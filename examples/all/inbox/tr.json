@@ -1,0 +1,131 @@
+{
+  "texts": {
+    "title": "Phishing E-postalarını Tanıma ve Raporlama",
+    "description": "Bu interaktif e-posta simülasyonunda phishing girişimlerini tanımayı ve raporlamayı öğrenin",
+    "instructions": "Phishing göstergelerini arayın ve şüpheli e-postaları raporlayın",
+    "selectEmailMessage": "İçeriğini görüntülemek için bir e-posta seçin",
+    "reportButtonText": "Phishing Olarak Raporla",
+    "nextButtonText": "Devam Et",
+    "phishingReportLabel": "Phishing Raporcusu",
+    "inboxLabel": "Gelen Kutusu",
+    "reportsLabel": "Raporlar",
+    "accuracyLabel": "Doğruluk",
+    "emailReportedMessage": "E-posta raporlandı",
+    "emailHeadersTitle": "E-posta Başlıkları",
+    "ctaButtonText": "Davranışınızı Geliştirin",
+    "mobileTitle": "Phishing Eğitimi",
+    "backToInboxText": "Gelen Kutusuna Dön",
+    "headersButtonText": "Başlıklar",
+    "correctReportMessage": "Phishing olarak işaretlendi — kırmızı bayrakları tespit etme konusunda harika.",
+    "cautiousReportMessage": "Şüpheli olarak işaretlendi — meşru olsa bile ihtiyatlı olmak iyi.",
+    "phishingReportModal": {
+      "title": "Phishing Raporcusu",
+      "subtitle": "Bu e-postayı analiz için sistem yöneticisine raporlamak ve sonucu e-posta ile almak istiyor musunuz?",
+      "question": "Bu e-postayı neden raporluyorsunuz?",
+      "options": [
+        "Spam e-posta aldım.",
+        "Phishing e-postası aldım.", 
+        "Bu e-postanın meşru olduğundan emin değilim."
+      ],
+      "reportButton": "Raporla",
+      "cancelButton": "İptal"
+    },
+    "phishingResultModal": {
+      "correctTitle": "Mükemmel yakalama!",
+      "correctSubtitle": "Bu phishing girişimini doğru şekilde tespit ettiniz.",
+      "incorrectTitle": "İyi güvenlik düşüncesi!",
+      "incorrectSubtitle": "Şüpheli e-postalarda temkinli olmak her zaman akıllıcadır.",
+      "difficultyLabel": "ORTA-KOLAY",
+      "emailInfoTitle": "İşlem Gerekli: WhatsApp Hesabınızı Doğrulayın",
+      "phishingExplanationTitle": "Bu neden phishing'di",
+      "legitimateExplanationTitle": "Bu neden meşruydu",
+      "continueButton": "Öğrenmeye Devam Et"
+    }
+  },
+  "emails": [
+    {
+      "id": "1",
+      "sender": "guvenlik@whatsapp.com",
+      "subject": "Yeni cihaz doğrulaması gerekli",
+      "preview": "Hesabınıza İstanbul'dan erişmeye çalışan birini fark ettik. Lütfen doğrulayın...",
+      "timestamp": "3 saat önce",
+      "isPhishing": true,
+      "content": "<p class=\"text-[#1C1C1E] dark:text-[#F2F2F7]\">Merhaba,</p><p class=\"text-[#1C1C1E] dark:text-[#F2F2F7]\">WhatsApp hesabınıza yeni bir cihazdan erişmeye çalışan birini fark ettik. Standart güvenlik prosedürümüzün bir parçası olarak, bunun siz olduğunu doğrulamamız gerekiyor.</p><p class=\"text-[#1C1C1E] dark:text-[#F2F2F7]\"><strong class=\"text-[#1C1C1E] dark:text-[#F2F2F7]\">Giriş girişimi detayları:</strong></p><ul class=\"text-[#1C1C1E] dark:text-[#F2F2F7]\"><li>Cihaz: Samsung Galaxy S21</li><li>Konum: İstanbul, Türkiye</li><li>Zaman: 16 Şubat 2024 14:30</li></ul><p class=\"text-[#1C1C1E] dark:text-[#F2F2F7]\">Eğer bu sizseniz, lütfen yeni cihazı onaylamak için aşağıdaki bağlantıya tıklayarak doğrulayın:</p><p class=\"text-[#1C1C1E] dark:text-[#F2F2F7]\"><a href=\"https://whatsapp-guvenlik-dogrulama.net/cihaz-onayla\" target=\"_blank\" rel=\"noopener noreferrer\" style=\"color: #007bff; text-decoration: underline;\">Yeni cihaz girişini doğrula</a></p><p class=\"text-[#1C1C1E] dark:text-[#F2F2F7]\">Bu cihazdan giriş yapmaya çalışmadıysanız, hesabınız hala güvende. Bu mesajı güvenle yok sayabilirsiniz.</p><p class=\"text-[#1C1C1E] dark:text-[#F2F2F7]\">Güvenliğiniz için WhatsApp Ayarlarında iki aşamalı doğrulamayı etkinleştirmenizi öneririz.</p><p class=\"text-[#1C1C1E] dark:text-[#F2F2F7]\">Teşekkürler,<br>WhatsApp Güvenlik Ekibi</p><p style=\"font-size: 11px; color: #999; margin-top: 20px;\">Sorularınız varsa, WhatsApp uygulamasındaki Yardım Merkezi'ni ziyaret edin.</p>",
+      "headers": [
+        "Return-Path: <guvenlik@whatsapp.com>",
+        "SPF: fail (whatsapp.com, 45.142.166.23'ü yetkili gönderici olarak belirtmez)",
+        "DMARC: fail (p=reject dis=none) header.from=whatsapp.com"
+      ],
+      "difficulty": "MEDIUM",
+      "explanation": "Bu e-posta profesyonel görünüyor ancak bağlantı sahte bir alana yönlendiriyor. Gerçek WhatsApp güvenlik bildirimleri e-posta ile dış bağlantılar değil, uygulama üzerinden gelir.",
+      "attachments": [
+        {
+          "id": "att-1-1",
+          "name": "guvenlik_raporu.pdf",
+          "size": "245 KB",
+          "type": "pdf",
+          "content": "<div class=\"p-3 sm:p-4 md:p-6 bg-white\"><div class=\"border-b border-gray-200 pb-4 mb-6\"><h1 class=\"text-xl font-bold text-gray-900\">WhatsApp Güvenlik Raporu</h1><p class=\"text-sm text-gray-600 mt-1\">Hesap Doğrulama Detayları</p></div><div class=\"mb-6\"><h3 class=\"text-lg font-semibold text-gray-900 mb-3\">Giriş Girişimi Özeti</h3><div class=\"bg-gray-50 p-3 sm:p-4 rounded border\"><div class=\"grid grid-cols-2 gap-4 text-sm\"><div><span class=\"text-gray-600\">IP Adresi:</span> 185.234.217.82</div><div><span class=\"text-gray-600\">Cihaz:</span> Samsung Galaxy S21</div><div><span class=\"text-gray-600\">Konum:</span> İstanbul, Türkiye</div><div><span class=\"text-gray-600\">Zaman:</span> 16 Şub, 14:30</div></div></div></div><div class=\"mb-6\"><h3 class=\"text-lg font-semibold text-gray-900 mb-3\">Doğrulama Adımları</h3><ol class=\"space-y-2 text-sm text-gray-700\"><li>1. Yukarıdaki giriş detaylarını inceleyin</li><li>2. Bunun yetkili bir erişim olduğunu onaylayın</li><li>3. Gerekirse güvenlik ayarlarınızı güncelleyin</li></ol></div><div class=\"bg-blue-50 border border-blue-200 p-3 sm:p-4 rounded\"><p class=\"text-sm text-blue-800\"><strong>Not:</strong> Bu rapor güvenliğiniz için otomatik olarak oluşturulur. Bu giriş girişimini tanıyorsanız herhangi bir işlem yapmanız gerekmez.</p></div></div>"
+        }
+      ]
+    },
+    {
+      "id": "2",
+      "sender": "bildirimler@whatsapp.com",
+      "subject": "Gelişmiş gizlilik ayarları mevcut",
+      "preview": "Hesabınız için yeni gizlilik özellikleri artık mevcut. Ayarlarınızı güncelleyin...",
+      "timestamp": "1 gün önce",
+      "isPhishing": true,
+      "content": "<p class=\"text-[#1C1C1E] dark:text-[#F2F2F7]\">Merhaba,</p><p class=\"text-[#1C1C1E] dark:text-[#F2F2F7]\">Konuşmalarınızı ve kişisel bilgilerinizi daha iyi korumak için yeni gizlilik özelliklerini tanıtmaktan heyecan duyuyoruz.</p><div style=\"background: #f8f9fa; border-left: 4px solid #25D366; padding: 15px; margin: 15px 0;\"><p style=\"margin: 0; font-weight: bold; color: #1C1C1E;\">🔐 Gelişmiş Gizlilik Özellikleri</p><ul style=\"margin: 10px 0; color: #1C1C1E;\"><li>Gelişmiş mesaj şifreleme</li><li>İyileştirilmiş kişi gizliliği</li><li>Gelişmiş yedekleme güvenliği</li></ul></div><p class=\"text-[#1C1C1E] dark:text-[#F2F2F7]\">Bu özellikleri etkinleştirmek için lütfen gizlilik ayarlarınızı güncelleyin:</p><p class=\"text-[#1C1C1E] dark:text-[#F2F2F7]\"><a href=\"https://gizlilik-ayarlari.whatsapp-guncellemeleri.com/gelismis\" target=\"_blank\" rel=\"noopener noreferrer\" style=\"color: #007bff; text-decoration: underline;\">Gizlilik ayarlarını şimdi güncelle</a></p><p class=\"text-[#1C1C1E] dark:text-[#F2F2F7]\">Bu yeni özellikler kademeli olarak kullanıma sunulmakta ve bu ayın sonuna kadar tüm kullanıcılar için mevcut olacak.</p><p class=\"text-[#1C1C1E] dark:text-[#F2F2F7]\">WhatsApp kullandığınız için teşekkür ederiz,<br>WhatsApp Ekibi</p><p style=\"font-size: 11px; color: #6c757d; margin-top: 20px;\">Gizlilik hakkında daha fazla bilgi için whatsapp.com/privacy adresini ziyaret edin</p>",
+      "headers": [
+        "Return-Path: <bildirimler@whatsapp.com>",
+        "SPF: fail (whatsapp.com, 203.0.113.42'yi yetkili gönderici olarak belirtmez)",
+        "DMARC: fail (p=reject dis=none) header.from=whatsapp.com"
+      ],
+      "difficulty": "HARD",
+      "explanation": "Bu e-posta çok meşru görünüyor ve gizlilik özellikleri hakkında ince sosyal mühendislik kullanıyor, ancak harici bağlantı şüpheli.",
+      "attachments": []
+    },
+    {
+      "id": "3",
+      "sender": "guncellemeler@whatsapp.com",
+      "subject": "Önemli: Ödeme yönteminizi güncelleyin",
+      "preview": "WhatsApp Business için ödeme yönteminizin süresi yakında doluyor. Hizmet kesintisini önlemek için güncelleyin...",
+      "timestamp": "6 saat önce",
+      "isPhishing": true,
+      "content": "<p class=\"text-[#1C1C1E] dark:text-[#F2F2F7]\">Değerli müşterimiz,</p><p class=\"text-[#1C1C1E] dark:text-[#F2F2F7]\">WhatsApp Business Premium için ödeme yönteminizin 25 Şubat 2024'te sona ereceğini bildirmek üzere size ulaşıyoruz.</p><p class=\"text-[#1C1C1E] dark:text-[#F2F2F7]\">Kesintisiz hizmet sağlamak için lütfen son kullanma tarihinden önce ödeme bilgilerinizi güncelleyin.</p><div style=\"background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 15px; margin: 15px 0;\"><p style=\"margin: 0; font-weight: bold; color: #856404;\">💳 Ödeme Yöntemi Süresi Doluyor</p><p style=\"margin: 5px 0 0 0; color: #856404;\">****4327 ile biten kartın süresi 25/02/2024'te doluyor</p></div><p class=\"text-[#1C1C1E] dark:text-[#F2F2F7]\">Ödeme yönteminizi güvenli şekilde güncelleyin:</p><p class=\"text-[#1C1C1E] dark:text-[#F2F2F7]\"><a href=\"https://faturalama.whatsapp-isletme.com/odeme-guncelle\" target=\"_blank\" rel=\"noopener noreferrer\" style=\"color: #007bff; text-decoration: underline;\">Ödeme bilgilerini güncelle</a></p><p class=\"text-[#1C1C1E] dark:text-[#F2F2F7]\">Son kullanma tarihine kadar güncellemezseniz, hesabınız ücretsiz katmana düşürülecek ve bazı özellikler sınırlanabilecek.</p><p class=\"text-[#1C1C1E] dark:text-[#F2F2F7]\">WhatsApp Business'ı seçtiğiniz için teşekkür ederiz,<br>WhatsApp Faturalama Ekibi</p><p style=\"font-size: 11px; color: #6c757d; margin-top: 20px;\">Bu e-posta WhatsApp Business hesabınızla ilgili gönderilmiştir. Destek için uygulama üzerinden bize ulaşın.</p>",
+      "headers": [
+        "Return-Path: <guncellemeler@whatsapp.com>",
+        "SPF: fail (whatsapp.com, 198.51.100.15'i yetkili gönderici olarak belirtmez)",
+        "DMARC: fail (p=reject dis=none) header.from=whatsapp.com"
+      ],
+      "difficulty": "MEDIUM-HARD",
+      "explanation": "Bu phishing e-postası ödeme aciliyeti ile işletme kullanıcılarını hedef alıyor. WhatsApp Business faturalama bildirimleri genellikle harici ödeme bağlantıları ile e-posta değil, uygulama üzerinden gelir.",
+      "attachments": [
+        {
+          "id": "att-6-1",
+          "name": "odeme_faturasi.pdf",
+          "size": "156 KB",
+          "type": "pdf",
+          "content": "<div class=\"p-3 sm:p-4 md:p-6 bg-white\"><div class=\"border-b border-gray-200 pb-4 mb-6\"><h1 class=\"text-xl font-bold text-gray-900\">WhatsApp Business</h1><h2 class=\"text-lg text-gray-700 mt-2\">Ödeme Hatırlatması</h2><p class=\"text-sm text-gray-500 mt-1\">Fatura #WB-2024-00127</p></div><div class=\"mb-6\"><h3 class=\"text-lg font-semibold text-gray-900 mb-3\">Hesap Bilgileri</h3><div class=\"bg-gray-50 p-3 sm:p-4 rounded border\"><div class=\"grid grid-cols-2 gap-4 text-sm\"><div><span class=\"text-gray-600\">Hesap:</span> WhatsApp Business Premium</div><div><span class=\"text-gray-600\">Fatura Döngüsü:</span> Aylık</div><div><span class=\"text-gray-600\">Sonraki Ödeme:</span> 25 Şubat 2024</div><div><span class=\"text-gray-600\">Tutar:</span> $19.99/ay</div></div></div></div><div class=\"mb-6\"><h3 class=\"text-lg font-semibold text-gray-900 mb-3\">Ödeme Yöntemi</h3><div class=\"bg-yellow-50 border border-yellow-200 p-4 rounded\"><div class=\"flex items-center gap-2 mb-2\"><span class=\"text-yellow-600\">⚠️</span><span class=\"font-semibold text-yellow-800\">Ödeme Yöntemi Süresi Doluyor</span></div><p class=\"text-sm text-yellow-700\">****4327 ile biten kredi kartınızın süresi 25/02/2024'te doluyor. Hizmet kesintisini önlemek için lütfen ödeme yönteminizi güncelleyin.</p></div></div><div class=\"mb-6\"><h3 class=\"text-lg font-semibold text-gray-900 mb-3\">Hizmet Özellikleri</h3><ul class=\"space-y-2 text-sm text-gray-700\"><li>• Gelişmiş analitik ve içgörüler</li><li>• Müşterilere sınırsız mesajlaşma</li><li>• Öncelikli müşteri desteği</li><li>• Gelişmiş otomasyon araçları</li></ul></div><div class=\"bg-blue-50 border border-blue-200 p-3 sm:p-4 rounded\"><p class=\"text-sm text-blue-800\"><strong>Önemli:</strong> WhatsApp Business Premium özelliklerinden yararlanmaya devam etmek için 25 Şubat 2024'ten önce ödeme yönteminizi güncelleyin.</p></div></div>"
+        }
+      ]
+    },
+    {
+      "id": "4",
+      "sender": "no-reply@whatsapp.com",
+      "subject": "Hesap aktivite özeti - Ocak 2024",
+      "preview": "Aylık WhatsApp kullanım raporunuz hazır. Bu ay 2.547 mesaj gönderildi...",
+      "timestamp": "3 gün önce",
+      "isPhishing": false,
+      "content": "<p class=\"text-[#1C1C1E] dark:text-[#F2F2F7]\">Merhaba,</p><p class=\"text-[#1C1C1E] dark:text-[#F2F2F7]\">İşte Ocak 2024 için WhatsApp aktivite özetiniz.</p><div style=\"background: #f8f9fa; border-radius: 8px; padding: 20px; margin: 20px 0;\"><h3 style=\"margin: 0 0 15px 0; color: #1C1C1E;\">📊 Aktiviteniz</h3><ul style=\"margin: 0; color: #1C1C1E; list-style: none; padding: 0;\"><li style=\"margin-bottom: 8px;\">• Gönderilen mesaj: 2.547</li><li style=\"margin-bottom: 8px;\">• Paylaşılan medya: 445 dosya</li><li style=\"margin-bottom: 8px;\">• Sesli mesaj: 67</li><li style=\"margin-bottom: 8px;\">• Video arama: 23 dakika</li></ul></div><p class=\"text-[#1C1C1E] dark:text-[#F2F2F7]\">Verileriniz özel ve şifrelidir. Bu özet cihazınızda yerel olarak oluşturulur ve kullanım kalıplarınızı anlamanıza yardımcı olur.</p><p class=\"text-[#1C1C1E] dark:text-[#F2F2F7]\">Gizlilik ayarlarınızı yönetmek için WhatsApp Ayarları → Hesap → Gizlilik'e gidin.</p><p class=\"text-[#1C1C1E] dark:text-[#F2F2F7]\">WhatsApp kullandığınız için teşekkürler,<br>WhatsApp Ekibi</p><p style=\"font-size: 11px; color: #6c757d; margin-top: 20px;\">Bu e-posta aylık olarak gönderilir ve yalnızca toplu verileri içerir. Bireysel mesajlarınız özel ve şifreli kalır.</p>",
+      "headers": [
+        "Return-Path: <no-reply@whatsapp.com>",
+        "SPF: pass (whatsapp.com, 192.0.2.10'u yetkili gönderici olarak belirtir)",
+        "DMARC: pass (p=reject dis=none) header.from=whatsapp.com"
+      ],
+      "difficulty": "EASY",
+      "explanation": "Meşru aylık aktivite özeti. Yalnızca genel kullanım istatistiklerini içerir ve kullanıcıları harici bağlantılar yerine uygulama içi ayarlara yönlendirir.",
+      "attachments": []
+    }
+  ]
+}
