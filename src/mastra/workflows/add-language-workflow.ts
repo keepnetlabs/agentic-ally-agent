@@ -155,13 +155,17 @@ const translateLanguageStep = createStep({
       throw new Error('translateLanguageJsonTool is not executable');
     }
 
-    const translated = await translateLanguageJsonTool.execute({
+    const translationParams = {
       inputData: {
         json: baseContent,
-        targetLanguage: targetLanguage, // Use workflow input instead of targetLanguage
+        targetLanguage: targetLanguage,
         doNotTranslateKeys: ['iconName', 'id', 'ids', 'url', 'src']
       }
-    });
+    };
+    
+    console.log('🔧 Translation parameters:', JSON.stringify(translationParams, null, 2));
+
+    const translated = await translateLanguageJsonTool.execute(translationParams);
 
     if (!translated?.success) {
       console.error('Translation tool response:', translated);
@@ -265,13 +269,17 @@ const updateInboxStep = createStep({
           throw new Error('translateLanguageJsonTool is not executable');
         }
 
-        const translatedInbox = await translateLanguageJsonTool.execute({
+        const inboxTranslationParams = {
           inputData: {
             json: baseInbox,
-            targetLanguage: targetLanguage, // Use workflow input instead of targetLanguage
+            targetLanguage: targetLanguage,
             doNotTranslateKeys: ['id', 'ids']
           }
-        });
+        };
+        
+        console.log('🔧 Inbox translation parameters:', JSON.stringify(inboxTranslationParams, null, 2));
+
+        const translatedInbox = await translateLanguageJsonTool.execute(inboxTranslationParams);
 
         if (translatedInbox?.success) {
           await remote.upsertInbox(normalizedDept, targetLanguage, microlearningId, translatedInbox.data);

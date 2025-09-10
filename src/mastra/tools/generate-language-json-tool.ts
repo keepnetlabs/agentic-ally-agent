@@ -139,19 +139,19 @@ Generate scenes 1-2 (intro, goal) using ONLY these exact keys:
 USE EXACTLY THESE KEYS BUT REPLACE PLACEHOLDERS WITH REAL CONTENT:
 {
   "1": {
-    "iconName": "Choose a Lucide icon that matches the topic/category. If Security and email threats are in scope, use 'mail-warning' or 'shield-alert'; otherwise use a non-security, topic-appropriate icon.",
-    "title": "2–4 words specific to ${analysis.topic}",
-    "subtitle": "Write one clear, practical benefit of learning ${analysis.topic}",
-    "sectionTitle": "Write a natural question in ${analysis.language} asking what this training helps with",
+    "iconName": "Choose appropriate Lucide icon for ${analysis.topic}",
+    "title": "Write 'Stop [${analysis.topic}] [issue-type]' format in ${analysis.language} (e.g., 'Stop Phishing Attacks', 'Stop Data Leaks', 'Improve Communication')",
+    "subtitle": "Write 'Learn to [action] [${analysis.topic}] safely' format in ${analysis.language} (max 10 words)",
+    "sectionTitle": "Translate 'What this training will help you with:' to ${analysis.language}",
     "highlights": [
-      {"iconName": "check-circle", "text": "Know ${analysis.topic.toLowerCase()} basics"},
-      {"iconName": "shield-check", "text": "See simple steps"},
-      {"iconName": "alert-triangle", "text": "Remember anyone can"}
+      {"iconName": "alert-triangle", "text": "Write 'Know that [${analysis.topic}] [common-issue]' in ${analysis.language} (max 6 words)"},
+      {"iconName": "users", "text": "Write 'Remember that anyone can be [affected]' in ${analysis.language} (max 7 words)"},
+      {"iconName": "shield-check", "text": "Write 'See how simple steps [help]' in ${analysis.language} (max 6 words)"}
     ],
     "key_message": [
-      "Write one concise, topic-specific point about ${analysis.topic}",
-      "Write one memorable takeaway about ${analysis.topic}",
-      "Write one actionable behavior for ${analysis.topic}"
+      "Write short ${analysis.topic} fact in ${analysis.language} (max 4 words)",
+      "Write short vulnerability statement in ${analysis.language} (max 5 words)",
+      "Write short solution statement in ${analysis.language} (max 5 words)"
     ],
     "duration": "~${Math.max(2, Math.round((microlearning.scenes?.reduce((total, scene) => total + (scene?.metadata?.duration_seconds || 30), 0) || 300) / 60))} minutes",
     "level": "Write the level name in ${analysis.language} for ${analysis.level}",
@@ -192,27 +192,27 @@ USE EXACTLY THESE KEYS BUT REPLACE PLACEHOLDERS WITH REAL CONTENT:
   "goals": [
     {
       "iconName": "alert-triangle",
-      "title": "Recognise the Signs",
+      "title": "Write simple recognition title for ${analysis.topic} in ${analysis.language}",
       "subtitle": "Pause and think",
-      "description": "Describe 2–3 concrete ${analysis.topic}-related cues that should be checked before acting."
+      "description": "Write ONE short 'Helps you...' sentence in ${analysis.language} for recognizing ${analysis.topic} issues (keep under 12 words)"
     },
     {
       "iconName": "shield-check",
       "title": "Make the Right Decision",
       "subtitle": "Safe action",
-      "description": "Describe the safe behavior for ${analysis.topic}, such as avoiding risky actions or verifying first."
+      "description": "Write ONE short 'Helps you...' sentence in ${analysis.language} for safe ${analysis.topic} behavior (keep under 12 words)"
     },
     {
       "iconName": "flag",
-      "title": "Report Safely",
+      "title": "Write simple escalation title for ${analysis.topic} in ${analysis.language}",
       "subtitle": "Report button",
-      "description": "Describe how to escalate or report ${analysis.topic} issues using the approved method."
+      "description": "Write ONE short 'Helps you...' sentence in ${analysis.language} for ${analysis.topic} escalation (keep under 12 words)"
     }
   ],
   "key_message": [
-    "Provide one recognition behavior for ${analysis.topic}",
-    "Provide one safe decision behavior for ${analysis.topic}",
-    "Provide one reporting/escalation behavior for ${analysis.topic}"
+    "Write 3-5 word ${analysis.topic} recognition behavior in ${analysis.language}",
+    "Write 5-7 word ${analysis.topic} safe action in ${analysis.language}",
+    "Write 3-5 word ${analysis.topic} escalation behavior in ${analysis.language}"
   ],
   "texts": {},
   "scene_type": "goal",
@@ -282,11 +282,12 @@ Return STRICT JSON ONLY.
 00:02:00.000 but`;
 
   const isEnglish = analysis.language.toLowerCase() === 'english' || analysis.language === 'en';
-  const transcriptContent = isEnglish ? baseEnglishTranscript : `CRITICAL: Translate ONLY the text content, NEVER modify timestamps.
+  const transcriptContent = isEnglish ? baseEnglishTranscript : `CRITICAL: Translate ONLY the text content, NEVER modify timestamps. Use actual line breaks, NOT \\n characters.
 
-EXAMPLE FORMAT (keep exact same):
+EXAMPLE FORMAT (each line on separate line):
 00:00:04.400 [translated text here]
 00:00:07.919 [translated text here]
+00:00:10.400 [translated text here]
 
 TRANSLATE TO ${analysis.language.toUpperCase()}:
 ${baseEnglishTranscript}
@@ -294,8 +295,10 @@ ${baseEnglishTranscript}
 RULES:
 - Keep ALL timestamps exactly: 00:00:04.400 format
 - Translate ONLY text after each timestamp
-- Keep same line breaks and structure
-- NO additional formatting or markdown`;
+- Each timestamp+text must be on its own line (use actual line breaks)
+- NO \\n characters - use real line breaks
+- NO additional formatting or markdown
+- Output must have proper line structure like the source`;
 
   // Transcript validation function
   const validateTranscript = (transcript: string): string => {
@@ -325,6 +328,130 @@ RULES:
     'Operations': ['Operations Manager', 'Project Manager', 'Team Lead', 'VP Operations'],
     'Management': ['Department Head', 'Senior Manager', 'Executive', 'Director'],
     'All': ['Marketing Manager', 'Project Coordinator', 'Team Leader', 'Department Manager']
+  };
+
+  // Topic-based resource URL mapping
+  const getTopicResources = (topic: string, category: string) => {
+    const topicKey = topic.toLowerCase();
+    const categoryKey = category.toLowerCase();
+    
+    const resourceMap: Record<string, Array<{title: string, url: string}>> = {
+      // Security topics
+      phishing: [
+        { title: "CISA Anti-Phishing Guide", url: "https://www.cisa.gov/cybersecurity" },
+        { title: "NCSC Phishing Guidance", url: "https://www.ncsc.gov.uk/cyber-security" }
+      ],
+      smishing: [
+        { title: "FTC SMS Scam Protection", url: "https://consumer.ftc.gov/articles/how-recognize-and-avoid-phishing-scams" },
+        { title: "CISA Mobile Security", url: "https://www.cisa.gov/cybersecurity" }
+      ],
+      vishing: [
+        { title: "FCC Phone Scam Guide", url: "https://www.fcc.gov/consumers/guides/spoofing-and-caller-id" },
+        { title: "CISA Voice Security", url: "https://www.cisa.gov/cybersecurity" }
+      ],
+      ransomware: [
+        { title: "CISA Ransomware Guide", url: "https://www.cisa.gov/cybersecurity" },
+        { title: "NCSC Ransomware Response", url: "https://www.ncsc.gov.uk/cyber-security" }
+      ],
+      password: [
+        { title: "NIST Password Guidelines", url: "https://www.nist.gov/cybersecurity" },
+        { title: "CISA Password Security", url: "https://www.cisa.gov/cybersecurity" }
+      ],
+      "data protection": [
+        { title: "NIST Data Security Framework", url: "https://www.nist.gov/cybersecurity" },
+        { title: "CISA Data Protection", url: "https://www.cisa.gov/cybersecurity" }
+      ],
+      malware: [
+        { title: "CISA Malware Prevention", url: "https://www.cisa.gov/cybersecurity" },
+        { title: "NCSC Malware Guide", url: "https://www.ncsc.gov.uk/cyber-security" }
+      ],
+      
+      // Business topics
+      communication: [
+        { title: "Harvard Business Communication", url: "https://hbr.org" },
+        { title: "SHRM Communication Skills", url: "https://www.shrm.org" }
+      ],
+      leadership: [
+        { title: "Harvard Leadership Guide", url: "https://hbr.org" },
+        { title: "SHRM Leadership Development", url: "https://www.shrm.org" }
+      ],
+      "team management": [
+        { title: "SHRM Team Management", url: "https://www.shrm.org" },
+        { title: "Harvard Team Leadership", url: "https://hbr.org" }
+      ],
+      "project management": [
+        { title: "PMI Best Practices", url: "https://www.pmi.org" },
+        { title: "Harvard Project Leadership", url: "https://hbr.org" }
+      ],
+      
+      // Finance topics
+      compliance: [
+        { title: "SEC Compliance Guide", url: "https://www.sec.gov" },
+        { title: "Investopedia Compliance", url: "https://www.investopedia.com" }
+      ],
+      "financial reporting": [
+        { title: "SEC Reporting Standards", url: "https://www.sec.gov" },
+        { title: "Investopedia Financial Reports", url: "https://www.investopedia.com" }
+      ],
+      
+      // Tech topics
+      "software security": [
+        { title: "OWASP Security Guide", url: "https://owasp.org" },
+        { title: "NIST Cybersecurity Framework", url: "https://www.nist.gov/cybersecurity" }
+      ],
+      "web security": [
+        { title: "OWASP Top 10", url: "https://owasp.org" },
+        { title: "CISA Web Security", url: "https://www.cisa.gov/cybersecurity" }
+      ]
+    };
+    
+    // Try exact topic match first
+    if (resourceMap[topicKey]) {
+      return resourceMap[topicKey];
+    }
+    
+    // Try partial matches
+    const partialMatch = Object.keys(resourceMap).find(key => 
+      topicKey.includes(key) || key.includes(topicKey)
+    );
+    if (partialMatch) {
+      return resourceMap[partialMatch];
+    }
+    
+    // Category-based fallback
+    if (categoryKey.includes('security') || categoryKey.includes('cyber')) {
+      return [
+        { title: "CISA Cybersecurity Resources", url: "https://www.cisa.gov/cybersecurity" },
+        { title: "NCSC Security Guidance", url: "https://www.ncsc.gov.uk/cyber-security" }
+      ];
+    }
+    
+    if (categoryKey.includes('business') || categoryKey.includes('management')) {
+      return [
+        { title: "Harvard Business Resources", url: "https://hbr.org" },
+        { title: "SHRM Professional Development", url: "https://www.shrm.org" }
+      ];
+    }
+    
+    if (categoryKey.includes('finance') || categoryKey.includes('compliance')) {
+      return [
+        { title: "SEC Resources", url: "https://www.sec.gov" },
+        { title: "Investopedia Education", url: "https://www.investopedia.com" }
+      ];
+    }
+    
+    if (categoryKey.includes('tech') || categoryKey.includes('development')) {
+      return [
+        { title: "OWASP Security Resources", url: "https://owasp.org" },
+        { title: "NIST Technology Guidelines", url: "https://www.nist.gov/cybersecurity" }
+      ];
+    }
+    
+    // Default fallback
+    return [
+      { title: "Professional Development Resources", url: "https://www.coursera.org" },
+      { title: "Industry Best Practices", url: "https://www.skillsoft.com" }
+    ];
   };
 
   const departmentKey = analysis.department || 'All';
@@ -644,12 +771,12 @@ Generate scenes 7-8 (nudge, summary):
       {
         "title": "Write resource title in ${analysis.language} about ${analysis.topic} guidance", 
         "type": "URL",
-        "url": "Generate working URL for ${analysis.topic} using ONLY these verified base domains: Security topics→cisa.gov, ncsc.gov.uk, nist.gov | Business/HR→hbr.org, shrm.org, indeed.com | Finance→investopedia.com, sec.gov | Tech→owasp.org, nist.gov | General→skillsoft.com, coursera.org. BUILD contextual path: base-domain + /[relevant-section]. Example: cisa.gov/phishing, hbr.org/leadership, owasp.org/top-ten"
-      },
+        "url": "${getTopicResources(analysis.topic, analysis.category)[0]?.url || 'https://www.cisa.gov/cybersecurity'}"
+        },
       {
         "title": "Write second resource title in ${analysis.language} about ${analysis.topic} best practices",
-        "type": "URL",
-        "url": "Generate DIFFERENT working URL for ${analysis.topic} using DIFFERENT verified base domain from first URL. Available: Security→ncsc.gov.uk, nist.gov, cisa.gov | Business→shrm.org, indeed.com, hbr.org | Finance→sec.gov, investopedia.com | Tech→nist.gov, owasp.org | General→coursera.org, skillsoft.com. BUILD topic-specific path. Example: ncsc.gov.uk/cyber-security, shrm.org/hr-topics, sec.gov/investor-guidance"
+        "type": "URL", 
+        "url": "${getTopicResources(analysis.topic, analysis.category)[1]?.url || 'https://www.ncsc.gov.uk/cyber-security'}"
       }
     ],
     "scene_type": "summary"

@@ -59,6 +59,7 @@ Use workflow-executor tool with exactly these parameters:
 Use workflow-executor tool with:
 - workflowType: 'add-language'
 - targetLanguage: [language code: tr, en, de, etc.]
+- sourceLanguage: [source language code: tr, en, de, etc.]
 - existingMicrolearningId: [use microlearningId from recent creation or find using knowledge-search]
 
 
