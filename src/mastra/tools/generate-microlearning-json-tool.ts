@@ -145,19 +145,26 @@ function generateTheme(topic: string) {
 }
 
 async function enhanceMicrolearningContent(microlearning: MicrolearningContent, model: any): Promise<MicrolearningContent> {
-  const enhancementPrompt = `ENHANCE this microlearning object's content to industry standards. Keep ALL keys exactly the same, only improve VALUES.
+  const enhancementPrompt = `CRITICAL: Return ONLY valid JSON. No explanations, no markdown, no backticks.
 
-CURRENT OBJECT: ${JSON.stringify(microlearning, null, 2)}
+ENHANCE this microlearning object's content to industry standards:
+
+${JSON.stringify(microlearning, null, 2)}
 
 ENHANCEMENT RULES:
-1. FIX title if too long or contains "Training:" - make it 3-5 professional words
-2. FIX category if wrong - security/phishing topics should be "Security Awareness" 
-3. FILL regulation_compliance array if empty - add relevant standards for the topic
-4. ENHANCE scientific_basis in scenes - make them detailed with learning theories
-5. IMPROVE risk_area to be 2-3 words max, not full sentences
-6. Keep all other keys/structure identical
+1. Fix title if too long - make it 3-5 professional words
+2. Fix category if wrong - security topics should be "Security Awareness" 
+3. Fill regulation_compliance array with relevant standards
+4. Enhance scientific_basis with learning theories
+5. Improve risk_area to be 2-3 words max
+6. Keep exact same structure
 
-Return the EXACT same JSON structure with enhanced content only:`;
+CRITICAL JSON RULES:
+- Use double quotes for all strings
+- No trailing commas
+- Escape all quotes in content with \"
+- No undefined or null values
+- Return valid JSON only`;
 
   try {
     const response = await generateText({

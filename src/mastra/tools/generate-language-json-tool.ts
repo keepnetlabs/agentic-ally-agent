@@ -130,10 +130,11 @@ GOAL SCENE (scene_id: "2"):
 - Avoid technical jargon, use plain language
 
 LANGUAGE QUALITY:
-- Write naturally in target language - avoid literal translations
-- Level field: Use proper capitalization for the target language
-- Key messages: Use complete, natural phrases (not fragments or keywords)
-- Grammar: Follow native language patterns, not English word order
+- Write naturally in ${analysis.language} with proper grammar and sentence structure
+- Use native ${analysis.language} word order, NOT English word order
+- Translate concepts completely - do not mix English words with ${analysis.language}
+- Level field: Use proper capitalization for ${analysis.language}
+- Key messages: Use complete, natural phrases in ${analysis.language}
 Generate scenes 1-2 (intro, goal) using ONLY these exact keys:
 
 USE EXACTLY THESE KEYS BUT REPLACE PLACEHOLDERS WITH REAL CONTENT:
@@ -802,7 +803,7 @@ CRITICAL:
       generateText({
         model: model,
         messages: [
-          { role: 'system', content: `Generate professional ${analysis.language} training content. Return ONLY VALID JSON - NO markdown, NO backticks, NO formatting. Start directly with {. CRITICAL: Use EXACTLY the fields shown in the example - NO EXTRA FIELDS. Do NOT add ANY additional keys beyond what is explicitly shown in the template. Follow the template structure PRECISELY. Use specific React Lucide icon names (from lucide-react library), not placeholders.` },
+          { role: 'system', content: `Generate professional ${analysis.language} training content. Return ONLY VALID JSON - NO markdown, NO backticks, NO formatting. Start directly with {. CRITICAL: Use EXACTLY the fields shown in the example - NO EXTRA FIELDS. Do NOT add ANY additional keys beyond what is explicitly shown in the template. Follow the template structure PRECISELY. Use specific React Lucide icon names (from lucide-react library), not placeholders. TRANSCRIPT RULE: Never use literal \\n characters in transcript - use actual line breaks only.` },
           { role: 'user', content: videoPrompt }
         ]
       }),

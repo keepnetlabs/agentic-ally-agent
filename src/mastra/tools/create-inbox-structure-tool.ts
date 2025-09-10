@@ -192,7 +192,7 @@ CONTENT REQUIREMENTS:
 - Make each email unique with different scenarios, subjects, and content
 - Vary email styles: formal vs casual tone, different urgency levels, various sender personalities
 - Create diverse content approaches: some with bullet points, some with paragraphs, some with call-to-action buttons
-- Use realistic sender domains and names
+- Use realistic sender domains that match the ${topic} context (e.g., for banking: @bank.com or @finansbank.com, for tech: @techcorp.com or @software.com, for healthcare: @hospital.com or @medicalcenter.com)
 - Include proper email headers
 - Create contextual attachments with HTML content
 - Each email should have maximum 1 attachment with content related to that specific email
@@ -406,13 +406,13 @@ Each should feel like it came from a different person with different communicati
     emailsData = [
       {
         "id": "1",
-        "sender": `security@${topic.toLowerCase().replace(/\s+/g, '')}.com`,
+        "sender": "security@company-alerts.com",
         "subject": `${topic} Security Alert`,
         "preview": "Important security notification requiring immediate attention...",
         "timestamp": "2 hours ago",
         "isPhishing": true,
         "content": `<div class=\\"text-[#1C1C1E] dark:text-[#F2F2F7]\\"><div class=\\"bg-red-600 p-4 text-white mb-4\\"><h2 class=\\"font-bold text-lg\\">🚨 URGENT ${topic.toUpperCase()} SECURITY ALERT</h2></div><p><strong>Dear Valued Employee,</strong></p><p>Our security systems have detected <strong>critical ${topic} activity</strong> on your corporate account that requires immediate action. Failure to respond within the next 2 hours may result in account suspension.</p><div class=\\"bg-yellow-50 border-l-4 border-yellow-400 p-4 my-4\\"><h3 class=\\"font-semibold text-yellow-800\\">⚠️ Security Breach Details:</h3><ul class=\\"mt-2 text-yellow-700\\"><li>• Unauthorized login attempts from foreign IP addresses</li><li>• Suspicious ${topic} patterns detected in your account</li><li>• Multiple failed authentication events logged</li><li>• Potential data compromise risk: <span class=\\"font-bold text-red-600\\">HIGH</span></li></ul></div><p>To immediately secure your account and prevent data loss, please verify your identity using our secure portal:</p><div class=\\"text-center my-6\\"><a href=\\"https://secure-${topic.toLowerCase()}-verification.net/urgent\\" class=\\"bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg text-lg\\">🔒 VERIFY ACCOUNT NOW</a></div><p class=\\"text-sm text-gray-600\\">This verification link will expire in 2 hours for security purposes. Do not ignore this critical security notice.</p><div class=\\"mt-6 pt-4 border-t border-gray-200\\"><p class=\\"text-sm\\"><strong>IT Security Department</strong><br>${topic} Protection Services<br>security@company-systems.com<br>📞 Emergency Line: 1-800-SECURITY</p></div></div>`,
-        "headers": [`Return-Path: <security@${topic.toLowerCase()}.com>`, "SPF: fail", "DMARC: fail"],
+        "headers": [`Return-Path: <security@company-alerts.com>`, "SPF: fail", "DMARC: fail"],
         "difficulty": "MEDIUM",
         "explanation": `This email uses ${topic} urgency tactics to trick users into clicking suspicious links`,
         "attachments": [
