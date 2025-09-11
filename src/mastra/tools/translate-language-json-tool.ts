@@ -45,12 +45,42 @@ Rules:
 - Do not translate iconName, id, ids, url, src, scene_type or keys listed in doNotTranslateKeys
 - CRITICAL: NEVER translate scene_type values - they must remain exactly: intro, goal, scenario, actionable_content, quiz, survey, nudge, summary
 - scene_type values are system constants and must stay in English
+- CRITICAL: Preserve transcript formatting - keep line breaks (\\n) and timestamps intact
+- For transcript fields: only translate text content, preserve timestamps and line structure
 - Return EXACTLY the same JSON structure with translated string values
 - NEVER add explanations or comments
 - NEVER wrap in markdown \`\`\`json blocks
 - Start response immediately with { and end with }`;
 
-        const user = `doNotTranslateKeys: ${JSON.stringify(protectedKeys)}\n\nJSON:\n${JSON.stringify(json)}`;
+        // Clean the input JSON before sending to AI
+        const cleanInputJson = (obj: any, path: string = ''): any => {
+            if (typeof obj === 'string') {
+                // Special handling for transcript field - preserve line breaks
+                if (path.includes('transcript') || path.includes('video.transcript')) {
+                    console.log('🎬 Preserving line breaks in transcript field');
+                    // Only remove problematic control characters, keep newlines (\n = \u000A)
+                    return obj.replace(/[\u0000-\u0009\u000B-\u001F\u007F-\u009F]/g, '');
+                } else {
+                    // Clean all control characters from other string values
+                    return obj.replace(/[\u0000-\u001F\u007F-\u009F]/g, '');
+                }
+            } else if (Array.isArray(obj)) {
+                return obj.map((item, index) => cleanInputJson(item, `${path}[${index}]`));
+            } else if (obj && typeof obj === 'object') {
+                const cleaned: any = {};
+                for (const [key, value] of Object.entries(obj)) {
+                    const newPath = path ? `${path}.${key}` : key;
+                    cleaned[key] = cleanInputJson(value, newPath);
+                }
+                return cleaned;
+            }
+            return obj;
+        };
+
+        const cleanedJson = cleanInputJson(json);
+        console.log('🧹 Cleaned input JSON of control characters');
+        
+        const user = `doNotTranslateKeys: ${JSON.stringify(protectedKeys)}\n\nJSON:\n${JSON.stringify(cleanedJson)}`;
 
         let res;
         try {
@@ -66,15 +96,86 @@ Rules:
                 ]
             });
             console.log('🤖 AI Response received, length:', res?.text?.length);
-            const text = res.text.trim().replace(/^```json\s*/i, '').replace(/```\s*$/i, '');
+            
+            // Enhanced cleaning for control characters and JSON issues
+            let text = res.text.trim();
+            
+            // Remove markdown formatting
+            text = text.replace(/^```json\s*/i, '').replace(/```\s*$/i, '');
+            console.log('📝 Removed markdown formatting');
+            
+            // Clean control characters that can break JSON parsing
+            // But preserve newlines in transcript content
+            const beforeClean = text.length;
+            
+            // Check if this response contains transcript content
+            const hasTranscript = text.includes('"transcript"') || text.includes('transcript');
+            
+            if (hasTranscript) {
+                console.log('🎬 Response contains transcript, preserving line breaks');
+                // Only remove problematic control characters, keep newlines (\n = \u000A)
+                text = text.replace(/[\u0000-\u0009\u000B-\u001F\u007F-\u009F]/g, '');
+            } else {
+                // Clean all control characters from non-transcript content
+                text = text.replace(/[\u0000-\u001F\u007F-\u009F]/g, '');
+            }
+            
+            if (text.length !== beforeClean) {
+                console.log(`🧹 Removed ${beforeClean - text.length} control characters`);
+            }
+            
+            // Fix common JSON issues
+            text = text.replace(/,(\s*[}\]])/g, '$1'); // Remove trailing commas
+            
+            // Handle escaped newlines properly in transcript content
+            text = text.replace(/\\\\n/g, '\\n'); // Convert double-escaped to single-escaped
+            
+            // Conservative fixes only - avoid aggressive HTML manipulation
+            // Fix only the most basic JSON syntax issues
+            text = text.replace(/\\\\\\/g, '\\'); // Fix triple backslashes
+            text = text.replace(/\\\\"/g, '\\"'); // Fix double-escaped quotes
+            
             console.log('🧹 Cleaned AI response preview:', text.substring(0, 500) + '...');
+            
+            // Try to parse the cleaned JSON
             const translated = JSON.parse(text);
             console.log('✅ Successfully parsed JSON, keys:', Object.keys(translated || {}));
             return { success: true, data: translated };
         } catch (error) {
             console.error('❌ Translation failed:', error);
             console.error('❌ Full AI response text:', res?.text);
-            console.error('❌ Parsed text attempt:', res?.text?.trim().replace(/^```json\s*/i, '').replace(/```\s*$/i, ''));
+            console.error('❌ Error position info:', error instanceof SyntaxError ? `Position: ${error.message}` : 'Not a syntax error');
+            
+            // Show the problematic area if it's a syntax error
+            if (error instanceof SyntaxError && res?.text) {
+                let cleanedText = res.text.trim().replace(/^```json\s*/i, '').replace(/```\s*$/i, '');
+                
+                // Apply the same cleaning that was attempted
+                cleanedText = cleanedText.replace(/[\u0000-\u001F\u007F-\u009F]/g, '');
+                cleanedText = cleanedText.replace(/,(\s*[}\]])/g, '$1');
+                cleanedText = cleanedText.replace(/class='([^']*)'/g, 'class="$1"');
+                cleanedText = cleanedText.replace(/style='([^']*)'/g, 'style="$1"');
+                
+                const match = error.message.match(/position (\d+)/);
+                if (match) {
+                    const position = parseInt(match[1]);
+                    const start = Math.max(0, position - 100);
+                    const end = Math.min(cleanedText.length, position + 100);
+                    
+                    console.error('🔍 Character at error position:', cleanedText.charCodeAt(position), `"${cleanedText.charAt(position)}"`);
+                    console.error('🔍 Problematic area around position:', cleanedText.substring(start, end));
+                    
+                    // Look for common issues around the error
+                    const problemArea = cleanedText.substring(Math.max(0, position - 50), position + 50);
+                    if (problemArea.includes("'")) {
+                        console.error('🔍 Found single quotes near error - this might be the issue');
+                    }
+                    if (problemArea.includes('"}')) {
+                        console.error('🔍 Found array element ending near error - might be missing comma');
+                    }
+                }
+            }
+            
             return { success: false, error: `Translation failed: ${error}`, data: json };
         }
     }

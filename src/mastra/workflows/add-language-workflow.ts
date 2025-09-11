@@ -50,7 +50,12 @@ const loadExistingStep = createStep({
   execute: async ({ inputData }) => {
     const { existingMicrolearningId, targetLanguage, sourceLanguage, department } = inputData;
     
-    console.log(`🔍 Step 1: Loading existing microlearning ${existingMicrolearningId} for ${targetLanguage} translation`);
+    // Validate language parameters
+    if (targetLanguage === sourceLanguage) {
+      throw new Error(`Target language (${targetLanguage}) cannot be the same as source language (${sourceLanguage}). Please check your parameters.`);
+    }
+    
+    console.log(`🔍 Step 1: Loading existing microlearning ${existingMicrolearningId} for ${sourceLanguage} → ${targetLanguage} translation`);
 
     // Try KVService first, fallback to MicrolearningService
     let existing = null;
@@ -156,7 +161,9 @@ const translateLanguageStep = createStep({
     }
 
     console.log('🔍 targetLanguage variable:', targetLanguage, typeof targetLanguage);
+    console.log('🔍 sourceLanguage variable:', sourceLanguage, typeof sourceLanguage);
     console.log('🔍 baseContent keys:', Object.keys(baseContent || {}));
+    console.log('🔍 microlearningId:', microlearningId);
     
     const translationParams = {
       json: baseContent,
@@ -180,11 +187,16 @@ const translateLanguageStep = createStep({
       const kvService = new KVService();
       
       // Store language content
+      console.log(`💾 About to store translated content for: ${microlearningId}/${targetLanguage}`);
+      console.log(`📊 Translated data sample:`, JSON.stringify(translated.data).substring(0, 200) + '...');
+      
       const langSuccess = await kvService.storeLanguageContent(
         microlearningId,
         targetLanguage,
         translated.data
       );
+      
+      console.log(`📝 Language content storage result: ${langSuccess ? 'SUCCESS' : 'FAILED'} for ${microlearningId}/${targetLanguage}`);
       
       // Update language_availability in microlearning metadata
       const updatedMicrolearning = { ...microlearningStructure };
@@ -253,17 +265,29 @@ const updateInboxStep = createStep({
   inputSchema: existingContentSchema, // Use existingContentSchema which has targetLanguage field
   outputSchema: finalResultSchema,
   execute: async ({ inputData }) => {
-    const { data: languageContent, analysis, microlearningId, targetLanguage, department } = inputData;
+    const { data: languageContent, analysis, microlearningId, targetLanguage, department, sourceLanguage } = inputData;
 
     console.log(`📥 Step 3: Creating inbox for ${targetLanguage} language`);
+    console.log(`🔍 Source language for inbox: ${sourceLanguage}`);
+    console.log(`🔍 Target language for inbox: ${targetLanguage}`);
     
     const normalizedDept = analysis.department ? normalizeDepartmentName(analysis.department) : 'all';
     const remote = new RemoteStorageService();
 
-    // Try to translate existing inbox first (base 'en')
+    // Try to translate existing inbox first (use actual source language, not hardcoded 'en')
     try {
       const service = new MicrolearningService();
-      const baseInbox = await service.getDepartmentInbox(microlearningId, normalizedDept, 'en');
+      console.log(`📦 Looking for base inbox: ${microlearningId}/${normalizedDept}/${sourceLanguage}`);
+      let baseInbox = await service.getDepartmentInbox(microlearningId, normalizedDept, sourceLanguage);
+
+      // Fallback to 'en' if source language inbox not found
+      if (!baseInbox && sourceLanguage !== 'en') {
+        console.log(`⚠️ No inbox found for ${sourceLanguage}, trying fallback to 'en'`);
+        baseInbox = await service.getDepartmentInbox(microlearningId, normalizedDept, 'en');
+        if (baseInbox) {
+          console.log(`✅ Found fallback inbox in 'en'`);
+        }
+      }
 
       if (baseInbox) {
         if (!translateLanguageJsonTool.execute) {
@@ -284,7 +308,12 @@ const updateInboxStep = createStep({
           await remote.upsertInbox(normalizedDept, targetLanguage, microlearningId, translatedInbox.data);
           console.log(`✅ Inbox translated and stored: inbox/${normalizedDept}/${targetLanguage}.json`);
         } else {
-          throw new Error('Inbox translation failed');
+          console.warn('⚠️ Inbox translation failed due to HTML/JSON parsing issues');
+          console.log('🔄 Attempting to regenerate inbox from scratch instead of translating');
+          
+          // Fallback: Generate fresh inbox for target language instead of translating broken HTML
+          // This will create clean HTML without translation parsing issues
+          throw new Error(`Inbox translation failed - HTML content too complex. Please regenerate inbox from scratch for ${targetLanguage} language.`);
         }
       } else {
         throw new Error('No base inbox to translate');

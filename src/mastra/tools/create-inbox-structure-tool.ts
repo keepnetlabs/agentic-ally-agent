@@ -80,12 +80,27 @@ async function createInboxStructure(
     await remote.upsertInbox(dept, languageCode, microlearningId, dynamicInboxData);
     return dynamicInboxData; // Return the generated content
 
-  } catch (error) {
-    console.warn('Failed to generate dynamic inbox, using fallback:', error);
-    // Fallback to basic structure
-    const fallbackPayload = { texts: {}, emails: [] };
-    await remote.upsertInbox(dept, languageCode, microlearningId, fallbackPayload);
-    return fallbackPayload; // Return the fallback content
+  } catch (firstError) {
+    console.warn('First attempt to generate dynamic inbox failed, retrying once:', firstError);
+
+    try {
+      const model = getModel(ModelProvider.OPENAI, Model.OPENAI_GPT_5_NANO);
+      const dynamicInboxData = await generateDynamicInboxWithAI(
+        microlearning,
+        languageCode,
+        model
+      );
+
+      await remote.upsertInbox(dept, languageCode, microlearningId, dynamicInboxData);
+      return dynamicInboxData; // Return the generated content after retry
+
+    } catch (secondError) {
+      console.warn('Second attempt failed, using fallback:', secondError);
+      // Fallback to basic structure
+      const fallbackPayload = { texts: {}, emails: [] };
+      await remote.upsertInbox(dept, languageCode, microlearningId, fallbackPayload);
+      return fallbackPayload; // Return the fallback content
+    }
   }
 }
 
@@ -170,10 +185,12 @@ Generate the following structure:
 
 
 
-  // Phase 2: Generate emails (simplified prompt for better JSON output)
+  // Phase 2: Generate emails with realistic behavior patterns
   const emailsPrompt = `Generate exactly 4 ${topic} training emails in ${languageCode} language. Return ONLY valid JSON array - no explanations or markdown.
 
 Topic: ${topic} (${category}, ${riskArea}, ${level} level)
+
+Make emails naturally relate to ${topic} - use relevant scenarios, terminology, and workplace situations that fit this specific security topic.
 
 CRITICAL JSON REQUIREMENTS:
 - Use double quotes for all strings
@@ -185,22 +202,59 @@ CRITICAL JSON REQUIREMENTS:
 - "isPhishing" must be: true or false
 - "sender" must be valid email format (e.g., "user@domain.com")
 
-CONTENT REQUIREMENTS:
-- Generate ALL text in ${languageCode} language
-- Create realistic workplace emails about ${topic}
-- Mix 2 phishing + 2 legitimate emails
-- Make each email unique with different scenarios, subjects, and content
-- Vary email styles: formal vs casual tone, different urgency levels, various sender personalities
-- Create diverse content approaches: some with bullet points, some with paragraphs, some with call-to-action buttons
-- Use realistic sender domains that match the ${topic} context (e.g., for banking: @bank.com or @finansbank.com, for tech: @techcorp.com or @software.com, for healthcare: @hospital.com or @medicalcenter.com)
-- Include proper email headers
-- Create contextual attachments with HTML content
-- Each email should have maximum 1 attachment with content related to that specific email
-- Make attachments visually appealing with proper styling and realistic content
-- Email content should be simple text, attachments should be styled cards
-- Vary attachment types: use different file types (pdf, doc, xlsx, jpg, png, zip, txt) for each email
-- Use rich Tailwind CSS styling: gradients, icons, borders, shadows, and proper spacing
-- Include realistic metadata like version numbers, status indicators, and file-specific information
+BEHAVIORAL REQUIREMENTS - CRITICAL FOR REALISM:
+
+FOR PHISHING EMAILS (isPhishing: true) - 2 emails:
+Create ONE obvious phishing and ONE sophisticated phishing:
+
+EMAIL 1 - Obvious Phishing:
+- URGENT language and time pressure ("expires in 24 hours", "immediate action")
+- SUSPICIOUS domains (typos, external services like "security-center.net", "account-help.org")
+- GENERIC greetings ("Dear User", "Account Holder")
+- OBVIOUS red flags in headers (SPF: fail, DMARC: fail)
+- PUSHY call-to-action with suspicious links
+
+EMAIL 2 - Sophisticated Phishing:
+- PROFESSIONAL and SUBTLE approach (sounds legitimate but has subtle red flags)
+- ALMOST-CORRECT domains (like "company-security.com" instead of "company.com")
+- PERSONALIZED but SLIGHTLY off ("Hi there", "Valued employee" instead of actual name)
+- MIXED headers (some pass, some fail - making it harder to detect)
+- HELPFUL tone that slowly asks for information or action
+
+FOR LEGITIMATE EMAILS (isPhishing: false) - 2 emails:
+Mix casual and formal legitimate communication:
+
+EMAIL 3 - Casual Legitimate:
+- NATURAL workplace communication from manager/colleague
+- COMPANY domain (@company.com, @yourorg.com)
+- PERSONAL greetings with names or casual tone ("Hey team", "Hi everyone")
+- CONVERSATIONAL language with contractions and friendly touches
+- CLEAN headers (SPF: pass, DMARC: pass)
+
+EMAIL 4 - Formal Legitimate:
+- PROFESSIONAL communication from HR/compliance/official department
+- COMPANY domain with appropriate department sender
+- FORMAL but WARM tone (professional without being cold)
+- PROPER business language (no contractions, structured content)
+- LEGITIMATE business context (policy updates, announcements, procedures)
+- CLEAN headers (SPF: pass, DMARC: pass)
+
+PHISHING SOPHISTICATION LEVELS:
+1. "Obviously Suspicious" - Clear red flags, easy to spot
+2. "Cleverly Disguised" - Professional appearance with subtle inconsistencies
+
+LEGITIMATE VARIETY:
+3. "Workplace Casual" - Manager/colleague informal communication
+4. "Corporate Professional" - HR/official department formal communication
+
+REALISTIC WORKPLACE ELEMENTS:
+- Meeting room names (Conference Room B, Boardroom A)
+- Company-specific language (our portal, company policy, team update)
+- Natural timing (tomorrow at 2pm, by end of week, quick reminder)
+- Personal touches (I'll bring coffee, looking forward to seeing everyone)
+- Proper context (training session, policy update, team announcement)
+
+Make each email sound like real workplace communication - phishing should feel "off" but professional, legitimate should feel natural and human.
 
 JSON FORMAT:
 [
@@ -487,7 +541,7 @@ Each should feel like it came from a different person with different communicati
         incorrectTitle: "Good security thinking!",
         incorrectSubtitle: "Being cautious is always wise",
         difficultyLabel: "MEDIUM",
-        emailInfoTitle: "Email Analysis", 
+        emailInfoTitle: "Email Analysis",
         phishingExplanationTitle: "Why this was suspicious",
         legitimateExplanationTitle: "Why this was legitimate",
         continueButton: "Continue Learning"

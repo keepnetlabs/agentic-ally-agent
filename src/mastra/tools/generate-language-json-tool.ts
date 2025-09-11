@@ -90,10 +90,9 @@ SCIENTIFIC CONTEXT:
    - Choose Lucide icons semantically matched to topic/category. Never default to generic security icons unless explicitly relevant.
 
 3. **Language & Style**
-   - Write ALL text in \${analysis.language} with natural grammar and fluent phrasing.
-   - Avoid literal/machine-like translation. Must sound native.
-   - No brand/tool names unless explicitly present in analysis context.
-   - Style: professional, concise, expert instructional designer tone. Behavior-focused, clear, and actionable.
+   - Use ${analysis.language} for all user-visible text. If English, write in English; otherwise avoid English words/templates. Do not mix languages (proper nouns excepted).
+   - Localize by meaning, not word-for-word. Use idiomatic ${analysis.language} with conventional imperative forms and natural structures; avoid literal/machine-like translation.
+   - Maintain a professional, concise instructional tone; avoid brand/tool names unless provided in the analysis context.
 
 4. **Structure & Quality**
    - Replace ALL placeholders with real, topic-specific content.
@@ -116,8 +115,8 @@ SCIENTIFIC CONTEXT:
 SCENE STANDARDIZATION:
 
 INTRO SCENE (scene_id: "1"):
-- Title format: "Stop [Topic] Attacks" or similar action-oriented phrase
-- Subtitle: "Learn to spot and report [topic] safely" format
+- Title: If ${analysis.language} is English, write a natural English title. Otherwise, provide a natural, action-oriented title in ${analysis.language} that conveys preventing ${analysis.topic} incidents.
+- Subtitle: If ${analysis.language} is English, write in English. Otherwise, provide a natural ${analysis.language} subtitle that conveys learning to recognize and safely report ${analysis.topic}.
 - Highlights: Risk → Target → Solution structure with simple language
 - Key messages: 3-4 word statements ("Topic is common", "Anyone can be targeted", "Simple steps help")
 - Duration: "~5 minutes", Level: "Beginner"
@@ -141,8 +140,8 @@ USE EXACTLY THESE KEYS BUT REPLACE PLACEHOLDERS WITH REAL CONTENT:
 {
   "1": {
     "iconName": "Choose appropriate Lucide icon for ${analysis.topic}",
-    "title": "Write 'Stop [${analysis.topic}] [issue-type]' format in ${analysis.language} (e.g., 'Stop Phishing Attacks', 'Stop Data Leaks', 'Improve Communication')",
-    "subtitle": "Write 'Learn to [action] [${analysis.topic}] safely' format in ${analysis.language} (max 10 words)",
+    "title": "If ${analysis.language} is English, write a natural English title. Otherwise, write a fully localized, natural ${analysis.language} title that conveys 'Prevent ${analysis.topic} incidents' (no English words or templates)",
+    "subtitle": "If ${analysis.language} is English, write in English. Otherwise, write a fully localized ${analysis.language} subtitle that conveys 'Learn to recognize and safely report ${analysis.topic}' (max 10 words, no English words)",
     "sectionTitle": "Translate 'What this training will help you with:' to ${analysis.language}",
     "highlights": [
       {"iconName": "alert-triangle", "text": "Write 'Know that [${analysis.topic}] [common-issue]' in ${analysis.language} (max 6 words)"},
@@ -335,8 +334,8 @@ RULES:
   const getTopicResources = (topic: string, category: string) => {
     const topicKey = topic.toLowerCase();
     const categoryKey = category.toLowerCase();
-    
-    const resourceMap: Record<string, Array<{title: string, url: string}>> = {
+
+    const resourceMap: Record<string, Array<{ title: string, url: string }>> = {
       // Security topics
       phishing: [
         { title: "CISA Anti-Phishing Guide", url: "https://www.cisa.gov/cybersecurity" },
@@ -366,7 +365,7 @@ RULES:
         { title: "CISA Malware Prevention", url: "https://www.cisa.gov/cybersecurity" },
         { title: "NCSC Malware Guide", url: "https://www.ncsc.gov.uk/cyber-security" }
       ],
-      
+
       // Business topics
       communication: [
         { title: "Harvard Business Communication", url: "https://hbr.org" },
@@ -384,7 +383,7 @@ RULES:
         { title: "PMI Best Practices", url: "https://www.pmi.org" },
         { title: "Harvard Project Leadership", url: "https://hbr.org" }
       ],
-      
+
       // Finance topics
       compliance: [
         { title: "SEC Compliance Guide", url: "https://www.sec.gov" },
@@ -394,7 +393,7 @@ RULES:
         { title: "SEC Reporting Standards", url: "https://www.sec.gov" },
         { title: "Investopedia Financial Reports", url: "https://www.investopedia.com" }
       ],
-      
+
       // Tech topics
       "software security": [
         { title: "OWASP Security Guide", url: "https://owasp.org" },
@@ -405,20 +404,20 @@ RULES:
         { title: "CISA Web Security", url: "https://www.cisa.gov/cybersecurity" }
       ]
     };
-    
+
     // Try exact topic match first
     if (resourceMap[topicKey]) {
       return resourceMap[topicKey];
     }
-    
+
     // Try partial matches
-    const partialMatch = Object.keys(resourceMap).find(key => 
+    const partialMatch = Object.keys(resourceMap).find(key =>
       topicKey.includes(key) || key.includes(topicKey)
     );
     if (partialMatch) {
       return resourceMap[partialMatch];
     }
-    
+
     // Category-based fallback
     if (categoryKey.includes('security') || categoryKey.includes('cyber')) {
       return [
@@ -426,28 +425,28 @@ RULES:
         { title: "NCSC Security Guidance", url: "https://www.ncsc.gov.uk/cyber-security" }
       ];
     }
-    
+
     if (categoryKey.includes('business') || categoryKey.includes('management')) {
       return [
         { title: "Harvard Business Resources", url: "https://hbr.org" },
         { title: "SHRM Professional Development", url: "https://www.shrm.org" }
       ];
     }
-    
+
     if (categoryKey.includes('finance') || categoryKey.includes('compliance')) {
       return [
         { title: "SEC Resources", url: "https://www.sec.gov" },
         { title: "Investopedia Education", url: "https://www.investopedia.com" }
       ];
     }
-    
+
     if (categoryKey.includes('tech') || categoryKey.includes('development')) {
       return [
         { title: "OWASP Security Resources", url: "https://owasp.org" },
         { title: "NIST Technology Guidelines", url: "https://www.nist.gov/cybersecurity" }
       ];
     }
-    
+
     // Default fallback
     return [
       { title: "Professional Development Resources", url: "https://www.coursera.org" },
@@ -804,7 +803,7 @@ CRITICAL:
       generateText({
         model: model,
         messages: [
-          { role: 'system', content: `Generate professional ${analysis.language} training content. Return ONLY VALID JSON - NO markdown, NO backticks, NO formatting. Start directly with {. CRITICAL: Use EXACTLY the fields shown in the example - NO EXTRA FIELDS. Do NOT add ANY additional keys beyond what is explicitly shown in the template. Follow the template structure PRECISELY. Use specific React Lucide icon names (from lucide-react library), not placeholders.` },
+          { role: 'system', content: `Generate professional ${analysis.language} training content. Return ONLY VALID JSON - NO markdown, NO backticks, NO formatting. Start directly with {. CRITICAL: Use EXACTLY the fields shown in the example - NO EXTRA FIELDS. Do NOT add ANY additional keys beyond what is explicitly shown in the template. Follow the template structure PRECISELY. Use specific React Lucide icon names (from lucide-react library), not placeholders. Follow GLOBAL RULES (Language & Style) strictly.` },
           { role: 'user', content: introPrompt }
         ]
       }).catch(err => {
@@ -814,7 +813,7 @@ CRITICAL:
       generateText({
         model: model,
         messages: [
-          { role: 'system', content: `Generate professional ${analysis.language} training content. Return ONLY VALID JSON - NO markdown, NO backticks, NO formatting. Start directly with {. CRITICAL: Use EXACTLY the fields shown in the example - NO EXTRA FIELDS. Do NOT add ANY additional keys beyond what is explicitly shown in the template. Follow the template structure PRECISELY. Use specific React Lucide icon names (from lucide-react library), not placeholders. TRANSCRIPT RULE: Never use literal \\n characters in transcript - use actual line breaks only.` },
+          { role: 'system', content: `Generate professional ${analysis.language} training content. Return ONLY VALID JSON - NO markdown, NO backticks, NO formatting. Start directly with {. CRITICAL: Use EXACTLY the fields shown in the example - NO EXTRA FIELDS. Do NOT add ANY additional keys beyond what is explicitly shown in the template. Follow the template structure PRECISELY. Use specific React Lucide icon names (from lucide-react library), not placeholders. TRANSCRIPT RULE: Never use literal \\n characters in transcript - use actual line breaks only. Follow GLOBAL RULES (Language & Style) strictly.` },
           { role: 'user', content: videoPrompt }
         ]
       }).catch(err => {
@@ -824,7 +823,7 @@ CRITICAL:
       generateText({
         model: model,
         messages: [
-          { role: 'system', content: `Generate professional ${analysis.language} training content. Return ONLY VALID JSON - NO markdown, NO backticks, NO formatting. Start directly with {. CRITICAL: Use EXACTLY the fields shown in the example - NO EXTRA FIELDS. Do NOT add ANY additional keys beyond what is explicitly shown in the template. Follow the template structure PRECISELY. Use specific React Lucide icon names (from lucide-react library), not placeholders.` },
+          { role: 'system', content: `Generate professional ${analysis.language} training content. Return ONLY VALID JSON - NO markdown, NO backticks, NO formatting. Start directly with {. CRITICAL: Use EXACTLY the fields shown in the example - NO EXTRA FIELDS. Do NOT add ANY additional keys beyond what is explicitly shown in the template. Follow the template structure PRECISELY. Use specific React Lucide icon names (from lucide-react library), not placeholders. Follow GLOBAL RULES (Language & Style) strictly.` },
           { role: 'user', content: mainPrompt }
         ]
       }).catch(err => {
@@ -834,7 +833,7 @@ CRITICAL:
       generateText({
         model: model,
         messages: [
-          { role: 'system', content: `Generate professional ${analysis.language} training content. Return ONLY VALID JSON - NO markdown, NO backticks, NO formatting. Start directly with {. CRITICAL: Use EXACTLY the fields shown in the example - NO EXTRA FIELDS. Do NOT add ANY additional keys beyond what is explicitly shown in the template. Follow the template structure PRECISELY. Use specific React Lucide icon names (from lucide-react library), not placeholders.` },
+          { role: 'system', content: `Generate professional ${analysis.language} training content. Return ONLY VALID JSON - NO markdown, NO backticks, NO formatting. Start directly with {. CRITICAL: Use EXACTLY the fields shown in the example - NO EXTRA FIELDS. Do NOT add ANY additional keys beyond what is explicitly shown in the template. Follow the template structure PRECISELY. Use specific React Lucide icon names (from lucide-react library), not placeholders. Follow GLOBAL RULES (Language & Style) strictly.` },
           { role: 'user', content: closingPrompt }
         ]
       }).catch(err => {
@@ -851,22 +850,22 @@ CRITICAL:
       try {
         console.log(`🧹 Cleaning ${sectionName} response (${text.length} chars)`);
         let clean = text.trim();
-        
+
         if (clean.startsWith('```')) {
           clean = clean.replace(/```json\s*/, '').replace(/```\s*$/, '');
           console.log(`📝 Removed markdown formatting from ${sectionName}`);
         }
-        
+
         // Additional cleaning - remove control characters that can break JSON
         const beforeClean = clean.length;
         clean = clean.replace(/[\u0000-\u001F\u007F-\u009F]/g, '');
         if (clean.length !== beforeClean) {
           console.log(`🧹 Removed ${beforeClean - clean.length} control characters from ${sectionName}`);
         }
-        
+
         // Fix common JSON issues
         clean = clean.replace(/,(\s*[}\]])/g, '$1'); // Remove trailing commas
-        
+
         console.log(`✅ ${sectionName} cleaned successfully (${clean.length} chars)`);
         return clean;
       } catch (cleanErr) {
@@ -894,9 +893,26 @@ CRITICAL:
       videoScenes = JSON.parse(cleanedVideo);
       console.log('✅ Video scenes parsed successfully');
     } catch (parseErr) {
-      console.error('❌ Failed to parse video scenes:', parseErr);
-      console.log('🔍 Video response preview:', videoResponse.text.substring(0, 200));
-      throw new Error(`Video JSON parsing failed: ${parseErr instanceof Error ? parseErr.message : String(parseErr)}`);
+      console.warn('⚠️ Video JSON parsing failed, attempting retry...');
+
+      try {
+        // Retry with fresh AI call
+        const retryResponse = await generateText({
+          model: model,
+          messages: [
+            { role: 'system', content: `Return only valid JSON. No explanations, no markdown, no extra text. Just JSON.` },
+            { role: 'user', content: videoPrompt }
+          ]
+        });
+
+        const retryCleanedVideo = cleanResponse(retryResponse.text, 'video');
+        videoScenes = JSON.parse(retryCleanedVideo);
+        console.log('✅ Video scenes parsed successfully on retry');
+
+      } catch (retryErr) {
+        console.error('❌ Video generation failed after retry');
+        throw new Error(`Video content generation failed after retry. Please regenerate the entire microlearning.`);
+      }
     }
 
     try {
@@ -935,7 +951,7 @@ CRITICAL:
     // Validate the combined content structure
     const sceneCount = Object.keys(combinedContent).filter(key => key !== 'app').length;
     console.log(`🎯 Combined content created with ${sceneCount} scenes`);
-    
+
     if (sceneCount < 8) {
       console.warn(`⚠️ Expected 8 scenes, got ${sceneCount}. Scene keys: ${Object.keys(combinedContent).filter(k => k !== 'app').join(', ')}`);
     }
@@ -955,7 +971,7 @@ CRITICAL:
       modelType: model?.constructor?.name || 'unknown',
       timestamp: new Date().toISOString()
     });
-    
+
     // Log the full error details for debugging
     if (err instanceof SyntaxError) {
       console.error('🔍 JSON Syntax Error detected');
@@ -964,7 +980,7 @@ CRITICAL:
     } else {
       console.error('🔍 Unknown error type detected');
     }
-    
+
     // Re-throw the error instead of returning it as LanguageContent
     throw new Error(`Language generation failed: ${err instanceof Error ? err.message : String(err)}`);
   }
