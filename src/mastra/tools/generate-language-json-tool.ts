@@ -791,7 +791,15 @@ CRITICAL:
 
   try {
     console.log('🚀 Starting parallel content generation with model:', model?.constructor?.name || 'unknown');
+    console.log('📊 Generation parameters:', {
+      language: analysis.language,
+      topic: analysis.topic,
+      category: analysis.category,
+      level: analysis.level
+    });
+
     // Generate content in parallel for better performance and reliability
+    const startTime = Date.now();
     const [introResponse, videoResponse, mainResponse, closingResponse] = await Promise.all([
       generateText({
         model: model,
@@ -799,6 +807,9 @@ CRITICAL:
           { role: 'system', content: `Generate professional ${analysis.language} training content. Return ONLY VALID JSON - NO markdown, NO backticks, NO formatting. Start directly with {. CRITICAL: Use EXACTLY the fields shown in the example - NO EXTRA FIELDS. Do NOT add ANY additional keys beyond what is explicitly shown in the template. Follow the template structure PRECISELY. Use specific React Lucide icon names (from lucide-react library), not placeholders.` },
           { role: 'user', content: introPrompt }
         ]
+      }).catch(err => {
+        console.error('❌ Intro generation failed:', err);
+        throw new Error(`Intro generation failed: ${err instanceof Error ? err.message : String(err)}`);
       }),
       generateText({
         model: model,
@@ -806,6 +817,9 @@ CRITICAL:
           { role: 'system', content: `Generate professional ${analysis.language} training content. Return ONLY VALID JSON - NO markdown, NO backticks, NO formatting. Start directly with {. CRITICAL: Use EXACTLY the fields shown in the example - NO EXTRA FIELDS. Do NOT add ANY additional keys beyond what is explicitly shown in the template. Follow the template structure PRECISELY. Use specific React Lucide icon names (from lucide-react library), not placeholders. TRANSCRIPT RULE: Never use literal \\n characters in transcript - use actual line breaks only.` },
           { role: 'user', content: videoPrompt }
         ]
+      }).catch(err => {
+        console.error('❌ Video generation failed:', err);
+        throw new Error(`Video generation failed: ${err instanceof Error ? err.message : String(err)}`);
       }),
       generateText({
         model: model,
@@ -813,6 +827,9 @@ CRITICAL:
           { role: 'system', content: `Generate professional ${analysis.language} training content. Return ONLY VALID JSON - NO markdown, NO backticks, NO formatting. Start directly with {. CRITICAL: Use EXACTLY the fields shown in the example - NO EXTRA FIELDS. Do NOT add ANY additional keys beyond what is explicitly shown in the template. Follow the template structure PRECISELY. Use specific React Lucide icon names (from lucide-react library), not placeholders.` },
           { role: 'user', content: mainPrompt }
         ]
+      }).catch(err => {
+        console.error('❌ Main content generation failed:', err);
+        throw new Error(`Main content generation failed: ${err instanceof Error ? err.message : String(err)}`);
       }),
       generateText({
         model: model,
@@ -820,28 +837,90 @@ CRITICAL:
           { role: 'system', content: `Generate professional ${analysis.language} training content. Return ONLY VALID JSON - NO markdown, NO backticks, NO formatting. Start directly with {. CRITICAL: Use EXACTLY the fields shown in the example - NO EXTRA FIELDS. Do NOT add ANY additional keys beyond what is explicitly shown in the template. Follow the template structure PRECISELY. Use specific React Lucide icon names (from lucide-react library), not placeholders.` },
           { role: 'user', content: closingPrompt }
         ]
+      }).catch(err => {
+        console.error('❌ Closing generation failed:', err);
+        throw new Error(`Closing generation failed: ${err instanceof Error ? err.message : String(err)}`);
       })
     ]);
 
-    // Clean and parse the three responses (remove markdown formatting if present)
-    const cleanResponse = (text: string) => {
-      let clean = text.trim();
-      if (clean.startsWith('```')) {
-        clean = clean.replace(/```json\s*/, '').replace(/```\s*$/, '');
+    const generationTime = Date.now() - startTime;
+    console.log(`⏱️ Parallel generation completed in ${generationTime}ms`);
+
+    // Clean and parse the responses with detailed error handling
+    const cleanResponse = (text: string, sectionName: string) => {
+      try {
+        console.log(`🧹 Cleaning ${sectionName} response (${text.length} chars)`);
+        let clean = text.trim();
+        
+        if (clean.startsWith('```')) {
+          clean = clean.replace(/```json\s*/, '').replace(/```\s*$/, '');
+          console.log(`📝 Removed markdown formatting from ${sectionName}`);
+        }
+        
+        // Additional cleaning - remove control characters that can break JSON
+        const beforeClean = clean.length;
+        clean = clean.replace(/[\u0000-\u001F\u007F-\u009F]/g, '');
+        if (clean.length !== beforeClean) {
+          console.log(`🧹 Removed ${beforeClean - clean.length} control characters from ${sectionName}`);
+        }
+        
+        // Fix common JSON issues
+        clean = clean.replace(/,(\s*[}\]])/g, '$1'); // Remove trailing commas
+        
+        console.log(`✅ ${sectionName} cleaned successfully (${clean.length} chars)`);
+        return clean;
+      } catch (cleanErr) {
+        console.error(`❌ Error cleaning ${sectionName}:`, cleanErr);
+        console.log(`🔍 Raw ${sectionName} text (first 500 chars):`, text.substring(0, 500));
+        throw new Error(`Failed to clean ${sectionName} response: ${cleanErr instanceof Error ? cleanErr.message : String(cleanErr)}`);
       }
-      // Additional cleaning - remove control characters that can break JSON
-      clean = clean.replace(/[\u0000-\u001F\u007F-\u009F]/g, '');
-      // Fix common JSON issues
-      clean = clean.replace(/,(\s*[}\]])/g, '$1'); // Remove trailing commas
-      return clean;
     };
 
-    const introScenes = JSON.parse(cleanResponse(introResponse.text));
-    const videoScenes = JSON.parse(cleanResponse(videoResponse.text));
-    const mainScenes = JSON.parse(cleanResponse(mainResponse.text));
-    const closingScenes = JSON.parse(cleanResponse(closingResponse.text));
+    console.log('🔄 Starting JSON parsing...');
+    let introScenes, videoScenes, mainScenes, closingScenes;
+
+    try {
+      const cleanedIntro = cleanResponse(introResponse.text, 'intro');
+      introScenes = JSON.parse(cleanedIntro);
+      console.log('✅ Intro scenes parsed successfully');
+    } catch (parseErr) {
+      console.error('❌ Failed to parse intro scenes:', parseErr);
+      console.log('🔍 Intro response preview:', introResponse.text.substring(0, 200));
+      throw new Error(`Intro JSON parsing failed: ${parseErr instanceof Error ? parseErr.message : String(parseErr)}`);
+    }
+
+    try {
+      const cleanedVideo = cleanResponse(videoResponse.text, 'video');
+      videoScenes = JSON.parse(cleanedVideo);
+      console.log('✅ Video scenes parsed successfully');
+    } catch (parseErr) {
+      console.error('❌ Failed to parse video scenes:', parseErr);
+      console.log('🔍 Video response preview:', videoResponse.text.substring(0, 200));
+      throw new Error(`Video JSON parsing failed: ${parseErr instanceof Error ? parseErr.message : String(parseErr)}`);
+    }
+
+    try {
+      const cleanedMain = cleanResponse(mainResponse.text, 'main');
+      mainScenes = JSON.parse(cleanedMain);
+      console.log('✅ Main scenes parsed successfully');
+    } catch (parseErr) {
+      console.error('❌ Failed to parse main scenes:', parseErr);
+      console.log('🔍 Main response preview:', mainResponse.text.substring(0, 200));
+      throw new Error(`Main JSON parsing failed: ${parseErr instanceof Error ? parseErr.message : String(parseErr)}`);
+    }
+
+    try {
+      const cleanedClosing = cleanResponse(closingResponse.text, 'closing');
+      closingScenes = JSON.parse(cleanedClosing);
+      console.log('✅ Closing scenes parsed successfully');
+    } catch (parseErr) {
+      console.error('❌ Failed to parse closing scenes:', parseErr);
+      console.log('🔍 Closing response preview:', closingResponse.text.substring(0, 200));
+      throw new Error(`Closing JSON parsing failed: ${parseErr instanceof Error ? parseErr.message : String(parseErr)}`);
+    }
 
     // Combine all scenes into final content
+    console.log('🔗 Combining all scenes...');
     const combinedContent = {
       ...introScenes,
       ...videoScenes,
@@ -853,12 +932,41 @@ CRITICAL:
       }
     };
 
+    // Validate the combined content structure
+    const sceneCount = Object.keys(combinedContent).filter(key => key !== 'app').length;
+    console.log(`🎯 Combined content created with ${sceneCount} scenes`);
+    
+    if (sceneCount < 8) {
+      console.warn(`⚠️ Expected 8 scenes, got ${sceneCount}. Scene keys: ${Object.keys(combinedContent).filter(k => k !== 'app').join(', ')}`);
+    }
+
+    const totalTime = Date.now() - startTime;
+    console.log(`✅ Language content generation completed successfully in ${totalTime}ms`);
+
     return combinedContent as LanguageContent;
 
   } catch (err) {
-    // If any parsing fails, fall back to deterministic generator
-    console.error('Parallel content generation failed, using fallback:', err);
-    return err as LanguageContent;
+    console.error('💥 CRITICAL ERROR in generateLanguageJsonWithAI:', err);
+    console.error('📊 Error context:', {
+      errorMessage: err instanceof Error ? err.message : String(err),
+      errorStack: err instanceof Error ? err.stack : undefined,
+      language: analysis.language,
+      topic: analysis.topic,
+      modelType: model?.constructor?.name || 'unknown',
+      timestamp: new Date().toISOString()
+    });
+    
+    // Log the full error details for debugging
+    if (err instanceof SyntaxError) {
+      console.error('🔍 JSON Syntax Error detected');
+    } else if (err instanceof Error && err.message?.includes('generation failed')) {
+      console.error('🔍 AI Generation Error detected');
+    } else {
+      console.error('🔍 Unknown error type detected');
+    }
+    
+    // Re-throw the error instead of returning it as LanguageContent
+    throw new Error(`Language generation failed: ${err instanceof Error ? err.message : String(err)}`);
   }
 }
 

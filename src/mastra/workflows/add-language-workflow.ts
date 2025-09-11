@@ -155,12 +155,13 @@ const translateLanguageStep = createStep({
       throw new Error('translateLanguageJsonTool is not executable');
     }
 
+    console.log('🔍 targetLanguage variable:', targetLanguage, typeof targetLanguage);
+    console.log('🔍 baseContent keys:', Object.keys(baseContent || {}));
+    
     const translationParams = {
-      inputData: {
-        json: baseContent,
-        targetLanguage: targetLanguage,
-        doNotTranslateKeys: ['iconName', 'id', 'ids', 'url', 'src']
-      }
+      json: baseContent,
+      targetLanguage: targetLanguage,
+      doNotTranslateKeys: ['iconName', 'id', 'ids', 'url', 'src']
     };
     
     console.log('🔧 Translation parameters:', JSON.stringify(translationParams, null, 2));
@@ -270,11 +271,9 @@ const updateInboxStep = createStep({
         }
 
         const inboxTranslationParams = {
-          inputData: {
-            json: baseInbox,
-            targetLanguage: targetLanguage,
-            doNotTranslateKeys: ['id', 'ids']
-          }
+          json: baseInbox,
+          targetLanguage: targetLanguage,
+          doNotTranslateKeys: ['id', 'ids']
         };
         
         console.log('🔧 Inbox translation parameters:', JSON.stringify(inboxTranslationParams, null, 2));

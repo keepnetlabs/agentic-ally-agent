@@ -7,7 +7,7 @@ import { createMicrolearningWorkflow } from './workflows/create-microlearning-wo
 import { addLanguageWorkflow } from './workflows/add-language-workflow';
 import { getDeployer } from './deployer';
 import { ExampleRepo } from './services/example-repo';
-import { LibSQLStore } from '@mastra/libsql';
+import { D1Store } from '@mastra/cloudflare-d1';
 
 const logger = new PinoLogger({
   name: 'Mastra',
@@ -38,9 +38,11 @@ export const mastra = new Mastra({
   agents: { agenticAlly },
   logger,
   deployer: getDeployer(),
-  storage: new LibSQLStore({
-    url: process.env.MASTRA_MEMORY_URL || 'file:./.mastra-memory.db',
-    authToken: process.env.MASTRA_MEMORY_TOKEN,
+  storage: new D1Store({
+    accountId: process.env.CLOUDFLARE_ACCOUNT_ID!, // Cloudflare Account ID
+    databaseId: process.env.CLOUDFLARE_D1_DATABASE_ID!, // D1 Database ID
+    apiToken: process.env.CLOUDFLARE_KV_TOKEN!, // Cloudflare API Token
+    tablePrefix: "dev_", // Optional: isolate tables per environment
   }),
   server: {
     middleware: [injectD1Database, disablePlayground, disableSwagger],
