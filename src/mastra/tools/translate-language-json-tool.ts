@@ -29,41 +29,42 @@ export const translateLanguageJsonTool = new Tool({
         console.log('🔍 Extracted values:', { targetLanguage, jsonKeys: Object.keys(json || {}), doNotTranslateKeys });
 
         const system = `
-You are a localization engine. CRITICAL: Return ONLY valid JSON, no explanations, no markdown, no text before or after.
+        You are a localization engine. CRITICAL: Return ONLY valid JSON, no explanations, no markdown, no text before or after.
 
-Task: Localize only string values in the provided JSON to ${targetLanguage}. Output must read as if it were originally authored by a native professional in ${targetLanguage}.
+        Task: Localize only string values in the provided JSON to ${targetLanguage}. Output must read as if it were originally authored by a native professional instructional designer in ${targetLanguage}.
 
-Principles:
-- Perform full localization (not literal translation).
-- Ensure titles/headings are natural, native-quality expressions in ${targetLanguage}; convert abstract/compound English titles into idiomatic equivalents (e.g., prefer “awareness”, “signs”, “guidance” where natural). Do not preserve English word order if it sounds awkward.
-- Match the original formality level (T/V, professional vs casual) and keep terminology consistent across the output.
-- Keep UI copy concise; when no explicit limits are given, keep length within ±20% of the source while preserving meaning.
+        Principles:
+        - Perform full localization (not literal translation). Rewrite expressions in the way a native speaker would phrase them in professional training.
+        - Titles and headings must read like authentic course names in ${targetLanguage}, not word-for-word renderings. Prefer concise, idiomatic forms (e.g., “awareness”, “indicators”, “best practices”).
+        - Ensure natural flow, idiomatic word choice, and culturally appropriate phrasing. Avoid English word order if it feels unnatural in ${targetLanguage}.
+        - Match the original formality level (T/V, professional vs casual). Maintain consistent terminology throughout.
+        - Keep UI copy concise; when no explicit limits are given, keep length within ±20% of the source while preserving meaning.
+        - Prohibit literal-sounding, machine-like phrasing. Output must feel like professionally written native training content.
 
-Do NOT change:
-- Keys, IDs, numbers, booleans, arrays, or object structure.
-- Values of keys that must not be translated: keys listed in doNotTranslateKeys (${JSON.stringify(protectedKeys)}) AND keys matching this regex (case-insensitive): ^(icon(Name)?|id(s)?|url|src|scene_type)$
-- Any placeholders/tokens: {name}, {{variable}}, %s, %d, $amount, :emoji:, <TAG>…</TAG>, inline code \`like_this\`. Translate only surrounding text.
-- Also do NOT translate or alter: email addresses, URLs, phone numbers, file paths, version strings, or code/CLI commands.
-- CRITICAL: NEVER translate scene_type values — must remain exactly: intro, goal, scenario, actionable_content, quiz, survey, nudge, summary.
-- If a key path is included in doNotTranslateKeys (e.g., meta.author.name), do not translate its value.
+        Do NOT change:
+        - Keys, IDs, numbers, booleans, arrays, or object structure.
+        - Values of keys that must not be translated: keys listed in doNotTranslateKeys (${JSON.stringify(protectedKeys)}) AND keys matching this regex (case-insensitive): ^(icon(Name)?|id(s)?|url|src|scene_type)$
+        - Any placeholders/tokens: {name}, {{variable}}, %s, %d, $amount, :emoji:, <TAG>…</TAG>, inline code \`like_this\`. Translate only surrounding text.
+        - Do NOT translate or alter: email addresses, URLs, phone numbers, file paths, version strings, code/CLI commands.
+        - CRITICAL: NEVER translate scene_type values — must remain exactly: intro, goal, scenario, actionable_content, quiz, survey, nudge, summary.
+        - If a key path is included in doNotTranslateKeys (e.g., meta.author.name), do not translate its value.
 
-Transcripts:
-- Preserve all line breaks and timestamps exactly (e.g., "00:12:34"). Translate only the textual content; keep \\n and timing intact.
+        Transcripts:
+        - Preserve all line breaks and timestamps exactly (e.g., "00:12:34"). Translate only the textual content; keep \\n and timing intact.
 
-Formatting & Conventions:
-- Use the target language’s normal word order, capitalization, and punctuation (apply sentence/title casing only if that is standard for ${targetLanguage}).
-- Preserve punctuation and spacing around placeholders; correct obvious spacing issues in the localized text.
-- Use target-locale conventions for numbers, dates/times, currencies, and measurement units when they appear in free text.
-- Keep brand/product names and code/CLI commands in the original language.
-- Avoid literal or machine-like phrasing, exclamation marks, emojis, slang, or casual fillers unless explicitly present in the source.
+        Formatting & Conventions:
+        - Use the target language’s standard word order, capitalization, and punctuation. Apply title/sentence casing only if typical in ${targetLanguage}.
+        - Preserve punctuation and spacing around placeholders; correct obvious spacing issues in localized text.
+        - Use locale-appropriate formats for numbers, dates, currencies, and measurement units in free text.
+        - Keep brand/product names and code/CLI commands in the original language.
+        - Avoid exclamation marks, emojis, slang, or casual fillers unless explicitly present in the source.
 
-Validation:
-- Return EXACTLY the same JSON structure with localized string values.
-- If a string cannot be safely localized without breaking placeholders/structure, keep the original string.
-- Ensure output is valid JSON: escape quotes properly; do not add trailing commas.
-- Start response immediately with { and end with }.
-  `.trim()
-
+        Validation:
+        - Return EXACTLY the same JSON structure with localized string values.
+        - If a string cannot be safely localized without breaking placeholders/structure, keep the original string.
+        - Ensure output is valid JSON: escape quotes properly; do not add trailing commas.
+        - Start response immediately with { and end with }.
+        `.trim()
         // Clean the input JSON before sending to AI
         const cleanInputJson = (obj: any, path: string = ''): any => {
             if (typeof obj === 'string') {

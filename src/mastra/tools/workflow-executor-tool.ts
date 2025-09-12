@@ -251,6 +251,18 @@ Examples:
           } catch (error) {
             console.error('Failed to send URL to frontend:', error);
           }
+        } else {
+          // Even if no URL, send completion message
+          try {
+            await writer?.write({ type: 'text-start' });
+            await writer?.write({
+              type: 'text-delta',
+              delta: `✅ Translation process completed.\n`
+            });
+            await writer?.write({ type: 'text-end' });
+          } catch (error) {
+            console.error('Failed to send completion message:', error);
+          }
         }
 
         return {
@@ -264,6 +276,18 @@ Examples:
       }
 
     } catch (error) {
+      // Send error message to frontend
+      try {
+        await writer?.write({ type: 'text-start' });
+        await writer?.write({
+          type: 'text-delta',
+          delta: `❌ Translation failed: ${error instanceof Error ? error.message : 'Unknown error'}\n`
+        });
+        await writer?.write({ type: 'text-end' });
+      } catch (writeError) {
+        console.error('Failed to send error message:', writeError);
+      }
+      
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'

@@ -90,15 +90,15 @@ SCIENTIFIC CONTEXT:
    - Choose Lucide icons semantically matched to topic/category. Never default to generic security icons unless explicitly relevant.
 
 3. **Language & Style**
-   - Write all user-visible text fully in ${analysis.language}. The output must read as if it were originally authored by a native professional in that language.
-   - Do not mix languages. Use only ${analysis.language}, except for proper nouns or technical terms that must remain unchanged.
-   - Express ideas by meaning, not word-for-word. Use idiomatic, contemporary ${analysis.language} with correct grammar, style, and natural sentence flow.
-   - Titles and headings must read like professional training program names in ${analysis.language}, not literal descriptions of incidents or processes.
-   - Ensure domain-specific terminology is used in the standard professional form for ${analysis.language}.
-   - Maintain a professional, instructional tone: clear, respectful, and concise. Use imperative forms to guide the learner (e.g., “Identify…”, “Apply…”).
-   - Avoid literal or awkward phrasing, machine-like translation, brand names, tool references, exclamation marks, emojis, slang, or casual fillers unless explicitly required by the context.
-   - Ensure terminology is consistent, precise, and appropriate to the domain throughout the output.
-   - Prefer short, memorable sentences that support comprehension and retention (ideally under 20 words).
+   - Write all user-visible text fully in ${analysis.language}. The output must read as if it were originally authored and edited by a native professional instructional designer in that language.
+   - Do not mix languages. Use only ${analysis.language}, except for proper nouns, established abbreviations, or technical terms that must remain unchanged.
+   - Express ideas by meaning, not word-for-word. Use idiomatic, contemporary ${analysis.language} with correct grammar, natural sentence flow, and culturally appropriate phrasing.
+   - Titles and headings must read like authentic training program names in ${analysis.language}, not literal descriptions. Favor formats that sound professional and engaging (e.g., “Awareness Training”, “Best Practices”, “Safe Use of X”).
+   - Ensure domain-specific terminology matches the standard professional usage in ${analysis.language} (e.g., legal, technical, compliance terms).
+   - Maintain a professional instructional tone: clear, respectful, concise, and action-oriented. Use imperative forms for guidance (e.g., “Identify…”, “Apply…”).
+   - Avoid literal or awkward phrasing, machine-like translation, redundancy, brand names, tool references, exclamation marks, emojis, slang, or casual fillers unless explicitly required by the context.
+   - Ensure terminology is consistent, precise, and appropriate to the subject domain throughout the output.
+   - Prefer short, memorable sentences (ideally under 20 words) that support comprehension and retention. Each should sound like natural spoken/written training content, not dictionary definitions.
 
 4. **Structure & Quality**
    - Replace ALL placeholders with real, topic-specific content.
@@ -118,28 +118,50 @@ SCIENTIFIC CONTEXT:
 
   const introPrompt = `${baseContext}
 
-SCENE STANDARDIZATION:
+        SCENE STANDARDIZATION:
 
-INTRO SCENE (scene_id: "1"):
-- Title: If ${analysis.language} is English, write a natural English title. Otherwise, provide a natural, action-oriented title in ${analysis.language} that conveys preventing ${analysis.topic} incidents.
-- Subtitle: If ${analysis.language} is English, write in English. Otherwise, provide a natural ${analysis.language} subtitle that conveys learning to recognize and safely report ${analysis.topic}.
-- Highlights: Risk → Target → Solution structure with simple language
-- Key messages: 3-4 word statements ("Topic is common", "Anyone can be targeted", "Simple steps help")
-- Duration: "~5 minutes", Level: "Beginner"
+        INTRO SCENE (scene_id: "1"):
+        - Title: In ${analysis.language}, write a short, natural training title. 
+          • If threat/incident → formats like "Stop X Attacks", "X Awareness Training".  
+          • If practice/tool/policy → formats like "Password Security Basics", "Data Classification Training".  
+          • Avoid literal or awkward phrasing ("to prevent incidents").  
+          • Must sound like a professional training course name, not a report title.
 
-GOAL SCENE (scene_id: "2"):
-- Title: "Your Security Goal" (keep simple)
-- Subtitle: "Next time you see a [topic situation], you will pause and report it" (max 12 words)
-- Goals descriptions: Start with "Helps you..." format, keep benefit-focused and simple
-- Key messages: Short, memorable phrases (max 6-7 words each)
-- Avoid technical jargon, use plain language
+        - Subtitle: One short sentence (max 12 words) stating learner benefit.  
+          • Threats/incidents → use verbs like "recognize", "report", "avoid".  
+          • Practices/tools/policies → use verbs like "create", "use", "apply", "enable", "manage".  
+          • Always choose verbs that make sense; never force “report” if not reportable.  
+          • Must read fluently as if written by a native instructional designer.
 
-LANGUAGE QUALITY:
-- Write entirely in ${analysis.language} with correct grammar and sentence structure.
-- Use natural word order for ${analysis.language}, not English word order.
-- Translate concepts completely. Do not mix English words with ${analysis.language} (except proper nouns).
-- Level field: Use proper capitalization rules for ${analysis.language}.
-- Key messages: Write complete, natural phrases in ${analysis.language}.
+        - Highlights: 3 items in Risk → Target → Solution order.  
+          • Each <8 words, natural bullet points.  
+          • Each highlight must present a unique idea (no repetition).
+
+        - Key messages: 3 unique short statements (max 5 words).  
+          • One fact, one risk, one solution.  
+          • Must be distinct, memorable, and slogan-like.
+
+        - Duration: "~5 minutes", Level: "Beginner".
+
+        GOAL SCENE (scene_id: "2"):
+        - Title: "Your Security Goal" (keep simple).
+
+        - Subtitle: One short sentence (max 12 words) in ${analysis.language}:
+          "Next time you encounter [${analysis.topic}], you will [safe action]."
+          • If threat/incident (e.g., phishing, suspicious email, social engineering) → use "pause and report it".  
+          • If practice/tool/policy (e.g., passwords, MFA, data classification) → use "apply the safe behavior" (e.g., create a strong password, enable MFA, classify data correctly).  
+          • Keep the sentence natural and behavior-focused.
+
+        - Goals: Exactly three, each with title, subtitle, description.  
+          • Titles: short natural phrases (e.g., "Spot suspicious emails", "Make the right choice", "Report safely"). Never add static prefixes like "Recognition:".  
+          • Subtitles: 2–3 plain words (e.g., "Pause and think", "Safe action", "Report button").  
+          • Descriptions: start with "Helps you..." and describe a concrete learner benefit.
+
+        - Key messages: Three short, distinct phrases (max 6–7 words).  
+          • One fact, one safe action, one escalation.  
+          • Must be realistic, non-repetitive, and easy to recall.
+
+        - Language: plain, professional, no jargon. Must avoid machine-like phrasing and ensure native flow.
 
 USE EXACTLY THESE KEYS BUT REPLACE PLACEHOLDERS WITH REAL CONTENT:
 {

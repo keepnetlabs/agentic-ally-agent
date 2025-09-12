@@ -198,6 +198,16 @@ const translateLanguageStep = createStep({
       
       console.log(`📝 Language content storage result: ${langSuccess ? 'SUCCESS' : 'FAILED'} for ${microlearningId}/${targetLanguage}`);
       
+      // DEBUG: Verify what was actually stored
+      const verifyKey = `ml:${microlearningId}:lang:${targetLanguage}`;
+      const storedData = await kvService.get(verifyKey);
+      if (storedData) {
+        console.log(`🔍 DEBUG: Stored data keys:`, Object.keys(storedData || {}));
+        console.log(`🔍 DEBUG: First stored item:`, JSON.stringify(storedData['1'] || storedData[Object.keys(storedData)[0]]).substring(0, 100) + '...');
+      } else {
+        console.error(`❌ DEBUG: No data found at key ${verifyKey}`);
+      }
+      
       // Update language_availability in microlearning metadata
       const updatedMicrolearning = { ...microlearningStructure };
       if (updatedMicrolearning.microlearning_metadata) {
