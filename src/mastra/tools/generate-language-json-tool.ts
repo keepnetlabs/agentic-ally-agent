@@ -93,10 +93,12 @@ SCIENTIFIC CONTEXT:
    - Write all user-visible text fully in ${analysis.language}. The output must read as if it were originally authored by a native professional in that language.
    - Do not mix languages. Use only ${analysis.language}, except for proper nouns or technical terms that must remain unchanged.
    - Express ideas by meaning, not word-for-word. Use idiomatic, contemporary ${analysis.language} with correct grammar, style, and natural sentence flow.
+   - Titles and headings must read like professional training program names in ${analysis.language}, not literal descriptions of incidents or processes.
+   - Ensure domain-specific terminology is used in the standard professional form for ${analysis.language}.
    - Maintain a professional, instructional tone: clear, respectful, and concise. Use imperative forms to guide the learner (e.g., “Identify…”, “Apply…”).
    - Avoid literal or awkward phrasing, machine-like translation, brand names, tool references, exclamation marks, emojis, slang, or casual fillers unless explicitly required by the context.
    - Ensure terminology is consistent, precise, and appropriate to the domain throughout the output.
-   - Prefer short, memorable sentences that support comprehension and retention.
+   - Prefer short, memorable sentences that support comprehension and retention (ideally under 20 words).
 
 4. **Structure & Quality**
    - Replace ALL placeholders with real, topic-specific content.

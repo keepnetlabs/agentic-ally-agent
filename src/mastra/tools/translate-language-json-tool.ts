@@ -21,7 +21,6 @@ export const translateLanguageJsonTool = new Tool({
     inputSchema: TranslateJsonInputSchema,
     outputSchema: TranslateJsonOutputSchema,
     execute: async (context: any) => {
-        console.log('🔍 Translation tool context:', JSON.stringify(context, null, 2));
         const { json, targetLanguage, doNotTranslateKeys = [] } = context as z.infer<typeof TranslateJsonInputSchema>;
 
         // Always add scene_type to protected keys

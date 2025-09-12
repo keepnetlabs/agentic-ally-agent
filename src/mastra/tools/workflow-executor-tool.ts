@@ -236,6 +236,23 @@ Examples:
           }
         });
 
+        // Extract trainingUrl from result and send to frontend
+        const trainingUrl = result?.status === 'success' ? result.result?.data?.trainingUrl : null;
+        console.log('🔍 Training URL for translated:', trainingUrl);
+        if (trainingUrl) {
+          try {
+            await writer?.write({ type: 'text-start' });
+            await writer?.write({
+              type: 'text-delta',
+              delta: `::ui:canvas_open::${trainingUrl}\n`
+            });
+            await writer?.write({ type: 'text-end' });
+            console.log('URL sent to frontend:', trainingUrl);
+          } catch (error) {
+            console.error('Failed to send URL to frontend:', error);
+          }
+        }
+
         return {
           success: true,
           message: 'Language added successfully!',

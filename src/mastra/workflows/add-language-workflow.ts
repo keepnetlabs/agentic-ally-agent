@@ -154,7 +154,7 @@ const translateLanguageStep = createStep({
     }
 
     console.log(`✅ Found base content for ${microlearningId}/${sourceLanguage}, translating to ${targetLanguage}`);
-    console.log(`📄 Base content sample:`, JSON.stringify(baseContent).substring(0, 200) + '...');
+    console.log(`📄 Base content sample:`, JSON.stringify(baseContent).substring(0, 50) + '...');
 
     if (!translateLanguageJsonTool.execute) {
       throw new Error('translateLanguageJsonTool is not executable');
@@ -171,7 +171,7 @@ const translateLanguageStep = createStep({
       doNotTranslateKeys: ['iconName', 'id', 'ids', 'url', 'src']
     };
     
-    console.log('🔧 Translation parameters:', JSON.stringify(translationParams, null, 2));
+ 
 
     const translated = await translateLanguageJsonTool.execute(translationParams);
 
@@ -300,7 +300,6 @@ const updateInboxStep = createStep({
           doNotTranslateKeys: ['id', 'ids']
         };
         
-        console.log('🔧 Inbox translation parameters:', JSON.stringify(inboxTranslationParams, null, 2));
 
         const translatedInbox = await translateLanguageJsonTool.execute(inboxTranslationParams);
 
@@ -308,12 +307,22 @@ const updateInboxStep = createStep({
           await remote.upsertInbox(normalizedDept, targetLanguage, microlearningId, translatedInbox.data);
           console.log(`✅ Inbox translated and stored: inbox/${normalizedDept}/${targetLanguage}.json`);
         } else {
-          console.warn('⚠️ Inbox translation failed due to HTML/JSON parsing issues');
-          console.log('🔄 Attempting to regenerate inbox from scratch instead of translating');
+          console.warn('⚠️ First inbox translation failed, attempting retry...');
           
-          // Fallback: Generate fresh inbox for target language instead of translating broken HTML
-          // This will create clean HTML without translation parsing issues
-          throw new Error(`Inbox translation failed - HTML content too complex. Please regenerate inbox from scratch for ${targetLanguage} language.`);
+          try {
+            // Retry translation with same parameters
+            const retryTranslatedInbox = await translateLanguageJsonTool.execute(inboxTranslationParams);
+            
+            if (retryTranslatedInbox?.success) {
+              await remote.upsertInbox(normalizedDept, targetLanguage, microlearningId, retryTranslatedInbox.data);
+              console.log(`✅ Inbox translated and stored on retry: inbox/${normalizedDept}/${targetLanguage}.json`);
+            } else {
+              throw new Error('Retry also failed');
+            }
+          } catch (retryError) {
+            console.error('❌ Inbox translation failed after retry');
+            throw new Error(`Inbox translation failed after retry. Please regenerate inbox from scratch for ${targetLanguage} language.`);
+          }
         }
       } else {
         throw new Error('No base inbox to translate');
@@ -336,7 +345,7 @@ const updateInboxStep = createStep({
 
     return {
       success: true,
-      message: `🌐 Language translation completed successfully! Training URL: ${trainingUrl}`,
+      message: `🌐 Language translation completed successfully!`,
       data: {
         microlearningId,
         title: analysis.title,
