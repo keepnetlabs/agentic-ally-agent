@@ -90,9 +90,13 @@ SCIENTIFIC CONTEXT:
    - Choose Lucide icons semantically matched to topic/category. Never default to generic security icons unless explicitly relevant.
 
 3. **Language & Style**
-   - Use ${analysis.language} for all user-visible text. If English, write in English; otherwise avoid English words/templates. Do not mix languages (proper nouns excepted).
-   - Localize by meaning, not word-for-word. Use idiomatic ${analysis.language} with conventional imperative forms and natural structures; avoid literal/machine-like translation.
-   - Maintain a professional, concise instructional tone; avoid brand/tool names unless provided in the analysis context.
+   - Write all user-visible text fully in ${analysis.language}. The output must read as if it were originally authored by a native professional in that language.
+   - Do not mix languages. Use only ${analysis.language}, except for proper nouns or technical terms that must remain unchanged.
+   - Express ideas by meaning, not word-for-word. Use idiomatic, contemporary ${analysis.language} with correct grammar, style, and natural sentence flow.
+   - Maintain a professional, instructional tone: clear, respectful, and concise. Use imperative forms to guide the learner (e.g., “Identify…”, “Apply…”).
+   - Avoid literal or awkward phrasing, machine-like translation, brand names, tool references, exclamation marks, emojis, slang, or casual fillers unless explicitly required by the context.
+   - Ensure terminology is consistent, precise, and appropriate to the domain throughout the output.
+   - Prefer short, memorable sentences that support comprehension and retention.
 
 4. **Structure & Quality**
    - Replace ALL placeholders with real, topic-specific content.
@@ -129,12 +133,11 @@ GOAL SCENE (scene_id: "2"):
 - Avoid technical jargon, use plain language
 
 LANGUAGE QUALITY:
-- Write naturally in ${analysis.language} with proper grammar and sentence structure
-- Use native ${analysis.language} word order, NOT English word order
-- Translate concepts completely - do not mix English words with ${analysis.language}
-- Level field: Use proper capitalization for ${analysis.language}
-- Key messages: Use complete, natural phrases in ${analysis.language}
-Generate scenes 1-2 (intro, goal) using ONLY these exact keys:
+- Write entirely in ${analysis.language} with correct grammar and sentence structure.
+- Use natural word order for ${analysis.language}, not English word order.
+- Translate concepts completely. Do not mix English words with ${analysis.language} (except proper nouns).
+- Level field: Use proper capitalization rules for ${analysis.language}.
+- Key messages: Write complete, natural phrases in ${analysis.language}.
 
 USE EXACTLY THESE KEYS BUT REPLACE PLACEHOLDERS WITH REAL CONTENT:
 {

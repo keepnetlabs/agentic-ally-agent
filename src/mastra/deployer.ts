@@ -12,6 +12,11 @@ export function getDeployer() {
                 binding: "agentic_ally_embeddings_cache",
                 database_name: "agentic-ally-embeddings-cache",
                 database_id: "be23a682-b463-47a0-a300-aca930ed8749"
+            },
+            {
+                binding: "agentic_ally_memory",
+                database_name: "agentic-ally-memory",
+                database_id: "5a66922d-fbff-419c-9e5a-24f23334e5b9"
             }
         ],
         kvNamespaces: [

@@ -8,11 +8,19 @@ import { addLanguageWorkflow } from './workflows/add-language-workflow';
 import { getDeployer } from './deployer';
 import { ExampleRepo } from './services/example-repo';
 import { D1Store } from '@mastra/cloudflare-d1';
-
+//import { LibSQLStore } from '@mastra/libsql';
 const logger = new PinoLogger({
   name: 'Mastra',
   level: 'info',
 });
+/*
+new D1Store({
+    accountId: process.env.CLOUDFLARE_ACCOUNT_ID!, // Cloudflare Account ID
+    databaseId: process.env.CLOUDFLARE_D1_DATABASE_ID!, // D1 Database ID
+    apiToken: process.env.CLOUDFLARE_KV_TOKEN!, // Cloudflare API Token
+    tablePrefix: "prod_", // Optional: isolate tables per environment
+  })
+    */
 
 // Middleware to inject D1 database into ExampleRepo
 const injectD1Database = async (c: any, next: any) => {

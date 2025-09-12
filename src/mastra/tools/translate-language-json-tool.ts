@@ -23,34 +23,47 @@ export const translateLanguageJsonTool = new Tool({
     execute: async (context: any) => {
         console.log('🔍 Translation tool context:', JSON.stringify(context, null, 2));
         const { json, targetLanguage, doNotTranslateKeys = [] } = context as z.infer<typeof TranslateJsonInputSchema>;
-        
+
         // Always add scene_type to protected keys
         const protectedKeys = [...doNotTranslateKeys, 'scene_type'];
         console.log('🔒 Protected keys:', protectedKeys);
         console.log('🔍 Extracted values:', { targetLanguage, jsonKeys: Object.keys(json || {}), doNotTranslateKeys });
 
-        const system = `You are a localization engine. CRITICAL: Return ONLY valid JSON, no explanations, no markdown, no text before or after.
+        const system = `
+You are a localization engine. CRITICAL: Return ONLY valid JSON, no explanations, no markdown, no text before or after.
 
-Task: localize only string values in the provided JSON to ${targetLanguage}. 
-CRITICAL:
-Always perform full localization, not direct translation.
-- Localization must adapt:
-  - Tone (professional, culture-appropriate)
-  - Expressions (avoid literal phrases that sound rude, childish, or awkward)
-  - Examples (use region/industry-relevant ones)
-- Always check if common expressions in one language need cultural adaptation in the target
+Task: Localize only string values in the provided JSON to ${targetLanguage}. Output must read as if it were originally authored by a native professional in ${targetLanguage}.
 
-Rules:
-- Do not change keys, IDs, numbers, booleans, arrays structure, object structure
-- Do not translate iconName, id, ids, url, src, scene_type or keys listed in doNotTranslateKeys
-- CRITICAL: NEVER translate scene_type values - they must remain exactly: intro, goal, scenario, actionable_content, quiz, survey, nudge, summary
-- scene_type values are system constants and must stay in English
-- CRITICAL: Preserve transcript formatting - keep line breaks (\\n) and timestamps intact
-- For transcript fields: only translate text content, preserve timestamps and line structure
-- Return EXACTLY the same JSON structure with translated string values
-- NEVER add explanations or comments
-- NEVER wrap in markdown \`\`\`json blocks
-- Start response immediately with { and end with }`;
+Principles:
+- Perform full localization (not literal translation).
+- Ensure titles/headings are natural, native-quality expressions in ${targetLanguage}; convert abstract/compound English titles into idiomatic equivalents (e.g., prefer “awareness”, “signs”, “guidance” where natural). Do not preserve English word order if it sounds awkward.
+- Match the original formality level (T/V, professional vs casual) and keep terminology consistent across the output.
+- Keep UI copy concise; when no explicit limits are given, keep length within ±20% of the source while preserving meaning.
+
+Do NOT change:
+- Keys, IDs, numbers, booleans, arrays, or object structure.
+- Values of keys that must not be translated: keys listed in doNotTranslateKeys (${JSON.stringify(protectedKeys)}) AND keys matching this regex (case-insensitive): ^(icon(Name)?|id(s)?|url|src|scene_type)$
+- Any placeholders/tokens: {name}, {{variable}}, %s, %d, $amount, :emoji:, <TAG>…</TAG>, inline code \`like_this\`. Translate only surrounding text.
+- Also do NOT translate or alter: email addresses, URLs, phone numbers, file paths, version strings, or code/CLI commands.
+- CRITICAL: NEVER translate scene_type values — must remain exactly: intro, goal, scenario, actionable_content, quiz, survey, nudge, summary.
+- If a key path is included in doNotTranslateKeys (e.g., meta.author.name), do not translate its value.
+
+Transcripts:
+- Preserve all line breaks and timestamps exactly (e.g., "00:12:34"). Translate only the textual content; keep \\n and timing intact.
+
+Formatting & Conventions:
+- Use the target language’s normal word order, capitalization, and punctuation (apply sentence/title casing only if that is standard for ${targetLanguage}).
+- Preserve punctuation and spacing around placeholders; correct obvious spacing issues in the localized text.
+- Use target-locale conventions for numbers, dates/times, currencies, and measurement units when they appear in free text.
+- Keep brand/product names and code/CLI commands in the original language.
+- Avoid literal or machine-like phrasing, exclamation marks, emojis, slang, or casual fillers unless explicitly present in the source.
+
+Validation:
+- Return EXACTLY the same JSON structure with localized string values.
+- If a string cannot be safely localized without breaking placeholders/structure, keep the original string.
+- Ensure output is valid JSON: escape quotes properly; do not add trailing commas.
+- Start response immediately with { and end with }.
+  `.trim()
 
         // Clean the input JSON before sending to AI
         const cleanInputJson = (obj: any, path: string = ''): any => {
@@ -79,7 +92,7 @@ Rules:
 
         const cleanedJson = cleanInputJson(json);
         console.log('🧹 Cleaned input JSON of control characters');
-        
+
         const user = `doNotTranslateKeys: ${JSON.stringify(protectedKeys)}\n\nJSON:\n${JSON.stringify(cleanedJson)}`;
 
         let res;
@@ -96,21 +109,21 @@ Rules:
                 ]
             });
             console.log('🤖 AI Response received, length:', res?.text?.length);
-            
+
             // Enhanced cleaning for control characters and JSON issues
             let text = res.text.trim();
-            
+
             // Remove markdown formatting
             text = text.replace(/^```json\s*/i, '').replace(/```\s*$/i, '');
             console.log('📝 Removed markdown formatting');
-            
+
             // Clean control characters that can break JSON parsing
             // But preserve newlines in transcript content
             const beforeClean = text.length;
-            
+
             // Check if this response contains transcript content
             const hasTranscript = text.includes('"transcript"') || text.includes('transcript');
-            
+
             if (hasTranscript) {
                 console.log('🎬 Response contains transcript, preserving line breaks');
                 // Only remove problematic control characters, keep newlines (\n = \u000A)
@@ -119,24 +132,24 @@ Rules:
                 // Clean all control characters from non-transcript content
                 text = text.replace(/[\u0000-\u001F\u007F-\u009F]/g, '');
             }
-            
+
             if (text.length !== beforeClean) {
                 console.log(`🧹 Removed ${beforeClean - text.length} control characters`);
             }
-            
+
             // Fix common JSON issues
             text = text.replace(/,(\s*[}\]])/g, '$1'); // Remove trailing commas
-            
+
             // Handle escaped newlines properly in transcript content
             text = text.replace(/\\\\n/g, '\\n'); // Convert double-escaped to single-escaped
-            
+
             // Conservative fixes only - avoid aggressive HTML manipulation
             // Fix only the most basic JSON syntax issues
             text = text.replace(/\\\\\\/g, '\\'); // Fix triple backslashes
             text = text.replace(/\\\\"/g, '\\"'); // Fix double-escaped quotes
-            
+
             console.log('🧹 Cleaned AI response preview:', text.substring(0, 500) + '...');
-            
+
             // Try to parse the cleaned JSON
             const translated = JSON.parse(text);
             console.log('✅ Successfully parsed JSON, keys:', Object.keys(translated || {}));
@@ -145,26 +158,26 @@ Rules:
             console.error('❌ Translation failed:', error);
             console.error('❌ Full AI response text:', res?.text);
             console.error('❌ Error position info:', error instanceof SyntaxError ? `Position: ${error.message}` : 'Not a syntax error');
-            
+
             // Show the problematic area if it's a syntax error
             if (error instanceof SyntaxError && res?.text) {
                 let cleanedText = res.text.trim().replace(/^```json\s*/i, '').replace(/```\s*$/i, '');
-                
+
                 // Apply the same cleaning that was attempted
                 cleanedText = cleanedText.replace(/[\u0000-\u001F\u007F-\u009F]/g, '');
                 cleanedText = cleanedText.replace(/,(\s*[}\]])/g, '$1');
                 cleanedText = cleanedText.replace(/class='([^']*)'/g, 'class="$1"');
                 cleanedText = cleanedText.replace(/style='([^']*)'/g, 'style="$1"');
-                
+
                 const match = error.message.match(/position (\d+)/);
                 if (match) {
                     const position = parseInt(match[1]);
                     const start = Math.max(0, position - 100);
                     const end = Math.min(cleanedText.length, position + 100);
-                    
+
                     console.error('🔍 Character at error position:', cleanedText.charCodeAt(position), `"${cleanedText.charAt(position)}"`);
                     console.error('🔍 Problematic area around position:', cleanedText.substring(start, end));
-                    
+
                     // Look for common issues around the error
                     const problemArea = cleanedText.substring(Math.max(0, position - 50), position + 50);
                     if (problemArea.includes("'")) {
@@ -175,8 +188,49 @@ Rules:
                     }
                 }
             }
-            
-            return { success: false, error: `Translation failed: ${error}`, data: json };
+
+            // Retry translation with fresh AI call
+            console.warn('⚠️ First translation failed, attempting retry...');
+            try {
+                const model = getModel(ModelProvider.OPENAI, Model.OPENAI_GPT_5_NANO);
+                const retryRes = await generateText({
+                    model,
+                    messages: [
+                        { role: 'system', content: system },
+                        { role: 'user', content: user }
+                    ]
+                });
+
+                console.log('🤖 Retry AI Response received, length:', retryRes?.text?.length);
+
+                // Apply same cleaning logic for retry
+                let retryText = retryRes.text.trim();
+                retryText = retryText.replace(/^```json\s*/i, '').replace(/```\s*$/i, '');
+
+                const retryHasTranscript = retryText.includes('"transcript"') || retryText.includes('transcript');
+
+                if (retryHasTranscript) {
+                    console.log('🎬 Retry response contains transcript, preserving line breaks');
+                    retryText = retryText.replace(/[\u0000-\u0009\u000B-\u001F\u007F-\u009F]/g, '');
+                } else {
+                    retryText = retryText.replace(/[\u0000-\u001F\u007F-\u009F]/g, '');
+                }
+
+                retryText = retryText.replace(/,(\s*[}\]])/g, '$1');
+                retryText = retryText.replace(/\\\\n/g, '\\n');
+                retryText = retryText.replace(/\\\\\\\\/g, '\\');
+                retryText = retryText.replace(/\\\\"/g, '\\"');
+
+                console.log('🧹 Cleaned retry response preview:', retryText.substring(0, 500) + '...');
+
+                const retryTranslated = JSON.parse(retryText);
+                console.log('✅ Successfully parsed JSON on retry, keys:', Object.keys(retryTranslated || {}));
+                return { success: true, data: retryTranslated };
+
+            } catch (retryError) {
+                console.error('❌ Translation failed after retry:', retryError);
+                return { success: false, error: `Translation failed after retry: ${retryError}`, data: null };
+            }
         }
     }
 });

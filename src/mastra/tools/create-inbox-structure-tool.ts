@@ -192,6 +192,42 @@ Topic: ${topic} (${category}, ${riskArea}, ${level} level)
 
 Make emails naturally relate to ${topic} - use relevant scenarios, terminology, and workplace situations that fit this specific security topic.
 
+SUBJECTS (MUST):
+- Realistic and varied; do not repeat literal "${topic}" across subjects; ≤ 90 chars.
+
+BODY (MUST):
+- Operational tone, not educational. Do not comment on "benefits" or "awareness". Avoid meta phrases like "this is an example" or "scenario to learn".
+- DO NOT include tips, best practices, or explanations of why the message is (not) phishing inside the body.
+- Keep literal "${topic}" usage minimal (0–1x). Convey the theme via details (systems, tickets, locations, timings).
+- Include plausible specifics (team/person, ticket/PO, date/time, room/tool name). Vary greeting/sign-off. Simple readable HTML.
+
+LINKS & DOMAINS:
+- PHISHING: look‑alike or external domains; NEVER the exact company primary domain.
+- LEGITIMATE: company domain and internal links; NEVER ask for credentials/sensitive data.
+
+VARIETY:
+- 1) urgent alert, 2) subtle professional request, 3) casual team note, 4) formal HR update.
+
+LENGTH:
+- preview: 8–14 words; body: 120–220 words.
+
+ATTACHMENTS:
+- 0–1 per email; realistic names (e.g., invoice_4721.pdf, meeting-agenda_Q3.docx).
+- Types allowed: pdf, doc, xlsx, jpg, png, zip, txt.
+- Size label realistic (50KB–2MB). Content uses simple HTML with very light inline styling (paragraphs, bold, small info box). No scripts/external assets.
+- Phishing: prefer doc/xlsx/zip; imply risky behavior indirectly (e.g., instructions to enable editing/content), never label the file as suspicious.
+- Legitimate: prefer pdf/jpg/png with concrete, benign info (e.g., line items, time slots, receipt totals). NEVER ask for credentials in the attachment.
+
+ATTACHMENT VARIETY (ACROSS 4 EMAILS):
+- If attachments are used, vary both type AND presentation. Do not reuse the same HTML structure/design for all attachments.
+- Mix formats (e.g., one invoice table, one agenda bullets, one short paragraph receipt, one image caption). Avoid identical layout/styling across emails.
+
+ATTACHMENT CONTENT EXAMPLES (match type):
+- invoice (pdf/doc/xlsx): 2–3 line items (description, qty, amount), subtotal, tax, total.
+- agenda/meeting (doc/pdf): date, room, time slots with topics.
+- receipt/report (pdf): reference no, date, amount, contact.
+- image (jpg/png): brief caption/alt consistent with body.
+
 CRITICAL JSON REQUIREMENTS:
 - Use double quotes for all strings
 - No trailing commas
@@ -261,7 +297,7 @@ JSON FORMAT:
   {
     "id": "1",
     "sender": "security@company.com",
-    "subject": "Security Alert - Account Verification Required",
+    "subject": "Unusual sign-in detected — please review",
     "preview": "Your account shows unusual activity",
     "timestamp": "2 hours ago",
     "isPhishing": true,
