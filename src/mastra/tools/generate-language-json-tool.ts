@@ -121,79 +121,85 @@ SCIENTIFIC CONTEXT:
         SCENE STANDARDIZATION:
 
         INTRO SCENE (scene_id: "1"):
-        - Title: In ${analysis.language}, write a short, natural training title. 
-          • If threat/incident → formats like "Stop X Attacks", "X Awareness Training".  
-          • If practice/tool/policy → formats like "Password Security Basics", "Data Classification Training".  
-          • Avoid literal or awkward phrasing ("to prevent incidents").  
-          • Must sound like a professional training course name, not a report title.
+        - Title: In ${analysis.language}, write a short, natural course-style title.  
+          • If threat/incident → e.g., "Stop X Attacks", "X Awareness Training".  
+          • If practice/tool/policy → e.g., "Password Security Basics", "Data Classification Training".  
+          • Avoid literal or awkward phrasing. Must sound like a professional training course name.  
 
         - Subtitle: One short sentence (max 12 words) stating learner benefit.  
-          • Threats/incidents → use verbs like "recognize", "report", "avoid".  
-          • Practices/tools/policies → use verbs like "create", "use", "apply", "enable", "manage".  
-          • Always choose verbs that make sense; never force “report” if not reportable.  
-          • Must read fluently as if written by a native instructional designer.
+          • Threats/incidents → verbs like "recognize", "report", "avoid".  
+          • Practices/tools/policies → verbs like "create", "use", "apply", "enable", "manage".  
+          • Always choose verbs that fit the topic; never force “report”.  
 
-        - Highlights: 3 items in Risk → Target → Solution order.  
-          • Each <8 words, natural bullet points.  
-          • Each highlight must present a unique idea (no repetition).
+        - Highlights: Exactly 3 (Risk → Target → Solution).  
+          • Each <8 words, unique and natural.  
 
-        - Key messages: 3 unique short statements (max 5 words).  
+        - Key messages: 3 short statements (max 5 words).  
           • One fact, one risk, one solution.  
-          • Must be distinct, memorable, and slogan-like.
+          • Must be distinct, memorable, slogan-like.  
 
         - Duration: "~5 minutes", Level: "Beginner".
 
         GOAL SCENE (scene_id: "2"):
-        - Title: "Your Security Goal" (keep simple).
+        - Title: "Your Security Goal" (simple).
 
-        - Subtitle: One short sentence (max 12 words) in ${analysis.language}:
-          "Next time you encounter [${analysis.topic}], you will [safe action]."
-          • If threat/incident (e.g., phishing, suspicious email, social engineering) → use "pause and report it".  
-          • If practice/tool/policy (e.g., passwords, MFA, data classification) → use "apply the safe behavior" (e.g., create a strong password, enable MFA, classify data correctly).  
-          • Keep the sentence natural and behavior-focused.
+        - Subtitle: One short sentence (max 12 words) in ${analysis.language}:  
+          "Next time you encounter [${analysis.topic}], you will [safe action]."  
+          • Threat/incident → use "pause and report it".  
+          • Practice/tool/policy → use "apply the safe behavior" (e.g., create a strong password).  
+          • Keep natural and behavior-focused.  
 
         - Goals: Exactly three, each with title, subtitle, description.  
-          • Titles: short natural phrases (e.g., "Spot suspicious emails", "Make the right choice", "Report safely"). Never add static prefixes like "Recognition:".  
-          • Subtitles: 2–3 plain words (e.g., "Pause and think", "Safe action", "Report button").  
-          • Descriptions: start with "Helps you..." and describe a concrete learner benefit.
+          • Titles: short natural phrases (no static prefixes).  
+          • Subtitles: 2–3 plain words (e.g., "Pause and think").  
+          • Descriptions: start with "Helps you..." and give a clear learner benefit.  
 
         - Key messages: Three short, distinct phrases (max 6–7 words).  
           • One fact, one safe action, one escalation.  
-          • Must be realistic, non-repetitive, and easy to recall.
+          • Must be realistic, non-repetitive, easy to recall.  
 
-        - Language: plain, professional, no jargon. Must avoid machine-like phrasing and ensure native flow.
+        - Language: plain, professional, native-quality. Avoid jargon, filler, or machine-like phrasing.
 
 USE EXACTLY THESE KEYS BUT REPLACE PLACEHOLDERS WITH REAL CONTENT:
 {
-  "1": {
+    "1": {
     "iconName": "Choose appropriate Lucide icon for ${analysis.topic}",
-    "title": "If ${analysis.language} is English, write a natural English title. Otherwise, write a fully localized, natural ${analysis.language} title that conveys 'Prevent ${analysis.topic} incidents' (no English words or templates)",
-    "subtitle": "If ${analysis.language} is English, write in English. Otherwise, write a fully localized ${analysis.language} subtitle that conveys 'Learn to recognize and safely report ${analysis.topic}' (max 10 words, no English words)",
-    "sectionTitle": "Translate 'What this training will help you with:' to ${analysis.language}",
+    "title": "If ${analysis.language} is English, provide a natural English title. Otherwise, provide a fully localized, natural ${analysis.language} title that conveys 'Prevent ${analysis.topic} incidents' (no English words or templates).",
+    "subtitle": "If ${analysis.language} is English, output a natural English subtitle. Otherwise, output a fully localized ${analysis.language} subtitle that conveys 'Learn to recognize and safely report ${analysis.topic}' (ideally under 10 words, no English words).",
+    "sectionTitle": "Translate 'What this training will help you with:' to ${analysis.language}.",
     "highlights": [
-      {"iconName": "alert-triangle", "text": "Write 'Know that [${analysis.topic}] [common-issue]' in ${analysis.language} (max 6 words)"},
-      {"iconName": "users", "text": "Write 'Remember that anyone can be [affected]' in ${analysis.language} (max 7 words)"},
-      {"iconName": "shield-check", "text": "Write 'See how simple steps [help]' in ${analysis.language} (max 6 words)"}
+      {
+        "iconName": "alert-triangle",
+        "text": "Provide '${analysis.topic} is a common issue' in ${analysis.language} (max 6 words)."
+      },
+      {
+        "iconName": "users",
+        "text": "Provide 'Anyone can be affected' in ${analysis.language} (max 7 words)."
+      },
+      {
+        "iconName": "shield-check",
+        "text": "Provide 'Simple steps help reduce risk' in ${analysis.language} (max 6 words)."
+      }
     ],
     "key_message": [
-      "Write short ${analysis.topic} fact in ${analysis.language} (max 4 words)",
-      "Write short vulnerability statement in ${analysis.language} (max 5 words)",
-      "Write short solution statement in ${analysis.language} (max 5 words)"
+      "Output a short ${analysis.topic} fact in ${analysis.language} (max 4 words).",
+      "Output a short vulnerability statement in ${analysis.language} (max 5 words).",
+      "Output a short solution statement in ${analysis.language} (max 5 words)."
     ],
     "duration": "~${Math.max(2, Math.round((microlearning.scenes?.reduce((total, scene) => total + (scene?.metadata?.duration_seconds || 30), 0) || 300) / 60))} minutes",
-    "level": "Write the level name in ${analysis.language} for ${analysis.level}",
+    "level": "Provide the level name in ${analysis.language} for ${analysis.level}.",
     "callToActionText": {
-      "mobile": "Translate 'Swipe to get started' to ${analysis.language} using natural phrasing",
-      "desktop": "Translate 'Click to get started' to ${analysis.language} using natural phrasing"
+      "mobile": "Translate 'Swipe to get started' to ${analysis.language} using natural phrasing.",
+      "desktop": "Translate 'Click to get started' to ${analysis.language} using natural phrasing."
     },
     "texts": {
       "sceneLabel": "Intro scene",
-      "sceneDescription": "${analysis.topic} introduction focused on awareness and practical benefits",
+      "sceneDescription": "${analysis.topic} introduction focused on awareness and practical benefits.",
       "iconLabel": "Training icon",
       "titleLabel": "Training title",
       "subtitleLabel": "Training introduction",
       "cardLabel": "Learning overview card",
-      "cardDescription": "Translate the static phrase 'What this training will help you with' into ${analysis.language} (natural phrasing only, do not expand or customize)",
+      "cardDescription": "Translate the static phrase 'What this training will help you with' into ${analysis.language} (natural phrasing only, do not expand or customize).",
       "highlightItemLabel": "Learning goal",
       "statsLabel": "Training details",
       "durationLabel": "Completion time",
@@ -211,46 +217,46 @@ USE EXACTLY THESE KEYS BUT REPLACE PLACEHOLDERS WITH REAL CONTENT:
       "sceneIconName": "Use the same value as iconName"
     }
   },
-  "2":  {
-  "iconName": "target",
-  "title": "Your ${analysis.topic} Goal",
-  "subtitle": "In ${analysis.language}, write one short sentence in this format: 'Next time you see/encounter [${analysis.topic}-related situation], you will [specific safe action]'"
-  "callToActionText": "Translate 'Continue' to ${analysis.language}",
-  "goals": [
-    {
-      "iconName": "alert-triangle",
-      "title": "Write simple recognition title for ${analysis.topic} in ${analysis.language}",
-      "subtitle": "Pause and think",
-      "description": "Write ONE short 'Helps you...' sentence in ${analysis.language} for recognizing ${analysis.topic} issues (keep under 12 words)"
-    },
-    {
-      "iconName": "shield-check",
-      "title": "Make the Right Decision",
-      "subtitle": "Safe action",
-      "description": "Write ONE short 'Helps you...' sentence in ${analysis.language} for safe ${analysis.topic} behavior (keep under 12 words)"
-    },
-    {
-      "iconName": "flag",
-      "title": "Write simple escalation title for ${analysis.topic} in ${analysis.language}",
-      "subtitle": "Report button",
-      "description": "Write ONE short 'Helps you...' sentence in ${analysis.language} for ${analysis.topic} escalation (keep under 12 words)"
+  "2": {
+    "iconName": "target",
+    "title": "Your ${analysis.topic} Goal",
+    "subtitle": "In ${analysis.language}, provide one short sentence: 'Next time you encounter [${analysis.topic}-related situation], you will [specific safe action]' (max 12 words).",
+    "callToActionText": "Translate 'Continue' to ${analysis.language}.",
+    "goals": [
+      {
+        "iconName": "alert-triangle",
+        "title": "Provide a simple recognition title for ${analysis.topic} in ${analysis.language}.",
+        "subtitle": "Pause and think",
+        "description": "Provide ONE short 'Helps you...' sentence in ${analysis.language} for recognizing ${analysis.topic} issues (ideally under 12 words)."
+      },
+      {
+        "iconName": "shield-check",
+        "title": "Make the Right Decision",
+        "subtitle": "Safe action",
+        "description": "Provide ONE short 'Helps you...' sentence in ${analysis.language} for safe ${analysis.topic} behavior (ideally under 12 words)."
+      },
+      {
+        "iconName": "flag",
+        "title": "Provide a simple escalation title for ${analysis.topic} in ${analysis.language}.",
+        "subtitle": "Report button",
+        "description": "Provide ONE short 'Helps you...' sentence in ${analysis.language} for ${analysis.topic} escalation (ideally under 12 words)."
+      }
+    ],
+    "key_message": [
+      "Provide a 3–5 word ${analysis.topic} recognition behavior in ${analysis.language}.",
+      "Provide a 5–7 word ${analysis.topic} safe action in ${analysis.language}.",
+      "Provide a 3–5 word ${analysis.topic} escalation behavior in ${analysis.language}."
+    ],
+    "texts": {},
+    "scene_type": "goal",
+    "points": 5,
+    "duration_seconds": ${Math.round(microlearning.scenes[1]?.metadata.duration_seconds || 20)},
+    "hasAchievementNotification": false,
+    "scientific_basis": "Goal – Goal Activation + Relevance: Implementation intention language and goal priming. 'Next time X happens, you will Y' format bridges intention–action gap.",
+    "icon": {
+      "sceneIconName": "target"
     }
-  ],
-  "key_message": [
-    "Write 3-5 word ${analysis.topic} recognition behavior in ${analysis.language}",
-    "Write 5-7 word ${analysis.topic} safe action in ${analysis.language}",
-    "Write 3-5 word ${analysis.topic} escalation behavior in ${analysis.language}"
-  ],
-  "texts": {},
-  "scene_type": "goal",
-  "points": 5,
-  "duration_seconds": ${Math.round(microlearning.scenes[1]?.metadata.duration_seconds || 20)},
-  "hasAchievementNotification": false,
-  "scientific_basis": "Goal – Goal Activation + Relevance: Implementation intention language and goal priming. 'Next time X happens, you will Y' format bridges intention-action gap.",
-  "icon": {
-    "sceneIconName": "target"
   }
-}
 }
 
 CRITICAL:
