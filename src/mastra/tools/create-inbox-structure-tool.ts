@@ -7,6 +7,7 @@ import { getModel, Model, ModelProvider } from '../model-providers';
 import { InboxContentSchema } from '../schemas/microlearning-schema';
 import { ExampleRepo } from '../services/example-repo';
 import { CreateInboxStructureSchema, CreateInboxStructureOutputSchema } from '../schemas/create-inbox-structure-schema';
+import { cleanResponse } from '../utils/content-processors/json-cleaner';
 
 const microlearningService = new MicrolearningService();
 
@@ -113,17 +114,6 @@ async function generateDynamicInboxWithAI(
   const category = microlearning.microlearning_metadata.category;
   const riskArea = microlearning.microlearning_metadata.risk_area;
   const level = microlearning.microlearning_metadata.level;
-
-
-  // Get inbox examples from ExampleRepo for better AI learning
-  const repo = ExampleRepo.getInstance();
-  let inboxHints: string;
-  try {
-    inboxHints = await repo.getSmartSchemaHints(`inbox simulation ${topic} ${category}`, 2);
-    console.log('✨ Using inbox examples for AI guidance');
-  } catch (error) {
-    inboxHints = 'No specific inbox examples found';
-  }
 
   // Phase 1: Generate UI texts (simplified prompt)
   const textsPrompt = `Create inbox UI texts for "${topic}" training in ${languageCode}. 
@@ -355,95 +345,24 @@ Each should feel like it came from a different person with different communicati
   let textsData, emailsData;
 
   try {
-    const cleanJson = (text: string) => {
-      // First, try to extract JSON from the response
-      let cleaned = text.trim()
-        .replace(/^```json\s*/, '')
-        .replace(/\s*```$/, '')
-        .replace(/^```\s*/, '')
-        .replace(/,\s*([}\]])/g, '$1')
-        .replace(/\n\s*\n/g, '\n')
-        .replace(/\s+$/gm, '');
-
-      // Enhanced JSON cleaning with repair
-      try {
-        // First attempt: Handle common issues
-        cleaned = cleaned
-          .replace(/\\\\/g, '\\')  // Fix double backslashes
-          .replace(/\\"/g, '\\"')  // Keep escaped quotes as valid JSON
-          .replace(/\\'/g, "'")    // Convert escaped single quotes
-          .replace(/\\n/g, '\\n')  // Keep escaped newlines as valid JSON
-          .replace(/\\t/g, '\\t')  // Keep escaped tabs as valid JSON
-          .replace(/\\r/g, '\\r')  // Keep escaped carriage returns
-          .replace(/[\u0000-\u001f\u007f-\u009f]/g, ''); // Remove control characters
-
-        // Try parsing to see if it's valid
-        JSON.parse(cleaned);
-        return cleaned;
-      } catch (e) {
-        // More aggressive repair
-        console.warn('First JSON clean failed, applying repairs:', e instanceof Error ? e.message : 'Unknown error');
-
-        // Fix common JSON structure issues
-        cleaned = text.trim()
-          .replace(/^```json\s*/, '')
-          .replace(/\s*```$/, '')
-          .replace(/^```\s*/, '')
-          // Fix missing commas
-          .replace(/}(\s*)"/g, '},$1"')  // Add comma between objects
-          .replace(/](\s*)"/g, '],$1"')  // Add comma after arrays
-          .replace(/"(\s*)}/g, '"$1}')   // Remove trailing commas before }
-          .replace(/"(\s*)]/g, '"$1]')   // Remove trailing commas before ]
-          .replace(/,(\s*[}\]])/g, '$1') // Remove trailing commas
-          // Fix quotes and escaping
-          .replace(/\\n/g, ' ')          // Replace newlines with spaces
-          .replace(/\\t/g, ' ')          // Replace tabs with spaces
-          .replace(/\\r/g, ' ')          // Replace carriage returns
-          .replace(/\\(?!["\\\/bfnrtu])/g, '\\\\') // Escape stray backslashes
-          .replace(/[\u0000-\u001f\u007f-\u009f]/g, ''); // Remove control chars
-
-        try {
-          // Test the repaired JSON
-          JSON.parse(cleaned);
-          console.log('✅ JSON repair successful');
-          return cleaned;
-        } catch (repairError) {
-          console.warn('⚠️ JSON repair failed, returning cleaned version');
-          return cleaned;
-        }
-      }
-    };
-
-    // Try to find JSON array/object boundaries
-    const findJsonBoundaries = (text: string) => {
-      const jsonStart = text.indexOf('[');
-      const objStart = text.indexOf('{');
-
-      if (jsonStart !== -1 && (objStart === -1 || jsonStart < objStart)) {
-        const lastBracket = text.lastIndexOf(']');
-        return text.substring(jsonStart, lastBracket + 1);
-      } else if (objStart !== -1) {
-        const lastBrace = text.lastIndexOf('}');
-        return text.substring(objStart, lastBrace + 1);
-      }
-      return text;
-    };
-
-    const cleanedTexts = cleanJson(textsResponse.text);
-    const cleanedEmails = cleanJson(emailsResponse.text);
+    // Use json-cleaner for robust JSON cleaning with jsonrepair
+    const cleanedTexts = cleanResponse(textsResponse.text, 'inbox-texts');
+    const cleanedEmails = cleanResponse(emailsResponse.text, 'inbox-emails');
 
     try {
-      textsData = JSON.parse(findJsonBoundaries(cleanedTexts));
+      textsData = JSON.parse(cleanedTexts);
+      console.log('✅ Inbox texts parsed successfully');
     } catch (textsError) {
       console.warn('Texts JSON parse failed, using fallback:', textsError);
-      throw textsError; // This will trigger the outer catch block
+      throw textsError;
     }
 
     try {
-      emailsData = JSON.parse(findJsonBoundaries(cleanedEmails));
+      emailsData = JSON.parse(cleanedEmails);
+      console.log('✅ Inbox emails parsed successfully');
     } catch (emailsError) {
       console.warn('Emails JSON parse failed, using fallback:', emailsError);
-      throw emailsError; // This will trigger the outer catch block
+      throw emailsError;
     }
 
   } catch (parseError) {
