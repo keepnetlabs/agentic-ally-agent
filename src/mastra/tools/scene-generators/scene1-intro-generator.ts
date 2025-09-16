@@ -37,15 +37,15 @@ USE EXACTLY THESE KEYS BUT REPLACE PLACEHOLDERS WITH REAL CONTENT:
     "highlights": [
       {
         "iconName": "alert-triangle",
-        "text": "Write a short Risk point in ${analysis.language} (≤6 words, unique)."
+        "text": "State the key RISK in ${analysis.language} (≤6 words, unique)."
       },
       {
         "iconName": "users",
-        "text": "Write a short Target point in ${analysis.language} (≤7 words, unique)."
+        "text": "State WHO/TARGET is impacted in ${analysis.language} (≤7 words, unique)."
       },
       {
         "iconName": "shield-check",
-        "text": "Write a short Solution point in ${analysis.language} (≤6 words, unique)."
+        "text": "State the simple SOLUTION in ${analysis.language} (≤6 words, unique)."
       }
     ],
     "key_message": [

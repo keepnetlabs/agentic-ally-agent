@@ -50,7 +50,7 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
   const scene2Prompt = generateScene2Prompt(analysis, microlearning);
 
   // Generate video prompt using modular generator
-  const videoPrompt = generateVideoPrompt(analysis, microlearning);
+  const videoPrompt = await generateVideoPrompt(analysis, microlearning);
 
   // Generate scene 4, 5, 6 prompts using modular generators
   const scene4Prompt = generateScene4Prompt(analysis, microlearning);

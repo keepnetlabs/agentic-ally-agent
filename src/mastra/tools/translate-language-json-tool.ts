@@ -65,6 +65,8 @@ export const translateLanguageJsonTool = new Tool({
         - Transcripts: Preserve all line breaks and timestamps exactly (e.g., "00:12:34"). Localize only textual content; keep \\n and timing intact.
         - File names: Localize descriptive parts but keep extensions (e.g., "security_report.pdf" → "informe_seguridad.pdf")
         - Formatting: Use target language's standard word order, capitalization, and punctuation
+        - HTML Content: When translating HTML content fields, preserve ALL HTML tags, attributes, and structure. Only translate text between tags, never modify or truncate HTML markup.
+        - Long Content: NEVER truncate or cut off content mid-sentence. Always complete the full translation of every field, no matter how long.
 
         🎯 Validation Rules:
         - Return EXACTLY the same JSON structure with localized string values
@@ -83,14 +85,14 @@ export const translateLanguageJsonTool = new Tool({
         Wrong Output: {"titulo": "Formación en Seguridad"} // ❌ Key changed
         Wrong Output: {"title": "Formación en Seguridad", "language": "es"} // ❌ Added new key
         `.trim()
-        
+
         // Use our robust cleanResponse method for input JSON
         const jsonString = JSON.stringify(json);
         const cleanedJsonString = cleanResponse(jsonString, 'localize-input');
         const cleanedJson = JSON.parse(cleanedJsonString);
         console.log('🧹 Cleaned input JSON using our cleanResponse method');
-
         const user = `doNotTranslateKeys: ${JSON.stringify(protectedKeys)}\n\nJSON:\n${JSON.stringify(cleanedJson)}`;
+
 
         let res;
         try {
@@ -123,22 +125,25 @@ export const translateLanguageJsonTool = new Tool({
             console.warn('⚠️ First localization failed, attempting retry...');
             try {
                 const model = getModel(ModelProvider.OPENAI, Model.OPENAI_GPT_5_NANO);
-                
+
                 // Use stronger system prompt for retry
                 const retrySystem = `
                 ${system}
                 
                 ⚠️ CRITICAL: Previous attempt FAILED. This is your FINAL chance.
-                
+
                 MANDATORY RULES FOR THIS RETRY:
                 - Copy EVERY SINGLE key from input JSON to output JSON with EXACT same name
                 - Do NOT add any new keys that don't exist in input
-                - Do NOT remove any keys that exist in input  
+                - Do NOT remove any keys that exist in input
                 - Do NOT rename any keys (keep exact spelling, capitalization, punctuation)
                 - Only change the VALUES of string fields, never the key names
+                - NEVER truncate HTML content - complete every single HTML field fully
+                - Preserve ALL HTML tags and attributes exactly as they appear
+                - Count input fields and ensure output has same number of fields
                 - Double-check your output has identical structure before responding
                 `.trim();
-                
+
                 const retryRes = await generateText({
                     model,
                     messages: [

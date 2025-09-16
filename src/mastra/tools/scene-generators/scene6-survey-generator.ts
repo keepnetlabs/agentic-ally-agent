@@ -13,8 +13,8 @@ Generate scene 6 (survey):
     "iconName": "message-circle",
     "title": "Quick Feedback",
     "subtitle": "Help us improve this training",
-    "callToActionText": "Translate 'Submit Feedback' to ${analysis.language}",
-    "skipCallToActionText": "Translate 'Skip' to ${analysis.language}",
+    "callToActionText": "Submit Feedback (localize to ${analysis.language})",
+    "skipCallToActionText": "Skip (localize to ${analysis.language})",
     "key_message": [
       "Your feedback matters",
       "Help us improve",
@@ -28,8 +28,8 @@ Generate scene 6 (survey):
           "question": "Write survey question in ${analysis.language} about training relevance for ${analysis.topic}",
           "scale": 5,
           "labels": {
-            "low": "Translate 'Not relevant' to ${analysis.language}",
-            "high": "Translate 'Very relevant' to ${analysis.language}"
+            "low": "Not relevant (localize to ${analysis.language})",
+            "high": "Very relevant (localize to ${analysis.language})"
           }
         },
         {
@@ -38,28 +38,28 @@ Generate scene 6 (survey):
           "question": "Write survey question in ${analysis.language} about training difficulty for ${analysis.topic}",
           "scale": 5,
           "labels": {
-            "low": "Translate 'Too easy' to ${analysis.language}",
-            "high": "Translate 'Too difficult' to ${analysis.language}"
+            "low": "Too easy (localize to ${analysis.language})",
+            "high": "Too difficult (localize to ${analysis.language})"
           }
         },
         {
           "id": "comments",
           "type": "text",
           "question": "Write open-ended question in ${analysis.language} asking for additional feedback about ${analysis.topic} training",
-          "placeholder": "Translate 'Your suggestions...' to ${analysis.language}",
+          "placeholder": "Your suggestions... (localize to ${analysis.language})",
           "optional": true
         }
       ]
     },
     "texts": {
-      "thankYouTitle": "Translate 'Thank you!' to ${analysis.language}",
-      "thankYouMessage": "Translate 'Your feedback helps us create better training.' to ${analysis.language}",
-      "submitText": "Translate 'Submit' to ${analysis.language}",
-      "submittingText": "Translate 'Submitting...' to ${analysis.language}",
-      "submittedText": "Translate 'Submitted' to ${analysis.language}",
-      "skipText": "Translate 'Skip' to ${analysis.language}",
-      "requiredText": "Translate 'Required' to ${analysis.language}",
-      "optionalText": "Translate 'Optional' to ${analysis.language}"
+      "thankYouTitle": "Thank you! (translate to ${analysis.language})",
+      "thankYouMessage": "Your feedback helps us create better training. (translate to ${analysis.language})",
+      "submitText": "Submit (translate to ${analysis.language})",
+      "submittingText": "Submitting... (translate to ${analysis.language})",
+      "submittedText": "Submitted (translate to ${analysis.language})",
+      "skipText": "Skip (translate to ${analysis.language})",
+      "requiredText": "Required (translate to ${analysis.language})",
+      "optionalText": "Optional (translate to ${analysis.language})"
     },
     "ariaTexts": {
       "mainLabel": "Feedback survey",

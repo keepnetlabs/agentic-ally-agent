@@ -1,0 +1,102 @@
+[
+  {
+    "title": "Security Awareness Podcast: How One-Click Phishing Defense Protects You",
+    "url": "https://www.youtube.com/watch?v=ehnMHnz5pTM",
+    "topics": ["phishing", "defense", "awareness", "protection"]
+  },
+  {
+    "title": "Security Awareness Podcast: Deepfake Phishing",
+    "url": "https://www.youtube.com/watch?v=6PMGH-7JQd0",
+    "topics": ["deepfake", "phishing", "voice impersonation", "social engineering"]
+  },
+  {
+    "title": "Security Awareness Podcast: What is Human Risk Score?",
+    "url": "https://www.youtube.com/watch?v=nr2CDQUFhfI",
+    "topics": ["human risk score", "behavioral analytics", "phishing simulations"]
+  },
+  {
+    "title": "Security Awareness Podcast: Cyber Insurance Essentials",
+    "url": "https://www.youtube.com/watch?v=Ap2dxzl7PSw",
+    "topics": ["cyber insurance", "risk management", "threat landscape"]
+  },
+  {
+    "title": "Security Awareness Podcast: What Is Vishing?",
+    "url": "https://www.youtube.com/watch?v=HFPHdRAccSE",
+    "topics": ["vishing", "phone scams", "social engineering"]
+  },
+  {
+    "title": "Security Awareness Podcast: What is Smishing?",
+    "url": "https://www.youtube.com/watch?v=80FGy1dI7c8",
+    "topics": ["smishing", "SMS phishing", "malicious links"]
+  },
+  {
+    "title": "Security Awareness Podcast: What is Quishing?",
+    "url": "https://www.youtube.com/watch?v=8FAQppIRNe0",
+    "topics": ["quishing", "QR code phishing", "cyber threat"]
+  },
+  {
+    "title": "Security Awareness Podcast: What is Tailgating? How Physical Access Breaches Happen",
+    "url": "https://www.youtube.com/watch?v=WYTm2BiDwX4",
+    "topics": ["tailgating", "physical security", "piggybacking"]
+  },
+  {
+    "title": "Do You Know Who Has Access to Your Sensitive Data?",
+    "url": "https://www.youtube.com/watch?v=1AVbKrnTCJk",
+    "topics": ["data access", "data breach", "email mistakes"]
+  },
+  {
+    "title": "Security Awareness Podcast: Top 5 Recommendations for Effective Human Cyber Risk Management",
+    "url": "https://www.youtube.com/watch?v=KTCg1vnxrrk",
+    "topics": ["human risk", "best practices", "risk reduction"]
+  },
+  {
+    "title": "Real-Life Security Awareness Training Story Series: SMS Phishing Attack Breached Company Systems",
+    "url": "https://www.youtube.com/watch?v=PjgifJNCDjw",
+    "topics": ["smishing", "case study", "urgency tactic", "data exposure"]
+  },
+  {
+    "title": "Real-Life Security Awareness Training Story Series: Europe's Biggest Phone Fraud",
+    "url": "https://www.youtube.com/watch?v=c92y_oWbrwE",
+    "topics": ["vishing", "phone fraud", "financial loss", "case study"]
+  },
+  {
+    "title": "Real-Life Security Awareness Training Story Series: How a Hacked Translation App Led to Espionage",
+    "url": "https://www.youtube.com/watch?v=03rWVEf6c1k",
+    "topics": ["malware", "supply chain attack", "espionage", "mobile app risk"]
+  },
+  {
+    "title": "Real-Life Security Awareness Training Story Series: SIM Swap Attack",
+    "url": "https://www.youtube.com/watch?v=ucrAnhWDiq0",
+    "topics": ["SIM swap", "account takeover", "phone number hijacking"]
+  },
+  {
+    "title": "Real-Life Security Awareness Training Story Series: Beware of Smishing and Vishing Scams",
+    "url": "https://www.youtube.com/watch?v=3QWkEHaQYAA",
+    "topics": ["vishing", "smishing", "phishing", "fake support"]
+  },
+  {
+    "title": "Real-Life Security Awareness Training Story Series: Amazon Voice Phishing Scam",
+    "url": "https://www.youtube.com/watch?v=65faDEZ7-0U",
+    "topics": ["vishing", "smishing", "voice phishing", "data breach"]
+  },
+  {
+    "title": "Security Awareness Training Story Series: A Supervisor's Lesson on Subtle Harassment",
+    "url": "https://www.youtube.com/watch?v=FpK1T9HFdqs",
+    "topics": ["workplace harassment", "microaggressions", "corporate culture"]
+  },
+  {
+    "title": "Real-Life Cybersecurity Awareness Story Series: Why Scanning QR codes Safely Really Matters",
+    "url": "https://www.youtube.com/watch?v=BrIfUbWOBbM",
+    "topics": ["quishing", "QR code fraud", "financial scam"]
+  },
+  {
+    "title": "Real-Life Security Awareness Training Story Series: Finding the Voice to Stop Harassment",
+    "url": "https://www.youtube.com/watch?v=j8eh4ZNN7HY",
+    "topics": ["workplace harassment", "reporting", "safe workplace"]
+  },
+  {
+    "title": "Behavioral Training Series: Phishing Reporting – Small Actions, Big Security Impact",
+    "url": "https://www.youtube.com/watch?v=qGtZEsJAL7I",
+    "topics": ["phishing reporting", "user awareness", "incident response"]
+  }
+]

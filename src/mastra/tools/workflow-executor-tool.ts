@@ -179,7 +179,6 @@ Examples:
         // Extract info from result - simple fallback approach
         let trainingUrl = 'URL not available';
         let title = params.prompt?.slice(0, 50) || 'microlearning';
-        let language = 'target language';
         let department = 'specified department';
         let microlearningId = 'ID not available';
 
@@ -189,7 +188,6 @@ Examples:
           try {
             trainingUrl = workflowResult.result.metadata.trainingUrl || trainingUrl;
             title = workflowResult.result.metadata.title || title;
-            language = workflowResult.result.metadata.language || language;
             department = workflowResult.result.metadata.department || department;
             microlearningId = workflowResult.result.metadata.microlearningId || microlearningId;
           } catch (error) {
@@ -211,9 +209,7 @@ Examples:
 
         return {
           success: true,
-          message: `Training completed successfully! Microlearning ID: ${microlearningId}`,
           title,
-          language,
           department,
           microlearningId,
           status: 'success'
@@ -251,24 +247,10 @@ Examples:
           } catch (error) {
             console.error('Failed to send URL to frontend:', error);
           }
-        } else {
-          // Even if no URL, send completion message
-          try {
-            await writer?.write({ type: 'text-start' });
-            await writer?.write({
-              type: 'text-delta',
-              delta: `✅ Translation process completed.\n`
-            });
-            await writer?.write({ type: 'text-end' });
-          } catch (error) {
-            console.error('Failed to send completion message:', error);
-          }
         }
 
         return {
-          success: true,
-          message: 'Language added successfully!',
-          data: result
+          success: true
         };
 
       } else {
@@ -287,7 +269,7 @@ Examples:
       } catch (writeError) {
         console.error('Failed to send error message:', writeError);
       }
-      
+
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
