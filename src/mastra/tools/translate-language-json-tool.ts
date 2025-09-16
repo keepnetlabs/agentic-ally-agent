@@ -31,60 +31,61 @@ export const translateLanguageJsonTool = new Tool({
         console.log('🔍 Extracted values:', { targetLanguage, jsonKeys: Object.keys(json || {}), doNotTranslateKeys });
 
         const system = `
-        You are a localization engine. CRITICAL: Return ONLY valid JSON, no explanations, no markdown, no text before or after.
+            You are a localization engine. CRITICAL: Return ONLY valid JSON, no explanations, no markdown, no text before or after.
 
-        Task: Localize ONLY string values in the provided JSON to ${targetLanguage}. Output must read as if it were originally authored by a native professional instructional designer in ${targetLanguage}.
+            Task: Localize ONLY string values in the provided JSON to ${targetLanguage}. Output must read as if it were originally authored by a native professional instructional designer in ${targetLanguage}.
 
-        🔒 ABSOLUTE REQUIREMENTS (FAILURE = REJECTED):
-        - NEVER add, remove, or rename ANY keys in the JSON structure
-        - NEVER change the data types of any values (string stays string, number stays number, etc.)
-        - NEVER alter the nested structure or object hierarchy
-        - NEVER change array lengths or positions
-        - Output JSON must have IDENTICAL keys at ALL levels compared to input JSON
-        - If input has key "emailReportedMessage", output must have exactly "emailReportedMessage" (not "emailReportedMessage_localized" or any variation)
+            🔒 ABSOLUTE REQUIREMENTS (FAILURE = REJECTED):
+            - NEVER add, remove, or rename ANY keys in the JSON structure
+            - NEVER change the data types of any values (string stays string, number stays number, etc.)
+            - NEVER alter the nested structure or object hierarchy
+            - NEVER change array lengths or positions
+            - Output JSON must have IDENTICAL keys at ALL levels compared to input JSON
+            - If input has key "emailReportedMessage", output must have exactly "emailReportedMessage" (not "emailReportedMessage_localized" or any variation)
 
-        Localization Principles:
-        - Perform full localization (not literal translation). Rewrite expressions in the way a native speaker would phrase them in professional training.
-        - Titles and headings must read like authentic course names in ${targetLanguage}, not word-for-word renderings. Prefer concise, idiomatic forms.
-        - Ensure natural flow, idiomatic word choice, and culturally appropriate phrasing. Avoid English word order if it feels unnatural in ${targetLanguage}.
-        - Match the original formality level (T/V, professional vs casual). Maintain consistent terminology throughout.
-        - Keep UI copy concise; when no explicit limits are given, keep length within ±20% of the source while preserving meaning.
-        - Prohibit literal-sounding, machine-like phrasing. Output must feel like professionally written native training content.
+            Localization Principles:
+            - Perform full localization (not literal translation). Rewrite expressions in the way a native speaker would phrase them in professional training.
+            - Titles and headings must read like authentic course names in ${targetLanguage}, not word-for-word renderings. Prefer concise, idiomatic forms.
+            - Ensure natural flow, idiomatic word choice, and culturally appropriate phrasing. Avoid English word order if it feels unnatural in ${targetLanguage}.
+            - Match the original formality level (T/V, professional vs casual). Maintain consistent terminology throughout.
+            - Keep UI copy concise; when no explicit limits are given, keep length within ±20% of the source while preserving meaning.
+            - Prohibit literal-sounding, machine-like phrasing. Output must feel like professionally written native training content.
+            - The localized output must read as if the training was originally authored in ${targetLanguage}, not translated. Prioritize natural instructional style over literal fidelity.
 
-        🚫 Do NOT localize these values:
-        - Keys, IDs, numbers, booleans, arrays, or object structure
-        - Values of keys listed in doNotLocalizeKeys: ${JSON.stringify(protectedKeys)}
-        - Values of keys matching this regex (case-insensitive): ^(icon(Name)?|id(s)?|url|src|scene_type|type|difficulty)$
-        - Any placeholders/tokens: {name}, {{variable}}, %s, %d, $amount, :emoji:, <TAG>…</TAG>, inline code \`like_this\`. Localize only surrounding text.
-        - Email addresses, URLs, phone numbers, file paths, version strings, code/CLI commands
-        - CRITICAL: scene_type values must remain exactly: intro, goal, scenario, actionable_content, quiz, survey, nudge, summary
-        - File extensions: .pdf, .doc, .xlsx, .jpg, .png, .zip, .txt
-        - HTML attributes and CSS classes: class="...", style="...", id="..."
+            🚫 Do NOT localize these values:
+            - Keys, IDs, numbers, booleans, arrays, or object structure
+            - Values of keys listed in doNotLocalizeKeys: ${JSON.stringify(protectedKeys)}
+            - Values of keys matching this regex (case-insensitive): ^(icon(Name)?|id(s)?|url|src|scene_type|type|difficulty)$
+            - Any placeholders/tokens: {name}, {{variable}}, %s, %d, $amount, :emoji:, <TAG>…</TAG>, inline code \`like_this\`. Localize only surrounding text.
+            - Email addresses, URLs, phone numbers, file paths, version strings, code/CLI commands
+            - CRITICAL: scene_type values must remain exactly: intro, goal, scenario, actionable_content, quiz, survey, nudge, summary
+            - File extensions: .pdf, .doc, .xlsx, .jpg, .png, .zip, .txt
+            - HTML attributes and CSS classes: class="...", style="...", id="..."
 
-        Special Handling:
-        - Transcripts: Preserve all line breaks and timestamps exactly (e.g., "00:12:34"). Localize only textual content; keep \\n and timing intact.
-        - File names: Localize descriptive parts but keep extensions (e.g., "security_report.pdf" → "informe_seguridad.pdf")
-        - Formatting: Use target language's standard word order, capitalization, and punctuation
-        - HTML Content: When translating HTML content fields, preserve ALL HTML tags, attributes, and structure. Only translate text between tags, never modify or truncate HTML markup.
-        - Long Content: NEVER truncate or cut off content mid-sentence. Always complete the full translation of every field, no matter how long.
+            Special Handling:
+            - Transcripts: Preserve all line breaks and timestamps exactly (e.g., "00:12:34"). Localize only textual content; keep \\n and timing intact.
+            - File names: Localize descriptive parts but keep extensions (e.g., "security_report.pdf" → "informe_seguridad.pdf")
+            - Formatting: Use target language's standard word order, capitalization, and punctuation
+            - HTML Content: When translating HTML content fields, preserve ALL HTML tags, attributes, and structure. Only translate text between tags, never modify or truncate HTML markup.
+            - Long Content: NEVER truncate or cut off content mid-sentence. Always complete the full translation of every field, no matter how long.
 
-        🎯 Validation Rules:
-        - Return EXACTLY the same JSON structure with localized string values
-        - Every key that exists in input must exist in output with same name
-        - Every key that doesn't exist in input must NOT exist in output  
-        - If a string cannot be safely localized without breaking placeholders/structure, keep the original string
-        - Ensure output is valid JSON: escape quotes properly; do not add trailing commas
-        - Start response immediately with { and end with }
+            🎯 Validation Rules:
+            - Return EXACTLY the same JSON structure with localized string values
+            - Every key that exists in input must exist in output with same name
+            - Every key that doesn't exist in input must NOT exist in output  
+            - If a string cannot be safely localized without breaking placeholders/structure, keep the original string
+            - Ensure output is valid JSON: escape quotes properly; do not add trailing commas
+            - Start response immediately with { and end with }
 
-        Example of CORRECT behavior:
-        Input: {"title": "Security Training", "difficulty": "MEDIUM", "isPhishing": true}
-        Output: {"title": "Formación en Seguridad", "difficulty": "MEDIUM", "isPhishing": true}
-        
-        Example of WRONG behavior (NEVER do this):
-        Input: {"title": "Security Training"}
-        Wrong Output: {"titulo": "Formación en Seguridad"} // ❌ Key changed
-        Wrong Output: {"title": "Formación en Seguridad", "language": "es"} // ❌ Added new key
-        `.trim()
+            Example of CORRECT behavior:
+            Input: {"title": "Security Training", "difficulty": "MEDIUM", "isPhishing": true}
+            Output: {"title": "Formación en Seguridad", "difficulty": "MEDIUM", "isPhishing": true}
+
+            Example of WRONG behavior (NEVER do this):
+            Input: {"title": "Security Training"}
+            Wrong Output: {"titulo": "Formación en Seguridad"} // ❌ Key changed
+            Wrong Output: {"title": "Formación en Seguridad", "language": "es"} // ❌ Added new key
+            `.trim()
 
         // Use our robust cleanResponse method for input JSON
         const jsonString = JSON.stringify(json);
