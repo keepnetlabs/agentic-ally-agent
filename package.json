@@ -29,6 +29,7 @@
     "@mastra/loggers": "^0.10.7",
     "@mastra/memory": "^0.14.2",
     "ai": "^5.0.28",
+    "jsonrepair": "^3.13.0",
     "zod": "^3.25.76"
   },
   "devDependencies": {

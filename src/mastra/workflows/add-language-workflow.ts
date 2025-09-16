@@ -1,7 +1,6 @@
 import { createStep, createWorkflow } from '@mastra/core/workflows';
 import { z } from 'zod';
 import { translateLanguageJsonTool } from '../tools/translate-language-json-tool';
-import { MicrolearningService } from '../services/microlearning-service';
 import { RemoteStorageService } from '../services/remote-storage-service';
 import { KVService } from '../services/kv-service';
 import { normalizeDepartmentName } from '../utils/language-utils';
@@ -26,7 +25,10 @@ const existingContentSchema = z.object({
 
 const languageContentSchema = z.object({
   success: z.boolean(),
-  data: z.any() // translated language content
+  data: z.any(), // translated language content
+  microlearningId: z.string(),
+  analysis: z.any(),
+  microlearningStructure: z.any()
 });
 
 const finalResultSchema = z.object({
@@ -70,14 +72,12 @@ const loadExistingStep = createStep({
         console.log(`✅ Found microlearning in KV: ${existing.microlearning_id}`);
       }
     } catch (kvError) {
-      console.warn('KVService failed, trying MicrolearningService fallback:', kvError);
+      console.warn('KVService failed to load microlearning:', kvError);
     }
 
-    // Fallback to MicrolearningService if KV fails
+    // No fallback needed - only use KVService in worker environment
     if (!existing) {
-      console.log(`📄 Fallback: Using MicrolearningService for ${existingMicrolearningId}`);
-      const microlearningService = new MicrolearningService();
-      existing = await microlearningService.getMicrolearningById(existingMicrolearningId);
+      console.error(`❌ Microlearning not found in KVService: ${existingMicrolearningId}`);
     }
 
     if (!existing) {
@@ -138,14 +138,12 @@ const translateLanguageStep = createStep({
         console.log(`✅ Found base content in KV: ${microlearningId}/${sourceLanguage}`);
       }
     } catch (kvError) {
-      console.warn('KVService failed for language content, trying MicrolearningService fallback:', kvError);
+      console.warn('KVService failed to load language content:', kvError);
     }
 
-    // Fallback to MicrolearningService
+    // No fallback needed - only use KVService in worker environment  
     if (!baseContent) {
-      console.log(`📄 Fallback: Using MicrolearningService for language content ${microlearningId}/${sourceLanguage}`);
-      const service = new MicrolearningService();
-      baseContent = await service.getLanguageContent(microlearningId, sourceLanguage);
+      console.error(`❌ Base content not found in KVService: ${microlearningId}/${sourceLanguage}`);
     }
 
     if (!baseContent) {
@@ -229,30 +227,8 @@ const translateLanguageStep = createStep({
       }
       
     } catch (kvError) {
-      console.warn('KVService storage failed, using MicrolearningService fallback:', kvError);
-      
-      // Fallback to MicrolearningService
-      const service = new MicrolearningService();
-      await service.storeLanguageContent(
-        microlearningId,
-        targetLanguage,
-        translated.data
-      );
-
-      // Update language_availability with fallback
-      const updatedMicrolearning = { ...microlearningStructure };
-      if (updatedMicrolearning.microlearning_metadata) {
-        const currentLanguages = updatedMicrolearning.microlearning_metadata.language_availability || [];
-        const newLanguage = targetLanguage.toLowerCase();
-        
-        if (!currentLanguages.includes(newLanguage)) {
-          updatedMicrolearning.microlearning_metadata.language_availability = [...currentLanguages, newLanguage];
-          await service.storeMicrolearning(updatedMicrolearning);
-          console.log(`✅ Updated language_availability: [${updatedMicrolearning.microlearning_metadata.language_availability.join(', ')}]`);
-        }
-      }
-      
-      storageSuccess = true; // Assume fallback worked
+      console.error('❌ KVService storage failed in worker environment:', kvError);
+      throw new Error(`Translation completed but storage failed: ${kvError}`);
     }
 
     console.log(`✅ Step 2 completed: Translation to ${targetLanguage} successful`);
@@ -272,10 +248,13 @@ const translateLanguageStep = createStep({
 const updateInboxStep = createStep({
   id: 'update-inbox',
   description: 'Translate and update department inbox for new language',
-  inputSchema: existingContentSchema, // Use existingContentSchema which has targetLanguage field
+  inputSchema: languageContentSchema, // Now receives translated content from previous step
   outputSchema: finalResultSchema,
   execute: async ({ inputData }) => {
-    const { data: languageContent, analysis, microlearningId, targetLanguage, department, sourceLanguage } = inputData;
+    const { data: translatedLanguageContent, analysis, microlearningId, microlearningStructure } = inputData;
+    const targetLanguage = analysis.language;
+    const department = analysis.department;
+    const sourceLanguage = microlearningStructure.microlearning_metadata?.language || 'en';
 
     console.log(`📥 Step 3: Creating inbox for ${targetLanguage} language`);
     console.log(`🔍 Source language for inbox: ${sourceLanguage}`);
@@ -284,22 +263,28 @@ const updateInboxStep = createStep({
     const normalizedDept = analysis.department ? normalizeDepartmentName(analysis.department) : 'all';
     const remote = new RemoteStorageService();
 
-    // Try to translate existing inbox first (use actual source language, not hardcoded 'en')
+    // Try to translate existing inbox using KVService
     try {
-      const service = new MicrolearningService();
-      console.log(`📦 Looking for base inbox: ${microlearningId}/${normalizedDept}/${sourceLanguage}`);
-      let baseInbox = await service.getDepartmentInbox(microlearningId, normalizedDept, sourceLanguage);
+      const kvService = new KVService();
+      console.log(`📦 Looking for base inbox in KV: ${microlearningId}/${normalizedDept}/${sourceLanguage}`);
+      
+      // Try to get inbox from KVService
+      const inboxKey = `ml:${microlearningId}:inbox:${normalizedDept}:${sourceLanguage}`;
+      let baseInbox = await kvService.get(inboxKey);
 
       // Fallback to 'en' if source language inbox not found
       if (!baseInbox && sourceLanguage !== 'en') {
         console.log(`⚠️ No inbox found for ${sourceLanguage}, trying fallback to 'en'`);
-        baseInbox = await service.getDepartmentInbox(microlearningId, normalizedDept, 'en');
+        const fallbackKey = `ml:${microlearningId}:inbox:${normalizedDept}:en`;
+        baseInbox = await kvService.get(fallbackKey);
         if (baseInbox) {
           console.log(`✅ Found fallback inbox in 'en'`);
         }
       }
 
       if (baseInbox) {
+        console.log(`✅ Found base inbox, sample:`, JSON.stringify(baseInbox).substring(0, 200) + '...');
+
         if (!translateLanguageJsonTool.execute) {
           throw new Error('translateLanguageJsonTool is not executable');
         }
@@ -314,6 +299,7 @@ const updateInboxStep = createStep({
         const translatedInbox = await translateLanguageJsonTool.execute(inboxTranslationParams);
 
         if (translatedInbox?.success) {
+          console.log(`✅ Inbox translation successful, sample:`, JSON.stringify(translatedInbox.data).substring(0, 200) + '...');
           await remote.upsertInbox(normalizedDept, targetLanguage, microlearningId, translatedInbox.data);
           console.log(`✅ Inbox translated and stored: inbox/${normalizedDept}/${targetLanguage}.json`);
         } else {
@@ -342,7 +328,7 @@ const updateInboxStep = createStep({
       throw new Error(`Failed to update inbox: ${error}`);
     }
 
-    await remote.saveLanguageFile(microlearningId, targetLanguage, languageContent);
+    await remote.saveLanguageFile(microlearningId, targetLanguage, translatedLanguageContent);
 
     const baseUrl = encodeURIComponent(`https://microlearning-api.keepnet-labs-ltd-business-profile4086.workers.dev/microlearning/${microlearningId}`);
     const langUrl = encodeURIComponent(`lang/${targetLanguage}`);
@@ -372,31 +358,17 @@ const updateInboxStep = createStep({
   }
 });
 
-// Add Language Workflow
-// Final step to extract translation result from parallel execution
-const finalizeResultsStep = createStep({
-  id: 'finalize-results',
-  description: 'Extract translation result from parallel execution',
-  inputSchema: z.object({
-    'translate-language-content': languageContentSchema,
-    'update-inbox': finalResultSchema
-  }),
-  outputSchema: finalResultSchema,
-  execute: async ({ inputData }) => {
-    // Return the inbox result which contains the complete response
-    return inputData['update-inbox'];
-  }
-});
+// Add Language Workflow - Sequential processing
 
 const addLanguageWorkflow = createWorkflow({
   id: 'add-language-workflow',
-  description: 'Add new language to existing microlearning with parallel processing',
+  description: 'Add new language to existing microlearning with sequential processing',
   inputSchema: addLanguageInputSchema,
   outputSchema: finalResultSchema,
 })
   .then(loadExistingStep)
-  .parallel([translateLanguageStep, updateInboxStep])
-  .then(finalizeResultsStep);
+  .then(translateLanguageStep)
+  .then(updateInboxStep);
 
 // Commit workflow
 addLanguageWorkflow.commit();
