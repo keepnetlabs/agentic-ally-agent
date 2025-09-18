@@ -16,8 +16,8 @@ CRITICAL:
     "iconName": "brain",
     "title": "Test Your Knowledge",
     "subtitle": "Make the right decision when it matters most",
-    "callToActionText": "Localize 'Answer to Continue' into ${analysis.language} (keep meaning, adapt tone & punctuation)",
-    "quizCompletionCallToActionText": "Localize 'Continue' into ${analysis.language}",
+    "callToActionText": "If ${analysis.language} is English, use 'Answer to Continue'. Otherwise, localize 'Answer to Continue' into ${analysis.language} (keep meaning, adapt tone & punctuation)",
+    "quizCompletionCallToActionText": "If ${analysis.language} is English, use 'Continue'. Otherwise, localize 'Continue' into ${analysis.language}",
     "key_message": [
       "Write quiz topic message 1 in ${analysis.language} about ${analysis.topic}",
       "Write quiz topic message 2 in ${analysis.language} about ${analysis.topic}",

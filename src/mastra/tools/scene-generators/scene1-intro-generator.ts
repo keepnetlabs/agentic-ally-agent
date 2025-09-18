@@ -54,10 +54,10 @@ USE EXACTLY THESE KEYS BUT REPLACE PLACEHOLDERS WITH REAL CONTENT:
       "Write a solution (≤5 words, ${analysis.language})."
     ],
     "duration": "~${Math.max(2, Math.round((microlearning.scenes?.reduce((total, scene) => total + (scene?.metadata?.duration_seconds || 30), 0) || 300) / 60))} minutes",
-    "level": "Provide ${analysis.level} in correct ${analysis.language} casing.",
+    "level": "Localize '${analysis.level}' into ${analysis.language} with proper capitalization (e.g., 'Beginner', 'Intermediate', 'Advanced')",
     "callToActionText": {
-      "mobile": "Translate 'Swipe to get started' to ${analysis.language} with natural phrasing.",
-      "desktop": "Translate 'Click to get started' to ${analysis.language} with natural phrasing."
+      "mobile": "If ${analysis.language} is English, use 'Swipe to get started'. Otherwise, translate to ${analysis.language} with natural phrasing.",
+      "desktop": "If ${analysis.language} is English, use 'Click to get started'. Otherwise, translate to ${analysis.language} with natural phrasing."
     },
     "texts": {
       "sceneLabel": "Intro scene",

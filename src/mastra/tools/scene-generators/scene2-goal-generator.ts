@@ -31,7 +31,7 @@ USE EXACTLY THESE KEYS BUT REPLACE PLACEHOLDERS WITH REAL CONTENT:
     "iconName": "target",
     "title": "Your ${analysis.topic} Security Goal",
     "subtitle": "In ${analysis.language}, write one short, natural sentence: 'Next time you encounter [${analysis.topic}-related situation], you will [specific safe action]' (max 12 words).",
-    "callToActionText": "Translate 'Continue' to ${analysis.language}.",
+    "callToActionText": "If ${analysis.language} is English, use 'Continue'. Otherwise, localize 'Continue' into ${analysis.language} - DO NOT add extra words",
     "goals": [
       {
         "iconName": "alert-triangle",

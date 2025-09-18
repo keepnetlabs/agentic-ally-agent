@@ -11,17 +11,17 @@ Generate scene 7 (nudge):
 {
   "7": {
     "iconName": "repeat",
-    "subtitle": "Your action plan to stay safe from ${analysis.topic.toLowerCase()}",
-    "callToActionText": "Translate 'Continue' to ${analysis.language}",
+    "subtitle": "Write short subtitle in ${analysis.language}: 'Your action plan to stay safe from ${analysis.topic}' (max 8 words)",
+    "callToActionText": "If ${analysis.language} is English, use 'Continue'. Otherwise, localize ONLY the word 'Continue' into ${analysis.language} - DO NOT add extra words",
     "texts": {
-      "title": "Action Plan",
-      "subtitle": "Next time you encounter ${analysis.topic.toLowerCase()} situation, you will do this:",
-      "actionsTitle": "Your next steps"
+      "title": "Localize 'Action Plan' into ${analysis.language}",
+      "subtitle": "Write short subtitle in ${analysis.language} about next time ${analysis.topic} situation (max 10 words)",
+      "actionsTitle": "Localize 'Your next steps' into ${analysis.language}"
     },
     "key_message": [
-      "Write context-appropriate action #1 in ${analysis.language} for ${analysis.topic} - MAXIMUM 5 words (Security topics: 'Recognise suspicious emails', Writing topics: 'Write clear subject lines', Password topics: 'Use strong passwords', Data topics: 'Protect sensitive information')",
-      "Write context-appropriate action #2 in ${analysis.language} for ${analysis.topic} - MAXIMUM 8 words (Security: 'Don't click suspicious links', Writing: 'Use professional tone and format', Password: 'Don't reuse old passwords', Data: 'Don't share confidential data')",
-      "Write context-appropriate action #3 in ${analysis.language} for ${analysis.topic} - MAXIMUM 5 words (Security: 'Report suspicious activity', Writing: 'Proofread before sending', Password: 'Use password manager', Data: 'Follow data policies')"
+      "Write first actionable step in ${analysis.language} for ${analysis.topic} (maximum 6 words)",
+      "Write second actionable step in ${analysis.language} for ${analysis.topic} (maximum 8 words)",
+      "Write third actionable step in ${analysis.language} for ${analysis.topic} (maximum 5 words)"
     ],
     "scene_type": "nudge"
   }

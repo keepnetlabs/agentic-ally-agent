@@ -13,8 +13,8 @@ Generate scene 4 (actionable_content):
     "iconName": "mail-check", 
     "title": "Practice ${analysis.topic} Detection",
     "subtitle": "Write short, action-oriented subtitle in ${analysis.language} using simple verbs (example: 'Check emails, spot threats, and report safely', 'Review messages, find risks, stay protected')",
-    "callToActionText": "Translate 'Start Practice' to ${analysis.language}",
-    "successCallToActionText": "Translate 'Continue' to ${analysis.language}",
+    "callToActionText": "If ${analysis.language} is English, use 'Start Practice'. Otherwise, translate 'Start Practice' to ${analysis.language}",
+    "successCallToActionText": "If ${analysis.language} is English, use 'Continue'. Otherwise, translate 'Continue' to ${analysis.language}",
     "key_message": [
       "Write key action 1 in ${analysis.language} specific to ${analysis.topic}",
       "Write key action 2 in ${analysis.language} specific to ${analysis.topic}", 
