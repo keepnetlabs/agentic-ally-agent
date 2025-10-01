@@ -8,10 +8,10 @@ export function generateScene1Prompt(analysis: PromptAnalysis, microlearning: Mi
   return `${baseContext}
 
 INTRO SCENE:
-- Title: In ${analysis.language}, write a short, natural course-style title.
-  • If threat/incident → e.g., "Stop X Attacks", "X Awareness Training".
-  • If practice/tool/policy → e.g., "Password Security Basics", "Data Classification Training".
-  • Avoid literal or awkward phrasing; must read like a professional course name.
+- Title: For ${analysis.topic}, use simple pattern:
+  • If attack/threat (phishing, deepfake, malware) → "Stop [topic] Attacks"
+  • If security tool/practice (MFA, passwords, backup) → "Secure with [tool]"
+  • Keep simple, avoid colons and complex formulas
 
 - Subtitle: One short sentence (max 12 words) stating learner benefit.
   • Threats/incidents → verbs like "recognize", "report", "avoid".
@@ -30,28 +30,28 @@ INTRO SCENE:
 USE EXACTLY THESE KEYS BUT REPLACE PLACEHOLDERS WITH REAL CONTENT:
 {
   "1": {
-    "iconName": "Choose an appropriate Lucide icon for ${analysis.topic}",
-    "title": "Write a natural ${analysis.language} course-style title aligned with ${analysis.topic} (no literal translations, no English templates).",
-    "subtitle": "Write a natural ${analysis.language} benefit sentence (≤12 words) using verbs that fit ${analysis.topic} (e.g., recognize/report for threats; create/enable/apply for practices).",
+    "iconName": "video",
+    "title": "Write simple title for ${analysis.topic}. Examples: 'Stop Phishing Attacks', 'Stop Deepfake Attacks', 'Secure with MFA', 'Strong Password Security'. Keep direct and clear.",
+    "subtitle": "Short benefit sentence (≤12 words) - natural language, no jargon.",
     "sectionTitle": "Translate 'What this training will help you with:' to ${analysis.language}.",
     "highlights": [
       {
         "iconName": "alert-triangle",
-        "text": "State the key RISK in ${analysis.language} (≤6 words, unique)."
+        "text": "Write educational risk statement in ${analysis.language} (≤8 words). Use teaching phrases like 'Know that...', 'Understand that...', 'Realize that...'. Example: 'Know that weak passwords invite attacks'."
       },
       {
         "iconName": "users",
-        "text": "State WHO/TARGET is impacted in ${analysis.language} (≤7 words, unique)."
+        "text": "Write impact awareness statement in ${analysis.language} (≤8 words). Use reminder phrases like 'Remember that...', 'Be aware that...'. Example: 'Remember that everyone can be targeted'."
       },
       {
         "iconName": "shield-check",
-        "text": "State the simple SOLUTION in ${analysis.language} (≤6 words, unique)."
+        "text": "Write solution awareness statement in ${analysis.language} (≤8 words). Use insight phrases like 'See how...', 'Learn how...', 'Discover how...'. Example: 'See how simple steps reduce risk'."
       }
     ],
     "key_message": [
-      "Write a ${analysis.topic} fact (≤4 words, ${analysis.language}).",
-      "Write a risk (≤5 words, ${analysis.language}).",
-      "Write a solution (≤5 words, ${analysis.language})."
+      "Write a simple user benefit in ${analysis.language} (≤4 words). Use direct, positive language like 'Stay secure online', 'Protect your data', 'Keep accounts safe'. Avoid awkward technical combinations.",
+      "Write a clear problem statement in ${analysis.language} (≤5 words). Use natural language like 'Weak passwords get hacked', 'Fake emails fool people', 'Threats target everyone'. Avoid technical jargon combinations.",
+      "Write a simple action in ${analysis.language} (≤5 words). Use clear verbs like 'Use strong passwords', 'Report suspicious emails', 'Enable extra security'. Avoid awkward phrasing."
     ],
     "duration": "~${Math.max(2, Math.round((microlearning.scenes?.reduce((total, scene) => total + (scene?.metadata?.duration_seconds || 30), 0) || 300) / 60))} minutes",
     "level": "Localize '${analysis.level}' into ${analysis.language} with proper capitalization (e.g., 'Beginner', 'Intermediate', 'Advanced')",

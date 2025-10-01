@@ -953,10 +953,10 @@
   resolved "https://registry.npmjs.org/@libsql/win32-x64-msvc/-/win32-x64-msvc-0.5.17.tgz"
   integrity sha512-f5bGH8+3A5sn6Lrqg8FsQ09a1pYXPnKGXGTFiAYlfQXVst1tUTxDTugnuWcJYKXyzDe/T7ccxyIZXeSmPOhq8A==
 
-"@mastra/cloudflare-d1@^0.13.0":
-  version "0.13.0"
-  resolved "https://registry.yarnpkg.com/@mastra/cloudflare-d1/-/cloudflare-d1-0.13.0.tgz#156b379b44382915cf2f9d6d94b94987e2348129"
-  integrity sha512-Rq/kGhufgjuELAB709IWW6m7++tgot0GQmcyahGyJxtSDn/eBlTFLrWrWWm5rK/Ylh/a72CMgkfQL89xIfpzfw==
+"@mastra/cloudflare-d1@^0.13.1":
+  version "0.13.1"
+  resolved "https://registry.yarnpkg.com/@mastra/cloudflare-d1/-/cloudflare-d1-0.13.1.tgz#a4bea92c6879a79ba99d6d7b13dc1e826314865d"
+  integrity sha512-pbs2ijTy0sfc5XI8dTVYM/9vy/RW2Ba0AFRVxOfNT3cgyJhU0HAj1G5rOW3ozMCW+/8Eu06pH1IiOHonSIexUw==
   dependencies:
     cloudflare "^4.5.0"
 

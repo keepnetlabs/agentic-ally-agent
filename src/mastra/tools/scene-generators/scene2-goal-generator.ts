@@ -1,4 +1,4 @@
-import { PromptAnalysis } from '../../types/prompt-analysis';
+  import { PromptAnalysis } from '../../types/prompt-analysis';
 import { MicrolearningContent } from '../../types/microlearning';
 import { buildBaseContext } from '../../utils/prompt-builders/base-context-builder';
 
@@ -10,11 +10,7 @@ export function generateScene2Prompt(analysis: PromptAnalysis, microlearning: Mi
         GOAL SCENE:
 - Title: "Your Security Goal" (simple).
 
-- Subtitle: One short sentence (max 12 words) in ${analysis.language}:  
-  "Next time you encounter [${analysis.topic}], you will [safe action]."  
-  • Threat/incident → use "pause and report it".  
-  • Practice/tool/policy → use "apply the safe behavior" (e.g., create a strong password).  
-  • Must describe a realistic learner action, not a generic statement.  
+- Subtitle: Write implementation intention for ${analysis.topic}: "Next time you [specific situation], you will [specific action]"  
 
 - Goals: Exactly three, each with title, subtitle, description.  
   • Titles: short natural phrases (no static prefixes).  
@@ -29,33 +25,33 @@ USE EXACTLY THESE KEYS BUT REPLACE PLACEHOLDERS WITH REAL CONTENT:
 {
   "2": {
     "iconName": "target",
-    "title": "Your ${analysis.topic} Security Goal",
-    "subtitle": "In ${analysis.language}, write one short, natural sentence: 'Next time you encounter [${analysis.topic}-related situation], you will [specific safe action]' (max 12 words).",
-    "callToActionText": "If ${analysis.language} is English, use 'Continue'. Otherwise, localize 'Continue' into ${analysis.language} - DO NOT add extra words",
+    "title": "Your Security Goal",
+    "subtitle": "Next time you encounter ${analysis.topic} risks, you will pause and take safe action",
+    "callToActionText": "Continue",
     "goals": [
       {
         "iconName": "alert-triangle",
-        "title": "Write a short, natural recognition title for ${analysis.topic} in ${analysis.language}.",
+        "title": "Spot the Warning Signs",
         "subtitle": "Pause and think",
-        "description": "Write ONE short 'Helps you...' sentence in ${analysis.language} for recognizing ${analysis.topic} issues (ideally under 12 words)."
+        "description": "Write conversational 'Helps you...' sentence - like 'when something looks unusual'",
       },
       {
         "iconName": "shield-check",
-        "title": "Make the Right Decision",
+        "title": "Verify Before Acting",
         "subtitle": "Safe action",
-        "description": "Write ONE short 'Helps you...' sentence in ${analysis.language} for safe ${analysis.topic} behavior (ideally under 12 words)."
+        "description": "Write natural 'Helps you...' - like 'avoid risky links and verify before opening'",
       },
       {
         "iconName": "flag",
-        "title": "Write a short, natural escalation title for ${analysis.topic} in ${analysis.language}.",
+        "title": "Report Suspicious Activity",
         "subtitle": "Report button",
-        "description": "Write ONE short 'Helps you...' sentence in ${analysis.language} for ${analysis.topic} escalation (ideally under 12 words)."
+        "description": "Write simple 'Helps you...' - like 'use the report button so security can act quickly'",
       }
     ],
     "key_message": [
-      "Write a 3–5 word ${analysis.topic} recognition behavior in ${analysis.language}.",
-      "Write a 5–7 word ${analysis.topic} safe action in ${analysis.language}.",
-      "Write a 3–5 word ${analysis.topic} escalation behavior in ${analysis.language}."
+      "Stay alert to warning signs",
+      "Verify through official channels",
+      "Report concerns immediately"
     ],
     "texts": {},
     "scene_type": "goal",

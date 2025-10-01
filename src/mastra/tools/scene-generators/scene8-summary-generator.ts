@@ -15,7 +15,7 @@ Generate scene 8 (summary):
       "downloadTrainingLogsText": "Localize 'Download Training Logs' into ${analysis.language}",
       "retryText": "Localize 'Retry' into ${analysis.language}",
       "completionTitle": "Write short title in ${analysis.language}: 'Well done — you've completed the training' (max 8 words)",
-      "completionSubtitle": "Write short subtitle in ${analysis.language}: 'You've refreshed your [${analysis.topic}] awareness' (max 8 words)",
+      "completionSubtitle": "Write short subtitle in ${analysis.language} about completing ${analysis.topic} training, like 'You've strengthened your security awareness' or 'You're now better protected against threats' (max 8 words)",
       "achievementsTitle": "Localize 'Your achievements' into ${analysis.language}",
       "actionPlanTitle": "Localize 'Next steps' into ${analysis.language}",
       "resourcesTitle": "Localize 'Additional resources' into ${analysis.language}",

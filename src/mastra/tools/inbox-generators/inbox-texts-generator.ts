@@ -9,56 +9,62 @@ export function generateInboxTextsPrompt(
 
 CRITICAL REQUIREMENTS:
 - Return ONLY valid JSON without explanation or markdown
-- Include ALL required fields, especially phishingResultModal.legitimateExplanationTitle
-- No missing fields allowed - validation will fail
+- Include ALL required fields: phishingReportModal AND phishingResultModal
+- MUST include phishingReportModal.title, phishingReportModal.subtitle, phishingReportModal.question, etc.
+- MUST include phishingResultModal.legitimateExplanationTitle
+- No missing fields allowed - validation will fail if ANY field is missing
 
 Generate the following structure:
-- Replace TOPIC with "${topic}" 
+- Replace TOPIC with "${topic}"
 - Replace LANGUAGE with "${languageCode}"
-- Replace TRANSLATE_PHISHING_REPORT with "Phishing Reporter" translated to ${languageCode}
+- Localize all "Localize 'text' into ${languageCode}" instructions to actual ${languageCode} text
 - Keep mobileTitle as "${topic} Training" (use actual topic)
-- MUST include phishingResultModal.legitimateExplanationTitle field
+- CRITICAL: MUST include both phishingReportModal AND phishingResultModal objects with ALL their fields
 
 {
-  "title": "TOPIC Training",
-  "description": "Learn to identify and handle TOPIC scenarios",
-  "instructions": "Review emails and report suspicious content",
-  "selectEmailMessage": "Select an email to view its content",
-  "reportButtonText": "Report as Suspicious",
-  "nextButtonText": "Continue",
-  "phishingReportLabel": "TRANSLATE_PHISHING_REPORT", 
-  "inboxLabel": "Inbox",
-  "reportsLabel": "Reports",
-  "accuracyLabel": "Accuracy",
-  "emailReportedMessage": "Email has been reported",
-  "emailHeadersTitle": "Email Headers",
-  "ctaButtonText": "Improve Your Behavior",
+  "title": "Localize 'TOPIC Training' into ${languageCode}",
+  "description": "Localize 'Learn to identify and handle TOPIC scenarios' into ${languageCode}",
+  "instructions": "Localize 'Review emails and report suspicious content' into ${languageCode}",
+  "selectEmailMessage": "Localize 'Select an email to view its content' into ${languageCode}",
+  "reportButtonText": "Localize 'Report as Suspicious' into ${languageCode}",
+  "nextButtonText": "Localize 'Continue' into ${languageCode}",
+  "phishingReportLabel": "If ${languageCode} is English, use 'Phishing Reporter'. Otherwise, localize 'Phishing Reporter' into ${languageCode} (keep the word 'Phishing' in English, translate only 'Reporter')", 
+  "inboxLabel": "Localize 'Inbox' into ${languageCode}",
+  "reportsLabel": "Localize 'Reports' into ${languageCode}",
+  "accuracyLabel": "Localize 'Accuracy' into ${languageCode}",
+  "emailReportedMessage": "Localize 'Email has been reported' into ${languageCode}",
+  "emailHeadersTitle": "Localize 'Email Headers' into ${languageCode}",
+  "ctaButtonText": "Localize 'Improve Your Behavior' into ${languageCode}",
   "mobileTitle": "${topic} Training",
-  "backToInboxText": "Back to Inbox", 
-  "headersButtonText": "Headers",
-  "correctReportMessage": "Well done identifying the issue",
-  "cautiousReportMessage": "Good caution with suspicious content",
+  "backToInboxText": "Localize 'Back to Inbox' into ${languageCode}",
+  "headersButtonText": "Localize 'Headers' into ${languageCode}",
+  "correctReportMessage": "Localize 'Well done identifying the issue' into ${languageCode}",
+  "cautiousReportMessage": "Localize 'Good caution with suspicious content' into ${languageCode}",
   "phishingReportModal": {
-    "title": "${topic} Reporter",
-    "subtitle": "Report this email for analysis?",
-    "question": "Why are you reporting this email?",
-    "options": ["Received spam email.", "Received suspicious email.", "Not sure if legitimate."],
-    "reportButton": "Report", 
-    "cancelButton": "Cancel"
+    "title": "If ${languageCode} is English, use 'Phishing Reporter'. Otherwise, localize 'Phishing Reporter' into ${languageCode} (keep 'Phishing' in English, translate only 'Reporter')",
+    "subtitle": "Localize 'Report this email for analysis?' into ${languageCode}",
+    "question": "Localize 'Why are you reporting this email?' into ${languageCode}",
+    "options": [
+      "Localize 'Received spam email.' into ${languageCode}",
+      "Localize 'Received suspicious email.' into ${languageCode}",
+      "Localize 'Not sure if legitimate.' into ${languageCode}"
+    ],
+    "reportButton": "Localize 'Report' into ${languageCode}",
+    "cancelButton": "Localize 'Cancel' into ${languageCode}"
   },
   "phishingResultModal": {
-    "correctTitle": "Excellent catch!",
-    "correctSubtitle": "You correctly identified this ${topic} issue",
-    "incorrectTitle": "Good security thinking!",
-    "incorrectSubtitle": "Being cautious is always wise",
-    "difficultyLabel": "MEDIUM",
-    "emailInfoTitle": "Email Analysis",
-    "phishingExplanationTitle": "Why this was suspicious",
-    "legitimateExplanationTitle": "Why this was legitimate",
-    "continueButton": "Continue Learning"
+    "correctTitle": "Localize 'Excellent catch!' into ${languageCode}",
+    "correctSubtitle": "Localize 'You correctly identified this ${topic} issue' into ${languageCode}",
+    "incorrectTitle": "Localize 'Good security thinking!' into ${languageCode}",
+    "incorrectSubtitle": "Localize 'Being cautious is always wise' into ${languageCode}",
+    "difficultyLabel": "Localize 'MEDIUM' into ${languageCode}",
+    "emailInfoTitle": "Localize 'Email Analysis' into ${languageCode}",
+    "phishingExplanationTitle": "Localize 'Why this was suspicious' into ${languageCode}",
+    "legitimateExplanationTitle": "Localize 'Why this was legitimate' into ${languageCode}",
+    "continueButton": "Localize 'Continue Learning' into ${languageCode}"
   },
-  "mobileHint": "💡 Open email. If suspicious, press Report.",
-  "feedbackCorrect": "✅ Good job — reporting helps protect everyone.",
-  "feedbackWrong": "⚠️ Not quite right — this email looks safe. Try again."
+  "mobileHint": "Localize '💡 Open email. If suspicious, press Report.' into ${languageCode}",
+  "feedbackCorrect": "Localize '✅ Good job — reporting helps protect everyone.' into ${languageCode}",
+  "feedbackWrong": "Localize '⚠️ Not quite right — this email looks safe. Try again.' into ${languageCode}"
 }`;
 }

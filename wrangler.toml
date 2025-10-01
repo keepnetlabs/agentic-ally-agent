@@ -7,6 +7,11 @@ binding = "agentic_ally_embeddings_cache"
 database_name = "agentic-ally-embeddings-cache"
 database_id = "be23a682-b463-47a0-a300-aca930ed8749"
 
+[[d1_databases]]
+binding = "agentic_ally_memory"
+database_name = "agentic-ally-memory"
+database_id = "5a66922d-fbff-419c-9e5a-24f23334e5b9"
+
 [[kv_namespaces]]
 binding = "MICROLEARNING_KV"
 id = "c96ef0b5a2424edca1426f6e7a85b9dc"

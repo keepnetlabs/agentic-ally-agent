@@ -38,7 +38,7 @@ export const workflowExecutorTool = createTool({
         // Workflow'u başlat
         const workflow = createMicrolearningWorkflow;
         const run = await workflow.createRunAsync();
-
+                /*
         // Context ve reasoning için değişkenler
         const model = getModel(ModelProvider.OPENAI, Model.OPENAI_GPT_5_NANO);
 
@@ -48,7 +48,6 @@ export const workflowExecutorTool = createTool({
           department: params.department || 'All',
           stepHistory: [] as Array<{ stepId: string, output: any, reasoning: string }>
         };
-        /*
         // Watch API ile progress tracking ve AI reasoning
         const unwatch = run.watch((event) => {
           if (event.type === 'watch') {
@@ -234,6 +233,7 @@ Examples:
 
         // Extract trainingUrl from result and send to frontend
         const trainingUrl = result?.status === 'success' ? result.result?.data?.trainingUrl : null;
+        const title = result?.status === 'success' ? result.result?.data?.title : null;
         console.log('🔍 Training URL for translated:', trainingUrl);
         if (trainingUrl) {
           try {
@@ -250,7 +250,10 @@ Examples:
         }
 
         return {
-          success: true
+          success: true,
+          department: params.department || 'All',
+          title: title || 'Microlearning',
+          status: 'success'
         };
 
       } else {

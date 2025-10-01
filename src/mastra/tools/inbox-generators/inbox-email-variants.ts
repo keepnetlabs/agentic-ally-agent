@@ -16,77 +16,46 @@ export type DiversityHints = {
 
 export const variantDeltaBuilder: Record<EmailVariant, (d: DiversityHints) => string> = {
     [EmailVariant.ObviousPhishing]: (d) => {
-        const topicLine = d.topicHint ? `\n- Topic context: ${d.topicHint}` : '';
-        const mustLine = d.mustInclude && d.mustInclude.length ? `\n- Ensure to include: ${d.mustInclude.join(', ')}` : '';
-        return `
-TYPE: Obvious phishing (isPhishing: true).
-- Urgent time pressure and generic greeting (${d.greetingHint})
-- Suspicious external/look-alike domains (${d.domainHint})
-- Headers show clear failures (${d.headerHint})
-- Pushy call-to-action; prefer risky attachment (${d.attachmentHint}). Attachment content must be multi-line and topic-aligned (e.g., doc/xlsx table or steps).
-- Email HTML: at least 2 paragraphs + a small details list (ul/li). Vary greeting and sign-off.
-- Do NOT label the email as suspicious in text${topicLine}${mustLine}
-`;
+        return `OBVIOUS PHISHING: Create believable business request with urgency. Use ${d.greetingHint} + suspicious external domain ${d.domainHint} + failing ${d.headerHint} + ${d.attachmentHint}. Make content realistic and detailed. Be authoritative - sound legitimate but with red flags.`;
     },
 
     [EmailVariant.SophisticatedPhishing]: (d) => {
-        const topicLine = d.topicHint ? `\n- Topic context: ${d.topicHint}` : '';
-        const mustLine = d.mustInclude && d.mustInclude.length ? `\n- Ensure to include: ${d.mustInclude.join(', ')}` : '';
-        return `
-TYPE: Sophisticated phishing (isPhishing: true).
-- Professional tone with subtle red flags
-- Almost-correct domain (${d.domainHint}); mixed headers (${d.headerHint})
-- Gentle, gradual ask; realistic but risky attachment (${d.attachmentHint}) with structured multi-line HTML (e.g., agenda slots, review notes).${topicLine}${mustLine}
-`;
+        return `SOPHISTICATED PHISHING: Professional business communication with subtle threats. Near-legitimate domain ${d.domainHint} + mixed ${d.headerHint} + ${d.attachmentHint}. Make attachments comprehensive and specific. Act as legitimate internal colleague with authority - harder to detect.`;
     },
 
     [EmailVariant.CasualLegit]: (d) => {
-        const topicLine = d.topicHint ? `\n- Topic context: ${d.topicHint}` : '';
-        const mustLine = d.mustInclude && d.mustInclude.length ? `\n- Ensure to include: ${d.mustInclude.join(', ')}` : '';
-        return `
-TYPE: Legitimate casual (isPhishing: false).
-- Internal domain (${d.domainHint}); personal greeting (${d.greetingHint})
-- Conversational tone; clean headers (${d.headerHint})
-- Optional benign attachment (${d.attachmentHint}). Attachment preview must be topic-relevant and multi-line (e.g., short receipt, image caption).${topicLine}${mustLine}
-`;
+        return `CASUAL LEGIT: Everyday business communication. Internal domain ${d.domainHint} + friendly ${d.greetingHint} + clean ${d.headerHint}. Random topics: team lunch, meeting rooms, office events, holiday schedules, system maintenance, project updates. Optional ${d.attachmentHint}. Completely normal workplace communication.`;
     },
 
     [EmailVariant.FormalLegit]: (d) => {
-        const topicLine = d.topicHint ? `\n- Topic context: ${d.topicHint}` : '';
-        const mustLine = d.mustInclude && d.mustInclude.length ? `\n- Ensure to include: ${d.mustInclude.join(', ')}` : '';
-        return `
-TYPE: Legitimate formal (HR/compliance) (isPhishing: false).
-- Corporate professional tone; internal domain (${d.domainHint})
-- Structured business content; clean headers (${d.headerHint})
-- Optional benign attachment (${d.attachmentHint}) with structured multi-line HTML (e.g., policy PDF summary: sections and effective date).${topicLine}${mustLine}
-`;
+        return `FORMAL LEGIT: Corporate communication style. Company domain ${d.domainHint} + formal tone + clean ${d.headerHint}. Topics: policy updates, compliance announcements, quarterly reports, facility updates, benefits information. Optional ${d.attachmentHint}. Standard business operations.`;
     },
 };
 
 export function diversityPlan(index: number): DiversityHints {
     const plans = [
         {
-            domainHint: 'security-center.net, account-help.org',
-            attachmentHint: 'zip/doc/xlsx (e.g., reset_form.docx)',
-            greetingHint: '"Dear User", "Account Holder"',
+            domainHint: 'invoice-systems.net, payments-center.org',
+            attachmentHint: '1 quality pdf/xlsx with comprehensive details (e.g., invoice_details.pdf)',
+            greetingHint: '"Dear Client", "Valued Customer"',
             headerHint: 'SPF: fail, DMARC: fail',
         },
         {
-            domainHint: 'company-security.com (near miss to company.com)',
-            attachmentHint: 'xlsx/doc (e.g., quarterly_review.xlsx)',
-            greetingHint: '"Hi there", "Valued employee"',
+            domainHint: 'company-services.com (near miss to company.com)',
+            attachmentHint: '1 detailed xlsx/pdf with specific data (e.g., contract_review.xlsx)',
+            greetingHint: '"Hello", "Good morning"',
             headerHint: 'SPF: pass, DMARC: fail (mixed)',
         },
         {
-            domainHint: 'manager@company.com, team@company.com',
-            attachmentHint: 'jpg/png (e.g., team_photo.jpg) or none',
+            domainHint: 'facilities@company.com, operations@company.com',
+            attachmentHint: '1 comprehensive pdf/jpg with realistic content (e.g., floor_plan.pdf) or none',
             greetingHint: '"Hey team", "Hi everyone"',
             headerHint: 'SPF: pass, DMARC: pass',
         },
         {
-            domainHint: 'hr@company.com, compliance@company.com',
-            attachmentHint: 'pdf (e.g., updated_policy.pdf)',
-            greetingHint: '"Dear all", formal salutation',
+            domainHint: 'finance@company.com, legal@company.com',
+            attachmentHint: '1 detailed pdf/xlsx with business data (e.g., quarterly_report.pdf)',
+            greetingHint: '"Dear colleagues", "Team"',
             headerHint: 'SPF: pass, DMARC: pass',
         },
     ];
@@ -94,10 +63,7 @@ export function diversityPlan(index: number): DiversityHints {
     return plans[index % plans.length];
 }
 
-function applyTopicAwareness(topic: string, base: DiversityHints): DiversityHints {
-    // Default: pass-through base without static heuristics
-    return { ...base };
-}
+// Removed topic-specific awareness - now generating topic-independent, dynamic emails
 
 export function buildHintsFromInsights(topic: string, index: number, insights?: {
     attachmentTypes?: string[];
@@ -106,7 +72,7 @@ export function buildHintsFromInsights(topic: string, index: number, insights?: 
     headerHints?: string[];
     greetings?: string[];
 }): DiversityHints {
-    const base = applyTopicAwareness(topic, diversityPlan(index));
+    const base = diversityPlan(index);
 
     if (!insights) return base;
 

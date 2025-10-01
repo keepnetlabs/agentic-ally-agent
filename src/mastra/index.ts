@@ -8,7 +8,7 @@ import { addLanguageWorkflow } from './workflows/add-language-workflow';
 import { getDeployer } from './deployer';
 import { ExampleRepo } from './services/example-repo';
 import { D1Store } from '@mastra/cloudflare-d1';
-//import { LibSQLStore } from '@mastra/libsql';
+import { LibSQLStore } from '@mastra/libsql';
 const logger = new PinoLogger({
   name: 'Mastra',
   level: 'info',
@@ -21,7 +21,11 @@ new D1Store({
     tablePrefix: "prod_", // Optional: isolate tables per environment
   })
     */
-
+/*
+new LibSQLStore({
+    url: process.env.MASTRA_MEMORY_URL!,
+    authToken: process.env.MASTRA_MEMORY_TOKEN,
+  }),*/
 // Middleware to inject D1 database into ExampleRepo
 const injectD1Database = async (c: any, next: any) => {
   // Check if we have D1 database in the environment (binding name from wrangler)

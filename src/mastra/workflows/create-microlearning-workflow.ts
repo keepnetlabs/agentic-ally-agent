@@ -204,7 +204,7 @@ const createInboxStep = createStep({
         microlearningId,
         title: analysis.title,
         language: analysis.language,
-        department: analysis.department,
+        department: normalizedDept,
         trainingUrl,
         filesGenerated: [
           `${microlearningId}.json`,

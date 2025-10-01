@@ -19,9 +19,9 @@ CRITICAL:
     "callToActionText": "If ${analysis.language} is English, use 'Answer to Continue'. Otherwise, localize 'Answer to Continue' into ${analysis.language} (keep meaning, adapt tone & punctuation)",
     "quizCompletionCallToActionText": "If ${analysis.language} is English, use 'Continue'. Otherwise, localize 'Continue' into ${analysis.language}",
     "key_message": [
-      "Write quiz topic message 1 in ${analysis.language} about ${analysis.topic}",
-      "Write quiz topic message 2 in ${analysis.language} about ${analysis.topic}",
-      "Write quiz topic message 3 in ${analysis.language} about ${analysis.topic}"
+      "Write actionable message 1 in ${analysis.language} for ${analysis.topic}: pause and verify suspicious content (max 8 words)",
+      "Write actionable message 2 in ${analysis.language} for ${analysis.topic}: report concerns to IT security immediately (max 7 words)",
+      "Write actionable message 3 in ${analysis.language} for ${analysis.topic}: always verify through proper channels (max 6 words)"
     ],
     "questions": {
       "totalCount": 2,
@@ -30,37 +30,37 @@ CRITICAL:
         {
           "id": "report-scenario",
           "type": "multiple_choice",
-          "title": "${analysis.topic} scenario with suspicious communication",
-          "description": "You receive an unexpected ${analysis.topic.toLowerCase()} attempt. The sender name looks legitimate, but something feels suspicious. What is the safest next step?",
+          "title": "Write specific ${analysis.topic} scenario title in ${analysis.language} (max 8 words)",
+          "description": "Write realistic ${analysis.topic} scenario in ${analysis.language}: Create a specific situation where someone might encounter ${analysis.topic.toLowerCase()} (e.g., for deepfake: CEO video request, for phishing: urgent email, for malware: suspicious download). Ask what is the safest next step? (max 40 words)",
           "options": [
             {
               "id": "engage",
-              "text": "Engage with the suspicious communication",
+              "text": "Write wrong answer 1 in ${analysis.language} for ${analysis.topic}: engage or interact with suspicious content (max 8 words)",
               "isCorrect": false
             },
             {
               "id": "reply",
-              "text": "Reply to the sender to ask if it's genuine", 
+              "text": "Write wrong answer 2 in ${analysis.language} for ${analysis.topic}: reply or respond to verify authenticity (max 8 words)",
               "isCorrect": false
             },
             {
               "id": "report",
-              "text": "Use the Report button so IT can investigate",
+              "text": "Write correct answer in ${analysis.language} for ${analysis.topic}: use Report button for IT investigation (max 8 words)",
               "isCorrect": true
             },
             {
               "id": "ignore",
-              "text": "Ignore and delete the message",
+              "text": "Write wrong answer 3 in ${analysis.language} for ${analysis.topic}: ignore and delete without reporting (max 8 words)",
               "isCorrect": false
             }
           ],
-          "explanation": "Using the Report button helps the security team act quickly and protect others. Avoid engaging with suspicious communications."
+          "explanation": "Write explanation in ${analysis.language} for ${analysis.topic}: explain why reporting is correct and why other actions are risky (max 25 words)"
         },
         {
           "id": "delete-vs-report", 
           "type": "true_false",
-          "title": "Delete or report?",
-          "statement": "If a communication looks suspicious, deleting it is enough.",
+          "title": "Write true/false question title in ${analysis.language} for ${analysis.topic} (max 5 words)",
+          "statement": "Write true/false statement in ${analysis.language} for ${analysis.topic}: Create a statement about safe behavior that is FALSE (e.g., for deepfake: 'If video looks authentic, safe to share', for phishing: 'If email from known sender, always safe', for malware: 'If file from colleague, always safe') (max 15 words)",
           "correctAnswer": false,
           "options": {
             "true": {
@@ -72,7 +72,7 @@ CRITICAL:
               "icon": "x"
             }
           },
-          "explanation": "Reporting helps IT spot wider attacks, warn colleagues and remove similar threats. Deleting only helps you."
+          "explanation": "Write explanation in ${analysis.language} for ${analysis.topic}: explain why the statement is false and what the correct behavior should be (max 25 words)"
         }
       ]
     },

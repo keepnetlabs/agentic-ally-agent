@@ -40,8 +40,11 @@ export const translateLanguageJsonTool = new Tool({
             - NEVER change the data types of any values (string stays string, number stays number, etc.)
             - NEVER alter the nested structure or object hierarchy
             - NEVER change array lengths or positions
+            - NEVER add new properties or fields that don't exist in input
             - Output JSON must have IDENTICAL keys at ALL levels compared to input JSON
             - If input has key "emailReportedMessage", output must have exactly "emailReportedMessage" (not "emailReportedMessage_localized" or any variation)
+            - NEVER modify object structure: if input is {"1": {...}}, output must be {"1": {...}} not {"1", ":", {...}}
+            - PRESERVE EXACT INPUT FORMAT: brackets, colons, commas, nesting levels must match exactly
 
             Localization Principles:
             - Perform full localization (not literal translation). Rewrite expressions in the way a native speaker would phrase them in professional training.
@@ -62,6 +65,13 @@ export const translateLanguageJsonTool = new Tool({
             - File extensions: .pdf, .doc, .xlsx, .jpg, .png, .zip, .txt
             - HTML attributes and CSS classes: class="...", style="...", id="..."
 
+            🔧 TECHNICAL TERM PRESERVATION (CRITICAL):
+            - Keep these cybersecurity terms in English regardless of target language: "deepfake", "phishing", "malware", "ransomware", "IoT", "VPN", "CEO", "IT", "AI", "URL", "API", "USB", "QR"
+            - Business acronyms stay in English: "HR", "PDF", "LMS", "SPF", "DMARC", "GDPR"
+            - When these terms appear in titles, descriptions, or any text content, DO NOT translate them
+            - Example: "Deepfake Detection Training" → "Deepfake Tespit Eğitimi" (NOT "Derin Sahtecilik Tespit Eğitimi")
+            - Example: "CEO Phishing Alert" → "CEO Phishing Uyarısı" (NOT "Genel Müdür Kimlik Avı Uyarısı")
+
             Special Handling:
             - Transcripts: Preserve all line breaks and timestamps exactly (e.g., "00:12:34"). Localize only textual content; keep \\n and timing intact.
             - File names: Localize descriptive parts but keep extensions (e.g., "security_report.pdf" → "informe_seguridad.pdf")
@@ -72,10 +82,12 @@ export const translateLanguageJsonTool = new Tool({
             🎯 Validation Rules:
             - Return EXACTLY the same JSON structure with localized string values
             - Every key that exists in input must exist in output with same name
-            - Every key that doesn't exist in input must NOT exist in output  
+            - Every key that doesn't exist in input must NOT exist in output
             - If a string cannot be safely localized without breaking placeholders/structure, keep the original string
             - Ensure output is valid JSON: escape quotes properly; do not add trailing commas
-            - Start response immediately with { and end with }
+            - Start response immediately with { or [ and end with } or ]
+            - CRITICAL: Maintain exact same object/array structure as input
+            - DO NOT restructure nested objects or change key-value pair formatting
 
             Example of CORRECT behavior:
             Input: {"title": "Security Training", "difficulty": "MEDIUM", "isPhishing": true}
@@ -85,6 +97,10 @@ export const translateLanguageJsonTool = new Tool({
             Input: {"title": "Security Training"}
             Wrong Output: {"titulo": "Formación en Seguridad"} // ❌ Key changed
             Wrong Output: {"title": "Formación en Seguridad", "language": "es"} // ❌ Added new key
+
+            Input: {"1": {"title": "Test"}}
+            Wrong Output: {"1", ":", {"title": "Test"}} // ❌ Structure changed
+            Correct Output: {"1": {"title": "Test"}} // ✅ Structure preserved
             `.trim()
 
         // Use our robust cleanResponse method for input JSON
@@ -93,8 +109,6 @@ export const translateLanguageJsonTool = new Tool({
         const cleanedJson = JSON.parse(cleanedJsonString);
         console.log('🧹 Cleaned input JSON using our cleanResponse method');
         const user = `doNotTranslateKeys: ${JSON.stringify(protectedKeys)}\n\nJSON:\n${JSON.stringify(cleanedJson)}`;
-
-
         let res;
         try {
             console.log('🤖 Calling AI with system prompt length:', system.length);
