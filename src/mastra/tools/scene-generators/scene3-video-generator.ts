@@ -34,62 +34,18 @@ export async function generateVideoPrompt(analysis: PromptAnalysis, microlearnin
   const finalTranscript = baseEnglishTranscript ||
     "00:00:04.400 Default transcript content for this video is not available yet. This is a placeholder transcript for the selected security awareness video.";
 
-  const isEnglish = analysis.language.toLowerCase() === 'english' || analysis.language === 'en';
-  const transcriptContent = isEnglish ? finalTranscript : `CRITICAL: Translate ONLY the text content, NEVER modify timestamps. Use actual line breaks, NOT \\n characters.
-
-EXAMPLE FORMAT (each line on separate line):
-00:00:04.400 [translated text here]
-00:00:07.919 [translated text here]
-00:00:10.400 [translated text here]
-
-TRANSLATE TO ${analysis.language.toUpperCase()}:
-${finalTranscript}
-
-RULES:
-- Keep ALL timestamps exactly: 00:00:04.400 format
-- Translate ONLY text after each timestamp
-- Each timestamp+text must be on its own line (use actual line breaks)
-- NO \\n characters - use real line breaks
-- NO additional formatting or markdown
-- Output must have proper line structure like the source`;
-
-  // Transcript validation function
-  const validateTranscript = (transcript: string): string => {
-    // First, clean up the transcript by replacing literal \n with actual newlines
-    let cleanedTranscript = transcript.replace(/\\n/g, '\n');
-
-    const lines = cleanedTranscript.split('\n');
-    const validatedLines = lines.map(line => {
-      // Check if line has timestamp format (both 00:00:00 and 00:00:00.000 formats)
-      const timestampMatch = line.match(/^(\d{2}:\d{2}:\d{2}(?:\.\d{3})?)\s+(.*)$/);
-      if (timestampMatch) {
-        return line; // Keep as is if properly formatted
-      }
-      // If line doesn't have timestamp, skip it
-      return null;
-    }).filter(line => line !== null);
-
-    return validatedLines.join('\n');
-  };
-
   return `${baseContext}
 
-SCENARIO SCENE STANDARDIZATION (scene_id: "3"):
-- Title: "Real [Topic] Story" format - translate completely to target language
-- Subtitle: "[Role]'s [consequence] mistake" format - use target language entirely  
-- Key messages: All in target language, no mixed languages
-- CallToAction: Use target language ("Continue" → "Devam Et", "Continuar", etc.)
-
-Generate scene 3 (video scenario). IMPORTANT: Create actual content, not placeholders or instructions. Follow this exact format:
+Generate scene 3 (video scenario). IMPORTANT: Create actual content in ${analysis.language}, not placeholders or instructions. Follow this exact format:
 {
   "3": {
     "iconName": "monitor-play",
-    "title": "Real ${analysis.topic} Story",
+    "title": "Write title (3-5 words) using pattern 'Real [Threat/Topic] Story' or 'Real [Topic] Case'. MUST use correct terminology for ${analysis.topic}. Examples: Phishing→'Real Phishing Attack', Deepfake→'Real Deepfake Incident', Malware→'Real Malware Attack', Backup/Ransomware→'Real Ransomware Attack' or 'Real Data Recovery Story' (NOT 'Real Ransomware Backups Story'). Use proper grammar.",
     "subtitle": "A ${randomJobTitle}'s costly mistake",
     "callToActionText": "Continue",
     "key_message": [
       "Real case",
-      "Spotting ${analysis.topic.toLowerCase()}",
+      "Write action phrase (2-3 words) for ${analysis.topic}. Pattern: '[Action] [object]'. Examples: Phishing→'Recognising threats', Deepfake→'Detecting fakes', Malware→'Spotting dangers', Password→'Securing accounts', Backup/Ransomware→'Protecting data' or 'Recovering systems' (NOT 'Spotting backups'). Use action verbs.",
       "Why it matters"
     ],
     "video": {
@@ -98,17 +54,17 @@ Generate scene 3 (video scenario). IMPORTANT: Create actual content, not placeho
       "disableForwardSeek": false,
       "showTranscript": true,
       "transcriptTitle": "Transcript",
-      "transcriptLanguage": "${isEnglish ? 'English' : analysis.language}",
-      "transcript": "${validateTranscript(transcriptContent)}"
+      "transcriptLanguage": "English",
+      "transcript": "${finalTranscript}"
     },
     "texts": {
       "transcriptLoading": "Loading transcript…",
-      "ctaLocked": "Watch to continue", 
+      "ctaLocked": "Watch to continue",
       "ctaUnlocked": "Continue"
     },
     "ariaTexts": {
       "mainLabel": "Scenario video",
-      "mainDescription": "Short story of a real ${analysis.topic.toLowerCase()} case",
+      "mainDescription": "Write description (5-8 words) for ${analysis.topic}. Pattern: 'Short story of a real [threat/incident]'. Examples: Phishing→'Short story of a real phishing attack', Deepfake→'Short story of a real deepfake incident', Backup/Ransomware→'Short story of a real ransomware attack' or 'real data recovery case' (NOT 'real backups case'). Use proper grammar.",
       "loadingLabel": "Loading transcript",
       "errorLabel": "Transcript could not be loaded",
       "videoPlayerLabel": "Scenario player",
@@ -118,5 +74,10 @@ Generate scene 3 (video scenario). IMPORTANT: Create actual content, not placeho
   }
 }
 
-CRITICAL: Use EXACTLY these keys and values. ${isEnglish ? 'Use English transcript as-is.' : 'Translate transcript content while keeping timestamps.'}`;
+CRITICAL:
+1. Use EXACTLY these JSON keys - do not add or remove any
+2. Output all text fields in ${analysis.language} (translate English template values)
+3. Keep transcript in English (transcriptLanguage: "English")
+4. Do NOT output instructions or placeholders - output final content directly
+5. TERMINOLOGY: Use correct grammar for compound topics (e.g., 'Real Ransomware Attack' NOT 'Real Ransomware Backups Story')`;
 }

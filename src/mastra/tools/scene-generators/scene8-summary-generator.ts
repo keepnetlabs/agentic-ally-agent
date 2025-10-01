@@ -50,14 +50,14 @@ Generate scene 8 (summary):
     ],
     "resources": [
       {
-        "title": "Write title in ${analysis.language} matching URL content: 'NCSC Security Guidance' or 'CISA Cybersecurity Resources' or 'NIST Standards' (max 4 words)",
+        "title": "Write topic-specific resource title in ${analysis.language} for ${analysis.topic} (max 5 words). Examples: Phishing→'CISA Phishing Guidance', Deepfake→'NCSC AI Threats Guide', Password→'NIST Password Guidelines', MFA→'CISA MFA Best Practices'. Make it specific to the topic, not generic.",
         "type": "URL",
-        "url": "Choose URL that matches your title: https://www.ncsc.gov.uk/ (for NCSC titles) OR https://www.cisa.gov/cybersecurity (for CISA titles) OR https://www.nist.gov/cybersecurity (for NIST titles)"
+        "url": "Choose topic-relevant URL from approved list. Match URL to topic: Phishing/Email→https://www.cisa.gov/secure-our-world/recognize-and-report-phishing OR https://www.cisa.gov/resources-tools/resources/phishing-guidance-stopping-attack-cycle-phase-one, Deepfake/AI→https://www.cisa.gov/ai, Password→https://www.cisa.gov/secure-our-world/use-strong-passwords, MFA→https://www.cisa.gov/secure-our-world/turn-mfa, Ransomware→https://www.cisa.gov/stopransomware, General→https://www.cisa.gov/secure-our-world OR https://www.cisa.gov/cybersecurity. Pick MOST SPECIFIC URL for ${analysis.topic}."
       },
       {
-        "title": "Write DIFFERENT title in ${analysis.language} matching a different authority: 'NCSC Guidance', 'CISA Resources', or 'NIST Standards' (max 4 words)",
+        "title": "Write second resource title in ${analysis.language} for ${analysis.topic} (max 5 words). Must be different URL than first resource.",
         "type": "URL",
-        "url": "Choose URL matching your title from remaining options: https://www.ncsc.gov.uk/ OR https://www.cisa.gov/cybersecurity OR https://www.nist.gov/cybersecurity OR https://www.cisa.gov/topics"
+        "url": "Choose second URL for ${analysis.topic}. RULES: 1) Must be DIFFERENT from first URL. 2) Must match ${analysis.topic} (e.g., if topic is Deepfake, use AI or general URLs - NEVER use phishing/password URLs). 3) If only 1 specific URL exists for topic, use general URL: https://www.cisa.gov/secure-our-world OR https://www.cisa.gov/cybersecurity. Available URLs: Phishing→https://www.cisa.gov/secure-our-world/recognize-and-report-phishing OR https://www.cisa.gov/resources-tools/resources/phishing-guidance-stopping-attack-cycle-phase-one, Deepfake/AI→https://www.cisa.gov/ai OR general, Password→https://www.cisa.gov/secure-our-world/use-strong-passwords OR general, MFA→https://www.cisa.gov/secure-our-world/turn-mfa OR general, Ransomware→https://www.cisa.gov/stopransomware OR general, General→https://www.cisa.gov/secure-our-world OR https://www.cisa.gov/cybersecurity."
       }
     ],
     "scene_type": "summary"
@@ -67,11 +67,20 @@ Generate scene 8 (summary):
 CRITICAL:
 1. NEVER use placeholder text. Replace ALL content with specific ${analysis.topic} information. Generate concrete takeaways and action steps.
 2. TOPIC CONSISTENCY: Summarize key ${analysis.topic} concepts and provide actionable takeaways.
-3. URL REQUIREMENTS: ONLY use these EXACT tested URLs (copy exactly with https://):
-   - https://www.ncsc.gov.uk/
-   - https://www.cisa.gov/cybersecurity
-   - https://www.nist.gov/cybersecurity
-   - https://www.cisa.gov/topics
-   - https://www.cisa.gov/resources-tools
-   Choose 2 DIFFERENT URLs. DO NOT modify URLs, copy exactly as listed.`;
+3. RESOURCE URL REQUIREMENTS:
+   - Choose 2 DIFFERENT URLs (not same URL twice)
+   - BOTH URLs must match ${analysis.topic} OR be general cybersecurity
+   - NEVER mix topics (e.g., NEVER use phishing URL for deepfake training)
+   - If topic has only 1 specific URL, second URL must be general
+   - APPROVED URLs (copy EXACTLY with https://):
+     * Phishing: https://www.cisa.gov/secure-our-world/recognize-and-report-phishing
+     * Phishing (technical): https://www.cisa.gov/resources-tools/resources/phishing-guidance-stopping-attack-cycle-phase-one
+     * Deepfake/AI: https://www.cisa.gov/ai
+     * Password: https://www.cisa.gov/secure-our-world/use-strong-passwords
+     * MFA: https://www.cisa.gov/secure-our-world/turn-mfa
+     * Ransomware: https://www.cisa.gov/stopransomware
+     * General: https://www.cisa.gov/secure-our-world
+     * General: https://www.cisa.gov/cybersecurity
+   - Match title to URL content
+   - DO NOT modify URLs, copy exactly`;
 }

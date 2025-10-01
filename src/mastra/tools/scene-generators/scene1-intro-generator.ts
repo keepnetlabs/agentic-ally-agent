@@ -30,28 +30,28 @@ INTRO SCENE:
 USE EXACTLY THESE KEYS BUT REPLACE PLACEHOLDERS WITH REAL CONTENT:
 {
   "1": {
-    "iconName": "video",
+    "iconName": "Choose lucide-react icon for ${analysis.topic}: phishing→'mail-warning', email security→'mail-check', deepfake→'video-off', malware→'bug', ransomware→'lock-keyhole', social engineering→'users-round', MFA→'shield-check', password→'key-round', backup→'hard-drive', encryption→'shield-lock', data privacy→'eye-off', general security→'shield'",
     "title": "Write simple title for ${analysis.topic}. Examples: 'Stop Phishing Attacks', 'Stop Deepfake Attacks', 'Secure with MFA', 'Strong Password Security'. Keep direct and clear.",
     "subtitle": "Short benefit sentence (≤12 words) - natural language, no jargon.",
-    "sectionTitle": "Translate 'What this training will help you with:' to ${analysis.language}.",
+    "sectionTitle": "Write 'What this training will help you with:' in ${analysis.language}. Output the translated text directly, not instructions.",
     "highlights": [
       {
         "iconName": "alert-triangle",
-        "text": "Write educational risk statement in ${analysis.language} (≤8 words). Use teaching phrases like 'Know that...', 'Understand that...', 'Realize that...'. Example: 'Know that weak passwords invite attacks'."
+        "text": "MUST start with 'Know that' + state THE PROBLEM/RISK for ${analysis.topic} (≤8 words total). Pattern: 'Know that [specific threat] is common' or 'Know that [specific threat] happens often'. Examples: phishing→'Know that phishing attacks are common', deepfake→'Know that deepfakes can mislead audiences', ransomware→'Know that ransomware locks critical files'. DO NOT mention WHO is affected - only state the problem."
       },
       {
         "iconName": "users",
-        "text": "Write impact awareness statement in ${analysis.language} (≤8 words). Use reminder phrases like 'Remember that...', 'Be aware that...'. Example: 'Remember that everyone can be targeted'."
+        "text": "MUST start with 'Remember that' + WHO is affected (≤8 words total). Pattern: 'Remember that anyone can be targeted' or 'Remember that everyone faces [risk]'. Keep universal - applies to all topics."
       },
       {
         "iconName": "shield-check",
-        "text": "Write solution awareness statement in ${analysis.language} (≤8 words). Use insight phrases like 'See how...', 'Learn how...', 'Discover how...'. Example: 'See how simple steps reduce risk'."
+        "text": "MUST start with 'See how' + simple solution benefit for ${analysis.topic} (≤8 words total). Pattern: 'See how simple steps reduce risk' or 'See how quick checks help'. Focus on ease and accessibility of solution."
       }
     ],
     "key_message": [
-      "Write a simple user benefit in ${analysis.language} (≤4 words). Use direct, positive language like 'Stay secure online', 'Protect your data', 'Keep accounts safe'. Avoid awkward technical combinations.",
-      "Write a clear problem statement in ${analysis.language} (≤5 words). Use natural language like 'Weak passwords get hacked', 'Fake emails fool people', 'Threats target everyone'. Avoid technical jargon combinations.",
-      "Write a simple action in ${analysis.language} (≤5 words). Use clear verbs like 'Use strong passwords', 'Report suspicious emails', 'Enable extra security'. Avoid awkward phrasing."
+      "First: State the PROBLEM in ${analysis.language} (3-5 words). Pattern: '[Threat] is common' or '[Risk] happens daily'. Example: 'Phishing is common', 'Weak passwords fail'.",
+      "Second: State WHO is affected in ${analysis.language} (3-5 words). Pattern: 'Anyone can be [risk]' or '[Group] are targets'. Example: 'Anyone can be targeted', 'Everyone faces risks'.",
+      "Third: State the SOLUTION in ${analysis.language} (3-5 words). Pattern: 'Small actions [benefit]' or 'Simple steps [outcome]'. Example: 'Small actions reduce risk', 'Simple steps increase safety'."
     ],
     "duration": "~${Math.max(2, Math.round((microlearning.scenes?.reduce((total, scene) => total + (scene?.metadata?.duration_seconds || 30), 0) || 300) / 60))} minutes",
     "level": "Localize '${analysis.level}' into ${analysis.language} with proper capitalization (e.g., 'Beginner', 'Intermediate', 'Advanced')",
@@ -78,10 +78,10 @@ USE EXACTLY THESE KEYS BUT REPLACE PLACEHOLDERS WITH REAL CONTENT:
     "points": 5,
     "duration_seconds": ${Math.round(microlearning.scenes[0]?.metadata.duration_seconds || 15)},
     "hasAchievementNotification": false,
-    "scientific_basis": "Attention & salience: concise, relevant cues improve focus and memory.",
+    "scientific_basis": "Intro – Attention Capture + Emotional Salience: Salience theory and emotionally triggered memory formation. Emotional hooks increase attention and memory encoding for subsequent learning.",
     "icon": {
       "sparkleIconName": "alert-triangle",
-      "sceneIconName": "Set this to the same value as iconName"
+      "sceneIconName": "MUST match iconName exactly - use same icon chosen above"
     }
   }
 }
