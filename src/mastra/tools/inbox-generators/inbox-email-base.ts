@@ -19,16 +19,17 @@ TOPIC CONTEXT: ${topic}
 - For password/MFA topics → emails may involve: account security, authentication, login alerts, credential updates
 - Use topic context to make emails realistic and relevant to what users are learning
 
-SENDER DIVERSITY (critical - vary each time):
-- Pick sender from domainHint options provided in variant instructions
-- Use different departments across emails: finance@, hr@, operations@, facilities@, legal@, training@, compliance@, marketing@, projects@
-- NEVER reuse same sender department (e.g., if email 1 uses finance@, email 2 must use different dept like hr@ or operations@)
-- Each email in inbox must have unique sender role/department
+SENDER DIVERSITY (CRITICAL):
+- Pick sender from domainHint options in variant instructions
+- NEVER reuse same department across emails (e.g., email 1: finance@, email 2: hr@, email 3: operations@)
+- Each email must have UNIQUE department name
 
 PHISHING EMAILS: Professional business tone with subtle urgency. Sound legitimate and authoritative.
 LEGITIMATE EMAILS: Normal workplace communications on everyday topics.
-GREETING RULE: Use ONLY ONE greeting at the start of content. Pick one from hints provided, never stack multiple greetings.
 NEVER mention "security", "phishing", "training", "simulation", or any security-related terms in ANY email content.
+CRITICAL: NEVER use the topic name literally in email content (e.g., "Deepfake Verification", "Ransomware Protection", "Malware Detection"). Use topic CONTEXT instead:
+- ❌ WRONG: "Deepfake Verification Signals review", "Phishing Awareness Module"
+- ✅ RIGHT: "CEO video message review", "Account verification required"
 
 STYLING: Wrap in <div class='text-[#1C1C1E] dark:text-[#F2F2F7]'>. Start greeting with <p>, not <h1> or <h2>.
 ATTACHMENTS: Maximum 1 attachment. CRITICAL: Attachment name and content MUST match email subject and body content.
@@ -45,12 +46,12 @@ EXACT FORMAT (return as-is, single object):
   "sender": "user@domain.com",
   "subject": "Natural business subject matching the email context and sender role.",
   "preview": "8-14 words",
-  "timestamp": "relative time",
+  "timestamp": "MUST use different timestamp for EACH email. Options: '2 hours ago', 'Yesterday', 'This morning', '30 minutes ago', '1 day ago', '4 hours ago'. Pick ONE option that has NOT been used in previous emails. NEVER repeat.",
   "isPhishing": true|false,
   "content": "<div class='text-[#1C1C1E] dark:text-[#F2F2F7]'>Multi-paragraph HTML</div>",
   "headers": ["Return-Path: <...>", "SPF: ...", "DMARC: ..."],
   "difficulty": "EASY|MEDIUM|HARD",
-  "explanation": "Point out 2-3 observable red flags or legitimacy indicators. Describe WHAT is suspicious or normal, NOT what the user should do.",
+  "explanation": "Point out 2-3 observable red flags or legitimacy indicators. Describe WHAT is suspicious/normal, NOT what user should do.",
   "attachments": [{"id": "string", "name": "filename.ext", "size": "KB", "type": "pdf|doc|xlsx", "content": "<div>...</div>"}]
 }
 

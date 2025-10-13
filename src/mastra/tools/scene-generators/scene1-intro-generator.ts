@@ -9,9 +9,9 @@ export function generateScene1Prompt(analysis: PromptAnalysis, microlearning: Mi
 
 INTRO SCENE:
 - Title: For ${analysis.topic}, use simple pattern:
-  • If attack/threat (phishing, deepfake, malware) → "Stop [topic] Attacks"
-  • If security tool/practice (MFA, passwords, backup) → "Secure with [tool]"
-  • Keep simple, avoid colons and complex formulas
+  • Attacks/threats (phishing, deepfake, impersonation, malware) → "Stop [Threat] Attacks"
+  • Security tools (MFA, passwords) → "Secure with [Tool]"
+  • Keep focused on core threat - avoid adding modifiers like "Social Media" unless topic explicitly includes them
 
 - Subtitle: One short sentence (max 12 words) stating learner benefit.
   • Threats/incidents → verbs like "recognize", "report", "avoid".
@@ -19,13 +19,14 @@ INTRO SCENE:
   • Choose verbs that fit the topic; never force “report”. Must sound natural when read aloud.
 
 - Highlights: Exactly 3 (Risk → Target → Solution).
-  • Each <8 words, unique, and expresses a distinct idea (no repetition).
+  • Each <8 words, SPECIFIC to ${analysis.topic} (not generic), actionable
+  • Focus on concrete tactics/benefits rather than general awareness
 
 - Key messages: 3 statements (max 5 words).
   • One fact, one risk, one solution.
   • Each must be distinct, slogan-like, and suitable for a slide/poster.
 
-- Duration: "~5 minutes", Level: "Beginner".
+- Duration: "~5 minutes" (adjust based on total scene duration), duration_seconds: 15-20.
 
 USE EXACTLY THESE KEYS BUT REPLACE PLACEHOLDERS WITH REAL CONTENT:
 {
@@ -37,21 +38,21 @@ USE EXACTLY THESE KEYS BUT REPLACE PLACEHOLDERS WITH REAL CONTENT:
     "highlights": [
       {
         "iconName": "alert-triangle",
-        "text": "MUST start with 'Know that' + state THE PROBLEM/RISK for ${analysis.topic} (≤8 words total). Pattern: 'Know that [specific threat] is common' or 'Know that [specific threat] happens often'. Examples: phishing→'Know that phishing attacks are common', deepfake→'Know that deepfakes can mislead audiences', ransomware→'Know that ransomware locks critical files'. DO NOT mention WHO is affected - only state the problem."
+        "text": "Start with 'Know that' + specific risk about ${analysis.topic} (≤8 words). Examples: phishing→'Know that sender addresses can be fake', backup→'Know that ransomware targets backups first', deepfake→'Know that video quality hides manipulation'. Pattern + specific fact."
       },
       {
         "iconName": "users",
-        "text": "MUST start with 'Remember that' + WHO is affected (≤8 words total). Pattern: 'Remember that anyone can be targeted' or 'Remember that everyone faces [risk]'. Keep universal - applies to all topics."
+        "text": "Start with 'Remember that' + specific context about ${analysis.topic} (≤8 words). Examples: phishing→'Remember that urgent emails need verification', backup→'Remember that untested restores can fail', deepfake→'Remember that familiar faces can be faked'. Pattern + specific warning."
       },
       {
         "iconName": "shield-check",
-        "text": "MUST start with 'See how' + simple solution benefit for ${analysis.topic} (≤8 words total). Pattern: 'See how simple steps reduce risk' or 'See how quick checks help'. Focus on ease and accessibility of solution."
+        "text": "Start with 'See how' + specific action/solution for ${analysis.topic} (≤8 words). Examples: phishing→'See how 30 seconds prevents attacks', backup→'See how 3-2-1 rule protects data', deepfake→'See how source checking stops fakes'. Pattern + actionable benefit."
       }
     ],
     "key_message": [
-      "First: State the PROBLEM in ${analysis.language} (3-5 words). Pattern: '[Threat] is common' or '[Risk] happens daily'. Example: 'Phishing is common', 'Weak passwords fail'.",
-      "Second: State WHO is affected in ${analysis.language} (3-5 words). Pattern: 'Anyone can be [risk]' or '[Group] are targets'. Example: 'Anyone can be targeted', 'Everyone faces risks'.",
-      "Third: State the SOLUTION in ${analysis.language} (3-5 words). Pattern: 'Small actions [benefit]' or 'Simple steps [outcome]'. Example: 'Small actions reduce risk', 'Simple steps increase safety'."
+      "First: State the PROBLEM for ${analysis.topic} (3-5 words). Pattern: '[Threat] is common' or '[Risk] happens often'. Examples: phishing→'Phishing is common', backup→'Backups fail often', deepfake→'Fakes spread fast'. Threat name + frequency.",
+      "Second: State WHO is affected by ${analysis.topic} (3-5 words). Pattern: 'Anyone can be [outcome]' or 'Everyone [risk]'. Examples: phishing→'Anyone can be targeted', backup→'Everyone needs backups', deepfake→'All see fake videos'. Inclusive statement.",
+      "Third: State the ACTION for ${analysis.topic} (3-5 words). Specific action verb + outcome. Examples: phishing→'Verify sender always', backup→'Test restores often', deepfake→'Check sources first'. NOT generic like 'reduce risk' or 'stay safe'."
     ],
     "duration": "~${Math.max(2, Math.round((microlearning.scenes?.reduce((total, scene) => total + (scene?.metadata?.duration_seconds || 30), 0) || 300) / 60))} minutes",
     "level": "Localize '${analysis.level}' into ${analysis.language} with proper capitalization (e.g., 'Beginner', 'Intermediate', 'Advanced')",

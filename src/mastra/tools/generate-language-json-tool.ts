@@ -51,7 +51,10 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
   const scene2Prompt = generateScene2Prompt(analysis, microlearning);
 
   // Generate video prompt using modular generator
-  const videoPrompt = await generateVideoPrompt(analysis, microlearning);
+  const videoData = await generateVideoPrompt(analysis, microlearning);
+  const videoPrompt = videoData.prompt;
+  const selectedVideoUrl = videoData.videoUrl;
+  const selectedTranscript = videoData.transcript;
 
   // Generate scene 4, 5, 6 prompts using modular generators
   const scene4Prompt = generateScene4Prompt(analysis, microlearning);
@@ -188,6 +191,14 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
     try {
       const cleanedVideo = cleanResponse(videoResponse.text, 'video');
       videoScenes = JSON.parse(cleanedVideo);
+
+      // Override video URL and transcript with actual selected values
+      if (videoScenes['3'] && videoScenes['3'].video) {
+        videoScenes['3'].video.src = selectedVideoUrl;
+        videoScenes['3'].video.transcript = selectedTranscript;
+        console.log(`✅ Video URL overridden: ${selectedVideoUrl}`);
+      }
+
       console.log('✅ Video scenes parsed successfully');
     } catch (parseErr) {
       console.warn('⚠️ Video JSON parsing failed, attempting retry...');
@@ -204,6 +215,14 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
 
         const retryCleanedVideo = cleanResponse(retryResponse.text, 'video');
         videoScenes = JSON.parse(retryCleanedVideo);
+
+        // Override video URL and transcript with actual selected values
+        if (videoScenes['3'] && videoScenes['3'].video) {
+          videoScenes['3'].video.src = selectedVideoUrl;
+          videoScenes['3'].video.transcript = selectedTranscript;
+          console.log(`✅ Video URL overridden on retry: ${selectedVideoUrl}`);
+        }
+
         console.log('✅ Video scenes parsed successfully on retry');
 
       } catch (retryErr) {

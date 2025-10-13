@@ -167,6 +167,7 @@ const translateLanguageStep = createStep({
     const translationParams = {
       json: baseContent,
       targetLanguage: targetLanguage,
+      topic: analysis.topic, // Pass topic for context-aware translation
       doNotTranslateKeys: ['iconName', 'id', 'ids', 'url', 'src']
     };
 
@@ -299,6 +300,7 @@ const updateInboxStep = createStep({
         const inboxTranslationParams = {
           json: baseInbox,
           targetLanguage: targetLanguage,
+          topic: analysis.topic, // Pass topic for context-aware translation
           doNotTranslateKeys: ['id', 'ids']
         };
 
@@ -317,6 +319,7 @@ const updateInboxStep = createStep({
             const reTranslationParams = {
               json: baseInbox,
               targetLanguage: targetLanguage,
+              topic: analysis.topic,
               doNotTranslateKeys: ['id', 'ids', 'isPhishing', 'difficulty', 'size', 'type', 'timestamp', 'headers', 'attachments']
             };
 
@@ -353,6 +356,7 @@ const updateInboxStep = createStep({
                 const finalTranslationParams = {
                   json: baseInbox,
                   targetLanguage: targetLanguage,
+                  topic: analysis.topic,
                   doNotTranslateKeys: ['id', 'ids', 'isPhishing', 'difficulty', 'size', 'type', 'timestamp', 'headers', 'attachments', 'Return-Path', 'SPF', 'DMARC']
                 };
 

@@ -5,7 +5,7 @@ import { selectVideoForTopic } from '../../utils/video-selector';
 import transcriptDatabase from '../../data/transcript-database.json';
 
 
-export async function generateVideoPrompt(analysis: PromptAnalysis, microlearning: MicrolearningContent): Promise<string> {
+export async function generateVideoPrompt(analysis: PromptAnalysis, microlearning: MicrolearningContent): Promise<{ prompt: string; videoUrl: string; transcript: string }> {
   const baseContext = buildBaseContext(analysis, microlearning);
 
   // Dynamic job titles based on department
@@ -34,7 +34,7 @@ export async function generateVideoPrompt(analysis: PromptAnalysis, microlearnin
   const finalTranscript = baseEnglishTranscript ||
     "00:00:04.400 Default transcript content for this video is not available yet. This is a placeholder transcript for the selected security awareness video.";
 
-  return `${baseContext}
+  const prompt = `${baseContext}
 
 Generate scene 3 (video scenario). IMPORTANT: Create actual content in ${analysis.language}, not placeholders or instructions. Follow this exact format:
 {
@@ -49,13 +49,13 @@ Generate scene 3 (video scenario). IMPORTANT: Create actual content in ${analysi
       "Why it matters"
     ],
     "video": {
-      "src": "${selectedVideoUrl}",
+      "src": "PLACEHOLDER_VIDEO_URL",
       "poster": null,
       "disableForwardSeek": false,
       "showTranscript": true,
       "transcriptTitle": "Transcript",
       "transcriptLanguage": "English",
-      "transcript": "${finalTranscript}"
+      "transcript": "PLACEHOLDER_TRANSCRIPT"
     },
     "texts": {
       "transcriptLoading": "Loading transcript…",
@@ -80,4 +80,10 @@ CRITICAL:
 3. Keep transcript in English (transcriptLanguage: "English")
 4. Do NOT output instructions or placeholders - output final content directly
 5. TERMINOLOGY: Use correct grammar for compound topics (e.g., 'Real Ransomware Attack' NOT 'Real Ransomware Backups Story')`;
+
+  return {
+    prompt,
+    videoUrl: selectedVideoUrl,
+    transcript: finalTranscript
+  };
 }

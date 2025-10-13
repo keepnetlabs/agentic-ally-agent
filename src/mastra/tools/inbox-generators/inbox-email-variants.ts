@@ -16,46 +16,62 @@ export type DiversityHints = {
 
 export const variantDeltaBuilder: Record<EmailVariant, (d: DiversityHints) => string> = {
     [EmailVariant.ObviousPhishing]: (d) => {
-        return `OBVIOUS PHISHING: Create believable business request with urgency related to training topic. ${d.topicHint ? `Context: ${d.topicHint}.` : ''} Use ${d.greetingHint} + suspicious external domain ${d.domainHint} + failing ${d.headerHint}. ATTACHMENT CRITICAL: ${d.attachmentHint} BUT attachment name and content MUST match email scenario from topicHint (e.g., if email about password reset, attachment should be password_reset_form.pdf with reset instructions, NOT generic invoice). Make content realistic and detailed. Be authoritative - sound legitimate but with red flags.`;
+        const impersonationHint = d.topicHint?.includes('executive') || d.topicHint?.includes('CEO') || d.topicHint?.includes('authority')
+            ? 'SENDER pretends to BE the executive. Example: From ceo@executive-portal.net, Subject "Urgent Wire Transfer", Content "I need you to process this payment immediately - CEO". Write as if CEO is directly sending email. '
+            : '';
+        return `OBVIOUS PHISHING: Believable business request with urgency. ${d.topicHint ? `Scenario: ${d.topicHint}.` : ''} ${impersonationHint}Use ${d.greetingHint} + external domain ${d.domainHint} + failing ${d.headerHint}. ${!impersonationHint ? 'Sender must match topic (billing@ for invoices).' : ''} Attachment: ${d.attachmentHint} matching scenario. Authoritative tone with red flags.`;
     },
 
     [EmailVariant.SophisticatedPhishing]: (d) => {
-        return `SOPHISTICATED PHISHING: Professional business communication with subtle threats related to training topic. ${d.topicHint ? `Context: ${d.topicHint}.` : ''} Near-legitimate domain ${d.domainHint} + mixed ${d.headerHint}. ATTACHMENT CRITICAL: ${d.attachmentHint} BUT attachment name and content MUST match email subject and body (e.g., if email about account verification, attachment should be verification_form.pdf with account details, NOT generic contract). Make attachments comprehensive and specific to email scenario. Act as legitimate internal colleague with authority - harder to detect.`;
+        const impersonationHint = d.topicHint?.includes('executive') || d.topicHint?.includes('CEO') || d.topicHint?.includes('colleague') || d.topicHint?.includes('authority')
+            ? 'SENDER pretends to BE a colleague/authority. Example: From sarah@company-services.com, Content "Hi, this is Sarah from Marketing. Director is stuck in meeting and urgently needs the Q3 budget file. Can you send it to me ASAP? Keep this between us - time sensitive." Write as if colleague is directly asking. '
+            : '';
+        return `SOPHISTICATED PHISHING: Professional, subtle threats. ${d.topicHint ? `Scenario: ${d.topicHint}.` : ''} ${impersonationHint} Near-legit domain ${d.domainHint} + mixed ${d.headerHint} + ${d.greetingHint}. MAY mismatch department-topic. Attachment: ${d.attachmentHint} matching email. Act as internal colleague - harder to detect.`;
     },
 
     [EmailVariant.CasualLegit]: (d) => {
-        return `CASUAL LEGIT: Everyday business communication. Internal domain ${d.domainHint} + friendly ${d.greetingHint} + clean ${d.headerHint}. Topics: ${d.topicHint || 'team lunch, meeting rooms, office events, holiday schedules, system maintenance, project updates'}. If attachment included: ${d.attachmentHint} BUT attachment name and content MUST match email scenario (e.g., if email about login activity, use activity_report.pdf with login details). Completely normal workplace communication.`;
+        const contextHint = d.topicHint?.includes('IT support') || d.topicHint?.includes('helpdesk')
+            ? 'Legitimate IT support follow-up. SENDER must be IT@company.com or support@company.com. Show ticket number, resolution steps. Example: From support@company.com, Subject "Ticket #12345 Resolved".'
+            : d.topicHint?.includes('executive') || d.topicHint?.includes('HR policy')
+            ? 'Legitimate HR/team update. SENDER must match topic (HR@ for employee topics, operations@ for projects).'
+            : '';
+        return `CASUAL LEGIT: Normal workplace email. ${contextHint} Internal ${d.domainHint} + ${d.greetingHint} + clean ${d.headerHint}. SENDER department must match email topic. Topics: ${d.topicHint || 'meetings, office events, schedules'}. Attachment: ${d.attachmentHint} matching scenario.`;
     },
 
     [EmailVariant.FormalLegit]: (d) => {
-        return `FORMAL LEGIT: Corporate communication style. Company domain ${d.domainHint} + formal tone + clean ${d.headerHint}. Topics: ${d.topicHint || 'policy updates, compliance announcements, quarterly reports, facility updates, benefits information'}. If attachment included: ${d.attachmentHint} BUT attachment name and content MUST match email topic (e.g., if email about policy change, use policy_update.pdf with policy details). Standard business operations.`;
+        const contextHint = d.topicHint?.includes('executive') || d.topicHint?.includes('CEO')
+            ? 'Legitimate executive announcement from actual leadership (exec@company.com). Formal corporate communication.'
+            : d.topicHint?.includes('HR policy')
+            ? 'Legitimate HR policy update from HR department.'
+            : '';
+        return `FORMAL LEGIT: Corporate communication. ${contextHint} Company ${d.domainHint} + ${d.greetingHint} + clean ${d.headerHint}. Sender matches content. Topics: ${d.topicHint || 'policy updates, quarterly reports'}. Attachment: ${d.attachmentHint} matching topic.`;
     },
 };
 
 export function diversityPlan(index: number): DiversityHints {
     const plans = [
         {
-            domainHint: 'finance@invoice-systems.net, billing@payments-center.org',
+            domainHint: 'billing@invoice-systems.net, accounts@payments-center.org',
             attachmentHint: '1 quality pdf/xlsx with comprehensive details (e.g., invoice_details.pdf)',
-            greetingHint: '"Dear Client", "Valued Customer"',
+            greetingHint: 'Pick ONE: "Dear Client" OR "Valued Customer"',
             headerHint: 'SPF: fail, DMARC: fail',
         },
         {
             domainHint: 'hr@company-services.com, training@company-services.com, compliance@company-services.com (near miss to company.com)',
             attachmentHint: '1 detailed xlsx/pdf with specific data (e.g., contract_review.xlsx)',
-            greetingHint: '"Hello", "Good morning"',
+            greetingHint: 'Pick ONE: "Hello" OR "Good morning"',
             headerHint: 'SPF: pass, DMARC: fail (mixed)',
         },
         {
             domainHint: 'facilities@company.com, operations@company.com, projects@company.com',
             attachmentHint: '1 comprehensive pdf/jpg with realistic content (e.g., floor_plan.pdf) or none',
-            greetingHint: '"Hey team", "Hi everyone"',
+            greetingHint: 'Pick ONE: "Hey team" OR "Hi everyone"',
             headerHint: 'SPF: pass, DMARC: pass',
         },
         {
             domainHint: 'finance@company.com, legal@company.com, exec@company.com',
             attachmentHint: '1 detailed pdf/xlsx with business data (e.g., quarterly_report.pdf)',
-            greetingHint: '"Dear colleagues", "Team"',
+            greetingHint: 'Pick ONE: "Dear colleagues" OR "Team"',
             headerHint: 'SPF: pass, DMARC: pass',
         },
     ];
@@ -127,7 +143,7 @@ function getTopicHint(topic: string, index: number): string {
         return scenarios[index % scenarios.length];
     }
 
-    if (t.includes('social') && t.includes('engineering')) {
+    if ((t.includes('social') && t.includes('engineering')) || t.includes('impersonation') || t.includes('authority')) {
         const scenarios = [
             'urgent executive request, CEO immediate action needed',
             'colleague urgent assistance, team member request',

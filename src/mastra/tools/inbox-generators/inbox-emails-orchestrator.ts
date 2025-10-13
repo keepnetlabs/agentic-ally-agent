@@ -26,7 +26,9 @@ async function generateOneEmail(
     topic: string,
     variant: EmailVariant
 ): Promise<any> {
-    const delta = variantDeltaBuilder[variant](buildHintsFromInsights(topic, index, undefined));
+    const timestampOptions = ['30 minutes ago', '2 hours ago', 'This morning', 'Yesterday'];
+    const timestampInstruction = `CRITICAL: Use timestamp "${timestampOptions[index % timestampOptions.length]}" for this email.`;
+    const delta = variantDeltaBuilder[variant](buildHintsFromInsights(topic, index, undefined)) + ` ${timestampInstruction}`;
 
     try {
         const res = await generateText({

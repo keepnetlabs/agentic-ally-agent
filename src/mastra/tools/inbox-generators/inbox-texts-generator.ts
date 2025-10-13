@@ -28,7 +28,7 @@ Generate the following structure:
   "selectEmailMessage": "Localize 'Select an email to view its content' into ${languageCode}",
   "reportButtonText": "Localize 'Report as Suspicious' into ${languageCode}",
   "nextButtonText": "Localize 'Continue' into ${languageCode}",
-  "phishingReportLabel": "If ${languageCode} is English, use 'Phishing Reporter'. Otherwise, localize 'Phishing Reporter' into ${languageCode} (keep the word 'Phishing' in English, translate only 'Reporter')", 
+  "phishingReportLabel": "Keep 'Phishing' in English. Localize 'Reporter' to ${languageCode}", 
   "inboxLabel": "Localize 'Inbox' into ${languageCode}",
   "reportsLabel": "Localize 'Reports' into ${languageCode}",
   "accuracyLabel": "Localize 'Accuracy' into ${languageCode}",
@@ -41,7 +41,7 @@ Generate the following structure:
   "correctReportMessage": "Localize 'Well done identifying the issue' into ${languageCode}",
   "cautiousReportMessage": "Localize 'Good caution with suspicious content' into ${languageCode}",
   "phishingReportModal": {
-    "title": "If ${languageCode} is English, use 'Phishing Reporter'. Otherwise, localize 'Phishing Reporter' into ${languageCode} (keep 'Phishing' in English, translate only 'Reporter')",
+    "title": "Keep 'Phishing' in English. Localize 'Reporter' to ${languageCode}",
     "subtitle": "Localize 'Report this email for analysis?' into ${languageCode}",
     "question": "Localize 'Why are you reporting this email?' into ${languageCode}",
     "options": [
