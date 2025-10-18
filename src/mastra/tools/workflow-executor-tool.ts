@@ -2,7 +2,7 @@ import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { createMicrolearningWorkflow } from '../workflows/create-microlearning-workflow';
 import { addLanguageWorkflow } from '../workflows/add-language-workflow';
-import { getModel, Model, ModelProvider } from '../model-providers';
+import { v4 as uuidv4 } from 'uuid';
 
 // Tool için schema
 const workflowExecutorSchema = z.object({
@@ -33,32 +33,30 @@ export const workflowExecutorTool = createTool({
         if (!params.prompt) {
           throw new Error('Prompt is required for create-microlearning workflow');
         }
-
-
         // Workflow'u başlat
         const workflow = createMicrolearningWorkflow;
         const run = await workflow.createRunAsync();
-                /*
-        // Context ve reasoning için değişkenler
-        const model = getModel(ModelProvider.OPENAI, Model.OPENAI_GPT_5_NANO);
+        /*
+// Context ve reasoning için değişkenler
+const model = getModel(ModelProvider.WORKERS_AI, Model.WORKERS_AI_GPT_OSS_120B);
 
-        // Context tracking için
-        let workflowContext = {
-          userPrompt: params.prompt,
-          department: params.department || 'All',
-          stepHistory: [] as Array<{ stepId: string, output: any, reasoning: string }>
-        };
-        // Watch API ile progress tracking ve AI reasoning
-        const unwatch = run.watch((event) => {
-          if (event.type === 'watch') {
-            const currentStep = event.payload?.currentStep;
-            if (currentStep) {
-              const stepId = currentStep.id;
-              const status = currentStep.status;
+// Context tracking için
+let workflowContext = {
+  userPrompt: params.prompt,
+  department: params.department || 'All',
+  stepHistory: [] as Array<{ stepId: string, output: any, reasoning: string }>
+};
+// Watch API ile progress tracking ve AI reasoning
+const unwatch = run.watch((event) => {
+  if (event.type === 'watch') {
+    const currentStep = event.payload?.currentStep;
+    if (currentStep) {
+      const stepId = currentStep.id;
+      const status = currentStep.status;
 
-              if (status === 'running') {
-                // Step başladığında AI reasoning
-                const reasoningPrompt = `Creating training for: "${params.prompt}"
+      if (status === 'running') {
+        // Step başladığında AI reasoning
+        const reasoningPrompt = `Creating training for: "${params.prompt}"
 
 Write a brief, friendly explanation of what step "${stepId}" does:
 - Keep it SHORT (max 15 words)
@@ -72,41 +70,41 @@ Examples:
 - "🎯 Building interactive content that matches your team's skills"
 - "📚 Creating scenarios your employees will actually encounter"`;
 
-                generateText({
-                  model: model,
-                  messages: [
-                    { role: 'system', content: 'You are explaining workflow steps to the user. Be concise, clear, and use the same language as their original request.' },
-                    { role: 'user', content: reasoningPrompt }
-                  ]
-                }).then(async (reasoning) => {
-                  await writer?.write({
-                    type: 'text-start',
-                  });
-                  await writer?.write({
-                    type: 'text-delta',
-                    delta: `🔄 ${reasoning.text}\n`
-                  });
-                  await writer?.write({
-                    type: 'text-end',
-                  });
-                }).catch(async (error) => {
-                  await writer?.write({
-                    type: 'text-start',
-                  });
-                  await writer?.write({
-                    type: 'text-delta',
-                    delta: `🔄 **Step starting:** ${stepId}`
-                  });
-                  await writer?.write({
-                    type: 'text-end',
-                  });
-                });
+        generateText({
+          model: model,
+          messages: [
+            { role: 'system', content: 'You are explaining workflow steps to the user. Be concise, clear, and use the same language as their original request.' },
+            { role: 'user', content: reasoningPrompt }
+          ]
+        }).then(async (reasoning) => {
+          await writer?.write({
+            type: 'text-start',
+          });
+          await writer?.write({
+            type: 'text-delta',
+            delta: `🔄 ${reasoning.text}\n`
+          });
+          await writer?.write({
+            type: 'text-end',
+          });
+        }).catch(async (error) => {
+          await writer?.write({
+            type: 'text-start',
+          });
+          await writer?.write({
+            type: 'text-delta',
+            delta: `🔄 **Step starting:** ${stepId}`
+          });
+          await writer?.write({
+            type: 'text-end',
+          });
+        });
 
-              } else if (status === 'success') {
-                // Step tamamlandığında AI summary
-                const stepOutput = currentStep.output;
+      } else if (status === 'success') {
+        // Step tamamlandığında AI summary
+        const stepOutput = currentStep.output;
 
-                const summaryPrompt = `Training: "${params.prompt}"
+        const summaryPrompt = `Training: "${params.prompt}"
 
 Step "${stepId}" finished. Write a SHORT completion message:
 - MAX 20 words total
@@ -120,47 +118,47 @@ Examples:
 - "✅ Added real email examples - practice with actual threats builds confidence" 
 - "✅ Created 8 quick lessons - bite-sized learning improves retention"`;
 
-                generateText({
-                  model: model,
-                  messages: [
-                    { role: 'system', content: 'You are providing step completion summaries. Be specific about what was accomplished and what was discovered. Use the same language as the user\'s original request.' },
-                    { role: 'user', content: summaryPrompt }
-                  ]
-                }).then(async (summary) => {
-                  // Context'e ekle
-                  workflowContext.stepHistory.push({
-                    stepId: stepId,
-                    output: stepOutput,
-                    reasoning: summary.text
-                  });
+        generateText({
+          model: model,
+          messages: [
+            { role: 'system', content: 'You are providing step completion summaries. Be specific about what was accomplished and what was discovered. Use the same language as the user\'s original request.' },
+            { role: 'user', content: summaryPrompt }
+          ]
+        }).then(async (summary) => {
+          // Context'e ekle
+          workflowContext.stepHistory.push({
+            stepId: stepId,
+            output: stepOutput,
+            reasoning: summary.text
+          });
 
-                  await writer?.write({
-                    type: 'text-start',
-                  });
-                  await writer?.write({
-                    type: 'text-delta',
-                    delta: `${summary.text}\n`
-                  });
-                  await writer?.write({
-                    type: 'text-end',
-                  });
-                }).catch(async (error) => {
-                  await writer?.write({
-                    type: 'text-start',
-                  });
-                  await writer?.write({
-                    type: 'text-delta',
-                    delta: `✅ **Step ${stepId}** completed successfully`
-                  });
-                  await writer?.write({
-                    type: 'text-end',
-                  });
-                });
-              }
-            }
-          }
+          await writer?.write({
+            type: 'text-start',
+          });
+          await writer?.write({
+            type: 'text-delta',
+            delta: `${summary.text}\n`
+          });
+          await writer?.write({
+            type: 'text-end',
+          });
+        }).catch(async (error) => {
+          await writer?.write({
+            type: 'text-start',
+          });
+          await writer?.write({
+            type: 'text-delta',
+            delta: `✅ **Step ${stepId}** completed successfully`
+          });
+          await writer?.write({
+            type: 'text-end',
+          });
         });
-        */
+      }
+    }
+  }
+});
+*/
 
         // Workflow'u başlat - let it fail if it fails
         const workflowResult = await run.start({
@@ -197,12 +195,14 @@ Examples:
         // Emit a custom UI signal for FE to open a canvas
         // Frontend can listen for lines starting with "::ui:canvas_open::" and use the raw URL payload
         try {
-          await writer?.write({ type: 'text-start' });
+          const messageId = uuidv4();
+          await writer?.write({ type: 'text-start', id: messageId });
           await writer?.write({
             type: 'text-delta',
+            id: messageId,
             delta: `::ui:canvas_open::${trainingUrl}\n`
           });
-          await writer?.write({ type: 'text-end' });
+          await writer?.write({ type: 'text-end', id: messageId });
           console.log('URL sent to frontend:', trainingUrl);
         } catch { }
 
@@ -237,12 +237,14 @@ Examples:
         console.log('🔍 Training URL for translated:', trainingUrl);
         if (trainingUrl) {
           try {
-            await writer?.write({ type: 'text-start' });
+            const messageId = uuidv4();
+            await writer?.write({ type: 'text-start', id: messageId });
             await writer?.write({
               type: 'text-delta',
+              id: messageId,
               delta: `::ui:canvas_open::${trainingUrl}\n`
             });
-            await writer?.write({ type: 'text-end' });
+            await writer?.write({ type: 'text-end', id: messageId });
             console.log('URL sent to frontend:', trainingUrl);
           } catch (error) {
             console.error('Failed to send URL to frontend:', error);
@@ -263,12 +265,14 @@ Examples:
     } catch (error) {
       // Send error message to frontend
       try {
-        await writer?.write({ type: 'text-start' });
+        const messageId = uuidv4();
+        await writer?.write({ type: 'text-start', id: messageId });
         await writer?.write({
           type: 'text-delta',
+          id: messageId,
           delta: `❌ Translation failed: ${error instanceof Error ? error.message : 'Unknown error'}\n`
         });
-        await writer?.write({ type: 'text-end' });
+        await writer?.write({ type: 'text-end', id: messageId });
       } catch (writeError) {
         console.error('Failed to send error message:', writeError);
       }

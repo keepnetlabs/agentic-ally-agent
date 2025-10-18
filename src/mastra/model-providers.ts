@@ -1,18 +1,19 @@
 import { createOpenAI } from '@ai-sdk/openai';
+import { createWorkersAI } from 'workers-ai-provider';
 
 /**
  * Enum for the supported model providers
  */
 export const enum ModelProvider {
     OPENAI = 'openai',
-    CLOUDFLARE = 'cloudflare',
+    WORKERS_AI = 'workers-ai',
 }
 
 export const enum Model {
     OPENAI_GPT_4O_MINI = 'gpt-4o-mini',
     OPENAI_GPT_5_NANO = 'gpt-5-nano',
     OPENAI_GPT_5_MINI = 'gpt-5-mini',
-    CLOUDFLARE_GPT_OSS_120B = 'workers-ai/@cf/openai/gpt-oss-120b',
+    WORKERS_AI_GPT_OSS_120B = '@cf/openai/gpt-oss-120b',
 }
 
 /**
@@ -48,11 +49,11 @@ function getModelProvider(provider: ModelProvider) {
     const cloudflareApiKey = process.env.CLOUDFLARE_API_KEY;
     const openAIApiKey = process.env.OPENAI_API_KEY;
     const cloudflareGatewayAuthKey = process.env.CLOUDFLARE_GATEWAY_AUTHENTICATION_KEY;
+    const cloudflareGatewayId = process.env.CLOUDFLARE_AI_GATEWAY_ID;
     switch (provider) {
         case 'openai':
             // Use Cloudflare AI Gateway if configured, otherwise OpenAI directly
             if (cloudflareAccountId && cloudflareApiKey && openAIApiKey) {
-                const cloudflareGatewayId = process.env.CLOUDFLARE_AI_GATEWAY_ID;
                 if (cloudflareGatewayId) {
                     const cfBaseURL = `https://gateway.ai.cloudflare.com/v1/${cloudflareAccountId}/${cloudflareGatewayId}/openai`;
                     const cfHeaders = {
@@ -71,44 +72,66 @@ function getModelProvider(provider: ModelProvider) {
             }
             return createOpenAI({ apiKey: openAIApiKey });
 
-        case 'cloudflare':
-            // Use Cloudflare AI Gateway as per official docs
+        case 'workers-ai':
+            // Workers AI provider - using OpenAI SDK with Workers AI endpoint
             if (!cloudflareAccountId || !cloudflareApiKey) {
-                throw new Error('CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_KEY are required for Cloudflare AI');
+                throw new Error('CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_KEY are required for Workers AI');
+            }
+            if (!cloudflareGatewayId) {
+                throw new Error('CLOUDFLARE_AI_GATEWAY_ID is required for Workers AI');
             }
 
-            const cloudflareGatewayId = process.env.CLOUDFLARE_AI_GATEWAY_ID;
-            if (cloudflareGatewayId) {
-                // Through AI Gateway (recommended for caching and analytics)
-                console.log('🔧 Using AI Gateway:', {
-                    accountId: cloudflareAccountId,
-                    gatewayId: cloudflareGatewayId,
-                    apiKeyLength: cloudflareApiKey?.length
-                });
+            const workerApiToken = process.env.CLOUDFLARE_WORKERS_API_TOKEN || cloudflareApiKey;
+            // Use Workers AI OpenAI-compatible endpoint through AI Gateway
+            // Note: @ai-sdk/openai automatically appends /chat/completions to baseURL
+            const baseURL = `https://gateway.ai.cloudflare.com/v1/${cloudflareAccountId}/${cloudflareGatewayId}/workers-ai/v1`;
 
-                return createOpenAI({
-                    baseURL: `https://gateway.ai.cloudflare.com/v1/${cloudflareAccountId}/${cloudflareGatewayId}/workers-ai/v1/chat/completions`,
-                    apiKey: cloudflareApiKey,
-                    headers: {
-                        'Authorization': `Bearer ${cloudflareApiKey}`,
-                        'cf-aig-authorization': 'Bearer ' + cloudflareGatewayAuthKey
-                    },
-                });
-            } else {
-                // Direct Workers AI (fallback) - also using compat endpoint
-                console.log('🔧 Using Direct Workers AI:', {
-                    accountId: cloudflareAccountId,
-                    apiKeyLength: cloudflareApiKey?.length
-                });
+            console.log('🔧 Using Workers AI (via AI Gateway):', {
+                accountId: cloudflareAccountId,
+                gatewayId: cloudflareGatewayId,
+                baseURL: baseURL,
+                model: '@cf/openai/gpt-oss-120b',
+                apiKeyLength: workerApiToken?.length,
+            });
 
-                return createOpenAI({
-                    baseURL: `https://api.cloudflare.com/client/v4/accounts/${cloudflareAccountId}/ai/v1`,
-                    apiKey: cloudflareApiKey,
-                    headers: {
-                        'Authorization': `Bearer ${cloudflareApiKey}`,
-                    },
+            // Custom fetch to transform Cloudflare response format to OpenAI format
+            const customFetch = async (url: string, options: any) => {
+                const response = await fetch(url, options);
+                const data = await response.json();
+
+                // Store raw Cloudflare response for reasoning extraction
+                if (data.output) {
+                    const reasoningItem = data.output.find((item: any) => item.type === 'reasoning');
+                    if (reasoningItem?.content?.[0]?.text) {
+                        (data as any)._reasoning = reasoningItem.content[0].text;
+                        console.log('🧠 Reasoning from Workers AI:', reasoningItem.content[0].text);
+                    }
+                }
+
+                // Transform Cloudflare format to OpenAI format
+                if (data.usage) {
+                    if (data.usage.prompt_tokens !== undefined && data.usage.input_tokens === undefined) {
+                        data.usage.input_tokens = data.usage.prompt_tokens;
+                    }
+                    if (data.usage.completion_tokens !== undefined && data.usage.output_tokens === undefined) {
+                        data.usage.output_tokens = data.usage.completion_tokens;
+                    }
+                }
+
+                return new Response(JSON.stringify(data), {
+                    status: response.status,
+                    headers: response.headers,
                 });
-            }
+            };
+
+            return createOpenAI({
+                baseURL: baseURL,
+                apiKey: workerApiToken,
+                headers: {
+                    'cf-aig-authorization': 'Bearer ' + cloudflareGatewayAuthKey,
+                },
+                fetch: customFetch as any,
+            });
 
         default:
             throw new Error(`Unsupported provider: ${provider}`);

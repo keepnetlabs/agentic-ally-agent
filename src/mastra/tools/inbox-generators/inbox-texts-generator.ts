@@ -13,11 +13,12 @@ CRITICAL REQUIREMENTS:
 - MUST include phishingReportModal.title, phishingReportModal.subtitle, phishingReportModal.question, etc.
 - MUST include phishingResultModal.legitimateExplanationTitle
 - No missing fields allowed - validation will fail if ANY field is missing
+ - Output final localized strings only. Do NOT echo instructions like "Localize ..." or "Translate ..." in values.
 
 Generate the following structure:
 - Replace TOPIC with "${topic}"
 - Replace LANGUAGE with "${languageCode}"
-- Localize all "Localize 'text' into ${languageCode}" instructions to actual ${languageCode} text
+- Localize all guidance strings to actual ${languageCode} text. Output the localized text directly, not instructions.
 - Keep mobileTitle as "${topic} Training" (use actual topic)
 - CRITICAL: MUST include both phishingReportModal AND phishingResultModal objects with ALL their fields
 

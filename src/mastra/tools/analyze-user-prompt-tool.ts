@@ -5,6 +5,7 @@ import { getModel, Model, ModelProvider } from '../model-providers';
 import { PromptAnalysis } from '../types/prompt-analysis';
 import { ExampleRepo } from '../services/example-repo';
 import { validateBCP47LanguageCode } from '../utils/language-utils';
+import { cleanResponse } from '../utils/content-processors/json-cleaner';
 
 const AnalyzeUserPromptSchema = z.object({
   userPrompt: z.string().min(1, 'User prompt is required'),
@@ -64,7 +65,7 @@ export const analyzeUserPromptTool = new Tool({
     const input = context?.inputData || context?.input || context;
     const { userPrompt, additionalContext, suggestedDepartment, customRequirements } = input;
     
-    const model = getModel(ModelProvider.OPENAI, Model.OPENAI_GPT_5_NANO);
+    const model = getModel(ModelProvider.WORKERS_AI, Model.WORKERS_AI_GPT_OSS_120B);
 
     console.log(`🤖 Analyzing user prompt: "${userPrompt.substring(0, 100)}..."`);
 
@@ -112,7 +113,7 @@ Return JSON:
   "level": "beginner/intermediate/advanced based on complexity",
   "category": "main category - Security Awareness, Leadership, Data Protection, Technical Skills, etc.",
   "subcategory": "specific subcategory based on focus",
-  "learningObjectives": ["actionable outcomes - 'Verb + what + context', max 50 chars each"],
+  "learningObjectives": ["specific skills learner can DO after 5-min training. Use simple action verbs (spot, check, create, report, verify, pause, enable). NOT meta-tasks (pass quiz, complete test) or unrealistic goals (teach others, become expert)"],
   "duration": 5,
   "industries": ["relevant industries from context or 'General Business'"],
   "roles": ["target audience roles"],
@@ -132,18 +133,14 @@ RULES:
       const response = await generateText({
         model: model,
         messages: [
-          { role: 'system', content: 'You are an expert instructional designer and content analyst. CRITICAL: Analyze user requests intelligently and create professional microlearning metadata. Do NOT copy user instructions as titles/topics. Extract the core learning subject and create appropriate professional titles. Return ONLY VALID JSON - NO markdown, NO backticks, NO formatting. Start directly with {. Use BCP-47 language codes (en, tr, de, fr, es, zh, ja, ar, etc.).' },
+          { role: 'system', content: 'You are an expert instructional designer and content analyst. CRITICAL: Analyze user requests intelligently and create professional microlearning metadata. Do NOT copy user instructions as titles/topics. Extract the core learning subject and create appropriate professional titles. Learning objectives must be realistic for 5-minute training scope - focus on specific, immediately actionable skills (NOT meta-tasks like "complete quiz" or unrealistic goals like "teach others"). Return ONLY VALID JSON - NO markdown, NO backticks, NO formatting. Start directly with {. Use BCP-47 language codes (en, tr, de, fr, es, zh, ja, ar, etc.).' },
           { role: 'user', content: analysisPrompt }
         ]
       });
 
-      // Clean response to remove markdown formatting if present
-      let cleanText = response.text.trim();
-      if (cleanText.startsWith('```')) {
-        cleanText = cleanText.replace(/```json\s*/, '').replace(/```\s*$/, '');
-      }
-
-      const analysis = JSON.parse(cleanText) as PromptAnalysis;
+      // Use professional JSON repair library
+      const cleanedText = cleanResponse(response.text, 'prompt-analysis');
+      const analysis = JSON.parse(cleanedText) as PromptAnalysis;
 
       // Validate and normalize BCP-47 language code
       analysis.language = validateBCP47LanguageCode(analysis.language || 'en');

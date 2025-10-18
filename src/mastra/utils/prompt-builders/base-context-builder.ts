@@ -2,23 +2,6 @@ import { PromptAnalysis } from '../../types/prompt-analysis';
 import { MicrolearningContent } from '../../types/microlearning';
 
 export function buildBaseContext(analysis: PromptAnalysis, microlearning: MicrolearningContent): string {
-  const analysisContext = JSON.stringify({
-    language: analysis.language,
-    topic: analysis.topic,
-    title: analysis.title,
-    department: analysis.department,
-    level: analysis.level,
-    category: analysis.category,
-    subcategory: analysis.subcategory,
-    learningObjectives: analysis.learningObjectives,
-    industries: analysis.industries,
-    roles: analysis.roles,
-    keyTopics: analysis.keyTopics,
-    practicalApplications: analysis.practicalApplications,
-    assessmentAreas: analysis.assessmentAreas,
-    customRequirements: analysis.customRequirements
-  }, null, 2);
-
   return `
 Generate ${analysis.language} training content for "${analysis.topic}" in STRICT JSON only.
 
@@ -33,9 +16,6 @@ Generate ${analysis.language} training content for "${analysis.topic}" in STRICT
 - Key Topics: ${(analysis.keyTopics || []).join(', ')}
 - Practical Applications: ${(analysis.practicalApplications || []).join(', ')}
 - Assessment Areas: ${(analysis.assessmentAreas || []).join(', ')}
-
-ANALYSIS CONTEXT (JSON):
-${analysisContext}
 
 SCIENTIFIC CONTEXT:
 - Category: ${microlearning.microlearning_metadata.category}/${microlearning.microlearning_metadata.subcategory}
@@ -54,15 +34,13 @@ SCIENTIFIC CONTEXT:
    - Choose Lucide icons semantically matched to topic/category. Never default to generic security icons unless explicitly relevant.
 
 3. **Language & Style**
-   - Write all user-visible text fully in ${analysis.language}. The output must read as if it were originally authored and edited by a native professional instructional designer in that language.
-   - Do not mix languages. Use only ${analysis.language}, except for proper nouns, established abbreviations, or technical terms that must remain unchanged.
-   - Express ideas by meaning, not word-for-word. Use idiomatic, contemporary ${analysis.language} with correct grammar, natural sentence flow, and culturally appropriate phrasing.
-   - Titles and headings must read like authentic training program names in ${analysis.language}, not literal descriptions. Favor formats that sound professional and engaging (e.g., "Awareness Training", "Best Practices", "Safe Use of X").
-   - Ensure domain-specific terminology matches the standard professional usage in ${analysis.language} (e.g., legal, technical, compliance terms).
-   - Maintain a professional instructional tone: clear, respectful, concise, and action-oriented. Use imperative forms for guidance (e.g., "Identify…", "Apply…").
-   - Avoid literal or awkward phrasing, machine-like translation, redundancy, brand names, tool references, exclamation marks, emojis, slang, or casual fillers unless explicitly required by the context.
-   - Ensure terminology is consistent, precise, and appropriate to the subject domain throughout the output.
-   - Prefer short, memorable sentences (ideally under 20 words) that support comprehension and retention. Each should sound like natural spoken/written training content, not dictionary definitions.
+   - ${analysis.language} only - natural, idiomatic, culturally appropriate (like native professional wrote it)
+   - Do not mix languages. Use ${analysis.language} except for proper nouns, abbreviations, or technical terms
+   - Express ideas by meaning, not word-for-word. Use idiomatic, contemporary phrasing with natural sentence flow
+   - Conversational but professional tone (like colleague explaining to colleague) - NOT formal textbook style
+   - Titles must sound like authentic training names (e.g., "Stop Phishing Attacks"), not literal descriptions
+   - Short sentences (<20 words), consistent domain terminology, natural spoken/written style - NOT dictionary definitions
+   - Avoid awkward phrasing, machine translation, redundancy, brand names, tool references, emojis, slang, exclamation marks
 
 4. **Structure & Quality**
    - Replace ALL placeholders with real, topic-specific content.
@@ -71,8 +49,9 @@ SCIENTIFIC CONTEXT:
    - Use short sentences, plain language, memory-friendly phrasing.
 
 5. **Learning Science**
-   - Integrate the listed learning theories into explanations (e.g., attention, memory, practice, reflection).
-   - Show links between practical actions and durable learning.
+   - Use memory-friendly patterns: repeat key points, chunk information (3-5 items max)
+   - Link actions to outcomes: "When you [action], you [benefit]"
+   - Keep cognitive load low: one concept per screen, simple language
 
 === CRITICAL ===
 - Never leave placeholders like "clear benefit statement" or "concise point".

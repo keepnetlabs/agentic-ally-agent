@@ -9,6 +9,7 @@ type OrchestratorArgs = {
     category: string;
     riskArea: string;
     level: string;
+    department: string;  // NEW: Department context for topic-specific emails
     model: any;
 };
 
@@ -24,11 +25,13 @@ async function generateOneEmail(
     systemPrompt: string,
     model: any,
     topic: string,
+    department: string,
     variant: EmailVariant
 ): Promise<any> {
     const timestampOptions = ['30 minutes ago', '2 hours ago', 'This morning', 'Yesterday'];
     const timestampInstruction = `CRITICAL: Use timestamp "${timestampOptions[index % timestampOptions.length]}" for this email.`;
-    const delta = variantDeltaBuilder[variant](buildHintsFromInsights(topic, index, undefined)) + ` ${timestampInstruction}`;
+    // Department context now baked into variantDeltaBuilder via buildHintsFromInsights
+    const delta = variantDeltaBuilder[variant](buildHintsFromInsights(topic, index, department, undefined)) + ` ${timestampInstruction}`;
 
     try {
         const res = await generateText({
@@ -75,7 +78,9 @@ export async function generateInboxEmailsParallel(args: OrchestratorArgs): Promi
         EmailVariant.FormalLegit,
     ];
 
-    const tasks = variantPlan.map((variant, i) => generateOneEmail(i, system, args.model, args.topic, variant));
+    console.log(`📧 Generating emails for topic="${args.topic}", department="${args.department}"`);
+
+    const tasks = variantPlan.map((variant, i) => generateOneEmail(i, system, args.model, args.topic, args.department, variant));
     const emails = await Promise.all(tasks);
     return emails;
 }

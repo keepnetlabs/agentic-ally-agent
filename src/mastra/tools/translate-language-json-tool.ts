@@ -164,7 +164,7 @@ Keep all keys "0" to "${extracted.length - 1}".
 `.trim()
 
         // Step 3: Translate each chunk with parallel processing and retry
-        const model = getModel(ModelProvider.OPENAI, Model.OPENAI_GPT_5_NANO);
+        const model = getModel(ModelProvider.WORKERS_AI, Model.WORKERS_AI_GPT_OSS_120B);
         const BATCH_SIZE = 3; // Process 3 chunks in parallel
         const MAX_RETRIES = 2;
 

@@ -108,15 +108,17 @@ export const mastra = new Mastra({
             threadId = `${forwarded}-${userAgent}`.replace(/[^a-zA-Z0-9]/g, '').slice(0, 32) || 'default';
           }
 
-          const stream = await agent.streamVNext(prompt, {
+          const stream = await agent.stream(prompt, {
             format: 'aisdk',
             memory: {
               thread: threadId,
               resource: 'agentic-ally-user'
-            }
+            },
           });
 
-          return stream.toUIMessageStreamResponse();
+          return stream.toUIMessageStreamResponse({
+            sendReasoning: true
+          });
         },
       }),
 

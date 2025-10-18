@@ -410,7 +410,7 @@ Scene metadata keys: ${Array.from(sceneMetaKeys).join(', ')}`;
         try {
             // Initialize embedding provider
             if (!this.embeddingProvider) {
-                this.embeddingProvider = getModel(ModelProvider.OPENAI, Model.OPENAI_GPT_5_NANO).embedding('text-embedding-3-small');
+                this.embeddingProvider = getModel(ModelProvider.WORKERS_AI, Model.WORKERS_AI_GPT_OSS_120B).embedding('text-embedding-3-small');
             }
             
             await this.generateEmbeddings();

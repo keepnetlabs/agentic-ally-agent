@@ -41,7 +41,7 @@ export const generateUniversalMicrolearningTool = new Tool({
     };
 
     console.log('🔧 Universal generator input:', { input });
-    const model = getModel(ModelProvider.OPENAI, Model.OPENAI_GPT_5_NANO);
+    const model = getModel(ModelProvider.WORKERS_AI, Model.WORKERS_AI_GPT_OSS_120B);
 
     try {
       // Step 1: AI analyzes user prompt with rich context

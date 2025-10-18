@@ -89,7 +89,7 @@ All microlearning follows scientific 8-scene structure, is WCAG compliant, multi
 export const agenticAlly = new Agent({
   name: 'agenticAlly',
   instructions: buildInstructions(),
-  model: getModel(ModelProvider.OPENAI, Model.OPENAI_GPT_5_NANO),
+  model: getModel(ModelProvider.OPENAI, Model.OPENAI_GPT_4O_MINI),
   tools: {
     workflowExecutor: workflowExecutorTool,
     knowledgeSearch: knowledgeSearchTool,

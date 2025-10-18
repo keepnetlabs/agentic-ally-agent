@@ -3,27 +3,7 @@ import { z } from 'zod';
 import { generateText } from 'ai';
 import { PromptAnalysis } from '../types/prompt-analysis';
 import { MicrolearningContent, ScientificEvidence, Scene } from '../types/microlearning';
-
-// JSON repair utility
-function repairJson(jsonString: string): string {
-  try {
-    // Remove common issues
-    let cleaned = jsonString
-      .replace(/,(\s*[}\]])/g, '$1') // Remove trailing commas
-      .replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)(:\s*)/g, '$1"$2"$3') // Quote unquoted keys
-      .replace(/\n|\r/g, ' ') // Remove line breaks
-      .replace(/\s+/g, ' ') // Normalize whitespace
-      .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control characters
-      .trim();
-
-    // Test if it's valid
-    JSON.parse(cleaned);
-    return cleaned;
-  } catch (error) {
-    console.warn('JSON repair failed:', error);
-    return jsonString;
-  }
-}
+import { cleanResponse } from '../utils/content-processors/json-cleaner';
 
 const GenerateMicrolearningJsonSchema = z.object({
   analysis: z.object({
@@ -147,24 +127,45 @@ function generateTheme(topic: string) {
 async function enhanceMicrolearningContent(microlearning: MicrolearningContent, model: any): Promise<MicrolearningContent> {
   const enhancementPrompt = `CRITICAL: Return ONLY valid JSON. No explanations, no markdown, no backticks.
 
-ENHANCE this microlearning object's content to industry standards:
+ENHANCE this microlearning metadata to industry standards:
 
 ${JSON.stringify(microlearning, null, 2)}
 
-ENHANCEMENT RULES:
-1. Fix title if too long - make it 3-5 professional words
-2. Fix category if wrong - security topics should be "Security Awareness" 
-3. Fill regulation_compliance array with relevant standards
-4. Enhance scientific_basis with learning theories
-5. Improve risk_area to be 2-3 words max
-6. Keep exact same structure
+ENHANCEMENT RULES (apply ONLY if needed):
+1. Title: 2-5 words max, professional training format
+   - Current: "${microlearning.microlearning_metadata.title}"
+   - Should clearly convey core topic and learning focus
+   - Use action-oriented or outcome-focused phrasing when appropriate
+   - Examples vary by domain - security: "Stop Phishing Attacks", leadership: "Effective Delegation Skills", compliance: "GDPR Essentials"
+
+2. Category: Ensure correct categorization
+   - Current: "${microlearning.microlearning_metadata.category}"
+   - Common categories: Security Awareness, Leadership, Data Protection, Technical Skills, Compliance, Professional Development
+   - Fix ONLY if clearly miscategorized
+
+3. Regulation Compliance: Add 2-4 relevant standards
+   - Current: ${microlearning.microlearning_metadata.regulation_compliance?.length || 0} items
+   - Select standards relevant to topic domain (ISO, NIST, GDPR, SOC 2, PCI DSS, HIPAA, etc.)
+   - Leave empty if truly no regulations apply
+
+4. Risk Area: 1-3 words, core subject only
+   - Current: "${microlearning.microlearning_metadata.risk_area}"
+   - Remove unnecessary modifiers, keep essence
+
+5. Scientific Basis: Verify all 8 scenes have specific learning theory reference
+
+VALIDATION CHECKLIST:
+✓ Title: 2-5 words, clear and professional
+✓ Category: Accurate for topic domain
+✓ Risk area: 1-3 words maximum
+✓ All scenes have scientific_basis field
 
 CRITICAL JSON RULES:
 - Use double quotes for all strings
 - No trailing commas
 - Escape all quotes in content with \"
 - No undefined or null values
-- Return valid JSON only`;
+- Return complete enhanced JSON with same structure`;
 
   try {
     const response = await generateText({
@@ -175,19 +176,9 @@ CRITICAL JSON RULES:
       ]
     });
 
-    // Clean AI response - remove markdown blocks if present
-    let cleanResponse = response.text.trim();
-    if (cleanResponse.startsWith('```json')) {
-      cleanResponse = cleanResponse.replace(/```json\s*/, '').replace(/\s*```$/, '');
-    } else if (cleanResponse.startsWith('```')) {
-      cleanResponse = cleanResponse.replace(/```\s*/, '').replace(/\s*```$/, '');
-    }
-
-    // Additional cleaning - remove control characters that can break JSON
-    cleanResponse = cleanResponse.replace(/[\u0000-\u001F\u007F-\u009F]/g, '');
-
-    const repairedResponse = repairJson(cleanResponse);
-    const enhanced = JSON.parse(repairedResponse);
+    // Use professional JSON repair library
+    const cleanedResponse = cleanResponse(response.text, 'microlearning-enhancement');
+    const enhanced = JSON.parse(cleanedResponse);
     console.log('✨ Microlearning content enhanced successfully');
     return enhanced;
   } catch (error) {
@@ -573,14 +564,9 @@ Guidelines:
       ]
     });
 
-    // Clean response to remove markdown formatting if present
-    let cleanText = response.text.trim();
-    if (cleanText.startsWith('```')) {
-      cleanText = cleanText.replace(/```json\s*/, '').replace(/```\s*$/, '');
-    }
-
-    const repairedConfig = repairJson(cleanText);
-    const config = JSON.parse(repairedConfig);
+    // Use professional JSON repair library
+    const cleanedConfig = cleanResponse(response.text, 'scene-configuration');
+    const config = JSON.parse(cleanedConfig);
     const sceneConfig = {
       scene_points: config.scene_points,
       achievement_notifications: config.achievement_notifications,
@@ -731,14 +717,9 @@ Guidelines:
         { role: 'user', content: evidencePrompt }
       ]
     });
-    // Clean response to remove markdown formatting if present
-    let cleanText = resp.text.trim();
-    if (cleanText.startsWith('```')) {
-      cleanText = cleanText.replace(/```json\s*/, '').replace(/```\s*$/, '');
-    }
-
-    const repairedText = repairJson(cleanText);
-    const parsed = JSON.parse(repairedText) as ScientificEvidence;
+    // Use professional JSON repair library
+    const cleanedEvidence = cleanResponse(resp.text, 'scientific-evidence');
+    const parsed = JSON.parse(cleanedEvidence) as ScientificEvidence;
     // Basic sanity checks
     if (!parsed?.overview?.title) throw new Error('Invalid evidence JSON');
     return parsed;

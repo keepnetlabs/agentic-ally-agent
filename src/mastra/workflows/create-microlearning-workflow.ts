@@ -104,7 +104,7 @@ const generateMicrolearningStep = createStep({
   execute: async ({ inputData }) => {
     const analysis = inputData.data;
     const microlearningId = generateMicrolearningId(analysis.topic);
-    const model = getModel(ModelProvider.OPENAI, Model.OPENAI_GPT_5_NANO);
+    const model = getModel(ModelProvider.WORKERS_AI, Model.WORKERS_AI_GPT_OSS_120B);
     console.log('🔍 Generating microlearning structure for:', analysis);
     if (!generateMicrolearningJsonTool.execute) {
       throw new Error('Generate microlearning JSON tool is not executable');
@@ -134,7 +134,7 @@ const generateLanguageStep = createStep({
     const analysis = inputData.analysis;
     const microlearningId = inputData.microlearningId;
 
-    const model = getModel(ModelProvider.OPENAI, Model.OPENAI_GPT_5_NANO);
+    const model = getModel(ModelProvider.WORKERS_AI, Model.WORKERS_AI_GPT_OSS_120B);
     if (!generateLanguageJsonTool.execute) {
       throw new Error('Generate language JSON tool is not executable');
     }

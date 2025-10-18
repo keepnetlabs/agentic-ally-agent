@@ -75,13 +75,26 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
       level: analysis.level
     });
 
+    // Optimized system prompts for GPT-5 Nano (concise, bullet format)
+    const baseSystemPrompt = `You generate ${analysis.language} microlearning scenes.
+
+CRITICAL RULES:
+1. Return ONLY valid JSON (no markdown, no backticks)
+2. Use EXACT fields from template - NO extra keys
+3. Simple, conversational language - NOT formal
+4. Use real Lucide icon names (e.g., "mail-warning", "shield-check")
+
+Start directly with {`;
+
+    const videoSystemPrompt = baseSystemPrompt + `\n5. NEVER use \\n in transcript - use actual line breaks`;
+
     // Generate content in parallel for better performance and reliability
     const startTime = Date.now();
     const [scene1Response, scene2Response, videoResponse, scene4Response, scene5Response, scene6Response, scene7Response, scene8Response] = await Promise.all([
       generateText({
         model: model,
         messages: [
-          { role: 'system', content: `Generate professional ${analysis.language} training content. Return ONLY VALID JSON - NO markdown, NO backticks, NO formatting. Start directly with {. CRITICAL: Use EXACTLY the fields shown in the example - NO EXTRA FIELDS. Do NOT add ANY additional keys beyond what is explicitly shown in the template. Follow the template structure PRECISELY. Use specific React Lucide icon names (from lucide-react library), not placeholders. Follow GLOBAL RULES (Language & Style) strictly.` },
+          { role: 'system', content: baseSystemPrompt },
           { role: 'user', content: scene1Prompt }
         ]
       }).catch(err => {
@@ -91,7 +104,7 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
       generateText({
         model: model,
         messages: [
-          { role: 'system', content: `Generate professional ${analysis.language} training content. Return ONLY VALID JSON - NO markdown, NO backticks, NO formatting. Start directly with {. CRITICAL: Use EXACTLY the fields shown in the example - NO EXTRA FIELDS. Do NOT add ANY additional keys beyond what is explicitly shown in the template. Follow the template structure PRECISELY. Use specific React Lucide icon names (from lucide-react library), not placeholders. Follow GLOBAL RULES (Language & Style) strictly.` },
+          { role: 'system', content: baseSystemPrompt },
           { role: 'user', content: scene2Prompt }
         ]
       }).catch(err => {
@@ -101,7 +114,7 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
       generateText({
         model: model,
         messages: [
-          { role: 'system', content: `Generate professional ${analysis.language} training content. Return ONLY VALID JSON - NO markdown, NO backticks, NO formatting. Start directly with {. CRITICAL: Use EXACTLY the fields shown in the example - NO EXTRA FIELDS. Do NOT add ANY additional keys beyond what is explicitly shown in the template. Follow the template structure PRECISELY. Use specific React Lucide icon names (from lucide-react library), not placeholders. TRANSCRIPT RULE: Never use literal \\n characters in transcript - use actual line breaks only. Follow GLOBAL RULES (Language & Style) strictly.` },
+          { role: 'system', content: videoSystemPrompt },
           { role: 'user', content: videoPrompt }
         ]
       }).catch(err => {
@@ -111,7 +124,7 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
       generateText({
         model: model,
         messages: [
-          { role: 'system', content: `Generate professional ${analysis.language} training content. Return ONLY VALID JSON - NO markdown, NO backticks, NO formatting. Start directly with {. CRITICAL: Use EXACTLY the fields shown in the example - NO EXTRA FIELDS. Do NOT add ANY additional keys beyond what is explicitly shown in the template. Follow the template structure PRECISELY. Use specific React Lucide icon names (from lucide-react library), not placeholders. Follow GLOBAL RULES (Language & Style) strictly.` },
+          { role: 'system', content: baseSystemPrompt },
           { role: 'user', content: scene4Prompt }
         ]
       }).catch(err => {
@@ -121,7 +134,7 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
       generateText({
         model: model,
         messages: [
-          { role: 'system', content: `Generate professional ${analysis.language} training content. Return ONLY VALID JSON - NO markdown, NO backticks, NO formatting. Start directly with {. CRITICAL: Use EXACTLY the fields shown in the example - NO EXTRA FIELDS. Do NOT add ANY additional keys beyond what is explicitly shown in the template. Follow the template structure PRECISELY. Use specific React Lucide icon names (from lucide-react library), not placeholders. Follow GLOBAL RULES (Language & Style) strictly.` },
+          { role: 'system', content: baseSystemPrompt },
           { role: 'user', content: scene5Prompt }
         ]
       }).catch(err => {
@@ -131,7 +144,7 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
       generateText({
         model: model,
         messages: [
-          { role: 'system', content: `Generate professional ${analysis.language} training content. Return ONLY VALID JSON - NO markdown, NO backticks, NO formatting. Start directly with {. CRITICAL: Use EXACTLY the fields shown in the example - NO EXTRA FIELDS. Do NOT add ANY additional keys beyond what is explicitly shown in the template. Follow the template structure PRECISELY. Use specific React Lucide icon names (from lucide-react library), not placeholders. Follow GLOBAL RULES (Language & Style) strictly.` },
+          { role: 'system', content: baseSystemPrompt },
           { role: 'user', content: scene6Prompt }
         ]
       }).catch(err => {
@@ -141,7 +154,7 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
       generateText({
         model: model,
         messages: [
-          { role: 'system', content: `Generate professional ${analysis.language} training content. Return ONLY VALID JSON - NO markdown, NO backticks, NO formatting. Start directly with {. CRITICAL: Use EXACTLY the fields shown in the example - NO EXTRA FIELDS. Do NOT add ANY additional keys beyond what is explicitly shown in the template. Follow the template structure PRECISELY. Use specific React Lucide icon names (from lucide-react library), not placeholders. Follow GLOBAL RULES (Language & Style) strictly.` },
+          { role: 'system', content: baseSystemPrompt },
           { role: 'user', content: scene7Prompt }
         ]
       }).catch(err => {
@@ -151,7 +164,7 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
       generateText({
         model: model,
         messages: [
-          { role: 'system', content: `Generate professional ${analysis.language} training content. Return ONLY VALID JSON - NO markdown, NO backticks, NO formatting. Start directly with {. CRITICAL: Use EXACTLY the fields shown in the example - NO EXTRA FIELDS. Do NOT add ANY additional keys beyond what is explicitly shown in the template. Follow the template structure PRECISELY. Use specific React Lucide icon names (from lucide-react library), not placeholders. Follow GLOBAL RULES (Language & Style) strictly.` },
+          { role: 'system', content: baseSystemPrompt },
           { role: 'user', content: scene8Prompt }
         ]
       }).catch(err => {
@@ -204,11 +217,11 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
       console.warn('⚠️ Video JSON parsing failed, attempting retry...');
 
       try {
-        // Retry with fresh AI call
+        // Retry with fresh AI call using same optimized prompt
         const retryResponse = await generateText({
           model: model,
           messages: [
-            { role: 'system', content: `Return only valid JSON. No explanations, no markdown, no extra text. Just JSON.` },
+            { role: 'system', content: videoSystemPrompt },
             { role: 'user', content: videoPrompt }
           ]
         });

@@ -11,40 +11,49 @@ export type DiversityHints = {
     greetingHint: string;
     headerHint: string;
     topicHint?: string;
+    departmentHint?: string;  // NEW: Department context for topic-specific emails
     mustInclude?: string[];
 };
 
 export const variantDeltaBuilder: Record<EmailVariant, (d: DiversityHints) => string> = {
     [EmailVariant.ObviousPhishing]: (d) => {
+        const departmentContext = d.departmentHint ? `Department scenario: Someone from ${d.departmentHint} who would realistically contact recipient.` : '';
+        const domainContext = `SENDER DOMAIN: Use a suspicious external domain. Examples: billing@invoice-systems.net, accounting@payments-hub.org, support@company-services.net. Domain should be EXTERNAL, not official company.com`;
         const impersonationHint = d.topicHint?.includes('executive') || d.topicHint?.includes('CEO') || d.topicHint?.includes('authority')
             ? 'SENDER pretends to BE the executive. Example: From ceo@executive-portal.net, Subject "Urgent Wire Transfer", Content "I need you to process this payment immediately - CEO". Write as if CEO is directly sending email. '
             : '';
-        return `OBVIOUS PHISHING: Believable business request with urgency. ${d.topicHint ? `Scenario: ${d.topicHint}.` : ''} ${impersonationHint}Use ${d.greetingHint} + external domain ${d.domainHint} + failing ${d.headerHint}. ${!impersonationHint ? 'Sender must match topic (billing@ for invoices).' : ''} Attachment: ${d.attachmentHint} matching scenario. Authoritative tone with red flags.`;
+        return `OBVIOUS PHISHING: Believable business request with urgency. ${d.topicHint ? `Scenario: ${d.topicHint}.` : ''} ${departmentContext} ${domainContext} ${impersonationHint}Use ${d.greetingHint} + failing ${d.headerHint}. ${!impersonationHint ? 'Sender must match topic (billing@ for invoices).' : ''} Attachment: ${d.attachmentHint} matching scenario. Authoritative tone with red flags.`;
     },
 
     [EmailVariant.SophisticatedPhishing]: (d) => {
+        const departmentContext = d.departmentHint ? `Department context: ${d.departmentHint}. Impersonate colleague/authority from this department who would realistically interact with recipient.` : '';
+        const domainContext = `SENDER DOMAIN: Use a NEAR-LEGIT domain that mimics company domain. Examples: finance@company-services.com (instead of finance@company.com), hr@company-solutions.net, support@company-global.org. Must look official but NOT be exact company domain.`;
         const impersonationHint = d.topicHint?.includes('executive') || d.topicHint?.includes('CEO') || d.topicHint?.includes('colleague') || d.topicHint?.includes('authority')
             ? 'SENDER pretends to BE a colleague/authority. Example: From sarah@company-services.com, Content "Hi, this is Sarah from Marketing. Director is stuck in meeting and urgently needs the Q3 budget file. Can you send it to me ASAP? Keep this between us - time sensitive." Write as if colleague is directly asking. '
             : '';
-        return `SOPHISTICATED PHISHING: Professional, subtle threats. ${d.topicHint ? `Scenario: ${d.topicHint}.` : ''} ${impersonationHint} Near-legit domain ${d.domainHint} + mixed ${d.headerHint} + ${d.greetingHint}. MAY mismatch department-topic. Attachment: ${d.attachmentHint} matching email. Act as internal colleague - harder to detect.`;
+        return `SOPHISTICATED PHISHING: Professional, subtle threats. ${d.topicHint ? `Scenario: ${d.topicHint}.` : ''} ${departmentContext} ${domainContext} ${impersonationHint} Mixed ${d.headerHint} + ${d.greetingHint}. CRITICAL: Sender department matches threat type (Finance→payments, IT→tech, Security→auth, Exec→CEO). Attachment: ${d.attachmentHint} matching email. Act as internal colleague - harder to detect.`;
     },
 
     [EmailVariant.CasualLegit]: (d) => {
+        const departmentContext = d.departmentHint ? `From ${d.departmentHint} department. Use friendly, informal tone typical of this department's internal communications.` : '';
+        const domainContext = `SENDER DOMAIN: Use REAL internal domain @company.com. Examples: support@company.com, it@company.com, operations@company.com, finance@company.com. Domain MUST match real company domain, not external or spoofed.`;
         const contextHint = d.topicHint?.includes('IT support') || d.topicHint?.includes('helpdesk')
             ? 'Legitimate IT support follow-up. SENDER must be IT@company.com or support@company.com. Show ticket number, resolution steps. Example: From support@company.com, Subject "Ticket #12345 Resolved".'
             : d.topicHint?.includes('executive') || d.topicHint?.includes('HR policy')
             ? 'Legitimate HR/team update. SENDER must match topic (HR@ for employee topics, operations@ for projects).'
             : '';
-        return `CASUAL LEGIT: Normal workplace email. ${contextHint} Internal ${d.domainHint} + ${d.greetingHint} + clean ${d.headerHint}. SENDER department must match email topic. Topics: ${d.topicHint || 'meetings, office events, schedules'}. Attachment: ${d.attachmentHint} matching scenario.`;
+        return `CASUAL LEGIT: Normal workplace email. ${departmentContext} ${domainContext} ${contextHint} ${d.greetingHint} + clean ${d.headerHint}. SENDER department automatically matches email topic for authenticity. Topics: ${d.topicHint || 'meetings, office events, schedules'}. Attachment: ${d.attachmentHint} matching scenario.`;
     },
 
     [EmailVariant.FormalLegit]: (d) => {
+        const departmentContext = d.departmentHint ? `From ${d.departmentHint} department leadership/authority. Use formal, professional, policy-focused tone typical of this department's official announcements.` : '';
+        const domainContext = `SENDER DOMAIN: Use OFFICIAL internal domain @company.com. Examples: exec@company.com, finance@company.com, legal@company.com, hr@company.com. Domain MUST be exact company domain for authority/credibility.`;
         const contextHint = d.topicHint?.includes('executive') || d.topicHint?.includes('CEO')
             ? 'Legitimate executive announcement from actual leadership (exec@company.com). Formal corporate communication.'
             : d.topicHint?.includes('HR policy')
             ? 'Legitimate HR policy update from HR department.'
             : '';
-        return `FORMAL LEGIT: Corporate communication. ${contextHint} Company ${d.domainHint} + ${d.greetingHint} + clean ${d.headerHint}. Sender matches content. Topics: ${d.topicHint || 'policy updates, quarterly reports'}. Attachment: ${d.attachmentHint} matching topic.`;
+        return `FORMAL LEGIT: Corporate communication. ${departmentContext} ${domainContext} ${contextHint} ${d.greetingHint} + clean ${d.headerHint}. Sender department automatically matches topic for authenticity. Topics: ${d.topicHint || 'policy updates, quarterly reports'}. Attachment: ${d.attachmentHint} matching topic.`;
     },
 };
 
@@ -82,7 +91,92 @@ export function diversityPlan(index: number): DiversityHints {
 function getTopicHint(topic: string, index: number): string {
     const t = topic.toLowerCase();
 
-    // Index-based scenario rotation for diversity - each email gets different scenario
+    // ============================================================================
+    // SOCIAL ENGINEERING ATTACKS
+    // ============================================================================
+
+    // Vishing (Voice Phishing) - Phone-based attacks
+    if (t.includes('vishing') || t.includes('voice phishing') || (t.includes('phone') && (t.includes('scam') || t.includes('fraud')))) {
+        const scenarios = [
+            'urgent IT support call verification, password reset request',
+            'bank fraud alert callback, account verification required',
+            'executive assistant urgent call, wire transfer authorization',
+            'tech support callback request, remote access needed'
+        ];
+        return scenarios[index % scenarios.length];
+    }
+
+    // Smishing (SMS Phishing) - Text message attacks
+    if (t.includes('smishing') || t.includes('sms phishing') || (t.includes('text') && (t.includes('scam') || t.includes('fraud')))) {
+        const scenarios = [
+            'package delivery notification, tracking link update',
+            'account security alert text, verification link',
+            'prize winner notification, claim reward link',
+            'service suspension warning, immediate action link'
+        ];
+        return scenarios[index % scenarios.length];
+    }
+
+    // Spear Phishing - Targeted phishing attacks
+    if (t.includes('spear phishing') || (t.includes('targeted') && t.includes('phishing'))) {
+        const scenarios = [
+            'personalized vendor invoice, targeted payment request',
+            'colleague project collaboration, specific file request',
+            'partner organization communication, tailored access request',
+            'industry conference invitation, personalized registration'
+        ];
+        return scenarios[index % scenarios.length];
+    }
+
+    // BEC (Business Email Compromise) - CEO fraud
+    if (t.includes('bec') || t.includes('business email compromise') || t.includes('ceo fraud')) {
+        const scenarios = [
+            'CEO urgent payment authorization, wire transfer required',
+            'CFO vendor payment change, bank account update',
+            'executive confidential acquisition, immediate action',
+            'legal counsel urgent matter, payment authorization'
+        ];
+        return scenarios[index % scenarios.length];
+    }
+
+    // Whaling - C-level executive targeting
+    if (t.includes('whaling') || (t.includes('executive') && t.includes('attack'))) {
+        const scenarios = [
+            'board meeting confidential document, executive review',
+            'merger acquisition confidential, leadership decision',
+            'shareholder communication urgent, executive response',
+            'strategic planning confidential, C-suite approval'
+        ];
+        return scenarios[index % scenarios.length];
+    }
+
+    // Baiting - Physical or digital bait attacks
+    if (t.includes('baiting') || (t.includes('bait') && t.includes('attack'))) {
+        const scenarios = [
+            'free software download offer, premium tool available',
+            'conference promotional giveaway, free resource download',
+            'limited time offer notification, exclusive access',
+            'free trial upgrade available, premium features'
+        ];
+        return scenarios[index % scenarios.length];
+    }
+
+    // Social Engineering / Pretexting / Impersonation / Authority
+    if ((t.includes('social') && t.includes('engineering')) || t.includes('impersonation') || t.includes('pretext') || t.includes('authority')) {
+        const scenarios = [
+            'urgent executive request, CEO immediate action needed',
+            'colleague urgent assistance, team member request',
+            'IT support ticket, helpdesk verification request',
+            'HR policy change, employee information update'
+        ];
+        return scenarios[index % scenarios.length];
+    }
+
+    // ============================================================================
+    // TECHNICAL ATTACKS
+    // ============================================================================
+
+    // Deepfake / Synthetic Media / Video manipulation
     if (t.includes('deepfake') || t.includes('video') || t.includes('synthetic media')) {
         const scenarios = [
             'urgent CEO announcement video, quarterly update message',
@@ -99,6 +193,28 @@ function getTopicHint(topic: string, index: number): string {
             'invoice payment request, vendor payment due',
             'unusual account activity detected, verification needed',
             'payment approval required, financial authorization'
+        ];
+        return scenarios[index % scenarios.length];
+    }
+
+    // Watering Hole Attacks - Compromised legitimate sites
+    if (t.includes('watering hole') || (t.includes('compromised') && t.includes('website'))) {
+        const scenarios = [
+            'industry news update notification, sector bulletin',
+            'professional association announcement, member resources',
+            'partner portal maintenance notice, service update',
+            'vendor system update notification, portal access'
+        ];
+        return scenarios[index % scenarios.length];
+    }
+
+    // Credential Stuffing / Account Takeover
+    if (t.includes('credential stuffing') || t.includes('account takeover') || (t.includes('password') && t.includes('reuse'))) {
+        const scenarios = [
+            'multiple login attempts detected, security alert',
+            'unusual access pattern notification, account review',
+            'password breach notification, credential compromise',
+            'account security upgrade, password policy update'
         ];
         return scenarios[index % scenarios.length];
     }
@@ -133,6 +249,80 @@ function getTopicHint(topic: string, index: number): string {
         return scenarios[index % scenarios.length];
     }
 
+    // ============================================================================
+    // PHYSICAL SECURITY
+    // ============================================================================
+
+    // USB / Removable Media / Flash Drive
+    if (t.includes('usb') || t.includes('removable media') || t.includes('flash drive') || t.includes('external drive')) {
+        const scenarios = [
+            'found USB drive announcement, lost and found notification',
+            'conference promotional USB distribution, event giveaway',
+            'external drive policy update, approved devices list',
+            'file transfer guidelines, USB vs cloud storage'
+        ];
+        return scenarios[index % scenarios.length];
+    }
+
+    // Shoulder Surfing / Visual Hacking / Physical Privacy
+    if (t.includes('shoulder surfing') || t.includes('visual hacking') || (t.includes('physical') && t.includes('privacy'))) {
+        const scenarios = [
+            'privacy screen distribution, equipment availability',
+            'workspace security reminder, clean desk policy',
+            'visitor area security guidelines, confidential workspace',
+            'public space work policy, cafe security guidelines'
+        ];
+        return scenarios[index % scenarios.length];
+    }
+
+    // Tailgating / Piggybacking - Physical access control
+    if (t.includes('tailgating') || t.includes('piggybacking') || (t.includes('physical') && t.includes('access'))) {
+        const scenarios = [
+            'badge access policy reminder, security protocol',
+            'visitor escort requirements, guest access rules',
+            'door security guidelines, entry procedures',
+            'facility access audit, badge verification'
+        ];
+        return scenarios[index % scenarios.length];
+    }
+
+    // ============================================================================
+    // NETWORK & INFRASTRUCTURE SECURITY
+    // ============================================================================
+
+    // Public Wi-Fi / Network Security
+    if (t.includes('public wifi') || t.includes('wi-fi security') || t.includes('public wi-fi') || (t.includes('network') && t.includes('public'))) {
+        const scenarios = [
+            'guest network access policy, visitor connectivity',
+            'coffee shop wifi guidelines, open network warning',
+            'VPN requirement notification, remote network access',
+            'network security update, connection best practices'
+        ];
+        return scenarios[index % scenarios.length];
+    }
+
+    // IoT Security / Smart Devices / Connected Devices
+    if (t.includes('iot') || t.includes('smart device') || t.includes('connected device') || t.includes('internet of things')) {
+        const scenarios = [
+            'smart office device policy, approved equipment list',
+            'printer security update, firmware patch available',
+            'conference room system maintenance, device configuration',
+            'network-connected device inventory, asset management'
+        ];
+        return scenarios[index % scenarios.length];
+    }
+
+    // API Security - Developer focused
+    if (t.includes('api') && (t.includes('security') || t.includes('key'))) {
+        const scenarios = [
+            'API key rotation policy, credential refresh required',
+            'developer security guidelines, secure coding practices',
+            'third-party API review, integration security audit',
+            'API access audit notification, permission review'
+        ];
+        return scenarios[index % scenarios.length];
+    }
+
     if (t.includes('remote') || t.includes('wfh') || t.includes('work from home') || t.includes('hybrid')) {
         const scenarios = [
             'remote access renewal, VPN credentials expiring',
@@ -143,7 +333,7 @@ function getTopicHint(topic: string, index: number): string {
         return scenarios[index % scenarios.length];
     }
 
-    if ((t.includes('social') && t.includes('engineering')) || t.includes('impersonation') || t.includes('authority')) {
+    if ((t.includes('social') && t.includes('engineering')) || t.includes('impersonation') || t.includes('pretext') || t.includes('authority')) {
         const scenarios = [
             'urgent executive request, CEO immediate action needed',
             'colleague urgent assistance, team member request',
@@ -153,12 +343,27 @@ function getTopicHint(topic: string, index: number): string {
         return scenarios[index % scenarios.length];
     }
 
+    // ============================================================================
+    // DATA & COMPLIANCE SECURITY
+    // ============================================================================
+
     if (t.includes('data') || t.includes('privacy') || t.includes('gdpr') || t.includes('compliance')) {
         const scenarios = [
             'policy update notification, data handling guidelines',
             'mandatory compliance training, regulatory certification',
             'confidential information sharing, document classification',
             'quarterly audit preparation, compliance documentation'
+        ];
+        return scenarios[index % scenarios.length];
+    }
+
+    // Insider Threat / Internal Risk
+    if (t.includes('insider threat') || t.includes('internal risk') || t.includes('employee security')) {
+        const scenarios = [
+            'data access audit notification, permission review',
+            'suspicious activity report guidelines, incident escalation',
+            'exit interview checklist, access revocation process',
+            'security policy acknowledgment, annual compliance'
         ];
         return scenarios[index % scenarios.length];
     }
@@ -273,7 +478,85 @@ function getTopicHint(topic: string, index: number): string {
     return genericScenarios[index % genericScenarios.length];
 }
 
-export function buildHintsFromInsights(topic: string, index: number, insights?: {
+// ============================================================================
+// DOMAIN SELECTION FOR ALL EMAIL VARIANTS
+// Maps topic context to appropriate internal department for sender authenticity
+//
+// NOTE: Domain selection now AI-generated via variantDeltaBuilder prompts
+// These functions kept as BACKUP reference - not currently used
+// ============================================================================
+
+/**
+ * BACKUP: Converts phishing domain to legitimate domain
+ * company-services.com → company.com
+ * Used for legitimate email variants (CasualLegit, FormalLegit)
+ *
+ * Kept for reference - domain selection now handled by AI in prompts
+ */
+/*
+function convertToLegitimateDomaın(domain: string): string {
+    return domain.replace('company-services.com', 'company.com')
+                .replace('company-services', 'company')
+                .replace('-services', '');
+}
+*/
+
+/**
+ * BACKUP: Legacy domain selection based on topic
+ *
+ * Kept for reference only - now using AI-generated domains via prompts
+ * each variant (ObviousPhishing, SophisticatedPhishing, CasualLegit, FormalLegit)
+ * includes domain instruction for AI to generate realistic, contextual domains
+ */
+/*
+function getDomainForTopic(topicHint: string | undefined, defaultDomain: string, isLegitimate: boolean = false): string {
+    if (!topicHint) return defaultDomain;
+    const t = topicHint.toLowerCase();
+
+    let domain: string;
+
+    // Financial/Payment attacks → Finance department
+    if (t.includes('payment') || t.includes('invoice') || t.includes('vendor') || t.includes('financial') || t.includes('purchase')) {
+        domain = 'finance@company-services.com';
+    }
+    // Executive/CEO attacks → Executive department
+    else if (t.includes('ceo') || t.includes('executive') || t.includes('c-suite') || t.includes('whaling') || t.includes('bec') || t.includes('business email compromise') || t.includes('authority')) {
+        domain = 'exec@company-services.com';
+    }
+    // Technical/Infrastructure attacks → IT department
+    else if (t.includes('ransomware') || t.includes('malware') || t.includes('backup') || t.includes('recovery') || t.includes('file') || t.includes('virus') || t.includes('patch') ||
+        t.includes('cloud') || t.includes('saas') || t.includes('api') || t.includes('remote') || t.includes('vpn') || t.includes('wfh') || t.includes('work from home') ||
+        t.includes('device') || t.includes('mobile') || t.includes('iot') || t.includes('network')) {
+        domain = 'IT@company-services.com';
+    }
+    // Security/Authentication attacks → Security department
+    else if (t.includes('password') || t.includes('mfa') || t.includes('authentication') || t.includes('2fa') || t.includes('credential') ||
+        t.includes('phishing') || t.includes('email') || t.includes('spoofing') || t.includes('vishing') || t.includes('smishing') ||
+        t.includes('social engineering') || t.includes('impersonation') || t.includes('pretext') || t.includes('account takeover')) {
+        domain = 'security@company-services.com';
+    }
+    // Deepfake/Video content → Executive/Communications department
+    else if (t.includes('deepfake') || t.includes('video') || t.includes('synthetic media') || t.includes('recording')) {
+        domain = 'exec@company-services.com';
+    }
+    // Compliance/Data → Compliance department
+    else if (t.includes('compliance') || t.includes('data') || t.includes('privacy') || t.includes('gdpr')) {
+        domain = 'compliance@company-services.com';
+    }
+    // HR/Policy attacks → HR department
+    else if (t.includes('hr') || t.includes('human resources') || t.includes('employee') || t.includes('policy')) {
+        domain = 'hr@company-services.com';
+    }
+    // Default fallback
+    else {
+        domain = defaultDomain;
+    }
+
+    // Convert to legitimate domain if needed (for CasualLegit, FormalLegit variants)
+    return isLegitimate ? convertToLegitimateDomaın(domain) : domain;
+}
+
+export function buildHintsFromInsights(topic: string, index: number, department?: string, insights?: {
     attachmentTypes?: string[];
     mustInclude?: string[];
     domainHints?: string[];
@@ -282,8 +565,9 @@ export function buildHintsFromInsights(topic: string, index: number, insights?: 
 }): DiversityHints {
     const base = diversityPlan(index);
     const topicHint = getTopicHint(topic, index);
+    const departmentHint = department || undefined;  // NEW: Pass department context
 
-    if (!insights) return { ...base, topicHint };
+    if (!insights) return { ...base, topicHint, departmentHint };
 
     const pick = <T>(arr?: T[], fallback?: T): T | undefined => (arr && arr.length ? arr[index % arr.length] : fallback);
 
@@ -295,6 +579,7 @@ export function buildHintsFromInsights(topic: string, index: number, insights?: 
         greetingHint: String(pick(insights.greetings, base.greetingHint) || base.greetingHint),
         mustInclude: insights.mustInclude && insights.mustInclude.length ? insights.mustInclude : base.mustInclude,
         topicHint,
+        departmentHint,  // NEW: Include department hint
     };
 }
 

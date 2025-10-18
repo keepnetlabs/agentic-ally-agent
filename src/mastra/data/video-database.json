@@ -2,7 +2,7 @@
   {
     "title": "Security Awareness Podcast: How One-Click Phishing Defense Protects You",
     "url": "https://www.youtube.com/watch?v=ehnMHnz5pTM",
-    "topics": ["phishing"]
+    "topics": ["phishing", "email security", "spoofing"]
   },
   {
     "title": "Security Awareness Podcast: Deepfake Phishing",
@@ -72,7 +72,7 @@
   {
     "title": "Real-Life Security Awareness Training Story Series: Beware of Smishing and Vishing Scams",
     "url": "https://www.youtube.com/watch?v=3QWkEHaQYAA",
-    "topics": ["social engineering"]
+    "topics": ["social engineering", "smishing", "vishing", "impersonation"]
   },
   {
     "title": "Real-Life Security Awareness Training Story Series: Amazon Voice Phishing Scam",
@@ -97,7 +97,7 @@
   {
     "title": "Behavioral Training Series: Phishing Reporting – Small Actions, Big Security Impact",
     "url": "https://www.youtube.com/watch?v=qGtZEsJAL7I",
-    "topics": ["phishing"]
+    "topics": ["phishing", "reporting", "BEC", "email fraud"]
   },
   {
     "title": "Behavioral Training Series: Recognizing Insider Threats – Trust, Instinct & Action",
@@ -132,7 +132,7 @@
   {
     "title": "Keepnet Security Awareness Podcast: What is Spear Phishing & How to Prevent It",
     "url": "https://www.youtube.com/watch?v=W0G6oduDY5I",
-    "topics": ["phishing"]
+    "topics": ["phishing", "spear phishing", "BEC", "business email", "email fraud"]
   },
   {
     "title": "Keepnet Security Awareness Podcast: What is Cryptojacking & How to Stop It",

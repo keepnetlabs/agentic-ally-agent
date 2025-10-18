@@ -72,11 +72,12 @@ async function createInboxStructure(
 
   // Generate dynamic inbox content with AI based on training topic and content
   try {
-    const model = getModel(ModelProvider.OPENAI, Model.OPENAI_GPT_5_NANO);
+    const model = getModel(ModelProvider.WORKERS_AI, Model.WORKERS_AI_GPT_OSS_120B);
     const dynamicInboxData = await generateDynamicInboxWithAI(
       microlearning,
       languageCode,
-      model
+      model,
+      dept  // Pass department for context-specific emails
     );
 
     await remote.upsertInbox(dept, languageCode, microlearningId, dynamicInboxData);
@@ -86,11 +87,12 @@ async function createInboxStructure(
     console.warn('First attempt to generate dynamic inbox failed, retrying once:', firstError);
 
     try {
-      const model = getModel(ModelProvider.OPENAI, Model.OPENAI_GPT_5_NANO);
+      const model = getModel(ModelProvider.WORKERS_AI, Model.WORKERS_AI_GPT_OSS_120B);
       const dynamicInboxData = await generateDynamicInboxWithAI(
         microlearning,
         languageCode,
-        model
+        model,
+        dept  // Pass department for context-specific emails
       );
 
       await remote.upsertInbox(dept, languageCode, microlearningId, dynamicInboxData);
@@ -109,7 +111,8 @@ async function createInboxStructure(
 async function generateDynamicInboxWithAI(
   microlearning: MicrolearningContent,
   languageCode: string,
-  model: any
+  model: any,
+  department: string = 'all'  // NEW: Department context for topic-specific emails
 ) {
   const topic = microlearning.microlearning_metadata.title;
   const category = microlearning.microlearning_metadata.category;
@@ -137,6 +140,7 @@ async function generateDynamicInboxWithAI(
       category,
       riskArea,
       level,
+      department,  // NEW: Pass department for context-specific emails
       model
     })
   ]);
