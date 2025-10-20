@@ -31,6 +31,24 @@ export async function generateVideoPrompt(analysis: PromptAnalysis, microlearnin
 
   const prompt = `${baseContext}
 
+SCENE 3 - VIDEO SCENARIO (TOPIC-SPECIFIC PATTERNS):
+Topic: ${analysis.topic} | Department: ${analysis.department || 'General'} | Language: ${analysis.language}
+
+CRITICAL INSTRUCTIONS:
+- Generate ONLY actual content in ${analysis.language}, NO placeholders, NO instructions
+- Video title/subtitle already AI-generated and topic+department-aware
+- Key messages follow topic-specific action patterns (NOT generic verbs)
+- Aria descriptions are natural language, not templated instructions
+
+KEY MESSAGE PATTERNS (output ONLY final text, not instructions):
+- Phishing: 'Spotting threats' or 'Verifying sender' or 'Reporting email'
+- Deepfake: 'Spotting fakes' or 'Verifying authenticity' or 'Reporting deepfake'
+- Ransomware: 'Recognizing signs' or 'Isolating system' or 'Starting recovery'
+- MFA: 'Enabling protection' or 'Testing recovery' or 'Securing access'
+- Password: 'Securing accounts' or 'Using manager' or 'Enabling MFA'
+- Vishing: 'Identifying impersonation' or 'Verifying caller' or 'Reporting fraud'
+- For ANY OTHER TOPIC: action verb + object related to topic
+
 Generate scene 3 (video scenario). IMPORTANT: Create actual content in ${analysis.language}, not placeholders or instructions. Follow this exact format:
 {
   "3": {
@@ -40,7 +58,7 @@ Generate scene 3 (video scenario). IMPORTANT: Create actual content in ${analysi
     "callToActionText": "Continue",
     "key_message": [
       "Real case",
-      "Output ONLY action phrase (2-3 words with -ING verb). Pattern: '[Verb-ing] [object]'. Match ${analysis.topic}. Examples: phishing→'Spotting threats' | deepfake→'Spotting fakes' | malware→'Spotting dangers' | password→'Securing accounts' | pretexting→'Spotting impersonators' | impersonation→'Verifying identities' | backup→'Protecting data' | incident response→'Following playbooks'.",
+      "Action phrase (2-3 words, -ING verb). Topic: ${analysis.topic}. Examples from patterns above. Reference: Phishing→'Spotting threats' | Deepfake→'Spotting fakes' | Ransomware→'Recognizing signs' | MFA→'Enabling protection' | Password→'Securing accounts' | Vishing→'Identifying impersonation'",
       "Why it matters"
     ],
     "video": {
@@ -59,7 +77,7 @@ Generate scene 3 (video scenario). IMPORTANT: Create actual content in ${analysi
     },
     "ariaTexts": {
       "mainLabel": "Scenario video",
-      "mainDescription": "Output ONLY description (5-8 words). Pattern: 'Short story of a real [threat/incident]'. Match ${analysis.topic}. Examples: phishing→'Short story of a real phishing attack' | deepfake→'Short story of a real deepfake incident' | pretexting→'Short story of a real pretexting attack' | impersonation→'Short story of a real impersonation incident' | backup→'Short story of a real data recovery case' | ransomware→'Short story of a real ransomware attack'.",
+      "mainDescription": "Scenario description (5-8 words) for ${analysis.topic}. Pattern: 'Short story of a real [topic]'. Examples: Phishing→'Short story of real phishing attack' | Deepfake→'Short story of real deepfake incident' | Ransomware→'Short story of real ransomware attack' | MFA→'Short story of account security breach' | Password→'Short story of password attack' | Vishing→'Short story of phone fraud call'",
       "loadingLabel": "Loading transcript",
       "errorLabel": "Transcript could not be loaded",
       "videoPlayerLabel": "Scenario player",

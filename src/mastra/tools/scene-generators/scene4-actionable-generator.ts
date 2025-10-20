@@ -12,18 +12,23 @@ CRITICAL: This scene is ALWAYS an email inbox simulation, regardless of topic.
 - Even for phone/voice topics (vishing, smishing), this scene uses EMAIL format where emails contain callback/voicemail requests
 - Even for physical topics (tailgating, USB), this scene uses EMAIL format where emails discuss these scenarios
 - iconName: MUST always be "mail-check" - NEVER use "phone", "message-square", "usb", or other icons
-- Title: MUST always be "Spot Suspicious Emails" (3 words) - NEVER change to "calls", "messages", "devices"
+- Title: Topic-aware, action-oriented practice title. INBOX FORMAT ALWAYS. Examples: Phishing→"Practice Phishing Detection" | Ransomware→"Spot Ransomware Emails" | Vishing→"Practice Email Callback Scams" (still emails, not calls). Pattern: "[Practice/Spot/Check] [Topic] [Detection/Emails]". NEVER generic like "Spot Suspicious Emails"
 
 - Subtitle: 3 verbs + objects for email checking (max 12 words)
   • Pattern: "Check [sender/content], spot [threats/risks], report/verify safely"
-  • Examples: 'Check sender, spot threats, report safely' | 'Review emails, identify risks, take action'
-  • For vishing/smishing: Still email-based → 'Check sender, spot callback scams, report safely'
+  • Production pattern examples: "Check emails, spot threats, and report safely" | "Review sender, identify risks, report safely"
 
-- Key messages: 3 email-checking actions (3-5 words each)
-  • Step 1: Check sender/source | Step 2: Spot warning signs | Step 3: Report or verify
+- Key messages: 3 email-checking actions (3-5 words each) - PRODUCTION QUALITY
+  • Step 1 (Check): Concrete action like 'Check the email' or 'Review sender source'
+  • Step 2 (Spot): Protective directive like 'Don't click links' or 'Spot warning signs'
+  • Step 3 (Report): Action outcome like 'Press Report' or 'Report if suspicious'
+  • Examples: phishing→['Check the email', 'Don't click links', 'Press Report'] | ransomware→['Check emails', 'Don't open attachments', 'Report now']
 
-- Actions: 3 cards (email inspection steps)
-  • Titles: 3-5 words | Descriptions: max 15 words | Tips: max 12 words
+- Actions: 3 cards (email inspection steps) - PRODUCTION QUALITY
+  • Titles: 3-5 words | Descriptions: max 15 words showing what to check | Tips: max 12 words with specific warning signs
+  • Action 1: Check sender/source. Tip should be specific (e.g., 'Mismatched URLs and urgent requests are warning signs')
+  • Action 2: Spot threats/warnings. Tip should be protective (e.g., 'Avoid clicking links or opening attachments')
+  • Action 3: Report/verify. Tip should show outcome (e.g., 'Use Report button so IT can investigate')
   • Action 1 iconName: MUST be "mail" (checking sender)
   • Action 2 iconName: MUST be "alert-triangle" (spotting threats)
   • Action 3 iconName: MUST be "flag" (reporting)
@@ -31,42 +36,42 @@ CRITICAL: This scene is ALWAYS an email inbox simulation, regardless of topic.
 {
   "4": {
     "iconName": "mail-check",
-    "title": "Spot Suspicious Emails",
-    "subtitle": "3 verbs + objects for email checking (max 12 words). Pattern: 'Check [sender/content], spot [threats/risks], report/verify safely'. Match ${analysis.topic} context naturally. Examples: phishing→'Check sender, spot threats, report safely' | credentials→'Check sender, spot credential requests, verify safely' | password→'Check emails, spot password resets, verify requests' | incident response→'Check emails, spot incidents, follow playbook'.",
+    "title": "Topic-aware action-oriented title. Examples: Phishing→'Practice Phishing Detection' | Ransomware→'Spot Ransomware Emails' | Vishing→'Practice Email Callback Scams'. INBOX FORMAT (emails always, not phone/calls medium).",
+    "subtitle": "3 ACTION VERBS showing what learner does (max 12 words). Pattern: 'Check [sender/content], spot [threats/risks], report/verify safely' - all ACTION-focused. Examples: Phishing→'Check emails, spot threats, and report safely' | Ransomware→'Review emails, identify malware signs, report now' | Vishing→'Check senders, spot callback requests, report immediately'. NOT observation: avoid 'understand', 'learn', 'recognize' as main verbs - use CHECK, SPOT, REPORT, PRESS.",
     "callToActionText": "Localize 'Start Practice' into ${analysis.language}. Output the localized text directly, not instructions.",
     "successCallToActionText": "Localize 'Continue' into ${analysis.language}. Output the localized text directly, not instructions.",
     "key_message": [
-      "Return phrase like 'Check sender address' (3-5 words) for checking sender. Other examples: 'Review email source' | 'Verify sender domain'.",
-      "Return phrase like 'Look for red flags' (3-5 words) for spotting threats. Other examples: 'Spot warning signs' | 'Identify suspicious content'.",
-      "Return phrase like 'Report if suspicious' (3-5 words) for taking action. Other examples: 'Verify before acting' | 'Use report button'."
+      "Step 1 - Check action (3-5 words): 'Check the email' or 'Review sender source' (concrete, not conditional)",
+      "Step 2 - Protective directive (3-5 words): 'Don't click links' or 'Spot warning signs' (include DON'T where relevant)",
+      "Step 3 - Action outcome (3-5 words): 'Press Report' or 'Report if suspicious' (action-focused)"
     ],
     "actions": [
       {
         "iconName": "mail",
-        "title": "Return title like 'Check the Sender' (3-5 words) for checking sender. Other examples: 'Review Email Source' | 'Verify Sender Domain'.",
-        "description": "Return description like 'Look at who sent the message and check if the address looks real' (max 15 words) explaining what to check.",
-        "tip": "Return tip like 'Real company emails come from official domains' (max 12 words) as practical advice."
+        "title": "Action 1 title (3-5 words): 'Check the Sender' or 'Review Email Source'. Concrete step for examining email.",
+        "description": "What to check (max 15 words): Explain what learner should examine (sender, subject, content). Example: 'Review the sender, subject and content before you act.'",
+        "tip": "Specific warning signs (max 12 words): Concrete indicators to watch for. Example: 'Mismatched URLs and urgent requests are common warning signs.'"
       },
       {
         "iconName": "alert-triangle",
-        "title": "Return title like 'Spot Warning Signs' (3-5 words) for spotting threats. Other examples: 'Identify Red Flags' | 'Check Email Content'.",
-        "description": "Return description like 'Look for things that seem off like urgent threats or strange requests' (max 15 words) explaining what to look for.",
-        "tip": "Return tip like 'If it feels wrong, it probably is' (max 12 words) as practical advice."
+        "title": "Action 2 title (3-5 words): 'Spot Warning Signs' or 'Identify Threats'. Focus on recognizing suspicious elements.",
+        "description": "Protective action (max 15 words): Explain what to avoid/protect against. Example: 'Avoid clicking suspicious links or opening unknown attachments.'",
+        "tip": "Protective guidance (max 12 words): Concrete protection advice. Example: 'Hover over links to preview where they go.'"
       },
       {
         "iconName": "flag",
-        "title": "Return title like 'Report It Safely' (3-5 words) for taking action. Other examples: 'Verify Before Acting' | 'Use Report Button'.",
-        "description": "Return description like 'Use the report button to let the security team know about suspicious emails' (max 15 words) explaining what to do.",
-        "tip": "Return tip like 'Reporting helps protect everyone on the team' (max 12 words) as practical advice."
+        "title": "Action 3 title (3-5 words): 'Report It Safely' or 'Report Suspicious Emails'. Focus on taking action.",
+        "description": "How to report (max 15 words): Explain the reporting mechanism and benefit. Example: 'If it looks suspicious, use the Report button so IT can investigate.'",
+        "tip": "Outcome/impact (max 12 words): Show why reporting matters. Example: 'Use Report Phishing in Outlook or Gmail for quick reporting.'"
       }
     ],
     "tipConfig": {
       "iconName": "info"
     },
     "texts": {
-      "mobileHint": "Return hint like '💡 Open each email. If it looks suspicious, press Report.' (max 12 words starting with 💡 emoji).",
-      "feedbackCorrect": "Return success message like '✅ Good job — reporting helps protect everyone' (max 12 words starting with ✅). Other example: '✅ Correct — that email was suspicious'.",
-      "feedbackWrong": "Return error message like '⚠️ Not quite right — this email looks safe. Try again' (max 15 words starting with ⚠️). Other example: '⚠️ Think again — check the sender carefully'."
+      "mobileHint": "Action hint (max 12 words with 💡): 'Open each email. If it looks suspicious, press Report.' Shows learner what to do.",
+      "feedbackCorrect": "Success message (max 12 words with ✅): 'Good job — reporting helps protect everyone' or 'Correct — that email was suspicious.' Emphasize team impact.",
+      "feedbackWrong": "Error message (max 15 words with ⚠️): 'Not quite right — this email looks safe. Try again' or 'Think again — check the sender carefully.' Guide to retry."
     },
     "scene_type": "actionable_content"
   }
@@ -78,5 +83,9 @@ CRITICAL:
 3. Match examples style but adapt to ${analysis.topic} context (emails about the topic, NOT the topic medium itself)
 4. All text in ${analysis.language}
 5. NO placeholders, NO "Return...", NO "Other examples" - just the final text
-6. INBOX FORMAT ONLY: iconName MUST be "mail-check", title MUST be "Spot Suspicious Emails" - even for vishing, smishing, phone topics`;
+6. INBOX FORMAT ONLY (CRITICAL):
+   - iconName MUST ALWAYS be "mail-check"
+   - Title MUST be topic-aware action-oriented, NOT generic (e.g., "Practice Phishing Detection" not "Spot Suspicious Emails")
+   - For vishing/smishing/phone topics: Title/content still about EMAILS (e.g., "Practice Email Callback Scams"), NOT phone calls
+   - Learner always checks inbox, never makes calls`;
 }

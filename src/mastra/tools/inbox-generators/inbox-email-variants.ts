@@ -36,13 +36,18 @@ export const variantDeltaBuilder: Record<EmailVariant, (d: DiversityHints) => st
 
     [EmailVariant.CasualLegit]: (d) => {
         const departmentContext = d.departmentHint ? `From ${d.departmentHint} department. Use friendly, informal tone typical of this department's internal communications.` : '';
-        const domainContext = `SENDER DOMAIN: Use REAL internal domain @company.com. Examples: support@company.com, it@company.com, operations@company.com, finance@company.com. Domain MUST match real company domain, not external or spoofed.`;
-        const contextHint = d.topicHint?.includes('IT support') || d.topicHint?.includes('helpdesk')
-            ? 'Legitimate IT support follow-up. SENDER must be IT@company.com or support@company.com. Show ticket number, resolution steps. Example: From support@company.com, Subject "Ticket #12345 Resolved".'
-            : d.topicHint?.includes('executive') || d.topicHint?.includes('HR policy')
-            ? 'Legitimate HR/team update. SENDER must match topic (HR@ for employee topics, operations@ for projects).'
-            : '';
-        return `CASUAL LEGIT: Normal workplace email. ${departmentContext} ${domainContext} ${contextHint} ${d.greetingHint} + clean ${d.headerHint}. SENDER department automatically matches email topic for authenticity. Topics: ${d.topicHint || 'meetings, office events, schedules'}. Attachment: ${d.attachmentHint} matching scenario.`;
+        const domainContext = `SENDER DOMAIN: Use REAL internal domain @company.com. Examples: support@company.com, it@company.com, operations@company.com, finance@company.com, security@company.com. Domain MUST match real company domain, not external or spoofed.`;
+
+        // Context-specific email patterns for legitimate scenarios
+        const contextHint = d.topicHint?.includes('account verification') || d.topicHint?.includes('login activity')
+            ? 'Legitimate IT security alert. SENDER must be IT@company.com or security@company.com. Content: Mention unusual activity detected. Crucially: Direct user to LOGIN TO INTERNAL PORTAL (NOT asking for sensitive data via form/attachment). Example: "Please log in to the security portal to review the activity." NO form attachments, NO password requests via email.'
+            : d.topicHint?.includes('IT support') || d.topicHint?.includes('helpdesk')
+                ? 'Legitimate IT support follow-up. SENDER must be IT@company.com or support@company.com. Show ticket number, resolution steps. NO risky attachments. Example: "Your ticket #12345 has been resolved. Log in to portal for details."'
+                : d.topicHint?.includes('executive') || d.topicHint?.includes('HR policy')
+                    ? 'Legitimate HR/team update. SENDER must match topic (HR@ for employee topics, operations@ for projects). NO forms requesting sensitive data.'
+                    : 'Legitimate workplace communication. All requests go through official channels (portal, system), NOT via attachments or forms.';
+
+        return `CASUAL LEGIT: Friendly internal workplace email. ${departmentContext} ${domainContext} ${contextHint} ${d.greetingHint} + clean ${d.headerHint} (both PASS). SENDER department matches topic for authenticity. KEY: For security alerts, direct to PORTAL not forms. Attachment: ${d.attachmentHint} but NO sensitive data collection forms. Topics: ${d.topicHint || 'meetings, office events, security alerts'}. CRITICAL: Never ask for passwords/IDs via email - legitimate IT uses portals.`;
     },
 
     [EmailVariant.FormalLegit]: (d) => {
@@ -51,8 +56,8 @@ export const variantDeltaBuilder: Record<EmailVariant, (d: DiversityHints) => st
         const contextHint = d.topicHint?.includes('executive') || d.topicHint?.includes('CEO')
             ? 'Legitimate executive announcement from actual leadership (exec@company.com). Formal corporate communication.'
             : d.topicHint?.includes('HR policy')
-            ? 'Legitimate HR policy update from HR department.'
-            : '';
+                ? 'Legitimate HR policy update from HR department.'
+                : '';
         return `FORMAL LEGIT: Corporate communication. ${departmentContext} ${domainContext} ${contextHint} ${d.greetingHint} + clean ${d.headerHint}. Sender department automatically matches topic for authenticity. Topics: ${d.topicHint || 'policy updates, quarterly reports'}. Attachment: ${d.attachmentHint} matching topic.`;
     },
 };
@@ -239,7 +244,19 @@ function getTopicHint(topic: string, index: number): string {
         return scenarios[index % scenarios.length];
     }
 
-    if (t.includes('password') || t.includes('mfa') || t.includes('authentication') || t.includes('2fa')) {
+    // MFA / Multi-Factor Authentication / 2FA - Separate branch (PRIORITY)
+    if (t.includes('mfa') || t.includes('multi-factor') || t.includes('2fa') || t.includes('two-factor')) {
+        const scenarios = [
+            'multi-factor authentication enrollment required, setup instructions',
+            'two-factor authentication activation needed, verification method',
+            'MFA account security confirmation, enable protection',
+            'authentication upgrade required, MFA enrollment deadline'
+        ];
+        return scenarios[index % scenarios.length];
+    }
+
+    // Password - Separate from MFA
+    if (t.includes('password') || (t.includes('authentication') && !t.includes('mfa') && !t.includes('2fa'))) {
         const scenarios = [
             'password expiration notice, credential update required',
             'account access setup, verification method enrollment',
@@ -555,7 +572,7 @@ function getDomainForTopic(topicHint: string | undefined, defaultDomain: string,
     // Convert to legitimate domain if needed (for CasualLegit, FormalLegit variants)
     return isLegitimate ? convertToLegitimateDomaın(domain) : domain;
 }
-
+*/
 export function buildHintsFromInsights(topic: string, index: number, department?: string, insights?: {
     attachmentTypes?: string[];
     mustInclude?: string[];
@@ -582,5 +599,4 @@ export function buildHintsFromInsights(topic: string, index: number, department?
         departmentHint,  // NEW: Include department hint
     };
 }
-
 

@@ -4,31 +4,51 @@ import { PromptAnalysis } from '../types/prompt-analysis';
 import videoDatabase from '../data/video-database.json';
 
 /**
- * Selects the most appropriate video from database based on topic analysis
+ * Selects the most appropriate SCENARIO video from database based on topic analysis
+ * CRITICAL: Only returns scenario videos, filters out tutorials/tool demos
  * @param analysis - The prompt analysis containing topic, level, and department
- * @returns Promise<string> - The selected video URL
+ * @returns Promise<string> - The selected scenario video URL
  */
 export async function selectVideoForTopic(analysis: PromptAnalysis): Promise<string> {
-  console.log(`🎥 Selecting video for topic: ${analysis.topic}`);
+  console.log(`🎥 Selecting SCENARIO video for topic: ${analysis.topic}`);
 
   const fallbackUrl = "https://customer-0lll6yc8omc23rbm.cloudflarestream.com/5fdb12ff1436c991f50b698a02e2faa1/manifest/video.m3u8";
 
-  // Multi-level matching strategy for robust video selection
+  // Multi-level matching strategy for robust SCENARIO video selection
   function findRelevantVideos(): typeof videoDatabase {
     const topicLower = analysis.topic.toLowerCase();
     const topicKeywords = topicLower.split(/\s+/).filter(w => w.length > 3);
 
-    // Level 1: Exact topic match in topics array
+    // CRITICAL: Filter for SCENARIO videos only (not tutorials, tool demos, or how-to guides)
+    const isScenarioVideo = (video: any) => {
+      const videoTitle = (video.title || '').toLowerCase();
+      const videoDesc = (video.description || '').toLowerCase();
+      const fullText = `${videoTitle} ${videoDesc}`;
+
+      // Include scenario keywords
+      const scenarioKeywords = ['scenario', 'real case', 'real story', 'case study', 'example', 'incident', 'attack', 'threat'];
+      const isScenario = scenarioKeywords.some(kw => fullText.includes(kw));
+
+      // Exclude tutorial/tool keywords
+      const excludeKeywords = ['tutorial', 'how to', 'how-to', 'guide', 'setup', 'install', 'configure', 'demo', 'feature'];
+      const isTutorial = excludeKeywords.some(kw => fullText.includes(kw));
+
+      return isScenario || !isTutorial;
+    };
+
+    // Level 1: Exact topic match in topics array (scenario-only)
     let matches = videoDatabase.filter(video =>
+      isScenarioVideo(video) &&
       video.topics.some(topic =>
         topicLower.includes(topic) ||
         topic.includes(topicLower)
       )
     );
 
-    // Level 2: Keyword match in topics or title (if Level 1 finds nothing)
+    // Level 2: Keyword match in topics or title (scenario-only)
     if (matches.length === 0 && topicKeywords.length > 0) {
       matches = videoDatabase.filter(video =>
+        isScenarioVideo(video) &&
         topicKeywords.some(keyword =>
           video.topics.some(topic => topic.includes(keyword) || keyword.includes(topic)) ||
           video.title.toLowerCase().includes(keyword)
@@ -54,6 +74,7 @@ export async function selectVideoForTopic(analysis: PromptAnalysis): Promise<str
 
       if (relatedTopics.length > 0) {
         matches = videoDatabase.filter(video =>
+          isScenarioVideo(video) &&
           video.topics.some(topic =>
             relatedTopics.some(relatedTopic =>
               topic.includes(relatedTopic) || relatedTopic.includes(topic)
@@ -66,17 +87,24 @@ export async function selectVideoForTopic(analysis: PromptAnalysis): Promise<str
       }
     }
 
-    // Level 4: Return all videos (last resort)
-    return matches.length > 0 ? matches : videoDatabase;
+    // Level 4: Return scenario videos only (last resort - no fallback to tutorials)
+    if (matches.length === 0) {
+      matches = videoDatabase.filter(isScenarioVideo);
+      if (matches.length > 0) {
+        console.log(`⚠️ No topic match found, returning generic scenario video`);
+      }
+    }
+
+    return matches.length > 0 ? matches : [];  // Return empty if no scenarios found
   }
 
   try {
     const relevantVideos = findRelevantVideos();
-    console.log(`📹 Found ${relevantVideos.length} relevant videos from ${videoDatabase.length} total`);
+    console.log(`📹 Found ${relevantVideos.length} relevant SCENARIO videos from ${videoDatabase.length} total`);
 
-    // CRITICAL: If no relevant videos found (all database returned), use fallback
-    if (relevantVideos.length === videoDatabase.length) {
-      console.warn(`⚠️ No relevant videos found for "${analysis.topic}", using generic fallback video`);
+    // CRITICAL: If no scenario videos found, return fallback
+    if (relevantVideos.length === 0) {
+      console.warn(`⚠️ No SCENARIO videos found for "${analysis.topic}", using fallback video`);
       return fallbackUrl;
     }
 

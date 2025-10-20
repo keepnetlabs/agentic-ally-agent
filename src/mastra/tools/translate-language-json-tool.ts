@@ -7,6 +7,7 @@ import { cleanResponse } from '../utils/content-processors/json-cleaner';
 
 const TranslateJsonInputSchema = z.object({
     json: z.any(),
+    sourceLanguage: z.string().optional().default('English'),
     targetLanguage: z.string(),
     topic: z.string().optional(),
     doNotTranslateKeys: z.array(z.string()).optional(),
@@ -100,11 +101,12 @@ export const translateLanguageJsonTool = new Tool({
     inputSchema: TranslateJsonInputSchema,
     outputSchema: TranslateJsonOutputSchema,
     execute: async (context: any) => {
-        const { json, targetLanguage, topic, doNotTranslateKeys = [] } = context as z.infer<typeof TranslateJsonInputSchema>;
+        const { json, sourceLanguage = 'English', targetLanguage, topic, doNotTranslateKeys = [] } = context as z.infer<typeof TranslateJsonInputSchema>;
 
         // Always add scene_type to protected keys
         const protectedKeys = [...doNotTranslateKeys, 'scene_type'];
         console.log('🔒 Protected keys:', protectedKeys);
+        console.log('📝 Source language:', sourceLanguage);
         console.log('🎯 Topic:', topic || 'General');
         console.log('🌍 Target language:', targetLanguage);
 
@@ -128,38 +130,55 @@ export const translateLanguageJsonTool = new Tool({
         const system = `
 ${topicContext}
 
-TASK: Localize JSON values to ${targetLanguage}. Write like a native ${targetLanguage} speaker.
+TASK: Localize JSON values from ${sourceLanguage} to ${targetLanguage} ONLY (100% native quality).
 
-RULES:
-1. Keep same keys - only change values
-2. Keep technical terms: phishing, deepfake, malware, CEO, IT, AI
+CRITICAL RULES:
 
-3. HTML TAGS - CRITICAL:
-   - NEVER remove, add, or modify ANY HTML tag
-   - Copy ALL tags exactly: <div>, </div>, <p>, </p>, <strong>, </strong>, <br>, <a>, etc.
-   - Count input tags = count output tags (MUST be equal)
-   - Only translate TEXT between tags
-   - Example: "<p>Hello <strong>world</strong></p>" → "<p>Merhaba <strong>dünya</strong></p>"
+1. LANGUAGE PURITY
+   • Output ONLY in ${targetLanguage} (no other languages except proper nouns: phishing, CEO, AI, MFA, SPF, DMARC)
+   • ZERO language mixing
 
-4. Keep formatting: \\n stays \\n, timestamps unchanged
-5. Write natural ${targetLanguage} - adapt grammar and sentence structure
-6. Use appropriate tone for security training content
+2. LOCALIZATION - DON'T TRANSLATE LITERALLY (Context-Aware)
+   • Read MEANING + TONE, not words
 
-HOW TO LOCALIZE:
-- Read the meaning, not individual words
-- Write how a ${targetLanguage} native would express this idea
-- Keep sentences clear and professional
-- Match natural ${targetLanguage} sentence patterns
-- Remove punctuation from labels/titles if unnatural in ${targetLanguage}
-- Keep capitalization style consistent with original text
-- Make imperative commands sound natural, not harsh
+   Content Type Guidance:
+   - Titles: [Action verb][Topic] - direct, action-oriented
+   - Warnings/Alerts: [Direct statement] + [impact] + [awareness] - conversational, urgent
+   - Descriptions: [Verb][what][why] - practical, concise
+   - Actions: Active voice (not passive/rigid)
+   - Information: Clear, simple (not academic/verbose)
+
+   • Use personal pronouns/direct address when natural (your/tu/suas)
+   • WRONG ❌: Word-for-word, formal/textbook, complex grammar
+   • RIGHT ✅: Natural like native professional would speak/write
+
+   Localization Patterns (apply to ${targetLanguage} and all languages):
+   1. Warnings/Threats:
+      PATTERN: Direct statement + [threat relevant to ${topic}] + personal pronouns + impact + awareness call
+      Structure: Not formal/possessive, but direct/conversational
+   2. Actions/Commands:
+      PATTERN: [Simple verb] + [context/reason] - active voice, natural, not formal/passive
+   3. Descriptions:
+      PATTERN: [Verb] [what] [why] - practical benefit focus, relevant to ${topic}
+
+   Note: Adapt all patterns to topic context (${topic}) and ${targetLanguage} conventions
+
+3. PRESERVE STRUCTURE
+   • Keep JSON keys & HTML tags (tag count MUST match)
+   • Preserve: \\n, timestamps, capitalization style
+   • Example: "<p>Hello <strong>world</strong></p>" → "<p>[translated]<strong>[translated]</strong></p>"
+
+4. CONTEXT-AWARE QUALITY
+   • Titles: Action-oriented, authentic
+   • Content: Conversational, professional
+   • Warnings: Direct, memorable, impactful
+   • AVOID: Machine translation artifacts, awkward grammar, harsh tone
 
 OUTPUT FORMAT:
 {
-  "0": "localized value",
-  "1": "localized value"
+  "0": "localized value in ${targetLanguage}",
+  "1": "localized value in ${targetLanguage}"
 }
-
 Keep all keys "0" to "${extracted.length - 1}".
 `.trim()
 
@@ -182,18 +201,32 @@ Keep all keys "0" to "${extracted.length - 1}".
                         numberedInput[index.toString()] = item.value;
                     });
 
-                    const user = `Localize values to native ${targetLanguage}. Sound natural, not literal.
+                    const user = `Localize ALL values to ${targetLanguage} ONLY. Output must be 100% in ${targetLanguage}.
 
-CRITICAL HTML RULES:
-- If input has "<p>Hello</p>", output MUST be "<p>[translated]</p>"
-- NEVER remove closing tags like </p>, </div>, </strong>
-- Copy HTML structure exactly, only change text
-- Count tags: input 8 tags = output 8 tags
+2. LOCALIZATION FROM ${sourceLanguage.toUpperCase()} TO ${targetLanguage.toUpperCase()} - NOT LITERAL TRANSLATION:
+- Read each ${sourceLanguage} value, understand its meaning and intent
+- Express that meaning naturally in ${targetLanguage} (like native professional would say it)
+- Focus on: Does a native ${targetLanguage} speaker naturally express it this way? If NO → rewrite.
 
-INPUT:
+HTML STRUCTURE - NON-NEGOTIABLE:
+- Input: "<p>Hello</p>" → Output: "<p>[translated]</p>"
+- NEVER remove, add, or modify closing tags (</p>, </div>, </strong>, etc.)
+- Copy HTML structure exactly, only change TEXT between tags
+- Tag count check: input X tags = output X tags (MUST be numerically equal)
+- Example: "<div><strong>Bold text</strong> normal text</div>" → "<div><strong>[boldueviri]</strong> [normaleviri]</div>"
+
+PRE-OUTPUT QUALITY CHECKLIST:
+✅ Every value in ${targetLanguage} (ZERO English)?
+✅ Sounds natural (native professional, not formal/translated)?
+✅ HTML tags preserved (count matches)?
+✅ Technical terms kept (phishing, CEO, AI, MFA, etc.)?
+✅ No machine-translation artifacts?
+✅ Training content conversational (direct, memorable, personal pronouns)?
+
+INPUT (${sourceLanguage} values):
 ${JSON.stringify(numberedInput, null, 2)}
 
-OUTPUT (same keys, exact HTML structure, natural ${targetLanguage} text):`;
+OUTPUT (${targetLanguage} ONLY, native quality, same structure):`;
 
                     const res = await generateText({
                         model,

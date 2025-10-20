@@ -16,6 +16,7 @@ Generate ${analysis.language} training content for "${analysis.topic}" in STRICT
 - Key Topics: ${(analysis.keyTopics || []).join(', ')}
 - Practical Applications: ${(analysis.practicalApplications || []).join(', ')}
 - Assessment Areas: ${(analysis.assessmentAreas || []).join(', ')}
+- Compliance Requirements: ${(analysis.regulationCompliance || []).join(', ') || 'General'}
 
 SCIENTIFIC CONTEXT:
 - Category: ${microlearning.microlearning_metadata.category}/${microlearning.microlearning_metadata.subcategory}
@@ -33,14 +34,33 @@ SCIENTIFIC CONTEXT:
    - Security-specific terms (phishing, reporting, email) are allowed **only** if category/key topics explicitly mention them.
    - Choose Lucide icons semantically matched to topic/category. Never default to generic security icons unless explicitly relevant.
 
-3. **Language & Style**
-   - ${analysis.language} only - natural, idiomatic, culturally appropriate (like native professional wrote it)
-   - Do not mix languages. Use ${analysis.language} except for proper nouns, abbreviations, or technical terms
-   - Express ideas by meaning, not word-for-word. Use idiomatic, contemporary phrasing with natural sentence flow
-   - Conversational but professional tone (like colleague explaining to colleague) - NOT formal textbook style
-   - Titles must sound like authentic training names (e.g., "Stop Phishing Attacks"), not literal descriptions
-   - Short sentences (<20 words), consistent domain terminology, natural spoken/written style - NOT dictionary definitions
-   - Avoid awkward phrasing, machine translation, redundancy, brand names, tool references, emojis, slang, exclamation marks
+3. **Language & Style - CRITICAL**
+   OUTPUT: ${analysis.language} ONLY. No other languages.
+
+   RULE 1: Language Purity
+   • Every JSON field: ${analysis.language} ONLY (100% target language)
+   • ZERO words from other languages (only proper nouns, unavoidable technical terms)
+   • NO language mixing
+
+   RULE 2: Transform, Don't Translate
+   • English examples in instructions = PATTERN only, not copy source
+   • YOUR JOB: Express meaning naturally in ${analysis.language} like native professional would
+   • WRONG ❌: Word-for-word translation (formal, awkward, mechanical)
+   • RIGHT ✅: Natural idiom in target language (conversational, native)
+
+   Example: English "Remember that one click compromises account"
+   ❌ NOT: "Bir tıklamanın hesabı tehlikeye attığını unutmayın" (literal, stiff)
+   ✅ YES: "Unutmayın ki tek bir tıklama hesabınızı ele verebilir" (natural native phrasing)
+
+   RULE 3: Quality Standard
+   • Professional colleague-to-colleague tone (NOT textbook, NOT formal, NOT translated)
+   • Natural sentence flow and idiomatic phrasing
+   • Authentic training language (sounds real, not artificial)
+   • Short sentences (<20 words), consistent terminology
+
+   AVOID: Machine translation artifacts, formal academic tone, awkward phrasing, redundancy
+
+   PRE-OUTPUT CHECK: "Would a native professional in ${analysis.language} naturally say this?" If NO → rewrite
 
 4. **Structure & Quality**
    - Replace ALL placeholders with real, topic-specific content.

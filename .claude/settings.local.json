@@ -7,7 +7,10 @@
       "WebFetch(domain:docs.mastra.ai)",
       "WebFetch(domain:github.com)",
       "WebFetch(domain:mastra.ai)",
-      "Bash(npm run typecheck:*)"
+      "Bash(npm run typecheck:*)",
+      "Bash(git checkout:*)",
+      "Bash(npx tsc:*)",
+      "WebFetch(domain:developers.cloudflare.com)"
     ],
     "deny": [],
     "ask": []

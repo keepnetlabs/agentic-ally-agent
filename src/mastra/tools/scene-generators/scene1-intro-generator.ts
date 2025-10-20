@@ -7,6 +7,16 @@ export function generateScene1Prompt(analysis: PromptAnalysis, microlearning: Mi
 
   return `${baseContext}
 
+SCENE 1 - INTRO (PATTERN-BASED GENERATION):
+Topic: ${analysis.topic} | Department: ${analysis.department || 'General'} | Language: ${analysis.language}
+
+⚠️ HIGHLIGHTS & KEY_MESSAGE INSTRUCTIONS:
+- These are GENERATION INSTRUCTIONS, not placeholders
+- READ the Pattern Examples below
+- GENERATE NEW, ORIGINAL content following the pattern structure
+- DO NOT copy examples - adapt the STYLE/PATTERN to your topic+department
+- For any topic not shown, analyze pattern structure and extrapolate
+
 INTRO SCENE:
 - Title: For ${analysis.topic}, use simple pattern based on category:
   • Attacks/threats (phishing, deepfake, impersonation, malware) → "Stop [Threat] Attacks"
@@ -16,21 +26,53 @@ INTRO SCENE:
   • Compliance/policy topics → "Understand [Policy]" or "Master [Topic]"
   • Keep focused on core theme - avoid adding modifiers like "Social Media" unless topic explicitly includes them
 
-- Subtitle: One short sentence (max 12 words) stating learner benefit.
-  • Threats/incidents → verbs like "recognize", "report", "avoid", "spot", "detect".
-  • Practices/tools/policies → verbs like "create", "use", "apply", "enable", "manage".
-  • Awareness/culture/mindset → verbs like "understand", "build", "develop", "foster", "cultivate".
-  • Compliance/policy → verbs like "comply", "follow", "understand", "implement", "maintain".
-  • CRITICAL: Deepfake = VIDEO/IMAGE manipulation (NOT phone calls). Vishing = VOICE phone calls.
-  • Choose verbs that fit the topic; never force generic words. Must sound natural when read aloud.
+- Subtitle: One short sentence (max 12 words). Show ACTION + OUTCOME/BENEFIT together.
+  Examples (empowering pattern, NOT fearful):
+  • "Learn to spot and report suspicious emails safely" (phishing)
+  • "Spot fake videos and verify before acting" (deepfake)
+  • "Identify caller impersonation and verify through official channels" (vishing)
+  • "Use strong unique passwords to protect your accounts" (password)
+  • Not: "Sender addresses can be fake" - Too technical
+  • Not: "Verify sender always" - Too imperative
 
-- Highlights: Exactly 3 (Risk → Target → Solution).
-  • Each <8 words, SPECIFIC to ${analysis.topic} (not generic), actionable
-  • Focus on concrete tactics/benefits rather than general awareness
+- Highlights: Exactly 3 (Risk → Target → Solution), <8 words each, department-specific, actionable.
+  • Pattern Examples (ADAPT to topic+department, do NOT copy):
 
-- Key messages: 3 statements (max 5 words).
-  • One fact, one risk, one solution.
-  • Each must be distinct, slogan-like, and suitable for a slide/poster.
+    PHISHING examples (PRODUCTION QUALITY - Learner-centric, empowering):
+    - Generic/All: 'Know that phishing attacks are evolving tactics' | 'Remember that one mistake can compromise accounts' | 'See how your caution protects everyone' | Alternative: 'Know that phishing is common threat' | 'Remember that anyone can be targeted' | 'See how simple steps reduce risk'
+    - Finance: 'Know that payment fraud starts with vendor email impersonation' | 'Remember that asking one colleague saves thousands in loss' | 'See how simple verification steps protect company finances'
+    - HR: 'Know that employee data is high-value to attackers' | 'Remember that a quick callback stops credential theft' | 'See how your caution protects entire teams'
+    - IT: 'Know that phishing is entry point for most breaches' | 'Remember that legitimate senders expect security questions' | 'See how reporting strengthens organizational defense'
+
+    MFA examples by department (PRODUCTION QUALITY):
+    - Finance: 'Know that protecting payment systems starts with your login' | 'Remember that 2FA makes unauthorized transactions nearly impossible' | 'See how your second factor stops fraud before millions lost'
+    - HR: 'Know that employee records hold identity theft targets' | 'Remember that MFA adds protection layer attackers cannot bypass' | 'See how your security habits protect sensitive data'
+    - IT: 'Know that compromised admin credentials enable full infrastructure breach' | 'Remember that MFA is fastest way to stop takeover' | 'See how your multi-factor approach prevents system access'
+
+    DEEPFAKE examples by department (VIDEO/IMAGE manipulation, NOT phone calls - PRODUCTION QUALITY):
+    - Executive: 'Know that deepfake videos of leaders trigger costly decisions' | 'Remember that asking one question prevents fraudulent transfers' | 'See how verification before acting stops video fraud'
+    - HR: 'Know that deepfake videos impersonating executives bypass hesitation' | 'Remember that familiar faces in videos can still be faked' | 'See how your skepticism prevents malicious impersonation'
+    - IT: 'Know that AI-generated videos fool most initial viewers' | 'Remember that source verification catches 99% of attempts' | 'See how your detection prevents organization-wide misinformation'
+    - Finance: 'Know that deepfake videos of executives authorize fake payments' | 'Remember that verification through known channels stops instant transfers' | 'See how your caution prevents million-dollar fraud'
+
+    RANSOMWARE examples by department (PRODUCTION QUALITY):
+    - IT: 'Know that ransomware takes critical systems offline within minutes' | 'Remember that isolated tested backups are your recovery insurance' | 'See how your backup discipline prevents weeks of paralysis'
+    - Finance: 'Know that ransomware targets payment and accounting systems first' | 'Remember that recovery from good backups saves millions' | 'See how your data protection restores business continuity'
+    - Operations: 'Know that ransomware attackers profit from organizational desperation' | 'Remember that continuity planning reduces ransom leverage' | 'See how your preparation minimizes impact across teams'
+
+    PASSWORD examples by department (PRODUCTION QUALITY):
+    - HR: 'Know that reused passwords across sites risk employee data' | 'Remember that unique passwords in manager make breaches unrecoverable' | 'See how your password habits protect security culture'
+    - Finance: 'Know that weak passwords are fastest path to fraud' | 'Remember that strong unique passwords cost attackers thousands' | 'See how your credential strength protects financial integrity'
+    - IT: 'Know that admin password compromise means full infrastructure access' | 'Remember that password managers enforce security across teams' | 'See how your password discipline prevents admin takeover'
+
+    VISHING examples by department (VOICE phone calls, NOT video - PRODUCTION QUALITY):
+    - Operations: 'Know that attackers impersonate authority to bypass caution' | 'Remember that hanging up and calling back stops vishing' | 'See how your verification habit protects everyone'
+    - HR: 'Know that social engineers mimic trusted contacts perfectly' | 'Remember that one callback confirms identity faster than rush' | 'See how your caution prevents employee data theft'
+    - IT: 'Know that vishing targets IT channels as system access' | 'Remember that credential requests over phone are never legitimate' | 'See how your verification prevents attacker access'
+
+    For ANY OTHER TOPIC: Pattern is Risk → Warning → Action. Apply to your topic+department.
+
+- Key messages: 3 statements (max 5 words, slogan-like, memorable), specific to department. Use same pattern as Highlights (Fact/Risk/Action). Reference examples above for style.
 
 - Duration: "~5 minutes" (adjust based on total scene duration), duration_seconds: 15-20.
 
@@ -39,35 +81,26 @@ USE EXACTLY THESE KEYS BUT REPLACE PLACEHOLDERS WITH REAL CONTENT:
   "1": {
     "iconName": "Choose lucide-react icon for ${analysis.topic}: phishing→'mail-warning', BEC/business email/spoofing→'briefcase', email security→'mail-check', deepfake→'video-off', vishing→'phone', malware→'bug', ransomware→'lock-keyhole', social engineering→'users-round', MFA→'shield-check', password→'key-round', backup→'hard-drive', encryption→'shield-lock', data privacy→'eye-off', incident response/playbooks/decision trees→'git-branch', checklists→'list-checks', general security→'shield', awareness→'brain', culture→'people', mindset→'lightbulb', compliance→'document', policy→'clipboard', best practices→'star'",
     "title": "Write simple title for ${analysis.topic}. Examples: 'Stop Phishing Attacks', 'Stop BEC Attacks', 'Stop Email Spoofing', 'Stop Deepfake Attacks', 'Stop Vishing Attacks', 'Secure with MFA', 'Strong Password Security', 'Follow Incident Response', 'Follow Decision Trees'. Keep direct and clear.",
-    "subtitle": "Short benefit sentence (≤12 words) - natural language, no jargon. For deepfake: mention VIDEO/visual (e.g., 'spot fake videos', 'recognize manipulated media'), NOT phone calls. For vishing: mention PHONE/voice calls. For MFA/passwords: benefit of protection (e.g., 'Protect accounts with extra security layer').",
+    "subtitle": "One sentence showing ACTION + OUTCOME (≤12 words) - empowering, NOT technical. Pattern: 'Learn to [action] and [benefit/outcome]'. Examples: 'Learn to spot and report suspicious emails safely' | 'Spot fake videos and verify before acting' | 'Use strong passwords to protect your accounts'. NOT: 'Sender addresses can be fake' (technical) or 'Always verify sender' (imperative).",
     "sectionTitle": "Write 'What this training will help you with:' in ${analysis.language}. Output the translated text directly, not instructions.",
     "highlights": [
       {
         "iconName": "alert-triangle",
-        "text": "Start with 'Know that' or 'Understand that' (≤8 words).
-        THREATS: specific risk. Examples: phishing→'Know that sender addresses can be fake', deepfake→'Know that video quality hides manipulation' (VIDEO), vishing→'Know that voices on phone can be fake' (PHONE).
-        TOOLS: specific weakness/vulnerability. Examples: MFA→'Know that single password protection is insufficient', password→'Know that passwords can be compromised', backup→'Know that ransomware targets backups first'.
-        AWARENESS/CULTURE: foundational understanding. Examples: 'Understand that security is everyone's responsibility', 'Know that awareness prevents most incidents', 'Recognize that culture shapes behavior'."
+        "text": "KNOW statement (≤8 words): Start with 'Know that'. Emphasize threat IMPACT/CONSEQUENCE/SEVERITY, NOT technical details. Threat-focused. Examples: 'Know that phishing attacks are evolving tactics' | 'Know that phishing is common threat' | 'Know that payment fraud starts with email impersonation'. NOT: 'Know that sender addresses can be forged' (too technical)"
       },
       {
         "iconName": "users",
-        "text": "Start with 'Remember that' or 'Consider that' (≤8 words).
-        THREATS: specific warning/context. Examples: phishing→'Remember that urgent emails need verification', deepfake→'Remember that familiar faces can be faked', vishing→'Remember that urgent calls need verification'.
-        TOOLS: specific benefit/importance. Examples: MFA→'Remember that MFA adds verification layer', password→'Remember that strong passwords protect accounts', backup→'Remember that untested restores can fail'.
-        AWARENESS/CULTURE: behavioral insight. Examples: 'Remember that habits take time to form', 'Consider that peer influence shapes choices', 'Remember that questions strengthen security'."
+        "text": "REMEMBER statement (≤8 words): Start with 'Remember that'. Universal impact or why it matters to everyone. Empowering tone. Examples: 'Remember that asking one colleague saves thousands' or 'Remember that anyone can be targeted'"
       },
       {
         "iconName": "shield-check",
-        "text": "Start with 'See how' + -ING action (≤8 words).
-        THREATS: solution/action. Examples: phishing→'See how reporting stops attacks', deepfake→'See how verifying stops fakes' (verify VIDEO), vishing→'See how verifying caller stops fraud' (verify PHONE).
-        TOOLS: enablement/benefit. Examples: MFA→'See how enabling MFA protects access', password→'See how strong passwords stop hacks', backup→'See how checking saves data'.
-        AWARENESS/CULTURE: capability building. Examples: 'See how asking questions improves decisions', 'See how small actions reduce risk', 'See how you protect your team'."
+        "text": "SEE statement (≤8 words): Start with 'See how'. Positive outcome of learner's action. Personal/relatable. Examples: 'See how your caution protects entire teams' or 'See how simple steps reduce risk'"
       }
     ],
     "key_message": [
-      "First (3-5 words): THREATS→'[Threat] is common' | TOOLS→'[Tool] is essential' | AWARENESS→'[Topic] matters now'. Examples: phishing→'Phishing is common' | MFA→'MFA is essential' | awareness→'Security culture matters' | compliance→'Compliance is mandatory'",
-      "Second (3-5 words): THREATS→'Anyone can be [outcome]' | TOOLS→'All accounts need [tool]' | AWARENESS→'Everyone has role'. Examples: phishing→'Anyone can be targeted' | MFA→'All accounts need MFA' | awareness→'Everyone has responsibility' | compliance→'Everyone must comply'",
-      "Third (3-5 words): THREATS→Verify/Detect/Report | TOOLS→Enable/Use/Apply | AWARENESS→Start/Build/Practice. Examples: phishing→'Verify sender always' | MFA→'Enable MFA today' | awareness→'Start with questions' | compliance→'Practice makes perfect'"
+      "What to know (≤5 words): Key insight about topic. Memorable fact. Examples: 'Phishing is common', 'Deepfakes are evolving', 'Passwords matter'",
+      "Why it matters (≤5 words): Universal consequence or impact. Empowering perspective. Examples: 'Anyone can be targeted', 'Your action protects all', 'Small steps make difference'",
+      "What you do (≤5 words): Positive action or behavior. Empowering, achievable. Examples: 'Small actions make difference' | 'Your action protects all' | 'Spot and report safely' | 'Anyone can report' | 'Report quickly' | 'Use strong passwords'. NOT: 'Always verify' (too imperative) or 'Verify sender always' (directive-based)"
     ],
     "duration": "~${Math.max(2, Math.round((microlearning.scenes?.reduce((total, scene) => total + (scene?.metadata?.duration_seconds || 30), 0) || 300) / 60))} minutes",
     "level": "Localize '${analysis.level}' into ${analysis.language} with proper capitalization (e.g., 'Beginner', 'Intermediate', 'Advanced')",

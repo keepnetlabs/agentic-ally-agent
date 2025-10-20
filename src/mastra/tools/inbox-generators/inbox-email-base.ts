@@ -5,7 +5,17 @@ export function buildInboxEmailBaseSystem(
   riskArea: string,
   level: string
 ): string {
-  return `Generate ONE realistic business email as a single valid JSON object in ${languageCode}.
+  return `Generate ONE realistic business email as a single valid JSON object in ${languageCode} ONLY.
+
+⚠️ LANGUAGE CONSISTENCY - MANDATORY:
+OUTPUT: ${languageCode} ONLY. Every field, every word.
+
+• Subject, preview, content, explanation, attachment names: ALL in ${languageCode}
+• ZERO other languages (except proper nouns, unavoidable technical terms)
+• ZERO language mixing
+• Natural business language (NOT formal/mechanical/translated style)
+• Like native professional in ${languageCode} wrote it
+
 OUTPUT MUST BE: A single object (not wrapped in array, not nested). Return ONLY the JSON object, no markdown, no code blocks.
 
 CRITICAL LOGIC:
@@ -44,15 +54,15 @@ EXACT FORMAT (return as-is, single object):
 {
   "id": "string",
   "sender": "user@domain.com",
-  "subject": "Natural business subject matching the email context and sender role.",
-  "preview": "8-14 words",
+  "subject": "Natural business subject in ${languageCode}, matching email context and sender role. MUST sound native-professional, NOT formal/mechanical translation.",
+  "preview": "8-14 words, in ${languageCode}, natural and conversational",
   "timestamp": "MUST use different timestamp for EACH email. Options: '2 hours ago', 'Yesterday', 'This morning', '30 minutes ago', '1 day ago', '4 hours ago'. Pick ONE option that has NOT been used in previous emails. NEVER repeat.",
   "isPhishing": true|false,
-  "content": "<div class='text-[#1C1C1E] dark:text-[#F2F2F7]'>Multi-paragraph HTML</div>",
+  "content": "<div class='text-[#1C1C1E] dark:text-[#F2F2F7]'>Multi-paragraph HTML content in ${languageCode}, natural business tone</div>",
   "headers": ["Return-Path: <...>", "SPF: ...", "DMARC: ..."],
   "difficulty": "EASY|MEDIUM|HARD",
-  "explanation": "Point out 2-3 observable red flags or legitimacy indicators. Describe WHAT is suspicious/normal, NOT what user should do.",
-  "attachments": [{"id": "string", "name": "filename.ext", "size": "KB", "type": "pdf|doc|xlsx", "content": "<div>...</div>"}]
+  "explanation": "Written in ${languageCode}: Point out 2-3 observable red flags or legitimacy indicators. Describe WHAT is suspicious/normal, NOT what user should do. Natural, professional tone.",
+  "attachments": [{"id": "string", "name": "filename (in ${languageCode}).ext", "size": "KB", "type": "pdf|doc|xlsx", "content": "<div>HTML content in ${languageCode}</div>"}]
 }
 
 CRITICAL: "attachments" must be array of objects, NOT nested arrays. If no attachment, use empty array [].

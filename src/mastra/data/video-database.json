@@ -107,7 +107,7 @@
   {
     "title": "Behavioral Training Series: The Hidden Danger of Weak Passwords",
     "url": "https://www.youtube.com/watch?v=JIN42SS3fns",
-    "topics": ["password"]
+    "topics": ["password", "mfa", "authentication", "credential security"]
   },
   {
     "title": "Behavioral Training Series: Do You Know Who Has Access to Your Sensitive Data?",
