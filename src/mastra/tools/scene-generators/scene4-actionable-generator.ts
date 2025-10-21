@@ -12,17 +12,21 @@ CRITICAL: This scene is ALWAYS an email inbox simulation, regardless of topic.
 - Even for phone/voice topics (vishing, smishing), this scene uses EMAIL format where emails contain callback/voicemail requests
 - Even for physical topics (tailgating, USB), this scene uses EMAIL format where emails discuss these scenarios
 - iconName: MUST always be "mail-check" - NEVER use "phone", "message-square", "usb", or other icons
-- Title: Topic-aware, action-oriented practice title. INBOX FORMAT ALWAYS. Examples: Phishing→"Practice Phishing Detection" | Ransomware→"Spot Ransomware Emails" | Vishing→"Practice Email Callback Scams" (still emails, not calls). Pattern: "[Practice/Spot/Check] [Topic] [Detection/Emails]". NEVER generic like "Spot Suspicious Emails"
+- Title: Topic-aware, action-oriented practice title. INBOX FORMAT ALWAYS. Examples: Phishing→"Practice Phishing Detection" | Ransomware→"Spot Ransomware Emails" | Vishing→"Practice Email Callback Scams" | Security Protocols→"Practice Remote Work Policy Review". Pattern: THREATS/TOOLS→"[Practice/Spot/Check] [Topic] [Detection/Emails]" | PROCESS→"[Practice/Review] [Topic] [Policy/Compliance]". NEVER generic like "Spot Suspicious Emails"
 
 - Subtitle: 3 verbs + objects for email checking (max 12 words)
-  • Pattern: "Check [sender/content], spot [threats/risks], report/verify safely"
-  • Production pattern examples: "Check emails, spot threats, and report safely" | "Review sender, identify risks, report safely"
+  • THREATS/TOOLS: "Check [sender/content], spot [threats/risks], report/verify safely"
+  • PROCESS: "Review [practices], identify [gaps], verify [compliance]"
+  • Production examples: "Check emails, spot threats, and report safely" | "Review practices, identify risks, verify compliance"
 
 - Key messages: 3 email-checking actions (3-5 words each) - PRODUCTION QUALITY
-  • Step 1 (Check): Concrete action like 'Check the email' or 'Review sender source'
-  • Step 2 (Spot): Protective directive like 'Don't click links' or 'Spot warning signs'
-  • Step 3 (Report): Action outcome like 'Press Report' or 'Report if suspicious'
-  • Examples: phishing→['Check the email', 'Don't click links', 'Press Report'] | ransomware→['Check emails', 'Don't open attachments', 'Report now']
+  • THREATS/TOOLS Step 1: 'Check the email' or 'Review sender source'
+  • THREATS/TOOLS Step 2: 'Don't click links' or 'Spot warning signs'
+  • THREATS/TOOLS Step 3: 'Press Report' or 'Report if suspicious'
+  • PROCESS Step 1: 'Review the email' or 'Check practices'
+  • PROCESS Step 2: 'Identify violations' or 'Spot gaps'
+  • PROCESS Step 3: 'Verify compliance' or 'Report findings'
+  • Examples: phishing→['Check the email', 'Don't click links', 'Press Report'] | Security Protocols→['Review practices', 'Identify violations', 'Verify compliance']
 
 - Actions: 3 cards (email inspection steps) - PRODUCTION QUALITY
   • Titles: 3-5 words | Descriptions: max 15 words showing what to check | Tips: max 12 words with specific warning signs

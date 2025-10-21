@@ -80,8 +80,12 @@ USE EXACTLY THESE KEYS BUT REPLACE PLACEHOLDERS WITH REAL CONTENT:
 {
   "1": {
     "iconName": "Choose lucide-react icon for ${analysis.topic}: phishing→'mail-warning', BEC/business email/spoofing→'briefcase', email security→'mail-check', deepfake→'video-off', vishing→'phone', malware→'bug', ransomware→'lock-keyhole', social engineering→'users-round', MFA→'shield-check', password→'key-round', backup→'hard-drive', encryption→'shield-lock', data privacy→'eye-off', incident response/playbooks/decision trees→'git-branch', checklists→'list-checks', general security→'shield', awareness→'brain', culture→'people', mindset→'lightbulb', compliance→'document', policy→'clipboard', best practices→'star'",
-    "title": "Write simple title for ${analysis.topic}. Examples: 'Stop Phishing Attacks', 'Stop BEC Attacks', 'Stop Email Spoofing', 'Stop Deepfake Attacks', 'Stop Vishing Attacks', 'Secure with MFA', 'Strong Password Security', 'Follow Incident Response', 'Follow Decision Trees'. Keep direct and clear.",
-    "subtitle": "One sentence showing ACTION + OUTCOME (≤12 words) - empowering, NOT technical. Pattern: 'Learn to [action] and [benefit/outcome]'. Examples: 'Learn to spot and report suspicious emails safely' | 'Spot fake videos and verify before acting' | 'Use strong passwords to protect your accounts'. NOT: 'Sender addresses can be fake' (technical) or 'Always verify sender' (imperative).",
+    "title": "Write simple title for ${analysis.topic}. Pattern by category: THREATS→'Stop [Threat]' (Phishing/Deepfake/Ransomware), TOOLS→'Secure with [Tool]' (MFA/Password), PROCESSES→'Follow [Protocol/Process]' (Incident Response/Security Protocols). Examples: 'Stop Phishing Attacks', 'Secure with MFA', 'Follow Security Protocols'. Keep direct and clear.",
+    "subtitle": "One sentence showing ACTION + OUTCOME (≤12 words) - empowering, NOT technical. Pattern adapts by category:
+- THREATS: 'Learn to [recognize] and [report/prevent]' → Examples: 'Learn to spot and report safely' | 'Spot fakes and verify before acting'
+- TOOLS: 'Learn to [use/enable] and [protect/benefit]' → Examples: 'Use strong passwords to protect accounts' | 'Enable MFA and secure access'
+- PROCESSES: 'Learn to [follow/apply] and [outcome]' → Examples: 'Learn to follow playbooks and respond quickly' | 'Apply decision trees and prevent mistakes'
+NOT: 'Sender addresses fake' (technical) or 'Always verify' (imperative).",
     "sectionTitle": "Write 'What this training will help you with:' in ${analysis.language}. Output the translated text directly, not instructions.",
     "highlights": [
       {
@@ -90,7 +94,7 @@ USE EXACTLY THESE KEYS BUT REPLACE PLACEHOLDERS WITH REAL CONTENT:
       },
       {
         "iconName": "users",
-        "text": "REMEMBER statement (≤8 words): Start with 'Remember that'. Universal impact or why it matters to everyone. Empowering tone. Examples: 'Remember that asking one colleague saves thousands' or 'Remember that anyone can be targeted'"
+        "text": "REMEMBER statement (≤8 words): Start with 'Remember that'. Universal benefit + topic-aware action phrasing. Empowering, NO fear language. Generate dynamically per ${analysis.topic}. Examples: Phishing→'Remember that anyone can be targeted' | Finance+Phishing→'Remember that verification prevents fraud' | Tools→'Remember that verification takes seconds' | Processes→'Remember that speed saves systems'"
       },
       {
         "iconName": "shield-check",

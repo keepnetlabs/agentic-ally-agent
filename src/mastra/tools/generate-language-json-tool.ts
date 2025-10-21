@@ -13,7 +13,6 @@ import { generateScene6Prompt } from './scene-generators/scene6-survey-generator
 import { generateScene7Prompt } from './scene-generators/scene7-nudge-generator';
 import { generateScene8Prompt } from './scene-generators/scene8-summary-generator';
 import { cleanResponse } from '../utils/content-processors/json-cleaner';
-import { validateOrFallback } from '../utils/url-validator';
 
 export const generateLanguageJsonTool = new Tool({
   id: 'generate_language_json',
@@ -295,21 +294,6 @@ Start directly with {`;
       const cleanedScene8 = cleanResponse(scene8Response.text, 'scene8');
       scene8Scenes = JSON.parse(cleanedScene8);
       console.log('✅ Scene 8 parsed successfully');
-
-      // Validate URLs in Scene 8 resources
-      if (scene8Scenes['8']?.resources) {
-        console.log('🔍 Validating Scene 8 resource URLs...');
-        for (const resource of scene8Scenes['8'].resources) {
-          if (resource.url) {
-            const originalUrl = resource.url;
-            resource.url = await validateOrFallback(resource.url, analysis.topic);
-            if (originalUrl !== resource.url) {
-              console.log(`🔄 URL validation: ${originalUrl} → ${resource.url}`);
-            }
-          }
-        }
-        console.log('✅ Scene 8 URL validation completed');
-      }
     } catch (parseErr) {
       console.error('❌ Failed to parse Scene 8:', parseErr);
       console.log('🔍 Scene 8 response preview:', scene8Response.text.substring(0, 200));

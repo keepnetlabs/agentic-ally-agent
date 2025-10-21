@@ -41,13 +41,25 @@ CRITICAL INSTRUCTIONS:
 - Aria descriptions are natural language, not templated instructions
 
 KEY MESSAGE PATTERNS (output ONLY final text, not instructions):
+
+THREAT topics (Phishing, Deepfake, Ransomware, Vishing, Malware, Social Engineering):
 - Phishing: 'Spotting threats' or 'Verifying sender' or 'Reporting email'
 - Deepfake: 'Spotting fakes' or 'Verifying authenticity' or 'Reporting deepfake'
 - Ransomware: 'Recognizing signs' or 'Isolating system' or 'Starting recovery'
+- Vishing: 'Identifying impersonation' or 'Verifying caller' or 'Reporting fraud'
+
+TOOL topics (Password, MFA, Backup, Encryption, Data Privacy):
 - MFA: 'Enabling protection' or 'Testing recovery' or 'Securing access'
 - Password: 'Securing accounts' or 'Using manager' or 'Enabling MFA'
-- Vishing: 'Identifying impersonation' or 'Verifying caller' or 'Reporting fraud'
-- For ANY OTHER TOPIC: action verb + object related to topic
+- Backup: 'Verifying backup' or 'Testing restore' or 'Ensuring recovery'
+- Encryption: 'Protecting data' or 'Encrypting files' or 'Securing transmission'
+
+PROCESS topics (Incident Response, Decision Trees, Security Protocols, Playbooks, Checklists):
+- Incident Response: 'Following protocol' or 'Executing response'
+- Decision Trees: 'Applying framework' or 'Following procedure'
+- Security Protocols: 'Implementing policy' or 'Following procedures'
+
+For OTHER topics: action verb + object related to topic
 
 Generate scene 3 (video scenario). IMPORTANT: Create actual content in ${analysis.language}, not placeholders or instructions. Follow this exact format:
 {
@@ -58,7 +70,7 @@ Generate scene 3 (video scenario). IMPORTANT: Create actual content in ${analysi
     "callToActionText": "Continue",
     "key_message": [
       "Real case",
-      "Action phrase (2-3 words, -ING verb). Topic: ${analysis.topic}. Examples from patterns above. Reference: Phishing→'Spotting threats' | Deepfake→'Spotting fakes' | Ransomware→'Recognizing signs' | MFA→'Enabling protection' | Password→'Securing accounts' | Vishing→'Identifying impersonation'",
+      "Action phrase (2-3 words, -ING verb). Topic: ${analysis.topic}. Examples from patterns above. Reference: Phishing→'Spotting threats' | Deepfake→'Spotting fakes' | Ransomware→'Recognizing signs' | MFA→'Enabling protection' | Password→'Securing accounts' | Vishing→'Identifying impersonation' | Incident Response→'Following protocol' | Security Protocols→'Implementing policy'",
       "Why it matters"
     ],
     "video": {
@@ -77,7 +89,7 @@ Generate scene 3 (video scenario). IMPORTANT: Create actual content in ${analysi
     },
     "ariaTexts": {
       "mainLabel": "Scenario video",
-      "mainDescription": "Scenario description (5-8 words) for ${analysis.topic}. Pattern: 'Short story of a real [topic]'. Examples: Phishing→'Short story of real phishing attack' | Deepfake→'Short story of real deepfake incident' | Ransomware→'Short story of real ransomware attack' | MFA→'Short story of account security breach' | Password→'Short story of password attack' | Vishing→'Short story of phone fraud call'",
+      "mainDescription": "Scenario description (5-8 words) for ${analysis.topic}. Pattern by category: THREATS→'Short story of real [threat] attack' | TOOLS→'Short story of real [tool] implementation' | PROCESS→'Short story of real [process] execution'. Examples: Phishing→'Short story of real phishing attack' | Deepfake→'Short story of real deepfake incident' | MFA→'Short story of account security breach' | Incident Response→'Short story of real incident response' | Security Protocols→'Short story of real protocol implementation'",
       "loadingLabel": "Loading transcript",
       "errorLabel": "Transcript could not be loaded",
       "videoPlayerLabel": "Scenario player",

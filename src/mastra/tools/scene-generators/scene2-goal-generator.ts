@@ -57,26 +57,31 @@ USE EXACTLY THESE KEYS BUT REPLACE PLACEHOLDERS WITH REAL CONTENT:
   "2": {
     "iconName": "target",
     "title": "Topic-aware title, NOT generic. Examples: Phishing→'Your Phishing Defense' | Deepfake→'Your Verification Skill' | Ransomware→'Your Recovery Plan' | MFA→'Your Account Security' | Password→'Your Credential Strength' | Vishing→'Your Verification Habit'",
-    "subtitle": "Return ONLY one short sentence (≤18 words): Next time you [topic-appropriate situation for ${analysis.topic}], you will [concrete action]. Keep natural language. Examples: phishing→ Next time you see a suspicious email, you will verify via an official channel. | password→ Next time you set a password, you will generate a unique 12+ character password in your manager. | backup→ Next time you finish critical work, you will verify backups and test a restore. | incident response→ Next time an incident occurs, you will follow the established playbook steps. | awareness→ Next time you're in a meeting, you will share a security tip. | compliance→ Next time you access data, you will confirm you're following policy.",
+    "subtitle": "Implementation intention for ${analysis.topic} (≤18 words): 'Next time you [situation], you will pause and [action]'. Keep natural language, behavioral focus.
+
+Examples by category:
+- THREATS: phishing→ 'Next time you see suspicious email, you will pause and report it' | ransomware→ 'Next time files encrypted, you will pause and isolate system' | deepfake→ 'Next time see video, you will pause and verify authenticity'
+- TOOLS: MFA→ 'Next time see login, you will pause and enable MFA' | password→ 'Next time create password, you will pause and use manager' | backup→ 'Next time finish work, you will pause and verify backup'
+- PROCESSES: incident response→ 'Next time incident occurs, you will pause and follow playbook'",
     "callToActionText": "If ${analysis.language} is English, use 'Continue'. Otherwise, localize ONLY the word 'Continue' into ${analysis.language}. Output the localized word directly, not instructions.",
     "goals": [
       {
         "iconName": "alert-triangle",
         "title": "Step 1 goal title for ${analysis.topic} (2-5 words). Reference pattern examples above. Threats→Recognize, Tools→Assess, Processes→Identify.",
-        "subtitle": "Concrete cue for Step 1 (2-4 words). Examples: 'Pause and think' | 'Check details' | 'Verify first'",
-        "description": "SHORT benefit description (≤12 words). MUST include 'so [outcome]'. Pattern: 'Helps you [action] [when situation] so [positive outcome].' Examples: 'Helps you pause and think when something looks unusual' | 'Helps you catch issues before they spread' | 'Helps you recognize threats so you stay safe'"
+        "subtitle": "Concrete cue for Step 1 (2-4 words). Examples: 'Pause and think' | 'Verify first' | 'Assess risks'. NOT: 'Check details' or procedural cues.",
+        "description": "SHORT benefit description (≤12 words). Pattern: 'Helps you [spot/recognize/notice] when [topic-aware situation].' Simple, direct, conversational. Consider ${analysis.topic} + ${analysis.department}. Examples: Phishing→'Helps you spot warning signs when emails look suspicious.' | Ransomware+IT→'Helps you recognize attack signs when system behaves oddly.' | MFA→'Helps you notice security prompts when logging in.' | Generic→'Helps you pause when something looks unusual.'"
       },
       {
         "iconName": "shield-check",
         "title": "Step 2 goal title for ${analysis.topic} (2-5 words). Reference pattern examples above. Threats→Verify, Tools→Implement, Processes→Follow.",
-        "subtitle": "Specific action or behavior (2-4 words). Examples: 'Safe action' | 'Verify now' | 'Use protection'",
-        "description": "SHORT benefit description (≤12 words). MUST include 'so [outcome]'. Protective guidance focus. Examples: 'Helps you avoid risky links and verify attachments so you stay safe' | 'Helps you protect sensitive data with encryption so data stays secure' | 'Helps you verify before acting so you prevent fraud'"
+        "subtitle": "Specific action or behavior (2-4 words): Topic-aware, action-focused. Examples: 'Verify first' | 'Protect now' | 'Use tool' | 'Enable feature'. NOT procedural UI cues like 'Click button', 'Go to settings', 'Check before clicking'.",
+        "description": "SHORT benefit description (≤12 words). MUST include 'when [situation] so [outcome]'. Consider ${analysis.topic} + ${analysis.department} for 'when' clause (contextual). Pattern: 'Helps you [action] when [situation] so [positive outcome].' Use user-focused outcomes (NOT technical). Examples: Phishing+HR→'Helps you verify sender when email risks data so you protect records' | MFA+TOOL→'Helps you enable MFA when logging in so your account stays secure' | Ransomware+IT→'Helps you isolate system when infected so you preserve systems'"
       },
       {
         "iconName": "flag",
         "title": "Step 3 goal title for ${analysis.topic} (2-4 words). Reference pattern examples above. Threats→Report, Tools→Test, Processes→Validate.",
-        "subtitle": "Escalation or verification (2-4 words). Examples: 'Report button' | 'Test backup' | 'Validate outcome'",
-        "description": "SHORT benefit description showing team impact/outcome (≤12 words). MUST include 'so' pattern. Examples: 'Helps you use the Report button so the security team can act quickly' | 'Helps you verify recovery works so you're prepared' | 'Helps you report threats so everyone stays protected'"
+        "subtitle": "Escalation or verification (2-4 words). Examples: 'Report it' | 'Test recovery' | 'Validate outcome'. NOT: 'Report button' or procedural cues.",
+        "description": "SHORT benefit description showing team impact/outcome (≤12 words). MUST include 'when [situation] so [outcome]'. Consider ${analysis.topic} + ${analysis.department} for 'when' clause (contextual). Pattern: 'Helps you [action] when [situation] so [team/organization benefit].' Examples: Phishing+HR→'Helps you report threats when spotted so security protects employee data' | Ransomware+IT→'Helps you report incidents when detected so IT responds fast' | Generic→'Helps you report threats when spotted so security team reacts'. NOT: 'use the Report button' or procedural UI cues."
       }
     ],
     "key_message": [

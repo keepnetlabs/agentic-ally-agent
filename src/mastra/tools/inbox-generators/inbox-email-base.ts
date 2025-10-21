@@ -27,6 +27,7 @@ TOPIC CONTEXT: ${topic}
 - For phishing/email topics → emails may involve: account verification, password resets, suspicious links, invoice requests
 - For malware/file topics → emails may involve: software updates, file downloads, document attachments, system patches
 - For password/MFA topics → emails may involve: account security, authentication, login alerts, credential updates
+- For security protocols/incident response → emails may involve: policy compliance, protocol violations, remote work procedures, security guidelines, procedural checklist
 - Use topic context to make emails realistic and relevant to what users are learning
 
 SENDER DIVERSITY (CRITICAL):

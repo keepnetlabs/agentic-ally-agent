@@ -7,10 +7,40 @@ export function generateScene5Prompt(analysis: PromptAnalysis, microlearning: Mi
 
   return `${baseContext}
 
+=== GENERIC QUESTION PATTERNS (Category-Based, works for ANY topic)
+
+THREAT Category (Phishing, Ransomware, Deepfake, Vishing, Malware, Social Engineering, etc):
+- "What is the safest response?" (recommended)
+- "What should you do immediately?"
+- "What is the correct action?"
+
+TOOL Category (MFA, Password, Backup, Encryption, Data Privacy, etc):
+- "What is the correct approach?" (recommended)
+- "What should you do first?"
+- "What is best practice?"
+
+PROCESS Category (Incident Response, Security Protocols, Decision Frameworks, Compliance, etc):
+- "What is the appropriate action?" (recommended)
+- "What should be done?"
+- "What is the procedure?"
+
+=== GENERIC DESCRIPTION PATTERN (Works for ANY topic + department combination)
+
+Template: "You encounter [specific situation with observable detail]. [Category-based question]? Max 40 words in ${analysis.language}"
+
+Examples (to show pattern, not hardcoded):
+- Phishing: "You receive an email about urgent payment. The sender address looks official but the link shows a mismatched domain. What is the safest response?"
+- MFA: "A login screen requests two-factor setup for the first time. What is the correct approach?"
+- Ransomware: "Your files show unusual extensions and a message appears demanding payment. What is the safest response?"
+- Incident Response: "An employee reports suspicious account activity. What is the appropriate action?"
+
 Generate scene 5 (quiz):
 CRITICAL:
 1. NEVER use placeholder text. Replace ALL content with specific ${analysis.topic} information. Generate concrete quiz questions and answers.
 2. TOPIC CONSISTENCY: Keep all quiz content focused strictly on ${analysis.topic}.
+3. CATEGORY-BASED QUESTIONS: Use question pattern from ${analysis.category} (THREAT/TOOL/PROCESS) section
+4. ALWAYS END WITH: Generic category-based question: THREAT→"What is the safest response?" | TOOL→"What is the correct approach?" | PROCESS→"What is the appropriate action?"
+5. SCALABILITY: This pattern works for unlimited topics - not hardcoded per topic
 {
   "5": {
     "iconName": "brain",
@@ -19,48 +49,48 @@ CRITICAL:
     "callToActionText": "Localize 'Answer to Continue' into ${analysis.language}. Output localized text directly, not instructions.",
     "quizCompletionCallToActionText": "Localize 'Continue' into ${analysis.language}. Output localized text directly, not instructions.",
     "key_message": [
-      "Write actionable message 1 in ${analysis.language} for ${analysis.topic}: pause and verify suspicious content (max 8 words)",
-      "Write actionable message 2 in ${analysis.language} for ${analysis.topic}: report concerns to IT security immediately (max 7 words)",
-      "Write actionable message 3 in ${analysis.language} for ${analysis.topic}: always verify through proper channels (max 6 words)"
+      "Action message (${analysis.category}) for ${analysis.topic} (${analysis.department}), max 5 words in ${analysis.language}",
+      "Action message (${analysis.category}) for ${analysis.topic} (${analysis.department}), max 5 words in ${analysis.language}",
+      "Action message (${analysis.category}) for ${analysis.topic} (${analysis.department}), max 5 words in ${analysis.language}"
     ],
     "questions": {
       "totalCount": 2,
-      "maxAttempts": 10,
+      "maxAttempts": 2,
       "list": [
         {
           "id": "report-scenario",
           "type": "multiple_choice",
-          "title": "Write specific ${analysis.topic} scenario title in ${analysis.language} (max 8 words)",
-          "description": "Write realistic ${analysis.topic} scenario in ${analysis.language}: Create a specific situation where someone might encounter ${analysis.topic.toLowerCase()} (e.g., for deepfake: CEO video request, for phishing: urgent email, for malware: suspicious download). Ask what is the safest next step? (max 40 words)",
+          "title": "Scenario title for ${analysis.topic} (${analysis.department}), max 8 words in ${analysis.language}",
+          "description": "Scenario for ${analysis.topic} (${analysis.department}). Pattern: You encounter [specific situation with observable detail]. Question: THREAT→'What is the safest response?' | TOOL→'What is the correct approach?' | PROCESS→'What is the appropriate action?'. Max 40 words in ${analysis.language}",
           "options": [
             {
-              "id": "engage",
-              "text": "Write wrong answer 1 in ${analysis.language} for ${analysis.topic}: engage or interact with suspicious content (max 8 words)",
+              "id": "mistake1",
+              "text": "Common mistake for ${analysis.topic} (${analysis.department}), max 8 words in ${analysis.language}",
               "isCorrect": false
             },
             {
-              "id": "reply",
-              "text": "Write wrong answer 2 in ${analysis.language} for ${analysis.topic}: reply or respond to verify authenticity (max 8 words)",
+              "id": "mistake2",
+              "text": "Another mistake for ${analysis.topic} (${analysis.department}), max 8 words in ${analysis.language}",
               "isCorrect": false
             },
             {
-              "id": "report",
-              "text": "Write correct answer in ${analysis.language} for ${analysis.topic}: use Report button for IT investigation (max 8 words)",
+              "id": "correct",
+              "text": "Correct action for ${analysis.topic}, max 8 words in ${analysis.language}",
               "isCorrect": true
             },
             {
-              "id": "ignore",
-              "text": "Write wrong answer 3 in ${analysis.language} for ${analysis.topic}: ignore and delete without reporting (max 8 words)",
+              "id": "mistake3",
+              "text": "Another mistake for ${analysis.topic} (${analysis.department}), max 8 words in ${analysis.language}",
               "isCorrect": false
             }
           ],
-          "explanation": "Write explanation in ${analysis.language} for ${analysis.topic}: explain why reporting is correct and why other actions are risky (max 25 words)"
+          "explanation": "Why correct + benefit for ${analysis.topic} (${analysis.department}). Max 25 words in ${analysis.language}"
         },
         {
-          "id": "delete-vs-report", 
+          "id": "belief-test",
           "type": "true_false",
-          "title": "Write true/false question title in ${analysis.language} for ${analysis.topic} (max 5 words)",
-          "statement": "Write true/false statement in ${analysis.language} for ${analysis.topic}: Create a statement about safe behavior that is FALSE (e.g., for deepfake: 'If video looks authentic, safe to share', for phishing: 'If email from known sender, always safe', for malware: 'If file from colleague, always safe') (max 15 words)",
+          "title": "Assessment for ${analysis.topic} (${analysis.department}), max 5 words in ${analysis.language}",
+          "statement": "Common misconception about ${analysis.topic}, max 15 words in ${analysis.language}. Examples: Phishing→'Official-looking emails are always safe' | MFA→'Setting it up is optional' | Ransomware→'Files from colleagues are always safe'",
           "correctAnswer": false,
           "options": {
             "true": {
@@ -68,11 +98,11 @@ CRITICAL:
               "icon": "check"
             },
             "false": {
-              "label": "False", 
+              "label": "False",
               "icon": "x"
             }
           },
-          "explanation": "Write explanation in ${analysis.language} for ${analysis.topic}: explain why the statement is false and what the correct behavior should be (max 25 words)"
+          "explanation": "Why FALSE + correct action for ${analysis.topic} (${analysis.department}). Max 25 words in ${analysis.language}"
         }
       ]
     },

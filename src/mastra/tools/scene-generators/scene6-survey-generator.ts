@@ -14,9 +14,9 @@ Generate scene 6 (survey):
     "title": "Localize 'Share Your Experience' into ${analysis.language}. Output localized text directly, not instructions.",
     "subtitle": "Localize 'Help us improve your training experience' into ${analysis.language}. Output localized text directly, not instructions.",
     "texts": {
-      "ratingQuestion": "Return like 'How confident are you in spotting threats?' (max 12 words)",
-      "topicsQuestion": "Return like 'Which areas need more practice?' (max 10 words)",
-      "feedbackQuestion": "Return like 'What tips helped you most?' (max 8 words)",
+      "ratingQuestion": "Confidence question for ${analysis.topic} (${analysis.department}), max 12 words in ${analysis.language}",
+      "topicsQuestion": "Practice areas question for ${analysis.topic} (${analysis.department}), max 10 words in ${analysis.language}",
+      "feedbackQuestion": "Feedback question for ${analysis.topic} (${analysis.department}), max 8 words in ${analysis.language}",
       "feedbackPlaceholder": "Localize 'Type your thoughts here…' into ${analysis.language}",
       "submitButton": "Localize 'Submit' into ${analysis.language}",
       "submittingText": "Localize 'Submitting…' into ${analysis.language}",
@@ -25,8 +25,8 @@ Generate scene 6 (survey):
       "dataSecurityNotice": "Localize 'Your responses are anonymous and protected.' into ${analysis.language}",
       "successTitle": "Localize 'Thank you' into ${analysis.language}",
       "successMessage1": "Localize 'Thanks for your feedback.' into ${analysis.language}",
-      "successMessage2": "Return like 'Your feedback helps improve training' (max 8 words)",
-      "successMessage3": "Return like 'Awareness improves with your input' (max 8 words)",
+      "successMessage2": "Outcome message for ${analysis.topic}, max 8 words in ${analysis.language}",
+      "successMessage3": "Team-focused message for ${analysis.topic}, max 8 words in ${analysis.language}",
       "thankYouMessage": "Localize 'Stay safe.' into ${analysis.language}"
     },
     "ariaTexts": {
@@ -37,9 +37,9 @@ Generate scene 6 (survey):
       "formDescription": "Confidence rating, topics to improve and a free text area.",
       "headerLabel": "Form title",
       "formContentDescription": "Star rating, topic selections and text entry",
-      "ratingDescription": "Return like 'Rate your confidence level' (max 8 words)",
+      "ratingDescription": "Confidence rating description, max 8 words in ${analysis.language}",
       "starLabel": "star",
-      "topicsDescription": "Return like 'Select areas to improve' (max 8 words)",
+      "topicsDescription": "Practice areas description, max 8 words in ${analysis.language}",
       "topicLabel": "Topic checkbox",
       "feedbackDescription": "Text area for additional comments",
       "feedbackLabel": "Feedback field",
@@ -49,8 +49,8 @@ Generate scene 6 (survey):
       "securityNoticeLabel": "Data privacy note"
     },
     "topics": [
-      "Write a topic-specific skill (3-5 words) for ${analysis.topic}. Output ONLY the final phrase.",
-      "Write another topic-specific skill (3-5 words) for ${analysis.topic}. Output ONLY the final phrase."
+      "Skill for ${analysis.topic} (${analysis.category}), 3-5 words in ${analysis.language}",
+      "Another skill for ${analysis.topic} (${analysis.category}), 3-5 words in ${analysis.language}"
     ],
     "scene_type": "survey"
   }
