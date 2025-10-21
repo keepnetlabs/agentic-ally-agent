@@ -20,7 +20,9 @@ Topic: ${analysis.topic}
 Category: ${analysis.category}
 Resolution: NCSC (National Cyber Security Centre UK) - All verified URLs (200/301 status)
 
-RECOMMENDED RESOURCES (Selected by url-resolver function - from database of 30+ URLs):
+CRITICAL: Use ONLY the URLs from "RECOMMENDED RESOURCES" below. NEVER generate, invent, or suggest alternative URLs. If a URL is provided, use it exactly as shown.
+
+RECOMMENDED RESOURCES (Selected by url-resolver function - from database of 30+ verified URLs):
 ${urlsFormatted}
 
 FALLBACK RESOLUTION LOGIC (3-Level Safety Net):
@@ -28,7 +30,7 @@ FALLBACK RESOLUTION LOGIC (3-Level Safety Net):
 - Level 2: Category fallback (e.g., unknown topic + 'THREAT' → NCSC THREAT resources)
 - Level 3: Generic fallback (NCSC Cyber Assessment Framework + main guidance hub)
 
-All URLs guaranteed working (NCSC: 100% reliability)
+All URLs guaranteed working
 
 Generate scene 8 (summary):
 {

@@ -61,5 +61,6 @@ CRITICAL:
 2. title MUST be "Share Your Experience" - NEVER include topic name
 3. Questions (ratingQuestion, topicsQuestion, feedbackQuestion) must be generic, applicable to any topic
 4. ONLY topics array should be topic-specific (2 skills/areas for ${analysis.topic})
-5. Where you see "Return like 'example'" - output text SIMILAR to example, NOT the instruction itself`;
+5. Where you see "Return like 'example'" - output text SIMILAR to example, NOT the instruction itself
+6. SCENE_TYPE MUST ALWAYS BE "survey" - NEVER "summary" or anything else`;
 }
