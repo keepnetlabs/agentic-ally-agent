@@ -1,7 +1,6 @@
 import { Tool } from '@mastra/core/tools';
 import { generateText } from 'ai';
 import { MicrolearningContent } from '../types/microlearning';
-import { RemoteStorageService } from '../services/remote-storage-service';
 import { MicrolearningService } from '../services/microlearning-service';
 import { getModel, Model, ModelProvider } from '../model-providers';
 import { InboxContentSchema } from '../schemas/microlearning-schema';
@@ -19,10 +18,10 @@ export const createInboxStructureTool = new Tool({
   outputSchema: CreateInboxStructureOutputSchema,
   execute: async (context: any) => {
     const input = context?.inputData || context?.input || context;
-    const { department, languageCode, microlearningId, microlearning, remote } = input;
+    const { department, languageCode, microlearningId, microlearning } = input;
 
     try {
-      const inboxContent = await createInboxStructure(department, languageCode, microlearningId, microlearning, remote);
+      const inboxContent = await createInboxStructure(department, languageCode, microlearningId, microlearning);
 
       console.log(`📦 Tool returning inbox content:`, typeof inboxContent, Object.keys(inboxContent || {}));
 
@@ -55,8 +54,7 @@ async function createInboxStructure(
   department: string,
   languageCode: string,
   microlearningId: string,
-  microlearning: MicrolearningContent,
-  remote: RemoteStorageService
+  microlearning: MicrolearningContent
 ) {
   // Maintain in-memory assignment for analytics and tools
   await microlearningService.assignMicrolearningToDepartment(
@@ -80,7 +78,6 @@ async function createInboxStructure(
       dept  // Pass department for context-specific emails
     );
 
-    await remote.upsertInbox(dept, languageCode, microlearningId, dynamicInboxData);
     return dynamicInboxData; // Return the generated content
 
   } catch (firstError) {
@@ -95,14 +92,12 @@ async function createInboxStructure(
         dept  // Pass department for context-specific emails
       );
 
-      await remote.upsertInbox(dept, languageCode, microlearningId, dynamicInboxData);
       return dynamicInboxData; // Return the generated content after retry
 
     } catch (secondError) {
       console.warn('Second attempt failed, using fallback:', secondError);
       // Fallback to basic structure
       const fallbackPayload = { texts: {}, emails: [] };
-      await remote.upsertInbox(dept, languageCode, microlearningId, fallbackPayload);
       return fallbackPayload; // Return the fallback content
     }
   }

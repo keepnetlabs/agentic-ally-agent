@@ -31,7 +31,7 @@ export function generateMicrolearningId(topic: string): string {
   return topic.toLowerCase()
     .replace(/[^a-z0-9\s]/g, '')
     .replace(/\s+/g, '-')
-    .substring(0, 30) + '-' + Date.now().toString().slice(-6);
+    .substring(0, 50) + '-' + Date.now().toString().slice(-6);
 }
 
 // Normalize department name for file paths (replace spaces with hyphens)
