@@ -5,59 +5,77 @@ import { buildBaseContext } from '../../utils/prompt-builders/base-context-build
 export function generateScene7Prompt(analysis: PromptAnalysis, microlearning: MicrolearningContent): string {
   const baseContext = buildBaseContext(analysis, microlearning);
 
+  // Use keyTopics to provide more specific context for dynamic nudge generation
+  const keyTopicsHint = analysis.keyTopics?.slice(0, 3).join(', ') || 'general security practice';
+
   return `${baseContext}
 
-=== GENERIC IMPLEMENTATION INTENTION PATTERNS (Category-Based, works for ANY topic)
+SCENE 7 - NUDGE (Implementation Intention Reminder):
+Topic: ${analysis.topic} | Key Topics: ${keyTopicsHint} | Category: ${analysis.category} | Language: ${analysis.language}
 
-THREAT Category (Phishing, Ransomware, Deepfake, Vishing, Malware, Social Engineering, etc):
-Template: "Next time you [perceive/encounter threat], you will [verify/isolate/report]"
-Examples:
-- "Next time you see suspicious email, verify sender"
-- "Next time you see video of leader, verify authenticity"
-- "Next time files look encrypted, isolate system"
-- "Next time someone calls requesting access, verify through official channels"
+⚠️ JSON OUTPUT RULES (CRITICAL):
+- Return ONLY key "7" (NEVER "1", "2", etc.)
+- scene_type MUST be "nudge" (NEVER other types)
+- Do NOT add extra fields or change field names
+- Output ONLY valid JSON
 
-TOOL Category (MFA, Password, Backup, Encryption, Data Privacy, etc):
-Template: "Next time you [use/need feature], you will [enable/setup/test]"
-Examples:
-- "Next time you see login prompt, enable MFA"
-- "Next time you create password, use password manager"
-- "Next time you finish critical work, verify backup"
-- "Next time you handle sensitive data, encrypt before sharing"
+=== PRODUCTION EXAMPLE: Phishing (THREAT Category)
 
-PROCESS Category (Incident Response, Security Protocols, Decision Frameworks, Compliance, etc):
-Template: "Next time you [encounter situation], you will [follow procedure]"
-Examples:
-- "Next time incident occurs, follow response playbook"
-- "Next time you face choice, apply security framework"
-- "Next time policy applies, validate compliance"
-- "Next time procedure needed, follow guidelines"
+Phishing Example:
+Subtitle: "Next time a suspicious email appears, you will do this:"
+Key Messages:
+1. "Recognise a suspicious email"
+2. "Don't click links or open unknown attachments"
+3. "Use the report button"
 
-=== GENERIC KEY MESSAGE PATTERNS (3-Step Framework: Recognize → Avoid/Do → Report/Enable)
+ADAPT THIS EXACT PATTERN TO ${analysis.topic}:
 
-THREAT Category (ANY threat topic):
-Step 1 - RECOGNIZE: [Perceive indicator] - Max 6 words
-  Examples: "Check sender carefully" | "Spot encrypted files" | "Identify video signs"
-Step 2 - AVOID/PROTECT: [Don't/Protective action] - Max 8 words
-  Examples: "Don't click links or open attachments" | "Don't open suspicious files" | "Don't trust without verification"
-Step 3 - REPORT/ISOLATE: [Escalate] - Max 5 words
-  Examples: "Report to IT" | "Isolate system immediately" | "Report the finding"
+SUBTITLE PATTERN FOR ${analysis.topic}:
+Structure: "Next time [specific situation in ${analysis.topic}], you will [concrete action]:"
+Guidelines:
+- Situation: Must be specific, observable trigger for ${analysis.topic}
+- Action: Concrete, immediately actionable step(s)
+- Format: Question/directive style ending with colon (:)
+- Max 15 words in ${analysis.language}
 
-TOOL Category (ANY tool topic):
-Step 1 - RECOGNIZE: [Perceive need/opportunity] - Max 6 words
-  Examples: "See login request" | "Create new password" | "Finish critical work"
-Step 2 - AVOID/DO: [Protective setup action] - Max 8 words
-  Examples: "Don't skip setup" | "Don't use weak passwords" | "Don't forget to backup"
-Step 3 - ENABLE/TEST: [Confirm/verify] - Max 5 words
-  Examples: "Enable immediately" | "Use password manager" | "Verify works"
+Examples by Category:
+- IF THREAT (${analysis.category}): "Next time [suspicious activity], you will [verify/report/isolate]:"
+- IF TOOL (${analysis.category}): "Next time [need/opportunity], you will [enable/setup]:"
+- IF PROCESS (${analysis.category}): "Next time [situation], you will [follow/apply]:"
 
-PROCESS Category (ANY process topic):
-Step 1 - RECOGNIZE: [Spot situation] - Max 6 words
-  Examples: "Notice unusual activity" | "Face policy decision" | "See compliance gap"
-Step 2 - AVOID/FOLLOW: [Don't deviate] - Max 8 words
-  Examples: "Don't investigate alone" | "Don't skip procedures" | "Don't assume optional"
-Step 3 - REPORT/VALIDATE: [Confirm adherence] - Max 5 words
-  Examples: "Report to team" | "Follow guidelines always" | "Validate compliance"
+Generate for ${analysis.topic}: Apply ${analysis.category} subtitle pattern above. Max 15 words.
+
+=== KEY MESSAGE STRUCTURE (3-Step Dynamic Framework)
+
+STEP 1 - RECOGNIZE (Action verb + topic-specific indicator):
+Pattern: [Action verb] [specific indicator for ${analysis.topic}]
+Example: "Recognise a suspicious email" (for phishing)
+Generate for ${analysis.topic}: Max 6 words in ${analysis.language}
+
+STEP 2 - PROTECT (Category-specific pattern for ${analysis.topic}):
+
+IF category is THREAT:
+  Pattern: "Don't [harmful action to avoid]"
+  Example: "Don't click links or open unknown attachments"
+  Generate for ${analysis.topic}: [DON'T] [specific harmful action]. Max 8 words.
+
+IF category is TOOL:
+  Pattern: "[Enable/Use/Setup] [security feature]"
+  Example: "Enable MFA before accessing company systems"
+  Generate for ${analysis.topic}: [ENABLE/USE/SETUP] [feature from ${keyTopicsHint}]. Max 8 words.
+
+IF category is PROCESS:
+  Pattern: "[Follow/Use/Apply] [procedure/framework]"
+  Example: "Follow incident response procedures immediately"
+  Generate for ${analysis.topic}: [FOLLOW/USE] [procedure]. Max 8 words.
+
+YOUR TOPIC CATEGORY: ${analysis.category}
+Apply the ${analysis.category} pattern above for ${analysis.topic}.
+
+STEP 3 - VERIFY (Escalation or confirmation action):
+Pattern: [Action verb] [escalation/reporting/verification method]
+Example: "Use the report button" (for phishing)
+Generate for ${analysis.topic}: Max 5 words in ${analysis.language}
 
 {
   "7": {
@@ -66,13 +84,13 @@ Step 3 - REPORT/VALIDATE: [Confirm adherence] - Max 5 words
     "callToActionText": "Localize 'Continue' into ${analysis.language}",
     "texts": {
       "title": "Localize 'Action Plan' into ${analysis.language}",
-      "subtitle": "Next time [situation for ${analysis.topic}], you will [action]. Max 15 words in ${analysis.language}",
+      "subtitle": "Adapt phishing example pattern to ${analysis.topic}. Next time [specific situation in ${analysis.topic}], you will [concrete action]: Max 15 words in ${analysis.language}. REFERENCE PHISHING: 'Next time a suspicious email appears, you will do this:'",
       "actionsTitle": "Localize 'Your next steps' into ${analysis.language}"
     },
     "key_message": [
-      "Perceive indicator for ${analysis.topic} (${analysis.category} pattern). Max 6 words in ${analysis.language}",
-      "Protective action for ${analysis.topic} (${analysis.category} pattern). Max 8 words in ${analysis.language}",
-      "Escalate per ${analysis.category} pattern for ${analysis.topic}. Max 5 words in ${analysis.language}"
+      "Step 1 - RECOGNIZE for ${analysis.topic}: Adapt from phishing example 'Recognise a suspicious email'. Max 6 words in ${analysis.language}",
+      "Step 2 - PROTECT for ${analysis.topic} (${analysis.category} category): Adapt from phishing example 'Don't click links or open unknown attachments' using ${analysis.category} pattern. Max 8 words in ${analysis.language}",
+      "Step 3 - VERIFY for ${analysis.topic}: Adapt from phishing example 'Use the report button'. Max 5 words in ${analysis.language}"
     ],
     "scene_type": "nudge"
   }

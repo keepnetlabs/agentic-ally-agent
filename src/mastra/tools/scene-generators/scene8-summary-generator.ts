@@ -6,31 +6,46 @@ import { getResourcesForScene8 } from '../../utils/url-resolver';
 export function generateScene8Prompt(analysis: PromptAnalysis, microlearning: MicrolearningContent): string {
   const baseContext = buildBaseContext(analysis, microlearning);
 
-  // Dynamically resolve topic-aware, category-aware resource URLs
-  const resources = getResourcesForScene8(analysis);
+  // Dynamically resolve resources using keyTopics (more accurate) + category fallback
+  console.log('🔍 Scene 8 - Resource Resolution Debug:');
+  console.log('  Topic:', analysis.topic);
+  console.log('  Category:', analysis.category);
+  console.log('  keyTopics:', analysis.keyTopics);
+
+  const resources = getResourcesForScene8({
+    topic: analysis.topic,
+    category: analysis.category,
+    keyTopics: analysis.keyTopics, // Pass keyTopics for dynamic resolution
+    department: analysis.department,
+    language: analysis.language
+  });
+
+  console.log('  Resources found:', resources.map(r => r.title).join(', '));
+
   const urlsFormatted = resources
     .map((resource, index) => `${index + 1}. ${resource.title}: ${resource.url}`)
     .join('\n');
 
   return `${baseContext}
 
-=== AUTHORITATIVE RESOURCE URLS (Dynamic: Topic-aware + Category-aware)
+=== AUTHORITATIVE RESOURCE URLS (Dynamic: keyTopics-based Resolution)
 
 Topic: ${analysis.topic}
 Category: ${analysis.category}
-Resolution: NCSC (National Cyber Security Centre UK) - All verified URLs (200/301 status)
+Resolution Method: Smart keyTopics matching + category fallback
 
-CRITICAL: Use ONLY the URLs from "RECOMMENDED RESOURCES" below. NEVER generate, invent, or suggest alternative URLs. If a URL is provided, use it exactly as shown.
+CRITICAL RULES:
+1. Use ONLY the URLs below - NEVER generate, invent, or suggest alternatives
+2. Localize resource titles into ${analysis.language} (max 5 words)
+3. Keep descriptions concise and action-focused
 
-RECOMMENDED RESOURCES (Selected by url-resolver function - from database of 30+ verified URLs):
+RECOMMENDED RESOURCES:
 ${urlsFormatted}
 
-FALLBACK RESOLUTION LOGIC (3-Level Safety Net):
-- Level 1: Topic-specific mapping (e.g., 'phishing' → NCSC Phishing guidance)
-- Level 2: Category fallback (e.g., unknown topic + 'THREAT' → NCSC THREAT resources)
-- Level 3: Generic fallback (NCSC Cyber Assessment Framework + main guidance hub)
-
-All URLs guaranteed working
+Resolution Priority:
+- Level 1: Match against keyTopics database
+- Level 2: Category fallback (THREAT/TOOL/PROCESS resources)
+- Level 3: Generic resources (NCSC Cyber Assessment Framework)
 
 Generate scene 8 (summary):
 {

@@ -7,39 +7,32 @@ export function generateScene5Prompt(analysis: PromptAnalysis, microlearning: Mi
 
   return `${baseContext}
 
-=== GENERIC QUESTION PATTERNS (Category-Based, works for ANY topic)
+=== QUESTION PATTERNS (Adapt to ${analysis.topic}, do NOT copy examples)
 
-THREAT Category (Phishing, Ransomware, Deepfake, Vishing, Malware, Social Engineering, etc):
-- "What is the safest response?" (recommended)
-- "What should you do immediately?"
-- "What is the correct action?"
+THREAT Pattern:
+Template: "You encounter [sign]. What is safest response?"
+Example: "Email requests urgent payment, sender looks official but link mismatches. What do you do?" → Report
 
-TOOL Category (MFA, Password, Backup, Encryption, Data Privacy, etc):
-- "What is the correct approach?" (recommended)
-- "What should you do first?"
-- "What is best practice?"
+TOOL Pattern:
+Template: "You need to [action]. What's your first step?"
+Example: "Login requests 2FA setup. What do you do?" → Enable immediately
 
-PROCESS Category (Incident Response, Security Protocols, Decision Frameworks, Compliance, etc):
-- "What is the appropriate action?" (recommended)
-- "What should be done?"
-- "What is the procedure?"
+PROCESS Pattern:
+Template: "You face [situation]. What procedure applies?"
+Example: "Employee reports suspicious activity. What do you do?" → Follow incident response playbook
 
-=== GENERIC DESCRIPTION PATTERN (Works for ANY topic + department combination)
-
-Template: "You encounter [specific situation with observable detail]. [Category-based question]? Max 40 words in ${analysis.language}"
-
-Examples (to show pattern, not hardcoded):
-- Phishing: "You receive an email about urgent payment. The sender address looks official but the link shows a mismatched domain. What is the safest response?"
-- MFA: "A login screen requests two-factor setup for the first time. What is the correct approach?"
-- Ransomware: "Your files show unusual extensions and a message appears demanding payment. What is the safest response?"
-- Incident Response: "An employee reports suspicious account activity. What is the appropriate action?"
+FOR ${analysis.topic} (${analysis.department}):
+- Use matching pattern template above (NOT example content)
+- Generate 2-3 questions matching pattern
+- Create realistic workplace scenarios
+- Correct answers = practical actions, NOT recall
 
 Generate scene 5 (quiz):
 CRITICAL:
 1. NEVER use placeholder text. Replace ALL content with specific ${analysis.topic} information. Generate concrete quiz questions and answers.
 2. TOPIC CONSISTENCY: Keep all quiz content focused strictly on ${analysis.topic}.
 3. CATEGORY-BASED QUESTIONS: Use question pattern from ${analysis.category} (THREAT/TOOL/PROCESS) section
-4. ALWAYS END WITH: Generic category-based question: THREAT→"What is the safest response?" | TOOL→"What is the correct approach?" | PROCESS→"What is the appropriate action?"
+4. QUESTION FORMAT: For THREAT category ask "What is the safest response?" | For TOOL category ask "What is the correct approach?" | For PROCESS category ask "What is the appropriate action?"
 5. SCALABILITY: This pattern works for unlimited topics - not hardcoded per topic
 {
   "5": {
@@ -61,7 +54,7 @@ CRITICAL:
           "id": "report-scenario",
           "type": "multiple_choice",
           "title": "Scenario title for ${analysis.topic} (${analysis.department}), max 8 words in ${analysis.language}",
-          "description": "Scenario for ${analysis.topic} (${analysis.department}). Pattern: You encounter [specific situation with observable detail]. Question: THREAT→'What is the safest response?' | TOOL→'What is the correct approach?' | PROCESS→'What is the appropriate action?'. Max 40 words in ${analysis.language}",
+          "description": "Realistic workplace scenario for ${analysis.topic} (${analysis.department}). Describe: [situation with observable detail]. Then ask appropriate question for ${analysis.category} category. Max 40 words in ${analysis.language}",
           "options": [
             {
               "id": "mistake1",
@@ -90,7 +83,7 @@ CRITICAL:
           "id": "belief-test",
           "type": "true_false",
           "title": "Assessment for ${analysis.topic} (${analysis.department}), max 5 words in ${analysis.language}",
-          "statement": "Common misconception about ${analysis.topic}, max 15 words in ${analysis.language}. Examples: Phishing→'Official-looking emails are always safe' | MFA→'Setting it up is optional' | Ransomware→'Files from colleagues are always safe'",
+          "statement": "Common misconception or false belief about ${analysis.topic}, max 15 words in ${analysis.language}",
           "correctAnswer": false,
           "options": {
             "true": {

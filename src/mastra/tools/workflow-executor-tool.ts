@@ -12,6 +12,7 @@ const workflowExecutorSchema = z.object({
   prompt: z.string().optional().describe('User prompt for microlearning creation'),
   additionalContext: z.string().optional().describe('Additional context for the microlearning'),
   department: z.string().optional().describe('Target department'),
+  level: z.enum(['Beginner', 'Intermediate', 'Advanced']).optional().default('Intermediate').describe('Content difficulty level'),
   priority: z.enum(['low', 'medium', 'high']).optional().default('medium'),
 
   // Add language parameters  
@@ -166,6 +167,7 @@ Examples:
             prompt: params.prompt!,
             additionalContext: params.additionalContext,
             department: params.department || 'All',
+            level: params.level || 'Intermediate',
             priority: params.priority || 'medium'
           }
         });

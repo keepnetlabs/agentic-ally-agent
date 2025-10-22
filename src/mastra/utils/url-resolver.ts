@@ -6,6 +6,7 @@ export interface ResourceURL {
   category?: string;
 }
 
+
 /**
  * URL Database: 30+ verified, working URLs from CISA and NCSC
  * Organized by topic, with category and department fallbacks
@@ -19,21 +20,34 @@ const URL_DATABASE: Record<string, ResourceURL[]> = {
       category: 'THREAT'
     },
     {
-      title: 'NCSC Data Security & Guidance',
+      title: 'NCSC Phishing Scams Guidance',
       url: 'https://www.ncsc.gov.uk/collection/phishing-scams',
+      category: 'THREAT'
+    }
+  ],
+
+  'quishing': [
+    {
+      title: 'What is Quishing (QR Phishing)?',
+      url: 'https://keepnetlabs.com/blog/understanding-quishing',
+      category: 'THREAT'
+    },
+    {
+      title: 'NCSC Mobile Device Security Guidance',
+      url: 'https://www.ncsc.gov.uk/collection/mobile-device-guidance',
       category: 'THREAT'
     }
   ],
 
   'ransomware': [
     {
-      title: 'NCSC Data Security & Ransomware Protection',
-      url: 'https://www.ncsc.gov.uk/collection/caf/caf-principles-and-guidance/b-3-data-security',
+      title: 'Ransomware Prevention & Response Guide',
+      url: 'https://keepnetlabs.com/blog/ransomware-prevention-response-guide',
       category: 'THREAT'
     },
     {
-      title: 'Ransomware with Scam Calls',
-      url: 'https://keepnetlabs.com/blog/ransomware-with-scam-calls',
+      title: 'NCSC Data Security & Ransomware Protection',
+      url: 'https://www.ncsc.gov.uk/collection/caf/caf-principles-and-guidance/b-3-data-security',
       category: 'THREAT'
     }
   ],
@@ -79,8 +93,8 @@ const URL_DATABASE: Record<string, ResourceURL[]> = {
 
   'social-engineering': [
     {
-      title: 'What Is Spyware?',
-      url: 'https://keepnetlabs.com/blog/what-is-spyware',
+      title: 'Social Engineering Attack Types & Prevention',
+      url: 'https://keepnetlabs.com/blog/social-engineering-attack-types-prevention',
       category: 'THREAT'
     },
     {
@@ -92,52 +106,52 @@ const URL_DATABASE: Record<string, ResourceURL[]> = {
 
   'data-breach': [
     {
-      title: 'What are Payment Card Data Security Standards',
-      url: 'https://keepnetlabs.com/blog/what-are-payment-card-data-security-standards-pci-dss',
+      title: 'Data Breach Response & Notification Guide',
+      url: 'https://keepnetlabs.com/blog/data-breach-response-notification',
       category: 'THREAT'
     },
     {
-      title: 'What is Data Masking?',
-      url: 'https://keepnetlabs.com/blog/what-is-data-masking-understanding-its-importance',
+      title: 'What are Payment Card Data Security Standards',
+      url: 'https://keepnetlabs.com/blog/what-are-payment-card-data-security-standards-pci-dss',
       category: 'THREAT'
     }
   ],
 
   'mfa': [
     {
-      title: 'NCSC Multi-Factor Authentication Guidance',
-      url: 'https://www.ncsc.gov.uk/collection/mfa-for-your-corporate-online-services',
+      title: 'What is MFA Fatigue Attack?',
+      url: 'https://keepnetlabs.com/blog/what-is-mfa-fatigue-attack-and-how-to-prevent-it',
       category: 'TOOL'
     },
     {
-      title: 'What is MFA Fatigue Attack?',
-      url: 'https://keepnetlabs.com/blog/what-is-mfa-fatigue-attack-and-how-to-prevent-it',
+      title: 'NCSC Multi-Factor Authentication Guidance',
+      url: 'https://www.ncsc.gov.uk/collection/mfa-for-your-corporate-online-services',
       category: 'TOOL'
     }
   ],
 
   'password': [
     {
-      title: 'Instagram Password Hacked?',
-      url: 'https://keepnetlabs.com/blog/instagram-hack-uncover-the-risks-and-protect-your-account',
+      title: 'Comprehensive Guide on Password Security Best Practices',
+      url: 'https://keepnetlabs.com/blog/comprehensive-guide-on-password-security-best-practices',
       category: 'TOOL'
     },
     {
-      title: 'Comprehensive Guide on Password Security Best Practices',
-      url: 'https://keepnetlabs.com/blog/comprehensive-guide-on-password-security-best-practices',
+      title: 'NCSC Password Guidance & Best Practices',
+      url: 'https://www.ncsc.gov.uk/collection/caf/caf-principles-and-guidance/a-3-protecting-passwords',
       category: 'TOOL'
     }
   ],
 
   'backup': [
     {
-      title: 'NCSC Data Security & Backup Guidelines',
-      url: 'https://www.ncsc.gov.uk/collection/caf/caf-principles-and-guidance/b-3-data-security',
+      title: 'Backup & Recovery Best Practices',
+      url: 'https://keepnetlabs.com/blog/backup-recovery-best-practices',
       category: 'TOOL'
     },
     {
-      title: 'NCSC Cyber Assessment Framework',
-      url: 'https://www.ncsc.gov.uk/collection/cyber-assessment-framework',
+      title: 'NCSC Data Security & Backup Guidelines',
+      url: 'https://www.ncsc.gov.uk/collection/caf/caf-principles-and-guidance/b-3-data-security',
       category: 'TOOL'
     }
   ],
@@ -157,13 +171,65 @@ const URL_DATABASE: Record<string, ResourceURL[]> = {
 
   'data-privacy': [
     {
-      title: 'NCSC Data Security & Privacy Framework',
-      url: 'https://www.ncsc.gov.uk/collection/caf/caf-principles-and-guidance/b-3-data-security',
+      title: 'What is a Privacy Program?',
+      url: 'https://keepnetlabs.com/blog/what-is-a-privacy-program-how-to-build-an-effective-privacy-program',
       category: 'TOOL'
     },
     {
-      title: 'What is a Privacy Program?',
-      url: 'https://keepnetlabs.com/blog/what-is-a-privacy-program-how-to-build-an-effective-privacy-program',
+      title: 'NCSC Data Security & Privacy Framework',
+      url: 'https://www.ncsc.gov.uk/collection/caf/caf-principles-and-guidance/b-3-data-security',
+      category: 'TOOL'
+    }
+  ],
+
+  'vpn': [
+    {
+      title: 'NCSC Secure Remote Access Guidance',
+      url: 'https://www.ncsc.gov.uk/blog-post/cni-system-design-secure-remote-access',
+      category: 'TOOL'
+    },
+    {
+      title: 'VPN Security Best Practices',
+      url: 'https://keepnetlabs.com/blog/vpn-security-best-practices',
+      category: 'TOOL'
+    }
+  ],
+
+  'remote-access': [
+    {
+      title: 'NCSC Secure Remote Access Design',
+      url: 'https://www.ncsc.gov.uk/blog-post/cni-system-design-secure-remote-access',
+      category: 'TOOL'
+    },
+    {
+      title: 'Remote Access Security Best Practices',
+      url: 'https://keepnetlabs.com/blog/remote-access-security-best-practices',
+      category: 'TOOL'
+    }
+  ],
+
+  'remote-work': [
+    {
+      title: 'Remote Worker Security Checklist',
+      url: 'https://keepnetlabs.com/blog/remote-worker-security-checklist',
+      category: 'TOOL'
+    },
+    {
+      title: 'NCSC Secure Remote Working Guidance',
+      url: 'https://www.ncsc.gov.uk/blog-post/cni-system-design-secure-remote-access',
+      category: 'TOOL'
+    }
+  ],
+
+  'secure-connection': [
+    {
+      title: 'Secure Network Connections Best Practices',
+      url: 'https://keepnetlabs.com/blog/secure-network-connections',
+      category: 'TOOL'
+    },
+    {
+      title: 'NCSC Data Security Standards',
+      url: 'https://www.ncsc.gov.uk/collection/caf/caf-principles-and-guidance/b-3-data-security',
       category: 'TOOL'
     }
   ],
@@ -310,15 +376,72 @@ export function resolveResourceUrls(
 }
 
 /**
- * Alias function for Scene 8 integration
- * Wraps resolveResourceUrls for consistency with PromptAnalysis interface
+ * Alias function for Scene 8 integration - Enhanced with keyTopics
+ * Uses keyTopics array for dynamic resource resolution
+ * Falls back to category + generic if keyTopics are not available
  */
 export function getResourcesForScene8(analysis: {
   topic: string;
   category: string;
+  keyTopics?: string[];
   department?: string;
   language?: string;
 }): ResourceURL[] {
+  console.log('🔗 getResourcesForScene8 called');
+  console.log('  keyTopics input:', analysis.keyTopics);
+
+  // LEVEL 1: Try to resolve from keyTopics (most dynamic)
+  if (analysis.keyTopics && analysis.keyTopics.length > 0) {
+    const resources: ResourceURL[] = [];
+
+    for (const keyTopic of analysis.keyTopics) {
+      // Normalize: lowercase + remove special chars + replace spaces with dashes
+      const topicKey = keyTopic
+        .toLowerCase()
+        .trim()
+        .replace(/[^\w\s-]/g, '') // remove special chars
+        .replace(/\s+/g, '-') // spaces to dashes
+        .replace(/-+/g, '-'); // multiple dashes to single dash
+
+      console.log(`  Checking keyTopic: "${keyTopic}" → normalized: "${topicKey}"`);
+
+      if (URL_DATABASE[topicKey] && URL_DATABASE[topicKey].length > 0) {
+        console.log(`    ✅ Found ${URL_DATABASE[topicKey].length} resources for "${topicKey}"`);
+        resources.push(...URL_DATABASE[topicKey]);
+      } else {
+        console.log(`    ❌ No exact match for "${topicKey}", checking alternatives...`);
+        // Log available keys for debugging
+        console.log(`    Available keys: ${Object.keys(URL_DATABASE).filter(k => k !== 'THREAT' && k !== 'TOOL' && k !== 'PROCESS' && k !== 'GENERIC').slice(0, 10).join(', ')}`);
+      }
+    }
+
+    // If we found resources from keyTopics, return top 2 (avoiding duplicates)
+    if (resources.length > 0) {
+      console.log(`  📦 Found ${resources.length} total resources from keyTopics`);
+
+      // Remove duplicates and return top 2
+      const uniqueUrls = new Set<string>();
+      const uniqueResources: ResourceURL[] = [];
+
+      for (const resource of resources) {
+        if (!uniqueUrls.has(resource.url)) {
+          uniqueUrls.add(resource.url);
+          uniqueResources.push(resource);
+          if (uniqueResources.length === 2) break;
+        }
+      }
+
+      console.log(`  ✅ Returning ${uniqueResources.length} unique resources from keyTopics`);
+      return uniqueResources;
+    } else {
+      console.log(`  ⚠️ No resources found from keyTopics, falling back to standard resolution`);
+    }
+  } else {
+    console.log(`  ⚠️ keyTopics empty or undefined, using standard resolution`);
+  }
+
+  // LEVEL 2: Fallback to standard topic/category resolution
+  console.log(`  Fallback: Using topic="${analysis.topic}", category="${analysis.category}"`);
   return resolveResourceUrls(
     analysis.topic,
     analysis.category,

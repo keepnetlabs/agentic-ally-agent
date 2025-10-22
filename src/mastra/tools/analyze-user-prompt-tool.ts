@@ -11,6 +11,7 @@ const AnalyzeUserPromptSchema = z.object({
   userPrompt: z.string().min(1, 'User prompt is required'),
   additionalContext: z.string().optional(),
   suggestedDepartment: z.string().optional(),
+  suggestedLevel: z.enum(['Beginner', 'Intermediate', 'Advanced']).optional().default('Intermediate'),
   customRequirements: z.string().optional(),
 });
 
@@ -102,7 +103,8 @@ export const analyzeUserPromptTool = new Tool({
 
 USER: "${userPrompt}" (LANGUAGE: ${detectLanguageFallback(userPrompt).toUpperCase()})
 CONTEXT: ${additionalContext || 'none'}
-DEPARTMENT: ${suggestedDepartment || 'not specified'}${examplesBlock}
+DEPARTMENT: ${suggestedDepartment || 'not specified'}
+SUGGESTED LEVEL: ${input.suggestedLevel || 'auto-detect'}${examplesBlock}
 
 Return JSON:
 {
@@ -110,7 +112,7 @@ Return JSON:
   "topic": "2-3 words max - core subject only",
   "title": "3-5 words max - professional training title", 
   "department": "target department or 'All'",
-  "level": "beginner/intermediate/advanced based on complexity",
+  "level": "beginner/intermediate/advanced - use SUGGESTED LEVEL if provided, else detect from complexity",
   "category": "main category - Security Awareness, Leadership, Data Protection, Technical Skills, etc.",
   "subcategory": "specific subcategory based on focus",
   "learningObjectives": ["specific skills learner can DO after 5-min training. Use simple action verbs (spot, check, create, report, verify, pause, enable). NOT meta-tasks (pass quiz, complete test) or unrealistic goals (teach others, become expert)"],

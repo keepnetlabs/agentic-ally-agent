@@ -54,13 +54,17 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
   const videoPrompt = videoData.prompt;
   const selectedVideoUrl = videoData.videoUrl;
   const selectedTranscript = videoData.transcript;
-
   // Generate scene 4, 5, 6 prompts using modular generators
   const scene4Prompt = generateScene4Prompt(analysis, microlearning);
   const scene5Prompt = generateScene5Prompt(analysis, microlearning);
   const scene6Prompt = generateScene6Prompt(analysis, microlearning);
 
-  // Generate scene 7, 8 prompts using modular generators  
+  // Generate scene 7, 8 prompts using modular generators
+  console.log('📋 Analysis data for Scene 8:');
+  console.log('  topic:', analysis.topic);
+  console.log('  category:', analysis.category);
+  console.log('  keyTopics:', analysis.keyTopics);
+
   const scene7Prompt = generateScene7Prompt(analysis, microlearning);
   const scene8Prompt = generateScene8Prompt(analysis, microlearning);
 
@@ -181,9 +185,12 @@ Start directly with {`;
     let scene1Scenes, scene2Scenes, videoScenes, mainScenes, closingScenes;
 
     try {
+      console.log('📤 Scene 1 RAW Response:', scene1Response.text.substring(0, 500));
       const cleanedScene1 = cleanResponse(scene1Response.text, 'scene1');
+      console.log('🧹 Scene 1 CLEANED:', cleanedScene1.substring(0, 500));
       scene1Scenes = JSON.parse(cleanedScene1);
-      console.log('✅ Scene 1 parsed successfully');
+      console.log('✅ Scene 1 PARSED:', JSON.stringify(scene1Scenes).substring(0, 500));
+      console.log('🔍 Scene 1 has highlights?', !!scene1Scenes['1']?.highlights);
     } catch (parseErr) {
       console.error('❌ Failed to parse scene 1:', parseErr);
       console.log('🔍 Scene 1 response preview:', scene1Response.text.substring(0, 200));
@@ -191,9 +198,11 @@ Start directly with {`;
     }
 
     try {
+      console.log('📤 Scene 2 RAW Response:', scene2Response.text.substring(0, 500));
       const cleanedScene2 = cleanResponse(scene2Response.text, 'scene2');
+      console.log('🧹 Scene 2 CLEANED:', cleanedScene2.substring(0, 500));
       scene2Scenes = JSON.parse(cleanedScene2);
-      console.log('✅ Scene 2 parsed successfully');
+      console.log('✅ Scene 2 PARSED:', JSON.stringify(scene2Scenes).substring(0, 500));
     } catch (parseErr) {
       console.error('❌ Failed to parse scene 2:', parseErr);
       console.log('🔍 Scene 2 response preview:', scene2Response.text.substring(0, 200));
@@ -201,17 +210,17 @@ Start directly with {`;
     }
 
     try {
+      console.log('📤 Video RAW Response:', videoResponse.text.substring(0, 500));
       const cleanedVideo = cleanResponse(videoResponse.text, 'video');
+      console.log('🧹 Video CLEANED:', cleanedVideo.substring(0, 500));
       videoScenes = JSON.parse(cleanedVideo);
-
+      console.log('✅ Video PARSED:', JSON.stringify(videoScenes).substring(0, 500));
       // Override video URL and transcript with actual selected values
       if (videoScenes['3'] && videoScenes['3'].video) {
         videoScenes['3'].video.src = selectedVideoUrl;
         videoScenes['3'].video.transcript = selectedTranscript;
         console.log(`✅ Video URL overridden: ${selectedVideoUrl}`);
       }
-
-      console.log('✅ Video scenes parsed successfully');
     } catch (parseErr) {
       console.warn('⚠️ Video JSON parsing failed, attempting retry...');
 
@@ -246,9 +255,11 @@ Start directly with {`;
     let scene4Scenes, scene5Scenes, scene6Scenes;
 
     try {
+      console.log('📤 Scene 4 RAW Response:', scene4Response.text.substring(0, 500));
       const cleanedScene4 = cleanResponse(scene4Response.text, 'scene4');
+      console.log('🧹 Scene 4 CLEANED:', cleanedScene4.substring(0, 500));
       scene4Scenes = JSON.parse(cleanedScene4);
-      console.log('✅ Scene 4 parsed successfully');
+      console.log('✅ Scene 4 PARSED:', JSON.stringify(scene4Scenes).substring(0, 500));
     } catch (parseErr) {
       console.error('❌ Failed to parse Scene 4:', parseErr);
       console.log('🔍 Scene 4 response preview:', scene4Response.text.substring(0, 200));
@@ -256,9 +267,11 @@ Start directly with {`;
     }
 
     try {
+      console.log('📤 Scene 5 RAW Response:', scene5Response.text.substring(0, 500));
       const cleanedScene5 = cleanResponse(scene5Response.text, 'scene5');
+      console.log('🧹 Scene 5 CLEANED:', cleanedScene5.substring(0, 500));
       scene5Scenes = JSON.parse(cleanedScene5);
-      console.log('✅ Scene 5 parsed successfully');
+      console.log('✅ Scene 5 PARSED:', JSON.stringify(scene5Scenes).substring(0, 500));
     } catch (parseErr) {
       console.error('❌ Failed to parse Scene 5:', parseErr);
       console.log('🔍 Scene 5 response preview:', scene5Response.text.substring(0, 200));
@@ -266,9 +279,11 @@ Start directly with {`;
     }
 
     try {
+      console.log('📤 Scene 6 RAW Response:', scene6Response.text.substring(0, 500));
       const cleanedScene6 = cleanResponse(scene6Response.text, 'scene6');
+      console.log('🧹 Scene 6 CLEANED:', cleanedScene6.substring(0, 500));
       scene6Scenes = JSON.parse(cleanedScene6);
-      console.log('✅ Scene 6 parsed successfully');
+      console.log('✅ Scene 6 PARSED:', JSON.stringify(scene6Scenes).substring(0, 500));
     } catch (parseErr) {
       console.error('❌ Failed to parse Scene 6:', parseErr);
       console.log('🔍 Scene 6 response preview:', scene6Response.text.substring(0, 200));
@@ -281,9 +296,11 @@ Start directly with {`;
     let scene7Scenes, scene8Scenes;
 
     try {
+      console.log('📤 Scene 7 RAW Response:', scene7Response.text.substring(0, 500));
       const cleanedScene7 = cleanResponse(scene7Response.text, 'scene7');
+      console.log('🧹 Scene 7 CLEANED:', cleanedScene7.substring(0, 500));
       scene7Scenes = JSON.parse(cleanedScene7);
-      console.log('✅ Scene 7 parsed successfully');
+      console.log('✅ Scene 7 PARSED:', JSON.stringify(scene7Scenes).substring(0, 500));
     } catch (parseErr) {
       console.error('❌ Failed to parse Scene 7:', parseErr);
       console.log('🔍 Scene 7 response preview:', scene7Response.text.substring(0, 200));
@@ -291,9 +308,11 @@ Start directly with {`;
     }
 
     try {
+      console.log('📤 Scene 8 RAW Response:', scene8Response.text.substring(0, 500));
       const cleanedScene8 = cleanResponse(scene8Response.text, 'scene8');
+      console.log('🧹 Scene 8 CLEANED:', cleanedScene8.substring(0, 500));
       scene8Scenes = JSON.parse(cleanedScene8);
-      console.log('✅ Scene 8 parsed successfully');
+      console.log('✅ Scene 8 PARSED:', JSON.stringify(scene8Scenes).substring(0, 500));
     } catch (parseErr) {
       console.error('❌ Failed to parse Scene 8:', parseErr);
       console.log('🔍 Scene 8 response preview:', scene8Response.text.substring(0, 200));

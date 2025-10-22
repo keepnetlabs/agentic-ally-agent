@@ -2,6 +2,14 @@ import { PromptAnalysis } from '../../types/prompt-analysis';
 import { MicrolearningContent } from '../../types/microlearning';
 
 export function buildBaseContext(analysis: PromptAnalysis, microlearning: MicrolearningContent): string {
+  const levelRules = {
+    'Beginner': 'Keep simple, one control/concept, one benefit',
+    'Intermediate': 'Combine related concepts, practical scenarios',
+    'Advanced': 'Multiple controls, business impact, strategic context'
+  };
+
+  const levelRule = levelRules[analysis.level as keyof typeof levelRules] || levelRules['Beginner'];
+
   return `
 Generate ${analysis.language} training content for "${analysis.topic}" in STRICT JSON only.
 
@@ -72,6 +80,9 @@ SCIENTIFIC CONTEXT:
    - Use memory-friendly patterns: repeat key points, chunk information (3-5 items max)
    - Link actions to outcomes: "When you [action], you [benefit]"
    - Keep cognitive load low: one concept per screen, simple language
+
+6. **Level Adaptation**
+   - ${levelRule}
 
 === CRITICAL ===
 - Never leave placeholders like "clear benefit statement" or "concise point".

@@ -16,6 +16,7 @@ const createInputSchema = z.object({
   additionalContext: z.string().optional(),
   customRequirements: z.string().optional(),
   department: z.string().optional().default('All'),
+  level: z.enum(['Beginner', 'Intermediate', 'Advanced']).optional().default('Intermediate'),
   priority: z.enum(['low', 'medium', 'high']).default('medium'),
 });
 
@@ -86,6 +87,7 @@ const analyzePromptStep = createStep({
       userPrompt: inputData.prompt,
       additionalContext: inputData.additionalContext,
       suggestedDepartment: inputData.department,
+      suggestedLevel: inputData.level,
       customRequirements: inputData.customRequirements,
     });
 

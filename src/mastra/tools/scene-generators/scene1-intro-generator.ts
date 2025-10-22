@@ -10,69 +10,30 @@ export function generateScene1Prompt(analysis: PromptAnalysis, microlearning: Mi
 SCENE 1 - INTRO (PATTERN-BASED GENERATION):
 Topic: ${analysis.topic} | Department: ${analysis.department || 'General'} | Language: ${analysis.language}
 
-⚠️ HIGHLIGHTS & KEY_MESSAGE INSTRUCTIONS:
-- These are GENERATION INSTRUCTIONS, not placeholders
-- READ the Pattern Examples below
-- GENERATE NEW, ORIGINAL content following the pattern structure
-- DO NOT copy examples - adapt the STYLE/PATTERN to your topic+department
-- For any topic not shown, analyze pattern structure and extrapolate
+⚠️ HIGHLIGHTS & KEY_MESSAGE:
 
-INTRO SCENE:
-- Title: For ${analysis.topic}, use simple pattern based on category:
-  • Attacks/threats (phishing, deepfake, impersonation, malware) → "Stop [Threat] Attacks"
-  • Security tools (MFA, passwords) → "Secure with [Tool]"
-  • Processes/frameworks (incident response, decision trees, playbooks, checklists) → "Follow [Framework]"
-  • General awareness/culture/mindset topics → "[Action] for [Topic]" or "Build [Habit]"
-  • Compliance/policy topics → "Understand [Policy]" or "Master [Topic]"
-  • Keep focused on core theme - avoid adding modifiers like "Social Media" unless topic explicitly includes them
+- Highlights: Exactly 3 items, <8 words each
+  • Pattern: Risk statement → Empowering action → Positive outcome
 
-- Subtitle: One short sentence (max 12 words). Show ACTION + OUTCOME/BENEFIT together.
-  Examples (empowering pattern, NOT fearful):
-  • "Learn to spot and report suspicious emails safely" (phishing)
-  • "Spot fake videos and verify before acting" (deepfake)
-  • "Identify caller impersonation and verify through official channels" (vishing)
-  • "Use strong unique passwords to protect your accounts" (password)
-  • Not: "Sender addresses can be fake" - Too technical
-  • Not: "Verify sender always" - Too imperative
+  REFERENCE EXAMPLE (Phishing):
+  • "Know that phishing attacks are common"
+  • "Remember that anyone can be targeted"
+  • "See how simple steps reduce risk"
 
-- Highlights: Exactly 3 (Risk → Target → Solution), <8 words each, department-specific, actionable.
-  • Pattern Examples (ADAPT to topic+department, do NOT copy):
+  FOR ${analysis.topic} (${analysis.department}):
+  • Adapt pattern to your topic context (do NOT copy phishing example)
+  • Focus on relevant threat → preventive action → positive outcome
 
-    PHISHING examples (PRODUCTION QUALITY - Learner-centric, empowering):
-    - Generic/All: 'Know that phishing attacks are evolving tactics' | 'Remember that one mistake can compromise accounts' | 'See how your caution protects everyone' | Alternative: 'Know that phishing is common threat' | 'Remember that anyone can be targeted' | 'See how simple steps reduce risk'
-    - Finance: 'Know that payment fraud starts with vendor email impersonation' | 'Remember that asking one colleague saves thousands in loss' | 'See how simple verification steps protect company finances'
-    - HR: 'Know that employee data is high-value to attackers' | 'Remember that a quick callback stops credential theft' | 'See how your caution protects entire teams'
-    - IT: 'Know that phishing is entry point for most breaches' | 'Remember that legitimate senders expect security questions' | 'See how reporting strengthens organizational defense'
+- Key messages: 3 statements, max 5 words each
+  • Pattern: Fact → Impact → Action
 
-    MFA examples by department (PRODUCTION QUALITY):
-    - Finance: 'Know that protecting payment systems starts with your login' | 'Remember that 2FA makes unauthorized transactions nearly impossible' | 'See how your second factor stops fraud before millions lost'
-    - HR: 'Know that employee records hold identity theft targets' | 'Remember that MFA adds protection layer attackers cannot bypass' | 'See how your security habits protect sensitive data'
-    - IT: 'Know that compromised admin credentials enable full infrastructure breach' | 'Remember that MFA is fastest way to stop takeover' | 'See how your multi-factor approach prevents system access'
+  REFERENCE EXAMPLE (Phishing):
+  • "Phishing is common" (fact)
+  • "Anyone can be targeted" (impact)
+  • "Report quickly" (action)
 
-    DEEPFAKE examples by department (VIDEO/IMAGE manipulation, NOT phone calls - PRODUCTION QUALITY):
-    - Executive: 'Know that deepfake videos of leaders trigger costly decisions' | 'Remember that asking one question prevents fraudulent transfers' | 'See how verification before acting stops video fraud'
-    - HR: 'Know that deepfake videos impersonating executives bypass hesitation' | 'Remember that familiar faces in videos can still be faked' | 'See how your skepticism prevents malicious impersonation'
-    - IT: 'Know that AI-generated videos fool most initial viewers' | 'Remember that source verification catches 99% of attempts' | 'See how your detection prevents organization-wide misinformation'
-    - Finance: 'Know that deepfake videos of executives authorize fake payments' | 'Remember that verification through known channels stops instant transfers' | 'See how your caution prevents million-dollar fraud'
-
-    RANSOMWARE examples by department (PRODUCTION QUALITY):
-    - IT: 'Know that ransomware takes critical systems offline within minutes' | 'Remember that isolated tested backups are your recovery insurance' | 'See how your backup discipline prevents weeks of paralysis'
-    - Finance: 'Know that ransomware targets payment and accounting systems first' | 'Remember that recovery from good backups saves millions' | 'See how your data protection restores business continuity'
-    - Operations: 'Know that ransomware attackers profit from organizational desperation' | 'Remember that continuity planning reduces ransom leverage' | 'See how your preparation minimizes impact across teams'
-
-    PASSWORD examples by department (PRODUCTION QUALITY):
-    - HR: 'Know that reused passwords across sites risk employee data' | 'Remember that unique passwords in manager make breaches unrecoverable' | 'See how your password habits protect security culture'
-    - Finance: 'Know that weak passwords are fastest path to fraud' | 'Remember that strong unique passwords cost attackers thousands' | 'See how your credential strength protects financial integrity'
-    - IT: 'Know that admin password compromise means full infrastructure access' | 'Remember that password managers enforce security across teams' | 'See how your password discipline prevents admin takeover'
-
-    VISHING examples by department (VOICE phone calls, NOT video - PRODUCTION QUALITY):
-    - Operations: 'Know that attackers impersonate authority to bypass caution' | 'Remember that hanging up and calling back stops vishing' | 'See how your verification habit protects everyone'
-    - HR: 'Know that social engineers mimic trusted contacts perfectly' | 'Remember that one callback confirms identity faster than rush' | 'See how your caution prevents employee data theft'
-    - IT: 'Know that vishing targets IT channels as system access' | 'Remember that credential requests over phone are never legitimate' | 'See how your verification prevents attacker access'
-
-    For ANY OTHER TOPIC: Pattern is Risk → Warning → Action. Apply to your topic+department.
-
-- Key messages: 3 statements (max 5 words, slogan-like, memorable), specific to department. Use same pattern as Highlights (Fact/Risk/Action). Reference examples above for style.
+  FOR ${analysis.topic} (${analysis.department}):
+  • Adapt fact/impact/action pattern to your topic
 
 - Duration: "~5 minutes" (adjust based on total scene duration), duration_seconds: 15-20.
 
