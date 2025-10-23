@@ -59,7 +59,7 @@ function extractStringsWithPaths(obj: any, protectedKeys: string[], currentPath 
 
     const isProtectedKey = (key: string) => {
         return protectedKeys.some(pk => key.toLowerCase().includes(pk.toLowerCase())) ||
-               /^(icon(Name)?|id(s)?|url|src|scene_type|type|difficulty|headers|timestamp|sender)$/i.test(key);
+            /^(icon(Name)?|id(s)?|url|src|scene_type|type|difficulty|headers|timestamp|sender)$/i.test(key);
     };
 
     function traverse(current: any, path: string) {
@@ -169,7 +169,7 @@ export const translateLanguageJsonTool = new Tool({
             ? `You are localizing content for a ${topic} security training. Use appropriate terminology for this security topic.`
             : 'You are localizing general security training content.';
 
-            const system = `
+        const system = `
             ${topicContext}
             
             TASK: Localize JSON values from ${sourceLanguage} to ${targetLanguage} ONLY, producing fluent, culturally natural, native-quality output.
@@ -226,7 +226,15 @@ export const translateLanguageJsonTool = new Tool({
             - Rewrite unnatural literal phrases to sound native while preserving meaning.
             
             ---
-            
+            #### 🎯 TONE ADAPTATION (MOTIVATIONAL & PROFESSIONAL)
+            - Adapt motivational or congratulatory phrases (e.g., "Well done", "Great job", "Nice work")
+            to sound natural and culturally appropriate in ${targetLanguage}.  
+            - Preserve a professional, confident, and encouraging tone suitable for adult learning.  
+            - Avoid childish or exaggerated expressions that sound like teacher–student speech.  
+            - Use tone that fits workplace microlearning: respectful, motivating, professional.  
+          
+            ---
+
             ### 5️⃣ TERMINOLOGY
             - Use **standard cybersecurity terminology** used in ${targetLanguage}.  
             - Do NOT invent new terms.  
@@ -269,7 +277,7 @@ export const translateLanguageJsonTool = new Tool({
             }
               
             Keep all keys "0" to "${extracted.length - 1}".
-            `.trim()            
+            `.trim()
 
         // Step 3: Translate each chunk with parallel processing and retry
         const model = getModel(ModelProvider.WORKERS_AI, Model.WORKERS_AI_GPT_OSS_120B);
