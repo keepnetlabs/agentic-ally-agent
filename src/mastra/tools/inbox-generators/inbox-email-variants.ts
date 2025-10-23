@@ -190,6 +190,29 @@ function getTopicHint(topic: string, index: number): string {
         return scenarios[(index * 7) % scenarios.length];
     }
 
+    // ============================================================================
+    // QUISHING ATTACKS (QR CODE PHISHING)
+    // ============================================================================
+
+    // Quishing - QR Code based phishing attacks
+    if (t.includes('quishing') || t.includes('qr code') || (t.includes('qr') && t.includes('phishing'))) {
+        const scenarios = [
+            'urgent payment verification QR code, invoice approval required',
+            'wifi network connection QR code, guest access setup',
+            'security update QR code scan, software patch verification',
+            'visitor check-in QR code, registration confirmation',
+            'event attendance QR code, conference badge generation',
+            'delivery package QR code, shipment tracking link',
+            'MFA setup QR code, authenticator app enrollment',
+            'compliance certification QR code, mandatory training completion',
+            'health screening QR code, vaccination record verification',
+            'parking access QR code, visitor permit issuance',
+            'IT support ticket QR code, helpdesk ticket status',
+            'expense report QR code, reimbursement approval'
+        ];
+        return scenarios[(index * 7) % scenarios.length];
+    }
+
     // Social Engineering / Pretexting / Impersonation / Authority
     if ((t.includes('social') && t.includes('engineering')) || t.includes('impersonation') || t.includes('pretext') || t.includes('authority')) {
         const scenarios = [

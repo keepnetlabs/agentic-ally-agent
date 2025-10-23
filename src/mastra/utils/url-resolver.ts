@@ -20,8 +20,8 @@ const URL_DATABASE: Record<string, ResourceURL[]> = {
       category: 'THREAT'
     },
     {
-      title: 'NCSC Phishing Scams Guidance',
-      url: 'https://www.ncsc.gov.uk/collection/phishing-scams',
+      title: 'Phishing Simulation Benchmarks: How Does Your Organization Compare?',
+      url: 'https://keepnetlabs.com/blog/phishing-simulation-benchmarks-how-does-your-organization-compare',
       category: 'THREAT'
     }
   ],
@@ -33,8 +33,8 @@ const URL_DATABASE: Record<string, ResourceURL[]> = {
       category: 'THREAT'
     },
     {
-      title: 'NCSC Mobile Device Security Guidance',
-      url: 'https://www.ncsc.gov.uk/collection/mobile-device-guidance',
+      title: 'Top Spoofed Brands in Used Quishing Attacks',
+      url: 'https://keepnetlabs.com/blog/top-spoofed-brands-in-used-quishing-attacks',
       category: 'THREAT'
     }
   ],
@@ -197,8 +197,8 @@ const URL_DATABASE: Record<string, ResourceURL[]> = {
 
   'remote-access': [
     {
-      title: 'NCSC Secure Remote Access Design',
-      url: 'https://www.ncsc.gov.uk/blog-post/cni-system-design-secure-remote-access',
+      title: '6 Cybersecurity Tips for Remote Workers',
+      url: 'https://keepnetlabs.com/blog/6-cybersecurity-tips-for-remote-workers',
       category: 'TOOL'
     },
     {
@@ -255,16 +255,16 @@ const URL_DATABASE: Record<string, ResourceURL[]> = {
       category: 'PROCESS'
     },
     {
-      title: 'NCSC Data Security & Incident Response',
-      url: 'https://www.ncsc.gov.uk/collection/caf/caf-principles-and-guidance/b-3-data-security',
+      title: 'Email Incident Response 101',
+      url: 'https://keepnetlabs.com/blog/email-incident-response-101',
       category: 'PROCESS'
     }
   ],
 
   'security-protocols': [
     {
-      title: 'NCSC Cyber Assessment Framework',
-      url: 'https://www.ncsc.gov.uk/collection/cyber-assessment-framework',
+      title: 'How to Negotiate Cybersecurity Protection Levels With Your Executives?',
+      url: 'https://keepnetlabs.com/blog/how-to-negotiate-cybersecurity-protection-levels-with-your-executives',
       category: 'PROCESS'
     },
     {
@@ -330,8 +330,8 @@ const URL_DATABASE: Record<string, ResourceURL[]> = {
   // ===== GENERIC FALLBACK =====
   'GENERIC': [
     {
-      title: 'NCSC Cyber Assessment Framework',
-      url: 'https://www.ncsc.gov.uk/collection/cyber-assessment-framework',
+      title: 'Microlearning in Security Awareness Training Programs',
+      url: 'https://keepnetlabs.com/blog/microlearning-in-security-awareness-training-programs',
       category: 'GENERIC'
     },
     {
