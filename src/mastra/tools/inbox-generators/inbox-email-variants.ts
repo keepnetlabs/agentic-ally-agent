@@ -43,8 +43,7 @@ export type DiversityHints = {
 export const variantDeltaBuilder: Record<EmailVariant, (d: DiversityHints) => string> = {
     [EmailVariant.ObviousPhishing]: (d) => {
         const departmentContext = d.departmentHint ? `Department scenario: Someone from ${d.departmentHint} who would realistically contact recipient.` : '';
-        const obviousDomainExamples = OBVIOUS_DOMAINS.slice(0, 3).join(', ');
-        const domainContext = `SENDER DOMAIN: Use OBVIOUSLY FAKE external domain with red flags. Examples: ${obviousDomainExamples}. Domains with keywords like "invoice-systems", "verify-account", "confirm-identity", "process-payment" signal phishing. Domain should be EXTERNAL, NOT official company.com.`;
+        const domainContext = `SENDER DOMAIN: Use OBVIOUSLY FAKE external domain with red flags. Candidates: ${d.domainHint}. Domains with keywords like "invoice-systems", "verify-account", "confirm-identity", "process-payment" signal phishing. Domain should be EXTERNAL, NOT official company.com.`;
         const impersonationHint = d.topicHint?.includes('executive') || d.topicHint?.includes('CEO') || d.topicHint?.includes('authority')
             ? 'SENDER pretends to BE the executive. Example: From ceo@verify-authority.net or finance@confirm-payment.io, Subject "Urgent Wire Transfer", Content "I need you to process this payment immediately - CEO". Write as if CEO is directly sending email. '
             : '';
@@ -53,8 +52,7 @@ export const variantDeltaBuilder: Record<EmailVariant, (d: DiversityHints) => st
 
     [EmailVariant.SophisticatedPhishing]: (d) => {
         const departmentContext = d.departmentHint ? `Department context: ${d.departmentHint}. Impersonate colleague/authority from this department who would realistically interact with recipient.` : '';
-        const sophisticatedDomainExamples = SOPHISTICATED_DOMAINS.slice(0, 5).map(d => `${d}`).join(', ');
-        const domainContext = `SENDER DOMAIN: Use a REALISTIC-LOOKING but FAKE corporate domain that could pass as a partner/vendor. Examples: finance@${sophisticatedDomainExamples.split(', ')[0]}, support@${sophisticatedDomainExamples.split(', ')[1]}, hr@${sophisticatedDomainExamples.split(', ')[2]}. Must look legitimate and corporate, NOT obviously fake like "invoice-systems". Department matches threat type (Finance→payments, IT→tech, Security→auth, Exec→CEO).`;
+        const domainContext = `SENDER DOMAIN: Use a REALISTIC-LOOKING but FAKE corporate domain that could pass as a partner/vendor. Candidates: ${d.domainHint}. Must look legitimate and corporate, NOT obviously fake like "invoice-systems". Department matches threat type (Finance→payments, IT→tech, Security→auth, Exec→CEO).`;
         const impersonationHint = d.topicHint?.includes('executive') || d.topicHint?.includes('CEO') || d.topicHint?.includes('colleague') || d.topicHint?.includes('authority')
             ? 'SENDER pretends to BE a colleague/authority. Example: From sarah@acme-solutions.net, Content "Hi, this is Sarah from Marketing. Director is stuck in meeting and urgently needs the Q3 budget file. Can you send it to me ASAP? Keep this between us - time sensitive." Write as if colleague/partner is directly asking. '
             : '';
@@ -93,28 +91,28 @@ export function diversityPlan(index: number): DiversityHints {
     const plans = [
         {
             // Index 0: ObviousPhishing - OBVIOUS fake domains (red flags clear)
-            domainHint: 'billing@invoice-systems.net, accounting@payments-hub.org, support@verify-account.net',
+            domainHint: 'billing@invoice-systems.net, accounting@payments-hub.org, support@verify-account.net, admin@confirm-identity.net, security@process-payment.io',
             attachmentHint: '1 quality pdf/xlsx with comprehensive details (e.g., invoice_details.pdf)',
             greetingHint: 'Pick ONE: "Dear Client" OR "Valued Customer"',
             headerHint: 'SPF: fail, DMARC: fail',
         },
         {
             // Index 1: SophisticatedPhishing - REALISTIC fake domains (near-miss lookalike)
-            domainHint: 'finance@acme-solutions.net, support@global-services.com, hr@corporate-group.io',
+            domainHint: 'finance@acme-solutions.net, support@global-services.com, hr@corporate-group.io, operations@business-portal.net, compliance@allied-services.org',
             attachmentHint: '1 detailed xlsx/pdf with specific data (e.g., contract_review.xlsx)',
             greetingHint: 'Pick ONE: "Hello" OR "Good morning"',
             headerHint: 'SPF: pass, DMARC: fail (mixed)',
         },
         {
             // Index 2: CasualLegit - Official internal domains (DIFFERENT departments from FormalLegit)
-            domainHint: 'Pick ONE: hr@company.com, it@company.com, communications@company.com, operations@company.com',
+            domainHint: 'Pick ONE: it@company.com, communications@company.com, operations@company.com, facilities@company.com, marketing@company.com',
             attachmentHint: '1 comprehensive pdf/jpg with realistic content (e.g., floor_plan.pdf) or none',
             greetingHint: 'Pick ONE: "Hey team" OR "Hi everyone"',
             headerHint: 'SPF: pass, DMARC: pass',
         },
         {
             // Index 3: FormalLegit - Official internal domains (DIFFERENT departments from CasualLegit)
-            domainHint: 'Pick ONE: compliance@company.com, security@company.com, legal@company.com, finance@company.com',
+            domainHint: 'Pick ONE: compliance@company.com, security@company.com, legal@company.com, finance@company.com, audit@company.com',
             attachmentHint: '1 detailed pdf/xlsx with business data (e.g., quarterly_report.pdf)',
             greetingHint: 'Pick ONE: "Dear colleagues" OR "Team"',
             headerHint: 'SPF: pass, DMARC: pass',

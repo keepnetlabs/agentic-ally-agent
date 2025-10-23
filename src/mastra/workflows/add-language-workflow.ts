@@ -90,7 +90,7 @@ const loadExistingStep = createStep({
       language: targetLanguage,
       topic: meta.topic || (existing as any).title || 'Training',
       title: meta.title || (existing as any).title || 'Training',
-      department: department || meta.department || 'All',
+      department: (department && department !== 'All') ? department : (meta.department || 'All'),
       level: meta.level || 'beginner',
       category: meta.category || 'General',
       subcategory: meta.subcategory,

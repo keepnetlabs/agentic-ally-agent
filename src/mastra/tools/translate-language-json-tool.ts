@@ -31,7 +31,7 @@ function extractStringsWithPaths(obj: any, protectedKeys: string[], currentPath 
 
     const isProtectedKey = (key: string) => {
         return protectedKeys.some(pk => key.toLowerCase().includes(pk.toLowerCase())) ||
-               /^(icon(Name)?|id(s)?|url|src|scene_type|type|difficulty|headers|timestamp)$/i.test(key);
+               /^(icon(Name)?|id(s)?|url|src|scene_type|type|difficulty|headers|timestamp|sender)$/i.test(key);
     };
 
     function traverse(current: any, path: string) {
@@ -201,32 +201,15 @@ Keep all keys "0" to "${extracted.length - 1}".
                         numberedInput[index.toString()] = item.value;
                     });
 
-                    const user = `Localize ALL values to ${targetLanguage} ONLY. Output must be 100% in ${targetLanguage}.
+                    const user = `Localize these ${sourceLanguage} values to ${targetLanguage} ONLY. Follow all system rules above.
 
-2. LOCALIZATION FROM ${sourceLanguage.toUpperCase()} TO ${targetLanguage.toUpperCase()} - NOT LITERAL TRANSLATION:
-- Read each ${sourceLanguage} value, understand its meaning and intent
-- Express that meaning naturally in ${targetLanguage} (like native professional would say it)
-- Focus on: Does a native ${targetLanguage} speaker naturally express it this way? If NO → rewrite.
-
-HTML STRUCTURE - NON-NEGOTIABLE:
-- Input: "<p>Hello</p>" → Output: "<p>[translated]</p>"
-- NEVER remove, add, or modify closing tags (</p>, </div>, </strong>, etc.)
-- Copy HTML structure exactly, only change TEXT between tags
-- Tag count check: input X tags = output X tags (MUST be numerically equal)
-- Example: "<div><strong>Bold text</strong> normal text</div>" → "<div><strong>[boldueviri]</strong> [normaleviri]</div>"
-
-PRE-OUTPUT QUALITY CHECKLIST:
-✅ Every value in ${targetLanguage} (ZERO English)?
-✅ Sounds natural (native professional, not formal/translated)?
-✅ HTML tags preserved (count matches)?
-✅ Technical terms kept (phishing, CEO, AI, MFA, etc.)?
-✅ No machine-translation artifacts?
-✅ Training content conversational (direct, memorable, personal pronouns)?
+CRITICAL: Localize ONLY text content INSIDE HTML tags. Do NOT change tags themselves.
+Example: "<p>Hello world</p>" → "<p>[localized text]</p>" (tags unchanged)
 
 INPUT (${sourceLanguage} values):
 ${JSON.stringify(numberedInput, null, 2)}
 
-OUTPUT (${targetLanguage} ONLY, native quality, same structure):`;
+OUTPUT (${targetLanguage} ONLY, native quality, exact HTML structure):`;
 
                     const res = await generateText({
                         model,
@@ -248,8 +231,10 @@ OUTPUT (${targetLanguage} ONLY, native quality, same structure):`;
                         return (str.match(/<[^>]+>/g) || []).length;
                     }
 
-                    // Convert to array and validate
+                    // Convert to array and validate with retry logic for HTML mismatches
                     const translatedChunk: string[] = [];
+                    let hasHtmlMismatch = false;
+
                     for (let i = 0; i < chunk.length; i++) {
                         const translatedValue = translatedObject[i.toString()];
                         if (translatedValue === undefined) {
@@ -261,13 +246,17 @@ OUTPUT (${targetLanguage} ONLY, native quality, same structure):`;
                         const translatedTags = countHtmlTags(translatedValue);
 
                         if (originalTags !== translatedTags) {
-                            console.warn(`⚠️ HTML tag mismatch in index ${i}: original=${originalTags}, translated=${translatedTags}`);
-                            console.warn(`   Original: "${chunk[i].value}"`);
-                            console.warn(`   Translated: "${translatedValue}"`);
-                            // Don't throw, just warn - let it continue but log the issue
+                            console.warn(`⚠️ HTML tag mismatch in index ${i} (attempt ${attempt}/${MAX_RETRIES}): original=${originalTags}, translated=${translatedTags}`);
+                            hasHtmlMismatch = true;
                         }
 
                         translatedChunk.push(translatedValue);
+                    }
+
+                    // If HTML mismatches found and retries remaining, retry this chunk
+                    if (hasHtmlMismatch && attempt < MAX_RETRIES) {
+                        console.warn(`⚠️ Chunk ${chunkNumber} has HTML mismatches, retrying...`);
+                        continue;
                     }
 
                     console.log(`✅ Chunk ${chunkNumber} done (${translatedChunk.length} strings)`);

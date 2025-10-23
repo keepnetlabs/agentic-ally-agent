@@ -51,21 +51,21 @@ NOT: 'Sender addresses fake' (technical) or 'Always verify' (imperative).",
     "highlights": [
       {
         "iconName": "alert-triangle",
-        "text": "KNOW statement (≤8 words): Start with 'Know that'. Emphasize threat IMPACT/CONSEQUENCE/SEVERITY, NOT technical details. Threat-focused. Examples: 'Know that phishing attacks are evolving tactics' | 'Know that phishing is common threat' | 'Know that payment fraud starts with email impersonation'. NOT: 'Know that sender addresses can be forged' (too technical)"
+        "text": "KNOW statement (≤8 words): Start with 'Know that'. Topic and Department-aware impact. Pattern: [topic fact] [impacts department outcome]. Department focus: Finance→fraud/money | Operations/IT→system/reliability | HR/General→team/safety. Examples: Phishing+Finance→'Know that phishing targets payment requests' | Ransomware+Operations→'Know that ransomware stops systems' | Password+IT→'Know that weak passwords invite attacks' | MFA+Finance→'Know that MFA protects financial access' | Incident Response+Operations→'Know that quick response saves systems' | Social Engineering+HR→'Know that verification protects colleagues'. Generate contextually for ${analysis.topic} + ${analysis.department}."
       },
       {
         "iconName": "users",
-        "text": "REMEMBER statement (≤8 words): Start with 'Remember that'. Universal benefit + topic-aware action phrasing. Empowering, NO fear language. Generate dynamically per ${analysis.topic}. Examples: Phishing→'Remember that anyone can be targeted' | Finance+Phishing→'Remember that verification prevents fraud' | Tools→'Remember that verification takes seconds' | Processes→'Remember that speed saves systems'"
+        "text": "REMEMBER statement (≤8 words): Start with 'Remember that'. Topic and Department-aware empowering action. Pattern: [action/strategy] [prevents/protects/stops] [outcome]. Department focus: Finance→fraud/money/verification | Operations/IT→system/speed/reliability | HR/General→team/safety. Examples: Phishing+Finance→'Remember that verification prevents fraud' | Phishing+IT→'Remember that quick action stops spread' | Phishing+General→'Remember that anyone can be targeted' | Password+IT→'Remember that strong passwords stop breaches'. Generate contextually for ${analysis.topic} + ${analysis.department}."
       },
       {
         "iconName": "shield-check",
-        "text": "SEE statement (≤8 words): Start with 'See how'. Positive outcome of learner's action. Personal/relatable. Examples: 'See how your caution protects entire teams' or 'See how simple steps reduce risk'"
+        "text": "SEE statement (≤8 words): Start with 'See how'. Topic and Department-aware positive outcome. Pattern: [learner action] [leads to/enables/protects] [positive outcome]. Department focus: Finance→transaction/asset protection | Operations/IT→system/reliability | HR/General→team/colleague safety. Examples: Phishing+Finance→'See how verification protects transactions' | Ransomware+Operations→'See how backups save systems' | Password+IT→'See how strong passwords enable security' | MFA+General→'See how MFA protects access' | Incident Response+Operations→'See how quick response limits damage'. Generate contextually for ${analysis.topic} + ${analysis.department}."
       }
     ],
     "key_message": [
-      "What to know (≤5 words): Key insight about topic. Memorable fact. Examples: 'Phishing is common', 'Deepfakes are evolving', 'Passwords matter'",
-      "Why it matters (≤5 words): Universal consequence or impact. Empowering perspective. Examples: 'Anyone can be targeted', 'Your action protects all', 'Small steps make difference'",
-      "What you do (≤5 words): Positive action or behavior. Empowering, achievable. Examples: 'Small actions make difference' | 'Your action protects all' | 'Spot and report safely' | 'Anyone can report' | 'Report quickly' | 'Use strong passwords'. NOT: 'Always verify' (too imperative) or 'Verify sender always' (directive-based)"
+      "What to know (≤5 words): Topic-focused fact. Examples: Phishing→'Phishing is common threat' | Ransomware→'Ransomware encrypts systems' | Password→'Weak passwords fail fast'. Generate for ${analysis.topic}.",
+      "Why it matters (≤5 words): Department-aware impact. Examples: Finance→'Fraud costs millions' | Operations→'Systems go down' | General→'Everyone gets targeted'. Generate for ${analysis.department}.",
+      "What you do (≤5 words): Action-focused behavior. Examples: 'Verify payment requests' | 'Report suspicious email' | 'Use strong passwords'. Generate for ${analysis.topic}."
     ],
     "duration": "~${Math.max(2, Math.round((microlearning.scenes?.reduce((total, scene) => total + (scene?.metadata?.duration_seconds || 30), 0) || 300) / 60))} minutes",
     "level": "Localize '${analysis.level}' into ${analysis.language} with proper capitalization (e.g., 'Beginner', 'Intermediate', 'Advanced')",
@@ -90,7 +90,7 @@ NOT: 'Sender addresses fake' (technical) or 'Always verify' (imperative).",
     },
     "scene_type": "intro",
     "points": 5,
-    "duration_seconds": ${Math.round(microlearning.scenes[0]?.metadata.duration_seconds || 15)},
+    "duration_seconds": ${Math.round((microlearning.scenes?.[0]?.metadata?.duration_seconds) || 15)},
     "hasAchievementNotification": false,
     "scientific_basis": "Intro – Attention Capture + Emotional Salience: Salience theory and emotionally triggered memory formation. Emotional hooks increase attention and memory encoding for subsequent learning.",
     "icon": {
