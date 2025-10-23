@@ -66,6 +66,9 @@ Use workflow-executor tool with exactly these parameters:
 - workflowType: 'create-microlearning'
 - prompt: [complete user request with topic details]
 - department: [user's selected department]
+- level: [user's selected level: Beginner/Intermediate/Advanced]
+- additionalContext: [if user mentioned context/details/incidents/goals]
+- customRequirements: [if user mentioned special requests/tone/focus]
 - priority: 'medium'
 
 **Add Language Translation:**

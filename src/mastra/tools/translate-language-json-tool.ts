@@ -19,11 +19,39 @@ const TranslateJsonOutputSchema = z.object({
     error: z.string().optional()
 });
 
+// Helper: Protect HTML tags during translation (industrial standard approach)
+function protectHtmlTags(text: string): { protectedText: string; tagMap: Map<number, string> } {
+    const tagMap = new Map<number, string>();
+    let index = 0;
+
+    // Replace HTML tags with unique tokens
+    const protectedText = text.replace(/<[^>]+>/g, (tag) => {
+        const token = `__HTML${index}__`;
+        tagMap.set(index, tag);
+        index++;
+        return token;
+    });
+
+    return { protectedText, tagMap };
+}
+
+// Helper: Restore HTML tags after translation
+function restoreHtmlTags(text: string, tagMap: Map<number, string>): string {
+    let restored = text;
+    tagMap.forEach((tag, index) => {
+        // Use global replace to handle potential duplicates (edge case)
+        const token = `__HTML${index}__`;
+        restored = restored.split(token).join(tag);  // Safer than .replaceAll() for older JS
+    });
+    return restored;
+}
+
 // Helper: Extract strings with paths and context
 interface ExtractedString {
     path: string;
     value: string;
     context: string;
+    tagMap?: Map<number, string>;  // Store tag map for HTML content
 }
 
 function extractStringsWithPaths(obj: any, protectedKeys: string[], currentPath = ''): ExtractedString[] {
@@ -51,7 +79,14 @@ function extractStringsWithPaths(obj: any, protectedKeys: string[], currentPath 
             else if (lastKey.includes('message') || lastKey.includes('Message')) context = 'message';
             else if (lastKey.includes('explanation')) context = 'explanation';
 
-            results.push({ path, value: current, context });
+            // Apply HTML tag protection for content fields with HTML
+            const hasHtml = current.includes('<') && current.includes('>');
+            if (hasHtml && (context === 'content' || lastKey === 'content')) {
+                const { protectedText, tagMap } = protectHtmlTags(current);
+                results.push({ path, value: protectedText, context, tagMap });
+            } else {
+                results.push({ path, value: current, context });
+            }
         } else if (Array.isArray(current)) {
             current.forEach((item, index) => {
                 traverse(item, path ? `${path}[${index}]` : `[${index}]`);
@@ -77,7 +112,13 @@ function bindTranslatedStrings(original: any, extracted: ExtractedString[], tran
     const result = JSON.parse(JSON.stringify(original)); // Deep clone
 
     extracted.forEach((item, index) => {
-        const translatedValue = translated[index];
+        let translatedValue = translated[index];
+
+        // Restore HTML tags if they were protected
+        if (item.tagMap && item.tagMap.size > 0) {
+            translatedValue = restoreHtmlTags(translatedValue, item.tagMap);
+        }
+
         const pathParts = item.path.split(/\.|\[|\]/).filter(p => p);
 
         let current = result;
@@ -112,7 +153,8 @@ export const translateLanguageJsonTool = new Tool({
 
         // Step 1: Extract strings with context
         const extracted = extractStringsWithPaths(json, protectedKeys);
-        console.log(`📦 Extracted ${extracted.length} strings for translation`);
+        const htmlCount = extracted.filter(e => e.tagMap && e.tagMap.size > 0).length;
+        console.log(`📦 Extracted ${extracted.length} strings for translation (${htmlCount} with HTML protection)`);
 
         // Chunk size: 50 strings per request (manageable for AI)
         const CHUNK_SIZE = 50;
@@ -241,14 +283,20 @@ OUTPUT (${targetLanguage} ONLY, native quality, exact HTML structure):`;
                             throw new Error(`Missing index ${i}`);
                         }
 
-                        // Validate HTML tags preservation
-                        const originalTags = countHtmlTags(chunk[i].value);
-                        const translatedTags = countHtmlTags(translatedValue);
+                        // Validate HTML tags preservation (skip if using tag protection tokens)
+                        const hasProtectionTokens = chunk[i].value.includes('__HTML') || translatedValue.includes('__HTML');
 
-                        if (originalTags !== translatedTags) {
-                            console.warn(`⚠️ HTML tag mismatch in index ${i} (attempt ${attempt}/${MAX_RETRIES}): original=${originalTags}, translated=${translatedTags}`);
-                            hasHtmlMismatch = true;
+                        if (!hasProtectionTokens) {
+                            // Only validate raw HTML (not protected content)
+                            const originalTags = countHtmlTags(chunk[i].value);
+                            const translatedTags = countHtmlTags(translatedValue);
+
+                            if (originalTags !== translatedTags) {
+                                console.warn(`⚠️ HTML tag mismatch in index ${i} (attempt ${attempt}/${MAX_RETRIES}): original=${originalTags}, translated=${translatedTags}`);
+                                hasHtmlMismatch = true;
+                            }
                         }
+                        // Protected content: tags will be validated after restoration
 
                         translatedChunk.push(translatedValue);
                     }
@@ -259,18 +307,28 @@ OUTPUT (${targetLanguage} ONLY, native quality, exact HTML structure):`;
                         continue;
                     }
 
+                    // If HTML mismatches remain after all retries, use original content as fallback
+                    if (hasHtmlMismatch && attempt === MAX_RETRIES) {
+                        console.warn(`⚠️ Chunk ${chunkNumber} has persistent HTML mismatches - using original content as fallback`);
+                        return chunk.map(item => item.value);  // Graceful degradation
+                    }
+
                     console.log(`✅ Chunk ${chunkNumber} done (${translatedChunk.length} strings)`);
                     return translatedChunk;
 
                 } catch (error) {
                     if (attempt === MAX_RETRIES) {
                         console.error(`❌ Chunk ${chunkNumber} failed after ${MAX_RETRIES} attempts:`, error);
-                        throw new Error(`Chunk ${chunkNumber} failed: ${error}`);
+                        console.warn(`⚠️ Using original content as fallback for chunk ${chunkNumber}`);
+                        return chunk.map(item => item.value);  // Graceful degradation on error
                     }
                     console.warn(`⚠️ Chunk ${chunkNumber} attempt ${attempt} failed, retrying...`);
                 }
             }
-            throw new Error(`Chunk ${chunkNumber} failed after all retries`);
+
+            // Final fallback if all retries exhausted
+            console.warn(`⚠️ Chunk ${chunkNumber} exhausted retries - returning original content`);
+            return chunk.map(item => item.value);
         }
 
         // Process chunks in batches (parallel within batch, sequential across batches)

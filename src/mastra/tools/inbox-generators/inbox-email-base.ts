@@ -49,9 +49,9 @@ STYLING: Wrap in <div class='text-[#1C1C1E] dark:text-[#F2F2F7]'>. Start greetin
 ATTACHMENTS: Maximum 1 attachment. CRITICAL: Attachment name and content MUST match email subject and body content.
 - Match email context: If email mentions "password reset", attachment should be password-related (e.g., password_reset_instructions.pdf, account_verification_form.pdf). If email mentions "invoice", use invoice attachment. NEVER mismatch topics.
 - Content must be REALISTIC DOCUMENT PREVIEW with actual data (numbers, dates, names) that matches email scenario.
-- PDF/DOC → Include: Title (<h2 class='text-lg font-bold mb-2'>) matching email topic, 2-3 sections (<h3 class='text-md font-semibold mt-3'>), bullet lists or paragraphs
-- XLSX → Include: Table with headers (<table class='border border-gray-300 w-full'><thead><tr class='bg-gray-100'><th class='border p-2'>), 3-5 data rows related to email content
-- All types → Use Tailwind spacing (mb-2, mb-4, mt-3), keep simple but professional. Include specific data relevant to email scenario.
+- PDF/DOC → Wrap in <div class='text-[#1C1C1E] dark:text-[#F2F2F7]'>. Include: Title (<h2 class='text-lg font-bold mb-2'>) matching email topic, 2-3 sections (<h3 class='text-md font-semibold mt-3'>), bullet lists or paragraphs
+- XLSX → Wrap in <div class='text-[#1C1C1E] dark:text-[#F2F2F7]'>. Include: Table with headers (<table class='border border-gray-300 w-full'><thead><tr class='bg-gray-100'><th class='border p-2'>), 3-5 data rows related to email content
+- All types → Use Tailwind spacing (mb-2, mb-4, mt-3), keep simple but professional. Include specific data relevant to email scenario. DARK MODE: All attachment content MUST wrap in <div class='text-[#1C1C1E] dark:text-[#F2F2F7]'> for proper dark/light mode support.
 File types: pdf, doc, xlsx, jpg, png, zip, txt.
 
 EXACT FORMAT (return as-is, single object):
