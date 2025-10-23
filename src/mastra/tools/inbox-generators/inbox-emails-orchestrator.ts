@@ -20,16 +20,67 @@ const VARIANTS: EmailVariant[] = [
     EmailVariant.FormalLegit,
 ];
 
+// Timestamp pool for email realism - ensures no repeats
+const TIMESTAMP_POOL = [
+    '15 minutes ago',
+    '30 minutes ago',
+    '1 hour ago',
+    '2 hours ago',
+    '3 hours ago',
+    '4 hours ago',
+    'This morning',
+    '1 day ago',
+    '2 days ago',
+    'Yesterday',
+    'This week',
+    '3 days ago',
+];
+
+// Shuffle array using Fisher-Yates algorithm
+function shuffleArray<T>(array: T[]): T[] {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+}
+
+// Timestamp ordering for realistic inbox display (newest first)
+const TIMESTAMP_ORDER = {
+    '15 minutes ago': 12,
+    '30 minutes ago': 11,
+    '1 hour ago': 10,
+    '2 hours ago': 9,
+    '3 hours ago': 8,
+    'This morning': 7,
+    '4 hours ago': 6,
+    '1 day ago': 5,
+    'This week': 4,
+    '2 days ago': 3,
+    '3 days ago': 2,
+    'Yesterday': 1,
+};
+
+// Get unique timestamps for N emails (no repeats), ordered newest first
+function getUniqueTimestamps(count: number): string[] {
+    const shuffled = shuffleArray(TIMESTAMP_POOL);
+    const selected = shuffled.slice(0, Math.min(count, TIMESTAMP_POOL.length));
+
+    // Sort by TIMESTAMP_ORDER (newest first) for realistic inbox display
+    return selected.sort((a, b) => (TIMESTAMP_ORDER[b as keyof typeof TIMESTAMP_ORDER] || 0) - (TIMESTAMP_ORDER[a as keyof typeof TIMESTAMP_ORDER] || 0));
+}
+
 async function generateOneEmail(
     index: number,
     systemPrompt: string,
     model: any,
     topic: string,
     department: string,
-    variant: EmailVariant
+    variant: EmailVariant,
+    timestamp: string
 ): Promise<any> {
-    const timestampOptions = ['30 minutes ago', '2 hours ago', 'This morning', 'Yesterday'];
-    const timestampInstruction = `CRITICAL: Use timestamp "${timestampOptions[index % timestampOptions.length]}" for this email.`;
+    const timestampInstruction = `CRITICAL:Use timestamp "${timestamp}" for this email.`;
     // Department context now baked into variantDeltaBuilder via buildHintsFromInsights
     const delta = variantDeltaBuilder[variant](buildHintsFromInsights(topic, index, department, undefined)) + ` ${timestampInstruction}`;
 
@@ -78,9 +129,15 @@ export async function generateInboxEmailsParallel(args: OrchestratorArgs): Promi
         EmailVariant.FormalLegit,
     ];
 
-    console.log(`📧 Generating emails for topic="${args.topic}", department="${args.department}"`);
+    // Generate randomized, unique timestamps for each email variant
+    const uniqueTimestamps = getUniqueTimestamps(variantPlan.length);
 
-    const tasks = variantPlan.map((variant, i) => generateOneEmail(i, system, args.model, args.topic, args.department, variant));
+    console.log(`📧 Generating emails for topic="${args.topic}", department="${args.department}"`);
+    console.log(`⏰ Using timestamps: ${uniqueTimestamps.join(', ')}`);
+
+    const tasks = variantPlan.map((variant, i) =>
+        generateOneEmail(i, system, args.model, args.topic, args.department, variant, uniqueTimestamps[i])
+    );
     const emails = await Promise.all(tasks);
     return emails;
 }

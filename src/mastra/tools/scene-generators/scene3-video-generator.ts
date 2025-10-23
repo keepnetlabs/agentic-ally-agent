@@ -43,10 +43,14 @@ CRITICAL INSTRUCTIONS:
 KEY MESSAGE PATTERNS (output ONLY final text, not instructions):
 
 THREAT topics (Phishing, Deepfake, Ransomware, Vishing, Malware, Social Engineering):
-- Phishing: 'Spotting threats' or 'Verifying sender' or 'Reporting email'
-- Deepfake: 'Spotting fakes' or 'Verifying authenticity' or 'Reporting deepfake'
-- Ransomware: 'Recognizing signs' or 'Isolating system' or 'Starting recovery'
-- Vishing: 'Identifying impersonation' or 'Verifying caller' or 'Reporting fraud'
+- Phishing: 'Spotting phishing' | 'Verifying sender' | 'Reporting email'
+- Quishing: 'Spotting QR threats' | 'Verifying QR source' | 'Reporting QR code'
+- Deepfake: 'Spotting fakes' | 'Verifying authenticity' | 'Reporting deepfake'
+- Ransomware: 'Recognizing encryption' | 'Isolating systems' | 'Starting recovery'
+- Vishing: 'Identifying impersonation' | 'Verifying caller identity' | 'Reporting fraud'
+- Smishing: 'Spotting SMS threats' | 'Verifying message source' | 'Reporting SMS'
+- Malware: 'Recognizing suspicious files' | 'Isolating infected systems' | 'Reporting malware'
+- Social-Engineering: 'Recognizing manipulation' | 'Verifying requests' | 'Reporting attempts'
 
 TOOL topics (Password, MFA, Backup, Encryption, Data Privacy):
 - MFA: 'Enabling protection' or 'Testing recovery' or 'Securing access'

@@ -56,7 +56,12 @@ STEP 2 - PROTECT (Category-specific pattern for ${analysis.topic}):
 
 IF category is THREAT:
   Pattern: "Don't [harmful action to avoid]"
-  Example: "Don't click links or open unknown attachments"
+  Examples by topic:
+  - Phishing: "Don't click links or open unknown attachments"
+  - Vishing: "Don't confirm credentials or transfer funds"
+  - Quishing: "Don't scan unknown or misplaced QR codes"
+  - Ransomware: "Don't pay ransom or execute suspicious files"
+  - Deepfake: "Don't trust unusual media without verification"
   Generate for ${analysis.topic}: [DON'T] [specific harmful action]. Max 8 words.
 
 IF category is TOOL:
@@ -79,18 +84,20 @@ Generate for ${analysis.topic}: Max 5 words in ${analysis.language}
 
 {
   "7": {
-    "iconName": "repeat",
+    "iconName": "[topic-specific icon: phishing→'mail-warning', vishing→'phone', quishing→'qr-code', ransomware→'alert-circle', deepfake→'video', malware→'shield-alert', social-engineering→'alert-triangle']",
     "subtitle": "Your action plan to stay safe from ${analysis.topic}",
     "callToActionText": "Localize 'Continue' into ${analysis.language}",
     "texts": {
       "title": "Localize 'Action Plan' into ${analysis.language}",
-      "subtitle": "Adapt phishing example pattern to ${analysis.topic}. Next time [specific situation in ${analysis.topic}], you will [concrete action]: Max 15 words in ${analysis.language}. REFERENCE PHISHING: 'Next time a suspicious email appears, you will do this:'",
+      "subtitle": "Implementation intention format - Next time [specific situation in ${analysis.topic}], you will [concrete action]: Max 15 words in ${analysis.language}. REFERENCE: Phishing='Next time a suspicious email appears, you will do this:' | Vishing='Next time you receive a suspicious call, you will do this:' | Quishing='Next time you see a suspicious QR code, you will do this:'",
       "actionsTitle": "Localize 'Your next steps' into ${analysis.language}"
     },
     "key_message": [
-      "Step 1 - RECOGNIZE for ${analysis.topic}: Adapt from phishing example 'Recognise a suspicious email'. Max 6 words in ${analysis.language}",
-      "Step 2 - PROTECT for ${analysis.topic} (${analysis.category} category): Adapt from phishing example 'Don't click links or open unknown attachments' using ${analysis.category} pattern. Max 8 words in ${analysis.language}",
-      "Step 3 - VERIFY for ${analysis.topic}: Adapt from phishing example 'Use the report button'. Max 5 words in ${analysis.language}"
+      "Step 1 - RECOGNIZE for ${analysis.topic}: Generate observable threat indicator specific to topic. REFERENCE EXAMPLES: Phishing='Recognise a suspicious email' | Vishing='Recognise a suspicious caller' | Quishing='Recognise a suspicious QR code' | Ransomware='Recognise encryption or lock signs' | Deepfake='Recognise media quality oddities' | Insider-Threat='Recognise unusual access requests' | Social-Engineering='Recognise manipulation attempts'. FOR ANY TOPIC NOT LISTED: Generate 'Recognise [observable threat indicator specific to ${analysis.topic}]'. Max 6 words in ${analysis.language}",
+
+      "Step 2 - PROTECT for ${analysis.topic} (${analysis.category} category): Generate harmful action to avoid in THREAT category. REFERENCE EXAMPLES: Phishing='Don't click links or open attachments' | Vishing='Don't confirm credentials or transfer funds' | Quishing='Don't scan unknown or misplaced QR codes' | Ransomware='Don't pay ransom or execute suspicious files' | Deepfake='Don't trust unusual media without verification' | Insider-Threat='Don't share credentials or sensitive access' | Supply-Chain='Don't trust unexpected vendor communications'. FOR ANY TOPIC NOT LISTED: Generate 'Don't [specific harmful action for ${analysis.topic}]'. Max 8 words in ${analysis.language}",
+
+      "Step 3 - VERIFY for ${analysis.topic}: Generate appropriate escalation/reporting action specific to topic. REFERENCE EXAMPLES: Phishing='Use the report button' | Vishing='Report to security team' | Quishing='Report to IT team' | Ransomware='Report to IT immediately' | Deepfake='Report suspicious content to security' | Insider-Threat='Report to compliance officer' | Supply-Chain='Alert procurement team'. FOR ANY TOPIC NOT LISTED: Generate '[Action] [appropriate escalation channel for ${analysis.topic}]'. Max 5 words in ${analysis.language}"
     ],
     "scene_type": "nudge"
   }

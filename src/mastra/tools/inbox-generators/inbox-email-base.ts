@@ -24,6 +24,9 @@ CRITICAL LOGIC:
 
 TOPIC CONTEXT: ${topic}
 - For deepfake/video topics → emails may involve: video messages, video calls, media files, CEO announcements, training videos, video conferencing
+- For vishing/voice phishing topics → emails may involve: calendar invites, video conference links, meeting invitations, urgent call requests, Zoom/Teams/WebEx links, executive briefing links
+- For smishing/SMS phishing topics → emails may involve: SMS notifications forwarded, text message alerts, delivery notifications, account alerts, package tracking, message forwarding context
+- For quishing/QR code topics → emails may involve: QR codes in attachments or content. For QR code images: <img src="https://imagedelivery.net/KxWh-mxPGDbsqJB3c5_fmA/16344751-9716-4ff4-8fe7-5b77c311eb00/public" alt="QR Code" style="width:200px;height:auto;">
 - For phishing/email topics → emails may involve: account verification, password resets, suspicious links, invoice requests
 - For malware/file topics → emails may involve: software updates, file downloads, document attachments, system patches
 - For password/MFA topics → emails may involve: account security, authentication, login alerts, credential updates
@@ -61,10 +64,16 @@ EXACT FORMAT (return as-is, single object):
   "isPhishing": true|false,
   "content": "<div class='text-[#1C1C1E] dark:text-[#F2F2F7]'>Multi-paragraph HTML content in ${languageCode}, natural business tone</div>",
   "headers": ["Return-Path: <...>", "SPF: ...", "DMARC: ..."],
-  "difficulty": "EASY|MEDIUM|HARD",
+  "difficulty": "EASY|MEDIUM|MEDIUM-HARD|HARD",
   "explanation": "Written in ${languageCode}: Point out 2-3 observable red flags or legitimacy indicators. Describe WHAT is suspicious/normal, NOT what user should do. Natural, professional tone.",
   "attachments": [{"id": "string", "name": "filename (in ${languageCode}).ext", "size": "KB", "type": "pdf|doc|xlsx", "content": "<div>HTML content in ${languageCode}</div>"}]
 }
+
+DIFFICULTY CALIBRATION:
+- EASY: External domain + failing SPF/DMARC + obvious urgency (clear phishing indicators)
+- MEDIUM: Some legitimate signals mixed with subtle red flags
+- MEDIUM-HARD: Near-legitimate domain + mixed SPF/DMARC + colleague impersonation (harder to detect)
+- HARD: Official internal domain + clean headers + minimal red flags (requires context analysis)
 
 CRITICAL: "attachments" must be array of objects, NOT nested arrays. If no attachment, use empty array [].
 `;

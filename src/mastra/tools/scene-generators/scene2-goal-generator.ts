@@ -69,7 +69,7 @@ Examples by category:
         "iconName": "alert-triangle",
         "title": "Step 1 goal title for ${analysis.topic} (2-5 words). Reference pattern examples above. Threats→Recognize, Tools→Assess, Processes→Identify.",
         "subtitle": "Concrete cue for Step 1 (2-4 words). Examples: 'Pause and think' | 'Verify first' | 'Assess risks'. NOT: 'Check details' or procedural cues.",
-        "description": "SHORT benefit description (≤12 words). Pattern: 'Helps you [spot/recognize/notice] when [topic-aware situation].' Simple, direct, conversational. Consider ${analysis.topic} + ${analysis.department}. Examples: Phishing→'Helps you spot warning signs when emails look suspicious.' | Ransomware+IT→'Helps you recognize attack signs when system behaves oddly.' | MFA→'Helps you notice security prompts when logging in.' | Generic→'Helps you pause when something looks unusual.'"
+        "description": "SHORT benefit description (≤12 words). Pattern: 'Helps you [spot/recognize/notice] when [topic-aware situation].' Simple, direct, conversational. Consider ${analysis.topic} + ${analysis.department}. Generate 3 specific warning signs/red flags matching ${analysis.topic}. Examples: Phishing→'Helps you spot phishing red flags: suspicious sender, urgent pressure, or unknown links.' | Ransomware→'Helps you recognize attack signs: encrypted files, locked system, or ransom message.' | Deepfake→'Helps you detect media issues: facial glitches, voice sync problems, or quality oddities.' | MFA→'Helps you notice security needs: unusual login, new device, or unrecognized location.' | Generic→'Helps you pause when something looks unusual.'"
       },
       {
         "iconName": "shield-check",

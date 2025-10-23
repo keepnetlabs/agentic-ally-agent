@@ -405,13 +405,30 @@ export function getResourcesForScene8(analysis: {
 
       console.log(`  Checking keyTopic: "${keyTopic}" → normalized: "${topicKey}"`);
 
+      // LEVEL 1: Try exact match
       if (URL_DATABASE[topicKey] && URL_DATABASE[topicKey].length > 0) {
         console.log(`    ✅ Found ${URL_DATABASE[topicKey].length} resources for "${topicKey}"`);
         resources.push(...URL_DATABASE[topicKey]);
-      } else {
-        console.log(`    ❌ No exact match for "${topicKey}", checking alternatives...`);
-        // Log available keys for debugging
-        console.log(`    Available keys: ${Object.keys(URL_DATABASE).filter(k => k !== 'THREAT' && k !== 'TOOL' && k !== 'PROCESS' && k !== 'GENERIC').slice(0, 10).join(', ')}`);
+        continue;
+      }
+
+      // LEVEL 2: Try to extract parent topic from granular keyTopic
+      // "definition-of-quishing" → extract "quishing"
+      // "typical-quishing-tactics" → extract "quishing"
+      const words = topicKey.split('-');
+      let parentTopicFound = false;
+
+      for (const word of words) {
+        if (URL_DATABASE[word] && URL_DATABASE[word].length > 0) {
+          console.log(`    ✅ Found parent topic match: "${word}" from "${topicKey}"`);
+          resources.push(...URL_DATABASE[word]);
+          parentTopicFound = true;
+          break;
+        }
+      }
+
+      if (!parentTopicFound) {
+        console.log(`    ❌ No exact match for "${topicKey}", no parent topic found`);
       }
     }
 

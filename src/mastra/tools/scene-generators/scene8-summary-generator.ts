@@ -55,12 +55,12 @@ Generate scene 8 (summary):
       "downloadTrainingLogsText": "Localize 'Download Training Logs' into ${analysis.language}",
       "retryText": "Localize 'Retry' into ${analysis.language}",
       "completionTitle": "Return like 'Well done — you've completed the training' (max 8 words) in ${analysis.language}",
-      "completionSubtitle": "Return like 'You've strengthened your skills' (max 8 words) in ${analysis.language}",
+      "completionSubtitle": "Topic-specific awareness completion. REFERENCE: Phishing='You've refreshed your phishing awareness' | Quishing='You've sharpened your QR code detection' | Ransomware='You've learned recovery procedures' | Deepfake='You've strengthened your verification skills' | MFA='You've secured your account protection'. Generate: 'You've [verb] your ${analysis.topic} [awareness/skills/knowledge]' (max 8 words) in ${analysis.language}",
       "achievementsTitle": "Localize 'Your achievements' into ${analysis.language}",
       "actionPlanTitle": "Localize 'Next steps' into ${analysis.language}",
       "resourcesTitle": "Localize 'Additional resources' into ${analysis.language}",
-      "motivationalTitle": "Motivational title (max 3 words, ${analysis.language})",
-      "motivationalMessage": "Empowering message for ${analysis.topic} (${analysis.department}), max 12 words in ${analysis.language}",
+      "motivationalTitle": "Motivational title (max 3 words). REFERENCE: 'Stay alert' | 'Stay vigilant' | 'Keep safe' in ${analysis.language}",
+      "motivationalMessage": "Organizational benefit message (generic, works for ANY topic). Pattern: '[Action/Training] helps keep your organisation [safer/secure/protected]'. Max 12 words in ${analysis.language}. Example: 'Completing this training helps keep your organisation safer.'",
       "saveAndFinish": "Localize 'Save and Finish' into ${analysis.language}",
       "savingText": "Localize 'Saving…' into ${analysis.language}",
       "finishedText": "Saved. You can now close this window' (max 10 words, ${analysis.language})",
@@ -76,17 +76,17 @@ Generate scene 8 (summary):
     "immediateActions": [
       {
         "title": "Localize 'Do now' into ${analysis.language}. Output localized text directly, not instructions.",
-        "description": "Immediate action for ${analysis.topic} (${analysis.category}), topic-specific, max 12 words in ${analysis.language}"
+        "description": "Tool-specific immediate action. Pattern: 'Use [tool/button] the next time [situation]'. REFERENCE: Phishing='Use the Report button the next time something looks suspicious' | Quishing='Use the Report button when you see a suspicious QR' | Ransomware='Isolate the system the next time encryption signs appear'. Max 12 words in ${analysis.language}"
       },
       {
         "title": "Localize 'This week' into ${analysis.language}. Output localized text directly, not instructions.",
-        "description": "Team-focused action for ${analysis.topic} (${analysis.department}), max 10 words in ${analysis.language}"
+        "description": "Social/behavioral action. Pattern: 'Encourage [audience] to [action]'. REFERENCE: Phishing='Encourage your team to report suspicious emails' | Quishing='Teach colleagues to verify QR codes' | Ransomware='Share recovery procedures with your team'. Max 10 words in ${analysis.language}"
       }
     ],
     "key_message": [
-      "Message 1 for ${analysis.topic}, max 3 words in ${analysis.language}",
-      "Message 2 for ${analysis.topic}, max 5 words in ${analysis.language}",
-      "Message 3 for ${analysis.topic}, max 4 words in ${analysis.language}"
+      "Meta-level completion message (generic, same for ALL topics). Max 3 words in ${analysis.language}. REFERENCE: 'Training completed'",
+      "Meta-level application message (generic, same for ALL topics). Max 5 words in ${analysis.language}. REFERENCE: 'Apply what you've practised'",
+      "Meta-level social message (generic, same for ALL topics). Max 4 words in ${analysis.language}. REFERENCE: 'Share and encourage others'"
     ],
     "resources": [
       {

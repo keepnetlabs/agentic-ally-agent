@@ -5,6 +5,31 @@ export enum EmailVariant {
     FormalLegit = 'FormalLegit',
 }
 
+// Obviously fake domains for obvious phishing (red flags are clear)
+const OBVIOUS_DOMAINS = [
+    'billing@invoice-systems.net',
+    'accounting@payments-hub.org',
+    'support@update-portal.net',
+    'admin@verify-account.org',
+    'security@confirm-identity.net',
+    'finance@process-payment.io',
+    'compliance@check-status.com',
+];
+
+// Realistic-looking fake domains for sophisticated phishing (lookalike effect)
+const SOPHISTICATED_DOMAINS = [
+    'acme-solutions.net',
+    'global-services.com',
+    'corporate-group.io',
+    'enterprise-hub.org',
+    'business-portal.net',
+    'professional-systems.com',
+    'allied-services.org',
+    'integrated-solutions.io',
+    'premier-consulting.net',
+    'universal-group.com',
+];
+
 export type DiversityHints = {
     domainHint: string;
     attachmentHint: string;
@@ -18,20 +43,22 @@ export type DiversityHints = {
 export const variantDeltaBuilder: Record<EmailVariant, (d: DiversityHints) => string> = {
     [EmailVariant.ObviousPhishing]: (d) => {
         const departmentContext = d.departmentHint ? `Department scenario: Someone from ${d.departmentHint} who would realistically contact recipient.` : '';
-        const domainContext = `SENDER DOMAIN: Use a suspicious external domain. Examples: billing@invoice-systems.net, accounting@payments-hub.org, support@company-services.net. Domain should be EXTERNAL, not official company.com`;
+        const obviousDomainExamples = OBVIOUS_DOMAINS.slice(0, 3).join(', ');
+        const domainContext = `SENDER DOMAIN: Use OBVIOUSLY FAKE external domain with red flags. Examples: ${obviousDomainExamples}. Domains with keywords like "invoice-systems", "verify-account", "confirm-identity", "process-payment" signal phishing. Domain should be EXTERNAL, NOT official company.com.`;
         const impersonationHint = d.topicHint?.includes('executive') || d.topicHint?.includes('CEO') || d.topicHint?.includes('authority')
-            ? 'SENDER pretends to BE the executive. Example: From ceo@executive-portal.net, Subject "Urgent Wire Transfer", Content "I need you to process this payment immediately - CEO". Write as if CEO is directly sending email. '
+            ? 'SENDER pretends to BE the executive. Example: From ceo@verify-authority.net or finance@confirm-payment.io, Subject "Urgent Wire Transfer", Content "I need you to process this payment immediately - CEO". Write as if CEO is directly sending email. '
             : '';
-        return `OBVIOUS PHISHING: Believable business request with urgency. ${d.topicHint ? `Scenario: ${d.topicHint}.` : ''} ${departmentContext} ${domainContext} ${impersonationHint}Use ${d.greetingHint} + failing ${d.headerHint}. ${!impersonationHint ? 'Sender must match topic (billing@ for invoices).' : ''} Attachment: ${d.attachmentHint} matching scenario. Authoritative tone with red flags.`;
+        return `OBVIOUS PHISHING: Believable business request with CLEAR red flags. ${d.topicHint ? `Scenario: ${d.topicHint}.` : ''} ${departmentContext} ${domainContext} ${impersonationHint}Use ${d.greetingHint} + failing ${d.headerHint}. ${!impersonationHint ? 'Sender must match topic (billing@ for invoices).' : ''} Attachment: ${d.attachmentHint} matching scenario. Authoritative tone but obvious domain gives it away.`;
     },
 
     [EmailVariant.SophisticatedPhishing]: (d) => {
         const departmentContext = d.departmentHint ? `Department context: ${d.departmentHint}. Impersonate colleague/authority from this department who would realistically interact with recipient.` : '';
-        const domainContext = `SENDER DOMAIN: Use a NEAR-LEGIT domain that mimics company domain. Examples: finance@company-services.com (instead of finance@company.com), hr@company-solutions.net, support@company-global.org. Must look official but NOT be exact company domain.`;
+        const sophisticatedDomainExamples = SOPHISTICATED_DOMAINS.slice(0, 5).map(d => `${d}`).join(', ');
+        const domainContext = `SENDER DOMAIN: Use a REALISTIC-LOOKING but FAKE corporate domain that could pass as a partner/vendor. Examples: finance@${sophisticatedDomainExamples.split(', ')[0]}, support@${sophisticatedDomainExamples.split(', ')[1]}, hr@${sophisticatedDomainExamples.split(', ')[2]}. Must look legitimate and corporate, NOT obviously fake like "invoice-systems". Department matches threat type (Finance→payments, IT→tech, Security→auth, Exec→CEO).`;
         const impersonationHint = d.topicHint?.includes('executive') || d.topicHint?.includes('CEO') || d.topicHint?.includes('colleague') || d.topicHint?.includes('authority')
-            ? 'SENDER pretends to BE a colleague/authority. Example: From sarah@company-services.com, Content "Hi, this is Sarah from Marketing. Director is stuck in meeting and urgently needs the Q3 budget file. Can you send it to me ASAP? Keep this between us - time sensitive." Write as if colleague is directly asking. '
+            ? 'SENDER pretends to BE a colleague/authority. Example: From sarah@acme-solutions.net, Content "Hi, this is Sarah from Marketing. Director is stuck in meeting and urgently needs the Q3 budget file. Can you send it to me ASAP? Keep this between us - time sensitive." Write as if colleague/partner is directly asking. '
             : '';
-        return `SOPHISTICATED PHISHING: Professional, subtle threats. ${d.topicHint ? `Scenario: ${d.topicHint}.` : ''} ${departmentContext} ${domainContext} ${impersonationHint} Mixed ${d.headerHint} + ${d.greetingHint}. CRITICAL: Sender department matches threat type (Finance→payments, IT→tech, Security→auth, Exec→CEO). Attachment: ${d.attachmentHint} matching email. Act as internal colleague - harder to detect.`;
+        return `SOPHISTICATED PHISHING: Professional, subtle threats. ${d.topicHint ? `Scenario: ${d.topicHint}.` : ''} ${departmentContext} ${domainContext} ${impersonationHint} Mixed ${d.headerHint} + ${d.greetingHint}. CRITICAL: Sender department matches threat type (Finance→payments, IT→tech, Security→auth, Exec→CEO). CRITICAL: Return-Path MUST match sender domain. Attachment: ${d.attachmentHint} matching email. Act as internal colleague/partner - harder to detect.`;
     },
 
     [EmailVariant.CasualLegit]: (d) => {
@@ -65,25 +92,29 @@ export const variantDeltaBuilder: Record<EmailVariant, (d: DiversityHints) => st
 export function diversityPlan(index: number): DiversityHints {
     const plans = [
         {
-            domainHint: 'billing@invoice-systems.net, accounts@payments-center.org',
+            // Index 0: ObviousPhishing - OBVIOUS fake domains (red flags clear)
+            domainHint: 'billing@invoice-systems.net, accounting@payments-hub.org, support@verify-account.net',
             attachmentHint: '1 quality pdf/xlsx with comprehensive details (e.g., invoice_details.pdf)',
             greetingHint: 'Pick ONE: "Dear Client" OR "Valued Customer"',
             headerHint: 'SPF: fail, DMARC: fail',
         },
         {
-            domainHint: 'hr@company-services.com, training@company-services.com, compliance@company-services.com (near miss to company.com)',
+            // Index 1: SophisticatedPhishing - REALISTIC fake domains (near-miss lookalike)
+            domainHint: 'finance@acme-solutions.net, support@global-services.com, hr@corporate-group.io',
             attachmentHint: '1 detailed xlsx/pdf with specific data (e.g., contract_review.xlsx)',
             greetingHint: 'Pick ONE: "Hello" OR "Good morning"',
             headerHint: 'SPF: pass, DMARC: fail (mixed)',
         },
         {
-            domainHint: 'facilities@company.com, operations@company.com, projects@company.com',
+            // Index 2: CasualLegit - Official internal domains (DIFFERENT departments from FormalLegit)
+            domainHint: 'Pick ONE: hr@company.com, it@company.com, communications@company.com, operations@company.com',
             attachmentHint: '1 comprehensive pdf/jpg with realistic content (e.g., floor_plan.pdf) or none',
             greetingHint: 'Pick ONE: "Hey team" OR "Hi everyone"',
             headerHint: 'SPF: pass, DMARC: pass',
         },
         {
-            domainHint: 'finance@company.com, legal@company.com, exec@company.com',
+            // Index 3: FormalLegit - Official internal domains (DIFFERENT departments from CasualLegit)
+            domainHint: 'Pick ONE: compliance@company.com, security@company.com, legal@company.com, finance@company.com',
             attachmentHint: '1 detailed pdf/xlsx with business data (e.g., quarterly_report.pdf)',
             greetingHint: 'Pick ONE: "Dear colleagues" OR "Team"',
             headerHint: 'SPF: pass, DMARC: pass',
@@ -100,32 +131,32 @@ function getTopicHint(topic: string, index: number): string {
     // SOCIAL ENGINEERING ATTACKS
     // ============================================================================
 
-    // Vishing (Voice Phishing) - Phone-based attacks
+    // Vishing (Voice Phishing) - Email-based calendar invite / video call exploitation
     if (t.includes('vishing') || t.includes('voice phishing') || (t.includes('phone') && (t.includes('scam') || t.includes('fraud')))) {
         const scenarios = [
-            'urgent IT support call verification, password reset request',
-            'bank fraud alert callback, account verification required',
-            'executive assistant urgent call, wire transfer authorization',
-            'tech support callback request, remote access needed',
-            'payroll update notification, employee verification call',
-            'security audit reminder, compliance check required',
-            'system maintenance confirmation, access validation needed',
-            'contractor onboarding call, credentials enrollment'
+            'urgent video conference call, meeting link join required',
+            'bank security briefing video call, executive discussion',
+            'executive all-hands video meeting, calendar invite',
+            'IT support video troubleshooting, remote assistance call link',
+            'payroll update video meeting, employee verification call',
+            'security audit video briefing, compliance discussion call',
+            'system maintenance video conference, technical discussion',
+            'contractor onboarding video call, orientation meeting link'
         ];
         return scenarios[(index * 7) % scenarios.length];
     }
 
-    // Smishing (SMS Phishing) - Text message attacks
+    // Smishing (SMS Phishing) - Email-based SMS notification simulation / text message forwarding
     if (t.includes('smishing') || t.includes('sms phishing') || (t.includes('text') && (t.includes('scam') || t.includes('fraud')))) {
         const scenarios = [
-            'package delivery notification, tracking link update',
-            'account security alert text, verification link',
-            'prize winner notification, claim reward link',
-            'service suspension warning, immediate action link',
-            'bank transaction alert text, confirm payment link',
-            'utility bill due reminder, payment verification needed',
-            'appointment confirmation update, reschedule link',
-            'workplace time-off approval, action required'
+            'SMS notification forwarded, package delivery tracking link',
+            'text message alert received, account security verification link',
+            'SMS text notification, prize winner claim reward link',
+            'text message warning, service suspension immediate action',
+            'SMS alert forwarded, bank transaction confirm payment link',
+            'text notification received, utility bill payment verification',
+            'SMS appointment update, reschedule appointment link',
+            'text message notification, workplace approval action required'
         ];
         return scenarios[(index * 7) % scenarios.length];
     }

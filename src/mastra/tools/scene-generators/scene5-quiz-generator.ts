@@ -27,6 +27,9 @@ FOR ${analysis.topic} (${analysis.department}):
 - Create realistic workplace scenarios
 - Correct answers = practical actions, NOT recall
 
+IMPORTANT FALLBACK RULE FOR ANY UNKNOWN TOPIC:
+Use the THREAT/TOOL/PROCESS pattern templates above. For distractors: generate IMPULSIVE error (user's wrong instinct) | PASSIVE avoidance (ignores problem, no report) | FALSE SECURITY (shifts responsibility). For T/F: create absolute statement ('All X are Y'), mark FALSE, explain correct action.
+
 Generate scene 5 (quiz):
 CRITICAL:
 1. NEVER use placeholder text. Replace ALL content with specific ${analysis.topic} information. Generate concrete quiz questions and answers.

@@ -63,9 +63,15 @@ export async function selectVideoForTopic(analysis: PromptAnalysis): Promise<str
         'multi-factor': ['password', 'authentication'],
         'authentication': ['password', 'mfa'],
         'login': ['password', 'authentication'],
-        'compliance': ['data protection', 'incident response'],
-        'policy': ['security awareness', 'incident response'],
-        'awareness': ['security', 'human risk'],
+        'quishing': ['phishing', 'email security', 'social engineering', 'spoofing'],
+        'ransomware': ['data protection', 'incident response', 'backup', 'recovery'],
+        'malware': ['ransomware', 'data protection', 'threat response', 'security'],
+        'social-engineering': ['phishing', 'vishing', 'smishing', 'quishing'],
+        'deepfake': ['phishing', 'email security', 'spoofing', 'threat'],
+        'smishing': ['phishing', 'social engineering', 'email security'],
+        'compliance': ['data protection', 'incident response', 'human risk'],
+        'policy': ['security awareness', 'incident response', 'human risk'],
+        'awareness': ['security', 'human risk', 'data protection'],
       };
 
       const relatedTopics = Object.entries(relatedTopicMap)
@@ -178,13 +184,23 @@ ${transcript.substring(0, 800)}...
 
 REQUIREMENTS:
 - Title: 3-5 words, pattern "Real [Threat/Topic] [Outcome]". Must match topic "${topic}".
-  Examples: "Real Phishing Emails Detected" | "Real MFA Account Takeover" | "Real Ransomware Attack" | "Spotting Real Deepfake Videos"
+  Topic-specific examples:
+  - Phishing: "Real Phishing Attack Detected" | "Spotting Email Threats"
+  - Quishing: "Real QR Code Attack" | "Detecting Quishing Threats"
+  - Vishing: "Real Voice Impersonation Attack" | "Identifying Vishing Calls"
+  - Ransomware: "Real Ransomware Attack" | "Recognizing Encryption Threats"
+  - Deepfake: "Spotting Real Deepfake Videos" | "Detecting AI-Generated Media"
+  - Smishing: "Real SMS Phishing Attack" | "Identifying Text Message Threats"
+  - Malware: "Real Malware Attack" | "Recognizing Suspicious Files"
 
 - Subtitle: 1 sentence (max 12 words). Focus on learner benefit with specific action.
-  Examples:
-  - For phishing: "Report threats instantly and protect your team"
-  - For MFA: "Secure accounts with multi-factor authentication"
+  Topic-specific examples:
+  - For phishing: "Spot email threats and report instantly"
+  - For quishing: "Verify QR codes before scanning"
+  - For vishing: "Identify caller impersonation and report fraud"
   - For ransomware: "Recognize attacks and safeguard critical data"
+  - For deepfake: "Verify media authenticity and report deepfakes"
+  - For MFA: "Secure accounts with multi-factor authentication"
 
 - Generate in ${language} language
 - NO instructions, NO patterns, NO "Write..." directives - just the final text
