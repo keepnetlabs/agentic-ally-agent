@@ -169,60 +169,107 @@ export const translateLanguageJsonTool = new Tool({
             ? `You are localizing content for a ${topic} security training. Use appropriate terminology for this security topic.`
             : 'You are localizing general security training content.';
 
-        const system = `
-${topicContext}
-
-TASK: Localize JSON values from ${sourceLanguage} to ${targetLanguage} ONLY (100% native quality).
-
-CRITICAL RULES:
-
-1. LANGUAGE PURITY
-   • Output ONLY in ${targetLanguage} (no other languages except proper nouns: phishing, CEO, AI, MFA, SPF, DMARC)
-   • ZERO language mixing
-
-2. LOCALIZATION - DON'T TRANSLATE LITERALLY (Context-Aware)
-   • Read MEANING + TONE, not words
-
-   Content Type Guidance:
-   - Titles: [Action verb][Topic] - direct, action-oriented
-   - Warnings/Alerts: [Direct statement] + [impact] + [awareness] - conversational, urgent
-   - Descriptions: [Verb][what][why] - practical, concise
-   - Actions: Active voice (not passive/rigid)
-   - Information: Clear, simple (not academic/verbose)
-
-   • Use personal pronouns/direct address when natural (your/tu/suas)
-   • WRONG ❌: Word-for-word, formal/textbook, complex grammar
-   • RIGHT ✅: Natural like native professional would speak/write
-
-   Localization Patterns (apply to ${targetLanguage} and all languages):
-   1. Warnings/Threats:
-      PATTERN: Direct statement + [threat relevant to ${topic}] + personal pronouns + impact + awareness call
-      Structure: Not formal/possessive, but direct/conversational
-   2. Actions/Commands:
-      PATTERN: [Simple verb] + [context/reason] - active voice, natural, not formal/passive
-   3. Descriptions:
-      PATTERN: [Verb] [what] [why] - practical benefit focus, relevant to ${topic}
-
-   Note: Adapt all patterns to topic context (${topic}) and ${targetLanguage} conventions
-
-3. PRESERVE STRUCTURE
-   • Keep JSON keys & HTML tags (tag count MUST match)
-   • Preserve: \\n, timestamps, capitalization style
-   • Example: "<p>Hello <strong>world</strong></p>" → "<p>[translated]<strong>[translated]</strong></p>"
-
-4. CONTEXT-AWARE QUALITY
-   • Titles: Action-oriented, authentic
-   • Content: Conversational, professional
-   • Warnings: Direct, memorable, impactful
-   • AVOID: Machine translation artifacts, awkward grammar, harsh tone
-
-OUTPUT FORMAT:
-{
-  "0": "localized value in ${targetLanguage}",
-  "1": "localized value in ${targetLanguage}"
-}
-Keep all keys "0" to "${extracted.length - 1}".
-`.trim()
+            const system = `
+            ${topicContext}
+            
+            TASK: Localize JSON values from ${sourceLanguage} to ${targetLanguage} ONLY, producing fluent, culturally natural, native-quality output.
+            
+            ---
+            
+            ## CRITICAL RULES
+            
+            ### 1️⃣ LANGUAGE PURITY
+            - Output ONLY in ${targetLanguage}.  
+            - Do not mix with other languages.  
+            - Keep proper nouns/acronyms that are globally standard in cybersecurity (phishing, CEO, MFA, SPF, DMARC, DKIM, AI).  
+            - If no direct equivalent exists, keep the English term and localize surrounding grammar naturally.
+            
+            ---
+            
+            ### 2️⃣ CONTEXT-AWARE LOCALIZATION (NOT LITERAL)
+            - Focus on **meaning, tone, and natural phrasing**—not word-for-word translation.  
+            - Adapt to the communication style of ${targetLanguage}.  
+            - Avoid robotic, academic, or overly formal tone.  
+            
+            **Content Type Guidance:**
+            - **Titles:** Action-oriented, clear, motivating.  
+            - **Warnings/Alerts:** Direct statement + impact + awareness.  
+            - **Descriptions:** Verb + what + why (practical and concise).  
+            - **Actions/Commands:** Simple active verbs, natural imperatives.  
+            - **Informational Text:** Professional, conversational, never textbook-like.
+            
+            **Localization Patterns (apply to all languages):**
+            1. **Warnings/Threats:** Direct statement → relevant threat → personal impact → awareness call.  
+            2. **Actions:** Simple verb + clear context (active voice).  
+            3. **Descriptions:** Verb + what + why (highlight benefit or purpose).
+            
+            Use direct address where natural (e.g., your / tu / su / vos / 您 / vous), depending on the ${targetLanguage}’s convention.
+            
+            ---
+            
+            ### 3️⃣ STRUCTURE PRESERVATION
+            - Preserve all JSON keys exactly ("0", "1", ..., "${extracted.length - 1}").  
+            - Keep HTML tags and attributes unchanged (same count and order).  
+            - Preserve placeholders and variables:  
+              \`{…}\`, \`{{…}}\`, \`%s\`, \`%d\`, \`{{name}}\`, URLs, emails, timestamps, \`\\n\`, capitalization.  
+            - Never add or remove any tags, placeholders, or extra sentences.  
+            - Example:  
+              <p>Hello <strong>world</strong></p> → <p>[localized]<strong>[localized]</strong></p>
+            
+            ---
+            
+            ### 4️⃣ STYLE (AUTO-ADAPT TO TARGET LANGUAGE)
+            - Automatically adapt sentence rhythm, tone, and idioms to ${targetLanguage} norms.  
+            - Prefer short, natural sentences (approx. 8–18 words).  
+            - Follow native punctuation, date, and number formats.  
+            - Maintain professional but conversational tone.  
+            - Rewrite unnatural literal phrases to sound native while preserving meaning.
+            
+            ---
+            
+            ### 5️⃣ TERMINOLOGY
+            - Use **standard cybersecurity terminology** used in ${targetLanguage}.  
+            - Do NOT invent new terms.  
+            - Keep global acronyms (MFA, SPF, DMARC, DKIM) as is unless a localized standard exists.  
+            - When uncertain, choose the most common enterprise security usage in ${targetLanguage}.  
+            
+            ---
+            
+            ### 6️⃣ FEW-SHOT SCAFFOLD (ILLUSTRATIVE)
+            *(Adapt these patterns to ${targetLanguage}; they define tone, not wording.)*
+            
+            **[Warning]**  
+            SRC: "Phishing alert: Do not open unexpected attachments — they may install malware."  
+            TGT: "[Natural ${targetLanguage} equivalent: clear, direct, professional warning]"
+            
+            **[Action]**  
+            SRC: "Verify the sender’s address before clicking any link."  
+            TGT: "[Natural ${targetLanguage} equivalent: polite imperative in active voice]"
+            
+            **[Description]**  
+            SRC: "Report suspicious emails so we can block similar attacks."  
+            TGT: "[Natural ${targetLanguage} equivalent: concise call to action with benefit]"
+            
+            ---
+            
+            ### 7️⃣ VALIDATION BEFORE OUTPUT
+            1. JSON keys must match source exactly (0…${extracted.length - 1}).  
+            2. Text fully localized in ${targetLanguage} (no mixed fragments).  
+            3. HTML tags, placeholders, and capitalization identical in structure.  
+            4. Meaning preserved — no omissions or additions.  
+            5. Output strictly valid JSON (no comments or metadata).  
+            
+            ---
+            
+            ### ✅ OUTPUT FORMAT (STRICT)
+            Return ONLY this JSON object:
+            {
+              "0": "localized value in ${targetLanguage}",
+              "1": "localized value in ${targetLanguage}"
+            }
+              
+            Keep all keys "0" to "${extracted.length - 1}".
+            `.trim()            
 
         // Step 3: Translate each chunk with parallel processing and retry
         const model = getModel(ModelProvider.WORKERS_AI, Model.WORKERS_AI_GPT_OSS_120B);

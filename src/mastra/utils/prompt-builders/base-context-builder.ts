@@ -43,32 +43,38 @@ SCIENTIFIC CONTEXT:
    - Choose Lucide icons semantically matched to topic/category. Never default to generic security icons unless explicitly relevant.
 
 3. **Language & Style - CRITICAL**
-   OUTPUT: ${analysis.language} ONLY. No other languages.
+   GOAL: Produce original microlearning content directly in ${analysis.language}.  
+   The writing must sound as if it was originally created in ${analysis.language} by a native professional—not translated or adapted.  
+   Assume you are a native professional educator and writer in ${analysis.language}, skilled in creating clear, engaging learning content.
+
+   OUTPUT: ${analysis.language} ONLY. No other languages. No meta commentary.
 
    RULE 1: Language Purity
-   • Every JSON field: ${analysis.language} ONLY (100% target language)
-   • ZERO words from other languages (only proper nouns, unavoidable technical terms)
-   • NO language mixing
+   • Every JSON field is written entirely in ${analysis.language} (100% native fluency)
+   • ZERO words from other languages (except globally recognized acronyms like MFA, SPF, DMARC, DKIM)
+   • No mixed-language fragments or translation residue
 
-   RULE 2: Transform, Don't Translate
-   • English examples in instructions = PATTERN only, not copy source
-   • YOUR JOB: Express meaning naturally in ${analysis.language} like native professional would
-   • WRONG ❌: Word-for-word translation (formal, awkward, mechanical)
-   • RIGHT ✅: Natural idiom in target language (conversational, native)
+   RULE 2: Expression Quality (Create, Don’t Translate)
+   • Ignore any English phrasing in this prompt—they illustrate patterns only
+   • Express each idea naturally in ${analysis.language}, using authentic tone, rhythm, and idioms
+   • WRONG ❌: Literal, mechanical, or word-for-word phrasing
+   • RIGHT ✅: Fluent, natural, idiomatic, and professional writing that feels native
 
-   Example: English "Remember that one click compromises account"
-   ❌ NOT: "Bir tıklamanın hesabı tehlikeye attığını unutmayın" (literal, stiff)
-   ✅ YES: "Unutmayın ki tek bir tıklama hesabınızı ele verebilir" (natural native phrasing)
+   RULE 3: Quality & Readability
+   • Professional, confident, approachable tone — colleague-to-colleague
+   • Clear, active verbs and smooth sentence flow
+   • Short sentences (≈8–18 words), one idea per line
+   • Plain, concrete vocabulary; avoid academic or bureaucratic style
+   • Consistent terminology, voice, and perspective throughout
 
-   RULE 3: Quality Standard
-   • Professional colleague-to-colleague tone (NOT textbook, NOT formal, NOT translated)
-   • Natural sentence flow and idiomatic phrasing
-   • Authentic training language (sounds real, not artificial)
-   • Short sentences (<20 words), consistent terminology
+   RULE 4: Clarity & Authenticity
+   • Sound like real learning material written for real people
+   • Avoid machine-translation artifacts, awkward constructions, redundancy, or stiff formal tone
+   • Prioritize clarity, engagement, and natural rhythm
 
-   AVOID: Machine translation artifacts, formal academic tone, awkward phrasing, redundancy
-
-   PRE-OUTPUT CHECK: "Would a native professional in ${analysis.language} naturally say this?" If NO → rewrite
+   FINAL CHECK:
+   Ask yourself: “Would a native professional in ${analysis.language} naturally say or write this?”  
+   If the answer is NO → rewrite before output.
 
 4. **Structure & Quality**
    - Replace ALL placeholders with real, topic-specific content.
