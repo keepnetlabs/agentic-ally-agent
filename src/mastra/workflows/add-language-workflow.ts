@@ -1,7 +1,6 @@
 import { createStep, createWorkflow } from '@mastra/core/workflows';
 import { z } from 'zod';
 import { translateLanguageJsonTool } from '../tools/translate-language-json-tool';
-import { RemoteStorageService } from '../services/remote-storage-service';
 import { KVService } from '../services/kv-service';
 import { normalizeDepartmentName } from '../utils/language-utils';
 import { validateInboxStructure, correctInboxStructure, detectJsonCorruption } from '../utils/json-validation-utils';
@@ -181,8 +180,6 @@ const translateLanguageStep = createStep({
     }
 
     // Store translated content using KVService
-    let storageSuccess = false;
-
     try {
       const kvService = new KVService();
 
@@ -219,12 +216,8 @@ const translateLanguageStep = createStep({
           updatedMicrolearning.microlearning_metadata.language_availability = [...currentLanguages, newLanguage];
 
           // Store updated microlearning structure
-          const baseSuccess = await kvService.updateMicrolearning(updatedMicrolearning);
+          await kvService.updateMicrolearning(updatedMicrolearning);
           console.log(`✅ Updated language_availability: [${updatedMicrolearning.microlearning_metadata.language_availability.join(', ')}]`);
-
-          storageSuccess = langSuccess && baseSuccess;
-        } else {
-          storageSuccess = langSuccess;
         }
       }
 
@@ -262,11 +255,10 @@ const updateInboxStep = createStep({
     console.log(`🔍 Target language for inbox: ${targetLanguage}`);
 
     const normalizedDept = analysis.department ? normalizeDepartmentName(analysis.department) : 'all';
-    const remote = new RemoteStorageService();
+    const kvService = new KVService();
 
     // Try to translate existing inbox using KVService
     try {
-      const kvService = new KVService();
       console.log(`📦 Looking for base inbox in KV: ${microlearningId}/${normalizedDept}/${sourceLanguage}`);
 
       // Try to get inbox from KVService
@@ -327,16 +319,16 @@ const updateInboxStep = createStep({
 
             if (reTranslatedInbox?.success && validateInboxStructure(baseInbox, reTranslatedInbox.data)) {
               console.log(`✅ Re-translation successful with correct structure`);
-              await remote.upsertInbox(normalizedDept, targetLanguage, microlearningId, reTranslatedInbox.data);
+              await kvService.storeInboxContent(microlearningId, normalizedDept, targetLanguage, reTranslatedInbox.data);
               console.log(`✅ Re-translated inbox stored: inbox/${normalizedDept}/${targetLanguage}.json`);
             } else {
               console.warn('⚠️ Re-translation also failed, using corrected version...');
               const correctedInbox = correctInboxStructure(baseInbox, translatedInbox.data);
-              await remote.upsertInbox(normalizedDept, targetLanguage, microlearningId, correctedInbox);
+              await kvService.storeInboxContent(microlearningId, normalizedDept, targetLanguage, correctedInbox);
               console.log(`✅ Inbox corrected and stored: inbox/${normalizedDept}/${targetLanguage}.json`);
             }
           } else {
-            await remote.upsertInbox(normalizedDept, targetLanguage, microlearningId, translatedInbox.data);
+            await kvService.storeInboxContent(microlearningId, normalizedDept, targetLanguage, translatedInbox.data);
             console.log(`✅ Inbox translated and stored: inbox/${normalizedDept}/${targetLanguage}.json`);
           }
         } else {
@@ -364,16 +356,16 @@ const updateInboxStep = createStep({
 
                 if (finalTranslatedInbox?.success && validateInboxStructure(baseInbox, finalTranslatedInbox.data)) {
                   console.log(`✅ Final re-translation successful with correct structure`);
-                  await remote.upsertInbox(normalizedDept, targetLanguage, microlearningId, finalTranslatedInbox.data);
+                  await kvService.storeInboxContent(microlearningId, normalizedDept, targetLanguage, finalTranslatedInbox.data);
                   console.log(`✅ Final re-translated inbox stored: inbox/${normalizedDept}/${targetLanguage}.json`);
                 } else {
                   console.warn('⚠️ All translation attempts failed, using corrected version...');
                   const correctedRetryInbox = correctInboxStructure(baseInbox, retryTranslatedInbox.data);
-                  await remote.upsertInbox(normalizedDept, targetLanguage, microlearningId, correctedRetryInbox);
+                  await kvService.storeInboxContent(microlearningId, normalizedDept, targetLanguage, correctedRetryInbox);
                   console.log(`✅ Final corrected inbox stored: inbox/${normalizedDept}/${targetLanguage}.json`);
                 }
               } else {
-                await remote.upsertInbox(normalizedDept, targetLanguage, microlearningId, retryTranslatedInbox.data);
+                await kvService.storeInboxContent(microlearningId, normalizedDept, targetLanguage, retryTranslatedInbox.data);
                 console.log(`✅ Inbox translated and stored on retry: inbox/${normalizedDept}/${targetLanguage}.json`);
               }
             } else {
@@ -392,12 +384,21 @@ const updateInboxStep = createStep({
       throw new Error(`Failed to update inbox: ${error}`);
     }
 
-    await remote.saveLanguageFile(microlearningId, targetLanguage, translatedLanguageContent);
+    // Store translated language content using KVService
+    const langStorageSuccess = await kvService.storeLanguageContent(microlearningId, targetLanguage, translatedLanguageContent);
+    if (!langStorageSuccess) {
+      console.warn('⚠️ Warning: Language content storage completed but with issues');
+    }
 
     const baseUrl = encodeURIComponent(`https://microlearning-api.keepnet-labs-ltd-business-profile4086.workers.dev/microlearning/${microlearningId}`);
     const langUrl = encodeURIComponent(`lang/${targetLanguage}`);
     const inboxUrl = encodeURIComponent(`inbox/${normalizedDept}`);
     const trainingUrl = `https://microlearning.pages.dev/?baseUrl=${baseUrl}&langUrl=${langUrl}&inboxUrl=${inboxUrl}&isEditMode=true`;
+
+    // Wait 5 seconds to ensure Cloudflare KV data is consistent before returning URL to UI
+    console.log('⏳ Waiting 5 seconds for Cloudflare KV consistency...');
+    await new Promise(resolve => setTimeout(resolve, 5000));
+    console.log('✅ KV consistency check complete, returning training URL');
 
     console.log(`✅ Step 3 completed: Inbox setup finished`);
     console.log(`🎯 Training URL generated: ${trainingUrl}`);

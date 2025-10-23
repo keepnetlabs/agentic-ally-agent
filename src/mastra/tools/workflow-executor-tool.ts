@@ -184,6 +184,7 @@ Examples:
         let microlearningId = 'ID not available';
 
         console.log('🔍 Workflow result:', workflowResult);
+        
         // Try to extract data from workflow result
         if (workflowResult.status === 'success' && workflowResult.result?.metadata) {
           try {

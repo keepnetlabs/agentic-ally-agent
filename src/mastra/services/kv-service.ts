@@ -1,5 +1,3 @@
-import { z } from 'zod';
-
 // KV Service for direct Cloudflare KV REST API operations
 export class KVService {
   private accountId: string;
@@ -42,7 +40,7 @@ export class KVService {
     return `https://api.cloudflare.com/client/v4/accounts/${this.accountId}/storage/kv/namespaces/${this.namespaceId}/values/${key}`;
   }
 
-  async put(key: string, value: any, metadata?: any): Promise<boolean> {
+  async put(key: string, value: any): Promise<boolean> {
     try {
       const url = this.getKVUrl(key);
       const body = typeof value === 'string' ? value : JSON.stringify(value);
@@ -236,20 +234,56 @@ export class KVService {
       if (!microlearningId) {
         throw new Error('Microlearning ID is required');
       }
-      
+
       const baseKey = `ml:${microlearningId}:base`;
       const success = await this.put(baseKey, microlearning);
-      
+
       if (success) {
         console.log(`✅ Microlearning base updated in KV: ${baseKey}`);
       } else {
         console.error(`❌ Failed to update microlearning base: ${baseKey}`);
       }
-      
+
       return success;
     } catch (error) {
       console.error(`Failed to update microlearning ${microlearning?.microlearning_id}:`, error);
       return false;
+    }
+  }
+
+  // Store inbox content for a specific department and language
+  async storeInboxContent(microlearningId: string, department: string, language: string, inboxPayload: any): Promise<boolean> {
+    try {
+      const inboxKey = `ml:${microlearningId}:inbox:${department}:${language}`;
+      const success = await this.put(inboxKey, inboxPayload);
+
+      if (success) {
+        console.log(`✅ Inbox content stored in KV: ${inboxKey}`);
+      } else {
+        console.error(`❌ Failed to store inbox content: ${inboxKey}`);
+      }
+
+      return success;
+    } catch (error) {
+      console.error(`Failed to store inbox content ${microlearningId}/${department}/${language}:`, error);
+      return false;
+    }
+  }
+
+  // Get inbox content for a specific department and language
+  async getInboxContent(microlearningId: string, department: string, language: string): Promise<any | null> {
+    try {
+      const inboxKey = `ml:${microlearningId}:inbox:${department}:${language}`;
+      const inbox = await this.get(inboxKey);
+
+      if (inbox) {
+        console.log(`✅ Inbox content retrieved from KV: ${inboxKey}`);
+      }
+
+      return inbox;
+    } catch (error) {
+      console.error(`Failed to get inbox content ${microlearningId}/${department}/${language}:`, error);
+      return null;
     }
   }
 

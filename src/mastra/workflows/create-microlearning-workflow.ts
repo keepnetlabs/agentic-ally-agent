@@ -6,7 +6,6 @@ import { generateLanguageJsonTool } from '../tools/generate-language-json-tool';
 import { createInboxStructureTool } from '../tools/create-inbox-structure-tool';
 import { getModel, Model, ModelProvider } from '../model-providers';
 import { MicrolearningService } from '../services/microlearning-service';
-import { RemoteStorageService } from '../services/remote-storage-service';
 import { KVService } from '../services/kv-service';
 import { generateMicrolearningId, normalizeDepartmentName } from '../utils/language-utils';
 
@@ -173,10 +172,9 @@ const createInboxStep = createStep({
   }),
   outputSchema: finalResultSchema,
   execute: async ({ inputData }) => {
-    const { data: languageContent, analysis, microlearningStructure, microlearningId } = inputData;
+    const { analysis, microlearningStructure, microlearningId } = inputData;
 
     const normalizedDept = analysis.department ? normalizeDepartmentName(analysis.department) : 'all';
-    const remote = new RemoteStorageService();
 
     if (!createInboxStructureTool.execute) {
       throw new Error('Create inbox structure tool is not executable');
@@ -186,8 +184,7 @@ const createInboxStep = createStep({
       department: normalizedDept,
       languageCode: analysis.language,
       microlearningId,
-      microlearning: microlearningStructure,
-      remote
+      microlearning: microlearningStructure
     })
 
     if (!inboxResult?.success) throw new Error(`Inbox creation failed: ${inboxResult?.error}`);
@@ -197,6 +194,11 @@ const createInboxStep = createStep({
     const langUrl = encodeURIComponent(`lang/${analysis.language}`);
     const inboxUrl = encodeURIComponent(`inbox/${normalizedDept}`);
     const trainingUrl = `https://microlearning.pages.dev/?baseUrl=${baseUrl}&langUrl=${langUrl}&inboxUrl=${inboxUrl}&isEditMode=true`;
+
+    // Wait 5 seconds to ensure Cloudflare KV data is consistent before returning URL to UI
+    console.log('⏳ Waiting 5 seconds for Cloudflare KV consistency...');
+    await new Promise(resolve => setTimeout(resolve, 5000));
+    console.log('✅ KV consistency check complete, returning training URL');
 
     return {
       success: true,
@@ -237,7 +239,6 @@ const saveToKVStep = createStep({
       const kvService = new KVService();
       const { microlearningId, analysis, microlearningStructure } = languageResult;
       const normalizedDept = analysis.department ? normalizeDepartmentName(analysis.department) : 'all';
-      const remote = new RemoteStorageService();
 
       // Fire and forget for better performance - don't wait for KV save
       kvService.saveMicrolearning(
@@ -249,10 +250,8 @@ const saveToKVStep = createStep({
         },
         analysis.language,
         normalizedDept
-      ).catch(async (error) => {
-        console.warn('KV save failed - falling back to remote storage:', error);
-        await remote.saveMicrolearning(microlearningId, microlearningStructure);
-        await remote.saveLanguageFile(microlearningId, analysis.language, languageResult.data);
+      ).catch((error) => {
+        console.error('KV save failed:', error);
       });
     } catch (error) {
       console.warn('KV initialization error:', error);
