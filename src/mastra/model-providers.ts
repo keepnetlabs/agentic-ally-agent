@@ -1,5 +1,5 @@
 import { createOpenAI } from '@ai-sdk/openai';
-import { createWorkersAI } from 'workers-ai-provider';
+import { createGoogleGenerativeAI } from '@ai-sdk/google';
 
 /**
  * Enum for the supported model providers
@@ -7,13 +7,17 @@ import { createWorkersAI } from 'workers-ai-provider';
 export const enum ModelProvider {
     OPENAI = 'openai',
     WORKERS_AI = 'workers-ai',
+    GOOGLE = 'google',
 }
 
 export const enum Model {
     OPENAI_GPT_4O_MINI = 'gpt-4o-mini',
+    OPENAI_GPT_41_MINI = 'gpt-4.1-mini',
     OPENAI_GPT_5_NANO = 'gpt-5-nano',
     OPENAI_GPT_5_MINI = 'gpt-5-mini',
     WORKERS_AI_GPT_OSS_120B = '@cf/openai/gpt-oss-120b',
+    GOOGLE_GEMINI_2_5_PRO = 'gemini-2.5-pro',
+    GOOGLE_GEMINI_2_5_FLASH = 'gemini-2.5-flash',
 }
 
 /**
@@ -132,6 +136,16 @@ function getModelProvider(provider: ModelProvider) {
                 },
                 fetch: customFetch as any,
             });
+
+        case 'google':
+            // Google Gemini provider
+            if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+                throw new Error('GOOGLE_GENERATIVE_AI_API_KEY is required for Google Gemini');
+            }
+            const googleProvider = createGoogleGenerativeAI({
+                apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
+            });
+            return (modelId: string) => googleProvider(modelId);
 
         default:
             throw new Error(`Unsupported provider: ${provider}`);

@@ -152,9 +152,10 @@ export class KVService {
 
   // Microlearning specific methods
   async saveMicrolearning(microlearningId: string, data: any, language: string, department: string): Promise<boolean> {
+    const normalizedLang = language.toLowerCase(); // Normalize to lowercase for consistency
     const baseKey = `ml:${microlearningId}:base`;
-    const langKey = `ml:${microlearningId}:lang:${language}`;
-    const inboxKey = `ml:${microlearningId}:inbox:${department}:${language}`;
+    const langKey = `ml:${microlearningId}:lang:${normalizedLang}`;
+    const inboxKey = `ml:${microlearningId}:inbox:${department}:${normalizedLang}`;
 
     try {
       // Save base microlearning structure
@@ -211,15 +212,16 @@ export class KVService {
   // Store language content
   async storeLanguageContent(microlearningId: string, language: string, content: any): Promise<boolean> {
     try {
-      const langKey = `ml:${microlearningId}:lang:${language}`;
+      const normalizedLang = language.toLowerCase(); // Normalize to lowercase for consistency
+      const langKey = `ml:${microlearningId}:lang:${normalizedLang}`;
       const success = await this.put(langKey, content);
-      
+
       if (success) {
         console.log(`✅ Language content stored in KV: ${langKey}`);
       } else {
         console.error(`❌ Failed to store language content: ${langKey}`);
       }
-      
+
       return success;
     } catch (error) {
       console.error(`Failed to store language content ${microlearningId}/${language}:`, error);
@@ -254,7 +256,8 @@ export class KVService {
   // Store inbox content for a specific department and language
   async storeInboxContent(microlearningId: string, department: string, language: string, inboxPayload: any): Promise<boolean> {
     try {
-      const inboxKey = `ml:${microlearningId}:inbox:${department}:${language}`;
+      const normalizedLang = language.toLowerCase(); // Normalize to lowercase for consistency
+      const inboxKey = `ml:${microlearningId}:inbox:${department}:${normalizedLang}`;
       const success = await this.put(inboxKey, inboxPayload);
 
       if (success) {

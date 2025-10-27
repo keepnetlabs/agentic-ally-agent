@@ -65,7 +65,7 @@ export const analyzeUserPromptTool = new Tool({
   execute: async (context: any) => {
     const input = context?.inputData || context?.input || context;
     const { userPrompt, additionalContext, suggestedDepartment, customRequirements } = input;
-    
+
     const model = getModel(ModelProvider.WORKERS_AI, Model.WORKERS_AI_GPT_OSS_120B);
 
     console.log(`🤖 Analyzing user prompt: "${userPrompt.substring(0, 100)}..."`);
@@ -108,7 +108,7 @@ SUGGESTED LEVEL: ${input.suggestedLevel || 'auto-detect'}${examplesBlock}
 
 Return JSON:
 {
-  "language": "BCP-47 code (en, tr, de, fr, etc.)",
+  "language": "BCP-47 tag (language-lowercase + optional REGION-UPPERCASE; prefer regional if known, e.g., en-GB/en-US/fr-CA/tr-TR; else use primary, e.g., en)"
   "topic": "2-3 words max - core subject only",
   "title": "3-5 words max - professional training title", 
   "department": "target department or 'All'",
@@ -145,7 +145,7 @@ RULES:
       const analysis = JSON.parse(cleanedText) as PromptAnalysis;
 
       // Validate and normalize BCP-47 language code
-      analysis.language = validateBCP47LanguageCode(analysis.language || 'en');
+      analysis.language = validateBCP47LanguageCode(analysis.language || 'en-GB');
 
       console.log(`🎯 Enhanced Prompt Analysis Result:`, analysis);
 
@@ -187,7 +187,7 @@ RULES:
 
     } catch (error) {
       console.error('JSON parse failed, using fallback analysis. Error:', error);
-      
+
       // Enhanced fallback analysis with context
       const fallbackData = {
         language: detectLanguageFallback(userPrompt),

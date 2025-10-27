@@ -1,18 +1,8 @@
 [
   {
-    "title": "Security Awareness Podcast: How One-Click Phishing Defense Protects You",
-    "url": "https://www.youtube.com/watch?v=ehnMHnz5pTM",
-    "topics": ["phishing", "email security", "spoofing"]
-  },
-  {
     "title": "Security Awareness Podcast: Deepfake Phishing",
     "url": "https://www.youtube.com/watch?v=6PMGH-7JQd0",
     "topics": ["deepfake"]
-  },
-  {
-    "title": "Security Awareness Podcast: What is Human Risk Score?",
-    "url": "https://www.youtube.com/watch?v=nr2CDQUFhfI",
-    "topics": ["human risk"]
   },
   {
     "title": "Security Awareness Podcast: Cyber Insurance Essentials",
@@ -82,7 +72,7 @@
   {
     "title": "Security Awareness Training Story Series: A Supervisor's Lesson on Subtle Harassment",
     "url": "https://www.youtube.com/watch?v=FpK1T9HFdqs",
-    "topics": ["workplace harassment"]
+    "topics": ["workplace harassment", "awareness"]
   },
   {
     "title": "Real-Life Cybersecurity Awareness Story Series: Why Scanning QR codes Safely Really Matters",
@@ -92,7 +82,7 @@
   {
     "title": "Real-Life Security Awareness Training Story Series: Finding the Voice to Stop Harassment",
     "url": "https://www.youtube.com/watch?v=j8eh4ZNN7HY",
-    "topics": ["workplace harassment"]
+    "topics": ["workplace harassment", "awareness"]
   },
   {
     "title": "Behavioral Training Series: Phishing Reporting – Small Actions, Big Security Impact",
@@ -132,7 +122,13 @@
   {
     "title": "Keepnet Security Awareness Podcast: What is Spear Phishing & How to Prevent It",
     "url": "https://www.youtube.com/watch?v=W0G6oduDY5I",
-    "topics": ["phishing", "spear phishing", "BEC", "business email", "email fraud"]
+    "topics": [
+      "phishing",
+      "spear phishing",
+      "BEC",
+      "business email",
+      "email fraud"
+    ]
   },
   {
     "title": "Keepnet Security Awareness Podcast: What is Cryptojacking & How to Stop It",

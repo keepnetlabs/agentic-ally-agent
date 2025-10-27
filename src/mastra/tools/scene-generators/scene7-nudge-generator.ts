@@ -89,7 +89,7 @@ Generate for ${analysis.topic}: Max 5 words in ${analysis.language}
     "callToActionText": "Localize 'Continue' into ${analysis.language}",
     "texts": {
       "title": "Localize 'Action Plan' into ${analysis.language}",
-      "subtitle": "Implementation intention format - Next time [specific situation in ${analysis.topic}], you will [concrete action]: Max 15 words in ${analysis.language}. REFERENCE: Phishing='Next time a suspicious email appears, you will do this:' | Vishing='Next time you receive a suspicious call, you will do this:' | Quishing='Next time you see a suspicious QR code, you will do this:'",
+      "subtitle": "Next time [specific situation in ${analysis.topic}], you will [concrete action]: Max 15 words in ${analysis.language}. REFERENCE: Phishing='Next time a suspicious email appears, you will do this:' | Vishing='Next time you receive a suspicious call, you will do this:' | Quishing='Next time you see a suspicious QR code, you will do this:'",
       "actionsTitle": "Localize 'Your next steps' into ${analysis.language}"
     },
     "key_message": [

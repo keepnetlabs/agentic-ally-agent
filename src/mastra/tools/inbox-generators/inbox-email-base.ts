@@ -26,7 +26,7 @@ TOPIC CONTEXT: ${topic}
 - For deepfake/video topics → emails may involve: video messages, video calls, media files, CEO announcements, training videos, video conferencing
 - For vishing/voice phishing topics → emails may involve: calendar invites, video conference links, meeting invitations, urgent call requests, Zoom/Teams/WebEx links, executive briefing links
 - For smishing/SMS phishing topics → emails may involve: SMS notifications forwarded, text message alerts, delivery notifications, account alerts, package tracking, message forwarding context
-- For quishing/QR code topics → emails may involve: QR codes in attachments or content. For QR code images: <img src="https://imagedelivery.net/KxWh-mxPGDbsqJB3c5_fmA/16344751-9716-4ff4-8fe7-5b77c311eb00/public" alt="QR Code" style="width:200px;height:auto;">
+- For quishing/QR code topics → MANDATORY: emails MUST include QR code visual. Email content should ask recipient to "scan QR code" for verification, payment, authentication, or access. Use exact QR image: <img src="https://imagedelivery.net/KxWh-mxPGDbsqJB3c5_fmA/16344751-9716-4ff4-8fe7-5b77c311eb00/public" alt="QR Code" style="width:200px;height:auto;">
 - For phishing/email topics → emails may involve: account verification, password resets, suspicious links, invoice requests
 - For malware/file topics → emails may involve: software updates, file downloads, document attachments, system patches
 - For password/MFA topics → emails may involve: account security, authentication, login alerts, credential updates
@@ -51,6 +51,7 @@ ATTACHMENTS: Maximum 1 attachment. CRITICAL: Attachment name and content MUST ma
 - Content must be REALISTIC DOCUMENT PREVIEW with actual data (numbers, dates, names) that matches email scenario.
 - PDF/DOC → Wrap in <div class='text-[#1C1C1E] dark:text-[#F2F2F7]'>. Include: Title (<h2 class='text-lg font-bold mb-2'>) matching email topic, 2-3 sections (<h3 class='text-md font-semibold mt-3'>), bullet lists or paragraphs
 - XLSX → Wrap in <div class='text-[#1C1C1E] dark:text-[#F2F2F7]'>. Include: Table with headers (<table class='border border-gray-300 w-full'><thead><tr class='bg-gray-100'><th class='border p-2'>), 3-5 data rows related to email content
+- QUISHING/QR CODE EMAILS (MANDATORY) → MUST include QR code image in content. Add this EXACT image tag: <img src="https://imagedelivery.net/KxWh-mxPGDbsqJB3c5_fmA/16344751-9716-4ff4-8fe7-5b77c311eb00/public" alt="QR Code" style="width:200px;height:auto;"> INSIDE the attachment content or email body. Context: "Scan this QR code to verify your account" or similar.
 - All types → Use Tailwind spacing (mb-2, mb-4, mt-3), keep simple but professional. Include specific data relevant to email scenario. DARK MODE: All attachment content MUST wrap in <div class='text-[#1C1C1E] dark:text-[#F2F2F7]'> for proper dark/light mode support.
 File types: pdf, doc, xlsx, jpg, png, zip, txt.
 

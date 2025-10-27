@@ -20,7 +20,9 @@
     "node": ">=20.9.0"
   },
   "dependencies": {
+    "@ai-sdk/google": "^2.0.23",
     "@ai-sdk/openai": "^2.0.23",
+    "@ai-sdk/openai-compatible": "1.0.22",
     "@ai-sdk/provider-utils": "^3.0.12",
     "@mastra/cloudflare": "^0.12.5",
     "@mastra/cloudflare-d1": "^0.13.5",
@@ -31,8 +33,7 @@
     "@mastra/memory": "^0.15.7",
     "ai": "^5.0.76",
     "jsonrepair": "^3.13.0",
-    "zod": "^3.25.76",
-    "@ai-sdk/openai-compatible": "1.0.22"
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@types/node": "^24.3.0",

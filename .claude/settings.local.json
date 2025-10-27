@@ -10,7 +10,11 @@
       "Bash(npm run typecheck:*)",
       "Bash(git checkout:*)",
       "Bash(npx tsc:*)",
-      "WebFetch(domain:developers.cloudflare.com)"
+      "WebFetch(domain:developers.cloudflare.com)",
+      "WebFetch(domain:www.cisa.gov)",
+      "WebFetch(domain:www.ncsc.gov.uk)",
+      "Bash(tree:*)",
+      "Bash(dir /s /b)"
     ],
     "deny": [],
     "ask": []

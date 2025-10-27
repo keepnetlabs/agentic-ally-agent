@@ -1,29 +1,86 @@
 
-// BCP-47 language code validation and normalization
-export function validateBCP47LanguageCode(code: string): string {
-  const bcp47Codes: Record<string, string> = {
-    'en': 'en', 'english': 'en', 'eng': 'en',
-    'tr': 'tr', 'turkish': 'tr', 'tur': 'tr', 'turkce': 'tr', 'türkçe': 'tr',
-    'de': 'de', 'german': 'de', 'deutsch': 'de', 'ger': 'de',
-    'fr': 'fr', 'french': 'fr', 'francais': 'fr', 'français': 'fr',
-    'es': 'es', 'spanish': 'es', 'español': 'es', 'espanol': 'es',
-    'it': 'it', 'italian': 'it', 'italiano': 'it',
-    'pt': 'pt', 'portuguese': 'pt', 'português': 'pt',
-    'ru': 'ru', 'russian': 'ru', 'русский': 'ru',
-    'zh': 'zh', 'chinese': 'zh', '中文': 'zh',
-    'ja': 'ja', 'japanese': 'ja', '日本語': 'ja',
-    'ar': 'ar', 'arabic': 'ar', 'العربية': 'ar',
-    'ko': 'ko', 'korean': 'ko', '한국어': 'ko',
-    'nl': 'nl', 'dutch': 'nl', 'nederlands': 'nl',
-    'pl': 'pl', 'polish': 'pl', 'polski': 'pl',
-    'sv': 'sv', 'swedish': 'sv', 'svenska': 'sv',
-    'no': 'no', 'norwegian': 'no', 'norsk': 'no',
-    'da': 'da', 'danish': 'da', 'dansk': 'da',
-    'fi': 'fi', 'finnish': 'fi', 'suomi': 'fi'
+// BCP-47 language code validation and normalization (standalone, no deps)
+export function validateBCP47LanguageCode(input: string): string {
+  // 1) Sanitize
+  const raw = String(input || "").trim().replace(/^['"]|['"]$/g, "");
+  if (!raw) return "en-GB";
+
+  // 2) Minimal synonyms (optional – extend as needed)
+  const aliases: Record<string, string> = {
+    english: "en", eng: "en",
+    turkish: "tr", tur: "tr", turkce: "tr", "türkçe": "tr",
+    german: "de", deutsch: "de",
+    french: "fr", francais: "fr", "français": "fr",
+    spanish: "es", espanol: "es", "español": "es",
+    italian: "it", italiano: "it",
+    portuguese: "pt", "português": "pt",
+    russian: "ru",
+    chinese: "zh",
+    japanese: "ja",
+    arabic: "ar",
+    korean: "ko",
+    dutch: "nl", nederlands: "nl",
+    polish: "pl", polski: "pl",
+    swedish: "sv", svenska: "sv",
+    norwegian: "no", norsk: "no",
+    danish: "da", dansk: "da",
+    finnish: "fi", suomi: "fi"
+  };
+  const lower = raw.toLowerCase().replace(/_/g, "-");
+  let tag = aliases[lower] ?? lower;
+
+  // 3) Legacy/typo fixes
+  if (tag === "en-uk") tag = "en-gb"; // normalize UK -> GB
+
+  // 4) Try Intl canonicalization when available
+  try {
+    // @ts-ignore
+    const canon = (Intl.getCanonicalLocales?.(tag) || [])[0];
+    if (canon) tag = canon;
+  } catch { /* ignore */ }
+
+  // 5) BCP-47 casing: language lower, script Title, region UPPER
+  const parts = tag.split("-");
+  const lang = (parts[0] || "").toLowerCase();
+  const rest = parts.slice(1).map(p => {
+    if (/^[A-Za-z]{4}$/.test(p)) return p.charAt(0).toUpperCase() + p.slice(1).toLowerCase(); // Script
+    if (/^[A-Za-z]{2}$/.test(p) || /^\d{3}$/.test(p)) return p.toUpperCase(); // Region
+    return p.toLowerCase(); // Variants/extensions
+  });
+  let normalized = [lang, ...rest].filter(Boolean).join("-");
+
+  // 6) Preferred regional defaults if no region was provided
+  const hasRegion = !!rest.find(p => /^[A-Z]{2}$/.test(p) || /^\d{3}$/.test(p));
+  const defaultRegionForLang: Record<string, string> = {
+    en: "GB",
+    tr: "TR",
+    fr: "FR",
+    es: "ES",
+    pt: "PT",
+    de: "DE",
+    it: "IT",
+    nl: "NL",
+    sv: "SE",
+    no: "NO",
+    da: "DK",
+    fi: "FI",
+    pl: "PL",
+    ru: "RU",
+    zh: "CN",
+    ja: "JP",
+    ar: "SA",
+    ko: "KR"
   };
 
-  const normalized = code.toLowerCase().trim();
-  return bcp47Codes[normalized] || 'en'; // default to English if not found
+  if (!hasRegion) {
+    const preferred = defaultRegionForLang[lang];
+    if (preferred) normalized = `${lang}-${preferred}`;
+  }
+
+  // 7) Final safety default
+  if (!normalized) normalized = "en-GB";
+
+  return normalized;
 }
 
 // Generate unique microlearning ID from topic
