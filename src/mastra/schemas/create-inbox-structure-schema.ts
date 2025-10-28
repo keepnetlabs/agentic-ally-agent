@@ -6,7 +6,7 @@ export const CreateInboxStructureSchema = z.object({
   microlearningId: z.string(),
   microlearning: z.any(), // MicrolearningContent
   languageContent: z.any(), // LanguageContent
-  remote: z.any(), // RemoteStorageService
+  remote: z.any(),
 });
 
 export const CreateInboxStructureOutputSchema = z.object({

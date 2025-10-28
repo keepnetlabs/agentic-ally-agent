@@ -1,105 +1,87 @@
-# Agentic Ally - Claude Code Guide
+# Agentic Ally - Project Guide
 
-## 🎯 Project Overview
-AI-powered microlearning content generation platform on Cloudflare Workers. Automatically creates 8-scene interactive training modules for cybersecurity/compliance.
+## 🎯 Quick Start
 
-**Stack:** Mastra (agent framework) → Cloudflare Workers → KV + D1
+**Platform:** AI-powered microlearning generation on Cloudflare Workers
+**Stack:** Mastra (agent) → TypeScript → Cloudflare Workers/KV/D1
+**Purpose:** Generates 8-scene interactive cybersecurity training modules
+**Core Flow:** User → Agent (state machine) → Workflow → [Parallel: Language + Inbox] → KV → Training URL
 
 ---
 
-## 📂 Directory Structure
+## 📂 Core Structure
 
 ```
 src/mastra/
-├── agents/              # AgenticAlly agent (gpt-4o-mini)
-├── tools/              # 21 tools (9 main + 8 scene + 4 inbox)
-│   ├── Main Tools (9):
-│   │   ├── analyze-user-prompt-tool.ts        (user intent analysis)
-│   │   ├── generate-microlearning-json-tool   (content structure)
-│   │   ├── translate-language-json-tool       (translation)
-│   │   ├── generate-language-json-tool        (language content)
-│   │   ├── create-inbox-structure-tool        (orchestrates inbox generation)
-│   │   ├── knowledge-search-tool              (semantic search)
-│   │   ├── universal-content-generator        (generic content)
-│   │   ├── workflow-executor-tool             (main orchestrator)
-│   │   └── workflow-tool.ts                   (utility)
-│   │
-│   ├── scene-generators/ (8):
-│   │   ├── scene1-intro-generator.ts          (introduction)
-│   │   ├── scene2-goal-generator.ts           (learning goals)
-│   │   ├── scene3-video-generator.ts          (video scenario)
-│   │   ├── scene4-actionable-generator.ts     (action items)
-│   │   ├── scene5-quiz-generator.ts           (knowledge check)
-│   │   ├── scene6-survey-generator.ts         (feedback)
-│   │   ├── scene7-nudge-generator.ts          (behavior nudge)
-│   │   └── scene8-summary-generator.ts        (recap)
-│   │
-│   └── inbox-generators/ (4):
-│       ├── inbox-email-base.ts                (email template)
-│       ├── inbox-email-variants.ts            (variations)
-│       ├── inbox-emails-orchestrator.ts       (orchestration)
-│       └── inbox-texts-generator.ts           (text generation)
-├── workflows/          # 2 workflows
-│   ├── create-microlearning-workflow     (analyze → generate → [lang||inbox] → save)
-│   └── add-language-workflow             (load → translate → update inbox)
-├── services/
-│   ├── kv-service.ts                     (Cloudflare KV REST wrapper)
-│   ├── microlearning-service.ts          (in-memory cache + remote fallback)
-│   ├── example-repo.ts                   (semantic search)
-│   └── remote-storage-service.ts
-├── types/
-│   ├── microlearning.ts                  (MicrolearningContent interface)
-│   └── prompt-analysis.ts
-├── schemas/            # Zod validation
-├── utils/              # Helpers (language, JSON, video selection)
-└── index.ts            # Main entry: /chat + /health endpoints
+├── agents/agentic-ally.ts              # State machine agent (state 1→4)
+├── tools/                              # 18 tools (9 main + 8 scene + 4 inbox)
+│   ├── Main: analyze-prompt, generate-microlearning, translate-language,
+│   │   generate-language, create-inbox, workflow-executor
+│   ├── Scene: scene1-intro through scene8-summary
+│   └── Inbox: email-base, email-variants, emails-orchestrator, texts
+├── workflows/                          # 2 workflows
+│   ├── create-microlearning-workflow   # Analyze → Generate → [Lang||Inbox] → Save
+│   └── add-language-workflow           # Load → Translate → Update Inbox
+├── services/                           # 4 services
+│   ├── kv-service.ts                   # Cloudflare KV REST API
+│   ├── microlearning-service.ts        # In-memory cache
+│   ├── example-repo.ts                 # Semantic search + D1 embeddings
+│   └── remote-storage-service.ts       # Backup persistence
+├── types/ & schemas/                   # TypeScript + Zod validation
+├── utils/                              # Helpers (language, video, URL, JSON)
+└── index.ts                            # Endpoints: /chat, /health
 ```
 
 ---
 
-## 🔑 Core Concepts
+## 🔑 Key Concepts
 
-### Agent Flow (State Machine)
+### Agent State Machine (Strict)
 ```
-STATE 1: Gather info (topic, dept, level)
-STATE 2: Show summary with time estimate + confirm
-STATE 3: Execute workflow on confirmation
+STATE 1: Gather topic, department, level
+STATE 2: Show summary + time estimate (HTML template)
+STATE 3: Execute workflow on user confirmation
 STATE 4: Return training URL
 ```
+**Rule:** Never call tools before STATE 2 complete + explicit confirmation.
 
 ### Workflow Architecture
 ```
-CREATE WORKFLOW:
-  Analyze Prompt → Generate Microlearning → [Parallel: Language + Inbox] → Save KV
+CREATE-MICROLEARNING:
+  1. Analyze user prompt (language detection + intent)
+  2. Generate 8-scene metadata structure
+  3. [PARALLEL] Language content generation (8 scenes)
+  3. [PARALLEL] Inbox structure (emails/texts)
+  4. Save to KV (fire-and-forget, no wait)
 
-ADD-LANGUAGE WORKFLOW:
-  Load Existing → Translate (3-level retry) → Update Inbox (retry + correction) → Save
+ADD-LANGUAGE:
+  1. Load existing microlearning from KV
+  2. Translate all scenes (multi-level retry)
+  3. Update department inboxes
+  4. Save to KV
 ```
 
 ### Data Model
-- **8-Scene Structure:** Intro → Goals → Video → Actions → Quiz → Survey → Nudge → Summary
-- **KV Format:** `ml:{id}:{type}:{lang}`
-  - `ml:phishing-101:base` = metadata
-  - `ml:phishing-101:lang:en` = English content
-  - `ml:phishing-101:inbox:it:tr` = IT dept Turkish emails
-- **Metadata:** title, category, dept_relevance, role_relevance, compliance, ethical_policy, etc.
+- **8 Scenes:** Intro → Goals → Video → Actions → Quiz → Survey → Nudge → Summary
+- **KV Keys:** `ml:{id}:base` | `ml:{id}:lang:{lang}` | `ml:{id}:inbox:{dept}:{lang}`
+- **PromptAnalysis Output:** language, topic, title, department, level, category, learningObjectives, duration, industries, roles, keyTopics, etc.
 
 ---
 
-## 🚀 Key Files to Know
+## 🚀 Critical Files
 
-| File | Purpose | Key Pattern |
-|------|---------|------------|
-| `workflow-executor-tool.ts` | **MAIN TOOL** - Execute workflows | Detects workflow type, runs async, streams UI signals |
-| `analyze-user-prompt-tool.ts` | Parse user intent | 3-level fallback (semantic → sampling → basic) |
-| `create-microlearning-workflow.ts` | Main content generation | Parallel: language + inbox |
-| `add-language-workflow.ts` | Add language to existing | Triple-retry with validation + auto-correction |
-| `model-providers.ts` | LLM routing | gpt-4o-mini (agent) + Workers AI (generation) |
-| `agentic-ally.ts` | Main agent | Strict state machine enforcement |
+| File | Purpose |
+|------|---------|
+| `workflow-executor-tool.ts` | Main orchestrator - routes create vs add-language workflows |
+| `analyze-user-prompt-tool.ts` | Parses user intent (3-level fallback: semantic → sampling → basic) |
+| `create-microlearning-workflow.ts` | Orchestrates all generation steps |
+| `add-language-workflow.ts` | Translation with 3-level retry + auto-correction |
+| `agentic-ally.ts` | Agent with state machine enforcement |
+| `model-providers.ts` | LLM routing (gpt-4o-mini for agent, Workers AI for content) |
 
 ---
 
-## 🛠️ Development Commands
+## 🛠️ Development
 
 ```bash
 npm run dev              # Local dev with Mastra CLI
@@ -107,7 +89,7 @@ npm run build            # Build for production
 npm run deploy           # Deploy to Cloudflare Workers
 ```
 
-**Local Testing:**
+**Test locally:**
 ```bash
 # POST http://localhost:8000/chat
 # Body: { "prompt": "Create phishing training for IT" }
@@ -115,347 +97,184 @@ npm run deploy           # Deploy to Cloudflare Workers
 
 ---
 
-## ⚡ Quick Workflow Understanding
-
-### How Microlearning is Created (25 seconds)
-
-```
-User: "Create phishing awareness training"
-  ↓
-Agent analyzes intent:
-  - language: en
-  - topic: Phishing Prevention
-  - department: All
-  - level: Intermediate
-  ↓
-Step 1 (2s): Analyze prompt
-Step 2 (8s): Generate 8-scene structure + metadata
-  ↓ [PARALLEL]
-  Step 3a (5s): Generate English language content
-  Step 3b (3s): Generate phishing email inbox
-  ↓ [END PARALLEL]
-Step 4: Save all to KV (fire-and-forget, no wait)
-  ↓
-Return: Training URL ready in editor
-  https://microlearning.pages.dev/?baseUrl=...&langUrl=lang/en&isEditMode=true
-```
-
----
-
-## 📊 Data Model Quick Ref
+## 📊 Complete Data Example
 
 ```typescript
-// Input to workflows
-{
-  prompt: "Create phishing training",
-  department?: "IT" | "HR" | "Sales" | "Finance" | "Operations" | "Management" | "All",
-  level?: "Beginner" | "Intermediate" | "Advanced",
-  additionalContext?: string,
-  customRequirements?: string
-}
+// Workflow input
+{ prompt: "Create phishing training", department: "IT", level: "Intermediate" }
 
-// AnalyzeUserPrompt output
+// PromptAnalysis (from analyze-user-prompt-tool)
 {
   language: "en",
   topic: "Phishing Prevention",
   title: "Stop Phishing Attacks",
-  department: "All",
+  department: "IT",
   level: "intermediate",
-  learningObjectives: ["Spot phishing emails", "Report suspicious emails"],
+  learningObjectives: ["Spot phishing emails", "Report suspicious"],
   duration: 5,
   industries: ["General"],
   roles: ["All Roles"],
-  keyTopics: ["Email security", "Red flags"],
-  // ... 10 more fields
+  keyTopics: ["Email security", "Red flags"]
 }
 
-// Final microlearning in KV
-ml:{id}:base = {
+// Final in KV: ml:phishing-101:base
+{
   microlearning_id: "phishing-101",
-  microlearning_metadata: { title, category, department_relevance, ... },
-  scientific_evidence: { learning_theories, behavioral_psychology, ... },
+  microlearning_metadata: { title, category, level, language_availability, ... },
+  scientific_evidence: { theories, psychology, sources },
   theme: { fontFamily, colors, logo },
-  scenes: [ 8 scene objects ]
+  scenes: [Scene1, Scene2, ..., Scene8]
 }
 
-ml:{id}:lang:en = { scene content in English }
-ml:{id}:inbox:it:en = [ array of phishing emails ]
+// In KV: ml:phishing-101:lang:en
+{ scenes with English content, app_texts in English }
+
+// In KV: ml:phishing-101:inbox:it:en
+{ simulated phishing emails for IT dept in English }
 ```
 
 ---
 
 ## 🔗 Integration Points
 
-- **OpenAI API:** gpt-4o-mini for agent/conversation
-- **Cloudflare Workers AI:** gpt-oss-120b for content generation (local)
-- **Cloudflare KV:** Microlearning storage (namespace: `c96ef0b5a2424edca1426f6e7a85b9dc`)
+- **OpenAI API:** gpt-4o-mini for agent conversation
+- **Cloudflare Workers AI:** gpt-oss-120b for content generation
+- **Cloudflare KV:** Main storage (namespace: `c96ef0b5a2424edca1426f6e7a85b9dc`)
 - **Cloudflare D1:** Agent memory + embedding cache (2 databases)
-- **Remote API:** `https://microlearning-api.keepnet-labs-ltd-business-profile4086.workers.dev` (fallback)
+- **Remote API:** Fallback storage at `https://microlearning-api.keepnet-labs-ltd-business-profile4086.workers.dev`
 
 ---
 
-## 🎓 Language Support
+## 🎓 Language Support (12)
 
-**12 languages supported** - auto-detected from user message:
-```
-Turkish (tr):      ş, ğ, ı, ö, ç chars
-German (de):       ä, ö, ü, ß chars
-French (fr):       àáâäèéêë chars
-Spanish (es):      áéíóúñü chars
-Portuguese (pt):   àáâãäåæçèéê chars
-Italian (it):      àáäèéëì chars
-Russian (ru):      а-я Cyrillic
-Chinese (zh):      CJK Unicode range
-Japanese (ja):     Hiragana/Katakana
-Arabic (ar):       Arabic script
-Korean (ko):       Hangul
-English (en):      Default fallback
-```
+English (en), Turkish (tr), German (de), French (fr), Spanish (es), Portuguese (pt), Italian (it), Russian (ru), Chinese (zh), Japanese (ja), Arabic (ar), Korean (ko)
+
+**Detection:** Character patterns → BCP-47 normalization
+**Strategy:** Auto-detect user language → generate in target language → support translation via add-language workflow
 
 ---
 
 ## ⚙️ Environment Variables
 
 ```
-# Required for core functionality
-CLOUDFLARE_ACCOUNT_ID              # Cloudflare account ID
-CLOUDFLARE_KV_TOKEN                # KV API token for REST access
-CLOUDFLARE_API_KEY                 # General Cloudflare API key
-CLOUDFLARE_AI_GATEWAY_ID           # AI Gateway instance name
-CLOUDFLARE_GATEWAY_AUTHENTICATION_KEY  # Gateway auth bearer token
-CLOUDFLARE_D1_DATABASE_ID          # D1 database ID for memory/embeddings
+# Required
+CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_KV_TOKEN, CLOUDFLARE_API_KEY
+CLOUDFLARE_AI_GATEWAY_ID, CLOUDFLARE_GATEWAY_AUTHENTICATION_KEY
+CLOUDFLARE_D1_DATABASE_ID
+OPENAI_API_KEY
 
-# LLM Provider Keys
-OPENAI_API_KEY                     # OpenAI API key (required for gpt-4o-mini)
-GOOGLE_GENERATIVE_AI_API_KEY       # Optional, for Gemini fallback
-CLOUDFLARE_WORKERS_API_TOKEN       # Optional, defaults to CLOUDFLARE_API_KEY
-
-# Optional - for remote memory storage
-MASTRA_MEMORY_URL                  # LibSQL/Turso database URL (optional)
-MASTRA_MEMORY_TOKEN                # LibSQL/Turso auth token (optional)
+# Optional
+GOOGLE_GENERATIVE_AI_API_KEY, MASTRA_MEMORY_URL, MASTRA_MEMORY_TOKEN
 ```
 
 ---
 
-## 🔧 Workflow Executor Tool - DEEP DIVE
+## 🔧 Workflow Executor Deep Dive
 
 **File:** `src/mastra/tools/workflow-executor-tool.ts`
-
-This is the **main orchestration tool** called by the agent. It routes to either workflow and manages streaming responses to frontend.
 
 ### Input Schema
 ```typescript
 {
   workflowType: 'create-microlearning' | 'add-language',
-
-  // For create-microlearning:
-  prompt: string,                    // User request (required)
-  additionalContext?: string,        // Extra context
-  customRequirements?: string,       // Special requests
-  department?: string,               // IT|HR|Sales|Finance|Operations|Management|All (default: 'All')
-  level?: 'Beginner'|'Intermediate'|'Advanced',  // Default: 'Intermediate'
-  priority?: 'low'|'medium'|'high',  // Default: 'medium'
-
-  // For add-language:
-  existingMicrolearningId?: string,  // ID to translate
-  targetLanguage?: string,           // Target language code
-  sourceLanguage?: string            // Source language (default: 'en')
+  // CREATE-MICROLEARNING:
+  prompt: string,
+  additionalContext?: string,
+  customRequirements?: string,
+  department?: 'IT'|'HR'|'Sales'|'Finance'|'Operations'|'Management'|'All',
+  level?: 'Beginner'|'Intermediate'|'Advanced',
+  // ADD-LANGUAGE:
+  existingMicrolearningId?: string,
+  targetLanguage?: string,
+  sourceLanguage?: string
 }
 ```
 
-### Execution Flow
-
-#### CREATE-MICROLEARNING Path (Lines 34-220)
-
-```
+### Execution Flow (CREATE-MICROLEARNING)
 1. Validate prompt exists
-2. Get workflow instance: createMicrolearningWorkflow
-3. Create run: workflow.createRunAsync()
+2. Get workflow instance
+3. Create async run
 4. Start workflow with inputData
-   ├─ Analyze prompt
-   ├─ Generate microlearning
-   ├─ [Parallel] Language + Inbox
-   └─ Save to KV
-5. Extract data from result
-   ├─ trainingUrl (the important part!)
-   ├─ title
-   ├─ department
-   ├─ microlearningId
-6. Send UI signal to frontend
-   └─ ::ui:canvas_open::{trainingUrl}
+5. Extract trainingUrl from result
+6. Send UI signal: `::ui:canvas_open::{trainingUrl}`
 7. Return success response
-```
 
-**Key Code:**
+### Execution Flow (ADD-LANGUAGE)
+1. Validate existingMicrolearningId + targetLanguage
+2. Get workflow instance
+3. Start workflow
+4. Extract trainingUrl with new language
+5. Send UI signal
+6. Return success
+
+### UI Signal Pattern
 ```typescript
-const workflowResult = await run.start({
-  inputData: {
-    prompt: params.prompt!,
-    additionalContext: params.additionalContext,
-    customRequirements: params.customRequirements,
-    department: params.department || 'All',
-    level: params.level || 'Intermediate',
-    priority: params.priority || 'medium'
-  }
-});
-
-// Extract training URL (lines 189-194)
-if (workflowResult.status === 'success' && workflowResult.result?.metadata) {
-  trainingUrl = workflowResult.result.metadata.trainingUrl;
-  title = workflowResult.result.metadata.title;
-  department = workflowResult.result.metadata.department;
-  microlearningId = workflowResult.result.metadata.microlearningId;
-}
-
-// Send to frontend via streaming writer (lines 202-210)
-await writer?.write({
-  type: 'text-delta',
-  delta: `::ui:canvas_open::${trainingUrl}\n`
-});
-```
-
-#### ADD-LANGUAGE Path (Lines 222-264)
-
-```
-1. Validate existingMicrolearningId + targetLanguage required
-2. Get workflow instance: addLanguageWorkflow
-3. Create run
-4. Start workflow with inputData
-   ├─ Load existing microlearning
-   ├─ Translate language content (triple-retry)
-   └─ Update inbox (retry + correction)
-5. Extract data from result
-   ├─ trainingUrl (with new lang)
-   ├─ title
-   ├─ targetLanguage
-6. Send UI signal with new URL
-7. Return success
-```
-
-### The UI Signal Pattern
-
-**How frontend gets the URL:**
-
-```typescript
-// Tool sends signal (line 208)
+// Tool sends signal
 delta: `::ui:canvas_open::${trainingUrl}\n`
 
 // Example URL:
-// ::ui:canvas_open::https://microlearning.pages.dev/?baseUrl=https%3A%2F%2Fapi.workers.dev%2Fmicrolearning%2Fphishing-101&langUrl=lang%2Fen&inboxUrl=inbox%2Fit&isEditMode=true
+// https://microlearning.pages.dev/?baseUrl=...&langUrl=lang/en&isEditMode=true
 
-// Frontend listens for this pattern and opens editor
-```
-
-**Note:** Lines 41-162 contain commented-out **streaming progress updates** (an incomplete feature):
-- Was trying to add real-time step-by-step progress
-- Would emit emoji + reason for each step as it completes
-- Currently disabled (commented out)
-- Could be re-enabled for better UX
-
-### Error Handling (Lines 270-289)
-
-```typescript
-catch (error) {
-  // Send error to frontend
-  await writer?.write({
-    type: 'text-delta',
-    delta: `❌ ${error.message}\n`
-  });
-
-  return {
-    success: false,
-    error: error instanceof Error ? error.message : 'Unknown error'
-  };
-}
-```
-
-### Key Observations
-
-✅ **What's Good:**
-- Clean separation of create vs add-language logic
-- Streaming responses with `writer.write()`
-- UI signal pattern is elegant (prefix-based detection)
-- Error messages sent to frontend
-- UUID for message IDs (prevents conflicts)
-
-⚠️ **What Could Be Better:**
-- No timeout on `run.start()` (could hang indefinitely)
-- Lines 41-162: Incomplete streaming progress feature (dead code)
-- No validation that workflow result has expected structure
-- Error message at line 278 hardcoded "Translation failed" (wrong for create-microlearning)
-
-### How Agent Calls This
-
-From **agentic-ally.ts** instructions:
-```
-When user confirms "Start":
-  → Call workflowExecutorTool with:
-    - workflowType: 'create-microlearning'
-    - prompt: [user's full request]
-    - department: [collected value]
-    - level: [collected value]
-    - additionalContext: [if provided]
-    - customRequirements: [if provided]
+// Frontend listens for ::ui:canvas_open:: prefix and opens editor
 ```
 
 ---
 
 ## 💡 Common Tasks
 
-### Add a new language to training
+### Add New Tool
+1. Create `src/mastra/tools/{action}-{object}-tool.ts`
+2. Define Zod input/output schemas
+3. Implement execute() with 3-level fallbacks
+4. Register in `agentic-ally.ts` tools object
+5. Return `{success, data, error, metadata}`
+
+### Add New Language
+1. Add code to `language-utils.ts` with character detection
+2. Add UI strings to `app-texts.ts`
+3. Add transcripts to `transcript-database.json` if needed
+4. Test `add-language-workflow` with new code
+
+### Debug Workflow Issues
+1. Check console logs (🔍, ❌ emojis)
+2. Verify state machine completion (STATE 1→4)
+3. Verify KV keys match convention: `ml:{id}:{type}:{lang}`
+4. Verify JSON valid (check cleanResponse() repairs)
+5. Check 3-level fallbacks were attempted
+
+### Translate Existing Training
 ```
 User: "Translate to Turkish"
   ↓
-Workflow: add-language-workflow
-  - Input: microlearning_id, targetLanguage: 'tr'
-  - Loads existing training
-  - Translates all scenes
-  - Updates department inboxes
-  - Returns new training URL with ?langUrl=lang/tr
+Call workflow-executor with:
+  - workflowType: 'add-language'
+  - targetLanguage: 'tr'
+  - existingMicrolearningId: 'phishing-101'
+  ↓
+Returns new URL with langUrl=lang/tr
 ```
 
-### Change scene generation
-Look in `src/mastra/tools/scene{N}-generator-tool.ts`
-- Each scene has own tool
-- All use Workers AI for content
-- Scene-specific prompts in tool
+---
 
-### Modify agent behavior
-Edit `src/mastra/agents/agentic-ally.ts`
-- Instructions: lines 9-146
-- State machine enforcement: lines 54-86
-- Tool calls in workflow-executor
+## 🎯 Error Handling Patterns
+
+| Pattern | Where | Strategy |
+|---------|-------|----------|
+| **3-level fallback** | analyzeUserPromptTool | semantic → sampling → basic |
+| **JSON repair** | All AI responses | Use jsonrepair library |
+| **Multi-retry** | add-language-workflow | Retry + validation + auto-correct |
+| **Fire-and-forget** | KV saves | Don't block response |
+| **Corruption detect** | Inbox translation | Validate structure preservation |
 
 ---
 
-## 🎯 Quick Reference: Error Handling Patterns
+## 📝 Modification Rules
 
-| Pattern | Where | Benefit |
-|---------|-------|---------|
-| **3-level fallback** | `analyzeUserPromptTool` | Semantic → Sampling → Basic |
-| **JSON repair** | All LLM responses | Handles malformed AI output |
-| **Multi-level retry** | `add-language-workflow` | Graceful translation recovery |
-| **Fire-and-forget KV** | Final step | Doesn't block response |
-| **Corruption detection** | Inbox translation | Catches bad data early |
-
----
-
-## 📝 When Modifying Code
-
-**Rule 1:** State machine (agent) must stay strict
-- No tool calls before: topic + dept + level + confirmation
-
-**Rule 2:** Workflows are sequential + parallel mix
-- Can add parallel steps, don't remove parallelization
-
-**Rule 3:** KV keys follow `ml:` prefix convention
-- Enables efficient listing and organization
-
-**Rule 4:** All LLM outputs need validation + repair
-- Always use `cleanResponse()` on AI JSON
-
-**Rule 5:** Tools must have 3-level error recovery
-- Primary method → Fallback → Guaranteed basic
+1. **State machine (agent) must stay strict** - No tools before STATE 2 + confirmation
+2. **Parallel processing is critical** - Generate 8 scenes in parallel, not sequential
+3. **KV keys use `ml:` prefix** - Enables efficient listing and organization
+4. **All LLM outputs validated** - Always use `cleanResponse()` on AI JSON
+5. **Tools need 3-level fallbacks** - Primary → Fallback 1 → Guaranteed basic
 
 ---
 
@@ -467,9 +286,10 @@ Edit `src/mastra/agents/agentic-ally.ts`
 - Sampling fails? → Use basic hints
 - Translation fails? → Retry with guards
 - Retry fails? → Auto-correct
-- Result: System never crashes, quality degrades gracefully
+- **Result:** System never crashes, quality degrades gracefully
 
 ---
 
-**Last Updated:** October 24, 2025
-**Maintainer Notes:** Cloudflare KV 5-second consistency wait is intentional. Semantic search fallbacks are critical for reliability.
+**Last Updated:** October 27, 2025
+**Compatibility:** Mastra 0.1.x, TypeScript 5.x, Cloudflare Workers
+**See Also:** `.cursorrules` for code standards and best practices

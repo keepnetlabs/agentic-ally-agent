@@ -38,129 +38,6 @@ export const workflowExecutorTool = createTool({
         // Workflow'u başlat
         const workflow = createMicrolearningWorkflow;
         const run = await workflow.createRunAsync();
-        /*
-// Context ve reasoning için değişkenler
-const model = getModel(ModelProvider.WORKERS_AI, Model.WORKERS_AI_GPT_OSS_120B);
-
-// Context tracking için
-let workflowContext = {
-  userPrompt: params.prompt,
-  department: params.department || 'All',
-  stepHistory: [] as Array<{ stepId: string, output: any, reasoning: string }>
-};
-// Watch API ile progress tracking ve AI reasoning
-const unwatch = run.watch((event) => {
-  if (event.type === 'watch') {
-    const currentStep = event.payload?.currentStep;
-    if (currentStep) {
-      const stepId = currentStep.id;
-      const status = currentStep.status;
-
-      if (status === 'running') {
-        // Step başladığında AI reasoning
-        const reasoningPrompt = `Creating training for: "${params.prompt}"
-
-Write a brief, friendly explanation of what step "${stepId}" does:
-- Keep it SHORT (max 15 words)
-- Use simple language
-- Start with an emoji
-- Same language as user's request
-- Focus on the benefit
-
-Examples:
-- "📋 Analyzing your needs to create the perfect training level"
-- "🎯 Building interactive content that matches your team's skills"
-- "📚 Creating scenarios your employees will actually encounter"`;
-
-        generateText({
-          model: model,
-          messages: [
-            { role: 'system', content: 'You are explaining workflow steps to the user. Be concise, clear, and use the same language as their original request.' },
-            { role: 'user', content: reasoningPrompt }
-          ]
-        }).then(async (reasoning) => {
-          await writer?.write({
-            type: 'text-start',
-          });
-          await writer?.write({
-            type: 'text-delta',
-            delta: `🔄 ${reasoning.text}\n`
-          });
-          await writer?.write({
-            type: 'text-end',
-          });
-        }).catch(async (error) => {
-          await writer?.write({
-            type: 'text-start',
-          });
-          await writer?.write({
-            type: 'text-delta',
-            delta: `🔄 **Step starting:** ${stepId}`
-          });
-          await writer?.write({
-            type: 'text-end',
-          });
-        });
-
-      } else if (status === 'success') {
-        // Step tamamlandığında AI summary
-        const stepOutput = currentStep.output;
-
-        const summaryPrompt = `Training: "${params.prompt}"
-
-Step "${stepId}" finished. Write a SHORT completion message:
-- MAX 20 words total
-- Start with ✅ 
-- Explain what was decided and why it helps
-- Same language as user's request
-- Be specific and actionable
-
-Examples:
-- "✅ Set beginner level - simpler content helps your team learn faster"
-- "✅ Added real email examples - practice with actual threats builds confidence" 
-- "✅ Created 8 quick lessons - bite-sized learning improves retention"`;
-
-        generateText({
-          model: model,
-          messages: [
-            { role: 'system', content: 'You are providing step completion summaries. Be specific about what was accomplished and what was discovered. Use the same language as the user\'s original request.' },
-            { role: 'user', content: summaryPrompt }
-          ]
-        }).then(async (summary) => {
-          // Context'e ekle
-          workflowContext.stepHistory.push({
-            stepId: stepId,
-            output: stepOutput,
-            reasoning: summary.text
-          });
-
-          await writer?.write({
-            type: 'text-start',
-          });
-          await writer?.write({
-            type: 'text-delta',
-            delta: `${summary.text}\n`
-          });
-          await writer?.write({
-            type: 'text-end',
-          });
-        }).catch(async (error) => {
-          await writer?.write({
-            type: 'text-start',
-          });
-          await writer?.write({
-            type: 'text-delta',
-            delta: `✅ **Step ${stepId}** completed successfully`
-          });
-          await writer?.write({
-            type: 'text-end',
-          });
-        });
-      }
-    }
-  }
-});
-*/
 
         // Workflow'u başlat - let it fail if it fails
         const workflowResult = await run.start({
@@ -174,9 +51,6 @@ Examples:
           }
         });
 
-        // Watch'ı temizle
-        //unwatch();
-
         // Extract info from result - simple fallback approach
         let trainingUrl = 'URL not available';
         let title = params.prompt?.slice(0, 50) || 'microlearning';
@@ -184,7 +58,7 @@ Examples:
         let microlearningId = 'ID not available';
 
         console.log('🔍 Workflow result:', workflowResult);
-        
+
         // Try to extract data from workflow result
         if (workflowResult.status === 'success' && workflowResult.result?.metadata) {
           try {

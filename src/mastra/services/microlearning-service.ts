@@ -12,29 +12,6 @@ export class MicrolearningService {
     this.contentStorage.set(content.microlearning_id, content);
   }
 
-  /**
-   * Retrieve microlearning content by id
-   */
-  async getMicrolearningById(microlearningId: string): Promise<MicrolearningContent | undefined> {
-    // Önce memory'de kontrol et
-    let content = this.contentStorage.get(microlearningId);
-
-    if (!content) {
-      // Backend'den çek
-      try {
-        const response = await fetch(`https://microlearning-api.keepnet-labs-ltd-business-profile4086.workers.dev/microlearning/${microlearningId}`);
-        if (response.ok) {
-          content = await response.json();
-          // Memory'e cache'le
-          this.contentStorage.set(microlearningId, content as MicrolearningContent);
-        }
-      } catch (error) {
-        console.error('Backend fetch failed:', error);
-      }
-    }
-
-    return content;
-  }
 
   /**
    * Store language-specific content
@@ -44,51 +21,7 @@ export class MicrolearningService {
     this.languageContentStorage.set(key, content);
   }
 
-  /**
-   * Retrieve language-specific content by id and language
-   */
-  async getLanguageContent(microlearningId: string, languageCode: string): Promise<LanguageContent | undefined> {
-    const key = `${microlearningId}_${languageCode}`;
-    let content = this.languageContentStorage.get(key);
 
-    if (!content) {
-      // Backend'den çek
-      try {
-        const response = await fetch(`https://microlearning-api.keepnet-labs-ltd-business-profile4086.workers.dev/microlearning/${microlearningId}/lang/${languageCode}`);
-        if (response.ok) {
-          content = await response.json();
-          // Memory'e cache'le
-          this.languageContentStorage.set(key, content as LanguageContent);
-        }
-      } catch (error) {
-        console.error('Backend language content fetch failed:', error);
-      }
-    }
-
-    return content;
-  }
-
-  /** Get department inbox by key */
-  async getDepartmentInbox(microlearningId: string, department: string, languageCode: string): Promise<DepartmentInbox | undefined> {
-    const key = `${department}_${languageCode}`;
-    let inbox = this.departmentInboxes.get(key);
-
-    if (!inbox) {
-      // Backend'den çek
-      try {
-        const response = await fetch(`https://microlearning-api.keepnet-labs-ltd-business-profile4086.workers.dev/microlearning/${microlearningId}/inbox/${department}/${languageCode}`);
-        if (response.ok) {
-          inbox = await response.json();
-          // Memory'e cache'le
-          this.departmentInboxes.set(key, inbox as DepartmentInbox);
-        }
-      } catch (error) {
-        console.error('Backend inbox fetch failed:', error);
-      }
-    }
-
-    return inbox;
-  }
 
   /**
    * Add microlearning to department inbox

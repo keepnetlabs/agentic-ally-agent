@@ -14,7 +14,8 @@
       "WebFetch(domain:www.cisa.gov)",
       "WebFetch(domain:www.ncsc.gov.uk)",
       "Bash(tree:*)",
-      "Bash(dir /s /b)"
+      "Bash(dir /s /b)",
+      "Read(//c/Users/user/Desktop/**)"
     ],
     "deny": [],
     "ask": []

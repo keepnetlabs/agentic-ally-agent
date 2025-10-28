@@ -23,25 +23,3 @@ export function isProduction(): boolean {
 export function isDevelopment(): boolean {
     return !isProduction();
 }
-
-/**
- * Checks if all required environment variables are set
- * @returns {boolean} True if all required environment variables are set, false otherwise
- */
-export function checkEnvironmentVariables() {
-    // List of required environment variables
-    const requiredVars = [
-        'CLOUDFLARE_API_TOKEN',
-        'CLOUDFLARE_ACCOUNT_ID',
-        'CLOUDFLARE_AI_GATEWAY_ID',
-        'OPENAI_API_KEY'
-    ];
-
-    const missingVars = requiredVars.filter((key) => !process.env[key] || process.env[key].trim() === '');
-
-    if (missingVars.length > 0) {
-        return false;
-    }
-
-    return true;
-}
