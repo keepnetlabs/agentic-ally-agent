@@ -1,18 +1,21 @@
 import { createOpenAI } from '@ai-sdk/openai';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 
+
 /**
  * Enum for the supported model providers
  */
-export const enum ModelProvider {
+export enum ModelProvider {
     OPENAI = 'openai',
     WORKERS_AI = 'workers-ai',
     GOOGLE = 'google',
 }
 
-export const enum Model {
+export enum Model {
+    OPENAI_GPT_4O = 'gpt-4o',
     OPENAI_GPT_4O_MINI = 'gpt-4o-mini',
-    OPENAI_GPT_41_MINI = 'gpt-4.1-mini',
+    OPENAI_GPT_4_1 = 'gpt-4.1',
+    OPENAI_GPT_4_1_MINI = 'gpt-4.1-mini',
     OPENAI_GPT_5_NANO = 'gpt-5-nano',
     OPENAI_GPT_5_MINI = 'gpt-5-mini',
     WORKERS_AI_GPT_OSS_120B = '@cf/openai/gpt-oss-120b',
@@ -149,5 +152,49 @@ function getModelProvider(provider: ModelProvider) {
 
         default:
             throw new Error(`Unsupported provider: ${provider}`);
+    }
+}
+
+/**
+ * Default models used across the application
+ */
+export function getDefaultAgentModel() {
+    return getModel(ModelProvider.OPENAI, Model.OPENAI_GPT_4O);
+}
+
+export function getDefaultGenerationModel() {
+    return getModel(ModelProvider.WORKERS_AI, Model.WORKERS_AI_GPT_OSS_120B);
+}
+
+/**
+ * Get model with override support from frontend/backend
+ * If modelProvider and modelName provided, use them; otherwise use default
+ * @param modelProvider - Optional model provider (OPENAI, WORKERS_AI, GOOGLE)
+ * @param modelName - Optional model name (e.g., OPENAI_GPT_4O, WORKERS_AI_GPT_OSS_120B)
+ * @param defaultFunc - Function to call if no override provided (default: getDefaultGenerationModel)
+ * @returns Model instance
+ */
+export function getModelWithOverride(
+    modelProvider?: string,
+    modelName?: string,
+    defaultFunc = getDefaultGenerationModel
+) {
+    if (!modelProvider || !modelName) {
+        return defaultFunc();
+    }
+
+    try {
+        const provider = ModelProvider[modelProvider as keyof typeof ModelProvider];
+        if (!provider) {
+            console.warn(`Invalid model provider: ${modelProvider}, using default`);
+            return defaultFunc();
+        }
+
+        const model = getModel(provider, Model[modelName as keyof typeof Model]);
+        console.log(`🔧 Using model override: ${modelProvider}/${modelName}`);
+        return model;
+    } catch (error) {
+        console.warn(`Failed to load model ${modelProvider}/${modelName}: ${error instanceof Error ? error.message : 'Unknown error'}, using default`);
+        return defaultFunc();
     }
 }

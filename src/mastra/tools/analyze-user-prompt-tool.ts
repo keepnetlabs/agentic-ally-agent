@@ -1,11 +1,12 @@
 import { Tool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { generateText } from 'ai';
-import { getModel, Model, ModelProvider } from '../model-providers';
+import { getModelWithOverride } from '../model-providers';
 import { PromptAnalysis } from '../types/prompt-analysis';
 import { ExampleRepo } from '../services/example-repo';
-import { validateBCP47LanguageCode } from '../utils/language-utils';
+import { validateBCP47LanguageCode, DEFAULT_LANGUAGE } from '../utils/language-utils';
 import { cleanResponse } from '../utils/content-processors/json-cleaner';
+import { PROMPT_ANALYSIS_PARAMS } from '../utils/llm-generation-params';
 
 const AnalyzeUserPromptSchema = z.object({
   userPrompt: z.string().min(1, 'User prompt is required'),
@@ -13,6 +14,8 @@ const AnalyzeUserPromptSchema = z.object({
   suggestedDepartment: z.string().optional(),
   suggestedLevel: z.enum(['Beginner', 'Intermediate', 'Advanced']).optional().default('Intermediate'),
   customRequirements: z.string().optional(),
+  modelProvider: z.enum(['OPENAI', 'WORKERS_AI', 'GOOGLE']).optional().describe('Model provider'),
+  model: z.string().optional().describe('Model name (e.g., OPENAI_GPT_4O_MINI, WORKERS_AI_GPT_OSS_120B)'),
 });
 
 const AnalyzeUserPromptOutputSchema = z.object({
@@ -64,9 +67,10 @@ export const analyzeUserPromptTool = new Tool({
   outputSchema: AnalyzeUserPromptOutputSchema,
   execute: async (context: any) => {
     const input = context?.inputData || context?.input || context;
-    const { userPrompt, additionalContext, suggestedDepartment, customRequirements } = input;
+    const { userPrompt, additionalContext, suggestedDepartment, customRequirements, modelProvider, model: modelOverride } = input;
 
-    const model = getModel(ModelProvider.WORKERS_AI, Model.WORKERS_AI_GPT_OSS_120B);
+    // Use model override if provided, otherwise use default
+    const model = getModelWithOverride(modelProvider, modelOverride);
 
     console.log(`🤖 Analyzing user prompt: "${userPrompt.substring(0, 100)}..."`);
 
@@ -108,7 +112,7 @@ SUGGESTED LEVEL: ${input.suggestedLevel || 'auto-detect'}${examplesBlock}
 
 Return JSON:
 {
-  "language": "BCP-47 tag (language-lowercase + optional REGION-UPPERCASE; prefer regional if known, e.g., en-GB/en-US/fr-CA/tr-TR; else use primary, e.g., en)"
+  "language": "BCP-47 tag (language-lowercase + region-lowercase; prefer regional if known, e.g., en-gb/en-us/fr-ca/tr-tr; else use primary, e.g. en-gb)"
   "topic": "2-3 words max - core subject only",
   "title": "3-5 words max - professional training title", 
   "department": "target department or 'All'",
@@ -137,15 +141,16 @@ RULES:
         messages: [
           { role: 'system', content: 'You are an expert instructional designer and content analyst. CRITICAL: Analyze user requests intelligently and create professional microlearning metadata. Do NOT copy user instructions as titles/topics. Extract the core learning subject and create appropriate professional titles. Learning objectives must be realistic for 5-minute training scope - focus on specific, immediately actionable skills (NOT meta-tasks like "complete quiz" or unrealistic goals like "teach others"). Return ONLY VALID JSON - NO markdown, NO backticks, NO formatting. Start directly with {. Use BCP-47 language codes (en, tr, de, fr, es, zh, ja, ar, etc.).' },
           { role: 'user', content: analysisPrompt }
-        ]
+        ],
+        ...PROMPT_ANALYSIS_PARAMS,
       });
 
       // Use professional JSON repair library
       const cleanedText = cleanResponse(response.text, 'prompt-analysis');
       const analysis = JSON.parse(cleanedText) as PromptAnalysis;
 
-      // Validate and normalize BCP-47 language code
-      analysis.language = validateBCP47LanguageCode(analysis.language || 'en-GB');
+      // Validate and normalize BCP-47 language code (includes en-* variant normalization to en-US)
+      analysis.language = validateBCP47LanguageCode(analysis.language || DEFAULT_LANGUAGE);
 
       console.log(`🎯 Enhanced Prompt Analysis Result:`, analysis);
 
@@ -164,7 +169,7 @@ RULES:
       return {
         success: true,
         data: {
-          language: analysis.language,
+          language: analysis.language.toLowerCase(),
           topic: analysis.topic,
           title: analysis.title,
           department: analysis.department,

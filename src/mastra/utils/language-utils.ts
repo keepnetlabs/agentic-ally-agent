@@ -1,9 +1,12 @@
 
+// Default language constant
+export const DEFAULT_LANGUAGE = "en-gb";
+
 // BCP-47 language code validation and normalization (standalone, no deps)
 export function validateBCP47LanguageCode(input: string): string {
   // 1) Sanitize
   const raw = String(input || "").trim().replace(/^['"]|['"]$/g, "");
-  if (!raw) return "en-GB";
+  if (!raw) return DEFAULT_LANGUAGE;
 
   // 2) Minimal synonyms (optional – extend as needed)
   const aliases: Record<string, string> = {
@@ -30,7 +33,7 @@ export function validateBCP47LanguageCode(input: string): string {
   let tag = aliases[lower] ?? lower;
 
   // 3) Legacy/typo fixes
-  if (tag === "en-uk") tag = "en-gb"; // normalize UK -> GB
+  if (tag === "en-uk") tag = "en-gb"; // normalize UK -> GB (preserve variant)
 
   // 4) Try Intl canonicalization when available
   try {
@@ -52,7 +55,7 @@ export function validateBCP47LanguageCode(input: string): string {
   // 6) Preferred regional defaults if no region was provided
   const hasRegion = !!rest.find(p => /^[A-Z]{2}$/.test(p) || /^\d{3}$/.test(p));
   const defaultRegionForLang: Record<string, string> = {
-    en: "GB",
+    en: "GB",  // Default English to GB (when no region specified)
     tr: "TR",
     fr: "FR",
     es: "ES",
@@ -78,7 +81,7 @@ export function validateBCP47LanguageCode(input: string): string {
   }
 
   // 7) Final safety default
-  if (!normalized) normalized = "en-GB";
+  if (!normalized) normalized = DEFAULT_LANGUAGE;
 
   return normalized;
 }

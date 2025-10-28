@@ -107,8 +107,27 @@ export const mastra = new Mastra({
             const forwarded = c.req.header('x-forwarded-for') || c.req.header('cf-connecting-ip') || 'unknown';
             threadId = `${forwarded}-${userAgent}`.replace(/[^a-zA-Z0-9]/g, '').slice(0, 32) || 'default';
           }
+          console.log('🔍 Thread ID:', threadId);
 
-          const stream = await agent.stream(prompt, {
+          // Extract model provider and model from request body
+          const modelProvider = body?.modelProvider;
+          const model = body?.model;
+          if (modelProvider || model) {
+            console.log('🔧 Model override received:', { modelProvider, model });
+          }
+
+          // Build prompt with model override as system instruction
+          let finalPrompt = prompt;
+          if (modelProvider || model) {
+            const modelInstruction = modelProvider && model
+              ? `[Use this model: ${modelProvider} - ${model}]\n\n`
+              : modelProvider
+              ? `[Use this model provider: ${modelProvider}]\n\n`
+              : '';
+            finalPrompt = modelInstruction + prompt;
+          }
+
+          const stream = await agent.stream(finalPrompt, {
             format: 'aisdk',
             memory: {
               thread: threadId,

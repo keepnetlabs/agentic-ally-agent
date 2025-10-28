@@ -9,8 +9,10 @@ import { validateInboxStructure, correctInboxStructure, detectJsonCorruption } f
 const addLanguageInputSchema = z.object({
   existingMicrolearningId: z.string().describe('ID of existing microlearning'),
   targetLanguage: z.string().describe('Target language code (e.g., tr, de, fr)'),
-  sourceLanguage: z.string().optional().default('en').describe('Source language to translate from'),
+  sourceLanguage: z.string().optional().describe('Source language code (e.g., en-US, tr-TR). If not provided, auto-detected from microlearning metadata'),
   department: z.string().optional().default('All'),
+  modelProvider: z.enum(['OPENAI', 'WORKERS_AI', 'GOOGLE']).optional().describe('Model provider (OPENAI, WORKERS_AI, GOOGLE)'),
+  model: z.string().optional().describe('Model name (e.g., OPENAI_GPT_4O_MINI, WORKERS_AI_GPT_OSS_120B)'),
 });
 
 const existingContentSchema = z.object({
@@ -21,6 +23,8 @@ const existingContentSchema = z.object({
   sourceLanguage: z.string(), // source language to translate from
   targetLanguage: z.string(), // target language for parallel steps
   department: z.string(), // department for parallel steps
+  modelProvider: z.enum(['OPENAI', 'WORKERS_AI', 'GOOGLE']).optional(), // model provider override
+  model: z.string().optional(), // model override
 });
 
 const languageContentSchema = z.object({
@@ -50,14 +54,9 @@ const loadExistingStep = createStep({
   inputSchema: addLanguageInputSchema,
   outputSchema: existingContentSchema,
   execute: async ({ inputData }) => {
-    const { existingMicrolearningId, targetLanguage, sourceLanguage, department } = inputData;
+    const { existingMicrolearningId, targetLanguage, sourceLanguage, department, modelProvider, model } = inputData;
 
-    // Validate language parameters
-    if (targetLanguage === sourceLanguage) {
-      throw new Error(`Target language (${targetLanguage}) cannot be the same as source language (${sourceLanguage}). Please check your parameters.`);
-    }
-
-    console.log(`🔍 Step 1: Loading existing microlearning ${existingMicrolearningId} for ${sourceLanguage} → ${targetLanguage} translation`);
+    console.log(`🔍 Step 1: Loading existing microlearning ${existingMicrolearningId} to translate to ${targetLanguage}`);
 
     // Try KVService first, fallback to MicrolearningService
     let existing = null;
@@ -86,7 +85,7 @@ const loadExistingStep = createStep({
 
     const meta = (existing as any).microlearning_metadata || {};
     const analysis = {
-      language: targetLanguage,
+      language: targetLanguage.toLowerCase(),  // Normalize to lowercase for KV key consistency
       topic: meta.topic || (existing as any).title || 'Training',
       title: meta.title || (existing as any).title || 'Training',
       department: (department && department !== 'All') ? department : (meta.department || 'All'),
@@ -99,6 +98,11 @@ const loadExistingStep = createStep({
     // Detect actual source language from microlearning metadata
     const actualSourceLanguage = meta.language || meta.primary_language || sourceLanguage;
 
+    // Validate that target language is different from source
+    if (actualSourceLanguage && actualSourceLanguage.toLowerCase() === targetLanguage.toLowerCase()) {
+      throw new Error(`Target language (${targetLanguage}) cannot be the same as source language (${actualSourceLanguage}). Please choose a different target language.`);
+    }
+
     console.log(`✅ Step 1 completed: Found microlearning "${analysis.title}" (${analysis.category})`);
     console.log(`📋 Translation details: ${actualSourceLanguage} → ${targetLanguage} for ${analysis.department} department`);
 
@@ -107,9 +111,11 @@ const loadExistingStep = createStep({
       data: existing,
       microlearningId: (existing as any).microlearning_id,
       analysis,
-      sourceLanguage: actualSourceLanguage, // Use detected source language
+      sourceLanguage: actualSourceLanguage.toLowerCase(), // Use detected source language
       targetLanguage, // Pass to parallel steps
-      department // Pass to parallel steps
+      department, // Pass to parallel steps
+      modelProvider, // Pass model override through
+      model // Pass model override through
     } as any;
   }
 });
@@ -165,9 +171,12 @@ const translateLanguageStep = createStep({
 
     const translationParams = {
       json: baseContent,
-      targetLanguage: targetLanguage,
+      sourceLanguage: sourceLanguage.toLowerCase(),  // Source language (e.g., en-us)
+      targetLanguage: targetLanguage.toLowerCase(),  // Normalize to lowercase (e.g., tr-tr)
       topic: analysis.topic, // Pass topic for context-aware translation
-      doNotTranslateKeys: ['iconName', 'id', 'ids', 'url', 'src']
+      doNotTranslateKeys: ['iconName', 'id', 'ids', 'url', 'src'],
+      modelProvider: inputData.modelProvider, // Pass model override if provided
+      model: inputData.model // Pass model override if provided
     };
 
 
@@ -249,6 +258,8 @@ const updateInboxStep = createStep({
     const { data: translatedLanguageContent, analysis, microlearningId, microlearningStructure } = inputData;
     const targetLanguage = analysis.language;
     const sourceLanguage = microlearningStructure.microlearning_metadata?.language || 'en';
+    const modelProvider = (inputData as any).modelProvider;
+    const model = (inputData as any).model;
 
     console.log(`📥 Step 3: Creating inbox for ${targetLanguage} language`);
     console.log(`🔍 Source language for inbox: ${sourceLanguage}`);
@@ -291,9 +302,12 @@ const updateInboxStep = createStep({
 
         const inboxTranslationParams = {
           json: baseInbox,
-          targetLanguage: targetLanguage,
+          sourceLanguage: sourceLanguage,  // Source language (e.g., en-us)
+          targetLanguage: targetLanguage.toLowerCase(),  // Normalize to lowercase (e.g., tr-tr)
           topic: analysis.topic, // Pass topic for context-aware translation
-          doNotTranslateKeys: ['id', 'ids']
+          doNotTranslateKeys: ['id', 'ids'],
+          modelProvider, // Pass model override if provided
+          model // Pass model override if provided
         };
 
 
@@ -310,9 +324,12 @@ const updateInboxStep = createStep({
             // Try re-translation with enhanced parameters
             const reTranslationParams = {
               json: baseInbox,
-              targetLanguage: targetLanguage,
+              sourceLanguage: sourceLanguage,  // Source language (e.g., en-us)
+              targetLanguage: targetLanguage.toLowerCase(),  // Normalize to lowercase (e.g., tr-tr)
               topic: analysis.topic,
-              doNotTranslateKeys: ['id', 'ids', 'isPhishing', 'difficulty', 'size', 'type', 'timestamp', 'headers', 'attachments']
+              doNotTranslateKeys: ['id', 'ids', 'isPhishing', 'difficulty', 'size', 'type', 'timestamp', 'headers', 'attachments'],
+              modelProvider, // Pass model override if provided
+              model // Pass model override if provided
             };
 
             const reTranslatedInbox = await translateLanguageJsonTool.execute(reTranslationParams);
@@ -347,9 +364,12 @@ const updateInboxStep = createStep({
                 // Final attempt with maximum protection
                 const finalTranslationParams = {
                   json: baseInbox,
-                  targetLanguage: targetLanguage,
+                  sourceLanguage: sourceLanguage,  // Source language (e.g., en-us)
+                  targetLanguage: targetLanguage.toLowerCase(),  // Normalize to lowercase (e.g., tr-tr)
                   topic: analysis.topic,
-                  doNotTranslateKeys: ['id', 'ids', 'isPhishing', 'difficulty', 'size', 'type', 'timestamp', 'headers', 'attachments', 'Return-Path', 'SPF', 'DMARC']
+                  doNotTranslateKeys: ['id', 'ids', 'isPhishing', 'difficulty', 'size', 'type', 'timestamp', 'headers', 'attachments', 'Return-Path', 'SPF', 'DMARC'],
+                  modelProvider, // Pass model override if provided
+                  model // Pass model override if provided
                 };
 
                 const finalTranslatedInbox = await translateLanguageJsonTool.execute(finalTranslationParams);

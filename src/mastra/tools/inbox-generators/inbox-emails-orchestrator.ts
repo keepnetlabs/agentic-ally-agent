@@ -2,6 +2,7 @@ import { generateText } from 'ai';
 import { buildInboxEmailBaseSystem } from './inbox-email-base';
 import { EmailVariant, variantDeltaBuilder, buildHintsFromInsights } from './inbox-email-variants';
 import { cleanResponse } from '../../utils/content-processors/json-cleaner';
+import { INBOX_GENERATION_PARAMS } from '../../utils/llm-generation-params';
 
 type OrchestratorArgs = {
     topic: string;
@@ -91,6 +92,7 @@ async function generateOneEmail(
                 { role: 'system', content: systemPrompt },
                 { role: 'user', content: delta },
             ],
+            ...INBOX_GENERATION_PARAMS,
         });
 
         const cleaned = cleanResponse(res.text, `inbox-email-${index + 1}`);
@@ -105,6 +107,7 @@ async function generateOneEmail(
                 { role: 'system', content: systemPrompt },
                 { role: 'user', content: delta + '\nIf previous output was not valid JSON, fix and resend as a single JSON object.' },
             ],
+            ...INBOX_GENERATION_PARAMS,
         });
         const cleaned2 = cleanResponse(res2.text, `inbox-email-retry-${index + 1}`);
         const parsed2 = JSON.parse(cleaned2);

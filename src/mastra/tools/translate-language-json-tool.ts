@@ -1,8 +1,9 @@
 import { Tool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { generateText } from 'ai';
-import { getModel, Model, ModelProvider } from '../model-providers';
+import { getModelWithOverride } from '../model-providers';
 import { cleanResponse } from '../utils/content-processors/json-cleaner';
+import { LOCALIZER_PARAMS } from '../utils/llm-generation-params';
 
 
 const TranslateJsonInputSchema = z.object({
@@ -11,6 +12,8 @@ const TranslateJsonInputSchema = z.object({
     targetLanguage: z.string(),
     topic: z.string().optional(),
     doNotTranslateKeys: z.array(z.string()).optional(),
+    modelProvider: z.enum(['OPENAI', 'WORKERS_AI', 'GOOGLE']).optional().describe('Model provider'),
+    model: z.string().optional().describe('Model name (e.g., OPENAI_GPT_4O_MINI, WORKERS_AI_GPT_OSS_120B)'),
 });
 
 const TranslateJsonOutputSchema = z.object({
@@ -142,7 +145,10 @@ export const translateLanguageJsonTool = new Tool({
     inputSchema: TranslateJsonInputSchema,
     outputSchema: TranslateJsonOutputSchema,
     execute: async (context: any) => {
-        const { json, sourceLanguage = 'English', targetLanguage, topic, doNotTranslateKeys = [] } = context as z.infer<typeof TranslateJsonInputSchema>;
+        const { json, sourceLanguage = 'English', targetLanguage, topic, doNotTranslateKeys = [], modelProvider, model: modelOverride } = context as z.infer<typeof TranslateJsonInputSchema>;
+
+        // Use model override if provided, otherwise use default
+        const model = getModelWithOverride(modelProvider, modelOverride);
 
         // Always add scene_type to protected keys
         const protectedKeys = [...doNotTranslateKeys, 'scene_type'];
@@ -280,7 +286,6 @@ export const translateLanguageJsonTool = new Tool({
             `.trim()
 
         // Step 3: Translate each chunk with parallel processing and retry
-        const model = getModel(ModelProvider.WORKERS_AI, Model.WORKERS_AI_GPT_OSS_120B);
         const BATCH_SIZE = 3; // Process 3 chunks in parallel
         const MAX_RETRIES = 2;
 
@@ -313,7 +318,8 @@ OUTPUT (${targetLanguage} ONLY, native quality, exact HTML structure):`;
                         messages: [
                             { role: 'system', content: system },
                             { role: 'user', content: user }
-                        ]
+                        ],
+                        ...LOCALIZER_PARAMS,
                     });
 
                     const cleanedText = cleanResponse(res.text, `chunk-${chunkNumber}`);

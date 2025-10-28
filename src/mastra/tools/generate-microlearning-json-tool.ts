@@ -4,6 +4,7 @@ import { generateText } from 'ai';
 import { PromptAnalysis } from '../types/prompt-analysis';
 import { MicrolearningContent, ScientificEvidence, Scene } from '../types/microlearning';
 import { cleanResponse } from '../utils/content-processors/json-cleaner';
+import { METADATA_GENERATION_PARAMS } from '../utils/llm-generation-params';
 
 const GenerateMicrolearningJsonSchema = z.object({
   analysis: z.object({
@@ -86,7 +87,8 @@ async function generateMicrolearningJsonWithAI(analysis: PromptAnalysis, microle
       content_provider: "AI-Generated Training",
       level: (analysis.level?.charAt(0).toUpperCase() + analysis.level?.slice(1)) as MicrolearningContent['microlearning_metadata']['level'],
       ethical_inclusive_language_policy: generateEthicalPolicy(),
-      language_availability: [analysis.language],
+      language: analysis.language.toLowerCase(),  // Normalize to lowercase (e.g., en-us, tr-tr) for KV key consistency
+      language_availability: [analysis.language.toLowerCase()],
       gamification_enabled: true,
       total_points: 100
     },
@@ -173,7 +175,8 @@ CRITICAL JSON RULES:
       messages: [
         { role: 'system', content: 'You are enhancing microlearning content. Keep the exact same JSON structure, only improve content values. Return ONLY valid JSON, no markdown blocks or commentary.' },
         { role: 'user', content: enhancementPrompt }
-      ]
+      ],
+      ...METADATA_GENERATION_PARAMS,
     });
 
     // Use professional JSON repair library
@@ -561,7 +564,8 @@ Guidelines:
       messages: [
         { role: 'system', content: 'Generate comprehensive microlearning configuration with scene settings and semantic icons. Return ONLY VALID JSON - NO markdown, NO backticks, NO formatting. Start directly with {' },
         { role: 'user', content: comprehensivePrompt }
-      ]
+      ],
+      ...METADATA_GENERATION_PARAMS,
     });
 
     // Use professional JSON repair library
@@ -715,7 +719,8 @@ Guidelines:
       messages: [
         { role: 'system', content: 'Return ONLY VALID JSON - NO markdown, NO backticks, NO formatting. Start directly with {' },
         { role: 'user', content: evidencePrompt }
-      ]
+      ],
+      ...METADATA_GENERATION_PARAMS,
     });
     // Use professional JSON repair library
     const cleanedEvidence = cleanResponse(resp.text, 'scientific-evidence');

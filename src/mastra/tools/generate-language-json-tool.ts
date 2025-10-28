@@ -13,6 +13,7 @@ import { generateScene6Prompt } from './scene-generators/scene6-survey-generator
 import { generateScene7Prompt } from './scene-generators/scene7-nudge-generator';
 import { generateScene8Prompt } from './scene-generators/scene8-summary-generator';
 import { cleanResponse } from '../utils/content-processors/json-cleaner';
+import { SCENE_GENERATION_PARAMS } from '../utils/llm-generation-params';
 
 export const generateLanguageJsonTool = new Tool({
   id: 'generate_language_json',
@@ -91,6 +92,17 @@ Start directly with {`;
 
     const videoSystemPrompt = baseSystemPrompt + `\n5. NEVER use \\n in transcript - use actual line breaks`;
 
+    // Log generation parameters being used
+    console.log('🎛️ Using scene-specific generation parameters:');
+    console.log(`   Scene 1 (Intro): temp=${SCENE_GENERATION_PARAMS[1].temperature}, topP=${SCENE_GENERATION_PARAMS[1].topP}`);
+    console.log(`   Scene 2 (Goals): temp=${SCENE_GENERATION_PARAMS[2].temperature}, topP=${SCENE_GENERATION_PARAMS[2].topP}`);
+    console.log(`   Scene 3 (Video): temp=${SCENE_GENERATION_PARAMS[3].temperature}, topP=${SCENE_GENERATION_PARAMS[3].topP}`);
+    console.log(`   Scene 4 (Actions): temp=${SCENE_GENERATION_PARAMS[4].temperature}, topP=${SCENE_GENERATION_PARAMS[4].topP}`);
+    console.log(`   Scene 5 (Quiz): temp=${SCENE_GENERATION_PARAMS[5].temperature}, topP=${SCENE_GENERATION_PARAMS[5].topP}`);
+    console.log(`   Scene 6 (Survey): temp=${SCENE_GENERATION_PARAMS[6].temperature}, topP=${SCENE_GENERATION_PARAMS[6].topP}`);
+    console.log(`   Scene 7 (Nudge): temp=${SCENE_GENERATION_PARAMS[7].temperature}, topP=${SCENE_GENERATION_PARAMS[7].topP}`);
+    console.log(`   Scene 8 (Summary): temp=${SCENE_GENERATION_PARAMS[8].temperature}, topP=${SCENE_GENERATION_PARAMS[8].topP}`);
+
     // Generate content in parallel for better performance and reliability
     const startTime = Date.now();
     const [scene1Response, scene2Response, videoResponse, scene4Response, scene5Response, scene6Response, scene7Response, scene8Response] = await Promise.all([
@@ -99,7 +111,8 @@ Start directly with {`;
         messages: [
           { role: 'system', content: baseSystemPrompt },
           { role: 'user', content: scene1Prompt }
-        ]
+        ],
+        ...SCENE_GENERATION_PARAMS[1]  // Scene 1: Intro (creative)
       }).catch(err => {
         console.error('❌ Scene 1 generation failed:', err);
         throw new Error(`Scene 1 generation failed: ${err instanceof Error ? err.message : String(err)}`);
@@ -109,7 +122,8 @@ Start directly with {`;
         messages: [
           { role: 'system', content: baseSystemPrompt },
           { role: 'user', content: scene2Prompt }
-        ]
+        ],
+        ...SCENE_GENERATION_PARAMS[2]  // Scene 2: Goals (factual)
       }).catch(err => {
         console.error('❌ Scene 2 generation failed:', err);
         throw new Error(`Scene 2 generation failed: ${err instanceof Error ? err.message : String(err)}`);
@@ -119,7 +133,8 @@ Start directly with {`;
         messages: [
           { role: 'system', content: videoSystemPrompt },
           { role: 'user', content: videoPrompt }
-        ]
+        ],
+        ...SCENE_GENERATION_PARAMS[3]  // Scene 3: Video (balanced)
       }).catch(err => {
         console.error('❌ Video generation failed:', err);
         throw new Error(`Video generation failed: ${err instanceof Error ? err.message : String(err)}`);
@@ -129,7 +144,8 @@ Start directly with {`;
         messages: [
           { role: 'system', content: baseSystemPrompt },
           { role: 'user', content: scene4Prompt }
-        ]
+        ],
+        ...SCENE_GENERATION_PARAMS[4]  // Scene 4: Actions (specific)
       }).catch(err => {
         console.error('❌ Scene 4 generation failed:', err);
         throw new Error(`Scene 4 generation failed: ${err instanceof Error ? err.message : String(err)}`);
@@ -139,7 +155,8 @@ Start directly with {`;
         messages: [
           { role: 'system', content: baseSystemPrompt },
           { role: 'user', content: scene5Prompt }
-        ]
+        ],
+        ...SCENE_GENERATION_PARAMS[5]  // Scene 5: Quiz (precise)
       }).catch(err => {
         console.error('❌ Scene 5 generation failed:', err);
         throw new Error(`Scene 5 generation failed: ${err instanceof Error ? err.message : String(err)}`);
@@ -149,7 +166,8 @@ Start directly with {`;
         messages: [
           { role: 'system', content: baseSystemPrompt },
           { role: 'user', content: scene6Prompt }
-        ]
+        ],
+        ...SCENE_GENERATION_PARAMS[6]  // Scene 6: Survey (neutral)
       }).catch(err => {
         console.error('❌ Scene 6 generation failed:', err);
         throw new Error(`Scene 6 generation failed: ${err instanceof Error ? err.message : String(err)}`);
@@ -159,7 +177,8 @@ Start directly with {`;
         messages: [
           { role: 'system', content: baseSystemPrompt },
           { role: 'user', content: scene7Prompt }
-        ]
+        ],
+        ...SCENE_GENERATION_PARAMS[7]  // Scene 7: Nudge (engaging)
       }).catch(err => {
         console.error('❌ Scene 7 generation failed:', err);
         throw new Error(`Scene 7 generation failed: ${err instanceof Error ? err.message : String(err)}`);
@@ -169,7 +188,8 @@ Start directly with {`;
         messages: [
           { role: 'system', content: baseSystemPrompt },
           { role: 'user', content: scene8Prompt }
-        ]
+        ],
+        ...SCENE_GENERATION_PARAMS[8]  // Scene 8: Summary (consistent)
       }).catch(err => {
         console.error('❌ Scene 8 generation failed:', err);
         throw new Error(`Scene 8 generation failed: ${err instanceof Error ? err.message : String(err)}`);

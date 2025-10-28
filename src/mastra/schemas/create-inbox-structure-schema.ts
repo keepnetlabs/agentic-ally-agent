@@ -7,6 +7,8 @@ export const CreateInboxStructureSchema = z.object({
   microlearning: z.any(), // MicrolearningContent
   languageContent: z.any(), // LanguageContent
   remote: z.any(),
+  modelProvider: z.enum(['OPENAI', 'WORKERS_AI', 'GOOGLE']).optional().describe('Model provider'),
+  model: z.string().optional().describe('Model name (e.g., OPENAI_GPT_4O_MINI, WORKERS_AI_GPT_OSS_120B)'),
 });
 
 export const CreateInboxStructureOutputSchema = z.object({

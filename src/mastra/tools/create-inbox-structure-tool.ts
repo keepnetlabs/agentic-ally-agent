@@ -2,12 +2,13 @@ import { Tool } from '@mastra/core/tools';
 import { generateText } from 'ai';
 import { MicrolearningContent } from '../types/microlearning';
 import { MicrolearningService } from '../services/microlearning-service';
-import { getModel, Model, ModelProvider } from '../model-providers';
+import { getModelWithOverride } from '../model-providers';
 import { InboxContentSchema } from '../schemas/microlearning-schema';
 import { CreateInboxStructureSchema, CreateInboxStructureOutputSchema } from '../schemas/create-inbox-structure-schema';
 import { cleanResponse } from '../utils/content-processors/json-cleaner';
 import { generateInboxTextsPrompt } from './inbox-generators/inbox-texts-generator';
 import { generateInboxEmailsParallel } from './inbox-generators/inbox-emails-orchestrator';
+import { LOCALIZER_PARAMS } from '../utils/llm-generation-params';
 
 const microlearningService = new MicrolearningService();
 
@@ -18,10 +19,10 @@ export const createInboxStructureTool = new Tool({
   outputSchema: CreateInboxStructureOutputSchema,
   execute: async (context: any) => {
     const input = context?.inputData || context?.input || context;
-    const { department, languageCode, microlearningId, microlearning } = input;
+    const { department, languageCode, microlearningId, microlearning, modelProvider, model: modelOverride } = input;
 
     try {
-      const inboxContent = await createInboxStructure(department, languageCode, microlearningId, microlearning);
+      const inboxContent = await createInboxStructure(department, languageCode, microlearningId, microlearning, modelProvider, modelOverride);
 
       console.log(`📦 Tool returning inbox content:`, typeof inboxContent, Object.keys(inboxContent || {}));
 
@@ -54,7 +55,9 @@ async function createInboxStructure(
   department: string,
   languageCode: string,
   microlearningId: string,
-  microlearning: MicrolearningContent
+  microlearning: MicrolearningContent,
+  modelProvider?: string,
+  modelOverride?: string
 ) {
   // Maintain in-memory assignment for analytics and tools
   await microlearningService.assignMicrolearningToDepartment(
@@ -70,7 +73,7 @@ async function createInboxStructure(
 
   // Generate dynamic inbox content with AI based on training topic and content
   try {
-    const model = getModel(ModelProvider.WORKERS_AI, Model.WORKERS_AI_GPT_OSS_120B);
+    const model = getModelWithOverride(modelProvider, modelOverride);
     const dynamicInboxData = await generateDynamicInboxWithAI(
       microlearning,
       languageCode,
@@ -84,7 +87,7 @@ async function createInboxStructure(
     console.warn('First attempt to generate dynamic inbox failed, retrying once:', firstError);
 
     try {
-      const model = getModel(ModelProvider.WORKERS_AI, Model.WORKERS_AI_GPT_OSS_120B);
+      const model = getModelWithOverride(modelProvider, modelOverride);
       const dynamicInboxData = await generateDynamicInboxWithAI(
         microlearning,
         languageCode,
@@ -127,7 +130,8 @@ async function generateDynamicInboxWithAI(
           content: `Generate ${topic} UI texts. Return only valid JSON - no markdown, no backticks. Use exact format shown in user prompt.`
         },
         { role: 'user', content: textsPrompt }
-      ]
+      ],
+      ...LOCALIZER_PARAMS,
     }),
     generateInboxEmailsParallel({
       topic,

@@ -16,10 +16,14 @@ const workflowExecutorSchema = z.object({
   level: z.enum(['Beginner', 'Intermediate', 'Advanced']).optional().default('Intermediate').describe('Content difficulty level'),
   priority: z.enum(['low', 'medium', 'high']).optional().default('medium'),
 
-  // Add language parameters  
+  // Add language parameters
   existingMicrolearningId: z.string().optional().describe('ID of existing microlearning to translate'),
   targetLanguage: z.string().optional().nullable().describe('Target language for translation'),
   sourceLanguage: z.string().optional().nullable().describe('Source language (optional)'),
+
+  // Model override parameters (optional)
+  modelProvider: z.enum(['OPENAI', 'WORKERS_AI', 'GOOGLE']).optional().describe('Model provider override'),
+  model: z.string().optional().describe('Model name override (e.g., OPENAI_GPT_4O_MINI)'),
 });
 
 export const workflowExecutorTool = createTool({
@@ -47,7 +51,9 @@ export const workflowExecutorTool = createTool({
             customRequirements: params.customRequirements,
             department: params.department || 'All',
             level: params.level || 'Intermediate',
-            priority: params.priority || 'medium'
+            priority: params.priority || 'medium',
+            modelProvider: params.modelProvider,
+            model: params.model
           }
         });
 
@@ -106,7 +112,11 @@ export const workflowExecutorTool = createTool({
             existingMicrolearningId: params.existingMicrolearningId!,
             department: params.department || 'All',
             targetLanguage: params.targetLanguage!,
-            sourceLanguage: params.sourceLanguage || 'en'
+            // sourceLanguage omitted: workflow will auto-detect from microlearning_metadata.language
+            // This ensures correct language code (e.g., en-US not just en)
+            sourceLanguage: params.sourceLanguage || undefined,  // Only pass if explicitly provided
+            modelProvider: params.modelProvider,
+            model: params.model
           }
         });
 

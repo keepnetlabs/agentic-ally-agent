@@ -32,6 +32,7 @@ export interface MicrolearningMetadata {
     };
     conclusion: string[];
   };
+  language: string;  // Primary language code (e.g., en-US, tr-TR) - used for translation detection
   language_availability: string[];
   gamification_enabled: boolean;
   total_points: number;

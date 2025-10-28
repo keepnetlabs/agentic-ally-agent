@@ -4,7 +4,7 @@ import { analyzeUserPromptTool } from '../tools/analyze-user-prompt-tool';
 import { generateMicrolearningJsonTool } from '../tools/generate-microlearning-json-tool';
 import { generateLanguageJsonTool } from '../tools/generate-language-json-tool';
 import { createInboxStructureTool } from '../tools/create-inbox-structure-tool';
-import { getModel, Model, ModelProvider } from '../model-providers';
+import { getModelWithOverride } from '../model-providers';
 import { MicrolearningService } from '../services/microlearning-service';
 import { KVService } from '../services/kv-service';
 import { generateMicrolearningId, normalizeDepartmentName } from '../utils/language-utils';
@@ -17,6 +17,8 @@ const createInputSchema = z.object({
   department: z.string().optional().default('All'),
   level: z.enum(['Beginner', 'Intermediate', 'Advanced']).optional().default('Intermediate'),
   priority: z.enum(['low', 'medium', 'high']).default('medium'),
+  modelProvider: z.enum(['OPENAI', 'WORKERS_AI', 'GOOGLE']).optional().describe('Model provider (OPENAI, WORKERS_AI, GOOGLE)'),
+  model: z.string().optional().describe('Model name (e.g., OPENAI_GPT_4O_MINI, WORKERS_AI_GPT_OSS_120B)'),
 });
 
 const promptAnalysisSchema = z.object({
@@ -34,7 +36,9 @@ const promptAnalysisSchema = z.object({
     practicalApplications: z.array(z.string()).optional(),
     industries: z.array(z.string()).optional(),
     roles: z.array(z.string()).optional(),
-  })
+  }),
+  modelProvider: z.enum(['OPENAI', 'WORKERS_AI', 'GOOGLE']).optional(),
+  model: z.string().optional(),
 });
 
 const microlearningSchema = z.object({
@@ -42,7 +46,9 @@ const microlearningSchema = z.object({
   data: z.any(), // Microlearning structure
   microlearningId: z.string(),
   analysis: z.any(),
-  microlearningStructure: z.any()
+  microlearningStructure: z.any(),
+  modelProvider: z.enum(['OPENAI', 'WORKERS_AI', 'GOOGLE']).optional(),
+  model: z.string().optional(),
 });
 
 const languageContentSchema = z.object({
@@ -50,7 +56,9 @@ const languageContentSchema = z.object({
   data: z.any(), // Language content
   microlearningId: z.string(),
   analysis: z.any(),
-  microlearningStructure: z.any()
+  microlearningStructure: z.any(),
+  modelProvider: z.enum(['OPENAI', 'WORKERS_AI', 'GOOGLE']).optional(),
+  model: z.string().optional(),
 });
 
 const finalResultSchema = z.object({
@@ -82,17 +90,25 @@ const analyzePromptStep = createStep({
       throw new Error('Analyze user prompt tool is not executable');
     }
 
+    // Pass model provider and model to analyze step
     const analysisRes = await analyzeUserPromptTool.execute({
       userPrompt: inputData.prompt,
       additionalContext: inputData.additionalContext,
       suggestedDepartment: inputData.department,
       suggestedLevel: inputData.level,
       customRequirements: inputData.customRequirements,
+      modelProvider: inputData.modelProvider,
+      model: inputData.model,
     });
 
     if (!analysisRes?.success) throw new Error(`Prompt analysis failed: ${analysisRes?.error}`);
 
-    return analysisRes;
+    return {
+      success: analysisRes.success,
+      data: analysisRes.data,
+      modelProvider: inputData.modelProvider,
+      model: inputData.model,
+    };
   }
 });
 
@@ -105,7 +121,7 @@ const generateMicrolearningStep = createStep({
   execute: async ({ inputData }) => {
     const analysis = inputData.data;
     const microlearningId = generateMicrolearningId(analysis.topic);
-    const model = getModel(ModelProvider.WORKERS_AI, Model.WORKERS_AI_GPT_OSS_120B);
+    const model = getModelWithOverride(inputData.modelProvider, inputData.model);
     console.log('🔍 Generating microlearning structure for:', analysis);
     if (!generateMicrolearningJsonTool.execute) {
       throw new Error('Generate microlearning JSON tool is not executable');
@@ -120,7 +136,15 @@ const generateMicrolearningStep = createStep({
     const microlearningService = new MicrolearningService();
     await microlearningService.storeMicrolearning(genRes.data);
 
-    return { success: true, data: genRes.data, microlearningId, analysis, microlearningStructure: genRes.data } as any;
+    return {
+      success: true,
+      data: genRes.data,
+      microlearningId,
+      analysis,
+      microlearningStructure: genRes.data,
+      modelProvider: inputData.modelProvider,
+      model: inputData.model,
+    } as any;
   }
 });
 
@@ -135,7 +159,7 @@ const generateLanguageStep = createStep({
     const analysis = inputData.analysis;
     const microlearningId = inputData.microlearningId;
 
-    const model = getModel(ModelProvider.WORKERS_AI, Model.WORKERS_AI_GPT_OSS_120B);
+    const model = getModelWithOverride(inputData.modelProvider, inputData.model);
     if (!generateLanguageJsonTool.execute) {
       throw new Error('Generate language JSON tool is not executable');
     }
@@ -155,7 +179,14 @@ const generateLanguageStep = createStep({
       result.data
     );
 
-    return { ...result, microlearningId, analysis, microlearningStructure } as any;
+    return {
+      ...result,
+      microlearningId,
+      analysis,
+      microlearningStructure,
+      modelProvider: inputData.modelProvider,
+      model: inputData.model,
+    } as any;
   }
 });
 
@@ -168,7 +199,9 @@ const createInboxStep = createStep({
     data: z.any(), // language content
     microlearningId: z.string(),
     analysis: z.any(),
-    microlearningStructure: z.any()
+    microlearningStructure: z.any(),
+    modelProvider: z.enum(['OPENAI', 'WORKERS_AI', 'GOOGLE']).optional(),
+    model: z.string().optional(),
   }),
   outputSchema: finalResultSchema,
   execute: async ({ inputData }) => {
@@ -184,7 +217,9 @@ const createInboxStep = createStep({
       department: normalizedDept,
       languageCode: analysis.language,
       microlearningId,
-      microlearning: microlearningStructure
+      microlearning: microlearningStructure,
+      modelProvider: inputData.modelProvider,
+      model: inputData.model
     })
 
     if (!inboxResult?.success) throw new Error(`Inbox creation failed: ${inboxResult?.error}`);
