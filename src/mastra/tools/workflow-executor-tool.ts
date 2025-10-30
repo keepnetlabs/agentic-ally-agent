@@ -2,11 +2,12 @@ import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { createMicrolearningWorkflow } from '../workflows/create-microlearning-workflow';
 import { addLanguageWorkflow } from '../workflows/add-language-workflow';
+import { addMultipleLanguagesWorkflow } from '../workflows/add-multiple-languages-workflow';
 import { v4 as uuidv4 } from 'uuid';
 
 // Tool için schema
 const workflowExecutorSchema = z.object({
-  workflowType: z.enum(['create-microlearning', 'add-language']).describe('Which workflow to execute'),
+  workflowType: z.enum(['create-microlearning', 'add-language', 'add-multiple-languages']).describe('Which workflow to execute'),
 
   // Create microlearning parameters
   prompt: z.string().optional().describe('User prompt for microlearning creation'),
@@ -18,7 +19,8 @@ const workflowExecutorSchema = z.object({
 
   // Add language parameters
   existingMicrolearningId: z.string().optional().describe('ID of existing microlearning to translate'),
-  targetLanguage: z.string().optional().nullable().describe('Target language for translation'),
+  targetLanguage: z.string().optional().nullable().describe('Target language for translation (single language)'),
+  targetLanguages: z.array(z.string()).optional().describe('Target languages for parallel translation (multiple languages)'),
   sourceLanguage: z.string().optional().nullable().describe('Source language (optional)'),
 
   // Model override parameters (optional)
@@ -146,6 +148,59 @@ export const workflowExecutorTool = createTool({
           title: title || 'Microlearning',
           status: 'success'
         };
+
+      } else if (workflowType === 'add-multiple-languages') {
+        if (!params.existingMicrolearningId || !params.targetLanguages || params.targetLanguages.length === 0) {
+          throw new Error('existingMicrolearningId and targetLanguages array are required for add-multiple-languages workflow');
+        }
+
+        const workflow = addMultipleLanguagesWorkflow;
+        const run = await workflow.createRunAsync();
+
+        const result = await run.start({
+          inputData: {
+            existingMicrolearningId: params.existingMicrolearningId,
+            targetLanguages: params.targetLanguages,
+            sourceLanguage: params.sourceLanguage || undefined,
+            department: params.department || 'All',
+            modelProvider: params.modelProvider,
+            model: params.model
+          }
+        });
+
+        // Return workflow result
+        if (result?.status === 'success' && result.result) {
+          const workflowResults = (result.result as any).results || [];
+
+          // Send first successful URL to frontend for UI refresh
+          const firstSuccess = workflowResults.find((r: any) => r.success && r.trainingUrl);
+          if (firstSuccess) {
+            try {
+              const messageId = uuidv4();
+              await writer?.write({ type: 'text-start', id: messageId });
+              await writer?.write({
+                type: 'text-delta',
+                id: messageId,
+                delta: `::ui:canvas_open::${firstSuccess.trainingUrl}\n`
+              });
+              await writer?.write({ type: 'text-end', id: messageId });
+              console.log('URL sent to frontend:', firstSuccess.trainingUrl);
+            } catch (error) {
+              console.error('Failed to send URL to frontend:', error);
+            }
+          }
+
+          return {
+            success: true,
+            successCount: (result.result as any).successCount,
+            failureCount: (result.result as any).failureCount,
+            languages: (result.result as any).languages,
+            results: (result.result as any).results,
+            status: (result.result as any).status
+          };
+        } else {
+          throw new Error('Add multiple languages workflow failed');
+        }
 
       } else {
         throw new Error(`Unknown workflow type: ${workflowType}`);

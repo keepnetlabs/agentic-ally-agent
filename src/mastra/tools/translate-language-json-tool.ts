@@ -4,6 +4,7 @@ import { generateText } from 'ai';
 import { getModelWithOverride } from '../model-providers';
 import { cleanResponse } from '../utils/content-processors/json-cleaner';
 import { LOCALIZER_PARAMS } from '../utils/llm-generation-params';
+import { buildSystemPrompt } from '../utils/localization-language-rules';
 
 
 const TranslateJsonInputSchema = z.object({
@@ -175,115 +176,13 @@ export const translateLanguageJsonTool = new Tool({
             ? `You are localizing content for a ${topic} security training. Use appropriate terminology for this security topic.`
             : 'You are localizing general security training content.';
 
-        const system = `
-            ${topicContext}
-            
-            TASK: Localize JSON values from ${sourceLanguage} to ${targetLanguage} ONLY, producing fluent, culturally natural, native-quality output.
-            
-            ---
-            
-            ## CRITICAL RULES
-            
-            ### 1️⃣ LANGUAGE PURITY
-            - Output ONLY in ${targetLanguage}.  
-            - Do not mix with other languages.  
-            - Keep proper nouns/acronyms that are globally standard in cybersecurity (phishing, CEO, MFA, SPF, DMARC, DKIM, AI).  
-            - If no direct equivalent exists, keep the English term and localize surrounding grammar naturally.
-            
-            ---
-            
-            ### 2️⃣ CONTEXT-AWARE LOCALIZATION (NOT LITERAL)
-            - Focus on **meaning, tone, and natural phrasing**—not word-for-word translation.  
-            - Adapt to the communication style of ${targetLanguage}.  
-            - Avoid robotic, academic, or overly formal tone.  
-            
-            **Content Type Guidance:**
-            - **Titles:** Action-oriented, clear, motivating.  
-            - **Warnings/Alerts:** Direct statement + impact + awareness.  
-            - **Descriptions:** Verb + what + why (practical and concise).  
-            - **Actions/Commands:** Simple active verbs, natural imperatives.  
-            - **Informational Text:** Professional, conversational, never textbook-like.
-            
-            **Localization Patterns (apply to all languages):**
-            1. **Warnings/Threats:** Direct statement → relevant threat → personal impact → awareness call.  
-            2. **Actions:** Simple verb + clear context (active voice).  
-            3. **Descriptions:** Verb + what + why (highlight benefit or purpose).
-            
-            Use direct address where natural (e.g., your / tu / su / vos / 您 / vous), depending on the ${targetLanguage}’s convention.
-            
-            ---
-            
-            ### 3️⃣ STRUCTURE PRESERVATION
-            - Preserve all JSON keys exactly ("0", "1", ..., "${extracted.length - 1}").  
-            - Keep HTML tags and attributes unchanged (same count and order).  
-            - Preserve placeholders and variables:  
-              \`{…}\`, \`{{…}}\`, \`%s\`, \`%d\`, \`{{name}}\`, URLs, emails, timestamps, \`\\n\`, capitalization.  
-            - Never add or remove any tags, placeholders, or extra sentences.  
-            - Example:  
-              <p>Hello <strong>world</strong></p> → <p>[localized]<strong>[localized]</strong></p>
-            
-            ---
-            
-            ### 4️⃣ STYLE (AUTO-ADAPT TO TARGET LANGUAGE)
-            - Automatically adapt sentence rhythm, tone, and idioms to ${targetLanguage} norms.  
-            - Prefer short, natural sentences (approx. 8–18 words).  
-            - Follow native punctuation, date, and number formats.  
-            - Maintain professional but conversational tone.  
-            - Rewrite unnatural literal phrases to sound native while preserving meaning.
-            
-            ---
-            #### 🎯 TONE ADAPTATION (MOTIVATIONAL & PROFESSIONAL)
-            - Adapt motivational or congratulatory phrases (e.g., "Well done", "Great job", "Nice work")
-            to sound natural and culturally appropriate in ${targetLanguage}.  
-            - Preserve a professional, confident, and encouraging tone suitable for adult learning.  
-            - Avoid childish or exaggerated expressions that sound like teacher–student speech.  
-            - Use tone that fits workplace microlearning: respectful, motivating, professional.  
-          
-            ---
+        const system = buildSystemPrompt({
+            topicContext,
+            sourceLanguage,
+            targetLanguage,
+            extractedLength: extracted.length
+        });
 
-            ### 5️⃣ TERMINOLOGY
-            - Use **standard cybersecurity terminology** used in ${targetLanguage}.  
-            - Do NOT invent new terms.  
-            - Keep global acronyms (MFA, SPF, DMARC, DKIM) as is unless a localized standard exists.  
-            - When uncertain, choose the most common enterprise security usage in ${targetLanguage}.  
-            
-            ---
-            
-            ### 6️⃣ FEW-SHOT SCAFFOLD (ILLUSTRATIVE)
-            *(Adapt these patterns to ${targetLanguage}; they define tone, not wording.)*
-            
-            **[Warning]**  
-            SRC: "Phishing alert: Do not open unexpected attachments — they may install malware."  
-            TGT: "[Natural ${targetLanguage} equivalent: clear, direct, professional warning]"
-            
-            **[Action]**  
-            SRC: "Verify the sender’s address before clicking any link."  
-            TGT: "[Natural ${targetLanguage} equivalent: polite imperative in active voice]"
-            
-            **[Description]**  
-            SRC: "Report suspicious emails so we can block similar attacks."  
-            TGT: "[Natural ${targetLanguage} equivalent: concise call to action with benefit]"
-            
-            ---
-            
-            ### 7️⃣ VALIDATION BEFORE OUTPUT
-            1. JSON keys must match source exactly (0…${extracted.length - 1}).  
-            2. Text fully localized in ${targetLanguage} (no mixed fragments).  
-            3. HTML tags, placeholders, and capitalization identical in structure.  
-            4. Meaning preserved — no omissions or additions.  
-            5. Output strictly valid JSON (no comments or metadata).  
-            
-            ---
-            
-            ### ✅ OUTPUT FORMAT (STRICT)
-            Return ONLY this JSON object:
-            {
-              "0": "localized value in ${targetLanguage}",
-              "1": "localized value in ${targetLanguage}"
-            }
-              
-            Keep all keys "0" to "${extracted.length - 1}".
-            `.trim()
 
         // Step 3: Translate each chunk with parallel processing and retry
         const BATCH_SIZE = 3; // Process 3 chunks in parallel

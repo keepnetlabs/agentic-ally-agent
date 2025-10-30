@@ -127,7 +127,7 @@ Use workflow-executor tool with exactly these parameters:
 - modelProvider: [optional, from context if provided: OPENAI, WORKERS_AI, GOOGLE]
 - model: [optional, from context if provided: e.g., OPENAI_GPT_4O_MINI, WORKERS_AI_GPT_OSS_120B]
 
-**Add Language Translation:**
+**Add Single Language Translation:**
 Use workflow-executor tool with:
 - workflowType: 'add-language'
 - targetLanguage: [BCP-47 code: language-REGION (e.g.,en-gb, tr-tr, en-us, de-de, fr-fr,fr-ca, es-es, pt-br, zh-cn, ja-jp, ar-sa, ko-kr)]
@@ -136,6 +136,21 @@ Use workflow-executor tool with:
 - department: [extract from recent conversation or from created training metadata - IMPORTANT: preserve original department]
 - modelProvider: [optional, from context if provided: OPENAI, WORKERS_AI, GOOGLE]
 - model: [optional, from context if provided: e.g., OPENAI_GPT_4O_MINI, WORKERS_AI_GPT_OSS_120B]
+
+**Add Multiple Languages (Parallel Processing - 2-12 Languages):**
+When user requests multiple languages (e.g., "Add French, German, Spanish"), use workflow-executor tool with:
+- workflowType: 'add-multiple-languages'
+- existingMicrolearningId: [use microlearningId from recent creation or find using knowledge-search]
+- targetLanguages: [array of BCP-47 codes: e.g., ["fr-fr", "de-de", "es-es", "pt-br", "ja-jp"]]
+- department: [extract from recent conversation or from created training metadata]
+- sourceLanguage: [optional, usually auto-detected]
+- modelProvider: [optional, from context if provided: OPENAI, WORKERS_AI, GOOGLE]
+- model: [optional, from context if provided: e.g., OPENAI_GPT_4O_MINI, WORKERS_AI_GPT_OSS_120B]
+
+**When to Use Each:**
+- Single language (1 language only) → Use workflow-executor tool with workflowType: 'add-language'
+- Multiple languages (2-12 languages) → Use workflow-executor tool with workflowType: 'add-multiple-languages' for parallel processing
+- Mixed scenario (already has some languages, adding more) → Use workflow-executor with 'add-multiple-languages' for all new languages at once
 
 ## Key Rules
 - Never execute without Topic + Department + Level + confirmation (or Assumption Mode applied)
