@@ -1,11 +1,11 @@
 import { PromptAnalysis } from '../../types/prompt-analysis';
 import { MicrolearningContent } from '../../types/microlearning';
-import { buildBaseContext } from '../../utils/prompt-builders/base-context-builder';
+import { buildContextData } from '../../utils/prompt-builders/base-context-builder';
 
 export function generateScene6Prompt(analysis: PromptAnalysis, microlearning: MicrolearningContent): string {
-  const baseContext = buildBaseContext(analysis, microlearning);
+  const contextData = buildContextData(analysis, microlearning);
 
-  return `${baseContext}
+  return `${contextData}
 
 Generate scene 6 (survey):
 {

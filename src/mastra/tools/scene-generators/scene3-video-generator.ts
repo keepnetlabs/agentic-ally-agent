@@ -1,12 +1,12 @@
 import { PromptAnalysis } from '../../types/prompt-analysis';
 import { MicrolearningContent } from '../../types/microlearning';
-import { buildBaseContext } from '../../utils/prompt-builders/base-context-builder';
+import { buildContextData } from '../../utils/prompt-builders/base-context-builder';
 import { selectVideoForTopic, generateVideoMetadata } from '../../utils/video-selector';
 import transcriptDatabase from '../../data/transcript-database.json';
 
 
 export async function generateVideoPrompt(analysis: PromptAnalysis, microlearning: MicrolearningContent): Promise<{ prompt: string; videoUrl: string; transcript: string }> {
-  const baseContext = buildBaseContext(analysis, microlearning);
+  const contextData = buildContextData(analysis, microlearning);
 
 
   // Select appropriate video using AI
@@ -29,7 +29,7 @@ export async function generateVideoPrompt(analysis: PromptAnalysis, microlearnin
   );
   console.log(`📊 Video metadata generated: title="${videoMetadata.title}", subtitle="${videoMetadata.subtitle}"`);
 
-  const prompt = `${baseContext}
+  const prompt = `${contextData}
 
 SCENE 3 - VIDEO SCENARIO (TOPIC-SPECIFIC PATTERNS):
 Topic: ${analysis.topic} | Department: ${analysis.department || 'General'} | Language: ${analysis.language}

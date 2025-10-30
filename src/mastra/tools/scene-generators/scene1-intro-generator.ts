@@ -1,11 +1,11 @@
 import { PromptAnalysis } from '../../types/prompt-analysis';
 import { MicrolearningContent } from '../../types/microlearning';
-import { buildBaseContext } from '../../utils/prompt-builders/base-context-builder';
+import { buildContextData } from '../../utils/prompt-builders/base-context-builder';
 
 export function generateScene1Prompt(analysis: PromptAnalysis, microlearning: MicrolearningContent): string {
-  const baseContext = buildBaseContext(analysis, microlearning);
+  const contextData = buildContextData(analysis, microlearning);
 
-  return `${baseContext}
+  return `${contextData}
 
 SCENE 1 - INTRO (PATTERN-BASED GENERATION):
 Topic: ${analysis.topic} | Department: ${analysis.department || 'General'} | Language: ${analysis.language}
@@ -55,7 +55,7 @@ NOT: 'Sender addresses fake' (technical) or 'Always verify' (imperative).",
       },
       {
         "iconName": "users",
-        "text": "REMEMBER statement (≤8 words): Start with 'Remember that'. Topic and Department-aware empowering action. Pattern: [action/strategy] [prevents/protects/stops] [outcome]. Department focus: Finance→fraud/money/verification | Operations/IT→system/speed/reliability | HR/General→team/safety. Examples: Phishing+Finance→'Remember that verification prevents fraud' | Phishing+IT→'Remember that quick action stops spread' | Phishing+General→'Remember that anyone can be targeted' | Password+IT→'Remember that strong passwords stop breaches'. Generate contextually for ${analysis.topic} + ${analysis.department}."
+        "text": "REMEMBER statement (≤8 words): Start with 'Remember that'. Topic and Department-aware empowering action. Pattern: [action/strategy] [prevents/protects/stops] [outcome]. Department focus: Finance→fraud/money/verification | Operations/IT→system/speed/reliability | HR/General→team/safety. Examples: Phishing+Finance→'Remember that verification prevents fraud' | Phishing+IT→'Remember that quick action stops spread' | Phishing+General→'Remember that anyone can be targeted' | Password+IT→'Remember that strong passwords stop breaches'. Use conversational language - words you'd use when explaining to a colleague. Generate contextually for ${analysis.topic} + ${analysis.department}."
       },
       {
         "iconName": "shield-check",

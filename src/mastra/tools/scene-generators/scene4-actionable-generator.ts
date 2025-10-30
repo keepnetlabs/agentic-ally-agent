@@ -1,11 +1,11 @@
 import { PromptAnalysis } from '../../types/prompt-analysis';
 import { MicrolearningContent } from '../../types/microlearning';
-import { buildBaseContext } from '../../utils/prompt-builders/base-context-builder';
+import { buildContextData } from '../../utils/prompt-builders/base-context-builder';
 
 export function generateScene4Prompt(analysis: PromptAnalysis, microlearning: MicrolearningContent): string {
-  const baseContext = buildBaseContext(analysis, microlearning);
+  const contextData = buildContextData(analysis, microlearning);
 
-  return `${baseContext}
+  return `${contextData}
 
 ACTIONABLE SCENE (Always inbox-based):
 CRITICAL: This scene is ALWAYS an email inbox simulation, regardless of topic.

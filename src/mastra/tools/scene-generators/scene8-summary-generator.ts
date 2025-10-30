@@ -1,10 +1,10 @@
 import { PromptAnalysis } from '../../types/prompt-analysis';
 import { MicrolearningContent } from '../../types/microlearning';
-import { buildBaseContext } from '../../utils/prompt-builders/base-context-builder';
+import { buildContextData } from '../../utils/prompt-builders/base-context-builder';
 import { getResourcesForScene8 } from '../../utils/url-resolver';
 
 export function generateScene8Prompt(analysis: PromptAnalysis, microlearning: MicrolearningContent): string {
-  const baseContext = buildBaseContext(analysis, microlearning);
+  const contextData = buildContextData(analysis, microlearning);
 
   // Dynamically resolve resources using keyTopics (more accurate) + category fallback
   console.log('🔍 Scene 8 - Resource Resolution Debug:');
@@ -26,7 +26,7 @@ export function generateScene8Prompt(analysis: PromptAnalysis, microlearning: Mi
     .map((resource, index) => `${index + 1}. ${resource.title}: ${resource.url}`)
     .join('\n');
 
-  return `${baseContext}
+  return `${contextData}
 
 === AUTHORITATIVE RESOURCE URLS (Dynamic: keyTopics-based Resolution)
 

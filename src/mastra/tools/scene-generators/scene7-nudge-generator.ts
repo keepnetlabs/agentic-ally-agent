@@ -1,14 +1,14 @@
 import { PromptAnalysis } from '../../types/prompt-analysis';
 import { MicrolearningContent } from '../../types/microlearning';
-import { buildBaseContext } from '../../utils/prompt-builders/base-context-builder';
+import { buildContextData } from '../../utils/prompt-builders/base-context-builder';
 
 export function generateScene7Prompt(analysis: PromptAnalysis, microlearning: MicrolearningContent): string {
-  const baseContext = buildBaseContext(analysis, microlearning);
+  const contextData = buildContextData(analysis, microlearning);
 
   // Use keyTopics to provide more specific context for dynamic nudge generation
   const keyTopicsHint = analysis.keyTopics?.slice(0, 3).join(', ') || 'general security practice';
 
-  return `${baseContext}
+  return `${contextData}
 
 SCENE 7 - NUDGE (Implementation Intention Reminder):
 Topic: ${analysis.topic} | Key Topics: ${keyTopicsHint} | Category: ${analysis.category} | Language: ${analysis.language}

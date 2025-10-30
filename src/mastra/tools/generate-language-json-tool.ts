@@ -4,6 +4,7 @@ import { PromptAnalysis } from '../types/prompt-analysis';
 import { MicrolearningContent, LanguageContent } from '../types/microlearning';
 import { GenerateLanguageJsonSchema, GenerateLanguageJsonOutputSchema } from '../schemas/generate-language-json-schema';
 import { getAppTexts, getAppAriaTexts } from '../utils/app-texts';
+import { buildSystemPrompt } from '../utils/prompt-builders/base-context-builder';
 import { generateScene1Prompt } from './scene-generators/scene1-intro-generator';
 import { generateScene2Prompt } from './scene-generators/scene2-goal-generator';
 import { generateVideoPrompt } from './scene-generators/scene3-video-generator';
@@ -79,29 +80,11 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
       level: analysis.level
     });
 
-    // Optimized system prompts for GPT-5 Nano (concise, bullet format)
-    const baseSystemPrompt = `You generate ${analysis.language} microlearning scenes.
+    // Build system prompt with language rules and behavior
+    const systemPrompt = buildSystemPrompt(analysis.language);
 
-CRITICAL RULES:
-1. Return ONLY valid JSON (no markdown, no backticks)
-2. Use EXACT fields from template - NO extra keys
-3. Simple, conversational language - NOT formal
-4. Use real Lucide icon names (e.g., "mail-warning", "shield-check")
-
-Start directly with {`;
-
-    const videoSystemPrompt = baseSystemPrompt + `\n5. NEVER use \\n in transcript - use actual line breaks`;
-
-    // Log generation parameters being used
-    console.log('🎛️ Using scene-specific generation parameters:');
-    console.log(`   Scene 1 (Intro): temp=${SCENE_GENERATION_PARAMS[1].temperature}, topP=${SCENE_GENERATION_PARAMS[1].topP}`);
-    console.log(`   Scene 2 (Goals): temp=${SCENE_GENERATION_PARAMS[2].temperature}, topP=${SCENE_GENERATION_PARAMS[2].topP}`);
-    console.log(`   Scene 3 (Video): temp=${SCENE_GENERATION_PARAMS[3].temperature}, topP=${SCENE_GENERATION_PARAMS[3].topP}`);
-    console.log(`   Scene 4 (Actions): temp=${SCENE_GENERATION_PARAMS[4].temperature}, topP=${SCENE_GENERATION_PARAMS[4].topP}`);
-    console.log(`   Scene 5 (Quiz): temp=${SCENE_GENERATION_PARAMS[5].temperature}, topP=${SCENE_GENERATION_PARAMS[5].topP}`);
-    console.log(`   Scene 6 (Survey): temp=${SCENE_GENERATION_PARAMS[6].temperature}, topP=${SCENE_GENERATION_PARAMS[6].topP}`);
-    console.log(`   Scene 7 (Nudge): temp=${SCENE_GENERATION_PARAMS[7].temperature}, topP=${SCENE_GENERATION_PARAMS[7].topP}`);
-    console.log(`   Scene 8 (Summary): temp=${SCENE_GENERATION_PARAMS[8].temperature}, topP=${SCENE_GENERATION_PARAMS[8].topP}`);
+    // Video-specific system prompt (adds transcript rule)
+    const videoSystemPrompt = systemPrompt + `\n\nVIDEO-SPECIFIC RULE:\n- NEVER use \\n in transcript - use actual line breaks`;
 
     // Generate content in parallel for better performance and reliability
     const startTime = Date.now();
@@ -109,7 +92,7 @@ Start directly with {`;
       generateText({
         model: model,
         messages: [
-          { role: 'system', content: baseSystemPrompt },
+          { role: 'system', content: systemPrompt },
           { role: 'user', content: scene1Prompt }
         ],
         ...SCENE_GENERATION_PARAMS[1]  // Scene 1: Intro (creative)
@@ -120,7 +103,7 @@ Start directly with {`;
       generateText({
         model: model,
         messages: [
-          { role: 'system', content: baseSystemPrompt },
+          { role: 'system', content: systemPrompt },
           { role: 'user', content: scene2Prompt }
         ],
         ...SCENE_GENERATION_PARAMS[2]  // Scene 2: Goals (factual)
@@ -142,7 +125,7 @@ Start directly with {`;
       generateText({
         model: model,
         messages: [
-          { role: 'system', content: baseSystemPrompt },
+          { role: 'system', content: systemPrompt },
           { role: 'user', content: scene4Prompt }
         ],
         ...SCENE_GENERATION_PARAMS[4]  // Scene 4: Actions (specific)
@@ -153,7 +136,7 @@ Start directly with {`;
       generateText({
         model: model,
         messages: [
-          { role: 'system', content: baseSystemPrompt },
+          { role: 'system', content: systemPrompt },
           { role: 'user', content: scene5Prompt }
         ],
         ...SCENE_GENERATION_PARAMS[5]  // Scene 5: Quiz (precise)
@@ -164,7 +147,7 @@ Start directly with {`;
       generateText({
         model: model,
         messages: [
-          { role: 'system', content: baseSystemPrompt },
+          { role: 'system', content: systemPrompt },
           { role: 'user', content: scene6Prompt }
         ],
         ...SCENE_GENERATION_PARAMS[6]  // Scene 6: Survey (neutral)
@@ -175,7 +158,7 @@ Start directly with {`;
       generateText({
         model: model,
         messages: [
-          { role: 'system', content: baseSystemPrompt },
+          { role: 'system', content: systemPrompt },
           { role: 'user', content: scene7Prompt }
         ],
         ...SCENE_GENERATION_PARAMS[7]  // Scene 7: Nudge (engaging)
@@ -186,7 +169,7 @@ Start directly with {`;
       generateText({
         model: model,
         messages: [
-          { role: 'system', content: baseSystemPrompt },
+          { role: 'system', content: systemPrompt },
           { role: 'user', content: scene8Prompt }
         ],
         ...SCENE_GENERATION_PARAMS[8]  // Scene 8: Summary (consistent)
