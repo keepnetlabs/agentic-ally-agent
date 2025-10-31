@@ -2,10 +2,36 @@ import { PromptAnalysis } from '../../types/prompt-analysis';
 import { MicrolearningContent } from '../../types/microlearning';
 
 /**
+ * Get level-specific vocabulary guidance for RULE 3
+ */
+function getVocabularyGuidance(level: string): { simplification: string; conversational: string } {
+   const guidance: Record<string, { simplification: string; conversational: string }> = {
+      'Beginner': {
+         simplification: '• Avoid ALL technical jargon - use only everyday words that anyone would understand',
+         conversational: '• Explain as if talking to someone completely new to the topic'
+      },
+      'Intermediate': {
+         simplification: '• Simplify technical jargon: if a word requires domain expertise to understand, replace it with an everyday equivalent',
+         conversational: '• Use words a non-expert would use in casual conversation'
+      },
+      'Advanced': {
+         simplification: '• Use professional technical vocabulary - audience has domain knowledge',
+         conversational: '• Write for experienced practitioners who understand industry terminology'
+      }
+   };
+
+   return guidance[level] || guidance['Beginner'];
+}
+
+/**
  * Build system prompt (AI identity and behavior)
  * Contains language rules and output constraints
+ * Adapts technical vocabulary based on learner level
  */
-export function buildSystemPrompt(language: string): string {
+export function buildSystemPrompt(language: string, level?: string): string {
+   // Level-specific technical vocabulary guidance
+   const vocabularyGuidance = getVocabularyGuidance(level || 'Beginner');
+
    return `You are a native ${language} microlearning content generator.
 
 === YOUR IDENTITY ===
@@ -33,8 +59,8 @@ RULE 3: Quality & Readability
 • Clear, active verbs and smooth sentence flow
 • Short sentences (≈8–18 words), one idea per line
 • Plain, concrete vocabulary; avoid academic or bureaucratic style
-• Simplify technical jargon: if a word requires domain expertise to understand, replace it with an everyday equivalent
-• Use words a non-expert would use in casual conversation
+${vocabularyGuidance.simplification}
+${vocabularyGuidance.conversational}
 • Consistent terminology, voice, and perspective throughout
 
 RULE 4: Clarity & Authenticity
@@ -70,14 +96,6 @@ If the answer is NO → rewrite before output.
  * Contains topic, department, objectives, and scientific context
  */
 export function buildContextData(analysis: PromptAnalysis, microlearning: MicrolearningContent): string {
-   const levelRules = {
-      'Beginner': 'Keep simple, one control/concept, one benefit',
-      'Intermediate': 'Combine related concepts, practical scenarios',
-      'Advanced': 'Multiple controls, business impact, strategic context'
-   };
-
-   const levelRule = levelRules[analysis.level as keyof typeof levelRules] || levelRules['Beginner'];
-
    return `
 Generate ${analysis.language} training content for "${analysis.topic}" in STRICT JSON only.
 
@@ -109,9 +127,6 @@ SCIENTIFIC CONTEXT:
    - Content must align with the given category/subcategory and key topics.
    - Security-specific terms (phishing, reporting, email) are allowed **only** if category/key topics explicitly mention them.
    - Choose Lucide icons semantically matched to topic/category. Never default to generic security icons unless explicitly relevant.
-
-3. **Level Adaptation**
-   - ${levelRule}
 `;
 }
 

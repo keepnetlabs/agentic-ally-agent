@@ -80,8 +80,8 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
       level: analysis.level
     });
 
-    // Build system prompt with language rules and behavior
-    const systemPrompt = buildSystemPrompt(analysis.language);
+    // Build system prompt with language rules and behavior (level-adaptive vocabulary)
+    const systemPrompt = buildSystemPrompt(analysis.language, analysis.level);
 
     // Video-specific system prompt (adds transcript rule)
     const videoSystemPrompt = systemPrompt + `\n\nVIDEO-SPECIFIC RULE:\n- NEVER use \\n in transcript - use actual line breaks`;

@@ -214,21 +214,8 @@ const translateLanguageStep = createStep({
         console.error(`❌ DEBUG: No data found at key ${verifyKey}`);
       }
 
-      // Update language_availability in microlearning metadata
-      const updatedMicrolearning = { ...microlearningStructure };
-      if (updatedMicrolearning.microlearning_metadata) {
-        const currentLanguages = updatedMicrolearning.microlearning_metadata.language_availability || [];
-        const newLanguage = targetLanguage.toLowerCase();
-
-        // Add new language if not already present
-        if (!currentLanguages.includes(newLanguage)) {
-          updatedMicrolearning.microlearning_metadata.language_availability = [...currentLanguages, newLanguage];
-
-          // Store updated microlearning structure
-          await kvService.updateMicrolearning(updatedMicrolearning);
-          console.log(`✅ Updated language_availability: [${updatedMicrolearning.microlearning_metadata.language_availability.join(', ')}]`);
-        }
-      }
+      // Update language_availability atomically (prevents race conditions in parallel workflows)
+      await kvService.updateLanguageAvailabilityAtomic(microlearningId, targetLanguage);
 
     } catch (kvError) {
       console.error('❌ KVService storage failed in worker environment:', kvError);

@@ -133,10 +133,10 @@ export const INBOX_TEXT_PARAMS: GenerationParams = {
  * - presencePenalty: Encourage vocabulary variety and natural expressions
  */
 export const LOCALIZER_PARAMS: GenerationParams & { frequencyPenalty?: number; presencePenalty?: number } = {
-  temperature: 0.65,   // MODERATE - Natural phrasing + meaning preservation balance
+  temperature: 0.15,   // MODERATE - Natural phrasing + meaning preservation balance
   topP: 0.92,          // Good diversity while maintaining control
-  frequencyPenalty: 0.2,   // Avoid repetitive words - encourages natural language
-  presencePenalty: 0.3     // Encourage vocabulary variety - feels more native
+  frequencyPenalty: 0.1,   // Avoid repetitive words - encourages natural language
+  presencePenalty: 0.0     // Encourage vocabulary variety - feels more native
 };
 
 /**

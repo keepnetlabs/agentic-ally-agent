@@ -253,6 +253,35 @@ export class KVService {
     }
   }
 
+  // Atomically update language_availability (read-modify-write)
+  async updateLanguageAvailabilityAtomic(microlearningId: string, newLanguages: string | string[]): Promise<boolean> {
+    try {
+      const baseKey = `ml:${microlearningId}:base`;
+      const baseData = await this.get(baseKey);
+
+      if (!baseData?.microlearning_metadata) {
+        throw new Error('Microlearning not found or invalid');
+      }
+
+      // Merge existing + new languages
+      const existing = baseData.microlearning_metadata.language_availability || [];
+      const toAdd = Array.isArray(newLanguages) ? newLanguages : [newLanguages];
+      const merged = [...new Set([...existing, ...toAdd])].map(l => l.toLowerCase()).sort();
+
+      // Single atomic update
+      baseData.microlearning_metadata.language_availability = merged;
+      const success = await this.put(baseKey, baseData);
+
+      if (success) {
+        console.log(`✅ Updated language_availability: [${merged.join(', ')}]`);
+      }
+      return success;
+    } catch (error) {
+      console.error(`Failed to update language availability ${microlearningId}:`, error);
+      return false;
+    }
+  }
+
   // Store inbox content for a specific department and language
   async storeInboxContent(microlearningId: string, department: string, language: string, inboxPayload: any): Promise<boolean> {
     try {

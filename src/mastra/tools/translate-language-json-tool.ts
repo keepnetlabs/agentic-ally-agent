@@ -1,12 +1,15 @@
 import { Tool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { generateText } from 'ai';
+import * as parse5 from 'parse5'; // ← npm: parse5
 import { getModelWithOverride } from '../model-providers';
 import { cleanResponse } from '../utils/content-processors/json-cleaner';
 import { LOCALIZER_PARAMS } from '../utils/llm-generation-params';
 import { buildSystemPrompt } from '../utils/localization-language-rules';
 
-
+/* =========================================================
+ * Schemas
+ * =======================================================*/
 const TranslateJsonInputSchema = z.object({
     json: z.any(),
     sourceLanguage: z.string().optional().default('English'),
@@ -23,83 +26,87 @@ const TranslateJsonOutputSchema = z.object({
     error: z.string().optional()
 });
 
-// Helper: Protect HTML tags during translation (industrial standard approach)
+/* =========================================================
+ * HTML: auto-fix (parse5) + protect/restore
+ * =======================================================*/
+
+/** Bozuk/eksik kapanışlı HTML’i tarayıcı standardına göre normalize eder. */
+function autoFixHtml(html: string): string {
+    try {
+        // Fragment kullan: <p>..</p> gibi gömülü HTML’lerde <html><body> sarmalaması eklenmez
+        const frag = parse5.parseFragment(html);
+        return parse5.serialize(frag);
+    } catch {
+        return html; // graceful fallback
+    }
+}
+
+/** Tag’leri token’layıp koru (LLM dokunmasın). */
 function protectHtmlTags(text: string): { protectedText: string; tagMap: Map<number, string> } {
     const tagMap = new Map<number, string>();
     let index = 0;
-
-    // Replace HTML tags with unique tokens
     const protectedText = text.replace(/<[^>]+>/g, (tag) => {
         const token = `__HTML${index}__`;
         tagMap.set(index, tag);
         index++;
         return token;
     });
-
     return { protectedText, tagMap };
 }
 
-// Helper: Restore HTML tags after translation
+/** Token’lanmış tag’leri geri yükle. */
 function restoreHtmlTags(text: string, tagMap: Map<number, string>): string {
-    let restored = text;
-    tagMap.forEach((tag, index) => {
-        // Use global replace to handle potential duplicates (edge case)
-        const token = `__HTML${index}__`;
-        restored = restored.split(token).join(tag);  // Safer than .replaceAll() for older JS
+    let out = text;
+    tagMap.forEach((tag, idx) => {
+        out = out.split(`__HTML${idx}__`).join(tag);
     });
-    return restored;
+    return out;
 }
 
-// Helper: Extract strings with paths and context
+/* =========================================================
+ * Extraction (yol + hafif bağlam) — HTML bulunan her string: auto-fix + protect
+ * =======================================================*/
 interface ExtractedString {
     path: string;
     value: string;
     context: string;
-    tagMap?: Map<number, string>;  // Store tag map for HTML content
+    tagMap?: Map<number, string>;
 }
 
 function extractStringsWithPaths(obj: any, protectedKeys: string[], currentPath = ''): ExtractedString[] {
     const results: ExtractedString[] = [];
 
-    const isProtectedKey = (key: string) => {
-        return protectedKeys.some(pk => key.toLowerCase().includes(pk.toLowerCase())) ||
-            /^(icon(Name)?|id(s)?|url|src|scene_type|type|difficulty|headers|timestamp|sender)$/i.test(key);
-    };
+    const isProtectedKey = (key: string) =>
+        protectedKeys.some(pk => key.toLowerCase().includes(pk.toLowerCase())) ||
+        /^(icon(Name)?|id(s)?|url|src|scene_type|type|difficulty|headers|timestamp|sender)$/i.test(key);
 
     function traverse(current: any, path: string) {
         if (typeof current === 'string') {
-            const pathParts = path.split('.');
-            const lastKey = pathParts[pathParts.length - 1];
-
-            // Skip protected keys
+            const parts = path.split('.');
+            const lastKey = parts[parts.length - 1];
             if (isProtectedKey(lastKey)) return;
 
-            // Determine context from path
             let context = 'text';
-            if (lastKey.includes('title') || lastKey.includes('Title')) context = 'title';
-            else if (lastKey.includes('subject') || lastKey.includes('Subject')) context = 'email_subject';
-            else if (lastKey.includes('description') || lastKey.includes('Description')) context = 'description';
-            else if (lastKey.includes('content') || lastKey.includes('Content')) context = 'content';
-            else if (lastKey.includes('message') || lastKey.includes('Message')) context = 'message';
-            else if (lastKey.includes('explanation')) context = 'explanation';
+            const lk = lastKey.toLowerCase();
+            if (lk.includes('title')) context = 'title';
+            else if (lk.includes('subject')) context = 'email_subject';
+            else if (lk.includes('description')) context = 'description';
+            else if (lk.includes('content')) context = 'content';
+            else if (lk.includes('message')) context = 'message';
+            else if (lk.includes('explanation')) context = 'explanation';
 
-            // Apply HTML tag protection for content fields with HTML
             const hasHtml = current.includes('<') && current.includes('>');
-            if (hasHtml && (context === 'content' || lastKey === 'content')) {
-                const { protectedText, tagMap } = protectHtmlTags(current);
+            if (hasHtml) {
+                const fixed = autoFixHtml(current);                    // ← önce onar
+                const { protectedText, tagMap } = protectHtmlTags(fixed); // ← sonra koru
                 results.push({ path, value: protectedText, context, tagMap });
             } else {
                 results.push({ path, value: current, context });
             }
         } else if (Array.isArray(current)) {
-            current.forEach((item, index) => {
-                traverse(item, path ? `${path}[${index}]` : `[${index}]`);
-            });
+            current.forEach((item, i) => traverse(item, path ? `${path}[${i}]` : `[${i}]`));
         } else if (current && typeof current === 'object') {
-            Object.keys(current).forEach(key => {
-                const newPath = path ? `${path}.${key}` : key;
-                traverse(current[key], newPath);
-            });
+            Object.keys(current).forEach((k) => traverse(current[k], path ? `${path}.${k}` : k));
         }
     }
 
@@ -107,71 +114,131 @@ function extractStringsWithPaths(obj: any, protectedKeys: string[], currentPath 
     return results;
 }
 
-// Helper: Bind translated strings back to structure
+/* =========================================================
+ * Bind back
+ * =======================================================*/
 function bindTranslatedStrings(original: any, extracted: ExtractedString[], translated: string[]): any {
     if (extracted.length !== translated.length) {
         throw new Error(`Mismatch: extracted ${extracted.length} strings but got ${translated.length} translations`);
     }
-
-    const result = JSON.parse(JSON.stringify(original)); // Deep clone
-
-    extracted.forEach((item, index) => {
-        let translatedValue = translated[index];
-
-        // Restore HTML tags if they were protected
+    const result = JSON.parse(JSON.stringify(original));
+    extracted.forEach((item, idx) => {
+        let val = translated[idx];
         if (item.tagMap && item.tagMap.size > 0) {
-            translatedValue = restoreHtmlTags(translatedValue, item.tagMap);
+            val = restoreHtmlTags(val, item.tagMap);
         }
-
-        const pathParts = item.path.split(/\.|\[|\]/).filter(p => p);
-
-        let current = result;
-        for (let i = 0; i < pathParts.length - 1; i++) {
-            const part = pathParts[i];
-            const isArrayIndex = !isNaN(Number(part));
-            current = current[isArrayIndex ? Number(part) : part];
+        const parts = item.path.split(/\.|\[|\]/).filter(Boolean);
+        let cur = result;
+        for (let i = 0; i < parts.length - 1; i++) {
+            const p = parts[i];
+            cur = cur[isNaN(Number(p)) ? p : Number(p)];
         }
-
-        const lastPart = pathParts[pathParts.length - 1];
-        const isArrayIndex = !isNaN(Number(lastPart));
-        current[isArrayIndex ? Number(lastPart) : lastPart] = translatedValue;
+        const last = parts[parts.length - 1];
+        cur[isNaN(Number(last)) ? last : Number(last)] = val;
     });
-
     return result;
 }
 
+/* =========================================================
+ * Robustness helpers (placeholder/ICU/URL/email/whitespace)
+ * =======================================================*/
+const ICU_TOKEN_RE = /\{[^}]*,(\s*plural|\s*select)[^}]*\}/g;
+const SIMPLE_PLACEHOLDER_RE = /%[sd]|{{\s*[\w.-]+\s*}}|\{[\w.-]+\}/g;
+const URL_RE = /\bhttps?:\/\/[^\s<>"']+/gi;
+const EMAIL_RE = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi;
+
+function collectPlaceholders(s: string): string[] {
+    return [
+        ...(s.match(ICU_TOKEN_RE) || []),
+        ...(s.match(SIMPLE_PLACEHOLDER_RE) || []),
+    ].sort();
+}
+function placeholdersEqual(src: string, tgt: string): boolean {
+    const a = collectPlaceholders(src);
+    const b = collectPlaceholders(tgt);
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+    return true;
+}
+function stringsEqualSet(a: string[], b: string[]) {
+    const A = new Set(a.map((x) => x.toLowerCase()));
+    const B = new Set(b.map((x) => x.toLowerCase()));
+    if (A.size !== B.size) return false;
+    for (const x of A) if (!B.has(x)) return false;
+    return true;
+}
+function edgeWhitespaceSig(s: string) {
+    const lead = s.match(/^\s*/)?.[0] ?? '';
+    const tail = s.match(/\s*$/)?.[0] ?? '';
+    return { lead, tail };
+}
+function isTrivialValue(s: string) {
+    const trimmed = s.trim();
+    if (trimmed === '') return true;
+    if (/^({{[\w.-]+}}|%[sd]|\{[\w.-]+\})$/.test(trimmed)) return true;
+    return false;
+}
+
+/* =========================================================
+ * Chunking
+ * =======================================================*/
+function computeChunkSize(items: ExtractedString[], maxJsonChars = 28_000) {
+    let size = 50;
+    let sample = Object.fromEntries(items.slice(0, size).map((it, i) => [String(i), it.value]));
+    let test = JSON.stringify(sample).length;
+    while (test > maxJsonChars && size > 5) {
+        size = Math.max(5, Math.floor(size * 0.7));
+        sample = Object.fromEntries(items.slice(0, size).map((it, i) => [String(i), it.value]));
+        test = JSON.stringify(sample).length;
+    }
+    return size;
+}
+
+/* =========================================================
+ * Tool
+ * =======================================================*/
 export const translateLanguageJsonTool = new Tool({
     id: 'translate_language_json',
     description: 'Translate only string values in a JSON while preserving structure, keys and non-string types',
     inputSchema: TranslateJsonInputSchema,
     outputSchema: TranslateJsonOutputSchema,
     execute: async (context: any) => {
-        const { json, sourceLanguage = 'English', targetLanguage, topic, doNotTranslateKeys = [], modelProvider, model: modelOverride } = context as z.infer<typeof TranslateJsonInputSchema>;
+        const {
+            json,
+            sourceLanguage = 'English',
+            targetLanguage,
+            topic,
+            doNotTranslateKeys = [],
+            modelProvider,
+            model: modelOverride
+        } = context as z.infer<typeof TranslateJsonInputSchema>;
 
-        // Use model override if provided, otherwise use default
         const model = getModelWithOverride(modelProvider, modelOverride);
 
-        // Always add scene_type to protected keys
         const protectedKeys = [...doNotTranslateKeys, 'scene_type'];
         console.log('🔒 Protected keys:', protectedKeys);
         console.log('📝 Source language:', sourceLanguage);
         console.log('🎯 Topic:', topic || 'General');
         console.log('🌍 Target language:', targetLanguage);
 
-        // Step 1: Extract strings with context
+        // 1) Extract
         const extracted = extractStringsWithPaths(json, protectedKeys);
         const htmlCount = extracted.filter(e => e.tagMap && e.tagMap.size > 0).length;
-        console.log(`📦 Extracted ${extracted.length} strings for translation (${htmlCount} with HTML protection)`);
+        console.log(`📦 Extracted ${extracted.length} strings (${htmlCount} with HTML protection)`);
 
-        // Chunk size: 50 strings per request (manageable for AI)
-        const CHUNK_SIZE = 50;
+        if (extracted.length === 0) {
+            return { success: true, data: json };
+        }
+
+        // 2) Chunking
+        const CHUNK_SIZE = computeChunkSize(extracted);
         const chunks: ExtractedString[][] = [];
         for (let i = 0; i < extracted.length; i += CHUNK_SIZE) {
             chunks.push(extracted.slice(i, i + CHUNK_SIZE));
         }
-        console.log(`📦 Split into ${chunks.length} chunks of ~${CHUNK_SIZE} strings`);
+        console.log(`📦 Split into ${chunks.length} chunks (≈${CHUNK_SIZE} each)`);
 
-        // Step 2: Build topic-aware prompt
+        // 3) Prompt
         const topicContext = topic
             ? `You are localizing content for a ${topic} security training. Use appropriate terminology for this security topic.`
             : 'You are localizing general security training content.';
@@ -183,154 +250,88 @@ export const translateLanguageJsonTool = new Tool({
             extractedLength: extracted.length
         });
 
+        // 4) Translate (sade; tek retry yok — istersen kolayca eklersin)
+        const BATCH_SIZE = 3;
+        const issues: string[] = [];
 
-        // Step 3: Translate each chunk with parallel processing and retry
-        const BATCH_SIZE = 3; // Process 3 chunks in parallel
-        const MAX_RETRIES = 2;
-
-        // Helper function to translate a single chunk with retry
         async function translateChunk(chunk: ExtractedString[], chunkIndex: number): Promise<string[]> {
             const chunkNumber = chunkIndex + 1;
-
-            for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-                try {
-                    console.log(`🔄 Translating chunk ${chunkNumber}/${chunks.length} (${chunk.length} strings)${attempt > 1 ? ` - Retry ${attempt}/${MAX_RETRIES}` : ''}`);
-
-                    // Convert chunk to numbered object
-                    const numberedInput: Record<string, string> = {};
-                    chunk.forEach((item, index) => {
-                        numberedInput[index.toString()] = item.value;
-                    });
-
-                    const user = `Localize these ${sourceLanguage} values to ${targetLanguage} ONLY. Follow all system rules above.
-
-CRITICAL: Localize ONLY text content INSIDE HTML tags. Do NOT change tags themselves.
-Example: "<p>Hello world</p>" → "<p>[localized text]</p>" (tags unchanged)
-
-INPUT (${sourceLanguage} values):
-${JSON.stringify(numberedInput, null, 2)}
-
-OUTPUT (${targetLanguage} ONLY, native quality, exact HTML structure):`;
-
-                    const res = await generateText({
-                        model,
-                        messages: [
-                            { role: 'system', content: system },
-                            { role: 'user', content: user }
-                        ],
-                        ...LOCALIZER_PARAMS,
-                    });
-
-                    const cleanedText = cleanResponse(res.text, `chunk-${chunkNumber}`);
-                    const translatedObject = JSON.parse(cleanedText);
-
-                    if (typeof translatedObject !== 'object' || Array.isArray(translatedObject)) {
-                        throw new Error(`Expected object, got ${typeof translatedObject}`);
-                    }
-
-                    // Helper: Count HTML tags in a string
-                    function countHtmlTags(str: string): number {
-                        return (str.match(/<[^>]+>/g) || []).length;
-                    }
-
-                    // Convert to array and validate with retry logic for HTML mismatches
-                    const translatedChunk: string[] = [];
-                    let hasHtmlMismatch = false;
-
-                    for (let i = 0; i < chunk.length; i++) {
-                        const translatedValue = translatedObject[i.toString()];
-                        if (translatedValue === undefined) {
-                            throw new Error(`Missing index ${i}`);
-                        }
-
-                        // Validate HTML tags preservation (skip if using tag protection tokens)
-                        const hasProtectionTokens = chunk[i].value.includes('__HTML') || translatedValue.includes('__HTML');
-
-                        if (!hasProtectionTokens) {
-                            // Only validate raw HTML (not protected content)
-                            const originalTags = countHtmlTags(chunk[i].value);
-                            const translatedTags = countHtmlTags(translatedValue);
-
-                            if (originalTags !== translatedTags) {
-                                console.warn(`⚠️ HTML tag mismatch in index ${i} (attempt ${attempt}/${MAX_RETRIES}): original=${originalTags}, translated=${translatedTags}`);
-                                hasHtmlMismatch = true;
-                            }
-                        }
-                        // Protected content: tags will be validated after restoration
-
-                        translatedChunk.push(translatedValue);
-                    }
-
-                    // If HTML mismatches found and retries remaining, retry this chunk
-                    if (hasHtmlMismatch && attempt < MAX_RETRIES) {
-                        console.warn(`⚠️ Chunk ${chunkNumber} has HTML mismatches, retrying...`);
-                        continue;
-                    }
-
-                    // If HTML mismatches remain after all retries, use original content as fallback
-                    if (hasHtmlMismatch && attempt === MAX_RETRIES) {
-                        console.warn(`⚠️ Chunk ${chunkNumber} has persistent HTML mismatches - using original content as fallback`);
-                        return chunk.map(item => item.value);  // Graceful degradation
-                    }
-
-                    console.log(`✅ Chunk ${chunkNumber} done (${translatedChunk.length} strings)`);
-                    return translatedChunk;
-
-                } catch (error) {
-                    if (attempt === MAX_RETRIES) {
-                        console.error(`❌ Chunk ${chunkNumber} failed after ${MAX_RETRIES} attempts:`, error);
-                        console.warn(`⚠️ Using original content as fallback for chunk ${chunkNumber}`);
-                        return chunk.map(item => item.value);  // Graceful degradation on error
-                    }
-                    console.warn(`⚠️ Chunk ${chunkNumber} attempt ${attempt} failed, retrying...`);
-                }
-            }
-
-            // Final fallback if all retries exhausted
-            console.warn(`⚠️ Chunk ${chunkNumber} exhausted retries - returning original content`);
-            return chunk.map(item => item.value);
-        }
-
-        // Process chunks in batches (parallel within batch, sequential across batches)
-        const allTranslatedStrings: string[] = [];
-
-        for (let batchStart = 0; batchStart < chunks.length; batchStart += BATCH_SIZE) {
-            const batchEnd = Math.min(batchStart + BATCH_SIZE, chunks.length);
-            const batchChunks = chunks.slice(batchStart, batchEnd);
-
-            console.log(`📦 Processing batch ${Math.floor(batchStart / BATCH_SIZE) + 1}/${Math.ceil(chunks.length / BATCH_SIZE)} (${batchChunks.length} chunks in parallel)`);
+            const trivialMask = chunk.map(it => isTrivialValue(it.value));
 
             try {
-                // Process batch chunks in parallel
-                const batchResults = await Promise.all(
-                    batchChunks.map((chunk, idx) => translateChunk(chunk, batchStart + idx))
-                );
+                const numberedInput: Record<string, string> = {};
+                chunk.forEach((item, i) => numberedInput[String(i)] = item.value);
 
-                // Flatten and add to results
-                batchResults.forEach(result => {
-                    allTranslatedStrings.push(...result);
+                const user =
+                    `Localize these ${sourceLanguage} values to ${targetLanguage} ONLY. Follow all system rules above.
+                    Do NOT modify HTML tokens (__HTML#__) or placeholders.
+
+                    INPUT:
+                    ${JSON.stringify(numberedInput, null, 2)}
+
+                    OUTPUT (${targetLanguage} ONLY, valid JSON object with keys "0".."${chunk.length - 1}"):`;
+
+                const res = await generateText({
+                    model,
+                    messages: [
+                        { role: 'system', content: system },
+                        { role: 'user', content: user }
+                    ],
+                    ...LOCALIZER_PARAMS,
                 });
 
-                console.log(`✅ Batch done: ${allTranslatedStrings.length}/${extracted.length} total strings`);
+                const cleaned = cleanResponse(res.text, `chunk-${chunkNumber}`);
+                const obj = JSON.parse(cleaned);
 
-            } catch (batchError) {
-                console.error(`❌ Batch failed:`, batchError);
-                return { success: false, error: `Translation failed: ${batchError}`, data: null };
+                const out: string[] = [];
+                for (let i = 0; i < chunk.length; i++) {
+                    const src = chunk[i].value;
+                    let tgt = trivialMask[i] ? src : obj[String(i)];
+                    if (tgt === undefined) throw new Error(`Missing key "${i}" in model output`);
+
+                    // Placeholders / URL / email / whitespace koru
+                    if (!placeholdersEqual(src, tgt)) {
+                        issues.push(`chunk ${chunkNumber} index ${i}: placeholder mismatch`);
+                    }
+                    const srcUrls = src.match(URL_RE) || [];
+                    const tgtUrls = tgt.match(URL_RE) || [];
+                    if (!stringsEqualSet(srcUrls, tgtUrls)) {
+                        issues.push(`chunk ${chunkNumber} index ${i}: url mismatch`);
+                    }
+                    const srcEmails = src.match(EMAIL_RE) || [];
+                    const tgtEmails = tgt.match(EMAIL_RE) || [];
+                    if (!stringsEqualSet(srcEmails, tgtEmails)) {
+                        issues.push(`chunk ${chunkNumber} index ${i}: email mismatch`);
+                    }
+
+                    const sSig = edgeWhitespaceSig(src);
+                    const tSig = edgeWhitespaceSig(tgt);
+                    if (sSig.lead.length !== tSig.lead.length || sSig.tail.length !== tSig.tail.length) {
+                        tgt = sSig.lead + tgt.trim() + sSig.tail;
+                    }
+
+                    out.push(tgt);
+                }
+                return out;
+
+            } catch (e) {
+                console.warn(`⚠️ Chunk ${chunkNumber} failed, using originals (error: ${String(e)})`);
+                return chunk.map(c => c.value);
             }
         }
 
-        // Step 4: Validate total count
-        if (allTranslatedStrings.length !== extracted.length) {
-            throw new Error(`Total mismatch: expected ${extracted.length}, got ${allTranslatedStrings.length}`);
+        const allTranslated: string[] = [];
+        for (let start = 0; start < chunks.length; start += BATCH_SIZE) {
+            const batch = chunks.slice(start, Math.min(start + BATCH_SIZE, chunks.length));
+            const results = await Promise.all(batch.map((ch, idx) => translateChunk(ch, start + idx)));
+            results.forEach(r => allTranslated.push(...r));
         }
 
-        console.log(`✅ All chunks translated successfully: ${allTranslatedStrings.length} strings`);
-        console.log(`📝 Sample: "${extracted[0].value}" → "${allTranslatedStrings[0]}"`);
+        if (allTranslated.length !== extracted.length) {
+            throw new Error(`Total mismatch: expected ${extracted.length}, got ${allTranslated.length}`);
+        }
 
-        // Step 5: Bind translations back to original structure
-        const result = bindTranslatedStrings(json, extracted, allTranslatedStrings);
-        console.log('✅ Successfully bound translations to original structure');
-
-        return { success: true, data: result };
+        const result = bindTranslatedStrings(json, extracted, allTranslated);
+        return { success: true, data: result, error: issues.length ? `Completed with ${issues.length} soft issues` : undefined };
     }
 });

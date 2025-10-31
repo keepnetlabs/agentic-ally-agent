@@ -1,7 +1,7 @@
 import { createStep, createWorkflow } from '@mastra/core/workflows';
 import { z } from 'zod';
 import { addLanguageWorkflow } from './add-language-workflow';
-import { v4 as uuidv4 } from 'uuid';
+import { KVService } from '../services/kv-service';
 
 // Input/Output Schemas
 const addMultipleLanguagesInputSchema = z.object({
@@ -151,6 +151,16 @@ const processMultipleLanguagesStep = createStep({
       const failureCount = languageResults.filter((r) => !r.success).length;
 
       console.log(`📊 Results: ${successCount}/${targetLanguages.length} successful in ${(totalDuration / 1000).toFixed(2)}s`);
+
+      // Update language_availability ONCE after all parallel workflows (prevents race condition)
+      if (successCount > 0) {
+        const successLanguages = languageResults
+          .filter((r) => r.success)
+          .map((r) => r.language);
+
+        const kvService = new KVService();
+        await kvService.updateLanguageAvailabilityAtomic(existingMicrolearningId, successLanguages);
+      }
 
       const status = successCount > 0 ? (failureCount === 0 ? 'success' : 'partial') : 'failed';
 
