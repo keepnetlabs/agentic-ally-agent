@@ -15,7 +15,12 @@
       "WebFetch(domain:www.ncsc.gov.uk)",
       "Bash(tree:*)",
       "Bash(dir /s /b)",
-      "Read(//c/Users/user/Desktop/**)"
+      "Read(//c/Users/user/Desktop/**)",
+      "Bash(npm run lint)",
+      "Bash(dist)",
+      "Bash(build)",
+      "Bash(dir /s /b 'C:\\Users\\user\\Desktop\\Agentic Ally\\fleet-v2-main\\agent\\src')",
+      "Bash(npm test)"
     ],
     "deny": [],
     "ask": []

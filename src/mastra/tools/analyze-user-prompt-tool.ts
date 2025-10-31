@@ -7,6 +7,7 @@ import { ExampleRepo } from '../services/example-repo';
 import { validateBCP47LanguageCode, DEFAULT_LANGUAGE } from '../utils/language-utils';
 import { cleanResponse } from '../utils/content-processors/json-cleaner';
 import { PROMPT_ANALYSIS_PARAMS } from '../utils/llm-generation-params';
+import { MICROLEARNING, PROMPT_ANALYSIS } from '../constants';
 
 const AnalyzeUserPromptSchema = z.object({
   userPrompt: z.string().min(1, 'User prompt is required'),
@@ -120,7 +121,7 @@ Return JSON:
   "category": "main category - Security Awareness, Leadership, Data Protection, Technical Skills, etc.",
   "subcategory": "specific subcategory based on focus",
   "learningObjectives": ["specific skills learner can DO after 5-min training. Use simple action verbs (spot, check, create, report, verify, pause, enable). NOT meta-tasks (pass quiz, complete test) or unrealistic goals (teach others, become expert)"],
-  "duration": 5,
+  "duration": ${MICROLEARNING.DURATION_MINUTES},
   "industries": ["relevant industries from context or 'General Business'"],
   "roles": ["target audience roles"],
   "keyTopics": ["3-5 main learning areas"],
@@ -157,7 +158,7 @@ RULES:
       // Enrich analysis with context if provided
       if (additionalContext) {
         analysis.hasRichContext = true;
-        analysis.contextSummary = additionalContext.substring(0, 200) + '...';
+        analysis.contextSummary = additionalContext.substring(0, PROMPT_ANALYSIS.MAX_CONTEXT_SUMMARY_LENGTH) + '...';
         console.log(`📄 Rich context provided: ${analysis.contextSummary}`);
       }
 
@@ -203,7 +204,7 @@ RULES:
         category: 'Professional Development',
         subcategory: 'Skills Training',
         learningObjectives: [`Learn about ${userPrompt.substring(0, 30)}`, 'Apply new skills', 'Improve performance'],
-        duration: 5,
+        duration: MICROLEARNING.DURATION_MINUTES,
         industries: ['General'],
         roles: ['All Roles'],
         keyTopics: [userPrompt.substring(0, 30)],
@@ -211,7 +212,7 @@ RULES:
         assessmentAreas: [`${userPrompt.substring(0, 20)} knowledge`],
         regulationCompliance: [],
         hasRichContext: !!additionalContext,
-        contextSummary: additionalContext?.substring(0, 200) + '...' || undefined,
+        contextSummary: additionalContext?.substring(0, PROMPT_ANALYSIS.MAX_CONTEXT_SUMMARY_LENGTH) + '...' || undefined,
         customRequirements: customRequirements,
       };
 

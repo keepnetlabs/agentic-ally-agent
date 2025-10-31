@@ -9,7 +9,11 @@
     "build:local": "cross-env mastra build && node scripts/fix-cloudflare-shims.js",
     "build:cloudflare": "cross-env mastra build && node scripts/fix-cloudflare-shims.js",
     "deploy": "npm run build:cloudflare && npx wrangler deploy .mastra/output/index.mjs --config .mastra/output/wrangler.json",
-    "fix-cloudflare": "node scripts/fix-cloudflare-shims.js"
+    "fix-cloudflare": "node scripts/fix-cloudflare-shims.js",
+    "test": "vitest run",
+    "test:watch": "vitest watch",
+    "test:coverage": "vitest run --coverage",
+    "test:ui": "vitest --ui"
   },
   "keywords": [],
   "author": "",
@@ -38,9 +42,12 @@
   },
   "devDependencies": {
     "@types/node": "^24.3.0",
+    "@vitest/ui": "^4.0.5",
     "cross-env": "^10.0.0",
+    "happy-dom": "^20.0.10",
     "mastra": "^0.17.0",
     "typescript": "^5.9.2",
+    "vitest": "^4.0.5",
     "wrangler": "^4.32.0"
   },
   "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"

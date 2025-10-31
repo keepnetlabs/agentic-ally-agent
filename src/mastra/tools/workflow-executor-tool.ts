@@ -4,24 +4,140 @@ import { createMicrolearningWorkflow } from '../workflows/create-microlearning-w
 import { addLanguageWorkflow } from '../workflows/add-language-workflow';
 import { addMultipleLanguagesWorkflow } from '../workflows/add-multiple-languages-workflow';
 import { v4 as uuidv4 } from 'uuid';
+import { PROMPT_ANALYSIS } from '../constants';
+
+/**
+ * Type definitions for workflow results
+ */
+interface WorkflowMetadata {
+  trainingUrl?: string;
+  title?: string;
+  department?: string;
+  microlearningId?: string;
+  filesGenerated?: string[];
+  [key: string]: unknown;
+}
+
+interface CreateMicrolearningResult {
+  status: 'success' | 'error' | 'failed' | 'suspended';
+  result?: {
+    metadata?: WorkflowMetadata;
+    [key: string]: unknown;
+  };
+  error?: Error | string;
+  [key: string]: unknown;
+}
+
+interface AddLanguageResult {
+  status: 'success' | 'error' | 'failed' | 'suspended';
+  result?: {
+    data?: {
+      trainingUrl?: string;
+      title?: string;
+      [key: string]: unknown;
+    };
+    [key: string]: unknown;
+  };
+  error?: Error | string;
+  [key: string]: unknown;
+}
+
+interface LanguageResultItem {
+  success?: boolean;
+  trainingUrl?: string;
+  language?: string;
+  [key: string]: unknown;
+}
+
+interface AddMultipleLanguagesResult {
+  status: 'success' | 'error' | 'failed' | 'suspended';
+  result?: {
+    results?: LanguageResultItem[];
+    successCount?: number;
+    failureCount?: number;
+    languages?: string[];
+    status?: string;
+    [key: string]: unknown;
+  };
+  error?: Error | string;
+  [key: string]: unknown;
+}
+
+interface ToolSuccessResponse {
+  success: true;
+  status: string;
+  [key: string]: unknown;
+}
+
+interface ToolErrorResponse {
+  success: false;
+  error: string;
+}
 
 // Tool için schema
 const workflowExecutorSchema = z.object({
   workflowType: z.enum(['create-microlearning', 'add-language', 'add-multiple-languages']).describe('Which workflow to execute'),
 
   // Create microlearning parameters
-  prompt: z.string().optional().describe('User prompt for microlearning creation'),
-  additionalContext: z.string().optional().describe('Additional context for the microlearning'),
-  customRequirements: z.string().optional().describe('Custom requirements or special requests'),
-  department: z.string().optional().describe('Target department'),
-  level: z.enum(['Beginner', 'Intermediate', 'Advanced']).optional().default('Intermediate').describe('Content difficulty level'),
-  priority: z.enum(['low', 'medium', 'high']).optional().default('medium'),
+  prompt: z
+    .string()
+    .min(PROMPT_ANALYSIS.MIN_PROMPT_LENGTH, `Prompt must be at least ${PROMPT_ANALYSIS.MIN_PROMPT_LENGTH} characters`)
+    .max(PROMPT_ANALYSIS.MAX_PROMPT_LENGTH, `Prompt must not exceed ${PROMPT_ANALYSIS.MAX_PROMPT_LENGTH} characters`)
+    .optional()
+    .describe('User prompt for microlearning creation'),
+  additionalContext: z
+    .string()
+    .max(PROMPT_ANALYSIS.MAX_ADDITIONAL_CONTEXT_LENGTH, `Additional context must not exceed ${PROMPT_ANALYSIS.MAX_ADDITIONAL_CONTEXT_LENGTH} characters`)
+    .optional()
+    .describe('Additional context for the microlearning'),
+  customRequirements: z
+    .string()
+    .max(PROMPT_ANALYSIS.MAX_CUSTOM_REQUIREMENTS_LENGTH, `Custom requirements must not exceed ${PROMPT_ANALYSIS.MAX_CUSTOM_REQUIREMENTS_LENGTH} characters`)
+    .optional()
+    .describe('Custom requirements or special requests'),
+  department: z
+    .string()
+    .max(PROMPT_ANALYSIS.MAX_DEPARTMENT_NAME_LENGTH, `Department name must not exceed ${PROMPT_ANALYSIS.MAX_DEPARTMENT_NAME_LENGTH} characters`)
+    .optional()
+    .describe('Target department'),
+  level: z
+    .enum(PROMPT_ANALYSIS.DIFFICULTY_LEVELS)
+    .optional()
+    .default('Intermediate')
+    .describe('Content difficulty level'),
+  priority: z
+    .enum(PROMPT_ANALYSIS.PRIORITY_LEVELS)
+    .optional()
+    .default('medium'),
 
   // Add language parameters
-  existingMicrolearningId: z.string().optional().describe('ID of existing microlearning to translate'),
-  targetLanguage: z.string().optional().nullable().describe('Target language for translation (single language)'),
-  targetLanguages: z.array(z.string()).optional().describe('Target languages for parallel translation (multiple languages)'),
-  sourceLanguage: z.string().optional().nullable().describe('Source language (optional)'),
+  existingMicrolearningId: z
+    .string()
+    .min(1, 'Microlearning ID cannot be empty')
+    .max(256, 'Microlearning ID must not exceed 256 characters')
+    .optional()
+    .describe('ID of existing microlearning to translate'),
+  targetLanguage: z
+    .string()
+    .regex(PROMPT_ANALYSIS.LANGUAGE_CODE_REGEX, PROMPT_ANALYSIS.LANGUAGE_CODE_REGEX.toString())
+    .optional()
+    .nullable()
+    .describe('Target language for translation (single language)'),
+  targetLanguages: z
+    .array(
+      z
+        .string()
+        .regex(PROMPT_ANALYSIS.LANGUAGE_CODE_REGEX, PROMPT_ANALYSIS.LANGUAGE_CODE_REGEX.toString())
+    )
+    .max(12, 'Maximum 12 languages allowed at once')
+    .optional()
+    .describe('Target languages for parallel translation (multiple languages)'),
+  sourceLanguage: z
+    .string()
+    .regex(PROMPT_ANALYSIS.LANGUAGE_CODE_REGEX, PROMPT_ANALYSIS.LANGUAGE_CODE_REGEX.toString())
+    .optional()
+    .nullable()
+    .describe('Source language (optional)'),
 
   // Model override parameters (optional)
   modelProvider: z.enum(['OPENAI', 'WORKERS_AI', 'GOOGLE']).optional().describe('Model provider override'),
@@ -46,7 +162,7 @@ export const workflowExecutorTool = createTool({
         const run = await workflow.createRunAsync();
 
         // Workflow'u başlat - let it fail if it fails
-        const workflowResult = await run.start({
+        const workflowResult: CreateMicrolearningResult = await run.start({
           inputData: {
             prompt: params.prompt!,
             additionalContext: params.additionalContext,
@@ -68,12 +184,16 @@ export const workflowExecutorTool = createTool({
         console.log('🔍 Workflow result:', workflowResult);
 
         // Try to extract data from workflow result
-        if (workflowResult.status === 'success' && workflowResult.result?.metadata) {
+        if (
+          workflowResult.status === 'success' &&
+          workflowResult.result?.metadata
+        ) {
           try {
-            trainingUrl = workflowResult.result.metadata.trainingUrl || trainingUrl;
-            title = workflowResult.result.metadata.title || title;
-            department = workflowResult.result.metadata.department || department;
-            microlearningId = workflowResult.result.metadata.microlearningId || microlearningId;
+            const metadata = workflowResult.result.metadata;
+            trainingUrl = metadata.trainingUrl || trainingUrl;
+            title = metadata.title || title;
+            department = metadata.department || department;
+            microlearningId = metadata.microlearningId || microlearningId;
           } catch (error) {
             console.warn('Could not extract workflow result data:', error);
           }
@@ -109,7 +229,7 @@ export const workflowExecutorTool = createTool({
         const workflow = addLanguageWorkflow;
         const run = await workflow.createRunAsync();
 
-        const result = await run.start({
+        const result: AddLanguageResult = await run.start({
           inputData: {
             existingMicrolearningId: params.existingMicrolearningId!,
             department: params.department || 'All',
@@ -123,8 +243,14 @@ export const workflowExecutorTool = createTool({
         });
 
         // Extract trainingUrl from result and send to frontend
-        const trainingUrl = result?.status === 'success' ? result.result?.data?.trainingUrl : null;
-        const title = result?.status === 'success' ? result.result?.data?.title : null;
+        const trainingUrl =
+          result?.status === 'success' && result.result?.data
+            ? result.result.data.trainingUrl
+            : null;
+        const title =
+          result?.status === 'success' && result.result?.data
+            ? result.result.data.title
+            : null;
         console.log('🔍 Training URL for translated:', trainingUrl);
         if (trainingUrl) {
           try {
@@ -157,7 +283,7 @@ export const workflowExecutorTool = createTool({
         const workflow = addMultipleLanguagesWorkflow;
         const run = await workflow.createRunAsync();
 
-        const result = await run.start({
+        const result: AddMultipleLanguagesResult = await run.start({
           inputData: {
             existingMicrolearningId: params.existingMicrolearningId,
             targetLanguages: params.targetLanguages,
@@ -170,10 +296,12 @@ export const workflowExecutorTool = createTool({
 
         // Return workflow result
         if (result?.status === 'success' && result.result) {
-          const workflowResults = (result.result as any).results || [];
+          const workflowResults: LanguageResultItem[] = result.result.results || [];
 
           // Send first successful URL to frontend for UI refresh
-          const firstSuccess = workflowResults.find((r: any) => r.success && r.trainingUrl);
+          const firstSuccess = workflowResults.find(
+            (r) => r.success && r.trainingUrl
+          );
           if (firstSuccess) {
             try {
               const messageId = uuidv4();
@@ -192,11 +320,11 @@ export const workflowExecutorTool = createTool({
 
           return {
             success: true,
-            successCount: (result.result as any).successCount,
-            failureCount: (result.result as any).failureCount,
-            languages: (result.result as any).languages,
-            results: (result.result as any).results,
-            status: (result.result as any).status
+            successCount: result.result.successCount,
+            failureCount: result.result.failureCount,
+            languages: result.result.languages,
+            results: result.result.results,
+            status: result.result.status
           };
         } else {
           throw new Error('Add multiple languages workflow failed');

@@ -1,8 +1,9 @@
 import { promises as fs } from 'fs';
 import * as path from 'path';
 import { createHash } from 'crypto';
-import { embed, embedMany } from 'ai';
+import { embed } from 'ai';
 import { getModel, ModelProvider, Model } from '../model-providers';
+import { EXAMPLE_REPO } from '../constants';
 
 export interface ExampleDoc {
     path: string;
@@ -562,7 +563,7 @@ Scene metadata keys: ${Array.from(sceneMetaKeys).join(', ')}`;
             }
         }
         
-        return Math.min(Math.max(complexity, 1), 5); // Clamp between 1-5
+        return Math.min(Math.max(complexity, EXAMPLE_REPO.COMPLEXITY_MIN), EXAMPLE_REPO.COMPLEXITY_MAX); // Clamp using constants
     }
     
     private async performSemanticSearch(query: string, options: SemanticSearchOptions): Promise<SearchResult[]> {

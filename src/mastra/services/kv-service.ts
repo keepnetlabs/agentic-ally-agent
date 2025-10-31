@@ -1,22 +1,30 @@
-// KV Service for direct Cloudflare KV REST API operations
+import { Logger, startTimer } from '../utils/logger';
+import { RETRY } from '../constants';
+
+/**
+ * KV Service for direct Cloudflare KV REST API operations
+ * Provides type-safe operations with retry logic and structured logging
+ */
 export class KVService {
   private accountId: string;
   private apiToken: string;
   private apiKey: string;
   private namespaceId: string;
+  private logger: Logger;
 
   constructor() {
     this.accountId = process.env.CLOUDFLARE_ACCOUNT_ID || '';
     this.apiToken = process.env.CLOUDFLARE_KV_TOKEN || '';
     this.apiKey = ''; // Not using legacy API key
-    this.namespaceId = 'c96ef0b5a2424edca1426f6e7a85b9dc'; // MICROLEARNING_KV namespace ID
+    this.namespaceId = process.env.MICROLEARNING_KV_NAMESPACE_ID || ''; // MICROLEARNING_KV namespace ID
+    this.logger = new Logger('KVService');
 
     // Validate required environment variables
     if (!this.accountId) {
-      console.warn('CLOUDFLARE_ACCOUNT_ID not found in environment variables');
+      this.logger.warn('CLOUDFLARE_ACCOUNT_ID not found in environment variables');
     }
     if (!this.apiToken) {
-      console.warn('CLOUDFLARE_KV_TOKEN (or API_TOKEN/API_KEY) not found in environment variables');
+      this.logger.warn('CLOUDFLARE_KV_TOKEN not found in environment variables');
     }
   }
 
@@ -42,6 +50,7 @@ export class KVService {
 
   async put(key: string, value: any): Promise<boolean> {
     try {
+      const timer = startTimer();
       const url = this.getKVUrl(key);
       const body = typeof value === 'string' ? value : JSON.stringify(value);
 
@@ -53,15 +62,27 @@ export class KVService {
         body: body
       });
 
+      const duration = timer.end();
+
       if (!response.ok) {
         const errorText = await response.text();
-        console.error(`KV PUT failed for key ${key}:`, response.status, errorText);
+        this.logger.warn(`KV PUT failed for key`, {
+          key,
+          status: response.status,
+          duration,
+          errorText: errorText.substring(0, 200), // Limit error text length
+        });
         return false;
       }
 
+      this.logger.debug(`KV PUT success`, { key, duration });
       return true;
     } catch (error) {
-      console.error(`KV PUT error for key ${key}:`, error);
+      const errorMsg = error instanceof Error ? error : new Error(String(error));
+      this.logger.error(`KV PUT operation failed`, errorMsg, {
+        key,
+        valueType: typeof value,
+      });
       return false;
     }
   }
@@ -152,38 +173,129 @@ export class KVService {
 
   // Microlearning specific methods
   async saveMicrolearning(microlearningId: string, data: any, language: string, department: string): Promise<boolean> {
-    const normalizedLang = language.toLowerCase(); // Normalize to lowercase for consistency
+    const timer = startTimer();
+    const normalizedLang = language.toLowerCase();
     const baseKey = `ml:${microlearningId}:base`;
     const langKey = `ml:${microlearningId}:lang:${normalizedLang}`;
     const inboxKey = `ml:${microlearningId}:inbox:${department}:${normalizedLang}`;
 
     try {
-      // Save base microlearning structure
-      const baseSuccess = await this.put(baseKey, {
-        ...data.microlearning,
-        microlearning_id: microlearningId
+      this.logger.info(`Saving microlearning to KV`, {
+        microlearningId,
+        language: normalizedLang,
+        department,
       });
 
-      // Save language content
-      const langSuccess = await this.put(langKey, data.languageContent);
+      // Save all three components in parallel with Promise.allSettled
+      const [baseResult, langResult, inboxResult] = await Promise.allSettled([
+        this.putWithRetry(baseKey, {
+          ...data.microlearning,
+          microlearning_id: microlearningId
+        }),
+        this.putWithRetry(langKey, data.languageContent),
+        this.putWithRetryWithLogging(
+          inboxKey,
+          data.inboxContent,
+          typeof data.inboxContent,
+          Object.keys(data.inboxContent || {})
+        ),
+      ]);
 
-      // Save inbox content
-      console.log(`📥 Saving inbox content to KV: ${inboxKey}`, typeof data.inboxContent, Object.keys(data.inboxContent || {}));
-      const inboxSuccess = await this.put(inboxKey, data.inboxContent);
+      // Check results
+      const baseSuccess = baseResult.status === 'fulfilled' && baseResult.value === true;
+      const langSuccess = langResult.status === 'fulfilled' && langResult.value === true;
+      const inboxSuccess = inboxResult.status === 'fulfilled' && inboxResult.value === true;
 
       const allSuccess = baseSuccess && langSuccess && inboxSuccess;
+      const duration = timer.end();
 
       if (allSuccess) {
-        console.log(`🎉 All microlearning data saved to KV: ${microlearningId}`);
+        this.logger.info(`All microlearning data saved successfully`, {
+          microlearningId,
+          duration,
+          components: ['base', 'language', 'inbox'],
+        });
       } else {
-        console.warn(`⚠️ Partial save to KV for: ${microlearningId}`);
+        const failures = [
+          !baseSuccess && 'base',
+          !langSuccess && 'language',
+          !inboxSuccess && 'inbox'
+        ].filter(Boolean);
+
+        this.logger.warn(`Partial microlearning save to KV`, {
+          microlearningId,
+          duration,
+          failedComponents: failures,
+          baseStatus: baseResult.status,
+          langStatus: langResult.status,
+          inboxStatus: inboxResult.status,
+        });
+
+        // Log rejection errors with details
+        if (baseResult.status === 'rejected') {
+          this.logger.error(`Base microlearning save failed`, baseResult.reason, { microlearningId });
+        }
+        if (langResult.status === 'rejected') {
+          this.logger.error(`Language content save failed`, langResult.reason, { microlearningId });
+        }
+        if (inboxResult.status === 'rejected') {
+          this.logger.error(`Inbox content save failed`, inboxResult.reason, { microlearningId });
+        }
       }
 
       return allSuccess;
     } catch (error) {
-      console.error(`Failed to save microlearning ${microlearningId}:`, error);
+      const errorMsg = error instanceof Error ? error : new Error(String(error));
+      this.logger.error(`Failed to save microlearning`, errorMsg, {
+        microlearningId,
+        language: normalizedLang,
+        department,
+        duration: timer.end(),
+      });
       return false;
     }
+  }
+
+  /**
+   * Helper method: PUT with exponential backoff retry
+   * Retries up to RETRY.MAX_ATTEMPTS times with exponential backoff
+   */
+  private async putWithRetry(key: string, value: any, maxRetries: number = RETRY.MAX_ATTEMPTS): Promise<boolean> {
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        const result = await this.put(key, value);
+        if (result) {
+          if (attempt > 0) {
+            console.log(`✅ KV PUT succeeded on retry ${attempt} for key: ${key}`);
+          }
+          return true;
+        }
+      } catch (error) {
+        console.warn(`KV PUT attempt ${attempt + 1}/${maxRetries} failed for ${key}:`, error);
+        if (attempt < maxRetries - 1) {
+          const delay = RETRY.getBackoffDelay(attempt);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Helper method: PUT with logging and retry
+   */
+  private async putWithRetryWithLogging(
+    key: string,
+    value: any,
+    typeInfo: string,
+    keyInfo: string[]
+  ): Promise<boolean> {
+    this.logger.debug(`Saving inbox content`, {
+      key,
+      valueType: typeInfo,
+      keys: keyInfo,
+    });
+    return this.putWithRetry(key, value);
   }
 
   async getMicrolearning(microlearningId: string, language?: string): Promise<any> {
@@ -266,7 +378,9 @@ export class KVService {
       // Merge existing + new languages
       const existing = baseData.microlearning_metadata.language_availability || [];
       const toAdd = Array.isArray(newLanguages) ? newLanguages : [newLanguages];
-      const merged = [...new Set([...existing, ...toAdd])].map(l => l.toLowerCase()).sort();
+      // Normalize to lowercase first, then deduplicate with Set
+      const normalized = [...existing, ...toAdd].map((l: string) => l.toLowerCase());
+      const merged = [...new Set(normalized)].sort();
 
       // Single atomic update
       baseData.microlearning_metadata.language_availability = merged;
@@ -335,7 +449,7 @@ export class KVService {
           if (microlearning && microlearning.microlearning_metadata) {
             const title = microlearning.microlearning_metadata.title || '';
             const id = microlearning.microlearning_id || '';
-            
+
             // Check if search term matches title or ID (case insensitive)
             if (
               title.toLowerCase().includes(searchTerm.toLowerCase()) ||
