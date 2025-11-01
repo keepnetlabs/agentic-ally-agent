@@ -71,7 +71,12 @@ Generate scene 8 (summary):
       "urgentLabel": "Localize 'Urgent' into ${analysis.language}",
       "pointsLabel": "Localize 'Points' into ${analysis.language}",
       "timeLabel": "Localize 'Time' into ${analysis.language}",
-      "completionLabel": "Localize 'Completion' into ${analysis.language}"
+      "completionLabel": "Localize 'Completion' into ${analysis.language}",
+      "certificateTitle": "Localize 'Certificate of Completion' into ${analysis.language}",
+      "certificateAwardedText": "Localize 'This certificate is awarded to' into ${analysis.language}",
+      "certificateCompletionText": "Localize 'for successful completion of' into ${analysis.language}",
+      "certificateDateText": "Localize 'on' into ${analysis.language}",
+      "downloadTrainingLogsText": "Localize 'Download Training Logs' into ${analysis.language}",
     },
     "immediateActions": [
       {
@@ -100,6 +105,7 @@ Generate scene 8 (summary):
         "url": "${resources[1]?.url}"
       }
     ],
+    "scientific_basis": "Summary – Consolidation: Review reinforces learning and provides closure.",
     "scene_type": "summary"
   }
 }`;

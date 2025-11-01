@@ -52,6 +52,7 @@ Generate scene 6 (survey):
       "Skill for ${analysis.topic} (${analysis.category}), 3-5 words in ${analysis.language}",
       "Another skill for ${analysis.topic} (${analysis.category}), 3-5 words in ${analysis.language}"
     ],
+    "scientific_basis": "Metacognition: Self-assessment promotes learning awareness.",
     "scene_type": "survey"
   }
 }

@@ -99,6 +99,7 @@ Generate scene 3 (video scenario). IMPORTANT: Create actual content in ${analysi
       "videoPlayerLabel": "Scenario player",
       "mobileHintLabel": "Best experienced with audio"
     },
+    "scientific_basis": "Contextual Learning: Real-world context improves knowledge transfer.",
     "scene_type": "scenario"
   }
 }

@@ -174,6 +174,7 @@ CRITICAL:
       "clearCategoryLabel": "Clear category",
       "removeItemLabel": "Remove item"
     },
+    "scientific_basis": "Active Recall: Testing enhances retention and identifies knowledge gaps.",
     "scene_type": "quiz"
   }
 }`;

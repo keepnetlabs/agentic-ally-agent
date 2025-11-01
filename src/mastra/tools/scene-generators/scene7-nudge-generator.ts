@@ -99,6 +99,7 @@ Generate for ${analysis.topic}: Max 5 words in ${analysis.language}
 
       "Step 3 - VERIFY for ${analysis.topic}: Generate appropriate escalation/reporting action specific to topic. REFERENCE EXAMPLES: Phishing='Use the report button' | Vishing='Report to security team' | Quishing='Report to IT team' | Ransomware='Report to IT immediately' | Deepfake='Report suspicious content to security' | Insider-Threat='Report to compliance officer' | Supply-Chain='Alert procurement team'. FOR ANY TOPIC NOT LISTED: Generate '[Action] [appropriate escalation channel for ${analysis.topic}]'. Max 5 words in ${analysis.language}"
     ],
+    "scientific_basis": ""Implementation Intentions: Concrete plans improve behavior change.",
     "scene_type": "nudge"
   }
 }`;
