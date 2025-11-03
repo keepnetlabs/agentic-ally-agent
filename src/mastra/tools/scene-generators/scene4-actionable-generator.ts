@@ -77,6 +77,7 @@ CRITICAL: This scene is ALWAYS an email inbox simulation, regardless of topic.
       "feedbackCorrect": "Success message (max 12 words with ✅): 'Good job — reporting helps protect everyone' or 'Correct — that email was suspicious.' Emphasize team impact.",
       "feedbackWrong": "Error message (max 15 words with ⚠️): 'Not quite right — this email looks safe. Try again' or 'Think again — check the sender carefully.' Guide to retry."
     },
+    "scientific_basis": "Procedural Knowledge: Step-by-step guidance builds competency.",
     "scene_type": "actionable_content"
   }
 }

@@ -78,7 +78,7 @@ function extractStringsWithPaths(obj: any, protectedKeys: string[], currentPath 
 
     const isProtectedKey = (key: string) =>
         protectedKeys.some(pk => key.toLowerCase().includes(pk.toLowerCase())) ||
-        /^(icon(Name)?|id(s)?|url|src|scene_type|type|difficulty|headers|timestamp|sender)$/i.test(key);
+        /^(icon(Name)?|id(s)?|url|src|scene_type|type|difficulty|headers|sender)$/i.test(key);
 
     function traverse(current: any, path: string) {
         if (typeof current === 'string') {
