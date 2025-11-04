@@ -17,4 +17,5 @@ export interface PromptAnalysis {
   hasRichContext?: boolean;
   contextSummary?: string;
   customRequirements?: string;
+  isCodeTopic?: boolean;
 }

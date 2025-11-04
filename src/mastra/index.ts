@@ -9,6 +9,7 @@ import { getDeployer } from './deployer';
 import { ExampleRepo } from './services/example-repo';
 import { D1Store } from '@mastra/cloudflare-d1';
 import { LibSQLStore } from '@mastra/libsql';
+import { codeReviewCheckTool } from './tools/code-review-check-tool';
 const logger = new PinoLogger({
   name: 'Mastra',
   level: 'info',
@@ -156,6 +157,36 @@ export const mastra = new Mastra({
             agents: Object.keys(agents).length > 0 ? Object.keys(agents) : [],
             workflows: Object.keys(workflows).length > 0 ? Object.keys(workflows) : [],
           });
+        },
+      }),
+
+      registerApiRoute('/code-review-validate', {
+        method: 'POST',
+        handler: async (c: any) => {
+          try {
+            const body = await c.req.json();
+
+            const result = await (codeReviewCheckTool.execute as any)(body);
+
+            if (result.success) {
+              return c.json(result, 200);
+            } else {
+              return c.json(result, 400);
+            }
+          } catch (error) {
+            console.error('Code review validation error:', error);
+            return c.json({
+              success: false,
+              data: {
+                isCorrect: false,
+                severity: 'incorrect',
+                feedback: 'Error validating code',
+                explanation: error instanceof Error ? error.message : 'Unknown error occurred',
+                points: 0,
+              },
+              error: error instanceof Error ? error.message : 'Unknown error',
+            }, 500);
+          }
         },
       }),
     ],

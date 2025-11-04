@@ -40,6 +40,7 @@ const AnalyzeUserPromptOutputSchema = z.object({
     hasRichContext: z.boolean().optional(),
     contextSummary: z.string().optional(),
     customRequirements: z.string().optional(),
+    isCodeTopic: z.boolean().optional(),
   }),
   error: z.string().optional(),
 });
@@ -115,7 +116,7 @@ Return JSON:
 {
   "language": "BCP-47 tag (language-lowercase + region-lowercase; prefer regional if known, e.g., en-gb/en-us/fr-ca/tr-tr; else use primary, e.g. en-gb)"
   "topic": "2-3 words max - core subject only",
-  "title": "3-5 words max - professional training title", 
+  "title": "3-5 words max - professional training title",
   "department": "target department or 'All'",
   "level": "beginner/intermediate/advanced - use SUGGESTED LEVEL if provided, else detect from complexity",
   "category": "main category - Security Awareness, Leadership, Data Protection, Technical Skills, etc.",
@@ -127,15 +128,19 @@ Return JSON:
   "keyTopics": ["3-5 main learning areas"],
   "practicalApplications": ["3-4 workplace situations"],
   "assessmentAreas": ["testable skills - focus on 'can they do X'"],
-  "regulationCompliance": ["relevant regulations by topic/industry"]
+  "regulationCompliance": ["relevant regulations by topic/industry"],
+  "isCodeTopic": false
 }
+
+// isCodeTopic rules: Set to true ONLY if topic is about code/software security (vulnerabilities, secure coding, code review, injection attacks, XSS, SQL injection, etc). Otherwise false.
 
 RULES:
 - DON'T copy user instructions as title/topic
 - CREATE professional titles from user intent
 - EXTRACT core subject, not full request
 - USE BCP-47 language codes only
-- RESPOND in user's language for content`;
+- RESPOND in user's language for content
+- isCodeTopic: CRITICAL - Return as boolean (true/false). Set true if topic is about code/software/programming (programming languages like JavaScript, Python, Java, C++, Go, Rust, TypeScript, etc. OR code-focused topics like code review, vulnerabilities, injection, XSS, SQL injection, secure coding, API security, encryption, etc). False for all threat awareness (phishing, ransomware, social engineering, etc). Examples: "Create JavaScript microlearning" → true, "Python workshop" → true, "Java training" → true, "SQL Injection" → true, "JavaScript XSS" → true, "Phishing Detection" → false, "Ransomware" → false, "Secure API Design" → true, "Authentication Bypass" → true`;
 
       const response = await generateText({
         model: model,
@@ -188,6 +193,7 @@ RULES:
           hasRichContext: analysis.hasRichContext,
           contextSummary: analysis.contextSummary,
           customRequirements: analysis.customRequirements,
+          isCodeTopic: analysis.isCodeTopic,
         }
       };
 
@@ -195,6 +201,25 @@ RULES:
       console.error('JSON parse failed, using fallback analysis. Error:', error);
 
       // Enhanced fallback analysis with context
+      // Detect if code-related topic based on programming languages OR security keywords
+      const specificCodeSecurityKeywords = [
+        'injection', 'xss', 'cross-site scripting', 'vulnerability', 'vulnerable',
+        'buffer overflow', 'memory leak', 'sql injection', 'code review',
+        'secure coding', 'api security', 'encryption', 'hash', 'authentication',
+        'authorization', 'owasp', 'cwe', 'cvss'
+      ];
+
+      const programmingLanguages = ['javascript', 'python', 'java', 'c++', 'php', 'go', 'rust', 'typescript', 'kotlin', 'csharp', 'c#'];
+
+      const promptLower = userPrompt.toLowerCase();
+
+      // Stricter logic: require specific code security keyword OR programming language
+      const hasSpecificCodeSecurityKeyword = specificCodeSecurityKeywords.some(kw => promptLower.includes(kw));
+      const hasProgrammingLanguage = programmingLanguages.some(lang => promptLower.includes(lang));
+      const hasCodeAndLanguage = promptLower.includes('code') && hasProgrammingLanguage;
+
+      const isCodeSecurityFallback = hasSpecificCodeSecurityKeyword || hasCodeAndLanguage || hasProgrammingLanguage;
+
       const fallbackData = {
         language: detectLanguageFallback(userPrompt),
         topic: userPrompt.substring(0, 50),
@@ -214,6 +239,7 @@ RULES:
         hasRichContext: !!additionalContext,
         contextSummary: additionalContext?.substring(0, PROMPT_ANALYSIS.MAX_CONTEXT_SUMMARY_LENGTH) + '...' || undefined,
         customRequirements: customRequirements,
+        isCodeTopic: isCodeSecurityFallback,
       };
 
       return {

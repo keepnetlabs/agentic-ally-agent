@@ -72,6 +72,9 @@ function generateEthicalPolicy() {
 async function generateMicrolearningJsonWithAI(analysis: PromptAnalysis, microlearningId: string, model: any) {
   // Basic structure creation - detailed enhancement happens in Stage 2
 
+  // Determine Scene 4 type based on analysis
+  const scene4Type = analysis.isCodeTopic ? "code_review" : "actionable_content";
+
   // Create the microlearning structure with AI-enhanced metadata
   const microlearning: MicrolearningContent = {
     microlearning_id: microlearningId,
@@ -93,7 +96,7 @@ async function generateMicrolearningJsonWithAI(analysis: PromptAnalysis, microle
       total_points: 100
     },
     scientific_evidence: generateScientificEvidence(),
-    scenes: generateSceneStructure(analysis.topic, analysis.duration),
+    scenes: generateSceneStructure(analysis.topic, analysis.duration, scene4Type),
     theme: generateTheme(analysis.topic)
   };
 
@@ -395,7 +398,39 @@ function generateScientificEvidence() {
 }
 
 
-function generateSceneStructure(topic: string, duration: number): Scene[] {
+/**
+ * Generate Scene 4 metadata based on type
+ */
+function generateScene4Metadata(duration: number, scene4Type: "code_review" | "actionable_content") {
+  if (scene4Type === "code_review") {
+    return {
+      scene_type: "code_review" as const,
+      points: 15,
+      duration_seconds: Math.round(duration * 60 * 0.2),
+      hasAchievementNotification: true,
+      scientific_basis: "Code Review – Active Analysis + Secure Coding: Encourages critical thinking and secure design review habits.",
+      icon: {
+        sparkleIconName: "code",
+        sceneIconName: "code"
+      }
+    };
+  }
+
+  // Default: actionable_content
+  return {
+    scene_type: "actionable_content" as const,
+    points: 25,
+    duration_seconds: Math.round(duration * 60 * 0.25),
+    hasAchievementNotification: false,
+    scientific_basis: "Procedural Knowledge: Step-by-step guidance builds competency.",
+    icon: {
+      sparkleIconName: "check-circle",
+      sceneIconName: "clipboard-check"
+    }
+  };
+}
+
+function generateSceneStructure(topic: string, duration: number, scene4Type: "code_review" | "actionable_content" = "actionable_content"): Scene[] {
   return [
     {
       scene_id: "1",
@@ -432,14 +467,7 @@ function generateSceneStructure(topic: string, duration: number): Scene[] {
     },
     {
       scene_id: "4",
-      metadata: {
-        scene_type: "actionable_content" as const,
-        points: 25,
-        duration_seconds: Math.round(duration * 60 * 0.25),
-        hasAchievementNotification: false,
-        scientific_basis: "Procedural Knowledge: Step-by-step guidance builds competency.",
-        icon: { sparkleIconName: "check-circle", sceneIconName: "clipboard-check" }
-      }
+      metadata: generateScene4Metadata(duration, scene4Type)
     },
     {
       scene_id: "5",
@@ -687,7 +715,8 @@ Guidelines:
     ];
   } catch (error) {
     console.error('Failed to generate custom icons, using fallbacks');
-    return generateSceneStructure(analysis.topic, 5) as unknown as Scene[];
+    const scene4Type = analysis.isCodeTopic ? "code_review" : "actionable_content";
+    return generateSceneStructure(analysis.topic, 5, scene4Type) as unknown as Scene[];
   }
 }
 async function generateScientificEvidenceAI(analysis: PromptAnalysis, model: any) {

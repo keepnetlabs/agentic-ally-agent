@@ -107,7 +107,7 @@ export interface Theme {
 }
 
 export interface SceneMetadata {
-  scene_type: "intro" | "goal" | "scenario" | "actionable_content" | "quiz" | "survey" | "nudge" | "summary";
+  scene_type: "intro" | "goal" | "scenario" | "actionable_content" | "code_review" | "quiz" | "survey" | "nudge" | "summary";
   points: number;
   duration_seconds: number;
   hasAchievementNotification: boolean;
@@ -209,6 +209,26 @@ interface ActionableScene extends BaseScene {
   tipConfig: {
     iconName: string;
   };
+}
+
+// Scene 4 Alternative: Code Review
+interface CodeReviewScene extends BaseScene {
+  title: string;
+  subtitle: string;
+  callToActionText: string;
+  code: {
+    language: string;
+    content: string;
+    lineNumbers: boolean;
+  };
+  vulnerability: {
+    name: string;
+    severity: "critical" | "high" | "medium";
+    description: string;
+    explanation: string;
+    cwe: string;
+  };
+  hints: string[];
 }
 
 // Scene 5: Quiz
@@ -313,7 +333,7 @@ export interface LanguageContent {
   "1": IntroScene;
   "2": GoalScene;
   "3": ScenarioScene;
-  "4": ActionableScene;
+  "4": ActionableScene | CodeReviewScene;
   "5": QuizScene;
   "6": SurveyScene;
   "7": ActionPlanScene;

@@ -9,6 +9,7 @@ import { generateScene1Prompt } from './scene-generators/scene1-intro-generator'
 import { generateScene2Prompt } from './scene-generators/scene2-goal-generator';
 import { generateVideoPrompt } from './scene-generators/scene3-video-generator';
 import { generateScene4Prompt } from './scene-generators/scene4-actionable-generator';
+import { generateScene4CodeReviewPrompt } from './scene-generators/scene4-code-review-generator';
 import { generateScene5Prompt } from './scene-generators/scene5-quiz-generator';
 import { generateScene6Prompt } from './scene-generators/scene6-survey-generator';
 import { generateScene7Prompt } from './scene-generators/scene7-nudge-generator';
@@ -56,8 +57,13 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
   const videoPrompt = videoData.prompt;
   const selectedVideoUrl = videoData.videoUrl;
   const selectedTranscript = videoData.transcript;
-  // Generate scene 4, 5, 6 prompts using modular generators
-  const scene4Prompt = generateScene4Prompt(analysis, microlearning);
+
+  // Determine Scene 4 type and generate appropriate prompt based on analysis
+  const isCodeTopic = analysis.isCodeTopic || false;
+  const scene4Prompt = isCodeTopic
+    ? generateScene4CodeReviewPrompt(analysis, microlearning)
+    : generateScene4Prompt(analysis, microlearning);
+
   const scene5Prompt = generateScene5Prompt(analysis, microlearning);
   const scene6Prompt = generateScene6Prompt(analysis, microlearning);
 
