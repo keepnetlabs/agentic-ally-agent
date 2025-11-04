@@ -1,18 +1,24 @@
 import { Tool } from '@mastra/core/tools';
 import { z } from 'zod';
-import { generateText } from 'ai';
-import * as parse5 from 'parse5'; // ← npm: parse5
 import { getModelWithOverride } from '../model-providers';
-import { cleanResponse } from '../utils/content-processors/json-cleaner';
-import { LOCALIZER_PARAMS } from '../utils/llm-generation-params';
-import { buildSystemPrompt } from '../utils/localization-language-rules';
+import { SceneType, getSceneTypeOrDefault } from '../types/scene-types';
+import { rewriteScene1Intro } from './scene-rewriters/scene1-intro-rewriter';
+import { rewriteScene2Goal } from './scene-rewriters/scene2-goal-rewriter';
+import { rewriteScene3Video } from './scene-rewriters/scene3-video-rewriter';
+import { rewriteScene4Actionable } from './scene-rewriters/scene4-actionable-rewriter';
+import { rewriteScene5Quiz } from './scene-rewriters/scene5-quiz-rewriter';
+import { rewriteScene6Survey } from './scene-rewriters/scene6-survey-rewriter';
+import { rewriteScene7Nudge } from './scene-rewriters/scene7-nudge-rewriter';
+import { rewriteScene8Summary } from './scene-rewriters/scene8-summary-rewriter';
+import { rewriteAppTexts } from './scene-rewriters/app-texts-rewriter';
 
 /* =========================================================
  * Schemas
  * =======================================================*/
 const TranslateJsonInputSchema = z.object({
     json: z.any(),
-    sourceLanguage: z.string().optional().default('English'),
+    microlearningStructure: z.any().describe('Base microlearning structure with scenes metadata'),
+    sourceLanguage: z.string().optional().default('en-gb'),
     targetLanguage: z.string(),
     topic: z.string().optional(),
     doNotTranslateKeys: z.array(z.string()).optional(),
@@ -27,311 +33,133 @@ const TranslateJsonOutputSchema = z.object({
 });
 
 /* =========================================================
- * HTML: auto-fix (parse5) + protect/restore
+ * Scene Type Detection & Mapping
  * =======================================================*/
 
-/** Bozuk/eksik kapanışlı HTML’i tarayıcı standardına göre normalize eder. */
-function autoFixHtml(html: string): string {
-    try {
-        // Fragment kullan: <p>..</p> gibi gömülü HTML’lerde <html><body> sarmalaması eklenmez
-        const frag = parse5.parseFragment(html);
-        return parse5.serialize(frag);
-    } catch {
-        return html; // graceful fallback
-    }
-}
+function getSceneRewriter(sceneType: SceneType): any {
+    const rewriterMap: Record<SceneType, any> = {
+        [SceneType.INTRO]: rewriteScene1Intro,
+        [SceneType.GOAL]: rewriteScene2Goal,
+        [SceneType.SCENARIO]: rewriteScene3Video, // scenario is the video scene
+        [SceneType.ACTIONABLE_CONTENT]: rewriteScene4Actionable,
+        [SceneType.CODE_REVIEW]: rewriteScene4Actionable, // Use same rewriter as actionable
+        [SceneType.QUIZ]: rewriteScene5Quiz,
+        [SceneType.SURVEY]: rewriteScene6Survey,
+        [SceneType.NUDGE]: rewriteScene7Nudge,
+        [SceneType.SUMMARY]: rewriteScene8Summary,
+    };
 
-/** Tag’leri token’layıp koru (LLM dokunmasın). */
-function protectHtmlTags(text: string): { protectedText: string; tagMap: Map<number, string> } {
-    const tagMap = new Map<number, string>();
-    let index = 0;
-    const protectedText = text.replace(/<[^>]+>/g, (tag) => {
-        const token = `__HTML${index}__`;
-        tagMap.set(index, tag);
-        index++;
-        return token;
-    });
-    return { protectedText, tagMap };
-}
-
-/** Token’lanmış tag’leri geri yükle. */
-function restoreHtmlTags(text: string, tagMap: Map<number, string>): string {
-    let out = text;
-    tagMap.forEach((tag, idx) => {
-        out = out.split(`__HTML${idx}__`).join(tag);
-    });
-    return out;
+    return rewriterMap[sceneType];
 }
 
 /* =========================================================
- * Extraction (yol + hafif bağlam) — HTML bulunan her string: auto-fix + protect
- * =======================================================*/
-interface ExtractedString {
-    path: string;
-    value: string;
-    context: string;
-    tagMap?: Map<number, string>;
-}
-
-function extractStringsWithPaths(obj: any, protectedKeys: string[], currentPath = ''): ExtractedString[] {
-    const results: ExtractedString[] = [];
-
-    const isProtectedKey = (key: string) =>
-        protectedKeys.some(pk => key.toLowerCase().includes(pk.toLowerCase())) ||
-        /^(icon(Name)?|id(s)?|url|src|scene_type|type|difficulty|headers|sender)$/i.test(key);
-
-    function traverse(current: any, path: string) {
-        if (typeof current === 'string') {
-            const parts = path.split('.');
-            const lastKey = parts[parts.length - 1];
-            if (isProtectedKey(lastKey)) return;
-
-            let context = 'text';
-            const lk = lastKey.toLowerCase();
-            if (lk.includes('title')) context = 'title';
-            else if (lk.includes('subject')) context = 'email_subject';
-            else if (lk.includes('description')) context = 'description';
-            else if (lk.includes('content')) context = 'content';
-            else if (lk.includes('message')) context = 'message';
-            else if (lk.includes('explanation')) context = 'explanation';
-
-            const hasHtml = current.includes('<') && current.includes('>');
-            if (hasHtml) {
-                const fixed = autoFixHtml(current);                    // ← önce onar
-                const { protectedText, tagMap } = protectHtmlTags(fixed); // ← sonra koru
-                results.push({ path, value: protectedText, context, tagMap });
-            } else {
-                results.push({ path, value: current, context });
-            }
-        } else if (Array.isArray(current)) {
-            current.forEach((item, i) => traverse(item, path ? `${path}[${i}]` : `[${i}]`));
-        } else if (current && typeof current === 'object') {
-            Object.keys(current).forEach((k) => traverse(current[k], path ? `${path}.${k}` : k));
-        }
-    }
-
-    traverse(obj, currentPath);
-    return results;
-}
-
-/* =========================================================
- * Bind back
- * =======================================================*/
-function bindTranslatedStrings(original: any, extracted: ExtractedString[], translated: string[]): any {
-    if (extracted.length !== translated.length) {
-        throw new Error(`Mismatch: extracted ${extracted.length} strings but got ${translated.length} translations`);
-    }
-    const result = JSON.parse(JSON.stringify(original));
-    extracted.forEach((item, idx) => {
-        let val = translated[idx];
-        if (item.tagMap && item.tagMap.size > 0) {
-            val = restoreHtmlTags(val, item.tagMap);
-        }
-        const parts = item.path.split(/\.|\[|\]/).filter(Boolean);
-        let cur = result;
-        for (let i = 0; i < parts.length - 1; i++) {
-            const p = parts[i];
-            cur = cur[isNaN(Number(p)) ? p : Number(p)];
-        }
-        const last = parts[parts.length - 1];
-        cur[isNaN(Number(last)) ? last : Number(last)] = val;
-    });
-    return result;
-}
-
-/* =========================================================
- * Robustness helpers (placeholder/ICU/URL/email/whitespace)
- * =======================================================*/
-const ICU_TOKEN_RE = /\{[^}]*,(\s*plural|\s*select)[^}]*\}/g;
-const SIMPLE_PLACEHOLDER_RE = /%[sd]|{{\s*[\w.-]+\s*}}|\{[\w.-]+\}/g;
-const URL_RE = /\bhttps?:\/\/[^\s<>"']+/gi;
-const EMAIL_RE = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi;
-
-function collectPlaceholders(s: string): string[] {
-    return [
-        ...(s.match(ICU_TOKEN_RE) || []),
-        ...(s.match(SIMPLE_PLACEHOLDER_RE) || []),
-    ].sort();
-}
-function placeholdersEqual(src: string, tgt: string): boolean {
-    const a = collectPlaceholders(src);
-    const b = collectPlaceholders(tgt);
-    if (a.length !== b.length) return false;
-    for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
-    return true;
-}
-function stringsEqualSet(a: string[], b: string[]) {
-    const A = new Set(a.map((x) => x.toLowerCase()));
-    const B = new Set(b.map((x) => x.toLowerCase()));
-    if (A.size !== B.size) return false;
-    for (const x of A) if (!B.has(x)) return false;
-    return true;
-}
-function edgeWhitespaceSig(s: string) {
-    const lead = s.match(/^\s*/)?.[0] ?? '';
-    const tail = s.match(/\s*$/)?.[0] ?? '';
-    return { lead, tail };
-}
-function isTrivialValue(s: string) {
-    const trimmed = s.trim();
-    if (trimmed === '') return true;
-    if (/^({{[\w.-]+}}|%[sd]|\{[\w.-]+\})$/.test(trimmed)) return true;
-    return false;
-}
-
-/* =========================================================
- * Chunking
- * =======================================================*/
-function computeChunkSize(items: ExtractedString[], maxJsonChars = 28_000) {
-    let size = 50;
-    let sample = Object.fromEntries(items.slice(0, size).map((it, i) => [String(i), it.value]));
-    let test = JSON.stringify(sample).length;
-    while (test > maxJsonChars && size > 5) {
-        size = Math.max(5, Math.floor(size * 0.7));
-        sample = Object.fromEntries(items.slice(0, size).map((it, i) => [String(i), it.value]));
-        test = JSON.stringify(sample).length;
-    }
-    return size;
-}
-
-/* =========================================================
- * Tool
+ * Scene-by-Scene Rewrite Tool
  * =======================================================*/
 export const translateLanguageJsonTool = new Tool({
     id: 'translate_language_json',
-    description: 'Translate only string values in a JSON while preserving structure, keys and non-string types',
+    description: 'Rewrite language content scene-by-scene using specialized rewriters for native quality. Each scene is rewritten by a domain-specific expert.',
     inputSchema: TranslateJsonInputSchema,
     outputSchema: TranslateJsonOutputSchema,
     execute: async (context: any) => {
         const {
             json,
-            sourceLanguage = 'English',
+            microlearningStructure,
+            sourceLanguage = 'en-gb',
             targetLanguage,
             topic,
-            doNotTranslateKeys = [],
             modelProvider,
             model: modelOverride
         } = context as z.infer<typeof TranslateJsonInputSchema>;
 
         const model = getModelWithOverride(modelProvider, modelOverride);
 
-        const protectedKeys = [...doNotTranslateKeys, 'scene_type'];
-        console.log('🔒 Protected keys:', protectedKeys);
-        console.log('📝 Source language:', sourceLanguage);
-        console.log('🎯 Topic:', topic || 'General');
-        console.log('🌍 Target language:', targetLanguage);
+        console.log('🎬 [SCENE REWRITE] Starting modular scene-by-scene rewrite');
+        console.log('📝 [SCENE REWRITE] Source:', sourceLanguage, '→ Target:', targetLanguage);
+        console.log('🎯 [SCENE REWRITE] Topic:', topic || 'General');
 
-        // 1) Extract
-        const extracted = extractStringsWithPaths(json, protectedKeys);
-        const htmlCount = extracted.filter(e => e.tagMap && e.tagMap.size > 0).length;
-        console.log(`📦 Extracted ${extracted.length} strings (${htmlCount} with HTML protection)`);
+        // Extract scenes metadata from microlearningStructure
+        const scenesMetadata = microlearningStructure?.scenes || [];
+        const appTexts = json.app_texts || {};
 
-        if (extracted.length === 0) {
+        if (scenesMetadata.length === 0) {
+            console.log('⚠️ [SCENE REWRITE] No scenes metadata found, returning original');
             return { success: true, data: json };
         }
 
-        // 2) Chunking
-        const CHUNK_SIZE = computeChunkSize(extracted);
-        const chunks: ExtractedString[][] = [];
-        for (let i = 0; i < extracted.length; i += CHUNK_SIZE) {
-            chunks.push(extracted.slice(i, i + CHUNK_SIZE));
-        }
-        console.log(`📦 Split into ${chunks.length} chunks (≈${CHUNK_SIZE} each)`);
+        console.log(`🎬 [SCENE REWRITE] Found ${scenesMetadata.length} scenes`);
 
-        // 3) Prompt
-        const topicContext = topic
-            ? `You are localizing content for a ${topic} security training. Use appropriate terminology for this security topic.`
-            : 'You are localizing general security training content.';
-
-        const system = buildSystemPrompt({
-            topicContext,
+        // Build rewrite context
+        const rewriteContext = {
             sourceLanguage,
             targetLanguage,
-            extractedLength: extracted.length
-        });
+            topic: topic || 'Cybersecurity training',
+            model
+        };
 
-        // 4) Translate (sade; tek retry yok — istersen kolayca eklersin)
-        const BATCH_SIZE = 3;
-        const issues: string[] = [];
+        // Rewrite function for a single scene
+        async function rewriteScene(sceneMetadata: any, sceneIndex: number): Promise<{ sceneId: string, content: any }> {
+            const sceneNumber = sceneIndex + 1;
+            const sceneId = sceneMetadata.scene_id;
+            const sceneTypeRaw = sceneMetadata.metadata?.scene_type;
+            const sceneType = getSceneTypeOrDefault(sceneTypeRaw);
+            const sceneContent = json[sceneId];
 
-        async function translateChunk(chunk: ExtractedString[], chunkIndex: number): Promise<string[]> {
-            const chunkNumber = chunkIndex + 1;
-            const trivialMask = chunk.map(it => isTrivialValue(it.value));
+            if (!sceneContent) {
+                console.warn(`⚠️ [SCENE ${sceneNumber}] No content found for scene_id ${sceneId}`);
+                return { sceneId, content: null };
+            }
+
+            const rewriter = getSceneRewriter(sceneType);
+            console.log(`🎬 [SCENE ${sceneNumber}/${scenesMetadata.length}] Rewriting ${sceneType} (id: ${sceneId})`);
 
             try {
-                const numberedInput: Record<string, string> = {};
-                chunk.forEach((item, i) => numberedInput[String(i)] = item.value);
-
-                const user =
-                    `Localize these ${sourceLanguage} values to ${targetLanguage} ONLY. Follow all system rules above.
-                    Do NOT modify HTML tokens (__HTML#__) or placeholders.
-
-                    INPUT:
-                    ${JSON.stringify(numberedInput, null, 2)}
-
-                    OUTPUT (${targetLanguage} ONLY, valid JSON object with keys "0".."${chunk.length - 1}"):`;
-
-                const res = await generateText({
-                    model,
-                    messages: [
-                        { role: 'system', content: system },
-                        { role: 'user', content: user }
-                    ],
-                    ...LOCALIZER_PARAMS,
-                });
-
-                const cleaned = cleanResponse(res.text, `chunk-${chunkNumber}`);
-                const obj = JSON.parse(cleaned);
-
-                const out: string[] = [];
-                for (let i = 0; i < chunk.length; i++) {
-                    const src = chunk[i].value;
-                    let tgt = trivialMask[i] ? src : obj[String(i)];
-                    if (tgt === undefined) throw new Error(`Missing key "${i}" in model output`);
-
-                    // Placeholders / URL / email / whitespace koru
-                    if (!placeholdersEqual(src, tgt)) {
-                        issues.push(`chunk ${chunkNumber} index ${i}: placeholder mismatch`);
-                    }
-                    const srcUrls = src.match(URL_RE) || [];
-                    const tgtUrls = tgt.match(URL_RE) || [];
-                    if (!stringsEqualSet(srcUrls, tgtUrls)) {
-                        issues.push(`chunk ${chunkNumber} index ${i}: url mismatch`);
-                    }
-                    const srcEmails = src.match(EMAIL_RE) || [];
-                    const tgtEmails = tgt.match(EMAIL_RE) || [];
-                    if (!stringsEqualSet(srcEmails, tgtEmails)) {
-                        issues.push(`chunk ${chunkNumber} index ${i}: email mismatch`);
-                    }
-
-                    const sSig = edgeWhitespaceSig(src);
-                    const tSig = edgeWhitespaceSig(tgt);
-                    if (sSig.lead.length !== tSig.lead.length || sSig.tail.length !== tSig.tail.length) {
-                        tgt = sSig.lead + tgt.trim() + sSig.tail;
-                    }
-
-                    out.push(tgt);
-                }
-                return out;
-
-            } catch (e) {
-                console.warn(`⚠️ Chunk ${chunkNumber} failed, using originals (error: ${String(e)})`);
-                return chunk.map(c => c.value);
+                const rewrittenContent = await rewriter(sceneContent, rewriteContext);
+                console.log(`✅ [SCENE ${sceneNumber}/${scenesMetadata.length}] Rewrite completed`);
+                return { sceneId, content: rewrittenContent };
+            } catch (error) {
+                console.error(`❌ [SCENE ${sceneNumber}/${scenesMetadata.length}] Rewrite failed:`, error);
+                console.warn(`⚠️ [SCENE ${sceneNumber}/${scenesMetadata.length}] Using original as fallback`);
+                return { sceneId, content: sceneContent }; // Graceful fallback
             }
         }
 
-        const allTranslated: string[] = [];
-        for (let start = 0; start < chunks.length; start += BATCH_SIZE) {
-            const batch = chunks.slice(start, Math.min(start + BATCH_SIZE, chunks.length));
-            const results = await Promise.all(batch.map((ch, idx) => translateChunk(ch, start + idx)));
-            results.forEach(r => allTranslated.push(...r));
+        // Process all scenes in parallel
+        console.log(`📦 [PARALLEL] Processing all ${scenesMetadata.length} scenes simultaneously`);
+
+        const allResults = await Promise.all(
+            scenesMetadata.map((sceneMetadata: any, idx: number) => rewriteScene(sceneMetadata, idx))
+        );
+
+        // Map results to scene IDs
+        const rewrittenScenesMap: Record<string, any> = {};
+        allResults.forEach(({ sceneId, content }) => {
+            if (content) {
+                rewrittenScenesMap[sceneId] = content;
+            }
+        });
+
+        // Rewrite app_texts
+        console.log('📱 [APP_TEXTS] Rewriting application texts');
+        let rewrittenAppTexts = appTexts;
+        try {
+            rewrittenAppTexts = await rewriteAppTexts(appTexts, rewriteContext);
+            console.log('✅ [APP_TEXTS] Rewrite completed');
+        } catch (error) {
+            console.error('❌ [APP_TEXTS] Rewrite failed, using original:', error);
         }
 
-        if (allTranslated.length !== extracted.length) {
-            throw new Error(`Total mismatch: expected ${extracted.length}, got ${allTranslated.length}`);
-        }
+        // Combine results - preserve original structure with rewritten scenes
+        const result = {
+            ...json, // Keep all original keys
+            ...rewrittenScenesMap, // Override with rewritten scene content
+            app_texts: rewrittenAppTexts
+        };
 
-        const result = bindTranslatedStrings(json, extracted, allTranslated);
-        return { success: true, data: result, error: issues.length ? `Completed with ${issues.length} soft issues` : undefined };
+        console.log(`🎉 [SCENE REWRITE] Completed: ${Object.keys(rewrittenScenesMap).length} scenes rewritten`);
+
+        return {
+            success: true,
+            data: result
+        };
     }
 });

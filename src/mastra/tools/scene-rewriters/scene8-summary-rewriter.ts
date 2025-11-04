@@ -1,0 +1,61 @@
+import { generateText } from 'ai';
+import { cleanResponse } from '../../utils/content-processors/json-cleaner';
+import { LOCALIZER_PARAMS } from '../../utils/llm-generation-params';
+
+interface RewriteContext {
+    sourceLanguage: string;
+    targetLanguage: string;
+    topic: string;
+    model: any;
+}
+
+export async function rewriteScene8Summary(scene: any, context: RewriteContext): Promise<any> {
+    const { sourceLanguage, targetLanguage, topic, model } = context;
+
+    const systemPrompt = `You are a ${targetLanguage} cybersecurity trainer creating training summary FROM SCRATCH.
+
+IMPORTANT: You will see a JSON in ${sourceLanguage}. DO NOT translate it. Instead:
+1. UNDERSTAND the message and purpose
+2. REWRITE ALL text values in the JSON in native ${targetLanguage}
+3. Think like a native ${targetLanguage} educator concluding a lesson
+
+What to rewrite:
+- ALL string values in the JSON
+
+What NOT to change:
+- JSON keys
+- URLs, IDs, booleans, numbers, scene_type
+
+Rules:
+- Keep JSON structure identical
+- Rewrite all text naturally - memorable and effective
+- Return only valid JSON`;
+
+    const userPrompt = `Topic: ${topic}
+
+Reference JSON (${sourceLanguage}) - understand, don't translate:
+${JSON.stringify(scene, null, 2)}
+
+Rewrite ALL text values in native ${targetLanguage}. Make key points memorable.
+
+Output (JSON only):`;
+
+    try {
+        const response = await generateText({
+            model,
+            messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: userPrompt }
+            ],
+            ...LOCALIZER_PARAMS,
+        });
+
+        const cleaned = cleanResponse(response.text, 'scene8-summary');
+        const rewritten = JSON.parse(cleaned);
+
+        return rewritten;
+    } catch (error) {
+        console.error('❌ Scene 8 (Summary) rewrite failed:', error);
+        throw error;
+    }
+}
