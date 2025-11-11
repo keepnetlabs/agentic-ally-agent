@@ -247,6 +247,371 @@ const URL_DATABASE: Record<string, ResourceURL[]> = {
     }
   ],
 
+  // ===== DEVELOPMENT/SECURE CODING TOPICS =====
+  'secure-coding': [
+    {
+      title: 'OWASP Code Review Guide',
+      url: 'https://owasp.org/www-project-code-review-guide/',
+      category: 'DEVELOPMENT'
+    },
+    {
+      title: 'OWASP Cheat Sheet Series - Secure Coding',
+      url: 'https://cheatsheetseries.owasp.org/index.html',
+      category: 'DEVELOPMENT'
+    }
+  ],
+
+  'code-review': [
+    {
+      title: 'OWASP Code Review Guide',
+      url: 'https://owasp.org/www-project-code-review-guide/',
+      category: 'DEVELOPMENT'
+    },
+    {
+      title: 'OWASP Testing Guide',
+      url: 'https://owasp.org/www-project-web-security-testing-guide/',
+      category: 'DEVELOPMENT'
+    }
+  ],
+
+  'api-security': [
+    {
+      title: 'OWASP API Security Top 10',
+      url: 'https://owasp.org/www-project-api-security/',
+      category: 'DEVELOPMENT'
+    },
+    {
+      title: 'OWASP API Security Cheat Sheet',
+      url: 'https://cheatsheetseries.owasp.org/cheatsheets/REST_API_Cheat_Sheet.html',
+      category: 'DEVELOPMENT'
+    }
+  ],
+
+  'vulnerabilities': [
+    {
+      title: 'OWASP Top 10 Web Application Security Risks',
+      url: 'https://owasp.org/www-project-top-ten/',
+      category: 'DEVELOPMENT'
+    },
+    {
+      title: 'CVE - Common Vulnerabilities and Exposures',
+      url: 'https://www.cve.org/',
+      category: 'DEVELOPMENT'
+    }
+  ],
+
+  'injection': [
+    {
+      title: 'OWASP Injection Prevention Cheat Sheet',
+      url: 'https://cheatsheetseries.owasp.org/cheatsheets/Injection_Prevention_Cheat_Sheet.html',
+      category: 'DEVELOPMENT'
+    },
+    {
+      title: 'OWASP SQL Injection Prevention',
+      url: 'https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html',
+      category: 'DEVELOPMENT'
+    }
+  ],
+
+  'xss': [
+    {
+      title: 'OWASP Cross Site Scripting (XSS) Prevention',
+      url: 'https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html',
+      category: 'DEVELOPMENT'
+    },
+    {
+      title: 'OWASP DOM based XSS Prevention',
+      url: 'https://cheatsheetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.html',
+      category: 'DEVELOPMENT'
+    }
+  ],
+
+  'sql-injection': [
+    {
+      title: 'OWASP SQL Injection Prevention',
+      url: 'https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html',
+      category: 'DEVELOPMENT'
+    },
+    {
+      title: 'OWASP Query Parameterization Cheat Sheet',
+      url: 'https://cheatsheetseries.owasp.org/cheatsheets/Query_Parameterization_Cheat_Sheet.html',
+      category: 'DEVELOPMENT'
+    }
+  ],
+
+  'input-validation': [
+    {
+      title: 'OWASP Input Validation Cheat Sheet',
+      url: 'https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html',
+      category: 'DEVELOPMENT'
+    },
+    {
+      title: 'OWASP Deserialization Cheat Sheet',
+      url: 'https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html',
+      category: 'DEVELOPMENT'
+    }
+  ],
+
+  'cryptography': [
+    {
+      title: 'OWASP Cryptographic Storage Cheat Sheet',
+      url: 'https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html',
+      category: 'DEVELOPMENT'
+    },
+    {
+      title: 'OWASP Key Management Cheat Sheet',
+      url: 'https://cheatsheetseries.owasp.org/cheatsheets/Key_Management_Cheat_Sheet.html',
+      category: 'DEVELOPMENT'
+    }
+  ],
+
+  'authentication': [
+    {
+      title: 'OWASP Authentication Cheat Sheet',
+      url: 'https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html',
+      category: 'DEVELOPMENT'
+    },
+    {
+      title: 'OWASP Session Management Cheat Sheet',
+      url: 'https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html',
+      category: 'DEVELOPMENT'
+    }
+  ],
+
+  'authorization': [
+    {
+      title: 'OWASP Authorization Cheat Sheet',
+      url: 'https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html',
+      category: 'DEVELOPMENT'
+    },
+    {
+      title: 'OWASP Access Control Cheat Sheet',
+      url: 'https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html',
+      category: 'DEVELOPMENT'
+    }
+  ],
+
+  'dependency-management': [
+    {
+      title: 'OWASP Supply Chain Security',
+      url: 'https://owasp.org/www-project-supply-chain-security/',
+      category: 'DEVELOPMENT'
+    },
+    {
+      title: 'OWASP Dependency Checker',
+      url: 'https://owasp.org/www-project-dependency-check/',
+      category: 'DEVELOPMENT'
+    }
+  ],
+
+  'static-analysis': [
+    {
+      title: 'OWASP Source Code Analysis Tools',
+      url: 'https://owasp.org/www-community/controls/Static_Code_Analysis',
+      category: 'DEVELOPMENT'
+    },
+    {
+      title: 'OWASP SAST Cheat Sheet',
+      url: 'https://cheatsheetseries.owasp.org/index.html',
+      category: 'DEVELOPMENT'
+    }
+  ],
+
+  'secrets-management': [
+    {
+      title: 'OWASP Secrets Management Cheat Sheet',
+      url: 'https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html',
+      category: 'DEVELOPMENT'
+    },
+    {
+      title: 'OWASP Credential Handling Cheat Sheet',
+      url: 'https://cheatsheetseries.owasp.org/cheatsheets/Credential_Stuffing_Prevention_Cheat_Sheet.html',
+      category: 'DEVELOPMENT'
+    }
+  ],
+
+  'ci-cd': [
+    {
+      title: 'OWASP Top 10 CI/CD Security Risks',
+      url: 'https://owasp.org/www-project-top-10-ci-cd-security-risks/',
+      category: 'DEVELOPMENT'
+    },
+    {
+      title: 'OWASP Testing Guide - CI/CD',
+      url: 'https://owasp.org/www-project-web-security-testing-guide/',
+      category: 'DEVELOPMENT'
+    }
+  ],
+
+  'devops': [
+    {
+      title: 'OWASP Top 10 CI/CD Security Risks',
+      url: 'https://owasp.org/www-project-top-10-ci-cd-security-risks/',
+      category: 'DEVELOPMENT'
+    },
+    {
+      title: 'OWASP Supply Chain Security',
+      url: 'https://owasp.org/www-project-supply-chain-security/',
+      category: 'DEVELOPMENT'
+    }
+  ],
+
+  'version-control': [
+    {
+      title: 'OWASP Code Review Guide',
+      url: 'https://owasp.org/www-project-code-review-guide/',
+      category: 'DEVELOPMENT'
+    },
+    {
+      title: 'OWASP Secrets Management Cheat Sheet',
+      url: 'https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html',
+      category: 'DEVELOPMENT'
+    }
+  ],
+
+  'testing': [
+    {
+      title: 'OWASP Security Testing Guide',
+      url: 'https://owasp.org/www-project-web-security-testing-guide/',
+      category: 'DEVELOPMENT'
+    },
+    {
+      title: 'OWASP Testing Checklist',
+      url: 'https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/README',
+      category: 'DEVELOPMENT'
+    }
+  ],
+
+  'feature-flags': [
+    {
+      title: 'OWASP Secure Coding Practices',
+      url: 'https://owasp.org/www-project-code-review-guide/',
+      category: 'DEVELOPMENT'
+    },
+    {
+      title: 'OWASP Configuration Management',
+      url: 'https://cheatsheetseries.owasp.org/cheatsheets/Configuration_Cheat_Sheet.html',
+      category: 'DEVELOPMENT'
+    }
+  ],
+
+  'legacy-code': [
+    {
+      title: 'OWASP Code Review Guide',
+      url: 'https://owasp.org/www-project-code-review-guide/',
+      category: 'DEVELOPMENT'
+    },
+    {
+      title: 'OWASP Testing for Legacy Applications',
+      url: 'https://owasp.org/www-project-web-security-testing-guide/',
+      category: 'DEVELOPMENT'
+    }
+  ],
+
+  'logging': [
+    {
+      title: 'OWASP Logging Cheat Sheet',
+      url: 'https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html',
+      category: 'DEVELOPMENT'
+    },
+    {
+      title: 'OWASP Logging Security Best Practices',
+      url: 'https://owasp.org/www-community/controls/Application_Logging',
+      category: 'DEVELOPMENT'
+    }
+  ],
+
+  'monitoring': [
+    {
+      title: 'OWASP Application Security Monitoring',
+      url: 'https://owasp.org/www-community/controls/Application_Logging',
+      category: 'DEVELOPMENT'
+    },
+    {
+      title: 'OWASP Logging Cheat Sheet',
+      url: 'https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html',
+      category: 'DEVELOPMENT'
+    }
+  ],
+
+  'data-masking': [
+    {
+      title: 'OWASP Logging Cheat Sheet',
+      url: 'https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html',
+      category: 'DEVELOPMENT'
+    },
+    {
+      title: 'OWASP Sensitive Data Exposure Prevention',
+      url: 'https://owasp.org/www-project-top-ten/',
+      category: 'DEVELOPMENT'
+    }
+  ],
+
+  'rate-limiting': [
+    {
+      title: 'OWASP Brute Force Protection Cheat Sheet',
+      url: 'https://cheatsheetseries.owasp.org/cheatsheets/Brute_Force_Protection_Cheat_Sheet.html',
+      category: 'DEVELOPMENT'
+    },
+    {
+      title: 'OWASP HTML5 Security Cheat Sheet',
+      url: 'https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html',
+      category: 'DEVELOPMENT'
+    }
+  ],
+
+  'brute-force-protection': [
+    {
+      title: 'OWASP Brute Force Protection Cheat Sheet',
+      url: 'https://cheatsheetseries.owasp.org/cheatsheets/Brute_Force_Protection_Cheat_Sheet.html',
+      category: 'DEVELOPMENT'
+    },
+    {
+      title: 'OWASP Account Lockout Strategies',
+      url: 'https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html',
+      category: 'DEVELOPMENT'
+    }
+  ],
+
+  'access-control': [
+    {
+      title: 'OWASP Access Control Cheat Sheet',
+      url: 'https://cheatsheetseries.owasp.org/cheatsheets/Access_Control_Cheat_Sheet.html',
+      category: 'DEVELOPMENT'
+    },
+    {
+      title: 'OWASP Authorization Cheat Sheet',
+      url: 'https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html',
+      category: 'DEVELOPMENT'
+    }
+  ],
+
+  'configuration-management': [
+    {
+      title: 'OWASP Secrets Management Cheat Sheet',
+      url: 'https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html',
+      category: 'DEVELOPMENT'
+    },
+    {
+      title: 'OWASP Docker Security Cheat Sheet',
+      url: 'https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html',
+      category: 'DEVELOPMENT'
+    }
+  ],
+
+  'vulnerability-management': [
+    {
+      title: 'OWASP Vulnerability Management Guide',
+      url: 'https://owasp.org/www-project-vulnerability-management-guide/',
+      category: 'DEVELOPMENT'
+    },
+    {
+      title: 'OWASP Top 10 Security Risks',
+      url: 'https://owasp.org/www-project-top-ten/',
+      category: 'DEVELOPMENT'
+    }
+  ],
+
   // ===== PROCESS TOPICS =====
   'incident-response': [
     {
@@ -288,6 +653,29 @@ const URL_DATABASE: Record<string, ResourceURL[]> = {
   ],
 
   // ===== CATEGORY-LEVEL FALLBACKS =====
+  'DEVELOPMENT': [
+    {
+      title: 'OWASP Code Review Guide',
+      url: 'https://owasp.org/www-project-code-review-guide/',
+      category: 'DEVELOPMENT'
+    },
+    {
+      title: 'OWASP Top 10 Web Application Security Risks',
+      url: 'https://owasp.org/www-project-top-ten/',
+      category: 'DEVELOPMENT'
+    },
+    {
+      title: 'OWASP Cheat Sheet Series - Secure Coding',
+      url: 'https://cheatsheetseries.owasp.org/index.html',
+      category: 'DEVELOPMENT'
+    },
+    {
+      title: 'OWASP Security Testing Guide',
+      url: 'https://owasp.org/www-project-web-security-testing-guide/',
+      category: 'DEVELOPMENT'
+    }
+  ],
+
   'THREAT': [
     {
       title: 'Insider Threat Awareness Training Guide',
@@ -346,18 +734,18 @@ const URL_DATABASE: Record<string, ResourceURL[]> = {
  * Resolves the most relevant resource URLs for a given topic, category, and department
  * Uses 3-level fallback logic:
  * 1. Topic-specific URLs (e.g., "phishing")
- * 2. Category fallback (e.g., "THREAT" for phishing/quishing/smishing)
+ * 2. Category fallback (e.g., "THREAT" for phishing/quishing/smishing, "DEVELOPMENT" for code topics)
  * 3. Generic fallback (catch-all)
  *
  * @param topic - The security topic (e.g., "phishing", "mfa", "ransomware")
- * @param category - The category (THREAT, TOOL, PROCESS)
- * @param department - Optional department context (Finance, IT, HR, Operations)
+ * @param category - The category (THREAT, TOOL, PROCESS, DEVELOPMENT)
+ * @param isCode - If true, ensures DEVELOPMENT resources for code/software topics
  * @returns Array of ResourceURL objects - top 2 most relevant resources
  */
 export function resolveResourceUrls(
   topic: string,
   category: string,
-  department?: string
+  isCode: boolean = false
 ): ResourceURL[] {
   const topicKey = topic.toLowerCase().replace(/\s+/g, '-');
 
@@ -366,12 +754,17 @@ export function resolveResourceUrls(
     return URL_DATABASE[topicKey].slice(0, 2);
   }
 
-  // LEVEL 2: Category fallback (THREAT/TOOL/PROCESS)
-  if (URL_DATABASE[category] && URL_DATABASE[category].length > 0) {
-    return URL_DATABASE[category].slice(0, 2);
+  // LEVEL 2: Category fallback (THREAT/TOOL/PROCESS/DEVELOPMENT)
+  // If isCode=true and not already DEVELOPMENT, use DEVELOPMENT as fallback
+  const fallbackCategory = isCode && category !== 'DEVELOPMENT' ? 'DEVELOPMENT' : category;
+
+  if (URL_DATABASE[fallbackCategory] && URL_DATABASE[fallbackCategory].length > 0) {
+    console.log(`  📚 Using fallback category: ${fallbackCategory}${isCode ? ' (code topic)' : ''}`);
+    return URL_DATABASE[fallbackCategory].slice(0, 2);
   }
 
   // LEVEL 3: Generic fallback (ultimate safety net)
+  console.log(`  📚 Using GENERIC fallback`);
   return (URL_DATABASE['GENERIC'] || []).slice(0, 2);
 }
 
@@ -379,6 +772,9 @@ export function resolveResourceUrls(
  * Alias function for Scene 8 integration - Enhanced with keyTopics
  * Uses keyTopics array for dynamic resource resolution
  * Falls back to category + generic if keyTopics are not available
+ *
+ * @param analysis - Analysis with topic, category, keyTopics, department, language, and isCode flag
+ * @param isCode - If true, ensures DEVELOPMENT resources for code/software topics (fallback priority: keyTopics → DEVELOPMENT → generic)
  */
 export function getResourcesForScene8(analysis: {
   topic: string;
@@ -386,7 +782,7 @@ export function getResourcesForScene8(analysis: {
   keyTopics?: string[];
   department?: string;
   language?: string;
-}): ResourceURL[] {
+}, isCode: boolean = false): ResourceURL[] {
   console.log('🔗 getResourcesForScene8 called');
   console.log('  keyTopics input:', analysis.keyTopics);
 
@@ -406,9 +802,10 @@ export function getResourcesForScene8(analysis: {
       console.log(`  Checking keyTopic: "${keyTopic}" → normalized: "${topicKey}"`);
 
       // LEVEL 1: Try exact match
-      if (URL_DATABASE[topicKey] && URL_DATABASE[topicKey].length > 0) {
-        console.log(`    ✅ Found ${URL_DATABASE[topicKey].length} resources for "${topicKey}"`);
-        resources.push(...URL_DATABASE[topicKey]);
+      const topicResources = URL_DATABASE[topicKey];
+      if (Array.isArray(topicResources) && topicResources.length > 0) {
+        console.log(`    ✅ Found ${topicResources.length} resources for "${topicKey}"`);
+        resources.push(...topicResources);
         continue;
       }
 
@@ -419,9 +816,10 @@ export function getResourcesForScene8(analysis: {
       let parentTopicFound = false;
 
       for (const word of words) {
-        if (URL_DATABASE[word] && URL_DATABASE[word].length > 0) {
+        const wordResources = URL_DATABASE[word];
+        if (Array.isArray(wordResources) && wordResources.length > 0) {
           console.log(`    ✅ Found parent topic match: "${word}" from "${topicKey}"`);
-          resources.push(...URL_DATABASE[word]);
+          resources.push(...wordResources);
           parentTopicFound = true;
           break;
         }
@@ -457,11 +855,11 @@ export function getResourcesForScene8(analysis: {
     console.log(`  ⚠️ keyTopics empty or undefined, using standard resolution`);
   }
 
-  // LEVEL 2: Fallback to standard topic/category resolution
-  console.log(`  Fallback: Using topic="${analysis.topic}", category="${analysis.category}"`);
+  // LEVEL 2: Fallback to standard topic/category resolution with isCode flag
+  console.log(`  Fallback: Using topic="${analysis.topic}", category="${analysis.category}", isCode=${isCode}`);
   return resolveResourceUrls(
     analysis.topic,
     analysis.category,
-    analysis.department
+    isCode // Pass isCode flag to ensure DEVELOPMENT resources if needed
   );
 }

@@ -9,6 +9,7 @@ const CodeReviewCheckSchema = z.object({
   originalCode: z.string().describe('The original code with the issue'),
   fixedCode: z.string().describe('The code after developer attempted to fix it'),
   language: z.string().describe('Programming language (javascript, python, java, etc.)'),
+  outputLanguage: z.string().optional().default('en').describe('Output language for feedback, explanation and hint (e.g., "en", "tr", "de", "fr", etc.)'),
   modelProvider: z.enum(['OPENAI', 'WORKERS_AI', 'GOOGLE']).optional().describe('Model provider'),
   model: z.string().optional().describe('Model name override'),
 });
@@ -18,10 +19,10 @@ const CodeReviewCheckOutputSchema = z.object({
   data: z.object({
     isCorrect: z.boolean().describe('Whether the fix properly addresses the vulnerability'),
     severity: z.enum(['correct', 'partial', 'incorrect']).describe('How close the fix is to correct'),
-    feedback: z.string().describe('Immediate 1-2 sentence feedback for learner'),
-    explanation: z.string().describe('Detailed explanation why correct/incorrect'),
+    feedback: z.string().describe('Immediate 1-2 sentence feedback for learner (in requested output language)'),
+    explanation: z.string().describe('Detailed explanation why correct/incorrect (in requested output language)'),
     points: z.number().min(0).max(25).describe('Points earned (0-25)'),
-    nextStep: z.string().optional().describe('Hint or guidance for next attempt if incorrect'),
+    hint: z.string().optional().describe('Solution-oriented hint for next attempt if incorrect (in requested output language)'),
   }),
   error: z.string().optional(),
 });
@@ -38,6 +39,7 @@ export const codeReviewCheckTool = new Tool({
       originalCode,
       fixedCode,
       language,
+      outputLanguage = 'en',
       modelProvider,
       model: modelOverride,
     } = input;
@@ -53,7 +55,8 @@ export const codeReviewCheckTool = new Tool({
         issueType,
         originalCode,
         fixedCode,
-        language
+        language,
+        outputLanguage
       );
 
       // Call AI for validation
@@ -65,6 +68,8 @@ export const codeReviewCheckTool = new Tool({
             content: `You are a pragmatic code reviewer. Your job is to validate if a developer correctly fixed a code issue (could be a security vulnerability, logic error, performance problem, or other code defect).
 
 Focus on: Does the fix solve the issue? If yes, it's correct - don't worry about whether it's the most elegant or best-practice approach. There are infinite ways to solve a problem.
+
+IMPORTANT: Respond in ${outputLanguage} language. All feedback, explanation, and hint must be in ${outputLanguage}.
 
 Return ONLY valid JSON - NO markdown, NO backticks, NO formatting. Start directly with {.`,
           },
@@ -93,7 +98,7 @@ Return ONLY valid JSON - NO markdown, NO backticks, NO formatting. Start directl
           feedback: result.feedback,
           explanation: result.explanation,
           points: points,
-          nextStep: result.nextStep,
+          hint: result.hint || result.nextStep || '', // Always return hint, empty string if not provided
         },
       };
     } catch (error) {
@@ -107,6 +112,7 @@ Return ONLY valid JSON - NO markdown, NO backticks, NO formatting. Start directl
           feedback: 'Error validating code',
           explanation: `Code review validation failed: ${error instanceof Error ? error.message : String(error)}`,
           points: 0,
+          hint: '', // Always return hint field
         },
         error: `Code review validation failed: ${error instanceof Error ? error.message : String(error)}`,
       };
@@ -121,7 +127,8 @@ function buildCodeReviewCheckPrompt(
   issueType: string,
   originalCode: string,
   fixedCode: string,
-  language: string
+  language: string,
+  outputLanguage: string = 'en'
 ): string {
   return `Code Issue Validation Task:
 
@@ -138,9 +145,12 @@ ${fixedCode}
 \`\`\`
 
 LANGUAGE: ${language}
+OUTPUT LANGUAGE: ${outputLanguage}
 
 VALIDATION TASK:
 Review the developer's fix and determine if it properly addresses the "${issueType}" issue.
+
+IMPORTANT: Respond in ${outputLanguage}. All feedback, explanation, and hint must be clear and actionable in ${outputLanguage}.
 
 Criteria for a CORRECT fix:
 1. The issue is properly resolved (the problem no longer exists)
@@ -152,13 +162,13 @@ What matters:
 - There are many valid ways to solve an issue - accept any valid solution
 - Code style, formatting, or elegance don't matter
 
-Return JSON:
+Return JSON (in ${outputLanguage}):
 {
   "isCorrect": boolean,
   "severity": "correct|partial|incorrect",
-  "feedback": "1-2 sentence immediate feedback",
-  "explanation": "2-3 sentences explaining why the fix works or what's still broken",
-  "nextStep": "If incorrect, provide a hint for the developer to try again (optional)"
+  "feedback": "1-2 sentence immediate feedback (in ${outputLanguage})",
+  "explanation": "2-3 sentences explaining why the fix works or what's still broken (in ${outputLanguage})",
+  "hint": "If incorrect, provide a solution-oriented hint for the developer to try again (optional, in ${outputLanguage})"
 }
 
 IMPORTANT:

@@ -2,122 +2,146 @@
   {
     "title": "Security Awareness Podcast: Deepfake Phishing",
     "url": "https://www.youtube.com/watch?v=6PMGH-7JQd0",
-    "topics": ["deepfake"]
+    "topics": ["deepfake"],
+    "audience": "general"
   },
   {
     "title": "Security Awareness Podcast: Cyber Insurance Essentials",
     "url": "https://www.youtube.com/watch?v=Ap2dxzl7PSw",
-    "topics": ["cyber insurance"]
+    "topics": ["cyber insurance"],
+    "audience": "general"
   },
   {
     "title": "Security Awareness Podcast: What Is Vishing?",
     "url": "https://www.youtube.com/watch?v=HFPHdRAccSE",
-    "topics": ["vishing"]
+    "topics": ["vishing"],
+    "audience": "general"
   },
   {
     "title": "Security Awareness Podcast: What is Smishing?",
     "url": "https://www.youtube.com/watch?v=80FGy1dI7c8",
-    "topics": ["smishing"]
+    "topics": ["smishing"],
+    "audience": "general"
   },
   {
     "title": "Security Awareness Podcast: What is Quishing?",
     "url": "https://www.youtube.com/watch?v=8FAQppIRNe0",
-    "topics": ["quishing"]
+    "topics": ["quishing"],
+    "audience": "general"
   },
   {
     "title": "Security Awareness Podcast: What is Tailgating? How Physical Access Breaches Happen",
     "url": "https://www.youtube.com/watch?v=WYTm2BiDwX4",
-    "topics": ["tailgating"]
+    "topics": ["tailgating"],
+    "audience": "general"
   },
   {
     "title": "Do You Know Who Has Access to Your Sensitive Data?",
     "url": "https://www.youtube.com/watch?v=1AVbKrnTCJk",
-    "topics": ["data protection"]
+    "topics": ["data protection"],
+    "audience": "general"
   },
   {
     "title": "Security Awareness Podcast: Top 5 Recommendations for Effective Human Cyber Risk Management",
     "url": "https://www.youtube.com/watch?v=KTCg1vnxrrk",
-    "topics": ["human risk"]
+    "topics": ["human risk"],
+    "audience": "general"
   },
   {
     "title": "Real-Life Security Awareness Training Story Series: SMS Phishing Attack Breached Company Systems",
     "url": "https://www.youtube.com/watch?v=PjgifJNCDjw",
-    "topics": ["smishing"]
+    "topics": ["smishing"],
+    "audience": "general"
   },
   {
     "title": "Real-Life Security Awareness Training Story Series: Europe's Biggest Phone Fraud",
     "url": "https://www.youtube.com/watch?v=c92y_oWbrwE",
-    "topics": ["vishing"]
+    "topics": ["vishing"],
+    "audience": "general"
   },
   {
     "title": "Real-Life Security Awareness Training Story Series: How a Hacked Translation App Led to Espionage",
     "url": "https://www.youtube.com/watch?v=03rWVEf6c1k",
-    "topics": ["malware"]
+    "topics": ["malware"],
+    "audience": "general"
   },
   {
     "title": "Real-Life Security Awareness Training Story Series: SIM Swap Attack",
     "url": "https://www.youtube.com/watch?v=ucrAnhWDiq0",
-    "topics": ["sim swap"]
+    "topics": ["sim swap"],
+    "audience": "general"
   },
   {
     "title": "Real-Life Security Awareness Training Story Series: Beware of Smishing and Vishing Scams",
     "url": "https://www.youtube.com/watch?v=3QWkEHaQYAA",
-    "topics": ["social engineering", "smishing", "vishing", "impersonation"]
+    "topics": ["social engineering", "smishing", "vishing", "impersonation"],
+    "audience": "general"
   },
   {
     "title": "Real-Life Security Awareness Training Story Series: Amazon Voice Phishing Scam",
     "url": "https://www.youtube.com/watch?v=65faDEZ7-0U",
-    "topics": ["vishing"]
+    "topics": ["vishing"],
+    "audience": "general"
   },
   {
     "title": "Security Awareness Training Story Series: A Supervisor's Lesson on Subtle Harassment",
     "url": "https://www.youtube.com/watch?v=FpK1T9HFdqs",
-    "topics": ["workplace harassment", "awareness"]
+    "topics": ["workplace harassment", "awareness"],
+    "audience": "general"
   },
   {
     "title": "Real-Life Cybersecurity Awareness Story Series: Why Scanning QR codes Safely Really Matters",
     "url": "https://www.youtube.com/watch?v=BrIfUbWOBbM",
-    "topics": ["quishing"]
+    "topics": ["quishing"],
+    "audience": "general"
   },
   {
     "title": "Real-Life Security Awareness Training Story Series: Finding the Voice to Stop Harassment",
     "url": "https://www.youtube.com/watch?v=j8eh4ZNN7HY",
-    "topics": ["workplace harassment", "awareness"]
+    "topics": ["workplace harassment", "awareness"],
+    "audience": "general"
   },
   {
     "title": "Behavioral Training Series: Phishing Reporting – Small Actions, Big Security Impact",
     "url": "https://www.youtube.com/watch?v=qGtZEsJAL7I",
-    "topics": ["phishing", "reporting", "BEC", "email fraud"]
+    "topics": ["phishing", "reporting", "BEC", "email fraud"],
+    "audience": "general"
   },
   {
     "title": "Behavioral Training Series: Recognizing Insider Threats – Trust, Instinct & Action",
     "url": "https://www.youtube.com/watch?v=R9BtHefpk_0",
-    "topics": ["insider threat"]
+    "topics": ["insider threat"],
+    "audience": "general"
   },
   {
     "title": "Behavioral Training Series: The Hidden Danger of Weak Passwords",
     "url": "https://www.youtube.com/watch?v=JIN42SS3fns",
-    "topics": ["password", "mfa", "authentication", "credential security"]
+    "topics": ["password", "mfa", "authentication", "credential security"],
+    "audience": "general"
   },
   {
     "title": "Behavioral Training Series: Do You Know Who Has Access to Your Sensitive Data?",
     "url": "https://www.youtube.com/watch?v=WIOXahEP4bY",
-    "topics": ["data protection"]
+    "topics": ["data protection"],
+    "audience": "general"
   },
   {
     "title": "Behavioral Training Series: The USB I Found Put the Whole Company at Risk",
     "url": "https://www.youtube.com/watch?v=C4UPSZPvEpE",
-    "topics": ["malware"]
+    "topics": ["malware"],
+    "audience": "general"
   },
   {
     "title": "Behavioral Training Series: A Small Mistake Plunged the Entire City into Darkness",
     "url": "https://www.youtube.com/watch?v=Wu0f7dFPUVM",
-    "topics": ["incident response"]
+    "topics": ["incident response"],
+    "audience": "general"
   },
   {
     "title": "Keepnet Security Awareness Podcast: How TOAD Voice Phishing Targets Your Business",
     "url": "https://www.youtube.com/watch?v=DqvZauSJNtM",
-    "topics": ["vishing"]
+    "topics": ["vishing"],
+    "audience": "general"
   },
   {
     "title": "Keepnet Security Awareness Podcast: What is Spear Phishing & How to Prevent It",
@@ -128,11 +152,143 @@
       "BEC",
       "business email",
       "email fraud"
-    ]
+    ],
+    "audience": "general"
   },
   {
     "title": "Keepnet Security Awareness Podcast: What is Cryptojacking & How to Stop It",
     "url": "https://www.youtube.com/watch?v=yBl9UMOnPfg",
-    "topics": ["cryptojacking"]
+    "topics": ["cryptojacking"],
+    "audience": "general"
+  },
+  {
+    "title": "A Forgotten Feature Flag That Exposed a Security Hole",
+    "url": "https://www.youtube.com/watch?v=grjI4boyUFM",
+    "topics": ["secure-coding", "feature-flags", "code-review"],
+    "audience": "development"
+  },
+  {
+    "title": "A Single Line of Legacy Code Left Our App Wide Open",
+    "url": "https://www.youtube.com/watch?v=kORG9Vf-u_o",
+    "topics": [
+      "legacy-code",
+      "authentication",
+      "code-review",
+      "secure-coding",
+      "testing"
+    ],
+    "audience": "development"
+  },
+  {
+    "title": "Feature Flag Misconfigured — Exposed to All Users",
+    "url": "https://www.youtube.com/watch?v=mnVKN1-NX3c",
+    "topics": [
+      "feature-flags",
+      "configuration-management",
+      "testing",
+      "code-review",
+      "secure-coding"
+    ],
+    "audience": "development"
+  },
+  {
+    "title": "I Skipped a Security Check — And It Went Live",
+    "url": "https://www.youtube.com/watch?v=jb_On1IHHyw",
+    "topics": [
+      "security-checks",
+      "dependency-management",
+      "vulnerability-management",
+      "ci-cd",
+      "secure-coding",
+      "devops"
+    ],
+    "audience": "development"
+  },
+  {
+    "title": "Malicious Access Detected — A Debug Line Slipped Into Git",
+    "url": "https://www.youtube.com/watch?v=KSypewuxSC8",
+    "topics": [
+      "access-control",
+      "static-analysis",
+      "code-review",
+      "secure-coding",
+      "ci-cd",
+      "debugging"
+    ],
+    "audience": "development"
+  },
+  {
+    "title": "Missing Rate Limiting Exposed User Data",
+    "url": "https://www.youtube.com/watch?v=H9eQl7-vpWI",
+    "topics": [
+      "rate-limiting",
+      "api-security",
+      "authentication",
+      "brute-force-protection",
+      "incident-response",
+      "secure-coding",
+      "devops"
+    ],
+    "audience": "development"
+  },
+  {
+    "title": "No Monitoring in Place — Breach Discovered Days Later",
+    "url": "https://www.youtube.com/watch?v=Ck6NIJt4eb8",
+    "topics": [
+      "monitoring",
+      "logging",
+      "observability",
+      "anomaly-detection",
+      "incident-response",
+      "devops",
+      "api-security",
+      "authentication",
+      "brute-force-protection"
+    ],
+    "audience": "development"
+  },
+  {
+    "title": "Secrets Pushed to a Public Repo — A Costly Git Mistake",
+    "url": "https://www.youtube.com/watch?v=uKDs2fGAUCI",
+    "topics": [
+      "secrets-management",
+      "version-control",
+      "git",
+      "pre-commit-hooks",
+      "ci-cd",
+      "devops",
+      "credential-management"
+    ],
+    "audience": "development"
+  },
+  {
+    "title": "User Data Left Unmasked in Production Logs",
+    "url": "https://www.youtube.com/watch?v=25G_BG8wQRM",
+    "topics": [
+      "logging",
+      "data-masking",
+      "production-logs",
+      "data-security",
+      "secure-coding",
+      "sensitive-data-handling",
+      "testing"
+    ],
+    "audience": "development"
+  },
+  {
+    "title": "We Skipped Static Scanning — A Vulnerability Went Live",
+    "url": "https://www.youtube.com/watch?v=WTepHCBdK3E",
+    "topics": [
+      "static-analysis",
+      "sast",
+      "ci-cd",
+      "code-scanning",
+      "vulnerability-management",
+      "input-validation",
+      "dependency-management",
+      "secure-coding",
+      "devsecops"
+    ],
+    "audience": "development"
   }
 ]

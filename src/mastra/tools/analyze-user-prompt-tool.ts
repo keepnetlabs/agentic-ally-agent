@@ -132,7 +132,7 @@ Return JSON:
   "isCodeTopic": false
 }
 
-// isCodeTopic rules: Set to true ONLY if topic is about code/software security (vulnerabilities, secure coding, code review, injection attacks, XSS, SQL injection, etc). Otherwise false.
+// isCodeTopic rules: Set to true if topic mentions programming languages OR code-focused topics. Otherwise false.
 
 RULES:
 - DON'T copy user instructions as title/topic
@@ -140,7 +140,15 @@ RULES:
 - EXTRACT core subject, not full request
 - USE BCP-47 language codes only
 - RESPOND in user's language for content
-- isCodeTopic: CRITICAL - Return as boolean (true/false). Set true if topic is about code/software/programming (programming languages like JavaScript, Python, Java, C++, Go, Rust, TypeScript, etc. OR code-focused topics like code review, vulnerabilities, injection, XSS, SQL injection, secure coding, API security, encryption, etc). False for all threat awareness (phishing, ransomware, social engineering, etc). Examples: "Create JavaScript microlearning" → true, "Python workshop" → true, "Java training" → true, "SQL Injection" → true, "JavaScript XSS" → true, "Phishing Detection" → false, "Ransomware" → false, "Secure API Design" → true, "Authentication Bypass" → true`;
+- isCodeTopic: **CRITICAL** - Return as boolean (true/false). Set to true IF ANY of these conditions are met:
+  1. Topic mentions a PROGRAMMING LANGUAGE: JavaScript, Python, Java, C++, C#, Go, Rust, TypeScript, Kotlin, PHP, Ruby, Swift, etc.
+  2. Topic mentions CODE-FOCUSED CONCEPTS: code review, secure coding, vulnerabilities, injection, XSS, SQL injection, API security, encryption, authentication, authorization, buffer overflow, memory management, testing, refactoring, debugging, legacy code, etc.
+  3. Topic mentions SECURITY CODING: OWASP, CWE, CVE, secure coding, secure design, security testing, etc.
+  Set to FALSE ONLY for: threat awareness, phishing, ransomware, social engineering, compliance, policy, incident response, password management, MFA, data protection (non-code).
+
+  **EXAMPLES:**
+  TRUE: "JavaScript" → true, "JavaScript Arrays" → true, "Python workshop" → true, "Java security" → true, "SQL Injection" → true, "XSS prevention" → true, "Code review" → true, "API security" → true, "Secure coding" → true
+  FALSE: "Phishing" → false, "Ransomware" → false, "MFA" → false, "Password security" → false, "Data protection" → false`;
 
       const response = await generateText({
         model: model,
@@ -206,19 +214,20 @@ RULES:
         'injection', 'xss', 'cross-site scripting', 'vulnerability', 'vulnerable',
         'buffer overflow', 'memory leak', 'sql injection', 'code review',
         'secure coding', 'api security', 'encryption', 'hash', 'authentication',
-        'authorization', 'owasp', 'cwe', 'cvss'
+        'authorization', 'owasp', 'cwe', 'cvss', 'refactoring', 'debugging',
+        'testing', 'legacy code', 'memory management', 'design pattern'
       ];
 
-      const programmingLanguages = ['javascript', 'python', 'java', 'c++', 'php', 'go', 'rust', 'typescript', 'kotlin', 'csharp', 'c#'];
+      const programmingLanguages = ['javascript', 'python', 'java', 'c++', 'c#', 'php', 'go', 'rust', 'typescript', 'kotlin', 'ruby', 'swift', 'scala', 'r language'];
 
       const promptLower = userPrompt.toLowerCase();
 
-      // Stricter logic: require specific code security keyword OR programming language
+      // Logic: programming language OR code security keyword
       const hasSpecificCodeSecurityKeyword = specificCodeSecurityKeywords.some(kw => promptLower.includes(kw));
       const hasProgrammingLanguage = programmingLanguages.some(lang => promptLower.includes(lang));
-      const hasCodeAndLanguage = promptLower.includes('code') && hasProgrammingLanguage;
 
-      const isCodeSecurityFallback = hasSpecificCodeSecurityKeyword || hasCodeAndLanguage || hasProgrammingLanguage;
+      // CRITICAL: If ANY programming language is mentioned, it's a code topic (regardless of other content)
+      const isCodeSecurityFallback = hasProgrammingLanguage || hasSpecificCodeSecurityKeyword;
 
       const fallbackData = {
         language: detectLanguageFallback(userPrompt),

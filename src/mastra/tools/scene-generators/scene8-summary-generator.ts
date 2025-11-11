@@ -12,40 +12,40 @@ export function generateScene8Prompt(analysis: PromptAnalysis, microlearning: Mi
   console.log('  Category:', analysis.category);
   console.log('  keyTopics:', analysis.keyTopics);
 
+  // Use isCodeTopic from analyze-user-prompt-tool (source of truth)
+  const isCodeTopic = analysis.isCodeTopic === true;
+
+  console.log(`  isCode detected: ${isCodeTopic} (from prompt analysis)`);
+
   const resources = getResourcesForScene8({
     topic: analysis.topic,
     category: analysis.category,
     keyTopics: analysis.keyTopics, // Pass keyTopics for dynamic resolution
     department: analysis.department,
     language: analysis.language
-  });
+  }, isCodeTopic); // Pass isCode flag to ensure DEVELOPMENT resources
 
   console.log('  Resources found:', resources.map(r => r.title).join(', '));
 
-  const urlsFormatted = resources
-    .map((resource, index) => `${index + 1}. ${resource.title}: ${resource.url}`)
-    .join('\n');
+  // Embed resources as JSON (not instructions) - AI cannot modify URLs
+  const resourcesJson = JSON.stringify(
+    resources.slice(0, 2).map(r => ({
+      title: r.title,
+      type: "URL",
+      url: r.url
+    }))
+  );
 
   return `${contextData}
 
-=== AUTHORITATIVE RESOURCE URLS (Dynamic: keyTopics-based Resolution)
+CRITICAL RULES:
+1. Use ONLY the resources provided below - NEVER generate, invent, or suggest alternatives
+2. Keep resource titles as provided (from database)
+3. Translate only if explicitly needed for language: ${analysis.language}
 
 Topic: ${analysis.topic}
-Category: ${analysis.category}
-Resolution Method: Smart keyTopics matching + category fallback
-
-CRITICAL RULES:
-1. Use ONLY the URLs below - NEVER generate, invent, or suggest alternatives
-2. Localize resource titles into ${analysis.language} (max 5 words)
-3. Keep descriptions concise and action-focused
-
-RECOMMENDED RESOURCES:
-${urlsFormatted}
-
-Resolution Priority:
-- Level 1: Match against keyTopics database
-- Level 2: Category fallback (THREAT/TOOL/PROCESS resources)
-- Level 3: Generic resources (NCSC Cyber Assessment Framework)
+Language: ${analysis.language}
+isCodeTopic: ${analysis.isCodeTopic}
 
 Generate scene 8 (summary):
 {
@@ -93,18 +93,7 @@ Generate scene 8 (summary):
       "Meta-level application message (generic, same for ALL topics). Max 5 words in ${analysis.language}. REFERENCE: 'Apply what you've practised'",
       "Meta-level social message (generic, same for ALL topics). Max 4 words in ${analysis.language}. REFERENCE: 'Share and encourage others'"
     ],
-    "resources": [
-      {
-        "title": "Localize resource title for ${analysis.topic}, max 5 words in ${analysis.language}",
-        "type": "URL",
-        "url": "${resources[0]?.url}"
-      },
-      {
-        "title": "Localize additional resources for ${analysis.topic}, max 5 words in ${analysis.language}",
-        "type": "URL",
-        "url": "${resources[1]?.url}"
-      }
-    ],
+    "resources": ${resourcesJson},
     "scientific_basis": "Summary – Consolidation: Review reinforces learning and provides closure.",
     "scene_type": "summary"
   }

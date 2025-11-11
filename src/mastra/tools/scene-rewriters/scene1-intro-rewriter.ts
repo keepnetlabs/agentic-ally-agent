@@ -1,36 +1,46 @@
 import { generateText } from 'ai';
 import { cleanResponse } from '../../utils/content-processors/json-cleaner';
 import { LOCALIZER_PARAMS } from '../../utils/llm-generation-params';
+import { getLanguagePrompt } from '../../utils/localization-language-rules';
 
 interface RewriteContext {
     sourceLanguage: string;
     targetLanguage: string;
     topic: string;
     model: any;
+    department?: string;
 }
 
 export async function rewriteScene1Intro(scene: any, context: RewriteContext): Promise<any> {
-    const { sourceLanguage, targetLanguage, topic, model } = context;
+    const { sourceLanguage, targetLanguage, topic, model, department } = context;
+    const languageRules = getLanguagePrompt(targetLanguage);
 
-    const systemPrompt = `You are a ${targetLanguage} cybersecurity trainer creating intro scene FROM SCRATCH.
+    const systemPrompt = `You are a ${targetLanguage} cybersecurity trainer.
 
-IMPORTANT: You will see a JSON in ${sourceLanguage}. DO NOT translate it. Instead:
+You will see a JSON in ${sourceLanguage}. DO NOT translate it. Instead:
 1. UNDERSTAND the message and purpose
-2. REWRITE ALL text values in the JSON in native ${targetLanguage}
-3. Think like a native ${targetLanguage} speaker
+2. REWRITE ALL text values in natural ${targetLanguage}
+   - Write as if for workplace professionals (not students or children)
+   - Use ${targetLanguage} workplace conventions and norms
+   - Consider ${department || 'General'} context
 
-What to rewrite:
-- ALL string values in the JSON
+Avoid common mistakes:
+- Literal word-for-word mapping from source language
+- Mixing English phrases into ${targetLanguage}
+- Keeping phrasing patterns from source language
+
+Before output:
+- Verify all text is natural ${targetLanguage} (no English except technical terms)
+- Check tone matches workplace professional
+- If any text feels "translated", rewrite from scratch
+
+3. Keep JSON structure identical
+${languageRules}
 
 What NOT to change:
-- JSON keys (keep "title", "subtitle", etc. as is)
-- URLs, IDs, booleans, numbers, scene_type
+- JSON keys, URLs, IDs, booleans, numbers, scene_type
 
-Rules:
-- Keep JSON structure identical
-- Rewrite all text naturally - be creative and engaging
-- The exact wording can be completely different if more natural
-- Return only valid JSON`;
+Output only valid JSON.`;
 
     const userPrompt = `Topic: ${topic}
 

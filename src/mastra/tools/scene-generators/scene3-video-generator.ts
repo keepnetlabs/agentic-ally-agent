@@ -36,7 +36,7 @@ Topic: ${analysis.topic} | Department: ${analysis.department || 'General'} | Lan
 
 CRITICAL INSTRUCTIONS:
 - Generate ONLY actual content in ${analysis.language}, NO placeholders, NO instructions
-- Video title/subtitle already AI-generated and topic+department-aware
+- **TITLE AND SUBTITLE ARE FIXED - DO NOT MODIFY OR GENERATE NEW ONES**
 - Key messages follow topic-specific action patterns (NOT generic verbs)
 - Aria descriptions are natural language, not templated instructions
 
@@ -65,7 +65,12 @@ PROCESS topics (Incident Response, Decision Trees, Security Protocols, Playbooks
 
 For OTHER topics: action verb + object related to topic
 
-Generate scene 3 (video scenario). IMPORTANT: Create actual content in ${analysis.language}, not placeholders or instructions. Follow this exact format:
+Generate scene 3 (video scenario). IMPORTANT: Create actual content in ${analysis.language}, not placeholders or instructions. **USE THESE EXACT VALUES FOR TITLE AND SUBTITLE - THEY ARE PRE-GENERATED AND FINAL:**
+
+Title: "${videoMetadata.title}"
+Subtitle: "${videoMetadata.subtitle}"
+
+Follow this exact format:
 {
   "3": {
     "iconName": "monitor-play",

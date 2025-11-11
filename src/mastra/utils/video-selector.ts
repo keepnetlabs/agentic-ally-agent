@@ -10,14 +10,15 @@ import videoDatabase from '../data/video-database.json';
  * @returns Promise<string> - The selected scenario video URL
  */
 export async function selectVideoForTopic(analysis: PromptAnalysis): Promise<string> {
-  console.log(`🎥 Selecting SCENARIO video for topic: ${analysis.topic}`);
+  console.log(`🎥 Selecting video for topic: ${analysis.topic}, audience: ${analysis.isCodeTopic ? 'development' : 'general'}`);
 
   const fallbackUrl = "https://customer-0lll6yc8omc23rbm.cloudflarestream.com/5fdb12ff1436c991f50b698a02e2faa1/manifest/video.m3u8";
 
-  // Multi-level matching strategy for robust SCENARIO video selection
+  // Multi-level matching strategy for robust SCENARIO video selection with audience filtering
   function findRelevantVideos(): typeof videoDatabase {
     const topicLower = analysis.topic.toLowerCase();
     const topicKeywords = topicLower.split(/\s+/).filter(w => w.length > 3);
+    const userAudience = analysis.isCodeTopic ? 'development' : 'general';
 
     // CRITICAL: Filter for SCENARIO videos only (not tutorials, tool demos, or how-to guides)
     const isScenarioVideo = (video: any) => {
@@ -36,8 +37,9 @@ export async function selectVideoForTopic(analysis: PromptAnalysis): Promise<str
       return isScenario || !isTutorial;
     };
 
-    // Level 1: Exact topic match in topics array (scenario-only)
+    // Level 1: Exact topic match in topics array (scenario-only, audience-matched)
     let matches = videoDatabase.filter(video =>
+      (video.audience || 'general') === userAudience &&
       isScenarioVideo(video) &&
       video.topics.some(topic =>
         topicLower.includes(topic) ||
@@ -45,9 +47,10 @@ export async function selectVideoForTopic(analysis: PromptAnalysis): Promise<str
       )
     );
 
-    // Level 2: Keyword match in topics or title (scenario-only)
+    // Level 2: Keyword match in topics or title (scenario-only, audience-matched)
     if (matches.length === 0 && topicKeywords.length > 0) {
       matches = videoDatabase.filter(video =>
+        (video.audience || 'general') === userAudience &&
         isScenarioVideo(video) &&
         topicKeywords.some(keyword =>
           video.topics.some(topic => topic.includes(keyword) || keyword.includes(topic)) ||
@@ -80,6 +83,7 @@ export async function selectVideoForTopic(analysis: PromptAnalysis): Promise<str
 
       if (relatedTopics.length > 0) {
         matches = videoDatabase.filter(video =>
+          (video.audience || 'general') === userAudience &&
           isScenarioVideo(video) &&
           video.topics.some(topic =>
             relatedTopics.some(relatedTopic =>
@@ -95,9 +99,24 @@ export async function selectVideoForTopic(analysis: PromptAnalysis): Promise<str
 
     // Level 4: Return scenario videos only (last resort - no fallback to tutorials)
     if (matches.length === 0) {
-      matches = videoDatabase.filter(isScenarioVideo);
+      matches = videoDatabase.filter(video =>
+        (video.audience || 'general') === userAudience &&
+        isScenarioVideo(video)
+      );
       if (matches.length > 0) {
-        console.log(`⚠️ No topic match found, returning generic scenario video`);
+        console.log(`⚠️ No topic match found, returning generic ${userAudience} scenario video`);
+      }
+    }
+
+    // Level 5: Cross-audience fallback - if no videos found in primary audience, try the other
+    if (matches.length === 0) {
+      const fallbackAudience = userAudience === 'development' ? 'general' : 'development';
+      matches = videoDatabase.filter(video =>
+        (video.audience || 'general') === fallbackAudience &&
+        isScenarioVideo(video)
+      );
+      if (matches.length > 0) {
+        console.log(`⚠️ No ${userAudience} scenario videos found, using ${fallbackAudience} audience fallback`);
       }
     }
 
@@ -126,12 +145,35 @@ Return the best matching video URL only:`;
     const videoSelection = await generateText({
       model,
       messages: [
-        { role: 'system', content: 'You select the most relevant video URL based on topic. Return ONLY the URL, nothing else.' },
+        {
+          role: 'system',
+          content: 'You are a video selector. From the available videos list, select the SINGLE most relevant video URL for the given topic. Return ONLY the complete URL from the list (starting with https://), nothing else - no explanation, no markdown, no extra text. If you cannot find a good match, return the first video URL from the list.'
+        },
         { role: 'user', content: videoSelectionPrompt }
       ]
     });
 
-    const selectedUrl = videoSelection.text.trim();
+    let selectedUrl = videoSelection.text.trim();
+
+    // Clean up common AI response patterns
+    // Remove markdown links: [text](url) → url
+    const markdownMatch = selectedUrl.match(/\[([^\]]+)\]\(([^)]+)\)/);
+    if (markdownMatch) {
+      selectedUrl = markdownMatch[2];
+    }
+
+    // Remove backticks or quotes
+    selectedUrl = selectedUrl.replace(/^[`"]+|[`"]+$/g, '');
+
+    // If empty or whitespace, use first available video
+    if (!selectedUrl || selectedUrl.length === 0) {
+      console.warn(`⚠️ AI returned empty URL, using first available video`);
+      if (relevantVideos.length > 0) {
+        selectedUrl = relevantVideos[0].url;
+      } else {
+        return fallbackUrl;
+      }
+    }
 
     // Validate URL exists in database
     const isValidUrl = videoDatabase.some(video => video.url === selectedUrl);
@@ -141,7 +183,11 @@ Return the best matching video URL only:`;
       console.log(`✅ Selected video: "${selectedVideo?.title}"`);
       return selectedUrl;
     } else {
-      console.warn(`⚠️ AI returned invalid URL: "${selectedUrl}", using fallback`);
+      console.warn(`⚠️ AI returned invalid URL: "${selectedUrl}", using first available video`);
+      // Fallback to first relevant video
+      if (relevantVideos.length > 0) {
+        return relevantVideos[0].url;
+      }
       return fallbackUrl;
     }
 

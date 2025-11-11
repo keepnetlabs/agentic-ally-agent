@@ -187,7 +187,7 @@ STATE 4: Result Delivery
      - Scene 1: Introduction (3 highlights)
      - Scene 2: Learning Goals (3-4 objectives)
      - Scene 3: Video Scenario (video + transcript)
-     - Scene 4: Action Items (4 steps)
+     - Scene 4: Action Items (4 steps) - Includes code review scenarios for security training
      - Scene 5: Quiz (knowledge check)
      - Scene 6: Survey (feedback)
      - Scene 7: Nudge (behavior trigger)
@@ -274,7 +274,16 @@ STATE 4: Result Delivery
    - Manages streaming
    - Error handling
 
-8. **model-providers.ts** *(Not a tool, utility)*
+8. **code-review-check-tool.ts** *(Security training action items)*
+   - Validates if learner correctly fixed a code vulnerability
+   - Input: issueType, originalCode, fixedCode, language, outputLanguage
+   - Output: isCorrect, severity (correct|partial|incorrect), feedback, explanation, points (0-25), hint
+   - Pragmatic review: Accepts ANY valid solution (not just best-practice)
+   - Multi-language: All feedback in learner's language (12 languages supported)
+   - Temperature 0.3: Consistent, low-variance AI reviews
+   - Used in: Scene 4 (Action Items) for security/development modules
+
+9. **model-providers.ts** *(Not a tool, utility)*
    - LLM routing and configuration with dynamic selection
    - Supports: OpenAI (gpt-4o, gpt-4o-mini, gpt-4.1, gpt-5-mini), Workers AI (gpt-oss-120b), Google Gemini (2.5-pro, 2.5-flash)
    - Default agent: gpt-4o (more reliable instruction following)
@@ -287,7 +296,12 @@ Each generates prompt for one scene:
 - scene1-intro-generator.ts
 - scene2-goal-generator.ts
 - scene3-video-generator.ts (uses video-selector)
-- scene4-actionable-generator.ts
+- scene4-actionable-generator.ts - **Includes code-review-check-tool for security training**
+  - For security modules: Generates code review scenarios
+  - Learners submit code fixes → code-review-check-tool validates
+  - Input: issueType, originalCode, language, outputLanguage
+  - Output: Correctness score (0-25pts), feedback, explanation, solution hint
+  - Multi-language support: All feedback in learner's language
 - scene5-quiz-generator.ts
 - scene6-survey-generator.ts
 - scene7-nudge-generator.ts
@@ -698,8 +712,16 @@ KV lookup: ml:{id}:lang:de-de
 
 ---
 
-**Last Updated:** October 28, 2025
-**Key Updates:**
+**Last Updated:** November 7, 2025
+
+---
+
+**Recent Updates (Nov 7, 2025):**
+- Code Review Check Tool: Multi-language support, `hint` field for solution-oriented feedback, `outputLanguage` parameter
+- Scene 4: Now includes code review scenarios with AI-powered validation (pragmatic reviewer)
+- Code validation feedback: All responses (feedback, explanation, hint) in learner's language
+
+**Key Features:**
 - gpt-4o agent (improved from gpt-4o-mini)
 - Dynamic language detection (unlimited languages via BCP-47)
 - Dynamic model selection (OPENAI/WORKERS_AI/GOOGLE with override support)

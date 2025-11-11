@@ -220,6 +220,122 @@ delta: `::ui:canvas_open::${trainingUrl}\n`
 
 ---
 
+## 🔧 Code Review Check Tool Deep Dive
+
+**File:** `src/mastra/tools/code-review-check-tool.ts`
+
+### Purpose
+Validates if a developer correctly fixed a code issue (security vulnerability, logic error, performance problem, etc.). AI acts as pragmatic code reviewer - accepts ANY valid solution that solves the problem, not just "best-practice" approaches.
+
+### Input Schema
+```typescript
+{
+  issueType: string,                    // "SQL Injection", "XSS", "Logic Error", etc.
+  originalCode: string,                 // Code with the vulnerability/issue
+  fixedCode: string,                    // Developer's attempted fix
+  language: string,                     // "javascript", "python", "java", etc.
+  outputLanguage?: string,              // Default: "en" (12 languages supported)
+  modelProvider?: 'OPENAI' | 'WORKERS_AI' | 'GOOGLE',
+  model?: string,                       // Model name override
+}
+```
+
+### Output Schema
+```typescript
+{
+  success: boolean,
+  data: {
+    isCorrect: boolean,                 // Does fix properly address the issue?
+    severity: 'correct' | 'partial' | 'incorrect',
+    feedback: string,                   // 1-2 sentence immediate feedback (in outputLanguage)
+    explanation: string,                // 2-3 sentence detailed explanation (in outputLanguage)
+    points: number,                     // 0-25 points earned
+    hint?: string,                      // Solution-oriented hint if incorrect (in outputLanguage)
+  },
+  error?: string
+}
+```
+
+### Scoring Logic
+| Result | Points |
+|--------|--------|
+| Correct fix | 25 points |
+| Partial fix | 10 points |
+| Incorrect fix | 0 points |
+
+### Multi-Language Support
+- **Supported Languages:** en, tr, de, fr, es, pt, it, ru, zh, ja, ar, ko
+- **Input Detection:** Parses `outputLanguage` parameter directly
+- **Output:** All feedback, explanation, and hint are in requested language
+- **System Prompt:** Includes language directive for AI
+
+### Key Features
+- **Pragmatic Review:** Accepts ANY valid solution (doesn't require best-practice)
+- **Functional Focus:** Only checks if issue is solved + code works + no new issues
+- **Multi-Language Feedback:** Returns guidance in learner's language
+- **Hint-Oriented:** If incorrect, provides actionable hint toward solution (not just "wrong")
+- **JSON Repair:** Uses `cleanResponse()` to fix malformed JSON from AI
+- **Consistent:** Temperature 0.3 for consistency + low variance
+
+### Validation Criteria (What "Correct" Means)
+1. ✅ Issue is properly resolved (problem no longer exists)
+2. ✅ Code is functional (doesn't break existing logic)
+3. ✅ No new critical issues are introduced
+4. ✅ Any valid solution approach is accepted
+
+### What Doesn't Matter
+- Code style or formatting
+- Using "best-practice" patterns
+- Code elegance or optimization
+- Following specific conventions
+
+### Error Handling
+- **Success case:** Always returns hint (empty string if AI didn't provide one)
+- **Error case:** Returns empty hint + error message
+- **AI parsing:** Uses cleanResponse() to repair malformed JSON
+- **Graceful degradation:** Returns error response rather than crashing
+
+### Example Usage (Turkish Output)
+```typescript
+// Request
+{
+  issueType: "SQL Injection",
+  originalCode: "SELECT * FROM users WHERE id = " + userInput,
+  fixedCode: "SELECT * FROM users WHERE id = ?",  // Using parameterized query
+  language: "javascript",
+  outputLanguage: "tr"  // Turkish
+}
+
+// Response
+{
+  success: true,
+  data: {
+    isCorrect: true,
+    severity: "correct",
+    feedback: "Harika! Parametreli sorgu kullanarak SQL injection zafiyetini kapattınız.",
+    explanation: "Orijinal kod doğrudan kullanıcı girdisini SQL sorgusuna katıyordu. Parametreli sorgular girdinin veriye karıştırılmasını engeller.",
+    points: 25,
+    hint: ""
+  }
+}
+```
+
+### Integration Points
+- **Used in:** Scene 4 (Actionable Items) - developers submit code fixes
+- **Called by:** Scene 4 actionable generator tool
+- **AI Model:** Uses same provider as workflow (can override)
+- **Language Detection:** From workflow context + explicit parameter
+
+### Related Files
+| File | Purpose |
+|------|---------|
+| `scene-generators/scene4-code-review-generator.ts` | Generates Scene 4 with code review scenarios |
+| `scene-rewriters/scene4-actionable-rewriter.ts` | Translates code review scenarios |
+| `model-providers.ts` | AI model routing |
+| `content-processors/json-cleaner.ts` | JSON repair utility |
+
+---
+
 ## 💡 Common Tasks
 
 ### Add New Tool
@@ -290,6 +406,11 @@ Returns new URL with langUrl=lang/tr
 
 ---
 
-**Last Updated:** October 27, 2025
+**Last Updated:** November 7, 2025
 **Compatibility:** Mastra 0.1.x, TypeScript 5.x, Cloudflare Workers
 **See Also:** `.cursorrules` for code standards and best practices
+
+---
+
+### Recent Updates (Nov 7, 2025)
+- **Code Review Check Tool:** Added full documentation with multi-language support, output schema includes `hint` field, `outputLanguage` parameter for non-English feedback

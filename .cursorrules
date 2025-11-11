@@ -150,7 +150,11 @@ PromptAnalysis {
 1. **Intro** - 3 highlights + 3 key messages
 2. **Goals** - 3-4 SMART objectives
 3. **Video** - Scenario + transcript
-4. **Actions** - 4 actionable steps
+4. **Actions** - 4 actionable steps (includes code review scenarios)
+   - For security training: Uses `code-review-check-tool.ts` to validate learner's code fixes
+   - Input: Issue type, original code, learner's fix, language, outputLanguage
+   - Output: Correctness score, feedback, explanation, solution hint (in learner's language)
+   - Scoring: 25pts (correct), 10pts (partial), 0pts (incorrect)
 5. **Quiz** - Knowledge check
 6. **Survey** - Feedback
 7. **Nudge** - Behavior trigger + action plan
@@ -244,4 +248,7 @@ System never crashes. Quality degrades gracefully. Primary fails → Fallback 1 
 
 ---
 
-**Last Updated:** October 27, 2025 | **Framework:** Mastra 0.1.x | **Runtime:** Cloudflare Workers
+**Last Updated:** November 7, 2025 | **Framework:** Mastra 0.1.x | **Runtime:** Cloudflare Workers
+
+**Recent Updates (Nov 7, 2025):**
+- Code Review Check Tool: Multi-language support, `hint` field for solution-oriented feedback, `outputLanguage` parameter
