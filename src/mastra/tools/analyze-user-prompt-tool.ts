@@ -7,7 +7,11 @@ import { ExampleRepo } from '../services/example-repo';
 import { validateBCP47LanguageCode, DEFAULT_LANGUAGE } from '../utils/language-utils';
 import { cleanResponse } from '../utils/content-processors/json-cleaner';
 import { PROMPT_ANALYSIS_PARAMS } from '../utils/llm-generation-params';
-import { MICROLEARNING, PROMPT_ANALYSIS } from '../constants';
+import { MICROLEARNING, PROMPT_ANALYSIS, ROLES, CATEGORIES, THEME_COLORS } from '../constants';
+
+// Cache formatted lists for performance
+const cachedRolesList = ROLES.VALUES.map((role) => `- "${role}"`).join('\n');
+const cachedCategoriesList = CATEGORIES.VALUES.map((cat) => `- "${cat}"`).join('\n');
 
 const AnalyzeUserPromptSchema = z.object({
   userPrompt: z.string().min(1, 'User prompt is required'),
@@ -37,6 +41,7 @@ const AnalyzeUserPromptOutputSchema = z.object({
     practicalApplications: z.array(z.string()),
     assessmentAreas: z.array(z.string()),
     regulationCompliance: z.array(z.string()).optional(),
+    themeColor: z.string().optional(),
     hasRichContext: z.boolean().optional(),
     contextSummary: z.string().optional(),
     customRequirements: z.string().optional(),
@@ -112,19 +117,27 @@ CONTEXT: ${additionalContext || 'none'}
 DEPARTMENT: ${suggestedDepartment || 'not specified'}
 SUGGESTED LEVEL: ${input.suggestedLevel || 'auto-detect'}${examplesBlock}
 
+ROLE SELECTION OPTIONS (pick ONE based on audience):
+${cachedRolesList}
+
+CATEGORY SELECTION OPTIONS (pick ONE based on topic domain):
+${cachedCategoriesList}
+
 Return JSON:
 {
   "language": "BCP-47 tag (language-lowercase + region-lowercase; prefer regional if known, e.g., en-gb/en-us/fr-ca/tr-tr; else use primary, e.g. en-gb)"
   "topic": "2-3 words max - core subject only",
   "title": "3-5 words max - professional training title",
+  "description": "1-2 sentences max - professional training description",
   "department": "target department or 'All'",
   "level": "beginner/intermediate/advanced - use SUGGESTED LEVEL if provided, else detect from complexity",
-  "category": "main category - Security Awareness, Leadership, Data Protection, Technical Skills, etc.",
+  "category": "One category from the list above that matches the topic domain",
   "subcategory": "specific subcategory based on focus",
   "learningObjectives": ["specific skills learner can DO after 5-min training. Use simple action verbs (spot, check, create, report, verify, pause, enable). NOT meta-tasks (pass quiz, complete test) or unrealistic goals (teach others, become expert)"],
   "duration": ${MICROLEARNING.DURATION_MINUTES},
   "industries": ["relevant industries from context or 'General Business'"],
-  "roles": ["target audience roles"],
+  "roles": ["One role from the list above that matches the target audience"],
+  "themeColor": "ONLY if user mentioned a color (standard: bg-gradient-red, or simple: red/blue/green) - convert to standard format. Otherwise null.",
   "keyTopics": ["3-5 main learning areas"],
   "practicalApplications": ["3-4 workplace situations"],
   "assessmentAreas": ["testable skills - focus on 'can they do X'"],
@@ -132,9 +145,40 @@ Return JSON:
   "isCodeTopic": false
 }
 
-// isCodeTopic rules: Set to true if topic mentions programming languages OR code-focused topics. Otherwise false.
-
 RULES:
+- For "roles": Pick ONE option that best matches the topic's target audience
+  - Technical/IT content → "IT Department"
+  - Fraud/finance content → "Finance Department"
+  - HR/culture topics → "Human Resource Department"
+  - Sales topics → "Sales Department"
+  - Unknown audience → "All Employees"
+- For "category": Pick ONE option that best matches the topic domain
+  - Email phishing → "Email Security"
+  - Malware/virus → "Malware"
+  - Ransomware → "Ransomware & Extortion"
+  - Remote work → "Remote Working Security"
+  - GDPR/privacy → "GDPR"
+  - Social engineering → "Social Engineering"
+  - Cloud → "Cloud Security"
+  - If unsure → "General"
+- For "themeColor": ONLY fill if user explicitly mentioned a color
+  - Accept both standard codes and simple names
+  - Convert simple color names to standard codes:
+    * "red" / "danger" / "risk" → "bg-gradient-red"
+    * "blue" / "tech" / "technology" → "bg-gradient-blue"
+    * "green" / "safe" / "safety" → "bg-gradient-green"
+    * "purple" / "compliance" → "bg-gradient-purple"
+    * "gray" / "grey" / "general" → "bg-gradient-gray"
+    * "orange" / "innovation" → "bg-gradient-orange"
+    * "yellow" / "smoke" → "bg-gradient-yellow" or "bg-gradient-yellow-smoke"
+    * "light-yellow" / "light yellow" → "bg-gradient-light-yellow"
+    * "light-blue" / "light blue" → "bg-gradient-light-blue"
+    * "pink" / "social" → "bg-gradient-pink"
+  - CRITICAL: ONLY return colors from this exact list. If user mentions any invalid color, return null.
+  - Valid colors: bg-gradient-red, bg-gradient-blue, bg-gradient-green, bg-gradient-gray, bg-gradient-purple, bg-gradient-yellow-smoke, bg-gradient-yellow, bg-gradient-light-yellow, bg-gradient-orange, bg-gradient-light-blue, bg-gradient-pink
+  - Otherwise leave as null/empty string
+  - User must explicitly state the color - do not infer or choose colors automatically
+- isCodeTopic: Set to true if topic mentions programming languages OR code-focused topics. Otherwise false.
 - DON'T copy user instructions as title/topic
 - CREATE professional titles from user intent
 - EXTRACT core subject, not full request
@@ -153,7 +197,7 @@ RULES:
       const response = await generateText({
         model: model,
         messages: [
-          { role: 'system', content: 'You are an expert instructional designer and content analyst. CRITICAL: Analyze user requests intelligently and create professional microlearning metadata. Do NOT copy user instructions as titles/topics. Extract the core learning subject and create appropriate professional titles. Learning objectives must be realistic for 5-minute training scope - focus on specific, immediately actionable skills (NOT meta-tasks like "complete quiz" or unrealistic goals like "teach others"). Return ONLY VALID JSON - NO markdown, NO backticks, NO formatting. Start directly with {. Use BCP-47 language codes (en, tr, de, fr, es, zh, ja, ar, etc.).' },
+          { role: 'system', content: 'You are an expert instructional designer and content analyst. CRITICAL: Analyze user requests intelligently and create professional microlearning metadata. Do NOT copy user instructions as titles/topics. Extract the core learning subject and create appropriate professional titles. Learning objectives must be realistic for 5-minute training scope - focus on specific, immediately actionable skills (NOT meta-tasks like "complete quiz" or unrealistic goals like "teach others"). For roles field: select exactly ONE role from the provided list that best matches the target audience for the topic. For category field: select exactly ONE category from the provided list that best matches the topic domain. For themeColor field: ONLY fill if user explicitly mentioned a color. Convert simple color names (red, blue, green, purple, gray, orange, yellow, pink, light-blue) to standard codes (bg-gradient-red, bg-gradient-blue, etc.). Never infer or auto-select colors - user must explicitly state the color. Return ONLY VALID JSON - NO markdown, NO backticks, NO formatting. Start directly with {. Use BCP-47 language codes (en-gb, tr-tr, de-de, fr-fr,fr-ca, es-es, zh-cn, ja-jp, ar-sa, etc.).' },
           { role: 'user', content: analysisPrompt }
         ],
         ...PROMPT_ANALYSIS_PARAMS,
@@ -165,6 +209,12 @@ RULES:
 
       // Validate and normalize BCP-47 language code (includes en-* variant normalization to en-US)
       analysis.language = validateBCP47LanguageCode(analysis.language || DEFAULT_LANGUAGE);
+
+      // Validate themeColor - only allow values from THEME_COLORS.VALUES
+      if (analysis.themeColor && !THEME_COLORS.VALUES.includes(analysis.themeColor as any)) {
+        console.warn(`⚠️ Invalid theme color "${analysis.themeColor}" - resetting to null`);
+        analysis.themeColor = undefined;
+      }
 
       console.log(`🎯 Enhanced Prompt Analysis Result:`, analysis);
 
@@ -186,6 +236,7 @@ RULES:
           language: analysis.language.toLowerCase(),
           topic: analysis.topic,
           title: analysis.title,
+          description: analysis.description,
           department: analysis.department,
           level: analysis.level,
           category: analysis.category,
@@ -198,6 +249,7 @@ RULES:
           practicalApplications: analysis.practicalApplications,
           assessmentAreas: analysis.assessmentAreas,
           regulationCompliance: analysis.regulationCompliance,
+          themeColor: analysis.themeColor,
           hasRichContext: analysis.hasRichContext,
           contextSummary: analysis.contextSummary,
           customRequirements: analysis.customRequirements,
@@ -235,12 +287,13 @@ RULES:
         title: `Training: ${userPrompt.substring(0, 30)}`,
         department: suggestedDepartment || 'All',
         level: 'intermediate',
-        category: 'Professional Development',
+        category: CATEGORIES.DEFAULT,
         subcategory: 'Skills Training',
         learningObjectives: [`Learn about ${userPrompt.substring(0, 30)}`, 'Apply new skills', 'Improve performance'],
         duration: MICROLEARNING.DURATION_MINUTES,
         industries: ['General'],
-        roles: ['All Roles'],
+        roles: [ROLES.DEFAULT],
+        themeColor: undefined,
         keyTopics: [userPrompt.substring(0, 30)],
         practicalApplications: [`Apply ${userPrompt.substring(0, 20)} skills`],
         assessmentAreas: [`${userPrompt.substring(0, 20)} knowledge`],

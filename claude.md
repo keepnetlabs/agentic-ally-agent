@@ -145,9 +145,9 @@ npm run deploy           # Deploy to Cloudflare Workers
 
 ---
 
-## 🎓 Language Support (12)
+## 🎓 Language Support
 
-English (en), Turkish (tr), German (de), French (fr), Spanish (es), Portuguese (pt), Italian (it), Russian (ru), Chinese (zh), Japanese (ja), Arabic (ar), Korean (ko)
+**All languages supported** (unlimited - auto-detect and generate in any language)
 
 **Detection:** Character patterns → BCP-47 normalization
 **Strategy:** Auto-detect user language → generate in target language → support translation via add-language workflow
@@ -234,7 +234,7 @@ Validates if a developer correctly fixed a code issue (security vulnerability, l
   originalCode: string,                 // Code with the vulnerability/issue
   fixedCode: string,                    // Developer's attempted fix
   language: string,                     // "javascript", "python", "java", etc.
-  outputLanguage?: string,              // Default: "en" (12 languages supported)
+  outputLanguage?: string,              // Default: "en" (all languages supported)
   modelProvider?: 'OPENAI' | 'WORKERS_AI' | 'GOOGLE',
   model?: string,                       // Model name override
 }
@@ -264,7 +264,7 @@ Validates if a developer correctly fixed a code issue (security vulnerability, l
 | Incorrect fix | 0 points |
 
 ### Multi-Language Support
-- **Supported Languages:** en, tr, de, fr, es, pt, it, ru, zh, ja, ar, ko
+- **Supported Languages:** All languages (unlimited - auto-detect and generate in any language)
 - **Input Detection:** Parses `outputLanguage` parameter directly
 - **Output:** All feedback, explanation, and hint are in requested language
 - **System Prompt:** Includes language directive for AI

@@ -285,6 +285,120 @@ export const DEPARTMENTS = {
 } as const;
 
 // ============================================
+// ROLES
+// ============================================
+
+export const ROLES = {
+  VALUES: [
+    'All Employees',
+    'IT Department',
+    'Executives',
+    'New Employees',
+    'Finance Department',
+    'Human Resource Department',
+    'Marketing Department',
+    'Sales Department',
+    'Production Department',
+    'Purchase Department',
+    'Customer Service Support Department',
+    'General',
+    'Board Members',
+  ] as const,
+  DEFAULT: 'All Employees',
+} as const;
+
+// ============================================
+// CATEGORIES
+// ============================================
+
+export const CATEGORIES = {
+  VALUES: [
+    'Remote Working Security',
+    'Travel Security',
+    'Mobile Device Security',
+    'Email Security',
+    'Social Media Security',
+    'Safe Online Shopping',
+    'Malware',
+    'Physical Security',
+    'Cyber Spying',
+    'Password Security',
+    'GDPR',
+    'Social Engineering',
+    'Removable Media',
+    'Wi-Fi Security',
+    'General',
+    'Cloud Security',
+    'Insider Threats',
+    'Incident Response',
+    'AI/ML Security',
+    'IoT Security',
+    'Deepfake & Synthetic Media',
+    'AI-Powered Threats',
+    'Ransomware & Extortion',
+    'Zero Trust Architecture',
+    'Biometric Security',
+    'Supply Chain Attacks',
+    'Hospitality',
+  ] as const,
+  DEFAULT: 'General',
+} as const;
+
+// ============================================
+// THEME COLORS
+// ============================================
+
+export const THEME_COLORS = {
+  VALUES: [
+    'bg-gradient-red',
+    'bg-gradient-blue',
+    'bg-gradient-green',
+    'bg-gradient-gray',
+    'bg-gradient-purple',
+    'bg-gradient-yellow-smoke',
+    'bg-gradient-yellow',
+    'bg-gradient-light-yellow',
+    'bg-gradient-orange',
+    'bg-gradient-light-blue',
+    'bg-gradient-pink',
+  ] as const,
+  DEFAULT: 'bg-gradient-gray',
+  COLOR_MAPPING: {
+    // Risk/Security threats → Red
+    malware: 'bg-gradient-red',
+    ransomware: 'bg-gradient-red',
+    phishing: 'bg-gradient-red',
+    'cyber spying': 'bg-gradient-red',
+    'insider threats': 'bg-gradient-red',
+
+    // Trust/Safety → Green
+    'physical security': 'bg-gradient-green',
+    'safe online shopping': 'bg-gradient-green',
+
+    // Technology/Cloud → Blue
+    'cloud security': 'bg-gradient-blue',
+    'iot security': 'bg-gradient-blue',
+    'wi-fi security': 'bg-gradient-blue',
+
+    // Compliance/Legal → Purple
+    gdpr: 'bg-gradient-purple',
+    'incident response': 'bg-gradient-purple',
+
+    // AI/Innovation → Orange/Yellow
+    'ai/ml security': 'bg-gradient-orange',
+    'ai-powered threats': 'bg-gradient-orange',
+    'deepfake & synthetic media': 'bg-gradient-yellow',
+
+    // People/HR → Pink/Light Blue
+    'social engineering': 'bg-gradient-pink',
+    'social media security': 'bg-gradient-light-blue',
+
+    // Default
+    general: 'bg-gradient-gray',
+  } as const,
+} as const;
+
+// ============================================
 // CACHE & PERFORMANCE
 // ============================================
 

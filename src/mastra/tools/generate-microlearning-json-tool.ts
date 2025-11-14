@@ -80,6 +80,7 @@ async function generateMicrolearningJsonWithAI(analysis: PromptAnalysis, microle
     microlearning_id: microlearningId,
     microlearning_metadata: {
       title: analysis.title,
+      description: analysis.description,
       category: analysis.category,
       subcategory: analysis.subcategory,
       industry_relevance: analysis.industries,
@@ -97,7 +98,7 @@ async function generateMicrolearningJsonWithAI(analysis: PromptAnalysis, microle
     },
     scientific_evidence: generateScientificEvidence(),
     scenes: generateSceneStructure(analysis.topic, analysis.duration, scene4Type),
-    theme: generateTheme(analysis.topic)
+    theme: generateTheme(analysis.topic, analysis.themeColor)
   };
 
   // Stage 2: Enhance the microlearning object with AI
@@ -109,7 +110,10 @@ async function generateMicrolearningJsonWithAI(analysis: PromptAnalysis, microle
 }
 
 
-function generateTheme(topic: string) {
+function generateTheme(topic: string, themeColor?: string) {
+  // Use provided theme color or fallback to gray
+  const backgroundColor = themeColor || "bg-gradient-gray";
+
   return {
     fontFamily: {
       primary: "SF Pro Display, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
@@ -117,7 +121,7 @@ function generateTheme(topic: string) {
       monospace: "SF Mono, ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace"
     },
     colors: {
-      background: "bg-gradient-gray"
+      background: backgroundColor
     },
     "logo": {
       "src": "https://keepnetlabs.com/keepnet-logo.svg",

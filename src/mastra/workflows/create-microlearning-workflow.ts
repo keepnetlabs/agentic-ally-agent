@@ -36,6 +36,7 @@ const promptAnalysisSchema = z.object({
     practicalApplications: z.array(z.string()).optional(),
     industries: z.array(z.string()).optional(),
     roles: z.array(z.string()).optional(),
+    themeColor: z.string().optional(),
   }),
   modelProvider: z.enum(['OPENAI', 'WORKERS_AI', 'GOOGLE']).optional(),
   model: z.string().optional(),

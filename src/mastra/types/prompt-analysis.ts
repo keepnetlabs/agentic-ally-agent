@@ -1,6 +1,7 @@
 export interface PromptAnalysis {
   language: string;
   topic: string;
+  description: string;
   title: string;
   department: string;
   level: string;
@@ -14,6 +15,7 @@ export interface PromptAnalysis {
   practicalApplications: string[];
   assessmentAreas: string[];
   regulationCompliance?: string[];
+  themeColor?: string;
   hasRichContext?: boolean;
   contextSummary?: string;
   customRequirements?: string;

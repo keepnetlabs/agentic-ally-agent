@@ -1,5 +1,6 @@
 export interface MicrolearningMetadata {
   title: string;
+  description: string;
   category: string;
   subcategory: string;
   industry_relevance: string[];
