@@ -137,7 +137,7 @@ Return JSON:
   "duration": ${MICROLEARNING.DURATION_MINUTES},
   "industries": ["relevant industries from context or 'General Business'"],
   "roles": ["One role from the list above that matches the target audience"],
-  "themeColor": "ONLY if user mentioned a color (standard: bg-gradient-red, or simple: red/blue/green) - convert to standard format. Otherwise null.",
+  "themeColor": "ONLY if user mentioned a color (standard: bg-gradient-red, or simple: red/blue/green/teal/indigo/emerald/violet/amber) - convert to standard format. Otherwise null.",
   "keyTopics": ["3-5 main learning areas"],
   "practicalApplications": ["3-4 workplace situations"],
   "assessmentAreas": ["testable skills - focus on 'can they do X'"],
@@ -175,7 +175,7 @@ RULES:
     * "light-blue" / "light blue" → "bg-gradient-light-blue"
     * "pink" / "social" → "bg-gradient-pink"
   - CRITICAL: ONLY return colors from this exact list. If user mentions any invalid color, return null.
-  - Valid colors: bg-gradient-red, bg-gradient-blue, bg-gradient-green, bg-gradient-gray, bg-gradient-purple, bg-gradient-yellow-smoke, bg-gradient-yellow, bg-gradient-light-yellow, bg-gradient-orange, bg-gradient-light-blue, bg-gradient-pink
+  - Valid colors: bg-gradient-red, bg-gradient-blue, bg-gradient-green, bg-gradient-gray, bg-gradient-purple, bg-gradient-yellow-smoke, bg-gradient-yellow, bg-gradient-light-yellow, bg-gradient-orange, bg-gradient-light-blue, bg-gradient-pink, bg-gradient-teal, bg-gradient-indigo, bg-gradient-emerald, bg-gradient-violet, bg-gradient-amber
   - Otherwise leave as null/empty string
   - User must explicitly state the color - do not infer or choose colors automatically
 - isCodeTopic: Set to true if topic mentions programming languages OR code-focused topics. Otherwise false.
@@ -197,7 +197,7 @@ RULES:
       const response = await generateText({
         model: model,
         messages: [
-          { role: 'system', content: 'You are an expert instructional designer and content analyst. CRITICAL: Analyze user requests intelligently and create professional microlearning metadata. Do NOT copy user instructions as titles/topics. Extract the core learning subject and create appropriate professional titles. Learning objectives must be realistic for 5-minute training scope - focus on specific, immediately actionable skills (NOT meta-tasks like "complete quiz" or unrealistic goals like "teach others"). For roles field: select exactly ONE role from the provided list that best matches the target audience for the topic. For category field: select exactly ONE category from the provided list that best matches the topic domain. For themeColor field: ONLY fill if user explicitly mentioned a color. Convert simple color names (red, blue, green, purple, gray, orange, yellow, pink, light-blue) to standard codes (bg-gradient-red, bg-gradient-blue, etc.). Never infer or auto-select colors - user must explicitly state the color. Return ONLY VALID JSON - NO markdown, NO backticks, NO formatting. Start directly with {. Use BCP-47 language codes (en-gb, tr-tr, de-de, fr-fr,fr-ca, es-es, zh-cn, ja-jp, ar-sa, etc.).' },
+          { role: 'system', content: 'You are an expert instructional designer and content analyst. CRITICAL: Analyze user requests intelligently and create professional microlearning metadata. Do NOT copy user instructions as titles/topics. Extract the core learning subject and create appropriate professional titles. Learning objectives must be realistic for 5-minute training scope - focus on specific, immediately actionable skills (NOT meta-tasks like "complete quiz" or unrealistic goals like "teach others"). For roles field: select exactly ONE role from the provided list that best matches the target audience for the topic. For category field: select exactly ONE category from the provided list that best matches the topic domain. For themeColor field: ONLY fill if user explicitly mentioned a color. Convert simple color names (red, blue, green, purple, gray, orange, yellow, pink, light-blue, teal, indigo, emerald, violet, amber) to standard codes (bg-gradient-red, bg-gradient-blue, bg-gradient-teal, etc.). Never infer or auto-select colors - user must explicitly state the color. Return ONLY VALID JSON - NO markdown, NO backticks, NO formatting. Start directly with {. Use BCP-47 language codes (en-gb, tr-tr, de-de, fr-fr,fr-ca, es-es, zh-cn, ja-jp, ar-sa, etc.).' },
           { role: 'user', content: analysisPrompt }
         ],
         ...PROMPT_ANALYSIS_PARAMS,

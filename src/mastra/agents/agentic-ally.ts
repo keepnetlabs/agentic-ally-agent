@@ -184,13 +184,27 @@ When user requests multiple languages (e.g., "Add French, German, Spanish"), use
 - modelProvider: [optional, from context if provided: OPENAI, WORKERS_AI, GOOGLE]
 - model: [optional, from context if provided: e.g., OPENAI_GPT_4O_MINI, WORKERS_AI_GPT_OSS_120B]
 
+**Update Existing Microlearning (Theme Customization):**
+When user requests to update theme (e.g., "Change background color", "Change font family", "Update logo"), use workflow-executor tool with:
+- workflowType: 'update-microlearning'
+- existingMicrolearningId: [from recent conversation context - if unclear, ask user]
+- department: [extract from recent conversation or ask user - default: 'All']
+- updates: {theme: {any nested theme properties}}
+
+Theme structure:
+- fontFamily: {primary, secondary, monospace}
+- colors: {background}
+- logo: {src, darkSrc, minimizedSrc, minimizedDarkSrc, alt}
+
 **When to Use Each:**
-- Single language (1 language only) → Use workflow-executor tool with workflowType: 'add-language'
-- Multiple languages (2-12 languages) → Use workflow-executor tool with workflowType: 'add-multiple-languages' for parallel processing
-- Mixed scenario (already has some languages, adding more) → Use workflow-executor with 'add-multiple-languages' for all new languages at once
+- Create new training → workflowType: 'create-microlearning' (REQUIRES: Topic + Department + Level + Confirmation)
+- Single language translation → workflowType: 'add-language' (NO confirmation)
+- Multiple languages (2-12) → workflowType: 'add-multiple-languages' (NO confirmation)
+- Update theme → workflowType: 'update-microlearning' (NO confirmation - execute immediately)
 
 ## Key Rules
-- Never execute without Topic + Department + Level + confirmation (or Assumption Mode applied)
+- For CREATE workflows: Never execute without Topic + Department + Level + confirmation (or Assumption Mode applied)
+- For UPDATE/TRANSLATE workflows: Execute immediately without confirmation
 - Ask one question at a time
 - Keep responses short in user's language
 - After successful workflow: NO additional messages

@@ -361,6 +361,11 @@ export const THEME_COLORS = {
     'bg-gradient-orange',
     'bg-gradient-light-blue',
     'bg-gradient-pink',
+    'bg-gradient-teal',
+    'bg-gradient-indigo',
+    'bg-gradient-emerald',
+    'bg-gradient-violet',
+    'bg-gradient-amber',
   ] as const,
   DEFAULT: 'bg-gradient-gray',
   COLOR_MAPPING: {

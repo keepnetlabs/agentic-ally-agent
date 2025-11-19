@@ -21,6 +21,7 @@ export enum Model {
     WORKERS_AI_GPT_OSS_120B = '@cf/openai/gpt-oss-120b',
     GOOGLE_GEMINI_2_5_PRO = 'gemini-2.5-pro',
     GOOGLE_GEMINI_2_5_FLASH = 'gemini-2.5-flash',
+    GOOGLE_GEMINI_3_PRO = 'gemini-3-pro',
 }
 
 /**

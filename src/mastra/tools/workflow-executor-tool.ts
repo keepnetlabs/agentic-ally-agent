@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { createMicrolearningWorkflow } from '../workflows/create-microlearning-workflow';
 import { addLanguageWorkflow } from '../workflows/add-language-workflow';
 import { addMultipleLanguagesWorkflow } from '../workflows/add-multiple-languages-workflow';
+import { updateMicrolearningWorkflow } from '../workflows/update-microlearning-workflow';
 import { v4 as uuidv4 } from 'uuid';
 import { PROMPT_ANALYSIS } from '../constants';
 
@@ -63,20 +64,26 @@ interface AddMultipleLanguagesResult {
   [key: string]: unknown;
 }
 
-interface ToolSuccessResponse {
-  success: true;
-  status: string;
+interface UpdateMicrolearningResult {
+  status: 'success' | 'error' | 'failed' | 'suspended';
+  result?: {
+    success: boolean;
+    status: string;
+    metadata?: {
+      microlearningId: string;
+      version: number;
+      changes?: Record<string, unknown>;
+      trainingUrl?: string;
+      timestamp: string;
+    };
+    error?: string;
+  };
   [key: string]: unknown;
 }
 
-interface ToolErrorResponse {
-  success: false;
-  error: string;
-}
-
-// Tool için schema
+// Workflow executor schema
 const workflowExecutorSchema = z.object({
-  workflowType: z.enum(['create-microlearning', 'add-language', 'add-multiple-languages']).describe('Which workflow to execute'),
+  workflowType: z.enum(['create-microlearning', 'add-language', 'add-multiple-languages', 'update-microlearning']).describe('Which workflow to execute'),
 
   // Create microlearning parameters
   prompt: z
@@ -138,6 +145,14 @@ const workflowExecutorSchema = z.object({
     .optional()
     .nullable()
     .describe('Source language (optional)'),
+
+  // Update microlearning parameters
+  updates: z
+    .object({
+      theme: z.record(z.any()).describe('Theme updates (fontFamily, colors, logo)'),
+    })
+    .optional()
+    .describe('Updates for update-microlearning workflow'),
 
   // Model override parameters (optional)
   modelProvider: z.enum(['OPENAI', 'WORKERS_AI', 'GOOGLE']).optional().describe('Model provider override'),
@@ -336,6 +351,51 @@ export const workflowExecutorTool = createTool({
         } else {
           throw new Error('Add multiple languages workflow failed');
         }
+
+      } else if (workflowType === 'update-microlearning') {
+        if (!params.existingMicrolearningId || !params.updates) {
+          throw new Error('existingMicrolearningId and updates are required for update-microlearning workflow');
+        }
+
+        const workflow = updateMicrolearningWorkflow;
+        const run = await workflow.createRunAsync();
+
+        const result: UpdateMicrolearningResult = await run.start({
+          inputData: {
+            microlearningId: params.existingMicrolearningId,
+            department: params.department || 'All',
+            updates: params.updates,
+            modelProvider: params.modelProvider,
+            model: params.model,
+          }
+        });
+
+        console.log('🔍 Update workflow result:', result);
+
+        // Send updated training URL to frontend via UI signal
+        const trainingUrl = result?.result?.metadata?.trainingUrl;
+        if (trainingUrl) {
+          try {
+            const messageId = uuidv4();
+            await writer?.write({ type: 'text-start', id: messageId });
+            await writer?.write({
+              type: 'text-delta',
+              id: messageId,
+              delta: `::ui:canvas_open::${trainingUrl}\n`
+            });
+            await writer?.write({ type: 'text-end', id: messageId });
+            console.log('Updated training URL sent to frontend:', trainingUrl);
+          } catch (error) {
+            console.error('⚠️ Failed to send updated training URL to frontend:', error);
+            // Continue - don't block response
+          }
+        }
+
+        return {
+          success: result?.result?.success ?? false,
+          status: result?.result?.status ?? 'Update completed',
+          microlearningId: params.existingMicrolearningId,
+        };
 
       } else {
         throw new Error(`Unknown workflow type: ${workflowType}`);
