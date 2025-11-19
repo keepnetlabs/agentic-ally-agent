@@ -40,7 +40,10 @@ export function validateBCP47LanguageCode(input: string): string {
     // @ts-ignore
     const canon = (Intl.getCanonicalLocales?.(tag) || [])[0];
     if (canon) tag = canon;
-  } catch { /* ignore */ }
+  } catch (error) {
+    // Fallback if Intl.getCanonicalLocales not available (older Node.js)
+    console.log('ℹ️ Intl.getCanonicalLocales not available, using fallback BCP-47 normalization');
+  }
 
   // 5) BCP-47 casing: language lower, script Title, region UPPER
   const parts = tag.split("-");

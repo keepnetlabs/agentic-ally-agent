@@ -36,7 +36,11 @@ function autoFixHtml(html: string): string {
         // Fragment kullan: <p>..</p> gibi gömülü HTML'lerde <html><body> sarmalaması eklenmez
         const frag = parse5.parseFragment(html);
         return parse5.serialize(frag);
-    } catch {
+    } catch (error) {
+        console.warn('⚠️ Failed to normalize HTML, returning original', {
+            error: error instanceof Error ? error.message : String(error),
+            htmlLength: html.length,
+        });
         return html; // graceful fallback
     }
 }

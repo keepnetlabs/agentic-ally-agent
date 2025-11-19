@@ -1,5 +1,3 @@
-import { PromptAnalysis } from '../types/prompt-analysis';
-
 export interface ResourceURL {
   title: string;
   url: string;

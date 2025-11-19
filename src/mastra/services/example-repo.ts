@@ -135,8 +135,10 @@ export class ExampleRepo {
                 try {
                     const text = await fs.readFile(f, 'utf-8');
                     docs.push({ path: path.relative(process.cwd(), f), content: text });
-                } catch {
-                    // ignore failed reads
+                } catch (error) {
+                    console.warn(`⚠️ Failed to read example file: ${f}`, {
+                        error: error instanceof Error ? error.message : String(error),
+                    });
                 }
             }
             this.docs = docs;
@@ -190,7 +192,10 @@ Top-level keys: ${topKeys.join(', ')}
 Metadata keys: ${metaKeys.join(', ')}
 Scene types: ${Array.from(sceneTypes).join(', ')}
 Scene metadata keys: ${Array.from(sceneMetaKeys).join(', ')}`;
-            } catch {
+            } catch (error) {
+                console.warn(`⚠️ Failed to parse schema from ${doc.path}:`, {
+                    error: error instanceof Error ? error.message : String(error),
+                });
                 return `File: ${doc.path}
 (Invalid JSON, skipped)`;
             }
@@ -513,9 +518,12 @@ Scene metadata keys: ${Array.from(sceneMetaKeys).join(', ')}`;
             }
             
             return parts.filter(Boolean).join(' ');
-            
-        } catch {
-            // Fallback to file path and content preview
+
+        } catch (error) {
+            // Fallback to file path and content preview on parse failure
+            console.warn(`⚠️ Failed to extract semantic text from ${doc.path}, using fallback`, {
+                error: error instanceof Error ? error.message : String(error),
+            });
             return doc.path + ' ' + doc.content.substring(0, 500);
         }
     }

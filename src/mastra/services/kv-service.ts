@@ -108,7 +108,11 @@ export class KVService {
       const text = await response.text();
       try {
         return JSON.parse(text);
-      } catch {
+      } catch (parseError) {
+        console.warn(`⚠️ Failed to parse KV value as JSON for key ${key}, returning as string`, {
+          error: parseError instanceof Error ? parseError.message : String(parseError),
+          textLength: text.length,
+        });
         return text; // Return as string if not JSON
       }
     } catch (error) {

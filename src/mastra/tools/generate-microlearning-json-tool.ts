@@ -5,6 +5,7 @@ import { PromptAnalysis } from '../types/prompt-analysis';
 import { MicrolearningContent, ScientificEvidence, Scene } from '../types/microlearning';
 import { cleanResponse } from '../utils/content-processors/json-cleaner';
 import { METADATA_GENERATION_PARAMS } from '../utils/llm-generation-params';
+import { CATEGORIES } from '../constants';
 
 const GenerateMicrolearningJsonSchema = z.object({
   analysis: z.object({
@@ -134,6 +135,8 @@ function generateTheme(topic: string, themeColor?: string) {
 }
 
 async function enhanceMicrolearningContent(microlearning: MicrolearningContent, model: any): Promise<MicrolearningContent> {
+  const categoriesList = CATEGORIES.VALUES.join(', ');
+
   const enhancementPrompt = `CRITICAL: Return ONLY valid JSON. No explanations, no markdown, no backticks.
 
 ENHANCE this microlearning metadata to industry standards:
@@ -147,10 +150,10 @@ ENHANCEMENT RULES (apply ONLY if needed):
    - Use action-oriented or outcome-focused phrasing when appropriate
    - Examples vary by domain - security: "Stop Phishing Attacks", leadership: "Effective Delegation Skills", compliance: "GDPR Essentials"
 
-2. Category: Ensure correct categorization
+2. Category: Ensure correct categorization (DO NOT CHANGE unless clearly wrong)
    - Current: "${microlearning.microlearning_metadata.category}"
-   - Common categories: Security Awareness, Leadership, Data Protection, Technical Skills, Compliance, Professional Development
-   - Fix ONLY if clearly miscategorized
+   - Valid categories: ${categoriesList}
+   - CRITICAL: If current category is in the valid list above, DO NOT CHANGE IT. Only fix if completely invalid.
 
 3. Regulation Compliance: Add 2-4 relevant standards
    - Current: ${microlearning.microlearning_metadata.regulation_compliance?.length || 0} items

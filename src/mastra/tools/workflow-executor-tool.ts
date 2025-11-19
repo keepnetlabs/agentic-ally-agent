@@ -211,7 +211,14 @@ export const workflowExecutorTool = createTool({
           });
           await writer?.write({ type: 'text-end', id: messageId });
           console.log('URL sent to frontend:', trainingUrl);
-        } catch { }
+        } catch (error) {
+          console.error('⚠️ Failed to send training URL to frontend:', {
+            error: error instanceof Error ? error.message : String(error),
+            trainingUrl: trainingUrl?.substring(0, 100),
+            timestamp: new Date().toISOString(),
+          });
+          // NOTE: Continue - don't block response, but log for monitoring
+        }
 
         return {
           success: true,
