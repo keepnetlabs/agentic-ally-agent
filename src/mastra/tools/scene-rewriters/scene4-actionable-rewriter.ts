@@ -15,39 +15,77 @@ export async function rewriteScene4Actionable(scene: any, context: RewriteContex
     const { sourceLanguage, targetLanguage, topic, model, department } = context;
     const languageRules = getLanguagePrompt(targetLanguage);
 
-    const systemPrompt = `You are a ${targetLanguage} cybersecurity trainer.
+    const systemPrompt = `You are a native ${targetLanguage} cybersecurity trainer specializing in *semantic localization* of microlearning content.
 
-You will see a JSON in ${sourceLanguage}. DO NOT translate it. Instead:
-1. UNDERSTAND the message and purpose
-2. REWRITE ALL text values in natural ${targetLanguage}
-   - Write as if for workplace professionals (not students or children)
-   - Use ${targetLanguage} workplace conventions and norms
-   - Consider ${department || 'General'} context
+=== CRITICAL: NOT TRANSLATION, NOT SUMMARY ===
 
-Avoid common mistakes:
-- Literal word-for-word mapping from source language
-- Mixing English phrases into ${targetLanguage}
-- Keeping phrasing patterns from source language
+You are NOT:
+- translating word-by-word (robotically)
+- summarizing or shortening the content
+- adding your own generic cybersecurity advice
 
-Before output:
-- Verify all text is natural ${targetLanguage} (no English except technical terms)
-- Check tone matches workplace professional
-- If any text feels "translated", rewrite from scratch
+You MUST:
+- keep ALL information, details, specific examples, and scenarios from the source
+- keep roughly the same length and level of detail
+- ONLY adapt the *phrasing* and *tone* for the ${targetLanguage} workplace context
 
-3. Keep JSON structure identical
+=== PROCESS: UNDERSTAND → MAP → REWRITE ===
+
+1. Understand the specific lesson/risk in ${sourceLanguage}
+
+2. Map that meaning to natural, professional ${targetLanguage} norms
+
+3. Rewrite it as if a native expert wrote it originally in ${targetLanguage} (re-authoring, NOT summarizing)
+
+=== PRESERVE CONTENT & LOGICAL FLOW ===
+
+- Do NOT add new risks or remove existing details
+- Do NOT change the logical flow (Idea A → Idea B → Conclusion)
+
+=== UI/UX CONSTRAINTS (CRITICAL) ===
+
+- Keep the exact same number of list items (If source has 3 bullets, output must have 3 bullets).
+- Keep similar visual text length (do not make it much shorter or 3x longer).
+- Preserve JSON structure, IDs, URLs, booleans, numbers, scene_type.
+- Preserve inline formatting (keep **bold** emphasis, line breaks, etc.).
+
+=== STYLE: NATIVE PROFESSIONAL ===
+
+- Tone: professional, engaging, and direct (microlearning / instructional design).
+- Context: ${topic} for ${department || 'General'} employees.
+- Scene Type: Actionable Content - Make actions practical and clear.
+- Grammar: use natural ${targetLanguage} sentence structures, NOT the source language's grammar.
+
+=== AVOID (THE "TRANSLATIONESE" TRAP) ===
+
+❌ Literal translations of idioms.
+❌ Keeping the source language's sentence rhythm (Subject-Verb order mirroring).
+❌ Using passive voice if active voice is more natural in ${targetLanguage}.
+
 ${languageRules}
 
-What NOT to change:
-- JSON keys, URLs, IDs, booleans, numbers, scene_type
+=== OUTPUT FORMAT (STRICT) ===
 
-Output only valid JSON.`;
+- Output only valid JSON.
+- Keys must remain exactly the same.
+- Do NOT add or remove any fields.
+- Only text values change.
+- No conversational filler ("Here is the JSON...", explanations, comments).
+
+FINAL CHECK (MENTAL):
+
+- Did I keep all original technical and scenario details?
+- Does every sentence sound like it was naturally written in ${targetLanguage}, not translated?`;
 
     const userPrompt = `Topic: ${topic}
 
-Reference JSON (${sourceLanguage}) - understand, don't translate:
+=== RAW CONTENT CONCEPTS (Source) ===
+
 ${JSON.stringify(scene, null, 2)}
 
-Rewrite ALL text values in native ${targetLanguage}. Make actions practical and clear.
+INSTRUCTION: Re-author the content above into native ${targetLanguage}.
+
+Focus on natural flow while keeping all technical details and UI structure exactly as is.
 
 Output (JSON only):`;
 
@@ -59,6 +97,7 @@ Output (JSON only):`;
                 { role: 'user', content: userPrompt }
             ],
             ...LOCALIZER_PARAMS,
+            temperature: 0.4,
         });
 
         const cleaned = cleanResponse(response.text, 'scene4-actionable');

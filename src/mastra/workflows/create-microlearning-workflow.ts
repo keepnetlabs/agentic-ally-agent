@@ -19,6 +19,7 @@ const createInputSchema = z.object({
   priority: z.enum(['low', 'medium', 'high']).default('medium'),
   modelProvider: z.enum(['OPENAI', 'WORKERS_AI', 'GOOGLE']).optional().describe('Model provider (OPENAI, WORKERS_AI, GOOGLE)'),
   model: z.string().optional().describe('Model name (e.g., OPENAI_GPT_4O_MINI, WORKERS_AI_GPT_OSS_120B)'),
+  writer: z.any().optional().describe('Stream writer for reasoning updates'),
 });
 
 const promptAnalysisSchema = z.object({
@@ -40,6 +41,7 @@ const promptAnalysisSchema = z.object({
   }),
   modelProvider: z.enum(['OPENAI', 'WORKERS_AI', 'GOOGLE']).optional(),
   model: z.string().optional(),
+  writer: z.any().optional(),
 });
 
 const microlearningSchema = z.object({
@@ -50,6 +52,7 @@ const microlearningSchema = z.object({
   microlearningStructure: z.any(),
   modelProvider: z.enum(['OPENAI', 'WORKERS_AI', 'GOOGLE']).optional(),
   model: z.string().optional(),
+  writer: z.any().optional(),
 });
 
 const languageContentSchema = z.object({
@@ -60,6 +63,7 @@ const languageContentSchema = z.object({
   microlearningStructure: z.any(),
   modelProvider: z.enum(['OPENAI', 'WORKERS_AI', 'GOOGLE']).optional(),
   model: z.string().optional(),
+  writer: z.any().optional(),
 });
 
 const finalResultSchema = z.object({
@@ -91,7 +95,7 @@ const analyzePromptStep = createStep({
       throw new Error('Analyze user prompt tool is not executable');
     }
 
-    // Pass model provider and model to analyze step
+    // Pass model provider, model, and writer to analyze step
     const analysisRes = await analyzeUserPromptTool.execute({
       userPrompt: inputData.prompt,
       additionalContext: inputData.additionalContext,
@@ -100,6 +104,7 @@ const analyzePromptStep = createStep({
       customRequirements: inputData.customRequirements,
       modelProvider: inputData.modelProvider,
       model: inputData.model,
+      writer: inputData.writer,
     });
 
     if (!analysisRes?.success) throw new Error(`Prompt analysis failed: ${analysisRes?.error}`);
@@ -109,6 +114,7 @@ const analyzePromptStep = createStep({
       data: analysisRes.data,
       modelProvider: inputData.modelProvider,
       model: inputData.model,
+      writer: inputData.writer,
     };
   }
 });
@@ -145,6 +151,7 @@ const generateMicrolearningStep = createStep({
       microlearningStructure: genRes.data,
       modelProvider: inputData.modelProvider,
       model: inputData.model,
+      writer: inputData.writer,
     } as any;
   }
 });
@@ -168,7 +175,8 @@ const generateLanguageStep = createStep({
     const result = await generateLanguageJsonTool.execute({
       analysis,
       microlearning: microlearningStructure,
-      model
+      model,
+      writer: inputData.writer
     });
 
     if (!result?.success) throw new Error(`Language content generation failed: ${result?.error}`);
@@ -187,6 +195,7 @@ const generateLanguageStep = createStep({
       microlearningStructure,
       modelProvider: inputData.modelProvider,
       model: inputData.model,
+      writer: inputData.writer,
     } as any;
   }
 });
@@ -203,6 +212,7 @@ const createInboxStep = createStep({
     microlearningStructure: z.any(),
     modelProvider: z.enum(['OPENAI', 'WORKERS_AI', 'GOOGLE']).optional(),
     model: z.string().optional(),
+    writer: z.any().optional(),
   }),
   outputSchema: finalResultSchema,
   execute: async ({ inputData }) => {

@@ -111,8 +111,8 @@ function getModelProvider(provider: ModelProvider) {
                 if (data.output) {
                     const reasoningItem = data.output.find((item: any) => item.type === 'reasoning');
                     if (reasoningItem?.content?.[0]?.text) {
-                        (data as any)._reasoning = reasoningItem.content[0].text;
-                        //console.log('🧠 Reasoning from Workers AI:', reasoningItem.content[0].text);
+                        data.reasoning = reasoningItem.content[0].text;
+                        //console.log('🧠 Workers AI Reasoning:', reasoningItem.content[0].text);
                     }
                 }
 

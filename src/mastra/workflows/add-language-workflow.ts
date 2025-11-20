@@ -318,7 +318,7 @@ const updateInboxStep = createStep({
           modelProvider,
           model
         };
-
+        console.log('inboxTranslationParams', inboxTranslationParams);
         let translatedInbox = await inboxTranslateJsonTool.execute(inboxTranslationParams);
         let isValid = translatedInbox?.success && validateInboxStructure(baseInbox, translatedInbox.data);
 

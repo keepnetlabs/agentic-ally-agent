@@ -130,10 +130,13 @@ const RULES_BY_LANG: Record<LangKey, string> = {
 `.trim(),
 
     ar: `
-### 🇸🇦 Arabic Style Rules
-- Avoid paternal/moralizing tone ("يا بُني", "احذر دائمًا").
-- Prefer: "تهانينا، أكملت التدريب بنجاح.", "يرجى التحقق من المرسل قبل النقر."
-- Use neutral forms where possible; professional tone.
+### Arabic Style Rules (MSA)
+- Use neutral, professional Modern Standard Arabic (no dialects).
+- Avoid paternal or moralizing tone.
+- Prefer clear, direct sentences (not poetic or overly formal).
+- Break English-style long sentences into natural Arabic.
+- Avoid literal patterns like “اعرف أن…”, use natural forms such as “اعلم أن…”.
+- Prefer active voice when natural; avoid overusing “يمكن أن…”.
 `.trim(),
 
     fa: `

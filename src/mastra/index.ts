@@ -5,6 +5,8 @@ import { agenticAlly } from './agents/agentic-ally';
 import { disablePlayground, disableSwagger } from './middleware/openapi';
 import { createMicrolearningWorkflow } from './workflows/create-microlearning-workflow';
 import { addLanguageWorkflow } from './workflows/add-language-workflow';
+import { addMultipleLanguagesWorkflow } from './workflows/add-multiple-languages-workflow';
+import { updateMicrolearningWorkflow } from './workflows/update-microlearning-workflow';
 import { getDeployer } from './deployer';
 import { ExampleRepo } from './services/example-repo';
 import { D1Store } from '@mastra/cloudflare-d1';
@@ -46,7 +48,9 @@ const injectD1Database = async (c: any, next: any) => {
 export const mastra = new Mastra({
   workflows: {
     createMicrolearningWorkflow,
-    addLanguageWorkflow
+    addLanguageWorkflow,
+    addMultipleLanguagesWorkflow,
+    updateMicrolearningWorkflow
   },
   agents: { agenticAlly },
   logger,
