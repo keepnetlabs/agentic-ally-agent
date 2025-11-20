@@ -23,6 +23,7 @@ export const GenerateLanguageJsonSchema = z.object({
   }),
   microlearning: z.any(),
   model: z.any(),
+  writer: z.any().optional().describe('Stream writer for reasoning updates'),
 });
 
 export const GenerateLanguageJsonOutputSchema = z.object({

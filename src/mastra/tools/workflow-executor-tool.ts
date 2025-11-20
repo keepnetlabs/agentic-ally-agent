@@ -172,11 +172,12 @@ export const workflowExecutorTool = createTool({
         if (!params.prompt) {
           throw new Error('Prompt is required for create-microlearning workflow');
         }
-        // Workflow'u başlat
+
+        // Start workflow with writer parameter
         const workflow = createMicrolearningWorkflow;
         const run = await workflow.createRunAsync();
 
-        // Workflow'u başlat - let it fail if it fails
+        // Start workflow - let it fail if it fails
         const workflowResult: CreateMicrolearningResult = await run.start({
           inputData: {
             prompt: params.prompt!,
@@ -186,7 +187,8 @@ export const workflowExecutorTool = createTool({
             level: params.level || 'Intermediate',
             priority: params.priority || 'medium',
             modelProvider: params.modelProvider,
-            model: params.model
+            model: params.model,
+            writer: writer
           }
         });
 

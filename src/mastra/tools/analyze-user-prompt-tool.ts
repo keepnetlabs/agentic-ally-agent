@@ -8,6 +8,7 @@ import { validateBCP47LanguageCode, DEFAULT_LANGUAGE } from '../utils/language-u
 import { cleanResponse } from '../utils/content-processors/json-cleaner';
 import { PROMPT_ANALYSIS_PARAMS } from '../utils/llm-generation-params';
 import { MICROLEARNING, PROMPT_ANALYSIS, ROLES, CATEGORIES, THEME_COLORS } from '../constants';
+import { streamReasoning } from '../utils/reasoning-stream';
 
 // Cache formatted lists for performance
 const cachedRolesList = ROLES.VALUES.map((role) => `- "${role}"`).join('\n');
@@ -75,6 +76,7 @@ export const analyzeUserPromptTool = new Tool({
   execute: async (context: any) => {
     const input = context?.inputData || context?.input || context;
     const { userPrompt, additionalContext, suggestedDepartment, customRequirements, modelProvider, model: modelOverride } = input;
+    const writer = input?.writer; // Get writer for streaming
 
     // Use model override if provided, otherwise use default
     const model = getModelWithOverride(modelProvider, modelOverride);
@@ -200,9 +202,16 @@ RULES:
           { role: 'system', content: 'You are an expert instructional designer and content analyst. CRITICAL: Analyze user requests intelligently and create professional microlearning metadata. Do NOT copy user instructions as titles/topics. Extract the core learning subject and create appropriate professional titles. Learning objectives must be realistic for 5-minute training scope - focus on specific, immediately actionable skills (NOT meta-tasks like "complete quiz" or unrealistic goals like "teach others"). For roles field: select exactly ONE role from the provided list that best matches the target audience for the topic. For category field: select exactly ONE category from the provided list that best matches the topic domain. For themeColor field: ONLY fill if user explicitly mentioned a color. Convert simple color names (red, blue, green, purple, gray, orange, yellow, pink, light-blue, teal, indigo, emerald, violet, amber) to standard codes (bg-gradient-red, bg-gradient-blue, bg-gradient-teal, etc.). Never infer or auto-select colors - user must explicitly state the color. Return ONLY VALID JSON - NO markdown, NO backticks, NO formatting. Start directly with {. Use BCP-47 language codes (en-gb, tr-tr, de-de, fr-fr,fr-ca, es-es, zh-cn, ja-jp, ar-sa, etc.).' },
           { role: 'user', content: analysisPrompt }
         ],
-        ...PROMPT_ANALYSIS_PARAMS,
+        ...PROMPT_ANALYSIS_PARAMS
       });
 
+      // Extract reasoning from response.response.body.reasoning
+      let reasoning = (response as any).response?.body?.reasoning;
+      console.log('🔍 Reasoning:', reasoning);
+      if (reasoning && writer) {
+        reasoning +=`\n 'I will create an 8-scene code editor training module if isCodeTopic is true, otherwise I will create an 8-scene inbox-based training module.'`;
+        streamReasoning(reasoning, writer);
+      }
       // Use professional JSON repair library
       const cleanedText = cleanResponse(response.text, 'prompt-analysis');
       const analysis = JSON.parse(cleanedText) as PromptAnalysis;

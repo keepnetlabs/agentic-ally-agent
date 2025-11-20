@@ -16,6 +16,7 @@ import { generateScene7Prompt } from './scene-generators/scene7-nudge-generator'
 import { generateScene8Prompt } from './scene-generators/scene8-summary-generator';
 import { cleanResponse } from '../utils/content-processors/json-cleaner';
 import { SCENE_GENERATION_PARAMS } from '../utils/llm-generation-params';
+import { streamReasoning } from '../utils/reasoning-stream';
 
 export const generateLanguageJsonTool = new Tool({
   id: 'generate_language_json',
@@ -24,10 +25,10 @@ export const generateLanguageJsonTool = new Tool({
   outputSchema: GenerateLanguageJsonOutputSchema,
   execute: async (context: any) => {
     const input = context?.inputData || context?.input || context;
-    const { analysis, microlearning, model } = input;
+    const { analysis, microlearning, model, writer } = input;
 
     try {
-      const languageContent = await generateLanguageJsonWithAI(analysis, microlearning, model);
+      const languageContent = await generateLanguageJsonWithAI(analysis, microlearning, model, writer);
 
       return {
         success: true,
@@ -45,8 +46,31 @@ export const generateLanguageJsonTool = new Tool({
   },
 });
 
+// Helper function to extract and stream reasoning from response
+// Same extraction method as analyze-user-prompt-tool.ts
+function extractAndStreamReasoning(response: any, writer: any, sceneName: string): void {
+  if (!writer) {
+    console.log(`⚠️ [${sceneName}] No writer provided, skipping reasoning stream`);
+    return;
+  }
+
+  // Extract reasoning from response.response.body.reasoning (same as analyze-user-prompt-tool.ts)
+  const reasoning = (response as any).response?.body?.reasoning;
+  console.log(`🔍 [${sceneName}] Checking reasoning:`, reasoning ? `Found (${reasoning.substring(0, 50)}...)` : 'Not found');
+
+  if (reasoning && typeof reasoning === 'string' && reasoning.trim().length > 0) {
+    console.log(`🧠 [${sceneName}] Found reasoning, streaming...`);
+    streamReasoning(reasoning, writer).catch((error) => {
+      console.error(`❌ [${sceneName}] Failed to stream reasoning:`, error);
+    });
+  } else {
+    console.log(`⚠️ [${sceneName}] No reasoning found in response.response.body.reasoning`);
+  }
+}
+
 // Generate language-specific training content from microlearning.json metadata with rich context
-async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearning: MicrolearningContent, model: any): Promise<LanguageContent> {
+async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearning: MicrolearningContent, model: any, writer?: any): Promise<LanguageContent> {
+  console.log('🔍 [generateLanguageJsonWithAI] Writer check:', writer ? '✅ Writer provided' : '❌ No writer');
 
   // Generate scene 1 & 2 prompts using modular generators
   const scene1Prompt = generateScene1Prompt(analysis, microlearning);
@@ -102,6 +126,9 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
           { role: 'user', content: scene1Prompt }
         ],
         ...SCENE_GENERATION_PARAMS[1]  // Scene 1: Intro (creative)
+      }).then((response) => {
+        // extractAndStreamReasoning(response, writer, 'Scene 1'); // Temporarily commented
+        return response;
       }).catch(err => {
         console.error('❌ Scene 1 generation failed:', err);
         throw new Error(`Scene 1 generation failed: ${err instanceof Error ? err.message : String(err)}`);
@@ -113,6 +140,9 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
           { role: 'user', content: scene2Prompt }
         ],
         ...SCENE_GENERATION_PARAMS[2]  // Scene 2: Goals (factual)
+      }).then((response) => {
+        // extractAndStreamReasoning(response, writer, 'Scene 2'); // Temporarily commented
+        return response;
       }).catch(err => {
         console.error('❌ Scene 2 generation failed:', err);
         throw new Error(`Scene 2 generation failed: ${err instanceof Error ? err.message : String(err)}`);
@@ -124,6 +154,9 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
           { role: 'user', content: videoPrompt }
         ],
         ...SCENE_GENERATION_PARAMS[3]  // Scene 3: Video (balanced)
+      }).then((response) => {
+        // extractAndStreamReasoning(response, writer, 'Scene 3'); // Temporarily commented
+        return response;
       }).catch(err => {
         console.error('❌ Video generation failed:', err);
         throw new Error(`Video generation failed: ${err instanceof Error ? err.message : String(err)}`);
@@ -135,6 +168,9 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
           { role: 'user', content: scene4Prompt }
         ],
         ...SCENE_GENERATION_PARAMS[4]  // Scene 4: Actions (specific)
+      }).then((response) => {
+        // extractAndStreamReasoning(response, writer, 'Scene 4'); // Temporarily commented
+        return response;
       }).catch(err => {
         console.error('❌ Scene 4 generation failed:', err);
         throw new Error(`Scene 4 generation failed: ${err instanceof Error ? err.message : String(err)}`);
@@ -146,6 +182,9 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
           { role: 'user', content: scene5Prompt }
         ],
         ...SCENE_GENERATION_PARAMS[5]  // Scene 5: Quiz (precise)
+      }).then((response) => {
+        // extractAndStreamReasoning(response, writer, 'Scene 5'); // Temporarily commented
+        return response;
       }).catch(err => {
         console.error('❌ Scene 5 generation failed:', err);
         throw new Error(`Scene 5 generation failed: ${err instanceof Error ? err.message : String(err)}`);
@@ -157,6 +196,9 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
           { role: 'user', content: scene6Prompt }
         ],
         ...SCENE_GENERATION_PARAMS[6]  // Scene 6: Survey (neutral)
+      }).then((response) => {
+        // extractAndStreamReasoning(response, writer, 'Scene 6'); // Temporarily commented
+        return response;
       }).catch(err => {
         console.error('❌ Scene 6 generation failed:', err);
         throw new Error(`Scene 6 generation failed: ${err instanceof Error ? err.message : String(err)}`);
@@ -168,6 +210,9 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
           { role: 'user', content: scene7Prompt }
         ],
         ...SCENE_GENERATION_PARAMS[7]  // Scene 7: Nudge (engaging)
+      }).then((response) => {
+        // extractAndStreamReasoning(response, writer, 'Scene 7'); // Temporarily commented
+        return response;
       }).catch(err => {
         console.error('❌ Scene 7 generation failed:', err);
         throw new Error(`Scene 7 generation failed: ${err instanceof Error ? err.message : String(err)}`);
@@ -179,6 +224,9 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
           { role: 'user', content: scene8Prompt }
         ],
         ...SCENE_GENERATION_PARAMS[8]  // Scene 8: Summary (consistent)
+      }).then((response) => {
+        // extractAndStreamReasoning(response, writer, 'Scene 8'); // Temporarily commented
+        return response;
       }).catch(err => {
         console.error('❌ Scene 8 generation failed:', err);
         throw new Error(`Scene 8 generation failed: ${err instanceof Error ? err.message : String(err)}`);
