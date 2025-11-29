@@ -58,7 +58,7 @@ code .
 ```
 src/mastra/
 ├── agents/
-│   └── agentic-ally.ts                 # Main conversational agent
+│   └── microlearning-agent.ts          # Main conversational agent (formerly agentic-ally)
 ├── tools/
 │   ├── analyze-user-prompt-tool.ts    # Intent parsing
 │   ├── workflow-executor-tool.ts      # Main orchestrator
@@ -191,7 +191,7 @@ export const myNewTool = new Tool({
 
 3. **Register in agent:**
 ```typescript
-// src/mastra/agents/agentic-ally.ts
+// src/mastra/agents/microlearning-agent.ts
 import { myNewTool } from '../tools/my-new-tool';
 
 export const agenticAlly = new Agent({

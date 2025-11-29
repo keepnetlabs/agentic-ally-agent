@@ -34,7 +34,7 @@
   <!-- 2. AI Agent -->
   <rect class="box" x="350" y="200" width="500" height="130" rx="5"/>
   <rect class="box-header" x="350" y="200" width="500" height="25" rx="5"/>
-  <text class="text-header" x="600" y="217" text-anchor="middle">AI Agent (agentic-ally)</text>
+  <text class="text-header" x="600" y="217" text-anchor="middle">AI Agent (microlearning)</text>
   <text class="text-normal" x="370" y="240">Model: Dynamic LLM Selection</text>
   <text class="text-highlight" x="390" y="258">Default: gpt-4o  |  Override: OPENAI/GOOGLE</text>
   <text class="text-normal" x="370" y="280">• State machine (4 states: Info Gathering → Summary → Execute → Complete)</text>

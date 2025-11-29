@@ -1,8 +1,13 @@
 import { Mastra } from '@mastra/core/mastra';
 import { PinoLogger } from '@mastra/loggers';
 import { registerApiRoute } from '@mastra/core/server';
-import { agenticAlly } from './agents/agentic-ally';
+import { microlearningAgent } from './agents/microlearning-agent';
+import { AgentRouter } from './services/agent-router';
+import { orchestratorAgent } from './agents/orchestrator-agent';
+import { phishingEmailAgent } from './agents/phishing-email-agent';
+import { userInfoAgent } from './agents/user-info-agent';
 import { disablePlayground, disableSwagger } from './middleware/openapi';
+import { contextStorage } from './middleware/context-storage';
 import { createMicrolearningWorkflow } from './workflows/create-microlearning-workflow';
 import { addLanguageWorkflow } from './workflows/add-language-workflow';
 import { addMultipleLanguagesWorkflow } from './workflows/add-multiple-languages-workflow';
@@ -10,25 +15,13 @@ import { updateMicrolearningWorkflow } from './workflows/update-microlearning-wo
 import { getDeployer } from './deployer';
 import { ExampleRepo } from './services/example-repo';
 import { D1Store } from '@mastra/cloudflare-d1';
-import { LibSQLStore } from '@mastra/libsql';
 import { codeReviewCheckTool } from './tools/code-review-check-tool';
+
 const logger = new PinoLogger({
   name: 'Mastra',
   level: 'info',
 });
-/*
-new D1Store({
-    accountId: process.env.CLOUDFLARE_ACCOUNT_ID!, // Cloudflare Account ID
-    databaseId: process.env.CLOUDFLARE_D1_DATABASE_ID!, // D1 Database ID
-    apiToken: process.env.CLOUDFLARE_KV_TOKEN!, // Cloudflare API Token
-    tablePrefix: "prod_", // Optional: isolate tables per environment
-  })
-    */
-/*
-new LibSQLStore({
-    url: process.env.MASTRA_MEMORY_URL!,
-    authToken: process.env.MASTRA_MEMORY_TOKEN,
-  }),*/
+
 // Middleware to inject D1 database into ExampleRepo
 const injectD1Database = async (c: any, next: any) => {
   // Check if we have D1 database in the environment (binding name from wrangler)
@@ -52,7 +45,12 @@ export const mastra = new Mastra({
     addMultipleLanguagesWorkflow,
     updateMicrolearningWorkflow
   },
-  agents: { agenticAlly },
+  agents: {
+    microlearningAgent,
+    phishingEmailAssistant: phishingEmailAgent,
+    userInfoAssistant: userInfoAgent,
+    orchestrator: orchestratorAgent
+  },
   logger,
   deployer: getDeployer(),
   storage: new D1Store({
@@ -62,15 +60,15 @@ export const mastra = new Mastra({
     tablePrefix: "dev_", // Optional: isolate tables per environment
   }),
   server: {
-    middleware: [injectD1Database, disablePlayground, disableSwagger],
+    middleware: [contextStorage, injectD1Database, disablePlayground, disableSwagger],
     apiRoutes: [
       registerApiRoute('/chat', {
         method: 'POST',
         handler: async (c) => {
           const mastra = c.get('mastra');
-          const agent = mastra.getAgent('agenticAlly');
 
           let prompt: string | undefined;
+          let routingContext: string = ''; // Context for orchestrator
           let body: any = {};
           try {
             body = await c.req.json();
@@ -78,32 +76,86 @@ export const mastra = new Mastra({
             // Prefer explicit fields if provided
             prompt = body?.prompt || body?.text || body?.input;
 
-            //TODO(emre): Remove this fallback once we have a proper way to get the prompt from the request
-            // Fallback: extract latest user text from AISDK-style messages array
-            if (!prompt && Array.isArray(body?.messages)) {
-              const userMessages = body.messages.filter((m: any) => m?.role === 'user');
-              const lastUserMessage = userMessages[userMessages.length - 1];
-              if (lastUserMessage) {
-                if (typeof lastUserMessage?.content === 'string') {
-                  prompt = lastUserMessage.content;
-                } else if (Array.isArray(lastUserMessage?.parts)) {
-                  const textParts = lastUserMessage.parts
-                    .filter((p: any) => p?.type === 'text' && typeof p?.text === 'string')
-                    .map((p: any) => p.text);
-                  if (textParts.length > 0) {
-                    prompt = textParts.join('\n');
+            // Extract latest prompt AND build context history
+            if (Array.isArray(body?.messages)) {
+              // Get last 5 messages for context
+              const recentMessages = body.messages.slice(-5);
+
+              // Build routing context string
+              routingContext = recentMessages.map((m: any) => {
+                const role = m.role === 'user' ? 'User' : 'Assistant';
+                let content = '';
+
+                // Case 1: Simple string
+                if (typeof m.content === 'string') {
+                  content = m.content;
+                }
+                // Case 2: Array (e.g. multi-modal)
+                else if (Array.isArray(m.content)) {
+                  content = m.content.map((c: any) => {
+                    if (c?.type === 'text') return c.text;
+                    if (c?.type === 'image') return '[Image]';
+                    return '';
+                  }).join(' ');
+                }
+                // Case 3: Vercel AI SDK "parts" structure
+                else if (Array.isArray(m.parts)) {
+                  content = m.parts.map((p: any) => {
+                    if (p?.type === 'text') return p.text;
+                    return '';
+                  }).join(' ');
+                }
+                // Case 4: Tool Invocations (Assistant called a tool)
+                else if (m.toolInvocations || m.function_call || m.tool_calls) {
+                  content = '[Tool Execution Result]';
+                  // Try to dig into tool result if possible, but for routing, knowing it was a tool is enough
+                }
+                // Case 5: Object fallback (try to find text field)
+                else if (typeof m.content === 'object') {
+                  content = m.content?.text || JSON.stringify(m.content);
+                }
+
+                // Final Fallback
+                if (!content || content === '[]' || content === '{}') {
+                  // If content is empty but there are tool calls, it's valid
+                  if (m.toolInvocations) content = '[Tool Call]';
+                  else content = '[Empty Message]';
+                }
+
+                return `${role}: ${content}`;
+              }).join('\n');
+
+              // If prompt wasn't explicitly set, try to get it from the last message
+              if (!prompt) {
+                const userMessages = body.messages.filter((m: any) => m?.role === 'user');
+                const lastUserMessage = userMessages[userMessages.length - 1];
+                if (lastUserMessage) {
+                  if (typeof lastUserMessage?.content === 'string') {
+                    prompt = lastUserMessage.content;
+                  } else if (Array.isArray(lastUserMessage?.parts)) {
+                    const textParts = lastUserMessage.parts
+                      .filter((p: any) => p?.type === 'text' && typeof p?.text === 'string')
+                      .map((p: any) => p.text);
+                    if (textParts.length > 0) {
+                      prompt = textParts.join('\n');
+                    }
                   }
                 }
               }
             }
           } catch (_err) {
-            // ignore JSON parse errors; prompt will remain undefined
+            // ignore JSON parse errors
           }
 
           if (!prompt) {
             return c.json({ success: false, message: 'Missing prompt. Provide {prompt}, {text}, {input}, or AISDK {messages} with user text.' }, 400);
           }
 
+          // If we have routing context, use it. Otherwise just use the prompt.
+          const orchestratorInput = routingContext ?
+            `Here is the recent conversation history:\n---\n${routingContext}\n---\nBased on this history and the last message, decide which agent should handle the request.` :
+            prompt;
+          console.log('🔍 Orchestrator input:', orchestratorInput);
           // Extract or generate thread ID for memory continuity
           let threadId = body?.conversationId || body?.threadId || body?.sessionId;
           if (!threadId) {
@@ -127,9 +179,24 @@ export const mastra = new Mastra({
             const modelInstruction = modelProvider && model
               ? `[Use this model: ${modelProvider} - ${model}]\n\n`
               : modelProvider
-              ? `[Use this model provider: ${modelProvider}]\n\n`
-              : '';
+                ? `[Use this model provider: ${modelProvider}]\n\n`
+                : '';
             finalPrompt = modelInstruction + prompt;
+          }
+
+          // Standardized Agent Routing
+          // Using the Router Service pattern to decouple routing logic from the handler
+          const router = new AgentRouter(mastra);
+          // Pass the FULL CONTEXT to the router, not just the last prompt
+          const routeResult = await router.route(orchestratorInput);
+
+
+          const agent = mastra.getAgent(routeResult.agentName);
+
+          // Inject Task Context if provided by Orchestrator
+          if (routeResult.taskContext) {
+            finalPrompt = `[CONTEXT FROM ORCHESTRATOR: ${routeResult.taskContext}]\n\n${finalPrompt}`;
+            console.log('🔗 Context Injected:', routeResult.taskContext);
           }
 
           const stream = await agent.stream(finalPrompt, {

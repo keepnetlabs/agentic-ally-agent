@@ -1,8 +1,9 @@
-// src/agents/keepnet-agent.ts
+// src/agents/microlearning-agent.ts
 import { Agent } from '@mastra/core/agent';
 import { workflowExecutorTool } from '../tools/workflow-executor-tool';
 import { knowledgeSearchTool } from '../tools/knowledge-search-tool';
 import { reasoningTool } from '../tools/reasoning-tool';
+// Removed getUserInfoTool - relying on history/defaults
 import { getDefaultAgentModel } from '../model-providers';
 import { Memory } from '@mastra/memory';
 
@@ -15,8 +16,8 @@ remember user preferences and execute microlearning workflows efficiently.
 - Before ANY major decision or analysis, call show_reasoning tool
 - Examples:
   * show_reasoning({ thought: "Detected 'SQL injection' keyword → Auto-assigning IT Department" })
-  * show_reasoning({ thought: "No level specified → Will ask user for clarification" })
-  * show_reasoning({ thought: "All parameters collected → Ready to execute workflow" })
+  * show_reasoning({ thought: "User said 'Create it' and history mentions 'Phishing' → Auto-filling Topic: Phishing" })
+  * show_reasoning({ thought: "User said 'Fill auto' → Applying all smart defaults" })
 - Keep reasoning concise (1-2 sentences max)
 - Call this tool BEFORE making decisions, not after
 
@@ -46,10 +47,11 @@ NEVER execute workflow immediately. SMART PARSE FIRST (see below), then follow t
 **SMART PARSE (Before asking ANYTHING):**
 
 1. **Topic**: Extract clear topic from message
+
 2. **Department GUESS** (CRITICAL - DO NOT ASK if match found):
-
+   
    **HARD RULE:** If ANY of these keywords appear in topic → SKIP department question, ASSUME department
-
+   
    - **IT (automatic):** SQL injection, XSS, CSRF, phishing, ransomware, malware, breach, cyber attack, password, encryption, firewall, network security, database, vulnerability, incident response, authentication, access control, data protection, hacking
    - **Finance (automatic):** fraud, embezzlement, audit, accounting, money laundering, financial crime, invoice, budget, expense, tax evasion, compliance violation
    - **HR (automatic):** harassment, discrimination, diversity, DEI, recruitment, onboarding, employee relations, code of conduct, workplace safety, harassment policy
@@ -91,11 +93,25 @@ NEVER execute workflow immediately. SMART PARSE FIRST (see below), then follow t
 
 5. **Final Confirmation**: Provide summary + time warning before execution
 
-### Smart Defaults (Assumption Mode)
-- If the user says "fill automatically", "auto", "otomatik doldur" or leaves fields blank, infer reasonable defaults for TOPIC/DEPARTMENT/LEVEL ONLY.
-- **NEVER assume modelProvider or model** - these are extracted from "[Use this model: ...]" format only, never shown to user.
-- Store assumptions as a short list and show them ONLY inside {assumptions_block} in STATE 2 template.
-- Never restate assumptions elsewhere.
+### Smart Defaults (Context-Aware vs. New Request)
+- **SCENARIO A: CONTINUATION (User says "Create it", "Yes", "Start" AFTER a discussion)**
+  - Use data from Conversation History (Topic, Dept, Level).
+  - If Level is missing in history -> Default to **"Intermediate"**.
+  - **Proceed automatically.**
+
+- **SCENARIO B: EXPLICIT AUTO-FILL (User says "Fill automatically", "Auto", "Otomatik doldur")**
+  - Use whatever data is available (History or Topic).
+  - For ANY missing fields, apply these defaults immediately:
+    - Department: **"All"** (if not detected from topic)
+    - Level: **"Intermediate"**
+    - Topic (if vague): **"General Security Awareness"**
+  - **Action:** Stop asking questions and **Jump immediately to STATE 2 (Show Summary & Ask Confirmation).**
+
+- **SCENARIO C: NEW REQUEST (User says "Create Phishing Awareness", "Make training about X")**
+  - Extract Topic from message.
+  - Auto-detect Department if possible.
+  - **IF LEVEL IS MISSING -> DO NOT DEFAULT. ASK THE USER.**
+  - *Example:* "I can create Phishing Awareness training for IT. What level should it be? (Beginner/Intermediate/Advanced)"
 
 ## Workflow Execution - State Machine
 Follow these states EXACTLY:
@@ -253,20 +269,20 @@ If the user's message starts with [Use this model: ...] or [Use this model provi
    These details must only be passed internally to the workflow-executor.
 `;
 
-export const agenticAlly = new Agent({
-  name: 'agenticAlly',
+export const microlearningAgent = new Agent({
+  name: 'microlearningAgent',
   instructions: buildInstructions(),
   model: getDefaultAgentModel(),
   tools: {
     showReasoning: reasoningTool,
     workflowExecutor: workflowExecutorTool,
     knowledgeSearch: knowledgeSearchTool,
+    // getUserInfoTool removed
   },
   memory: new Memory({
     options: {
-      lastMessages: 5,
+      lastMessages: 10,
       workingMemory: { enabled: true },
     },
   }),
 });
-

@@ -13,7 +13,7 @@
 
 ```
 src/mastra/
-├── agents/agentic-ally.ts              # State machine agent (state 1→4)
+├── agents/microlearning-agent.ts       # State machine agent (state 1→4)
 ├── tools/                              # 18 tools (9 main + 8 scene + 4 inbox)
 │   ├── Main: analyze-prompt, generate-microlearning, translate-language,
 │   │   generate-language, create-inbox, workflow-executor
@@ -76,7 +76,7 @@ ADD-LANGUAGE:
 | `analyze-user-prompt-tool.ts` | Parses user intent (3-level fallback: semantic → sampling → basic) |
 | `create-microlearning-workflow.ts` | Orchestrates all generation steps |
 | `add-language-workflow.ts` | Translation with 3-level retry + auto-correction |
-| `agentic-ally.ts` | Agent with state machine enforcement |
+| `microlearning-agent.ts` | Agent with state machine enforcement |
 | `model-providers.ts` | LLM routing (gpt-4o-mini for agent, Workers AI for content) |
 
 ---
@@ -342,7 +342,7 @@ Validates if a developer correctly fixed a code issue (security vulnerability, l
 1. Create `src/mastra/tools/{action}-{object}-tool.ts`
 2. Define Zod input/output schemas
 3. Implement execute() with 3-level fallbacks
-4. Register in `agentic-ally.ts` tools object
+4. Register in `index.ts` (formerly agentic-ally.ts) tools object
 5. Return `{success, data, error, metadata}`
 
 ### Add New Language
