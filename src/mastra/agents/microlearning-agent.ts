@@ -4,6 +4,8 @@ import { workflowExecutorTool } from '../tools/workflow-executor-tool';
 import { knowledgeSearchTool } from '../tools/knowledge-search-tool';
 import { reasoningTool } from '../tools/reasoning-tool';
 // Removed getUserInfoTool - relying on history/defaults
+import { uploadTrainingTool } from '../tools/upload-training-tool';
+import { assignTrainingTool } from '../tools/assign-training-tool';
 import { getDefaultAgentModel } from '../model-providers';
 import { Memory } from '@mastra/memory';
 
@@ -17,7 +19,7 @@ remember user preferences and execute microlearning workflows efficiently.
 - Examples:
   * show_reasoning({ thought: "Detected 'SQL injection' keyword → Auto-assigning IT Department" })
   * show_reasoning({ thought: "User said 'Create it' and history mentions 'Phishing' → Auto-filling Topic: Phishing" })
-  * show_reasoning({ thought: "User said 'Fill auto' → Applying all smart defaults" })
+  * show_reasoning({ thought: "User wants to upload → Checking memory for recent microlearningId" })
 - Keep reasoning concise (1-2 sentences max)
 - Call this tool BEFORE making decisions, not after
 
@@ -31,6 +33,7 @@ remember user preferences and execute microlearning workflows efficiently.
 ## Core Responsibilities
 - Create new microlearning content for any topic
 - Add language translations to existing microlearning
+- **Upload & Assign** content to the platform
 - Always respond in user's detected language
 
 ## Information Requirements
@@ -222,6 +225,14 @@ When user requests to update theme (e.g., "Change background color", "Change fon
 - department: [extract from recent conversation or ask user - default: 'All']
 - updates: {theme: {any nested theme properties}}
 
+**Platform Integration (Upload & Assign):**
+When user requests to **Upload** or **Assign** training:
+1. Look for the most recent 'microlearningId' in conversation history.
+2. If 'Assign' is requested, also look for a 'targetUserResourceId' (from UserInfo context).
+3. Call 'uploadTraining' tool first (Input: microlearningId).
+4. If upload successful AND assignment requested, call 'assignTraining' tool (Input: resourceId and sendTrainingResourceId from upload result, targetUserResourceId).
+5. If IDs are missing, ASK the user.
+
 Theme structure:
 - fontFamily: {primary, secondary, monospace}
 - colors: {background}
@@ -232,6 +243,8 @@ Theme structure:
 - Single language translation → workflowType: 'add-language' (NO confirmation)
 - Multiple languages (2-12) → workflowType: 'add-multiple-languages' (NO confirmation)
 - Update theme → workflowType: 'update-microlearning' (NO confirmation - execute immediately)
+- Upload to Platform → Tool: 'uploadTraining' (NO confirmation - execute immediately)
+- Assign to User → Tool: 'assignTraining' (NO confirmation - execute immediately)
 
 ## Key Rules
 - For CREATE workflows: Never execute without Topic + Department + Level + confirmation (or Assumption Mode applied)
@@ -277,6 +290,8 @@ export const microlearningAgent = new Agent({
     showReasoning: reasoningTool,
     workflowExecutor: workflowExecutorTool,
     knowledgeSearch: knowledgeSearchTool,
+    uploadTraining: uploadTrainingTool,
+    assignTraining: assignTrainingTool,
     // getUserInfoTool removed
   },
   memory: new Memory({

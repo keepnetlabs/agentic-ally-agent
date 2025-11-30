@@ -4,7 +4,7 @@ import { generateText } from 'ai';
 import { KVService } from '../services/kv-service';
 import { Logger } from '../utils/logger';
 import { normalizeDepartmentName } from '../utils/language-utils';
-import { getDefaultGenerationModel, getModelWithOverride } from '../model-providers';
+import { getModelWithOverride } from '../model-providers';
 import { THEME_COLORS } from '../constants';
 import { DEFAULT_GENERATION_PARAMS } from '../utils/llm-generation-params';
 
@@ -20,7 +20,7 @@ const updateInputSchema = z.object({
       .describe('Theme updates (fontFamily, colors, logo)'),
   }).describe('Updates to apply'),
   modelProvider: z.string().optional().describe('Model provider override (OPENAI, WORKERS_AI, GOOGLE)'),
-  model: z.any().optional().describe('Model instance override'),
+  model: z.string().optional().describe('Model name (e.g., OPENAI_GPT_4O_MINI, WORKERS_AI_GPT_OSS_120B)'),
 });
 
 const updateOutputSchema = z.object({
@@ -60,15 +60,15 @@ function deepMerge(target: any, source: any): any {
 }
 
 // Color normalization - AI-powered CSS class matching
-async function normalizeThemeColor(colorInput: string, model?: any, modelProvider?: string): Promise<string> {
+async function normalizeThemeColor(colorInput: string, modelProvider?: string, modelName?: string): Promise<string> {
   // Check if already a valid CSS class
   if (THEME_COLORS.VALUES.includes(colorInput as any)) {
     return colorInput;
   }
 
   try {
-    // Use provided model or get default
-    const finalModel = model || getModelWithOverride(modelProvider, undefined);
+    // Use model override if provided, otherwise use default (Cloudflare Workers AI)
+    const finalModel = getModelWithOverride(modelProvider, modelName);
 
     const systemPrompt = `ROLE: CSS Color Class Matcher
 TASK: Return ONLY the CSS class name - nothing else
@@ -210,7 +210,7 @@ const mergeUpdatesStep = createStep({
       // Normalize color if provided
       if (updates.theme.colors?.background) {
         const inputColor = updates.theme.colors.background;
-        const normalizedColor = await normalizeThemeColor(inputColor, model, modelProvider);
+        const normalizedColor = await normalizeThemeColor(inputColor, modelProvider, model);
         updates.theme.colors.background = normalizedColor;
         logger.info('Color normalized in merge', {
           microlearningId,

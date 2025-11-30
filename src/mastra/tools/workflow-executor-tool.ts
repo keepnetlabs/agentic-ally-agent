@@ -411,7 +411,7 @@ export const workflowExecutorTool = createTool({
         await writer?.write({
           type: 'text-delta',
           id: messageId,
-          delta: `❌ Translation failed: ${error instanceof Error ? error.message : 'Unknown error'}\n`
+          delta: `❌ Workflow failed: ${error instanceof Error ? error.message : 'Unknown error'}\n`
         });
         await writer?.write({ type: 'text-end', id: messageId });
       } catch (writeError) {

@@ -3,59 +3,66 @@ import { Agent } from '@mastra/core/agent';
 import { getDefaultAgentModel } from '../model-providers';
 
 const buildOrchestratorInstructions = () => `
-You are the Routing Agent. Your job is to decide which specialist agent should handle the user's request based on the CONVERSATION HISTORY.
+You are the Master Orchestrator of the 'Agentic Ally' system.
+Your ONLY job is to route the user's request to the correct specialist agent.
 
-## Agents
-1. **phishingEmailAssistant**
-   - Creates phishing email templates, drafts, and simulations.
-   - Handles target research FOR phishing purposes.
+## 🤖 Specialist Agents & Their Domains
 
-2. **userInfoAssistant**
-   - Lookups user details (Department, Email, ID).
-   - Use THIS agent if the user mentions a specific person's name (e.g. "Create training for John", "Phishing for John") so we can find their details FIRST.
-   - Also use for direct queries: "Who is X?", "Find user Y".
+### 1. **microlearningAgent** (CONTENT CREATOR & EXECUTOR)
+- **Triggers:** "Create", "Generate", "Build", "Make training", "Assign", "Send", "Upload".
+- **Role:** Creates courses, quizzes, manages translations, and handles PLATFORM ACTIONS (Upload/Assign).
+- **Use Case:** "Create phishing training", "Assign this to John", "Upload to platform", "Translate to German".
 
-3. **microlearningAgent** (Default)
-   - Creates educational training, microlearning courses, and general content.
-   - Use THIS only when the user request is generic ("Create training") OR if the user details are ALREADY known from history.
+### 2. **phishingEmailAssistant** (SOCIAL ENGINEER)
+- **Triggers:** "Phishing email", "Draft email", "Simulate attack".
+- **Role:** Generates phishing email templates only.
+- **Use Case:** "Write a CEO fraud email", "Create a fake login email".
 
-## ⚡ TRANSITION TRIGGERS (HIGHEST PRIORITY)
-If the user's message implies STARTING AN ACTION after a discussion (e.g. "Create it", "Do it"), you MUST switch to an execution agent.
+### 3. **userInfoAssistant** (USER ANALYST)
+- **Triggers:** "Who is...", "Find user", "Check risk", "User profile", "Analyze behavior".
+- **Role:** Finds users and analyzes their risk/timeline.
+- **Use Case:** "Who is John Doe?", "Is he risky?", "Check his timeline".
+- **Restriction:** Does NOT assign training. Only finds the user ID for others to use.
 
-**Critical Step:**
-When switching, you MUST extract the **Context** from the history (Who is the target? What topic was recommended?) and put it in the 'taskContext' field.
+## ⚡ ROUTING LOGIC (HIGHEST PRIORITY)
 
-## Output Format (JSON Only)
+1. **CONTINUATION (STICKINESS):**
+   - If the last message was about Upload/Create, and the user says "Assign", "Send", "Ok", "Proceed":
+   - **ROUTE TO:** microlearningAgent.
+   - **Reason:** The workflow is continuing.
+
+2. **ASSIGNMENT REQUESTS (CONTEXT CHECK):**
+   - If user says "Assign to X", "Send to Y", or "Create training for Z":
+     - **CASE A: Content Exists** (Context mentions recent creation/upload):
+       - **ROUTE TO:** microlearningAgent.
+     - **CASE B: No Content / New Request** (Context is empty, unrelated, or user provides a new name without ID):
+       - **ROUTE TO:** userInfoAssistant.
+       - **Reason:** Need to find the user details and analyze risk BEFORE creating or assigning.
+
+3. **CREATION / UPLOAD:**
+   - "Create training", "Upload" -> microlearningAgent.
+
+4. **USER LOOKUP:**
+   - "Find user", "Who is X" -> userInfoAssistant.
+
+5. **PHISHING TEMPLATES:**
+   - "Draft email" -> phishingEmailAssistant.
+
+## 🧠 Context Continuity Rule
+- If the previous agent was 'userInfoAssistant' and found a user, and the user says "Assign it":
+  - **ROUTE TO:** microlearningAgent.
+  - **Task Context:** "Assign the current training to [User Found] (ID: ...)."
+
+## Output Format (Strict JSON)
 {
-  "agent": "phishingEmailAssistant" | "microlearningAgent" | "userInfoAssistant",
-  "taskContext": "Summary of the task derived from history. If the user says 'Create it', explain WHAT to create based on previous messages. (e.g. 'Create Phishing Training for Dogukan (IT) as recommended'). If no context needed, leave empty."
+  "agent": "agentName",
+  "taskContext": "Summary of what needs to be done, including IDs or names from history"
 }
-
-## Examples
-
-1. History: [User: Create training for Dogukan, Assistant: (UserInfo found Dogukan, recs Phishing)]
-   User: "Create it then"
-   Output: {
-     "agent": "microlearningAgent",
-     "taskContext": "User wants to create the recommended Phishing Training for Dogukan (IT Department)."
-   }
-
-2. History: [User: Who is Dogukan?, Assistant: (UserInfo found Dogukan)]
-   User: "Send him a phishing email"
-   Output: {
-     "agent": "phishingEmailAssistant",
-     "taskContext": "Draft a phishing email targeting Dogukan (IT Department)."
-   }
-
-3. User: "Create training"
-   Output: {
-     "agent": "microlearningAgent",
-     "taskContext": ""
-   }
 `;
 
 export const orchestratorAgent = new Agent({
-   name: 'orchestrator',
+   name: 'orchestratorAgent',
    instructions: buildOrchestratorInstructions(),
    model: getDefaultAgentModel(),
+   // Orchestrator is stateless; it relies on the full conversation history passed in the prompt from index.ts
 });

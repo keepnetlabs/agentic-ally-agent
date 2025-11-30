@@ -78,8 +78,8 @@ export const mastra = new Mastra({
 
             // Extract latest prompt AND build context history
             if (Array.isArray(body?.messages)) {
-              // Get last 5 messages for context
-              const recentMessages = body.messages.slice(-5);
+              // Get last 10 messages for better context awareness
+              const recentMessages = body.messages.slice(-10);
 
               // Build routing context string
               routingContext = recentMessages.map((m: any) => {
