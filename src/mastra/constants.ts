@@ -70,22 +70,6 @@ export const PROMPT_ANALYSIS = {
   // Language code validation
   LANGUAGE_CODE_REGEX: /^[a-z]{2}(-[a-z]{2})?$/i,
 
-  // Supported languages (12 languages)
-  SUPPORTED_LANGUAGES: [
-    'en',
-    'tr',
-    'de',
-    'fr',
-    'es',
-    'pt',
-    'it',
-    'ru',
-    'zh',
-    'ja',
-    'ar',
-    'ko',
-  ] as const,
-
   // Default language
   DEFAULT_LANGUAGE: 'en-gb',
 
