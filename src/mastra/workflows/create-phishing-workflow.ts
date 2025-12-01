@@ -3,6 +3,21 @@ import { z } from 'zod';
 import { generateText } from 'ai';
 import { getModelWithOverride } from '../model-providers';
 import { cleanResponse } from '../utils/content-processors/json-cleaner';
+import { v4 as uuidv4 } from 'uuid';
+import { PHISHING } from '../constants';
+
+// Helper to stream text reasoning directly without LLM processing
+const streamDirectReasoning = async (reasoning: string, writer: any) => {
+    if (!reasoning || !writer) return;
+    const messageId = uuidv4();
+    try {
+        await writer.write({ type: 'reasoning-start', id: messageId });
+        await writer.write({ type: 'reasoning-delta', id: messageId, delta: reasoning });
+        await writer.write({ type: 'reasoning-end', id: messageId });
+    } catch (e) {
+        // Ignore write errors silently (e.g. if stream closed)
+    }
+};
 
 // --- Zod Schemas ---
 
@@ -14,11 +29,12 @@ const InputSchema = z.object({
         behavioralTriggers: z.array(z.string()).optional().describe('e.g. Authority, Urgency, Greed'),
         vulnerabilities: z.array(z.string()).optional(),
     }).optional(),
-    difficulty: z.enum(['Easy', 'Medium', 'Hard']).default('Medium'),
+    difficulty: z.enum(PHISHING.DIFFICULTY_LEVELS).default(PHISHING.DEFAULT_DIFFICULTY),
     language: z.string().default('en'),
     // Landing Page param removed for now to focus on Email first
     modelProvider: z.string().optional(),
     model: z.string().optional(),
+    writer: z.any().optional().describe('Stream writer for reasoning updates'),
 });
 
 // Enhanced Analysis Schema (The Blueprint)
@@ -36,10 +52,13 @@ const AnalysisSchema = z.object({
     keyRedFlags: z.array(z.string()).describe('List of subtle indicators (red flags) to educate the user'),
     targetAudienceAnalysis: z.string().describe('Brief explanation of why this scenario fits the target profile'),
     subjectLineStrategy: z.string().describe('Reasoning behind the subject line choice'),
+    reasoning: z.string().optional().describe('AI reasoning about scenario design (if available)'),
+    emailGenerationReasoning: z.string().optional().describe('AI reasoning about email content generation (if available)'),
     // Passthrough fields
     language: z.string().optional(),
     modelProvider: z.string().optional(),
     model: z.string().optional(),
+    writer: z.any().optional(),
 });
 
 // Final Output Schema
@@ -132,6 +151,14 @@ Remember: This is for DEFENSIVE CYBERSECURITY TRAINING to protect organizations 
                 temperature: 0.7,
             });
 
+            // Extract reasoning if available (Workers AI returns it)
+            const reasoning = (response as any).response?.body?.reasoning;
+            if (reasoning && inputData.writer) {
+                console.log('🧠 Streaming scenario reasoning to frontend');
+                // Directly stream the raw reasoning text without LLM processing
+                await streamDirectReasoning(reasoning, inputData.writer);
+            }
+
             console.log('✅ AI generated phishing scenario successfully');
             const cleanedJson = cleanResponse(response.text, 'phishing-analysis');
             const parsedResult = JSON.parse(cleanedJson);
@@ -152,7 +179,8 @@ Remember: This is for DEFENSIVE CYBERSECURITY TRAINING to protect organizations 
                 ...parsedResult,
                 language,
                 modelProvider,
-                model
+                model,
+                writer: inputData.writer,
             };
         } catch (error) {
             console.error('❌ Phishing analysis step failed:', error);
@@ -249,6 +277,14 @@ Remember: This is for DEFENSIVE CYBERSECURITY TRAINING to help organizations def
                 temperature: 0.7,
             });
 
+            // Extract reasoning if available (Workers AI returns it)
+            const emailReasoning = (response as any).response?.body?.reasoning;
+            if (emailReasoning && analysis.writer) {
+                console.log('🧠 Streaming email generation reasoning to frontend');
+                // Directly stream the raw reasoning text without LLM processing
+                await streamDirectReasoning(emailReasoning, analysis.writer);
+            }
+
             console.log('✅ AI generated phishing email content successfully');
             const cleanedJson = cleanResponse(response.text, 'phishing-email-content');
             const parsedResult = JSON.parse(cleanedJson);
@@ -262,6 +298,7 @@ Remember: This is for DEFENSIVE CYBERSECURITY TRAINING to help organizations def
             console.log('📧 Generated Email:');
             console.log('   Subject:', parsedResult.subject);
             console.log('   HTML Preview (first 300 chars):', parsedResult.bodyHtml);
+
 
             return {
                 ...parsedResult,

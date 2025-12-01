@@ -28,7 +28,8 @@ export async function streamReasoning(
     });
 
     // Convert technical reasoning to user-friendly summary in background
-    // Don't await - let it run async while we can show something immediately
+    // Fire-and-forget (Silent Mode): Don't await, just let it try.
+    // If the stream closes before it finishes, we silently ignore the error.
     const model = getModelWithOverride('WORKERS_AI');
 
     generateText({
@@ -44,30 +45,35 @@ export async function streamReasoning(
         }
       ],
       temperature: 0.3,
-    }).then((summaryResponse) => {
+    }).then(async (summaryResponse) => {
       const userFriendlyReasoning = summaryResponse.text;
 
-      // Send user-friendly reasoning content
-      return writer.write({
-        type: 'reasoning-delta',
-        id: messageId,
-        delta: userFriendlyReasoning
-      });
-    }).then(() => {
-      // End reasoning block
-      return writer.write({
-        type: 'reasoning-end',
-        id: messageId
-      });
-    }).then(() => {
-      console.log('🧠 User-friendly reasoning streamed');
-    }).catch((error) => {
-      console.error('❌ Failed to convert/stream reasoning:', error);
-      // Still end the reasoning block even if conversion failed
-      writer.write({
-        type: 'reasoning-end',
-        id: messageId
-      }).catch(() => { });
+      try {
+        // Send user-friendly reasoning content
+        await writer.write({
+          type: 'reasoning-delta',
+          id: messageId,
+          delta: userFriendlyReasoning
+        });
+
+        // End reasoning block
+        await writer.write({
+          type: 'reasoning-end',
+          id: messageId
+        });
+
+        console.log('🧠 User-friendly reasoning streamed');
+      } catch (writeError) {
+        // Stream likely closed, ignore silently
+      }
+    }).catch(() => {
+      // Silent catch for generation errors or stream errors
+      try {
+        writer.write({
+          type: 'reasoning-end',
+          id: messageId
+        }).catch(() => { });
+      } catch (e) { }
     });
 
   } catch (error) {
@@ -84,5 +90,24 @@ export async function streamReasoningUpdates(
 ): Promise<void> {
   for (const text of reasoningTexts) {
     await streamReasoning(text, writer);
+  }
+}
+
+/**
+ * Stream reasoning directly to frontend without LLM processing
+ * Used when the reasoning is already user-friendly or speed is critical
+ */
+export async function streamDirectReasoning(
+  reasoning: string,
+  writer: any
+): Promise<void> {
+  if (!reasoning || !writer) return;
+  const messageId = uuidv4();
+  try {
+    await writer.write({ type: 'reasoning-start', id: messageId });
+    await writer.write({ type: 'reasoning-delta', id: messageId, delta: reasoning });
+    await writer.write({ type: 'reasoning-end', id: messageId });
+  } catch (e) {
+    // Ignore write errors silently (e.g. if stream closed)
   }
 }

@@ -2,10 +2,10 @@ import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { createPhishingWorkflow } from '../workflows/create-phishing-workflow';
 import { v4 as uuidv4 } from 'uuid';
-import { PROMPT_ANALYSIS } from '../constants';
+import { PHISHING } from '../constants';
 
 const phishingWorkflowSchema = z.object({
-    workflowType: z.literal('create-phishing').describe('Workflow to execute'),
+    workflowType: z.literal(PHISHING.WORKFLOW_TYPE).describe('Workflow to execute'),
     topic: z.string().describe('Topic for phishing simulation (e.g. "Reset Password")'),
     targetProfile: z.object({
         name: z.string().optional(),
@@ -13,7 +13,7 @@ const phishingWorkflowSchema = z.object({
         behavioralTriggers: z.array(z.string()).optional(),
         vulnerabilities: z.array(z.string()).optional(),
     }).optional().describe('Target user profile for personalization'),
-    difficulty: z.enum(['Easy', 'Medium', 'Hard']).optional().default('Medium'),
+    difficulty: z.enum(PHISHING.DIFFICULTY_LEVELS).optional().default(PHISHING.DEFAULT_DIFFICULTY),
     language: z.string().optional().default('en'),
     modelProvider: z.enum(['OPENAI', 'WORKERS_AI', 'GOOGLE']).optional(),
     model: z.string().optional(),
@@ -37,10 +37,11 @@ export const phishingWorkflowExecutorTool = createTool({
                 inputData: {
                     topic: params.topic,
                     targetProfile: params.targetProfile,
-                    difficulty: params.difficulty || 'Medium',
+                    difficulty: params.difficulty || PHISHING.DEFAULT_DIFFICULTY,
                     language: params.language || 'en',
                     modelProvider: params.modelProvider,
                     model: params.model,
+                    writer: writer,
                 }
             });
 
@@ -52,14 +53,19 @@ export const phishingWorkflowExecutorTool = createTool({
                 // Stream result to frontend
                 if (writer) {
                     try {
+                        // Wait 3 seconds to let reasoning streams finish and build anticipation
+                        // This ensures the UI component appears AT THE END, after all reasoning logs
+                        await new Promise(resolve => setTimeout(resolve, 3000));
+
                         const messageId = uuidv4();
                         await writer.write({ type: 'text-start', id: messageId });
 
-                        // UI event (not visible in chat - frontend should filter ::ui:: prefixes)
+                        // UI event (base64 encoded to prevent agent from displaying HTML as text)
+                        const encodedHtml = Buffer.from(output.bodyHtml).toString('base64');
                         await writer.write({
                             type: 'text-delta',
                             id: messageId,
-                            delta: `::ui:phishing_email::${output.bodyHtml}::/ui:phishing_email::\n`
+                            delta: `::ui:phishing_email::${encodedHtml}::/ui:phishing_email::\n`
                         });
 
                         await writer.write({ type: 'text-end', id: messageId });
@@ -70,22 +76,43 @@ export const phishingWorkflowExecutorTool = createTool({
 
                 return {
                     success: true,
+                    status: 'success',
+                    // Return rich metadata for Agent Memory (context handover)
                     data: {
+                        topic: params.topic,
+                        language: params.language,
+                        difficulty: params.difficulty,
                         subject: output.subject,
-                        analysis: output.analysis
-                    },
-                    status: 'success'
+                        scenario: output.analysis?.scenario,
+                        category: output.analysis?.category,
+                        psychologicalTriggers: output.analysis?.psychologicalTriggers,
+                        keyRedFlags: output.analysis?.keyRedFlags,
+                        targetAudience: output.analysis?.targetAudienceAnalysis
+                    }
                 };
 
             }
 
-            throw new Error('Phishing workflow failed or produced no output');
+            // Workflow succeeded but no result
+            console.error('❌ Phishing workflow produced no output');
+            return {
+                success: false,
+                error: 'Unable to generate phishing email. Please try again or simplify your request.'
+            };
 
         } catch (error) {
             console.error('❌ Phishing workflow error:', error);
+
+            // User-friendly error message
+            const userMessage = error instanceof Error && error.message.includes('analysis')
+                ? 'Failed to analyze your request. Please provide more details about the phishing scenario.'
+                : error instanceof Error && error.message.includes('email')
+                ? 'Failed to generate email content. Please try again with a simpler scenario.'
+                : 'Unable to generate phishing email. Please try again or contact support if the issue persists.';
+
             return {
                 success: false,
-                error: error instanceof Error ? error.message : 'Unknown error'
+                error: userMessage
             };
         }
     }

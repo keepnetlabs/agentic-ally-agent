@@ -388,6 +388,40 @@ export const THEME_COLORS = {
 } as const;
 
 // ============================================
+// AGENT NAMES
+// ============================================
+
+export const AGENT_NAMES = {
+  PHISHING: 'phishingEmailAssistant',
+  MICROLEARNING: 'microlearningAgent',
+  USER_INFO: 'userInfoAssistant',
+  ORCHESTRATOR: 'orchestrator'
+} as const;
+
+// ============================================
+// PHISHING SIMULATION CONFIGURATION
+// ============================================
+
+export const PHISHING = {
+  // Difficulty levels
+  DIFFICULTY_LEVELS: ['Easy', 'Medium', 'Hard'] as const,
+  DEFAULT_DIFFICULTY: 'Medium',
+
+  // Workflow configuration
+  WORKFLOW_TYPE: 'create-phishing',
+
+  // Timing estimates (includes 3s delay + AI generation + reasoning stream)
+  TIMING: {
+    GENERATION_SECONDS_MIN: 20,
+    GENERATION_SECONDS_MAX: 30
+  },
+
+  // Input validation
+  MIN_TOPIC_LENGTH: 3,
+  MAX_TOPIC_LENGTH: 200
+} as const;
+
+// ============================================
 // CACHE & PERFORMANCE
 // ============================================
 

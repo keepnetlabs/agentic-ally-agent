@@ -1,8 +1,12 @@
 import { Mastra } from '@mastra/core/mastra';
 import { cleanResponse } from '../utils/content-processors/json-cleaner';
+import { AGENT_NAMES } from '../constants';
+
+// Extract agent name type from constants
+type AgentName = typeof AGENT_NAMES[keyof typeof AGENT_NAMES];
 
 export type AgentRoutingResult = {
-  agentName: 'phishingEmailAssistant' | 'microlearningAgent' | 'userInfoAssistant';
+  agentName: AgentName;
   taskContext?: string;
 };
 
@@ -34,19 +38,22 @@ export class AgentRouter {
       const agent = decision?.agent;
       const taskContext = decision?.taskContext;
 
-      if (['phishingEmailAssistant', 'microlearningAgent', 'userInfoAssistant'].includes(agent)) {
+      // Get valid agent names from constants (excluding orchestrator)
+      const validAgents = Object.values(AGENT_NAMES).filter(name => name !== AGENT_NAMES.ORCHESTRATOR);
+
+      if (validAgents.includes(agent)) {
         console.log(`✅ Routed to: ${agent}`);
         if (taskContext) console.log(`📝 Context: ${taskContext}`);
         return { agentName: agent, taskContext };
       }
 
       // Fallback
-      console.warn(`⚠️ Unexpected JSON output: ${JSON.stringify(decision)}. Defaulting to microlearningAgent.`);
-      return { agentName: 'microlearningAgent' };
+      console.warn(`⚠️ Unexpected JSON output: ${JSON.stringify(decision)}. Defaulting to ${AGENT_NAMES.MICROLEARNING}.`);
+      return { agentName: AGENT_NAMES.MICROLEARNING };
 
     } catch (error) {
       console.error('❌ Orchestrator routing error:', error);
-      return { agentName: 'microlearningAgent' };
+      return { agentName: AGENT_NAMES.MICROLEARNING };
     }
   }
 }
