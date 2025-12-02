@@ -8,6 +8,8 @@ import { getModelWithOverride } from '../model-providers';
 import { MicrolearningService } from '../services/microlearning-service';
 import { KVService } from '../services/kv-service';
 import { generateMicrolearningId, normalizeDepartmentName } from '../utils/language-utils';
+import { MODEL_PROVIDERS, TRAINING_LEVELS, DEFAULT_TRAINING_LEVEL, PRIORITY_LEVELS, DEFAULT_PRIORITY } from '../constants';
+import { StreamWriterSchema } from '../types/stream-writer';
 
 // Input/Output Schemas
 const createInputSchema = z.object({
@@ -15,11 +17,11 @@ const createInputSchema = z.object({
   additionalContext: z.string().optional(),
   customRequirements: z.string().optional(),
   department: z.string().optional().default('All'),
-  level: z.enum(['Beginner', 'Intermediate', 'Advanced']).optional().default('Intermediate'),
-  priority: z.enum(['low', 'medium', 'high']).default('medium'),
-  modelProvider: z.enum(['OPENAI', 'WORKERS_AI', 'GOOGLE']).optional().describe('Model provider (OPENAI, WORKERS_AI, GOOGLE)'),
+  level: z.enum(TRAINING_LEVELS).optional().default(DEFAULT_TRAINING_LEVEL),
+  priority: z.enum(PRIORITY_LEVELS).default(DEFAULT_PRIORITY),
+  modelProvider: z.enum(MODEL_PROVIDERS.NAMES).optional().describe('Model provider (OPENAI, WORKERS_AI, GOOGLE)'),
   model: z.string().optional().describe('Model name (e.g., OPENAI_GPT_4O_MINI, WORKERS_AI_GPT_OSS_120B)'),
-  writer: z.any().optional().describe('Stream writer for reasoning updates'),
+  writer: StreamWriterSchema.optional(),
 });
 
 const promptAnalysisSchema = z.object({
@@ -39,9 +41,9 @@ const promptAnalysisSchema = z.object({
     roles: z.array(z.string()).optional(),
     themeColor: z.string().optional(),
   }),
-  modelProvider: z.enum(['OPENAI', 'WORKERS_AI', 'GOOGLE']).optional(),
+  modelProvider: z.enum(MODEL_PROVIDERS.NAMES).optional(),
   model: z.string().optional(),
-  writer: z.any().optional(),
+  writer: StreamWriterSchema.optional(),
 });
 
 const microlearningSchema = z.object({
@@ -50,9 +52,9 @@ const microlearningSchema = z.object({
   microlearningId: z.string(),
   analysis: z.any(),
   microlearningStructure: z.any(),
-  modelProvider: z.enum(['OPENAI', 'WORKERS_AI', 'GOOGLE']).optional(),
+  modelProvider: z.enum(MODEL_PROVIDERS.NAMES).optional(),
   model: z.string().optional(),
-  writer: z.any().optional(),
+  writer: StreamWriterSchema.optional(),
 });
 
 const languageContentSchema = z.object({
@@ -61,9 +63,9 @@ const languageContentSchema = z.object({
   microlearningId: z.string(),
   analysis: z.any(),
   microlearningStructure: z.any(),
-  modelProvider: z.enum(['OPENAI', 'WORKERS_AI', 'GOOGLE']).optional(),
+  modelProvider: z.enum(MODEL_PROVIDERS.NAMES).optional(),
   model: z.string().optional(),
-  writer: z.any().optional(),
+  writer: StreamWriterSchema.optional(),
 });
 
 const finalResultSchema = z.object({
@@ -210,9 +212,9 @@ const createInboxStep = createStep({
     microlearningId: z.string(),
     analysis: z.any(),
     microlearningStructure: z.any(),
-    modelProvider: z.enum(['OPENAI', 'WORKERS_AI', 'GOOGLE']).optional(),
+    modelProvider: z.enum(MODEL_PROVIDERS.NAMES).optional(),
     model: z.string().optional(),
-    writer: z.any().optional(),
+    writer: StreamWriterSchema.optional(),
   }),
   outputSchema: finalResultSchema,
   execute: async ({ inputData }) => {

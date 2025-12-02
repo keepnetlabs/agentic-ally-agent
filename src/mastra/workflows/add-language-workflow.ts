@@ -5,6 +5,7 @@ import { inboxTranslateJsonTool } from '../tools/inbox-translate-json-tool';
 import { KVService } from '../services/kv-service';
 import { normalizeDepartmentName } from '../utils/language-utils';
 import { validateInboxStructure, correctInboxStructure, detectJsonCorruption } from '../utils/json-validation-utils';
+import { MODEL_PROVIDERS } from '../constants';
 
 // Input/Output Schemas
 const addLanguageInputSchema = z.object({
@@ -12,7 +13,7 @@ const addLanguageInputSchema = z.object({
   targetLanguage: z.string().describe('Target language code - supports any language code (e.g., tr-tr, de-de, fr-fr, ja-jp, ko-kr, zh-cn,fr-ca etc.)'),
   sourceLanguage: z.string().optional().describe('Source language code (e.g., en-US, tr-TR). If not provided, auto-detected from microlearning metadata'),
   department: z.string().optional().default('All'),
-  modelProvider: z.enum(['OPENAI', 'WORKERS_AI', 'GOOGLE']).optional().describe('Model provider (OPENAI, WORKERS_AI, GOOGLE)'),
+  modelProvider: z.enum(MODEL_PROVIDERS.NAMES).optional().describe('Model provider (OPENAI, WORKERS_AI, GOOGLE)'),
   model: z.string().optional().describe('Model name (e.g., OPENAI_GPT_4O_MINI, WORKERS_AI_GPT_OSS_120B)'),
 });
 
@@ -24,7 +25,7 @@ const existingContentSchema = z.object({
   sourceLanguage: z.string(), // source language to translate from
   targetLanguage: z.string(), // target language for parallel steps
   department: z.string(), // department for parallel steps
-  modelProvider: z.enum(['OPENAI', 'WORKERS_AI', 'GOOGLE']).optional(), // model provider override
+  modelProvider: z.enum(MODEL_PROVIDERS.NAMES).optional(), // model provider override
   model: z.string().optional(), // model override
   hasInbox: z.boolean(), // whether inbox is needed (false for code_review type)
 });

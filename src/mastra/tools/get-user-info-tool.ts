@@ -1,6 +1,7 @@
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { requestStorage } from '../utils/request-storage';
+import { ERROR_MESSAGES } from '../constants';
 
 // Payload for Step 1: Find User
 const GET_ALL_PAYLOAD = {
@@ -73,7 +74,7 @@ export const getUserInfoTool = createTool({
         const token = store?.token;
 
         if (!token) {
-            return { success: false, error: 'Authentication token missing.' };
+            return { success: false, error: ERROR_MESSAGES.USER_INFO.TOKEN_MISSING };
         }
 
         try {
@@ -151,7 +152,7 @@ export const getUserInfoTool = createTool({
 
         } catch (error) {
             console.error('❌ Tool execution failed:', error);
-            return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+            return { success: false, error: error instanceof Error ? error.message : ERROR_MESSAGES.USER_INFO.UNKNOWN_ERROR };
         }
     },
 });

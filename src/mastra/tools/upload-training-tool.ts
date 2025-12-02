@@ -2,6 +2,7 @@ import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { requestStorage } from '../utils/request-storage';
 import { KVService } from '../services/kv-service';
+import { ERROR_MESSAGES } from '../constants';
 
 const WORKER_URL = 'https://crud-training-worker.keepnet-labs-ltd-business-profile4086.workers.dev/submit';
 const API_URL = 'https://test-api.devkeepnet.com';
@@ -34,7 +35,7 @@ export const uploadTrainingTool = createTool({
         const token = store?.token;
 
         if (!token) {
-            return { success: false, error: 'Authentication token missing. Cannot upload training.' };
+            return { success: false, error: ERROR_MESSAGES.PLATFORM.UPLOAD_TOKEN_MISSING };
         }
 
         try {
@@ -123,7 +124,7 @@ export const uploadTrainingTool = createTool({
             console.error('❌ Upload tool failed:', error);
             return {
                 success: false,
-                error: error instanceof Error ? error.message : 'Unknown upload error'
+                error: error instanceof Error ? error.message : ERROR_MESSAGES.PLATFORM.UNKNOWN_UPLOAD_ERROR
             };
         }
     },

@@ -8,6 +8,7 @@ import { uploadTrainingTool } from '../tools/upload-training-tool';
 import { assignTrainingTool } from '../tools/assign-training-tool';
 import { getDefaultAgentModel } from '../model-providers';
 import { Memory } from '@mastra/memory';
+import { AGENT_NAMES } from '../constants';
 
 
 const buildInstructions = () => `
@@ -285,7 +286,7 @@ If the user's message starts with [Use this model: ...] or [Use this model provi
 `;
 
 export const microlearningAgent = new Agent({
-  name: 'microlearningAgent',
+  name: AGENT_NAMES.MICROLEARNING,
   instructions: buildInstructions(),
   model: getDefaultAgentModel(),
   tools: {

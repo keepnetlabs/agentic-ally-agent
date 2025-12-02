@@ -4,6 +4,7 @@ import { reasoningTool } from '../tools/reasoning-tool';
 import { getUserInfoTool } from '../tools/get-user-info-tool';
 import { getDefaultAgentModel } from '../model-providers';
 import { Memory } from '@mastra/memory';
+import { AGENT_NAMES } from '../constants';
 
 const buildUserInfoInstructions = () => `
 You are the **User Behavior Analyst & Profiler**. 
@@ -98,7 +99,7 @@ User found. Ready to assign the current training."
 `;
 
 export const userInfoAgent = new Agent({
-  name: 'userInfoAssistant',
+  name: AGENT_NAMES.USER_INFO,
   instructions: buildUserInfoInstructions(),
   model: getDefaultAgentModel(),
   tools: {

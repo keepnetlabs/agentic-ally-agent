@@ -137,7 +137,7 @@ const loadMicrolearningStep = createStep({
     currentContent: z.any(),
     currentVersion: z.number(),
     updates: z.any(),
-    model: z.any().optional(),
+    model: z.string().optional(),
     modelProvider: z.string().optional(),
   }),
   execute: async ({ inputData }) => {
@@ -184,7 +184,7 @@ const mergeUpdatesStep = createStep({
     currentContent: z.any(),
     currentVersion: z.number(),
     updates: z.any(),
-    model: z.any().optional(),
+    model: z.string().optional(),
     modelProvider: z.string().optional(),
   }),
   outputSchema: z.object({

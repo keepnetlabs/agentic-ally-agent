@@ -46,28 +46,6 @@ export const generateLanguageJsonTool = new Tool({
   },
 });
 
-// Helper function to extract and stream reasoning from response
-// Same extraction method as analyze-user-prompt-tool.ts
-function extractAndStreamReasoning(response: any, writer: any, sceneName: string): void {
-  if (!writer) {
-    console.log(`⚠️ [${sceneName}] No writer provided, skipping reasoning stream`);
-    return;
-  }
-
-  // Extract reasoning from response.response.body.reasoning (same as analyze-user-prompt-tool.ts)
-  const reasoning = (response as any).response?.body?.reasoning;
-  console.log(`🔍 [${sceneName}] Checking reasoning:`, reasoning ? `Found (${reasoning.substring(0, 50)}...)` : 'Not found');
-
-  if (reasoning && typeof reasoning === 'string' && reasoning.trim().length > 0) {
-    console.log(`🧠 [${sceneName}] Found reasoning, streaming...`);
-    streamReasoning(reasoning, writer).catch((error) => {
-      console.error(`❌ [${sceneName}] Failed to stream reasoning:`, error);
-    });
-  } else {
-    console.log(`⚠️ [${sceneName}] No reasoning found in response.response.body.reasoning`);
-  }
-}
-
 // Generate language-specific training content from microlearning.json metadata with rich context
 async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearning: MicrolearningContent, model: any, writer?: any): Promise<LanguageContent> {
   console.log('🔍 [generateLanguageJsonWithAI] Writer check:', writer ? '✅ Writer provided' : '❌ No writer');

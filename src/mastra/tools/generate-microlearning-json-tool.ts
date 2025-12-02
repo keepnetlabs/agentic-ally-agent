@@ -2,10 +2,11 @@ import { Tool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { generateText } from 'ai';
 import { PromptAnalysis } from '../types/prompt-analysis';
-import { MicrolearningContent, ScientificEvidence, Scene } from '../types/microlearning';
+import { MicrolearningContent, Scene } from '../types/microlearning';
 import { cleanResponse } from '../utils/content-processors/json-cleaner';
 import { METADATA_GENERATION_PARAMS } from '../utils/llm-generation-params';
 import { CATEGORIES } from '../constants';
+import { LanguageModelSchema } from '../types/language-model';
 
 const GenerateMicrolearningJsonSchema = z.object({
   analysis: z.object({
@@ -23,7 +24,7 @@ const GenerateMicrolearningJsonSchema = z.object({
     duration: z.number(),
   }),
   microlearningId: z.string(),
-  model: z.any(),
+  model: LanguageModelSchema,
 });
 
 const GenerateMicrolearningJsonOutputSchema = z.object({
@@ -98,8 +99,8 @@ async function generateMicrolearningJsonWithAI(analysis: PromptAnalysis, microle
       total_points: 100
     },
     scientific_evidence: generateScientificEvidence(),
-    scenes: generateSceneStructure(analysis.topic, analysis.duration, scene4Type),
-    theme: generateTheme(analysis.topic, analysis.themeColor)
+    scenes: generateSceneStructure(analysis.duration, scene4Type),
+    theme: generateTheme(analysis.themeColor)
   };
 
   // Stage 2: Enhance the microlearning object with AI
@@ -111,7 +112,7 @@ async function generateMicrolearningJsonWithAI(analysis: PromptAnalysis, microle
 }
 
 
-function generateTheme(topic: string, themeColor?: string) {
+function generateTheme(themeColor?: string) {
   // Use provided theme color or fallback to gray
   const backgroundColor = themeColor || "bg-gradient-gray";
 
@@ -437,7 +438,7 @@ function generateScene4Metadata(duration: number, scene4Type: "code_review" | "a
   };
 }
 
-function generateSceneStructure(topic: string, duration: number, scene4Type: "code_review" | "actionable_content" = "actionable_content"): Scene[] {
+function generateSceneStructure(duration: number, scene4Type: "code_review" | "actionable_content" = "actionable_content"): Scene[] {
   return [
     {
       scene_id: "1",
@@ -525,247 +526,3 @@ function generateSceneStructure(topic: string, duration: number, scene4Type: "co
 
 export type GenerateMicrolearningJsonInput = z.infer<typeof GenerateMicrolearningJsonSchema>;
 export type GenerateMicrolearningJsonOutput = z.infer<typeof GenerateMicrolearningJsonOutputSchema>;
-
-
-
-// Generate AI-enhanced scene structure with dynamic content
-async function generateAIEnhancedSceneStructure(analysis: any, model: any): Promise<Scene[]> {
-
-  // Generate comprehensive scene configuration and icons in single optimized prompt
-  const comprehensivePrompt = `Generate optimal microlearning configuration for:
-
-Topic: ${analysis.topic}
-Level: ${analysis.level}  
-Duration: ${analysis.duration} minutes
-Department: ${analysis.department}
-Objectives: ${analysis.learningObjectives.join(', ')}
-
-Return single JSON with scene settings and semantic icons:
-{
-  "scene_points": {
-    "intro": <3-10 based on complexity>,
-    "goal": <3-10>, 
-    "scenario": <5-15>,
-    "actionable_content": <10-30>,
-    "quiz": <15-40>,
-    "survey": <3-8>,
-    "nudge": <5-15>,
-    "summary": <8-25>
-  },
-  "achievement_notifications": {
-    "intro": <boolean>,
-    "goal": <boolean>,
-    "scenario": <boolean>, 
-    "actionable_content": <boolean>,
-    "quiz": <boolean>,
-    "survey": <boolean>,
-    "nudge": <boolean>,
-    "summary": <boolean>
-  },
-  "duration_distribution": {
-    "intro": <0.05-0.20>,
-    "goal": <0.10-0.25>,
-    "scenario": <0.15-0.35>,
-    "actionable_content": <0.20-0.35>,
-    "quiz": <0.10-0.25>,
-    "survey": <0.03-0.10>,
-    "nudge": <0.03-0.10>,
-    "summary": <0.05-0.15>
-  },
-  "icons": {
-    "scene1_intro": "<lucide icon for intro>",
-    "scene2_goal": "<lucide icon for goals>", 
-    "scene3_scenario": "<lucide icon for scenarios>",
-    "scene4_actionable": "<lucide icon for actionable content>",
-    "scene5_quiz": "<lucide icon for quiz>",
-    "scene6_survey": "<lucide icon for survey>", 
-    "scene7_nudge": "<lucide icon for nudge>",
-    "scene8_summary": "<lucide icon for summary>",
-    "sparkle": "<lucide icon for highlights>"
-  }
-}
-
-Guidelines:
-- Beginner: Lower points, more achievements, intuitive icons
-- Advanced: Higher points, selective achievements, professional icons
-- Short duration: Focused content, faster pace
-- Long duration: Comprehensive coverage
-- Select meaningful Lucide-React icons that match "${analysis.topic}" semantically`;
-
-  try {
-    // Generate comprehensive configuration in single optimized call
-    const response = await generateText({
-      model: model,
-      messages: [
-        { role: 'system', content: 'Generate comprehensive microlearning configuration with scene settings and semantic icons. Return ONLY VALID JSON - NO markdown, NO backticks, NO formatting. Start directly with {' },
-        { role: 'user', content: comprehensivePrompt }
-      ],
-      ...METADATA_GENERATION_PARAMS,
-    });
-
-    // Use professional JSON repair library
-    const cleanedConfig = cleanResponse(response.text, 'scene-configuration');
-    const config = JSON.parse(cleanedConfig);
-    const sceneConfig = {
-      scene_points: config.scene_points,
-      achievement_notifications: config.achievement_notifications,
-      duration_distribution: config.duration_distribution
-    };
-    const customIcons = config.icons;
-
-    return [
-      {
-        scene_id: "1",
-        metadata: {
-          scene_type: "intro" as const,
-          points: sceneConfig.scene_points?.intro || 5,
-          duration_seconds: Math.round(analysis.duration * 60 * (sceneConfig.duration_distribution?.intro || 0.1)),
-          hasAchievementNotification: sceneConfig.achievement_notifications?.intro || false,
-          scientific_basis: "Intro – Attention Capture: Creates initial engagement and sets learning expectations.",
-          icon: {
-            sparkleIconName: customIcons.sparkle || "alert-triangle",
-            sceneIconName: customIcons.scene1_intro || "shield-alert"
-          }
-        }
-      },
-      {
-        scene_id: "2",
-        metadata: {
-          scene_type: "goal" as const,
-          points: sceneConfig.scene_points?.goal || 5,
-          duration_seconds: Math.round(analysis.duration * 60 * (sceneConfig.duration_distribution?.goal || 0.15)),
-          hasAchievementNotification: sceneConfig.achievement_notifications?.goal || false,
-          scientific_basis: "Goal – Goal Activation: Clear objectives improve learning focus and retention.",
-          icon: {
-            sceneIconName: customIcons.scene2_goal || "target"
-          }
-        }
-      },
-      {
-        scene_id: "3",
-        metadata: {
-          scene_type: "scenario" as const,
-          points: sceneConfig.scene_points?.scenario || 10,
-          duration_seconds: Math.round(analysis.duration * 60 * (sceneConfig.duration_distribution?.scenario || 0.25)),
-          hasAchievementNotification: sceneConfig.achievement_notifications?.scenario || false,
-          scientific_basis: "Scenario – Contextual Learning: Real-world context improves knowledge transfer.",
-          icon: {
-            sceneIconName: customIcons.scene3_scenario || "monitor-play"
-          }
-        }
-      },
-      {
-        scene_id: "4",
-        metadata: {
-          scene_type: "actionable_content" as const,
-          points: sceneConfig.scene_points?.actionable_content || 25,
-          duration_seconds: Math.round(analysis.duration * 60 * (sceneConfig.duration_distribution?.actionable_content || 0.25)),
-          hasAchievementNotification: sceneConfig.achievement_notifications?.actionable_content || false,
-          scientific_basis: "Actionable Content – Procedural Knowledge: Step-by-step guidance builds competency.",
-          icon: {
-            sceneIconName: customIcons.scene4_actionable || "clipboard-check"
-          }
-        }
-      },
-      {
-        scene_id: "5",
-        metadata: {
-          scene_type: "quiz" as const,
-          points: sceneConfig.scene_points?.quiz || 25,
-          duration_seconds: Math.round(analysis.duration * 60 * (sceneConfig.duration_distribution?.quiz || 0.15)),
-          hasAchievementNotification: sceneConfig.achievement_notifications?.quiz !== undefined ? sceneConfig.achievement_notifications.quiz : true,
-          scientific_basis: "Quiz – Active Recall: Testing enhances retention and identifies knowledge gaps.",
-          icon: {
-            sceneIconName: customIcons.scene5_quiz || "brain"
-          }
-        }
-      },
-      {
-        scene_id: "6",
-        metadata: {
-          scene_type: "survey" as const,
-          points: sceneConfig.scene_points?.survey || 5,
-          duration_seconds: Math.round(analysis.duration * 60 * (sceneConfig.duration_distribution?.survey || 0.05)),
-          hasAchievementNotification: sceneConfig.achievement_notifications?.survey || false,
-          scientific_basis: "Survey – Metacognition: Self-assessment promotes learning awareness.",
-          icon: {
-            sceneIconName: customIcons.scene6_survey || "list-checks"
-          }
-        }
-      },
-      {
-        scene_id: "7",
-        metadata: {
-          scene_type: "nudge" as const,
-          points: sceneConfig.scene_points?.nudge || 10,
-          duration_seconds: Math.round(analysis.duration * 60 * (sceneConfig.duration_distribution?.nudge || 0.05)),
-          hasAchievementNotification: sceneConfig.achievement_notifications?.nudge || false,
-          scientific_basis: "Action Plan – Implementation Intentions: Concrete plans improve behavior change.",
-          icon: {
-            sceneIconName: customIcons.scene7_nudge || "repeat"
-          }
-        }
-      },
-      {
-        scene_id: "8",
-        metadata: {
-          scene_type: "summary" as const,
-          points: sceneConfig.scene_points?.summary || 15,
-          duration_seconds: Math.round(analysis.duration * 60 * (sceneConfig.duration_distribution?.summary || 0.1)),
-          hasAchievementNotification: sceneConfig.achievement_notifications?.summary !== undefined ? sceneConfig.achievement_notifications.summary : true,
-          scientific_basis: "Summary – Consolidation: Review reinforces learning and provides closure.",
-          icon: {
-            sceneIconName: customIcons.scene8_summary || "trophy"
-          }
-        }
-      }
-    ];
-  } catch (error) {
-    console.error('Failed to generate custom icons, using fallbacks');
-    const scene4Type = analysis.isCodeTopic ? "code_review" : "actionable_content";
-    return generateSceneStructure(analysis.topic, 5, scene4Type) as unknown as Scene[];
-  }
-}
-async function generateScientificEvidenceAI(analysis: PromptAnalysis, model: any) {
-  const evidencePrompt = `Build a rigorous, citation-backed scientific evidence object for a microlearning on "${analysis.topic}" in category "${analysis.category}".
-Return STRICT JSON ONLY matching this TypeScript type (keys exact):
-{
-  "overview": { "title": string, "description": string, "last_updated": string(YYYY-MM-DD), "evidence_level": string, "peer_reviewed_sources": number },
-  "learning_theories": { [key: string]: { "theory": string, "application": string, "evidence": string } },
-  "behavioral_psychology": { [key: string]: { "theory": string, "application": string, "evidence": string } },
-  "gamification_research": { [key: string]: { "theory": string, "application": string, "evidence": string } },
-  "cybersecurity_specific": { [key: string]: { "study": string, "findings": string, "application": string } },
-  "methodology_evidence": { [key: string]: { "meta_analysis"?: string, "study"?: string, "findings": string, "application": string } },
-  "effectiveness_metrics": { "learning_outcomes": { [k: string]: string }, "engagement_metrics": { [k: string]: string }, "business_impact": { [k: string]: string } },
-  "research_sources": [ { "author": string, "year": number, "title": string, "journal"?: string, "publisher"?: string, "conference"?: string, "doi"?: string } ]
-}
-Guidelines:
-- Include 2-4 items per section, concise and credible.
-- Adapt ALL content to "${analysis.topic}" context - make theories, psychology, and research specific to this topic domain.
-- "cybersecurity_specific": For non-security topics, treat as domain-specific research (leadership topics → management studies, health topics → clinical research, etc.)
-- Select theories and research most relevant to ${analysis.department} and "${analysis.topic}" learning objectives.
-- Provide quantitative findings and specific applications wherever possible.
-- Use realistic citations with actual researcher names and credible journals.
-- Dates: last_updated is today's date.
-- Language for titles/descriptions: English.`;
-
-  try {
-    const resp = await generateText({
-      model: model,
-      messages: [
-        { role: 'system', content: 'Return ONLY VALID JSON - NO markdown, NO backticks, NO formatting. Start directly with {' },
-        { role: 'user', content: evidencePrompt }
-      ],
-      ...METADATA_GENERATION_PARAMS,
-    });
-    // Use professional JSON repair library
-    const cleanedEvidence = cleanResponse(resp.text, 'scientific-evidence');
-    const parsed = JSON.parse(cleanedEvidence) as ScientificEvidence;
-    // Basic sanity checks
-    if (!parsed?.overview?.title) throw new Error('Invalid evidence JSON');
-    return parsed;
-  } catch (_) {
-    // Fallback to static scaffold if AI JSON fails
-    //return generateScientificEvidence(analysis.topic, analysis.category);
-  }
-}

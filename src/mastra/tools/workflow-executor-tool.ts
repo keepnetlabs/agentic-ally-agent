@@ -5,7 +5,7 @@ import { addLanguageWorkflow } from '../workflows/add-language-workflow';
 import { addMultipleLanguagesWorkflow } from '../workflows/add-multiple-languages-workflow';
 import { updateMicrolearningWorkflow } from '../workflows/update-microlearning-workflow';
 import { v4 as uuidv4 } from 'uuid';
-import { PROMPT_ANALYSIS } from '../constants';
+import { PROMPT_ANALYSIS, MODEL_PROVIDERS, ERROR_MESSAGES } from '../constants';
 
 /**
  * Type definitions for workflow results
@@ -155,7 +155,7 @@ const workflowExecutorSchema = z.object({
     .describe('Updates for update-microlearning workflow'),
 
   // Model override parameters (optional)
-  modelProvider: z.enum(['OPENAI', 'WORKERS_AI', 'GOOGLE']).optional().describe('Model provider override'),
+  modelProvider: z.enum(MODEL_PROVIDERS.NAMES).optional().describe('Model provider override'),
   model: z.string().optional().describe('Model name override (e.g., OPENAI_GPT_4O_MINI)'),
 });
 
@@ -420,7 +420,7 @@ export const workflowExecutorTool = createTool({
 
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : ERROR_MESSAGES.WORKFLOW.UNKNOWN_ERROR
       };
     }
   }

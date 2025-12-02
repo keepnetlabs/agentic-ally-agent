@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { StreamWriterSchema } from '../types/stream-writer';
+import { LanguageModelSchema } from '../types/language-model';
 
 export const GenerateLanguageJsonSchema = z.object({
   analysis: z.object({
@@ -22,8 +24,8 @@ export const GenerateLanguageJsonSchema = z.object({
     customRequirements: z.string().optional(),
   }),
   microlearning: z.any(),
-  model: z.any(),
-  writer: z.any().optional().describe('Stream writer for reasoning updates'),
+  model: LanguageModelSchema,
+  writer: StreamWriterSchema.optional(),
 });
 
 export const GenerateLanguageJsonOutputSchema = z.object({

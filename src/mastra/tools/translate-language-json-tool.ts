@@ -1,6 +1,7 @@
 import { Tool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { getModelWithOverride } from '../model-providers';
+import { MODEL_PROVIDERS } from '../constants';
 import { SceneType, getSceneTypeOrDefault } from '../types/scene-types';
 import { rewriteScene1Intro } from './scene-rewriters/scene1-intro-rewriter';
 import { rewriteScene2Goal } from './scene-rewriters/scene2-goal-rewriter';
@@ -22,7 +23,7 @@ const TranslateJsonInputSchema = z.object({
     targetLanguage: z.string(),
     topic: z.string().optional(),
     doNotTranslateKeys: z.array(z.string()).optional(),
-    modelProvider: z.enum(['OPENAI', 'WORKERS_AI', 'GOOGLE']).optional().describe('Model provider'),
+    modelProvider: z.enum(MODEL_PROVIDERS.NAMES).optional().describe('Model provider'),
     model: z.string().optional().describe('Model name (e.g., OPENAI_GPT_4O_MINI, WORKERS_AI_GPT_OSS_120B)'),
 });
 

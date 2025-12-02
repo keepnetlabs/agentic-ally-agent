@@ -1,6 +1,7 @@
 // src/agents/orchestrator-agent.ts
 import { Agent } from '@mastra/core/agent';
 import { getDefaultAgentModel } from '../model-providers';
+import { AGENT_NAMES } from '../constants';
 
 const buildOrchestratorInstructions = () => `
 You are the Master Orchestrator of the 'Agentic Ally' system.
@@ -63,7 +64,7 @@ Your ONLY job is to route the user's request to the correct specialist agent.
 `;
 
 export const orchestratorAgent = new Agent({
-   name: 'orchestratorAgent',
+   name: AGENT_NAMES.ORCHESTRATOR,
    instructions: buildOrchestratorInstructions(),
    model: getDefaultAgentModel(),
    // Orchestrator is stateless; it relies on the full conversation history passed in the prompt from index.ts

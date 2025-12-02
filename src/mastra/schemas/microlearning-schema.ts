@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { TRAINING_LEVELS } from '../constants';
 
 export const SceneMetadataSchema = z.object({
     scene_type: z.enum(['intro', 'goal', 'scenario', 'actionable_content', 'quiz', 'survey', 'nudge', 'summary']),
@@ -27,7 +28,7 @@ export const MicrolearningMetadataSchema = z.object({
     regulation_compliance: z.array(z.string()),
     risk_area: z.string().min(1),
     content_provider: z.string().min(1),
-    level: z.enum(['Beginner', 'Intermediate', 'Advanced']),
+    level: z.enum(TRAINING_LEVELS),
     ethical_inclusive_language_policy: z.record(z.any()),
     language_availability: z.array(z.string()),
     gamification_enabled: z.boolean(),

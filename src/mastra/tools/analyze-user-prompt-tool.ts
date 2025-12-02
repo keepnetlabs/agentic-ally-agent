@@ -7,7 +7,7 @@ import { ExampleRepo } from '../services/example-repo';
 import { validateBCP47LanguageCode, DEFAULT_LANGUAGE } from '../utils/language-utils';
 import { cleanResponse } from '../utils/content-processors/json-cleaner';
 import { PROMPT_ANALYSIS_PARAMS } from '../utils/llm-generation-params';
-import { MICROLEARNING, PROMPT_ANALYSIS, ROLES, CATEGORIES, THEME_COLORS } from '../constants';
+import { MICROLEARNING, PROMPT_ANALYSIS, ROLES, CATEGORIES, THEME_COLORS, MODEL_PROVIDERS, TRAINING_LEVELS, DEFAULT_TRAINING_LEVEL } from '../constants';
 import { streamReasoning } from '../utils/reasoning-stream';
 
 // Cache formatted lists for performance
@@ -18,9 +18,9 @@ const AnalyzeUserPromptSchema = z.object({
   userPrompt: z.string().min(1, 'User prompt is required'),
   additionalContext: z.string().optional(),
   suggestedDepartment: z.string().optional(),
-  suggestedLevel: z.enum(['Beginner', 'Intermediate', 'Advanced']).optional().default('Intermediate'),
+  suggestedLevel: z.enum(TRAINING_LEVELS).optional().default(DEFAULT_TRAINING_LEVEL),
   customRequirements: z.string().optional(),
-  modelProvider: z.enum(['OPENAI', 'WORKERS_AI', 'GOOGLE']).optional().describe('Model provider'),
+  modelProvider: z.enum(MODEL_PROVIDERS.NAMES).optional().describe('Model provider'),
   model: z.string().optional().describe('Model name (e.g., OPENAI_GPT_4O_MINI, WORKERS_AI_GPT_OSS_120B)'),
 });
 

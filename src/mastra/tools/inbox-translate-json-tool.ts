@@ -6,6 +6,7 @@ import { getModelWithOverride } from '../model-providers';
 import { cleanResponse } from '../utils/content-processors/json-cleaner';
 import { LOCALIZER_PARAMS } from '../utils/llm-generation-params';
 import { buildSystemPrompt } from '../utils/localization-language-rules';
+import { MODEL_PROVIDERS } from '../constants';
 
 /* =========================================================
  * Schemas
@@ -16,7 +17,7 @@ const InboxTranslateInputSchema = z.object({
     targetLanguage: z.string(),
     topic: z.string().optional(),
     doNotTranslateKeys: z.array(z.string()).optional(),
-    modelProvider: z.enum(['OPENAI', 'WORKERS_AI', 'GOOGLE']).optional().describe('Model provider'),
+    modelProvider: z.enum(MODEL_PROVIDERS.NAMES).optional().describe('Model provider'),
     model: z.string().optional().describe('Model name (e.g., OPENAI_GPT_4O_MINI, WORKERS_AI_GPT_OSS_120B)'),
 });
 

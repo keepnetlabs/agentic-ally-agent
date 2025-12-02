@@ -12,11 +12,11 @@ export class KVService {
   private namespaceId: string;
   private logger: Logger;
 
-  constructor() {
+  constructor(namespaceIdOverride?: string) {
     this.accountId = process.env.CLOUDFLARE_ACCOUNT_ID || '';
     this.apiToken = process.env.CLOUDFLARE_KV_TOKEN || '';
     this.apiKey = ''; // Not using legacy API key
-    this.namespaceId = process.env.MICROLEARNING_KV_NAMESPACE_ID || ''; // MICROLEARNING_KV namespace ID
+    this.namespaceId = namespaceIdOverride || process.env.MICROLEARNING_KV_NAMESPACE_ID || ''; // Use override or default
     this.logger = new Logger('KVService');
 
     // Validate required environment variables
@@ -256,6 +256,62 @@ export class KVService {
         department,
         duration: timer.end(),
       });
+      return false;
+    }
+  }
+
+  // Phishing specific methods
+  async savePhishing(id: string, data: any, language: string): Promise<boolean> {
+    const timer = startTimer();
+    const normalizedLang = language.toLowerCase();
+    const baseKey = `phishing:${id}:base`;
+    const langKey = `phishing:${id}:lang:${normalizedLang}`;
+
+    try {
+      this.logger.info(`Saving phishing content to KV`, { id, language: normalizedLang });
+
+      // Prepare Base Data (Meta only)
+      const baseData = {
+        id,
+        name: data.analysis?.name,
+        description: data.analysis?.description,
+        topic: data.analysis?.scenario || 'Unknown Topic',
+        difficulty: data.analysis?.difficulty || 'Medium',
+        method: data.analysis?.method || 'Click-Only', // Renamed from attackType
+        targetProfile: data.analysis?.targetAudienceAnalysis || {},
+        createdAt: new Date().toISOString(),
+        language_availability: [normalizedLang]
+      };
+
+      // Prepare Language Data (Content)
+      const langData = {
+        id,
+        language: normalizedLang,
+        subject: data.subject,
+        template: data.template, // Renamed from bodyHtml
+        fromAddress: data.fromAddress,
+        fromName: data.fromName,
+        redFlags: data.analysis?.keyRedFlags || []
+      };
+
+      const [baseResult, langResult] = await Promise.allSettled([
+        this.putWithRetry(baseKey, baseData),
+        this.putWithRetry(langKey, langData)
+      ]);
+
+      const baseSuccess = baseResult.status === 'fulfilled' && baseResult.value === true;
+      const langSuccess = langResult.status === 'fulfilled' && langResult.value === true;
+
+      if (baseSuccess && langSuccess) {
+        this.logger.info(`✅ Phishing content stored in KV: ${id} (${normalizedLang})`, { duration: timer.end() });
+        return true;
+      } else {
+        this.logger.error(`❌ Failed to store phishing content completely`, undefined, { baseSuccess, langSuccess });
+        return false;
+      }
+
+    } catch (error) {
+      this.logger.error(`Failed to save phishing content ${id}:`, error instanceof Error ? error : new Error(String(error)));
       return false;
     }
   }

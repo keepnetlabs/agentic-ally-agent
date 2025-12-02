@@ -1,6 +1,7 @@
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { requestStorage } from '../utils/request-storage';
+import { ERROR_MESSAGES } from '../constants';
 
 const ASSIGN_API_URL = 'https://crud-training-worker.keepnet-labs-ltd-business-profile4086.workers.dev/send'; // Check this endpoint
 const API_URL = 'https://test-api.devkeepnet.com';
@@ -27,7 +28,7 @@ export const assignTrainingTool = createTool({
     const token = store?.token;
 
     if (!token) {
-      return { success: false, error: 'Authentication token missing. Cannot assign training.' };
+      return { success: false, error: ERROR_MESSAGES.PLATFORM.ASSIGN_TOKEN_MISSING };
     }
 
     const payload = {
@@ -68,7 +69,7 @@ export const assignTrainingTool = createTool({
       console.error('❌ Assign tool failed:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown assignment error'
+        error: error instanceof Error ? error.message : ERROR_MESSAGES.PLATFORM.UNKNOWN_ASSIGN_ERROR
       };
     }
   },

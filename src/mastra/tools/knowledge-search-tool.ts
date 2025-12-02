@@ -2,6 +2,7 @@ import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { ExampleRepo } from '../services/example-repo';
 import { KVService } from '../services/kv-service';
+import { ERROR_MESSAGES } from '../constants';
 
 // Simple schema for knowledge search
 const knowledgeSearchSchema = z.object({
@@ -82,7 +83,7 @@ export const knowledgeSearchTool = createTool({
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Search failed',
+        error: error instanceof Error ? error.message : ERROR_MESSAGES.SEARCH.FAILED,
         results: [],
         query
       };

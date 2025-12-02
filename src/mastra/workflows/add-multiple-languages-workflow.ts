@@ -2,6 +2,7 @@ import { createStep, createWorkflow } from '@mastra/core/workflows';
 import { z } from 'zod';
 import { addLanguageWorkflow } from './add-language-workflow';
 import { KVService } from '../services/kv-service';
+import { MODEL_PROVIDERS } from '../constants';
 
 // Input/Output Schemas
 const addMultipleLanguagesInputSchema = z.object({
@@ -9,7 +10,7 @@ const addMultipleLanguagesInputSchema = z.object({
   targetLanguages: z.array(z.string()).min(1).describe('Array of target languages'),
   sourceLanguage: z.string().optional().describe('Source language code (optional)'),
   department: z.string().optional().default('All').describe('Target department'),
-  modelProvider: z.enum(['OPENAI', 'WORKERS_AI', 'GOOGLE']).optional().describe('Model provider override'),
+  modelProvider: z.enum(MODEL_PROVIDERS.NAMES).optional().describe('Model provider override'),
   model: z.string().optional().describe('Model name override'),
 });
 

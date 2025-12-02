@@ -2,7 +2,7 @@ import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { createPhishingWorkflow } from '../workflows/create-phishing-workflow';
 import { v4 as uuidv4 } from 'uuid';
-import { PHISHING } from '../constants';
+import { PHISHING, MODEL_PROVIDERS, ERROR_MESSAGES } from '../constants';
 
 const phishingWorkflowSchema = z.object({
     workflowType: z.literal(PHISHING.WORKFLOW_TYPE).describe('Workflow to execute'),
@@ -14,8 +14,9 @@ const phishingWorkflowSchema = z.object({
         vulnerabilities: z.array(z.string()).optional(),
     }).optional().describe('Target user profile for personalization'),
     difficulty: z.enum(PHISHING.DIFFICULTY_LEVELS).optional().default(PHISHING.DEFAULT_DIFFICULTY),
-    language: z.string().optional().default('en'),
-    modelProvider: z.enum(['OPENAI', 'WORKERS_AI', 'GOOGLE']).optional(),
+    language: z.string().optional().default('en-gb').describe('Target language (BCP-47 code, e.g. en-gb, tr-tr)'),
+    method: z.enum(PHISHING.ATTACK_METHODS).optional().describe('Type of phishing attack'),
+    modelProvider: z.enum(MODEL_PROVIDERS.NAMES).optional(),
     model: z.string().optional(),
 });
 
@@ -39,6 +40,7 @@ export const phishingWorkflowExecutorTool = createTool({
                     targetProfile: params.targetProfile,
                     difficulty: params.difficulty || PHISHING.DEFAULT_DIFFICULTY,
                     language: params.language || 'en',
+                    method: params.method, // Pass user choice or undefined
                     modelProvider: params.modelProvider,
                     model: params.model,
                     writer: writer,
@@ -61,7 +63,7 @@ export const phishingWorkflowExecutorTool = createTool({
                         await writer.write({ type: 'text-start', id: messageId });
 
                         // UI event (base64 encoded to prevent agent from displaying HTML as text)
-                        const encodedHtml = Buffer.from(output.bodyHtml).toString('base64');
+                        const encodedHtml = Buffer.from(output.template).toString('base64');
                         await writer.write({
                             type: 'text-delta',
                             id: messageId,
@@ -79,10 +81,14 @@ export const phishingWorkflowExecutorTool = createTool({
                     status: 'success',
                     // Return rich metadata for Agent Memory (context handover)
                     data: {
+                        phishingId: output.phishingId,
                         topic: params.topic,
                         language: params.language,
                         difficulty: params.difficulty,
+                        method: output.analysis?.method,
                         subject: output.subject,
+                        fromAddress: output.fromAddress,
+                        fromName: output.fromName,
                         scenario: output.analysis?.scenario,
                         category: output.analysis?.category,
                         psychologicalTriggers: output.analysis?.psychologicalTriggers,
@@ -97,7 +103,7 @@ export const phishingWorkflowExecutorTool = createTool({
             console.error('❌ Phishing workflow produced no output');
             return {
                 success: false,
-                error: 'Unable to generate phishing email. Please try again or simplify your request.'
+                error: ERROR_MESSAGES.PHISHING.NO_OUTPUT
             };
 
         } catch (error) {
@@ -105,10 +111,10 @@ export const phishingWorkflowExecutorTool = createTool({
 
             // User-friendly error message
             const userMessage = error instanceof Error && error.message.includes('analysis')
-                ? 'Failed to analyze your request. Please provide more details about the phishing scenario.'
+                ? ERROR_MESSAGES.PHISHING.ANALYSIS_FAILED
                 : error instanceof Error && error.message.includes('email')
-                ? 'Failed to generate email content. Please try again with a simpler scenario.'
-                : 'Unable to generate phishing email. Please try again or contact support if the issue persists.';
+                    ? ERROR_MESSAGES.PHISHING.GENERATION_FAILED
+                    : ERROR_MESSAGES.PHISHING.GENERIC;
 
             return {
                 success: false,

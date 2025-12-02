@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { generateText } from 'ai';
 import { getModelWithOverride } from '../model-providers';
 import { cleanResponse } from '../utils/content-processors/json-cleaner';
+import { MODEL_PROVIDERS } from '../constants';
 
 const CodeReviewCheckSchema = z.object({
   issueType: z.string().describe('Type of issue to fix (e.g., "SQL Injection", "XSS", "Logic Error", "Performance Issue")'),
@@ -10,7 +11,7 @@ const CodeReviewCheckSchema = z.object({
   fixedCode: z.string().describe('The code after developer attempted to fix it'),
   language: z.string().describe('Programming language (javascript, python, java, etc.)'),
   outputLanguage: z.string().optional().default('en').describe('Output language for feedback, explanation and hint (e.g., "en", "tr", "de", "fr", etc.)'),
-  modelProvider: z.enum(['OPENAI', 'WORKERS_AI', 'GOOGLE']).optional().describe('Model provider'),
+  modelProvider: z.enum(MODEL_PROVIDERS.NAMES).optional().describe('Model provider'),
   model: z.string().optional().describe('Model name override'),
 });
 

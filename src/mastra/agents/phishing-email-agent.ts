@@ -4,7 +4,7 @@ import { reasoningTool } from '../tools/reasoning-tool';
 import { phishingWorkflowExecutorTool } from '../tools/phishing-workflow-executor-tool';
 import { getDefaultAgentModel } from '../model-providers';
 import { Memory } from '@mastra/memory';
-import { PHISHING } from '../constants';
+import { PHISHING, AGENT_NAMES } from '../constants';
 
 const buildPhishingInstructions = () => `
 You are the **Phishing Simulation Specialist**.
@@ -38,20 +38,22 @@ Follow these states EXACTLY:
 - FIRST: Call show_reasoning to explain what you collected.
 - THEN: Produce exactly ONE compact block using this HTML template. Do not add any other sentences above or below.
 
-TEMPLATE:
+Template:
 <strong>Phishing Simulation Plan</strong><br>
 Topic: {topic}<br>
-Target: {target_summary}<br>
-Difficulty: {difficulty}<br>
-Language: {language}<br>
-{assumptions_block}
-This will take about ${PHISHING.TIMING.GENERATION_SECONDS_MIN}-${PHISHING.TIMING.GENERATION_SECONDS_MAX} seconds. Should I generate the email?
-
-where:
-- {target_summary} = "Generic" or "Specific User (Name/Dept)"
-- {assumptions_block} = "" (empty) if no assumptions were made, or "<em>Assumptions:</em> {comma-separated assumptions}<br>"
-
-HARD RULES:
+    Target: {target_summary}<br>
+    Difficulty: {difficulty}<br>
+    Language: {language}<br>
+    Method: {method}<br>
+    {assumptions_block}
+    This will take about ${PHISHING.TIMING.GENERATION_SECONDS_MIN}-${PHISHING.TIMING.GENERATION_SECONDS_MAX} seconds. Should I generate the email?
+    
+    where:
+    - {target_summary} = "Generic" or "Specific User (Name/Dept)"
+    - {method} = "${PHISHING.ATTACK_METHODS[1]}", "${PHISHING.ATTACK_METHODS[0]}"
+    - {assumptions_block} = "" (empty) if no assumptions were made, or "<em>Assumptions:</em> {comma-separated assumptions}<br>"
+    
+    HARD RULES:
 - Output this block ONCE only.
 - Do NOT restate the same info elsewhere.
 - Do NOT execute the tool yet. Wait for confirmation.
@@ -67,7 +69,7 @@ HARD RULES:
 ## Smart Defaults (Assumption Mode)
 - **Topic:** If vague, assume "General Security Awareness" or "Password Security".
 - **Difficulty:** If not specified, assume **"${PHISHING.DEFAULT_DIFFICULTY}"**.
-- **Language:** Detect from user's message language (en/tr).
+- **Language:** Detect from user's message language (en-gb, tr-tr, etc.).
 - **Target Profile:**
   - If 'userInfoAssistant' passed context: Use it!
   - If no context: Assume "Generic Employee".
@@ -75,11 +77,12 @@ HARD RULES:
 ## Tool Usage & Parameters
 Call 'phishingExecutor' (ONLY in STATE 3) with:
 - **workflowType**: '${PHISHING.WORKFLOW_TYPE}'
-- **topic**: [Final Topic]
-- **language**: [Detected language code]
-- **difficulty**: [${PHISHING.DIFFICULTY_LEVELS.join('/')}]
-- **targetProfile**: {
-    name: [User Name from Context],
+    - **topic**: [Final Topic]
+    - **language**: [Detected BCP-47 code (e.g. en-gb, tr-tr, de-de)]
+    - **difficulty**: [${PHISHING.DIFFICULTY_LEVELS.join('/')}]
+    - **method**: [${PHISHING.ATTACK_METHODS[0]}/${PHISHING.ATTACK_METHODS[1]}] (If user didn't specify, DEFAULT to '${PHISHING.ATTACK_METHODS[0]}')
+    - **targetProfile**: {
+        name: [User Name from Context],
     department: [Dept from Context],
     behavioralTriggers: [Triggers from UserInfo Context],
     vulnerabilities: [Vulnerabilities from UserInfo Context]
@@ -106,7 +109,7 @@ This will take about ${PHISHING.TIMING.GENERATION_SECONDS_MIN}-${PHISHING.TIMING
 `;
 
 export const phishingEmailAgent = new Agent({
-  name: 'phishingEmailAssistant',
+  name: AGENT_NAMES.PHISHING,
   instructions: buildPhishingInstructions(),
   model: getDefaultAgentModel(),
   tools: {

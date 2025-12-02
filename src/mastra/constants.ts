@@ -53,6 +53,16 @@ export const MICROLEARNING = {
 } as const;
 
 // ============================================
+// TRAINING CONFIGURATION
+// ============================================
+
+export const TRAINING_LEVELS = ['Beginner', 'Intermediate', 'Advanced'] as const;
+export const DEFAULT_TRAINING_LEVEL = 'Intermediate' as const;
+
+export const PRIORITY_LEVELS = ['low', 'medium', 'high'] as const;
+export const DEFAULT_PRIORITY = 'medium' as const;
+
+// ============================================
 // PROMPT ANALYSIS CONFIGURATION
 // ============================================
 
@@ -240,6 +250,7 @@ export const VALIDATION = {
 // ============================================
 
 export const ERROR_MESSAGES = {
+  // System errors
   ENV_VARS_MISSING: 'Missing required environment variables:',
   INVALID_LANGUAGE_CODE: 'Invalid language code format (e.g., en, en-US, en-gb)',
   PROMPT_TOO_SHORT: `Prompt must be at least ${PROMPT_ANALYSIS.MIN_PROMPT_LENGTH} characters`,
@@ -249,6 +260,48 @@ export const ERROR_MESSAGES = {
   EMBEDDING_GENERATION_FAILED: 'Failed to generate embeddings',
   KV_OPERATION_FAILED: 'KV operation failed',
   SEMANTIC_SEARCH_FAILED: 'Semantic search failed',
+
+  // Phishing workflow errors
+  PHISHING: {
+    NO_OUTPUT: 'Unable to generate phishing email. Please try again or simplify your request.',
+    ANALYSIS_FAILED: 'Failed to analyze your request. Please provide more details about the phishing scenario.',
+    GENERATION_FAILED: 'Failed to generate email content. Please try again with a simpler scenario.',
+    GENERIC: 'Unable to generate phishing email. Please try again or contact support if the issue persists.'
+  },
+
+  // Workflow execution errors
+  WORKFLOW: {
+    EXECUTION_FAILED: 'Workflow execution failed. Please try again.',
+    UNKNOWN_ERROR: 'Unknown error occurred during workflow execution.'
+  },
+
+  // Authentication errors
+  AUTH: {
+    TOKEN_MISSING: 'Authentication token missing.',
+    UNAUTHORIZED: 'Unauthorized access.'
+  },
+
+  // Platform integration errors
+  PLATFORM: {
+    UPLOAD_FAILED: 'Failed to upload training to platform.',
+    ASSIGN_FAILED: 'Failed to assign training to user.',
+    UPLOAD_TOKEN_MISSING: 'Authentication token missing. Cannot upload training.',
+    ASSIGN_TOKEN_MISSING: 'Authentication token missing. Cannot assign training.',
+    UNKNOWN_UPLOAD_ERROR: 'Unknown upload error occurred.',
+    UNKNOWN_ASSIGN_ERROR: 'Unknown assignment error occurred.'
+  },
+
+  // User info errors
+  USER_INFO: {
+    TOKEN_MISSING: 'Authentication token missing.',
+    FETCH_FAILED: 'Failed to fetch user information.',
+    UNKNOWN_ERROR: 'Unknown error occurred while fetching user info.'
+  },
+
+  // Search errors
+  SEARCH: {
+    FAILED: 'Search failed. Please try again.'
+  }
 } as const;
 
 // ============================================
@@ -407,6 +460,10 @@ export const PHISHING = {
   DIFFICULTY_LEVELS: ['Easy', 'Medium', 'Hard'] as const,
   DEFAULT_DIFFICULTY: 'Medium',
 
+  // Attack methods
+  ATTACK_METHODS: ['Click-Only', 'Data-Submission'] as const,
+  DEFAULT_ATTACK_METHOD: 'Click-Only',
+
   // Workflow configuration
   WORKFLOW_TYPE: 'create-phishing',
 
@@ -419,6 +476,42 @@ export const PHISHING = {
   // Input validation
   MIN_TOPIC_LENGTH: 3,
   MAX_TOPIC_LENGTH: 200
+} as const;
+
+// ============================================
+// PHISHING EMAIL CONFIGURATION
+// ============================================
+
+export const PHISHING_EMAIL = {
+  // Dynamic merge tags available in phishing email templates
+  MERGE_TAGS: [
+    '{FULLNAME}',
+    '{FIRSTNAME}',
+    '{LASTNAME}',
+    '{EMAIL}',
+    '{PHISHINGURL}',
+    '{FROMNAME}',
+    '{FROMEMAIL}',
+    '{SUBJECT}',
+    '{DATEEMAILSENT}',
+    '{COMPANYNAME}',
+    '{DATE_SENT}',
+    '{CURRENT_DATE}',
+    '{CURRENT_DATE_PLUS_10_DAYS}',
+    '{CURRENT_DATE_MINUS_10_DAYS}',
+    '{RANDOM_NUMBER_1_DIGIT}',
+    '{RANDOM_NUMBER_2_DIGITS}',
+    '{RANDOM_NUMBER_3_DIGITS}'
+  ] as const,
+
+  // Content constraints
+  MAX_SUBJECT_LENGTH: 200,
+
+  // Mandatory tags for valid phishing emails
+  MANDATORY_TAGS: ['{PHISHINGURL}'] as const,
+
+  // Recommended tags for better realism
+  RECOMMENDED_TAGS: ['{FIRSTNAME}', '{COMPANYNAME}', '{CURRENT_DATE}'] as const
 } as const;
 
 // ============================================
