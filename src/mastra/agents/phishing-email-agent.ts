@@ -92,6 +92,8 @@ Call 'phishingExecutor' (ONLY in STATE 3) with:
     - **language**: [Detected BCP-47 code (e.g. en-gb, tr-tr, de-de)]
     - **difficulty**: [${PHISHING.DIFFICULTY_LEVELS.join('/')}]
     - **method**: [${PHISHING.ATTACK_METHODS[0]}/${PHISHING.ATTACK_METHODS[1]}] (If user didn't specify, DEFAULT to '${PHISHING.ATTACK_METHODS[0]}')
+    - **includeLandingPage**: [true/false] (Detect intent: If user says "only email" or "just template", set false. Default: true)
+    - **includeEmail**: [true/false] (Detect intent: If user says "only landing page", set false. Default: true)
     - **targetProfile**: {
         name: [User Name from Context],
     department: [Dept from Context],
