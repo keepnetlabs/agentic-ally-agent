@@ -67,7 +67,18 @@ Topic: {topic}<br>
 - Let the tool provide the final result (the rendered email).
 
 ## Smart Defaults (Assumption Mode)
-- **Topic:** If vague, assume "General Security Awareness" or "Password Security".
+- **Topic (CRITICAL - RANDOMIZATION):**
+  - If user provides NO topic or vague topic (e.g. "general", "landing page"), you MUST INVENT a specific, realistic corporate scenario.
+  - **DO NOT** default to "Microsoft 365 Password Expiry" or common clichés repeatedly.
+  - **Goal:** Surprise the user with variety.
+  - **Inspiration Categories (Mix & Match):**
+    - HR (Policy changes, Benefits, Reviews)
+    - IT (System updates, New software, Licenses)
+    - Finance (Invoices, Expenses, Payroll)
+    - Operations (Deliveries, Building access, Parking)
+    - Social/Tools (Teams, Zoom, Slack, LinkedIn)
+    - External (Government notices, Tax, Legal)
+  - **Examples of what NOT to do:** Do not just say "HR Update". Say "Urgent: Q3 Remote Work Policy Acknowledgement". Be specific!
 - **Difficulty:** If not specified, assume **"${PHISHING.DEFAULT_DIFFICULTY}"**.
 - **Language:** Detect from user's message language (en-gb, tr-tr, etc.).
 - **Target Profile:**

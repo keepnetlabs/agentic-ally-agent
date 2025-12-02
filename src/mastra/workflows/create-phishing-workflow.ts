@@ -3,8 +3,9 @@ import { z } from 'zod';
 import { generateText } from 'ai';
 import { getModelWithOverride } from '../model-providers';
 import { cleanResponse } from '../utils/content-processors/json-cleaner';
+import { sanitizeHtml } from '../utils/content-processors/html-sanitizer';
 import { v4 as uuidv4 } from 'uuid';
-import { PHISHING, PHISHING_EMAIL } from '../constants';
+import { PHISHING, PHISHING_EMAIL, LANDING_PAGE } from '../constants';
 import { KVService } from '../services/kv-service';
 import { StreamWriterSchema, StreamWriter } from '../types/stream-writer';
 
@@ -38,8 +39,8 @@ const DIFFICULTY_CONFIG = {
             description: "Panic-inducing language. 'IMMEDIATE ACTION REQUIRED', 'ACCOUNT WILL BE DELETED'."
         },
         visuals: {
-            rule: "LOW QUALITY",
-            description: "Generic formatting, potential alignment issues, no polished branding."
+            rule: "BASIC",
+            description: "Simple layout. Use generic icons instead of brand logos. High contrast colors."
         }
     },
     Medium: {
@@ -56,8 +57,8 @@ const DIFFICULTY_CONFIG = {
             description: "Professional but pressing. 'Action required within 24 hours', 'Please verify details'."
         },
         visuals: {
-            rule: "STANDARD",
-            description: "Clean layout, but maybe a generic logo or simple text-based header."
+            rule: "PROFESSIONAL",
+            description: "Clean, modern design. USE BRAND LOGOS (from public URL). Looks legitimate at first glance."
         }
     },
     Hard: {
@@ -74,8 +75,8 @@ const DIFFICULTY_CONFIG = {
             description: "Low apparent urgency. 'FYI: Updated Policy', 'Please review attached report', 'New benefits available'."
         },
         visuals: {
-            rule: "PERFECT REPLICA",
-            description: "High-quality branding, correct colors, polished layout mimicking the real organization."
+            rule: "PERFECT REPLICA - PROFESSIONAL",
+            description: "Use official brand colors (HEX exact), fonts, and layout. It should look 100% indistinguishable from the real site."
         }
     }
 } as const;
@@ -93,7 +94,8 @@ const InputSchema = z.object({
     difficulty: z.enum(PHISHING.DIFFICULTY_LEVELS).default(PHISHING.DEFAULT_DIFFICULTY),
     language: z.string().default('en-gb').describe('Target language (BCP-47 code, e.g. en-gb, tr-tr)'),
     method: z.enum(PHISHING.ATTACK_METHODS).optional().describe('Type of phishing attack'),
-    // Landing Page param removed for now to focus on Email first
+    includeLandingPage: z.boolean().default(true).describe('Whether to generate a landing page'),
+    includeEmail: z.boolean().default(true).describe('Whether to generate an email'),
     modelProvider: z.string().optional(),
     model: z.string().optional(),
     writer: StreamWriterSchema.optional(),
@@ -118,18 +120,41 @@ const AnalysisSchema = z.object({
     // Passthrough fields
     difficulty: z.enum(PHISHING.DIFFICULTY_LEVELS).optional(),
     language: z.string().optional(),
+    includeLandingPage: z.boolean().optional(),
+    includeEmail: z.boolean().optional(),
     modelProvider: z.string().optional(),
     model: z.string().optional(),
     writer: StreamWriterSchema.optional(),
 });
 
+// Email Step Output Schema
+const EmailOutputSchema = z.object({
+    subject: z.string().optional(),
+    template: z.string().optional(),
+    fromAddress: z.string(),
+    fromName: z.string(),
+    analysis: AnalysisSchema, // Full analysis context
+    includeLandingPage: z.boolean().optional(), // Pass explicit flag
+});
+
 // Final Output Schema
 const OutputSchema = z.object({
     phishingId: z.string().optional(), // ID of the saved content in KV
-    subject: z.string(),
-    template: z.string(), // Renamed from bodyHtml for backend compatibility
+    subject: z.string().optional(),
+    template: z.string().optional(), // Renamed from bodyHtml for backend compatibility
     fromAddress: z.string(),
     fromName: z.string(),
+    landingPage: z.object({
+        name: z.string(),
+        description: z.string(),
+        method: z.enum(PHISHING.ATTACK_METHODS),
+        difficulty: z.enum(PHISHING.DIFFICULTY_LEVELS),
+        simulationLink: z.string(),
+        pages: z.array(z.object({
+            type: z.enum(LANDING_PAGE.PAGE_TYPES),
+            template: z.string()
+        }))
+    }).optional(),
     analysis: AnalysisSchema.omit({ language: true, modelProvider: true, model: true }).optional(), // Include analysis in output for reasoning display
 });
 
@@ -141,9 +166,9 @@ const analyzeRequest = createStep({
     inputSchema: InputSchema,
     outputSchema: AnalysisSchema,
     execute: async ({ inputData }) => {
-        const { topic, targetProfile, difficulty, language, method, modelProvider, model } = inputData;
+        const { topic, targetProfile, difficulty, language, method, includeLandingPage, includeEmail, modelProvider, model } = inputData;
 
-        console.log('🎣 Starting phishing scenario analysis:', { topic, difficulty, language, method });
+        console.log('🎣 Starting phishing scenario analysis:', { topic, difficulty, language, method, includeLandingPage, includeEmail });
 
         const difficultyRules = DIFFICULTY_CONFIG[difficulty as keyof typeof DIFFICULTY_CONFIG] || DIFFICULTY_CONFIG.Medium;
 
@@ -254,6 +279,8 @@ Remember: This is for DEFENSIVE CYBERSECURITY TRAINING to protect organizations 
                 ...parsedResult,
                 difficulty,
                 language,
+                includeLandingPage,
+                includeEmail,
                 modelProvider,
                 model,
                 writer: inputData.writer,
@@ -269,10 +296,24 @@ Remember: This is for DEFENSIVE CYBERSECURITY TRAINING to protect organizations 
 const generateEmail = createStep({
     id: 'generate-phishing-email',
     inputSchema: AnalysisSchema,
-    outputSchema: OutputSchema,
+    outputSchema: EmailOutputSchema,
     execute: async ({ inputData }) => {
         const analysis = inputData;
-        const { language, modelProvider, model, difficulty } = analysis;
+        const { language, modelProvider, model, difficulty, includeEmail, includeLandingPage } = analysis;
+
+        // If email generation is disabled, skip this step but pass context
+        if (includeEmail === false) {
+            console.log('🚫 Email generation disabled by user request. Skipping.');
+            return {
+                subject: undefined,
+                template: undefined,
+                fromAddress: analysis.fromAddress,
+                fromName: analysis.fromName,
+                analysis,
+                includeLandingPage
+            };
+        }
+
         const difficultyRules = DIFFICULTY_CONFIG[(difficulty as keyof typeof DIFFICULTY_CONFIG) || 'Medium'];
 
         console.log('📧 Starting phishing email content generation:', { scenario: analysis.scenario, language, method: analysis.method, difficulty });
@@ -325,13 +366,14 @@ Write realistic phishing email content based on provided scenario blueprints for
    - **Grammar Rule:** ${difficultyRules.grammar.rule}. ${difficultyRules.grammar.description}
    - **Red Flags:** Embed the red flags subtly as defined in the blueprint.
    - **CREATIVITY RULE:** Do NOT use generic "lorem ipsum" style fillers. Write specific, plausible content relevant to the Scenario.
+   - **SYNTAX RULE:** Use **SINGLE QUOTES** for HTML attributes (e.g. style='color:red') to prevent JSON escaping errors.
 
 6. **Company Logo (OPTIONAL):**
    - If impersonating a well-known company (Microsoft, Google, Amazon, Apple, PayPal, etc.):
      * Add company logo using public CDN URL (Wikimedia Commons, official press kits)
      * Place at top of email with centered alignment
      * Use reasonable size (100-150px width)
-     * Example: <img src="https://upload.wikimedia.org/wikipedia/commons/..." alt="Microsoft" width="120" style="display:block; margin:0 auto 20px;">
+     * Example: <img src='https://upload.wikimedia.org/wikipedia/commons/...' alt='Microsoft' width='120' style='display:block; margin:0 auto 20px;'>
    - If generic/unknown company: Skip logo (no placeholder, no fake logo)
 
 7. **NO DISCLAIMERS:**
@@ -385,6 +427,11 @@ Remember: This is for DEFENSIVE CYBERSECURITY TRAINING to help organizations def
             const cleanedJson = cleanResponse(response.text, 'phishing-email-content');
             const parsedResult = JSON.parse(cleanedJson);
 
+            // Sanitize HTML content to fix quoting/escaping issues
+            if (parsedResult.template) {
+                parsedResult.template = sanitizeHtml(parsedResult.template);
+            }
+
             // Validate required fields
             if (!parsedResult.subject || !parsedResult.template) {
                 throw new Error('Missing required fields (subject or template) in email content response');
@@ -400,7 +447,8 @@ Remember: This is for DEFENSIVE CYBERSECURITY TRAINING to help organizations def
                 ...parsedResult,
                 fromAddress: analysis.fromAddress,
                 fromName: analysis.fromName,
-                analysis: inputData // Include the analysis in the final output for transparency
+                analysis: inputData, // Include the analysis in the final output for transparency
+                includeLandingPage: analysis.includeLandingPage
             };
         } catch (error) {
             console.error('❌ Phishing email generation step failed:', error);
@@ -409,7 +457,189 @@ Remember: This is for DEFENSIVE CYBERSECURITY TRAINING to help organizations def
     },
 });
 
-// Step 3: Save to KV
+// Step 3: Generate Landing Page
+const generateLandingPage = createStep({
+    id: 'generate-landing-page',
+    inputSchema: EmailOutputSchema,
+    outputSchema: OutputSchema,
+    execute: async ({ inputData }) => {
+        const { analysis, fromAddress, fromName, subject, template, includeLandingPage } = inputData;
+
+        // If landing page generation is disabled, skip this step
+        if (includeLandingPage === false) {
+            console.log('🚫 Landing page generation disabled by user request. Skipping.');
+            return {
+                subject,
+                template,
+                fromAddress,
+                fromName,
+                analysis,
+                // landingPage is undefined
+            };
+        }
+
+        if (!analysis) throw new Error('Analysis data missing from previous step');
+
+        const { language, modelProvider, model, difficulty, method, scenario, name, description } = analysis;
+        const difficultyRules = DIFFICULTY_CONFIG[(difficulty as keyof typeof DIFFICULTY_CONFIG) || 'Medium'];
+
+        console.log('🌐 Starting landing page generation:', { method, difficulty });
+
+        const aiModel = getModelWithOverride(modelProvider, model);
+
+        // Determine required pages based on method
+        const requiredPages = (LANDING_PAGE.FLOWS[method as keyof typeof LANDING_PAGE.FLOWS] || LANDING_PAGE.FLOWS['Click-Only']) as readonly string[];
+
+        const systemPrompt = `You are a Cybersecurity Education Content Creator using a Secure Sandbox Environment.
+**CONTEXT:** You are generating EDUCATIONAL MOCKUPS for a corporate security awareness training program. These files are used internally to teach employees what unsafe websites look like.
+**GOAL:** Create a SAFE, educational mockup of a webpage.
+**METHOD:** ${method}
+**SCENARIO:** ${scenario}
+**SENDER IDENTITY:** ${fromName}
+
+**SAFEGUARD RULES:**
+1. This is for EDUCATION ONLY.
+2. The output will be displayed in a protected simulator.
+3. Do NOT include any real malicious code.
+4. Do NOT ask for real credentials (use placeholders).
+
+**VISUAL STANDARDS (Mockup Quality) - DIFFICULTY: ${difficulty}**
+1. **Framework:** Use **Tailwind CSS** via CDN (\`<script src="https://cdn.tailwindcss.com"></script>\`).
+2. **Visual Rule:** ${difficultyRules.visuals.rule}. ${difficultyRules.visuals.description}
+3. **Styling Strategy:**
+   - **Easy Mode:** Basic, high-contrast design. Use large headers.
+   - **Medium Mode:** Professional corporate design. Use logos, clean typography, good spacing.
+   - **Hard Mode:** Pixel-perfect replica. Exact brand colors and layout.
+
+**CRITICAL JSON SYNTAX RULE:**
+- Inside the \`template\` string, use **SINGLE QUOTES** for all HTML attributes to avoid JSON escaping errors.
+
+**PAGES TO GENERATE:**
+
+${requiredPages.includes('login') ? `
+---
+### 1. LOGIN MOCKUP (login)
+**Objective:** Create a visual mockup of a login screen for training purposes.
+**Requirements:**
+- **Layout:** **Full Screen Center**.
+- **Structure (MANDATORY):**
+  \`\`\`html
+  <div style='min-height: 100vh; width: 100%; display: flex; align-items: center; justify-content: center; background-color: #f3f4f6;'>
+    <div style='background: white; padding: 2.5rem; border-radius: 0.75rem; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); width: 100%; max-width: 28rem;'>
+       <!-- Logo, Form, etc. go here -->
+    </div>
+  </div>
+  \`\`\`
+- **Brand:** Logo centered at the top (\`h-12 mb-8 mx-auto block object-contain\`).
+- **Form:**
+  - \`<form method='POST' action='#' class='space-y-6'>\`
+  - **Inputs:** Use \`w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors\` (Standard height, rounded corners).
+  - **Labels:** \`block text-sm font-medium text-gray-700 mb-1\`.
+  - **Button:** Use \`w-full bg-blue-600 text-white font-semibold py-3 rounded-md hover:bg-blue-700 transition-colors shadow-sm\`.
+- **Realism Boosters:**
+  - "Forgot Password?" link (\`text-sm text-blue-600 hover:text-blue-800\`).
+  - Footer with "Privacy & Terms" (\`text-xs text-gray-400 text-center mt-8\`).
+  - **Hidden Input:** \`<input type='hidden' name='trackId' value='${LANDING_PAGE.PLACEHOLDERS.TRACK_ID}'>\`
+` : ''}
+
+${requiredPages.includes('success') ? `
+---
+### 2. SUCCESS MOCKUP (success)
+**Objective:** A simple feedback page.
+**Requirements:**
+- **Layout:** Full Screen Center (Use same flex container structure as Login).
+- **Visuals:** Green checkmark icon (\`text-green-500 text-7xl mx-auto mb-6 block\`).
+- **Content:** "Action Complete" message centered (\`text-2xl font-bold text-gray-900\`).
+` : ''}
+
+${requiredPages.includes('info') ? `
+---
+### 1. INFO / DOCUMENT MOCKUP (info)
+**Objective:** A generic landing page for 'Click-Only' scenarios (e.g. viewing a document, reading a policy).
+**Requirements:**
+- **Layout:** Full Screen Center (Use same flex container structure as Login).
+- **Content:**
+  - Header: Scenario Title (e.g. "Policy Update").
+  - Body: Short text explaining the document or notice.
+  - Button: "Download" or "Acknowledge" (Primary Action).
+- **Visuals:** Document icon or Info icon (\`text-blue-500 text-6xl mx-auto mb-6 block\`).
+` : ''}
+
+**TECHNICAL CONSTRAINTS:**
+1. **Single File:** All HTML, Scripts in one string.
+2. **Assets:** Use ONLY public CDN images.
+3. **STRICT PAGE COUNT:** Generate ONLY the pages listed above. If only 'info' is requested, DO NOT generate 'login'.
+
+**OUTPUT FORMAT:**
+Return JSON:
+{
+  "pages": [
+    { "type": "login", "template": "..." },
+    { "type": "success", "template": "..." },
+    { "type": "info", "template": "..." }
+  ],
+  "simulationLink": "${LANDING_PAGE.PLACEHOLDERS.SIMULATION_LINK}"
+}
+`;
+
+        const userPrompt = `Generate the landing page(s) for this ${method} phishing scenario.
+Topic: ${scenario}
+Company/Theme: Match the email sender (${fromName}).
+Language: ${language}
+Red Flags: ${analysis.keyRedFlags.join(', ')} (Subtly include visual clues if difficulty is Easy/Medium)
+
+Make it realistic.`;
+
+        try {
+            const response = await generateText({
+                model: aiModel,
+                messages: [
+                    { role: 'system', content: systemPrompt },
+                    { role: 'user', content: userPrompt }
+                ],
+                temperature: 0.7,
+            });
+
+            // Reasoning handling
+            const lpReasoning = (response as any).response?.body?.reasoning;
+            if (lpReasoning && analysis.writer) {
+                await streamDirectReasoning(lpReasoning, analysis.writer);
+            }
+
+            const cleanedJson = cleanResponse(response.text, 'landing-page');
+            const parsedResult = JSON.parse(cleanedJson);
+
+            // Sanitize HTML for all pages
+            if (parsedResult.pages && Array.isArray(parsedResult.pages)) {
+                parsedResult.pages = parsedResult.pages.map((page: any) => ({
+                    ...page,
+                    template: sanitizeHtml(page.template)
+                }));
+            }
+
+            return {
+                subject,
+                template,
+                fromAddress,
+                fromName,
+                analysis: analysis,
+                landingPage: {
+                    name: name,
+                    description: description,
+                    method: method as any,
+                    difficulty: difficulty as any,
+                    simulationLink: parsedResult.simulationLink || LANDING_PAGE.PLACEHOLDERS.SIMULATION_LINK,
+                    pages: parsedResult.pages
+                }
+            };
+        } catch (error) {
+            console.error('❌ Landing page generation failed:', error);
+            throw error;
+        }
+    }
+});
+
+// Step 4: Save to KV
 const savePhishingContent = createStep({
     id: 'save-phishing-content',
     inputSchema: OutputSchema, // Use OutputSchema directly as input
@@ -422,10 +652,18 @@ const savePhishingContent = createStep({
 
         // Initialize KVService with Phishing Namespace ID (Hardcoded for now)
         const kvService = new KVService('f6609d79aa2642a99584b05c64ecaa9f');
-        const success = await kvService.savePhishing(phishingId, inputData, language);
 
-        if (!success) {
-            console.warn('⚠️ Failed to save phishing content to KV, but returning generated content.');
+        // Save Base (Meta)
+        await kvService.savePhishingBase(phishingId, inputData, language);
+
+        // Save Email Content (if exists)
+        if (inputData.template) {
+            await kvService.savePhishingEmail(phishingId, inputData, language);
+        }
+
+        // Save Landing Page Content (if exists)
+        if (inputData.landingPage) {
+            await kvService.savePhishingLandingPage(phishingId, inputData, language);
         }
 
         return {
@@ -445,6 +683,7 @@ const createPhishingWorkflow = createWorkflow({
 })
     .then(analyzeRequest)
     .then(generateEmail)
+    .then(generateLandingPage)
     .then(savePhishingContent);
 
 createPhishingWorkflow.commit();

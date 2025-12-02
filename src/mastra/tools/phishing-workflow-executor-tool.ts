@@ -16,6 +16,8 @@ const phishingWorkflowSchema = z.object({
     difficulty: z.enum(PHISHING.DIFFICULTY_LEVELS).optional().default(PHISHING.DEFAULT_DIFFICULTY),
     language: z.string().optional().default('en-gb').describe('Target language (BCP-47 code, e.g. en-gb, tr-tr)'),
     method: z.enum(PHISHING.ATTACK_METHODS).optional().describe('Type of phishing attack'),
+    includeEmail: z.boolean().optional().default(true).describe('Whether to generate an email'),
+    includeLandingPage: z.boolean().optional().default(true).describe('Whether to generate a landing page'),
     modelProvider: z.enum(MODEL_PROVIDERS.NAMES).optional(),
     model: z.string().optional(),
 });
@@ -41,6 +43,8 @@ export const phishingWorkflowExecutorTool = createTool({
                     difficulty: params.difficulty || PHISHING.DEFAULT_DIFFICULTY,
                     language: params.language || 'en',
                     method: params.method, // Pass user choice or undefined
+                    includeEmail: params.includeEmail,
+                    includeLandingPage: params.includeLandingPage,
                     modelProvider: params.modelProvider,
                     model: params.model,
                     writer: writer,
@@ -62,13 +66,33 @@ export const phishingWorkflowExecutorTool = createTool({
                         const messageId = uuidv4();
                         await writer.write({ type: 'text-start', id: messageId });
 
-                        // UI event (base64 encoded to prevent agent from displaying HTML as text)
-                        const encodedHtml = Buffer.from(output.template).toString('base64');
-                        await writer.write({
-                            type: 'text-delta',
-                            id: messageId,
-                            delta: `::ui:phishing_email::${encodedHtml}::/ui:phishing_email::\n`
-                        });
+                        // 1. Email Preview (if exists)
+                        if (output.template) {
+                            const encodedHtml = Buffer.from(output.template).toString('base64');
+                            await writer.write({
+                                type: 'text-delta',
+                                id: messageId,
+                                delta: `::ui:phishing_email::${encodedHtml}::/ui:phishing_email::\n`
+                            });
+                        }
+
+                        // 2. Landing Page Pages (if exists)
+                        if (output.landingPage && output.landingPage.pages.length > 0) {
+                            // Stream ALL pages sequentially
+                            for (const page of output.landingPage.pages) {
+                                const encodedHtml = Buffer.from(page.template).toString('base64');
+
+                                // Small delay to ensure FE processes order
+                                await new Promise(resolve => setTimeout(resolve, 500));
+
+                                await writer.write({
+                                    type: 'text-delta',
+                                    id: messageId,
+                                    // Using same UI tag as requested to reuse the preview component
+                                    delta: `::ui:phishing_email::${encodedHtml}::/ui:phishing_email::\n`
+                                });
+                            }
+                        }
 
                         await writer.write({ type: 'text-end', id: messageId });
                     } catch (err) {
@@ -93,7 +117,8 @@ export const phishingWorkflowExecutorTool = createTool({
                         category: output.analysis?.category,
                         psychologicalTriggers: output.analysis?.psychologicalTriggers,
                         keyRedFlags: output.analysis?.keyRedFlags,
-                        targetAudience: output.analysis?.targetAudienceAnalysis
+                        targetAudience: output.analysis?.targetAudienceAnalysis,
+                        landingPage: output.landingPage
                     }
                 };
 

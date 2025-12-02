@@ -261,59 +261,97 @@ export class KVService {
   }
 
   // Phishing specific methods
-  async savePhishing(id: string, data: any, language: string): Promise<boolean> {
-    const timer = startTimer();
-    const normalizedLang = language.toLowerCase();
+
+  // 1. Save Phishing Base (Metadata)
+  async savePhishingBase(id: string, data: any, language: string): Promise<boolean> {
     const baseKey = `phishing:${id}:base`;
-    const langKey = `phishing:${id}:lang:${normalizedLang}`;
+    const normalizedLang = language.toLowerCase();
 
     try {
-      this.logger.info(`Saving phishing content to KV`, { id, language: normalizedLang });
-
-      // Prepare Base Data (Meta only)
       const baseData = {
         id,
         name: data.analysis?.name,
         description: data.analysis?.description,
         topic: data.analysis?.scenario || 'Unknown Topic',
         difficulty: data.analysis?.difficulty || 'Medium',
-        method: data.analysis?.method || 'Click-Only', // Renamed from attackType
+        method: data.analysis?.method || 'Click-Only',
         targetProfile: data.analysis?.targetAudienceAnalysis || {},
         createdAt: new Date().toISOString(),
         language_availability: [normalizedLang]
       };
 
-      // Prepare Language Data (Content)
-      const langData = {
+      const success = await this.putWithRetry(baseKey, baseData);
+      if (success) {
+        this.logger.info(`✅ Phishing base saved: ${baseKey}`);
+      }
+      return success;
+    } catch (error) {
+      this.logger.error(`Failed to save phishing base ${id}:`, error instanceof Error ? error : new Error(String(error)));
+      return false;
+    }
+  }
+
+  // 2. Save Phishing Email (Content)
+  async savePhishingEmail(id: string, data: any, language: string): Promise<boolean> {
+    const normalizedLang = language.toLowerCase();
+    const emailKey = `phishing:${id}:email:${normalizedLang}`;
+
+    try {
+      const emailData = {
         id,
         language: normalizedLang,
         subject: data.subject,
-        template: data.template, // Renamed from bodyHtml
+        template: data.template,
         fromAddress: data.fromAddress,
         fromName: data.fromName,
         redFlags: data.analysis?.keyRedFlags || []
       };
 
-      const [baseResult, langResult] = await Promise.allSettled([
-        this.putWithRetry(baseKey, baseData),
-        this.putWithRetry(langKey, langData)
-      ]);
-
-      const baseSuccess = baseResult.status === 'fulfilled' && baseResult.value === true;
-      const langSuccess = langResult.status === 'fulfilled' && langResult.value === true;
-
-      if (baseSuccess && langSuccess) {
-        this.logger.info(`✅ Phishing content stored in KV: ${id} (${normalizedLang})`, { duration: timer.end() });
-        return true;
-      } else {
-        this.logger.error(`❌ Failed to store phishing content completely`, undefined, { baseSuccess, langSuccess });
-        return false;
+      const success = await this.putWithRetry(emailKey, emailData);
+      if (success) {
+        this.logger.info(`✅ Phishing email saved: ${emailKey}`);
       }
-
+      return success;
     } catch (error) {
-      this.logger.error(`Failed to save phishing content ${id}:`, error instanceof Error ? error : new Error(String(error)));
+      this.logger.error(`Failed to save phishing email ${id}:`, error instanceof Error ? error : new Error(String(error)));
       return false;
     }
+  }
+
+  // 3. Save Phishing Landing Page (Content)
+  async savePhishingLandingPage(id: string, data: any, language: string): Promise<boolean> {
+    if (!data.landingPage) return true; // Skip if no landing page data
+
+    const normalizedLang = language.toLowerCase();
+    const landingKey = `phishing:${id}:landing:${normalizedLang}`;
+
+    try {
+      const landingData = {
+        id,
+        language: normalizedLang,
+        ...data.landingPage
+      };
+
+      const success = await this.putWithRetry(landingKey, landingData);
+      if (success) {
+        this.logger.info(`✅ Phishing landing page saved: ${landingKey}`);
+      }
+      return success;
+    } catch (error) {
+      this.logger.error(`Failed to save phishing landing page ${id}:`, error instanceof Error ? error : new Error(String(error)));
+      return false;
+    }
+  }
+
+  // Wrapper for saving all components at once (optional convenience method)
+  async savePhishing(id: string, data: any, language: string): Promise<boolean> {
+    const results = await Promise.allSettled([
+      this.savePhishingBase(id, data, language),
+      this.savePhishingEmail(id, data, language),
+      this.savePhishingLandingPage(id, data, language)
+    ]);
+
+    return results.every(r => r.status === 'fulfilled' && r.value === true);
   }
 
   /**

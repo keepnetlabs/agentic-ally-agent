@@ -515,6 +515,28 @@ export const PHISHING_EMAIL = {
 } as const;
 
 // ============================================
+// LANDING PAGE CONFIGURATION
+// ============================================
+
+export const LANDING_PAGE = {
+  // Page types for templates
+  PAGE_TYPES: ['login', 'success', 'info'] as const,
+
+  // Flow definitions based on attack method
+  FLOWS: {
+    'Data-Submission': ['login', 'success'],
+    'Click-Only': ['info']
+  },
+
+  // Dynamic placeholders for landing pages
+  PLACEHOLDERS: {
+    SIMULATION_LINK: '{SIMULATION_LINK}',
+    TRACK_ID: '{TRACK_ID}',
+    EMAIL: '{EMAIL}'
+  }
+} as const;
+
+// ============================================
 // CACHE & PERFORMANCE
 // ============================================
 
