@@ -22,6 +22,7 @@ const GenerateMicrolearningJsonSchema = z.object({
     language: z.string(),
     learningObjectives: z.array(z.string()),
     duration: z.number(),
+    additionalContext: z.string().optional().describe('User context, vulnerabilities, or specific requirements'),
   }),
   microlearningId: z.string(),
   model: LanguageModelSchema,
@@ -71,7 +72,7 @@ function generateEthicalPolicy() {
 // Removed: AI-generated scientific evidence (using static template for performance)
 
 // Step 2: AI generates complete microlearning.json structure with rich context
-async function generateMicrolearningJsonWithAI(analysis: PromptAnalysis, microlearningId: string, model: any) {
+async function generateMicrolearningJsonWithAI(analysis: PromptAnalysis & { additionalContext?: string }, microlearningId: string, model: any) {
   // Basic structure creation - detailed enhancement happens in Stage 2
 
   // Determine Scene 4 type based on analysis
@@ -105,7 +106,7 @@ async function generateMicrolearningJsonWithAI(analysis: PromptAnalysis, microle
 
   // Stage 2: Enhance the microlearning object with AI
   console.log('🔧 Starting Stage 2: Enhancement...');
-  const enhancedMicrolearning = await enhanceMicrolearningContent(microlearning, model);
+  const enhancedMicrolearning = await enhanceMicrolearningContent(microlearning, model, analysis.additionalContext);
   console.log('✅ Stage 2 completed');
 
   return enhancedMicrolearning;
@@ -135,7 +136,7 @@ function generateTheme(themeColor?: string) {
   }
 }
 
-async function enhanceMicrolearningContent(microlearning: MicrolearningContent, model: any): Promise<MicrolearningContent> {
+async function enhanceMicrolearningContent(microlearning: MicrolearningContent, model: any, additionalContext?: string): Promise<MicrolearningContent> {
   const categoriesList = CATEGORIES.VALUES.join(', ');
 
   const enhancementPrompt = `CRITICAL: Return ONLY valid JSON. No explanations, no markdown, no backticks.
@@ -143,6 +144,10 @@ async function enhanceMicrolearningContent(microlearning: MicrolearningContent, 
 ENHANCE this microlearning metadata to industry standards:
 
 ${JSON.stringify(microlearning, null, 2)}
+
+USER CONTEXT & SPECIFIC REQUIREMENTS:
+${additionalContext ? `"${additionalContext}"` : "No specific context provided."}
+(Use this context to refine the Title, Risk Area, and relevance.)
 
 ENHANCEMENT RULES (apply ONLY if needed):
 1. Title: 2-5 words max, professional training format

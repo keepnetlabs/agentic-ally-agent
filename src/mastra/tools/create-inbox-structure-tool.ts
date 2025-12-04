@@ -19,10 +19,10 @@ export const createInboxStructureTool = new Tool({
   outputSchema: CreateInboxStructureOutputSchema,
   execute: async (context: any) => {
     const input = context?.inputData || context?.input || context;
-    const { department, languageCode, microlearningId, microlearning, modelProvider, model: modelOverride } = input;
+    const { department, languageCode, microlearningId, microlearning, additionalContext, modelProvider, model: modelOverride } = input;
 
     try {
-      const inboxContent = await createInboxStructure(department, languageCode, microlearningId, microlearning, modelProvider, modelOverride);
+      const inboxContent = await createInboxStructure(department, languageCode, microlearningId, microlearning, additionalContext, modelProvider, modelOverride);
 
       console.log(`📦 Tool returning inbox content:`, typeof inboxContent, Object.keys(inboxContent || {}));
 
@@ -56,6 +56,7 @@ async function createInboxStructure(
   languageCode: string,
   microlearningId: string,
   microlearning: MicrolearningContent,
+  additionalContext?: string,
   modelProvider?: string,
   modelOverride?: string
 ) {
@@ -78,7 +79,8 @@ async function createInboxStructure(
       microlearning,
       languageCode,
       model,
-      dept  // Pass department for context-specific emails
+      dept,  // Pass department for context-specific emails
+      additionalContext
     );
 
     return dynamicInboxData; // Return the generated content
@@ -92,7 +94,8 @@ async function createInboxStructure(
         microlearning,
         languageCode,
         model,
-        dept  // Pass department for context-specific emails
+        dept,  // Pass department for context-specific emails
+        additionalContext
       );
 
       return dynamicInboxData; // Return the generated content after retry
@@ -110,7 +113,8 @@ async function generateDynamicInboxWithAI(
   microlearning: MicrolearningContent,
   languageCode: string,
   model: any,
-  department: string = 'all'  // NEW: Department context for topic-specific emails
+  department: string = 'all',  // NEW: Department context for topic-specific emails
+  additionalContext?: string
 ) {
   const topic = microlearning.microlearning_metadata.title;
   const category = microlearning.microlearning_metadata.category;
@@ -140,6 +144,7 @@ async function generateDynamicInboxWithAI(
       riskArea,
       level,
       department,  // NEW: Pass department for context-specific emails
+      additionalContext,
       model
     })
   ]);

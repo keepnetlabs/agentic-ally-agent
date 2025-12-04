@@ -75,7 +75,7 @@ export const PROMPT_ANALYSIS = {
   MAX_DEPARTMENT_NAME_LENGTH: 100,
 
   // Context summary
-  MAX_CONTEXT_SUMMARY_LENGTH: 300,
+  MAX_CONTEXT_SUMMARY_LENGTH: 500,
 
   // Language code validation
   LANGUAGE_CODE_REGEX: /^[a-z]{2}(-[a-z]{2})?$/i,

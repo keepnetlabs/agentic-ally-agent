@@ -40,6 +40,7 @@ const promptAnalysisSchema = z.object({
     industries: z.array(z.string()).optional(),
     roles: z.array(z.string()).optional(),
     themeColor: z.string().optional(),
+    additionalContext: z.string().optional(), // Added to carry context to next steps
   }),
   modelProvider: z.enum(MODEL_PROVIDERS.NAMES).optional(),
   model: z.string().optional(),
@@ -110,10 +111,13 @@ const analyzePromptStep = createStep({
     });
 
     if (!analysisRes?.success) throw new Error(`Prompt analysis failed: ${analysisRes?.error}`);
-
+    console.log('inputData.additionalContext', inputData.additionalContext);
     return {
       success: analysisRes.success,
-      data: analysisRes.data,
+      data: {
+        ...analysisRes.data,
+        additionalContext: inputData.additionalContext // Explicitly pass context to next steps
+      },
       modelProvider: inputData.modelProvider,
       model: inputData.model,
       writer: inputData.writer,
@@ -232,7 +236,8 @@ const createInboxStep = createStep({
       microlearningId,
       microlearning: microlearningStructure,
       modelProvider: inputData.modelProvider,
-      model: inputData.model
+      model: inputData.model,
+      additionalContext: analysis.additionalContext // Pass user context to inbox generation
     })
 
     if (!inboxResult?.success) throw new Error(`Inbox creation failed: ${inboxResult?.error}`);

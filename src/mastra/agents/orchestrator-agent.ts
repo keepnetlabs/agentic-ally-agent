@@ -70,7 +70,7 @@ Your ONLY job is to route the user's request to the correct specialist agent.
 ## Output Format (Strict JSON)
 {
   "agent": "agentName",
-  "taskContext": "Summary of what needs to be done, including IDs or names from history"
+  "taskContext": "COMPLETE information from previous agent responses. If userInfoAssistant provided detailed analysis (risk level, triggers, patterns, observations, recommendations), include ALL of it verbatim. Do NOT summarize - agents need full context to make informed decisions."
 }
 `;
 

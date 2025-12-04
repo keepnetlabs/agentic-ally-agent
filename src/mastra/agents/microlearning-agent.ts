@@ -183,6 +183,8 @@ HARD RULES:
 Extract ALL descriptive details from user's message into two fields (hidden from STATE 2, used in STATE 3):
 
 - **additionalContext**: All descriptive content → goals, audience, format, examples, duration, scenarios, "real phishing samples", "focusing on CEO spoofing", etc.
+  - **CRITICAL: USER HISTORY INTEGRATION**: If the conversation history contains a found user (from userInfoAssistant) with specific vulnerabilities, failed campaigns, or risk scores (e.g., "Failed Phishing: CEO Fraud", "Risk Score: High"), YOU MUST INCLUDE THIS in additionalContext.
+  - Example: "Focus on CEO fraud because user Ali Yılmaz failed recent campaign."
   - If user mentions any detail beyond topic/dept/level → PUT IN additionalContext
 - **customRequirements**: ONLY special requests → "no jargon", "make it formal", "gamified", "emphasize risk"
   - If none mentioned → leave empty

@@ -37,6 +37,7 @@ export type DiversityHints = {
     headerHint: string;
     topicHint?: string;
     departmentHint?: string;  // NEW: Department context for topic-specific emails
+    additionalContext?: string; // NEW: User context override
     mustInclude?: string[];
 };
 
@@ -53,10 +54,16 @@ export const variantDeltaBuilder: Record<EmailVariant, (d: DiversityHints) => st
     [EmailVariant.SophisticatedPhishing]: (d) => {
         const departmentContext = d.departmentHint ? `Department context: ${d.departmentHint}. Impersonate colleague/authority from this department who would realistically interact with recipient.` : '';
         const domainContext = `SENDER DOMAIN: Use a REALISTIC-LOOKING but FAKE corporate domain that could pass as a partner/vendor. Candidates: ${d.domainHint}. Must look legitimate and corporate, NOT obviously fake like "invoice-systems". Department matches threat type (Finance→payments, IT→tech, Security→auth, Exec→CEO).`;
+        console.log('d.additionalContext', d.additionalContext);
+        // TARGETED CONTEXT OVERRIDE
+        const targetContext = d.additionalContext
+            ? `CRITICAL TARGET CONTEXT: User Vulnerability: "${d.additionalContext}". OVERRIDE standard topic hints. You MUST construct the scenario around this specific vulnerability (e.g., if 'Spotify', make it a Spotify Premium update; if 'CEO Fraud', make it a direct CEO request).`
+            : d.topicHint ? `Scenario: ${d.topicHint}.` : '';
+
         const impersonationHint = d.topicHint?.includes('executive') || d.topicHint?.includes('CEO') || d.topicHint?.includes('colleague') || d.topicHint?.includes('authority')
             ? 'SENDER pretends to BE a colleague/authority. Example: From sarah@acme-solutions.net, Content "Hi, this is Sarah from Marketing. Director is stuck in meeting and urgently needs the Q3 budget file. Can you send it to me ASAP? Keep this between us - time sensitive." Write as if colleague/partner is directly asking. '
             : '';
-        return `SOPHISTICATED PHISHING: Professional, subtle threats. ${d.topicHint ? `Scenario: ${d.topicHint}.` : ''} ${departmentContext} ${domainContext} ${impersonationHint} Mixed ${d.headerHint} + ${d.greetingHint}. CRITICAL: Sender department matches threat type (Finance→payments, IT→tech, Security→auth, Exec→CEO). CRITICAL: Return-Path MUST match sender domain. Attachment: ${d.attachmentHint} matching email. Act as internal colleague/partner - harder to detect.`;
+        return `SOPHISTICATED PHISHING: Professional, subtle threats. ${targetContext} ${departmentContext} ${domainContext} ${impersonationHint} Mixed ${d.headerHint} + ${d.greetingHint}. CRITICAL: Sender department matches threat type (Finance→payments, IT→tech, Security→auth, Exec→CEO). CRITICAL: Return-Path MUST match sender domain. Attachment: ${d.attachmentHint} matching email. Act as internal colleague/partner - harder to detect.`;
     },
 
     [EmailVariant.CasualLegit]: (d) => {
@@ -780,7 +787,7 @@ function getDomainForTopic(topicHint: string | undefined, defaultDomain: string,
     return isLegitimate ? convertToLegitimateDomaın(domain) : domain;
 }
 */
-export function buildHintsFromInsights(topic: string, index: number, department?: string, insights?: {
+export function buildHintsFromInsights(topic: string, index: number, department?: string, additionalContext?: string, insights?: {
     attachmentTypes?: string[];
     mustInclude?: string[];
     domainHints?: string[];
@@ -791,7 +798,7 @@ export function buildHintsFromInsights(topic: string, index: number, department?
     const topicHint = getTopicHint(topic, index);
     const departmentHint = department || undefined;  // NEW: Pass department context
 
-    if (!insights) return { ...base, topicHint, departmentHint };
+    if (!insights) return { ...base, topicHint, departmentHint, additionalContext };
 
     const pick = <T>(arr?: T[], fallback?: T): T | undefined => (arr && arr.length ? arr[index % arr.length] : fallback);
 
@@ -804,6 +811,7 @@ export function buildHintsFromInsights(topic: string, index: number, department?
         mustInclude: insights.mustInclude && insights.mustInclude.length ? insights.mustInclude : base.mustInclude,
         topicHint,
         departmentHint,  // NEW: Include department hint
+        additionalContext, // NEW: Include context
     };
 }
 

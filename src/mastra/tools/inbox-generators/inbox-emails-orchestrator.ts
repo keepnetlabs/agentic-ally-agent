@@ -11,6 +11,7 @@ type OrchestratorArgs = {
     riskArea: string;
     level: string;
     department: string;  // NEW: Department context for topic-specific emails
+    additionalContext?: string; // NEW: User context, vulnerabilities, or specific requirements
     model: any;
 };
 
@@ -79,11 +80,12 @@ async function generateOneEmail(
     topic: string,
     department: string,
     variant: EmailVariant,
-    timestamp: string
+    timestamp: string,
+    additionalContext?: string // New parameter
 ): Promise<any> {
     const timestampInstruction = `CRITICAL:Use timestamp "${timestamp}" for this email.`;
-    // Department context now baked into variantDeltaBuilder via buildHintsFromInsights
-    const delta = variantDeltaBuilder[variant](buildHintsFromInsights(topic, index, department, undefined)) + ` ${timestampInstruction}`;
+    // Pass additionalContext to buildHintsFromInsights
+    const delta = variantDeltaBuilder[variant](buildHintsFromInsights(topic, index, department, additionalContext)) + ` ${timestampInstruction}`;
 
     try {
         const res = await generateText({
@@ -117,6 +119,8 @@ async function generateOneEmail(
 }
 
 export async function generateInboxEmailsParallel(args: OrchestratorArgs): Promise<any[]> {
+    // Base system prompt (generic) for ALL emails
+    // Context is now injected purely via variant hints in generateOneEmail
     const system = buildInboxEmailBaseSystem(
         args.topic,
         args.languageCode,
@@ -127,7 +131,7 @@ export async function generateInboxEmailsParallel(args: OrchestratorArgs): Promi
 
     const variantPlan: EmailVariant[] = [
         EmailVariant.ObviousPhishing,
-        EmailVariant.SophisticatedPhishing,
+        EmailVariant.SophisticatedPhishing, // Targeted one (if context exists)
         EmailVariant.CasualLegit,
         EmailVariant.FormalLegit,
     ];
@@ -137,10 +141,17 @@ export async function generateInboxEmailsParallel(args: OrchestratorArgs): Promi
 
     console.log(`📧 Generating emails for topic="${args.topic}", department="${args.department}"`);
     console.log(`⏰ Using timestamps: ${uniqueTimestamps.join(', ')}`);
+    if (args.additionalContext) {
+        console.log(`🎯 Applying user context to SophisticatedPhishing variant only.`);
+    }
 
-    const tasks = variantPlan.map((variant, i) =>
-        generateOneEmail(i, system, args.model, args.topic, args.department, variant, uniqueTimestamps[i])
-    );
+    const tasks = variantPlan.map((variant, i) => {
+        // Only apply targeted context to SophisticatedPhishing
+        const useTargetedPrompt = variant === EmailVariant.SophisticatedPhishing;
+        const contextForVariant = useTargetedPrompt ? args.additionalContext : undefined;
+
+        return generateOneEmail(i, system, args.model, args.topic, args.department, variant, uniqueTimestamps[i], contextForVariant);
+    });
     const emails = await Promise.all(tasks);
     return emails;
 }
