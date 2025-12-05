@@ -414,3 +414,137 @@ Returns new URL with langUrl=lang/tr
 
 ### Recent Updates (Nov 7, 2025)
 - **Code Review Check Tool:** Added full documentation with multi-language support, output schema includes `hint` field, `outputLanguage` parameter for non-English feedback
+- **Rate Limiting:** Production-ready rate limiting middleware with sliding window algorithm, configurable limits, standard headers
+
+---
+
+## 🔒 Security & Rate Limiting
+
+### Rate Limiting Middleware
+
+**File:** `src/mastra/middleware/rate-limit.ts`
+
+#### Features
+- ✅ Sliding window counter algorithm
+- ✅ IP-based identification (Cloudflare-aware)
+- ✅ Configurable limits per endpoint
+- ✅ Standard rate limit headers (X-RateLimit-*)
+- ✅ Health check bypass
+- ✅ Production-ready error handling
+
+#### Configuration
+
+**Environment Variables:**
+```bash
+RATE_LIMIT_MAX_REQUESTS=100     # Max requests per window
+RATE_LIMIT_WINDOW_MS=60000      # Window size in milliseconds (default: 1 minute)
+```
+
+**Default Tiers:**
+```typescript
+RATE_LIMIT_TIERS = {
+  CHAT: { maxRequests: 50, windowMs: 60000 },      // 50 req/min
+  HEALTH: { maxRequests: 300, windowMs: 60000 },   // 300 req/min
+  DEFAULT: { maxRequests: 100, windowMs: 60000 }   // 100 req/min
+}
+```
+
+#### Response Headers
+
+All responses include standard rate limit headers:
+```
+X-RateLimit-Limit: 100
+X-RateLimit-Remaining: 95
+X-RateLimit-Reset: 1699999999999
+Retry-After: 42  (only when rate limited)
+```
+
+#### Error Response
+
+When rate limit exceeded (HTTP 429):
+```json
+{
+  "error": "Rate limit exceeded",
+  "message": "Too many requests, please try again later.",
+  "retryAfter": 42,
+  "limit": 100,
+  "current": 101
+}
+```
+
+#### Usage Examples
+
+**Apply globally:**
+```typescript
+server: {
+  middleware: [
+    rateLimitMiddleware({
+      maxRequests: 100,
+      windowMs: 60000,
+      skip: (c) => c.req.path === '/health'
+    })
+  ]
+}
+```
+
+**Endpoint-specific:**
+```typescript
+import { createEndpointRateLimiter } from './middleware/rate-limit';
+
+const chatRateLimiter = createEndpointRateLimiter('CHAT');
+// Apply to specific route
+```
+
+**Custom identifier (e.g., API key):**
+```typescript
+rateLimitMiddleware({
+  identifier: (c) => c.req.header('Authorization') || getClientIdentifier(c)
+})
+```
+
+#### Testing
+
+Run tests:
+```bash
+npm test src/mastra/middleware/rate-limit.test.ts
+```
+
+#### Production Considerations
+
+**Current Implementation:** In-memory store per Worker instance
+- ✅ Fast (no external calls)
+- ✅ Simple
+- ⚠️ Not distributed (each Worker has separate counter)
+
+**For Distributed Rate Limiting:**
+Use Cloudflare KV or Durable Objects:
+```typescript
+// Future enhancement: KV-based rate limiting
+const key = `ratelimit:${identifier}`;
+const count = await env.KV.get(key);
+// ... increment and check
+```
+
+#### Monitoring
+
+Rate limit violations are logged:
+```
+⚠️ Rate limit exceeded: {
+  identifier: "1.2.3.4",
+  current: 101,
+  limit: 100,
+  path: "/chat",
+  method: "POST"
+}
+```
+
+Warnings when approaching limit:
+```
+📊 Rate limit warning: {
+  identifier: "1.2.3.4",
+  remaining: 8,
+  path: "/chat"
+}
+```
+
+---

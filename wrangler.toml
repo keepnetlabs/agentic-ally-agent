@@ -6,6 +6,8 @@ compatibility_date = "2024-01-01"
 binding = "agentic_ally_embeddings_cache"
 database_name = "agentic-ally-embeddings-cache"
 database_id = "be23a682-b463-47a0-a300-aca930ed8749"
+migrations_dir = "migrations"
+migrations_table = "_cf_migrations"
 
 [[d1_databases]]
 binding = "agentic_ally_memory"

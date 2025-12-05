@@ -2,6 +2,8 @@ import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { requestStorage } from '../utils/request-storage';
 import { ERROR_MESSAGES } from '../constants';
+import crypto from 'crypto';
+import { parseName, isValidName, normalizeName } from '../utils/name-parser';
 
 // Payload for Step 1: Find User
 const GET_ALL_PAYLOAD = {
@@ -39,15 +41,20 @@ const TIMELINE_PAYLOAD = {
 
 export const getUserInfoTool = createTool({
     id: 'get-user-info',
-    description: 'Searches for a user AND retrieves their recent activity timeline. Useful for understanding user history.',
+    description: 'Searches for a user AND retrieves their recent activity timeline. Accepts either fullName or explicit firstName/lastName. Useful for understanding user history.',
     inputSchema: z.object({
-        firstName: z.string().describe('First name of the user'),
-        lastName: z.string().optional().describe('Last name of the user'),
-    }),
+        fullName: z.string().optional().describe('Full name of the user (e.g., "John Doe", "Gürkan Uğurlu"). Will be automatically parsed into firstName/lastName.'),
+        firstName: z.string().optional().describe('First name of the user (used if fullName is not provided)'),
+        lastName: z.string().optional().describe('Last name of the user (optional, used with firstName)'),
+    }).refine(
+        data => data.fullName || data.firstName,
+        { message: 'Either fullName or firstName must be provided' }
+    ),
     outputSchema: z.object({
         success: z.boolean(),
         userInfo: z.object({
             targetUserResourceId: z.string(),
+            maskedId: z.string().describe('Anonymized identifier for Zero PII compliance (e.g., [USER-ABC12345])'),
             fullName: z.string().optional(),
             department: z.string().optional(),
             email: z.string().optional(),
@@ -64,15 +71,39 @@ export const getUserInfoTool = createTool({
         error: z.string().optional(),
     }),
     execute: async ({ context }) => {
-        const { firstName, lastName } = context;
-        const fullName = lastName ? `${firstName} ${lastName}` : firstName;
+        const { fullName: inputFullName, firstName: inputFirstName, lastName: inputLastName } = context;
 
-        console.log(`🔍 Searching for user: "${fullName}"`);
+        // Parse name using utility
+        let parsed;
+        try {
+            if (inputFullName) {
+                // Validate and normalize full name (handles case sensitivity)
+                if (!isValidName(inputFullName)) {
+                    return { success: false, error: `Invalid name format: "${inputFullName}"` };
+                }
+                const normalizedFullName = normalizeName(inputFullName);
+                parsed = parseName(normalizedFullName);
+                console.log(`📝 Parsed & normalized fullName "${inputFullName}" -> "${normalizedFullName}":`, parsed);
+            } else if (inputFirstName) {
+                // Use explicit firstName/lastName with normalization
+                const normalizedFirstName = normalizeName(inputFirstName);
+                const normalizedLastName = inputLastName ? normalizeName(inputLastName) : undefined;
+                parsed = parseName({ firstName: normalizedFirstName, lastName: normalizedLastName });
+                console.log(`📝 Using explicit names (normalized):`, parsed);
+            } else {
+                return { success: false, error: 'Either fullName or firstName must be provided' };
+            }
+        } catch (error) {
+            return { success: false, error: error instanceof Error ? error.message : 'Failed to parse name' };
+        }
+
+        const { firstName, lastName, fullName } = parsed;
+        console.log(`🔍 Searching for user: "${fullName}" (firstName: "${firstName}", lastName: "${lastName || 'N/A'}")`);
 
         // Get Auth Token
         const store = requestStorage.getStore();
         const token = store?.token;
-
+        console.log('token', token);
         if (!token) {
             return { success: false, error: ERROR_MESSAGES.USER_INFO.TOKEN_MISSING };
         }
@@ -88,7 +119,7 @@ export const getUserInfoTool = createTool({
                     Value: lastName, FieldName: "lastName", Operator: "Contains"
                 });
             }
-
+            console.log('userSearchPayload', userSearchPayload);
             const userSearchResponse = await fetch('https://test-api.devkeepnet.com/api/leaderboard/get-all', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -105,7 +136,11 @@ export const getUserInfoTool = createTool({
 
             const user = users[0];
             const userId = user.targetUserResourceId;
-            console.log(`✅ Found user: ${user.firstName} ${user.lastName} (ID: ${userId})`);
+            const userFullName = `${user.firstName} ${user.lastName}`;
+
+            // 🔒 Zero PII: Generate masked identifier
+            const maskedId = `[USER-${crypto.createHash('sha256').update(userFullName.toLowerCase().trim()).digest('hex').substring(0, 8).toUpperCase()}]`;
+            console.log(`✅ Found user: ${userFullName} (ID: ${userId}, Masked: ${maskedId})`);
 
             // --- STEP 2: Get Timeline ---
             const timelinePayload = JSON.parse(JSON.stringify(TIMELINE_PAYLOAD));
@@ -143,9 +178,10 @@ export const getUserInfoTool = createTool({
                 success: true,
                 userInfo: {
                     targetUserResourceId: userId,
-                    fullName: `${user.firstName} ${user.lastName}`,
+                    maskedId: maskedId, // 🔒 Zero PII identifier for LLM communication
+                    fullName: userFullName, // ⚠️ Real name - agent should NOT expose this in final output
                     department: user.departmentName || user.department || 'Unknown',
-                    email: user.email
+                    email: user.email // ⚠️ Real email - agent should NOT expose this in final output
                 },
                 recentActivities: recentActivities
             };

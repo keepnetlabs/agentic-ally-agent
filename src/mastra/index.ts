@@ -8,6 +8,7 @@ import { phishingEmailAgent } from './agents/phishing-email-agent';
 import { userInfoAgent } from './agents/user-info-agent';
 import { disablePlayground, disableSwagger } from './middleware/openapi';
 import { contextStorage } from './middleware/context-storage';
+import { rateLimitMiddleware } from './middleware/rate-limit';
 import { createMicrolearningWorkflow } from './workflows/create-microlearning-workflow';
 import { addLanguageWorkflow } from './workflows/add-language-workflow';
 import { addMultipleLanguagesWorkflow } from './workflows/add-multiple-languages-workflow';
@@ -16,6 +17,7 @@ import { getDeployer } from './deployer';
 import { ExampleRepo } from './services/example-repo';
 import { D1Store } from '@mastra/cloudflare-d1';
 import { codeReviewCheckTool } from './tools/code-review-check-tool';
+import { maskPII, unmaskPII } from './utils/pii-masking-utils';
 
 const logger = new PinoLogger({
   name: 'Mastra',
@@ -60,7 +62,17 @@ export const mastra = new Mastra({
     tablePrefix: "dev_", // Optional: isolate tables per environment
   }),
   server: {
-    middleware: [contextStorage, injectD1Database, disablePlayground, disableSwagger],
+    middleware: [
+      contextStorage,
+      rateLimitMiddleware({
+        maxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100'),
+        windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '60000'),
+        skip: (c) => c.req.path === '/health', // Skip health checks from rate limiting
+      }),
+      injectD1Database,
+      disablePlayground,
+      disableSwagger
+    ],
     apiRoutes: [
       registerApiRoute('/chat', {
         method: 'POST',
@@ -151,10 +163,20 @@ export const mastra = new Mastra({
             return c.json({ success: false, message: 'Missing prompt. Provide {prompt}, {text}, {input}, or AISDK {messages} with user text.' }, 400);
           }
 
-          // If we have routing context, use it. Otherwise just use the prompt.
-          const orchestratorInput = routingContext ?
-            `Here is the recent conversation history:\n---\n${routingContext}\n---\nBased on this history and the last message, decide which agent should handle the request.` :
-            prompt;
+          // 🔒 Zero PII: Mask personally identifiable information ONLY for orchestrator routing
+          // Agent will receive ORIGINAL prompt so tools can work with real names
+          const { maskedText: maskedRoutingContext, mapping: piiMapping } = maskPII(routingContext);
+
+          // Store mapping in context for potential unmasking (optional)
+          c.set('piiMapping', piiMapping);
+          console.log('🔒 PII Masking applied:', Object.keys(piiMapping).length, 'identifiers masked for orchestrator');
+
+          // If we have routing context, use MASKED version for orchestrator
+          // CRITICAL: Always include the current user message so orchestrator can see it
+          const maskedPrompt = maskPII(prompt).maskedText;
+          const orchestratorInput = maskedRoutingContext ?
+            `Here is the recent conversation history:\n---\n${maskedRoutingContext}\n---\n\nCurrent user message: "${maskedPrompt}"\n\nBased on this history and the current message, decide which agent should handle the request.` :
+            maskedPrompt; // Use masked prompt if no context
           console.log('🔍 Orchestrator input:', orchestratorInput);
           // Extract or generate thread ID for memory continuity
           let threadId = body?.conversationId || body?.threadId || body?.sessionId;
@@ -174,6 +196,7 @@ export const mastra = new Mastra({
           }
 
           // Build prompt with model override as system instruction
+          // Use ORIGINAL prompt for agent (so tools can work with real names)
           let finalPrompt = prompt;
           if (modelProvider || model) {
             const modelInstruction = modelProvider && model
@@ -194,9 +217,11 @@ export const mastra = new Mastra({
           const agent = mastra.getAgent(routeResult.agentName);
 
           // Inject Task Context if provided by Orchestrator
+          // Unmask PII in taskContext so agent receives real names for tool calls
           if (routeResult.taskContext) {
-            finalPrompt = `[CONTEXT FROM ORCHESTRATOR: ${routeResult.taskContext}]\n\n${finalPrompt}`;
-            console.log('🔗 Context Injected:', routeResult.taskContext);
+            const unmaskedTaskContext = unmaskPII(routeResult.taskContext, piiMapping);
+            finalPrompt = `[CONTEXT FROM ORCHESTRATOR: ${unmaskedTaskContext}]\n\n${finalPrompt}`;
+            console.log('🔗 Context Injected (unmasked):', unmaskedTaskContext);
           }
 
           const stream = await agent.stream(finalPrompt, {

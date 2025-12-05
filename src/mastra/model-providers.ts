@@ -116,13 +116,20 @@ function getModelProvider(provider: ModelProvider) {
                     }
                 }
 
-                // Transform Cloudflare format to OpenAI format
+                // Transform Cloudflare format to AI SDK v5 format
+                // Cloudflare: prompt_tokens, completion_tokens (snake_case)
+                // AI SDK v5: inputTokens, outputTokens (camelCase)
                 if (data.usage) {
-                    if (data.usage.prompt_tokens !== undefined && data.usage.input_tokens === undefined) {
-                        data.usage.input_tokens = data.usage.prompt_tokens;
+                    if (data.usage.prompt_tokens !== undefined) {
+                        data.usage.inputTokens = data.usage.prompt_tokens;  // AI SDK v5 format
+                        data.usage.input_tokens = data.usage.prompt_tokens;  // Backward compat
                     }
-                    if (data.usage.completion_tokens !== undefined && data.usage.output_tokens === undefined) {
-                        data.usage.output_tokens = data.usage.completion_tokens;
+                    if (data.usage.completion_tokens !== undefined) {
+                        data.usage.outputTokens = data.usage.completion_tokens;  // AI SDK v5 format
+                        data.usage.output_tokens = data.usage.completion_tokens;  // Backward compat
+                    }
+                    if (data.usage.prompt_tokens !== undefined && data.usage.completion_tokens !== undefined) {
+                        data.usage.totalTokens = data.usage.prompt_tokens + data.usage.completion_tokens;
                     }
                 }
 
@@ -160,7 +167,7 @@ function getModelProvider(provider: ModelProvider) {
  * Default models used across the application
  */
 export function getDefaultAgentModel() {
-    return getModel(ModelProvider.OPENAI, Model.OPENAI_GPT_4O);
+    return getModel(ModelProvider.OPENAI, Model.OPENAI_GPT_4O_MINI);
 }
 
 export function getDefaultGenerationModel() {

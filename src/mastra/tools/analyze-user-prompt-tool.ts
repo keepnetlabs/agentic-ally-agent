@@ -207,7 +207,6 @@ RULES:
 
       // Extract reasoning from response.response.body.reasoning
       let reasoning = (response as any).response?.body?.reasoning;
-      console.log('🔍 Reasoning:', reasoning);
       if (reasoning && writer) {
         reasoning += `\n 'I will create an 8-scene code editor training module if isCodeTopic is true, otherwise I will create an 8-scene inbox-based training module.'`;
         streamReasoning(reasoning, writer);

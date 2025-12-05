@@ -16,7 +16,7 @@ import { generateScene7Prompt } from './scene-generators/scene7-nudge-generator'
 import { generateScene8Prompt } from './scene-generators/scene8-summary-generator';
 import { cleanResponse } from '../utils/content-processors/json-cleaner';
 import { SCENE_GENERATION_PARAMS } from '../utils/llm-generation-params';
-import { streamReasoning } from '../utils/reasoning-stream';
+import { trackCost } from '../utils/cost-tracker';
 
 export const generateLanguageJsonTool = new Tool({
   id: 'generate_language_json',
@@ -213,6 +213,27 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
 
     const generationTime = Date.now() - startTime;
     console.log(`⏱️ Parallel generation completed in ${generationTime}ms`);
+
+    // Track token usage for cost monitoring
+    const allResponses = [scene1Response, scene2Response, videoResponse, scene4Response, scene5Response, scene6Response, scene7Response, scene8Response];
+    const totalUsage = allResponses.reduce((acc, response) => {
+      if (response.usage) {
+        // AI SDK v5 uses: inputTokens, outputTokens (camelCase)
+        // Older versions: promptTokens/completionTokens or input_tokens/output_tokens
+        const usage = response.usage as any;
+        const inputTokens = usage.inputTokens ?? usage.promptTokens ?? usage.input_tokens ?? 0;
+        const outputTokens = usage.outputTokens ?? usage.completionTokens ?? usage.output_tokens ?? 0;
+
+        acc.promptTokens += inputTokens;
+        acc.completionTokens += outputTokens;
+      } else {
+        console.warn('⚠️ Response missing usage field');
+      }
+      return acc;
+    }, { promptTokens: 0, completionTokens: 0 });
+
+    // Use cost tracker for structured logging
+    trackCost('generate-language-content', model.modelId || '@cf/openai/gpt-oss-120b', totalUsage);
 
     // Clean and parse the responses with detailed error handling
 

@@ -88,11 +88,7 @@ export const uploadTrainingTool = createTool({
             console.log('📦 Upload Payload:', JSON.stringify({
                 ...payload,
                 accessToken: '***MASKED***',
-                trainingData: {
-                    ...trainingData,
-                    // Log scene count from original source since it's not in payload anymore
-                    scenes: `[${microlearningData.scenes?.length || 0} scenes]`
-                }
+                trainingData
             }, null, 2));
 
             const response = await fetch(WORKER_URL, {
