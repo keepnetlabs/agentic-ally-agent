@@ -44,7 +44,7 @@ const AnalyzeUserPromptOutputSchema = z.object({
     regulationCompliance: z.array(z.string()).optional(),
     themeColor: z.string().optional(),
     hasRichContext: z.boolean().optional(),
-    contextSummary: z.string().optional(),
+    additionalContext: z.string().optional(),
     customRequirements: z.string().optional(),
     isCodeTopic: z.boolean().optional(),
   }),
@@ -115,7 +115,6 @@ export const analyzeUserPromptTool = new Tool({
       const analysisPrompt = `Create microlearning metadata from this request:
 
 USER: "${userPrompt}" (LANGUAGE: ${detectLanguageFallback(userPrompt).toUpperCase()})
-CONTEXT: ${additionalContext || 'none'}
 DEPARTMENT: ${suggestedDepartment || 'not specified'}
 SUGGESTED LEVEL: ${input.suggestedLevel || 'auto-detect'}${examplesBlock}
 
@@ -196,12 +195,38 @@ RULES:
   TRUE: "JavaScript" → true, "JavaScript Arrays" → true, "Python workshop" → true, "Java security" → true, "SQL Injection" → true, "XSS prevention" → true, "Code review" → true, "API security" → true, "Secure coding" → true
   FALSE: "Phishing" → false, "Ransomware" → false, "MFA" → false, "Password security" → false, "Data protection" → false`;
 
+      // Build messages array with multi-message pattern
+      const messages: any[] = [
+        {
+          role: 'system',
+          content: 'You are an expert instructional designer and content analyst. CRITICAL: Analyze user requests intelligently and create professional microlearning metadata. Do NOT copy user instructions as titles/topics. Extract the core learning subject and create appropriate professional titles. Learning objectives must be realistic for 5-minute training scope - focus on specific, immediately actionable skills (NOT meta-tasks like "complete quiz" or unrealistic goals like "teach others"). For roles field: select exactly ONE role from the provided list that best matches the target audience for the topic. For category field: select exactly ONE category from the provided list that best matches the topic domain. For themeColor field: ONLY fill if user explicitly mentioned a color. Convert simple color names (red, blue, green, purple, gray, orange, yellow, pink, light-blue, teal, indigo, emerald, violet, amber) to standard codes (bg-gradient-red, bg-gradient-blue, bg-gradient-teal, etc.). Never infer or auto-select colors - user must explicitly state the color. Return ONLY VALID JSON - NO markdown, NO backticks, NO formatting. Start directly with {. Use BCP-47 language codes (en-gb, tr-tr, de-de, fr-fr,fr-ca, es-es, zh-cn, ja-jp, ar-sa, etc.).'
+        }
+      ];
+
+      // If we have rich user behavior context, add it as a dedicated message
+      // This uses the multi-message pattern recommended by OpenAI/Anthropic:
+      // - Semantic separation signals importance to the LLM
+      // - Recency bias ensures context receives more attention
+      // - Dedicated attention slot for critical information
+      if (additionalContext) {
+        messages.push({
+          role: 'user',
+          content: `🔴 CRITICAL USER CONTEXT - Behavior & Risk Analysis:
+
+${additionalContext}`
+        });
+        console.log(`📄 Added dedicated context message (${additionalContext.length} chars)`);
+      }
+
+      // Add main analysis request
+      messages.push({
+        role: 'user',
+        content: analysisPrompt
+      });
+
       const response = await generateText({
         model: model,
-        messages: [
-          { role: 'system', content: 'You are an expert instructional designer and content analyst. CRITICAL: Analyze user requests intelligently and create professional microlearning metadata. Do NOT copy user instructions as titles/topics. Extract the core learning subject and create appropriate professional titles. Learning objectives must be realistic for 5-minute training scope - focus on specific, immediately actionable skills (NOT meta-tasks like "complete quiz" or unrealistic goals like "teach others"). For roles field: select exactly ONE role from the provided list that best matches the target audience for the topic. For category field: select exactly ONE category from the provided list that best matches the topic domain. For themeColor field: ONLY fill if user explicitly mentioned a color. Convert simple color names (red, blue, green, purple, gray, orange, yellow, pink, light-blue, teal, indigo, emerald, violet, amber) to standard codes (bg-gradient-red, bg-gradient-blue, bg-gradient-teal, etc.). Never infer or auto-select colors - user must explicitly state the color. Return ONLY VALID JSON - NO markdown, NO backticks, NO formatting. Start directly with {. Use BCP-47 language codes (en-gb, tr-tr, de-de, fr-fr,fr-ca, es-es, zh-cn, ja-jp, ar-sa, etc.).' },
-          { role: 'user', content: analysisPrompt }
-        ],
+        messages: messages,
         ...PROMPT_ANALYSIS_PARAMS
       });
 
@@ -229,8 +254,8 @@ RULES:
       // Enrich analysis with context if provided
       if (additionalContext) {
         analysis.hasRichContext = true;
-        analysis.contextSummary = additionalContext.substring(0, PROMPT_ANALYSIS.MAX_CONTEXT_SUMMARY_LENGTH) + '...';
-        console.log(`📄 Rich context provided: ${analysis.contextSummary}`);
+        analysis.additionalContext = additionalContext;
+        console.log(`📄 Rich context provided (${additionalContext.length} chars)`);
       }
 
       if (customRequirements) {
@@ -259,7 +284,7 @@ RULES:
           regulationCompliance: analysis.regulationCompliance,
           themeColor: analysis.themeColor,
           hasRichContext: analysis.hasRichContext,
-          contextSummary: analysis.contextSummary,
+          additionalContext: analysis.additionalContext,
           customRequirements: analysis.customRequirements,
           isCodeTopic: analysis.isCodeTopic,
         }
@@ -307,7 +332,7 @@ RULES:
         assessmentAreas: [`${userPrompt.substring(0, 20)} knowledge`],
         regulationCompliance: [],
         hasRichContext: !!additionalContext,
-        contextSummary: additionalContext?.substring(0, PROMPT_ANALYSIS.MAX_CONTEXT_SUMMARY_LENGTH) + '...' || undefined,
+        additionalContext: additionalContext || undefined,
         customRequirements: customRequirements,
         isCodeTopic: isCodeSecurityFallback,
       };

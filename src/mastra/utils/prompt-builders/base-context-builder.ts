@@ -103,7 +103,6 @@ Generate ${analysis.language} training content for "${analysis.topic}" in STRICT
 - Level: ${analysis.level} | Department: ${analysis.department}
 - Category: ${analysis.category}${analysis.subcategory ? ` / ${analysis.subcategory}` : ''}
 - Objectives: ${analysis.learningObjectives.join(', ')}
-- Rich Context: ${analysis.contextSummary || 'Standard training'}
 - Custom Requirements: ${analysis.customRequirements || 'None'}
 - Roles: ${(analysis.roles || []).join(', ') || 'All Roles'}
 - Industries: ${(analysis.industries || []).join(', ') || 'General'}
@@ -150,7 +149,6 @@ Generate ${analysis.language} training content for "${analysis.topic}" in STRICT
 - Level: ${analysis.level} | Department: ${analysis.department}
 - Category: ${analysis.category}${analysis.subcategory ? ` / ${analysis.subcategory}` : ''}
 - Objectives: ${analysis.learningObjectives.join(', ')}
-- Rich Context: ${analysis.contextSummary || 'Standard training'}
 - Custom Requirements: ${analysis.customRequirements || 'None'}
 - Roles: ${(analysis.roles || []).join(', ') || 'All Roles'}
 - Industries: ${(analysis.industries || []).join(', ') || 'General'}

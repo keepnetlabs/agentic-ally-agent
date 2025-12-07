@@ -2,7 +2,7 @@ import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { requestStorage } from '../utils/request-storage';
 import { ERROR_MESSAGES } from '../constants';
-import crypto from 'crypto';
+import { generatePIIHash } from '../utils/pii-masking-utils';
 import { parseName, isValidName, normalizeName } from '../utils/name-parser';
 
 // Payload for Step 1: Find User
@@ -43,7 +43,7 @@ export const getUserInfoTool = createTool({
     id: 'get-user-info',
     description: 'Searches for a user AND retrieves their recent activity timeline. Accepts either fullName or explicit firstName/lastName. Useful for understanding user history.',
     inputSchema: z.object({
-        fullName: z.string().optional().describe('Full name of the user (e.g., "John Doe", "Gürkan Uğurlu"). Will be automatically parsed into firstName/lastName.'),
+        fullName: z.string().optional().describe('Full name of the user (e.g., "John Doe", "Peter Parker"). Will be automatically parsed into firstName/lastName.'),
         firstName: z.string().optional().describe('First name of the user (used if fullName is not provided)'),
         lastName: z.string().optional().describe('Last name of the user (optional, used with firstName)'),
     }).refine(
@@ -139,7 +139,7 @@ export const getUserInfoTool = createTool({
             const userFullName = `${user.firstName} ${user.lastName}`;
 
             // 🔒 Zero PII: Generate masked identifier
-            const maskedId = `[USER-${crypto.createHash('sha256').update(userFullName.toLowerCase().trim()).digest('hex').substring(0, 8).toUpperCase()}]`;
+            const maskedId = `[USER-${generatePIIHash(userFullName)}]`;
             console.log(`✅ Found user: ${userFullName} (ID: ${userId}, Masked: ${maskedId})`);
 
             // --- STEP 2: Get Timeline ---

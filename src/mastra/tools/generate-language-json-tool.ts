@@ -46,6 +46,38 @@ export const generateLanguageJsonTool = new Tool({
   },
 });
 
+/**
+ * Build messages array with multi-message pattern for scene generation
+ * Ensures additionalContext receives dedicated attention from LLM
+ */
+function buildSceneMessages(systemPrompt: string, scenePrompt: string, analysis: PromptAnalysis): any[] {
+  const messages: any[] = [
+    { role: 'system', content: systemPrompt }
+  ];
+
+  // If we have rich user behavior context, add it as a dedicated message
+  // This uses the multi-message pattern recommended by OpenAI/Anthropic:
+  // - Semantic separation signals importance to the LLM
+  // - Recency bias ensures context receives more attention
+  // - Dedicated attention slot for critical information
+  if (analysis.additionalContext) {
+    messages.push({
+      role: 'user',
+      content: `🔴 CRITICAL USER CONTEXT - Behavior & Risk Analysis:
+
+${analysis.additionalContext}`
+    });
+  }
+
+  // Add main scene generation request
+  messages.push({
+    role: 'user',
+    content: scenePrompt
+  });
+
+  return messages;
+}
+
 // Generate language-specific training content from microlearning.json metadata with rich context
 async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearning: MicrolearningContent, model: any, writer?: any): Promise<LanguageContent> {
   console.log('🔍 [generateLanguageJsonWithAI] Writer check:', writer ? '✅ Writer provided' : '❌ No writer');
@@ -99,10 +131,7 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
     const [scene1Response, scene2Response, videoResponse, scene4Response, scene5Response, scene6Response, scene7Response, scene8Response] = await Promise.all([
       generateText({
         model: model,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: scene1Prompt }
-        ],
+        messages: buildSceneMessages(systemPrompt, scene1Prompt, analysis),
         ...SCENE_GENERATION_PARAMS[1]  // Scene 1: Intro (creative)
       }).then((response) => {
         // extractAndStreamReasoning(response, writer, 'Scene 1'); // Temporarily commented
@@ -113,10 +142,7 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
       }),
       generateText({
         model: model,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: scene2Prompt }
-        ],
+        messages: buildSceneMessages(systemPrompt, scene2Prompt, analysis),
         ...SCENE_GENERATION_PARAMS[2]  // Scene 2: Goals (factual)
       }).then((response) => {
         // extractAndStreamReasoning(response, writer, 'Scene 2'); // Temporarily commented
@@ -127,10 +153,7 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
       }),
       generateText({
         model: model,
-        messages: [
-          { role: 'system', content: videoSystemPrompt },
-          { role: 'user', content: videoPrompt }
-        ],
+        messages: buildSceneMessages(videoSystemPrompt, videoPrompt, analysis),
         ...SCENE_GENERATION_PARAMS[3]  // Scene 3: Video (balanced)
       }).then((response) => {
         // extractAndStreamReasoning(response, writer, 'Scene 3'); // Temporarily commented
@@ -141,10 +164,7 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
       }),
       generateText({
         model: model,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: scene4Prompt }
-        ],
+        messages: buildSceneMessages(systemPrompt, scene4Prompt, analysis),
         ...SCENE_GENERATION_PARAMS[4]  // Scene 4: Actions (specific)
       }).then((response) => {
         // extractAndStreamReasoning(response, writer, 'Scene 4'); // Temporarily commented
@@ -155,10 +175,7 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
       }),
       generateText({
         model: model,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: scene5Prompt }
-        ],
+        messages: buildSceneMessages(systemPrompt, scene5Prompt, analysis),
         ...SCENE_GENERATION_PARAMS[5]  // Scene 5: Quiz (precise)
       }).then((response) => {
         // extractAndStreamReasoning(response, writer, 'Scene 5'); // Temporarily commented
@@ -169,10 +186,7 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
       }),
       generateText({
         model: model,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: scene6Prompt }
-        ],
+        messages: buildSceneMessages(systemPrompt, scene6Prompt, analysis),
         ...SCENE_GENERATION_PARAMS[6]  // Scene 6: Survey (neutral)
       }).then((response) => {
         // extractAndStreamReasoning(response, writer, 'Scene 6'); // Temporarily commented
@@ -183,10 +197,7 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
       }),
       generateText({
         model: model,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: scene7Prompt }
-        ],
+        messages: buildSceneMessages(systemPrompt, scene7Prompt, analysis),
         ...SCENE_GENERATION_PARAMS[7]  // Scene 7: Nudge (engaging)
       }).then((response) => {
         // extractAndStreamReasoning(response, writer, 'Scene 7'); // Temporarily commented
@@ -197,10 +208,7 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
       }),
       generateText({
         model: model,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: scene8Prompt }
-        ],
+        messages: buildSceneMessages(systemPrompt, scene8Prompt, analysis),
         ...SCENE_GENERATION_PARAMS[8]  // Scene 8: Summary (consistent)
       }).then((response) => {
         // extractAndStreamReasoning(response, writer, 'Scene 8'); // Temporarily commented
@@ -284,10 +292,7 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
         // Retry with fresh AI call using same optimized prompt
         const retryResponse = await generateText({
           model: model,
-          messages: [
-            { role: 'system', content: videoSystemPrompt },
-            { role: 'user', content: videoPrompt }
-          ]
+          messages: buildSceneMessages(videoSystemPrompt, videoPrompt, analysis)
         });
 
         const retryCleanedVideo = cleanResponse(retryResponse.text, 'video');

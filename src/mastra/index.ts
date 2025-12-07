@@ -167,8 +167,6 @@ export const mastra = new Mastra({
           // Agent will receive ORIGINAL prompt so tools can work with real names
           const { maskedText: maskedRoutingContext, mapping: piiMapping } = maskPII(routingContext);
 
-          // Store mapping in context for potential unmasking (optional)
-          c.set('piiMapping', piiMapping);
           console.log('🔒 PII Masking applied:', Object.keys(piiMapping).length, 'identifiers masked for orchestrator');
 
           // If we have routing context, use MASKED version for orchestrator

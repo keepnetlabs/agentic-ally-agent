@@ -17,7 +17,7 @@ export interface PromptAnalysis {
   regulationCompliance?: string[];
   themeColor?: string;
   hasRichContext?: boolean;
-  contextSummary?: string;
+  additionalContext?: string;
   customRequirements?: string;
   isCodeTopic?: boolean;
 }

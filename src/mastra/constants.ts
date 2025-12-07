@@ -74,9 +74,6 @@ export const PROMPT_ANALYSIS = {
   MAX_CUSTOM_REQUIREMENTS_LENGTH: 1000,
   MAX_DEPARTMENT_NAME_LENGTH: 100,
 
-  // Context summary
-  MAX_CONTEXT_SUMMARY_LENGTH: 500,
-
   // Language code validation
   LANGUAGE_CODE_REGEX: /^[a-z]{2}(-[a-z]{2})?$/i,
 
@@ -217,7 +214,7 @@ export const MODEL_PROVIDERS = {
 
   // Default model per provider
   DEFAULTS: {
-    OPENAI: 'OPENAI_GPT_4O_MINI',
+    OPENAI: 'OPENAI_GPT_4O',
     WORKERS_AI: 'WORKERS_AI_GPT_OSS_120B',
     GOOGLE: 'GOOGLE_GENERATIVE_AI_GEMINI_15',
   },

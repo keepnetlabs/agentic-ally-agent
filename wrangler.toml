@@ -18,3 +18,10 @@ database_id = "5a66922d-fbff-419c-9e5a-24f23334e5b9"
 binding = "MICROLEARNING_KV"
 id = "c96ef0b5a2424edca1426f6e7a85b9dc"
 preview_id = "c96ef0b5a2424edca1426f6e7a85b9dc"
+
+# Service Binding - Worker-to-Worker internal communication
+# Bu sayede agent worker, crud-training-worker'ı internal routing ile çağırır
+# Public internet yerine Cloudflare network'ü üzerinden (hızlı + güvenli + CORS yok)
+[[services]]
+binding = "CRUD_WORKER"
+service = "crud-training-worker"

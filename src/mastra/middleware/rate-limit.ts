@@ -91,6 +91,8 @@ const rateLimitStore = new Map<string, RateLimitEntry>();
 
 /**
  * Clean up expired entries periodically
+ * Note: In Cloudflare Workers, we can't use setInterval in global scope
+ * Cleanup happens on-demand during rate limit checks
  */
 function cleanupExpiredEntries() {
   const now = Date.now();
@@ -101,10 +103,8 @@ function cleanupExpiredEntries() {
   }
 }
 
-// Run cleanup every 60 seconds
-if (typeof setInterval !== 'undefined') {
-  setInterval(cleanupExpiredEntries, 60_000);
-}
+// Don't use setInterval in global scope (Cloudflare Workers restriction)
+// Cleanup will happen on-demand during rate limit checks
 
 /**
  * Check rate limit and increment counter
@@ -120,6 +120,12 @@ function checkRateLimit(
   resetTime: number;
   retryAfter?: number;
 } {
+  // Periodic cleanup (every 100 requests to avoid performance impact)
+  // Cloudflare Workers can't use setInterval in global scope
+  if (rateLimitStore.size > 0 && rateLimitStore.size % 100 === 0) {
+    cleanupExpiredEntries();
+  }
+
   const key = `${config.keyPrefix}${identifier}`;
   const now = Date.now();
   const resetTime = now + config.windowMs;

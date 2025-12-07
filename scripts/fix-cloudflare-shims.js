@@ -12,6 +12,7 @@ import { join } from 'path';
 
 const MASTRA_OUTPUT_DIR = '.mastra/output';
 const FILES_TO_FIX = ['index.mjs', 'mastra.mjs'];
+const WRANGLER_CONFIG_PATH = join(MASTRA_OUTPUT_DIR, 'wrangler.json');
 
 const ORIGINAL_SHIM = `// -- Shims --
 import cjsUrl from 'node:url';
@@ -76,16 +77,58 @@ function fixFile(filePath) {
   }
 }
 
+function patchWranglerConfig() {
+  try {
+    if (!existsSync(WRANGLER_CONFIG_PATH)) {
+      console.log(`⚠️  wrangler.json not found: ${WRANGLER_CONFIG_PATH}`);
+      return false;
+    }
+
+    const config = JSON.parse(readFileSync(WRANGLER_CONFIG_PATH, 'utf8'));
+
+    // Add service bindings if not already present
+    if (!config.services) {
+      config.services = [];
+    }
+
+    const crudWorkerBinding = {
+      binding: "CRUD_WORKER",
+      service: "crud-training-worker"
+    };
+
+    // Check if CRUD_WORKER already exists
+    const existingBinding = config.services.find(s => s.binding === "CRUD_WORKER");
+    if (!existingBinding) {
+      config.services.push(crudWorkerBinding);
+      writeFileSync(WRANGLER_CONFIG_PATH, JSON.stringify(config, null, 2), 'utf8');
+      console.log(`  ✅ Added CRUD_WORKER service binding`);
+      return true;
+    } else {
+      console.log(`  ✅ CRUD_WORKER service binding already exists`);
+      return false;
+    }
+  } catch (error) {
+    console.error(`❌ Error patching wrangler.json:`, error.message);
+    return false;
+  }
+}
+
 function main() {
   console.log('🔧 Fixing Cloudflare Workers compatibility issues...\n');
 
   let fixedCount = 0;
-  
+
   for (const fileName of FILES_TO_FIX) {
     const filePath = join(MASTRA_OUTPUT_DIR, fileName);
     if (fixFile(filePath)) {
       fixedCount++;
     }
+  }
+
+  // Patch wrangler.json to add service bindings
+  console.log('\n🔧 Patching wrangler.json for service bindings...');
+  if (patchWranglerConfig()) {
+    fixedCount++;
   }
 
   if (fixedCount > 0) {

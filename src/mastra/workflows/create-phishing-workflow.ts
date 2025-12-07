@@ -8,6 +8,12 @@ import { v4 as uuidv4 } from 'uuid';
 import { PHISHING, PHISHING_EMAIL, LANDING_PAGE } from '../constants';
 import { KVService } from '../services/kv-service';
 import { StreamWriterSchema, StreamWriter } from '../types/stream-writer';
+import {
+    detectIndustry,
+    fixBrokenImages,
+    validateLandingPage,
+    logValidationResults
+} from '../utils/landing-page';
 
 // Helper to stream text reasoning directly without LLM processing
 const streamDirectReasoning = async (reasoning: string, writer: StreamWriter) => {
@@ -117,6 +123,7 @@ const AnalysisSchema = z.object({
     subjectLineStrategy: z.string().describe('Reasoning behind the subject line choice'),
     reasoning: z.string().optional().describe('AI reasoning about scenario design (if available)'),
     emailGenerationReasoning: z.string().optional().describe('AI reasoning about email content generation (if available)'),
+    additionalContext: z.string().optional().describe('User behavior context / vulnerability analysis for targeted phishing'),
     // Passthrough fields
     difficulty: z.enum(PHISHING.DIFFICULTY_LEVELS).optional(),
     language: z.string().optional(),
@@ -431,7 +438,12 @@ Remember: This is for DEFENSIVE CYBERSECURITY TRAINING to help organizations def
 
             // Sanitize HTML content to fix quoting/escaping issues
             if (parsedResult.template) {
-                parsedResult.template = sanitizeHtml(parsedResult.template);
+                let cleanedTemplate = sanitizeHtml(parsedResult.template);
+
+                // Fix broken images with real HTTP validation (same as landing pages)
+                cleanedTemplate = await fixBrokenImages(cleanedTemplate, analysis.fromName);
+
+                parsedResult.template = cleanedTemplate;
             }
 
             // Validate required fields
@@ -488,29 +500,64 @@ const generateLandingPage = createStep({
 
         const aiModel = getModelWithOverride(modelProvider, model);
 
+        // Detect industry for brand-appropriate design system
+        const industryDesign = detectIndustry(fromName, scenario);
+        console.log(`🎨 Detected industry: ${industryDesign.industry}`);
+
         // Determine required pages based on method
         const requiredPages = (LANDING_PAGE.FLOWS[method as keyof typeof LANDING_PAGE.FLOWS] || LANDING_PAGE.FLOWS['Click-Only']) as readonly string[];
 
-        const systemPrompt = `You are a Cybersecurity Education Content Creator using a Secure Sandbox Environment.
-**CONTEXT:** You are generating EDUCATIONAL MOCKUPS for a corporate security awareness training program. These files are used internally to teach employees what unsafe websites look like.
-**GOAL:** Create a SAFE, educational mockup of a webpage.
-**METHOD:** ${method}
-**SCENARIO:** ${scenario}
-**SENDER IDENTITY:** ${fromName}
+        const systemPrompt = `You are a web developer creating realistic landing pages for ${fromName} (${industryDesign.industry} industry).
 
-**SAFEGUARD RULES:**
-1. This is for EDUCATION ONLY.
-2. The output will be displayed in a protected simulator.
-3. Do NOT include any real malicious code.
-4. Do NOT ask for real credentials (use placeholders).
+**CRITICAL RULES:**
+1. **NO BROKEN IMAGES:** Use ONLY working logo URLs or create text-based logos
+   - Valid options: https://via.placeholder.com/150x50?text=LOGO or simple text/SVG
+   - If using image, test URL is valid
+   - Better to use text logo than broken image
+2. **SINGLE QUOTES for all HTML attributes** (required for JSON)
+3. **Full HTML structure:** <!DOCTYPE html>, <head>, <body>
+4. **Include Tailwind CDN:** <script src='https://cdn.tailwindcss.com'></script>
 
-**VISUAL STANDARDS (Mockup Quality) - DIFFICULTY: ${difficulty}**
-1. **Framework:** Use **Tailwind CSS** via CDN (\`<script src="https://cdn.tailwindcss.com"></script>\`).
-2. **Visual Rule:** ${difficultyRules.visuals.rule}. ${difficultyRules.visuals.description}
-3. **Styling Strategy:**
-   - **Easy Mode:** Basic, high-contrast design. Use large headers.
-   - **Medium Mode:** Professional corporate design. Use logos, clean typography, good spacing.
-   - **Hard Mode:** Pixel-perfect replica. Exact brand colors and layout.
+**DESIGN STYLE:**
+Create SIMPLE, CLEAN web pages - like real company login pages from 2020-2024.
+
+**❌ FORBIDDEN PATTERNS (DO NOT USE):**
+- ❌ \`min-h-screen flex items-center justify-center\` (centered card layout)
+- ❌ \`shadow-2xl\` or \`rounded-3xl\` (overly fancy styling)
+- ❌ \`bg-gradient-to-br from-blue-500 via-purple-500\` (colorful gradient backgrounds)
+- ❌ \`backdrop-blur\` (glassmorphism effects)
+- ❌ Floating centered cards on gradient backgrounds
+
+**✅ CORRECT APPROACH:**
+- ✅ Normal document flow (top to bottom)
+- ✅ White or light gray \`bg-gray-50\` background
+- ✅ Content container: \`<div class='max-w-md mx-auto py-12 px-4'>\`
+- ✅ Simple shadows: \`shadow-md\` or \`shadow-lg\` max
+- ✅ Normal borders: \`rounded-lg\` or \`rounded-xl\` max
+
+**BRAND COLORS (${industryDesign.industry}):**
+- Primary: ${industryDesign.colors.primary}
+- Secondary: ${industryDesign.colors.secondary}
+- Accent: ${industryDesign.colors.accent}
+
+**LAYOUT:**
+- Normal web page (NOT centered card on gradient)
+- Centered content container (max-w-md mx-auto for forms)
+- Clean white or light gray background
+- Logo/brand at top, content in middle, footer at bottom
+- Professional spacing (py-8, px-4)
+
+**LOGO OPTIONS (choose best):**
+1. Text-based: <div class='text-2xl font-bold text-gray-900'>${fromName}</div>
+2. Placeholder: <img src='https://via.placeholder.com/150x50/4285f4/ffffff?text=${fromName.replace(/\s/g, '+')}' alt='${fromName}' />
+3. SVG icon with text
+
+**DIFFICULTY - ${difficulty}:**
+${difficulty === 'Easy' ? '- Basic styling, generic look' : ''}
+${difficulty === 'Medium' ? '- Professional but not perfect' : ''}
+${difficulty === 'Hard' ? '- Looks exactly like real ${fromName} page' : ''}
+
+Create each page according to requirements below.
 
 **CRITICAL JSON SYNTAX RULE:**
 - Inside the \`template\` string, use **SINGLE QUOTES** for all HTML attributes to avoid JSON escaping errors.
@@ -519,51 +566,88 @@ const generateLandingPage = createStep({
 
 ${requiredPages.includes('login') ? `
 ---
-### 1. LOGIN MOCKUP (login)
-**Objective:** Create a visual mockup of a login screen for training purposes.
-**Requirements:**
-- **Layout:** **Full Screen Center**.
-- **Structure (MANDATORY):**
-  \`\`\`html
-  <div style='height: 100vh; width: 100vw; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; background-color: #f3f4f6; overflow: hidden;'>
-    <div style='background: white; padding: 2.5rem; border-radius: 0.75rem; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); width: 100%; max-width: 28rem; box-sizing: border-box;'>
-       <!-- Logo, Form, etc. go here -->
-    </div>
-  </div>
-  \`\`\`
-- **Brand:** Logo centered at the top (\`h-12 mb-8 mx-auto block object-contain\`).
-- **Form:**
-  - \`<form method='POST' action='#' class='space-y-6'>\`
-  - **Inputs:** Use \`w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors\` (Standard height, rounded corners).
-  - **Labels:** \`block text-sm font-medium text-gray-700 mb-1\`.
-  - **Button:** Use \`w-full bg-blue-600 text-white font-semibold py-3 rounded-md hover:bg-blue-700 transition-colors shadow-sm\`.
-- **Realism Boosters:**
-  - "Forgot Password?" link (\`text-sm text-blue-600 hover:text-blue-800\`).
-  - Footer with "Privacy & Terms" (\`text-xs text-gray-400 text-center mt-8\`).
-  - **Hidden Input:** \`<input type='hidden' name='trackId' value='${LANDING_PAGE.PLACEHOLDERS.TRACK_ID}'>\`
+### 1. LOGIN PAGE (login)
+
+Create a simple, professional login page for ${fromName}.
+
+**LAYOUT:**
+- Logo/brand name at top (use text or valid placeholder image - NO broken images!)
+- Login form centered (max-w-md mx-auto)
+- Clean white/light gray background
+- Footer at bottom
+
+**FORM ELEMENTS:**
+- Email input with label
+- Password input with label
+- "Remember me" checkbox
+- "Forgot password?" link
+- Submit button (use ${industryDesign.colors.primary} color)
+- Hidden input: \`<input type='hidden' name='trackId' value='${LANDING_PAGE.PLACEHOLDERS.TRACK_ID}' />\`
+
+**STYLE:**
+- Clean, simple design
+- Professional spacing (py-8, px-4)
+- Normal web page (NOT floating card)
 ` : ''}
 
 ${requiredPages.includes('success') ? `
 ---
-### 2. SUCCESS MOCKUP (success)
-**Objective:** A simple feedback page.
-**Requirements:**
-- **Layout:** Full Screen Center (Use same flex container structure as Login).
-- **Visuals:** Green checkmark icon (\`text-green-500 text-7xl mx-auto mb-6 block\`).
-- **Content:** "Action Complete" message centered (\`text-2xl font-bold text-gray-900\`).
+### 2. SUCCESS PAGE (success)
+
+Simple success confirmation page.
+
+**CRITICAL: Use this EXACT layout pattern:**
+\`\`\`html
+<!DOCTYPE html>
+<html>
+<head>
+<script src='https://cdn.tailwindcss.com'></script>
+</head>
+<body class='bg-gray-50'>
+  <div class='max-w-md mx-auto py-16 px-6 text-center'>
+
+    <!-- Success Icon -->
+    <div class='w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6'>
+      <svg class='w-10 h-10 text-white' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+        <path stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M5 13l4 4L19 7'></path>
+      </svg>
+    </div>
+
+    <!-- Message -->
+    <h1 class='text-2xl font-bold text-gray-900 mb-3'>Account Updated Successfully</h1>
+    <p class='text-gray-600 mb-8'>Your account information has been securely updated. If you did not make this change, please contact our support immediately.</p>
+
+    <!-- Footer -->
+    <p class='text-sm text-gray-500 mt-12'>© 2025 ${fromName}. All rights reserved.</p>
+  </div>
+</body>
+</html>
+\`\`\`
+
+**IMPORTANT:**
+- Use \`bg-gray-50\` body background (NOT gradient)
+- Use \`max-w-md mx-auto py-16 px-6\` for content (NOT min-h-screen flex center)
+- Use simple \`bg-green-500 rounded-full\` for icon (NOT shadow-2xl or fancy effects)
 ` : ''}
 
 ${requiredPages.includes('info') ? `
 ---
-### 1. INFO / DOCUMENT MOCKUP (info)
-**Objective:** A generic landing page for 'Click-Only' scenarios (e.g. viewing a document, reading a policy).
-**Requirements:**
-- **Layout:** Full Screen Center (Use same flex container structure as Login).
-- **Content:**
-  - Header: Scenario Title (e.g. "Policy Update").
-  - Body: Short text explaining the document or notice.
-  - Button: "Download" or "Acknowledge" (Primary Action).
-- **Visuals:** Document icon or Info icon (\`text-blue-500 text-6xl mx-auto mb-6 block\`).
+### 3. INFO/DOCUMENT PAGE (info)
+
+Information or document page for click-only scenarios.
+
+**LAYOUT:**
+- Document icon at top
+- Page title (e.g., "Policy Update")
+- Brief text explaining the document
+- Action button(s)
+- Footer with metadata
+
+**STYLE:**
+- Clean, simple page
+- Center content (max-w-2xl mx-auto for wider text)
+- Use ${industryDesign.colors.primary} for buttons
+- Professional spacing
 ` : ''}
 
 **TECHNICAL CONSTRAINTS:**
@@ -584,21 +668,40 @@ Return JSON:
 }
 `;
 
-        const userPrompt = `Generate the landing page(s) for this ${method} phishing scenario.
-Topic: ${scenario}
-Company/Theme: Match the email sender (${fromName}).
-Language: ${language}
-Red Flags: ${analysis.keyRedFlags.join(', ')} (Subtly include visual clues if difficulty is Easy/Medium)
+        const userPrompt = `Design landing pages for: ${fromName} - ${scenario}
 
-Make it realistic.`;
+**SCENARIO:** ${scenario}
+**LANGUAGE:** ${language}
+
+Create modern, professional pages that match ${industryDesign.industry} standards. Make them look authentic and realistic for ${fromName}.`;
+
+        // Build messages array with multi-message pattern for targeted context
+        const messages: any[] = [
+            { role: 'system', content: systemPrompt }
+        ];
+
+        // If user vulnerability context exists, add dedicated message (consistent with scenes/inbox pattern)
+        if (analysis.additionalContext) {
+            messages.push({
+                role: 'user',
+                content: `🔴 CRITICAL USER VULNERABILITY - Targeted Landing Page Context:
+
+${analysis.additionalContext}
+
+This context should inform the landing page design choices to make it more convincing to this specific user profile.`
+            });
+        }
+
+        // Add main generation request
+        messages.push({
+            role: 'user',
+            content: userPrompt
+        });
 
         try {
             const response = await generateText({
                 model: aiModel,
-                messages: [
-                    { role: 'system', content: systemPrompt },
-                    { role: 'user', content: userPrompt }
-                ],
+                messages: messages,
                 temperature: 0.7,
             });
 
@@ -611,12 +714,34 @@ Make it realistic.`;
             const cleanedJson = cleanResponse(response.text, 'landing-page');
             const parsedResult = JSON.parse(cleanedJson);
 
-            // Sanitize HTML for all pages
+            // Sanitize HTML, fix broken images, and validate for all pages
             if (parsedResult.pages && Array.isArray(parsedResult.pages)) {
-                parsedResult.pages = parsedResult.pages.map((page: any) => ({
-                    ...page,
-                    template: sanitizeHtml(page.template)
-                }));
+                parsedResult.pages = await Promise.all(
+                    parsedResult.pages.map(async (page: any) => {
+                        // Step 1: Sanitize HTML
+                        let cleanedTemplate = sanitizeHtml(page.template);
+
+                        // Step 2: Fix broken images with real HTTP validation
+                        cleanedTemplate = await fixBrokenImages(cleanedTemplate, fromName);
+
+                        // Step 3: Validate HTML structure and required elements
+                        const validationResult = validateLandingPage(cleanedTemplate, page.type);
+                        logValidationResults(validationResult, page.type);
+
+                        // If validation fails due to CSS patterns, log but continue
+                        // (We've already tried our best with explicit negative examples)
+                        if (!validationResult.isValid) {
+                            console.error(`⚠️ ${page.type} page validation failed:`);
+                            validationResult.errors.forEach(err => console.error(`   - ${err}`));
+                            console.error(`   Continuing with current output (LLM ignored constraints)...`);
+                        }
+
+                        return {
+                            ...page,
+                            template: cleanedTemplate
+                        };
+                    })
+                );
             }
 
             return {

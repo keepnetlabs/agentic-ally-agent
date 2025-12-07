@@ -23,9 +23,10 @@ export const assignTrainingTool = createTool({
 
     console.log(`🔗 Preparing assignment for Resource: ${resourceId} (LangID: ${sendTrainingLanguageId}) to User: ${targetUserResourceId}`);
 
-    // Get Auth Token
+    // Get Auth Token & Cloudflare bindings from AsyncLocalStorage
     const store = requestStorage.getStore();
     const token = store?.token;
+    const env = store?.env; // Cloudflare env (bindings: KV, D1, Service Bindings)
 
     if (!token) {
       return { success: false, error: ERROR_MESSAGES.PLATFORM.ASSIGN_TOKEN_MISSING };
@@ -43,14 +44,32 @@ export const assignTrainingTool = createTool({
     console.log('📦 Assign Payload:', JSON.stringify(payload, null, 2));
 
     try {
-      const response = await fetch(ASSIGN_API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
+      // Service Binding kullan (production) veya fallback to public URL (local dev)
+      let response: Response;
+
+      if (env?.CRUD_WORKER) {
+        // ✅ SERVICE BINDING (Production - Internal Routing)
+        console.log('🔗 Using Service Binding: CRUD_WORKER');
+        response = await env.CRUD_WORKER.fetch('https://worker/send', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(payload)
+        });
+      } else {
+        // ⚠️ FALLBACK: Public URL (Local Development)
+        console.log('🌐 Using Public URL (Fallback):', ASSIGN_API_URL);
+        response = await fetch(ASSIGN_API_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(payload)
+        });
+      }
 
       if (!response.ok) {
         const errorText = await response.text();

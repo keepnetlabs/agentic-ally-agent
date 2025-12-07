@@ -30,9 +30,10 @@ export const uploadTrainingTool = createTool({
 
         console.log(`📤 Preparing upload for ID: "${microlearningId}"...`);
 
-        // Get Auth Token
+        // Get Auth Token & Cloudflare bindings from AsyncLocalStorage
         const store = requestStorage.getStore();
         const token = store?.token;
+        const env = store?.env; // Cloudflare env (bindings: KV, D1, Service Bindings)
 
         if (!token) {
             return { success: false, error: ERROR_MESSAGES.PLATFORM.UPLOAD_TOKEN_MISSING };
@@ -91,11 +92,26 @@ export const uploadTrainingTool = createTool({
                 trainingData
             }, null, 2));
 
-            const response = await fetch(WORKER_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
+            // Service Binding kullan (production) veya fallback to public URL (local dev)
+            let response: Response;
+
+            if (env?.CRUD_WORKER) {
+                // ✅ SERVICE BINDING (Production - Internal Routing)
+                console.log('🔗 Using Service Binding: CRUD_WORKER');
+                response = await env.CRUD_WORKER.fetch('https://worker/submit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+            } else {
+                // ⚠️ FALLBACK: Public URL (Local Development)
+                console.log('🌐 Using Public URL (Fallback):', WORKER_URL);
+                response = await fetch(WORKER_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+            }
 
             if (!response.ok) {
                 const errorText = await response.text();

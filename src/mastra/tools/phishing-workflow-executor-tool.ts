@@ -66,32 +66,37 @@ export const phishingWorkflowExecutorTool = createTool({
                         const messageId = uuidv4();
                         await writer.write({ type: 'text-start', id: messageId });
 
-                        // 1. Email Preview (if exists)
+                        // 1. Email Preview (if exists) - Single object encoding
                         if (output.template) {
-                            const encodedHtml = Buffer.from(output.template).toString('base64');
+                            // Encode entire email object as JSON string
+                            const emailObject = {
+                                subject: output.subject,
+                                template: output.template,
+                                fromAddress: output.fromAddress,
+                                fromName: output.fromName,
+                                method: output.analysis?.method,
+                            };
+                            const emailJson = JSON.stringify(emailObject);
+                            const encodedEmail = Buffer.from(emailJson).toString('base64');
+
                             await writer.write({
                                 type: 'text-delta',
                                 id: messageId,
-                                delta: `::ui:phishing_email::${encodedHtml}::/ui:phishing_email::\n`
+                                delta: `::ui:phishing_email::${encodedEmail}::/ui:phishing_email::\n`
                             });
                         }
 
-                        // 2. Landing Page Pages (if exists)
+                        // 2. Landing Page (if exists) - Single object encoding
                         if (output.landingPage && output.landingPage.pages.length > 0) {
-                            // Stream ALL pages sequentially
-                            for (const page of output.landingPage.pages) {
-                                const encodedHtml = Buffer.from(page.template).toString('base64');
+                            // Encode entire landingPage object as JSON string
+                            const landingPageJson = JSON.stringify(output.landingPage);
+                            const encodedLandingPage = Buffer.from(landingPageJson).toString('base64');
 
-                                // Small delay to ensure FE processes order
-                                await new Promise(resolve => setTimeout(resolve, 500));
-
-                                await writer.write({
-                                    type: 'text-delta',
-                                    id: messageId,
-                                    // Using same UI tag as requested to reuse the preview component
-                                    delta: `::ui:phishing_email::${encodedHtml}::/ui:phishing_email::\n`
-                                });
-                            }
+                            await writer.write({
+                                type: 'text-delta',
+                                id: messageId,
+                                delta: `::ui:landing_page::${encodedLandingPage}::/ui:landing_page::\n`
+                            });
                         }
 
                         await writer.write({ type: 'text-end', id: messageId });
@@ -118,7 +123,6 @@ export const phishingWorkflowExecutorTool = createTool({
                         psychologicalTriggers: output.analysis?.psychologicalTriggers,
                         keyRedFlags: output.analysis?.keyRedFlags,
                         targetAudience: output.analysis?.targetAudienceAnalysis,
-                        landingPage: output.landingPage
                     }
                 };
 

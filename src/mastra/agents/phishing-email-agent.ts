@@ -89,7 +89,7 @@ Topic: {topic}<br>
     - External (Government notices, Tax, Legal)
   - **Examples of what NOT to do:** Do not just say "HR Update". Say "Urgent: Q3 Remote Work Policy Acknowledgement". Be specific!
 - **Difficulty:** If not specified, assume **"${PHISHING.DEFAULT_DIFFICULTY}"**.
-- **Language:** Detect from user's message language (en-gb, tr-tr, etc.).
+- **Language:** Detect from user's message language (en-gb, tr-tr, etc.). If language cannot be detected, default to **"en-gb"** (English - Great Britain).
 - **Target Profile:**
   - If 'userInfoAssistant' passed context: Use it!
   - If no context: Assume "Generic Employee".

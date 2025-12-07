@@ -25,5 +25,7 @@ export function getDeployer() {
                 id: "c96ef0b5a2424edca1426f6e7a85b9dc"
             }
         ]
+        // Note: Service bindings (CRUD_WORKER) post-build script tarafından wrangler.json'a eklenir
+        // scripts/fix-cloudflare-shims.js → patchWranglerConfig()
     });
 }

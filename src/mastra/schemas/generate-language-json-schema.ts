@@ -20,7 +20,7 @@ export const GenerateLanguageJsonSchema = z.object({
     assessmentAreas: z.array(z.string()),
     regulationCompliance: z.array(z.string()).optional(),
     hasRichContext: z.boolean().optional(),
-    contextSummary: z.string().optional(),
+    additionalContext: z.string().optional(),
     customRequirements: z.string().optional(),
   }),
   microlearning: z.any(),

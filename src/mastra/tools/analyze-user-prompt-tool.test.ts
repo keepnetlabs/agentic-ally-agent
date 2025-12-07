@@ -40,7 +40,7 @@ const outputSchema = z.object({
     assessmentAreas: z.array(z.string()),
     regulationCompliance: z.array(z.string()).optional(),
     hasRichContext: z.boolean().optional(),
-    contextSummary: z.string().optional(),
+    additionalContext: z.string().optional(),
     customRequirements: z.string().optional(),
   }),
   error: z.string().optional(),
@@ -300,7 +300,7 @@ describe('analyzeUserPromptTool', () => {
           assessmentAreas: ['Identifying phishing', 'Reporting procedures'],
           regulationCompliance: ['GDPR', 'HIPAA'],
           hasRichContext: true,
-          contextSummary: 'Focus on advanced phishing techniques...',
+          additionalContext: 'Focus on advanced phishing techniques...',
           customRequirements: 'Include simulation scenarios',
         },
       };
@@ -328,7 +328,7 @@ describe('analyzeUserPromptTool', () => {
           keyTopics: ['Phishing'],
           practicalApplications: [],
           assessmentAreas: [],
-          // Optional fields omitted: regulationCompliance, hasRichContext, contextSummary, customRequirements
+          // Optional fields omitted: regulationCompliance, hasRichContext, additionalContext, customRequirements
         },
       };
 
@@ -376,7 +376,7 @@ describe('analyzeUserPromptTool', () => {
       expect(input.additionalContext).toBeTruthy();
     });
 
-    it('should include contextSummary when additionalContext provided', async () => {
+    it('should include additionalContext when additionalContext provided', async () => {
       const input = {
         userPrompt: 'Create training',
         additionalContext: 'Very long context that should be summarized and limited to 200 characters maximum for display purposes. This is additional text to ensure the context string is long enough to demonstrate the truncation behavior. The tool will limit this to 200 chars plus ellipsis.',

@@ -87,13 +87,34 @@ async function generateOneEmail(
     // Pass additionalContext to buildHintsFromInsights
     const delta = variantDeltaBuilder[variant](buildHintsFromInsights(topic, index, department, additionalContext)) + ` ${timestampInstruction}`;
 
+    // Build messages array with multi-message pattern for consistency with scenes
+    const messages: any[] = [
+        { role: 'system', content: systemPrompt }
+    ];
+
+    // If phishing variant + additionalContext exists, add dedicated context message
+    // Both ObviousPhishing and SophisticatedPhishing benefit from user vulnerability intelligence
+    const isPhishingVariant = variant === EmailVariant.SophisticatedPhishing ||
+                              variant === EmailVariant.ObviousPhishing;
+    if (isPhishingVariant && additionalContext) {
+        messages.push({
+            role: 'user',
+            content: `🔴 CRITICAL USER VULNERABILITY - Targeted Attack Context:
+
+${additionalContext}`
+        });
+    }
+
+    // Add main email generation request
+    messages.push({
+        role: 'user',
+        content: delta
+    });
+
     try {
         const res = await generateText({
             model,
-            messages: [
-                { role: 'system', content: systemPrompt },
-                { role: 'user', content: delta },
-            ],
+            messages: messages,
             ...INBOX_GENERATION_PARAMS,
         });
 
@@ -102,13 +123,29 @@ async function generateOneEmail(
         parsed.id = String(index + 1);
         return parsed;
     } catch (err) {
-        // minimal per-variant retry once
+        // minimal per-variant retry once - rebuild messages with retry instruction
+        const retryMessages: any[] = [
+            { role: 'system', content: systemPrompt }
+        ];
+
+        // Apply same phishing variant check for retry
+        if (isPhishingVariant && additionalContext) {
+            retryMessages.push({
+                role: 'user',
+                content: `🔴 CRITICAL USER VULNERABILITY - Targeted Attack Context:
+
+${additionalContext}`
+            });
+        }
+
+        retryMessages.push({
+            role: 'user',
+            content: delta + '\nIf previous output was not valid JSON, fix and resend as a single JSON object.'
+        });
+
         const res2 = await generateText({
             model,
-            messages: [
-                { role: 'system', content: systemPrompt },
-                { role: 'user', content: delta + '\nIf previous output was not valid JSON, fix and resend as a single JSON object.' },
-            ],
+            messages: retryMessages,
             ...INBOX_GENERATION_PARAMS,
         });
         const cleaned2 = cleanResponse(res2.text, `inbox-email-retry-${index + 1}`);
@@ -142,12 +179,14 @@ export async function generateInboxEmailsParallel(args: OrchestratorArgs): Promi
     console.log(`📧 Generating emails for topic="${args.topic}", department="${args.department}"`);
     console.log(`⏰ Using timestamps: ${uniqueTimestamps.join(', ')}`);
     if (args.additionalContext) {
-        console.log(`🎯 Applying user context to SophisticatedPhishing variant only.`);
+        console.log(`🎯 Applying user context to phishing variants (ObviousPhishing + SophisticatedPhishing).`);
     }
 
     const tasks = variantPlan.map((variant, i) => {
-        // Only apply targeted context to SophisticatedPhishing
-        const useTargetedPrompt = variant === EmailVariant.SophisticatedPhishing;
+        // Apply targeted context to both phishing variants (realistic - attackers research targets)
+        // Legit emails don't need vulnerability context (they're normal workplace communication)
+        const useTargetedPrompt = variant === EmailVariant.SophisticatedPhishing ||
+                                  variant === EmailVariant.ObviousPhishing;
         const contextForVariant = useTargetedPrompt ? args.additionalContext : undefined;
 
         return generateOneEmail(i, system, args.model, args.topic, args.department, variant, uniqueTimestamps[i], contextForVariant);

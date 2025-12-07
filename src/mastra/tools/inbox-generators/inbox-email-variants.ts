@@ -45,25 +45,31 @@ export const variantDeltaBuilder: Record<EmailVariant, (d: DiversityHints) => st
     [EmailVariant.ObviousPhishing]: (d) => {
         const departmentContext = d.departmentHint ? `Department scenario: Someone from ${d.departmentHint} who would realistically contact recipient.` : '';
         const domainContext = `SENDER DOMAIN: Use OBVIOUSLY FAKE external domain with red flags. Candidates: ${d.domainHint}. Domains with keywords like "invoice-systems", "verify-account", "confirm-identity", "process-payment" signal phishing. Domain should be EXTERNAL, NOT official company.com.`;
+
+        // Note: additionalContext is now passed as dedicated message (multi-message pattern)
+        // If provided via dedicated message, LLM will use it to construct believable scenario
+        // that matches user's department/triggers, but with obvious red flags (fake domain)
+        const topicContext = d.topicHint ? `Scenario: ${d.topicHint}.` : '';
+
         const impersonationHint = d.topicHint?.includes('executive') || d.topicHint?.includes('CEO') || d.topicHint?.includes('authority')
             ? 'SENDER pretends to BE the executive. Example: From ceo@verify-authority.net or finance@confirm-payment.io, Subject "Urgent Wire Transfer", Content "I need you to process this payment immediately - CEO". Write as if CEO is directly sending email. '
             : '';
-        return `OBVIOUS PHISHING: Believable business request with CLEAR red flags. ${d.topicHint ? `Scenario: ${d.topicHint}.` : ''} ${departmentContext} ${domainContext} ${impersonationHint}Use ${d.greetingHint} + failing ${d.headerHint}. ${!impersonationHint ? 'Sender must match topic (billing@ for invoices).' : ''} Attachment: ${d.attachmentHint} matching scenario. Authoritative tone but obvious domain gives it away.`;
+        return `OBVIOUS PHISHING: Believable business request with CLEAR red flags. ${topicContext} ${departmentContext} ${domainContext} ${impersonationHint}Use ${d.greetingHint} + failing ${d.headerHint}. ${!impersonationHint ? 'Sender must match topic (billing@ for invoices).' : ''} Attachment: ${d.attachmentHint} matching scenario. Authoritative tone but obvious domain gives it away.`;
     },
 
     [EmailVariant.SophisticatedPhishing]: (d) => {
         const departmentContext = d.departmentHint ? `Department context: ${d.departmentHint}. Impersonate colleague/authority from this department who would realistically interact with recipient.` : '';
         const domainContext = `SENDER DOMAIN: Use a REALISTIC-LOOKING but FAKE corporate domain that could pass as a partner/vendor. Candidates: ${d.domainHint}. Must look legitimate and corporate, NOT obviously fake like "invoice-systems". Department matches threat type (Finance→payments, IT→tech, Security→auth, Exec→CEO).`;
-        console.log('d.additionalContext', d.additionalContext);
-        // TARGETED CONTEXT OVERRIDE
-        const targetContext = d.additionalContext
-            ? `CRITICAL TARGET CONTEXT: User Vulnerability: "${d.additionalContext}". OVERRIDE standard topic hints. You MUST construct the scenario around this specific vulnerability (e.g., if 'Spotify', make it a Spotify Premium update; if 'CEO Fraud', make it a direct CEO request).`
-            : d.topicHint ? `Scenario: ${d.topicHint}.` : '';
+
+        // Note: additionalContext is now passed as dedicated message (multi-message pattern)
+        // If provided via dedicated message, LLM will use it to construct targeted scenario
+        // Otherwise, use standard topic hint
+        const topicContext = d.topicHint ? `Scenario: ${d.topicHint}.` : '';
 
         const impersonationHint = d.topicHint?.includes('executive') || d.topicHint?.includes('CEO') || d.topicHint?.includes('colleague') || d.topicHint?.includes('authority')
             ? 'SENDER pretends to BE a colleague/authority. Example: From sarah@acme-solutions.net, Content "Hi, this is Sarah from Marketing. Director is stuck in meeting and urgently needs the Q3 budget file. Can you send it to me ASAP? Keep this between us - time sensitive." Write as if colleague/partner is directly asking. '
             : '';
-        return `SOPHISTICATED PHISHING: Professional, subtle threats. ${targetContext} ${departmentContext} ${domainContext} ${impersonationHint} Mixed ${d.headerHint} + ${d.greetingHint}. CRITICAL: Sender department matches threat type (Finance→payments, IT→tech, Security→auth, Exec→CEO). CRITICAL: Return-Path MUST match sender domain. Attachment: ${d.attachmentHint} matching email. Act as internal colleague/partner - harder to detect.`;
+        return `SOPHISTICATED PHISHING: Professional, subtle threats. ${topicContext} ${departmentContext} ${domainContext} ${impersonationHint} Mixed ${d.headerHint} + ${d.greetingHint}. CRITICAL: Sender department matches threat type (Finance→payments, IT→tech, Security→auth, Exec→CEO). CRITICAL: Return-Path MUST match sender domain. Attachment: ${d.attachmentHint} matching email. Act as internal colleague/partner - harder to detect.`;
     },
 
     [EmailVariant.CasualLegit]: (d) => {
@@ -709,84 +715,6 @@ function getTopicHint(topic: string, index: number): string {
     return genericScenarios[(index * 7) % genericScenarios.length];
 }
 
-// ============================================================================
-// DOMAIN SELECTION FOR ALL EMAIL VARIANTS
-// Maps topic context to appropriate internal department for sender authenticity
-//
-// NOTE: Domain selection now AI-generated via variantDeltaBuilder prompts
-// These functions kept as BACKUP reference - not currently used
-// ============================================================================
-
-/**
- * BACKUP: Converts phishing domain to legitimate domain
- * company-services.com → company.com
- * Used for legitimate email variants (CasualLegit, FormalLegit)
- *
- * Kept for reference - domain selection now handled by AI in prompts
- */
-/*
-function convertToLegitimateDomaın(domain: string): string {
-    return domain.replace('company-services.com', 'company.com')
-                .replace('company-services', 'company')
-                .replace('-services', '');
-}
-*/
-
-/**
- * BACKUP: Legacy domain selection based on topic
- *
- * Kept for reference only - now using AI-generated domains via prompts
- * each variant (ObviousPhishing, SophisticatedPhishing, CasualLegit, FormalLegit)
- * includes domain instruction for AI to generate realistic, contextual domains
- */
-/*
-function getDomainForTopic(topicHint: string | undefined, defaultDomain: string, isLegitimate: boolean = false): string {
-    if (!topicHint) return defaultDomain;
-    const t = topicHint.toLowerCase();
-
-    let domain: string;
-
-    // Financial/Payment attacks → Finance department
-    if (t.includes('payment') || t.includes('invoice') || t.includes('vendor') || t.includes('financial') || t.includes('purchase')) {
-        domain = 'finance@company-services.com';
-    }
-    // Executive/CEO attacks → Executive department
-    else if (t.includes('ceo') || t.includes('executive') || t.includes('c-suite') || t.includes('whaling') || t.includes('bec') || t.includes('business email compromise') || t.includes('authority')) {
-        domain = 'exec@company-services.com';
-    }
-    // Technical/Infrastructure attacks → IT department
-    else if (t.includes('ransomware') || t.includes('malware') || t.includes('backup') || t.includes('recovery') || t.includes('file') || t.includes('virus') || t.includes('patch') ||
-        t.includes('cloud') || t.includes('saas') || t.includes('api') || t.includes('remote') || t.includes('vpn') || t.includes('wfh') || t.includes('work from home') ||
-        t.includes('device') || t.includes('mobile') || t.includes('iot') || t.includes('network')) {
-        domain = 'IT@company-services.com';
-    }
-    // Security/Authentication attacks → Security department
-    else if (t.includes('password') || t.includes('mfa') || t.includes('authentication') || t.includes('2fa') || t.includes('credential') ||
-        t.includes('phishing') || t.includes('email') || t.includes('spoofing') || t.includes('vishing') || t.includes('smishing') ||
-        t.includes('social engineering') || t.includes('impersonation') || t.includes('pretext') || t.includes('account takeover')) {
-        domain = 'security@company-services.com';
-    }
-    // Deepfake/Video content → Executive/Communications department
-    else if (t.includes('deepfake') || t.includes('video') || t.includes('synthetic media') || t.includes('recording')) {
-        domain = 'exec@company-services.com';
-    }
-    // Compliance/Data → Compliance department
-    else if (t.includes('compliance') || t.includes('data') || t.includes('privacy') || t.includes('gdpr')) {
-        domain = 'compliance@company-services.com';
-    }
-    // HR/Policy attacks → HR department
-    else if (t.includes('hr') || t.includes('human resources') || t.includes('employee') || t.includes('policy')) {
-        domain = 'hr@company-services.com';
-    }
-    // Default fallback
-    else {
-        domain = defaultDomain;
-    }
-
-    // Convert to legitimate domain if needed (for CasualLegit, FormalLegit variants)
-    return isLegitimate ? convertToLegitimateDomaın(domain) : domain;
-}
-*/
 export function buildHintsFromInsights(topic: string, index: number, department?: string, additionalContext?: string, insights?: {
     attachmentTypes?: string[];
     mustInclude?: string[];
