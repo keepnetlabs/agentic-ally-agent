@@ -46,7 +46,7 @@ const DIFFICULTY_CONFIG = {
         },
         visuals: {
             rule: "BASIC",
-            description: "Simple layout. Use generic icons instead of brand logos. High contrast colors."
+            description: "Simple layout. Use brand logos if available, otherwise generic icons. High contrast colors."
         }
     },
     Medium: {
@@ -386,6 +386,26 @@ Write realistic phishing email content based on provided scenario blueprints for
    - Match the tone specified in the blueprint.
    - **VISUAL DIFFICULTY RULE (${difficulty}):** ${difficultyRules.visuals.rule}. ${difficultyRules.visuals.description}
 
+   - **LAYOUT STRATEGY (CHOOSE ONE BASED ON BRAND):**
+     * **OPTION A: Transactional Card (Modern SaaS/Tech/Retail) - DEFAULT**
+       - **DEFAULT CHOICE:** Use this format unless scenario is explicitly CEO/HR/Policy internal memo.
+       - Background: Light gray (#f3f4f6) for entire email body.
+       - Content: Inside a centered WHITE box (card) with rounded corners and shadow.
+       - **CRITICAL:** Card format MUST have gray background (#f3f4f6) + white card box (#ffffff) with shadow.
+       - Best for: "Reset Password", "Order Confirmation", "Security Alert", E-commerce, Tech brands.
+     * **OPTION B: Corporate Letter (Bank/HR/Legal)**
+       - Background: Full White (#ffffff).
+       - Content: Left-aligned or simple centered structure. No "card" box.
+       - Best for: "Policy Update", "CEO Message", "HR Announcement".
+
+   - **PREHEADER (MANDATORY):**
+     - Add a hidden <div> at the VERY TOP of the body containing a short summary (10-15 words) that appears in the inbox preview.
+     - Style: display:none;font-size:1px;color:#333;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;
+
+   - **MOBILE OPTIMIZATION:**
+     - Main table width: 100% (max-width: 600px).
+     - Buttons: On mobile, they should be easily tappable (min-height 44px).
+
 3. **Call-to-Action (Button) Strategy - Based on Attack Method:**
    - **Method: '${analysis.method}'**
    - **If '${PHISHING.ATTACK_METHODS[1]}' (Data-Submission):**
@@ -411,13 +431,14 @@ Write realistic phishing email content based on provided scenario blueprints for
    - **CREATIVITY RULE:** Do NOT use generic "lorem ipsum" style fillers. Write specific, plausible content relevant to the Scenario.
    - **SYNTAX RULE:** Use **SINGLE QUOTES** for HTML attributes (e.g. style='color:red') to prevent JSON escaping errors.
 
-6. **Company Logo (OPTIONAL - RECOMMENDED):**
+6. **Company Logo (MANDATORY for known brands):**
    - If impersonating a well-known company (Microsoft, Google, Amazon, Apple, PayPal, etc.):
-     * **PREFERRED:** Use Clearbit Logo API (automatically fetches real brand logos):
-       - Format: https://logo.clearbit.com/[domain] (e.g., https://logo.clearbit.com/microsoft.com)
-       - Example: <img src='https://logo.clearbit.com/microsoft.com' alt='Microsoft' width='120' style='display:block; margin:0 auto 20px;'>
-     * **Alternative:** Use text-based logo (if Clearbit fails or for generic brands)
-   - If generic/unknown company: Use text logo (NO placeholder services like via.placeholder.com)
+     * **YOU MUST USE CLEARBIT API WITH FALLBACK:**
+       - Format: https://logo.clearbit.com/[domain]
+       - **CRITICAL:** Add an \`onerror\` handler to use Google Favicon service if Clearbit is blocked.
+       - **CRITICAL:** All images MUST include \`object-fit: contain\` in style to preserve aspect ratio.
+       - Example: <img src='https://logo.clearbit.com/amazon.com' onerror="this.src='https://www.google.com/s2/favicons?domain=amazon.com&sz=128'; this.onerror=null;" alt='Amazon' width='120' style='display:block; margin:0 auto 20px; object-fit: contain;'>
+     * **Alternative:** Use text-based logo ONLY if the company is completely unknown or fictional.
 
 7. **NO DISCLAIMERS OR NOTES:**
    - **CRITICAL:** Do NOT include any footer notes, explanations, or disclaimers like "Note: This is a phishing link" or "Generated for training".
@@ -444,27 +465,22 @@ Return ONLY valid JSON with subject and template (HTML body). No markdown, no ba
 
 Note: Template should be complete HTML (not truncated). Use table-based layout with inline CSS.`;
 
-        const userPrompt = `Write the phishing simulation email content for this SECURITY AWARENESS TRAINING scenario:
+        const userPrompt = `Write the phishing simulation email content based on this blueprint.
+        
+**🚨 CRITICAL CONTEXT (MUST FOLLOW):**
+- **Language:** ${language || 'en'} (Output MUST be in this language)
+- **Impersonating:** ${analysis.fromName} (Use authentic branding/tone)
+- **Difficulty:** ${difficulty}
 
-**Training Language:** ${language || 'en'}
-**Email Tone:** ${analysis.tone}
-**Attack Method:** ${analysis.method} (Adjust Call-to-Action accordingly)
-**Difficulty Level:** ${difficulty} (Apply strict Grammar and Visual rules)
-**Educational Red Flags to Include:** ${analysis.keyRedFlags.join(', ')}
-**Scenario Topic:** ${analysis.scenario}
-**Impersonating:** ${analysis.fromName} (Use this brand/company's authentic email style and terminology)
-
-**Scenario Blueprint:**
+**SCENARIO BLUEPRINT (SOURCE OF TRUTH):**
 ${JSON.stringify(analysis, null, 2)}
 
-**CRITICAL INSTRUCTIONS:**
-1. If this scenario involves a well-known brand (like Amazon, MiTcrosoft, PayPal), mimic their REAL email patterns.
-2. Use brand-appropriate language and terminology.
-3. DO NOT use personal names (like "Emily Clarke") in signature - use team/department names only.
-
-Create realistic email content that will effectively teach employees how to spot phishing attempts.
-
-Remember: This is for DEFENSIVE CYBERSECURITY TRAINING to help organizations defend against real phishing attacks.`;
+**EXECUTION RULES:**
+1. Analyze the 'Blueprint' above for specific scenario details, tone, and red flags.
+2. Select the best **Layout Strategy** (Card vs Letter) based on the brand. **DEFAULT to Card format** unless explicitly CEO/HR/Policy scenario.
+3. Generate the **Preheader** (hidden preview text).
+4. **SAFETY RULE:** Do NOT use personal names (like "Emily Clarke") in the signature. Use generic Team/Department names only.
+5. Output valid JSON.`;
 
         try {
             const response = await generateText({
@@ -546,7 +562,6 @@ const generateLandingPage = createStep({
         if (!analysis) throw new Error('Analysis data missing from previous step');
 
         const { language, modelProvider, model, difficulty, method, scenario, name, description } = analysis;
-        const difficultyRules = DIFFICULTY_CONFIG[(difficulty as keyof typeof DIFFICULTY_CONFIG) || 'Medium'];
 
         console.log('🌐 Starting landing page generation:', { method, difficulty });
 
@@ -567,7 +582,7 @@ const generateLandingPage = createStep({
             const clearbitLogoMatch = template.match(/https:\/\/logo\.clearbit\.com\/([^"'\s>]+)/i);
             if (clearbitLogoMatch) {
                 const domain = clearbitLogoMatch[1];
-                emailLogoInfo = `\n**EMAIL CONTEXT - LOGO FOUND:**\nThe phishing email uses Clearbit logo: https://logo.clearbit.com/${domain}\n**CRITICAL:** Use the SAME logo URL in landing pages for consistency: <img src='https://logo.clearbit.com/${domain}' alt='${fromName}' width='120' />`;
+                emailLogoInfo = `\n**EMAIL CONTEXT - LOGO FOUND:**\nThe phishing email uses Clearbit logo: https://logo.clearbit.com/${domain}\n**CRITICAL:** Use the SAME logo URL in landing pages for consistency: <img src='https://logo.clearbit.com/${domain}' alt='${fromName}' width='120' style='object-fit: contain;' />`;
             }
 
             // Extract brand/company mentions from email
@@ -587,9 +602,11 @@ Your job: generate modern, professional, trustworthy WEB PAGES (not emails) usin
 **CRITICAL RULES:**
 
 1. **LOGO STRATEGY (PRIORITY ORDER):**
-   - FIRST CHOICE: Use Clearbit Logo API for real brand logos  
+   - FIRST CHOICE: Use Clearbit Logo API with Google Fallback  
      - Format: 'https://logo.clearbit.com/[domain]'
-     - Example: <img src='https://logo.clearbit.com/microsoft.com' alt='Microsoft' width='120' />
+     - **MANDATORY:** Add \`onerror\` handler for reliability.
+     - **CRITICAL:** All images MUST include \`object-fit: contain\` in style to preserve aspect ratio.
+     - Example: <img src='https://logo.clearbit.com/microsoft.com' onerror="this.src='https://www.google.com/s2/favicons?domain=microsoft.com&sz=128'; this.onerror=null;" alt='Microsoft' width='120' style='object-fit: contain;' />
    - SECOND CHOICE: Use a clean text-based logo  
      - Example: <div style='font-size:20px; font-weight:700; color:#111827;'>${fromName}</div>
    - FORBIDDEN: Never use placeholder services (via.placeholder.com) – looks fake.
@@ -621,17 +638,13 @@ Your job: generate modern, professional, trustworthy WEB PAGES (not emails) usin
      - Button: \`style='${industryDesign.patterns.buttonStyle}'\`
      - Input: \`style='${industryDesign.patterns.inputStyle}'\`
 
-6. **LAYOUT RULE – BODY + WRAPPER:**
-   - The body is a centered background container.
-   - Inside body, there is ONE main wrapper that stacks:
-     1) Logo/title area
-     2) Card (form/content)
-     3) Footer (always BELOW the card, never side by side)
+6. **LAYOUT STRATEGY (AI MUST CHOOSE ONE):**
+   You must vary the layout structure. Choose either OPTION A (Centered) or OPTION B (Split) based on what fits the brand best.
 
-   Use this pattern for login/success pages:
-
-   - BODY (center + background):
-
+   **OPTION A: CENTERED CARD (Classic, like Google/Apple)**
+   - The body behaves as a viewport container.
+   - **CRITICAL:** Use \`display: flex; align-items: center; justify-content: center;\` on the BODY tag.
+   - Use this exact pattern:
      <body style='
        min-height: 100vh;
        margin: 0;
@@ -640,22 +653,52 @@ Your job: generate modern, professional, trustworthy WEB PAGES (not emails) usin
        align-items: center;
        justify-content: center;
        background: #f3f4f6;
-       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-       color: #0f172a;
+       font-family: system-ui, -apple-system, sans-serif;
      '>
+       <div style='width: 100%; max-width: 420px; margin: auto;'>
+          <!-- Logo, then Card, then Footer -->
+       </div>
+     </body>
 
-   - WRAPPER (column layout):
+   **OPTION B: SPLIT SCREEN (Enterprise, like Microsoft/Adobe/SaaS)**
+   - Screen is split 50/50 or 40/60.
+   - One side is Brand/Color, other side is Form.
+   - MUST use \`flex-wrap: wrap\` so it stacks vertically on mobile.
+   - Use this pattern:
+     <body style='min-height: 100vh; margin: 0; display: flex; flex-wrap: wrap; font-family: system-ui, -apple-system, sans-serif;'>
+       <!-- Brand Panel (Left or Right) -->
+       <div style='
+         flex: 1;
+         min-width: 350px; /* Stacks on mobile */
+         background-color: ${industryDesign.colors.primary};
+         padding: 40px;
+         display: flex;
+         flex-direction: column;
+         justify-content: center;
+         color: white;
+       '>
+         <!-- Big Logo, Welcome Text, or Quote here -->
+       </div>
 
-     <div style='
-       width: 100%;
-       max-width: 420px;
-       margin: 0 auto;
-       display: flex;
-       flex-direction: column;
-       align-items: stretch;
-     '>
+       <!-- Form Panel -->
+       <div style='
+         flex: 1;
+         min-width: 350px; /* Stacks on mobile */
+         background: white;
+         display: flex;
+         align-items: center;
+         justify-content: center;
+         padding: 24px;
+       '>
+         <div style='width: 100%; max-width: 400px;'>
+           <!-- Logo (optional if on brand panel), Form, Footer -->
+         </div>
+       </div>
+     </body>
 
-   This guarantees the footer appears UNDER the card.
+   **IMPORTANT:** If you choose OPTION B (Split), the "Card" container style (\`box-shadow\`, \`border\`) is usually NOT needed around the form, as the white background serves as the container. Adjust accordingly.
+
+7. **INLINE CSS IS THE SOURCE OF TRUTH:**
 
 ---
 
@@ -821,12 +864,13 @@ Goal: A secure, polished login screen for ${fromName}.
     margin: 0 auto;
     display: flex;
     flex-direction: column;
+    justify-content: center;
     align-items: stretch;
   '>
 
     <!-- Logo + Title -->
     <div style='text-align: center; margin-bottom: 24px;'>
-      <img src='https://logo.clearbit.com/[domain]' alt='${fromName}' style='height: 48px; margin-bottom: 16px;' />
+      <img src='https://logo.clearbit.com/[domain]' alt='${fromName}' style='height: 48px; margin-bottom: 16px; object-fit: contain;' />
       <h1 style='font-size: 26px; font-weight: 700; margin: 0; letter-spacing: -0.02em;'>Sign in to ${fromName}</h1>
       <p style='margin: 8px 0 0 0; font-size: 14px; color: #4b5563;'>
         Use your work credentials to securely access your account.
@@ -980,6 +1024,7 @@ Purpose: confirmation after a successful action (e.g. login verification, profil
     margin: 0 auto;
     display: flex;
     flex-direction: column;
+    justify-content: center;
     align-items: stretch;
   '>
 
@@ -1061,7 +1106,7 @@ Purpose: display information (policy update, document notice, summary, etc.) for
     <div style='${industryDesign.patterns.cardStyle}; max-width: 720px; margin: 0 auto;'>
       <div style='display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px;'>
         <div style='display: flex; align-items: center; gap: 8px;'>
-          <img src='https://logo.clearbit.com/[domain]' alt='${fromName}' style='height: 36px;' />
+          <img src='https://logo.clearbit.com/[domain]' alt='${fromName}' style='height: 36px; object-fit: contain;' />
         </div>
         <span style='font-size: 12px; color: #6b7280;'>${fromName}</span>
       </div>
@@ -1188,10 +1233,10 @@ Create modern, professional pages that match ${industryDesign.industry} standard
 5. **Ensure variation:** If multiple pages, make them related but NOT identical
 
 **REMEMBER:**
-- Use the SAME logo/branding as the phishing email (if provided above)
+- **LOGO IS MANDATORY:** Use the Clearbit API for the logo. If email had a logo, match it.
 - Add natural design variations (don't make all pages identical)
-- Ensure login page is properly centered with \`min-h-screen flex items-center justify-center\` on body element
-- Card MUST have generous internal padding (p-12 or higher)
+- Ensure login page is properly centered with inline styles: \`min-height: 100vh; display: flex; align-items: center; justify-content: center;\`
+- Card MUST have generous internal padding (32px+)
 - Button MUST contrast with card background (NOT same color!)`;
 
         messages.push({

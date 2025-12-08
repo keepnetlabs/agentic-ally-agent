@@ -6,7 +6,7 @@ import { ERROR_MESSAGES } from '../constants';
 
 const WORKER_URL = 'https://crud-training-worker.keepnet-labs-ltd-business-profile4086.workers.dev/submit';
 const API_URL = 'https://test-api.devkeepnet.com';
-const BASE_URL = 'https://test.devkeepnet.com';
+const BASE_URL = 'https://microlearning-api.keepnet-labs-ltd-business-profile4086.workers.dev/microlearning/';
 
 export const uploadTrainingTool = createTool({
     id: 'upload-training',
@@ -81,7 +81,7 @@ export const uploadTrainingTool = createTool({
             const payload = {
                 accessToken: token, // Sensitive!
                 url: API_URL,
-                baseUrl: BASE_URL,
+                baseUrl: BASE_URL + microlearningId,
                 trainingData: trainingData
             };
 
