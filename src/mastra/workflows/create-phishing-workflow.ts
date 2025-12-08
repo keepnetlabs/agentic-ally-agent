@@ -156,7 +156,6 @@ const OutputSchema = z.object({
         description: z.string(),
         method: z.enum(PHISHING.ATTACK_METHODS),
         difficulty: z.enum(PHISHING.DIFFICULTY_LEVELS),
-        simulationLink: z.string(),
         pages: z.array(z.object({
             type: z.enum(LANDING_PAGE.PAGE_TYPES),
             template: z.string()
@@ -207,6 +206,18 @@ Design highly realistic phishing simulation scenarios for cybersecurity training
    - Example: If Topic is "General", pick a universal theme like "Password Expiry" or "Storage Full".
    - **Do NOT fail** if profile is missing. Create the most effective scenario for the given Topic/Difficulty.
 
+3a. **BRAND/COMPANY DETECTION (CRITICAL):**
+   - **IF Topic mentions a SPECIFIC BRAND/COMPANY** (e.g., "Shopping platform", "Amazon", "Microsoft", "PayPal"):
+     * Set "fromName" to that BRAND NAME (e.g., "Amazon")
+     * Create scenarios matching that brand's context (e.g., E-commerce → package delivery, order confirmation)
+     * Use brand-appropriate email address (e.g., "noreply@shopping-notifications.com" for Medium difficulty)
+   - **IF Topic is GENERIC** (e.g., "Create phishing email"):
+     * Invent a plausible company/department (e.g., "IT Support", "HR Department", "Finance Team")
+   - **Examples:**
+     * Topic: "E-commerce package" → fromName: "Shopping Platform", scenario: "Package Delivery Notification"
+     * Topic: "Amazon order" → fromName: "Amazon", scenario: "Order Confirmation Alert"
+     * Topic: "General phishing" → fromName: "IT Support", scenario: "Password Reset Request"
+
 4. **Difficulty Adjustment (STRICT RULES for '${difficulty}'):**
    - **Sender Logic:** ${difficultyRules.sender.rule}. (Examples: ${difficultyRules.sender.examples.join(', ')} - **DO NOT COPY these exact examples. INVENT NEW ONES matching this pattern**).
    - **Urgency/Tone:** ${difficultyRules.urgency.rule}. ${difficultyRules.urgency.description}.
@@ -219,7 +230,7 @@ Design highly realistic phishing simulation scenarios for cybersecurity training
 **OUTPUT FORMAT:**
 Return ONLY valid JSON matching the schema. No markdown, no backticks, no explanation, just JSON.
 
-**EXAMPLE OUTPUT:**
+**EXAMPLE OUTPUT (Scenario Analysis - for EMAIL generation):**
 {
   "scenario": "CEO Urgent Wire Transfer",
   "name": "CEO Fraud - Urgent Transfer",
@@ -228,11 +239,27 @@ Return ONLY valid JSON matching the schema. No markdown, no backticks, no explan
   "method": "Data-Submission",
   "psychologicalTriggers": ["Authority", "Urgency", "Fear"],
   "tone": "Urgent",
-  "fromName": "John Smith",
-  "fromAddress": "j.smith@companay.com",
+  "fromName": "Finance Department",
+  "fromAddress": "finance@companay.com",
   "keyRedFlags": ["Misspelled domain (companay.com)", "Unusual urgency", "Request to bypass procedures", "External email marked as internal"],
   "targetAudienceAnalysis": "Finance team members are targeted due to their access to wire transfer systems and tendency to comply with executive requests",
   "subjectLineStrategy": "Creates time pressure with 'URGENT' prefix and implies consequences for delay"
+}
+
+**EXAMPLE OUTPUT (Brand-Specific Scenario - E-commerce Brand):**
+{
+  "scenario": "E-commerce Package Delivery Issue",
+  "name": "Package Delivery - Urgent Action",
+  "description": "Simulates a fake package delivery notification from an e-commerce platform requiring address verification.",
+  "category": "Credential Harvesting",
+  "method": "Data-Submission",
+  "psychologicalTriggers": ["Urgency", "Curiosity", "Fear"],
+  "tone": "Helpful but urgent",
+  "fromName": "Shopping Platform",
+  "fromAddress": "noreply@shopping-notifications.com",
+  "keyRedFlags": ["Suspicious domain (shopping-notifications.com instead of official domain)", "Urgency to verify address", "Request for login credentials"],
+  "targetAudienceAnalysis": "Online shoppers are likely to trust package delivery notifications from platforms they use",
+  "subjectLineStrategy": "Creates urgency with 'Your order is on hold' message"
 }`;
 
         const userPrompt = `Design a phishing simulation scenario for SECURITY AWARENESS TRAINING based on this context:
@@ -335,6 +362,14 @@ This is an AUTHORIZED, LEGAL, and EDUCATIONAL exercise. You are creating phishin
 **YOUR ROLE:**
 Write realistic phishing email content based on provided scenario blueprints for cybersecurity training.
 
+**BRAND AWARENESS:**
+- If the scenario mentions a specific brand/company (e.g., "Hepsiburada", "Amazon", "Microsoft"), USE their authentic style:
+  - Match their typical email tone and language
+  - Use appropriate terminology for that brand (e.g., "order", "package", "delivery")
+  - Reference their actual services/products
+  - Mimic their real notification patterns
+- Example: For e-commerce brands → "Your order is being prepared", package tracking, order confirmation style
+
 **CONTENT REQUIREMENTS:**
 
 1. **Subject Line:**
@@ -376,13 +411,13 @@ Write realistic phishing email content based on provided scenario blueprints for
    - **CREATIVITY RULE:** Do NOT use generic "lorem ipsum" style fillers. Write specific, plausible content relevant to the Scenario.
    - **SYNTAX RULE:** Use **SINGLE QUOTES** for HTML attributes (e.g. style='color:red') to prevent JSON escaping errors.
 
-6. **Company Logo (OPTIONAL):**
+6. **Company Logo (OPTIONAL - RECOMMENDED):**
    - If impersonating a well-known company (Microsoft, Google, Amazon, Apple, PayPal, etc.):
-     * Add company logo using public CDN URL (Wikimedia Commons, official press kits)
-     * Place at top of email with centered alignment
-     * Use reasonable size (100-150px width)
-     * Example: <img src='https://upload.wikimedia.org/wikipedia/commons/...' alt='Microsoft' width='120' style='display:block; margin:0 auto 20px;'>
-   - If generic/unknown company: Skip logo (no placeholder, no fake logo)
+     * **PREFERRED:** Use Clearbit Logo API (automatically fetches real brand logos):
+       - Format: https://logo.clearbit.com/[domain] (e.g., https://logo.clearbit.com/microsoft.com)
+       - Example: <img src='https://logo.clearbit.com/microsoft.com' alt='Microsoft' width='120' style='display:block; margin:0 auto 20px;'>
+     * **Alternative:** Use text-based logo (if Clearbit fails or for generic brands)
+   - If generic/unknown company: Use text logo (NO placeholder services like via.placeholder.com)
 
 7. **NO DISCLAIMERS OR NOTES:**
    - **CRITICAL:** Do NOT include any footer notes, explanations, or disclaimers like "Note: This is a phishing link" or "Generated for training".
@@ -390,14 +425,24 @@ Write realistic phishing email content based on provided scenario blueprints for
    - Any meta-commentary destroys the simulation.
    - The simulation platform adds these disclaimers automatically.
 
+8. **EMAIL SIGNATURE RULES:**
+   - **FORBIDDEN:** Do NOT use personal names in signature (like "Emily Clarke", "John Smith", "Sarah Johnson").
+   - **REQUIRED:** Use ONLY department/team/system names:
+     ✅ Correct: "Security Notifications Team", "IT Support Team", "Customer Service", "Microsoft Account Team", "Automated System"
+     ❌ Wrong: "Emily Clarke", "John from IT", "Sarah - Support"
+   - Signature format: Team Name + Email Address
+   - Example: "Best regards,<br>Security Notifications Team<br>security@company.com"
+
 **OUTPUT FORMAT:**
 Return ONLY valid JSON with subject and template (HTML body). No markdown, no backticks, no explanation, just JSON.
 
-**EXAMPLE OUTPUT (with Microsoft impersonation):**
+**EXAMPLE OUTPUT:**
 {
   "subject": "Microsoft Security Alert - Verify Your Account",
-  "template": "<table width='100%' cellpadding='0' cellspacing='0' border='0' style='font-family: Arial, sans-serif; background-color:#f4f4f4;'><tr><td align='center' style='padding:20px;'><table width='600' cellpadding='0' cellspacing='0' border='0' style='background-color:#ffffff; border:1px solid #dddddd;'><tr><td style='padding:20px;'><img src='https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg' alt='Microsoft' width='120' style='display:block; margin:0 auto 20px;'><p style='margin:0 0 15px 0;'>Hi {FIRSTNAME},</p><p style='margin:0 0 15px 0;'>We detected unusual activity on your Microsoft account. For your security, please verify your account within 24 hours to prevent suspension.</p><p style='margin:0 0 15px 0; text-align:center;'><a href='{PHISHINGURL}' style='background-color:#0078d4; color:#ffffff; padding:12px 20px; text-decoration:none; font-weight:bold; border-radius:4px; display:inline-block;'>VERIFY ACCOUNT</a></p><p style='margin:0 0 15px 0; color:#999999; font-size:12px;'>This is an automated message from Microsoft Security.</p><p style='margin:0;'>Best regards,<br>Microsoft Account Team<br>security@microsoft.com</p></td></tr></table></td></tr></table>"
-}`;
+  "template": "[Full HTML email with table layout, Clearbit logo, personalized greeting with {FIRSTNAME}, urgent message, call-to-action button with {PHISHINGURL}, and signature with department name]"
+}
+
+Note: Template should be complete HTML (not truncated). Use table-based layout with inline CSS.`;
 
         const userPrompt = `Write the phishing simulation email content for this SECURITY AWARENESS TRAINING scenario:
 
@@ -406,9 +451,16 @@ Return ONLY valid JSON with subject and template (HTML body). No markdown, no ba
 **Attack Method:** ${analysis.method} (Adjust Call-to-Action accordingly)
 **Difficulty Level:** ${difficulty} (Apply strict Grammar and Visual rules)
 **Educational Red Flags to Include:** ${analysis.keyRedFlags.join(', ')}
+**Scenario Topic:** ${analysis.scenario}
+**Impersonating:** ${analysis.fromName} (Use this brand/company's authentic email style and terminology)
 
 **Scenario Blueprint:**
 ${JSON.stringify(analysis, null, 2)}
+
+**CRITICAL INSTRUCTIONS:**
+1. If this scenario involves a well-known brand (like Amazon, MiTcrosoft, PayPal), mimic their REAL email patterns.
+2. Use brand-appropriate language and terminology.
+3. DO NOT use personal names (like "Emily Clarke") in signature - use team/department names only.
 
 Create realistic email content that will effectively teach employees how to spot phishing attempts.
 
@@ -507,178 +559,606 @@ const generateLandingPage = createStep({
         // Determine required pages based on method
         const requiredPages = (LANDING_PAGE.FLOWS[method as keyof typeof LANDING_PAGE.FLOWS] || LANDING_PAGE.FLOWS['Click-Only']) as readonly string[];
 
-        const systemPrompt = `You are a web developer creating realistic landing pages for ${fromName} (${industryDesign.industry} industry).
+        // Extract logo/brand info from email template if available
+        let emailLogoInfo = '';
+        let emailBrandContext = '';
+        if (template) {
+            // Extract Clearbit logo URL from email template
+            const clearbitLogoMatch = template.match(/https:\/\/logo\.clearbit\.com\/([^"'\s>]+)/i);
+            if (clearbitLogoMatch) {
+                const domain = clearbitLogoMatch[1];
+                emailLogoInfo = `\n**EMAIL CONTEXT - LOGO FOUND:**\nThe phishing email uses Clearbit logo: https://logo.clearbit.com/${domain}\n**CRITICAL:** Use the SAME logo URL in landing pages for consistency: <img src='https://logo.clearbit.com/${domain}' alt='${fromName}' width='120' />`;
+            }
+
+            // Extract brand/company mentions from email
+            const brandMatches = template.match(/(Microsoft|Google|Amazon|Apple|PayPal|Netflix|Spotify|Adobe|Salesforce|Stripe|Shopify|Meta|Facebook|Twitter|LinkedIn|Instagram|TikTok|YouTube|Hepsiburada|Trendyol|GittiGidiyor|N11|Amazon\.tr)/gi);
+            if (brandMatches && brandMatches.length > 0) {
+                const uniqueBrands = [...new Set(brandMatches.map(b => b.toLowerCase()))];
+                emailBrandContext = `\n**EMAIL CONTEXT - BRAND MENTIONED:**\nThe email references: ${uniqueBrands.join(', ')}\n**CRITICAL:** Match the landing page design style to this brand's authentic look and feel.`;
+            }
+        }
+
+        const systemPrompt = `You are a web developer creating realistic landing pages for ${fromName} (${industryDesign.industry} industry).${emailLogoInfo}${emailBrandContext}
+
+Your job: generate modern, professional, trustworthy WEB PAGES (not emails) using ONLY pure HTML + inline CSS. No CSS frameworks.
+
+---
 
 **CRITICAL RULES:**
-1. **NO BROKEN IMAGES:** Use ONLY working logo URLs or create text-based logos
-   - Valid options: https://via.placeholder.com/150x50?text=LOGO or simple text/SVG
-   - If using image, test URL is valid
-   - Better to use text logo than broken image
-2. **SINGLE QUOTES for all HTML attributes** (required for JSON)
-3. **Full HTML structure:** <!DOCTYPE html>, <head>, <body>
-4. **Include Tailwind CDN:** <script src='https://cdn.tailwindcss.com'></script>
+
+1. **LOGO STRATEGY (PRIORITY ORDER):**
+   - FIRST CHOICE: Use Clearbit Logo API for real brand logos  
+     - Format: 'https://logo.clearbit.com/[domain]'
+     - Example: <img src='https://logo.clearbit.com/microsoft.com' alt='Microsoft' width='120' />
+   - SECOND CHOICE: Use a clean text-based logo  
+     - Example: <div style='font-size:20px; font-weight:700; color:#111827;'>${fromName}</div>
+   - FORBIDDEN: Never use placeholder services (via.placeholder.com) – looks fake.
+
+2. **SINGLE QUOTES for ALL HTML attributes** (required for JSON safety)
+   - Good: <div style='margin: 0 auto; padding: 32px;'>
+   - Bad:  <div style="margin: 0 auto;">
+   - JSON keys/values can use normal double quotes. ONLY HTML attributes must use SINGLE quotes.
+
+3. **Full HTML document is MANDATORY for every page:**
+   - \`<!DOCTYPE html>\`
+   - \`<html>\`
+   - \`<head>\` with:
+     - <meta charset='UTF-8' />
+     - <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+     - <title>...</title>
+   - \`<body>\` ... \`</body>\`
+   - \`</html>\`
+
+4. **NO CSS / JS FRAMEWORKS:**
+   - Do NOT include Tailwind, Bootstrap, or any other library.
+   - Do NOT include external CSS or JS files.
+   - Styling must be done with inline \`style='...'\` attributes.
+
+5. **INLINE CSS IS THE SOURCE OF TRUTH:**
+   - You MAY use the design hints from \`industryDesign\`, but the final visual result must come from inline styles.
+   - For the main card, primary button and inputs, use the provided design patterns:
+     - Card: \`style='${industryDesign.patterns.cardStyle}'\`
+     - Button: \`style='${industryDesign.patterns.buttonStyle}'\`
+     - Input: \`style='${industryDesign.patterns.inputStyle}'\`
+
+6. **LAYOUT RULE – BODY + WRAPPER:**
+   - The body is a centered background container.
+   - Inside body, there is ONE main wrapper that stacks:
+     1) Logo/title area
+     2) Card (form/content)
+     3) Footer (always BELOW the card, never side by side)
+
+   Use this pattern for login/success pages:
+
+   - BODY (center + background):
+
+     <body style='
+       min-height: 100vh;
+       margin: 0;
+       padding: 24px;
+       display: flex;
+       align-items: center;
+       justify-content: center;
+       background: #f3f4f6;
+       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+       color: #0f172a;
+     '>
+
+   - WRAPPER (column layout):
+
+     <div style='
+       width: 100%;
+       max-width: 420px;
+       margin: 0 auto;
+       display: flex;
+       flex-direction: column;
+       align-items: stretch;
+     '>
+
+   This guarantees the footer appears UNDER the card.
+
+---
 
 **DESIGN STYLE:**
-Create SIMPLE, CLEAN web pages - like real company login pages from 2020-2024.
+Create MODERN, PROFESSIONAL landing pages that look POLISHED, TRUSTWORTHY, and LEGITIMATE – similar in quality to Microsoft / Google / Apple / Stripe auth / account pages (2024–2025 aesthetic).
 
-**❌ FORBIDDEN PATTERNS (DO NOT USE):**
-- ❌ \`min-h-screen flex items-center justify-center\` (centered card layout)
-- ❌ \`shadow-2xl\` or \`rounded-3xl\` (overly fancy styling)
-- ❌ \`bg-gradient-to-br from-blue-500 via-purple-500\` (colorful gradient backgrounds)
-- ❌ \`backdrop-blur\` (glassmorphism effects)
-- ❌ Floating centered cards on gradient backgrounds
+---
 
-**✅ CORRECT APPROACH:**
-- ✅ Normal document flow (top to bottom)
-- ✅ White or light gray \`bg-gray-50\` background
-- ✅ Content container: \`<div class='max-w-md mx-auto py-12 px-4'>\`
-- ✅ Simple shadows: \`shadow-md\` or \`shadow-lg\` max
-- ✅ Normal borders: \`rounded-lg\` or \`rounded-xl\` max
-
-**BRAND COLORS (${industryDesign.industry}):**
+**BRAND COLORS (from detected industry: ${industryDesign.industry}):**
 - Primary: ${industryDesign.colors.primary}
 - Secondary: ${industryDesign.colors.secondary}
 - Accent: ${industryDesign.colors.accent}
 
-**LAYOUT:**
-- Normal web page (NOT centered card on gradient)
-- Centered content container (max-w-md mx-auto for forms)
-- Clean white or light gray background
-- Logo/brand at top, content in middle, footer at bottom
-- Professional spacing (py-8, px-4)
+Use these mainly for:
+- Primary buttons
+- Highlights
+- Icons / small accents
 
-**LOGO OPTIONS (choose best):**
-1. Text-based: <div class='text-2xl font-bold text-gray-900'>${fromName}</div>
-2. Placeholder: <img src='https://via.placeholder.com/150x50/4285f4/ffffff?text=${fromName.replace(/\s/g, '+')}' alt='${fromName}' />
-3. SVG icon with text
+Always ensure **high contrast** (e.g. primary button background vs text).
 
-**DIFFICULTY - ${difficulty}:**
-${difficulty === 'Easy' ? '- Basic styling, generic look' : ''}
-${difficulty === 'Medium' ? '- Professional but not perfect' : ''}
-${difficulty === 'Hard' ? '- Looks exactly like real ${fromName} page' : ''}
+---
 
-Create each page according to requirements below.
+**🎨 VISUAL VARIATION RULES (DO NOT CREATE CLONES):**
 
-**CRITICAL JSON SYNTAX RULE:**
-- Inside the \`template\` string, use **SINGLE QUOTES** for all HTML attributes to avoid JSON escaping errors.
+Pages for the same brand must feel related (same color palette, logo, general mood) but **must not be pixel-identical copies**.
 
-**PAGES TO GENERATE:**
+For each new page/template, change at least **3** of the following visual aspects in a natural way:
+
+1. Card max-width (e.g. 380–460px) via \`style='max-width: 380px;'\` vs \`420px\`.
+2. Card border-radius (e.g. 14px, 18px, 22px).
+3. Card shadow strength (softer or stronger \`box-shadow\`).
+4. Logo size or alignment (center vs left).
+5. Button shape (fully pill vs slightly rounded rectangle).
+6. Vertical spacing between sections (margins between logo, card, footer).
+7. Heading text and microcopy wording (same meaning, slightly different sentences).
+
+- Do **NOT** blindly copy the same inline style values across all pages.
+- Maintain consistency (same brand), but introduce subtle visual diversity like real products do.
+
+---
+
+**REQUIRED DESIGN ELEMENTS (Make it look PREMIUM):**
+
+1. **Card Container (Main Panel):**
+   - White background.
+   - Rounded corners.
+   - Soft, realistic shadow.
+   - Comfortable padding (around 28–36px).
+   - Example:
+     <div style='${industryDesign.patterns.cardStyle}'>
+       ...
+     </div>
+
+2. **Typography Hierarchy:**
+   - Main heading: clear, strong, around 22–28px, bold.
+   - Subheading: smaller, muted color (e.g. #4b5563), explaining context.
+   - Helper/footer text: 11–13px, subtle.
+
+3. **Inputs:**
+   - Use this pattern:
+     <input
+       type='...'
+       name='...'
+       placeholder='...'
+       style='${industryDesign.patterns.inputStyle}'
+     />
+   - Each input must have a visible label above it.
+
+4. **Primary Button:**
+   - Use this pattern:
+     <button
+       type='submit'
+       style='${industryDesign.patterns.buttonStyle}'
+     >
+       ...
+     </button>
+   - Background must use a strong brand color (e.g. ${industryDesign.colors.primary}) to stand out from the card.
+   - Text must always be readable (e.g. white text on dark/strong background).
+
+5. **Trust & Security Indicator (especially on login):**
+   - Small row under the button, with an icon + text.
+   - Example:
+     <div style='margin-top: 10px; display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: #6b7280;'>
+       <span aria-hidden='true'>🔒</span>
+       <span>256-bit SSL encryption</span>
+     </div>
+
+6. **Footer (ALWAYS under the card):**
+   - Use small text.
+   - Include © YEAR BRAND
+   - Include tiny links: Privacy, Terms, Support.
+   - Example:
+
+     <div style='
+       margin-top: 32px;
+       text-align: center;
+       font-size: 12px;
+       color: #9ca3af;
+     '>
+       <p style='margin: 0;'>© 2025 ${fromName}. All rights reserved.</p>
+       <div style='
+         margin-top: 10px;
+         display: flex;
+         align-items: center;
+         justify-content: center;
+         gap: 12px;
+         font-size: 12px;
+       '>
+         <a href='#' style='color: #9ca3af; text-decoration: none;'>Privacy</a>
+         <span>•</span>
+         <a href='#' style='color: #9ca3af; text-decoration: none;'>Terms</a>
+         <span>•</span>
+         <a href='#' style='color: #9ca3af; text-decoration: none;'>Support</a>
+       </div>
+     </div>
+
+---
+
+**ACCESSIBILITY:**
+- Every input has a label with \`for='id'\` matching \`id='...'\`.
+- Avoid extremely small text for important content (use >= 14px for main copy).
+- Buttons and links should look clearly interactive (cursor changes, visual styling).
+
+---
+
+**PAGES TO GENERATE (depending on requiredPages):**
 
 ${requiredPages.includes('login') ? `
----
-### 1. LOGIN PAGE (login)
+=====================================================
+### 1. LOGIN PAGE (type: 'login')
 
-Create a simple, professional login page for ${fromName}.
+Goal: A secure, polished login screen for ${fromName}.
 
-**LAYOUT:**
-- Logo/brand name at top (use text or valid placeholder image - NO broken images!)
-- Login form centered (max-w-md mx-auto)
-- Clean white/light gray background
-- Footer at bottom
+**STRUCTURE:**
 
-**FORM ELEMENTS:**
-- Email input with label
-- Password input with label
-- "Remember me" checkbox
-- "Forgot password?" link
-- Submit button (use ${industryDesign.colors.primary} color)
-- Hidden input: \`<input type='hidden' name='trackId' value='${LANDING_PAGE.PLACEHOLDERS.TRACK_ID}' />\`
+- BODY: centered layout with background.
+- WRAPPER: column layout (logo section, card, footer).
+- CARD: login form.
 
-**STYLE:**
-- Clean, simple design
-- Professional spacing (py-8, px-4)
-- Normal web page (NOT floating card)
-` : ''}
+**LOGIN TEMPLATE EXAMPLE (STRUCTURE TO FOLLOW):**
 
-${requiredPages.includes('success') ? `
----
-### 2. SUCCESS PAGE (success)
-
-Simple success confirmation page.
-
-**CRITICAL: Use this EXACT layout pattern:**
-\`\`\`html
 <!DOCTYPE html>
 <html>
 <head>
-<script src='https://cdn.tailwindcss.com'></script>
+  <meta charset='UTF-8' />
+  <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+  <title>Sign in to ${fromName}</title>
 </head>
-<body class='bg-gray-50'>
-  <div class='max-w-md mx-auto py-16 px-6 text-center'>
+<body style='
+  min-height: 100vh;
+  margin: 0;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f3f4f6;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #0f172a;
+'>
+  <div style='
+    width: 100%;
+    max-width: 420px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+  '>
 
-    <!-- Success Icon -->
-    <div class='w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6'>
-      <svg class='w-10 h-10 text-white' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-        <path stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M5 13l4 4L19 7'></path>
-      </svg>
+    <!-- Logo + Title -->
+    <div style='text-align: center; margin-bottom: 24px;'>
+      <img src='https://logo.clearbit.com/[domain]' alt='${fromName}' style='height: 48px; margin-bottom: 16px;' />
+      <h1 style='font-size: 26px; font-weight: 700; margin: 0; letter-spacing: -0.02em;'>Sign in to ${fromName}</h1>
+      <p style='margin: 8px 0 0 0; font-size: 14px; color: #4b5563;'>
+        Use your work credentials to securely access your account.
+      </p>
     </div>
 
-    <!-- Message -->
-    <h1 class='text-2xl font-bold text-gray-900 mb-3'>Account Updated Successfully</h1>
-    <p class='text-gray-600 mb-8'>Your account information has been securely updated. If you did not make this change, please contact our support immediately.</p>
+    <!-- Card -->
+    <div style='${industryDesign.patterns.cardStyle}'>
+      <form>
+        <!-- Email -->
+        <div style='margin-bottom: 16px;'>
+          <label for='email' style='display: block; font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 6px;'>
+            Email address
+          </label>
+          <input
+            id='email'
+            type='email'
+            name='email'
+            placeholder='you@example.com'
+            autocomplete='email'
+            required
+            style='${industryDesign.patterns.inputStyle}'
+          />
+        </div>
 
-    <!-- Footer -->
-    <p class='text-sm text-gray-500 mt-12'>© 2025 ${fromName}. All rights reserved.</p>
+        <!-- Password -->
+        <div style='margin-bottom: 16px;'>
+          <div style='display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;'>
+            <label for='password' style='font-size: 12px; font-weight: 600; color: #374151;'>
+              Password
+            </label>
+            <a href='#' style='font-size: 12px; color: ${industryDesign.colors.primary}; text-decoration: none;'>
+              Forgot?
+            </a>
+          </div>
+          <input
+            id='password'
+            type='password'
+            name='password'
+            placeholder='Enter your password'
+            autocomplete='current-password'
+            required
+            style='${industryDesign.patterns.inputStyle}'
+          />
+        </div>
+
+        <!-- Remember Me -->
+        <div style='display: flex; align-items: center; gap: 8px; margin-bottom: 16px;'>
+          <input
+            id='remember'
+            type='checkbox'
+            name='remember'
+            style='width: 14px; height: 14px; border-radius: 4px; border: 1px solid #d1d5db;'
+          />
+          <label for='remember' style='font-size: 12px; color: #4b5563;'>
+            Keep me signed in
+          </label>
+        </div>
+
+        <!-- Submit Button -->
+        <button
+          type='submit'
+          style='${industryDesign.patterns.buttonStyle}'
+        >
+          Sign in
+        </button>
+
+        <!-- Security Indicator -->
+        <div style='margin-top: 10px; display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: #6b7280;'>
+          <span aria-hidden='true'>🔒</span>
+          <span>256-bit SSL encryption</span>
+        </div>
+
+        <!-- Hidden Tracking -->
+        <input type='hidden' name='trackId' value='${LANDING_PAGE.PLACEHOLDERS.TRACK_ID}' />
+      </form>
+    </div>
+
+    <!-- Footer (ALWAYS under the card) -->
+    <div style='
+      margin-top: 32px;
+      text-align: center;
+      font-size: 12px;
+      color: #9ca3af;
+    '>
+      <p style='margin: 0;'>© 2025 ${fromName}. All rights reserved.</p>
+      <div style='
+        margin-top: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+      '>
+        <a href='#' style='color: #9ca3af; text-decoration: none;'>Privacy</a>
+        <span>•</span>
+        <a href='#' style='color: #9ca3af; text-decoration: none;'>Terms</a>
+        <span>•</span>
+        <a href='#' style='color: #9ca3af; text-decoration: none;'>Support</a>
+      </div>
+    </div>
   </div>
 </body>
 </html>
-\`\`\`
 
-**IMPORTANT:**
-- Use \`bg-gray-50\` body background (NOT gradient)
-- Use \`max-w-md mx-auto py-16 px-6\` for content (NOT min-h-screen flex center)
-- Use simple \`bg-green-500 rounded-full\` for icon (NOT shadow-2xl or fancy effects)
+**LOGIN VALIDATION:**
+- [ ] Body uses flex center and background.
+- [ ] Wrapper uses flex-direction: column, so footer is BELOW the card.
+- [ ] Card has generous padding and clean shadow.
+- [ ] Button has strong contrast using brand primary.
+- [ ] All HTML attributes use SINGLE QUOTES.
+- [ ] Hidden trackId field is present.
+` : ''}
+
+${requiredPages.includes('success') ? `
+=====================================================
+### 2. SUCCESS PAGE (type: 'success')
+
+Purpose: confirmation after a successful action (e.g. login verification, profile update).
+
+**STRUCTURE:**
+- Same body + wrapper pattern as login.
+- Single centered card with:
+  - Success icon (checkmark).
+  - Title and short message.
+  - Optional primary button.
+  - No form.
+
+**SUCCESS TEMPLATE EXAMPLE:**
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset='UTF-8' />
+  <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+  <title>${fromName} – Success</title>
+</head>
+<body style='
+  min-height: 100vh;
+  margin: 0;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f3f4f6;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #0f172a;
+'>
+  <div style='
+    width: 100%;
+    max-width: 420px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+  '>
+
+    <div style='${industryDesign.patterns.cardStyle}; text-align: center;'>
+      <div style='margin-bottom: 16px;'>
+        <div style='
+          width: 64px;
+          height: 64px;
+          border-radius: 999px;
+          margin: 0 auto 16px auto;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: #22c55e;
+        '>
+          <span style='color: #ffffff; font-size: 32px;'>✓</span>
+        </div>
+        <h1 style='font-size: 22px; font-weight: 700; margin: 0 0 8px 0;'>Account updated</h1>
+        <p style='margin: 0; font-size: 14px; color: #4b5563;'>
+          Your account information has been updated successfully.
+        </p>
+      </div>
+
+      <button
+        type='button'
+        style='${industryDesign.patterns.buttonStyle}; width: auto; padding-left: 24px; padding-right: 24px; margin-top: 16px;'
+      >
+        Go to dashboard
+      </button>
+    </div>
+
+    <div style='
+      margin-top: 32px;
+      text-align: center;
+      font-size: 12px;
+      color: #9ca3af;
+    '>
+      <p style='margin: 0;'>© 2025 ${fromName}. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>
 ` : ''}
 
 ${requiredPages.includes('info') ? `
----
-### 3. INFO/DOCUMENT PAGE (info)
+=====================================================
+### 3. INFO/DOCUMENT PAGE (type: 'info')
 
-Information or document page for click-only scenarios.
+Purpose: display information (policy update, document notice, summary, etc.) for click-only flows.
 
-**LAYOUT:**
-- Document icon at top
-- Page title (e.g., "Policy Update")
-- Brief text explaining the document
-- Action button(s)
-- Footer with metadata
+**STRUCTURE:**
+- Body: simple vertical layout.
+- Main content in a wider card (e.g. 640–760px max-width).
+- Logo + brand at top.
+- Title + intro.
+- 1–3 short paragraphs of text.
+- Primary action button + metadata (e.g. "Last updated: ...").
+- Footer ©.
 
-**STYLE:**
-- Clean, simple page
-- Center content (max-w-2xl mx-auto for wider text)
-- Use ${industryDesign.colors.primary} for buttons
-- Professional spacing
+**INFO TEMPLATE EXAMPLE:**
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset='UTF-8' />
+  <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+  <title>${fromName} – Policy update</title>
+</head>
+<body style='
+  min-height: 100vh;
+  margin: 0;
+  padding: 40px 16px;
+  background: #f3f4f6;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #0f172a;
+'>
+  <div style='max-width: 720px; margin: 0 auto;'>
+
+    <div style='${industryDesign.patterns.cardStyle}; max-width: 720px; margin: 0 auto;'>
+      <div style='display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px;'>
+        <div style='display: flex; align-items: center; gap: 8px;'>
+          <img src='https://logo.clearbit.com/[domain]' alt='${fromName}' style='height: 36px;' />
+        </div>
+        <span style='font-size: 12px; color: #6b7280;'>${fromName}</span>
+      </div>
+
+      <div style='margin-bottom: 16px;'>
+        <h1 style='font-size: 24px; font-weight: 700; margin: 0 0 8px 0;'>Policy update</h1>
+        <p style='margin: 0; font-size: 14px; color: #4b5563;'>
+          We have updated our account policy to improve security and transparency.
+        </p>
+      </div>
+
+      <div style='font-size: 14px; color: #4b5563; line-height: 1.6; margin-bottom: 24px;'>
+        <p style='margin: 0 0 12px 0;'>
+          Please review the updated terms to stay informed about how your information is used and protected.
+        </p>
+        <p style='margin: 0;'>
+          By continuing, you confirm that you have read and understood these changes.
+        </p>
+      </div>
+
+      <div style='display: flex; align-items: center; gap: 12px; flex-wrap: wrap;'>
+        <button
+          type='button'
+          style='${industryDesign.patterns.buttonStyle}; width: auto; padding-left: 20px; padding-right: 20px;'
+        >
+          View full policy
+        </button>
+        <span style='font-size: 12px; color: #6b7280;'>Last updated: Jan 5, 2025</span>
+      </div>
+    </div>
+
+    <div style='
+      margin-top: 32px;
+      text-align: center;
+      font-size: 12px;
+      color: #9ca3af;
+    '>
+      <p style='margin: 0;'>© 2025 ${fromName}. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>
 ` : ''}
 
-**TECHNICAL CONSTRAINTS:**
-1. **Single File:** All HTML, Scripts in one string.
-2. **Assets:** Use ONLY public CDN images.
-3. **STRICT PAGE COUNT:** Generate ONLY the pages listed above. If only 'info' is requested, DO NOT generate 'login'.
-4. **NO DISCLAIMERS:** Do NOT add any text like "Note: This link uses a look-alike domain". The output must be ONLY the mockup HTML.
+---
 
-**OUTPUT FORMAT:**
-Return JSON:
+**TECHNICAL CONSTRAINTS:**
+1. **Single File per Page:** Each \`template\` must be a complete HTML document as shown above.
+2. **Assets:** Use ONLY public CDN-hosted images (Clearbit logos, neutral icons). No local files.
+3. **STRICT PAGE COUNT:** Generate ONLY the pages requested in \`requiredPages\`.
+   - If only 'info' is requested, DO NOT generate 'login' or 'success'.
+4. **NO DISCLAIMERS:** Do NOT add any security warnings like "this is a fake site" or "look-alike domain". The output is a mockup.
+
+---
+
+**OUTPUT FORMAT (MANDATORY):**
+Return ONLY this JSON structure (no extra commentary, no markdown):
+
 {
   "pages": [
-    { "type": "login", "template": "..." },
-    { "type": "success", "template": "..." },
-    { "type": "info", "template": "..." }
-  ],
-  "simulationLink": "${LANDING_PAGE.PLACEHOLDERS.SIMULATION_LINK}"
+    { "type": "login", "template": "<!DOCTYPE html><html>...</html>" },
+    { "type": "success", "template": "<!DOCTYPE html><html>...</html>" },
+    { "type": "info", "template": "<!DOCTYPE html><html>...</html>" }
+  ]
 }
+
+- Include only the page objects that match \`requiredPages\`.
+- Each \`template\` must be a COMPLETE HTML document.
+- DO NOT include email-related fields (subject, fromName, fromAddress). This is a WEBSITE, not an email.
+- Inside each \`template\`, ALL HTML attributes must use SINGLE QUOTES.
 `;
 
-        const userPrompt = `Design landing pages for: ${fromName} - ${scenario}
 
-**SCENARIO:** ${scenario}
-**LANGUAGE:** ${language}
 
-Create modern, professional pages that match ${industryDesign.industry} standards. Make them look authentic and realistic for ${fromName}.`;
 
         // Build messages array with multi-message pattern for targeted context
         const messages: any[] = [
             { role: 'system', content: systemPrompt }
         ];
+
+        // Add email context as separate message (for logo/brand consistency)
+        if (template && (emailLogoInfo || emailBrandContext)) {
+            messages.push({
+                role: 'user',
+                content: `📧 PHISHING EMAIL CONTEXT (for landing page consistency):
+
+**Email Subject:** ${subject || 'N/A'}
+**From:** ${fromName} <${fromAddress}>
+
+**CRITICAL:** The landing pages MUST match the branding and style used in the phishing email above. Use the SAME logo, colors, and design language to maintain consistency. Users clicking from the email should see a seamless transition to the landing page.
+
+${emailLogoInfo ? `\n${emailLogoInfo}` : ''}
+${emailBrandContext ? `\n${emailBrandContext}` : ''}
+
+**Email Preview (first 500 chars):** ${template.substring(0, 500)}...`
+            });
+        }
 
         // If user vulnerability context exists, add dedicated message (consistent with scenes/inbox pattern)
         if (analysis.additionalContext) {
@@ -693,6 +1173,27 @@ This context should inform the landing page design choices to make it more convi
         }
 
         // Add main generation request
+        const userPrompt = `Design landing pages for: ${fromName} - ${scenario}
+
+**SCENARIO:** ${scenario}
+**LANGUAGE:** ${language}
+
+Create modern, professional pages that match ${industryDesign.industry} standards. Make them look authentic and realistic for ${fromName}.
+
+**GENERATION STEPS (Follow this order):**
+1. **Plan first:** Review checklist above, decide on colors, layout, spacing
+2. **Match email branding:** Use SAME logo, colors, and style from phishing email (if provided)
+3. **Generate HTML:** Create complete, valid HTML with all required elements
+4. **Validate:** Check output validation list before returning
+5. **Ensure variation:** If multiple pages, make them related but NOT identical
+
+**REMEMBER:**
+- Use the SAME logo/branding as the phishing email (if provided above)
+- Add natural design variations (don't make all pages identical)
+- Ensure login page is properly centered with \`min-h-screen flex items-center justify-center\` on body element
+- Card MUST have generous internal padding (p-12 or higher)
+- Button MUST contrast with card background (NOT same color!)`;
+
         messages.push({
             role: 'user',
             content: userPrompt
@@ -755,7 +1256,6 @@ This context should inform the landing page design choices to make it more convi
                     description: description,
                     method: method as any,
                     difficulty: difficulty as any,
-                    simulationLink: parsedResult.simulationLink || LANDING_PAGE.PLACEHOLDERS.SIMULATION_LINK,
                     pages: parsedResult.pages
                 }
             };

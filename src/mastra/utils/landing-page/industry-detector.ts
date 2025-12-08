@@ -9,17 +9,39 @@ export interface IndustryDesign {
         primary: string;
         secondary: string;
         accent: string;
-        gradient: string;
+        gradient: string; // can be used for backgrounds if needed
     };
     typography: {
+        /**
+         * Semantic heading style identifier (not a Tailwind class).
+         * You can either ignore this or map it to your own CSS classes.
+         */
         headingClass: string;
+        /**
+         * Semantic body style identifier (not a Tailwind class).
+         */
         bodyClass: string;
     };
     patterns: {
+        /**
+         * Recommended inline-style snippet for cards (no frameworks).
+         * Example usage:
+         *   <div style={industryDesign.patterns.cardStyle}>...</div>
+         */
         cardStyle: string;
+        /**
+         * Recommended inline-style snippet for primary buttons.
+         */
         buttonStyle: string;
+        /**
+         * Recommended inline-style snippet for inputs.
+         */
         inputStyle: string;
     };
+    /**
+     * Example logo URL for this industry (Clearbit, no placeholder.com).
+     * This is just for reference; systemPrompt will still compute its own logo src.
+     */
     logoExample: string;
 }
 
@@ -39,21 +61,47 @@ export function detectIndustry(fromName: string, scenario: string): IndustryDesi
         return {
             industry: 'Banking & Finance',
             colors: {
-                primary: '#1e3a8a', // Deep blue
-                secondary: '#1f2937', // Slate gray
-                accent: '#f59e0b', // Gold
-                gradient: 'from-blue-900 via-blue-700 to-blue-600'
+                primary: '#1e3a8a',      // Deep blue
+                secondary: '#1f2937',    // Slate gray
+                accent: '#f59e0b',       // Gold
+                gradient: 'linear-gradient(135deg, #0f172a, #1e3a8a)' // Dark to deep blue
             },
             typography: {
-                headingClass: 'font-serif font-bold',
-                bodyClass: 'font-sans'
+                headingClass: 'lp-heading-bank', // semantic, not Tailwind
+                bodyClass: 'lp-body-bank'
             },
             patterns: {
-                cardStyle: 'bg-white rounded-2xl shadow-2xl shadow-blue-900/20 border border-blue-100',
-                buttonStyle: 'bg-gradient-to-r from-blue-600 to-blue-800 text-white font-semibold px-6 py-3 rounded-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300',
-                inputStyle: 'w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all'
+                cardStyle: [
+                    'background-color: #ffffff',
+                    'border-radius: 18px',
+                    'box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18)',
+                    'border: 1px solid rgba(30, 64, 175, 0.12)',
+                    'padding: 32px',
+                    'max-width: 420px',
+                    'margin: 0 auto'
+                ].join('; '),
+                buttonStyle: [
+                    `background: #1e3a8a`,
+                    'color: #ffffff',
+                    'border-radius: 999px',
+                    'padding: 12px 18px',
+                    'font-weight: 600',
+                    'font-size: 14px',
+                    'border: none',
+                    'cursor: pointer',
+                    'box-shadow: 0 16px 30px rgba(15, 23, 42, 0.35)'
+                ].join('; '),
+                inputStyle: [
+                    'width: 100%',
+                    'border-radius: 10px',
+                    'border: 1px solid #e5e7eb',
+                    'padding: 11px 12px',
+                    'font-size: 14px',
+                    'background-color: #f9fafb'
+                ].join('; ')
             },
-            logoExample: 'https://via.placeholder.com/150x50/1e3a8a/ffffff?text=Bank+Logo'
+            // Example large bank
+            logoExample: 'https://logo.clearbit.com/jpmorganchase.com'
         };
     }
 
@@ -62,21 +110,46 @@ export function detectIndustry(fromName: string, scenario: string): IndustryDesi
         return {
             industry: 'Technology',
             colors: {
-                primary: '#4285f4', // Google blue
-                secondary: '#5f6368', // Gray
-                accent: '#ea4335', // Red
-                gradient: 'from-blue-500 via-purple-500 to-pink-500'
+                primary: '#4285f4',      // Google blue
+                secondary: '#5f6368',    // Neutral gray
+                accent: '#ea4335',       // Red
+                gradient: 'linear-gradient(135deg, #4285f4, #a855f7)'
             },
             typography: {
-                headingClass: 'font-sans font-bold',
-                bodyClass: 'font-sans'
+                headingClass: 'lp-heading-tech',
+                bodyClass: 'lp-body-tech'
             },
             patterns: {
-                cardStyle: 'bg-white rounded-3xl shadow-2xl shadow-purple-500/10',
-                buttonStyle: 'bg-gradient-to-r from-blue-500 to-purple-600 text-white font-bold px-6 py-3 rounded-full hover:shadow-2xl hover:scale-105 transition-all duration-200',
-                inputStyle: 'w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 outline-none transition-all'
+                cardStyle: [
+                    'background-color: #ffffff',
+                    'border-radius: 20px',
+                    'box-shadow: 0 24px 60px rgba(79, 70, 229, 0.18)',
+                    'border: 1px solid rgba(148, 163, 184, 0.18)',
+                    'padding: 32px',
+                    'max-width: 440px',
+                    'margin: 0 auto'
+                ].join('; '),
+                buttonStyle: [
+                    'background: linear-gradient(135deg, #4285f4, #8b5cf6)',
+                    'color: #ffffff',
+                    'border-radius: 999px',
+                    'padding: 12px 20px',
+                    'font-weight: 700',
+                    'font-size: 14px',
+                    'border: none',
+                    'cursor: pointer',
+                    'box-shadow: 0 18px 36px rgba(55, 48, 163, 0.35)'
+                ].join('; '),
+                inputStyle: [
+                    'width: 100%',
+                    'border-radius: 12px',
+                    'border: 1px solid #e5e7eb',
+                    'padding: 11px 12px',
+                    'font-size: 14px',
+                    'background-color: #f9fafb'
+                ].join('; ')
             },
-            logoExample: 'https://via.placeholder.com/150x50/4285f4/ffffff?text=Tech+Co'
+            logoExample: 'https://logo.clearbit.com/google.com'
         };
     }
 
@@ -85,21 +158,46 @@ export function detectIndustry(fromName: string, scenario: string): IndustryDesi
         return {
             industry: 'Healthcare',
             colors: {
-                primary: '#059669', // Medical green
-                secondary: '#0d9488', // Teal
-                accent: '#06b6d4', // Cyan
-                gradient: 'from-emerald-600 via-teal-600 to-cyan-600'
+                primary: '#059669',      // Medical green
+                secondary: '#0d9488',    // Teal
+                accent: '#06b6d4',       // Cyan
+                gradient: 'linear-gradient(135deg, #059669, #0ea5e9)'
             },
             typography: {
-                headingClass: 'font-sans font-semibold',
-                bodyClass: 'font-sans'
+                headingClass: 'lp-heading-health',
+                bodyClass: 'lp-body-health'
             },
             patterns: {
-                cardStyle: 'bg-white rounded-2xl shadow-2xl shadow-emerald-500/10 border border-emerald-50',
-                buttonStyle: 'bg-gradient-to-r from-emerald-600 to-teal-700 text-white font-semibold px-6 py-3 rounded-lg hover:shadow-lg hover:scale-[1.02] transition-all',
-                inputStyle: 'w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 outline-none transition-all'
+                cardStyle: [
+                    'background-color: #ffffff',
+                    'border-radius: 18px',
+                    'box-shadow: 0 24px 60px rgba(16, 185, 129, 0.18)',
+                    'border: 1px solid rgba(16, 185, 129, 0.12)',
+                    'padding: 32px',
+                    'max-width: 420px',
+                    'margin: 0 auto'
+                ].join('; '),
+                buttonStyle: [
+                    'background: linear-gradient(135deg, #059669, #0d9488)',
+                    'color: #ffffff',
+                    'border-radius: 999px',
+                    'padding: 12px 18px',
+                    'font-weight: 600',
+                    'font-size: 14px',
+                    'border: none',
+                    'cursor: pointer',
+                    'box-shadow: 0 16px 30px rgba(15, 118, 110, 0.35)'
+                ].join('; '),
+                inputStyle: [
+                    'width: 100%',
+                    'border-radius: 10px',
+                    'border: 1px solid #e5e7eb',
+                    'padding: 11px 12px',
+                    'font-size: 14px',
+                    'background-color: #f9fafb'
+                ].join('; ')
             },
-            logoExample: 'https://via.placeholder.com/150x50/059669/ffffff?text=Health+Co'
+            logoExample: 'https://logo.clearbit.com/mayoclinic.org'
         };
     }
 
@@ -108,21 +206,46 @@ export function detectIndustry(fromName: string, scenario: string): IndustryDesi
         return {
             industry: 'E-commerce',
             colors: {
-                primary: '#ff6600', // Orange
-                secondary: '#16a34a', // Green
-                accent: '#eab308', // Yellow
-                gradient: 'from-orange-500 via-amber-500 to-yellow-500'
+                primary: '#ff6600',      // Orange
+                secondary: '#16a34a',    // Green
+                accent: '#eab308',       // Yellow
+                gradient: 'linear-gradient(135deg, #fb923c, #facc15)'
             },
             typography: {
-                headingClass: 'font-sans font-bold',
-                bodyClass: 'font-sans'
+                headingClass: 'lp-heading-ecom',
+                bodyClass: 'lp-body-ecom'
             },
             patterns: {
-                cardStyle: 'bg-white rounded-2xl shadow-2xl shadow-orange-500/10',
-                buttonStyle: 'bg-gradient-to-r from-orange-600 to-orange-700 text-white font-bold px-6 py-3 rounded-lg hover:shadow-xl hover:scale-[1.02] transition-all',
-                inputStyle: 'w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-orange-500 focus:ring-4 focus:ring-orange-500/20 outline-none transition-all'
+                cardStyle: [
+                    'background-color: #ffffff',
+                    'border-radius: 18px',
+                    'box-shadow: 0 24px 60px rgba(248, 115, 22, 0.18)',
+                    'border: 1px solid rgba(248, 115, 22, 0.12)',
+                    'padding: 32px',
+                    'max-width: 420px',
+                    'margin: 0 auto'
+                ].join('; '),
+                buttonStyle: [
+                    'background: linear-gradient(135deg, #ea580c, #f97316)',
+                    'color: #ffffff',
+                    'border-radius: 12px',
+                    'padding: 12px 18px',
+                    'font-weight: 700',
+                    'font-size: 14px',
+                    'border: none',
+                    'cursor: pointer',
+                    'box-shadow: 0 16px 30px rgba(180, 83, 9, 0.35)'
+                ].join('; '),
+                inputStyle: [
+                    'width: 100%',
+                    'border-radius: 10px',
+                    'border: 1px solid #e5e7eb',
+                    'padding: 11px 12px',
+                    'font-size: 14px',
+                    'background-color: #f9fafb'
+                ].join('; ')
             },
-            logoExample: 'https://via.placeholder.com/150x50/ff6600/ffffff?text=Shop+Logo'
+            logoExample: 'https://logo.clearbit.com/amazon.com'
         };
     }
 
@@ -130,21 +253,46 @@ export function detectIndustry(fromName: string, scenario: string): IndustryDesi
     return {
         industry: 'Corporate',
         colors: {
-            primary: '#334155', // Slate
-            secondary: '#64748b', // Slate-500
-            accent: '#0ea5e9', // Sky blue
-            gradient: 'from-slate-700 via-slate-600 to-slate-500'
+            primary: '#334155',          // Slate
+            secondary: '#64748b',        // Slate-500
+            accent: '#0ea5e9',           // Sky blue
+            gradient: 'linear-gradient(135deg, #020617, #334155)'
         },
         typography: {
-            headingClass: 'font-sans font-bold',
-            bodyClass: 'font-sans'
+            headingClass: 'lp-heading-corporate',
+            bodyClass: 'lp-body-corporate'
         },
         patterns: {
-            cardStyle: 'bg-white rounded-2xl shadow-2xl shadow-slate-500/10',
-            buttonStyle: 'bg-gradient-to-r from-slate-700 to-slate-900 text-white font-semibold px-6 py-3 rounded-lg hover:shadow-lg hover:scale-[1.02] transition-all',
-            inputStyle: 'w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-slate-500 focus:ring-4 focus:ring-slate-500/20 outline-none transition-all'
+            cardStyle: [
+                'background-color: #ffffff',
+                'border-radius: 18px',
+                'box-shadow: 0 24px 60px rgba(15, 23, 42, 0.16)',
+                'border: 1px solid rgba(148, 163, 184, 0.18)',
+                'padding: 32px',
+                'max-width: 420px',
+                'margin: 0 auto'
+            ].join('; '),
+            buttonStyle: [
+                'background: linear-gradient(135deg, #334155, #020617)',
+                'color: #ffffff',
+                'border-radius: 999px',
+                'padding: 12px 18px',
+                'font-weight: 600',
+                'font-size: 14px',
+                'border: none',
+                'cursor: pointer',
+                'box-shadow: 0 16px 30px rgba(15, 23, 42, 0.35)'
+            ].join('; '),
+            inputStyle: [
+                'width: 100%',
+                'border-radius: 10px',
+                'border: 1px solid #e5e7eb',
+                'padding: 11px 12px',
+                'font-size: 14px',
+                'background-color: #f9fafb'
+            ].join('; ')
         },
-        logoExample: 'https://via.placeholder.com/150x50/334155/ffffff?text=Company'
+        logoExample: 'https://logo.clearbit.com/accenture.com'
     };
 }
 
