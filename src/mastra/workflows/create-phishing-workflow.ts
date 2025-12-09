@@ -14,6 +14,7 @@ import {
     validateLandingPage,
     logValidationResults
 } from '../utils/landing-page';
+import { DEFAULT_GENERIC_LOGO } from '../utils/landing-page/image-validator';
 
 // Helper to stream text reasoning directly without LLM processing
 const streamDirectReasoning = async (reasoning: string, writer: StreamWriter) => {
@@ -102,6 +103,7 @@ const InputSchema = z.object({
     method: z.enum(PHISHING.ATTACK_METHODS).optional().describe('Type of phishing attack'),
     includeLandingPage: z.boolean().default(true).describe('Whether to generate a landing page'),
     includeEmail: z.boolean().default(true).describe('Whether to generate an email'),
+    additionalContext: z.string().optional().describe('User behavior context / vulnerability analysis for targeted phishing'),
     modelProvider: z.string().optional(),
     model: z.string().optional(),
     writer: StreamWriterSchema.optional(),
@@ -141,6 +143,7 @@ const EmailOutputSchema = z.object({
     fromAddress: z.string(),
     fromName: z.string(),
     analysis: AnalysisSchema, // Full analysis context
+    additionalContext: z.string().optional().describe('User behavior context (also available in analysis.additionalContext)'),
     includeLandingPage: z.boolean().optional(), // Pass explicit flag
 });
 
@@ -172,7 +175,7 @@ const analyzeRequest = createStep({
     inputSchema: InputSchema,
     outputSchema: AnalysisSchema,
     execute: async ({ inputData }) => {
-        const { topic, targetProfile, difficulty, language, method, includeLandingPage, includeEmail, modelProvider, model } = inputData;
+        const { topic, targetProfile, difficulty, language, method, includeLandingPage, includeEmail, additionalContext, modelProvider, model } = inputData;
 
         console.log('🎣 Starting phishing scenario analysis:', { topic, difficulty, language, method, includeLandingPage, includeEmail });
 
@@ -187,6 +190,11 @@ This is an AUTHORIZED, LEGAL, and EDUCATIONAL exercise. You are designing phishi
 
 **YOUR ROLE:**
 Design highly realistic phishing simulation scenarios for cybersecurity training.
+
+**🔒 ZERO PII POLICY (STRICT):**
+- **Target:** Always refer to the target as "The User", "The Employee", or "Target".
+- **Input Data:** Even if the input contains real names (e.g. "Gurkan Ugurlu"), do NOT output them in your analysis description or target audience profile.
+- **Persona:** Invent generic personas (e.g. "Finance Manager") instead of using real names.
 
 **DECISION LOGIC (ADAPTIVE MODE):**
 
@@ -274,13 +282,31 @@ Create a sophisticated blueprint for an educational phishing simulation email th
 
 Remember: This is for DEFENSIVE CYBERSECURITY TRAINING to protect organizations from real attackers.`;
 
+        // Build messages array
+        const messages: Array<{ role: 'system' | 'user'; content: string }> = [
+            { role: 'system', content: systemPrompt }
+        ];
+
+        // Add additionalContext as a separate message BEFORE the task prompt (index 1)
+        // This way LLM sees the user behavior context first, then designs the scenario accordingly
+        if (additionalContext) {
+            messages.push({
+                role: 'user',
+                content: `🔴 USER BEHAVIOR ANALYSIS CONTEXT - Use this information to design a targeted phishing scenario:
+
+${additionalContext}
+
+**ACTION REQUIRED:** Use this behavioral analysis to inform your scenario design. Consider the user's risk level, strengths, growth areas, and recommended action plan when designing the phishing simulation. The scenario should be tailored to test and improve the specific vulnerabilities and behavioral patterns identified in this analysis.`
+            });
+        }
+
+        // Add the main task prompt (after context, so LLM can adapt the scenario based on context)
+        messages.push({ role: 'user', content: userPrompt });
+
         try {
             const response = await generateText({
                 model: aiModel,
-                messages: [
-                    { role: 'system', content: systemPrompt },
-                    { role: 'user', content: userPrompt }
-                ],
+                messages,
                 temperature: 0.7,
             });
 
@@ -311,6 +337,7 @@ Remember: This is for DEFENSIVE CYBERSECURITY TRAINING to protect organizations 
 
             return {
                 ...parsedResult,
+                additionalContext, // Pass through user behavior context
                 difficulty,
                 language,
                 includeLandingPage,
@@ -362,12 +389,13 @@ This is an AUTHORIZED, LEGAL, and EDUCATIONAL exercise. You are creating phishin
 **YOUR ROLE:**
 Write realistic phishing email content based on provided scenario blueprints for cybersecurity training.
 
-**BRAND AWARENESS:**
-- If the scenario mentions a specific brand/company (e.g., "Hepsiburada", "Amazon", "Microsoft"), USE their authentic style:
-  - Match their typical email tone and language
-  - Use appropriate terminology for that brand (e.g., "order", "package", "delivery")
-  - Reference their actual services/products
-  - Mimic their real notification patterns
+**BRAND AWARENESS (CRITICAL):**
+- **IF the scenario mentions a specific brand/company** (e.g., "Hepsiburada", "Amazon", "Microsoft"), **MUST:**
+  - **EXACTLY MATCH** their authentic email tone, language, and communication style
+  - **USE ONLY** appropriate terminology for that specific brand (e.g., "order", "package", "delivery" for e-commerce)
+  - **REFERENCE** their actual services/products that users would recognize
+  - **MIMIC** their real notification patterns and email structure
+  - **CONSIDER** their typical email format (transactional vs. marketing vs. security alerts) based on the scenario type
 - Example: For e-commerce brands → "Your order is being prepared", package tracking, order confirmation style
 
 **CONTENT REQUIREMENTS:**
@@ -382,8 +410,8 @@ Write realistic phishing email content based on provided scenario blueprints for
    - Use **INLINE CSS** for all styling (no <style> blocks).
    - Use web-safe fonts (Arial, sans-serif).
    - Avoid modern CSS like Flexbox or Grid (breaks in Outlook).
-   - Make it look professional (like a real corporate/service email).
-   - Match the tone specified in the blueprint.
+   - **MUST look professional and authentic** - like a real corporate/service email that users receive daily.
+   - **MUST match the tone** specified in the blueprint exactly.
    - **VISUAL DIFFICULTY RULE (${difficulty}):** ${difficultyRules.visuals.rule}. ${difficultyRules.visuals.description}
 
    - **LAYOUT STRATEGY (CHOOSE ONE BASED ON BRAND):**
@@ -402,9 +430,9 @@ Write realistic phishing email content based on provided scenario blueprints for
      - Add a hidden <div> at the VERY TOP of the body containing a short summary (10-15 words) that appears in the inbox preview.
      - Style: display:none;font-size:1px;color:#333;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;
 
-   - **MOBILE OPTIMIZATION:**
+   - **MOBILE OPTIMIZATION (MANDATORY):**
      - Main table width: 100% (max-width: 600px).
-     - Buttons: On mobile, they should be easily tappable (min-height 44px).
+     - Buttons: **MUST be easily tappable on mobile** (min-height 44px) for optimal user experience.
 
 3. **Call-to-Action (Button) Strategy - Based on Attack Method:**
    - **Method: '${analysis.method}'**
@@ -415,8 +443,9 @@ Write realistic phishing email content based on provided scenario blueprints for
      - Button Text: "View Document", "Track Package", "Read Announcement", "See Photos".
      - Urgency: Low to Medium. Focus on curiosity or helpfulness.
 
-4. **Dynamic Variables (Merge Tags):**
-   - **MANDATORY TAGS:** ${PHISHING_EMAIL.MANDATORY_TAGS.map(tag => `\`${tag}\``).join(', ')}, \`{FIRSTNAME}\` (or \`{FULLNAME}\`) - MUST be used for salutation.
+4. **Dynamic Variables (Merge Tags) - STRICT PII RULES:**
+   - **MANDATORY TAGS:** ${PHISHING_EMAIL.MANDATORY_TAGS.map(tag => `\`${tag}\``).join(', ')}, \`{FIRSTNAME}\` (or \`{FULLNAME}\`).
+   - **ABSOLUTE BAN ON REAL NAMES:** NEVER use a real name (e.g., "Hi Gurkan", "Dear Peter") in the greeting. You MUST use \`{FIRSTNAME}\`.
    - **FORBIDDEN:** Do NOT use generic salutations like "Dear User", "Dear Employee", "Hi Team". You MUST use the merge tag.
    - **RECOMMENDED TAGS:** ${PHISHING_EMAIL.RECOMMENDED_TAGS.map(tag => `\`${tag}\``).join(', ')}
    - **CRITICAL RULES:**
@@ -427,18 +456,23 @@ Write realistic phishing email content based on provided scenario blueprints for
 
 5. **Grammar & Style (${difficulty} Mode):**
    - **Grammar Rule:** ${difficultyRules.grammar.rule}. ${difficultyRules.grammar.description}
-   - **Red Flags:** Embed the red flags subtly as defined in the blueprint.
-   - **CREATIVITY RULE:** Do NOT use generic "lorem ipsum" style fillers. Write specific, plausible content relevant to the Scenario.
+   - **Red Flags:** **MUST embed the red flags** as defined in the blueprint. ${difficulty === 'Easy' ? 'For Easy mode, make them OBVIOUS and easily detectable. For Medium/Hard, make them subtle but detectable.' : difficulty === 'Hard' ? 'For Hard mode, make them EXTREMELY SUBTLE - only detectable by trained security professionals. They should blend naturally into the email.' : 'For Medium mode, make them MODERATELY SUBTLE - detectable with careful inspection but not immediately obvious.'}
+   - **CREATIVITY RULE:** Do NOT use generic "lorem ipsum" style fillers. **MUST write specific, plausible, realistic content** directly relevant to the Scenario that feels authentic and genuine.
    - **SYNTAX RULE:** Use **SINGLE QUOTES** for HTML attributes (e.g. style='color:red') to prevent JSON escaping errors.
 
-6. **Company Logo (MANDATORY for known brands):**
-   - If impersonating a well-known company (Microsoft, Google, Amazon, Apple, PayPal, etc.):
-     * **YOU MUST USE CLEARBIT API WITH FALLBACK:**
-       - Format: https://logo.clearbit.com/[domain]
+6. **Company Logo (MANDATORY - Always include a logo):**
+   - **CRITICAL:** Every email MUST include a logo image.
+   - **LOGO SELECTION RULES (STRICT):**
+     * **ONLY IF impersonating a WELL-KNOWN, RECOGNIZED company with a REAL domain** (Microsoft, Google, Amazon, Apple, PayPal, Netflix, Adobe, etc.):
+       - Use Clearbit API: https://logo.clearbit.com/[domain]
        - **CRITICAL:** Add an \`onerror\` handler to use Google Favicon service if Clearbit is blocked.
        - **CRITICAL:** All images MUST include \`object-fit: contain\` in style to preserve aspect ratio.
        - Example: <img src='https://logo.clearbit.com/amazon.com' onerror="this.src='https://www.google.com/s2/favicons?domain=amazon.com&sz=128'; this.onerror=null;" alt='Amazon' width='120' style='display:block; margin:0 auto 20px; object-fit: contain;'>
-     * **Alternative:** Use text-based logo ONLY if the company is completely unknown or fictional.
+     * **IF NO recognized domain OR generic/internal company** (IT Support, HR Department, Finance Team, etc.):
+       - **MUST USE DEFAULT GENERIC LOGO** (do NOT generate random Clearbit URLs for unknown domains):
+       - Use this EXACT default logo: \`${DEFAULT_GENERIC_LOGO}\`
+       - Example: <img src='${DEFAULT_GENERIC_LOGO}' alt='Company Logo' width='120' style='display:block; margin:0 auto 20px; object-fit: contain;'>
+   - **FORBIDDEN:** Do NOT use Clearbit API for unknown, generic, or made-up domains. Only use it for real, well-known companies.
 
 7. **NO DISCLAIMERS OR NOTES:**
    - **CRITICAL:** Do NOT include any footer notes, explanations, or disclaimers like "Note: This is a phishing link" or "Generated for training".
@@ -463,7 +497,7 @@ Return ONLY valid JSON with subject and template (HTML body). No markdown, no ba
   "template": "[Full HTML email with table layout, Clearbit logo, personalized greeting with {FIRSTNAME}, urgent message, call-to-action button with {PHISHINGURL}, and signature with department name]"
 }
 
-Note: Template should be complete HTML (not truncated). Use table-based layout with inline CSS.`;
+**CRITICAL:** Template MUST be complete HTML (not truncated). Use table-based layout with inline CSS. The email must be production-ready and fully functional.`;
 
         const userPrompt = `Write the phishing simulation email content based on this blueprint.
         
@@ -475,12 +509,14 @@ Note: Template should be complete HTML (not truncated). Use table-based layout w
 **SCENARIO BLUEPRINT (SOURCE OF TRUTH):**
 ${JSON.stringify(analysis, null, 2)}
 
-**EXECUTION RULES:**
-1. Analyze the 'Blueprint' above for specific scenario details, tone, and red flags.
-2. Select the best **Layout Strategy** (Card vs Letter) based on the brand. **DEFAULT to Card format** unless explicitly CEO/HR/Policy scenario.
-3. Generate the **Preheader** (hidden preview text).
-4. **SAFETY RULE:** Do NOT use personal names (like "Emily Clarke") in the signature. Use generic Team/Department names only.
-5. Output valid JSON.`;
+**EXECUTION RULES (FOLLOW IN ORDER):**
+1. **ANALYZE** the 'Blueprint' above - extract specific scenario details, exact tone, and all red flags that must be embedded.
+2. **SELECT** the best **Layout Strategy** (Card vs Letter) based on the brand. **DEFAULT to Card format** unless explicitly CEO/HR/Policy scenario.
+3. **GENERATE** the **Preheader** (hidden preview text) - 10-15 words that appear in inbox preview.
+4. **WRITE** realistic, authentic email content that matches the brand's style and the blueprint's tone exactly.
+5. **EMBED** red flags according to difficulty level (obvious for Easy, subtle for Medium/Hard).
+6. **SAFETY RULE:** Do NOT use personal names (like "Emily Clarke") in the signature. Use generic Team/Department names only.
+7. **OUTPUT** valid JSON with complete, production-ready HTML template.`;
 
         try {
             const response = await generateText({
@@ -530,6 +566,7 @@ ${JSON.stringify(analysis, null, 2)}
                 fromAddress: analysis.fromAddress,
                 fromName: analysis.fromName,
                 analysis: inputData, // Include the analysis in the final output for transparency
+                additionalContext: analysis.additionalContext, // Also pass directly for easier access
                 includeLandingPage: analysis.includeLandingPage
             };
         } catch (error) {
@@ -545,7 +582,7 @@ const generateLandingPage = createStep({
     inputSchema: EmailOutputSchema,
     outputSchema: OutputSchema,
     execute: async ({ inputData }) => {
-        const { analysis, fromAddress, fromName, subject, template, includeLandingPage } = inputData;
+        const { analysis, fromAddress, fromName, subject, template, includeLandingPage, additionalContext } = inputData;
 
         // If landing page generation is disabled, skip this step
         if (includeLandingPage === false) {
@@ -578,11 +615,11 @@ const generateLandingPage = createStep({
         let emailLogoInfo = '';
         let emailBrandContext = '';
         if (template) {
-            // Extract Clearbit logo URL from email template
-            const clearbitLogoMatch = template.match(/https:\/\/logo\.clearbit\.com\/([^"'\s>]+)/i);
-            if (clearbitLogoMatch) {
-                const domain = clearbitLogoMatch[1];
-                emailLogoInfo = `\n**EMAIL CONTEXT - LOGO FOUND:**\nThe phishing email uses Clearbit logo: https://logo.clearbit.com/${domain}\n**CRITICAL:** Use the SAME logo URL in landing pages for consistency: <img src='https://logo.clearbit.com/${domain}' alt='${fromName}' width='120' style='object-fit: contain;' />`;
+            // Extract first image src (usually the logo)
+            const imgMatch = template.match(/<img[^>]+src=['"]([^'"]+)['"][^>]*>/i);
+            if (imgMatch) {
+                const logoUrl = imgMatch[1];
+                emailLogoInfo = `\n**EMAIL LOGO:** Use this EXACT logo URL: ${logoUrl}\n<img src='${logoUrl}' alt='${fromName}' width='120' style='display: block; margin: 0 auto; object-fit: contain;' />`;
             }
 
             // Extract brand/company mentions from email
@@ -597,19 +634,29 @@ const generateLandingPage = createStep({
 
 Your job: generate modern, professional, trustworthy WEB PAGES (not emails) using ONLY pure HTML + inline CSS. No CSS frameworks.
 
+**🔒 ZERO PII POLICY (STRICT):**
+- **No Real Names:** Never display real user names (e.g. "Welcome, Gurkan").
+- **Safe Greetings:** Use "Welcome back", "Hello", "Sign in", or show the email address (e.g. "user@company.com").
+
 ---
 
 **CRITICAL RULES:**
 
-1. **LOGO STRATEGY (PRIORITY ORDER):**
-   - FIRST CHOICE: Use Clearbit Logo API with Google Fallback  
-     - Format: 'https://logo.clearbit.com/[domain]'
-     - **MANDATORY:** Add \`onerror\` handler for reliability.
-     - **CRITICAL:** All images MUST include \`object-fit: contain\` in style to preserve aspect ratio.
-     - Example: <img src='https://logo.clearbit.com/microsoft.com' onerror="this.src='https://www.google.com/s2/favicons?domain=microsoft.com&sz=128'; this.onerror=null;" alt='Microsoft' width='120' style='object-fit: contain;' />
-   - SECOND CHOICE: Use a clean text-based logo  
-     - Example: <div style='font-size:20px; font-weight:700; color:#111827;'>${fromName}</div>
-   - FORBIDDEN: Never use placeholder services (via.placeholder.com) – looks fake.
+1. **LOGO STRATEGY (MANDATORY - Always include a logo):**
+   - **CRITICAL:** Every landing page MUST include a logo image.
+   - **LOGO SELECTION RULES (STRICT):**
+     * **ONLY IF impersonating a WELL-KNOWN, RECOGNIZED company with a REAL domain** (Microsoft, Google, Amazon, Apple, PayPal, Netflix, Adobe, etc.):
+       - Use Clearbit Logo API: 'https://logo.clearbit.com/[domain]'
+       - **MANDATORY:** Add \`onerror\` handler for reliability (Google Favicon fallback).
+       - **CRITICAL:** All images MUST include \`object-fit: contain\` and \`display: block; margin: 0 auto;\` in style to preserve aspect ratio and center alignment.
+       - Example: <img src='https://logo.clearbit.com/microsoft.com' onerror="this.src='https://www.google.com/s2/favicons?domain=microsoft.com&sz=128'; this.onerror=null;" alt='Microsoft' width='120' style='display: block; margin: 0 auto; object-fit: contain;' />
+     * **IF NO recognized domain OR generic/internal company** (IT Support, HR Department, Finance Team, etc.):
+       - **MUST USE DEFAULT GENERIC LOGO** (do NOT generate random Clearbit URLs for unknown domains):
+       - Use this EXACT default logo: \`${DEFAULT_GENERIC_LOGO}\`
+       - Example: <img src='${DEFAULT_GENERIC_LOGO}' alt='Company Logo' width='120' style='display: block; margin: 0 auto; object-fit: contain;' />
+   - **FORBIDDEN:** 
+     - Do NOT use Clearbit API for unknown, generic, or made-up domains. Only use it for real, well-known companies.
+     - Never use placeholder services (via.placeholder.com) – looks fake.
 
 2. **SINGLE QUOTES for ALL HTML attributes** (required for JSON safety)
    - Good: <div style='margin: 0 auto; padding: 32px;'>
@@ -870,7 +917,7 @@ Goal: A secure, polished login screen for ${fromName}.
 
     <!-- Logo + Title -->
     <div style='text-align: center; margin-bottom: 24px;'>
-      <img src='https://logo.clearbit.com/[domain]' alt='${fromName}' style='height: 48px; margin-bottom: 16px; object-fit: contain;' />
+      <img src='https://logo.clearbit.com/[domain]' alt='${fromName}' style='display: block; margin: 0 auto 16px auto; height: 48px; object-fit: contain;' />
       <h1 style='font-size: 26px; font-weight: 700; margin: 0; letter-spacing: -0.02em;'>Sign in to ${fromName}</h1>
       <p style='margin: 8px 0 0 0; font-size: 14px; color: #4b5563;'>
         Use your work credentials to securely access your account.
@@ -1106,7 +1153,7 @@ Purpose: display information (policy update, document notice, summary, etc.) for
     <div style='${industryDesign.patterns.cardStyle}; max-width: 720px; margin: 0 auto;'>
       <div style='display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px;'>
         <div style='display: flex; align-items: center; gap: 8px;'>
-          <img src='https://logo.clearbit.com/[domain]' alt='${fromName}' style='height: 36px; object-fit: contain;' />
+          <img src='https://logo.clearbit.com/[domain]' alt='${fromName}' style='display: block; margin: 0 auto; height: 36px; object-fit: contain;' />
         </div>
         <span style='font-size: 12px; color: #6b7280;'>${fromName}</span>
       </div>
@@ -1187,6 +1234,21 @@ Return ONLY this JSON structure (no extra commentary, no markdown):
             { role: 'system', content: systemPrompt }
         ];
 
+        // Add user behavior context FIRST (before email context) so landing page design is informed by user analysis
+        // This ensures the page is tailored to the user's vulnerabilities, risk level, and behavioral patterns
+        // Use direct additionalContext if available, otherwise fall back to analysis.additionalContext
+        const userContext = additionalContext || analysis.additionalContext;
+        if (userContext) {
+            messages.push({
+                role: 'user',
+                content: `🔴 USER BEHAVIOR ANALYSIS CONTEXT - Design landing page based on this user profile:
+
+${userContext}
+
+**ACTION REQUIRED:** Use this behavioral analysis to inform your landing page design. Consider the user's risk level, strengths, growth areas, and behavioral triggers when creating the page. The design must feel genuine, trustworthy, and specifically tailored to this user's profile. Make it look like a legitimate, professional page that this specific user would naturally trust and interact with based on their identified vulnerabilities and patterns.`
+            });
+        }
+
         // Add email context as separate message (for logo/brand consistency)
         if (template && (emailLogoInfo || emailBrandContext)) {
             messages.push({
@@ -1202,18 +1264,6 @@ ${emailLogoInfo ? `\n${emailLogoInfo}` : ''}
 ${emailBrandContext ? `\n${emailBrandContext}` : ''}
 
 **Email Preview (first 500 chars):** ${template.substring(0, 500)}...`
-            });
-        }
-
-        // If user vulnerability context exists, add dedicated message (consistent with scenes/inbox pattern)
-        if (analysis.additionalContext) {
-            messages.push({
-                role: 'user',
-                content: `🔴 CRITICAL USER VULNERABILITY - Targeted Landing Page Context:
-
-${analysis.additionalContext}
-
-This context should inform the landing page design choices to make it more convincing to this specific user profile.`
             });
         }
 
@@ -1233,7 +1283,7 @@ Create modern, professional pages that match ${industryDesign.industry} standard
 5. **Ensure variation:** If multiple pages, make them related but NOT identical
 
 **REMEMBER:**
-- **LOGO IS MANDATORY:** Use the Clearbit API for the logo. If email had a logo, match it.
+- **LOGO IS MANDATORY:** Use Clearbit API ONLY for recognized well-known companies. For generic/internal companies, use the default generic logo. If email had a logo, match it exactly.
 - Add natural design variations (don't make all pages identical)
 - Ensure login page is properly centered with inline styles: \`min-height: 100vh; display: flex; align-items: center; justify-content: center;\`
 - Card MUST have generous internal padding (32px+)
@@ -1248,7 +1298,7 @@ Create modern, professional pages that match ${industryDesign.industry} standard
             const response = await generateText({
                 model: aiModel,
                 messages: messages,
-                temperature: 0.7,
+                temperature: 0.8,
             });
 
             // Reasoning handling

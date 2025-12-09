@@ -2,6 +2,8 @@
 import { Agent } from '@mastra/core/agent';
 import { reasoningTool } from '../tools/reasoning-tool';
 import { phishingWorkflowExecutorTool } from '../tools/phishing-workflow-executor-tool';
+import { uploadPhishingTool } from '../tools/upload-phishing-tool';
+import { assignPhishingTool } from '../tools/assign-phishing-tool';
 import { getDefaultAgentModel } from '../model-providers';
 import { Memory } from '@mastra/memory';
 import { PHISHING, AGENT_NAMES } from '../constants';
@@ -75,6 +77,12 @@ Topic: {topic}<br>
 **STATE 4 - Complete**
 - Let the tool provide the final result (the rendered email).
 
+**STATE 5 - Upload (Optional)**
+- If user requests to **Upload** phishing simulation:
+  1. Look for the most recent 'phishingId' in conversation history (from phishingExecutor tool result).
+  2. Call 'uploadPhishing' tool with: phishingId
+  3. If upload successful, inform the user that the phishing simulation is ready for assignment.
+
 ## Smart Defaults (Assumption Mode)
 - **Topic (CRITICAL - RANDOMIZATION):**
   - If user provides NO topic or vague topic (e.g. "general", "landing page"), you MUST INVENT a specific, realistic corporate scenario.
@@ -93,6 +101,31 @@ Topic: {topic}<br>
 - **Target Profile:**
   - If 'userInfoAssistant' passed context: Use it!
   - If no context: Assume "Generic Employee".
+
+## Platform Integration (Upload & Assign)
+When user requests to **Upload** or **Assign** phishing simulation:
+1. Look for the most recent 'phishingId' in conversation history (from phishingExecutor tool result).
+2. If 'Assign' is requested, also look for a 'targetUserResourceId' (from UserInfo context).
+   - **CRITICAL:** Scan conversation history for ANY recent User Profile search results (e.g. "User found: John Doe (ID: ...)").
+   - Use that ID automatically. Do NOT ask "Who?" if a user was just discussed.
+3. Call 'uploadPhishing' tool first (Input: phishingId).
+4. **Upload returns:** {resourceId, languageId, phishingId, title}
+5. If upload successful AND assignment requested, call 'assignPhishing' with EXACT fields from upload:
+   - resourceId: FROM upload.data.resourceId
+   - languageId: FROM upload.data.languageId (optional, include if available)
+   - targetUserResourceId: FROM user context (CRITICAL - must be present for assignment)
+6. If IDs are missing, ASK the user.
+
+**CRITICAL RULES:**
+- **targetUserResourceId is REQUIRED for assignment** - Do NOT proceed with assignPhishing if this ID is missing
+- Always scan conversation history first before asking the user for targetUserResourceId
+- If user context contains a user ID from a recent search/profile lookup, use it automatically
+
+**EXAMPLE:**
+Phishing workflow result: {phishingId: "abc123"}
+→ uploadPhishing({phishingId: "abc123"})
+Upload result: {resourceId: "xyz789", languageId: "lang456"}
+→ assignPhishing({resourceId: "xyz789", languageId: "lang456", targetUserResourceId: "user123"})
 
 ## Tool Usage & Parameters
 Call 'phishingExecutor' (ONLY in STATE 3) with:
@@ -142,6 +175,8 @@ export const phishingEmailAgent = new Agent({
   tools: {
     showReasoning: reasoningTool,
     phishingExecutor: phishingWorkflowExecutorTool,
+    uploadPhishing: uploadPhishingTool,
+    assignPhishing: assignPhishingTool,
   },
   memory: new Memory({
     options: {

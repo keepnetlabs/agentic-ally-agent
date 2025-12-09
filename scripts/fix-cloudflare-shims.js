@@ -96,15 +96,37 @@ function patchWranglerConfig() {
       service: "crud-training-worker"
     };
 
+    const phishingCrudWorkerBinding = {
+      binding: "PHISHING_CRUD_WORKER",
+      service: "crud-phishing-worker"
+    };
+
+    let added = false;
+
     // Check if CRUD_WORKER already exists
-    const existingBinding = config.services.find(s => s.binding === "CRUD_WORKER");
-    if (!existingBinding) {
+    const existingCrudBinding = config.services.find(s => s.binding === "CRUD_WORKER");
+    if (!existingCrudBinding) {
       config.services.push(crudWorkerBinding);
-      writeFileSync(WRANGLER_CONFIG_PATH, JSON.stringify(config, null, 2), 'utf8');
       console.log(`  ✅ Added CRUD_WORKER service binding`);
-      return true;
+      added = true;
     } else {
       console.log(`  ✅ CRUD_WORKER service binding already exists`);
+    }
+
+    // Check if PHISHING_CRUD_WORKER already exists
+    const existingPhishingBinding = config.services.find(s => s.binding === "PHISHING_CRUD_WORKER");
+    if (!existingPhishingBinding) {
+      config.services.push(phishingCrudWorkerBinding);
+      console.log(`  ✅ Added PHISHING_CRUD_WORKER service binding`);
+      added = true;
+    } else {
+      console.log(`  ✅ PHISHING_CRUD_WORKER service binding already exists`);
+    }
+
+    if (added) {
+      writeFileSync(WRANGLER_CONFIG_PATH, JSON.stringify(config, null, 2), 'utf8');
+      return true;
+    } else {
       return false;
     }
   } catch (error) {

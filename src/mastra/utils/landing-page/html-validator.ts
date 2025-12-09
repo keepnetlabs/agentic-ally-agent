@@ -152,11 +152,6 @@ export function validateHTMLStructure(html: string): ValidationResult {
         errors.push('Missing <body> tag');
     }
 
-    // Check for Tailwind CDN
-    if (!html.includes('cdn.tailwindcss.com')) {
-        warnings.push('Missing Tailwind CSS CDN');
-    }
-
     return {
         isValid: errors.length === 0,
         errors,

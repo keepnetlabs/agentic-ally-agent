@@ -18,6 +18,7 @@ const phishingWorkflowSchema = z.object({
     method: z.enum(PHISHING.ATTACK_METHODS).optional().describe('Type of phishing attack'),
     includeEmail: z.boolean().optional().default(true).describe('Whether to generate an email'),
     includeLandingPage: z.boolean().optional().default(true).describe('Whether to generate a landing page'),
+    additionalContext: z.string().optional().describe('User behavior context / vulnerability analysis for targeted phishing'),
     modelProvider: z.enum(MODEL_PROVIDERS.NAMES).optional(),
     model: z.string().optional(),
 });
@@ -45,6 +46,7 @@ export const phishingWorkflowExecutorTool = createTool({
                     method: params.method, // Pass user choice or undefined
                     includeEmail: params.includeEmail,
                     includeLandingPage: params.includeLandingPage,
+                    additionalContext: params.additionalContext,
                     modelProvider: params.modelProvider,
                     model: params.model,
                     writer: writer,

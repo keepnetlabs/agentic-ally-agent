@@ -354,6 +354,38 @@ export class KVService {
     return results.every(r => r.status === 'fulfilled' && r.value === true);
   }
 
+  // Get Phishing Content from KV (similar to getMicrolearning)
+  // Note: KVService must be initialized with phishing namespace ID to use this method
+  async getPhishing(phishingId: string, language?: string): Promise<any> {
+    try {
+      const baseKey = `phishing:${phishingId}:base`;
+      const base = await this.get(baseKey);
+
+      if (!base) {
+        return null;
+      }
+
+      const result: any = { base };
+
+      // Use provided language or fallback to first available language from base
+      const availableLangs = base.language_availability || [];
+      const langToUse = language || (availableLangs.length > 0 ? availableLangs[0] : null);
+
+      if (langToUse) {
+        const normalizedLang = langToUse.toLowerCase();
+        const emailKey = `phishing:${phishingId}:email:${normalizedLang}`;
+        const landingKey = `phishing:${phishingId}:landing:${normalizedLang}`;
+        result.email = await this.get(emailKey);
+        result.landing = await this.get(landingKey);
+      }
+
+      return result;
+    } catch (error) {
+      console.error(`Failed to get phishing ${phishingId}:`, error);
+      return null;
+    }
+  }
+
   /**
    * Helper method: PUT with exponential backoff retry
    * Retries up to RETRY.MAX_ATTEMPTS times with exponential backoff

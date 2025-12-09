@@ -3,6 +3,10 @@
  * Validates image URLs with real HTTP requests and fixes broken images
  */
 
+// Default generic corporate logo (SVG data URI) - used as fallback when brand logos fail
+// Modern, professional icon-only logo with gradient background
+export const DEFAULT_GENERIC_LOGO = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 80'%3E%3Cdefs%3E%3ClinearGradient id='grad' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23334155;stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:%231e293b;stop-opacity:1' /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='80' height='80' fill='url(%23grad)' rx='16'/%3E%3Ccircle cx='40' cy='40' r='18' fill='none' stroke='%23ffffff' stroke-width='3'/%3E%3Cpath d='M 40 25 L 40 40 L 50 40' stroke='%23ffffff' stroke-width='3' stroke-linecap='round' fill='none'/%3E%3C/svg%3E";
+
 /**
  * Validate image URL with real HTTP HEAD request
  * @param url - Image URL to validate
@@ -62,6 +66,12 @@ export async function fixBrokenImages(html: string, brandName: string): Promise<
 
     // Validate all unique URLs in parallel (with cached validation)
     const validationPromises = Array.from(uniqueUrls).map(async (url) => {
+        // Skip data URIs (they're always valid, no need to validate)
+        if (url.startsWith('data:')) {
+            console.log(`✅ Skipping validation for data URI (always valid)`);
+            return { url, isValid: true };
+        }
+
         // Quick heuristic check first (fail fast for obvious issues)
         const isObviouslyBroken =
             !url.startsWith('http') ||
@@ -95,18 +105,17 @@ export async function fixBrokenImages(html: string, brandName: string): Promise<
     const validationResults = await Promise.all(validationPromises);
     const urlValidityMap = new Map(validationResults.map(r => [r.url, r.isValid]));
 
-    // Replace all broken images (including duplicates)
-    const textLogo = `<div class='text-2xl font-bold text-gray-900 mb-6 text-center'>${brandName}</div>`;
-
+    // Replace all broken images (including duplicates) with default generic logo
     urlToMatches.forEach((matchesForUrl, url) => {
         const isValid = urlValidityMap.get(url) ?? false;
 
         if (!isValid) {
-            console.log(`🔧 Replacing ${matchesForUrl.length} broken image(s) with text logo`);
+            console.log(`🔧 Replacing ${matchesForUrl.length} broken image(s) with default generic logo`);
 
             matchesForUrl.forEach(({ fullTag }) => {
-                // Use global replace to handle duplicate URLs
-                fixedHtml = fixedHtml.replace(fullTag, textLogo);
+                // Simply replace the src attribute, keep all other attributes intact
+                const fixedTag = fullTag.replace(/src=['"]([^'"]*)['"]/i, `src='${DEFAULT_GENERIC_LOGO}'`);
+                fixedHtml = fixedHtml.replace(fullTag, fixedTag);
             });
         }
     });

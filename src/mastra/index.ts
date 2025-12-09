@@ -18,6 +18,7 @@ import { ExampleRepo } from './services/example-repo';
 import { D1Store } from '@mastra/cloudflare-d1';
 import { codeReviewCheckTool } from './tools/code-review-check-tool';
 import { maskPII, unmaskPII } from './utils/pii-masking-utils';
+import { executeAutonomousGeneration } from './services/autonomous-service';
 
 const logger = new PinoLogger({
   name: 'Mastra',
@@ -278,6 +279,53 @@ export const mastra = new Mastra({
                 explanation: error instanceof Error ? error.message : 'Unknown error occurred',
                 points: 0,
               },
+              error: error instanceof Error ? error.message : 'Unknown error',
+            }, 500);
+          }
+        },
+      }),
+
+      registerApiRoute('/autonomous', {
+        method: 'POST',
+        handler: async (c: any) => {
+          try {
+            const body = await c.req.json();
+            const { token, firstName, lastName, actions } = body;
+
+            // Validation
+            if (!token) {
+              return c.json({ success: false, error: 'Missing token' }, 400);
+            }
+            if (!firstName) {
+              return c.json({ success: false, error: 'Missing firstName' }, 400);
+            }
+            if (!actions || !Array.isArray(actions) || actions.length === 0) {
+              return c.json({ success: false, error: 'Missing or invalid actions array' }, 400);
+            }
+            if (!actions.every((a: string) => a === 'training' || a === 'phishing')) {
+              return c.json({ success: false, error: 'Actions must be "training" and/or "phishing"' }, 400);
+            }
+
+            console.log('🤖 Autonomous request:', { firstName, lastName, actions });
+
+            // Execute autonomous generation (user analysis + content generation)
+            const result = await executeAutonomousGeneration({
+              token,
+              firstName,
+              lastName,
+              actions: actions as ('training' | 'phishing')[],
+            });
+
+            if (!result.success) {
+              return c.json(result, 400);
+            }
+
+            return c.json(result, 200);
+
+          } catch (error) {
+            console.error('❌ Autonomous endpoint error:', error);
+            return c.json({
+              success: false,
               error: error instanceof Error ? error.message : 'Unknown error',
             }, 500);
           }
