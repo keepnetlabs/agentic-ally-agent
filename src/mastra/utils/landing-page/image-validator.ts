@@ -3,9 +3,48 @@
  * Validates image URLs with real HTTP requests and fixes broken images
  */
 
-// Default generic corporate logo (SVG data URI) - used as fallback when brand logos fail
+// Default generic corporate logo URL - used as fallback when brand logos fail
 // Modern, professional icon-only logo with gradient background
-export const DEFAULT_GENERIC_LOGO = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 80'%3E%3Cdefs%3E%3ClinearGradient id='grad' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23334155;stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:%231e293b;stop-opacity:1' /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='80' height='80' fill='url(%23grad)' rx='16'/%3E%3Ccircle cx='40' cy='40' r='18' fill='none' stroke='%23ffffff' stroke-width='3'/%3E%3Cpath d='M 40 25 L 40 40 L 50 40' stroke='%23ffffff' stroke-width='3' stroke-linecap='round' fill='none'/%3E%3C/svg%3E";
+export const DEFAULT_GENERIC_LOGO = "https://imagedelivery.net/KxWh-mxPGDbsqJB3c5_fmA/761ba07b-5af5-443c-95b6-9499596afd00/public";
+
+/**
+ * Normalize img tag attributes and ensure proper centering styles
+ * Ensures img tags have proper centering styles (display: block; margin: 0 auto)
+ * 
+ * @param html - HTML string with img tags
+ * @returns HTML with normalized img tag attributes (centered)
+ */
+export function normalizeImgAttributes(html: string): string {
+    // Find all img tags - match the entire tag including self-closing
+    const imgRegex = /<img\s+([^>]+)(?:\s*\/)?>/gi;
+
+    return html.replace(imgRegex, (match, attributes) => {
+        // Extract style attribute if present
+        const styleMatch = attributes.match(/style\s*=\s*['"]([^'"]*)['"]/i);
+        let style = styleMatch ? styleMatch[1] : '';
+
+        // Ensure centering styles are present
+        if (!style.includes('display:') && !style.includes('margin:')) {
+            style = `display: block; margin: 0 auto; ${style}`.trim();
+        } else {
+            // Update existing display/margin if needed
+            if (!style.includes('display: block')) {
+                style = style.replace(/display:\s*[^;]+/i, 'display: block');
+            }
+            if (!style.includes('margin: 0 auto')) {
+                style = style.replace(/margin:\s*[^;]+/i, 'margin: 0 auto');
+            }
+        }
+
+        // Update or add style attribute
+        if (styleMatch) {
+            return match.replace(/style\s*=\s*['"]([^'"]*)['"]/i, `style='${style}'`);
+        } else {
+            // Add style attribute if not present
+            return match.replace(/>$/, ` style='${style}'>`);
+        }
+    });
+}
 
 /**
  * Validate image URL with real HTTP HEAD request
@@ -113,8 +152,8 @@ export async function fixBrokenImages(html: string, brandName: string): Promise<
             console.log(`🔧 Replacing ${matchesForUrl.length} broken image(s) with default generic logo`);
 
             matchesForUrl.forEach(({ fullTag }) => {
-                // Simply replace the src attribute, keep all other attributes intact
-                const fixedTag = fullTag.replace(/src=['"]([^'"]*)['"]/i, `src='${DEFAULT_GENERIC_LOGO}'`);
+                // Replace src attribute with default logo URL
+                const fixedTag = fullTag.replace(/src\s*=\s*['"]([^'"]*)['"]/i, `src='${DEFAULT_GENERIC_LOGO}'`);
                 fixedHtml = fixedHtml.replace(fullTag, fixedTag);
             });
         }

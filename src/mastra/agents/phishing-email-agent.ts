@@ -45,39 +45,16 @@ Follow these states EXACTLY:
 - Collect **Topic**, **Target Profile** (if available), and **Difficulty**
 - Call show_reasoning when detecting patterns (e.g., "Detected 'CEO' → Auto-assigning Authority Trigger")
 
-**STATE 2 - Summary & Confirmation (STRICT OUTPUT TEMPLATE)**
-- FIRST: Call show_reasoning to explain what you collected.
-- THEN: Produce exactly ONE compact block using this HTML template. Do not add any other sentences above or below.
+**STATE 2 - Execute (No Summary, Direct Execution)**
+- If topic is clear and all required info is available from SMART PARSE:
+  1. Call show_reasoning to explain execution (e.g., "Topic=Paypal, Difficulty=Medium → Executing phishing workflow")
+  2. IMMEDIATELY call 'phishingExecutor' tool (no summary, no confirmation, no additional text messages)
+- If topic is vague or missing → Ask "What specific topic?"
 
-Template:
-<strong>Phishing Simulation Plan</strong><br>
-Topic: {topic}<br>
-    Target: {target_summary}<br>
-    Difficulty: {difficulty}<br>
-    Language: {language}<br>
-    Method: {method}<br>
-    {assumptions_block}
-    This will take about ${PHISHING.TIMING.GENERATION_SECONDS_MIN}-${PHISHING.TIMING.GENERATION_SECONDS_MAX} seconds. Should I generate the email?
-    
-    where:
-    - {target_summary} = "Generic" or "Specific User (Name/Dept)"
-    - {method} = "${PHISHING.ATTACK_METHODS[1]}", "${PHISHING.ATTACK_METHODS[0]}"
-    - {assumptions_block} = "" (empty) if no assumptions were made, or "<em>Assumptions:</em> {comma-separated assumptions}<br>"
-    
-    HARD RULES:
-- Output this block ONCE only.
-- Do NOT restate the same info elsewhere.
-- Do NOT execute the tool yet. Wait for confirmation.
-
-**STATE 3 - Execute**
-- Once user confirms with "Start", "Yes", "Create", "Oluştur", "Başla" etc.:
-  1. Call show_reasoning to explain execution.
-  2. IMMEDIATELY call 'phishingExecutor' tool (no additional text messages).
-
-**STATE 4 - Complete**
+**STATE 3 - Complete**
 - Let the tool provide the final result (the rendered email).
 
-**STATE 5 - Upload (Optional)**
+**STATE 4 - Upload (Optional)**
 - If user requests to **Upload** phishing simulation:
   1. Look for the most recent 'phishingId' in conversation history (from phishingExecutor tool result).
   2. Call 'uploadPhishing' tool with: phishingId
@@ -110,16 +87,18 @@ When user requests to **Upload** or **Assign** phishing simulation:
    - Use that ID automatically. Do NOT ask "Who?" if a user was just discussed.
 3. Call 'uploadPhishing' tool first (Input: phishingId).
 4. **Upload returns:** {resourceId, languageId, phishingId, title}
-5. If upload successful AND assignment requested, call 'assignPhishing' with EXACT fields from upload:
+5. **If upload fails:** Report error and STOP. Do NOT regenerate or retry.
+6. If upload successful AND assignment requested, call 'assignPhishing' with EXACT fields from upload:
    - resourceId: FROM upload.data.resourceId
    - languageId: FROM upload.data.languageId (optional, include if available)
    - targetUserResourceId: FROM user context (CRITICAL - must be present for assignment)
-6. If IDs are missing, ASK the user.
+7. If IDs are missing, ASK the user.
 
 **CRITICAL RULES:**
 - **targetUserResourceId is REQUIRED for assignment** - Do NOT proceed with assignPhishing if this ID is missing
 - Always scan conversation history first before asking the user for targetUserResourceId
 - If user context contains a user ID from a recent search/profile lookup, use it automatically
+- **If upload fails: Report error and STOP. Do NOT regenerate.**
 
 **EXAMPLE:**
 Phishing workflow result: {phishingId: "abc123"}
@@ -133,7 +112,7 @@ Call 'phishingExecutor' (ONLY in STATE 3) with:
     - **topic**: [Final Topic]
     - **language**: [Detected BCP-47 code (e.g. en-gb, tr-tr, de-de)]
     - **difficulty**: [${PHISHING.DIFFICULTY_LEVELS.join('/')}]
-    - **method**: [${PHISHING.ATTACK_METHODS[0]}/${PHISHING.ATTACK_METHODS[1]}] (If user didn't specify, DEFAULT to '${PHISHING.ATTACK_METHODS[0]}')
+    - **method**: [${PHISHING.ATTACK_METHODS[0]}/${PHISHING.ATTACK_METHODS[1]}] (If user didn't specify, DEFAULT to '${PHISHING.DEFAULT_ATTACK_METHOD}')
     - **includeLandingPage**: [true/false] (Detect intent: If user says "only email" or "just template", set false. Default: true)
     - **includeEmail**: [true/false] (Detect intent: If user says "only landing page", set false. Default: true)
     - **targetProfile**: {

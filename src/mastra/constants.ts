@@ -459,7 +459,7 @@ export const PHISHING = {
 
   // Attack methods
   ATTACK_METHODS: ['Click-Only', 'Data-Submission'] as const,
-  DEFAULT_ATTACK_METHOD: 'Click-Only',
+  DEFAULT_ATTACK_METHOD: 'Data-Submission',
 
   // Workflow configuration
   WORKFLOW_TYPE: 'create-phishing',
@@ -492,6 +492,7 @@ export const PHISHING_EMAIL = {
     '{SUBJECT}',
     '{DATEEMAILSENT}',
     '{COMPANYNAME}',
+    '{CUSTOMMAINLOGO}',
     '{DATE_SENT}',
     '{CURRENT_DATE}',
     '{CURRENT_DATE_PLUS_10_DAYS}',
