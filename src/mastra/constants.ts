@@ -136,6 +136,16 @@ export const RETRY = {
 } as const;
 
 // ============================================
+// TIMEOUT CONFIGURATION
+// ============================================
+
+/**
+ * Default timeout for agent calls (60s - safe for Cloudflare Workers)
+ * Can be overridden per operation if needed
+ */
+export const AGENT_CALL_TIMEOUT_MS = 60000;
+
+// ============================================
 // EXAMPLE REPOSITORY CONFIGURATION
 // ============================================
 
