@@ -1,7 +1,7 @@
 import { generateText } from 'ai';
-import { getModel, Model, ModelProvider } from '../model-providers';
-import { PromptAnalysis } from '../types/prompt-analysis';
-import videoDatabase from '../data/video-database.json';
+import { getModel, Model, ModelProvider } from '../../model-providers';
+import { PromptAnalysis } from '../../types/prompt-analysis';
+import videoDatabase from '../../data/video-database.json';
 
 /**
  * Selects the most appropriate SCENARIO video from database based on topic analysis

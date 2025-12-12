@@ -8,7 +8,7 @@ import { CreateInboxStructureSchema, CreateInboxStructureOutputSchema } from '..
 import { cleanResponse } from '../utils/content-processors/json-cleaner';
 import { generateInboxTextsPrompt } from './inbox-generators/inbox-texts-generator';
 import { generateInboxEmailsParallel } from './inbox-generators/inbox-emails-orchestrator';
-import { LOCALIZER_PARAMS } from '../utils/llm-generation-params';
+import { LOCALIZER_PARAMS } from '../utils/config/llm-generation-params';
 
 const microlearningService = new MicrolearningService();
 

@@ -1,7 +1,7 @@
 import { generateText } from 'ai';
 import { cleanResponse } from '../../utils/content-processors/json-cleaner';
-import { LOCALIZER_PARAMS } from '../../utils/llm-generation-params';
-import { getLanguagePrompt } from '../../utils/localization-language-rules';
+import { LOCALIZER_PARAMS } from '../../utils/config/llm-generation-params';
+import { getLanguagePrompt } from '../../utils/language/localization-language-rules';
 
 interface RewriteContext {
     sourceLanguage: string;

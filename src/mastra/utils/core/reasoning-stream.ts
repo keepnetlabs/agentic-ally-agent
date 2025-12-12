@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import { generateText } from 'ai';
-import { getModelWithOverride } from '../model-providers';
+import { getModelWithOverride } from '../../model-providers';
 
 /**
  * Stream reasoning to frontend using AI SDK reasoning protocol

@@ -1,6 +1,6 @@
 import { generateText } from 'ai';
 import { cleanResponse } from '../content-processors/json-cleaner';
-import { streamDirectReasoning } from '../reasoning-stream';
+import { streamDirectReasoning } from '../core/reasoning-stream';
 
 /**
  * Retry generation with stronger authorization prompt if first attempt fails

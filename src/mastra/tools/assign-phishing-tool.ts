@@ -1,6 +1,6 @@
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
-import { requestStorage } from '../utils/request-storage';
+import { requestStorage } from '../utils/core/request-storage';
 import { ERROR_MESSAGES } from '../constants';
 
 const ASSIGN_API_URL = 'https://crud-phishing-worker.keepnet-labs-ltd-business-profile4086.workers.dev/send'; // TODO: Update with actual phishing assign endpoint

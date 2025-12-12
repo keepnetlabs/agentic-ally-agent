@@ -3,8 +3,8 @@ import { z } from 'zod';
 import { translateLanguageJsonTool } from '../tools/translate-language-json-tool';
 import { inboxTranslateJsonTool } from '../tools/inbox-translate-json-tool';
 import { KVService } from '../services/kv-service';
-import { normalizeDepartmentName } from '../utils/language-utils';
-import { validateInboxStructure, correctInboxStructure, detectJsonCorruption } from '../utils/json-validation-utils';
+import { normalizeDepartmentName } from '../utils/language/language-utils';
+import { validateInboxStructure, correctInboxStructure, detectJsonCorruption } from '../utils/validation/json-validation-utils';
 import { MODEL_PROVIDERS } from '../constants';
 
 // Input/Output Schemas

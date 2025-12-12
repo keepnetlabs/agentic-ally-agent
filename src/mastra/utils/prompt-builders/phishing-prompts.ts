@@ -4,7 +4,7 @@
  */
 
 import { PHISHING, PHISHING_EMAIL, LANDING_PAGE } from '../../constants';
-import { DIFFICULTY_CONFIG } from '../../config/phishing-difficulty-config';
+import { DIFFICULTY_CONFIG } from '../config/phishing-difficulty-config';
 import { DEFAULT_GENERIC_LOGO } from '../landing-page/image-validator';
 import { AnalysisSchema } from '../../schemas/phishing-workflow-schemas';
 import { z } from 'zod';

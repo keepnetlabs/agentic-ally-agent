@@ -17,7 +17,7 @@ import { getDeployer } from './deployer';
 import { ExampleRepo } from './services/example-repo';
 import { D1Store } from '@mastra/cloudflare-d1';
 import { codeReviewCheckTool } from './tools/code-review-check-tool';
-import { maskPII, unmaskPII } from './utils/pii-masking-utils';
+import { maskPII, unmaskPII } from './utils/parsers/pii-masking-utils';
 import { executeAutonomousGeneration } from './services/autonomous-service';
 
 const logger = new PinoLogger({

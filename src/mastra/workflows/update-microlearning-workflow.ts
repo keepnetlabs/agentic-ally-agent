@@ -2,11 +2,11 @@ import { createStep, createWorkflow } from '@mastra/core/workflows';
 import { z } from 'zod';
 import { generateText } from 'ai';
 import { KVService } from '../services/kv-service';
-import { Logger } from '../utils/logger';
-import { normalizeDepartmentName } from '../utils/language-utils';
+import { Logger } from '../utils/core/logger';
+import { normalizeDepartmentName } from '../utils/language/language-utils';
 import { getModelWithOverride } from '../model-providers';
 import { THEME_COLORS } from '../constants';
-import { DEFAULT_GENERATION_PARAMS } from '../utils/llm-generation-params';
+import { DEFAULT_GENERATION_PARAMS } from '../utils/config/llm-generation-params';
 
 const logger = new Logger('UpdateMicrolearningWorkflow');
 

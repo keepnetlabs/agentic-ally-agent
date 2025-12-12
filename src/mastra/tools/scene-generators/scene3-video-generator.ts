@@ -1,7 +1,7 @@
 import { PromptAnalysis } from '../../types/prompt-analysis';
 import { MicrolearningContent } from '../../types/microlearning';
 import { buildContextData } from '../../utils/prompt-builders/base-context-builder';
-import { selectVideoForTopic, generateVideoMetadata } from '../../utils/video-selector';
+import { selectVideoForTopic, generateVideoMetadata } from '../../utils/resolvers/video-selector';
 import transcriptDatabase from '../../data/transcript-database.json';
 
 

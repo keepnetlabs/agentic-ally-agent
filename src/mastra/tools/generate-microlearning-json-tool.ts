@@ -4,9 +4,10 @@ import { generateText } from 'ai';
 import { PromptAnalysis } from '../types/prompt-analysis';
 import { MicrolearningContent, Scene } from '../types/microlearning';
 import { cleanResponse } from '../utils/content-processors/json-cleaner';
-import { METADATA_GENERATION_PARAMS } from '../utils/llm-generation-params';
+import { METADATA_GENERATION_PARAMS } from '../utils/config/llm-generation-params';
 import { CATEGORIES } from '../constants';
 import { LanguageModelSchema } from '../types/language-model';
+import { ProductService } from '../services/product-service';
 
 const GenerateMicrolearningJsonSchema = z.object({
   analysis: z.object({
@@ -72,7 +73,11 @@ function generateEthicalPolicy() {
 // Removed: AI-generated scientific evidence (using static template for performance)
 
 // Step 2: AI generates complete microlearning.json structure with rich context
-async function generateMicrolearningJsonWithAI(analysis: PromptAnalysis & { additionalContext?: string }, microlearningId: string, model: any) {
+async function generateMicrolearningJsonWithAI(
+  analysis: PromptAnalysis & { additionalContext?: string },
+  microlearningId: string,
+  model: any
+) {
   // Basic structure creation - detailed enhancement happens in Stage 2
 
   // Determine Scene 4 type based on analysis
@@ -101,7 +106,7 @@ async function generateMicrolearningJsonWithAI(analysis: PromptAnalysis & { addi
     },
     scientific_evidence: generateScientificEvidence(),
     scenes: generateSceneStructure(analysis.duration, scene4Type),
-    theme: generateTheme(analysis.themeColor)
+    theme: await generateTheme(analysis.themeColor)
   };
 
   // Stage 2: Enhance the microlearning object with AI
@@ -113,9 +118,38 @@ async function generateMicrolearningJsonWithAI(analysis: PromptAnalysis & { addi
 }
 
 
-function generateTheme(themeColor?: string) {
+async function generateTheme(themeColor?: string) {
   // Use provided theme color or fallback to gray
   const backgroundColor = themeColor || "bg-gradient-gray";
+
+  // Default logo configuration
+  let logoConfig = {
+    "src": "https://keepnetlabs.com/keepnet-logo.svg",
+    "darkSrc": "https://imagedelivery.net/KxWh-mxPGDbsqJB3c5_fmA/74b2b289-fe69-4e14-ef7d-f15e2ad3bb00/public",
+    "minimizedSrc": "https://imagedelivery.net/KxWh-mxPGDbsqJB3c5_fmA/ed60ad9d-9ad1-48a7-177a-bac702cdce00/public",
+    "minimizedDarkSrc": "https://imagedelivery.net/KxWh-mxPGDbsqJB3c5_fmA/ed60ad9d-9ad1-48a7-177a-bac702cdce00/public",
+    "alt": "Keepnet Labs"
+  };
+
+  // Fetch whitelabeling config from requestStorage
+  try {
+    const productService = new ProductService();
+    const whitelabelingConfig = await productService.getWhitelabelingConfig();
+
+    console.log('🎨 Whitelabeling Config Response:', whitelabelingConfig);
+
+    if (whitelabelingConfig) {
+      logoConfig = {
+        "src": whitelabelingConfig.mainLogoUrl || logoConfig.src,
+        "darkSrc": whitelabelingConfig.mainLogoUrl || logoConfig.darkSrc,
+        "minimizedSrc": whitelabelingConfig.minimizedMenuLogoUrl || logoConfig.minimizedSrc,
+        "minimizedDarkSrc": whitelabelingConfig.minimizedMenuLogoUrl || logoConfig.minimizedDarkSrc,
+        "alt": whitelabelingConfig.brandName || logoConfig.alt
+      };
+    }
+  } catch (error) {
+    console.warn('⚠️ Failed to fetch whitelabeling config, using defaults:', error instanceof Error ? error.message : String(error));
+  }
 
   return {
     fontFamily: {
@@ -126,13 +160,7 @@ function generateTheme(themeColor?: string) {
     colors: {
       background: backgroundColor
     },
-    "logo": {
-      "src": "https://keepnetlabs.com/keepnet-logo.svg",
-      "darkSrc": "https://imagedelivery.net/KxWh-mxPGDbsqJB3c5_fmA/74b2b289-fe69-4e14-ef7d-f15e2ad3bb00/public",
-      "minimizedSrc": "https://imagedelivery.net/KxWh-mxPGDbsqJB3c5_fmA/ed60ad9d-9ad1-48a7-177a-bac702cdce00/public",
-      "minimizedDarkSrc": "https://imagedelivery.net/KxWh-mxPGDbsqJB3c5_fmA/ed60ad9d-9ad1-48a7-177a-bac702cdce00/public",
-      "alt": "Keepnet Labs"
-    }
+    "logo": logoConfig
   }
 }
 

@@ -1,5 +1,5 @@
 import { Context, Next } from 'hono';
-import { requestStorage } from '../utils/request-storage';
+import { requestStorage } from '../utils/core/request-storage';
 
 /**
  * Middleware to initialize AsyncLocalStorage for request-scoped data.

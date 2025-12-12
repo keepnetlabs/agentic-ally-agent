@@ -12,7 +12,7 @@ import {
   validateLandingPage,
   logValidationResults
 } from '../utils/landing-page';
-import { streamDirectReasoning } from '../utils/reasoning-stream';
+import { streamDirectReasoning } from '../utils/core/reasoning-stream';
 import {
   InputSchema,
   AnalysisSchema,

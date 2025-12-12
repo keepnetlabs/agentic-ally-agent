@@ -1,6 +1,6 @@
 // src/mastra/services/autonomous-service.ts
 import { getUserInfoTool } from '../tools/get-user-info-tool';
-import { requestStorage } from '../utils/request-storage';
+import { requestStorage } from '../utils/core/request-storage';
 import { phishingEmailAgent } from '../agents/phishing-email-agent';
 import { microlearningAgent } from '../agents/microlearning-agent';
 

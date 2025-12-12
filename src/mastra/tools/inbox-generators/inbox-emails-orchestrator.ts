@@ -2,7 +2,7 @@ import { generateText } from 'ai';
 import { buildInboxEmailBaseSystem } from './inbox-email-base';
 import { EmailVariant, variantDeltaBuilder, buildHintsFromInsights } from './inbox-email-variants';
 import { cleanResponse } from '../../utils/content-processors/json-cleaner';
-import { INBOX_GENERATION_PARAMS } from '../../utils/llm-generation-params';
+import { INBOX_GENERATION_PARAMS } from '../../utils/config/llm-generation-params';
 
 type OrchestratorArgs = {
     topic: string;

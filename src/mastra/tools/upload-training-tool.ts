@@ -1,6 +1,6 @@
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
-import { requestStorage } from '../utils/request-storage';
+import { requestStorage } from '../utils/core/request-storage';
 import { KVService } from '../services/kv-service';
 import { ERROR_MESSAGES } from '../constants';
 

@@ -1,4 +1,4 @@
-import { Logger, startTimer } from '../utils/logger';
+import { Logger, startTimer } from '../utils/core/logger';
 import { RETRY } from '../constants';
 
 /**

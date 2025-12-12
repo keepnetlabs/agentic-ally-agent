@@ -4,11 +4,11 @@ import { generateText } from 'ai';
 import { getModelWithOverride } from '../model-providers';
 import { PromptAnalysis } from '../types/prompt-analysis';
 import { ExampleRepo } from '../services/example-repo';
-import { validateBCP47LanguageCode, DEFAULT_LANGUAGE } from '../utils/language-utils';
+import { validateBCP47LanguageCode, DEFAULT_LANGUAGE } from '../utils/language/language-utils';
 import { cleanResponse } from '../utils/content-processors/json-cleaner';
-import { PROMPT_ANALYSIS_PARAMS } from '../utils/llm-generation-params';
+import { PROMPT_ANALYSIS_PARAMS } from '../utils/config/llm-generation-params';
 import { MICROLEARNING, PROMPT_ANALYSIS, ROLES, CATEGORIES, THEME_COLORS, MODEL_PROVIDERS, TRAINING_LEVELS, DEFAULT_TRAINING_LEVEL } from '../constants';
-import { streamReasoning } from '../utils/reasoning-stream';
+import { streamReasoning } from '../utils/core/reasoning-stream';
 
 // Cache formatted lists for performance
 const cachedRolesList = ROLES.VALUES.map((role) => `- "${role}"`).join('\n');

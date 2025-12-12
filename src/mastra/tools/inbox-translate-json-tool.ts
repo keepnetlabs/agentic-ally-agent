@@ -4,8 +4,8 @@ import { generateText } from 'ai';
 import * as parse5 from 'parse5';
 import { getModelWithOverride } from '../model-providers';
 import { cleanResponse } from '../utils/content-processors/json-cleaner';
-import { LOCALIZER_PARAMS } from '../utils/llm-generation-params';
-import { buildSystemPrompt } from '../utils/localization-language-rules';
+import { LOCALIZER_PARAMS } from '../utils/config/llm-generation-params';
+import { buildSystemPrompt } from '../utils/language/localization-language-rules';
 import { MODEL_PROVIDERS } from '../constants';
 
 /* =========================================================

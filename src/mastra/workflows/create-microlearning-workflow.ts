@@ -7,7 +7,7 @@ import { createInboxStructureTool } from '../tools/create-inbox-structure-tool';
 import { getModelWithOverride } from '../model-providers';
 import { MicrolearningService } from '../services/microlearning-service';
 import { KVService } from '../services/kv-service';
-import { generateMicrolearningId, normalizeDepartmentName } from '../utils/language-utils';
+import { generateMicrolearningId, normalizeDepartmentName } from '../utils/language/language-utils';
 import { MODEL_PROVIDERS, TRAINING_LEVELS, DEFAULT_TRAINING_LEVEL, PRIORITY_LEVELS, DEFAULT_PRIORITY } from '../constants';
 import { StreamWriterSchema } from '../types/stream-writer';
 
