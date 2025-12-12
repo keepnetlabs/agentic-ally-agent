@@ -175,9 +175,10 @@ export const getUserInfoTool = createTool({
         const { firstName, lastName, fullName } = parsed;
         console.log(`🔍 Searching for user: "${fullName}" (firstName: "${firstName}", lastName: "${lastName || 'N/A'}")`);
 
-        // Get Auth Token
+        // Get Auth Token & CompanyId
         const store = requestStorage.getStore();
         const token = store?.token;
+        const companyId = store?.companyId;
         if (!token) {
             return { success: false, error: ERROR_MESSAGES.USER_INFO.TOKEN_MISSING };
         }
@@ -193,9 +194,17 @@ export const getUserInfoTool = createTool({
                     Value: lastName, FieldName: "lastName", Operator: "Contains"
                 });
             }
+            const userSearchHeaders: Record<string, string> = {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            };
+            if (companyId) {
+                userSearchHeaders['x-ir-company-id'] = companyId;
+            }
+
             const userSearchResponse = await fetch('https://test-api.devkeepnet.com/api/leaderboard/get-all', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                headers: userSearchHeaders,
                 body: JSON.stringify(userSearchPayload)
             });
 
@@ -220,9 +229,17 @@ export const getUserInfoTool = createTool({
             timelinePayload.pagination.ascending = false;
 
             console.log(`🔍 Fetching timeline for ID: ${userId}`);
+            const timelineHeaders: Record<string, string> = {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            };
+            if (companyId) {
+                timelineHeaders['x-ir-company-id'] = companyId;
+            }
+
             const timelineResponse = await fetch('https://test-api.devkeepnet.com/api/leaderboard/get-user-timeline', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                headers: timelineHeaders,
                 body: JSON.stringify(timelinePayload)
             });
 

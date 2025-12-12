@@ -34,10 +34,11 @@ export class ProductService {
         this.baseUrl = `${tokenData.idp}/api`;
       }
 
-      this.companyId = tokenData.companyId;
+      // Use companyId from requestStorage if available (X-COMPANY-ID header), otherwise from JWT
+      this.companyId = this.getCompanyIdFromRequestStorage() || tokenData.companyId;
     }
 
-    this.apiKey = process.env.IR_API_KEY || '';
+    this.apiKey = 'apikey'
   }
 
   /**
@@ -54,24 +55,35 @@ export class ProductService {
   }
 
   /**
+   * Get companyId from requestStorage (X-COMPANY-ID header)
+   */
+  private getCompanyIdFromRequestStorage(): string | undefined {
+    try {
+      const store = requestStorage.getStore();
+      return store?.companyId;
+    } catch (error) {
+      this.logger.warn('Failed to get companyId from requestStorage');
+      return undefined;
+    }
+  }
+
+  /**
    * Parse JWT and extract relevant fields
    */
   private parseToken(token: string): { idp?: string; companyId?: string } {
     try {
-      const parts = token.split('.');
-      if (parts.length !== 3) {
+      const payload = token.split('.')[1];
+      if (!payload) {
         this.logger.warn('Invalid JWT format');
         return {};
       }
 
-      const padding = '='.repeat((4 - (parts[1].length % 4)) % 4);
-      const payload = JSON.parse(
-        Buffer.from(parts[1] + padding, 'base64').toString('utf-8')
-      );
+      const padded = payload + '='.repeat((4 - payload.length % 4) % 4);
+      const decoded = JSON.parse(Buffer.from(padded, 'base64').toString('utf-8'));
 
       return {
-        idp: payload.idp,
-        companyId: payload.user_company_resourceid
+        idp: decoded.idp,
+        companyId: decoded.user_company_resourceid
       };
     } catch (error) {
       this.logger.warn('Failed to parse JWT token');

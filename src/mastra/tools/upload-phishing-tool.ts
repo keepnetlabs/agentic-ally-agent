@@ -32,6 +32,7 @@ export const uploadPhishingTool = createTool({
         // Get Auth Token & Cloudflare bindings from AsyncLocalStorage
         const store = requestStorage.getStore();
         const token = store?.token;
+        const companyId = store?.companyId;
         const env = store?.env; // Cloudflare env (bindings: KV, D1, Service Bindings)
 
         if (!token) {
@@ -86,6 +87,7 @@ export const uploadPhishingTool = createTool({
             // 3. Upload to Worker
             const payload = {
                 accessToken: token, // Sensitive!
+                companyId: companyId,
                 url: API_URL,
                 phishingData: phishingPayload
             };

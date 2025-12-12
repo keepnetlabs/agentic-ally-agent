@@ -26,6 +26,7 @@ export const assignTrainingTool = createTool({
     // Get Auth Token & Cloudflare bindings from AsyncLocalStorage
     const store = requestStorage.getStore();
     const token = store?.token;
+    const companyId = store?.companyId;
     const env = store?.env; // Cloudflare env (bindings: KV, D1, Service Bindings)
 
     if (!token) {
@@ -35,6 +36,7 @@ export const assignTrainingTool = createTool({
     const payload = {
       apiUrl: API_URL,
       accessToken: token,
+      companyId: companyId,
       trainingId: resourceId,
       languageId: sendTrainingLanguageId, // Map languageId to resourceId param if API expects it
       targetUserResourceId: targetUserResourceId,

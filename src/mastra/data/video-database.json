@@ -1,8 +1,26 @@
 [
   {
-    "title": "Security Awareness Podcast: Deepfake Phishing",
-    "url": "https://www.youtube.com/watch?v=6PMGH-7JQd0",
-    "topics": ["deepfake"],
+    "title": "Nano Security Awareness | Password Reuse and Credential Stuffing",
+    "url": "https://www.youtube.com/watch?v=3GkdCeGagtw",
+    "topics": ["password reuse", "credential stuffing", "account security"],
+    "audience": "general"
+  },
+  {
+    "title": "Nano Security Awareness | Public Wi-Fi and Remote Work Risks",
+    "url": "https://www.youtube.com/watch?v=WO5FYGNWcGY",
+    "topics": ["public wifi", "man-in-the-middle", "remote work security"],
+    "audience": "general"
+  },
+  {
+    "title": "Nano Security Awareness | Ransomware – When Your Screen Turns Red",
+    "url": "https://www.youtube.com/watch?v=X0cST3Cw9YE",
+    "topics": ["ransomware", "malware", "incident response"],
+    "audience": "general"
+  },
+  {
+    "title": "Nano Security Awareness | Phishing – The Silent Digital Threat",
+    "url": "https://www.youtube.com/watch?v=6wGLpVZFoq8",
+    "topics": ["phishing", "social engineering", "email security"],
     "audience": "general"
   },
   {

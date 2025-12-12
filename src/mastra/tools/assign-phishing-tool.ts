@@ -28,6 +28,7 @@ export const assignPhishingTool = createTool({
         // Get Auth Token & Cloudflare bindings from AsyncLocalStorage
         const store = requestStorage.getStore();
         const token = store?.token;
+        const companyId = store?.companyId;
         const env = store?.env; // Cloudflare env (bindings: KV, D1, Service Bindings)
 
         if (!token) {
@@ -37,6 +38,7 @@ export const assignPhishingTool = createTool({
         const payload = {
             apiUrl: API_URL,
             accessToken: token,
+            companyId: companyId,
             phishingId: resourceId,
             languageId: languageId,
             targetUserResourceId: targetUserResourceId,
