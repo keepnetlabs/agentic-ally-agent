@@ -1,6 +1,7 @@
 import { Mastra } from '@mastra/core/mastra';
 import { PinoLogger } from '@mastra/loggers';
 import { registerApiRoute } from '@mastra/core/server';
+import { Context, Next } from 'hono';
 import { microlearningAgent } from './agents/microlearning-agent';
 import { AgentRouter } from './services/agent-router';
 import { orchestratorAgent } from './agents/orchestrator-agent';
@@ -14,11 +15,20 @@ import { addLanguageWorkflow } from './workflows/add-language-workflow';
 import { addMultipleLanguagesWorkflow } from './workflows/add-multiple-languages-workflow';
 import { updateMicrolearningWorkflow } from './workflows/update-microlearning-workflow';
 import { getDeployer } from './deployer';
-import { ExampleRepo } from './services/example-repo';
+import { ExampleRepo, type D1Database } from './services/example-repo';
 import { D1Store } from '@mastra/cloudflare-d1';
 import { codeReviewCheckTool } from './tools/code-review-check-tool';
 import { maskPII, unmaskPII } from './utils/parsers/pii-masking-utils';
 import { executeAutonomousGeneration } from './services/autonomous-service';
+import type {
+  ChatRequestBody,
+  ChatMessage,
+  MessageContentPart,
+  MessageParts,
+  CodeReviewRequestBody,
+  AutonomousRequestBody,
+  CloudflareEnv,
+} from './types/api-types';
 
 const logger = new PinoLogger({
   name: 'Mastra',
@@ -26,11 +36,13 @@ const logger = new PinoLogger({
 });
 
 // Middleware to inject D1 database into ExampleRepo
-const injectD1Database = async (c: any, next: any) => {
+const injectD1Database = async (c: Context, next: Next) => {
   // Check if we have D1 database in the environment (binding name from wrangler)
-  if (c.env && c.env.agentic_ally_embeddings_cache) {
+  const env = c.env as CloudflareEnv | undefined;
+  if (env && env.agentic_ally_embeddings_cache) {
     const repo = ExampleRepo.getInstance();
-    repo.setDatabase(c.env.agentic_ally_embeddings_cache);
+    // Type assertion: Cloudflare Workers D1Database type
+    repo.setDatabase(env.agentic_ally_embeddings_cache as D1Database);
     console.log('📦 D1 database injected into ExampleRepo (production)');
   } else if (process.env.NODE_ENV === 'development') {
     // Local development - D1 bindings not available in mastra dev
@@ -77,14 +89,14 @@ export const mastra = new Mastra({
     apiRoutes: [
       registerApiRoute('/chat', {
         method: 'POST',
-        handler: async (c) => {
+        handler: async (c: Context) => {
           const mastra = c.get('mastra');
 
           let prompt: string | undefined;
           let routingContext: string = ''; // Context for orchestrator
-          let body: any = {};
+          let body: ChatRequestBody = {};
           try {
-            body = await c.req.json();
+            body = await c.req.json<ChatRequestBody>();
 
             // Prefer explicit fields if provided
             prompt = body?.prompt || body?.text || body?.input;
@@ -95,7 +107,7 @@ export const mastra = new Mastra({
               const recentMessages = body.messages.slice(-10);
 
               // Build routing context string
-              routingContext = recentMessages.map((m: any) => {
+              routingContext = recentMessages.map((m: ChatMessage) => {
                 const role = m.role === 'user' ? 'User' : 'Assistant';
                 let content = '';
 
@@ -105,15 +117,15 @@ export const mastra = new Mastra({
                 }
                 // Case 2: Array (e.g. multi-modal)
                 else if (Array.isArray(m.content)) {
-                  content = m.content.map((c: any) => {
-                    if (c?.type === 'text') return c.text;
-                    if (c?.type === 'image') return '[Image]';
+                  content = m.content.map((part: MessageContentPart) => {
+                    if (part?.type === 'text') return part.text || '';
+                    if (part?.type === 'image') return '[Image]';
                     return '';
                   }).join(' ');
                 }
                 // Case 3: Vercel AI SDK "parts" structure
                 else if (Array.isArray(m.parts)) {
-                  content = m.parts.map((p: any) => {
+                  content = m.parts.map((p: MessageParts) => {
                     if (p?.type === 'text') return p.text;
                     return '';
                   }).join(' ');
@@ -124,8 +136,8 @@ export const mastra = new Mastra({
                   // Try to dig into tool result if possible, but for routing, knowing it was a tool is enough
                 }
                 // Case 5: Object fallback (try to find text field)
-                else if (typeof m.content === 'object') {
-                  content = m.content?.text || JSON.stringify(m.content);
+                else if (typeof m.content === 'object' && m.content !== null) {
+                  content = (m.content as { text?: string })?.text || JSON.stringify(m.content);
                 }
 
                 // Final Fallback
@@ -140,15 +152,15 @@ export const mastra = new Mastra({
 
               // If prompt wasn't explicitly set, try to get it from the last message
               if (!prompt) {
-                const userMessages = body.messages.filter((m: any) => m?.role === 'user');
+                const userMessages = body.messages.filter((m: ChatMessage) => m?.role === 'user');
                 const lastUserMessage = userMessages[userMessages.length - 1];
                 if (lastUserMessage) {
                   if (typeof lastUserMessage?.content === 'string') {
                     prompt = lastUserMessage.content;
                   } else if (Array.isArray(lastUserMessage?.parts)) {
                     const textParts = lastUserMessage.parts
-                      .filter((p: any) => p?.type === 'text' && typeof p?.text === 'string')
-                      .map((p: any) => p.text);
+                      .filter((p: MessageParts) => p?.type === 'text' && typeof p?.text === 'string')
+                      .map((p: MessageParts) => p.text);
                     if (textParts.length > 0) {
                       prompt = textParts.join('\n');
                     }
@@ -257,11 +269,17 @@ export const mastra = new Mastra({
 
       registerApiRoute('/code-review-validate', {
         method: 'POST',
-        handler: async (c: any) => {
+        handler: async (c: Context) => {
           try {
-            const body = await c.req.json();
+            const body = await c.req.json<CodeReviewRequestBody>();
 
-            const result = await (codeReviewCheckTool.execute as any)(body);
+            // Type-safe execution - Tool.execute expects context with inputData
+            if (!codeReviewCheckTool.execute) {
+              throw new Error('Code review tool execute method not available');
+            }
+            const result = await codeReviewCheckTool.execute({
+              inputData: body,
+            } as Parameters<typeof codeReviewCheckTool.execute>[0]);
 
             if (result.success) {
               return c.json(result, 200);
@@ -287,9 +305,9 @@ export const mastra = new Mastra({
 
       registerApiRoute('/autonomous', {
         method: 'POST',
-        handler: async (c: any) => {
+        handler: async (c: Context) => {
           try {
-            const body = await c.req.json();
+            const body = await c.req.json<AutonomousRequestBody>();
             const { token, firstName, lastName, actions } = body;
 
             // Validation

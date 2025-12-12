@@ -32,7 +32,7 @@ interface SearchResult {
 
 
 // D1 Database schema interface
-interface D1Database {
+export interface D1Database {
     prepare(query: string): D1PreparedStatement;
     dump(): Promise<ArrayBuffer>;
     batch(statements: D1PreparedStatement[]): Promise<D1Result[]>;
