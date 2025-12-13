@@ -1,11 +1,11 @@
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
-import { createMicrolearningWorkflow } from '../workflows/create-microlearning-workflow';
-import { addLanguageWorkflow } from '../workflows/add-language-workflow';
-import { addMultipleLanguagesWorkflow } from '../workflows/add-multiple-languages-workflow';
-import { updateMicrolearningWorkflow } from '../workflows/update-microlearning-workflow';
+import { createMicrolearningWorkflow } from '../../workflows/create-microlearning-workflow';
+import { addLanguageWorkflow } from '../../workflows/add-language-workflow';
+import { addMultipleLanguagesWorkflow } from '../../workflows/add-multiple-languages-workflow';
+import { updateMicrolearningWorkflow } from '../../workflows/update-microlearning-workflow';
 import { v4 as uuidv4 } from 'uuid';
-import { PROMPT_ANALYSIS, MODEL_PROVIDERS, ERROR_MESSAGES } from '../constants';
+import { PROMPT_ANALYSIS, MODEL_PROVIDERS, ERROR_MESSAGES } from '../../constants';
 
 /**
  * Type definitions for workflow results

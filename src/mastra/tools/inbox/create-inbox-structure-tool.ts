@@ -1,14 +1,14 @@
 import { Tool } from '@mastra/core/tools';
 import { generateText } from 'ai';
-import { MicrolearningContent } from '../types/microlearning';
-import { MicrolearningService } from '../services/microlearning-service';
-import { getModelWithOverride } from '../model-providers';
-import { InboxContentSchema } from '../schemas/microlearning-schema';
-import { CreateInboxStructureSchema, CreateInboxStructureOutputSchema } from '../schemas/create-inbox-structure-schema';
-import { cleanResponse } from '../utils/content-processors/json-cleaner';
-import { generateInboxTextsPrompt } from './inbox-generators/inbox-texts-generator';
-import { generateInboxEmailsParallel } from './inbox-generators/inbox-emails-orchestrator';
-import { LOCALIZER_PARAMS } from '../utils/config/llm-generation-params';
+import { MicrolearningContent } from '../../types/microlearning';
+import { MicrolearningService } from '../../services/microlearning-service';
+import { getModelWithOverride } from '../../model-providers';
+import { InboxContentSchema } from '../../schemas/microlearning-schema';
+import { CreateInboxStructureSchema, CreateInboxStructureOutputSchema } from '../../schemas/create-inbox-structure-schema';
+import { cleanResponse } from '../../utils/content-processors/json-cleaner';
+import { generateInboxTextsPrompt } from './generators/inbox-texts-generator';
+import { generateInboxEmailsParallel } from './generators/inbox-emails-orchestrator';
+import { LOCALIZER_PARAMS } from '../../utils/config/llm-generation-params';
 
 const microlearningService = new MicrolearningService();
 

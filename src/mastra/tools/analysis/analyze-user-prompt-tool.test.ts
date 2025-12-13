@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { analyzeUserPromptTool, AnalyzeUserPromptInput, AnalyzeUserPromptOutput } from './analyze-user-prompt-tool';
-import { ExampleRepo } from '../services/example-repo';
+import { ExampleRepo } from '../../services/example-repo';
 import { z } from 'zod';
 import '../../../src/__tests__/setup';
 
@@ -703,7 +703,7 @@ describe('analyzeUserPromptTool', () => {
 
     it('should handle multi-language content in single prompt', async () => {
       const input = {
-        userPrompt: 'Create phishing training / Phishing eğitimi oluştur / Erstellen Sie ein Phishing-Training',
+        userPrompt: 'Create phishing training // Phishing eğitimi oluştur // Erstellen Sie ein Phishing-Training',
       };
 
       // Language detection should still work for mixed content

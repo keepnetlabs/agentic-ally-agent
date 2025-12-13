@@ -1,22 +1,22 @@
 import { Tool } from '@mastra/core/tools';
 import { generateText } from 'ai';
-import { PromptAnalysis } from '../types/prompt-analysis';
-import { MicrolearningContent, LanguageContent } from '../types/microlearning';
-import { GenerateLanguageJsonSchema, GenerateLanguageJsonOutputSchema } from '../schemas/generate-language-json-schema';
-import { getAppTexts, getAppAriaTexts } from '../utils/language/app-texts';
-import { buildSystemPrompt } from '../utils/prompt-builders/base-context-builder';
-import { generateScene1Prompt } from './scene-generators/scene1-intro-generator';
-import { generateScene2Prompt } from './scene-generators/scene2-goal-generator';
-import { generateVideoPrompt } from './scene-generators/scene3-video-generator';
-import { generateScene4Prompt } from './scene-generators/scene4-actionable-generator';
-import { generateScene4CodeReviewPrompt } from './scene-generators/scene4-code-review-generator';
-import { generateScene5Prompt } from './scene-generators/scene5-quiz-generator';
-import { generateScene6Prompt } from './scene-generators/scene6-survey-generator';
-import { generateScene7Prompt } from './scene-generators/scene7-nudge-generator';
-import { generateScene8Prompt } from './scene-generators/scene8-summary-generator';
-import { cleanResponse } from '../utils/content-processors/json-cleaner';
-import { SCENE_GENERATION_PARAMS } from '../utils/config/llm-generation-params';
-import { trackCost } from '../utils/core/cost-tracker';
+import { PromptAnalysis } from '../../types/prompt-analysis';
+import { MicrolearningContent, LanguageContent } from '../../types/microlearning';
+import { GenerateLanguageJsonSchema, GenerateLanguageJsonOutputSchema } from '../../schemas/generate-language-json-schema';
+import { getAppTexts, getAppAriaTexts } from '../../utils/language/app-texts';
+import { buildSystemPrompt } from '../../utils/prompt-builders/base-context-builder';
+import { generateScene1Prompt } from '../scenes/generators/scene1-intro-generator';
+import { generateScene2Prompt } from '../scenes/generators/scene2-goal-generator';
+import { generateVideoPrompt } from '../scenes/generators/scene3-video-generator';
+import { generateScene4Prompt } from '../scenes/generators/scene4-actionable-generator';
+import { generateScene4CodeReviewPrompt } from '../scenes/generators/scene4-code-review-generator';
+import { generateScene5Prompt } from '../scenes/generators/scene5-quiz-generator';
+import { generateScene6Prompt } from '../scenes/generators/scene6-survey-generator';
+import { generateScene7Prompt } from '../scenes/generators/scene7-nudge-generator';
+import { generateScene8Prompt } from '../scenes/generators/scene8-summary-generator';
+import { cleanResponse } from '../../utils/content-processors/json-cleaner';
+import { SCENE_GENERATION_PARAMS } from '../../utils/config/llm-generation-params';
+import { trackCost } from '../../utils/core/cost-tracker';
 
 export const generateLanguageJsonTool = new Tool({
   id: 'generate_language_json',

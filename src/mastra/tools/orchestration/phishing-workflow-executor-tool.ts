@@ -1,8 +1,8 @@
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
-import { createPhishingWorkflow } from '../workflows/create-phishing-workflow';
+import { createPhishingWorkflow } from '../../workflows/create-phishing-workflow';
 import { v4 as uuidv4 } from 'uuid';
-import { PHISHING, MODEL_PROVIDERS, ERROR_MESSAGES } from '../constants';
+import { PHISHING, MODEL_PROVIDERS, ERROR_MESSAGES } from '../../constants';
 
 const phishingWorkflowSchema = z.object({
     workflowType: z.literal(PHISHING.WORKFLOW_TYPE).describe('Workflow to execute'),
@@ -18,7 +18,7 @@ const phishingWorkflowSchema = z.object({
     method: z.enum(PHISHING.ATTACK_METHODS).optional().describe('Type of phishing attack'),
     includeEmail: z.boolean().optional().default(true).describe('Whether to generate an email'),
     includeLandingPage: z.boolean().optional().default(true).describe('Whether to generate a landing page'),
-    additionalContext: z.string().optional().describe('User behavior context / vulnerability analysis for targeted phishing'),
+    additionalContext: z.string().optional().describe('User behavior context // vulnerability analysis for targeted phishing'),
     modelProvider: z.enum(MODEL_PROVIDERS.NAMES).optional(),
     model: z.string().optional(),
 });

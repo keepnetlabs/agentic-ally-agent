@@ -1,13 +1,13 @@
 import { Tool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { generateText } from 'ai';
-import { PromptAnalysis } from '../types/prompt-analysis';
-import { MicrolearningContent, Scene } from '../types/microlearning';
-import { cleanResponse } from '../utils/content-processors/json-cleaner';
-import { METADATA_GENERATION_PARAMS } from '../utils/config/llm-generation-params';
-import { CATEGORIES } from '../constants';
-import { LanguageModelSchema } from '../types/language-model';
-import { ProductService } from '../services/product-service';
+import { PromptAnalysis } from '../../types/prompt-analysis';
+import { MicrolearningContent, Scene } from '../../types/microlearning';
+import { cleanResponse } from '../../utils/content-processors/json-cleaner';
+import { METADATA_GENERATION_PARAMS } from '../../utils/config/llm-generation-params';
+import { CATEGORIES } from '../../constants';
+import { LanguageModelSchema } from '../../types/language-model';
+import { ProductService } from '../../services/product-service';
 
 const GenerateMicrolearningJsonSchema = z.object({
   analysis: z.object({

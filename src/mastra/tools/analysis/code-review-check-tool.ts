@@ -1,9 +1,9 @@
 import { Tool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { generateText } from 'ai';
-import { getModelWithOverride } from '../model-providers';
-import { cleanResponse } from '../utils/content-processors/json-cleaner';
-import { MODEL_PROVIDERS } from '../constants';
+import { getModelWithOverride } from '../../model-providers';
+import { cleanResponse } from '../../utils/content-processors/json-cleaner';
+import { MODEL_PROVIDERS } from '../../constants';
 
 const CodeReviewCheckSchema = z.object({
   issueType: z.string().describe('Type of issue to fix (e.g., "SQL Injection", "XSS", "Logic Error", "Performance Issue")'),

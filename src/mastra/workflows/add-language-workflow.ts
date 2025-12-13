@@ -1,7 +1,7 @@
 import { createStep, createWorkflow } from '@mastra/core/workflows';
 import { z } from 'zod';
-import { translateLanguageJsonTool } from '../tools/translate-language-json-tool';
-import { inboxTranslateJsonTool } from '../tools/inbox-translate-json-tool';
+import { translateLanguageJsonTool } from '../tools/generation';
+import { inboxTranslateJsonTool } from '../tools/inbox';
 import { KVService } from '../services/kv-service';
 import { normalizeDepartmentName } from '../utils/language/language-utils';
 import { validateInboxStructure, correctInboxStructure, detectJsonCorruption } from '../utils/validation/json-validation-utils';

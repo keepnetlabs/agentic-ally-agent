@@ -1,17 +1,17 @@
 import { Tool } from '@mastra/core/tools';
 import { z } from 'zod';
-import { getModelWithOverride } from '../model-providers';
-import { MODEL_PROVIDERS } from '../constants';
-import { SceneType, getSceneTypeOrDefault } from '../types/scene-types';
-import { rewriteScene1Intro } from './scene-rewriters/scene1-intro-rewriter';
-import { rewriteScene2Goal } from './scene-rewriters/scene2-goal-rewriter';
-import { rewriteScene3Video } from './scene-rewriters/scene3-video-rewriter';
-import { rewriteScene4Actionable } from './scene-rewriters/scene4-actionable-rewriter';
-import { rewriteScene5Quiz } from './scene-rewriters/scene5-quiz-rewriter';
-import { rewriteScene6Survey } from './scene-rewriters/scene6-survey-rewriter';
-import { rewriteScene7Nudge } from './scene-rewriters/scene7-nudge-rewriter';
-import { rewriteScene8Summary } from './scene-rewriters/scene8-summary-rewriter';
-import { rewriteAppTexts } from './scene-rewriters/app-texts-rewriter';
+import { getModelWithOverride } from '../../model-providers';
+import { MODEL_PROVIDERS } from '../../constants';
+import { SceneType, getSceneTypeOrDefault } from '../../types/scene-types';
+import { rewriteScene1Intro } from '../scenes/rewriters/scene1-intro-rewriter';
+import { rewriteScene2Goal } from '../scenes/rewriters/scene2-goal-rewriter';
+import { rewriteScene3Video } from '../scenes/rewriters/scene3-video-rewriter';
+import { rewriteScene4Actionable } from '../scenes/rewriters/scene4-actionable-rewriter';
+import { rewriteScene5Quiz } from '../scenes/rewriters/scene5-quiz-rewriter';
+import { rewriteScene6Survey } from '../scenes/rewriters/scene6-survey-rewriter';
+import { rewriteScene7Nudge } from '../scenes/rewriters/scene7-nudge-rewriter';
+import { rewriteScene8Summary } from '../scenes/rewriters/scene8-summary-rewriter';
+import { rewriteAppTexts } from '../scenes/rewriters/app-texts-rewriter';
 
 /* =========================================================
  * Schemas

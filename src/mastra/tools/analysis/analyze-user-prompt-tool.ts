@@ -1,14 +1,14 @@
 import { Tool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { generateText } from 'ai';
-import { getModelWithOverride } from '../model-providers';
-import { PromptAnalysis } from '../types/prompt-analysis';
-import { ExampleRepo } from '../services/example-repo';
-import { validateBCP47LanguageCode, DEFAULT_LANGUAGE } from '../utils/language/language-utils';
-import { cleanResponse } from '../utils/content-processors/json-cleaner';
-import { PROMPT_ANALYSIS_PARAMS } from '../utils/config/llm-generation-params';
-import { MICROLEARNING, PROMPT_ANALYSIS, ROLES, CATEGORIES, THEME_COLORS, MODEL_PROVIDERS, TRAINING_LEVELS, DEFAULT_TRAINING_LEVEL } from '../constants';
-import { streamReasoning } from '../utils/core/reasoning-stream';
+import { getModelWithOverride } from '../../model-providers';
+import { PromptAnalysis } from '../../types/prompt-analysis';
+import { ExampleRepo } from '../../services/example-repo';
+import { validateBCP47LanguageCode, DEFAULT_LANGUAGE } from '../../utils/language/language-utils';
+import { cleanResponse } from '../../utils/content-processors/json-cleaner';
+import { PROMPT_ANALYSIS_PARAMS } from '../../utils/config/llm-generation-params';
+import { MICROLEARNING, PROMPT_ANALYSIS, ROLES, CATEGORIES, THEME_COLORS, MODEL_PROVIDERS, TRAINING_LEVELS, DEFAULT_TRAINING_LEVEL } from '../../constants';
+import { streamReasoning } from '../../utils/core/reasoning-stream';
 
 // Cache formatted lists for performance
 const cachedRolesList = ROLES.VALUES.map((role) => `- "${role}"`).join('\n');
@@ -165,16 +165,16 @@ RULES:
 - For "themeColor": ONLY fill if user explicitly mentioned a color
   - Accept both standard codes and simple names
   - Convert simple color names to standard codes:
-    * "red" / "danger" / "risk" → "bg-gradient-red"
-    * "blue" / "tech" / "technology" → "bg-gradient-blue"
-    * "green" / "safe" / "safety" → "bg-gradient-green"
-    * "purple" / "compliance" → "bg-gradient-purple"
-    * "gray" / "grey" / "general" → "bg-gradient-gray"
-    * "orange" / "innovation" → "bg-gradient-orange"
-    * "yellow" / "smoke" → "bg-gradient-yellow" or "bg-gradient-yellow-smoke"
-    * "light-yellow" / "light yellow" → "bg-gradient-light-yellow"
-    * "light-blue" / "light blue" → "bg-gradient-light-blue"
-    * "pink" / "social" → "bg-gradient-pink"
+    * "red" // "danger" // "risk" → "bg-gradient-red"
+    * "blue" // "tech" // "technology" → "bg-gradient-blue"
+    * "green" // "safe" // "safety" → "bg-gradient-green"
+    * "purple" // "compliance" → "bg-gradient-purple"
+    * "gray" // "grey" // "general" → "bg-gradient-gray"
+    * "orange" // "innovation" → "bg-gradient-orange"
+    * "yellow" // "smoke" → "bg-gradient-yellow" or "bg-gradient-yellow-smoke"
+    * "light-yellow" // "light yellow" → "bg-gradient-light-yellow"
+    * "light-blue" // "light blue" → "bg-gradient-light-blue"
+    * "pink" // "social" → "bg-gradient-pink"
   - CRITICAL: ONLY return colors from this exact list. If user mentions any invalid color, return null.
   - Valid colors: bg-gradient-red, bg-gradient-blue, bg-gradient-green, bg-gradient-gray, bg-gradient-purple, bg-gradient-yellow-smoke, bg-gradient-yellow, bg-gradient-light-yellow, bg-gradient-orange, bg-gradient-light-blue, bg-gradient-pink, bg-gradient-teal, bg-gradient-indigo, bg-gradient-emerald, bg-gradient-violet, bg-gradient-amber
   - Otherwise leave as null/empty string

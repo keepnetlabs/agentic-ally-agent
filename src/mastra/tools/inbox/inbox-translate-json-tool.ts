@@ -2,11 +2,11 @@ import { Tool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { generateText } from 'ai';
 import * as parse5 from 'parse5';
-import { getModelWithOverride } from '../model-providers';
-import { cleanResponse } from '../utils/content-processors/json-cleaner';
-import { LOCALIZER_PARAMS } from '../utils/config/llm-generation-params';
-import { buildSystemPrompt } from '../utils/language/localization-language-rules';
-import { MODEL_PROVIDERS } from '../constants';
+import { getModelWithOverride } from '../../model-providers';
+import { cleanResponse } from '../../utils/content-processors/json-cleaner';
+import { LOCALIZER_PARAMS } from '../../utils/config/llm-generation-params';
+import { buildSystemPrompt } from '../../utils/language/localization-language-rules';
+import { MODEL_PROVIDERS } from '../../constants';
 
 /* =========================================================
  * Schemas
@@ -294,7 +294,7 @@ export const inboxTranslateJsonTool = new Tool({
                     let tgt = trivialMask[i] ? src : obj[String(i)];
                     if (tgt === undefined) throw new Error(`Missing key "${i}" in translation output`);
 
-                    // Placeholders / URL / email / whitespace koru
+                    // Placeholders // URL // email // whitespace koru
                     if (!placeholdersEqual(src, tgt)) {
                         issues.push(`chunk ${chunkNumber} index ${i}: placeholder mismatch`);
                     }

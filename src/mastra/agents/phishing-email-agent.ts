@@ -1,9 +1,8 @@
 // src/agents/phishing-email-agent.ts
 import { Agent } from '@mastra/core/agent';
-import { reasoningTool } from '../tools/reasoning-tool';
-import { phishingWorkflowExecutorTool } from '../tools/phishing-workflow-executor-tool';
-import { uploadPhishingTool } from '../tools/upload-phishing-tool';
-import { assignPhishingTool } from '../tools/assign-phishing-tool';
+import { reasoningTool } from '../tools/analysis';
+import { phishingWorkflowExecutorTool } from '../tools/orchestration';
+import { uploadPhishingTool, assignPhishingTool } from '../tools/user-management';
 import { getDefaultAgentModel } from '../model-providers';
 import { Memory } from '@mastra/memory';
 import { PHISHING, AGENT_NAMES } from '../constants';

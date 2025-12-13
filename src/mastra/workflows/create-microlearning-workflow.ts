@@ -1,9 +1,8 @@
 import { createStep, createWorkflow } from '@mastra/core/workflows';
 import { z } from 'zod';
-import { analyzeUserPromptTool } from '../tools/analyze-user-prompt-tool';
-import { generateMicrolearningJsonTool } from '../tools/generate-microlearning-json-tool';
-import { generateLanguageJsonTool } from '../tools/generate-language-json-tool';
-import { createInboxStructureTool } from '../tools/create-inbox-structure-tool';
+import { analyzeUserPromptTool } from '../tools/analysis';
+import { generateMicrolearningJsonTool, generateLanguageJsonTool } from '../tools/generation';
+import { createInboxStructureTool } from '../tools/inbox';
 import { getModelWithOverride } from '../model-providers';
 import { MicrolearningService } from '../services/microlearning-service';
 import { KVService } from '../services/kv-service';

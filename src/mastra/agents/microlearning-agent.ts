@@ -1,11 +1,9 @@
 // src/agents/microlearning-agent.ts
 import { Agent } from '@mastra/core/agent';
-import { workflowExecutorTool } from '../tools/workflow-executor-tool';
-import { knowledgeSearchTool } from '../tools/knowledge-search-tool';
-import { reasoningTool } from '../tools/reasoning-tool';
+import { workflowExecutorTool } from '../tools/orchestration';
+import { knowledgeSearchTool, reasoningTool } from '../tools/analysis';
 // Removed getUserInfoTool - relying on history/defaults
-import { uploadTrainingTool } from '../tools/upload-training-tool';
-import { assignTrainingTool } from '../tools/assign-training-tool';
+import { uploadTrainingTool, assignTrainingTool } from '../tools/user-management';
 import { getDefaultAgentModel } from '../model-providers';
 import { Memory } from '@mastra/memory';
 import { AGENT_NAMES } from '../constants';

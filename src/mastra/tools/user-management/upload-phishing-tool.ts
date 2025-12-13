@@ -1,34 +1,33 @@
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
-import { requestStorage } from '../utils/core/request-storage';
-import { KVService } from '../services/kv-service';
-import { ERROR_MESSAGES } from '../constants';
+import { requestStorage } from '../../utils/core/request-storage';
+import { KVService } from '../../services/kv-service';
+import { ERROR_MESSAGES } from '../../constants';
 
-const WORKER_URL = 'https://crud-training-worker.keepnet-labs-ltd-business-profile4086.workers.dev/submit';
+const WORKER_URL = 'https://crud-phishing-worker.keepnet-labs-ltd-business-profile4086.workers.dev/submit'; // TODO: Update with actual phishing worker URL
 const API_URL = 'https://test-api.devkeepnet.com';
-const BASE_URL = 'https://microlearning-api.keepnet-labs-ltd-business-profile4086.workers.dev/microlearning/';
 
-export const uploadTrainingTool = createTool({
-    id: 'upload-training',
-    description: 'Fetches the microlearning content by ID, prepares it, and uploads it to the platform via the SCORM worker.',
+export const uploadPhishingTool = createTool({
+    id: 'upload-phishing',
+    description: 'Fetches the phishing content by ID, prepares it, and uploads it to the platform via the phishing worker.',
     inputSchema: z.object({
-        microlearningId: z.string().describe('The ID of the microlearning content to upload'),
+        phishingId: z.string().describe('The ID of the phishing content to upload'),
     }),
     outputSchema: z.object({
         success: z.boolean(),
         data: z.object({
             resourceId: z.string(),
-            sendTrainingLanguageId: z.string().optional(), // Add this field
-            microlearningId: z.string(),
+            languageId: z.string().optional(),
+            phishingId: z.string(),
             title: z.string().optional(),
         }).optional(),
         message: z.string().optional(),
         error: z.string().optional(),
     }),
     execute: async ({ context }) => {
-        const { microlearningId } = context;
+        const { phishingId } = context;
 
-        console.log(`📤 Preparing upload for ID: "${microlearningId}"...`);
+        console.log(`📤 Preparing upload for phishing ID: "${phishingId}"...`);
 
         // Get Auth Token & Cloudflare bindings from AsyncLocalStorage
         const store = requestStorage.getStore();
@@ -42,40 +41,47 @@ export const uploadTrainingTool = createTool({
 
         try {
             // 1. Fetch Content from KV
-            const kvService = new KVService();
-            const baseContent = await kvService.getMicrolearning(microlearningId);
+            // Use phishing namespace ID (same as in create-phishing-workflow.ts)
+            const kvService = new KVService('f6609d79aa2642a99584b05c64ecaa9f');
+            const phishingContent = await kvService.getPhishing(phishingId);
 
-            if (!baseContent || !baseContent.base) {
-                throw new Error(`Microlearning content not found for ID: ${microlearningId}`);
+            if (!phishingContent || !phishingContent.base) {
+                throw new Error(`Phishing content not found for ID: ${phishingId}`);
             }
 
-            const microlearningData = baseContent.base;
+            const phishingData = phishingContent.base;
+            const emailContent = phishingContent.email;
+            const landingContent = phishingContent.landing;
 
-            // 2. Prepare Payload (Extract fields)
-            const meta = microlearningData.microlearning_metadata;
+            // 2. Prepare Payload (Extract fields from base metadata)
+            const name = phishingData.name?.trim();
+            const description = phishingData.description?.trim();
+            const topic = phishingData.topic?.trim();
+            const difficulty = phishingData.difficulty;
+            const method = phishingData.method;
 
-            const category = (meta.category || 'General').trim().replace(/\s+/g, '');
-
-            const rolesInput = meta.role_relevance || 'AllEmployees';
-            const targetAudience = Array.isArray(rolesInput)
-                ? rolesInput.join('').replace(/\s+/g, '')
-                : (rolesInput || 'AllEmployees').toString().trim().replace(/\s+/g, '');
-
-            const description = meta.description?.trim() || 'Microlearning training module';
-            const title = meta.title?.trim() || 'Security Awareness Training';
-
-            // Extract language from availability list (default to 'en-us' if empty)
-            const availableLangs = meta.language_availability || [];
+            // Extract language from availability list (default to 'en-gb' if empty)
+            const availableLangs = phishingData.language_availability || [];
             const language = Array.isArray(availableLangs) && availableLangs.length > 0
                 ? availableLangs[0]
-                : 'en-us';
+                : 'en-gb';
 
-            const trainingData = {
-                title,
+            const phishingPayload = {
+                name,
                 description,
-                category,
-                targetAudience,
+                topic,
+                difficulty,
+                method,
                 language,
+                email: emailContent ? {
+                    subject: emailContent.subject,
+                    template: emailContent.template,
+                    fromAddress: emailContent.fromAddress,
+                    fromName: emailContent.fromName,
+                } : undefined,
+                landingPage: landingContent ? {
+                    ...landingContent,
+                } : undefined,
             };
 
             // 3. Upload to Worker
@@ -83,24 +89,23 @@ export const uploadTrainingTool = createTool({
                 accessToken: token, // Sensitive!
                 companyId: companyId,
                 url: API_URL,
-                baseUrl: BASE_URL + microlearningId,
-                trainingData: trainingData
+                phishingData: phishingPayload
             };
 
             // Secure Logging (Mask token)
             console.log('📦 Upload Payload:', JSON.stringify({
                 ...payload,
                 accessToken: '***MASKED***',
-                trainingData
+                phishingData: phishingPayload
             }, null, 2));
 
             // Service Binding kullan (production) veya fallback to public URL (local dev)
             let response: Response;
 
-            if (env?.CRUD_WORKER) {
+            if (env?.PHISHING_CRUD_WORKER) {
                 // ✅ SERVICE BINDING (Production - Internal Routing)
-                console.log('🔗 Using Service Binding: CRUD_WORKER');
-                response = await env.CRUD_WORKER.fetch('https://worker/submit', {
+                console.log('🔗 Using Service Binding: PHISHING_CRUD_WORKER');
+                response = await env.PHISHING_CRUD_WORKER.fetch('https://worker/submit', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
@@ -127,11 +132,11 @@ export const uploadTrainingTool = createTool({
                 success: true,
                 data: {
                     resourceId: result.resourceId,
-                    sendTrainingLanguageId: result.languageId,
-                    microlearningId: microlearningId,
-                    title: title
+                    languageId: result.languageId,
+                    phishingId: phishingId,
+                    title: name
                 },
-                message: `Training uploaded successfully. Resource ID ${result.resourceId} is ready for assignment.`
+                message: `Phishing simulation uploaded successfully. Resource ID ${result.resourceId} is ready for assignment.`
             };
 
         } catch (error) {
@@ -143,3 +148,5 @@ export const uploadTrainingTool = createTool({
         }
     },
 });
+
+

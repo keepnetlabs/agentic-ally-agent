@@ -1,7 +1,7 @@
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
-import { requestStorage } from '../utils/core/request-storage';
-import { ERROR_MESSAGES } from '../constants';
+import { requestStorage } from '../../utils/core/request-storage';
+import { ERROR_MESSAGES } from '../../constants';
 
 const ASSIGN_API_URL = 'https://crud-training-worker.keepnet-labs-ltd-business-profile4086.workers.dev/send'; // Check this endpoint
 const API_URL = 'https://test-api.devkeepnet.com';

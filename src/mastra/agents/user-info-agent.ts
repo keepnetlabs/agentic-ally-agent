@@ -1,7 +1,7 @@
 // src/agents/user-info-agent.ts
 import { Agent } from '@mastra/core/agent';
-import { reasoningTool } from '../tools/reasoning-tool';
-import { getUserInfoTool } from '../tools/get-user-info-tool';
+import { reasoningTool } from '../tools/analysis';
+import { getUserInfoTool } from '../tools/user-management';
 import { getDefaultAgentModel } from '../model-providers';
 import { Memory } from '@mastra/memory';
 import { AGENT_NAMES } from '../constants';
