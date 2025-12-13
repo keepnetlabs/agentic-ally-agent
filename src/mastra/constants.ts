@@ -555,3 +555,42 @@ export const CACHE = {
   // Example loading performance optimization
   SKIP_EXPENSIVE_LOADING: false, // Set to true for faster startup
 } as const;
+
+// ============================================
+// ORCHESTRATOR ROUTING CONFIGURATION
+// ============================================
+
+export const ROUTING = {
+  // User confirmation triggers
+  CONFIRMATION_TRIGGERS: ['Yes', 'Proceed', 'Do it', 'Oluştur', 'Tamam'] as const,
+
+  // Microlearning triggers
+  MICROLEARNING_TRIGGERS: [
+    'Create training',
+    'Build module',
+    'Teach phishing',
+    'Upload training',
+    'Translate',
+  ] as const,
+
+  // Phishing triggers
+  PHISHING_TRIGGERS: [
+    'Phishing email',
+    'Draft template',
+    'Simulate attack',
+    'Fake landing page',
+    'Upload simulation',
+  ] as const,
+
+  // Platform actions
+  PLATFORM_ACTIONS: ['Upload', 'Assign', 'Send', 'Deploy', 'Yükle', 'Gönder'] as const,
+
+  // Training keywords
+  TRAINING_KEYWORDS: ['Training', 'Module', 'Course', 'Microlearning', 'Learn'] as const,
+
+  // Phishing keywords
+  PHISHING_KEYWORDS: ['Simulation', 'Attack', 'Template', 'Fake Email', 'Test'] as const,
+
+  // User analysis triggers
+  USER_ANALYSIS_TRIGGERS: ['Who is', 'Find', 'Analyze'] as const,
+} as const;

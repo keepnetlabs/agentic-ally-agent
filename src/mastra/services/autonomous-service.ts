@@ -5,54 +5,7 @@ import { phishingEmailAgent } from '../agents/phishing-email-agent';
 import { microlearningAgent } from '../agents/microlearning-agent';
 import { AGENT_CALL_TIMEOUT_MS } from '../constants';
 import { withTimeout, withRetry } from '../utils/core/resilience-utils';
-
-export interface AutonomousRequest {
-    token: string;
-    firstName: string;
-    lastName?: string;
-    actions: ('training' | 'phishing')[];
-}
-
-export interface AutonomousResponse {
-    success: boolean;
-    userInfo?: {
-        targetUserResourceId: string;
-        maskedId: string;
-        fullName?: string;
-        department?: string;
-        email?: string;
-    };
-    recentActivities?: Array<{
-        actionType?: string;
-        campaignName?: string;
-        productType?: string;
-        difficulty?: string;
-        score?: number;
-        actionTime?: string;
-    }>;
-    analysisReport?: any;
-    executiveReport?: string; // Human-readable report from agent
-    phishingResult?: {
-        success: boolean;
-        message?: string;
-        agentResponse?: string;
-        error?: string;
-    };
-    trainingResult?: {
-        success: boolean;
-        message?: string;
-        agentResponse?: string;
-        uploadAssignResult?: {
-            success: boolean;
-            agentResponse?: string;
-            error?: string;
-        };
-        error?: string;
-    };
-    actions: ('training' | 'phishing')[];
-    message?: string;
-    error?: string;
-}
+import { AutonomousRequest, AutonomousResponse } from '../types/autonomous-types';
 
 /**
  * Generate phishing simulation using agent (maintains agentic behavior and memory)
@@ -191,15 +144,21 @@ async function uploadAndAssignTraining(
 
     try {
         console.log('📤 Requesting agent to upload and assign training...');
-        const uploadAssignPrompt = `The training has been generated successfully. Now you MUST:
+        const uploadAssignPrompt = `The training has been generated successfully. Now you MUST upload and assign it.
 
-1. Upload the training using uploadTraining tool (use the microlearningId from the previous generation)
-2. After upload succeeds, assign it to the user using assignTraining tool with:
-   - resourceId: from upload result
-   - sendTrainingLanguageId: from upload result
-   - targetUserResourceId: ${targetUserResourceId}
+**AUTONOMOUS EXECUTION OVERRIDE:**
+- User Confirmation: **ALREADY RECEIVED**
+- Target User ID: **${targetUserResourceId}**
+- Action: **Execute Upload & Assign IMMEDIATELY**
 
-Execute uploadTraining and assignTraining tools now. Do not ask for confirmation. Upload and assign immediately.`;
+Instructions:
+1. FIRST: Call 'uploadTraining' tool.
+2. WAIT for the tool output (resourceId).
+3. THEN: Call 'assignTraining' tool using the resourceId from step 1.
+   - targetUserResourceId: "${targetUserResourceId}"
+
+WARNING: You CANNOT call 'assignTraining' before 'uploadTraining' completes. Do not run them in parallel.
+DO NOT ask for confirmation. EXECUTE SEQUENCE NOW.`;
 
         const uploadAssignResponse = await withTimeout(
             microlearningAgent.generate(uploadAssignPrompt, {
@@ -283,18 +242,21 @@ async function generateTrainingModule(
 - Department: ${toolResult.userInfo?.department || 'All'}
 - User Context: See previous orchestrator context for detailed behavioral analysis
 
-**CRITICAL:** This is an AUTONOMOUS request. You have ALL required information (Topic, Department, Level). 
-- Skip STATE 1 (Information Gathering) - all info is provided
-- Skip STATE 2 (Summary & Confirmation) - no user interaction needed
-- Go DIRECTLY to STATE 3 (Execute) - call workflowExecutor tool immediately with:
-  - workflowType: 'create-microlearning'
-  - prompt: "${topic}"
-  - department: "${department}"
-  - level: "${level}"
-  - additionalContext: [Copy the ENTIRE orchestrator context from previous message - include Risk Level, Recommended Level, Department, Triggers, Patterns, Observations, Strategic Recommendation]
-  - priority: 'medium'
+**AUTONOMOUS EXECUTION OVERRIDE:**
+- User Confirmation: **ALREADY RECEIVED**
+- Information Gathering: **COMPLETE**
+- Summary: **SKIPPED BY SYSTEM**
+- ACTION: **Execute State 3 IMMEDIATELY**
 
-Execute the workflowExecutor tool now. Do not ask for confirmation. Generate immediately.`;
+Instruction: Call the workflowExecutor tool now with these parameters.
+- workflowType: 'create-microlearning'
+- prompt: "${topic}"
+- department: "${department}"
+- level: "${level}"
+- additionalContext: [Copy the ENTIRE orchestrator context from previous message]
+- priority: 'medium'
+
+DO NOT ask questions. DO NOT show summary. EXECUTE NOW.`;
 
     const simplifiedPrompt = `Generate training module:
 - Topic: ${topic}
@@ -532,4 +494,3 @@ ${references || 'None provided'}`;
         };
     }
 }
-
