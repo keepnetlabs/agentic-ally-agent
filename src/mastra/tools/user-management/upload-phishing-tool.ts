@@ -67,11 +67,11 @@ export const uploadPhishingTool = createTool({
             const language = Array.isArray(availableLangs) && availableLangs.length > 0
                 ? availableLangs[0]
                 : 'en-gb';
-            
-            logger.debug('Language extracted for upload', { 
-                availableLangs, 
+
+            logger.debug('Language extracted for upload', {
+                availableLangs,
                 selectedLanguage: language,
-                phishingId 
+                phishingId
             });
 
             const phishingPayload = {
@@ -134,7 +134,8 @@ export const uploadPhishingTool = createTool({
             }
 
             const result = await response.json();
-            logger.info('Phishing upload successful', { resourceId: result.resourceId, phishingId });
+
+            logger.info('Phishing upload successful', result);
 
             return {
                 success: true,
