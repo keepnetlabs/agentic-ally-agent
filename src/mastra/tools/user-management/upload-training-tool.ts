@@ -90,7 +90,11 @@ export const uploadTrainingTool = createTool({
             };
 
             // Secure Logging (Mask token)
-            logger.debug('Upload payload prepared', { hasTrainingData: !!trainingData });
+            const maskedPayload = {
+                ...payload,
+                accessToken: token ? `${token.substring(0, 8)}...${token.substring(token.length - 4)}` : undefined
+            };
+            logger.debug('Upload payload prepared', { payload: maskedPayload });
 
             // Service Binding kullan (production) veya fallback to public URL (local dev)
             let response: Response;

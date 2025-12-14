@@ -67,6 +67,12 @@ export const uploadPhishingTool = createTool({
             const language = Array.isArray(availableLangs) && availableLangs.length > 0
                 ? availableLangs[0]
                 : 'en-gb';
+            
+            logger.debug('Language extracted for upload', { 
+                availableLangs, 
+                selectedLanguage: language,
+                phishingId 
+            });
 
             const phishingPayload = {
                 name,
@@ -95,7 +101,11 @@ export const uploadPhishingTool = createTool({
             };
 
             // Secure Logging (Mask token)
-            logger.debug('Upload payload prepared', { hasPhishingData: !!phishingPayload });
+            const maskedPayload = {
+                ...payload,
+                accessToken: token ? `${token.substring(0, 8)}...${token.substring(token.length - 4)}` : undefined
+            };
+            logger.debug('Upload payload prepared', { payload: maskedPayload });
 
             // Service Binding kullan (production) veya fallback to public URL (local dev)
             let response: Response;

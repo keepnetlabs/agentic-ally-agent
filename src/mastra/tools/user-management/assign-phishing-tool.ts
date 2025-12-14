@@ -57,8 +57,12 @@ export const assignPhishingTool = createTool({
             ...(sendTrainingLanguageId && { sendTrainingLanguageId })
         };
 
-        // Log Payload (Token is in header, so payload is safe to log)
-        logger.debug('Assign phishing payload prepared', { payloadKeys: Object.keys(payload) });
+        // Log Payload with masked token
+        const maskedPayload = {
+            ...payload,
+            accessToken: token ? `${token.substring(0, 8)}...${token.substring(token.length - 4)}` : undefined
+        };
+        logger.debug('Assign phishing payload prepared', { payload: maskedPayload });
 
         try {
             // Service Binding kullan (production) veya fallback to public URL (local dev)
