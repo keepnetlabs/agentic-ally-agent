@@ -5,6 +5,7 @@ export interface AutonomousRequest {
     firstName: string;
     lastName?: string;
     actions: ('training' | 'phishing')[];
+    sendAfterPhishingSimulation?: boolean;
 }
 
 export interface AutonomousResponse {

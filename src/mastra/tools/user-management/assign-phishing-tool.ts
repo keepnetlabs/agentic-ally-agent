@@ -4,7 +4,7 @@ import { requestStorage } from '../../utils/core/request-storage';
 import { getLogger } from '../../utils/core/logger';
 import { ERROR_MESSAGES } from '../../constants';
 
-const ASSIGN_API_URL = 'https://crud-phishing-worker.keepnet-labs-ltd-business-profile4086.workers.dev/send'; // TODO: Update with actual phishing assign endpoint
+const ASSIGN_API_URL = 'https://crud-phishing-worker.keepnet-labs-ltd-business-profile4086.workers.dev/send';
 const API_URL = 'https://test-api.devkeepnet.com';
 
 export const assignPhishingTool = createTool({
@@ -13,7 +13,9 @@ export const assignPhishingTool = createTool({
     inputSchema: z.object({
         resourceId: z.string().describe('The Resource ID returned from the upload process'),
         languageId: z.string().optional().describe('The Language ID returned from the upload process'),
-        targetUserResourceId: z.string().describe('The User ID to assign the phishing simulation to')
+        targetUserResourceId: z.string().describe('The User ID to assign the phishing simulation to'),
+        trainingId: z.string().optional().describe('The Training Resource ID to send after phishing simulation (if sendAfterPhishingSimulation is true)'),
+        sendTrainingLanguageId: z.string().optional().describe('The Training Language ID to send after phishing simulation (if sendAfterPhishingSimulation is true)')
     }),
     outputSchema: z.object({
         success: z.boolean(),
@@ -22,10 +24,16 @@ export const assignPhishingTool = createTool({
     }),
     execute: async ({ context }) => {
         const logger = getLogger('AssignPhishingTool');
-        const { resourceId, languageId, targetUserResourceId } = context;
+        const { resourceId, languageId, targetUserResourceId, trainingId, sendTrainingLanguageId } = context;
         const name = `Phishing Campaign - ${targetUserResourceId} Agentic Ally`;
 
-        logger.info('Preparing phishing assignment for resource to user', { resourceId, languageId, targetUserResourceId });
+        logger.info('Preparing phishing assignment for resource to user', { 
+            resourceId, 
+            languageId, 
+            targetUserResourceId,
+            trainingId,
+            sendTrainingLanguageId 
+        });
 
         // Get Auth Token & Cloudflare bindings from AsyncLocalStorage
         const store = requestStorage.getStore();
@@ -44,7 +52,9 @@ export const assignPhishingTool = createTool({
             phishingId: resourceId,
             languageId: languageId,
             targetUserResourceId: targetUserResourceId,
-            name
+            name,
+            ...(trainingId && { trainingId }),
+            ...(sendTrainingLanguageId && { sendTrainingLanguageId })
         };
 
         // Log Payload (Token is in header, so payload is safe to log)
