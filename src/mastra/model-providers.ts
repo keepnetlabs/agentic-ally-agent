@@ -1,6 +1,8 @@
 import { createOpenAI } from '@ai-sdk/openai';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
+import { getLogger } from './utils/core/logger';
 
+const logger = getLogger('ModelProviders');
 
 /**
  * Enum for the supported model providers
@@ -94,7 +96,7 @@ function getModelProvider(provider: ModelProvider) {
             // Note: @ai-sdk/openai automatically appends /chat/completions to baseURL
             const baseURL = `https://gateway.ai.cloudflare.com/v1/${cloudflareAccountId}/${cloudflareGatewayId}/workers-ai/v1`;
 
-            console.log('🔧 Using Workers AI (via AI Gateway):', {
+            logger.info('Using Workers AI (via AI Gateway)', {
                 accountId: cloudflareAccountId,
                 gatewayId: cloudflareGatewayId,
                 baseURL: baseURL,
@@ -112,7 +114,6 @@ function getModelProvider(provider: ModelProvider) {
                     const reasoningItem = data.output.find((item: any) => item.type === 'reasoning');
                     if (reasoningItem?.content?.[0]?.text) {
                         data.reasoning = reasoningItem.content[0].text;
-                        //console.log('🧠 Workers AI Reasoning:', reasoningItem.content[0].text);
                     }
                 }
 
@@ -194,15 +195,26 @@ export function getModelWithOverride(
     try {
         const provider = ModelProvider[modelProvider as keyof typeof ModelProvider];
         if (!provider) {
-            console.warn(`Invalid model provider: ${modelProvider}, using default`);
+            logger.warn('Invalid model provider, using default', {
+                modelProvider
+            });
             return defaultFunc();
         }
 
         const model = getModel(provider, Model[modelName as keyof typeof Model]);
-        console.log(`🔧 Using model override: ${modelProvider}/${modelName}`);
+        logger.info('Using model override', {
+            modelProvider,
+            modelName
+        });
         return model;
     } catch (error) {
-        console.warn(`Failed to load model ${modelProvider}/${modelName}: ${error instanceof Error ? error.message : 'Unknown error'}, using default`);
+        const err = error instanceof Error ? error : new Error(String(error));
+        logger.warn('Failed to load model, using default', {
+            modelProvider,
+            modelName,
+            error: err.message,
+            stack: err.stack
+        });
         return defaultFunc();
     }
 }

@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { ExampleRepo } from '../../services/example-repo';
 import { KVService } from '../../services/kv-service';
 import { ERROR_MESSAGES } from '../../constants';
+import { getLogger } from '../../utils/core/logger';
 
 // Simple schema for knowledge search
 const knowledgeSearchSchema = z.object({
@@ -17,6 +18,7 @@ export const knowledgeSearchTool = createTool({
   inputSchema: knowledgeSearchSchema,
 
   execute: async ({ context }) => {
+    const logger = getLogger('KnowledgeSearchTool');
     const { query, maxResults } = context;
 
     try {
@@ -45,7 +47,8 @@ export const knowledgeSearchTool = createTool({
           }));
         }
       } catch (kvError) {
-        console.warn('KV search failed, continuing with examples:', kvError);
+        const err = kvError instanceof Error ? kvError : new Error(String(kvError));
+        logger.warn('KV search failed, continuing with examples', { error: err.message });
       }
 
       // Then search through examples

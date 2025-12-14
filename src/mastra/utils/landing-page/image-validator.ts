@@ -3,6 +3,10 @@
  * Validates image URLs with real HTTP requests and fixes broken images
  */
 
+import { getLogger } from '../core/logger';
+
+const logger = getLogger('ImageValidator');
+
 // Default generic corporate logo URL - used as fallback when brand logos fail
 // Modern, professional icon-only logo with gradient background
 export const DEFAULT_GENERIC_LOGO = "https://imagedelivery.net/KxWh-mxPGDbsqJB3c5_fmA/761ba07b-5af5-443c-95b6-9499596afd00/public";
@@ -107,7 +111,7 @@ export async function fixBrokenImages(html: string, brandName: string): Promise<
     const validationPromises = Array.from(uniqueUrls).map(async (url) => {
         // Skip data URIs (they're always valid, no need to validate)
         if (url.startsWith('data:')) {
-            console.log(`✅ Skipping validation for data URI (always valid)`);
+            logger.info('Skipping validation for data URI (always valid)');
             return { url, isValid: true };
         }
 
@@ -126,13 +130,13 @@ export async function fixBrokenImages(html: string, brandName: string): Promise<
 
         // Use cached validation for valid-looking URLs
         if (url.startsWith('http')) {
-            console.log(`🔍 Validating image URL: ${url}`);
+            logger.info('Validating image URL', { url });
             const isValid = await validateImageUrlCached(url);
 
             if (!isValid) {
-                console.log(`❌ Image validation failed (404 or timeout): ${url}`);
+                logger.info('Image validation failed (404 or timeout)', { url });
             } else {
-                console.log(`✅ Image validated successfully: ${url}`);
+                logger.info('Image validated successfully', { url });
             }
 
             return { url, isValid };
@@ -149,7 +153,9 @@ export async function fixBrokenImages(html: string, brandName: string): Promise<
         const isValid = urlValidityMap.get(url) ?? false;
 
         if (!isValid) {
-            console.log(`🔧 Replacing ${matchesForUrl.length} broken image(s) with default generic logo`);
+            logger.info('Replacing broken images with default generic logo', {
+                count: matchesForUrl.length
+            });
 
             matchesForUrl.forEach(({ fullTag }) => {
                 // Replace src attribute with default logo URL
@@ -180,7 +186,7 @@ export async function validateImageUrlCached(url: string): Promise<boolean> {
 
     // Check if cache entry exists and is still valid
     if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
-        console.log(`📦 Using cached validation result for: ${url}`);
+        logger.info('Using cached validation result', { url });
         return cached.isValid;
     }
 
@@ -214,7 +220,9 @@ function cleanupExpiredCacheEntries(): void {
     }
 
     if (removedCount > 0) {
-        console.log(`🧹 Cleaned up ${removedCount} expired cache entries`);
+        logger.info('Cleaned up expired cache entries', {
+            count: removedCount
+        });
     }
 }
 
@@ -224,5 +232,5 @@ function cleanupExpiredCacheEntries(): void {
  */
 export function clearImageValidationCache(): void {
     imageValidationCache.clear();
-    console.log('🧹 Image validation cache cleared');
+    logger.info('Image validation cache cleared');
 }

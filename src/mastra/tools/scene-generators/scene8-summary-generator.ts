@@ -2,20 +2,23 @@ import { PromptAnalysis } from '../../types/prompt-analysis';
 import { MicrolearningContent } from '../../types/microlearning';
 import { buildContextData } from '../../utils/prompt-builders/base-context-builder';
 import { getResourcesForScene8 } from '../../utils/resolvers/url-resolver';
+import { getLogger } from '../../utils/core/logger';
 
 export function generateScene8Prompt(analysis: PromptAnalysis, microlearning: MicrolearningContent): string {
+  const logger = getLogger('Scene8SummaryGenerator');
   const contextData = buildContextData(analysis, microlearning);
 
   // Dynamically resolve resources using keyTopics (more accurate) + category fallback
-  console.log('🔍 Scene 8 - Resource Resolution Debug:');
-  console.log('  Topic:', analysis.topic);
-  console.log('  Category:', analysis.category);
-  console.log('  keyTopics:', analysis.keyTopics);
+  logger.info('Scene 8 - Resource Resolution Debug', {
+    topic: analysis.topic,
+    category: analysis.category,
+    keyTopics: analysis.keyTopics
+  });
 
   // Use isCodeTopic from analyze-user-prompt-tool (source of truth)
   const isCodeTopic = analysis.isCodeTopic === true;
 
-  console.log(`  isCode detected: ${isCodeTopic} (from prompt analysis)`);
+  logger.info('isCode detection', { isCodeTopic, source: 'prompt analysis' });
 
   const resources = getResourcesForScene8({
     topic: analysis.topic,
@@ -25,7 +28,7 @@ export function generateScene8Prompt(analysis: PromptAnalysis, microlearning: Mi
     language: analysis.language
   }, isCodeTopic); // Pass isCode flag to ensure DEVELOPMENT resources
 
-  console.log('  Resources found:', resources.map(r => r.title).join(', '));
+  logger.info('Resources found', { resources: resources.map(r => r.title).join(', ') });
 
   // Embed resources as JSON (not instructions) - AI cannot modify URLs
   const resourcesJson = JSON.stringify(

@@ -8,6 +8,7 @@ import { parseName, isValidName, normalizeName } from '../../utils/parsers/name-
 import { generateText } from 'ai';
 import { getModelWithOverride } from '../../model-providers'; // Use override to pick stronger model
 import { cleanResponse } from '../../utils/content-processors/json-cleaner';
+import { getLogger } from '../../utils/core/logger';
 
 // Payload for Step 1: Find User
 const GET_ALL_PAYLOAD = {
@@ -148,6 +149,7 @@ export const getUserInfoTool = createTool({
         error: z.string().optional(),
     }),
     execute: async ({ context }) => {
+        const logger = getLogger('GetUserInfoTool');
         const { fullName: inputFullName, firstName: inputFirstName, lastName: inputLastName } = context;
 
         // Parse name using utility
@@ -159,12 +161,12 @@ export const getUserInfoTool = createTool({
                 }
                 const normalizedFullName = normalizeName(inputFullName);
                 parsed = parseName(normalizedFullName);
-                console.log(`📝 Parsed & normalized fullName "${inputFullName}" -> "${normalizedFullName}":`, parsed);
+                logger.debug('Name parsed and normalized', { original: inputFullName, normalized: normalizedFullName });
             } else if (inputFirstName) {
                 const normalizedFirstName = normalizeName(inputFirstName);
                 const normalizedLastName = inputLastName ? normalizeName(inputLastName) : undefined;
                 parsed = parseName({ firstName: normalizedFirstName, lastName: normalizedLastName });
-                console.log(`📝 Using explicit names (normalized):`, parsed);
+                logger.debug('Using explicit normalized names', { firstName: normalizedFirstName, lastName: normalizedLastName });
             } else {
                 return { success: false, error: 'Either fullName or firstName must be provided' };
             }
@@ -173,7 +175,7 @@ export const getUserInfoTool = createTool({
         }
 
         const { firstName, lastName, fullName } = parsed;
-        console.log(`🔍 Searching for user: "${fullName}" (firstName: "${firstName}", lastName: "${lastName || 'N/A'}")`);
+        logger.debug('Searching for user', { fullName, firstName, lastName: lastName || 'N/A' });
 
         // Get Auth Token & CompanyId
         const store = requestStorage.getStore();
@@ -221,14 +223,14 @@ export const getUserInfoTool = createTool({
             const userFullName = `${user.firstName} ${user.lastName}`;
             const maskedId = `[USER-${generatePIIHash(userFullName)}]`;
 
-            console.log(`✅ Found user: ${userFullName} (ID: ${userId}, Masked: ${maskedId})`);
+            logger.debug('User found', { userId, maskedId });
 
             // --- STEP 2: Get Timeline ---
             const timelinePayload = JSON.parse(JSON.stringify(TIMELINE_PAYLOAD));
             timelinePayload.targetUserResourceId = userId;
             timelinePayload.pagination.ascending = false;
 
-            console.log(`🔍 Fetching timeline for ID: ${userId}`);
+            logger.debug('Fetching timeline for user', { userId });
             const timelineHeaders: Record<string, string> = {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
@@ -255,13 +257,13 @@ export const getUserInfoTool = createTool({
                     score: r.points || 0,
                     actionTime: r.ActionTimeWithDay || r.ActionTime
                 })).slice(0, 10);
-                console.log(`✅ Found ${results.length} activities.`);
+                logger.debug('Timeline activities retrieved', { count: results.length });
             } else {
-                console.warn(`⚠️ Timeline API failed: ${timelineResponse.status}`);
+                logger.warn('Timeline API request failed', { status: timelineResponse.status });
             }
 
             // --- STEP 3: Generate Analysis Report (Internal LLM Call) ---
-            console.log('🧠 Analyzing user data with LLM...');
+            logger.debug('Starting user analysis with LLM', {});
 
             const systemPrompt = `You are the **User Security Behavior Analyst & Profiler**.
 Your job is to build a deep **Psychological, Cultural & Security Behavior Profile** based on the provided user data and output a structured executive JSON report.
@@ -438,10 +440,10 @@ Use this exact JSON structure:
 
                 const cleanedJson = cleanResponse(response.text, 'analysis-report');
                 analysisReport = JSON.parse(cleanedJson);
-                console.log('✅ Analysis report generated successfully.');
-                console.log('🎯 Analysis Report', JSON.stringify(analysisReport, null, 2));
+                logger.debug('Analysis report generated successfully', {});
             } catch (aiError) {
-                console.error('⚠️ AI Analysis failed:', aiError);
+                const err = aiError instanceof Error ? aiError : new Error(String(aiError));
+                logger.error('AI analysis generation failed', { error: err.message, stack: err.stack });
             }
 
             return {
@@ -457,8 +459,9 @@ Use this exact JSON structure:
             };
 
         } catch (error) {
-            console.error('❌ Tool execution failed:', error);
-            return { success: false, error: error instanceof Error ? error.message : ERROR_MESSAGES.USER_INFO.UNKNOWN_ERROR };
+            const err = error instanceof Error ? error : new Error(String(error));
+            logger.error('Tool execution failed', { error: err.message, stack: err.stack });
+            return { success: false, error: err.message };
         }
     },
 });

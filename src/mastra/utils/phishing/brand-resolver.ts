@@ -1,5 +1,8 @@
 import { generateText } from 'ai';
 import { DEFAULT_GENERIC_LOGO } from '../landing-page/image-validator';
+import { getLogger } from '../core/logger';
+
+const logger = getLogger('BrandResolver');
 
 export interface LogoAndBrandInfo {
   logoUrl: string;
@@ -66,7 +69,11 @@ export async function resolveLogoAndBrand(
         if (cleanDomain.includes('.')) {
           const clearbitUrl = `https://logo.clearbit.com/${cleanDomain}`;
           const brandColors = parsed.brandColors || null;
-          console.log(`🎨 Resolved logo URL for brand "${brandName || fromName}": ${clearbitUrl}${brandColors ? ` with colors: ${JSON.stringify(brandColors)}` : ''}`);
+          logger.info('Resolved logo URL for brand', {
+            brandName: brandName || fromName,
+            logoUrl: clearbitUrl,
+            hasBrandColors: !!brandColors
+          });
           return {
             logoUrl: clearbitUrl,
             brandName: brandName || fromName,
@@ -78,14 +85,20 @@ export async function resolveLogoAndBrand(
     }
 
     // Fallback to default logo for generic/internal companies
-    console.log(`ℹ️ No recognized brand found for "${fromName}", using default logo`);
+    logger.info('No recognized brand found, using default logo', {
+      fromName
+    });
     return {
       logoUrl: DEFAULT_GENERIC_LOGO,
       brandName: null,
       isRecognizedBrand: false
     };
   } catch (error) {
-    console.warn('⚠️ Logo and brand resolution failed, using default logo:', error);
+    const err = error instanceof Error ? error : new Error(String(error));
+    logger.warn('Logo and brand resolution failed, using default logo', {
+      error: err.message,
+      stack: err.stack
+    });
     return {
       logoUrl: DEFAULT_GENERIC_LOGO,
       brandName: null,

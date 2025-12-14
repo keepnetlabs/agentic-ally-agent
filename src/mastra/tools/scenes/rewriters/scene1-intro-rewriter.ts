@@ -2,6 +2,7 @@ import { generateText } from 'ai';
 import { cleanResponse } from '../../../utils/content-processors/json-cleaner';
 import { LOCALIZER_PARAMS } from '../../../utils/config/llm-generation-params';
 import { getLanguagePrompt } from '../../../utils/language/localization-language-rules';
+import { getLogger } from '../../../utils/core/logger';
 
 interface RewriteContext {
     sourceLanguage: string;
@@ -12,6 +13,7 @@ interface RewriteContext {
 }
 
 export async function rewriteScene1Intro(scene: any, context: RewriteContext): Promise<any> {
+    const logger = getLogger('RewriteScene1Intro');
     const { sourceLanguage, targetLanguage, topic, model, department } = context;
     const languageRules = getLanguagePrompt(targetLanguage);
 
@@ -105,7 +107,8 @@ Output (JSON only):`;
 
         return rewritten;
     } catch (error) {
-        console.error('❌ Scene 1 (Intro) rewrite failed:', error);
+        const err = error instanceof Error ? error : new Error(String(error));
+        logger.error('Scene 1 (Intro) rewrite failed', { error: err.message, stack: err.stack });
         throw error;
     }
 }

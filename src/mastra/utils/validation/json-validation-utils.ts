@@ -2,6 +2,10 @@
  * JSON structure validation and correction utilities for translation workflows
  */
 
+import { getLogger } from '../core/logger';
+
+const logger = getLogger('JsonValidation');
+
 /**
  * Validates that translated JSON maintains the same structure as the original
  * @param original - The original JSON object
@@ -10,7 +14,7 @@
  */
 export function validateInboxStructure(original: any, translated: any): boolean {
   if (!original || !translated) {
-    console.warn('❌ Missing original or translated data for validation');
+    logger.warn('Missing original or translated data for validation');
     return false;
   }
 
@@ -19,19 +23,25 @@ export function validateInboxStructure(original: any, translated: any): boolean 
   const translatedKeys = Object.keys(translated).sort();
 
   if (originalKeys.join(',') !== translatedKeys.join(',')) {
-    console.warn(`❌ Key mismatch - Original: [${originalKeys.join(', ')}], Translated: [${translatedKeys.join(', ')}]`);
+    logger.warn('Key mismatch detected', {
+      originalKeys: originalKeys.join(', '),
+      translatedKeys: translatedKeys.join(', ')
+    });
     return false;
   }
 
   // Check if 'emails' array exists and has correct structure
   if (original.emails && Array.isArray(original.emails)) {
     if (!translated.emails || !Array.isArray(translated.emails)) {
-      console.warn('❌ Missing or invalid emails array in translation');
+      logger.warn('Missing or invalid emails array in translation');
       return false;
     }
 
     if (original.emails.length !== translated.emails.length) {
-      console.warn(`❌ Email count mismatch - Original: ${original.emails.length}, Translated: ${translated.emails.length}`);
+      logger.warn('Email count mismatch', {
+        originalCount: original.emails.length,
+        translatedCount: translated.emails.length
+      });
       return false;
     }
 
@@ -41,7 +51,7 @@ export function validateInboxStructure(original: any, translated: any): boolean 
       const transEmail = translated.emails[i];
 
       if (!origEmail || !transEmail) {
-        console.warn(`❌ Missing email at index ${i}`);
+        logger.warn('Missing email at index', { index: i });
         continue;
       }
 
@@ -49,19 +59,27 @@ export function validateInboxStructure(original: any, translated: any): boolean 
       const transEmailKeys = Object.keys(transEmail).sort();
 
       if (origEmailKeys.join(',') !== transEmailKeys.join(',')) {
-        console.warn(`❌ Email ${i} key mismatch - Original: [${origEmailKeys.join(', ')}], Translated: [${transEmailKeys.join(', ')}]`);
+        logger.warn('Email key mismatch', {
+          emailIndex: i,
+          originalKeys: origEmailKeys.join(', '),
+          translatedKeys: transEmailKeys.join(', ')
+        });
         return false;
       }
 
       // Check nested objects like attachments
       if (origEmail.attachments && Array.isArray(origEmail.attachments)) {
         if (!transEmail.attachments || !Array.isArray(transEmail.attachments)) {
-          console.warn(`❌ Email ${i} missing or invalid attachments array`);
+          logger.warn('Email missing or invalid attachments array', { emailIndex: i });
           return false;
         }
 
         if (origEmail.attachments.length !== transEmail.attachments.length) {
-          console.warn(`❌ Email ${i} attachment count mismatch - Original: ${origEmail.attachments.length}, Translated: ${transEmail.attachments.length}`);
+          logger.warn('Email attachment count mismatch', {
+            emailIndex: i,
+            originalCount: origEmail.attachments.length,
+            translatedCount: transEmail.attachments.length
+          });
           return false;
         }
       }
@@ -71,14 +89,14 @@ export function validateInboxStructure(original: any, translated: any): boolean 
   // Check texts object structure
   if (original.texts && typeof original.texts === 'object') {
     if (!translated.texts || typeof translated.texts !== 'object') {
-      console.warn('❌ Missing or invalid texts object in translation');
+      logger.warn('Missing or invalid texts object in translation');
       return false;
     }
 
     // Check nested modal structures
     if (original.texts.phishingReportModal) {
       if (!translated.texts.phishingReportModal) {
-        console.warn('❌ Missing phishingReportModal in translated texts');
+        logger.warn('Missing phishingReportModal in translated texts');
         return false;
       }
 
@@ -86,14 +104,17 @@ export function validateInboxStructure(original: any, translated: any): boolean 
       const transModalKeys = Object.keys(translated.texts.phishingReportModal).sort();
 
       if (origModalKeys.join(',') !== transModalKeys.join(',')) {
-        console.warn(`❌ phishingReportModal key mismatch - Original: [${origModalKeys.join(', ')}], Translated: [${transModalKeys.join(', ')}]`);
+        logger.warn('phishingReportModal key mismatch', {
+          originalKeys: origModalKeys.join(', '),
+          translatedKeys: transModalKeys.join(', ')
+        });
         return false;
       }
     }
 
     if (original.texts.phishingResultModal) {
       if (!translated.texts.phishingResultModal) {
-        console.warn('❌ Missing phishingResultModal in translated texts');
+        logger.warn('Missing phishingResultModal in translated texts');
         return false;
       }
 
@@ -101,13 +122,16 @@ export function validateInboxStructure(original: any, translated: any): boolean 
       const transResultModalKeys = Object.keys(translated.texts.phishingResultModal).sort();
 
       if (origResultModalKeys.join(',') !== transResultModalKeys.join(',')) {
-        console.warn(`❌ phishingResultModal key mismatch - Original: [${origResultModalKeys.join(', ')}], Translated: [${transResultModalKeys.join(', ')}]`);
+        logger.warn('phishingResultModal key mismatch', {
+          originalKeys: origResultModalKeys.join(', '),
+          translatedKeys: transResultModalKeys.join(', ')
+        });
         return false;
       }
     }
   }
 
-  console.log('✅ Inbox structure validation passed');
+  logger.info('Inbox structure validation passed');
   return true;
 }
 
@@ -119,18 +143,18 @@ export function validateInboxStructure(original: any, translated: any): boolean 
  */
 export function correctInboxStructure(original: any, translated: any): any {
   if (!original || !translated) {
-    console.warn('❌ Cannot correct structure - missing original or translated data');
+    logger.warn('Cannot correct structure - missing original or translated data');
     return original;
   }
 
-  console.log('🔧 Attempting to correct inbox structure...');
+  logger.info('Attempting to correct inbox structure');
 
   const corrected = { ...translated };
 
   // Ensure all original keys exist
   Object.keys(original).forEach(key => {
     if (!(key in corrected)) {
-      console.log(`🔧 Adding missing key: ${key}`);
+      logger.info('Adding missing key', { key });
       corrected[key] = original[key];
     }
   });
@@ -138,7 +162,7 @@ export function correctInboxStructure(original: any, translated: any): any {
   // Remove any extra keys that weren't in original
   Object.keys(corrected).forEach(key => {
     if (!(key in original)) {
-      console.log(`🔧 Removing extra key: ${key}`);
+      logger.info('Removing extra key', { key });
       delete corrected[key];
     }
   });
@@ -146,10 +170,10 @@ export function correctInboxStructure(original: any, translated: any): any {
   // Fix emails array if needed
   if (original.emails && Array.isArray(original.emails)) {
     if (!corrected.emails || !Array.isArray(corrected.emails)) {
-      console.log('🔧 Restoring emails array from original');
+      logger.info('Restoring emails array from original');
       corrected.emails = original.emails;
     } else if (corrected.emails.length !== original.emails.length) {
-      console.log('🔧 Correcting emails array length');
+      logger.info('Correcting emails array length');
 
       // Try to match emails by id or index
       const correctedEmails = [];
@@ -158,13 +182,13 @@ export function correctInboxStructure(original: any, translated: any): any {
         let transEmail = corrected.emails.find((e: any) => e.id === origEmail.id) || corrected.emails[i];
 
         if (!transEmail) {
-          console.log(`🔧 Using original email ${i} as translation failed`);
+          logger.info('Using original email as translation failed', { emailIndex: i });
           transEmail = origEmail;
         } else {
           // Ensure email has all required keys
           Object.keys(origEmail).forEach(emailKey => {
             if (!(emailKey in transEmail)) {
-              console.log(`🔧 Adding missing email key: ${emailKey}`);
+              logger.info('Adding missing email key', { emailKey });
               transEmail[emailKey] = origEmail[emailKey];
             }
           });
@@ -172,7 +196,7 @@ export function correctInboxStructure(original: any, translated: any): any {
           // Remove extra keys from email
           Object.keys(transEmail).forEach(emailKey => {
             if (!(emailKey in origEmail)) {
-              console.log(`🔧 Removing extra email key: ${emailKey}`);
+              logger.info('Removing extra email key', { emailKey });
               delete transEmail[emailKey];
             }
           });
@@ -180,10 +204,10 @@ export function correctInboxStructure(original: any, translated: any): any {
           // Fix attachments array if needed
           if (origEmail.attachments && Array.isArray(origEmail.attachments)) {
             if (!transEmail.attachments || !Array.isArray(transEmail.attachments)) {
-              console.log(`🔧 Restoring attachments array for email ${i}`);
+              logger.info('Restoring attachments array for email', { emailIndex: i });
               transEmail.attachments = origEmail.attachments;
             } else if (transEmail.attachments.length !== origEmail.attachments.length) {
-              console.log(`🔧 Correcting attachments length for email ${i}`);
+              logger.info('Correcting attachments length for email', { emailIndex: i });
               transEmail.attachments = origEmail.attachments;
             }
           }
@@ -199,13 +223,13 @@ export function correctInboxStructure(original: any, translated: any): any {
   // Fix texts object structure
   if (original.texts && typeof original.texts === 'object') {
     if (!corrected.texts || typeof corrected.texts !== 'object') {
-      console.log('🔧 Restoring texts object from original');
+      logger.info('Restoring texts object from original');
       corrected.texts = original.texts;
     } else {
       // Ensure all text keys exist
       Object.keys(original.texts).forEach(textKey => {
         if (!(textKey in corrected.texts)) {
-          console.log(`🔧 Adding missing text key: ${textKey}`);
+          logger.info('Adding missing text key', { textKey });
           corrected.texts[textKey] = original.texts[textKey];
         }
       });
@@ -214,7 +238,7 @@ export function correctInboxStructure(original: any, translated: any): any {
       if (original.texts.phishingReportModal && corrected.texts.phishingReportModal) {
         Object.keys(original.texts.phishingReportModal).forEach(modalKey => {
           if (!(modalKey in corrected.texts.phishingReportModal)) {
-            console.log(`🔧 Adding missing phishingReportModal key: ${modalKey}`);
+            logger.info('Adding missing phishingReportModal key', { modalKey });
             corrected.texts.phishingReportModal[modalKey] = original.texts.phishingReportModal[modalKey];
           }
         });
@@ -223,7 +247,7 @@ export function correctInboxStructure(original: any, translated: any): any {
       if (original.texts.phishingResultModal && corrected.texts.phishingResultModal) {
         Object.keys(original.texts.phishingResultModal).forEach(modalKey => {
           if (!(modalKey in corrected.texts.phishingResultModal)) {
-            console.log(`🔧 Adding missing phishingResultModal key: ${modalKey}`);
+            logger.info('Adding missing phishingResultModal key', { modalKey });
             corrected.texts.phishingResultModal[modalKey] = original.texts.phishingResultModal[modalKey];
           }
         });
@@ -231,7 +255,7 @@ export function correctInboxStructure(original: any, translated: any): any {
     }
   }
 
-  console.log('✅ Inbox structure correction completed');
+  logger.info('Inbox structure correction completed');
   return corrected;
 }
 

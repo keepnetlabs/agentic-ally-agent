@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { addLanguageWorkflow } from './add-language-workflow';
 import { KVService } from '../services/kv-service';
 import { MODEL_PROVIDERS } from '../constants';
+import { getLogger } from '../utils/core/logger';
 
 // Input/Output Schemas
 const addMultipleLanguagesInputSchema = z.object({
@@ -38,9 +39,13 @@ const processMultipleLanguagesStep = createStep({
   inputSchema: addMultipleLanguagesInputSchema,
   outputSchema: finalMultiLanguageResultSchema,
   execute: async ({ inputData }) => {
+    const logger = getLogger('ProcessMultipleLanguages');
     const { existingMicrolearningId, targetLanguages, sourceLanguage, department, modelProvider, model } = inputData;
 
-    console.log(`🌍 Starting parallel language processing for ${targetLanguages.length} languages: ${targetLanguages.join(', ')}`);
+    logger.info('Starting parallel language processing', {
+      languageCount: targetLanguages.length,
+      languages: targetLanguages.join(', ')
+    });
 
     try {
       // Validation
@@ -57,16 +62,16 @@ const processMultipleLanguagesStep = createStep({
       }
 
       const normalizedLanguages = targetLanguages.map((lang) => lang.toLowerCase());
-      console.log(`✅ Validation passed. Processing: ${normalizedLanguages.join(', ')}`);
+      logger.info('Validation passed. Processing languages', { languages: normalizedLanguages.join(', ') });
 
       const startTime = Date.now();
-      console.log(`⏱️  Starting parallel execution at ${new Date().toISOString()}`);
+      logger.info('Starting parallel execution', { timestamp: new Date().toISOString() });
 
       // Launch all language workflows in parallel
       const workflowPromises = normalizedLanguages.map(async (targetLanguage) => {
         const langStartTime = Date.now();
         try {
-          console.log(`🔄 [${targetLanguage}] Starting translation workflow...`);
+          logger.info('Starting translation workflow', { language: targetLanguage });
 
           const workflow = addLanguageWorkflow;
           const run = await workflow.createRunAsync();
@@ -92,7 +97,7 @@ const processMultipleLanguagesStep = createStep({
                          (result as any)?.data?.title ||
                          (result as any)?.title;
 
-            console.log(`✅ [${targetLanguage}] Completed successfully (${duration}ms)`);
+            logger.info('Translation completed successfully', { language: targetLanguage, durationMs: duration });
 
             return {
               language: targetLanguage,
@@ -106,7 +111,7 @@ const processMultipleLanguagesStep = createStep({
                             (result as any)?.result?.message ||
                             (result as any)?.message ||
                             'Unknown error';
-            console.error(`❌ [${targetLanguage}] Failed: ${errorMsg}`);
+            logger.error('Translation failed', { error: errorMsg, language: targetLanguage });
 
             return {
               language: targetLanguage,
@@ -117,13 +122,13 @@ const processMultipleLanguagesStep = createStep({
           }
         } catch (error) {
           const duration = Date.now() - langStartTime;
-          const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-          console.error(`❌ [${targetLanguage}] Exception: ${errorMsg}`);
+          const err = error instanceof Error ? error : new Error(String(error));
+          logger.error('Translation exception', { error: err.message, stack: err.stack, language: targetLanguage });
 
           return {
             language: targetLanguage,
             success: false,
-            error: errorMsg,
+            error: err.message,
             duration
           };
         }
@@ -133,7 +138,10 @@ const processMultipleLanguagesStep = createStep({
       const results = await Promise.allSettled(workflowPromises);
       const totalDuration = Date.now() - startTime;
 
-      console.log(`⏱️  Total execution time: ${totalDuration}ms (${(totalDuration / 1000).toFixed(2)}s)`);
+      logger.info('Total execution time', {
+        durationMs: totalDuration,
+        durationSec: (totalDuration / 1000).toFixed(2)
+      });
 
       // Process results
       const languageResults = results.map((result, index) => {
@@ -151,7 +159,11 @@ const processMultipleLanguagesStep = createStep({
       const successCount = languageResults.filter((r) => r.success).length;
       const failureCount = languageResults.filter((r) => !r.success).length;
 
-      console.log(`📊 Results: ${successCount}/${targetLanguages.length} successful in ${(totalDuration / 1000).toFixed(2)}s`);
+      logger.info('Translation results', {
+        successCount,
+        totalCount: targetLanguages.length,
+        durationSec: (totalDuration / 1000).toFixed(2)
+      });
 
       // Update language_availability ONCE after all parallel workflows (prevents race condition)
       if (successCount > 0) {
@@ -175,7 +187,8 @@ const processMultipleLanguagesStep = createStep({
         status: status as 'success' | 'partial' | 'failed'
       };
     } catch (error) {
-      console.error(`❌ Multi-language workflow error: ${error}`);
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.error('Multi-language workflow error', { error: err.message, stack: err.stack });
       throw error;
     }
   }

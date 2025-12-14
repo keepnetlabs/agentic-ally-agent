@@ -3,6 +3,10 @@
  * Validates required elements, CSS patterns, and structural integrity
  */
 
+import { getLogger } from '../core/logger';
+
+const logger = getLogger('HtmlValidator');
+
 export interface ValidationResult {
     isValid: boolean;
     errors: string[];
@@ -196,17 +200,21 @@ export function validateLandingPage(html: string, pageType: string): ValidationR
  */
 export function logValidationResults(result: ValidationResult, pageType: string): void {
     if (result.isValid && result.warnings.length === 0) {
-        console.log(`✅ ${pageType} page validation passed`);
+        logger.info('Page validation passed', { pageType });
         return;
     }
 
     if (result.errors.length > 0) {
-        console.error(`❌ ${pageType} page validation FAILED:`);
-        result.errors.forEach(error => console.error(`   - ${error}`));
+        logger.error('Page validation FAILED', {
+            pageType,
+            errors: result.errors
+        });
     }
 
     if (result.warnings.length > 0) {
-        console.warn(`⚠️ ${pageType} page validation warnings:`);
-        result.warnings.forEach(warning => console.warn(`   - ${warning}`));
+        logger.warn('Page validation warnings', {
+            pageType,
+            warnings: result.warnings
+        });
     }
 }

@@ -4,6 +4,7 @@ import { generateText } from 'ai';
 import { getModelWithOverride } from '../../model-providers';
 import { cleanResponse } from '../../utils/content-processors/json-cleaner';
 import { MODEL_PROVIDERS } from '../../constants';
+import { getLogger } from '../../utils/core/logger';
 
 const CodeReviewCheckSchema = z.object({
   issueType: z.string().describe('Type of issue to fix (e.g., "SQL Injection", "XSS", "Logic Error", "Performance Issue")'),
@@ -47,8 +48,9 @@ export const codeReviewCheckTool = new Tool({
 
     // Use model override if provided, otherwise use default
     const model = getModelWithOverride(modelProvider, modelOverride);
+    const logger = getLogger('CodeReviewCheckTool');
 
-    console.log(`🔍 Code Review Check: ${issueType} in ${language}`);
+    logger.info('Code Review Check', { issueType, language });
 
     try {
       // Create validation prompt
@@ -103,7 +105,8 @@ Return ONLY valid JSON - NO markdown, NO backticks, NO formatting. Start directl
         },
       };
     } catch (error) {
-      console.error('Code review check failed:', error);
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.error('Code review check failed', { error: err.message, stack: err.stack });
 
       return {
         success: false,

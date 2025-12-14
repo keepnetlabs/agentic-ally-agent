@@ -1,6 +1,7 @@
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { requestStorage } from '../../utils/core/request-storage';
+import { getLogger } from '../../utils/core/logger';
 import { KVService } from '../../services/kv-service';
 import { ERROR_MESSAGES } from '../../constants';
 
@@ -25,9 +26,10 @@ export const uploadPhishingTool = createTool({
         error: z.string().optional(),
     }),
     execute: async ({ context }) => {
+        const logger = getLogger('UploadPhishingTool');
         const { phishingId } = context;
 
-        console.log(`📤 Preparing upload for phishing ID: "${phishingId}"...`);
+        logger.info('Preparing upload for phishing content', { phishingId });
 
         // Get Auth Token & Cloudflare bindings from AsyncLocalStorage
         const store = requestStorage.getStore();
@@ -93,18 +95,14 @@ export const uploadPhishingTool = createTool({
             };
 
             // Secure Logging (Mask token)
-            console.log('📦 Upload Payload:', JSON.stringify({
-                ...payload,
-                accessToken: '***MASKED***',
-                phishingData: phishingPayload
-            }, null, 2));
+            logger.debug('Upload payload prepared', { hasPhishingData: !!phishingPayload });
 
             // Service Binding kullan (production) veya fallback to public URL (local dev)
             let response: Response;
 
             if (env?.PHISHING_CRUD_WORKER) {
                 // ✅ SERVICE BINDING (Production - Internal Routing)
-                console.log('🔗 Using Service Binding: PHISHING_CRUD_WORKER');
+                logger.debug('Using Service Binding: PHISHING_CRUD_WORKER');
                 response = await env.PHISHING_CRUD_WORKER.fetch('https://worker/submit', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -112,7 +110,7 @@ export const uploadPhishingTool = createTool({
                 });
             } else {
                 // ⚠️ FALLBACK: Public URL (Local Development)
-                console.log('🌐 Using Public URL (Fallback):', WORKER_URL);
+                logger.debug('Using Public URL fallback for phishing upload', { url: WORKER_URL });
                 response = await fetch(WORKER_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -126,7 +124,7 @@ export const uploadPhishingTool = createTool({
             }
 
             const result = await response.json();
-            console.log('✅ Upload Success. Result:', JSON.stringify(result, null, 2));
+            logger.info('Phishing upload successful', { resourceId: result.resourceId, phishingId });
 
             return {
                 success: true,
@@ -140,7 +138,8 @@ export const uploadPhishingTool = createTool({
             };
 
         } catch (error) {
-            console.error('❌ Upload tool failed:', error);
+            const err = error instanceof Error ? error : new Error(String(error));
+            logger.error('Upload tool failed', { error: err.message, stack: err.stack });
             return {
                 success: false,
                 error: error instanceof Error ? error.message : ERROR_MESSAGES.PLATFORM.UNKNOWN_UPLOAD_ERROR

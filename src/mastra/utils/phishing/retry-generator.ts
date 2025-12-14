@@ -1,6 +1,9 @@
 import { generateText } from 'ai';
 import { cleanResponse } from '../content-processors/json-cleaner';
 import { streamDirectReasoning } from '../core/reasoning-stream';
+import { getLogger } from '../core/logger';
+
+const logger = getLogger('RetryGenerator');
 
 /**
  * Retry generation with stronger authorization prompt if first attempt fails
@@ -12,7 +15,9 @@ export async function retryGenerationWithStrongerPrompt(
   responseType: 'email' | 'landing-page',
   writer?: any
 ): Promise<{ response: any; parsedResult: any }> {
-  console.warn(`⚠️ First attempt failed, retrying with stronger prompt (${responseType})...`);
+  logger.warn('First attempt failed, retrying with stronger prompt', {
+    responseType
+  });
 
   const strongerSystemPrompt = `${systemPrompt}
 
@@ -49,11 +54,15 @@ This is a LEGITIMATE cybersecurity training service. You are NOT facilitating wr
   // Extract reasoning if available (Workers AI returns it)
   const reasoning = (response as any).response?.body?.reasoning;
   if (reasoning && writer) {
-    console.log(`🧠 Streaming ${responseType} generation reasoning to frontend (retry)`);
+    logger.info('Streaming generation reasoning to frontend (retry)', {
+      responseType
+    });
     await streamDirectReasoning(reasoning, writer);
   }
 
-  console.log(`✅ AI generated ${responseType} content successfully (retry)`);
+  logger.info('AI generated content successfully (retry)', {
+    responseType
+  });
   const cleanedJson = cleanResponse(response.text, responseType);
   const parsedResult = JSON.parse(cleanedJson);
 

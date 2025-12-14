@@ -1,6 +1,7 @@
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { requestStorage } from '../../utils/core/request-storage';
+import { getLogger } from '../../utils/core/logger';
 import { KVService } from '../../services/kv-service';
 import { ERROR_MESSAGES } from '../../constants';
 
@@ -26,9 +27,10 @@ export const uploadTrainingTool = createTool({
         error: z.string().optional(),
     }),
     execute: async ({ context }) => {
+        const logger = getLogger('UploadTrainingTool');
         const { microlearningId } = context;
 
-        console.log(`📤 Preparing upload for ID: "${microlearningId}"...`);
+        logger.info('Preparing upload for microlearning', { microlearningId });
 
         // Get Auth Token & Cloudflare bindings from AsyncLocalStorage
         const store = requestStorage.getStore();
@@ -88,18 +90,14 @@ export const uploadTrainingTool = createTool({
             };
 
             // Secure Logging (Mask token)
-            console.log('📦 Upload Payload:', JSON.stringify({
-                ...payload,
-                accessToken: '***MASKED***',
-                trainingData
-            }, null, 2));
+            logger.debug('Upload payload prepared', { hasTrainingData: !!trainingData });
 
             // Service Binding kullan (production) veya fallback to public URL (local dev)
             let response: Response;
 
             if (env?.CRUD_WORKER) {
                 // ✅ SERVICE BINDING (Production - Internal Routing)
-                console.log('🔗 Using Service Binding: CRUD_WORKER');
+                logger.debug('Using Service Binding: CRUD_WORKER');
                 response = await env.CRUD_WORKER.fetch('https://worker/submit', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -107,7 +105,7 @@ export const uploadTrainingTool = createTool({
                 });
             } else {
                 // ⚠️ FALLBACK: Public URL (Local Development)
-                console.log('🌐 Using Public URL (Fallback):', WORKER_URL);
+                logger.debug('Using Public URL fallback for training upload', { url: WORKER_URL });
                 response = await fetch(WORKER_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -121,7 +119,7 @@ export const uploadTrainingTool = createTool({
             }
 
             const result = await response.json();
-            console.log('✅ Upload Success. Result:', JSON.stringify(result, null, 2));
+            logger.info('Training upload successful', { resourceId: result.resourceId, microlearningId });
 
             return {
                 success: true,
@@ -135,7 +133,8 @@ export const uploadTrainingTool = createTool({
             };
 
         } catch (error) {
-            console.error('❌ Upload tool failed:', error);
+            const err = error instanceof Error ? error : new Error(String(error));
+            logger.error('Upload tool failed', { error: err.message, stack: err.stack });
             return {
                 success: false,
                 error: error instanceof Error ? error.message : ERROR_MESSAGES.PLATFORM.UNKNOWN_UPLOAD_ERROR

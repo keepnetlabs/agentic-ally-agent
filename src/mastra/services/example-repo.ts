@@ -3,6 +3,9 @@ import * as path from 'path';
 import { embed } from 'ai';
 import { getModel, ModelProvider, Model } from '../model-providers';
 import { EXAMPLE_REPO } from '../constants';
+import { getLogger } from '../utils/core/logger';
+
+const logger = getLogger('ExampleRepo');
 
 export interface ExampleDoc {
     path: string;
@@ -106,7 +109,7 @@ export class ExampleRepo {
         const shouldLoadExamples = false; // Set to true only if advanced schema hints needed
 
         if (!shouldLoadExamples) {
-            console.log('⚡ Skipping example loading for faster performance');
+            logger.info('⚡ Skipping example loading for faster performance');
             this.indexed = true;
             this.basicSchemaCacheGenerated = true; // Mark as ready with minimal setup
             return;
@@ -115,13 +118,13 @@ export class ExampleRepo {
         try {
             const exists = await fs.stat(baseDir).then(() => true).catch(() => false);
             if (!exists) {
-                console.log('📁 Examples directory not found, using minimal setup');
+                logger.info('📁 Examples directory not found, using minimal setup');
                 this.indexed = true;
                 this.basicSchemaCacheGenerated = true;
                 return;
             }
 
-            console.log('📚 Loading examples for enhanced schema hints...');
+            logger.info('📚 Loading examples for enhanced schema hints...');
             const files = await this.walk(baseDir);
             const jsonFiles = files.filter(f => f.endsWith('.json'));
             const docs: ExampleDoc[] = [];
@@ -135,19 +138,19 @@ export class ExampleRepo {
                     const text = await fs.readFile(f, 'utf-8');
                     docs.push({ path: path.relative(process.cwd(), f), content: text });
                 } catch (error) {
-                    console.warn(`⚠️ Failed to read example file: ${f}`, {
+                    logger.warn(`⚠️ Failed to read example file: ${f}`, {
                         error: error instanceof Error ? error.message : String(error),
                     });
                 }
             }
             this.docs = docs;
             this.indexed = true;
-            console.log(`✅ Loaded ${docs.length} examples`);
+            logger.info(`✅ Loaded ${docs.length} examples`);
 
             // Skip embedding generation for faster startup
-            // this.initializeWithD1Cache().catch(console.error); // Disabled for performance
+            // this.initializeWithD1Cache().catch(logger.error); // Disabled for performance
         } catch (error) {
-            console.warn('⚠️ Example loading failed, using minimal setup:', error);
+            logger.warn('⚠️ Example loading failed, using minimal setup:', error);
             this.indexed = true;
             this.basicSchemaCacheGenerated = true;
         }
@@ -192,7 +195,7 @@ Metadata keys: ${metaKeys.join(', ')}
 Scene types: ${Array.from(sceneTypes).join(', ')}
 Scene metadata keys: ${Array.from(sceneMetaKeys).join(', ')}`;
             } catch (error) {
-                console.warn(`⚠️ Failed to parse schema from ${doc.path}:`, {
+                logger.warn(`⚠️ Failed to parse schema from ${doc.path}:`, {
                     error: error instanceof Error ? error.message : String(error),
                 });
                 return `File: ${doc.path}
@@ -207,7 +210,7 @@ Scene metadata keys: ${Array.from(sceneMetaKeys).join(', ')}`;
 
         // If embeddings failed or are not available, fallback to token search
         if (this.embeddingsFailed || (!this.embeddingsGenerated && !await this.tryGenerateEmbeddings())) {
-            console.log('🔄 Semantic search unavailable, using token-based fallback');
+            logger.info('🔄 Semantic search unavailable, using token-based fallback');
             return this.searchTopKSync(query, k);
         }
 
@@ -223,7 +226,7 @@ Scene metadata keys: ${Array.from(sceneMetaKeys).join(', ')}`;
             const results = await this.performSemanticSearch(query, searchOptions);
             return results.map(r => r.doc);
         } catch (error) {
-            console.warn('❌ Semantic search failed, falling back to token search:', error);
+            logger.warn('❌ Semantic search failed, falling back to token search:', error);
             this.embeddingsFailed = true;
             return this.searchTopKSync(query, k);
         }
@@ -258,7 +261,7 @@ Scene metadata keys: ${Array.from(sceneMetaKeys).join(', ')}`;
 
     private async initializeWithD1Cache(): Promise<void> {
         if (!this.db) {
-            console.warn('⚠️ D1 database not available, skipping cache');
+            logger.warn('⚠️ D1 database not available, skipping cache');
             await this.tryGenerateEmbeddings();
             return;
         }
@@ -268,7 +271,7 @@ Scene metadata keys: ${Array.from(sceneMetaKeys).join(', ')}`;
             await this.loadFromD1Cache();
             await this.tryGenerateEmbeddings();
         } catch (error) {
-            console.warn('⚠️ D1 cache initialization failed:', error);
+            logger.warn('⚠️ D1 cache initialization failed:', error);
             await this.tryGenerateEmbeddings();
         }
     }
@@ -291,10 +294,10 @@ Scene metadata keys: ${Array.from(sceneMetaKeys).join(', ')}`;
 
         try {
             await this.db.exec(createTableSQL);
-            console.log('📦 D1 embedding cache table initialized');
+            logger.info('📦 D1 embedding cache table initialized');
             this.cacheInitialized = true;
         } catch (error) {
-            console.warn('⚠️ Failed to initialize D1 schema:', error);
+            logger.warn('⚠️ Failed to initialize D1 schema:', error);
             throw error;
         }
     }
@@ -311,7 +314,7 @@ Scene metadata keys: ${Array.from(sceneMetaKeys).join(', ')}`;
             const result = await stmt.all();
 
             if (!result.success || !result.results) {
-                console.log('📦 No D1 cache entries found');
+                logger.info('📦 No D1 cache entries found');
                 return;
             }
 
@@ -335,22 +338,22 @@ Scene metadata keys: ${Array.from(sceneMetaKeys).join(', ')}`;
                     cacheHits++;
 
                     // Update usage stats in background
-                    this.updateUsageStats(doc.path).catch(console.warn);
+                    this.updateUsageStats(doc.path).catch(logger.warn);
 
                 } else if (cached && cached.content_hash !== contentHash) {
                     staleEntries++;
                     // Remove stale cache entry
-                    this.removeCacheEntry(doc.path).catch(console.warn);
+                    this.removeCacheEntry(doc.path).catch(logger.warn);
                 }
             }
 
             const hitRate = Math.round(cacheHits / this.docs.length * 100);
-            console.log(
+            logger.info(
                 `📦 D1 Cache: ${cacheHits}/${this.docs.length} hits (${hitRate}%), ${staleEntries} stale removed`
             );
 
         } catch (error) {
-            console.warn('📦 D1 cache loading failed:', error);
+            logger.warn('📦 D1 cache loading failed:', error);
         }
     }
 
@@ -375,7 +378,7 @@ Scene metadata keys: ${Array.from(sceneMetaKeys).join(', ')}`;
             ).run();
 
         } catch (error) {
-            console.warn(`💾 Failed to save cache entry for ${doc.path}:`, error);
+            logger.warn(`💾 Failed to save cache entry for ${doc.path}:`, error);
         }
     }
 
@@ -388,7 +391,7 @@ Scene metadata keys: ${Array.from(sceneMetaKeys).join(', ')}`;
             );
             await stmt.bind(docPath).run();
         } catch (error) {
-            console.warn(`Failed to update usage stats for ${docPath}:`, error);
+            logger.warn(`Failed to update usage stats for ${docPath}:`, error);
         }
     }
 
@@ -399,7 +402,7 @@ Scene metadata keys: ${Array.from(sceneMetaKeys).join(', ')}`;
             const stmt = this.db.prepare('DELETE FROM embedding_cache WHERE path = ?');
             await stmt.bind(docPath).run();
         } catch (error) {
-            console.warn(`Failed to remove cache entry for ${docPath}:`, error);
+            logger.warn(`Failed to remove cache entry for ${docPath}:`, error);
         }
     }
 
@@ -428,7 +431,7 @@ Scene metadata keys: ${Array.from(sceneMetaKeys).join(', ')}`;
             await this.generateEmbeddings();
             return true;
         } catch (error) {
-            console.warn('🚫 Embedding provider initialization failed:', error);
+            logger.warn('🚫 Embedding provider initialization failed:', error);
             this.embeddingsFailed = true;
             return false;
         }
@@ -441,12 +444,12 @@ Scene metadata keys: ${Array.from(sceneMetaKeys).join(', ')}`;
         const docsNeedingEmbeddings = this.docs.filter(doc => !doc.embedding);
 
         if (docsNeedingEmbeddings.length === 0) {
-            console.log('✅ All embeddings already cached');
+            logger.info('✅ All embeddings already cached');
             this.embeddingsGenerated = true;
             return;
         }
 
-        console.log(`🔄 Generating embeddings for ${docsNeedingEmbeddings.length}/${this.docs.length} documents...`);
+        logger.info(`🔄 Generating embeddings for ${docsNeedingEmbeddings.length}/${this.docs.length} documents...`);
 
         let successCount = 0;
         let failCount = 0;
@@ -471,12 +474,12 @@ Scene metadata keys: ${Array.from(sceneMetaKeys).join(', ')}`;
                 newCacheEntries++;
 
             } catch (error) {
-                console.warn(`❌ Failed to generate embedding for ${doc.path}:`, error);
+                logger.warn(`❌ Failed to generate embedding for ${doc.path}:`, error);
                 failCount++;
 
                 // If too many failures, mark as failed and stop
                 if (failCount > successCount && failCount > 2) {
-                    console.error('🚫 Too many embedding failures, marking as failed');
+                    logger.error('🚫 Too many embedding failures, marking as failed');
                     this.embeddingsFailed = true;
                     throw new Error('Embedding generation failed for multiple documents');
                 }
@@ -486,7 +489,7 @@ Scene metadata keys: ${Array.from(sceneMetaKeys).join(', ')}`;
         // D1 cache entries are saved individually as they're generated
 
         this.embeddingsGenerated = true;
-        console.log(`✅ Embeddings completed: ${successCount} new, ${failCount} failed, ${newCacheEntries} cached`);
+        logger.info(`✅ Embeddings completed: ${successCount} new, ${failCount} failed, ${newCacheEntries} cached`);
     }
 
     private extractSemanticContent(doc: ExampleDoc): string {
@@ -527,7 +530,7 @@ Scene metadata keys: ${Array.from(sceneMetaKeys).join(', ')}`;
 
         } catch (error) {
             // Fallback to file path and content preview on parse failure
-            console.warn(`⚠️ Failed to extract semantic text from ${doc.path}, using fallback`, {
+            logger.warn(`⚠️ Failed to extract semantic text from ${doc.path}, using fallback`, {
                 error: error instanceof Error ? error.message : String(error),
             });
             return doc.path + ' ' + doc.content.substring(0, 500);
@@ -590,7 +593,7 @@ Scene metadata keys: ${Array.from(sceneMetaKeys).join(', ')}`;
             });
             queryEmbedding = result.embedding;
         } catch (error) {
-            console.error('❌ Query embedding generation failed:', error);
+            logger.error('❌ Query embedding generation failed:', error);
             throw error;
         }
 
@@ -658,7 +661,7 @@ Scene metadata keys: ${Array.from(sceneMetaKeys).join(', ')}`;
                 const docs = this.getSchemaHintsSmart(maxFiles);
                 this.basicSchemaCache = this.formatSchemaHints(docs);
                 this.basicSchemaCacheGenerated = true;
-                console.log('💾 Generated and cached basic schema hints');
+                logger.info('💾 Generated and cached basic schema hints');
             }
             return this.basicSchemaCache;
         }
@@ -669,14 +672,14 @@ Scene metadata keys: ${Array.from(sceneMetaKeys).join(', ')}`;
         if (query && !this.embeddingsFailed) {
             try {
                 docs = await this.searchTopK(query, maxFiles);
-                console.log('🎯 Used semantic search for complex query');
+                logger.info('🎯 Used semantic search for complex query');
             } catch (error) {
-                console.warn('⚠️ Semantic search failed for complex query, using smart sampling:', error);
+                logger.warn('⚠️ Semantic search failed for complex query, using smart sampling:', error);
                 docs = this.getSchemaHintsSmart(maxFiles);
             }
         } else {
             docs = this.getSchemaHintsSmart(maxFiles);
-            console.log('📊 Used smart sampling for complex query');
+            logger.info('📊 Used smart sampling for complex query');
         }
 
         return this.formatSchemaHints(docs);
@@ -685,15 +688,15 @@ Scene metadata keys: ${Array.from(sceneMetaKeys).join(', ')}`;
     // D1 Cache management methods
     async clearCache(): Promise<void> {
         if (!this.db) {
-            console.warn('⚠️ D1 database not available');
+            logger.warn('⚠️ D1 database not available');
             return;
         }
 
         try {
             await this.db.exec('DELETE FROM embedding_cache');
-            console.log('🗑️ D1 cache cleared successfully');
+            logger.info('🗑️ D1 cache cleared successfully');
         } catch (error) {
-            console.warn('⚠️ D1 cache clear failed:', error);
+            logger.warn('⚠️ D1 cache clear failed:', error);
         }
     }
 
@@ -733,7 +736,7 @@ Scene metadata keys: ${Array.from(sceneMetaKeys).join(', ')}`;
                 totalUsage: statsResult?.total_usage || 0
             };
         } catch (error) {
-            console.warn('Failed to get D1 cache stats:', error);
+            logger.warn('Failed to get D1 cache stats:', error);
             return {
                 totalEntries: 0,
                 cacheSize: '0 MB',
@@ -779,7 +782,7 @@ Scene metadata keys: ${Array.from(sceneMetaKeys).join(', ')}`;
                 }
             }
         } catch (error) {
-            console.warn('Failed to validate D1 cache:', error);
+            logger.warn('Failed to validate D1 cache:', error);
             results.details.push('Validation failed: ' + error);
         }
 
@@ -816,11 +819,11 @@ Scene metadata keys: ${Array.from(sceneMetaKeys).join(', ')}`;
             }
 
             if (cleaned > 0) {
-                console.log(`🧹 D1 Cache optimized: ${cleaned} removed, ${kept} kept`);
+                logger.info(`🧹 D1 Cache optimized: ${cleaned} removed, ${kept} kept`);
             }
 
         } catch (error) {
-            console.warn('Failed to optimize D1 cache:', error);
+            logger.warn('Failed to optimize D1 cache:', error);
         }
 
         return { cleaned, kept };
@@ -896,7 +899,7 @@ Scene metadata keys: ${Array.from(sceneMetaKeys).join(', ')}`;
 
     // Development/Debug helpers
     async rebuildCache(): Promise<void> {
-        console.log('🔄 Rebuilding D1 cache from scratch...');
+        logger.info('🔄 Rebuilding D1 cache from scratch...');
 
         // Clear D1 cache
         await this.clearCache();
@@ -917,15 +920,15 @@ Scene metadata keys: ${Array.from(sceneMetaKeys).join(', ')}`;
 
     async printCacheReport(): Promise<void> {
         const stats = await this.getCacheStats();
-        console.log('📊 D1 Cache Report:');
-        console.log(`  Total entries: ${stats.totalEntries}`);
-        console.log(`  Cache size: ${stats.cacheSize}`);
-        console.log(`  Total usage: ${stats.totalUsage}`);
-        console.log(`  Oldest entry: ${stats.oldestEntry?.toLocaleDateString()}`);
-        console.log(`  Newest entry: ${stats.newestEntry?.toLocaleDateString()}`);
+        logger.info('📊 D1 Cache Report:');
+        logger.info(`  Total entries: ${stats.totalEntries}`);
+        logger.info(`  Cache size: ${stats.cacheSize}`);
+        logger.info(`  Total usage: ${stats.totalUsage}`);
+        logger.info(`  Oldest entry: ${stats.oldestEntry?.toLocaleDateString()}`);
+        logger.info(`  Newest entry: ${stats.newestEntry?.toLocaleDateString()}`);
 
         if (!this.db) {
-            console.log('  D1 database not available');
+            logger.info('  D1 database not available');
             return;
         }
 
@@ -939,13 +942,13 @@ Scene metadata keys: ${Array.from(sceneMetaKeys).join(', ')}`;
             `).all();
 
             if (topUsed.success && topUsed.results && topUsed.results.length > 0) {
-                console.log('  Top used examples:');
+                logger.info('  Top used examples:');
                 topUsed.results.forEach((entry: any, i: number) => {
-                    console.log(`    ${i + 1}. ${entry.path} (used ${entry.usage_count} times, last: ${new Date(entry.last_used).toLocaleDateString()})`);
+                    logger.info(`    ${i + 1}. ${entry.path} (used ${entry.usage_count} times, last: ${new Date(entry.last_used).toLocaleDateString()})`);
                 });
             }
         } catch (error) {
-            console.warn('  Failed to get top used examples:', error);
+            logger.warn('  Failed to get top used examples:', error);
         }
     }
 }

@@ -9,6 +9,7 @@ import { cleanResponse } from '../../utils/content-processors/json-cleaner';
 import { PROMPT_ANALYSIS_PARAMS } from '../../utils/config/llm-generation-params';
 import { MICROLEARNING, PROMPT_ANALYSIS, ROLES, CATEGORIES, THEME_COLORS, MODEL_PROVIDERS, TRAINING_LEVELS, DEFAULT_TRAINING_LEVEL } from '../../constants';
 import { streamReasoning } from '../../utils/core/reasoning-stream';
+import { getLogger } from '../../utils/core/logger';
 
 // Cache formatted lists for performance
 const cachedRolesList = ROLES.VALUES.map((role) => `- "${role}"`).join('\n');
@@ -74,6 +75,7 @@ export const analyzeUserPromptTool = new Tool({
   inputSchema: AnalyzeUserPromptSchema,
   outputSchema: AnalyzeUserPromptOutputSchema,
   execute: async (context: any) => {
+    const logger = getLogger('AnalyzeUserPromptTool');
     const input = context?.inputData || context?.input || context;
     const { userPrompt, additionalContext, suggestedDepartment, customRequirements, modelProvider, model: modelOverride } = input;
     const writer = input?.writer; // Get writer for streaming
@@ -81,7 +83,7 @@ export const analyzeUserPromptTool = new Tool({
     // Use model override if provided, otherwise use default
     const model = getModelWithOverride(modelProvider, modelOverride);
 
-    console.log(`🤖 Analyzing user prompt: "${userPrompt.substring(0, 100)}..."`);
+    logger.debug('Starting user prompt analysis', { promptLength: userPrompt.length, hasContext: !!additionalContext });
 
     try {
       // Load examples and retrieve semantically relevant ones
@@ -93,18 +95,20 @@ export const analyzeUserPromptTool = new Tool({
       try {
         // Level 1: Smart semantic search with query context
         schemaHints = await repo.getSmartSchemaHints(userPrompt, 3);
-        console.log('✨ Using semantic-enhanced schema hints');
+        logger.debug('Using semantic-enhanced schema hints', {});
       } catch (error) {
-        console.warn('⚠️ Semantic search unavailable, trying smart sampling...', error);
+        const err = error instanceof Error ? error : new Error(String(error));
+        logger.warn('Semantic search unavailable, trying smart sampling', { error: err.message });
         try {
           // Level 2: Smart sampling without semantic search
           schemaHints = await repo.getSmartSchemaHints(undefined, 3);
-          console.log('🎯 Using smart sampling schema hints');
+          logger.debug('Using smart sampling schema hints', {});
         } catch (fallbackError) {
           // Level 3: Basic schema hints (guaranteed to work)
-          console.warn('⚠️ Smart sampling failed, using basic schema hints:', fallbackError);
+          const fbErr = fallbackError instanceof Error ? fallbackError : new Error(String(fallbackError));
+          logger.warn('Smart sampling failed, using basic schema hints', { error: fbErr.message });
           schemaHints = repo.getSchemaHints(3);
-          console.log('📋 Using basic schema hints');
+          logger.debug('Using basic schema hints', {});
         }
       }
 
@@ -215,7 +219,7 @@ RULES:
 
 ${additionalContext}`
         });
-        console.log(`📄 Added dedicated context message (${additionalContext.length} chars)`);
+        logger.debug('Added dedicated context message', { contextLength: additionalContext.length });
       }
 
       // Add main analysis request
@@ -245,22 +249,22 @@ ${additionalContext}`
 
       // Validate themeColor - only allow values from THEME_COLORS.VALUES
       if (analysis.themeColor && !THEME_COLORS.VALUES.includes(analysis.themeColor as any)) {
-        console.warn(`⚠️ Invalid theme color "${analysis.themeColor}" - resetting to null`);
+        logger.warn('Invalid theme color, resetting to null', { providedColor: analysis.themeColor });
         analysis.themeColor = undefined;
       }
 
-      console.log(`🎯 Enhanced Prompt Analysis Result:`, analysis);
+      logger.debug('Enhanced prompt analysis completed', { language: analysis.language, topic: analysis.topic });
 
       // Enrich analysis with context if provided
       if (additionalContext) {
         analysis.hasRichContext = true;
         analysis.additionalContext = additionalContext;
-        console.log(`📄 Rich context provided (${additionalContext.length} chars)`);
+        logger.debug('Rich context provided', { contextLength: additionalContext.length });
       }
 
       if (customRequirements) {
         analysis.customRequirements = customRequirements;
-        console.log(`⚙️ Custom requirements: ${customRequirements}`);
+        logger.debug('Custom requirements set', { requirementsLength: customRequirements.length });
       }
 
       return {
@@ -291,7 +295,8 @@ ${additionalContext}`
       };
 
     } catch (error) {
-      console.error('JSON parse failed, using fallback analysis. Error:', error);
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.error('JSON parse failed, using fallback analysis', { error: err.message, stack: err.stack });
 
       // Enhanced fallback analysis with context
       // Detect if code-related topic based on programming languages OR security keywords

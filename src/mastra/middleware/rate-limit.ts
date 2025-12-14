@@ -1,4 +1,7 @@
 import { Context } from 'hono';
+import { getLogger } from '../utils/core/logger';
+
+const logger = getLogger('RateLimit');
 
 /**
  * Rate Limiting Middleware for Cloudflare Workers
@@ -221,7 +224,7 @@ export function rateLimitMiddleware(customConfig?: Partial<RateLimitConfig>) {
       c.res.headers.set('Retry-After', result.retryAfter!.toString());
 
       // Log rate limit violation
-      console.warn('⚠️ Rate limit exceeded:', {
+      logger.warn('Rate limit exceeded', {
         identifier,
         current: result.current,
         limit: result.limit,
@@ -243,7 +246,7 @@ export function rateLimitMiddleware(customConfig?: Partial<RateLimitConfig>) {
 
     // Log for monitoring (can be sent to analytics)
     if (result.remaining < 10) {
-      console.info('📊 Rate limit warning:', {
+      logger.info('Rate limit warning', {
         identifier,
         remaining: result.remaining,
         path: c.req.path,

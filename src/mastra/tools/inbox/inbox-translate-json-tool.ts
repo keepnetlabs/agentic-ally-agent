@@ -6,6 +6,7 @@ import { getModelWithOverride } from '../../model-providers';
 import { cleanResponse } from '../../utils/content-processors/json-cleaner';
 import { LOCALIZER_PARAMS } from '../../utils/config/llm-generation-params';
 import { buildSystemPrompt } from '../../utils/language/localization-language-rules';
+import { getLogger } from '../../utils/core/logger';
 import { MODEL_PROVIDERS } from '../../constants';
 
 /* =========================================================
@@ -38,7 +39,8 @@ function autoFixHtml(html: string): string {
         const frag = parse5.parseFragment(html);
         return parse5.serialize(frag);
     } catch (error) {
-        console.warn('⚠️ Failed to normalize HTML, returning original', {
+        const logger = getLogger('InboxTranslateJsonTool');
+        logger.warn('Failed to normalize HTML, returning original', {
             error: error instanceof Error ? error.message : String(error),
             htmlLength: html.length,
         });
@@ -208,6 +210,7 @@ export const inboxTranslateJsonTool = new Tool({
     inputSchema: InboxTranslateInputSchema,
     outputSchema: InboxTranslateOutputSchema,
     execute: async (context: any) => {
+        const logger = getLogger('InboxTranslateJsonTool');
         const {
             json,
             sourceLanguage = 'English',
@@ -221,15 +224,12 @@ export const inboxTranslateJsonTool = new Tool({
         const model = getModelWithOverride(modelProvider, modelOverride);
 
         const protectedKeys = [...doNotTranslateKeys, 'scene_type'];
-        console.log('🔒 [INBOX] Protected keys:', protectedKeys);
-        console.log('📝 [INBOX] Source language:', sourceLanguage);
-        console.log('🎯 [INBOX] Topic:', topic || 'General');
-        console.log('🌍 [INBOX] Target language:', targetLanguage);
+        logger.debug('Translation configuration', { protectedKeys, sourceLanguage, topic: topic || 'General', targetLanguage });
 
         // 1) Extract
         const extracted = extractStringsWithPaths(json, protectedKeys);
         const htmlCount = extracted.filter(e => e.tagMap && e.tagMap.size > 0).length;
-        console.log(`📦 [INBOX] Extracted ${extracted.length} strings (${htmlCount} with HTML protection)`);
+        logger.debug('Extracted strings from inbox', { count: extracted.length, htmlCount });
 
         if (extracted.length === 0) {
             return { success: true, data: json };
@@ -241,7 +241,7 @@ export const inboxTranslateJsonTool = new Tool({
         for (let i = 0; i < extracted.length; i += CHUNK_SIZE) {
             chunks.push(extracted.slice(i, i + CHUNK_SIZE));
         }
-        console.log(`📦 [INBOX] Split into ${chunks.length} chunks (≈${CHUNK_SIZE} each)`);
+        logger.debug('Split inbox strings into chunks', { chunkCount: chunks.length, chunkSize: CHUNK_SIZE });
 
         // 3) Prompt
         const topicContext = topic
@@ -320,7 +320,8 @@ export const inboxTranslateJsonTool = new Tool({
                 return out;
 
             } catch (e) {
-                console.warn(`⚠️ [INBOX] Chunk ${chunkNumber} failed, using originals (error: ${String(e)})`);
+                const err = e instanceof Error ? e : new Error(String(e));
+                logger.warn(`Chunk translation failed, using originals`, { chunkNumber, error: err.message });
                 return chunk.map(c => c.value);
             }
         }

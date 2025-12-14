@@ -307,9 +307,9 @@ const saveUpdatesStep = createStep({
       });
 
       // Wait 5 seconds to ensure Cloudflare KV data is consistent before returning URL to UI
-      console.log('⏳ Waiting 5 seconds for Cloudflare KV consistency...');
+      logger.info('Waiting 5 seconds for Cloudflare KV consistency');
       await new Promise(resolve => setTimeout(resolve, 5000));
-      console.log('✅ KV consistency check complete, returning training URL');
+      logger.info('KV consistency check complete, returning training URL');
 
       return {
         success: true,

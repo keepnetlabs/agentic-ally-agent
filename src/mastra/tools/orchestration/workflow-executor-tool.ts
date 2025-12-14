@@ -6,6 +6,7 @@ import { addMultipleLanguagesWorkflow } from '../../workflows/add-multiple-langu
 import { updateMicrolearningWorkflow } from '../../workflows/update-microlearning-workflow';
 import { v4 as uuidv4 } from 'uuid';
 import { PROMPT_ANALYSIS, MODEL_PROVIDERS, ERROR_MESSAGES } from '../../constants';
+import { getLogger } from '../../utils/core/logger';
 
 /**
  * Type definitions for workflow results
@@ -165,6 +166,7 @@ export const workflowExecutorTool = createTool({
   inputSchema: workflowExecutorSchema,
 
   execute: async ({ context, writer }) => {
+    const logger = getLogger('WorkflowExecutor');
     const { workflowType, ...params } = context;
 
     try {
@@ -198,7 +200,7 @@ export const workflowExecutorTool = createTool({
         let department = 'specified department';
         let microlearningId = 'ID not available';
 
-        console.log('🔍 Workflow result:', workflowResult);
+        logger.debug('Workflow result received', { status: workflowResult.status });
 
         // Try to extract data from workflow result
         if (
@@ -212,7 +214,8 @@ export const workflowExecutorTool = createTool({
             department = metadata.department || department;
             microlearningId = metadata.microlearningId || microlearningId;
           } catch (error) {
-            console.warn('Could not extract workflow result data:', error);
+            const err = error instanceof Error ? error : new Error(String(error));
+            logger.warn('Could not extract workflow result data', { error: err.message });
           }
         }
 
@@ -227,10 +230,12 @@ export const workflowExecutorTool = createTool({
             delta: `::ui:canvas_open::${trainingUrl}\n`
           });
           await writer?.write({ type: 'text-end', id: messageId });
-          console.log('URL sent to frontend:', trainingUrl);
+          logger.debug('Training URL sent to frontend', { urlLength: trainingUrl?.length });
         } catch (error) {
-          console.error('⚠️ Failed to send training URL to frontend:', {
-            error: error instanceof Error ? error.message : String(error),
+          const err = error instanceof Error ? error : new Error(String(error));
+          logger.error('Failed to send training URL to frontend', {
+            error: err.message,
+            stack: err.stack,
             trainingUrl: trainingUrl?.substring(0, 100),
             timestamp: new Date().toISOString(),
           });
@@ -275,7 +280,7 @@ export const workflowExecutorTool = createTool({
           result?.status === 'success' && result.result?.data
             ? result.result.data.title
             : null;
-        console.log('🔍 Training URL for translated:', trainingUrl);
+        logger.debug('Language translation completed', { hasTrainingUrl: !!trainingUrl });
         if (trainingUrl) {
           try {
             const messageId = uuidv4();
@@ -286,9 +291,10 @@ export const workflowExecutorTool = createTool({
               delta: `::ui:canvas_open::${trainingUrl}\n`
             });
             await writer?.write({ type: 'text-end', id: messageId });
-            console.log('URL sent to frontend:', trainingUrl);
+            logger.debug('Training URL sent to frontend', { urlLength: trainingUrl?.length });
           } catch (error) {
-            console.error('Failed to send URL to frontend:', error);
+            const err = error instanceof Error ? error : new Error(String(error));
+            logger.error('Failed to send translated URL to frontend', { error: err.message, stack: err.stack });
           }
         }
 
@@ -336,9 +342,10 @@ export const workflowExecutorTool = createTool({
                 delta: `::ui:canvas_open::${firstSuccess.trainingUrl}\n`
               });
               await writer?.write({ type: 'text-end', id: messageId });
-              console.log('URL sent to frontend:', firstSuccess.trainingUrl);
+              logger.debug('Training URL sent to frontend', { urlLength: firstSuccess.trainingUrl?.length });
             } catch (error) {
-              console.error('Failed to send URL to frontend:', error);
+              const err = error instanceof Error ? error : new Error(String(error));
+              logger.error('Failed to send translated URL to frontend', { error: err.message, stack: err.stack });
             }
           }
 
@@ -372,7 +379,7 @@ export const workflowExecutorTool = createTool({
           }
         });
 
-        console.log('🔍 Update workflow result:', result);
+        logger.debug('Update workflow completed', { success: result?.result?.success });
 
         // Send updated training URL to frontend via UI signal
         const trainingUrl = result?.result?.metadata?.trainingUrl;
@@ -386,9 +393,10 @@ export const workflowExecutorTool = createTool({
               delta: `::ui:canvas_open::${trainingUrl}\n`
             });
             await writer?.write({ type: 'text-end', id: messageId });
-            console.log('Updated training URL sent to frontend:', trainingUrl);
+            logger.debug('Updated training URL sent to frontend', { microlearningId: params.existingMicrolearningId });
           } catch (error) {
-            console.error('⚠️ Failed to send updated training URL to frontend:', error);
+            const err = error instanceof Error ? error : new Error(String(error));
+            logger.error('Failed to send updated training URL to frontend', { error: err.message, stack: err.stack });
             // Continue - don't block response
           }
         }
@@ -415,7 +423,8 @@ export const workflowExecutorTool = createTool({
         });
         await writer?.write({ type: 'text-end', id: messageId });
       } catch (writeError) {
-        console.error('Failed to send error message:', writeError);
+        const err = writeError instanceof Error ? writeError : new Error(String(writeError));
+        logger.error('Failed to send error message to frontend', { error: err.message, stack: err.stack });
       }
 
       return {

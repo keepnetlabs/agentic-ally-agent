@@ -1,18 +1,22 @@
 import { jsonrepair } from 'jsonrepair';
+import { getLogger } from '../core/logger';
+
+const logger = getLogger('JsonCleaner');
 
 export function cleanResponse(text: string, sectionName: string): string {
   try {
-    console.log(`🧹 Cleaning ${sectionName} response (${text.length} chars)`);
+    logger.debug('Cleaning response', { sectionName, textLength: text.length });
 
     // Use json-repair to fix all JSON issues automatically
     const clean = jsonrepair(text.trim());
-    console.log(`🔧 Applied json-repair to ${sectionName}`);
+    logger.debug('Applied json-repair', { sectionName });
 
-    console.log(`✅ ${sectionName} cleaned successfully (${clean.length} chars)`);
+    logger.debug('Cleaned successfully', { sectionName, cleanLength: clean.length });
     return clean;
   } catch (cleanErr) {
-    console.error(`❌ Error cleaning ${sectionName}:`, cleanErr);
-    console.log(`🔍 Raw ${sectionName} text (first 500 chars):`, text.substring(0, 500));
+    const err = cleanErr instanceof Error ? cleanErr : new Error(String(cleanErr));
+    logger.error('Error cleaning response', { sectionName, error: err.message, stack: err.stack });
+    logger.debug('Raw text sample', { sectionName, sample: text.substring(0, 500) });
     throw new Error(`Failed to clean ${sectionName} response: ${cleanErr instanceof Error ? cleanErr.message : String(cleanErr)}`);
   }
 }

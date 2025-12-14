@@ -5,6 +5,7 @@ import { phishingEmailAgent } from '../agents/phishing-email-agent';
 import { microlearningAgent } from '../agents/microlearning-agent';
 import { AGENT_CALL_TIMEOUT_MS } from '../constants';
 import { withTimeout, withRetry } from '../utils/core/resilience-utils';
+import { getLogger } from '../utils/core/logger';
 import { AutonomousRequest, AutonomousResponse } from '../types/autonomous-types';
 
 /**
@@ -17,13 +18,14 @@ async function generatePhishingSimulation(
     toolResult: any,
     threadId: string
 ): Promise<any> {
-    console.log('🎣 Using phishingEmailAgent to generate simulation based on analysis report...');
+    const logger = getLogger('GeneratePhishingSimulation');
+    logger.info('Using phishingEmailAgent to generate simulation based on analysis report');
 
     // First, add executive report to agent's memory by sending it as a message
     // This way agent has the full context in memory
     if (executiveReport) {
         try {
-            console.log('📤 Adding executive report to phishingEmailAgent memory...');
+            logger.debug('Adding executive report to phishingEmailAgent memory');
             await withTimeout(
                 phishingEmailAgent.generate(`[CONTEXT FROM ORCHESTRATOR: ${executiveReport}]`, {
                     memory: {
@@ -33,9 +35,10 @@ async function generatePhishingSimulation(
                 }),
                 AGENT_CALL_TIMEOUT_MS
             );
-            console.log('✅ Executive report added to agent memory');
+            logger.debug('Executive report added to agent memory');
         } catch (memoryError) {
-            console.warn('⚠️ Failed to add context to agent memory:', memoryError);
+            const err = memoryError instanceof Error ? memoryError : new Error(String(memoryError));
+            logger.warn('Failed to add context to agent memory', { error: err.message });
             // Continue anyway - agent can work without full context
         }
     }
@@ -73,7 +76,7 @@ Execute the phishingExecutor tool now. Skip confirmation and generate immediatel
 
     // LEVEL 1: Primary path - Full context with timeout + retry
     try {
-        console.log('🎣 Calling phishingEmailAgent (Level 1: Primary with full context)...');
+        logger.debug('Calling phishingEmailAgent (Level 1: Primary with full context)');
         const agentResult = await withRetry(
             () => withTimeout(
                 phishingEmailAgent.generate(fullPrompt, memoryConfig),
@@ -82,8 +85,8 @@ Execute the phishingExecutor tool now. Skip confirmation and generate immediatel
             'Phishing agent generation (Level 1)'
         );
 
-        console.log('✅ Phishing agent executed successfully');
-        console.log('📝 Agent response preview:', agentResult.text?.substring(0, 500) || 'No response');
+        logger.info('Phishing agent executed successfully');
+        logger.debug('Agent response preview', { preview: agentResult.text?.substring(0, 500) || 'No response' });
 
         return {
             success: true,
@@ -91,24 +94,26 @@ Execute the phishingExecutor tool now. Skip confirmation and generate immediatel
             agentResponse: agentResult.text,
         };
     } catch (primaryError) {
-        console.warn('⚠️ Primary failed, fallback 1:', primaryError);
+        const err = primaryError instanceof Error ? primaryError : new Error(String(primaryError));
+        logger.warn('Primary failed, attempting fallback 1', { error: err.message });
 
         // LEVEL 2: Fallback - Simplified prompt without full context
         try {
-            console.log('🎣 Attempting fallback 1: Simplified prompt...');
+            logger.debug('Attempting fallback 1: Simplified prompt');
             const agentResult = await withTimeout(
                 phishingEmailAgent.generate(simplifiedPrompt, memoryConfig),
                 AGENT_CALL_TIMEOUT_MS
             );
 
-            console.log('✅ Fallback 1 succeeded');
+            logger.info('Fallback 1 succeeded');
             return {
                 success: true,
                 message: 'Phishing simulation generated via agent (simplified)',
                 agentResponse: agentResult.text,
             };
         } catch (fallback1Error) {
-            console.warn('⚠️ Fallback 1 failed, using basic:', fallback1Error);
+            const err2 = fallback1Error instanceof Error ? fallback1Error : new Error(String(fallback1Error));
+            logger.warn('Fallback 1 failed, using basic', { error: err2.message });
 
             // LEVEL 3: Guaranteed fallback - Return structured error with recommendations
             return {
@@ -134,8 +139,9 @@ async function uploadAndAssignTraining(
     targetUserResourceId: string | undefined,
     threadId: string
 ): Promise<any> {
+    const logger = getLogger('UploadAndAssignTraining');
     if (!targetUserResourceId) {
-        console.warn('⚠️ Cannot assign: Missing targetUserResourceId');
+        logger.warn('Cannot assign: Missing targetUserResourceId');
         return {
             success: false,
             error: 'Missing targetUserResourceId',
@@ -143,7 +149,7 @@ async function uploadAndAssignTraining(
     }
 
     try {
-        console.log('📤 Requesting agent to upload and assign training...');
+        logger.info('Requesting agent to upload and assign training');
         const uploadAssignPrompt = `The training has been generated successfully. Now you MUST upload and assign it.
 
 **AUTONOMOUS EXECUTION OVERRIDE:**
@@ -170,18 +176,19 @@ DO NOT ask for confirmation. EXECUTE SEQUENCE NOW.`;
             AGENT_CALL_TIMEOUT_MS
         );
 
-        console.log('✅ Upload and assign agent executed');
-        console.log('📝 Upload/Assign response preview:', uploadAssignResponse.text?.substring(0, 500) || 'No response');
+        logger.info('Upload and assign agent executed');
+        logger.debug('Upload/Assign response preview', { preview: uploadAssignResponse.text?.substring(0, 500) || 'No response' });
 
         return {
             success: true,
             agentResponse: uploadAssignResponse.text,
         };
     } catch (uploadAssignError) {
-        console.error('❌ Upload/Assign agent error:', uploadAssignError);
+        const err = uploadAssignError instanceof Error ? uploadAssignError : new Error(String(uploadAssignError));
+        logger.error('Upload/Assign agent error', { error: err.message, stack: err.stack });
         return {
             success: false,
-            error: uploadAssignError instanceof Error ? uploadAssignError.message : 'Unknown error',
+            error: err.message,
         };
     }
 }
@@ -196,13 +203,14 @@ async function generateTrainingModule(
     toolResult: any,
     threadId: string
 ): Promise<any> {
-    console.log('📚 Using microlearningAgent to generate training module based on analysis report...');
+    const logger = getLogger('GenerateTrainingModule');
+    logger.info('Using microlearningAgent to generate training module based on analysis report');
 
     // First, add executive report to agent's memory by sending it as a message
     // This way agent has the full context in memory
     if (executiveReport) {
         try {
-            console.log('📤 Adding executive report to microlearningAgent memory...');
+            logger.debug('Adding executive report to microlearningAgent memory');
             await withTimeout(
                 microlearningAgent.generate(`[CONTEXT FROM ORCHESTRATOR: ${executiveReport}]`, {
                     memory: {
@@ -212,9 +220,10 @@ async function generateTrainingModule(
                 }),
                 AGENT_CALL_TIMEOUT_MS
             );
-            console.log('✅ Executive report added to microlearningAgent memory');
+            logger.debug('Executive report added to microlearningAgent memory');
         } catch (memoryError) {
-            console.warn('⚠️ Failed to add context to microlearningAgent memory:', memoryError);
+            const err = memoryError instanceof Error ? memoryError : new Error(String(memoryError));
+            logger.warn('Failed to add context to microlearningAgent memory', { error: err.message });
             // Continue anyway - agent can work without full context
         }
     }
@@ -274,7 +283,7 @@ Execute workflowExecutor tool with workflowType: 'create-microlearning', prompt:
 
     // LEVEL 1: Primary path - Full context with timeout + retry
     try {
-        console.log('📚 Calling microlearningAgent (Level 1: Primary with full context)...');
+        logger.debug('Calling microlearningAgent (Level 1: Primary with full context)');
         const agentResult = await withRetry(
             () => withTimeout(
                 microlearningAgent.generate(fullPrompt, memoryConfig),
@@ -283,7 +292,7 @@ Execute workflowExecutor tool with workflowType: 'create-microlearning', prompt:
             'Training agent generation (Level 1)'
         );
 
-        console.log('✅ Training agent executed successfully');
+        logger.info('Training agent executed successfully');
 
         // Step 4: Upload and Assign (separate agent call after generation)
         const uploadAssignResult = await uploadAndAssignTraining(
@@ -299,17 +308,18 @@ Execute workflowExecutor tool with workflowType: 'create-microlearning', prompt:
             uploadAssignResult,
         };
     } catch (primaryError) {
-        console.warn('⚠️ Primary failed, fallback 1:', primaryError);
+        const err = primaryError instanceof Error ? primaryError : new Error(String(primaryError));
+        logger.warn('Primary failed, attempting fallback 1', { error: err.message });
 
         // LEVEL 2: Fallback - Simplified prompt without full context
         try {
-            console.log('📚 Attempting fallback 1: Simplified prompt...');
+            logger.debug('Attempting fallback 1: Simplified prompt');
             const agentResult = await withTimeout(
                 microlearningAgent.generate(simplifiedPrompt, memoryConfig),
                 AGENT_CALL_TIMEOUT_MS
             );
 
-            console.log('✅ Fallback 1 succeeded');
+            logger.info('Fallback 1 succeeded');
             const uploadAssignResult = await uploadAndAssignTraining(
                 toolResult.userInfo?.targetUserResourceId,
                 threadId
@@ -323,7 +333,8 @@ Execute workflowExecutor tool with workflowType: 'create-microlearning', prompt:
                 uploadAssignResult,
             };
         } catch (fallback1Error) {
-            console.warn('⚠️ Fallback 1 failed, using basic:', fallback1Error);
+            const err2 = fallback1Error instanceof Error ? fallback1Error : new Error(String(fallback1Error));
+            logger.warn('Fallback 1 failed, using basic', { error: err2.message });
 
             // LEVEL 3: Guaranteed fallback - Return structured error with recommendations
             return {
@@ -354,12 +365,13 @@ Execute workflowExecutor tool with workflowType: 'create-microlearning', prompt:
 export async function executeAutonomousGeneration(
     request: AutonomousRequest
 ): Promise<AutonomousResponse> {
+    const logger = getLogger('ExecuteAutonomousGeneration');
     const { token, firstName, lastName, actions } = request;
 
     try {
         // Set token in request storage so getUserInfoTool can access it
         return await requestStorage.run({ token }, async () => {
-            console.log('✅ Using getUserInfoTool with:', { firstName, lastName });
+            logger.info('Using getUserInfoTool with user details', { firstName, lastName });
 
             // Use getUserInfoTool with firstName/lastName (as the tool expects)
             if (!getUserInfoTool.execute) {
@@ -390,7 +402,7 @@ export async function executeAutonomousGeneration(
 
             // Step 2: Prepare concise context for agents (no duplication, include all important fields + references)
             let contextForAgents: string | undefined;
-            console.log('🔍 Analysis report:', JSON.stringify(toolResult.analysisReport, null, 2));
+            logger.debug('Analysis report available', { hasAnalysis: !!toolResult.analysisReport });
             if (toolResult.analysisReport) {
                 const report = toolResult.analysisReport;
                 const sim = report.recommended_next_steps?.simulations?.[0];
@@ -447,7 +459,7 @@ ${references || 'None provided'}`;
 
             // Keep executiveReport alias for compatibility
             const executiveReport = contextForAgents;
-            console.log('🔍 Executive report:', executiveReport);
+            logger.debug('Executive report prepared', { hasContext: !!executiveReport });
             // Step 3: Generate content based on actions
             let phishingResult: any = undefined;
             let trainingResult: any = undefined;
@@ -486,10 +498,11 @@ ${references || 'None provided'}`;
             };
         });
     } catch (error) {
-        console.error('❌ Autonomous service error:', error);
+        const err = error instanceof Error ? error : new Error(String(error));
+        logger.error('Autonomous service error', { error: err.message, stack: err.stack });
         return {
             success: false,
-            error: error instanceof Error ? error.message : 'Unknown error',
+            error: err.message,
             actions,
         };
     }

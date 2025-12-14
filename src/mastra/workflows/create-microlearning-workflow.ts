@@ -9,6 +9,9 @@ import { KVService } from '../services/kv-service';
 import { generateMicrolearningId, normalizeDepartmentName } from '../utils/language/language-utils';
 import { MODEL_PROVIDERS, TRAINING_LEVELS, DEFAULT_TRAINING_LEVEL, PRIORITY_LEVELS, DEFAULT_PRIORITY } from '../constants';
 import { StreamWriterSchema } from '../types/stream-writer';
+import { getLogger } from '../utils/core/logger';
+
+const logger = getLogger('CreateMicrolearningWorkflow');
 
 // Input/Output Schemas
 const createInputSchema = z.object({
@@ -110,7 +113,7 @@ const analyzePromptStep = createStep({
     });
 
     if (!analysisRes?.success) throw new Error(`Prompt analysis failed: ${analysisRes?.error}`);
-    console.log('inputData.additionalContext', inputData.additionalContext);
+    logger.debug('Additional context received', { additionalContext: inputData.additionalContext });
     return {
       success: analysisRes.success,
       data: {
@@ -134,7 +137,7 @@ const generateMicrolearningStep = createStep({
     const analysis = inputData.data;
     const microlearningId = generateMicrolearningId(analysis.topic);
     const model = getModelWithOverride(inputData.modelProvider, inputData.model);
-    console.log('🔍 Generating microlearning structure for:', analysis);
+    logger.info('Generating microlearning structure', { analysis });
     if (!generateMicrolearningJsonTool.execute) {
       throw new Error('Generate microlearning JSON tool is not executable');
     }
@@ -248,9 +251,9 @@ const createInboxStep = createStep({
     const trainingUrl = `https://microlearning.pages.dev/?baseUrl=${baseUrl}&langUrl=${langUrl}&inboxUrl=${inboxUrl}&isEditMode=true`;
 
     // Wait 5 seconds to ensure Cloudflare KV data is consistent before returning URL to UI
-    console.log('⏳ Waiting 5 seconds for Cloudflare KV consistency...');
+    logger.info('Waiting 5 seconds for Cloudflare KV consistency');
     await new Promise(resolve => setTimeout(resolve, 5000));
-    console.log('✅ KV consistency check complete, returning training URL');
+    logger.info('KV consistency check complete, returning training URL');
 
     return {
       success: true,
@@ -303,10 +306,12 @@ const saveToKVStep = createStep({
         analysis.language,
         normalizedDept
       ).catch((error) => {
-        console.error('KV save failed:', error);
+        const err = error instanceof Error ? error : new Error(String(error));
+        logger.error('KV save failed', { error: err.message, stack: err.stack });
       });
     } catch (error) {
-      console.warn('KV initialization error:', error);
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.warn('KV initialization error', { error: err.message, stack: err.stack });
     }
 
     // Return only the inbox result from parallel execution

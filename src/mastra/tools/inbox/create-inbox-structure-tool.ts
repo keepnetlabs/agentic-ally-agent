@@ -9,6 +9,7 @@ import { cleanResponse } from '../../utils/content-processors/json-cleaner';
 import { generateInboxTextsPrompt } from './generators/inbox-texts-generator';
 import { generateInboxEmailsParallel } from './generators/inbox-emails-orchestrator';
 import { LOCALIZER_PARAMS } from '../../utils/config/llm-generation-params';
+import { getLogger } from '../../utils/core/logger';
 
 const microlearningService = new MicrolearningService();
 
@@ -18,13 +19,14 @@ export const createInboxStructureTool = new Tool({
   inputSchema: CreateInboxStructureSchema,
   outputSchema: CreateInboxStructureOutputSchema,
   execute: async (context: any) => {
+    const logger = getLogger('CreateInboxStructureTool');
     const input = context?.inputData || context?.input || context;
     const { department, languageCode, microlearningId, microlearning, additionalContext, modelProvider, model: modelOverride } = input;
 
     try {
       const inboxContent = await createInboxStructure(department, languageCode, microlearningId, microlearning, additionalContext, modelProvider, modelOverride);
 
-      console.log(`📦 Tool returning inbox content:`, typeof inboxContent, Object.keys(inboxContent || {}));
+      logger.debug('Tool returning inbox content', { contentType: typeof inboxContent, keyCount: Object.keys(inboxContent || {}).length });
 
       return {
         success: true,
@@ -40,7 +42,7 @@ export const createInboxStructureTool = new Tool({
       };
 
     } catch (error) {
-      console.error('Inbox structure creation failed:', error);
+      logger.error('Inbox structure creation failed', error instanceof Error ? error : new Error(String(error)));
 
       return {
         success: false,
@@ -86,7 +88,8 @@ async function createInboxStructure(
     return dynamicInboxData; // Return the generated content
 
   } catch (firstError) {
-    console.warn('First attempt to generate dynamic inbox failed, retrying once:', firstError);
+    const logger = getLogger('CreateInboxStructure');
+    logger.warn('First attempt to generate dynamic inbox failed, retrying once', firstError instanceof Error ? firstError : new Error(String(firstError)));
 
     try {
       const model = getModelWithOverride(modelProvider, modelOverride);
@@ -101,7 +104,8 @@ async function createInboxStructure(
       return dynamicInboxData; // Return the generated content after retry
 
     } catch (secondError) {
-      console.warn('Second attempt failed, using fallback:', secondError);
+      const logger2 = getLogger('CreateInboxStructure');
+      logger2.warn('Second attempt failed, using fallback', secondError instanceof Error ? secondError : new Error(String(secondError)));
       // Fallback to basic structure
       const fallbackPayload = { texts: {}, emails: [] };
       return fallbackPayload; // Return the fallback content
@@ -158,16 +162,19 @@ async function generateDynamicInboxWithAI(
 
     try {
       textsData = JSON.parse(cleanedTexts);
-      console.log('✅ Inbox texts parsed successfully');
+      const logger = getLogger('GenerateDynamicInboxWithAI');
+      logger.debug('Inbox texts parsed successfully', {});
     } catch (textsError) {
-      console.warn('Texts JSON parse failed, using fallback:', textsError);
+      const logger = getLogger('GenerateDynamicInboxWithAI');
+      logger.warn('Texts JSON parse failed, using fallback', textsError instanceof Error ? textsError : new Error(String(textsError)));
       throw textsError;
     }
 
     emailsData = emailsArray;
 
   } catch (parseError) {
-    console.error('JSON parsing failed:', parseError);
+    const logger = getLogger('GenerateDynamicInboxWithAI');
+    logger.error('JSON parsing failed', parseError instanceof Error ? parseError : new Error(String(parseError)));
   }
 
   const aiResponse = {
@@ -178,10 +185,12 @@ async function generateDynamicInboxWithAI(
   // Validate with schema
   try {
     const validatedInboxContent = InboxContentSchema.parse(aiResponse);
-    console.log(`✅ Generated inbox content validated successfully for topic: ${topic}`);
+    const logger = getLogger('GenerateDynamicInboxWithAI');
+    logger.debug('Generated inbox content validated successfully', { topic });
     return validatedInboxContent;
   } catch (validationError) {
-    console.warn('Inbox content validation failed, using fallback:', validationError);
+    const logger = getLogger('GenerateDynamicInboxWithAI');
+    logger.warn('Inbox content validation failed, using fallback', validationError instanceof Error ? validationError : new Error(String(validationError)));
   }
 }
 

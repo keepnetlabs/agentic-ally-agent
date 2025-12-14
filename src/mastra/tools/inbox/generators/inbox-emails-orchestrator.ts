@@ -3,6 +3,9 @@ import { buildInboxEmailBaseSystem } from './inbox-email-base';
 import { EmailVariant, variantDeltaBuilder, buildHintsFromInsights } from './inbox-email-variants';
 import { cleanResponse } from '../../../utils/content-processors/json-cleaner';
 import { INBOX_GENERATION_PARAMS } from '../../../utils/config/llm-generation-params';
+import { getLogger } from '../../../utils/core/logger';
+
+const logger = getLogger('InboxEmailsOrchestrator');
 
 export type OrchestratorArgs = {
     topic: string;
@@ -176,11 +179,12 @@ export async function generateInboxEmailsParallel(args: OrchestratorArgs): Promi
     // Generate randomized, unique timestamps for each email variant
     const uniqueTimestamps = getUniqueTimestamps(variantPlan.length);
 
-    console.log(`📧 Generating emails for topic="${args.topic}", department="${args.department}"`);
-    console.log(`⏰ Using timestamps: ${uniqueTimestamps.join(', ')}`);
-    if (args.additionalContext) {
-        console.log(`🎯 Applying user context to phishing variants (ObviousPhishing + SophisticatedPhishing).`);
-    }
+    logger.info('Generating emails', {
+        topic: args.topic,
+        department: args.department,
+        timestamps: uniqueTimestamps.join(', '),
+        hasAdditionalContext: !!args.additionalContext
+    });
 
     const tasks = variantPlan.map((variant, i) => {
         // Apply targeted context to both phishing variants (realistic - attackers research targets)

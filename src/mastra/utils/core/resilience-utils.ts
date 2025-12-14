@@ -1,5 +1,8 @@
 // src/mastra/utils/core/resilience-utils.ts
 import { RETRY } from '../../constants';
+import { getLogger } from './logger';
+
+const logger = getLogger('ResilienceUtils');
 
 /**
  * Wraps a promise with timeout protection
@@ -53,7 +56,12 @@ export async function withRetry<T>(
         } catch (error) {
             if (attempt === RETRY.MAX_ATTEMPTS - 1) throw error;
             const delay = RETRY.getBackoffDelay(attempt);
-            console.warn(`⚠️ ${operationName} failed (${attempt + 1}/${RETRY.MAX_ATTEMPTS}), retrying in ${delay}ms...`);
+            logger.warn('Operation failed, retrying', {
+                operation: operationName,
+                attempt: attempt + 1,
+                maxAttempts: RETRY.MAX_ATTEMPTS,
+                retryDelayMs: delay
+            });
             await new Promise(resolve => setTimeout(resolve, delay));
         }
     }

@@ -5,6 +5,10 @@
  * Strategy: Simple, structured logging - let Cloudflare aggregate
  */
 
+import { getLogger } from './logger';
+
+const logger = getLogger('CostTracker');
+
 // Pricing (USD per 1M tokens)
 const PRICING = {
   // OpenAI Models
@@ -83,7 +87,10 @@ export function trackCost(
 
   // Warn if using fallback pricing for unknown model
   if (!PRICING[normalizedModel as keyof typeof PRICING] && normalizedModel !== '@cf/openai/gpt-oss-120b') {
-    console.warn(`⚠️ Unknown model "${model}" (normalized: "${normalizedModel}"), using fallback pricing`);
+    logger.warn('Unknown model, using fallback pricing', {
+      originalModel: model,
+      normalizedModel
+    });
   }
 
   // Calculate cost (cache hits are 50% cheaper for OpenAI)
@@ -99,7 +106,7 @@ export function trackCost(
   const totalCost = inputCost + cachedCost + outputCost;
 
   // Structured log (Cloudflare Analytics will aggregate)
-  console.log(JSON.stringify({
+  logger.info('LLM cost tracking', {
     type: 'llm_cost',
     operation,
     model,
@@ -117,9 +124,5 @@ export function trackCost(
       total: parseFloat(totalCost.toFixed(6))
     },
     timestamp: new Date().toISOString()
-  }));
-
-  // Human-readable log
-  const cacheInfo = cachedTokens > 0 ? ` (${cachedTokens} cached)` : '';
-  console.log(`💰 ${operation}: $${totalCost.toFixed(6)} | ${promptTokens + completionTokens} tokens${cacheInfo}`);
+  });
 }

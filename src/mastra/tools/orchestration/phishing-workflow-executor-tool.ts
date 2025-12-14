@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { createPhishingWorkflow } from '../../workflows/create-phishing-workflow';
 import { v4 as uuidv4 } from 'uuid';
 import { PHISHING, MODEL_PROVIDERS, ERROR_MESSAGES } from '../../constants';
+import { getLogger } from '../../utils/core/logger';
 
 const phishingWorkflowSchema = z.object({
     workflowType: z.literal(PHISHING.WORKFLOW_TYPE).describe('Workflow to execute'),
@@ -30,9 +31,10 @@ export const phishingWorkflowExecutorTool = createTool({
 
     execute: async ({ context, writer }) => {
         const { workflowType, ...params } = context;
+        const logger = getLogger('PhishingWorkflowExecutor');
 
         try {
-            console.log('🎣 Starting Phishing Workflow:', params.topic);
+            logger.info('Starting Phishing Workflow', { topic: params.topic });
 
             const workflow = createPhishingWorkflow;
             const run = await workflow.createRunAsync();
@@ -53,7 +55,7 @@ export const phishingWorkflowExecutorTool = createTool({
                 }
             });
 
-            console.log('🎣 Workflow Completed:', result.status);
+            logger.info('Workflow Completed', { status: result.status });
 
             if (result.status === 'success' && result.result) {
                 const output = result.result;
@@ -103,7 +105,8 @@ export const phishingWorkflowExecutorTool = createTool({
 
                         await writer.write({ type: 'text-end', id: messageId });
                     } catch (err) {
-                        console.error('Failed to stream phishing email:', err);
+                        const error = err instanceof Error ? err : new Error(String(err));
+                        logger.error('Failed to stream phishing email', { error: error.message, stack: error.stack });
                     }
                 }
 
@@ -131,14 +134,15 @@ export const phishingWorkflowExecutorTool = createTool({
             }
 
             // Workflow succeeded but no result
-            console.error('❌ Phishing workflow produced no output');
+            logger.error('Phishing workflow produced no output', {});
             return {
                 success: false,
                 error: ERROR_MESSAGES.PHISHING.NO_OUTPUT
             };
 
         } catch (error) {
-            console.error('❌ Phishing workflow error:', error);
+            const err = error instanceof Error ? error : new Error(String(error));
+            logger.error('Phishing workflow error', { error: err.message, stack: err.stack });
 
             // User-friendly error message
             const userMessage = error instanceof Error && error.message.includes('analysis')

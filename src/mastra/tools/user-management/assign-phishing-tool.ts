@@ -1,6 +1,7 @@
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { requestStorage } from '../../utils/core/request-storage';
+import { getLogger } from '../../utils/core/logger';
 import { ERROR_MESSAGES } from '../../constants';
 
 const ASSIGN_API_URL = 'https://crud-phishing-worker.keepnet-labs-ltd-business-profile4086.workers.dev/send'; // TODO: Update with actual phishing assign endpoint
@@ -20,10 +21,11 @@ export const assignPhishingTool = createTool({
         error: z.string().optional(),
     }),
     execute: async ({ context }) => {
+        const logger = getLogger('AssignPhishingTool');
         const { resourceId, languageId, targetUserResourceId } = context;
         const name = `Phishing Campaign - ${targetUserResourceId} Agentic Ally`;
 
-        console.log(`🔗 Preparing phishing assignment for Resource: ${resourceId}${languageId ? ` (LangID: ${languageId})` : ''} to User: ${targetUserResourceId}`);
+        logger.info('Preparing phishing assignment for resource to user', { resourceId, languageId, targetUserResourceId });
 
         // Get Auth Token & Cloudflare bindings from AsyncLocalStorage
         const store = requestStorage.getStore();
@@ -46,10 +48,7 @@ export const assignPhishingTool = createTool({
         };
 
         // Log Payload (Token is in header, so payload is safe to log)
-        console.log('📦 Assign Phishing Payload:', JSON.stringify({
-            ...payload,
-            accessToken: '***MASKED***',
-        }, null, 2));
+        logger.debug('Assign phishing payload prepared', { payloadKeys: Object.keys(payload) });
 
         try {
             // Service Binding kullan (production) veya fallback to public URL (local dev)
@@ -57,7 +56,7 @@ export const assignPhishingTool = createTool({
 
             if (env?.PHISHING_CRUD_WORKER) {
                 // ✅ SERVICE BINDING (Production - Internal Routing)
-                console.log('🔗 Using Service Binding: PHISHING_CRUD_WORKER');
+                logger.debug('Using Service Binding: PHISHING_CRUD_WORKER');
                 response = await env.PHISHING_CRUD_WORKER.fetch('https://worker/send', {
                     method: 'POST',
                     headers: {
@@ -68,7 +67,7 @@ export const assignPhishingTool = createTool({
                 });
             } else {
                 // ⚠️ FALLBACK: Public URL (Local Development)
-                console.log('🌐 Using Public URL (Fallback):', ASSIGN_API_URL);
+                logger.debug('Using Public URL fallback for phishing assignment', { url: ASSIGN_API_URL });
                 response = await fetch(ASSIGN_API_URL, {
                     method: 'POST',
                     headers: {
@@ -85,7 +84,7 @@ export const assignPhishingTool = createTool({
             }
 
             const result = await response.json();
-            console.log('✅ Phishing Assignment Success:', JSON.stringify(result, null, 2));
+            logger.info('Phishing assignment success', { resultKeys: Object.keys(result) });
 
             return {
                 success: true,
@@ -93,7 +92,8 @@ export const assignPhishingTool = createTool({
             };
 
         } catch (error) {
-            console.error('❌ Assign phishing tool failed:', error);
+            const err = error instanceof Error ? error : new Error(String(error));
+            logger.error('Assign phishing tool failed', { error: err.message, stack: err.stack });
             return {
                 success: false,
                 error: error instanceof Error ? error.message : ERROR_MESSAGES.PLATFORM.UNKNOWN_ASSIGN_ERROR

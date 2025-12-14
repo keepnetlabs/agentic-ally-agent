@@ -2,6 +2,9 @@ import { Mastra } from '@mastra/core/mastra';
 import { cleanResponse } from '../utils/content-processors/json-cleaner';
 import { AGENT_NAMES } from '../constants';
 import { withRetry } from '../utils/core/resilience-utils';
+import { getLogger } from '../utils/core/logger';
+
+const logger = getLogger('AgentRouter');
 
 // Extract agent name type from constants
 type AgentName = typeof AGENT_NAMES[keyof typeof AGENT_NAMES];
@@ -28,7 +31,7 @@ export class AgentRouter {
     const validAgents = Object.values(AGENT_NAMES).filter(name => name !== AGENT_NAMES.ORCHESTRATOR);
 
     try {
-      console.log('🧠 Orchestrator analyzing intent...');
+      logger.info('Orchestrator analyzing intent');
 
       // Wrap orchestrator call + JSON parsing in retry mechanism
       // withRetry will automatically retry on errors with exponential backoff
@@ -52,25 +55,27 @@ export class AgentRouter {
 
       // Validate agent name
       if (validAgents.includes(agent)) {
-        console.log(`✅ Routed to: ${agent}`);
-        if (taskContext) console.log(`📝 Context: ${taskContext}`);
+        logger.info('Routed to agent', { agent, taskContext });
         return { agentName: agent, taskContext };
       }
 
       // Invalid agent name - this is a logic error, not a transient error
       // Don't retry, just fallback to default
-      console.warn(`⚠️ Invalid agent name "${agent}" from orchestrator. Defaulting to ${AGENT_NAMES.MICROLEARNING}.`, {
+      logger.warn('Invalid agent name from orchestrator, defaulting', {
         received: agent,
         validAgents,
         decision: JSON.stringify(decision),
+        defaultAgent: AGENT_NAMES.MICROLEARNING
       });
       return { agentName: AGENT_NAMES.MICROLEARNING };
 
     } catch (error) {
       // withRetry exhausted all attempts - fallback to default
-      console.error('❌ Orchestrator routing failed after all retries:', {
-        error: error instanceof Error ? error.message : String(error),
-        errorType: error instanceof Error ? error.constructor.name : typeof error,
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.error('Orchestrator routing failed after all retries', {
+        error: err.message,
+        stack: err.stack,
+        errorType: err.constructor.name
       });
       return { agentName: AGENT_NAMES.MICROLEARNING };
     }

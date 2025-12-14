@@ -12,6 +12,7 @@ import { rewriteScene6Survey } from '../scenes/rewriters/scene6-survey-rewriter'
 import { rewriteScene7Nudge } from '../scenes/rewriters/scene7-nudge-rewriter';
 import { rewriteScene8Summary } from '../scenes/rewriters/scene8-summary-rewriter';
 import { rewriteAppTexts } from '../scenes/rewriters/app-texts-rewriter';
+import { getLogger } from '../../utils/core/logger';
 
 /* =========================================================
  * Schemas
@@ -62,6 +63,7 @@ export const translateLanguageJsonTool = new Tool({
     inputSchema: TranslateJsonInputSchema,
     outputSchema: TranslateJsonOutputSchema,
     execute: async (context: any) => {
+        const logger = getLogger('TranslateLanguageJsonTool');
         const {
             json,
             microlearningStructure,
@@ -74,20 +76,18 @@ export const translateLanguageJsonTool = new Tool({
 
         const model = getModelWithOverride(modelProvider, modelOverride);
 
-        console.log('🎬 [SCENE REWRITE] Starting modular scene-by-scene rewrite');
-        console.log('📝 [SCENE REWRITE] Source:', sourceLanguage, '→ Target:', targetLanguage);
-        console.log('🎯 [SCENE REWRITE] Topic:', topic || 'General');
+        logger.debug('Starting scene-by-scene rewrite', { sourceLanguage, targetLanguage, topic: topic || 'General' });
 
         // Extract scenes metadata from microlearningStructure
         const scenesMetadata = microlearningStructure?.scenes || [];
         const appTexts = json.app_texts || {};
 
         if (scenesMetadata.length === 0) {
-            console.log('⚠️ [SCENE REWRITE] No scenes metadata found, returning original');
+            logger.warn('No scenes metadata found, returning original', {});
             return { success: true, data: json };
         }
 
-        console.log(`🎬 [SCENE REWRITE] Found ${scenesMetadata.length} scenes`);
+        logger.debug('Scene rewrite parameters', { sceneCount: scenesMetadata.length });
 
         // Build rewrite context
         const rewriteContext = {
@@ -106,26 +106,27 @@ export const translateLanguageJsonTool = new Tool({
             const sceneContent = json[sceneId];
 
             if (!sceneContent) {
-                console.warn(`⚠️ [SCENE ${sceneNumber}] No content found for scene_id ${sceneId}`);
+                logger.warn('No content found for scene', { sceneNumber, sceneId });
                 return { sceneId, content: null };
             }
 
             const rewriter = getSceneRewriter(sceneType);
-            console.log(`🎬 [SCENE ${sceneNumber}/${scenesMetadata.length}] Rewriting ${sceneType} (id: ${sceneId})`);
+            logger.debug('Rewriting scene', { sceneNumber, totalScenes: scenesMetadata.length, sceneType, sceneId });
 
             try {
                 const rewrittenContent = await rewriter(sceneContent, rewriteContext);
-                console.log(`✅ [SCENE ${sceneNumber}/${scenesMetadata.length}] Rewrite completed`);
+                logger.debug('Scene rewrite completed', { sceneNumber, totalScenes: scenesMetadata.length });
                 return { sceneId, content: rewrittenContent };
             } catch (error) {
-                console.error(`❌ [SCENE ${sceneNumber}/${scenesMetadata.length}] Rewrite failed:`, error);
-                console.warn(`⚠️ [SCENE ${sceneNumber}/${scenesMetadata.length}] Using original as fallback`);
+                const err = error instanceof Error ? error : new Error(String(error));
+                logger.error('Scene rewrite failed', { sceneNumber, sceneId, error: err.message, stack: err.stack });
+                logger.warn('Using original content as fallback', { sceneNumber, sceneId });
                 return { sceneId, content: sceneContent }; // Graceful fallback
             }
         }
 
         // Process all scenes in parallel
-        console.log(`📦 [PARALLEL] Processing all ${scenesMetadata.length} scenes simultaneously`);
+        logger.debug('Processing all scenes in parallel', { sceneCount: scenesMetadata.length });
 
         const allResults = await Promise.all(
             scenesMetadata.map((sceneMetadata: any, idx: number) => rewriteScene(sceneMetadata, idx))
@@ -140,13 +141,13 @@ export const translateLanguageJsonTool = new Tool({
         });
 
         // Rewrite app_texts
-        console.log('📱 [APP_TEXTS] Rewriting application texts');
+        logger.debug('Rewriting application texts', {});
         let rewrittenAppTexts = appTexts;
         try {
             rewrittenAppTexts = await rewriteAppTexts(appTexts, rewriteContext);
-            console.log('✅ [APP_TEXTS] Rewrite completed');
+            logger.debug('Application texts rewrite completed', {});
         } catch (error) {
-            console.error('❌ [APP_TEXTS] Rewrite failed, using original:', error);
+            logger.error('Application texts rewrite failed, using original', error);
         }
 
         // Combine results - preserve original structure with rewritten scenes
@@ -156,7 +157,7 @@ export const translateLanguageJsonTool = new Tool({
             app_texts: rewrittenAppTexts
         };
 
-        console.log(`🎉 [SCENE REWRITE] Completed: ${Object.keys(rewrittenScenesMap).length} scenes rewritten`);
+        logger.debug('Scene rewrite batch completed', { scenesRewritten: Object.keys(rewrittenScenesMap).length });
 
         return {
             success: true,

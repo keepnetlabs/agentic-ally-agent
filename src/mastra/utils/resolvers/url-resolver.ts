@@ -1,3 +1,7 @@
+import { getLogger } from '../core/logger';
+
+const logger = getLogger('UrlResolver');
+
 export interface ResourceURL {
   title: string;
   url: string;
@@ -757,12 +761,15 @@ export function resolveResourceUrls(
   const fallbackCategory = isCode && category !== 'DEVELOPMENT' ? 'DEVELOPMENT' : category;
 
   if (URL_DATABASE[fallbackCategory] && URL_DATABASE[fallbackCategory].length > 0) {
-    console.log(`  📚 Using fallback category: ${fallbackCategory}${isCode ? ' (code topic)' : ''}`);
+    logger.info('Using fallback category', {
+      category: fallbackCategory,
+      isCodeTopic: isCode
+    });
     return URL_DATABASE[fallbackCategory].slice(0, 2);
   }
 
   // LEVEL 3: Generic fallback (ultimate safety net)
-  console.log(`  📚 Using GENERIC fallback`);
+  logger.info('Using GENERIC fallback');
   return (URL_DATABASE['GENERIC'] || []).slice(0, 2);
 }
 
@@ -781,8 +788,9 @@ export function getResourcesForScene8(analysis: {
   department?: string;
   language?: string;
 }, isCode: boolean = false): ResourceURL[] {
-  console.log('🔗 getResourcesForScene8 called');
-  console.log('  keyTopics input:', analysis.keyTopics);
+  logger.info('getResourcesForScene8 called', {
+    keyTopics: analysis.keyTopics
+  });
 
   // LEVEL 1: Try to resolve from keyTopics (most dynamic)
   if (analysis.keyTopics && analysis.keyTopics.length > 0) {
@@ -797,12 +805,18 @@ export function getResourcesForScene8(analysis: {
         .replace(/\s+/g, '-') // spaces to dashes
         .replace(/-+/g, '-'); // multiple dashes to single dash
 
-      console.log(`  Checking keyTopic: "${keyTopic}" → normalized: "${topicKey}"`);
+      logger.info('Checking keyTopic', {
+        original: keyTopic,
+        normalized: topicKey
+      });
 
       // LEVEL 1: Try exact match
       const topicResources = URL_DATABASE[topicKey];
       if (Array.isArray(topicResources) && topicResources.length > 0) {
-        console.log(`    ✅ Found ${topicResources.length} resources for "${topicKey}"`);
+        logger.info('Found resources for keyTopic', {
+          topicKey,
+          count: topicResources.length
+        });
         resources.push(...topicResources);
         continue;
       }
@@ -816,7 +830,10 @@ export function getResourcesForScene8(analysis: {
       for (const word of words) {
         const wordResources = URL_DATABASE[word];
         if (Array.isArray(wordResources) && wordResources.length > 0) {
-          console.log(`    ✅ Found parent topic match: "${word}" from "${topicKey}"`);
+          logger.info('Found parent topic match', {
+            word,
+            fromTopic: topicKey
+          });
           resources.push(...wordResources);
           parentTopicFound = true;
           break;
@@ -824,13 +841,15 @@ export function getResourcesForScene8(analysis: {
       }
 
       if (!parentTopicFound) {
-        console.log(`    ❌ No exact match for "${topicKey}", no parent topic found`);
+        logger.info('No match found for keyTopic', { topicKey });
       }
     }
 
     // If we found resources from keyTopics, return top 2 (avoiding duplicates)
     if (resources.length > 0) {
-      console.log(`  📦 Found ${resources.length} total resources from keyTopics`);
+      logger.info('Found resources from keyTopics', {
+        totalCount: resources.length
+      });
 
       // Remove duplicates and return top 2
       const uniqueUrls = new Set<string>();
@@ -844,17 +863,23 @@ export function getResourcesForScene8(analysis: {
         }
       }
 
-      console.log(`  ✅ Returning ${uniqueResources.length} unique resources from keyTopics`);
+      logger.info('Returning unique resources from keyTopics', {
+        count: uniqueResources.length
+      });
       return uniqueResources;
     } else {
-      console.log(`  ⚠️ No resources found from keyTopics, falling back to standard resolution`);
+      logger.info('No resources found from keyTopics, falling back to standard resolution');
     }
   } else {
-    console.log(`  ⚠️ keyTopics empty or undefined, using standard resolution`);
+    logger.info('keyTopics empty or undefined, using standard resolution');
   }
 
   // LEVEL 2: Fallback to standard topic/category resolution with isCode flag
-  console.log(`  Fallback: Using topic="${analysis.topic}", category="${analysis.category}", isCode=${isCode}`);
+  logger.info('Using fallback resolution', {
+    topic: analysis.topic,
+    category: analysis.category,
+    isCode
+  });
   return resolveResourceUrls(
     analysis.topic,
     analysis.category,

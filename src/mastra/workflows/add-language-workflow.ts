@@ -6,6 +6,9 @@ import { KVService } from '../services/kv-service';
 import { normalizeDepartmentName } from '../utils/language/language-utils';
 import { validateInboxStructure, correctInboxStructure, detectJsonCorruption } from '../utils/validation/json-validation-utils';
 import { MODEL_PROVIDERS } from '../constants';
+import { getLogger } from '../utils/core/logger';
+
+const logger = getLogger('AddLanguageWorkflow');
 
 // Input/Output Schemas
 const addLanguageInputSchema = z.object({
@@ -60,26 +63,27 @@ const loadExistingStep = createStep({
   execute: async ({ inputData }) => {
     const { existingMicrolearningId, targetLanguage, sourceLanguage, department, modelProvider, model } = inputData;
 
-    console.log(`🔍 Step 1: Loading existing microlearning ${existingMicrolearningId} to translate to ${targetLanguage}`);
+    logger.info('Step 1: Loading existing microlearning', { existingMicrolearningId, targetLanguage });
 
     // Try KVService first, fallback to MicrolearningService
     let existing = null;
 
     try {
       const kvService = new KVService();
-      console.log(`📦 Using KVService to load microlearning ${existingMicrolearningId}`);
+      logger.info('Using KVService to load microlearning', { existingMicrolearningId });
       const kvResult = await kvService.getMicrolearning(existingMicrolearningId);
       existing = kvResult?.base;
 
       if (existing) {
-        console.log(`✅ Found microlearning in KV: ${existing.microlearning_id}`);
+        logger.info('Found microlearning in KV', { microlearningId: existing.microlearning_id });
       }
     } catch (kvError) {
-      console.warn('KVService failed to load microlearning:', kvError);
+      const err = kvError instanceof Error ? kvError : new Error(String(kvError));
+      logger.warn('KVService failed to load microlearning', { error: err.message, stack: err.stack });
     }
 
     if (!existing) {
-      console.error(`❌ Microlearning not found in KVService: ${existingMicrolearningId}`);
+      logger.error('Microlearning not found in KVService', { existingMicrolearningId });
       throw new Error(`Microlearning not found with ID: "${existingMicrolearningId}". Please ensure the microlearning exists and provide the correct ID.`);
     }
 
@@ -99,7 +103,7 @@ const loadExistingStep = createStep({
     const actualSourceLanguage = meta.language || meta.primary_language || sourceLanguage || 'en-gb';
 
     if (!meta.language && !meta.primary_language && !sourceLanguage) {
-      console.log(`ℹ️ Source language not specified, defaulting to 'en'`);
+      logger.info('Source language not specified, defaulting to en');
     }
 
     // Validate that target language is different from source
@@ -116,12 +120,17 @@ const loadExistingStep = createStep({
     }
 
     if (!hasInbox) {
-      console.log('ℹ️ Code review training detected - inbox will be skipped');
+      logger.info('Code review training detected - inbox will be skipped');
     }
 
-    console.log(`✅ Step 1 completed: Found microlearning "${analysis.title}" (${analysis.category})`);
-    console.log(`📋 Translation details: ${actualSourceLanguage} → ${targetLanguage} for ${analysis.department} department`);
-    console.log(`📦 Inbox required: ${hasInbox ? 'Yes' : 'No'}`);
+    logger.info('Step 1 completed: Found microlearning', {
+      title: analysis.title,
+      category: analysis.category,
+      sourceLanguage: actualSourceLanguage,
+      targetLanguage,
+      department: analysis.department,
+      inboxRequired: hasInbox
+    });
 
     return {
       success: true,
@@ -147,31 +156,32 @@ const translateLanguageStep = createStep({
   execute: async ({ inputData }) => {
     const { data: microlearningStructure, microlearningId, analysis, sourceLanguage, targetLanguage } = inputData;
 
-    console.log(`🔄 Step 2: Starting translation from ${sourceLanguage} to ${targetLanguage}`);
+    logger.info('Step 2: Starting translation', { sourceLanguage, targetLanguage });
 
     // Try to get base language content from KVService first
     let baseContent = null;
 
     try {
       const kvService = new KVService();
-      console.log(`📦 Using KVService to get language content directly: ${microlearningId}/${sourceLanguage}`);
+      logger.info('Using KVService to get language content', { microlearningId, sourceLanguage });
       const langKey = `ml:${microlearningId}:lang:${sourceLanguage}`;
       baseContent = await kvService.get(langKey);
 
       if (baseContent) {
-        console.log(`✅ Found base content in KV: ${microlearningId}/${sourceLanguage}`);
+        logger.info('Found base content in KV', { microlearningId, sourceLanguage });
       }
     } catch (kvError) {
-      console.warn('KVService failed to load language content:', kvError);
+      const err = kvError instanceof Error ? kvError : new Error(String(kvError));
+      logger.warn('KVService failed to load language content', { error: err.message, stack: err.stack });
     }
 
     // Validate base content exists and has data
     if (!baseContent || Object.keys(baseContent).length === 0) {
-      console.error(`❌ Base content not found or empty in KVService: ${microlearningId}/${sourceLanguage}`);
+      logger.error('Base content not found or empty in KVService', { microlearningId, sourceLanguage });
       throw new Error(`Base language content (${sourceLanguage}) not found or empty for translation. Make sure the base language content exists.`);
     }
 
-    console.log(`✅ Found base content for ${microlearningId}/${sourceLanguage}, translating to ${targetLanguage}`);
+    logger.info('Found base content, translating', { microlearningId, sourceLanguage, targetLanguage });
 
     if (!translateLanguageJsonTool.execute) {
       throw new Error('translateLanguageJsonTool is not executable');
@@ -192,13 +202,13 @@ const translateLanguageStep = createStep({
     const translated = await translateLanguageJsonTool.execute(translationParams);
 
     if (!translated?.success) {
-      console.error('Translation tool response:', translated);
+      logger.error('Translation tool failed', { response: translated });
       throw new Error(`Language translation failed: ${translated?.error || 'Unknown error'}`);
     }
 
     // Validate translation data is not empty
     if (!translated.data || Object.keys(translated.data).length === 0) {
-      console.error('❌ Translation succeeded but returned empty data');
+      logger.error('Translation succeeded but returned empty data');
       throw new Error('Translation returned empty content - please retry or check source language content');
     }
 
@@ -207,7 +217,7 @@ const translateLanguageStep = createStep({
       const kvService = new KVService();
 
       // Store language content
-      console.log(`💾 Storing translated content for: ${microlearningId}/${targetLanguage}`);
+      logger.info('Storing translated content', { microlearningId, targetLanguage });
 
       const langSuccess = await kvService.storeLanguageContent(
         microlearningId,
@@ -215,18 +225,18 @@ const translateLanguageStep = createStep({
         translated.data
       );
 
-      console.log(`📝 Language content storage: ${langSuccess ? 'SUCCESS' : 'FAILED'}`);
+      logger.info('Language content storage result', { success: langSuccess });
 
       // Update language_availability atomically (prevents race conditions in parallel workflows)
       await kvService.updateLanguageAvailabilityAtomic(microlearningId, targetLanguage);
 
     } catch (kvError) {
-      console.error('❌ KVService storage failed in worker environment:', kvError);
+      const err = kvError instanceof Error ? kvError : new Error(String(kvError));
+      logger.error('KVService storage failed in worker environment', { error: err.message, stack: err.stack });
       throw new Error(`Translation completed but storage failed: ${kvError}`);
     }
 
-    console.log(`✅ Step 2 completed: Translation to ${targetLanguage} successful`);
-    console.log(`💾 Language content stored: ${microlearningId}/${targetLanguage}.json`);
+    logger.info('Step 2 completed: Translation successful', { targetLanguage, microlearningId });
 
     return {
       success: true,
@@ -262,7 +272,7 @@ const updateInboxStep = createStep({
 
     // Skip inbox processing if not needed (e.g., code_review training)
     if (!hasInbox) {
-      console.log(`⏭️ Step 3: Skipping inbox update - not required for this training type`);
+      logger.info('Step 3: Skipping inbox update - not required for this training type');
       return {
         success: true,
         microlearningId,
@@ -270,16 +280,14 @@ const updateInboxStep = createStep({
       };
     }
 
-    console.log(`📥 Step 3: Creating inbox for ${targetLanguage} language`);
-    console.log(`🔍 Source language for inbox: ${sourceLanguage}`);
-    console.log(`🔍 Target language for inbox: ${targetLanguage}`);
+    logger.info('Step 3: Creating inbox', { targetLanguage, sourceLanguage });
 
     const normalizedDept = analysis.department ? normalizeDepartmentName(analysis.department) : 'all';
     const kvService = new KVService();
 
     // Try to translate existing inbox using KVService
     try {
-      console.log(`📦 Looking for base inbox in KV: ${microlearningId}/${normalizedDept}/${sourceLanguage}`);
+      logger.info('Looking for base inbox in KV', { microlearningId, normalizedDept, sourceLanguage });
 
       // Try to get inbox from KVService
       const inboxKey = `ml:${microlearningId}:inbox:${normalizedDept}:${sourceLanguage}`;
@@ -287,22 +295,22 @@ const updateInboxStep = createStep({
 
       // Fallback to 'en' if source language inbox not found
       if (!baseInbox && sourceLanguage !== 'en-gb') {
-        console.log(`⚠️ No inbox found for ${sourceLanguage}, trying fallback to 'en-gb'`);
+        logger.info('No inbox found for source language, trying fallback to en-gb', { sourceLanguage });
         const fallbackKey = `ml:${microlearningId}:inbox:${normalizedDept}:en-gb`;
         baseInbox = await kvService.get(fallbackKey);
         if (baseInbox) {
-          console.log(`✅ Found fallback inbox in 'en-gb'`);
+          logger.info('Found fallback inbox in en-gb');
         }
       }
 
       if (baseInbox) {
-        console.log(`✅ Found base inbox, sample:`, JSON.stringify(baseInbox).substring(0, 200) + '...');
+        logger.debug('Found base inbox', { sample: JSON.stringify(baseInbox).substring(0, 200) });
 
         // Check for corruption in base inbox before translation
         const corruptionIssues = detectJsonCorruption(baseInbox);
         if (corruptionIssues.length > 0) {
-          console.warn('⚠️ Detected corruption in base inbox:', corruptionIssues.join(', '));
-          console.warn('⚠️ Translation may produce incomplete results due to source corruption');
+          logger.warn('Detected corruption in base inbox', { issues: corruptionIssues.join(', ') });
+          logger.warn('Translation may produce incomplete results due to source corruption');
         }
 
         if (!inboxTranslateJsonTool.execute) {
@@ -319,13 +327,13 @@ const updateInboxStep = createStep({
           modelProvider,
           model
         };
-        console.log('inboxTranslationParams', inboxTranslationParams);
+        logger.debug('Inbox translation parameters', inboxTranslationParams);
         let translatedInbox = await inboxTranslateJsonTool.execute(inboxTranslationParams);
         let isValid = translatedInbox?.success && validateInboxStructure(baseInbox, translatedInbox.data);
 
         // Retry once with enhanced protection if first attempt failed
         if (!isValid) {
-          console.warn('⚠️ First inbox translation failed or invalid, retrying with enhanced protection...');
+          logger.warn('First inbox translation failed or invalid, retrying with enhanced protection');
 
           const enhancedParams = {
             ...inboxTranslationParams,
@@ -341,15 +349,15 @@ const updateInboxStep = createStep({
         // Store result or use correction fallback
         if (isValid) {
           await kvService.storeInboxContent(microlearningId, normalizedDept, targetLanguage, translatedInbox.data);
-          console.log(`✅ Inbox translated and stored: inbox/${normalizedDept}/${targetLanguage}.json`);
+          logger.info('Inbox translated and stored', { normalizedDept, targetLanguage });
         } else {
-          console.warn('⚠️ Translation retry also failed, using structure correction fallback...');
+          logger.warn('Translation retry also failed, using structure correction fallback');
           const correctedInbox = correctInboxStructure(baseInbox, translatedInbox?.data || baseInbox);
           await kvService.storeInboxContent(microlearningId, normalizedDept, targetLanguage, correctedInbox);
-          console.log(`✅ Inbox corrected and stored: inbox/${normalizedDept}/${targetLanguage}.json`);
+          logger.info('Inbox corrected and stored', { normalizedDept, targetLanguage });
         }
       } else {
-        console.error('❌ No base inbox found to translate');
+        logger.error('No base inbox found to translate');
         return {
           success: false,
           microlearningId,
@@ -357,7 +365,8 @@ const updateInboxStep = createStep({
         };
       }
     } catch (error) {
-      console.error('❌ Inbox translation failed:', error);
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.error('Inbox translation failed', { error: err.message, stack: err.stack });
       return {
         success: false,
         microlearningId,
@@ -365,7 +374,7 @@ const updateInboxStep = createStep({
       };
     }
 
-    console.log(`✅ Step 3 completed: Inbox translation and storage finished`);
+    logger.info('Step 3 completed: Inbox translation and storage finished');
 
     return {
       success: true,
@@ -400,9 +409,9 @@ const combineResultsStep = createStep({
     }
 
     // Wait 5 seconds to ensure Cloudflare KV data is consistent before returning URL to UI
-    console.log('⏳ Waiting 5 seconds for Cloudflare KV consistency...');
+    logger.info('Waiting 5 seconds for Cloudflare KV consistency');
     await new Promise(resolve => setTimeout(resolve, 5000));
-    console.log('✅ KV consistency check complete');
+    logger.info('KV consistency check complete');
 
     // Generate training URL
     const baseUrl = encodeURIComponent(`https://microlearning-api.keepnet-labs-ltd-business-profile4086.workers.dev/microlearning/${microlearningId}`);
@@ -423,7 +432,7 @@ const combineResultsStep = createStep({
       ];
     } else if (hasInbox && !updateInbox.success) {
       // Language succeeded but inbox failed - graceful degradation
-      console.warn('⚠️ Inbox translation failed, but language content is available');
+      logger.warn('Inbox translation failed, but language content is available');
       trainingUrl = `https://microlearning.pages.dev/?baseUrl=${baseUrl}&langUrl=${langUrl}&isEditMode=true`;
       filesGenerated = [`${microlearningId}/${targetLanguage}.json`];
       message = `🌐 Language translation completed! Note: Inbox translation failed but training content is ready.`;
@@ -433,8 +442,8 @@ const combineResultsStep = createStep({
       filesGenerated = [`${microlearningId}/${targetLanguage}.json`];
     }
 
-    console.log(`🎯 Training URL generated: ${trainingUrl}`);
-    console.log(`🎉 Add-language workflow completed for ${targetLanguage}`);
+    logger.info('Training URL generated', { trainingUrl });
+    logger.info('Add-language workflow completed', { targetLanguage });
 
     return {
       success: true,

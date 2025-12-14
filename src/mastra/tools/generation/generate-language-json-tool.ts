@@ -17,6 +17,7 @@ import { generateScene8Prompt } from '../scenes/generators/scene8-summary-genera
 import { cleanResponse } from '../../utils/content-processors/json-cleaner';
 import { SCENE_GENERATION_PARAMS } from '../../utils/config/llm-generation-params';
 import { trackCost } from '../../utils/core/cost-tracker';
+import { getLogger } from '../../utils/core/logger';
 
 export const generateLanguageJsonTool = new Tool({
   id: 'generate_language_json',
@@ -24,6 +25,7 @@ export const generateLanguageJsonTool = new Tool({
   inputSchema: GenerateLanguageJsonSchema,
   outputSchema: GenerateLanguageJsonOutputSchema,
   execute: async (context: any) => {
+    const logger = getLogger('GenerateLanguageJsonTool');
     const input = context?.inputData || context?.input || context;
     const { analysis, microlearning, model, writer } = input;
 
@@ -36,7 +38,7 @@ export const generateLanguageJsonTool = new Tool({
       };
 
     } catch (error) {
-      console.error('Language JSON generation failed:', error);
+      logger.error('Language JSON generation failed', error instanceof Error ? error : new Error(String(error)));
 
       return {
         success: false,
@@ -80,7 +82,8 @@ ${analysis.additionalContext}`
 
 // Generate language-specific training content from microlearning.json metadata with rich context
 async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearning: MicrolearningContent, model: any, writer?: any): Promise<LanguageContent> {
-  console.log('🔍 [generateLanguageJsonWithAI] Writer check:', writer ? '✅ Writer provided' : '❌ No writer');
+  const logger = getLogger('GenerateLanguageJsonWithAI');
+  logger.debug('Initializing language content generation', { hasWriter: !!writer });
 
   // Generate scene 1 & 2 prompts using modular generators
   const scene1Prompt = generateScene1Prompt(analysis, microlearning);
@@ -102,18 +105,15 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
   const scene6Prompt = generateScene6Prompt(analysis, microlearning);
 
   // Generate scene 7, 8 prompts using modular generators
-  console.log('📋 Analysis data for Scene 8:');
-  console.log('  topic:', analysis.topic);
-  console.log('  category:', analysis.category);
-  console.log('  keyTopics:', analysis.keyTopics);
+  logger.debug('Preparing final scene prompts', { topic: analysis.topic, category: analysis.category, keyTopicsCount: analysis.keyTopics?.length || 0 });
 
   const scene7Prompt = generateScene7Prompt(analysis, microlearning);
   const scene8Prompt = generateScene8Prompt(analysis, microlearning);
 
 
   try {
-    console.log('🚀 Starting parallel content generation with model:', model?.constructor?.name || 'unknown');
-    console.log('📊 Generation parameters:', {
+    logger.debug('Starting parallel content generation', {
+      modelType: model?.constructor?.name || 'unknown',
       language: analysis.language,
       topic: analysis.topic,
       category: analysis.category,
@@ -137,7 +137,7 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
         // extractAndStreamReasoning(response, writer, 'Scene 1'); // Temporarily commented
         return response;
       }).catch(err => {
-        console.error('❌ Scene 1 generation failed:', err);
+        logger.error('Scene 1 generation failed', err);
         throw new Error(`Scene 1 generation failed: ${err instanceof Error ? err.message : String(err)}`);
       }),
       generateText({
@@ -148,7 +148,7 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
         // extractAndStreamReasoning(response, writer, 'Scene 2'); // Temporarily commented
         return response;
       }).catch(err => {
-        console.error('❌ Scene 2 generation failed:', err);
+        logger.error('Scene 2 generation failed', err);
         throw new Error(`Scene 2 generation failed: ${err instanceof Error ? err.message : String(err)}`);
       }),
       generateText({
@@ -159,7 +159,7 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
         // extractAndStreamReasoning(response, writer, 'Scene 3'); // Temporarily commented
         return response;
       }).catch(err => {
-        console.error('❌ Video generation failed:', err);
+        logger.error('Video generation failed', err);
         throw new Error(`Video generation failed: ${err instanceof Error ? err.message : String(err)}`);
       }),
       generateText({
@@ -170,7 +170,7 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
         // extractAndStreamReasoning(response, writer, 'Scene 4'); // Temporarily commented
         return response;
       }).catch(err => {
-        console.error('❌ Scene 4 generation failed:', err);
+        logger.error('Scene 4 generation failed', err);
         throw new Error(`Scene 4 generation failed: ${err instanceof Error ? err.message : String(err)}`);
       }),
       generateText({
@@ -181,7 +181,7 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
         // extractAndStreamReasoning(response, writer, 'Scene 5'); // Temporarily commented
         return response;
       }).catch(err => {
-        console.error('❌ Scene 5 generation failed:', err);
+        logger.error('Scene 5 generation failed', err);
         throw new Error(`Scene 5 generation failed: ${err instanceof Error ? err.message : String(err)}`);
       }),
       generateText({
@@ -192,7 +192,7 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
         // extractAndStreamReasoning(response, writer, 'Scene 6'); // Temporarily commented
         return response;
       }).catch(err => {
-        console.error('❌ Scene 6 generation failed:', err);
+        logger.error('Scene 6 generation failed', err);
         throw new Error(`Scene 6 generation failed: ${err instanceof Error ? err.message : String(err)}`);
       }),
       generateText({
@@ -203,7 +203,7 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
         // extractAndStreamReasoning(response, writer, 'Scene 7'); // Temporarily commented
         return response;
       }).catch(err => {
-        console.error('❌ Scene 7 generation failed:', err);
+        logger.error('Scene 7 generation failed', err);
         throw new Error(`Scene 7 generation failed: ${err instanceof Error ? err.message : String(err)}`);
       }),
       generateText({
@@ -214,13 +214,13 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
         // extractAndStreamReasoning(response, writer, 'Scene 8'); // Temporarily commented
         return response;
       }).catch(err => {
-        console.error('❌ Scene 8 generation failed:', err);
+        logger.error('Scene 8 generation failed', err);
         throw new Error(`Scene 8 generation failed: ${err instanceof Error ? err.message : String(err)}`);
       })
     ]);
 
     const generationTime = Date.now() - startTime;
-    console.log(`⏱️ Parallel generation completed in ${generationTime}ms`);
+    logger.debug('Parallel generation completed', { durationMs: generationTime });
 
     // Track token usage for cost monitoring
     const allResponses = [scene1Response, scene2Response, videoResponse, scene4Response, scene5Response, scene6Response, scene7Response, scene8Response];
@@ -235,7 +235,7 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
         acc.promptTokens += inputTokens;
         acc.completionTokens += outputTokens;
       } else {
-        console.warn('⚠️ Response missing usage field');
+        logger.warn('Response missing usage field', {});
       }
       return acc;
     }, { promptTokens: 0, completionTokens: 0 });
@@ -244,49 +244,42 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
     trackCost('generate-language-content', model.modelId || '@cf/openai/gpt-oss-120b', totalUsage);
 
     // Clean and parse the responses with detailed error handling
-
-    console.log('🔄 Starting JSON parsing...');
+    logger.debug('Starting JSON parsing for all scenes');
     let scene1Scenes, scene2Scenes, videoScenes, mainScenes, closingScenes;
 
     try {
-      console.log('📤 Scene 1 RAW Response:', scene1Response.text.substring(0, 500));
+      logger.debug('Parsing Scene 1', { responseLength: scene1Response.text.length });
       const cleanedScene1 = cleanResponse(scene1Response.text, 'scene1');
-      console.log('🧹 Scene 1 CLEANED:', cleanedScene1.substring(0, 500));
       scene1Scenes = JSON.parse(cleanedScene1);
-      console.log('✅ Scene 1 PARSED:', JSON.stringify(scene1Scenes).substring(0, 500));
-      console.log('🔍 Scene 1 has highlights?', !!scene1Scenes['1']?.highlights);
+      logger.debug('Scene 1 parsed successfully', { hasHighlights: !!scene1Scenes['1']?.highlights });
     } catch (parseErr) {
-      console.error('❌ Failed to parse scene 1:', parseErr);
-      console.log('🔍 Scene 1 response preview:', scene1Response.text.substring(0, 200));
+      logger.error('Failed to parse scene 1', parseErr instanceof Error ? parseErr : new Error(String(parseErr)));
       throw new Error(`Scene 1 JSON parsing failed: ${parseErr instanceof Error ? parseErr.message : String(parseErr)}`);
     }
 
     try {
-      console.log('📤 Scene 2 RAW Response:', scene2Response.text.substring(0, 500));
+      logger.debug('Parsing Scene 2', { responseLength: scene2Response.text.length });
       const cleanedScene2 = cleanResponse(scene2Response.text, 'scene2');
-      console.log('🧹 Scene 2 CLEANED:', cleanedScene2.substring(0, 500));
       scene2Scenes = JSON.parse(cleanedScene2);
-      console.log('✅ Scene 2 PARSED:', JSON.stringify(scene2Scenes).substring(0, 500));
+      logger.debug('Scene 2 parsed successfully');
     } catch (parseErr) {
-      console.error('❌ Failed to parse scene 2:', parseErr);
-      console.log('🔍 Scene 2 response preview:', scene2Response.text.substring(0, 200));
+      logger.error('Failed to parse scene 2', parseErr instanceof Error ? parseErr : new Error(String(parseErr)));
       throw new Error(`Scene 2 JSON parsing failed: ${parseErr instanceof Error ? parseErr.message : String(parseErr)}`);
     }
 
     try {
-      console.log('📤 Video RAW Response:', videoResponse.text.substring(0, 500));
+      logger.debug('Parsing Video', { responseLength: videoResponse.text.length });
       const cleanedVideo = cleanResponse(videoResponse.text, 'video');
-      console.log('🧹 Video CLEANED:', cleanedVideo.substring(0, 500));
       videoScenes = JSON.parse(cleanedVideo);
-      console.log('✅ Video PARSED:', JSON.stringify(videoScenes).substring(0, 500));
+      logger.debug('Video parsed successfully');
       // Override video URL and transcript with actual selected values
       if (videoScenes['3'] && videoScenes['3'].video) {
         videoScenes['3'].video.src = selectedVideoUrl;
         videoScenes['3'].video.transcript = selectedTranscript;
-        console.log(`✅ Video URL overridden: ${selectedVideoUrl}`);
+        logger.debug('Video URL overridden', { videoUrl: selectedVideoUrl.substring(0, 50) });
       }
     } catch (parseErr) {
-      console.warn('⚠️ Video JSON parsing failed, attempting retry...');
+      logger.warn('Video JSON parsing failed, attempting retry', { originalError: parseErr instanceof Error ? parseErr.message : String(parseErr) });
 
       try {
         // Retry with fresh AI call using same optimized prompt
@@ -302,13 +295,13 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
         if (videoScenes['3'] && videoScenes['3'].video) {
           videoScenes['3'].video.src = selectedVideoUrl;
           videoScenes['3'].video.transcript = selectedTranscript;
-          console.log(`✅ Video URL overridden on retry: ${selectedVideoUrl}`);
+          logger.debug('Video URL overridden on retry', { videoUrl: selectedVideoUrl.substring(0, 50) });
         }
 
-        console.log('✅ Video scenes parsed successfully on retry');
+        logger.debug('Video scenes parsed successfully on retry');
 
       } catch (retryErr) {
-        console.error('❌ Video generation failed after retry');
+        logger.error('Video generation failed after retry', retryErr instanceof Error ? retryErr : new Error(String(retryErr)));
         throw new Error(`Video content generation failed after retry. Please regenerate the entire microlearning.`);
       }
     }
@@ -316,76 +309,66 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
     let scene4Scenes, scene5Scenes, scene6Scenes;
 
     try {
-      console.log('📤 Scene 4 RAW Response:', scene4Response.text.substring(0, 500));
+      logger.debug('Parsing Scene 4', { responseLength: scene4Response.text.length });
       const cleanedScene4 = cleanResponse(scene4Response.text, 'scene4');
-      console.log('🧹 Scene 4 CLEANED:', cleanedScene4.substring(0, 500));
       scene4Scenes = JSON.parse(cleanedScene4);
-      console.log('✅ Scene 4 PARSED:', JSON.stringify(scene4Scenes).substring(0, 500));
+      logger.debug('Scene 4 parsed successfully');
     } catch (parseErr) {
-      console.error('❌ Failed to parse Scene 4:', parseErr);
-      console.log('🔍 Scene 4 response preview:', scene4Response.text.substring(0, 200));
+      logger.error('Failed to parse scene 4', parseErr instanceof Error ? parseErr : new Error(String(parseErr)));
       throw new Error(`Scene 4 JSON parsing failed: ${parseErr instanceof Error ? parseErr.message : String(parseErr)}`);
     }
 
     try {
-      console.log('📤 Scene 5 RAW Response:', scene5Response.text.substring(0, 500));
+      logger.debug('Parsing Scene 5', { responseLength: scene5Response.text.length });
       const cleanedScene5 = cleanResponse(scene5Response.text, 'scene5');
-      console.log('🧹 Scene 5 CLEANED:', cleanedScene5.substring(0, 500));
       scene5Scenes = JSON.parse(cleanedScene5);
-      console.log('✅ Scene 5 PARSED:', JSON.stringify(scene5Scenes).substring(0, 500));
+      logger.debug('Scene 5 parsed successfully');
     } catch (parseErr) {
-      console.error('❌ Failed to parse Scene 5:', parseErr);
-      console.log('🔍 Scene 5 response preview:', scene5Response.text.substring(0, 200));
+      logger.error('Failed to parse scene 5', parseErr instanceof Error ? parseErr : new Error(String(parseErr)));
       throw new Error(`Scene 5 JSON parsing failed: ${parseErr instanceof Error ? parseErr.message : String(parseErr)}`);
     }
 
     try {
-      console.log('📤 Scene 6 RAW Response:', scene6Response.text.substring(0, 500));
+      logger.debug('Parsing Scene 6', { responseLength: scene6Response.text.length });
       const cleanedScene6 = cleanResponse(scene6Response.text, 'scene6');
-      console.log('🧹 Scene 6 CLEANED:', cleanedScene6.substring(0, 500));
       scene6Scenes = JSON.parse(cleanedScene6);
-      console.log('✅ Scene 6 PARSED:', JSON.stringify(scene6Scenes).substring(0, 500));
+      logger.debug('Scene 6 parsed successfully');
     } catch (parseErr) {
-      console.error('❌ Failed to parse Scene 6:', parseErr);
-      console.log('🔍 Scene 6 response preview:', scene6Response.text.substring(0, 200));
+      logger.error('Failed to parse scene 6', parseErr instanceof Error ? parseErr : new Error(String(parseErr)));
       throw new Error(`Scene 6 JSON parsing failed: ${parseErr instanceof Error ? parseErr.message : String(parseErr)}`);
     }
 
     mainScenes = { ...scene4Scenes, ...scene5Scenes, ...scene6Scenes };
-    console.log('✅ Main scenes (4, 5, 6) combined successfully');
+    logger.debug('Main scenes combined', { sceneCount: Object.keys(mainScenes).length });
 
     let scene7Scenes, scene8Scenes;
 
     try {
-      console.log('📤 Scene 7 RAW Response:', scene7Response.text.substring(0, 500));
+      logger.debug('Parsing Scene 7', { responseLength: scene7Response.text.length });
       const cleanedScene7 = cleanResponse(scene7Response.text, 'scene7');
-      console.log('🧹 Scene 7 CLEANED:', cleanedScene7.substring(0, 500));
       scene7Scenes = JSON.parse(cleanedScene7);
-      console.log('✅ Scene 7 PARSED:', JSON.stringify(scene7Scenes).substring(0, 500));
+      logger.debug('Scene 7 parsed successfully');
     } catch (parseErr) {
-      console.error('❌ Failed to parse Scene 7:', parseErr);
-      console.log('🔍 Scene 7 response preview:', scene7Response.text.substring(0, 200));
+      logger.error('Failed to parse scene 7', parseErr instanceof Error ? parseErr : new Error(String(parseErr)));
       throw new Error(`Scene 7 JSON parsing failed: ${parseErr instanceof Error ? parseErr.message : String(parseErr)}`);
     }
 
     try {
-      console.log('📤 Scene 8 RAW Response:', scene8Response.text.substring(0, 500));
+      logger.debug('Parsing Scene 8', { responseLength: scene8Response.text.length });
       const cleanedScene8 = cleanResponse(scene8Response.text, 'scene8');
-      console.log('🧹 Scene 8 CLEANED:', cleanedScene8.substring(0, 500));
       scene8Scenes = JSON.parse(cleanedScene8);
-      console.log('✅ Scene 8 PARSED:', JSON.stringify(scene8Scenes).substring(0, 500));
+      logger.debug('Scene 8 parsed successfully');
     } catch (parseErr) {
-      console.error('❌ Failed to parse Scene 8:', parseErr);
-      console.log('🔍 Scene 8 response preview:', scene8Response.text.substring(0, 200));
+      logger.error('Failed to parse scene 8', parseErr instanceof Error ? parseErr : new Error(String(parseErr)));
       throw new Error(`Scene 8 JSON parsing failed: ${parseErr instanceof Error ? parseErr.message : String(parseErr)}`);
     }
 
 
     closingScenes = { ...scene7Scenes, ...scene8Scenes };
-    console.log('✅ Closing scenes (7, 8) combined successfully');
+    logger.debug('Closing scenes combined', { sceneCount: Object.keys(closingScenes).length });
 
     // Combine all scenes into final content
-    console.log('🔗 Combining all scenes...');
+    logger.debug('Combining all scenes into final content');
     const combinedContent = {
       ...scene1Scenes,
       ...scene2Scenes,
@@ -400,36 +383,19 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
 
     // Validate the combined content structure
     const sceneCount = Object.keys(combinedContent).filter(key => key !== 'app').length;
-    console.log(`🎯 Combined content created with ${sceneCount} scenes`);
+    logger.debug('Combined content created', { sceneCount, haAppTexts: !!combinedContent.app });
 
     if (sceneCount < 8) {
-      console.warn(`⚠️ Expected 8 scenes, got ${sceneCount}. Scene keys: ${Object.keys(combinedContent).filter(k => k !== 'app').join(', ')}`);
+      logger.warn('Scene count mismatch', { expected: 8, actual: sceneCount, sceneKeys: Object.keys(combinedContent).filter(k => k !== 'app').join(', ') });
     }
 
     const totalTime = Date.now() - startTime;
-    console.log(`✅ Language content generation completed successfully in ${totalTime}ms`);
+    logger.debug('Language content generation completed', { durationMs: totalTime, sceneCount });
 
     return combinedContent as LanguageContent;
 
   } catch (err) {
-    console.error('💥 CRITICAL ERROR in generateLanguageJsonWithAI:', err);
-    console.error('📊 Error context:', {
-      errorMessage: err instanceof Error ? err.message : String(err),
-      errorStack: err instanceof Error ? err.stack : undefined,
-      language: analysis.language,
-      topic: analysis.topic,
-      modelType: model?.constructor?.name || 'unknown',
-      timestamp: new Date().toISOString()
-    });
-
-    // Log the full error details for debugging
-    if (err instanceof SyntaxError) {
-      console.error('🔍 JSON Syntax Error detected');
-    } else if (err instanceof Error && err.message?.includes('generation failed')) {
-      console.error('🔍 AI Generation Error detected');
-    } else {
-      console.error('🔍 Unknown error type detected');
-    }
+    logger.error('Critical error in language generation', err instanceof Error ? err : new Error(String(err)));
 
     // Re-throw the error instead of returning it as LanguageContent
     throw new Error(`Language generation failed: ${err instanceof Error ? err.message : String(err)}`);

@@ -1,4 +1,4 @@
-import { Logger, startTimer } from '../utils/core/logger';
+import { getLogger, startTimer } from '../utils/core/logger';
 import { RETRY } from '../constants';
 
 /**
@@ -10,14 +10,13 @@ export class KVService {
   private apiToken: string;
   private apiKey: string;
   private namespaceId: string;
-  private logger: Logger;
+  private logger = getLogger('KVService');
 
   constructor(namespaceIdOverride?: string) {
     this.accountId = process.env.CLOUDFLARE_ACCOUNT_ID || '';
     this.apiToken = process.env.CLOUDFLARE_KV_TOKEN || '';
     this.apiKey = ''; // Not using legacy API key
     this.namespaceId = namespaceIdOverride || process.env.MICROLEARNING_KV_NAMESPACE_ID || ''; // Use override or default
-    this.logger = new Logger('KVService');
 
     // Validate required environment variables
     if (!this.accountId) {
@@ -79,7 +78,9 @@ export class KVService {
       return true;
     } catch (error) {
       const errorMsg = error instanceof Error ? error : new Error(String(error));
-      this.logger.error(`KV PUT operation failed`, errorMsg, {
+      this.logger.error(`KV PUT operation failed`, {
+        error: errorMsg.message,
+        stack: errorMsg.stack,
         key,
         valueType: typeof value,
       });
@@ -101,7 +102,7 @@ export class KVService {
           return null; // Key not found
         }
         const errorText = await response.text();
-        console.error(`KV GET failed for key ${key}:`, response.status, errorText);
+        this.logger.error(`KV GET failed for key`, { key, status: response.status, errorText: errorText.substring(0, 200) });
         return null;
       }
 
@@ -109,14 +110,16 @@ export class KVService {
       try {
         return JSON.parse(text);
       } catch (parseError) {
-        console.warn(`⚠️ Failed to parse KV value as JSON for key ${key}, returning as string`, {
+        this.logger.warn(`Failed to parse KV value as JSON for key, returning as string`, {
+          key,
           error: parseError instanceof Error ? parseError.message : String(parseError),
           textLength: text.length,
         });
         return text; // Return as string if not JSON
       }
     } catch (error) {
-      console.error(`KV GET error for key ${key}:`, error);
+      const err = error instanceof Error ? error : new Error(String(error));
+      this.logger.error(`KV GET error for key`, { key, error: err.message, stack: err.stack });
       return null;
     }
   }
@@ -132,14 +135,15 @@ export class KVService {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error(`KV DELETE failed for key ${key}:`, response.status, errorText);
+        this.logger.error(`KV DELETE failed for key`, { key, status: response.status, errorText: errorText.substring(0, 200) });
         return false;
       }
 
-      console.log(`✅ KV DELETE success for key: ${key}`);
+      this.logger.debug(`KV DELETE success for key`, { key });
       return true;
     } catch (error) {
-      console.error(`KV DELETE error for key ${key}:`, error);
+      const err = error instanceof Error ? error : new Error(String(error));
+      this.logger.error(`KV DELETE error for key`, { key, error: err.message, stack: err.stack });
       return false;
     }
   }
@@ -163,14 +167,15 @@ export class KVService {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error(`KV LIST failed:`, response.status, errorText);
+        this.logger.error(`KV LIST failed`, { status: response.status, errorText: errorText.substring(0, 200) });
         return [];
       }
 
       const data = await response.json();
       return data.result?.map((item: any) => item.name) || [];
     } catch (error) {
-      console.error(`KV LIST error:`, error);
+      const err = error instanceof Error ? error : new Error(String(error));
+      this.logger.error(`KV LIST error`, { error: err.message, stack: err.stack });
       return [];
     }
   }
@@ -237,24 +242,29 @@ export class KVService {
 
         // Log rejection errors with details
         if (baseResult.status === 'rejected') {
-          this.logger.error(`Base microlearning save failed`, baseResult.reason, { microlearningId });
+          const baseErr = baseResult.reason instanceof Error ? baseResult.reason : new Error(String(baseResult.reason));
+          this.logger.error(`Base microlearning save failed`, { microlearningId, error: baseErr.message, stack: baseErr.stack });
         }
         if (langResult.status === 'rejected') {
-          this.logger.error(`Language content save failed`, langResult.reason, { microlearningId });
+          const langErr = langResult.reason instanceof Error ? langResult.reason : new Error(String(langResult.reason));
+          this.logger.error(`Language content save failed`, { microlearningId, error: langErr.message, stack: langErr.stack });
         }
         if (inboxResult.status === 'rejected') {
-          this.logger.error(`Inbox content save failed`, inboxResult.reason, { microlearningId });
+          const inboxErr = inboxResult.reason instanceof Error ? inboxResult.reason : new Error(String(inboxResult.reason));
+          this.logger.error(`Inbox content save failed`, { microlearningId, error: inboxErr.message, stack: inboxErr.stack });
         }
       }
 
       return allSuccess;
     } catch (error) {
       const errorMsg = error instanceof Error ? error : new Error(String(error));
-      this.logger.error(`Failed to save microlearning`, errorMsg, {
+      this.logger.error(`Failed to save microlearning`, {
         microlearningId,
         language: normalizedLang,
         department,
         duration: timer.end(),
+        error: errorMsg.message,
+        stack: errorMsg.stack,
       });
       return false;
     }
@@ -282,11 +292,12 @@ export class KVService {
 
       const success = await this.putWithRetry(baseKey, baseData);
       if (success) {
-        this.logger.info(`✅ Phishing base saved: ${baseKey}`);
+        this.logger.info(`Phishing base saved`, { key: baseKey });
       }
       return success;
     } catch (error) {
-      this.logger.error(`Failed to save phishing base ${id}:`, error instanceof Error ? error : new Error(String(error)));
+      const err = error instanceof Error ? error : new Error(String(error));
+      this.logger.error(`Failed to save phishing base`, { id, error: err.message, stack: err.stack });
       return false;
     }
   }
@@ -309,11 +320,12 @@ export class KVService {
 
       const success = await this.putWithRetry(emailKey, emailData);
       if (success) {
-        this.logger.info(`✅ Phishing email saved: ${emailKey}`);
+        this.logger.info(`Phishing email saved`, { key: emailKey });
       }
       return success;
     } catch (error) {
-      this.logger.error(`Failed to save phishing email ${id}:`, error instanceof Error ? error : new Error(String(error)));
+      const err = error instanceof Error ? error : new Error(String(error));
+      this.logger.error(`Failed to save phishing email`, { id, error: err.message, stack: err.stack });
       return false;
     }
   }
@@ -334,11 +346,12 @@ export class KVService {
 
       const success = await this.putWithRetry(landingKey, landingData);
       if (success) {
-        this.logger.info(`✅ Phishing landing page saved: ${landingKey}`);
+        this.logger.info(`Phishing landing page saved`, { key: landingKey });
       }
       return success;
     } catch (error) {
-      this.logger.error(`Failed to save phishing landing page ${id}:`, error instanceof Error ? error : new Error(String(error)));
+      const err = error instanceof Error ? error : new Error(String(error));
+      this.logger.error(`Failed to save phishing landing page`, { id, error: err.message, stack: err.stack });
       return false;
     }
   }
@@ -381,7 +394,8 @@ export class KVService {
 
       return result;
     } catch (error) {
-      console.error(`Failed to get phishing ${phishingId}:`, error);
+      const err = error instanceof Error ? error : new Error(String(error));
+      this.logger.error(`Failed to get phishing`, { phishingId, error: err.message, stack: err.stack });
       return null;
     }
   }
@@ -396,12 +410,18 @@ export class KVService {
         const result = await this.put(key, value);
         if (result) {
           if (attempt > 0) {
-            console.log(`✅ KV PUT succeeded on retry ${attempt} for key: ${key}`);
+            this.logger.debug(`KV PUT succeeded on retry`, { attempt, key });
           }
           return true;
         }
       } catch (error) {
-        console.warn(`KV PUT attempt ${attempt + 1}/${maxRetries} failed for ${key}:`, error);
+        const err = error instanceof Error ? error : new Error(String(error));
+        this.logger.warn(`KV PUT attempt failed`, {
+          attempt: attempt + 1,
+          maxRetries,
+          key,
+          error: err.message,
+        });
         if (attempt < maxRetries - 1) {
           const delay = RETRY.getBackoffDelay(attempt);
           await new Promise(resolve => setTimeout(resolve, delay));
@@ -446,7 +466,8 @@ export class KVService {
 
       return result;
     } catch (error) {
-      console.error(`Failed to get microlearning ${microlearningId}:`, error);
+      const err = error instanceof Error ? error : new Error(String(error));
+      this.logger.error(`Failed to get microlearning`, { microlearningId, error: err.message, stack: err.stack });
       return null;
     }
   }
@@ -459,14 +480,15 @@ export class KVService {
       const success = await this.put(langKey, content);
 
       if (success) {
-        console.log(`✅ Language content stored in KV: ${langKey}`);
+        this.logger.info(`Language content stored in KV`, { langKey });
       } else {
-        console.error(`❌ Failed to store language content: ${langKey}`);
+        this.logger.error(`Failed to store language content`, { langKey });
       }
 
       return success;
     } catch (error) {
-      console.error(`Failed to store language content ${microlearningId}/${language}:`, error);
+      const err = error instanceof Error ? error : new Error(String(error));
+      this.logger.error(`Failed to store language content`, { microlearningId, language, error: err.message, stack: err.stack });
       return false;
     }
   }
@@ -483,14 +505,15 @@ export class KVService {
       const success = await this.put(baseKey, microlearning);
 
       if (success) {
-        console.log(`✅ Microlearning base updated in KV: ${baseKey}`);
+        this.logger.info(`Microlearning base updated in KV`, { baseKey });
       } else {
-        console.error(`❌ Failed to update microlearning base: ${baseKey}`);
+        this.logger.error(`Failed to update microlearning base`, { baseKey });
       }
 
       return success;
     } catch (error) {
-      console.error(`Failed to update microlearning ${microlearning?.microlearning_id}:`, error);
+      const err = error instanceof Error ? error : new Error(String(error));
+      this.logger.error(`Failed to update microlearning`, { microlearningId: microlearning?.microlearning_id, error: err.message, stack: err.stack });
       return false;
     }
   }
@@ -517,11 +540,12 @@ export class KVService {
       const success = await this.put(baseKey, baseData);
 
       if (success) {
-        console.log(`✅ Updated language_availability: [${merged.join(', ')}]`);
+        this.logger.info(`Updated language_availability`, { languages: merged, microlearningId });
       }
       return success;
     } catch (error) {
-      console.error(`Failed to update language availability ${microlearningId}:`, error);
+      const err = error instanceof Error ? error : new Error(String(error));
+      this.logger.error(`Failed to update language availability`, { microlearningId, error: err.message, stack: err.stack });
       return false;
     }
   }
@@ -534,14 +558,15 @@ export class KVService {
       const success = await this.put(inboxKey, inboxPayload);
 
       if (success) {
-        console.log(`✅ Inbox content stored in KV: ${inboxKey}`);
+        this.logger.info(`Inbox content stored in KV`, { inboxKey });
       } else {
-        console.error(`❌ Failed to store inbox content: ${inboxKey}`);
+        this.logger.error(`Failed to store inbox content`, { inboxKey });
       }
 
       return success;
     } catch (error) {
-      console.error(`Failed to store inbox content ${microlearningId}/${department}/${language}:`, error);
+      const err = error instanceof Error ? error : new Error(String(error));
+      this.logger.error(`Failed to store inbox content`, { microlearningId, department, language, error: err.message, stack: err.stack });
       return false;
     }
   }
@@ -553,12 +578,13 @@ export class KVService {
       const inbox = await this.get(inboxKey);
 
       if (inbox) {
-        console.log(`✅ Inbox content retrieved from KV: ${inboxKey}`);
+        this.logger.info(`Inbox content retrieved from KV`, { inboxKey });
       }
 
       return inbox;
     } catch (error) {
-      console.error(`Failed to get inbox content ${microlearningId}/${department}/${language}:`, error);
+      const err = error instanceof Error ? error : new Error(String(error));
+      this.logger.error(`Failed to get inbox content`, { microlearningId, department, language, error: err.message, stack: err.stack });
       return null;
     }
   }
@@ -590,13 +616,15 @@ export class KVService {
             }
           }
         } catch (error) {
-          console.warn(`Failed to check microlearning ${key}:`, error);
+          const err = error instanceof Error ? error : new Error(String(error));
+          this.logger.warn(`Failed to check microlearning`, { key, error: err.message });
         }
       }
 
       return results;
     } catch (error) {
-      console.error(`Failed to search microlearnings for "${searchTerm}":`, error);
+      const err = error instanceof Error ? error : new Error(String(error));
+      this.logger.error(`Failed to search microlearnings`, { searchTerm, error: err.message, stack: err.stack });
       return [];
     }
   }
@@ -615,11 +643,12 @@ export class KVService {
         return true;
       } else {
         const errorText = await response.text();
-        console.error('Namespace check failed:', response.status, errorText);
+        this.logger.error(`Namespace check failed`, { status: response.status, errorText: errorText.substring(0, 200) });
         return false;
       }
     } catch (error) {
-      console.error('Namespace check error:', error);
+      const err = error instanceof Error ? error : new Error(String(error));
+      this.logger.error(`Namespace check error`, { error: err.message, stack: err.stack });
       return false;
     }
   }
@@ -630,7 +659,7 @@ export class KVService {
       // First check if namespace exists
       const namespaceOk = await this.checkNamespace();
       if (!namespaceOk) {
-        console.error('KV health check failed: namespace inaccessible');
+        this.logger.error(`KV health check failed: namespace inaccessible`);
         return false;
       }
 
@@ -640,14 +669,14 @@ export class KVService {
       // Test PUT operation
       const putResult = await this.put(testKey, testValue);
       if (!putResult) {
-        console.error('KV health check failed: PUT operation failed');
+        this.logger.error(`KV health check failed: PUT operation failed`);
         return false;
       }
 
       // Test GET operation
       const getValue = await this.get(testKey);
       if (!getValue || getValue.timestamp !== testValue.timestamp) {
-        console.error('KV health check failed: GET operation failed');
+        this.logger.error(`KV health check failed: GET operation failed`);
         return false;
       }
 
@@ -656,7 +685,8 @@ export class KVService {
 
       return true;
     } catch (error) {
-      console.error('KV health check failed:', error);
+      const err = error instanceof Error ? error : new Error(String(error));
+      this.logger.error(`KV health check failed`, { error: err.message, stack: err.stack });
       return false;
     }
   }

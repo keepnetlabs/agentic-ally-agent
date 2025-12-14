@@ -8,6 +8,7 @@ import { METADATA_GENERATION_PARAMS } from '../../utils/config/llm-generation-pa
 import { CATEGORIES } from '../../constants';
 import { LanguageModelSchema } from '../../types/language-model';
 import { ProductService } from '../../services/product-service';
+import { getLogger } from '../../utils/core/logger';
 
 const GenerateMicrolearningJsonSchema = z.object({
   analysis: z.object({
@@ -110,9 +111,10 @@ async function generateMicrolearningJsonWithAI(
   };
 
   // Stage 2: Enhance the microlearning object with AI
-  console.log('🔧 Starting Stage 2: Enhancement...');
+  const logger = getLogger('GenerateMicrolearningJson');
+  logger.info('Starting Stage 2: Enhancement');
   const enhancedMicrolearning = await enhanceMicrolearningContent(microlearning, model, analysis.additionalContext);
-  console.log('✅ Stage 2 completed');
+  logger.info('Stage 2 completed');
 
   return enhancedMicrolearning;
 }
@@ -133,10 +135,11 @@ async function generateTheme(themeColor?: string) {
 
   // Fetch whitelabeling config from requestStorage
   try {
+    const logger = getLogger('GenerateTheme');
     const productService = new ProductService();
     const whitelabelingConfig = await productService.getWhitelabelingConfig();
 
-    console.log('🎨 Whitelabeling Config Response:', whitelabelingConfig);
+    logger.debug('Whitelabeling Config Response', { config: whitelabelingConfig });
 
     if (whitelabelingConfig) {
       logoConfig = {
@@ -148,7 +151,9 @@ async function generateTheme(themeColor?: string) {
       };
     }
   } catch (error) {
-    console.warn('⚠️ Failed to fetch whitelabeling config, using defaults:', error instanceof Error ? error.message : String(error));
+    const logger = getLogger('GenerateTheme');
+    const err = error instanceof Error ? error : new Error(String(error));
+    logger.warn('Failed to fetch whitelabeling config, using defaults', { error: err.message });
   }
 
   return {
@@ -226,10 +231,13 @@ CRITICAL JSON RULES:
     // Use professional JSON repair library
     const cleanedResponse = cleanResponse(response.text, 'microlearning-enhancement');
     const enhanced = JSON.parse(cleanedResponse);
-    console.log('✨ Microlearning content enhanced successfully');
+    const logger = getLogger('EnhanceMicrolearning');
+    logger.info('Microlearning content enhanced successfully');
     return enhanced;
   } catch (error) {
-    console.warn('⚠️ Enhancement failed, returning original:', error);
+    const logger = getLogger('EnhanceMicrolearning');
+    const err = error instanceof Error ? error : new Error(String(error));
+    logger.warn('Enhancement failed, returning original', { error: err.message });
     return microlearning;
   }
 }

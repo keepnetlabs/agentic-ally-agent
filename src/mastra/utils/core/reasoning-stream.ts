@@ -1,6 +1,9 @@
 import { v4 as uuidv4 } from 'uuid';
 import { generateText } from 'ai';
 import { getModelWithOverride } from '../../model-providers';
+import { getLogger } from './logger';
+
+const logger = getLogger('ReasoningStream');
 
 /**
  * Stream reasoning to frontend using AI SDK reasoning protocol
@@ -62,7 +65,7 @@ export async function streamReasoning(
           id: messageId
         });
 
-        console.log('🧠 User-friendly reasoning streamed');
+        logger.info('User-friendly reasoning streamed');
       } catch (writeError) {
         // Stream likely closed, ignore silently
       }
@@ -77,7 +80,11 @@ export async function streamReasoning(
     });
 
   } catch (error) {
-    console.error('❌ Failed to start reasoning stream:', error);
+    const err = error instanceof Error ? error : new Error(String(error));
+    logger.error('Failed to start reasoning stream', {
+      error: err.message,
+      stack: err.stack
+    });
   }
 }
 

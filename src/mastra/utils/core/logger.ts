@@ -1,132 +1,71 @@
 /**
- * Structured logging utility for consistent error and info logging
- * Supports multiple log levels with JSON structured output
+ * Logger utility - Mastra PinoLogger wrapper
+ * Creates singleton instances of PinoLogger for each module
+ *
+ * Usage:
+ *   import { getLogger } from '../utils/core/logger';
+ *   const logger = getLogger('ModuleName');
+ *   logger.info('message', { context });
+ *   logger.error('error', { context });
  */
 
-export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+import { PinoLogger } from '@mastra/loggers';
 
-export interface LogContext {
-  [key: string]: unknown;
-}
+const loggers = new Map<string, PinoLogger>();
 
-interface LogEntry {
-  timestamp: string;
-  level: LogLevel;
-  message: string;
-  context?: LogContext;
-  error?: {
-    message: string;
-    stack?: string;
-    code?: string;
-  };
+/**
+ * Get or create a PinoLogger instance for a module
+ * Reuses instances to avoid recreating loggers multiple times
+ * @param moduleName Name of the module (used in log output)
+ * @returns PinoLogger instance
+ */
+export function getLogger(moduleName: string): PinoLogger {
+  if (!loggers.has(moduleName)) {
+    loggers.set(
+      moduleName,
+      new PinoLogger({
+        name: moduleName,
+        level: (process.env.LOG_LEVEL as any) || 'info',
+      })
+    );
+  }
+  return loggers.get(moduleName)!;
 }
 
 /**
- * Logger class for structured logging
- * Usage: const logger = new Logger('ModuleName');
- *        logger.error('Operation failed', { userId, action, error });
+ * Legacy Logger class - DEPRECATED
+ * Use getLogger() instead for better performance
+ * This is kept for backward compatibility
  */
 export class Logger {
-  private moduleName: string;
-  private isProduction: boolean;
+  private pinoLogger: PinoLogger;
 
   constructor(moduleName: string) {
-    this.moduleName = moduleName;
-    this.isProduction = process.env.NODE_ENV === 'production';
+    this.pinoLogger = getLogger(moduleName);
   }
 
-  /**
-   * Log debug message (only in development)
-   */
-  debug(message: string, context?: LogContext): void {
-    if (this.isProduction) return;
-    this.log('debug', message, context);
+  debug(message: string, context?: any): void {
+    this.pinoLogger.debug(message, context);
   }
 
-  /**
-   * Log info message
-   */
-  info(message: string, context?: LogContext): void {
-    this.log('info', message, context);
+  info(message: string, context?: any): void {
+    this.pinoLogger.info(message, context);
   }
 
-  /**
-   * Log warning message
-   */
-  warn(message: string, context?: LogContext): void {
-    this.log('warn', message, context);
+  warn(message: string, context?: any): void {
+    this.pinoLogger.warn(message, context);
   }
 
-  /**
-   * Log error message with error details
-   */
-  error(message: string, error?: Error | string, context?: LogContext): void {
-    const errorObj = this.parseError(error);
-    this.log('error', message, context, errorObj);
-  }
+  error(message: string, error?: Error | string, context?: any): void {
+    const errorData = error instanceof Error
+      ? { error: error.message, stack: error.stack }
+      : (typeof error === 'string' ? { error } : {});
 
-  /**
-   * Private method to format and output log
-   */
-  private log(level: LogLevel, message: string, context?: LogContext, errorObj?: any): void {
-    const entry: LogEntry = {
-      timestamp: new Date().toISOString(),
-      level,
-      message: `[${this.moduleName}] ${message}`,
-      ...(context && { context }),
-      ...(errorObj && { error: errorObj }),
-    };
-
-    // Output based on level
-    switch (level) {
-      case 'debug':
-        console.debug(entry.message, context);
-        break;
-      case 'info':
-        console.log(entry.message, context || '');
-        break;
-      case 'warn':
-        console.warn(entry.message, context || '');
-        break;
-      case 'error':
-        console.error(entry.message, context || '');
-        if (errorObj) console.error('  Error:', errorObj);
-        break;
-    }
-
-    // Structured JSON output for production
-    if (this.isProduction) {
-      console.log(JSON.stringify(entry));
-    }
-  }
-
-  /**
-   * Parse error object into structured format
-   */
-  private parseError(error: Error | string | undefined) {
-    if (!error) return undefined;
-
-    if (typeof error === 'string') {
-      return {
-        message: error,
-      };
-    }
-
-    return {
-      message: error.message,
-      stack: error.stack,
-      code: (error as any).code,
-    };
+    this.pinoLogger.error({ message, ...errorData, ...context });
   }
 }
 
-/**
- * Helper function to measure operation duration
- * Usage:
- *   const timer = startTimer();
- *   // ... do work ...
- *   const duration = timer.end();
- */
+// Helper function for timer (from original logger)
 export function startTimer() {
   const start = Date.now();
   return {

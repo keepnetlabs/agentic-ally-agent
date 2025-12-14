@@ -3,19 +3,21 @@ import { MicrolearningContent } from '../../types/microlearning';
 import { buildContextData } from '../../utils/prompt-builders/base-context-builder';
 import { selectVideoForTopic, generateVideoMetadata } from '../../utils/resolvers/video-selector';
 import transcriptDatabase from '../../data/transcript-database.json';
+import { getLogger } from '../../utils/core/logger';
 
 
 export async function generateVideoPrompt(analysis: PromptAnalysis, microlearning: MicrolearningContent): Promise<{ prompt: string; videoUrl: string; transcript: string }> {
+  const logger = getLogger('Scene3VideoGenerator');
   const contextData = buildContextData(analysis, microlearning);
 
 
   // Select appropriate video using AI
   const selectedVideoUrl = await selectVideoForTopic(analysis);
-  console.log(`🎬 Selected video URL: ${selectedVideoUrl}`);
+  logger.info('Selected video URL', { selectedVideoUrl });
 
   // Get base English transcript from database using selected video URL
   const baseEnglishTranscript = (transcriptDatabase as any)[selectedVideoUrl];
-  console.log(`📝 Transcript found: ${baseEnglishTranscript ? 'YES' : 'NO'}`);
+  logger.info('Transcript found', { found: baseEnglishTranscript ? 'YES' : 'NO' });
 
   const finalTranscript = baseEnglishTranscript ||
     "00:00:04.400 Default transcript content for this video is not available yet. This is a placeholder transcript for the selected security awareness video.";
@@ -27,7 +29,7 @@ export async function generateVideoPrompt(analysis: PromptAnalysis, microlearnin
     analysis.department,
     finalTranscript
   );
-  console.log(`📊 Video metadata generated: title="${videoMetadata.title}", subtitle="${videoMetadata.subtitle}"`);
+  logger.info('Video metadata generated', { title: videoMetadata.title, subtitle: videoMetadata.subtitle });
 
   const prompt = `${contextData}
 

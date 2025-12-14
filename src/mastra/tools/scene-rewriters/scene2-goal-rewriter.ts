@@ -2,6 +2,7 @@ import { generateText } from 'ai';
 import { cleanResponse } from '../../utils/content-processors/json-cleaner';
 import { LOCALIZER_PARAMS } from '../../utils/config/llm-generation-params';
 import { getLanguagePrompt } from '../../utils/language/localization-language-rules';
+import { getLogger } from '../../utils/core/logger';
 
 interface RewriteContext {
     sourceLanguage: string;
@@ -105,7 +106,9 @@ Output (JSON only):`;
 
         return rewritten;
     } catch (error) {
-        console.error('❌ Scene 2 (Goals) rewrite failed:', error);
+        const err = error instanceof Error ? error : new Error(String(error));
+        const logger = getLogger('Scene2GoalRewriter');
+        logger.error('Scene 2 (Goals) rewrite failed', { error: err.message, stack: err.stack });
         throw error;
     }
 }

@@ -2,6 +2,9 @@ import { generateText } from 'ai';
 import { getModel, Model, ModelProvider } from '../../model-providers';
 import { PromptAnalysis } from '../../types/prompt-analysis';
 import videoDatabase from '../../data/video-database.json';
+import { getLogger } from '../core/logger';
+
+const logger = getLogger('VideoSelector');
 
 /**
  * Selects the most appropriate SCENARIO video from database based on topic analysis
@@ -10,7 +13,10 @@ import videoDatabase from '../../data/video-database.json';
  * @returns Promise<string> - The selected scenario video URL
  */
 export async function selectVideoForTopic(analysis: PromptAnalysis): Promise<string> {
-  console.log(`🎥 Selecting video for topic: ${analysis.topic}, audience: ${analysis.isCodeTopic ? 'development' : 'general'}`);
+  logger.info('Selecting video for topic', {
+    topic: analysis.topic,
+    audience: analysis.isCodeTopic ? 'development' : 'general'
+  });
 
   const fallbackUrl = "https://customer-0lll6yc8omc23rbm.cloudflarestream.com/5fdb12ff1436c991f50b698a02e2faa1/manifest/video.m3u8";
 
@@ -92,7 +98,9 @@ export async function selectVideoForTopic(analysis: PromptAnalysis): Promise<str
           )
         );
         if (matches.length > 0) {
-          console.log(`📌 No exact match found, using related topic: ${relatedTopics.join(', ')}`);
+          logger.info('No exact match found, using related topic', {
+            relatedTopics: relatedTopics.join(', ')
+          });
         }
       }
     }
@@ -104,7 +112,9 @@ export async function selectVideoForTopic(analysis: PromptAnalysis): Promise<str
         isScenarioVideo(video)
       );
       if (matches.length > 0) {
-        console.log(`⚠️ No topic match found, returning generic ${userAudience} scenario video`);
+        logger.info('No topic match found, returning generic scenario video', {
+          audience: userAudience
+        });
       }
     }
 
@@ -116,7 +126,10 @@ export async function selectVideoForTopic(analysis: PromptAnalysis): Promise<str
         isScenarioVideo(video)
       );
       if (matches.length > 0) {
-        console.log(`⚠️ No ${userAudience} scenario videos found, using ${fallbackAudience} audience fallback`);
+        logger.info('Using cross-audience fallback', {
+          primaryAudience: userAudience,
+          fallbackAudience
+        });
       }
     }
 
@@ -125,11 +138,16 @@ export async function selectVideoForTopic(analysis: PromptAnalysis): Promise<str
 
   try {
     const relevantVideos = findRelevantVideos();
-    console.log(`📹 Found ${relevantVideos.length} relevant SCENARIO videos from ${videoDatabase.length} total`);
+    logger.info('Found relevant SCENARIO videos', {
+      count: relevantVideos.length,
+      totalVideos: videoDatabase.length
+    });
 
     // CRITICAL: If no scenario videos found, return fallback
     if (relevantVideos.length === 0) {
-      console.warn(`⚠️ No SCENARIO videos found for "${analysis.topic}", using fallback video`);
+      logger.warn('No SCENARIO videos found, using fallback', {
+        topic: analysis.topic
+      });
       return fallbackUrl;
     }
 
@@ -167,7 +185,7 @@ Return the best matching video URL only:`;
 
     // If empty or whitespace, use first available video
     if (!selectedUrl || selectedUrl.length === 0) {
-      console.warn(`⚠️ AI returned empty URL, using first available video`);
+      logger.warn('AI returned empty URL, using first available video');
       if (relevantVideos.length > 0) {
         selectedUrl = relevantVideos[0].url;
       } else {
@@ -180,10 +198,14 @@ Return the best matching video URL only:`;
 
     if (isValidUrl) {
       const selectedVideo = videoDatabase.find(v => v.url === selectedUrl);
-      console.log(`✅ Selected video: "${selectedVideo?.title}"`);
+      logger.info('Selected video', {
+        title: selectedVideo?.title
+      });
       return selectedUrl;
     } else {
-      console.warn(`⚠️ AI returned invalid URL: "${selectedUrl}", using first available video`);
+      logger.warn('AI returned invalid URL, using first available video', {
+        invalidUrl: selectedUrl
+      });
       // Fallback to first relevant video
       if (relevantVideos.length > 0) {
         return relevantVideos[0].url;
@@ -192,7 +214,11 @@ Return the best matching video URL only:`;
     }
 
   } catch (error) {
-    console.error(`❌ Video selection failed: ${error}, using fallback`);
+    const err = error instanceof Error ? error : new Error(String(error));
+    logger.error('Video selection failed, using fallback', {
+      error: err.message,
+      stack: err.stack
+    });
     return fallbackUrl;
   }
 }
@@ -275,14 +301,21 @@ Return ONLY valid JSON, no markdown:
     const cleanedResponse = result.text.trim();
     const metadata = JSON.parse(cleanedResponse);
 
-    console.log(`✅ Generated video metadata for "${topic}" in ${language}`);
+    logger.info('Generated video metadata', {
+      topic,
+      language
+    });
     return {
       title: metadata.title || `Real ${topic} Scenario`,
       subtitle: metadata.subtitle || 'Learn to recognize and respond to threats'
     };
 
   } catch (error) {
-    console.warn(`⚠️ Video metadata generation failed: ${error}, using fallback`);
+    const err = error instanceof Error ? error : new Error(String(error));
+    logger.warn('Video metadata generation failed, using fallback', {
+      error: err.message,
+      stack: err.stack
+    });
 
     // Fallback values if AI generation fails
     return {
