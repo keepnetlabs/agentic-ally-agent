@@ -16,7 +16,7 @@ async function generatePhishingSimulation(
     simulation: any,
     executiveReport: string | undefined,
     toolResult: any,
-    threadId: string,
+    phishingThreadId: string,
     uploadOnly: boolean = false
 ): Promise<any> {
     const logger = getLogger('GeneratePhishingSimulation');
@@ -30,7 +30,7 @@ async function generatePhishingSimulation(
             await withTimeout(
                 phishingEmailAgent.generate(`[CONTEXT FROM ORCHESTRATOR: ${executiveReport}]`, {
                     memory: {
-                        thread: threadId,
+                        thread: phishingThreadId,
                         resource: 'agentic-ally-autonomous'
                     }
                 }),
@@ -59,18 +59,28 @@ async function generatePhishingSimulation(
 - Department: ${toolResult.userInfo?.department || 'All'}
 - Behavioral Triggers: ${simulation.persuasion_tactic || 'Authority'}
 
-Execute the phishingExecutor tool now with these parameters. Skip confirmation and generate immediately.`;
+**CRITICAL INSTRUCTIONS:**
+1. Call the phishingExecutor tool ONCE with these parameters.
+2. **MUST include landing page**: Set includeLandingPage: true in the tool call. You MUST generate a landing page.
+3. DO NOT call it multiple times - execute only once.
+4. Skip confirmation and generate immediately.
+5. If the tool returns successfully, STOP - do not call it again.`;
 
     const simplifiedPrompt = `Generate a phishing simulation:
 - Topic: ${simulation.title || 'Security Update'}
 - Difficulty: ${simulation.difficulty || 'Medium'}
 - Department: ${toolResult.userInfo?.department || 'All'}
 
-Execute the phishingExecutor tool now. Skip confirmation and generate immediately.`;
+**CRITICAL:**
+1. Call the phishingExecutor tool ONCE.
+2. **MUST include landing page**: Set includeLandingPage: true in the tool call. You MUST generate a landing page.
+3. DO NOT call it multiple times - execute only once.
+4. Skip confirmation and generate immediately.
+5. If the tool returns successfully, STOP - do not call it again.`;
 
     const memoryConfig = {
         memory: {
-            thread: threadId,
+            thread: phishingThreadId,
             resource: 'agentic-ally-autonomous'
         }
     };
@@ -90,7 +100,7 @@ Execute the phishingExecutor tool now. Skip confirmation and generate immediatel
 
         // Step 4: Upload (and optionally assign)
         if (uploadOnly) {
-            const uploadResult = await uploadPhishingOnly(threadId);
+            const uploadResult = await uploadPhishingOnly(phishingThreadId);
             return {
                 success: true,
                 message: 'Phishing simulation generated and uploaded',
@@ -100,7 +110,7 @@ Execute the phishingExecutor tool now. Skip confirmation and generate immediatel
         } else {
             const uploadAssignResult = await uploadAndAssignPhishing(
                 toolResult.userInfo?.targetUserResourceId,
-                threadId
+                phishingThreadId
             );
             return {
                 success: true,
@@ -124,7 +134,7 @@ Execute the phishingExecutor tool now. Skip confirmation and generate immediatel
 
             logger.info('Fallback 1 succeeded');
             if (uploadOnly) {
-                const uploadResult = await uploadPhishingOnly(threadId);
+                const uploadResult = await uploadPhishingOnly(phishingThreadId);
                 return {
                     success: true,
                     message: 'Phishing simulation generated via agent (simplified) and uploaded',
@@ -134,7 +144,7 @@ Execute the phishingExecutor tool now. Skip confirmation and generate immediatel
             } else {
                 const uploadAssignResult = await uploadAndAssignPhishing(
                     toolResult.userInfo?.targetUserResourceId,
-                    threadId
+                    phishingThreadId
                 );
                 return {
                     success: true,
@@ -239,12 +249,24 @@ async function uploadAndAssignPhishing(
 Instructions:
 1. FIRST: Look for the most recent 'phishingId' in conversation history (from phishingExecutor tool result).
 2. Call 'uploadPhishing' tool with: phishingId
-3. WAIT for the tool output (resourceId, languageId).
-4. THEN: Call 'assignPhishing' tool using the resourceId and languageId from step 2.
-   - resourceId: FROM upload.data.resourceId
-   - languageId: FROM upload.data.languageId (optional, include if available)
+3. WAIT for the tool output. The uploadPhishing tool returns:
+   {
+     success: true,
+     data: {
+       resourceId: "...",  // CRITICAL: This is scenarioResourceId if available, otherwise templateResourceId (use this for assignment)
+       scenarioResourceId: "...", // May be null - if present, resourceId will use this
+       templateResourceId: "...", // Original template ID
+       languageId: "...",   // Optional, use if available
+       phishingId: "...",
+       title: "..."
+     }
+   }
+4. THEN: Call 'assignPhishing' tool using EXACT values from step 3:
+   - resourceId: MUST be from uploadPhishing tool result data.resourceId (this is the correct ID for assignment - uses scenarioResourceId if available)
+   - languageId: FROM uploadPhishing tool result data.languageId (optional, include if available)
    - targetUserResourceId: "${targetUserResourceId}"
 
+CRITICAL: Extract resourceId from the uploadPhishing tool's response.data.resourceId field. This field automatically uses scenarioResourceId if available (which is required by backend), otherwise falls back to templateResourceId. Do NOT use templateResourceId or scenarioResourceId directly - use data.resourceId.
 WARNING: You CANNOT call 'assignPhishing' before 'uploadPhishing' completes. Do not run them in parallel.
 DO NOT ask for confirmation. EXECUTE SEQUENCE NOW.`;
 
@@ -280,7 +302,7 @@ DO NOT ask for confirmation. EXECUTE SEQUENCE NOW.`;
  */
 async function assignPhishingWithTraining(
     targetUserResourceId: string | undefined,
-    threadId: string
+    phishingThreadId: string
 ): Promise<any> {
     const logger = getLogger('AssignPhishingWithTraining');
     if (!targetUserResourceId) {
@@ -303,29 +325,35 @@ async function assignPhishingWithTraining(
 **IMPORTANT:** A training module was also uploaded earlier. You MUST include the training IDs when assigning the phishing simulation.
 
 Instructions:
-1. Look for the most recent phishing upload result in conversation history (from uploadPhishing tool). Extract:
-   - resourceId: FROM uploadPhishing tool result (data.resourceId) - this is the phishing resourceId
-   - languageId: FROM uploadPhishing tool result (data.languageId - optional, include if available)
+1. Look for the most recent phishing upload result in conversation history (from uploadPhishing tool). 
+   The uploadPhishing tool returns: { success: true, data: { resourceId: "...", scenarioResourceId: "...", templateResourceId: "...", languageId: "...", ... } }
+   Extract EXACTLY:
+   - resourceId: FROM uploadPhishing tool result data.resourceId (CRITICAL: This automatically uses scenarioResourceId if available, which is required by backend. Use this exact field, NOT templateResourceId directly, NOT phishingId)
+   - languageId: FROM uploadPhishing tool result data.languageId (optional, include if available)
 
-2. Look for the most recent training upload result in conversation history (from uploadTraining tool). Extract:
-   - trainingId: FROM uploadTraining tool result (data.resourceId) - this is the training resourceId, will be sent as trainingId to backend
-   - sendTrainingLanguageId: FROM uploadTraining tool result (data.sendTrainingLanguageId) - this is the training languageId
+2. Look for the most recent training upload result in conversation history (from uploadTraining tool).
+   The uploadTraining tool returns: { success: true, data: { resourceId: "...", sendTrainingLanguageId: "...", ... } }
+   Extract EXACTLY:
+   - trainingId: FROM uploadTraining tool result data.resourceId (this is the training resourceId)
+   - sendTrainingLanguageId: FROM uploadTraining tool result data.sendTrainingLanguageId (this is the training languageId)
 
 3. Call 'assignPhishing' tool with the extracted values from steps 1 and 2:
-   - resourceId: [from step 1 - phishing resourceId]
-   - languageId: [from step 1 - phishing languageId, optional]
+   - resourceId: [from step 1 - phishing resourceId from data.resourceId]
+   - languageId: [from step 1 - phishing languageId from data.languageId, optional]
    - targetUserResourceId: "${targetUserResourceId}"
    - trainingId: [from step 2 - training resourceId from data.resourceId]
    - sendTrainingLanguageId: [from step 2 - training languageId from data.sendTrainingLanguageId]
 
-CRITICAL: Both phishing and training upload results MUST be found in conversation history. Extract the exact IDs from the tool outputs.
+CRITICAL: 
+- Extract resourceId from uploadPhishing tool's response.data.resourceId field. This field automatically uses scenarioResourceId if available (required by backend), otherwise falls back to templateResourceId. Do NOT use templateResourceId or scenarioResourceId directly - always use data.resourceId.
+- Both phishing and training upload results MUST be found in conversation history. Extract the exact IDs from the tool outputs.
 DO NOT call uploadPhishing again - it's already uploaded.
 DO NOT ask for confirmation. EXECUTE ASSIGN NOW.`;
 
         const assignResponse = await withTimeout(
             phishingEmailAgent.generate(assignPrompt, {
                 memory: {
-                    thread: threadId,
+                    thread: phishingThreadId,
                     resource: 'agentic-ally-autonomous'
                 }
             }),
@@ -464,7 +492,7 @@ async function generateTrainingModule(
     microlearning: any,
     executiveReport: string | undefined,
     toolResult: any,
-    threadId: string,
+    trainingThreadId: string,
     uploadOnly: boolean = false
 ): Promise<any> {
     const logger = getLogger('GenerateTrainingModule');
@@ -478,7 +506,7 @@ async function generateTrainingModule(
             await withTimeout(
                 microlearningAgent.generate(`[CONTEXT FROM ORCHESTRATOR: ${executiveReport}]`, {
                     memory: {
-                        thread: threadId,
+                        thread: trainingThreadId,
                         resource: 'agentic-ally-autonomous'
                     }
                 }),
@@ -540,7 +568,7 @@ Execute workflowExecutor tool with workflowType: 'create-microlearning', prompt:
 
     const memoryConfig = {
         memory: {
-            thread: threadId,
+            thread: trainingThreadId,
             resource: 'agentic-ally-autonomous'
         }
     };
@@ -560,7 +588,7 @@ Execute workflowExecutor tool with workflowType: 'create-microlearning', prompt:
 
         // Step 4: Upload (and optionally assign)
         if (uploadOnly) {
-            const uploadResult = await uploadTrainingOnly(threadId);
+            const uploadResult = await uploadTrainingOnly(trainingThreadId);
             return {
                 success: true,
                 message: 'Training module generated and uploaded',
@@ -570,7 +598,7 @@ Execute workflowExecutor tool with workflowType: 'create-microlearning', prompt:
         } else {
             const uploadAssignResult = await uploadAndAssignTraining(
                 toolResult.userInfo?.targetUserResourceId,
-                threadId
+                trainingThreadId
             );
             return {
                 success: true,
@@ -594,7 +622,7 @@ Execute workflowExecutor tool with workflowType: 'create-microlearning', prompt:
 
             logger.info('Fallback 1 succeeded');
             if (uploadOnly) {
-                const uploadResult = await uploadTrainingOnly(threadId);
+                const uploadResult = await uploadTrainingOnly(trainingThreadId);
                 return {
                     success: true,
                     message: 'Training module generated via agent (simplified) and uploaded',
@@ -604,7 +632,7 @@ Execute workflowExecutor tool with workflowType: 'create-microlearning', prompt:
             } else {
                 const uploadAssignResult = await uploadAndAssignTraining(
                     toolResult.userInfo?.targetUserResourceId,
-                    threadId
+                    trainingThreadId
                 );
                 return {
                     success: true,
@@ -679,8 +707,10 @@ export async function executeAutonomousGeneration(
                 };
             }
 
-            // Use consistent thread ID for memory continuity across all agents
-            const threadId = `autonomous-${toolResult.userInfo?.targetUserResourceId || Date.now()}`;
+            // Use isolated thread IDs for each agent to prevent memory confusion
+            const userId = toolResult.userInfo?.targetUserResourceId || Date.now();
+            const phishingThreadId = `phishing-${userId}`;
+            const trainingThreadId = `training-${userId}`;
 
             // Step 2: Prepare concise context for agents (no duplication, include all important fields + references)
             let contextForAgents: string | undefined;
@@ -755,13 +785,13 @@ ${references || 'None provided'}`;
                 // 1. Generate and upload phishing (no assign)
                 if (actions.includes('phishing') && toolResult.analysisReport?.recommended_next_steps?.simulations?.[0]) {
                     const simulation = toolResult.analysisReport.recommended_next_steps.simulations[0];
-                    phishingResult = await generatePhishingSimulation(simulation, executiveReport, toolResult, threadId, true);
+                    phishingResult = await generatePhishingSimulation(simulation, executiveReport, toolResult, phishingThreadId, true);
                 }
-                
+
                 // 2. Generate and upload training (no assign)
                 if (actions.includes('training') && toolResult.analysisReport?.recommended_next_steps?.microlearnings?.[0]) {
                     const microlearning = toolResult.analysisReport.recommended_next_steps.microlearnings[0];
-                    trainingResult = await generateTrainingModule(microlearning, executiveReport, toolResult, threadId, true);
+                    trainingResult = await generateTrainingModule(microlearning, executiveReport, toolResult, trainingThreadId, true);
                 }
                 
                 // 3. Assign phishing with training IDs (phishing already uploaded)
@@ -769,7 +799,7 @@ ${references || 'None provided'}`;
                     logger.info('Assigning phishing with training IDs');
                     const assignPhishingResult = await assignPhishingWithTraining(
                         toolResult.userInfo?.targetUserResourceId,
-                        threadId
+                        phishingThreadId
                     );
                     
                     if (assignPhishingResult?.success) {
@@ -783,16 +813,38 @@ ${references || 'None provided'}`;
                 // Normal flow: Each generates, uploads, and assigns independently
                 logger.info('Using normal flow (independent generation and assignment)');
                 
-                // Generate phishing if requested
+                // Generate phishing and training in parallel (with isolated thread IDs)
+                const generationPromises: Promise<any>[] = [];
+
                 if (actions.includes('phishing') && toolResult.analysisReport?.recommended_next_steps?.simulations?.[0]) {
                     const simulation = toolResult.analysisReport.recommended_next_steps.simulations[0];
-                    phishingResult = await generatePhishingSimulation(simulation, executiveReport, toolResult, threadId, false);
+                    generationPromises.push(
+                        generatePhishingSimulation(simulation, executiveReport, toolResult, phishingThreadId, false)
+                            .then(result => { phishingResult = result; })
+                            .catch(error => {
+                                const err = error instanceof Error ? error : new Error(String(error));
+                                logger.error('Phishing generation failed', { error: err.message });
+                                phishingResult = { success: false, error: err.message };
+                            })
+                    );
                 }
 
-                // Generate training if requested
                 if (actions.includes('training') && toolResult.analysisReport?.recommended_next_steps?.microlearnings?.[0]) {
                     const microlearning = toolResult.analysisReport.recommended_next_steps.microlearnings[0];
-                    trainingResult = await generateTrainingModule(microlearning, executiveReport, toolResult, threadId, false);
+                    generationPromises.push(
+                        generateTrainingModule(microlearning, executiveReport, toolResult, trainingThreadId, false)
+                            .then(result => { trainingResult = result; })
+                            .catch(error => {
+                                const err = error instanceof Error ? error : new Error(String(error));
+                                logger.error('Training generation failed', { error: err.message });
+                                trainingResult = { success: false, error: err.message };
+                            })
+                    );
+                }
+
+                // Execute both in parallel
+                if (generationPromises.length > 0) {
+                    await Promise.all(generationPromises);
                 }
             }
 

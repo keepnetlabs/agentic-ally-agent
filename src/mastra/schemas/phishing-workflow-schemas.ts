@@ -40,7 +40,7 @@ export const AnalysisSchema = z.object({
     name: z.string().describe('Short display name for the template (e.g. "Password Reset - Easy")'),
     description: z.string().describe('Brief description of the phishing scenario'),
     category: z.string().describe('Phishing category: Credential Harvesting, Malware, Financial Fraud, etc.'),
-    method: z.enum(PHISHING.ATTACK_METHODS).describe('The determined attack method for this scenario'),
+    method: z.enum(PHISHING.ATTACK_METHODS).default(PHISHING.DEFAULT_ATTACK_METHOD).describe('The determined attack method for this scenario'),
     psychologicalTriggers: z.array(z.string()).describe('Triggers used: Authority, Urgency, Fear, Greed, Curiosity, Helpfulness'),
     tone: z.string().describe('Email tone: Formal, Urgent, Friendly, Threatening, etc.'),
     fromAddress: z.string().describe('Spoofed sender email address'),
@@ -63,8 +63,8 @@ export const AnalysisSchema = z.object({
     // Passthrough fields
     difficulty: z.enum(PHISHING.DIFFICULTY_LEVELS).optional(),
     language: z.string().optional(),
-    includeLandingPage: z.boolean().optional(),
-    includeEmail: z.boolean().optional(),
+    includeLandingPage: z.boolean().default(true).optional(),
+    includeEmail: z.boolean().default(true).optional(),
     modelProvider: z.string().optional(),
     model: z.string().optional(),
     writer: StreamWriterSchema.optional(),
@@ -82,7 +82,7 @@ export const EmailOutputSchema = z.object({
     fromName: z.string(),
     analysis: AnalysisSchema, // Full analysis context
     additionalContext: z.string().optional().describe('User behavior context (also available in analysis.additionalContext)'),
-    includeLandingPage: z.boolean().optional(), // Pass explicit flag
+    includeLandingPage: z.boolean().default(true).optional(), // Pass explicit flag
 });
 
 /**
@@ -99,7 +99,7 @@ export const OutputSchema = z.object({
     landingPage: z.object({
         name: z.string(),
         description: z.string(),
-        method: z.enum(PHISHING.ATTACK_METHODS),
+        method: z.enum(PHISHING.ATTACK_METHODS).default(PHISHING.DEFAULT_ATTACK_METHOD),
         difficulty: z.enum(PHISHING.DIFFICULTY_LEVELS),
         pages: z.array(z.object({
             type: z.enum(LANDING_PAGE.PAGE_TYPES),

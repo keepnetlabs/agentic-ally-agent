@@ -17,8 +17,14 @@ export const uploadPhishingTool = createTool({
     outputSchema: z.object({
         success: z.boolean(),
         data: z.object({
-            resourceId: z.string(),
-            languageId: z.string().optional(),
+            resourceId: z.string(), // CRITICAL: Uses scenarioResourceId if available, otherwise templateResourceId (for assignment)
+            templateResourceId: z.string().optional(), // Original template resource ID
+            templateId: z.number().optional(),
+            landingPageResourceId: z.string().nullable().optional(),
+            landingPageId: z.number().nullable().optional(),
+            scenarioResourceId: z.string().nullable().optional(), // Scenario resource ID (preferred for assignment)
+            scenarioId: z.number().nullable().optional(),
+            languageId: z.string().optional(), // May not be in backend response, kept for compatibility
             phishingId: z.string(),
             title: z.string().optional(),
         }).optional(),
@@ -135,17 +141,41 @@ export const uploadPhishingTool = createTool({
 
             const result = await response.json();
 
-            logger.info('Phishing upload successful', result);
+            logger.info('Phishing upload successful', {
+                success: result.success,
+                templateResourceId: result.templateResourceId,
+                templateId: result.templateId,
+                landingPageResourceId: result.landingPageResourceId,
+                landingPageId: result.landingPageId,
+                scenarioResourceId: result.scenarioResourceId,
+                scenarioId: result.scenarioId,
+                message: result.message
+            });
+
+            // Backend returns: { templateResourceId, templateId, landingPageResourceId, landingPageId, scenarioResourceId, scenarioId, message }
+            // Map to our expected format
+            const templateResourceId = result.templateResourceId || result.resourceId; // Fallback for backward compatibility
+            const scenarioResourceId = result.scenarioResourceId || null;
+
+            // CRITICAL: Use scenarioResourceId for assignment if available, otherwise fallback to templateResourceId
+            // Backend API expects scenarioResourceId for assignment (based on "Phishing scenario not found" error)
+            const resourceIdForAssignment = scenarioResourceId || templateResourceId;
 
             return {
                 success: true,
                 data: {
-                    resourceId: result.resourceId,
-                    languageId: result.languageId,
+                    resourceId: resourceIdForAssignment, // Use scenarioResourceId if available, otherwise templateResourceId
+                    templateResourceId: templateResourceId, // Keep original templateResourceId for reference
+                    templateId: result.templateId,
+                    landingPageResourceId: result.landingPageResourceId || null,
+                    landingPageId: result.landingPageId || null,
+                    scenarioResourceId: scenarioResourceId, // Scenario resource ID (may be null)
+                    scenarioId: result.scenarioId || null,
+                    languageId: result.languageId, // May not exist in backend response, kept for compatibility
                     phishingId: phishingId,
                     title: name
                 },
-                message: `Phishing simulation uploaded successfully. Resource ID ${result.resourceId} is ready for assignment.`
+                message: result.message || `Phishing simulation uploaded successfully. Resource ID ${resourceIdForAssignment} is ready for assignment.`
             };
 
         } catch (error) {

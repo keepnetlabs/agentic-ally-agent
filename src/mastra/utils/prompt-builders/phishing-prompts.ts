@@ -79,7 +79,7 @@ Design highly realistic phishing simulation scenarios for cybersecurity training
 
 1. **Attack Method Determination:**
    - **User Choice:** If '${method}' is provided, YOU MUST USE IT.
-   - **Auto-Detect (if missing):**
+   - **Auto-Detect (if missing) DEFAULT -- '${PHISHING.DEFAULT_ATTACK_METHOD}'**:
      - '${PHISHING.ATTACK_METHODS[1]}' (Data-Submission): For scenarios requiring login, password reset, verification, payment, survey.
      - '${PHISHING.ATTACK_METHODS[0]}' (Click-Only): For scenarios requiring viewing a document, tracking a package, reading news, downloading a file.
 
