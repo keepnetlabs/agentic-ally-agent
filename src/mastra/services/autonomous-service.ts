@@ -484,7 +484,7 @@ ${references || 'None provided'}`;
             const message = generatedItems.length > 0
                 ? `User analysis, executive report, and ${generatedItems.join(' + ')} completed successfully.`
                 : 'User info, analysis, and executive report fetched successfully. Ready for next step.';
-
+            logger.info('Autonomous service completed successfully', { message });
             return {
                 success: true,
                 userInfo: toolResult.userInfo,

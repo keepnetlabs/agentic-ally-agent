@@ -14,34 +14,6 @@ export interface ValidationResult {
 }
 
 /**
- * Validate that login page contains required trackId input
- * @param html - HTML string to validate
- * @returns ValidationResult
- */
-export function validateTrackIdInput(html: string): ValidationResult {
-    const errors: string[] = [];
-    const warnings: string[] = [];
-
-    // Check for trackId hidden input
-    const trackIdPatterns = [
-        /name=['"]trackId['"]/i,
-        /id=['"]trackId['"]/i
-    ];
-
-    const hasTrackId = trackIdPatterns.some(pattern => pattern.test(html));
-
-    if (!hasTrackId) {
-        errors.push('Missing required trackId hidden input field');
-    }
-
-    return {
-        isValid: errors.length === 0,
-        errors,
-        warnings
-    };
-}
-
-/**
  * Validate that page doesn't contain unwanted CSS patterns
  * (e.g., overly complex styling that doesn't match "normal web page" requirement)
  * @param html - HTML string to validate
@@ -177,10 +149,6 @@ export function validateLandingPage(html: string, pageType: string): ValidationR
     results.push(validateHTMLStructure(html));
     results.push(validateCSSPatterns(html));
     results.push(validateFormElements(html, pageType));
-
-    if (pageType === 'login') {
-        results.push(validateTrackIdInput(html));
-    }
 
     // Aggregate results
     const allErrors = results.flatMap(r => r.errors);

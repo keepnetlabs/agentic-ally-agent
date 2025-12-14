@@ -337,19 +337,45 @@ export const mastra = new Mastra({
 
             logger.info('autonomous_request_received', { firstName, lastName, actionsCount: actions.length });
 
-            // Execute autonomous generation (user analysis + content generation)
-            const result = await executeAutonomousGeneration({
+            // Fire-and-forget pattern:
+            // 1. Return immediate success response
+            // 2. Continue processing in background (using c.executionCtx.waitUntil if available)
+
+            const executionPromise = executeAutonomousGeneration({
               token,
               firstName,
               lastName,
               actions: actions as ('training' | 'phishing')[],
+            }).catch(err => {
+              logger.error('autonomous_background_execution_failed', {
+                error: err instanceof Error ? err.message : String(err)
+              });
             });
 
-            if (!result.success) {
-              return c.json(result, 400);
+            // Safely check for Cloudflare Workers execution context
+            try {
+              // @ts-ignore - ExecutionContext check for Cloudflare Workers
+              if (c.executionCtx && typeof c.executionCtx.waitUntil === 'function') {
+                // @ts-ignore
+                c.executionCtx.waitUntil(executionPromise);
+                logger.debug('background_task_registered_with_waituntil');
+              } else {
+                throw new Error('No execution context');
+              }
+            } catch (e) {
+              // Fallback for environments without waitUntil (like local dev server):
+              // We just let the promise float. In Node.js/Local dev this works fine.
+              logger.warn('waituntil_not_available_using_floating_promise');
             }
 
-            return c.json(result, 200);
+            return c.json({
+              success: true,
+              message: 'Autonomous generation started in background. This process may take 5-10 minutes.',
+              status: 'processing',
+              firstName,
+              lastName,
+              actions
+            }, 200);
 
           } catch (error) {
             logger.error('autonomous_endpoint_error', {

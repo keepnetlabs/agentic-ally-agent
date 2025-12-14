@@ -22,7 +22,6 @@ export {
 // HTML validation
 export {
     validateLandingPage,
-    validateTrackIdInput,
     validateCSSPatterns,
     validateFormElements,
     validateHTMLStructure,
