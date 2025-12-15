@@ -45,7 +45,9 @@ async function generatePhishingSimulation(
     }
 
     // Build prompts for 3-level fallback
-    const fullPrompt = `Based on the user behavior analysis in the previous context, generate the recommended phishing simulation now.
+    const fullPrompt = `**AUTONOMOUS_EXECUTION_MODE**
+    
+    Based on the user behavior analysis in the previous context, generate the recommended phishing simulation now.
 
 **Recommended Simulation Strategy:**
 - Topic: ${simulation.title || 'Security Update'}
@@ -64,9 +66,12 @@ async function generatePhishingSimulation(
 2. **MUST include landing page**: Set includeLandingPage: true in the tool call. You MUST generate a landing page.
 3. DO NOT call it multiple times - execute only once.
 4. Skip confirmation and generate immediately.
-5. If the tool returns successfully, STOP - do not call it again.`;
+5. If the tool returns successfully, STOP - do not call it again.
+6. **DO NOT UPLOAD or ASSIGN yet.** Just generate the content using phishingExecutor.`;
 
-    const simplifiedPrompt = `Generate a phishing simulation:
+    const simplifiedPrompt = `**AUTONOMOUS_EXECUTION_MODE**
+    
+    Generate a phishing simulation:
 - Topic: ${simulation.title || 'Security Update'}
 - Difficulty: ${simulation.difficulty || 'Medium'}
 - Department: ${toolResult.userInfo?.department || 'All'}
@@ -76,7 +81,8 @@ async function generatePhishingSimulation(
 2. **MUST include landing page**: Set includeLandingPage: true in the tool call. You MUST generate a landing page.
 3. DO NOT call it multiple times - execute only once.
 4. Skip confirmation and generate immediately.
-5. If the tool returns successfully, STOP - do not call it again.`;
+5. If the tool returns successfully, STOP - do not call it again.
+6. **DO NOT UPLOAD or ASSIGN yet.** Just generate the content using phishingExecutor.`;
 
     const memoryConfig = {
         memory: {
@@ -192,7 +198,8 @@ Instructions:
 2. Call 'uploadPhishing' tool with: phishingId
 3. WAIT for the tool output (resourceId, languageId).
 
-DO NOT call assignPhishing. DO NOT ask for confirmation. EXECUTE UPLOAD NOW.`;
+CRITICAL: DO NOT GENERATE NEW CONTENT. DO NOT CALL phishingExecutor. THIS IS AN UPLOAD TASK ONLY.
+DO NOT call assignPhishing. DO NOT ask for confirmation. EXECUTE UPLOAD NOW. STOP AFTER TOOL EXECUTION.`;
 
         const uploadResponse = await withTimeout(
             phishingEmailAgent.generate(uploadPrompt, {
@@ -268,7 +275,8 @@ Instructions:
 
 CRITICAL: Extract resourceId from the uploadPhishing tool's response.data.resourceId field. This field automatically uses scenarioResourceId if available (which is required by backend), otherwise falls back to templateResourceId. Do NOT use templateResourceId or scenarioResourceId directly - use data.resourceId.
 WARNING: You CANNOT call 'assignPhishing' before 'uploadPhishing' completes. Do not run them in parallel.
-DO NOT ask for confirmation. EXECUTE SEQUENCE NOW.`;
+CRITICAL: DO NOT GENERATE NEW CONTENT. DO NOT CALL phishingExecutor. THIS IS AN ASSIGNMENT TASK ONLY.
+DO NOT ask for confirmation. EXECUTE SEQUENCE NOW. STOP AFTER TOOL EXECUTION.`;
 
         const uploadAssignResponse = await withTimeout(
             phishingEmailAgent.generate(uploadAssignPrompt, {
@@ -347,8 +355,9 @@ Instructions:
 CRITICAL: 
 - Extract resourceId from uploadPhishing tool's response.data.resourceId field. This field automatically uses scenarioResourceId if available (required by backend), otherwise falls back to templateResourceId. Do NOT use templateResourceId or scenarioResourceId directly - always use data.resourceId.
 - Both phishing and training upload results MUST be found in conversation history. Extract the exact IDs from the tool outputs.
+- DO NOT GENERATE NEW CONTENT. DO NOT CALL phishingExecutor OR workflowExecutor. THIS IS AN ASSIGNMENT TASK ONLY.
 DO NOT call uploadPhishing again - it's already uploaded.
-DO NOT ask for confirmation. EXECUTE ASSIGN NOW.`;
+DO NOT ask for confirmation. EXECUTE ASSIGN NOW. STOP AFTER TOOL EXECUTION.`;
 
         const assignResponse = await withTimeout(
             phishingEmailAgent.generate(assignPrompt, {
@@ -394,7 +403,8 @@ Instructions:
 2. Call 'uploadTraining' tool with: microlearningId
 3. WAIT for the tool output (resourceId, sendTrainingLanguageId).
 
-DO NOT call assignTraining. DO NOT ask for confirmation. EXECUTE UPLOAD NOW.`;
+CRITICAL: DO NOT GENERATE NEW CONTENT. DO NOT CALL workflowExecutor. THIS IS AN UPLOAD TASK ONLY.
+DO NOT call assignTraining. DO NOT ask for confirmation. EXECUTE UPLOAD NOW. STOP AFTER TOOL EXECUTION.`;
 
         const uploadResponse = await withTimeout(
             microlearningAgent.generate(uploadPrompt, {
@@ -455,7 +465,8 @@ Instructions:
    - targetUserResourceId: "${targetUserResourceId}"
 
 WARNING: You CANNOT call 'assignTraining' before 'uploadTraining' completes. Do not run them in parallel.
-DO NOT ask for confirmation. EXECUTE SEQUENCE NOW.`;
+CRITICAL: DO NOT GENERATE NEW CONTENT. DO NOT CALL workflowExecutor. THIS IS AN UPLOAD/ASSIGN TASK ONLY.
+DO NOT ask for confirmation. EXECUTE SEQUENCE NOW. STOP AFTER TOOL EXECUTION.`;
 
         const uploadAssignResponse = await withTimeout(
             microlearningAgent.generate(uploadAssignPrompt, {
@@ -530,7 +541,9 @@ async function generateTrainingModule(
     const rationale = microlearning.rationale || 'Based on user behavior analysis';
 
     // Build prompts for 3-level fallback
-    const fullPrompt = `Based on the user behavior analysis in the previous context, generate the recommended training module now.
+    const fullPrompt = `**AUTONOMOUS_EXECUTION_MODE**
+    
+    Based on the user behavior analysis in the previous context, generate the recommended training module now.
 
 **Recommended Training Strategy:**
 - Topic: ${topic}
@@ -557,14 +570,18 @@ Instruction: Call the workflowExecutor tool now with these parameters.
 - additionalContext: [Copy the ENTIRE orchestrator context from previous message]
 - priority: 'medium'
 
-DO NOT ask questions. DO NOT show summary. EXECUTE NOW.`;
+DO NOT ask questions. DO NOT show summary. EXECUTE NOW.
+**DO NOT UPLOAD or ASSIGN yet.** Just generate the content.`;
 
-    const simplifiedPrompt = `Generate training module:
+    const simplifiedPrompt = `**AUTONOMOUS_EXECUTION_MODE**
+    
+    Generate training module:
 - Topic: ${topic}
 - Department: ${department}
 - Level: ${level}
 
-Execute workflowExecutor tool with workflowType: 'create-microlearning', prompt: "${topic}", department: "${department}", level: "${level}". Skip confirmation.`;
+Execute workflowExecutor tool with workflowType: 'create-microlearning', prompt: "${topic}", department: "${department}", level: "${level}". Skip confirmation.
+**DO NOT UPLOAD or ASSIGN yet.** Just generate the content.`;
 
     const memoryConfig = {
         memory: {
@@ -676,7 +693,7 @@ export async function executeAutonomousGeneration(
     request: AutonomousRequest
 ): Promise<AutonomousResponse> {
     const logger = getLogger('ExecuteAutonomousGeneration');
-    const { token, firstName, lastName, actions } = request;
+    const { token, firstName, lastName, actions, sendAfterPhishingSimulation } = request;
 
     try {
         // Set token in request storage so getUserInfoTool can access it
@@ -772,28 +789,52 @@ ${references || 'None provided'}`;
             // Keep executiveReport alias for compatibility
             const executiveReport = contextForAgents;
             logger.debug('Executive report prepared', { hasContext: !!executiveReport });
-            
+
             // Step 3: Generate content based on actions
             let phishingResult: any = undefined;
             let trainingResult: any = undefined;
-            const sendAfterPhishingSimulation = request.sendAfterPhishingSimulation === true;
+            const shouldSendAfterPhishingSimulation = sendAfterPhishingSimulation === true
 
-            if (sendAfterPhishingSimulation) {
+            if (shouldSendAfterPhishingSimulation) {
                 // Special flow: Phishing → Training → Assign Phishing with Training IDs
                 logger.info('Using sendAfterPhishingSimulation flow');
-                
+
+                // Parallel Generation using Promise array for better readability
+                const generationPromises: Promise<any>[] = [];
+
                 // 1. Generate and upload phishing (no assign)
                 if (actions.includes('phishing') && toolResult.analysisReport?.recommended_next_steps?.simulations?.[0]) {
                     const simulation = toolResult.analysisReport.recommended_next_steps.simulations[0];
-                    phishingResult = await generatePhishingSimulation(simulation, executiveReport, toolResult, phishingThreadId, true);
+                    generationPromises.push(
+                        generatePhishingSimulation(simulation, executiveReport, toolResult, phishingThreadId, true)
+                            .then(result => { phishingResult = result; })
+                            .catch(error => {
+                                const err = error instanceof Error ? error : new Error(String(error));
+                                logger.error('Phishing generation failed (sendAfterPhishing flow)', { error: err.message });
+                                phishingResult = { success: false, error: err.message };
+                            })
+                    );
                 }
 
                 // 2. Generate and upload training (no assign)
                 if (actions.includes('training') && toolResult.analysisReport?.recommended_next_steps?.microlearnings?.[0]) {
                     const microlearning = toolResult.analysisReport.recommended_next_steps.microlearnings[0];
-                    trainingResult = await generateTrainingModule(microlearning, executiveReport, toolResult, trainingThreadId, true);
+                    generationPromises.push(
+                        generateTrainingModule(microlearning, executiveReport, toolResult, trainingThreadId, true)
+                            .then(result => { trainingResult = result; })
+                            .catch(error => {
+                                const err = error instanceof Error ? error : new Error(String(error));
+                                logger.error('Training generation failed (sendAfterPhishing flow)', { error: err.message });
+                                trainingResult = { success: false, error: err.message };
+                            })
+                    );
                 }
-                
+
+                // Execute both in parallel
+                if (generationPromises.length > 0) {
+                    await Promise.all(generationPromises);
+                }
+
                 // 3. Assign phishing with training IDs (phishing already uploaded)
                 if (phishingResult?.success && trainingResult?.success) {
                     logger.info('Assigning phishing with training IDs');
@@ -801,7 +842,7 @@ ${references || 'None provided'}`;
                         toolResult.userInfo?.targetUserResourceId,
                         phishingThreadId
                     );
-                    
+
                     if (assignPhishingResult?.success) {
                         phishingResult.uploadAssignResult = assignPhishingResult;
                         phishingResult.message = phishingResult.message?.replace('uploaded', 'uploaded and assigned with training');
@@ -812,7 +853,7 @@ ${references || 'None provided'}`;
             } else {
                 // Normal flow: Each generates, uploads, and assigns independently
                 logger.info('Using normal flow (independent generation and assignment)');
-                
+
                 // Generate phishing and training in parallel (with isolated thread IDs)
                 const generationPromises: Promise<any>[] = [];
 

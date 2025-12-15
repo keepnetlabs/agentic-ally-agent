@@ -27,12 +27,12 @@ export const assignPhishingTool = createTool({
         const { resourceId, languageId, targetUserResourceId, trainingId, sendTrainingLanguageId } = context;
         const name = `Phishing Campaign - ${targetUserResourceId} Agentic Ally`;
 
-        logger.info('Preparing phishing assignment for resource to user', { 
-            resourceId, 
-            languageId, 
+        logger.info('Preparing phishing assignment for resource to user', {
+            resourceId,
+            languageId,
             targetUserResourceId,
             trainingId,
-            sendTrainingLanguageId 
+            sendTrainingLanguageId
         });
 
         // Get Auth Token & Cloudflare bindings from AsyncLocalStorage

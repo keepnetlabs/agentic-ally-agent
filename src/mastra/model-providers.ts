@@ -168,7 +168,7 @@ function getModelProvider(provider: ModelProvider) {
  * Default models used across the application
  */
 export function getDefaultAgentModel() {
-    return getModel(ModelProvider.OPENAI, Model.OPENAI_GPT_4O_MINI);
+    return getModel(ModelProvider.OPENAI, Model.OPENAI_GPT_4O);
 }
 
 export function getDefaultGenerationModel() {
