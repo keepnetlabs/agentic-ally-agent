@@ -7,6 +7,15 @@ import { AGENT_CALL_TIMEOUT_MS } from '../constants';
 import { withTimeout, withRetry } from '../utils/core/resilience-utils';
 import { getLogger } from '../utils/core/logger';
 import { AutonomousRequest, AutonomousResponse } from '../types/autonomous-types';
+import {
+    buildPhishingGenerationPrompt,
+    buildPhishingGenerationPromptSimplified,
+    buildTrainingGenerationPrompt,
+    buildTrainingGenerationPromptSimplified,
+    buildUploadPrompt,
+    buildUploadAndAssignPrompt,
+    buildAssignPhishingWithTrainingPrompt,
+} from '../utils/prompts/autonomous-prompts';
 
 /**
  * Generate phishing simulation using agent (maintains agentic behavior and memory)
@@ -44,45 +53,16 @@ async function generatePhishingSimulation(
         }
     }
 
-    // Build prompts for 3-level fallback
-    const fullPrompt = `**AUTONOMOUS_EXECUTION_MODE**
-    
-    Based on the user behavior analysis in the previous context, generate the recommended phishing simulation now.
+    // Build goal-based prompts for 3-level fallback (more agentic approach)
+    const fullPrompt = buildPhishingGenerationPrompt({
+        simulation,
+        toolResult,
+    });
 
-**Recommended Simulation Strategy:**
-- Topic: ${simulation.title || 'Security Update'}
-- Difficulty: ${simulation.difficulty || 'Medium'}
-- Method: ${simulation.scenario_type === 'CLICK_ONLY' ? 'Click-Only' : simulation.scenario_type === 'DATA_SUBMISSION' ? 'Data-Submission' : 'Click-Only'}
-- Vector: ${simulation.vector || 'EMAIL'}
-- Persuasion Tactic: ${simulation.persuasion_tactic || 'Authority'}
-- Rationale: ${simulation.rationale || 'Based on user behavior analysis'}
-
-**Target Profile:**
-- Department: ${toolResult.userInfo?.department || 'All'}
-- Behavioral Triggers: ${simulation.persuasion_tactic || 'Authority'}
-
-**CRITICAL INSTRUCTIONS:**
-1. Call the phishingExecutor tool ONCE with these parameters.
-2. **MUST include landing page**: Set includeLandingPage: true in the tool call. You MUST generate a landing page.
-3. DO NOT call it multiple times - execute only once.
-4. Skip confirmation and generate immediately.
-5. If the tool returns successfully, STOP - do not call it again.
-6. **DO NOT UPLOAD or ASSIGN yet.** Just generate the content using phishingExecutor.`;
-
-    const simplifiedPrompt = `**AUTONOMOUS_EXECUTION_MODE**
-    
-    Generate a phishing simulation:
-- Topic: ${simulation.title || 'Security Update'}
-- Difficulty: ${simulation.difficulty || 'Medium'}
-- Department: ${toolResult.userInfo?.department || 'All'}
-
-**CRITICAL:**
-1. Call the phishingExecutor tool ONCE.
-2. **MUST include landing page**: Set includeLandingPage: true in the tool call. You MUST generate a landing page.
-3. DO NOT call it multiple times - execute only once.
-4. Skip confirmation and generate immediately.
-5. If the tool returns successfully, STOP - do not call it again.
-6. **DO NOT UPLOAD or ASSIGN yet.** Just generate the content using phishingExecutor.`;
+    const simplifiedPrompt = buildPhishingGenerationPromptSimplified({
+        simulation,
+        toolResult,
+    });
 
     const memoryConfig = {
         memory: {
@@ -188,18 +168,8 @@ async function uploadPhishingOnly(threadId: string): Promise<any> {
     const logger = getLogger('UploadPhishingOnly');
     try {
         logger.info('Requesting agent to upload phishing simulation (upload only)');
-        const uploadPrompt = `The phishing simulation has been generated successfully. Now you MUST upload it (do NOT assign yet).
-
-**AUTONOMOUS EXECUTION OVERRIDE:**
-- Action: **Execute Upload ONLY IMMEDIATELY**
-
-Instructions:
-1. Look for the most recent 'phishingId' in conversation history (from phishingExecutor tool result).
-2. Call 'uploadPhishing' tool with: phishingId
-3. WAIT for the tool output (resourceId, languageId).
-
-CRITICAL: DO NOT GENERATE NEW CONTENT. DO NOT CALL phishingExecutor. THIS IS AN UPLOAD TASK ONLY.
-DO NOT call assignPhishing. DO NOT ask for confirmation. EXECUTE UPLOAD NOW. STOP AFTER TOOL EXECUTION.`;
+        // Use goal-based prompt (more agentic)
+        const uploadPrompt = buildUploadPrompt('phishing');
 
         const uploadResponse = await withTimeout(
             phishingEmailAgent.generate(uploadPrompt, {
@@ -246,37 +216,8 @@ async function uploadAndAssignPhishing(
 
     try {
         logger.info('Requesting agent to upload and assign phishing simulation');
-        const uploadAssignPrompt = `The phishing simulation has been generated successfully. Now you MUST upload and assign it.
-
-**AUTONOMOUS EXECUTION OVERRIDE:**
-- User Confirmation: **ALREADY RECEIVED**
-- Target User ID: **${targetUserResourceId}**
-- Action: **Execute Upload & Assign IMMEDIATELY**
-
-Instructions:
-1. FIRST: Look for the most recent 'phishingId' in conversation history (from phishingExecutor tool result).
-2. Call 'uploadPhishing' tool with: phishingId
-3. WAIT for the tool output. The uploadPhishing tool returns:
-   {
-     success: true,
-     data: {
-       resourceId: "...",  // CRITICAL: This is scenarioResourceId if available, otherwise templateResourceId (use this for assignment)
-       scenarioResourceId: "...", // May be null - if present, resourceId will use this
-       templateResourceId: "...", // Original template ID
-       languageId: "...",   // Optional, use if available
-       phishingId: "...",
-       title: "..."
-     }
-   }
-4. THEN: Call 'assignPhishing' tool using EXACT values from step 3:
-   - resourceId: MUST be from uploadPhishing tool result data.resourceId (this is the correct ID for assignment - uses scenarioResourceId if available)
-   - languageId: FROM uploadPhishing tool result data.languageId (optional, include if available)
-   - targetUserResourceId: "${targetUserResourceId}"
-
-CRITICAL: Extract resourceId from the uploadPhishing tool's response.data.resourceId field. This field automatically uses scenarioResourceId if available (which is required by backend), otherwise falls back to templateResourceId. Do NOT use templateResourceId or scenarioResourceId directly - use data.resourceId.
-WARNING: You CANNOT call 'assignPhishing' before 'uploadPhishing' completes. Do not run them in parallel.
-CRITICAL: DO NOT GENERATE NEW CONTENT. DO NOT CALL phishingExecutor. THIS IS AN ASSIGNMENT TASK ONLY.
-DO NOT ask for confirmation. EXECUTE SEQUENCE NOW. STOP AFTER TOOL EXECUTION.`;
+        // Use goal-based prompt (more agentic)
+        const uploadAssignPrompt = buildUploadAndAssignPrompt('phishing', targetUserResourceId);
 
         const uploadAssignResponse = await withTimeout(
             phishingEmailAgent.generate(uploadAssignPrompt, {
@@ -323,41 +264,8 @@ async function assignPhishingWithTraining(
 
     try {
         logger.info('Requesting agent to assign phishing simulation with training IDs');
-        const assignPrompt = `The phishing simulation and training module have been uploaded successfully. Now you MUST assign the phishing simulation WITH training IDs.
-
-**AUTONOMOUS EXECUTION OVERRIDE:**
-- User Confirmation: **ALREADY RECEIVED**
-- Target User ID: **${targetUserResourceId}**
-- Action: **Execute Assign IMMEDIATELY (phishing already uploaded)**
-
-**IMPORTANT:** A training module was also uploaded earlier. You MUST include the training IDs when assigning the phishing simulation.
-
-Instructions:
-1. Look for the most recent phishing upload result in conversation history (from uploadPhishing tool). 
-   The uploadPhishing tool returns: { success: true, data: { resourceId: "...", scenarioResourceId: "...", templateResourceId: "...", languageId: "...", ... } }
-   Extract EXACTLY:
-   - resourceId: FROM uploadPhishing tool result data.resourceId (CRITICAL: This automatically uses scenarioResourceId if available, which is required by backend. Use this exact field, NOT templateResourceId directly, NOT phishingId)
-   - languageId: FROM uploadPhishing tool result data.languageId (optional, include if available)
-
-2. Look for the most recent training upload result in conversation history (from uploadTraining tool).
-   The uploadTraining tool returns: { success: true, data: { resourceId: "...", sendTrainingLanguageId: "...", ... } }
-   Extract EXACTLY:
-   - trainingId: FROM uploadTraining tool result data.resourceId (this is the training resourceId)
-   - sendTrainingLanguageId: FROM uploadTraining tool result data.sendTrainingLanguageId (this is the training languageId)
-
-3. Call 'assignPhishing' tool with the extracted values from steps 1 and 2:
-   - resourceId: [from step 1 - phishing resourceId from data.resourceId]
-   - languageId: [from step 1 - phishing languageId from data.languageId, optional]
-   - targetUserResourceId: "${targetUserResourceId}"
-   - trainingId: [from step 2 - training resourceId from data.resourceId]
-   - sendTrainingLanguageId: [from step 2 - training languageId from data.sendTrainingLanguageId]
-
-CRITICAL: 
-- Extract resourceId from uploadPhishing tool's response.data.resourceId field. This field automatically uses scenarioResourceId if available (required by backend), otherwise falls back to templateResourceId. Do NOT use templateResourceId or scenarioResourceId directly - always use data.resourceId.
-- Both phishing and training upload results MUST be found in conversation history. Extract the exact IDs from the tool outputs.
-- DO NOT GENERATE NEW CONTENT. DO NOT CALL phishingExecutor OR workflowExecutor. THIS IS AN ASSIGNMENT TASK ONLY.
-DO NOT call uploadPhishing again - it's already uploaded.
-DO NOT ask for confirmation. EXECUTE ASSIGN NOW. STOP AFTER TOOL EXECUTION.`;
+        // Use goal-based prompt (more agentic)
+        const assignPrompt = buildAssignPhishingWithTrainingPrompt(targetUserResourceId);
 
         const assignResponse = await withTimeout(
             phishingEmailAgent.generate(assignPrompt, {
@@ -393,18 +301,8 @@ async function uploadTrainingOnly(threadId: string): Promise<any> {
     const logger = getLogger('UploadTrainingOnly');
     try {
         logger.info('Requesting agent to upload training module (upload only)');
-        const uploadPrompt = `The training has been generated successfully. Now you MUST upload it (do NOT assign yet).
-
-**AUTONOMOUS EXECUTION OVERRIDE:**
-- Action: **Execute Upload ONLY IMMEDIATELY**
-
-Instructions:
-1. Look for the most recent 'microlearningId' in conversation history (from workflowExecutor tool result).
-2. Call 'uploadTraining' tool with: microlearningId
-3. WAIT for the tool output (resourceId, sendTrainingLanguageId).
-
-CRITICAL: DO NOT GENERATE NEW CONTENT. DO NOT CALL workflowExecutor. THIS IS AN UPLOAD TASK ONLY.
-DO NOT call assignTraining. DO NOT ask for confirmation. EXECUTE UPLOAD NOW. STOP AFTER TOOL EXECUTION.`;
+        // Use goal-based prompt (more agentic)
+        const uploadPrompt = buildUploadPrompt('training');
 
         const uploadResponse = await withTimeout(
             microlearningAgent.generate(uploadPrompt, {
@@ -451,22 +349,8 @@ async function uploadAndAssignTraining(
 
     try {
         logger.info('Requesting agent to upload and assign training');
-        const uploadAssignPrompt = `The training has been generated successfully. Now you MUST upload and assign it.
-
-**AUTONOMOUS EXECUTION OVERRIDE:**
-- User Confirmation: **ALREADY RECEIVED**
-- Target User ID: **${targetUserResourceId}**
-- Action: **Execute Upload & Assign IMMEDIATELY**
-
-Instructions:
-1. FIRST: Call 'uploadTraining' tool.
-2. WAIT for the tool output (resourceId).
-3. THEN: Call 'assignTraining' tool using the resourceId from step 1.
-   - targetUserResourceId: "${targetUserResourceId}"
-
-WARNING: You CANNOT call 'assignTraining' before 'uploadTraining' completes. Do not run them in parallel.
-CRITICAL: DO NOT GENERATE NEW CONTENT. DO NOT CALL workflowExecutor. THIS IS AN UPLOAD/ASSIGN TASK ONLY.
-DO NOT ask for confirmation. EXECUTE SEQUENCE NOW. STOP AFTER TOOL EXECUTION.`;
+        // Use goal-based prompt (more agentic)
+        const uploadAssignPrompt = buildUploadAndAssignPrompt('training', targetUserResourceId);
 
         const uploadAssignResponse = await withTimeout(
             microlearningAgent.generate(uploadAssignPrompt, {
@@ -540,48 +424,18 @@ async function generateTrainingModule(
     const level = 'Intermediate';
     const rationale = microlearning.rationale || 'Based on user behavior analysis';
 
-    // Build prompts for 3-level fallback
-    const fullPrompt = `**AUTONOMOUS_EXECUTION_MODE**
-    
-    Based on the user behavior analysis in the previous context, generate the recommended training module now.
+    // Build goal-based prompts for 3-level fallback (more agentic approach)
+    const fullPrompt = buildTrainingGenerationPrompt({
+        microlearning,
+        department,
+        level,
+    });
 
-**Recommended Training Strategy:**
-- Topic: ${topic}
-- Objective: ${objective}
-- Department: ${department}
-- Level: ${level}
-- Rationale: ${rationale}
-
-**Target Profile:**
-- Department: ${toolResult.userInfo?.department || 'All'}
-- User Context: See previous orchestrator context for detailed behavioral analysis
-
-**AUTONOMOUS EXECUTION OVERRIDE:**
-- User Confirmation: **ALREADY RECEIVED**
-- Information Gathering: **COMPLETE**
-- Summary: **SKIPPED BY SYSTEM**
-- ACTION: **Execute State 3 IMMEDIATELY**
-
-Instruction: Call the workflowExecutor tool now with these parameters.
-- workflowType: 'create-microlearning'
-- prompt: "${topic}"
-- department: "${department}"
-- level: "${level}"
-- additionalContext: [Copy the ENTIRE orchestrator context from previous message]
-- priority: 'medium'
-
-DO NOT ask questions. DO NOT show summary. EXECUTE NOW.
-**DO NOT UPLOAD or ASSIGN yet.** Just generate the content.`;
-
-    const simplifiedPrompt = `**AUTONOMOUS_EXECUTION_MODE**
-    
-    Generate training module:
-- Topic: ${topic}
-- Department: ${department}
-- Level: ${level}
-
-Execute workflowExecutor tool with workflowType: 'create-microlearning', prompt: "${topic}", department: "${department}", level: "${level}". Skip confirmation.
-**DO NOT UPLOAD or ASSIGN yet.** Just generate the content.`;
+    const simplifiedPrompt = buildTrainingGenerationPromptSimplified({
+        microlearning,
+        department,
+        level,
+    });
 
     const memoryConfig = {
         memory: {

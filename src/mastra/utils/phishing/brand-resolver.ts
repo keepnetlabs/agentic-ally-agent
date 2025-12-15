@@ -1,6 +1,7 @@
 import { generateText } from 'ai';
 import { DEFAULT_GENERIC_LOGO } from '../landing-page/image-validator';
 import { getLogger } from '../core/logger';
+import { cleanResponse } from '../content-processors/json-cleaner';
 
 const logger = getLogger('BrandResolver');
 
@@ -96,6 +97,100 @@ export async function resolveLogoAndBrand(
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error));
     logger.warn('Logo and brand resolution failed, using default logo', {
+      error: err.message,
+      stack: err.stack
+    });
+    return {
+      logoUrl: DEFAULT_GENERIC_LOGO,
+      brandName: null,
+      isRecognizedBrand: false
+    };
+  }
+}
+
+/**
+ * Generate a contextual brand name and logo URL based on phishing scenario analysis
+ * Used when brand detection fails - generates a realistic brand that fits the scenario context
+ * 
+ * @param scenario - Phishing scenario description
+ * @param category - Phishing category (e.g., "Invoice", "Security Alert")
+ * @param fromName - Original sender name from analysis
+ * @param model - AI model instance for brand generation
+ * @returns LogoAndBrandInfo with generated brand name and logo URL (or default)
+ */
+export async function generateContextualBrand(
+  scenario: string,
+  category: string,
+  fromName: string,
+  model: any
+): Promise<LogoAndBrandInfo> {
+  try {
+    logger.info('Generating contextual brand based on scenario analysis', {
+      scenario: scenario.substring(0, 100),
+      category,
+      fromName
+    });
+
+    const response = await generateText({
+      model,
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a brand naming expert. Based on the phishing scenario analysis, suggest a realistic, contextually appropriate brand/company name that fits the scenario. Return ONLY valid JSON: { "suggestedBrandName": "Brand Name", "domain": "brandname.com" or null }. The brand name should be realistic and fit the scenario context (e.g., for "invoice" scenarios: accounting/finance brands, for "security" scenarios: tech/security brands). Keep it simple and realistic - 1-2 words maximum. If you suggest a domain, make it realistic but generic (e.g., "securepay.com", "invoicepro.com").'
+        },
+        {
+          role: 'user',
+          content: `Scenario: "${scenario}"\nCategory: "${category}"\nFrom Name: "${fromName}"\n\nSuggest a realistic brand name and optional domain that fits this phishing scenario context. Return ONLY valid JSON: { "suggestedBrandName": "Brand Name", "domain": "brandname.com" or null }`
+        }
+      ],
+      temperature: 0.7 // Higher temperature for creativity
+    });
+
+    // Clean and parse JSON response
+    const cleanedJson = cleanResponse(response.text, 'contextual-brand-generation');
+    const parsed = JSON.parse(cleanedJson);
+
+    const suggestedBrandName = parsed.suggestedBrandName?.trim();
+    const domain = parsed.domain?.toLowerCase().trim();
+
+    if (suggestedBrandName && suggestedBrandName.length > 0) {
+      // If domain is provided, try to use Clearbit logo
+      let logoUrl = DEFAULT_GENERIC_LOGO;
+
+      if (domain && domain.includes('.')) {
+        const cleanDomain = domain.replace(/['"]/g, '').split(/[\s\n]/)[0];
+        if (cleanDomain.includes('.')) {
+          logoUrl = `https://logo.clearbit.com/${cleanDomain}`;
+          logger.info('Generated contextual brand with Clearbit logo', {
+            brandName: suggestedBrandName,
+            domain: cleanDomain,
+            logoUrl
+          });
+        }
+      } else {
+        logger.info('Generated contextual brand name (using default logo)', {
+          brandName: suggestedBrandName,
+          logoUrl: DEFAULT_GENERIC_LOGO
+        });
+      }
+
+      return {
+        logoUrl,
+        brandName: suggestedBrandName,
+        isRecognizedBrand: false, // Still not a recognized brand, just contextual
+      };
+    }
+
+    // Fallback if brand name generation failed
+    logger.warn('Failed to generate contextual brand name, using default');
+    return {
+      logoUrl: DEFAULT_GENERIC_LOGO,
+      brandName: null,
+      isRecognizedBrand: false
+    };
+  } catch (error) {
+    const err = error instanceof Error ? error : new Error(String(error));
+    logger.warn('Contextual brand generation failed, using default', {
       error: err.message,
       stack: err.stack
     });

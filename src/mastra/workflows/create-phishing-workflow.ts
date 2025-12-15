@@ -24,7 +24,7 @@ import {
   buildEmailPrompts,
   buildLandingPagePrompts
 } from '../utils/prompt-builders/phishing-prompts';
-import { resolveLogoAndBrand } from '../utils/phishing/brand-resolver';
+import { resolveLogoAndBrand, generateContextualBrand } from '../utils/phishing/brand-resolver';
 import { DEFAULT_GENERIC_LOGO, normalizeImgAttributes } from '../utils/landing-page/image-validator';
 import { retryGenerationWithStrongerPrompt } from '../utils/phishing/retry-generator';
 import { getLogger } from '../utils/core/logger';
@@ -107,10 +107,33 @@ const analyzeRequest = createStep({
 
       // Resolve logo and brand detection early (once, in analysis step)
       logger.info('Detecting brand and resolving logo URL');
-      const logoInfo = await resolveLogoAndBrand(parsedResult.fromName, parsedResult.scenario, aiModel);
+      let logoInfo = await resolveLogoAndBrand(parsedResult.fromName, parsedResult.scenario, aiModel);
+
+      // If brand detection failed, sometimes generate a contextual brand name and logo based on analysis
+      // This adds variety and makes phishing simulations more realistic
+      if (!logoInfo.isRecognizedBrand && Math.random() < 0.5) {
+        logger.info('Brand detection failed, generating contextual brand based on analysis');
+        const contextualBrandInfo = await generateContextualBrand(
+          parsedResult.scenario,
+          parsedResult.category,
+          parsedResult.fromName,
+          aiModel
+        );
+
+        // If contextual brand was generated successfully, use it
+        if (contextualBrandInfo.brandName) {
+          logoInfo = contextualBrandInfo;
+          logger.info('Using generated contextual brand', {
+            brandName: logoInfo.brandName,
+            logoUrlPrefix: logoInfo.logoUrl.substring(0, 60)
+          });
+        }
+      }
+
       logger.info('Brand detection complete', {
         brandName: logoInfo.brandName || 'Generic',
-        logoUrlPrefix: logoInfo.logoUrl.substring(0, 60)
+        logoUrlPrefix: logoInfo.logoUrl.substring(0, 60),
+        isRecognizedBrand: logoInfo.isRecognizedBrand
       });
 
       return {
