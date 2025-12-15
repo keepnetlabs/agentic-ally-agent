@@ -75,5 +75,10 @@ export type CloudflareEnv = Record<string, unknown> & {
   agentic_ally_memory?: unknown; // D1Database
   MICROLEARNING_KV?: unknown; // KVNamespace
   CRUD_WORKER?: unknown; // Service
+  AUTONOMOUS_WORKFLOW?: WorkflowBinding<AutonomousRequestBody>;
 };
+
+export interface WorkflowBinding<TParams = unknown, TResult = unknown> {
+  create: (options: { params: TParams }) => Promise<{ id: string } & TResult>;
+}
 

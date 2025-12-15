@@ -1,7 +1,7 @@
 // src/agents/microlearning-agent.ts
 import { Agent } from '@mastra/core/agent';
 import { workflowExecutorTool } from '../tools/orchestration';
-import { knowledgeSearchTool, reasoningTool } from '../tools/analysis';
+import { reasoningTool } from '../tools/analysis';
 // Removed getUserInfoTool - relying on history/defaults
 import { uploadTrainingTool, assignTrainingTool } from '../tools/user-management';
 import { getDefaultAgentModel } from '../model-providers';
@@ -183,7 +183,7 @@ Use workflow-executor tool with:
 - workflowType: 'add-language'
 - targetLanguage: [BCP-47 code: language-REGION (e.g.,en-gb, tr-tr, en-us, de-de, fr-fr,fr-ca, es-es, pt-br, zh-cn, ja-jp, ar-sa, ko-kr)]
 - sourceLanguage: [BCP-47 code: language-REGION (e.g.,en-gb, tr-tr, en-us, de-de, fr-fr,fr-ca, es-es, pt-br, zh-cn, ja-jp, ar-sa, ko-kr)]
-- existingMicrolearningId: [use microlearningId from recent creation or find using knowledge-search]
+- existingMicrolearningId: [use microlearningId from recent creation or conversation history]
 - department: [extract from recent conversation or from created training metadata - IMPORTANT: preserve original department]
 - modelProvider: [optional, from context if provided: OPENAI, WORKERS_AI, GOOGLE]
 - model: [optional, from context if provided: e.g., OPENAI_GPT_4O_MINI, WORKERS_AI_GPT_OSS_120B]
@@ -191,7 +191,7 @@ Use workflow-executor tool with:
 **Add Multiple Languages (Parallel Processing - 2-12 Languages):**
 When user requests multiple languages (e.g., "Add French, German, Spanish"), use workflow-executor tool with:
 - workflowType: 'add-multiple-languages'
-- existingMicrolearningId: [use microlearningId from recent creation or find using knowledge-search]
+- existingMicrolearningId: [use microlearningId from recent creation or conversation history]
 - targetLanguages: [array of BCP-47 codes: e.g., ["fr-fr", "de-de", "es-es", "pt-br", "ja-jp"]]
 - department: [extract from recent conversation or from created training metadata]
 - sourceLanguage: [optional, usually auto-detected]
@@ -284,14 +284,12 @@ export const microlearningAgent = new Agent({
   tools: {
     showReasoning: reasoningTool,
     workflowExecutor: workflowExecutorTool,
-    knowledgeSearch: knowledgeSearchTool,
     uploadTraining: uploadTrainingTool,
     assignTraining: assignTrainingTool,
-    // getUserInfoTool removed
   },
   memory: new Memory({
     options: {
-      lastMessages: 10,
+      lastMessages: 15, // Increased from 10 for better context awareness without significant performance impact
       workingMemory: { enabled: true },
     },
   }),

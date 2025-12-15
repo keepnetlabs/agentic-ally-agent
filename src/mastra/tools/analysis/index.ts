@@ -7,8 +7,6 @@
 export { analyzeUserPromptTool } from './analyze-user-prompt-tool';
 export type { AnalyzeUserPromptInput, AnalyzeUserPromptOutput } from './analyze-user-prompt-tool';
 
-export { knowledgeSearchTool } from './knowledge-search-tool';
-
 export { codeReviewCheckTool } from './code-review-check-tool';
 export type { CodeReviewCheckInput, CodeReviewCheckOutput } from './code-review-check-tool';
 

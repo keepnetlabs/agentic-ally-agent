@@ -165,7 +165,7 @@ export const phishingEmailAgent = new Agent({
   },
   memory: new Memory({
     options: {
-      lastMessages: 10,
+      lastMessages: 15, // Increased from 10 for better context awareness without significant performance impact
       workingMemory: { enabled: true },
     },
   }),

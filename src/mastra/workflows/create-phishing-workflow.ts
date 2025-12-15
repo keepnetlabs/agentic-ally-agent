@@ -242,19 +242,13 @@ const generateEmail = createStep({
       if (parsedResult.template) {
         let cleanedTemplate = sanitizeHtml(parsedResult.template);
 
-        // Replace {CUSTOMMAINLOGO} tag FIRST (before fixBrokenImages)
+        // Replace {CUSTOMMAINLOGO} tag with {COMPANYLOGO} tag in email template
         if (cleanedTemplate.includes('{CUSTOMMAINLOGO}')) {
-          const logoUrl = analysis.logoUrl || DEFAULT_GENERIC_LOGO;
-          // Replace {CUSTOMMAINLOGO} tag with logo URL
-          cleanedTemplate = cleanedTemplate.replace(/src=['"]\{CUSTOMMAINLOGO\}['"]/gi, `src='${logoUrl}'`);
+          // Replace {CUSTOMMAINLOGO} tag with {COMPANYLOGO} tag (not URL, keep as merge tag)
+          cleanedTemplate = cleanedTemplate.replace(/src=['"]\{CUSTOMMAINLOGO\}['"]/gi, `src='{COMPANYLOGO}'`);
           // Also handle cases where tag might be in the value without quotes (edge case)
-          cleanedTemplate = cleanedTemplate.replace(/\{CUSTOMMAINLOGO\}/g, logoUrl);
-          // Normalize img attributes and add centering styles
-          cleanedTemplate = normalizeImgAttributes(cleanedTemplate);
-          logger.info('Replaced CUSTOMMAINLOGO tag with logo from analysis', {
-            logoUrlPrefix: logoUrl.substring(0, 80),
-            truncated: logoUrl.length > 80
-          });
+          cleanedTemplate = cleanedTemplate.replace(/\{CUSTOMMAINLOGO\}/g, '{COMPANYLOGO}');
+          logger.info('Replaced CUSTOMMAINLOGO tag with COMPANYLOGO tag in email template');
         }
 
         // Fix broken images with real HTTP validation (same as landing pages)

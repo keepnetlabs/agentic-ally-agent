@@ -38,7 +38,6 @@ const logger = new PinoLogger({
   name: 'Mastra',
   level: 'info',
 });
-
 // Middleware to inject D1 database into ExampleRepo
 const injectD1Database = async (c: Context, next: Next) => {
   // Check if we have D1 database in the environment (binding name from wrangler)
@@ -320,7 +319,7 @@ export const mastra = new Mastra({
           try {
             const body = await c.req.json<AutonomousRequestBody>();
             const { token, firstName, lastName, actions, sendAfterPhishingSimulation } = body;
-
+            const env = c.env as CloudflareEnv | undefined;
             // Validation
             if (!token) {
               return c.json({ success: false, error: 'Missing token' }, 400);
@@ -337,23 +336,50 @@ export const mastra = new Mastra({
 
             logger.info('autonomous_request_received', { firstName, lastName, actionsCount: actions.length });
 
-            // Fire-and-forget pattern:
-            // 1. Return immediate success response
-            // 2. Continue processing in background (using c.executionCtx.waitUntil if available)
+            // Primary path: Cloudflare Workflow binding
+            try {
+              const workflow = env?.AUTONOMOUS_WORKFLOW;
+              if (workflow && workflow.create) {
+                const instance = await workflow.create({
+                  params: {
+                    token,
+                    firstName,
+                    lastName,
+                    actions,
+                    sendAfterPhishingSimulation
+                  }
+                });
 
+                logger.info('autonomous_workflow_started', { workflowId: instance?.id });
+                return c.json({
+                  success: true,
+                  workflowId: instance?.id ?? null,
+                  status: 'started',
+                  firstName,
+                  lastName,
+                  actions
+                }, 202);
+              }
+              logger.warn('autonomous_workflow_binding_missing_falling_back');
+            } catch (workflowError) {
+              logger.warn('autonomous_workflow_start_failed_falling_back', {
+                error: workflowError instanceof Error ? workflowError.message : String(workflowError)
+              });
+            }
+
+            // Fallback 1: run in background via waitUntil if available
             const executionPromise = executeAutonomousGeneration({
               token,
               firstName,
               lastName,
               actions: actions as ('training' | 'phishing')[],
-              sendAfterPhishingSimulation,
+              sendAfterPhishingSimulation
             }).catch(err => {
               logger.error('autonomous_background_execution_failed', {
                 error: err instanceof Error ? err.message : String(err)
               });
             });
 
-            // Safely check for Cloudflare Workers execution context
             try {
               // @ts-ignore - ExecutionContext check for Cloudflare Workers
               if (c.executionCtx && typeof c.executionCtx.waitUntil === 'function') {
@@ -364,8 +390,7 @@ export const mastra = new Mastra({
                 throw new Error('No execution context');
               }
             } catch (e) {
-              // Fallback for environments without waitUntil (like local dev server):
-              // We just let the promise float. In Node.js/Local dev this works fine.
+              // Fallback 2: floating promise (local dev / platforms without waitUntil)
               logger.warn('waituntil_not_available_using_floating_promise');
             }
 

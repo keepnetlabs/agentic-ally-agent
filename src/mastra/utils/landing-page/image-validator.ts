@@ -11,6 +11,61 @@ const logger = getLogger('ImageValidator');
 // Modern, professional icon-only logo with gradient background
 export const DEFAULT_GENERIC_LOGO = "https://imagedelivery.net/KxWh-mxPGDbsqJB3c5_fmA/761ba07b-5af5-443c-95b6-9499596afd00/public";
 
+// Cache for default logo base64 (never expires - logo rarely changes)
+let cachedDefaultLogoBase64: string | null = null;
+
+/**
+ * Get base64 encoded version of DEFAULT_GENERIC_LOGO for Gmail compatibility
+ * Gmail proxies external images, so base64 data URIs are more reliable
+ * This function fetches the logo and converts it to base64 at runtime (cached)
+ * @returns Promise<string> - Base64 data URI
+ */
+export async function getDefaultGenericLogoBase64(): Promise<string> {
+    // Return cached version if available
+    if (cachedDefaultLogoBase64) {
+        return cachedDefaultLogoBase64;
+    }
+
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
+
+        const response = await fetch(DEFAULT_GENERIC_LOGO, {
+            signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+            logger.warn('Failed to fetch default logo for base64 conversion', {
+                status: response.status
+            });
+            // Return empty 1x1 transparent PNG as fallback
+            const fallback = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+            cachedDefaultLogoBase64 = fallback; // Cache fallback too
+            return fallback;
+        }
+
+        const arrayBuffer = await response.arrayBuffer();
+        const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+
+        // Detect content type from response or default to PNG
+        const contentType = response.headers.get('content-type') || 'image/png';
+
+        const dataUri = `data:${contentType};base64,${base64}`;
+        cachedDefaultLogoBase64 = dataUri; // Cache successful result
+        return dataUri;
+    } catch (error) {
+        logger.warn('Error converting default logo URL to base64', {
+            error: error instanceof Error ? error.message : String(error)
+        });
+        // Return empty 1x1 transparent PNG as fallback
+        const fallback = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+        cachedDefaultLogoBase64 = fallback; // Cache fallback too
+        return fallback;
+    }
+}
+
 /**
  * Normalize img tag attributes and ensure proper centering styles
  * Ensures img tags have proper centering styles (display: block; margin: 0 auto)

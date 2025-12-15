@@ -1,11 +1,15 @@
 // src/mastra/types/autonomous-types.ts
 
+import type { CloudflareEnv } from './api-types';
+
 export interface AutonomousRequest {
     token: string;
     firstName: string;
     lastName?: string;
     actions: ('training' | 'phishing')[];
     sendAfterPhishingSimulation?: boolean;
+    env?: CloudflareEnv;
+    mastra?: any; // Mastra instance for agent access - optional for backward compatibility
 }
 
 export interface AutonomousResponse {

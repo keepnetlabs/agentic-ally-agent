@@ -25,3 +25,8 @@ preview_id = "c96ef0b5a2424edca1426f6e7a85b9dc"
 [[services]]
 binding = "CRUD_WORKER"
 service = "crud-training-worker"
+
+# Cloudflare Workflows binding for autonomous generation
+[[workflows]]
+name = "AUTONOMOUS_WORKFLOW"
+class_name = "AutonomousWorkflow"
