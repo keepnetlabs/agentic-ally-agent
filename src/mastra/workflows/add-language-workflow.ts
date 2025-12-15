@@ -7,6 +7,7 @@ import { normalizeDepartmentName } from '../utils/language/language-utils';
 import { validateInboxStructure, correctInboxStructure, detectJsonCorruption } from '../utils/validation/json-validation-utils';
 import { MODEL_PROVIDERS } from '../constants';
 import { getLogger } from '../utils/core/logger';
+import { waitForKVConsistency, buildExpectedKVKeys } from '../utils/kv-consistency';
 
 const logger = getLogger('AddLanguageWorkflow');
 
@@ -408,10 +409,9 @@ const combineResultsStep = createStep({
       throw new Error('Language translation failed - cannot generate training URL');
     }
 
-    // Wait 5 seconds to ensure Cloudflare KV data is consistent before returning URL to UI
-    logger.info('Waiting 5 seconds for Cloudflare KV consistency');
-    await new Promise(resolve => setTimeout(resolve, 5000));
-    logger.info('KV consistency check complete');
+    // Verify KV consistency before returning URL to UI
+    const expectedKeys = buildExpectedKVKeys(microlearningId, targetLanguage, normalizedDept);
+    await waitForKVConsistency(microlearningId, expectedKeys);
 
     // Generate training URL
     const baseUrl = encodeURIComponent(`https://microlearning-api.keepnet-labs-ltd-business-profile4086.workers.dev/microlearning/${microlearningId}`);

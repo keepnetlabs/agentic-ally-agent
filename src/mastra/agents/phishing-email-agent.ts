@@ -156,6 +156,10 @@ This will take about ${PHISHING.TIMING.GENERATION_SECONDS_MIN}-${PHISHING.TIMING
 
 export const phishingEmailAgent = new Agent({
   name: AGENT_NAMES.PHISHING,
+  description: `Generates realistic phishing email simulations for security awareness training.
+    Creates deceptive email content and landing pages based on user behavioral profiles and psychological triggers.
+    Supports multiple difficulty levels (Easy, Medium, Hard) and attack methods (Click-Only, Data-Submission).
+    Handles platform integration for uploading and assigning simulations to users.`,
   instructions: buildPhishingInstructions(),
   model: getDefaultAgentModel(),
   tools: {

@@ -28,6 +28,8 @@ import { resolveLogoAndBrand, generateContextualBrand } from '../utils/phishing/
 import { DEFAULT_GENERIC_LOGO, normalizeImgAttributes } from '../utils/landing-page/image-validator';
 import { retryGenerationWithStrongerPrompt } from '../utils/phishing/retry-generator';
 import { getLogger } from '../utils/core/logger';
+import { waitForKVConsistency, buildExpectedPhishingKeys } from '../utils/kv-consistency';
+import { withRetry } from '../utils/core/resilience-utils';
 
 // --- Steps ---
 
@@ -72,11 +74,16 @@ const analyzeRequest = createStep({
     messages.push({ role: 'user', content: userPrompt });
 
     try {
-      const response = await generateText({
-        model: aiModel,
-        messages,
-        temperature: 0.7,
-      });
+      const response = await withRetry(
+        async () => {
+          return await generateText({
+            model: aiModel,
+            messages,
+            temperature: 0.7,
+          });
+        },
+        'phishing-scenario-analysis'
+      );
 
       // Extract reasoning if available (Workers AI returns it)
       const reasoning = (response as any).response?.body?.reasoning;
@@ -136,6 +143,31 @@ const analyzeRequest = createStep({
         isRecognizedBrand: logoInfo.isRecognizedBrand
       });
 
+      // Detect industry once in analysis step (avoid duplicate calls in email/landing page steps)
+      logger.info('Detecting industry for consistent branding');
+      let industryDesign = await detectIndustry(parsedResult.fromName, parsedResult.scenario, aiModel);
+
+      // Override with brand colors if available (more accurate for recognized brands)
+      if (logoInfo.brandColors && logoInfo.isRecognizedBrand) {
+        industryDesign = {
+          ...industryDesign,
+          colors: {
+            primary: logoInfo.brandColors.primary,
+            secondary: logoInfo.brandColors.secondary,
+            accent: logoInfo.brandColors.accent,
+            gradient: `linear-gradient(135deg, ${logoInfo.brandColors.primary}, ${logoInfo.brandColors.accent})`,
+          }
+        };
+        logger.info('Using brand colors for industry design', {
+          brandName: logoInfo.brandName,
+          primary: logoInfo.brandColors.primary,
+          secondary: logoInfo.brandColors.secondary,
+          accent: logoInfo.brandColors.accent
+        });
+      } else {
+        logger.info('Using detected industry design', { industry: industryDesign.industry });
+      }
+
       return {
         ...parsedResult,
         additionalContext, // Pass through user behavior context
@@ -151,6 +183,8 @@ const analyzeRequest = createStep({
         brandName: logoInfo.brandName,
         isRecognizedBrand: logoInfo.isRecognizedBrand,
         brandColors: logoInfo.brandColors, // Brand colors if available
+        // Industry design (detected once, reused in email/landing page steps)
+        industryDesign: industryDesign,
       };
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
@@ -168,7 +202,7 @@ const generateEmail = createStep({
   execute: async ({ inputData }) => {
     const logger = getLogger('GeneratePhishingEmail');
     const analysis = inputData;
-    const { language, modelProvider, model, difficulty, includeEmail, includeLandingPage } = analysis;
+    const { language, modelProvider, model, difficulty, includeEmail, includeLandingPage, industryDesign } = analysis;
 
     // If email generation is disabled, skip this step but pass context
     if (includeEmail === false) {
@@ -185,31 +219,13 @@ const generateEmail = createStep({
 
     logger.info('Starting phishing email content generation', { scenario: analysis.scenario, language, method: analysis.method, difficulty });
 
-    const aiModel = getModelWithOverride(modelProvider, model);
-
-    // Detect industry for consistent branding with landing page
-    let industryDesign = detectIndustry(analysis.fromName, analysis.scenario);
-
-    // Override with brand colors if available (more accurate for recognized brands)
-    if (analysis.brandColors && analysis.isRecognizedBrand) {
-      industryDesign = {
-        ...industryDesign,
-        colors: {
-          primary: analysis.brandColors.primary,
-          secondary: analysis.brandColors.secondary,
-          accent: analysis.brandColors.accent,
-          gradient: `linear-gradient(135deg, ${analysis.brandColors.primary}, ${analysis.brandColors.accent})`, // Generate gradient from brand colors
-        }
-      };
-      logger.info('Using brand colors', {
-        brandName: analysis.brandName,
-        primary: analysis.brandColors.primary,
-        secondary: analysis.brandColors.secondary,
-        accent: analysis.brandColors.accent
-      });
-    } else {
-      logger.info('Detected industry for email', { industry: industryDesign.industry });
+    // Validate industry design from analysis step (already detected, no need to call again)
+    if (!industryDesign) {
+      throw new Error('Industry design missing from analysis step');
     }
+    logger.info('Using industry design from analysis', { industry: industryDesign.industry });
+
+    const aiModel = getModelWithOverride(modelProvider, model);
 
     // Build prompts using prompt builder
     const { systemPrompt, userPrompt } = buildEmailPrompts({
@@ -220,19 +236,24 @@ const generateEmail = createStep({
     });
 
     try {
-      // First attempt
+      // First attempt with automatic retry (withRetry handles transient errors)
       let response;
       let parsedResult;
 
       try {
-        response = await generateText({
-          model: aiModel,
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userPrompt }
-          ],
-          temperature: 0.8, // Increased from 0.7 for more creative email variations while maintaining quality
-        });
+        response = await withRetry(
+          async () => {
+            return await generateText({
+              model: aiModel,
+              messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: userPrompt }
+              ],
+              temperature: 0.8
+            });
+          },
+          'phishing-email-generation'
+        );
 
         // Extract reasoning if available (Workers AI returns it)
         const emailReasoning = (response as any).response?.body?.reasoning;
@@ -246,7 +267,10 @@ const generateEmail = createStep({
         const cleanedJson = cleanResponse(response.text, 'phishing-email-content');
         parsedResult = JSON.parse(cleanedJson);
       } catch (error) {
-        // Retry with stronger prompt
+        // Level 2 fallback: Retry with stronger prompt (for JSON parse errors, content issues)
+        logger.warn('Primary generation failed, using stronger prompt retry', {
+          error: error instanceof Error ? error.message : String(error)
+        });
         const retryResult = await retryGenerationWithStrongerPrompt(
           aiModel,
           systemPrompt,
@@ -331,35 +355,17 @@ const generateLandingPage = createStep({
 
     if (!analysis) throw new Error('Analysis data missing from previous step');
 
-    const { language, modelProvider, model, difficulty, method, scenario, name, description } = analysis;
+    const { language, modelProvider, model, difficulty, method, scenario, name, description, industryDesign } = analysis;
 
     logger.info('Starting landing page generation', { method, difficulty });
 
-    const aiModel = getModelWithOverride(modelProvider, model);
-
-    // Detect industry for brand-appropriate design system
-    let industryDesign = detectIndustry(fromName, scenario);
-
-    // Override with brand colors if available (more accurate for recognized brands)
-    if (analysis.brandColors && analysis.isRecognizedBrand) {
-      industryDesign = {
-        ...industryDesign,
-        colors: {
-          primary: analysis.brandColors.primary,
-          secondary: analysis.brandColors.secondary,
-          accent: analysis.brandColors.accent,
-          gradient: `linear-gradient(135deg, ${analysis.brandColors.primary}, ${analysis.brandColors.accent})`, // Generate gradient from brand colors
-        }
-      };
-      logger.info('Using brand colors', {
-        brandName: analysis.brandName,
-        primary: analysis.brandColors.primary,
-        secondary: analysis.brandColors.secondary,
-        accent: analysis.brandColors.accent
-      });
-    } else {
-      logger.info('Detected industry', { industry: industryDesign.industry });
+    // Validate industry design from analysis step (already detected, no need to call again)
+    if (!industryDesign) {
+      throw new Error('Industry design missing from analysis step');
     }
+    logger.info('Using industry design from analysis', { industry: industryDesign.industry });
+
+    const aiModel = getModelWithOverride(modelProvider, model);
 
     // Determine required pages based on method
     const requiredPages = (LANDING_PAGE.FLOWS[method as keyof typeof LANDING_PAGE.FLOWS] || LANDING_PAGE.FLOWS['Click-Only']) as readonly string[];
@@ -417,11 +423,16 @@ const generateLandingPage = createStep({
 
     try {
       try {
-        response = await generateText({
-          model: aiModel,
-          messages: messages,
-          temperature: 0.8,
-        });
+        response = await withRetry(
+          async () => {
+            return await generateText({
+              model: aiModel,
+              messages: messages,
+              temperature: 0.8,
+            });
+          },
+          'phishing-landing-page-generation'
+        );
 
         // Reasoning handling
         const lpReasoning = (response as any).response?.body?.reasoning;
@@ -432,7 +443,10 @@ const generateLandingPage = createStep({
         const cleanedJson = cleanResponse(response.text, 'landing-page');
         parsedResult = JSON.parse(cleanedJson);
       } catch (error) {
-        // Retry with stronger prompt
+        // Level 2 fallback: Retry with stronger prompt (for JSON parse errors, content issues)
+        logger.warn('Primary landing page generation failed, using stronger prompt retry', {
+          error: error instanceof Error ? error.message : String(error)
+        });
         const retryResult = await retryGenerationWithStrongerPrompt(
           aiModel,
           systemPrompt,
@@ -540,6 +554,16 @@ const savePhishingContent = createStep({
     if (inputData.landingPage) {
       await kvService.savePhishingLandingPage(phishingId, inputData, language);
     }
+
+    // Verify KV consistency before returning phishing ID
+    // Use phishing namespace ID to check consistency
+    const expectedKeys = buildExpectedPhishingKeys(
+      phishingId,
+      language,
+      !!inputData.template,
+      !!inputData.landingPage
+    );
+    await waitForKVConsistency(phishingId, expectedKeys, 'f6609d79aa2642a99584b05c64ecaa9f');
 
     return {
       ...inputData,

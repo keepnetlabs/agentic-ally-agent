@@ -14,8 +14,6 @@ export {
 // Industry detection and design systems
 export {
     detectIndustry,
-    getSupportedIndustries,
-    getIndustryKeywords,
     type IndustryDesign
 } from './industry-detector';
 

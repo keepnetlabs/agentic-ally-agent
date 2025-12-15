@@ -60,6 +60,26 @@ export const AnalysisSchema = z.object({
         secondary: z.string().describe('Secondary brand color in hex format (e.g., #000000 for Amazon)'),
         accent: z.string().describe('Accent brand color in hex format'),
     }).optional().describe('Authentic brand colors for recognized brands (primary, secondary, accent)'),
+    // Industry detection (detected once in analysis step, reused in email/landing page steps)
+    industryDesign: z.object({
+        industry: z.string(),
+        colors: z.object({
+            primary: z.string(),
+            secondary: z.string(),
+            accent: z.string(),
+            gradient: z.string(),
+        }),
+        typography: z.object({
+            headingClass: z.string(),
+            bodyClass: z.string(),
+        }),
+        patterns: z.object({
+            cardStyle: z.string(),
+            buttonStyle: z.string(),
+            inputStyle: z.string(),
+        }),
+        logoExample: z.string(),
+    }).optional().describe('Detected industry design system (colors, typography, patterns)'),
     // Passthrough fields
     difficulty: z.enum(PHISHING.DIFFICULTY_LEVELS).optional(),
     language: z.string().optional(),

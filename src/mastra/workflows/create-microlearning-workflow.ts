@@ -10,6 +10,7 @@ import { generateMicrolearningId, normalizeDepartmentName } from '../utils/langu
 import { MODEL_PROVIDERS, TRAINING_LEVELS, DEFAULT_TRAINING_LEVEL, PRIORITY_LEVELS, DEFAULT_PRIORITY } from '../constants';
 import { StreamWriterSchema } from '../types/stream-writer';
 import { getLogger } from '../utils/core/logger';
+import { waitForKVConsistency, buildExpectedKVKeys } from '../utils/kv-consistency';
 
 const logger = getLogger('CreateMicrolearningWorkflow');
 
@@ -250,10 +251,9 @@ const createInboxStep = createStep({
     const inboxUrl = encodeURIComponent(`inbox/${normalizedDept}`);
     const trainingUrl = `https://microlearning.pages.dev/?baseUrl=${baseUrl}&langUrl=${langUrl}&inboxUrl=${inboxUrl}&isEditMode=true`;
 
-    // Wait 5 seconds to ensure Cloudflare KV data is consistent before returning URL to UI
-    logger.info('Waiting 5 seconds for Cloudflare KV consistency');
-    await new Promise(resolve => setTimeout(resolve, 5000));
-    logger.info('KV consistency check complete, returning training URL');
+    // Verify KV consistency before returning URL to UI
+    const expectedKeys = buildExpectedKVKeys(microlearningId, analysis.language, normalizedDept);
+    await waitForKVConsistency(microlearningId, expectedKeys);
 
     return {
       success: true,

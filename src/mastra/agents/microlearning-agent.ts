@@ -279,6 +279,10 @@ If the user's message starts with [Use this model: ...] or [Use this model provi
 
 export const microlearningAgent = new Agent({
   name: AGENT_NAMES.MICROLEARNING,
+  description: `Creates and manages microlearning training modules for compliance and security education.
+    Handles training content generation, multi-language translations, and platform integration (upload/assign).
+    Uses a state machine to gather topic, department, and level requirements before workflow execution.
+    Supports 8-scene interactive training structure with quizzes, videos, and actionable steps.`,
   instructions: buildInstructions(),
   model: getDefaultAgentModel(),
   tools: {

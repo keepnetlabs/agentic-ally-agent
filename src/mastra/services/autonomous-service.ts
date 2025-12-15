@@ -15,7 +15,7 @@ import {
     buildUploadPrompt,
     buildUploadAndAssignPrompt,
     buildAssignPhishingWithTrainingPrompt,
-} from '../utils/prompts/autonomous-prompts';
+} from '../utils/prompt-builders/autonomous-prompts';
 
 /**
  * Generate phishing simulation using agent (maintains agentic behavior and memory)

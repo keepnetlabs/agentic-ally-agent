@@ -1,4 +1,4 @@
-import { isDevelopment, isProduction } from '../utils'
+import { isDevelopment } from '../utils'
 
 // Disable playground in production
 export const disablePlayground = async (c: any, next: any) => {

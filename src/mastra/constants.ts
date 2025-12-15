@@ -110,6 +110,14 @@ export const CLOUDFLARE_KV = {
   // List query limits
   LIST_MAX_RESULTS: 100,
   SEMANTIC_SEARCH_MAX_RESULTS: 3,
+
+  // Consistency check configuration
+  // Note: 1 second interval to avoid Cloudflare rate limiting
+  CONSISTENCY_CHECK: {
+    ENABLED: true,
+    MAX_WAIT_MS: 5000, // 5 seconds
+    CHECK_INTERVAL_MS: 1000, // 1 second (safe for rate limits)
+  },
 } as const;
 
 // ============================================

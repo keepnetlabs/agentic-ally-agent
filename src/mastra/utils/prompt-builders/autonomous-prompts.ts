@@ -1,4 +1,4 @@
-// src/mastra/utils/prompts/autonomous-prompts.ts
+// src/mastra/utils/prompt-builders/autonomous-prompts.ts
 /**
  * Goal-based prompts for autonomous service
  * These prompts give agents goals instead of prescriptive instructions

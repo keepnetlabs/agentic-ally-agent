@@ -7,6 +7,7 @@ import { normalizeDepartmentName } from '../utils/language/language-utils';
 import { getModelWithOverride } from '../model-providers';
 import { THEME_COLORS } from '../constants';
 import { DEFAULT_GENERATION_PARAMS } from '../utils/config/llm-generation-params';
+import { waitForKVConsistency, buildExpectedKVKeys } from '../utils/kv-consistency';
 
 const logger = new Logger('UpdateMicrolearningWorkflow');
 
@@ -306,10 +307,9 @@ const saveUpdatesStep = createStep({
         trainingUrl,
       });
 
-      // Wait 5 seconds to ensure Cloudflare KV data is consistent before returning URL to UI
-      logger.info('Waiting 5 seconds for Cloudflare KV consistency');
-      await new Promise(resolve => setTimeout(resolve, 5000));
-      logger.info('KV consistency check complete, returning training URL');
+      // Verify KV consistency before returning URL to UI
+      const expectedKeys = buildExpectedKVKeys(microlearningId, language, normalizedDepartment);
+      await waitForKVConsistency(microlearningId, expectedKeys);
 
       return {
         success: true,

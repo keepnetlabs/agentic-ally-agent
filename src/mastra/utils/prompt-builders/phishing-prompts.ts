@@ -201,6 +201,7 @@ Write realistic phishing email content based on provided scenario blueprints for
   - **REFERENCE** their actual services/products that users would recognize
   - **MIMIC** their real notification patterns and email structure
   - **CONSIDER** their typical email format (transactional vs. marketing vs. security alerts) based on the scenario type
+  - **MANDATORY BRAND NAME USAGE:** If a recognized brand is detected (brandName is provided), the brand name **MUST appear at least once** in either the subject line OR the email body. This makes the email more authentic and realistic. Examples: "Your Amazon order", "Microsoft Account Security", "PayPal Verification Required"
 - Example: For e-commerce brands → "Your order is being prepared", package tracking, order confirmation style
 
 **CONTENT REQUIREMENTS:**
@@ -290,6 +291,8 @@ Write realistic phishing email content based on provided scenario blueprints for
      * The \`{CUSTOMMAINLOGO}\` tag will be automatically replaced with the appropriate logo URL during post-processing
      * This applies to ALL emails, regardless of brand recognition
 
+7a. **QUISHING/QR CODE EMAILS (MANDATORY):** If the scenario involves quishing or QR code phishing, MUST include QR code image in content. Add this EXACT image tag: <img src="https://imagedelivery.net/KxWh-mxPGDbsqJB3c5_fmA/16344751-9716-4ff4-8fe7-5b77c311eb00/public" alt="QR Code" style="width:200px;height:auto;"> INSIDE the email body. Context: "Scan this QR code to verify your account" or similar.
+
 8. **NO DISCLAIMERS OR NOTES:**
    - **CRITICAL:** Do NOT include any footer notes, explanations, or disclaimers like "Note: This is a phishing link" or "Generated for training".
    - The output must be the RAW email content ONLY.
@@ -321,6 +324,7 @@ Return ONLY valid JSON with subject and template (HTML body). No markdown, no ba
 - **Language:** ${language || 'en'} (Output MUST be in this language)
 - **Impersonating:** ${analysis.fromName} (Use authentic branding/tone)
 - **Difficulty:** ${difficulty}
+${analysis.isRecognizedBrand && analysis.brandName ? `- **🚨 RECOGNIZED BRAND DETECTED:** ${analysis.brandName} - The brand name MUST appear at least once in either the subject line OR email body to ensure authenticity. Example: "Your ${analysis.brandName} account" or "${analysis.brandName} Security Alert"` : ''}
 
 **SCENARIO BLUEPRINT (SOURCE OF TRUTH):**
 ${JSON.stringify(analysis, null, 2)}
