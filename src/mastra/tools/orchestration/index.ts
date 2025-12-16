@@ -6,3 +6,4 @@
 
 export { workflowExecutorTool } from './workflow-executor-tool';
 export { phishingWorkflowExecutorTool } from './phishing-workflow-executor-tool';
+export { phishingEditorTool } from './phishing-editor-tool';

@@ -1,7 +1,7 @@
 // src/agents/phishing-email-agent.ts
 import { Agent } from '@mastra/core/agent';
 import { reasoningTool } from '../tools/analysis';
-import { phishingWorkflowExecutorTool } from '../tools/orchestration';
+import { phishingWorkflowExecutorTool, phishingEditorTool } from '../tools/orchestration';
 import { uploadPhishingTool, assignPhishingTool } from '../tools/user-management';
 import { getDefaultAgentModel } from '../model-providers';
 import { Memory } from '@mastra/memory';
@@ -155,6 +155,44 @@ Call 'phishingExecutor' (ONLY in STATE 3) with:
 - If user provides a profile in the prompt (e.g., "for John in Finance"), extract it.
 - If user mentions specific triggers (e.g., "use fear"), add to profile.
 
+## EDIT MODE - Modify Existing Template
+If user message contains edit keywords (change, update, modify, remove, make, set, translate, etc.):
+1. Check conversation history for most recent phishingId (from phishingExecutor result)
+2. If phishingId found: call show_reasoning() then phishingEditor tool immediately (no confirmation)
+3. If phishingId NOT found: ask user:
+   - "No existing template found. Do you have a phishing ID to edit, or should I create a new template first?"
+   - If user provides ID → edit that template
+   - If user says "create new" → generate fresh template, then apply edit
+
+**Tool Behavior:**
+- phishingEditor edits EMAIL + LANDING PAGE in PARALLEL
+- **DEFAULT**: Both components edited (unless user explicitly says "email only")
+- If user says "email only" or "email template only" → edit email ONLY
+- If user mentions "landing page" → edit both (landing page explicitly requested)
+- Tool makes AI decision: whether to edit each component based on instruction
+
+**Call phishingEditor tool with:**
+- **phishingId**: [from conversation history - MOST RECENT]
+- **editInstruction**: [user's natural language request - VERBATIM]
+- **language**: [detected from user message, optional]
+- **modelProvider**: [Optional Override]
+- **model**: [Optional Override]
+
+**Example (both components):**
+User: "Change subject to Urgent Action Required"
+→ show_reasoning({ thought: "User wants to modify existing template" })
+→ phishingEditor({ phishingId: "abc123", editInstruction: "Change subject to Urgent Action Required" })
+→ Response: Email + Landing Page both updated (default behavior)
+
+**Example (email only):**
+User: "Change email subject to Urgent, don't touch landing page"
+→ phishingEditor({ phishingId: "abc123", editInstruction: "Change email subject to Urgent, don't touch landing page" })
+→ Response: Email updated, Landing Page skipped
+
+**Example (no template):**
+User: "Change subject to Urgent Action Required"
+→ Agent: "No existing template found. Do you have a phishing ID to edit, or should I create a new template first?"
+
 ## Example Interaction
 **User:** "Create a phishing email for password reset"
 **You:** (State 2)
@@ -180,6 +218,7 @@ export const phishingEmailAgent = new Agent({
   tools: {
     showReasoning: reasoningTool,
     phishingExecutor: phishingWorkflowExecutorTool,
+    phishingEditor: phishingEditorTool,
     uploadPhishing: uploadPhishingTool,
     assignPhishing: assignPhishingTool,
   },

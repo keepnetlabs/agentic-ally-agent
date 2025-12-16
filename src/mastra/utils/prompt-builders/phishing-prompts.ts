@@ -798,6 +798,7 @@ Goal: A secure, polished login screen for ${fromName}.
 **LOGIN VALIDATION:**
 - [ ] Body uses flex center and background.
 - [ ] Wrapper uses flex-direction: column, so footer is BELOW the card.
+- [ ] Wrapper has margin: 0 auto to ensure centering.
 - [ ] Card has generous padding and clean shadow.
 - [ ] Button has strong contrast using brand primary.
 - [ ] All HTML attributes use SINGLE QUOTES.
