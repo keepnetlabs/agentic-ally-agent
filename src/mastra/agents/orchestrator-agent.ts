@@ -120,7 +120,8 @@ You must always respond with a JSON object:
 
 {
   "agent": "agentName",
-  "taskContext": "Clear, actionable context string. Include user names/IDs if found."
+  "taskContext": "Clear, actionable context string. Include user names/IDs if found.",
+  "reasoning": "Brief explanation of WHY this agent was selected based on user input."
 }
 `;
 

@@ -171,7 +171,10 @@ export const routeToAgent = async (
 ) => {
   const router = new AgentRouter(mastra);
   const routeResult = await router.route(orchestratorInput);
-  logger.info('agent_routing_successful', { agentName: routeResult.agentName });
+  logger.info('agent_routing_successful', {
+    agentName: routeResult.agentName,
+    reasoning: (routeResult as any).reasoning
+  });
   return routeResult;
 };
 
@@ -225,16 +228,6 @@ export const createAgentStream = async (
  * @param piiMapping - Mapping from [PERSON1] → "John" to reverse the masking
  *
  * @returns Updated final prompt with injected unmasked context
- *
- * @example
- * Input:
- *   finalPrompt: "Handle the user's request"
- *   taskContext: "[CONTEXT: Assign training to [PERSON1]]"
- *   piiMapping: { "[PERSON1]": "john.doe" }
- * Output:
- *   "[CONTEXT: Assign training to john.doe]\n\nHandle the user's request"
- *
- * Note: The [CONTEXT] is now UNMASKED so agent can execute tools with real data
  */
 export const injectOrchestratorContext = (
   finalPrompt: string,
