@@ -56,7 +56,7 @@ RULE 2: Expression Quality (Create, Don't Translate)
 
 RULE 3: Quality & Readability
 • Professional, confident, approachable tone — colleague-to-colleague
-• Clear, active verbs and smooth sentence flow
+• Use clear, active verbs (Bloom's Taxonomy based) and smooth sentence flow
 • Short sentences (≈8–18 words), one idea per line
 • Plain, concrete vocabulary; avoid academic or bureaucratic style
 ${vocabularyGuidance.simplification}

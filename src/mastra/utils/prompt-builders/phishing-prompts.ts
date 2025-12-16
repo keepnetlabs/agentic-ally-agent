@@ -51,6 +51,58 @@ type LandingPagePromptParams = {
   additionalContext?: string;
 };
 
+// Layout and Style Options for Dynamic Generation
+const LAYOUT_OPTIONS = [
+  {
+    id: 'CENTERED',
+    name: 'CENTERED CARD (Classic)',
+    description: 'A centered white card on a colored background. Best for generic login.',
+    cssRule: 'body { display: flex; align-items: center; justify-content: center; background-color: #f3f4f6; } .card { max-width: 420px; margin: 0 auto; background: white; padding: 32px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }'
+  },
+  {
+    id: 'SPLIT',
+    name: 'SPLIT SCREEN (Enterprise)',
+    description: 'Split screen 50/50. Left side is brand color/image, Right side is the form. Best for corporate/SaaS.',
+    cssRule: 'body { display: flex; flex-wrap: wrap; min-height: 100vh; margin: 0; } .brand-side { flex: 1; min-width: 300px; background-color: var(--primary-color); display: flex; align-items: center; justify-content: center; color: white; } .form-side { flex: 1; min-width: 300px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: white; padding: 24px; }'
+  },
+  {
+    id: 'MINIMAL',
+    name: 'MINIMAL / URGENT (Alert)',
+    description: 'No card container. Content sits directly on a plain white or very light background. Top-aligned logo. Best for simple alerts.',
+    cssRule: 'body { padding: 40px 20px; max-width: 600px; margin: 0 auto; background-color: #ffffff; font-family: system-ui, sans-serif; } .content { text-align: left; }'
+  },
+  {
+    id: 'SIDEBAR',
+    name: 'SIDEBAR (Dashboard/Admin)',
+    description: 'Left sidebar with navigation links, right side with content card. Looks like an internal portal or settings page.',
+    cssRule: 'body { display: flex; min-height: 100vh; margin: 0; background: #f9fafb; font-family: system-ui, sans-serif; } .sidebar { width: 240px; background: white; border-right: 1px solid #e5e7eb; padding: 24px; display: none; } @media(min-width: 768px) { .sidebar { display: flex; flex-direction: column; } } .main { flex: 1; padding: 40px 20px; display: flex; flex-direction: column; justify-content: center; align-items: center; }'
+  },
+  {
+    id: 'HERO',
+    name: 'HERO HEADER (Marketing/Promo)',
+    description: 'Top colored hero section with logo, content card overlapping the header. Looks like a modern promo or announcement page.',
+    cssRule: 'body { margin: 0; background: #f3f4f6; min-height: 100vh; font-family: system-ui, sans-serif; } .hero { height: 220px; background-color: var(--primary-color); width: 100%; display: flex; align-items: center; justify-content: center; } .main-container { margin-top: -80px; padding: 0 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; }'
+  }
+];
+
+const STYLE_OPTIONS = [
+  {
+    id: 'SOFT',
+    name: 'Soft & Modern',
+    rules: 'Border-radius: 12px to 16px. Box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1). Padding: Spacious (32px+). Buttons: Fully rounded (pill shape) or soft rounded.'
+  },
+  {
+    id: 'SHARP',
+    name: 'Sharp & Corporate',
+    rules: 'Border-radius: 2px to 4px. Box-shadow: 0 1px 3px rgba(0,0,0,0.1). Border: 1px solid #e5e7eb. Padding: Compact (20-24px). Buttons: Slightly rounded (4px).'
+  },
+  {
+    id: 'FLAT',
+    name: 'Flat & High Contrast',
+    rules: 'Border-radius: 6px. No shadow. Border: 2px solid #e5e7eb. Inputs have strong borders. Buttons: No shadow, strong flat color.'
+  }
+];
+
 /**
  * Build system and user prompts for analysis step (Step 1)
  */
@@ -82,6 +134,15 @@ Design highly realistic phishing simulation scenarios for cybersecurity training
    - **Auto-Detect (if missing) DEFAULT -- '${PHISHING.DEFAULT_ATTACK_METHOD}'**:
      - '${PHISHING.ATTACK_METHODS[1]}' (Data-Submission): For scenarios requiring login, password reset, verification, payment, survey.
      - '${PHISHING.ATTACK_METHODS[0]}' (Click-Only): For scenarios requiring viewing a document, tracking a package, reading news, downloading a file.
+
+1a. **PSYCHOLOGICAL STRATEGY (Cialdini Principles):**
+   - **MANDATORY:** You MUST select and apply at least 2 of Cialdini's 6 Principles (Reciprocity, Commitment, Social Proof, Authority, Liking, Scarcity).
+   - **Contextual Match:**
+     * Finance/Legal → **Authority** ("CEO Request") + **Urgency/Scarcity** ("Immediate action required")
+     * HR/Internal → **Social Proof** ("Everyone has completed") + **Commitment** ("As agreed in meeting")
+     * Marketing/Perks → **Reciprocity** ("Gift for you") + **Liking** ("Valued employee")
+   - **Goal:** Create realistic cognitive dissonance. The target should feel a psychological urge to click, beyond just curiosity.
+
 
 2. **Profile Analysis (IF Profile Exists):**
    - Use known 'behavioralTriggers' (e.g. Authority -> CEO Fraud).
@@ -369,6 +430,19 @@ export function buildLandingPagePrompts(params: LandingPagePromptParams): {
     additionalContext,
   } = params;
 
+  // 🎲 RANDOMIZE DESIGN 🎲
+  const randomLayout = LAYOUT_OPTIONS[Math.floor(Math.random() * LAYOUT_OPTIONS.length)];
+  const randomStyle = STYLE_OPTIONS[Math.floor(Math.random() * STYLE_OPTIONS.length)];
+
+  // 📝 LOG CHOSEN DESIGN FOR DEBUGGING
+  // This helps us verify that randomization is working and what the agent is instructed to do
+  console.log('[Phishing Prompt Builder] Design Injection:', {
+    layout: randomLayout.id,
+    style: randomStyle.id,
+    layoutName: randomLayout.name,
+    styleName: randomStyle.name
+  });
+
   // Check if email uses {CUSTOMMAINLOGO} tag
   const emailUsesLogoTag = template && template.includes('{CUSTOMMAINLOGO}');
 
@@ -424,67 +498,27 @@ Your job: generate modern, professional, trustworthy WEB PAGES (not emails) usin
      - Button: \`style='${industryDesign.patterns.buttonStyle}'\`
      - Input: \`style='${industryDesign.patterns.inputStyle}'\`
 
-6. **LAYOUT STRATEGY (AI MUST CHOOSE ONE):**
-   You must vary the layout structure. Choose either OPTION A (Centered) or OPTION B (Split) based on what fits the brand best.
+  6. **🚨 MANDATORY DESIGN DIRECTIVE (YOU MUST FOLLOW THIS):**
+     
+     You act as a rendering engine. You have been assigned a specific design system for this generation.
+     
+     **ASSIGNED LAYOUT: ${randomLayout.name}**
+     - Description: ${randomLayout.description}
+     - Base CSS Requirement: \`${randomLayout.cssRule}\`
+     
+     **ASSIGNED VISUAL STYLE: ${randomStyle.name}**
+     - Rules: ${randomStyle.rules}
+     
+     **CONSTRAINT:** You MUST ignore any previous "Option A/B" instructions and strictly implement the **${randomLayout.name}** layout with **${randomStyle.name}** styling.
+     
+     **Specific Implementation Rules for ${randomLayout.id}:**
+     ${randomLayout.id === 'SPLIT' ? '- Use `display: flex; flex-wrap: wrap;` on body.\n     - Left side: Brand color background, centered logo/text.\n     - Right side: White background, form content.' : ''}
+     ${randomLayout.id === 'MINIMAL' ? '- NO CARD CONTAINER. Content sits directly on background.\n     - Top-aligned logo.\n     - Very clean, sparse layout.' : ''}
+     ${randomLayout.id === 'CENTERED' ? '- Classic centered card with shadow.\n     - Background color surrounds the card.' : ''}
+     ${randomLayout.id === 'SIDEBAR' ? '- Left sidebar (light gray/white) with dummy nav links.\n     - Main content area with a card.\n     - Looks like an admin panel/dashboard.' : ''}
+     ${randomLayout.id === 'HERO' ? '- Top full-width hero bar (brand color, ~200px height).\n     - Content card overlaps the hero bar (negative margin-top).\n     - Centered layout below.' : ''}
 
-   **OPTION A: CENTERED CARD (Classic, like Google/Apple)**
-   - The body behaves as a viewport container.
-   - **CRITICAL:** Use \`display: flex; align-items: center; justify-content: center;\` on the BODY tag.
-   - Use this exact pattern:
-     <body style='
-       min-height: 100vh;
-       margin: 0;
-       padding: 24px;
-       display: flex;
-       align-items: center;
-       justify-content: center;
-       background: #f3f4f6;
-       font-family: system-ui, -apple-system, sans-serif;
-     '>
-       <div style='width: 100%; max-width: 420px; margin: auto;'>
-          <!-- Logo, then Card, then Footer -->
-       </div>
-     </body>
-
-   **OPTION B: SPLIT SCREEN (Enterprise, like Microsoft/Adobe/SaaS)**
-   - Screen is split 50/50 or 40/60.
-   - One side is Brand/Color, other side is Form.
-   - MUST use \`flex-wrap: wrap\` so it stacks vertically on mobile.
-   - Use this pattern:
-     <body style='min-height: 100vh; margin: 0; display: flex; flex-wrap: wrap; font-family: system-ui, -apple-system, sans-serif;'>
-       <!-- Brand Panel (Left or Right) -->
-       <div style='
-         flex: 1;
-         min-width: 350px; /* Stacks on mobile */
-         background-color: ${industryDesign.colors.primary};
-         padding: 40px;
-         display: flex;
-         flex-direction: column;
-         justify-content: center;
-         color: white;
-       '>
-         <!-- Big Logo, Welcome Text, or Quote here -->
-       </div>
-
-       <!-- Form Panel -->
-       <div style='
-         flex: 1;
-         min-width: 350px; /* Stacks on mobile */
-         background: white;
-         display: flex;
-         align-items: center;
-         justify-content: center;
-         padding: 24px;
-       '>
-         <div style='width: 100%; max-width: 400px;'>
-           <!-- Logo (optional if on brand panel), Form, Footer -->
-         </div>
-       </div>
-     </body>
-
-   **IMPORTANT:** If you choose OPTION B (Split), the "Card" container style (\`box-shadow\`, \`border\`) is usually NOT needed around the form, as the white background serves as the container. Adjust accordingly.
-
-7. **INLINE CSS IS THE SOURCE OF TRUTH:**
+  7. **INLINE CSS IS THE SOURCE OF TRUTH:**
 
 ---
 

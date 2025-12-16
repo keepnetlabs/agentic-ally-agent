@@ -5,7 +5,7 @@ import { addLanguageWorkflow } from '../../workflows/add-language-workflow';
 import { addMultipleLanguagesWorkflow } from '../../workflows/add-multiple-languages-workflow';
 import { updateMicrolearningWorkflow } from '../../workflows/update-microlearning-workflow';
 import { v4 as uuidv4 } from 'uuid';
-import { PROMPT_ANALYSIS, MODEL_PROVIDERS, ERROR_MESSAGES } from '../../constants';
+import { PROMPT_ANALYSIS, MODEL_PROVIDERS } from '../../constants';
 import { getLogger } from '../../utils/core/logger';
 import { errorService } from '../../services/error-service';
 

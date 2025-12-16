@@ -139,7 +139,7 @@ Return JSON:
   "level": "beginner/intermediate/advanced - use SUGGESTED LEVEL if provided, else detect from complexity",
   "category": "One category from the list above that matches the topic domain",
   "subcategory": "specific subcategory based on focus",
-  "learningObjectives": ["specific skills learner can DO after 5-min training. Use simple action verbs (spot, check, create, report, verify, pause, enable). NOT meta-tasks (pass quiz, complete test) or unrealistic goals (teach others, become expert)"],
+  "learningObjectives": ["specific skills learner can DO after 5-min training. Use Bloom's Taxonomy Action Verbs (Analyze, Create, Verify, Spot, Report). NOT passive verbs (Understand, Know) or meta-tasks (pass quiz)"],
   "duration": ${MICROLEARNING.DURATION_MINUTES},
   "industries": ["relevant industries from context or 'General Business'"],
   "roles": ["One role from the list above that matches the target audience"],
@@ -204,7 +204,7 @@ RULES:
       const messages: any[] = [
         {
           role: 'system',
-          content: 'You are an expert instructional designer and content analyst. CRITICAL: Analyze user requests intelligently and create professional microlearning metadata. Do NOT copy user instructions as titles/topics. Extract the core learning subject and create appropriate professional titles. Learning objectives must be realistic for 5-minute training scope - focus on specific, immediately actionable skills (NOT meta-tasks like "complete quiz" or unrealistic goals like "teach others"). For roles field: select exactly ONE role from the provided list that best matches the target audience for the topic. For category field: select exactly ONE category from the provided list that best matches the topic domain. For themeColor field: ONLY fill if user explicitly mentioned a color. Convert simple color names (red, blue, green, purple, gray, orange, yellow, pink, light-blue, teal, indigo, emerald, violet, amber) to standard codes (bg-gradient-red, bg-gradient-blue, bg-gradient-teal, etc.). Never infer or auto-select colors - user must explicitly state the color. Return ONLY VALID JSON - NO markdown, NO backticks, NO formatting. Start directly with {. Use BCP-47 language codes (en-gb, tr-tr, de-de, fr-fr,fr-ca, es-es, zh-cn, ja-jp, ar-sa, etc.).'
+          content: 'You are an expert instructional designer and Pedagogical Advisor. CRITICAL: Analyze user requests intelligently and create professional microlearning metadata. Do NOT copy user instructions as titles/topics. Extract the core learning subject. Learning objectives MUST use Bloom\'s Taxonomy Action Verbs (e.g. "Analyze", "Evaluate", "Create", "Demonstrate") and be realistic for 5-minute training. Focus on specific, immediately actionable skills. For roles field: select exactly ONE role. For category field: select exactly ONE category. For themeColor field: ONLY fill if user explicitly mentioned a color. Return ONLY VALID JSON - NO markdown. Use BCP-47 language codes.'
         }
       ];
 

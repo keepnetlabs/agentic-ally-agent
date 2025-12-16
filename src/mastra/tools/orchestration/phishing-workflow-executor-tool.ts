@@ -20,7 +20,7 @@ const phishingWorkflowSchema = z.object({
     method: z.enum(PHISHING.ATTACK_METHODS).optional().describe('Type of phishing attack'),
     includeEmail: z.boolean().optional().default(true).describe('Whether to generate an email'),
     includeLandingPage: z.boolean().optional().default(true).describe('Whether to generate a landing page'),
-    additionalContext: z.string().optional().describe('User behavior context // vulnerability analysis for targeted phishing'),
+    additionalContext: z.string().optional().describe('Strategic context from Agent reasoning (e.g. "Use Authority trigger", "Focus on Fear", "Simulate CEO"). Also used for vulnerability analysis details.'),
     modelProvider: z.enum(MODEL_PROVIDERS.NAMES).optional(),
     model: z.string().optional(),
 });
