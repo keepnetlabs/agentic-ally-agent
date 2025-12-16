@@ -12,7 +12,7 @@ import {
   validateLandingPage,
   logValidationResults
 } from '../utils/landing-page';
-import { streamDirectReasoning } from '../utils/core/reasoning-stream';
+import { streamReasoning } from '../utils/core/reasoning-stream';
 import {
   InputSchema,
   AnalysisSchema,
@@ -89,8 +89,8 @@ const analyzeRequest = createStep({
       const reasoning = (response as any).response?.body?.reasoning;
       if (reasoning && inputData.writer) {
         logger.info('Streaming scenario reasoning to frontend');
-        // Directly stream the raw reasoning text without LLM processing
-        await streamDirectReasoning(reasoning, inputData.writer);
+        // Convert technical reasoning to user-friendly updates (fire-and-forget)
+        streamReasoning(reasoning, inputData.writer);
       }
 
       logger.info('AI generated phishing scenario successfully');
@@ -259,8 +259,8 @@ const generateEmail = createStep({
         const emailReasoning = (response as any).response?.body?.reasoning;
         if (emailReasoning && analysis.writer) {
           logger.info('Streaming email generation reasoning to frontend');
-          // Directly stream the raw reasoning text without LLM processing
-          await streamDirectReasoning(emailReasoning, analysis.writer);
+          // Convert technical reasoning to user-friendly updates (fire-and-forget)
+          streamReasoning(emailReasoning, analysis.writer);
         }
 
         logger.info('AI generated phishing email content successfully');
@@ -441,7 +441,7 @@ const generateLandingPage = createStep({
         // Reasoning handling
         const lpReasoning = (response as any).response?.body?.reasoning;
         if (lpReasoning && analysis.writer) {
-          await streamDirectReasoning(lpReasoning, analysis.writer);
+          streamReasoning(lpReasoning, analysis.writer);
         }
 
         const cleanedJson = cleanResponse(response.text, 'landing-page');
