@@ -2,10 +2,7 @@ import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { requestStorage } from '../../utils/core/request-storage';
 import { getLogger } from '../../utils/core/logger';
-import { ERROR_MESSAGES } from '../../constants';
-
-const ASSIGN_API_URL = 'https://crud-phishing-worker.keepnet-labs-ltd-business-profile4086.workers.dev/send';
-const API_URL = 'https://test-api.devkeepnet.com';
+import { ERROR_MESSAGES, API_ENDPOINTS } from '../../constants';
 
 export const assignPhishingTool = createTool({
     id: 'assign-phishing',
@@ -46,7 +43,7 @@ export const assignPhishingTool = createTool({
         }
 
         const payload = {
-            apiUrl: API_URL,
+            apiUrl: API_ENDPOINTS.PLATFORM_API_URL,
             accessToken: token,
             companyId: companyId,
             phishingId: resourceId,
@@ -81,8 +78,8 @@ export const assignPhishingTool = createTool({
                 });
             } else {
                 // ⚠️ FALLBACK: Public URL (Local Development)
-                logger.debug('Using Public URL fallback for phishing assignment', { url: ASSIGN_API_URL });
-                response = await fetch(ASSIGN_API_URL, {
+                logger.debug('Using Public URL fallback for phishing assignment', { url: API_ENDPOINTS.PHISHING_WORKER_SEND });
+                response = await fetch(API_ENDPOINTS.PHISHING_WORKER_SEND, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

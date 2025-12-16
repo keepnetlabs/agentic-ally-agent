@@ -281,13 +281,11 @@ export const mastra = new Mastra({
           try {
             const body = await c.req.json<CodeReviewRequestBody>();
 
-            // Type-safe execution - Tool.execute expects context with inputData
+            // Type-safe execution - Tool.execute expects root-level fields matching inputSchema
             if (!codeReviewCheckTool.execute) {
               throw new Error('Code review tool execute method not available');
             }
-            const result = await codeReviewCheckTool.execute({
-              inputData: body,
-            } as Parameters<typeof codeReviewCheckTool.execute>[0]);
+            const result = await codeReviewCheckTool.execute(body as Parameters<typeof codeReviewCheckTool.execute>[0]);
 
             if (result.success) {
               return c.json(result, 200);
@@ -306,6 +304,7 @@ export const mastra = new Mastra({
                 feedback: 'Error validating code',
                 explanation: error instanceof Error ? error.message : 'Unknown error occurred',
                 points: 0,
+                hint: '',
               },
               error: error instanceof Error ? error.message : 'Unknown error',
             }, 500);

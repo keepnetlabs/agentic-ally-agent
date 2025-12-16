@@ -32,39 +32,6 @@ export function getLogger(moduleName: string): PinoLogger {
   return loggers.get(moduleName)!;
 }
 
-/**
- * Legacy Logger class - DEPRECATED
- * Use getLogger() instead for better performance
- * This is kept for backward compatibility
- */
-export class Logger {
-  private pinoLogger: PinoLogger;
-
-  constructor(moduleName: string) {
-    this.pinoLogger = getLogger(moduleName);
-  }
-
-  debug(message: string, context?: any): void {
-    this.pinoLogger.debug(message, context);
-  }
-
-  info(message: string, context?: any): void {
-    this.pinoLogger.info(message, context);
-  }
-
-  warn(message: string, context?: any): void {
-    this.pinoLogger.warn(message, context);
-  }
-
-  error(message: string, error?: Error | string, context?: any): void {
-    const errorData = error instanceof Error
-      ? { error: error.message, stack: error.stack }
-      : (typeof error === 'string' ? { error } : {});
-
-    this.pinoLogger.error({ message, ...errorData, ...context });
-  }
-}
-
 // Helper function for timer (from original logger)
 export function startTimer() {
   const start = Date.now();

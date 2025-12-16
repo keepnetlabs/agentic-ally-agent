@@ -2,6 +2,7 @@ import { generateText } from 'ai';
 import { DEFAULT_GENERIC_LOGO } from '../landing-page/image-validator';
 import { getLogger } from '../core/logger';
 import { cleanResponse } from '../content-processors/json-cleaner';
+import { getLogoUrl } from '../landing-page/logo-resolver';
 
 const logger = getLogger('BrandResolver');
 
@@ -68,15 +69,15 @@ export async function resolveLogoAndBrand(
         // Clean up domain (remove quotes, extra text)
         const cleanDomain = domain.replace(/['"]/g, '').split(/[\s\n]/)[0];
         if (cleanDomain.includes('.')) {
-          const clearbitUrl = `https://logo.clearbit.com/${cleanDomain}`;
+          const logoUrl = getLogoUrl(cleanDomain);
           const brandColors = parsed.brandColors || null;
           logger.info('Resolved logo URL for brand', {
             brandName: brandName || fromName,
-            logoUrl: clearbitUrl,
+            logoUrl,
             hasBrandColors: !!brandColors
           });
           return {
-            logoUrl: clearbitUrl,
+            logoUrl,
             brandName: brandName || fromName,
             isRecognizedBrand: true,
             brandColors: brandColors || undefined
@@ -154,14 +155,14 @@ export async function generateContextualBrand(
     const domain = parsed.domain?.toLowerCase().trim();
 
     if (suggestedBrandName && suggestedBrandName.length > 0) {
-      // If domain is provided, try to use Clearbit logo
+      // If domain is provided, try to use logo service
       let logoUrl = DEFAULT_GENERIC_LOGO;
 
       if (domain && domain.includes('.')) {
         const cleanDomain = domain.replace(/['"]/g, '').split(/[\s\n]/)[0];
         if (cleanDomain.includes('.')) {
-          logoUrl = `https://logo.clearbit.com/${cleanDomain}`;
-          logger.info('Generated contextual brand with Clearbit logo', {
+          logoUrl = getLogoUrl(cleanDomain);
+          logger.info('Generated contextual brand with logo', {
             brandName: suggestedBrandName,
             domain: cleanDomain,
             logoUrl

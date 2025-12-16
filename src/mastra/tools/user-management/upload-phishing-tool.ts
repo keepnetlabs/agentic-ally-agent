@@ -3,10 +3,7 @@ import { z } from 'zod';
 import { requestStorage } from '../../utils/core/request-storage';
 import { getLogger } from '../../utils/core/logger';
 import { KVService } from '../../services/kv-service';
-import { ERROR_MESSAGES } from '../../constants';
-
-const WORKER_URL = 'https://crud-phishing-worker.keepnet-labs-ltd-business-profile4086.workers.dev/submit'; // TODO: Update with actual phishing worker URL
-const API_URL = 'https://test-api.devkeepnet.com';
+import { ERROR_MESSAGES, API_ENDPOINTS } from '../../constants';
 
 export const uploadPhishingTool = createTool({
     id: 'upload-phishing',
@@ -102,7 +99,7 @@ export const uploadPhishingTool = createTool({
             const payload = {
                 accessToken: token, // Sensitive!
                 companyId: companyId,
-                url: API_URL,
+                url: API_ENDPOINTS.PLATFORM_API_URL,
                 phishingData: phishingPayload
             };
 
@@ -126,8 +123,8 @@ export const uploadPhishingTool = createTool({
                 });
             } else {
                 // ⚠️ FALLBACK: Public URL (Local Development)
-                logger.debug('Using Public URL fallback for phishing upload', { url: WORKER_URL });
-                response = await fetch(WORKER_URL, {
+                logger.debug('Using Public URL fallback for phishing upload', { url: API_ENDPOINTS.PHISHING_WORKER_URL });
+                response = await fetch(API_ENDPOINTS.PHISHING_WORKER_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)

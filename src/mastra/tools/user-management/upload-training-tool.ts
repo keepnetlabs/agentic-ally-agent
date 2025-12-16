@@ -3,11 +3,7 @@ import { z } from 'zod';
 import { requestStorage } from '../../utils/core/request-storage';
 import { getLogger } from '../../utils/core/logger';
 import { KVService } from '../../services/kv-service';
-import { ERROR_MESSAGES } from '../../constants';
-
-const WORKER_URL = 'https://crud-training-worker.keepnet-labs-ltd-business-profile4086.workers.dev/submit';
-const API_URL = 'https://test-api.devkeepnet.com';
-const BASE_URL = 'https://microlearning-api.keepnet-labs-ltd-business-profile4086.workers.dev/microlearning/';
+import { ERROR_MESSAGES, API_ENDPOINTS } from '../../constants';
 
 export const uploadTrainingTool = createTool({
     id: 'upload-training',
@@ -84,8 +80,8 @@ export const uploadTrainingTool = createTool({
             const payload = {
                 accessToken: token, // Sensitive!
                 companyId: companyId,
-                url: API_URL,
-                baseUrl: BASE_URL + microlearningId,
+                url: API_ENDPOINTS.PLATFORM_API_URL,
+                baseUrl: API_ENDPOINTS.MICROLEARNING_API_URL + microlearningId,
                 trainingData: trainingData
             };
 
@@ -109,8 +105,8 @@ export const uploadTrainingTool = createTool({
                 });
             } else {
                 // ⚠️ FALLBACK: Public URL (Local Development)
-                logger.debug('Using Public URL fallback for training upload', { url: WORKER_URL });
-                response = await fetch(WORKER_URL, {
+                logger.debug('Using Public URL fallback for training upload', { url: API_ENDPOINTS.TRAINING_WORKER_URL });
+                response = await fetch(API_ENDPOINTS.TRAINING_WORKER_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)

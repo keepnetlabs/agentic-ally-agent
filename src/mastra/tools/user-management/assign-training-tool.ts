@@ -2,10 +2,7 @@ import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { requestStorage } from '../../utils/core/request-storage';
 import { getLogger } from '../../utils/core/logger';
-import { ERROR_MESSAGES } from '../../constants';
-
-const ASSIGN_API_URL = 'https://crud-training-worker.keepnet-labs-ltd-business-profile4086.workers.dev/send'; // Check this endpoint
-const API_URL = 'https://test-api.devkeepnet.com';
+import { ERROR_MESSAGES, API_ENDPOINTS } from '../../constants';
 export const assignTrainingTool = createTool({
   id: 'assign-training',
   description: 'Assigns an uploaded training resource to a specific user.',
@@ -36,7 +33,7 @@ export const assignTrainingTool = createTool({
     }
 
     const payload = {
-      apiUrl: API_URL,
+      apiUrl: API_ENDPOINTS.PLATFORM_API_URL,
       accessToken: token,
       companyId: companyId,
       trainingId: resourceId,
@@ -68,8 +65,8 @@ export const assignTrainingTool = createTool({
         });
       } else {
         // ⚠️ FALLBACK: Public URL (Local Development)
-        logger.debug('Using Public URL (Fallback)', { url: ASSIGN_API_URL });
-        response = await fetch(ASSIGN_API_URL, {
+        logger.debug('Using Public URL (Fallback)', { url: API_ENDPOINTS.TRAINING_WORKER_SEND });
+        response = await fetch(API_ENDPOINTS.TRAINING_WORKER_SEND, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

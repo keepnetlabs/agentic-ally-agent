@@ -295,20 +295,22 @@ const saveToKVStep = createStep({
       const { microlearningId, analysis, microlearningStructure } = languageResult;
       const normalizedDept = analysis.department ? normalizeDepartmentName(analysis.department) : 'all';
 
-      // Fire and forget for better performance - don't wait for KV save
-      kvService.saveMicrolearning(
-        microlearningId,
-        {
-          microlearning: microlearningStructure,
-          languageContent: languageResult.data,
-          inboxContent: inboxResult.data
-        },
-        analysis.language,
-        normalizedDept
-      ).catch((error) => {
-        const err = error instanceof Error ? error : new Error(String(error));
-        logger.error('KV save failed', { error: err.message, stack: err.stack });
-      });
+      try {
+        await kvService.saveMicrolearning(
+          microlearningId,
+          {
+            microlearning: microlearningStructure,
+            languageContent: languageResult.data,
+            inboxContent: inboxResult.data
+          },
+          analysis.language,
+          normalizedDept
+        );
+        logger.info('Microlearning saved to KV successfully', { microlearningId });
+      } catch (saveError) {
+        const err = saveError instanceof Error ? saveError : new Error(String(saveError));
+        logger.warn('KV save failed but continuing', { error: err.message, stack: err.stack, microlearningId });
+      }
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
       logger.warn('KV initialization error', { error: err.message, stack: err.stack });

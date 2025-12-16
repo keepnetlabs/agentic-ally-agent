@@ -1,5 +1,6 @@
-import { Logger } from '../utils/core/logger';
+import { getLogger } from '../utils/core/logger';
 import { requestStorage } from '../utils/core/request-storage';
+import { API_KEYS } from '../constants';
 
 /**
  * ProductService for communicating with our product backend
@@ -10,10 +11,9 @@ export class ProductService {
   private jwtToken?: string;
   private apiKey: string;
   private companyId?: string;
-  private logger: Logger;
+  private logger = getLogger('ProductService');
 
   constructor(jwtToken?: string) {
-    this.logger = new Logger('ProductService');
 
     // Get JWT token from parameter or requestStorage
     const token = jwtToken || this.getTokenFromRequestStorage();
@@ -38,7 +38,10 @@ export class ProductService {
       this.companyId = this.getCompanyIdFromRequestStorage() || tokenData.companyId;
     }
 
-    this.apiKey = 'apikey'
+    this.apiKey = API_KEYS.PRODUCT_API_KEY;
+    if (!this.apiKey) {
+      this.logger.warn('PRODUCT_API_KEY not configured in environment');
+    }
   }
 
   /**

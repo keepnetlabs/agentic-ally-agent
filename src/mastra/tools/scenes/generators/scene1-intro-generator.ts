@@ -70,8 +70,8 @@ NOT: 'Sender addresses fake' (technical) or 'Always verify' (imperative).",
     "duration": "~${Math.max(2, Math.round((microlearning.scenes?.reduce((total, scene) => total + (scene?.metadata?.duration_seconds || 30), 0) || 300) / 60))} minutes",
     "level": "Localize '${analysis.level}' into ${analysis.language} with proper capitalization (e.g., 'Beginner', 'Intermediate', 'Advanced')",
     "callToActionText": {
-      "mobile": "If ${analysis.language} is English, use 'Swipe to get started'. Otherwise, localize to ${analysis.language} with natural phrasing. Output the localized text directly, not instructions.",
-      "desktop": "If ${analysis.language} is English, use 'Click to get started'. Otherwise, localize to ${analysis.language} with natural phrasing. Output the localized text directly, not instructions."
+      "mobile": "Localize 'Swipe to get started' to ${analysis.language} naturally.",
+      "desktop": "Localize 'Click to get started' to ${analysis.language} naturally."
     },
     "texts": {
       "sceneLabel": "Intro scene",

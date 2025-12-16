@@ -35,6 +35,7 @@ export const codeReviewCheckTool = new Tool({
   inputSchema: CodeReviewCheckSchema,
   outputSchema: CodeReviewCheckOutputSchema,
   execute: async (context: any) => {
+    // Support both direct root-level fields (from API endpoint) and nested formats (from agent calls)
     const input = context?.inputData || context?.input || context;
     const {
       issueType,

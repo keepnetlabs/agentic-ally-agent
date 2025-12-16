@@ -1,5 +1,5 @@
 import { getLogger, startTimer } from '../utils/core/logger';
-import { RETRY } from '../constants';
+import { withRetry } from '../utils/core/resilience-utils';
 
 /**
  * KV Service for direct Cloudflare KV REST API operations
@@ -50,35 +50,34 @@ export class KVService {
   async put(key: string, value: any): Promise<boolean> {
     try {
       const timer = startTimer();
-      const url = this.getKVUrl(key);
-      const body = typeof value === 'string' ? value : JSON.stringify(value);
+      return await withRetry(
+        async () => {
+          const url = this.getKVUrl(key);
+          const body = typeof value === 'string' ? value : JSON.stringify(value);
+          const headers = this.getHeaders();
 
-      const headers = this.getHeaders();
+          const response = await fetch(url, {
+            method: 'PUT',
+            headers,
+            body: body
+          });
 
-      const response = await fetch(url, {
-        method: 'PUT',
-        headers,
-        body: body
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`KV PUT failed with status ${response.status}: ${errorText.substring(0, 200)}`);
+          }
+
+          return true;
+        },
+        `KV PUT ${key}`
+      ).then((result) => {
+        const duration = timer.end();
+        this.logger.debug(`KV PUT success`, { key, duration });
+        return result;
       });
-
-      const duration = timer.end();
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        this.logger.warn(`KV PUT failed for key`, {
-          key,
-          status: response.status,
-          duration,
-          errorText: errorText.substring(0, 200), // Limit error text length
-        });
-        return false;
-      }
-
-      this.logger.debug(`KV PUT success`, { key, duration });
-      return true;
     } catch (error) {
       const errorMsg = error instanceof Error ? error : new Error(String(error));
-      this.logger.error(`KV PUT operation failed`, {
+      this.logger.error(`KV PUT failed after retries`, {
         error: errorMsg.message,
         stack: errorMsg.stack,
         key,
@@ -90,60 +89,68 @@ export class KVService {
 
   async get(key: string): Promise<any | null> {
     try {
-      const url = this.getKVUrl(key);
+      return await withRetry(
+        async () => {
+          const url = this.getKVUrl(key);
 
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: this.getHeaders()
-      });
+          const response = await fetch(url, {
+            method: 'GET',
+            headers: this.getHeaders()
+          });
 
-      if (!response.ok) {
-        if (response.status === 404) {
-          return null; // Key not found
-        }
-        const errorText = await response.text();
-        this.logger.error(`KV GET failed for key`, { key, status: response.status, errorText: errorText.substring(0, 200) });
-        return null;
-      }
+          if (!response.ok) {
+            if (response.status === 404) {
+              return null; // Key not found - don't retry
+            }
+            const errorText = await response.text();
+            throw new Error(`KV GET failed with status ${response.status}: ${errorText.substring(0, 200)}`);
+          }
 
-      const text = await response.text();
-      try {
-        return JSON.parse(text);
-      } catch (parseError) {
-        this.logger.warn(`Failed to parse KV value as JSON for key, returning as string`, {
-          key,
-          error: parseError instanceof Error ? parseError.message : String(parseError),
-          textLength: text.length,
-        });
-        return text; // Return as string if not JSON
-      }
+          const text = await response.text();
+          try {
+            return JSON.parse(text);
+          } catch (parseError) {
+            this.logger.warn(`Failed to parse KV value as JSON for key, returning as string`, {
+              key,
+              error: parseError instanceof Error ? parseError.message : String(parseError),
+              textLength: text.length,
+            });
+            return text; // Return as string if not JSON
+          }
+        },
+        `KV GET ${key}`
+      );
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      this.logger.error(`KV GET error for key`, { key, error: err.message, stack: err.stack });
+      this.logger.error(`KV GET failed after retries`, { key, error: err.message, stack: err.stack });
       return null;
     }
   }
 
   async delete(key: string): Promise<boolean> {
     try {
-      const url = this.getKVUrl(key);
+      return await withRetry(
+        async () => {
+          const url = this.getKVUrl(key);
 
-      const response = await fetch(url, {
-        method: 'DELETE',
-        headers: this.getHeaders()
-      });
+          const response = await fetch(url, {
+            method: 'DELETE',
+            headers: this.getHeaders()
+          });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        this.logger.error(`KV DELETE failed for key`, { key, status: response.status, errorText: errorText.substring(0, 200) });
-        return false;
-      }
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`KV DELETE failed with status ${response.status}: ${errorText.substring(0, 200)}`);
+          }
 
-      this.logger.debug(`KV DELETE success for key`, { key });
-      return true;
+          this.logger.debug(`KV DELETE success for key`, { key });
+          return true;
+        },
+        `KV DELETE ${key}`
+      );
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      this.logger.error(`KV DELETE error for key`, { key, error: err.message, stack: err.stack });
+      this.logger.error(`KV DELETE failed after retries`, { key, error: err.message, stack: err.stack });
       return false;
     }
   }
@@ -197,17 +204,12 @@ export class KVService {
 
       // Save all three components in parallel with Promise.allSettled
       const [baseResult, langResult, inboxResult] = await Promise.allSettled([
-        this.putWithRetry(baseKey, {
+        this.put(baseKey, {
           ...data.microlearning,
           microlearning_id: microlearningId
         }),
-        this.putWithRetry(langKey, data.languageContent),
-        this.putWithRetryWithLogging(
-          inboxKey,
-          data.inboxContent,
-          typeof data.inboxContent,
-          Object.keys(data.inboxContent || {})
-        ),
+        this.put(langKey, data.languageContent),
+        this.put(inboxKey, data.inboxContent),
       ]);
 
       // Check results
@@ -290,11 +292,7 @@ export class KVService {
         language_availability: [normalizedLang]
       };
 
-      const success = await this.putWithRetry(baseKey, baseData);
-      if (success) {
-        this.logger.info(`Phishing base saved`, { key: baseKey });
-      }
-      return success;
+      return await this.put(baseKey, baseData);
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
       this.logger.error(`Failed to save phishing base`, { id, error: err.message, stack: err.stack });
@@ -318,11 +316,7 @@ export class KVService {
         redFlags: data.analysis?.keyRedFlags || []
       };
 
-      const success = await this.putWithRetry(emailKey, emailData);
-      if (success) {
-        this.logger.info(`Phishing email saved`, { key: emailKey });
-      }
-      return success;
+      return await this.put(emailKey, emailData);
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
       this.logger.error(`Failed to save phishing email`, { id, error: err.message, stack: err.stack });
@@ -344,11 +338,7 @@ export class KVService {
         ...data.landingPage
       };
 
-      const success = await this.putWithRetry(landingKey, landingData);
-      if (success) {
-        this.logger.info(`Phishing landing page saved`, { key: landingKey });
-      }
-      return success;
+      return await this.put(landingKey, landingData);
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
       this.logger.error(`Failed to save phishing landing page`, { id, error: err.message, stack: err.stack });
@@ -400,53 +390,6 @@ export class KVService {
     }
   }
 
-  /**
-   * Helper method: PUT with exponential backoff retry
-   * Retries up to RETRY.MAX_ATTEMPTS times with exponential backoff
-   */
-  private async putWithRetry(key: string, value: any, maxRetries: number = RETRY.MAX_ATTEMPTS): Promise<boolean> {
-    for (let attempt = 0; attempt < maxRetries; attempt++) {
-      try {
-        const result = await this.put(key, value);
-        if (result) {
-          if (attempt > 0) {
-            this.logger.debug(`KV PUT succeeded on retry`, { attempt, key });
-          }
-          return true;
-        }
-      } catch (error) {
-        const err = error instanceof Error ? error : new Error(String(error));
-        this.logger.warn(`KV PUT attempt failed`, {
-          attempt: attempt + 1,
-          maxRetries,
-          key,
-          error: err.message,
-        });
-        if (attempt < maxRetries - 1) {
-          const delay = RETRY.getBackoffDelay(attempt);
-          await new Promise(resolve => setTimeout(resolve, delay));
-        }
-      }
-    }
-    return false;
-  }
-
-  /**
-   * Helper method: PUT with logging and retry
-   */
-  private async putWithRetryWithLogging(
-    key: string,
-    value: any,
-    typeInfo: string,
-    keyInfo: string[]
-  ): Promise<boolean> {
-    this.logger.debug(`Saving inbox content`, {
-      key,
-      valueType: typeInfo,
-      keys: keyInfo,
-    });
-    return this.putWithRetry(key, value);
-  }
 
   async getMicrolearning(microlearningId: string, language?: string): Promise<any> {
     try {

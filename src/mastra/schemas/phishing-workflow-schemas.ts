@@ -4,7 +4,7 @@
  */
 
 import { z } from 'zod';
-import { PHISHING, LANDING_PAGE } from '../constants';
+import { PHISHING, LANDING_PAGE, PHISHING_EMAIL } from '../constants';
 import { StreamWriterSchema } from '../types/stream-writer';
 
 /**
@@ -38,7 +38,7 @@ export const InputSchema = z.object({
 export const AnalysisSchema = z.object({
     scenario: z.string().describe('The specific scenario chosen (e.g. CEO Fraud, IT Update, HR Policy)'),
     name: z.string().describe('Short display name for the template (e.g. "Password Reset - Easy")'),
-    description: z.string().describe('Brief description of the phishing scenario'),
+    description: z.string().max(PHISHING_EMAIL.MAX_DESCRIPTION_LENGTH).describe('Brief description of the phishing scenario'),
     category: z.string().describe('Phishing category: Credential Harvesting, Malware, Financial Fraud, etc.'),
     method: z.enum(PHISHING.ATTACK_METHODS).default(PHISHING.DEFAULT_ATTACK_METHOD).describe('The determined attack method for this scenario'),
     psychologicalTriggers: z.array(z.string()).describe('Triggers used: Authority, Urgency, Fear, Greed, Curiosity, Helpfulness'),
@@ -52,7 +52,7 @@ export const AnalysisSchema = z.object({
     emailGenerationReasoning: z.string().optional().describe('AI reasoning about email content generation (if available)'),
     additionalContext: z.string().optional().describe('User behavior context / vulnerability analysis for targeted phishing'),
     // Brand detection (resolved during analysis)
-    logoUrl: z.string().optional().describe('Resolved logo URL (Clearbit URL for recognized brands, default logo for generic companies)'),
+    logoUrl: z.string().optional().describe('Resolved logo URL (using alternative logo services for recognized brands, default logo for generic companies)'),
     brandName: z.string().nullable().optional().describe('Detected brand name if recognized, null for generic companies'),
     isRecognizedBrand: z.boolean().optional().describe('Whether the company/brand is a recognized well-known brand'),
     brandColors: z.object({
@@ -118,7 +118,7 @@ export const OutputSchema = z.object({
     fromName: z.string(),
     landingPage: z.object({
         name: z.string(),
-        description: z.string(),
+        description: z.string().max(PHISHING_EMAIL.MAX_DESCRIPTION_LENGTH),
         method: z.enum(PHISHING.ATTACK_METHODS).default(PHISHING.DEFAULT_ATTACK_METHOD),
         difficulty: z.enum(PHISHING.DIFFICULTY_LEVELS),
         pages: z.array(z.object({

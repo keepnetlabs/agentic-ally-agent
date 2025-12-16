@@ -115,7 +115,7 @@ export const CLOUDFLARE_KV = {
   // Note: 1 second interval to avoid Cloudflare rate limiting
   CONSISTENCY_CHECK: {
     ENABLED: true,
-    MAX_WAIT_MS: 5000, // 5 seconds
+    MAX_WAIT_MS: 10000, // 10 seconds
     CHECK_INTERVAL_MS: 1000, // 1 second (safe for rate limits)
   },
 } as const;
@@ -522,6 +522,7 @@ export const PHISHING_EMAIL = {
 
   // Content constraints
   MAX_SUBJECT_LENGTH: 200,
+  MAX_DESCRIPTION_LENGTH: 300,
 
   // Mandatory tags for valid phishing emails
   MANDATORY_TAGS: ['{PHISHINGURL}'] as const,
@@ -601,4 +602,35 @@ export const ROUTING = {
 
   // User analysis triggers
   USER_ANALYSIS_TRIGGERS: ['Who is', 'Find', 'Analyze'] as const,
+} as const;
+
+// ============================================
+// API ENDPOINTS & AUTHENTICATION
+// ============================================
+
+export const API_ENDPOINTS = {
+  // Phishing worker endpoints
+  PHISHING_WORKER_URL: process.env.PHISHING_WORKER_URL || 'https://crud-phishing-worker.keepnet-labs-ltd-business-profile4086.workers.dev/submit',
+  PHISHING_WORKER_SUBMIT: process.env.PHISHING_WORKER_URL || 'https://crud-phishing-worker.keepnet-labs-ltd-business-profile4086.workers.dev/submit',
+  PHISHING_WORKER_SEND: process.env.PHISHING_WORKER_SEND || 'https://crud-phishing-worker.keepnet-labs-ltd-business-profile4086.workers.dev/send',
+
+  // Training worker endpoints
+  TRAINING_WORKER_URL: process.env.TRAINING_WORKER_URL || 'https://crud-training-worker.keepnet-labs-ltd-business-profile4086.workers.dev/submit',
+  TRAINING_WORKER_SEND: process.env.TRAINING_WORKER_SEND || 'https://crud-training-worker.keepnet-labs-ltd-business-profile4086.workers.dev/send',
+
+  // Platform API endpoints
+  PLATFORM_API_URL: process.env.PLATFORM_API_URL || 'https://test-api.devkeepnet.com',
+
+  // Microlearning API endpoints
+  MICROLEARNING_API_URL: process.env.MICROLEARNING_API_URL || 'https://microlearning-api.keepnet-labs-ltd-business-profile4086.workers.dev/microlearning/',
+
+  // Product backend endpoints
+  PRODUCT_API_URL: process.env.PRODUCT_API_URL || '',
+  PRODUCT_WHITELABELING_ENDPOINT: '/whitelabeling',
+} as const;
+
+// API Keys and authentication
+export const API_KEYS = {
+  // Product API key (from environment or default placeholder)
+  PRODUCT_API_KEY: process.env.PRODUCT_API_KEY || 'apikey',
 } as const;

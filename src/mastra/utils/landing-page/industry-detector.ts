@@ -55,7 +55,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
                 'background-color: #f9fafb'
             ].join('; ')
         },
-        logoExample: 'https://logo.clearbit.com/jpmorganchase.com'
+        logoExample: 'https://icon.horse/icon/jpmorganchase.com'
     },
     'Technology': {
         colors: {
@@ -99,7 +99,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
                 'background-color: #f9fafb'
             ].join('; ')
         },
-        logoExample: 'https://logo.clearbit.com/google.com'
+        logoExample: 'https://icon.horse/icon/google.com'
     },
     'Healthcare': {
         colors: {
@@ -143,7 +143,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
                 'background-color: #f9fafb'
             ].join('; ')
         },
-        logoExample: 'https://logo.clearbit.com/mayoclinic.org'
+        logoExample: 'https://icon.horse/icon/mayoclinic.org'
     },
     'E-commerce': {
         colors: {
@@ -187,7 +187,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
                 'background-color: #f9fafb'
             ].join('; ')
         },
-        logoExample: 'https://logo.clearbit.com/amazon.com'
+        logoExample: 'https://icon.horse/icon/amazon.com'
     },
     'Corporate': {
         colors: {
@@ -231,7 +231,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
                 'background-color: #f9fafb'
             ].join('; ')
         },
-        logoExample: 'https://logo.clearbit.com/accenture.com'
+        logoExample: 'https://icon.horse/icon/accenture.com'
     },
     'Education': {
         colors: {
@@ -275,7 +275,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
                 'background-color: #f9fafb'
             ].join('; ')
         },
-        logoExample: 'https://logo.clearbit.com/coursera.org'
+        logoExample: 'https://icon.horse/icon/coursera.org'
     },
     'Media & Entertainment': {
         colors: {
@@ -319,7 +319,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
                 'background-color: #f9fafb'
             ].join('; ')
         },
-        logoExample: 'https://logo.clearbit.com/netflix.com'
+        logoExample: 'https://icon.horse/icon/netflix.com'
     },
     'Government': {
         colors: {
@@ -363,7 +363,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
                 'background-color: #f9fafb'
             ].join('; ')
         },
-        logoExample: 'https://logo.clearbit.com/usa.gov'
+        logoExample: 'https://icon.horse/icon/usa.gov'
     },
     'Real Estate': {
         colors: {
@@ -407,7 +407,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
                 'background-color: #f9fafb'
             ].join('; ')
         },
-        logoExample: 'https://logo.clearbit.com/zillow.com'
+        logoExample: 'https://icon.horse/icon/zillow.com'
     },
     'Hospitality & Travel': {
         colors: {
@@ -451,7 +451,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
                 'background-color: #f9fafb'
             ].join('; ')
         },
-        logoExample: 'https://logo.clearbit.com/booking.com'
+        logoExample: 'https://icon.horse/icon/booking.com'
     }
 };
 
@@ -491,7 +491,7 @@ export interface IndustryDesign {
         inputStyle: string;
     };
     /**
-     * Example logo URL for this industry (Clearbit, no placeholder.com).
+     * Example logo URL for this industry (using alternative logo services).
      * This is just for reference; systemPrompt will still compute its own logo src.
      */
     logoExample: string;
