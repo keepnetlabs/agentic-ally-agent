@@ -10,6 +10,7 @@ import { generateInboxTextsPrompt } from './generators/inbox-texts-generator';
 import { generateInboxEmailsParallel } from './generators/inbox-emails-orchestrator';
 import { LOCALIZER_PARAMS } from '../../utils/config/llm-generation-params';
 import { getLogger } from '../../utils/core/logger';
+import { errorService } from '../../services/error-service';
 
 const microlearningService = new MicrolearningService();
 
@@ -42,11 +43,20 @@ export const createInboxStructureTool = new Tool({
       };
 
     } catch (error) {
-      logger.error('Inbox structure creation failed', error instanceof Error ? error : new Error(String(error)));
+      const err = error instanceof Error ? error : new Error(String(error));
+      const errorInfo = errorService.external(err.message, {
+        department,
+        languageCode,
+        microlearningId,
+        step: 'inbox-structure-creation',
+        stack: err.stack
+      });
+
+      logger.error('Inbox structure creation failed', errorInfo);
 
       return {
         success: false,
-        error: (error as Error).message
+        error: JSON.stringify(errorInfo)
       };
     }
   },

@@ -18,6 +18,7 @@ import { cleanResponse } from '../../utils/content-processors/json-cleaner';
 import { SCENE_GENERATION_PARAMS } from '../../utils/config/llm-generation-params';
 import { trackCost } from '../../utils/core/cost-tracker';
 import { getLogger } from '../../utils/core/logger';
+import { errorService } from '../../services/error-service';
 
 export const generateLanguageJsonTool = new Tool({
   id: 'generate_language_json',
@@ -38,11 +39,18 @@ export const generateLanguageJsonTool = new Tool({
       };
 
     } catch (error) {
-      logger.error('Language JSON generation failed', error instanceof Error ? error : new Error(String(error)));
+      const err = error instanceof Error ? error : new Error(String(error));
+      const errorInfo = errorService.aiModel(err.message, {
+        analysis: { language: analysis.language, topic: analysis.topic },
+        step: 'language-json-generation',
+        stack: err.stack
+      });
+
+      logger.error('Language JSON generation failed', errorInfo);
 
       return {
         success: false,
-        error: (error as Error).message
+        error: JSON.stringify(errorInfo)
       };
     }
   },

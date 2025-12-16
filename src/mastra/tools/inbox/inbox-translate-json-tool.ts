@@ -8,6 +8,7 @@ import { LOCALIZER_PARAMS } from '../../utils/config/llm-generation-params';
 import { buildSystemPrompt } from '../../utils/language/localization-language-rules';
 import { getLogger } from '../../utils/core/logger';
 import { MODEL_PROVIDERS } from '../../constants';
+import { errorService } from '../../services/error-service';
 
 /* =========================================================
  * Schemas
@@ -211,133 +212,148 @@ export const inboxTranslateJsonTool = new Tool({
     outputSchema: InboxTranslateOutputSchema,
     execute: async (context: any) => {
         const logger = getLogger('InboxTranslateJsonTool');
-        const {
-            json,
-            sourceLanguage = 'English',
-            targetLanguage,
-            topic,
-            doNotTranslateKeys = [],
-            modelProvider,
-            model: modelOverride
-        } = context as z.infer<typeof InboxTranslateInputSchema>;
+        try {
+            const {
+                json,
+                sourceLanguage = 'English',
+                targetLanguage,
+                topic,
+                doNotTranslateKeys = [],
+                modelProvider,
+                model: modelOverride
+            } = context as z.infer<typeof InboxTranslateInputSchema>;
 
-        const model = getModelWithOverride(modelProvider, modelOverride);
+            const model = getModelWithOverride(modelProvider, modelOverride);
 
-        const protectedKeys = [...doNotTranslateKeys, 'scene_type'];
-        logger.debug('Translation configuration', { protectedKeys, sourceLanguage, topic: topic || 'General', targetLanguage });
+            const protectedKeys = [...doNotTranslateKeys, 'scene_type'];
+            logger.debug('Translation configuration', { protectedKeys, sourceLanguage, topic: topic || 'General', targetLanguage });
 
-        // 1) Extract
-        const extracted = extractStringsWithPaths(json, protectedKeys);
-        const htmlCount = extracted.filter(e => e.tagMap && e.tagMap.size > 0).length;
-        logger.debug('Extracted strings from inbox', { count: extracted.length, htmlCount });
+            // 1) Extract
+            const extracted = extractStringsWithPaths(json, protectedKeys);
+            const htmlCount = extracted.filter(e => e.tagMap && e.tagMap.size > 0).length;
+            logger.debug('Extracted strings from inbox', { count: extracted.length, htmlCount });
 
-        if (extracted.length === 0) {
-            return { success: true, data: json };
-        }
-
-        // 2) Chunking
-        const CHUNK_SIZE = computeChunkSize(extracted);
-        const chunks: ExtractedString[][] = [];
-        for (let i = 0; i < extracted.length; i += CHUNK_SIZE) {
-            chunks.push(extracted.slice(i, i + CHUNK_SIZE));
-        }
-        logger.debug('Split inbox strings into chunks', { chunkCount: chunks.length, chunkSize: CHUNK_SIZE });
-
-        // 3) Prompt
-        const topicContext = topic
-            ? `You are localizing content for a ${topic} security training. Use appropriate terminology for this security topic.`
-            : 'You are localizing general security training content.';
-
-        const system = buildSystemPrompt({
-            topicContext,
-            sourceLanguage,
-            targetLanguage,
-            extractedLength: extracted.length
-        });
-
-        // 4) Translate
-        const BATCH_SIZE = 3;
-        const issues: string[] = [];
-
-        async function translateChunk(chunk: ExtractedString[], chunkIndex: number): Promise<string[]> {
-            const chunkNumber = chunkIndex + 1;
-            const trivialMask = chunk.map(it => isTrivialValue(it.value));
-
-            try {
-                const numberedInput: Record<string, string> = {};
-                chunk.forEach((item, i) => numberedInput[String(i)] = item.value);
-
-                const user =
-                    `Localize these ${sourceLanguage} values to ${targetLanguage} ONLY. Follow all system rules above.
-                    Do NOT modify HTML tokens (__HTML#__) or placeholders.
-
-                    INPUT:
-                    ${JSON.stringify(numberedInput, null, 2)}
-
-                    OUTPUT (${targetLanguage} ONLY, valid JSON object with keys "0".."${chunk.length - 1}"):`;
-
-                const res = await generateText({
-                    model,
-                    messages: [
-                        { role: 'system', content: system },
-                        { role: 'user', content: user }
-                    ],
-                    ...LOCALIZER_PARAMS,
-                });
-
-                const cleaned = cleanResponse(res.text, `inbox-chunk-${chunkNumber}`);
-                const obj = JSON.parse(cleaned);
-
-                const out: string[] = [];
-                for (let i = 0; i < chunk.length; i++) {
-                    const src = chunk[i].value;
-                    let tgt = trivialMask[i] ? src : obj[String(i)];
-                    if (tgt === undefined) throw new Error(`Missing key "${i}" in translation output`);
-
-                    // Placeholders // URL // email // whitespace koru
-                    if (!placeholdersEqual(src, tgt)) {
-                        issues.push(`chunk ${chunkNumber} index ${i}: placeholder mismatch`);
-                    }
-                    const srcUrls = src.match(URL_RE) || [];
-                    const tgtUrls = tgt.match(URL_RE) || [];
-                    if (!stringsEqualSet(srcUrls, tgtUrls)) {
-                        issues.push(`chunk ${chunkNumber} index ${i}: url mismatch`);
-                    }
-                    const srcEmails = src.match(EMAIL_RE) || [];
-                    const tgtEmails = tgt.match(EMAIL_RE) || [];
-                    if (!stringsEqualSet(srcEmails, tgtEmails)) {
-                        issues.push(`chunk ${chunkNumber} index ${i}: email mismatch`);
-                    }
-
-                    const sSig = edgeWhitespaceSig(src);
-                    const tSig = edgeWhitespaceSig(tgt);
-                    if (sSig.lead.length !== tSig.lead.length || sSig.tail.length !== tSig.tail.length) {
-                        tgt = sSig.lead + tgt.trim() + sSig.tail;
-                    }
-
-                    out.push(tgt);
-                }
-                return out;
-
-            } catch (e) {
-                const err = e instanceof Error ? e : new Error(String(e));
-                logger.warn(`Chunk translation failed, using originals`, { chunkNumber, error: err.message });
-                return chunk.map(c => c.value);
+            if (extracted.length === 0) {
+                return { success: true, data: json };
             }
-        }
 
-        const allTranslated: string[] = [];
-        for (let start = 0; start < chunks.length; start += BATCH_SIZE) {
-            const batch = chunks.slice(start, Math.min(start + BATCH_SIZE, chunks.length));
-            const results = await Promise.all(batch.map((ch, idx) => translateChunk(ch, start + idx)));
-            results.forEach(r => allTranslated.push(...r));
-        }
+            // 2) Chunking
+            const CHUNK_SIZE = computeChunkSize(extracted);
+            const chunks: ExtractedString[][] = [];
+            for (let i = 0; i < extracted.length; i += CHUNK_SIZE) {
+                chunks.push(extracted.slice(i, i + CHUNK_SIZE));
+            }
+            logger.debug('Split inbox strings into chunks', { chunkCount: chunks.length, chunkSize: CHUNK_SIZE });
 
-        if (allTranslated.length !== extracted.length) {
-            throw new Error(`Total mismatch: expected ${extracted.length}, got ${allTranslated.length}`);
-        }
+            // 3) Prompt
+            const topicContext = topic
+                ? `You are localizing content for a ${topic} security training. Use appropriate terminology for this security topic.`
+                : 'You are localizing general security training content.';
 
-        const result = bindTranslatedStrings(json, extracted, allTranslated);
-        return { success: true, data: result, error: issues.length ? `Completed with ${issues.length} soft issues` : undefined };
+            const system = buildSystemPrompt({
+                topicContext,
+                sourceLanguage,
+                targetLanguage,
+                extractedLength: extracted.length
+            });
+
+            // 4) Translate
+            const BATCH_SIZE = 3;
+            const issues: string[] = [];
+
+            async function translateChunk(chunk: ExtractedString[], chunkIndex: number): Promise<string[]> {
+                const chunkNumber = chunkIndex + 1;
+                const trivialMask = chunk.map(it => isTrivialValue(it.value));
+
+                try {
+                    const numberedInput: Record<string, string> = {};
+                    chunk.forEach((item, i) => numberedInput[String(i)] = item.value);
+
+                    const user =
+                        `Localize these ${sourceLanguage} values to ${targetLanguage} ONLY. Follow all system rules above.
+                        Do NOT modify HTML tokens (__HTML#__) or placeholders.
+
+                        INPUT:
+                        ${JSON.stringify(numberedInput, null, 2)}
+
+                        OUTPUT (${targetLanguage} ONLY, valid JSON object with keys "0".."${chunk.length - 1}"):`;
+
+                    const res = await generateText({
+                        model,
+                        messages: [
+                            { role: 'system', content: system },
+                            { role: 'user', content: user }
+                        ],
+                        ...LOCALIZER_PARAMS,
+                    });
+
+                    const cleaned = cleanResponse(res.text, `inbox-chunk-${chunkNumber}`);
+                    const obj = JSON.parse(cleaned);
+
+                    const out: string[] = [];
+                    for (let i = 0; i < chunk.length; i++) {
+                        const src = chunk[i].value;
+                        let tgt = trivialMask[i] ? src : obj[String(i)];
+                        if (tgt === undefined) throw new Error(`Missing key "${i}" in translation output`);
+
+                        // Placeholders // URL // email // whitespace koru
+                        if (!placeholdersEqual(src, tgt)) {
+                            issues.push(`chunk ${chunkNumber} index ${i}: placeholder mismatch`);
+                        }
+                        const srcUrls = src.match(URL_RE) || [];
+                        const tgtUrls = tgt.match(URL_RE) || [];
+                        if (!stringsEqualSet(srcUrls, tgtUrls)) {
+                            issues.push(`chunk ${chunkNumber} index ${i}: url mismatch`);
+                        }
+                        const srcEmails = src.match(EMAIL_RE) || [];
+                        const tgtEmails = tgt.match(EMAIL_RE) || [];
+                        if (!stringsEqualSet(srcEmails, tgtEmails)) {
+                            issues.push(`chunk ${chunkNumber} index ${i}: email mismatch`);
+                        }
+
+                        const sSig = edgeWhitespaceSig(src);
+                        const tSig = edgeWhitespaceSig(tgt);
+                        if (sSig.lead.length !== tSig.lead.length || sSig.tail.length !== tSig.tail.length) {
+                            tgt = sSig.lead + tgt.trim() + sSig.tail;
+                        }
+
+                        out.push(tgt);
+                    }
+                    return out;
+
+                } catch (e) {
+                    const err = e instanceof Error ? e : new Error(String(e));
+                    logger.warn(`Chunk translation failed, using originals`, { chunkNumber, error: err.message });
+                    return chunk.map(c => c.value);
+                }
+            }
+
+            const allTranslated: string[] = [];
+            for (let start = 0; start < chunks.length; start += BATCH_SIZE) {
+                const batch = chunks.slice(start, Math.min(start + BATCH_SIZE, chunks.length));
+                const results = await Promise.all(batch.map((ch, idx) => translateChunk(ch, start + idx)));
+                results.forEach(r => allTranslated.push(...r));
+            }
+
+            if (allTranslated.length !== extracted.length) {
+                throw new Error(`Total mismatch: expected ${extracted.length}, got ${allTranslated.length}`);
+            }
+
+            const result = bindTranslatedStrings(json, extracted, allTranslated);
+            return { success: true, data: result, error: issues.length ? `Completed with ${issues.length} soft issues` : undefined };
+        } catch (error) {
+            const err = error instanceof Error ? error : new Error(String(error));
+            const errorInfo = errorService.aiModel(err.message, {
+                sourceLanguage: context?.sourceLanguage,
+                targetLanguage: context?.targetLanguage,
+                step: 'inbox-translation',
+                stack: err.stack
+            });
+            logger.error('Inbox translation failed', errorInfo);
+            return {
+                success: false,
+                error: JSON.stringify(errorInfo)
+            };
+        }
     }
 });

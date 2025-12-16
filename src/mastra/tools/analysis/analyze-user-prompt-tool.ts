@@ -10,6 +10,7 @@ import { PROMPT_ANALYSIS_PARAMS } from '../../utils/config/llm-generation-params
 import { MICROLEARNING, PROMPT_ANALYSIS, ROLES, CATEGORIES, THEME_COLORS, MODEL_PROVIDERS, TRAINING_LEVELS, DEFAULT_TRAINING_LEVEL } from '../../constants';
 import { streamReasoning } from '../../utils/core/reasoning-stream';
 import { getLogger } from '../../utils/core/logger';
+import { errorService } from '../../services/error-service';
 
 // Cache formatted lists for performance
 const cachedRolesList = ROLES.VALUES.map((role) => `- "${role}"`).join('\n');
@@ -296,7 +297,12 @@ ${additionalContext}`
 
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('JSON parse failed, using fallback analysis', { error: err.message, stack: err.stack });
+      const errorInfo = errorService.aiModel(err.message, {
+        userPrompt: userPrompt?.substring(0, 100),
+        step: 'prompt-analysis',
+        stack: err.stack
+      });
+      logger.error('Prompt analysis failed, using fallback', errorInfo);
 
       // Enhanced fallback analysis with context
       // Detect if code-related topic based on programming languages OR security keywords
@@ -344,7 +350,8 @@ ${additionalContext}`
 
       return {
         success: true,
-        data: fallbackData
+        data: fallbackData,
+        error: JSON.stringify(errorInfo)
       };
     }
   },

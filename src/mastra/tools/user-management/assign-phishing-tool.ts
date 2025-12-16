@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { requestStorage } from '../../utils/core/request-storage';
 import { getLogger } from '../../utils/core/logger';
 import { ERROR_MESSAGES, API_ENDPOINTS } from '../../constants';
+import { errorService } from '../../services/error-service';
 
 export const assignPhishingTool = createTool({
     id: 'assign-phishing',
@@ -39,7 +40,9 @@ export const assignPhishingTool = createTool({
         const env = store?.env; // Cloudflare env (bindings: KV, D1, Service Bindings)
 
         if (!token) {
-            return { success: false, error: ERROR_MESSAGES.PLATFORM.ASSIGN_TOKEN_MISSING };
+            const errorInfo = errorService.auth(ERROR_MESSAGES.PLATFORM.ASSIGN_TOKEN_MISSING);
+            logger.warn('Auth error: Token missing', errorInfo);
+            return { success: false, error: JSON.stringify(errorInfo) };
         }
 
         const payload = {
@@ -104,10 +107,17 @@ export const assignPhishingTool = createTool({
 
         } catch (error) {
             const err = error instanceof Error ? error : new Error(String(error));
-            logger.error('Assign phishing tool failed', { error: err.message, stack: err.stack });
+            const errorInfo = errorService.external(err.message, {
+                resourceId,
+                targetUserResourceId,
+                stack: err.stack,
+            });
+
+            logger.error('Assign phishing tool failed', errorInfo);
+
             return {
                 success: false,
-                error: error instanceof Error ? error.message : ERROR_MESSAGES.PLATFORM.UNKNOWN_ASSIGN_ERROR
+                error: JSON.stringify(errorInfo)
             };
         }
     },

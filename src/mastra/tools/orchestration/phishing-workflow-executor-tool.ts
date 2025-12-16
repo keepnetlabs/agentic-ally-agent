@@ -4,6 +4,7 @@ import { createPhishingWorkflow } from '../../workflows/create-phishing-workflow
 import { v4 as uuidv4 } from 'uuid';
 import { PHISHING, MODEL_PROVIDERS, ERROR_MESSAGES } from '../../constants';
 import { getLogger } from '../../utils/core/logger';
+import { errorService } from '../../services/error-service';
 
 const phishingWorkflowSchema = z.object({
     workflowType: z.literal(PHISHING.WORKFLOW_TYPE).describe('Workflow to execute'),
@@ -144,18 +145,26 @@ export const phishingWorkflowExecutorTool = createTool({
 
         } catch (error) {
             const err = error instanceof Error ? error : new Error(String(error));
-            logger.error('Phishing workflow error', { error: err.message, stack: err.stack });
+            const errorInfo = errorService.external(err.message, {
+                topic: context?.topic,
+                difficulty: context?.difficulty,
+                step: 'phishing-workflow-execution',
+                stack: err.stack
+            });
+
+            logger.error('Phishing workflow error', errorInfo);
 
             // User-friendly error message
-            const userMessage = error instanceof Error && error.message.includes('analysis')
+            const userMessage = err.message.includes('analysis')
                 ? ERROR_MESSAGES.PHISHING.ANALYSIS_FAILED
-                : error instanceof Error && error.message.includes('email')
+                : err.message.includes('email')
                     ? ERROR_MESSAGES.PHISHING.GENERATION_FAILED
                     : ERROR_MESSAGES.PHISHING.GENERIC;
 
             return {
                 success: false,
-                error: userMessage
+                error: JSON.stringify(errorInfo),
+                message: userMessage
             };
         }
     }

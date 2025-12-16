@@ -292,24 +292,3 @@ export function unmaskPII(text: string, mapping: PIIMapping): string {
 
   return unmaskedText;
 }
-
-/**
- * Extract user IDs from masked text
- * Useful for tracking which users were mentioned
- */
-export function extractMaskedUserIDs(text: string): string[] {
-  const pattern = /\[USER-([A-F0-9]+)\]/g;
-  const matches = [...text.matchAll(pattern)];
-  return matches.map(m => m[1]);
-}
-
-/**
- * Test helper - check if text contains PII
- */
-export function containsPII(text: string): boolean {
-  const namePattern = /\b([A-ZÇĞİÖŞÜ][a-zçğıöşü]+\s+[A-ZÇĞİÖŞÜ][a-zçğıöşü]+)\b/;
-  const emailPattern = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/;
-  const phonePattern = /(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/;
-
-  return namePattern.test(text) || emailPattern.test(text) || phonePattern.test(text);
-}

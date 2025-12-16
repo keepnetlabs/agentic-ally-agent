@@ -9,6 +9,7 @@ import { CATEGORIES } from '../../constants';
 import { LanguageModelSchema } from '../../types/language-model';
 import { ProductService } from '../../services/product-service';
 import { getLogger } from '../../utils/core/logger';
+import { errorService } from '../../services/error-service';
 
 const GenerateMicrolearningJsonSchema = z.object({
   analysis: z.object({
@@ -250,6 +251,7 @@ export const generateMicrolearningJsonTool = new Tool({
   execute: async (context: any) => {
     const input = context?.inputData || context?.input || context;
     const { analysis, microlearningId, model } = input;
+    const logger = getLogger('GenerateMicrolearningJsonTool');
 
     try {
       const result = await generateMicrolearningJsonWithAI(analysis, microlearningId, model);
@@ -258,9 +260,18 @@ export const generateMicrolearningJsonTool = new Tool({
         data: result
       };
     } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      const errorInfo = errorService.aiModel(err.message, {
+        microlearningId,
+        step: 'json-generation',
+        stack: err.stack
+      });
+
+      logger.error('JSON generation failed', errorInfo);
+
       return {
         success: false,
-        error: error instanceof Error ? error.message : String(error),
+        error: JSON.stringify(errorInfo),
         data: null
       };
     }

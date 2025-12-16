@@ -13,6 +13,7 @@ import { rewriteScene7Nudge } from '../scenes/rewriters/scene7-nudge-rewriter';
 import { rewriteScene8Summary } from '../scenes/rewriters/scene8-summary-rewriter';
 import { rewriteAppTexts } from '../scenes/rewriters/app-texts-rewriter';
 import { getLogger } from '../../utils/core/logger';
+import { errorService } from '../../services/error-service';
 
 /* =========================================================
  * Schemas
@@ -64,30 +65,32 @@ export const translateLanguageJsonTool = new Tool({
     outputSchema: TranslateJsonOutputSchema,
     execute: async (context: any) => {
         const logger = getLogger('TranslateLanguageJsonTool');
-        const {
-            json,
-            microlearningStructure,
-            sourceLanguage = 'en-gb',
-            targetLanguage,
-            topic,
-            modelProvider,
-            model: modelOverride
-        } = context as z.infer<typeof TranslateJsonInputSchema>;
 
-        const model = getModelWithOverride(modelProvider, modelOverride);
+        try {
+            const {
+                json,
+                microlearningStructure,
+                sourceLanguage = 'en-gb',
+                targetLanguage,
+                topic,
+                modelProvider,
+                model: modelOverride
+            } = context as z.infer<typeof TranslateJsonInputSchema>;
 
-        logger.debug('Starting scene-by-scene rewrite', { sourceLanguage, targetLanguage, topic: topic || 'General' });
+            const model = getModelWithOverride(modelProvider, modelOverride);
 
-        // Extract scenes metadata from microlearningStructure
-        const scenesMetadata = microlearningStructure?.scenes || [];
-        const appTexts = json.app_texts || {};
+            logger.debug('Starting scene-by-scene rewrite', { sourceLanguage, targetLanguage, topic: topic || 'General' });
 
-        if (scenesMetadata.length === 0) {
-            logger.warn('No scenes metadata found, returning original', {});
-            return { success: true, data: json };
-        }
+            // Extract scenes metadata from microlearningStructure
+            const scenesMetadata = microlearningStructure?.scenes || [];
+            const appTexts = json.app_texts || {};
 
-        logger.debug('Scene rewrite parameters', { sceneCount: scenesMetadata.length });
+            if (scenesMetadata.length === 0) {
+                logger.warn('No scenes metadata found, returning original', {});
+                return { success: true, data: json };
+            }
+
+            logger.debug('Scene rewrite parameters', { sceneCount: scenesMetadata.length });
 
         // Build rewrite context
         const rewriteContext = {
@@ -157,11 +160,26 @@ export const translateLanguageJsonTool = new Tool({
             app_texts: rewrittenAppTexts
         };
 
-        logger.debug('Scene rewrite batch completed', { scenesRewritten: Object.keys(rewrittenScenesMap).length });
+            logger.debug('Scene rewrite batch completed', { scenesRewritten: Object.keys(rewrittenScenesMap).length });
 
-        return {
-            success: true,
-            data: result
-        };
+            return {
+                success: true,
+                data: result
+            };
+        } catch (error) {
+            const err = error instanceof Error ? error : new Error(String(error));
+            const errorInfo = errorService.aiModel(err.message, {
+                targetLanguage: context?.targetLanguage,
+                step: 'language-translation',
+                stack: err.stack
+            });
+
+            logger.error('Language translation failed', errorInfo);
+
+            return {
+                success: false,
+                error: JSON.stringify(errorInfo)
+            };
+        }
     }
 });

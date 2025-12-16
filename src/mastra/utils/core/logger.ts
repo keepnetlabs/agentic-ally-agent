@@ -40,15 +40,3 @@ export function startTimer() {
     endMs: () => `${Date.now() - start}ms`,
   };
 }
-
-/**
- * Helper to safely serialize objects for logging
- */
-export function safeStringify(obj: any, maxLength: number = 500): string {
-  try {
-    const str = JSON.stringify(obj);
-    return str.length > maxLength ? str.substring(0, maxLength) + '...' : str;
-  } catch (error) {
-    return `[Circular or non-serializable: ${typeof obj}]`;
-  }
-}

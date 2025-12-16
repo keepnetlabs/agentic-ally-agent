@@ -7,8 +7,7 @@
 export {
     validateImageUrl,
     validateImageUrlCached,
-    fixBrokenImages,
-    clearImageValidationCache
+    fixBrokenImages
 } from './image-validator';
 
 // Industry detection and design systems

@@ -280,12 +280,3 @@ function cleanupExpiredCacheEntries(): void {
         });
     }
 }
-
-/**
- * Clear the image validation cache
- * Useful for testing or when you want to force re-validation
- */
-export function clearImageValidationCache(): void {
-    imageValidationCache.clear();
-    logger.info('Image validation cache cleared');
-}

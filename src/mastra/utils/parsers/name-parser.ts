@@ -99,37 +99,3 @@ export function normalizeName(name: string): string {
     })
     .join(' ');
 }
-
-/**
- * Extract name from various input formats
- * Useful for parsing user input that might contain prefixes or suffixes
- *
- * @example
- * extractName("Find user: John Doe") // "John Doe"
- * extractName("Create training for Ali Yılmaz") // "Ali Yılmaz"
- */
-export function extractNameFromContext(context: string): string | null {
-  // Remove common prefixes
-  const prefixes = [
-    'find user:?',
-    'user:?',
-    'for:?',
-    'create.*?for:?',
-    'assign.*?to:?',
-    'search:?',
-  ];
-
-  let cleaned = context.trim();
-
-  for (const prefix of prefixes) {
-    const regex = new RegExp(`^${prefix}\\s*`, 'i');
-    cleaned = cleaned.replace(regex, '');
-  }
-
-  // Extract capitalized words (likely a name)
-  // Matches: "John Doe", "Ali Yılmaz", "Jean-Claude Van Damme"
-  const namePattern = /\b([A-ZÇĞİÖŞÜ][a-zçğıöşü]+(?:[-\s][A-ZÇĞİÖŞÜ][a-zçğıöşü]+)*)\b/;
-  const match = cleaned.match(namePattern);
-
-  return match ? match[0] : null;
-}

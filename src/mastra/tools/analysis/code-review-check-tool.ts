@@ -5,6 +5,7 @@ import { getModelWithOverride } from '../../model-providers';
 import { cleanResponse } from '../../utils/content-processors/json-cleaner';
 import { MODEL_PROVIDERS } from '../../constants';
 import { getLogger } from '../../utils/core/logger';
+import { errorService } from '../../services/error-service';
 
 const CodeReviewCheckSchema = z.object({
   issueType: z.string().describe('Type of issue to fix (e.g., "SQL Injection", "XSS", "Logic Error", "Performance Issue")'),
@@ -107,7 +108,13 @@ Return ONLY valid JSON - NO markdown, NO backticks, NO formatting. Start directl
       };
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Code review check failed', { error: err.message, stack: err.stack });
+      const errorInfo = errorService.aiModel(err.message, {
+        issueType,
+        language,
+        stack: err.stack,
+      });
+
+      logger.error('Code review check failed', errorInfo);
 
       return {
         success: false,
@@ -115,11 +122,11 @@ Return ONLY valid JSON - NO markdown, NO backticks, NO formatting. Start directl
           isCorrect: false,
           severity: 'incorrect' as const,
           feedback: 'Error validating code',
-          explanation: `Code review validation failed: ${error instanceof Error ? error.message : String(error)}`,
+          explanation: `Code review validation failed: ${err.message}`,
           points: 0,
-          hint: '', // Always return hint field
+          hint: '',
         },
-        error: `Code review validation failed: ${error instanceof Error ? error.message : String(error)}`,
+        error: JSON.stringify(errorInfo),
       };
     }
   },

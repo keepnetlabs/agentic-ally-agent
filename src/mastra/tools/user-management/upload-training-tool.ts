@@ -4,6 +4,7 @@ import { requestStorage } from '../../utils/core/request-storage';
 import { getLogger } from '../../utils/core/logger';
 import { KVService } from '../../services/kv-service';
 import { ERROR_MESSAGES, API_ENDPOINTS } from '../../constants';
+import { errorService } from '../../services/error-service';
 
 export const uploadTrainingTool = createTool({
     id: 'upload-training',
@@ -35,7 +36,9 @@ export const uploadTrainingTool = createTool({
         const env = store?.env; // Cloudflare env (bindings: KV, D1, Service Bindings)
 
         if (!token) {
-            return { success: false, error: ERROR_MESSAGES.PLATFORM.UPLOAD_TOKEN_MISSING };
+            const errorInfo = errorService.auth(ERROR_MESSAGES.PLATFORM.UPLOAD_TOKEN_MISSING);
+            logger.warn('Auth error: Token missing', errorInfo);
+            return { success: false, error: JSON.stringify(errorInfo) };
         }
 
         try {
@@ -134,10 +137,16 @@ export const uploadTrainingTool = createTool({
 
         } catch (error) {
             const err = error instanceof Error ? error : new Error(String(error));
-            logger.error('Upload tool failed', { error: err.message, stack: err.stack });
+            const errorInfo = errorService.external(err.message, {
+                microlearningId,
+                stack: err.stack,
+            });
+
+            logger.error('Upload tool failed', errorInfo);
+
             return {
                 success: false,
-                error: error instanceof Error ? error.message : ERROR_MESSAGES.PLATFORM.UNKNOWN_UPLOAD_ERROR
+                error: JSON.stringify(errorInfo)
             };
         }
     },

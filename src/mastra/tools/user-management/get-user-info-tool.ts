@@ -2,13 +2,14 @@
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { requestStorage } from '../../utils/core/request-storage';
-import { ERROR_MESSAGES } from '../../constants';
+import { ERROR_MESSAGES, API_ENDPOINTS } from '../../constants';
 import { generatePIIHash } from '../../utils/parsers/pii-masking-utils';
 import { parseName, isValidName, normalizeName } from '../../utils/parsers/name-parser';
 import { generateText } from 'ai';
 import { getModelWithOverride } from '../../model-providers'; // Use override to pick stronger model
 import { cleanResponse } from '../../utils/content-processors/json-cleaner';
 import { getLogger } from '../../utils/core/logger';
+import { errorService } from '../../services/error-service';
 
 // Payload for Step 1: Find User
 const GET_ALL_PAYLOAD = {
@@ -157,7 +158,9 @@ export const getUserInfoTool = createTool({
         try {
             if (inputFullName) {
                 if (!isValidName(inputFullName)) {
-                    return { success: false, error: `Invalid name format: "${inputFullName}"` };
+                    const errorInfo = errorService.validation(`Invalid name format: "${inputFullName}"`);
+                    logger.warn('Validation error: Invalid name format', errorInfo);
+                    return { success: false, error: JSON.stringify(errorInfo) };
                 }
                 const normalizedFullName = normalizeName(inputFullName);
                 parsed = parseName(normalizedFullName);
@@ -168,10 +171,15 @@ export const getUserInfoTool = createTool({
                 parsed = parseName({ firstName: normalizedFirstName, lastName: normalizedLastName });
                 logger.debug('Using explicit normalized names', { firstName: normalizedFirstName, lastName: normalizedLastName });
             } else {
-                return { success: false, error: 'Either fullName or firstName must be provided' };
+                const errorInfo = errorService.validation('Either fullName or firstName must be provided');
+                logger.warn('Validation error: Name required', errorInfo);
+                return { success: false, error: JSON.stringify(errorInfo) };
             }
         } catch (error) {
-            return { success: false, error: error instanceof Error ? error.message : 'Failed to parse name' };
+            const err = error instanceof Error ? error : new Error(String(error));
+            const errorInfo = errorService.validation(err.message, { step: 'name-parsing' });
+            logger.error('Name parsing error', errorInfo);
+            return { success: false, error: JSON.stringify(errorInfo) };
         }
 
         const { firstName, lastName, fullName } = parsed;
@@ -182,7 +190,9 @@ export const getUserInfoTool = createTool({
         const token = store?.token;
         const companyId = store?.companyId;
         if (!token) {
-            return { success: false, error: ERROR_MESSAGES.USER_INFO.TOKEN_MISSING };
+            const errorInfo = errorService.auth(ERROR_MESSAGES.USER_INFO.TOKEN_MISSING);
+            logger.warn('Auth error: Token missing', errorInfo);
+            return { success: false, error: JSON.stringify(errorInfo) };
         }
 
         try {
@@ -204,7 +214,7 @@ export const getUserInfoTool = createTool({
                 userSearchHeaders['x-ir-company-id'] = companyId;
             }
 
-            const userSearchResponse = await fetch('https://test-api.devkeepnet.com/api/leaderboard/get-all', {
+            const userSearchResponse = await fetch(API_ENDPOINTS.USER_INFO_GET_ALL, {
                 method: 'POST',
                 headers: userSearchHeaders,
                 body: JSON.stringify(userSearchPayload)
@@ -239,7 +249,7 @@ export const getUserInfoTool = createTool({
                 timelineHeaders['x-ir-company-id'] = companyId;
             }
 
-            const timelineResponse = await fetch('https://test-api.devkeepnet.com/api/leaderboard/get-user-timeline', {
+            const timelineResponse = await fetch(API_ENDPOINTS.USER_INFO_GET_TIMELINE, {
                 method: 'POST',
                 headers: timelineHeaders,
                 body: JSON.stringify(timelinePayload)
@@ -443,7 +453,13 @@ Use this exact JSON structure:
                 logger.debug('Analysis report generated successfully', {});
             } catch (aiError) {
                 const err = aiError instanceof Error ? aiError : new Error(String(aiError));
-                logger.error('AI analysis generation failed', { error: err.message, stack: err.stack });
+                const errorInfo = errorService.aiModel(err.message, {
+                    step: 'analysis-report-generation',
+                    maskedId,
+                    stack: err.stack
+                });
+                logger.error('AI analysis generation failed', errorInfo);
+                // Don't return - analysis is optional, continue with partial data
             }
 
             return {
@@ -460,8 +476,19 @@ Use this exact JSON structure:
 
         } catch (error) {
             const err = error instanceof Error ? error : new Error(String(error));
-            logger.error('Tool execution failed', { error: err.message, stack: err.stack });
-            return { success: false, error: err.message };
+            const errorInfo = errorService.external(err.message, {
+                fullName,
+                firstName,
+                lastName,
+                stack: err.stack
+            });
+
+            logger.error('Tool execution failed', errorInfo);
+
+            return {
+                success: false,
+                error: JSON.stringify(errorInfo)
+            };
         }
     },
 });

@@ -7,6 +7,7 @@ import { updateMicrolearningWorkflow } from '../../workflows/update-microlearnin
 import { v4 as uuidv4 } from 'uuid';
 import { PROMPT_ANALYSIS, MODEL_PROVIDERS, ERROR_MESSAGES } from '../../constants';
 import { getLogger } from '../../utils/core/logger';
+import { errorService } from '../../services/error-service';
 
 /**
  * Type definitions for workflow results
@@ -412,6 +413,15 @@ export const workflowExecutorTool = createTool({
       }
 
     } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      const errorInfo = errorService.external(err.message, {
+        workflowType: context?.workflowType,
+        step: 'workflow-execution',
+        stack: err.stack
+      });
+
+      logger.error('Workflow execution failed', errorInfo);
+
       // Send error message to frontend
       try {
         const messageId = uuidv4();
@@ -419,17 +429,17 @@ export const workflowExecutorTool = createTool({
         await writer?.write({
           type: 'text-delta',
           id: messageId,
-          delta: `❌ Workflow failed: ${error instanceof Error ? error.message : 'Unknown error'}\n`
+          delta: `❌ Workflow failed: ${err.message}\n`
         });
         await writer?.write({ type: 'text-end', id: messageId });
       } catch (writeError) {
-        const err = writeError instanceof Error ? writeError : new Error(String(writeError));
-        logger.error('Failed to send error message to frontend', { error: err.message, stack: err.stack });
+        const writeErr = writeError instanceof Error ? writeError : new Error(String(writeError));
+        logger.error('Failed to send error message to frontend', { error: writeErr.message, stack: writeErr.stack });
       }
 
       return {
         success: false,
-        error: error instanceof Error ? error.message : ERROR_MESSAGES.WORKFLOW.UNKNOWN_ERROR
+        error: JSON.stringify(errorInfo)
       };
     }
   }

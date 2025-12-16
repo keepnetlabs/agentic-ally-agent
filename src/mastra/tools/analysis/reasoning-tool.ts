@@ -1,6 +1,7 @@
 import { Tool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { getLogger } from '../../utils/core/logger';
+import { errorService } from '../../services/error-service';
 
 /**
  * Reasoning Tool - Allows agent to show its thinking process
@@ -62,9 +63,15 @@ export const reasoningTool = new Tool({
       };
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Reasoning tool error', { error: err.message, stack: err.stack });
+      const errorInfo = errorService.internal(err.message, {
+        thought: thought?.substring(0, 100),
+        step: 'reasoning-emission',
+        stack: err.stack
+      });
+      logger.error('Reasoning tool error', errorInfo);
       return {
-        success: false
+        success: false,
+        error: JSON.stringify(errorInfo)
       };
     }
   }
