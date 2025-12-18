@@ -2,6 +2,7 @@ import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { requestStorage } from '../../utils/core/request-storage';
 import { getLogger } from '../../utils/core/logger';
+import { withRetry } from '../../utils/core/resilience-utils';
 import { ERROR_MESSAGES, API_ENDPOINTS } from '../../constants';
 import { errorService } from '../../services/error-service';
 
@@ -53,39 +54,43 @@ export const assignTrainingTool = createTool({
     logger.debug('Assign payload prepared', { payload: maskedPayload });
 
     try {
-      // Service Binding kullan (production) veya fallback to public URL (local dev)
-      let response: Response;
+      // Wrap API call with retry (exponential backoff: 1s, 2s, 4s)
+      const result = await withRetry(async () => {
+        // Service Binding kullan (production) veya fallback to public URL (local dev)
+        let response: Response;
 
-      if (env?.CRUD_WORKER) {
-        // ✅ SERVICE BINDING (Production - Internal Routing)
-        logger.debug('Using Service Binding: CRUD_WORKER');
-        response = await env.CRUD_WORKER.fetch('https://worker/send', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify(payload)
-        });
-      } else {
-        // ⚠️ FALLBACK: Public URL (Local Development)
-        logger.debug('Using Public URL (Fallback)', { url: API_ENDPOINTS.TRAINING_WORKER_SEND });
-        response = await fetch(API_ENDPOINTS.TRAINING_WORKER_SEND, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify(payload)
-        });
-      }
+        if (env?.CRUD_WORKER) {
+          // ✅ SERVICE BINDING (Production - Internal Routing)
+          logger.debug('Using Service Binding: CRUD_WORKER');
+          response = await env.CRUD_WORKER.fetch('https://worker/send', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(payload)
+          });
+        } else {
+          // ⚠️ FALLBACK: Public URL (Local Development)
+          logger.debug('Using Public URL (Fallback)', { url: API_ENDPOINTS.TRAINING_WORKER_SEND });
+          response = await fetch(API_ENDPOINTS.TRAINING_WORKER_SEND, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(payload)
+          });
+        }
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Assign API failed: ${response.status} - ${errorText}`);
-      }
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Assign API failed: ${response.status} - ${errorText}`);
+        }
 
-      const result = await response.json();
+        return await response.json();
+      }, `Assign training to user ${targetUserResourceId}`);
+
       logger.info('Assignment success', { resultKeys: Object.keys(result) });
 
       return {

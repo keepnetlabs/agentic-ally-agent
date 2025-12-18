@@ -10,6 +10,9 @@ import type {
   MessageContentPart,
   MessageParts,
 } from '../types/api-types';
+import { getLogger } from './core/logger';
+
+const logger = getLogger('ChatRequestHelpers');
 
 // Window size for conversation context
 const CONTEXT_WINDOW_SIZE = 10;
@@ -75,25 +78,87 @@ export const extractMessageContent = (message: ChatMessage): string => {
  * @param messages - Array of chat messages
  * @returns Formatted context string for orchestrator
  */
+/**
+ * Cleans UI signals and unnecessary content from message
+ * Converts ::ui:* signals to semantic messages for orchestrator understanding
+ * Removes markdown formatting and shortens URLs
+ *
+ * UI Signal Format: ::ui:signal_type::payload::/ui:signal_type:: (with optional closing tag)
+ */
+const cleanMessageContent = (content: string): string => {
+  if (!content) return '';
+
+  // Convert UI signals to semantic messages (for orchestrator context)
+  // Matches both with and without closing tags: ::ui:canvas_open:: or ::ui:canvas_open::data::/ui:canvas_open::
+  if (content.match(/::ui:canvas_open::/)) {
+    return '[Training Created]';
+  }
+  if (content.match(/::ui:phishing_email::/)) {
+    return '[Phishing Simulation Email Created]';
+  }
+  if (content.match(/::ui:landing_page::/)) {
+    return '[Phishing Simulation Landing Page Created]';
+  }
+  if (content.match(/::ui:training_uploaded::/)) {
+    return '[Training Uploaded]';
+  }
+  if (content.match(/::ui:phishing_uploaded::/)) {
+    return '[Phishing Simulation Uploaded]';
+  }
+  if (content.match(/::ui:training_assigned::/)) {
+    return '[Training Assigned to User]';
+  }
+  if (content.match(/::ui:phishing_assigned::/)) {
+    return '[Phishing Simulation Assigned to User]';
+  }
+
+  // Remove remaining UI signals (includes both formats with/without closing tags)
+  let cleaned = content.replace(/::ui:\w+::[^\n]*/g, '');
+
+  // Remove extremely long URLs - keep just ID or shorten
+  cleaned = cleaned.replace(/https?:\/\/[^\s)]+/g, (url) => {
+    // Extract meaningful ID from URL
+    const idMatch = url.match(/[/=]([a-zA-Z0-9_-]+)(?:[&?#]|$)/);
+    if (idMatch && idMatch[1].length > 10) {
+      return `[URL: ${idMatch[1].substring(0, 20)}...]`;
+    }
+    return '[URL]';
+  });
+
+  // Clean multiple whitespaces
+  cleaned = cleaned.replace(/\s+/g, ' ').trim();
+
+  return cleaned;
+};
+
 export const buildRoutingContext = (messages: ChatMessage[]): string => {
   if (!Array.isArray(messages) || messages.length === 0) {
     return '';
   }
 
+  logger.info('📥 ROUTING_CONTEXT_BUILD Building context from messages', {
+    totalMessages: messages.length,
+    selectedMessages: CONTEXT_WINDOW_SIZE
+  });
+
   const recentMessages = messages.slice(-CONTEXT_WINDOW_SIZE);
 
-  return recentMessages.map((message: ChatMessage) => {
+  // Build structured context
+  let context = 'CONVERSATION HISTORY\n';
+  context += '====================\n\n';
+
+  recentMessages.forEach((message: ChatMessage, index: number) => {
     const role = message.role === 'user' ? 'User' : 'Assistant';
-    const content = extractMessageContent(message);
+    const rawContent = extractMessageContent(message);
+    const cleanedContent = cleanMessageContent(rawContent);
 
-    // Validate extracted content
-    if (!content || content === '[]' || content === '{}') {
-      const fallback = message.toolInvocations ? '[Tool Call]' : '[Empty Message]';
-      return `${role}: ${fallback}`;
-    }
+    context += `[MESSAGE ${index + 1}]\n`;
+    context += `Role: ${role}\n`;
+    context += `Content: ${cleanedContent}\n`;
+    context += '\n';
+  });
 
-    return `${role}: ${content}`;
-  }).join('\n');
+  return context;
 };
 
 /**

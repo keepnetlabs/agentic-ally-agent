@@ -93,6 +93,13 @@ export const preparePIIMaskedInput = (
     `Here is the recent conversation history:\n---\n${maskedRoutingContext}\n---\n\nCurrent user message: "${maskedPrompt}"\n\nBased on this history and the current message, decide which agent should handle the request.` :
     maskedPrompt;
 
+  // Debug: Exactly what is sent to orchestrator
+  logger.info('🎯 ORCHESTRATOR_INPUT Data sent to orchestrator', {
+    maskedRoutingContext: maskedRoutingContext,
+    maskedPrompt: maskedPrompt,
+    orchestratorInput: orchestratorInput
+  });
+
   return { orchestratorInput, maskedPrompt, piiMapping };
 };
 
@@ -171,6 +178,14 @@ export const routeToAgent = async (
 ) => {
   const router = new AgentRouter(mastra);
   const routeResult = await router.route(orchestratorInput);
+
+  // Debug: Routing response from orchestrator
+  logger.info('✅ ORCHESTRATOR_RESPONSE Response from orchestrator', {
+    agentName: routeResult.agentName,
+    reasoning: (routeResult as any).reasoning,
+    taskContext: (routeResult as any).taskContext
+  });
+
   logger.info('agent_routing_successful', {
     agentName: routeResult.agentName,
     reasoning: (routeResult as any).reasoning

@@ -185,6 +185,12 @@ export const mastra = new Mastra({
 
           const { prompt, routingContext } = parsedRequest;
 
+          // Debug: Parse result
+          logger.info('🔍 PARSE_RESULT Chat request parsed successfully', {
+            prompt: prompt,
+            routingContext: routingContext
+          });
+
           // Step 2: Prepare PII-masked orchestrator input
           const { orchestratorInput, piiMapping } = preparePIIMaskedInput(prompt, routingContext);
 
@@ -195,6 +201,10 @@ export const mastra = new Mastra({
           let routeResult;
           try {
             routeResult = await routeToAgent(mastra, orchestratorInput);
+            logger.info('🎬 FINAL_ROUTING Agent selected', {
+              agentName: routeResult.agentName,
+              taskContext: routeResult.taskContext
+            });
           } catch (routingError) {
             logger.error('agent_routing_failed', {
               error: routingError instanceof Error ? routingError.message : String(routingError),

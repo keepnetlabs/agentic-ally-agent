@@ -2,6 +2,7 @@ import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { requestStorage } from '../../utils/core/request-storage';
 import { getLogger } from '../../utils/core/logger';
+import { withRetry } from '../../utils/core/resilience-utils';
 import { KVService } from '../../services/kv-service';
 import { ERROR_MESSAGES, API_ENDPOINTS } from '../../constants';
 import { errorService } from '../../services/error-service';
@@ -113,33 +114,36 @@ export const uploadPhishingTool = createTool({
             };
             logger.debug('Upload payload prepared', { payload: maskedPayload });
 
-            // Service Binding kullan (production) veya fallback to public URL (local dev)
-            let response: Response;
+            // Wrap API call with retry (exponential backoff: 1s, 2s, 4s)
+            const result = await withRetry(async () => {
+                // Service Binding kullan (production) veya fallback to public URL (local dev)
+                let response: Response;
 
-            if (env?.PHISHING_CRUD_WORKER) {
-                // ✅ SERVICE BINDING (Production - Internal Routing)
-                logger.debug('Using Service Binding: PHISHING_CRUD_WORKER');
-                response = await env.PHISHING_CRUD_WORKER.fetch('https://worker/submit', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-            } else {
-                // ⚠️ FALLBACK: Public URL (Local Development)
-                logger.debug('Using Public URL fallback for phishing upload', { url: API_ENDPOINTS.PHISHING_WORKER_URL });
-                response = await fetch(API_ENDPOINTS.PHISHING_WORKER_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-            }
+                if (env?.PHISHING_CRUD_WORKER) {
+                    // ✅ SERVICE BINDING (Production - Internal Routing)
+                    logger.debug('Using Service Binding: PHISHING_CRUD_WORKER');
+                    response = await env.PHISHING_CRUD_WORKER.fetch('https://worker/submit', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                } else {
+                    // ⚠️ FALLBACK: Public URL (Local Development)
+                    logger.debug('Using Public URL fallback for phishing upload', { url: API_ENDPOINTS.PHISHING_WORKER_URL });
+                    response = await fetch(API_ENDPOINTS.PHISHING_WORKER_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                }
 
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`Worker failed: ${response.status} - ${errorText}`);
-            }
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Worker failed: ${response.status} - ${errorText}`);
+                }
 
-            const result = await response.json();
+                return await response.json();
+            }, `Upload phishing content ${phishingId}`);
 
             logger.info('Phishing upload successful', {
                 success: result.success,
