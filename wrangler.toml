@@ -28,5 +28,6 @@ service = "crud-training-worker"
 
 # Cloudflare Workflows binding for autonomous generation
 [[workflows]]
-name = "AUTONOMOUS_WORKFLOW"
+binding = "AUTONOMOUS_WORKFLOW"
+name = "autonomous-workflow"
 class_name = "AutonomousWorkflow"

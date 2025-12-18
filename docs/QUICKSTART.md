@@ -177,12 +177,15 @@ After successful test:
 ## Next Steps
 
 - 📖 Read [OVERVIEW.md](./OVERVIEW.md) to understand the system
-- 🏗️ Read [ARCHITECTURE.md](./ARCHITECTURE.md) for technical details
+- 🏗️ Read [ARCHITECTURE.md](./ARCHITECTURE.md) for system design & middleware layers
+- 🛠️ Read [DEVELOPMENT.md](./DEVELOPMENT.md) for logging, constants, and development patterns
 - 🚀 Read [DEPLOYMENT.md](./DEPLOYMENT.md) to deploy to production
-- 🛠️ Read [DEVELOPMENT.md](./DEVELOPMENT.md) for deeper development
 
 ---
 
 **Stuck?** Check [FAQ.md](./FAQ.md) or [DEVELOPMENT.md](./DEVELOPMENT.md) troubleshooting section.
 
-**Last Updated:** October 27, 2025
+---
+
+**Last Updated:** December 18, 2025
+**New:** Updated references to middleware documentation (context storage, logging, rate limiting)

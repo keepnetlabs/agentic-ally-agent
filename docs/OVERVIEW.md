@@ -101,12 +101,14 @@ Returns a ready-to-use training URL
 - Generates scientific evidence-based content
 - Includes behavioral psychology principles
 - Creates realistic scenario simulations
+- Magic numbers consolidated for maintainability
 
-### 🌍 Multi-Language Support
+### 🌍 Multi-Language Support (Unlimited)
 - Detects user language automatically
-- Supports 12 languages (English, Turkish, German, French, Spanish, Portuguese, Italian, Russian, Chinese, Japanese, Arabic, Korean)
+- **Supports unlimited languages** (any language you need - auto-detected via BCP-47 codes)
 - Professional translations maintain context and culture
 - Easy language switching with URL parameters
+- Examples: English, Turkish, German, French, Spanish, Portuguese, Italian, Russian, Chinese, Japanese, Arabic, Korean, and more...
 
 ### 🎯 Interactive Elements
 - **Scenario Videos** - Real-world situation demonstrations
@@ -166,27 +168,33 @@ Language:           TypeScript
 
 ### Agent-Driven
 - Uses a conversational AI agent to gather requirements
-- Implements strict state machine for consistency
+- Implements strict **4-state machine** for consistency (Gather → Summary → Execute → Complete)
 - Remembers conversation context for personalization
+- No tools execute before state completion + explicit confirmation
 
 ### Workflow-Based
-- Two main workflows: Create microlearning, Add language
-- Parallel processing for speed
+- Two main workflows: **Create microlearning**, **Add language**
+- Parallel processing for speed (25-35 sec total)
 - 3-level fallback chains for reliability
+- AsyncLocalStorage for request-scoped context propagation
 
-### Resilient
+### Resilient & Observable
 - Never crashes - degrades gracefully
 - Semantic search with multiple fallbacks
 - JSON corruption detection and repair
 - Automatic retry logic with guards
+- **Rate limiting** with standard headers (X-RateLimit-*)
+- AsyncLocalStorage for request-scoped context
 
 ## Quick Stats
 
 - **Processing Time:** 25-35 seconds for complete module
-- **Scene Count:** 8 scenes per module
-- **Languages:** 12 supported (auto-detected)
-- **Components:** 47+ TypeScript files
+- **Scene Count:** 8 scenes per module (intro, goals, video, actions, quiz, survey, nudge, summary)
+- **Languages:** **Unlimited** (auto-detected via BCP-47 codes)
+- **Tools:** 18 total (9 main, 8 scene generators, 4 inbox generators + code review)
+- **Workflows:** 2 main (create-microlearning, add-language)
 - **API Endpoints:** 2 main (/chat, /health)
+- **Middleware:** Context storage, rate limiting, correlation ID tracing
 - **Error Recovery Levels:** 3-tier fallback system
 
 ## Common Workflows
@@ -238,10 +246,12 @@ Result: Same training, Turkish URL parameter added
 
 ## Next Steps
 
-- **Learn more:** Read [ARCHITECTURE.md](./ARCHITECTURE.md) for system design
+- **Learn more:** Read [ARCHITECTURE.md](./ARCHITECTURE.md) for system design & middleware layers
 - **Get started:** Follow [QUICKSTART.md](./QUICKSTART.md) for setup
-- **Go deeper:** Check [WORKFLOWS.md](./WORKFLOWS.md) for technical details
+- **Go deeper:** Check [DEVELOPMENT.md](./DEVELOPMENT.md) for logging patterns & constants
+- **API Details:** See [API_REFERENCE.md](./API_REFERENCE.md) for endpoint docs
 
 ---
 
-**Last Updated:** October 27, 2025
+**Last Updated:** December 18, 2025
+**Improvements:** Unlimited language support, state machine clarification, logging & rate limiting details, constants consolidation

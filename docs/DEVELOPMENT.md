@@ -141,6 +141,47 @@ console.log('❌ Error:', error.message);
 console.log('✅ Success:', result);
 ```
 
+## Using Constants & Timing
+
+### Avoid Magic Numbers
+
+All timing and limit values are centralized in `src/mastra/constants.ts`:
+
+```typescript
+// Good: Use constants
+import { TIMING, LIMITS } from '../constants';
+
+const delay = TIMING.KV_RETRY_DELAY_MS;  // 500ms
+const maxRetries = TIMING.KV_MAX_RETRIES; // 10
+const contextSize = LIMITS.CONTEXT_WINDOW_SIZE; // 10
+
+// Avoid: Magic numbers scattered
+setTimeout(() => { }, 500);  // Where does 500 come from?
+await retry(functionName, 10); // Why 10 attempts?
+```
+
+### When Adding Timing Constants
+
+1. Define in `constants.ts` under `TIMING`:
+```typescript
+export const TIMING = {
+  MY_NEW_TIMEOUT_MS: 5000,  // Clear unit (MS)
+};
+```
+
+2. Use throughout codebase:
+```typescript
+setTimeout(cleanup, TIMING.MY_NEW_TIMEOUT_MS);
+```
+
+3. Benefits:
+- ✅ Single source of truth
+- ✅ Easy A/B testing (change one value)
+- ✅ Self-documenting (clear intent)
+- ✅ Maintainability
+
+---
+
 ## Common Tasks
 
 ### Adding a New Tool
@@ -484,13 +525,26 @@ npm test                 # Run tests (if available)
 
 ## Next Steps
 
-1. **Understand the flow:** Read [ARCHITECTURE.md](./ARCHITECTURE.md)
+1. **Understand the flow:** Read [ARCHITECTURE.md](./ARCHITECTURE.md) (state machine, middleware layers, logging)
 2. **Learn workflows:** Read [WORKFLOWS.md](./WORKFLOWS.md)
 3. **Data structures:** Read [DATA_MODEL.md](./DATA_MODEL.md)
 4. **Deploy:** Read [DEPLOYMENT.md](./DEPLOYMENT.md)
+5. **System overview:** Read [OVERVIEW.md](./OVERVIEW.md) for big picture
 
 ---
 
-**Last Updated:** October 27, 2025
+**Last Updated:** December 18, 2025
+**New Sections:** Using Constants & Timing, Rate Limiting
 
 Need help? Check [FAQ.md](./FAQ.md) or look at existing tools for examples.
+
+---
+
+## Quick Reference: Constants Pattern
+
+### Constants
+```typescript
+import { TIMING, LIMITS } from '../constants';
+setTimeout(fn, TIMING.KV_RETRY_DELAY_MS);
+const size = LIMITS.CONTEXT_WINDOW_SIZE;
+```

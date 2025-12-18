@@ -1,185 +1,172 @@
-<svg viewBox="0 0 1200 1800" xmlns="http://www.w3.org/2000/svg">
+<svg viewBox="0 0 1400 1600" xmlns="http://www.w3.org/2000/svg">
   <!-- Define styles -->
   <defs>
     <style>
       .box { fill: #f0f4f8; stroke: #2c3e50; stroke-width: 2; }
       .box-header { fill: #34495e; }
+      .box-header-ml { fill: #3498db; }
+      .box-header-phishing { fill: #e74c3c; }
+      .box-header-userinfo { fill: #27ae60; }
+      .workflow-box-ml { fill: #f0f4f8; stroke: #3498db; stroke-width: 2; }
+      .workflow-box-phishing { fill: #f0f4f8; stroke: #e74c3c; stroke-width: 2; }
+      .workflow-box-userinfo { fill: #f0f4f8; stroke: #27ae60; stroke-width: 2; }
       .text-header { fill: white; font-size: 14px; font-weight: bold; }
       .text-normal { fill: #2c3e50; font-size: 12px; }
-      .text-highlight { fill: #e74c3c; font-size: 11px; font-weight: bold; }
       .arrow { stroke: #34495e; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
-      .label-arrow { fill: #34495e; font-size: 11px; }
+      .arrow-label { fill: #34495e; font-size: 10px; font-weight: bold; }
     </style>
     <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
       <polygon points="0 0, 10 3, 0 6" fill="#34495e" />
     </marker>
+    <marker id="arrowhead-ml" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#3498db" />
+    </marker>
+    <marker id="arrowhead-phishing" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#e74c3c" />
+    </marker>
+    <marker id="arrowhead-userinfo" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#27ae60" />
+    </marker>
   </defs>
 
   <!-- Title -->
-  <text x="600" y="30" font-size="24" font-weight="bold" text-anchor="middle" fill="#2c3e50">
-    Agentic Ally - High-Level Architecture
+  <text x="700" y="30" font-size="24" font-weight="bold" text-anchor="middle" fill="#2c3e50">
+    Agentic Ally - High-Level Architecture (v2)
   </text>
 
   <!-- 1. User Input -->
-  <rect class="box" x="400" y="60" width="400" height="100" rx="5"/>
-  <rect class="box-header" x="400" y="60" width="400" height="25" rx="5"/>
-  <text class="text-header" x="600" y="77" text-anchor="middle">User Input (via /chat)</text>
-  <text class="text-normal" x="420" y="100">• prompt: string</text>
-  <text class="text-normal" x="420" y="120">• modelProvider?: OPENAI | WORKERS_AI | GOOGLE</text>
-  <text class="text-normal" x="420" y="140">• model?: model_name (optional)</text>
+  <rect class="box" x="500" y="50" width="400" height="70" rx="5"/>
+  <rect class="box-header" x="500" y="50" width="400" height="25" rx="5"/>
+  <text class="text-header" x="700" y="67" text-anchor="middle">HTTP POST /chat</text>
+  <text class="text-normal" x="520" y="90">• prompt: string</text>
+  <text class="text-normal" x="520" y="105">• modelProvider?: OPENAI | WORKERS_AI</text>
 
   <!-- Arrow 1 -->
-  <path class="arrow" d="M 600 160 L 600 200"/>
+  <path class="arrow" d="M 700 120 L 700 145"/>
 
-  <!-- 2. AI Agent -->
-  <rect class="box" x="350" y="200" width="500" height="130" rx="5"/>
-  <rect class="box-header" x="350" y="200" width="500" height="25" rx="5"/>
-  <text class="text-header" x="600" y="217" text-anchor="middle">AI Agent (microlearning)</text>
-  <text class="text-normal" x="370" y="240">Model: Dynamic LLM Selection</text>
-  <text class="text-highlight" x="390" y="258">Default: gpt-4o  |  Override: OPENAI/GOOGLE</text>
-  <text class="text-normal" x="370" y="280">• State machine (4 states: Info Gathering → Summary → Execute → Complete)</text>
-  <text class="text-normal" x="370" y="300">• Dynamic language detection • Instruction parsing</text>
-  <text class="text-normal" x="370" y="320">• Conversational interface • Model override support</text>
+  <!-- Middleware Layer -->
+  <rect class="box" x="400" y="145" width="600" height="70" rx="5"/>
+  <rect class="box-header" x="400" y="145" width="600" height="25" rx="5"/>
+  <text class="text-header" x="700" y="162" text-anchor="middle">Middleware Layer (Request Context)</text>
+  <text class="text-normal" x="420" y="185">✓ AsyncLocalStorage context | ✓ Auth token | ✓ Rate limiting</text>
 
   <!-- Arrow 2 -->
-  <path class="arrow" d="M 600 330 L 600 370"/>
+  <path class="arrow" d="M 700 215 L 700 240"/>
 
-  <!-- 3. Workflow Executor Tool -->
-  <rect class="box" x="350" y="370" width="500" height="130" rx="5"/>
-  <rect class="box-header" x="350" y="370" width="500" height="25" rx="5"/>
-  <text class="text-header" x="600" y="387" text-anchor="middle">Workflow Executor Tool</text>
-  <text class="text-normal" x="370" y="410">Route: create-microlearning  |  add-language</text>
-  <text class="text-normal" x="370" y="430">Pass: modelProvider + model through workflow</text>
-  <text class="text-normal" x="370" y="450">Auto Context Capture:</text>
-  <text class="text-normal" x="370" y="468" font-size="11">• additionalContext: All contextual details</text>
-  <text class="text-normal" x="370" y="485" font-size="11">• customRequirements: Special requests, tone, focus</text>
+  <!-- Orchestrator Agent -->
+  <rect class="box" x="400" y="240" width="600" height="70" rx="5"/>
+  <rect fill="#9b59b6" x="400" y="240" width="600" height="25" rx="5"/>
+  <text class="text-header" x="700" y="257" text-anchor="middle">Orchestrator Agent (Router)</text>
+  <text class="text-normal" x="420" y="280">Routes to: Microlearning | Phishing Email | User Info specialist agents</text>
 
-  <!-- Arrow 3 splits into two -->
-  <path class="arrow" d="M 500 500 L 210 550"/>
-  <path class="arrow" d="M 700 500 L 990 550"/>
-  <text class="label-arrow" x="320" y="530" text-anchor="middle">CREATE</text>
-  <text class="label-arrow" x="880" y="530" text-anchor="middle">ADD-LANGUAGE</text>
+  <!-- Arrow from Orchestrator - splits to 3 -->
+  <path class="arrow" stroke="#3498db" marker-end="url(#arrowhead-ml)" d="M 550 310 L 230 350"/>
+  <path class="arrow" stroke="#e74c3c" marker-end="url(#arrowhead-phishing)" d="M 700 310 L 700 350"/>
+  <path class="arrow" stroke="#27ae60" marker-end="url(#arrowhead-userinfo)" d="M 850 310 L 1170 350"/>
 
-  <!-- 4a. CREATE WORKFLOW - Left side -->
-  <g>
-    <!-- Step 1: Analyze -->
-    <rect class="box" x="50" y="550" width="320" height="120" rx="5"/>
-    <rect class="box-header" x="50" y="550" width="320" height="25" rx="5"/>
-    <text class="text-header" x="210" y="567" text-anchor="middle">1. Analyze Prompt</text>
-    <text class="text-normal" x="70" y="590">Semantic intent analysis:</text>
-    <text class="text-normal" x="70" y="607" font-size="10">• Language detection (NLP)</text>
-    <text class="text-normal" x="70" y="622" font-size="10">• Topic + learning objectives</text>
-    <text class="text-normal" x="70" y="637" font-size="10">• Department + role relevance</text>
-    <text class="text-normal" x="70" y="652" font-size="10">• Difficulty level inference</text>
+  <!-- Labels for arrows -->
+  <text x="350" y="325" class="arrow-label" fill="#3498db">Microlearning</text>
+  <text x="720" y="335" class="arrow-label" fill="#e74c3c">Phishing</text>
+  <text x="980" y="325" class="arrow-label" fill="#27ae60">User Info</text>
 
-    <!-- Arrow down -->
-    <path class="arrow" d="M 210 670 L 210 710"/>
+  <!-- 2a. MICROLEARNING AGENT - LEFT -->
+  <rect class="box" x="20" y="350" width="420" height="380" rx="5"/>
+  <rect class="box-header-ml" x="20" y="350" width="420" height="30" rx="5"/>
+  <text class="text-header" x="230" y="370" text-anchor="middle">Microlearning Agent</text>
+  <text fill="#3498db" font-weight="bold" x="40" y="395" font-size="11">(4-State Machine)</text>
 
-    <!-- Step 2: Generate -->
-    <rect class="box" x="50" y="710" width="320" height="90" rx="5"/>
-    <rect class="box-header" x="50" y="710" width="320" height="25" rx="5"/>
-    <text class="text-header" x="210" y="727" text-anchor="middle">2. Generate Base Structure</text>
-    <text class="text-normal" x="70" y="750">Create 8-scene metadata +</text>
-    <text class="text-normal" x="70" y="767">theme + compliance framework</text>
+  <rect class="box" x="40" y="410" width="380" height="40" rx="3"/>
+  <text class="text-normal" x="60" y="435" font-size="10">↓ calls workflowExecutorTool (create-ml or add-language)</text>
 
-    <!-- Arrow splits -->
-    <path class="arrow" d="M 150 800 L 100 840"/>
-    <path class="arrow" d="M 270 800 L 320 840"/>
+  <!-- CREATE Workflow -->
+  <rect class="workflow-box-ml" x="40" y="460" width="180" height="150" rx="3"/>
+  <rect fill="#3498db" x="40" y="460" width="180" height="22" rx="3"/>
+  <text class="text-header" x="130" y="476" text-anchor="middle" font-size="11">CREATE</text>
+  <text class="text-normal" x="50" y="498" font-size="9">1. Analyze (lang detect, topic)</text>
+  <text class="text-normal" x="50" y="515" font-size="9">2. Generate (8-scene metadata)</text>
+  <text class="text-normal" x="50" y="532" font-size="9">3. [PARALLEL]</text>
+  <text class="text-normal" x="55" y="547" font-size="9">• Lang Content</text>
+  <text class="text-normal" x="55" y="562" font-size="9">• Inbox Simulation</text>
 
-    <!-- Step 3a: Language Content -->
-    <rect class="box" x="0" y="840" width="260" height="110" rx="5"/>
-    <rect class="box-header" x="0" y="840" width="260" height="25" rx="5"/>
-    <text class="text-header" x="130" y="857" text-anchor="middle">3a. Language Content Gen</text>
-    <text class="text-normal" x="15" y="880" font-size="10">8 scenes (intro, goals,</text>
-    <text class="text-normal" x="15" y="895" font-size="10">video, actions, quiz,</text>
-    <text class="text-normal" x="15" y="910" font-size="10">survey, nudge, summary)</text>
-    <text class="text-normal" x="15" y="927" font-size="10">Model: Dynamic | Override ✓</text>
+  <!-- ADD-LANGUAGE Workflow -->
+  <rect class="workflow-box-ml" x="240" y="460" width="180" height="150" rx="3"/>
+  <rect fill="#3498db" x="240" y="460" width="180" height="22" rx="3"/>
+  <text class="text-header" x="330" y="476" text-anchor="middle" font-size="11">ADD-LANG</text>
+  <text class="text-normal" x="250" y="498" font-size="9">1. Load (Fetch from KV)</text>
+  <text class="text-normal" x="250" y="515" font-size="9">2. Localize (3-level retry)</text>
+  <text class="text-normal" x="250" y="532" font-size="9">3. Save</text>
+  <text class="text-normal" x="255" y="547" font-size="9">• ml:{id}:lang</text>
+  <text class="text-normal" x="255" y="562" font-size="9">• ml:{id}:inbox</text>
 
-    <!-- Step 3b: Inbox -->
-    <rect class="box" x="310" y="840" width="260" height="110" rx="5"/>
-    <rect class="box-header" x="310" y="840" width="260" height="25" rx="5"/>
-    <text class="text-header" x="440" y="857" text-anchor="middle">3b. Inbox Simulation</text>
-    <text class="text-normal" x="325" y="880" font-size="10">Dept-specific emails</text>
-    <text class="text-normal" x="325" y="895" font-size="10">+ SMS variants</text>
-    <text class="text-normal" x="325" y="910" font-size="10">Realistic scenarios</text>
-    <text class="text-normal" x="325" y="927" font-size="10">Model: Dynamic | Override ✓</text>
+  <!-- 2b. PHISHING AGENT - MIDDLE -->
+  <rect class="box" x="490" y="350" width="420" height="380" rx="5"/>
+  <rect class="box-header-phishing" x="490" y="350" width="420" height="30" rx="5"/>
+  <text class="text-header" x="700" y="370" text-anchor="middle">Phishing Email Agent</text>
+  <text fill="#e74c3c" font-weight="bold" x="510" y="395" font-size="11">(Psychological Profiler)</text>
 
-    <!-- Arrows converge -->
-    <path class="arrow" d="M 130 950 L 400 1030"/>
-    <path class="arrow" d="M 440 950 L 600 1030"/>
-  </g>
+  <rect class="box" x="510" y="410" width="380" height="40" rx="3"/>
+  <text class="text-normal" x="530" y="435" font-size="10">↓ calls phishingWorkflowExecutorTool</text>
 
-  <!-- 4b. ADD-LANGUAGE WORKFLOW - Right side -->
-  <g>
-    <!-- Step 1: Load -->
-    <rect class="box" x="830" y="550" width="320" height="120" rx="5"/>
-    <rect class="box-header" x="830" y="550" width="320" height="25" rx="5"/>
-    <text class="text-header" x="990" y="567" text-anchor="middle">1. Load Existing ML</text>
-    <text class="text-normal" x="850" y="590">Fetch from KV by</text>
-    <text class="text-normal" x="850" y="607" font-size="10">microlearningId</text>
-    <text class="text-normal" x="850" y="622" font-size="10">• Validate structure</text>
-    <text class="text-normal" x="850" y="637" font-size="10">• Extract all 8 scenes</text>
-    <text class="text-normal" x="850" y="652" font-size="10">• Load inbox variants</text>
+  <!-- PHISHING Workflow -->
+  <rect class="workflow-box-phishing" x="510" y="460" width="380" height="200" rx="3"/>
+  <rect fill="#e74c3c" x="510" y="460" width="380" height="22" rx="3"/>
+  <text class="text-header" x="700" y="476" text-anchor="middle" font-size="11">PHISHING SIMULATION</text>
+  <text class="text-normal" x="520" y="498" font-size="9">1. Profile Analysis (vulnerabilities, triggers)</text>
+  <text class="text-normal" x="520" y="515" font-size="9">2. Generate Simulation (Cialdini Principles)</text>
+  <text class="text-normal" x="520" y="532" font-size="9">3. Save (ps:{id}:base, emails per user/dept)</text>
+  <text class="text-normal" x="520" y="549" font-size="9">4. Upload &amp; Assign (deploy to users)</text>
 
-    <!-- Arrow down -->
-    <path class="arrow" d="M 990 670 L 990 710"/>
+  <!-- 2c. USER INFO AGENT - RIGHT -->
+  <rect class="box" x="960" y="350" width="420" height="380" rx="5"/>
+  <rect class="box-header-userinfo" x="960" y="350" width="420" height="30" rx="5"/>
+  <text class="text-header" x="1170" y="370" text-anchor="middle">User Info Agent</text>
+  <text fill="#27ae60" font-weight="bold" x="980" y="395" font-size="11">(Risk Analyst)</text>
 
-    <!-- Step 2: Localize -->
-    <rect class="box" x="830" y="710" width="320" height="110" rx="5"/>
-    <rect class="box-header" x="830" y="710" width="320" height="25" rx="5"/>
-    <text class="text-header" x="990" y="727" text-anchor="middle">2. Localize (3-level)</text>
-    <text class="text-normal" x="850" y="750" font-size="10">Preserve URLs/IDs/types</text>
-    <text class="text-normal" x="850" y="765" font-size="10">HTML tag protection</text>
-    <text class="text-normal" x="850" y="780" font-size="10">Corruption detection +</text>
-    <text class="text-normal" x="850" y="795" font-size="10">auto-fix on failures</text>
+  <rect class="box" x="980" y="410" width="380" height="40" rx="3"/>
+  <text class="text-normal" x="1000" y="435" font-size="10">No workflow - Analysis only (provides context)</text>
 
-    <!-- Arrow down -->
-    <path class="arrow" d="M 990 820 L 990 870"/>
+  <!-- RISK ANALYSIS -->
+  <rect class="workflow-box-userinfo" x="980" y="460" width="380" height="150" rx="3"/>
+  <rect fill="#27ae60" x="980" y="460" width="380" height="22" rx="3"/>
+  <text class="text-header" x="1170" y="476" text-anchor="middle" font-size="11">RISK ANALYSIS</text>
+  <text class="text-normal" x="990" y="498" font-size="9">1. Fetch User Details (profile, history)</text>
+  <text class="text-normal" x="990" y="515" font-size="9">2. Analyze Timeline (vulnerability patterns)</text>
+  <text class="text-normal" x="990" y="532" font-size="9">3. Recommend Level (Beginner/Intermediate/Advanced)</text>
 
-    <!-- Step 3: Localize Inboxes -->
-    <rect class="box" x="830" y="870" width="320" height="110" rx="5"/>
-    <rect class="box-header" x="830" y="870" width="320" height="25" rx="5"/>
-    <text class="text-header" x="990" y="887" text-anchor="middle">3. Localize Inboxes</text>
-    <text class="text-normal" x="850" y="910" font-size="10">Per-department emails</text>
-    <text class="text-normal" x="850" y="925" font-size="10">Target language BCP-47</text>
-    <text class="text-normal" x="850" y="940" font-size="10">Model: Dynamic | Override ✓</text>
-    <text class="text-normal" x="850" y="955" font-size="10">Retry + validation</text>
+  <!-- Converge arrows -->
+  <path class="arrow" stroke="#3498db" marker-end="url(#arrowhead-ml)" d="M 230 730 L 500 780"/>
+  <path class="arrow" stroke="#e74c3c" marker-end="url(#arrowhead-phishing)" d="M 700 730 L 700 780"/>
+  <path class="arrow" stroke="#27ae60" marker-end="url(#arrowhead-userinfo)" d="M 1170 730 L 900 780"/>
 
-    <!-- Arrow down -->
-    <path class="arrow" d="M 990 980 L 800 1030"/>
-  </g>
+  <text x="320" y="755" class="arrow-label" fill="#3498db" font-size="9">ml:{id}</text>
+  <text x="715" y="760" class="arrow-label" fill="#e74c3c" font-size="9">ps:{id}</text>
+  <text x="1000" y="755" class="arrow-label" fill="#27ae60" font-size="9">context</text>
 
-  <!-- 5. Common: Save and Output -->
-  <rect class="box" x="250" y="1010" width="700" height="90" rx="5"/>
-  <rect class="box-header" x="250" y="1010" width="700" height="25" rx="5"/>
-  <text class="text-header" x="600" y="1027" text-anchor="middle">4. Save and Output</text>
-  <text class="text-normal" x="320" y="1050">Save to KV: base | lang:{code} | inbox:{dept}:{code}</text>
-  <text class="text-normal" x="320" y="1070">Localization: Per-language, Per-department, BCP-47 codes</text>
+  <!-- 3. Common: Save to KV -->
+  <rect class="box" x="350" y="780" width="700" height="70" rx="5"/>
+  <rect class="box-header" x="350" y="780" width="700" height="25" rx="5"/>
+  <text class="text-header" x="700" y="797" text-anchor="middle" font-size="12">3. Common: Save to KV (Fire-and-forget)</text>
+  <text class="text-normal" x="370" y="820" font-size="10">Training: ml:{id}:base | Simulations: ps:{id}:base + per-dept, per-lang</text>
 
   <!-- Arrow down -->
-  <path class="arrow" d="M 600 1100 L 600 1140"/>
+  <path class="arrow" d="M 700 850 L 700 880"/>
 
-  <!-- 6. Return URL -->
-  <rect class="box" x="350" y="1140" width="500" height="80" rx="5"/>
-  <rect class="box-header" x="350" y="1140" width="500" height="25" rx="5"/>
-  <text class="text-header" x="600" y="1157" text-anchor="middle">Return Training URL + Metadata</text>
-  <text class="text-normal" x="370" y="1180">Ready to deploy in microlearning editor</text>
-  <text class="text-normal" x="370" y="1200">Available in selected language + department</text>
+  <!-- 4. Return Response -->
+  <rect class="box" x="400" y="880" width="600" height="60" rx="5"/>
+  <rect class="box-header" x="400" y="880" width="600" height="25" rx="5"/>
+  <text class="text-header" x="700" y="897" text-anchor="middle" font-size="12">4. Return Response (Training URL or Simulation Link)</text>
+  <text class="text-normal" x="420" y="920" font-size="10">Ready-to-deploy microlearning URL | Phishing test link with analytics</text>
 
   <!-- Bottom legend -->
-  <rect class="box" x="50" y="1320" width="1100" height="240" rx="5"/>
-  <text x="70" y="1345" font-size="13" font-weight="bold" fill="#2c3e50">Key Features:</text>
+  <rect class="box" x="100" y="970" width="1200" height="220" rx="5"/>
+  <text x="120" y="1000" font-size="13" font-weight="bold" fill="#2c3e50">Key Features:</text>
 
-  <text x="70" y="1370" font-size="11" fill="#2c3e50">✓ Dynamic Language Detection: Unlimited languages via BCP-47 codes (en-gb, tr-tr, de-de, ja-jp, zh-cn, ar-sa, etc.)</text>
-  <text x="70" y="1388" font-size="11" fill="#2c3e50">✓ Dynamic LLM Selection: Choose provider (OPENAI/WORKERS_AI/GOOGLE) + model at runtime with fallback to defaults</text>
-  <text x="70" y="1406" font-size="11" fill="#2c3e50">✓ Model Override Support: Frontend sends modelProvider + model, cascades through entire workflow pipeline</text>
-
-  <text x="70" y="1428" font-size="11" fill="#2c3e50">✓ Parallel Execution: Language content (8 scenes) + Inbox generation run simultaneously (25-35 sec total)</text>
-  <text x="70" y="1446" font-size="11" fill="#2c3e50">✓ 3-Level Retry Strategy: Corruption detection, HTML tag protection, auto-fix on translation failures</text>
-
-  <text x="70" y="1468" font-size="11" fill="#2c3e50">✓ State Machine Agent: 4-state enforcement (Info Gathering → Summary → Execute → Complete) with strict confirmation gates</text>
-  <text x="70" y="1486" font-size="11" fill="#2c3e50">✓ KV Storage Architecture: base | lang:{code} | inbox:{dept}:{code} with atomic saves and per-department isolation</text>
-
-  <text x="70" y="1508" font-size="11" fill="#2c3e50">✓ Content Quality: 8-scene scientific structure, WCAG compliance, behavioral psychology principles, SEO optimization</text>
-  <text x="70" y="1526" font-size="11" fill="#2c3e50">✓ Auto Context Capture: additionalContext (all details) + customRequirements (special requests) extraction for precision</text>
+  <text x="120" y="1025" font-size="11" fill="#2c3e50">✓ Orchestrator Router: Analyzes intent → Routes to specialist agents</text>
+  <text x="120" y="1045" font-size="11" fill="#2c3e50">✓ Middleware Layer: Context isolation (AsyncLocalStorage), rate limiting</text>
+  <text x="120" y="1065" font-size="11" fill="#2c3e50">✓ 4-State Machine: Strict STATE 1→4 progression with confirmation gates</text>
+  <text x="120" y="1085" font-size="11" fill="#2c3e50">✓ Unlimited Languages: Auto-detect via BCP-47 codes (en, tr, de, ja, etc.)</text>
+  <text x="120" y="1105" font-size="11" fill="#2c3e50">✓ Parallel Execution: 8 scenes + Inbox generation run simultaneously</text>
+  <text x="120" y="1125" font-size="11" fill="#2c3e50">✓ 3-Level Retry: Corruption detection, HTML tag protection, auto-fix</text>
+  <text x="120" y="1145" font-size="11" fill="#2c3e50">✓ Phishing Workflow: Profile analysis → Generate → Upload &amp; Deploy (Cialdini)</text>
+  <text x="120" y="1165" font-size="11" fill="#2c3e50">✓ KV Storage: ml:{id}:* + ps:{id}:* with per-dept, per-lang isolation</text>
 </svg>
