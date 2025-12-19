@@ -1,9 +1,10 @@
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
-import { requestStorage } from '../../utils/core/request-storage';
+import { getRequestContext } from '../../utils/core/request-storage';
 import { getLogger } from '../../utils/core/logger';
 import { withRetry } from '../../utils/core/resilience-utils';
 import { callWorkerAPI } from '../../utils/core/worker-api-client';
+import { maskSensitiveField } from '../../utils/core/security-utils';
 import { KVService } from '../../services/kv-service';
 import { ERROR_MESSAGES, API_ENDPOINTS } from '../../constants';
 import { errorService } from '../../services/error-service';
@@ -36,10 +37,7 @@ export const uploadTrainingTool = createTool({
         logger.info('Preparing upload for microlearning', { microlearningId });
 
         // Get Auth Token & Cloudflare bindings from AsyncLocalStorage
-        const store = requestStorage.getStore();
-        const token = store?.token;
-        const companyId = store?.companyId;
-        const env = store?.env; // Cloudflare env (bindings: KV, D1, Service Bindings)
+        const { token, companyId, env } = getRequestContext();
 
         if (!token) {
             const errorInfo = errorService.auth(ERROR_MESSAGES.PLATFORM.UPLOAD_TOKEN_MISSING);
@@ -100,10 +98,7 @@ export const uploadTrainingTool = createTool({
             };
 
             // Secure Logging (Mask token)
-            const maskedPayload = {
-                ...payload,
-                accessToken: token ? `${token.substring(0, 8)}...${token.substring(token.length - 4)}` : undefined
-            };
+            const maskedPayload = maskSensitiveField(payload, 'accessToken', token);
             logger.debug('Upload payload prepared', { payload: maskedPayload });
 
             // Wrap API call with retry (exponential backoff: 1s, 2s, 4s)

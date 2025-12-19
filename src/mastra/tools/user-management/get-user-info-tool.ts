@@ -1,7 +1,7 @@
 // src/mastra/tools/get-user-info-tool.ts
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
-import { requestStorage } from '../../utils/core/request-storage';
+import { getRequestContext } from '../../utils/core/request-storage';
 import { ERROR_MESSAGES, API_ENDPOINTS } from '../../constants';
 import { generatePIIHash } from '../../utils/parsers/pii-masking-utils';
 import { parseName, isValidName, normalizeName } from '../../utils/parsers/name-parser';
@@ -190,9 +190,7 @@ export const getUserInfoTool = createTool({
         logger.debug('Searching for user', { fullName, firstName, lastName: lastName || 'N/A' });
 
         // Get Auth Token & CompanyId
-        const store = requestStorage.getStore();
-        const token = store?.token;
-        const companyId = store?.companyId;
+        const { token, companyId } = getRequestContext();
         if (!token) {
             const errorInfo = errorService.auth(ERROR_MESSAGES.USER_INFO.TOKEN_MISSING);
             logger.warn('Auth error: Token missing', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
