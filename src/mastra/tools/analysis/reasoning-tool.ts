@@ -26,8 +26,9 @@ export const reasoningTool = new Tool({
 
     try {
       if (!thought) {
-        logger.warn('Reasoning tool called without thought');
-        return { success: false };
+        const errorInfo = errorService.validation('Thought is required for reasoning tool');
+        logger.warn('Reasoning tool called without thought', errorInfo);
+        return { success: false, error: JSON.stringify(errorInfo) };
       }
 
       // Get writer from context (Mastra stream writer)

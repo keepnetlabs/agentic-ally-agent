@@ -112,11 +112,11 @@ export const CLOUDFLARE_KV = {
   SEMANTIC_SEARCH_MAX_RESULTS: 3,
 
   // Consistency check configuration
-  // Note: 1 second interval to avoid Cloudflare rate limiting
   CONSISTENCY_CHECK: {
     ENABLED: true,
     MAX_WAIT_MS: 10000, // 10 seconds
-    CHECK_INTERVAL_MS: 1000, // 1 second (safe for rate limits)
+    INITIAL_DELAY_MS: 500, // First retry after 500ms
+    MAX_DELAY_MS: 2000, // Max delay 2 seconds
   },
 } as const;
 

@@ -85,7 +85,9 @@ export const assignTrainingTool = createTool({
 
         if (!response.ok) {
           const errorText = await response.text();
-          throw new Error(`Assign API failed: ${response.status} - ${errorText}`);
+          const errorInfo = errorService.external(`Assign API failed: ${response.status} - ${errorText}`, { status: response.status });
+          logger.error('Assign API failed', errorInfo);
+          throw new Error(errorInfo.message);
         }
 
         return await response.json();

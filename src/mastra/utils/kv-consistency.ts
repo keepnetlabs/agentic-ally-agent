@@ -2,7 +2,7 @@
  * KV Consistency Check Utility
  * 
  * Verifies that KV keys are available after writes to ensure eventual consistency.
- * Uses intelligent polling with configurable intervals to avoid Cloudflare rate limits.
+ * Uses exponential backoff: 500ms → 1s → 2s
  * 
  * @module utils/kv-consistency
  */
@@ -12,6 +12,15 @@ import { KVService } from '../services/kv-service';
 import { getLogger } from './core/logger';
 
 const logger = getLogger('KVConsistency');
+
+/**
+ * Calculate exponential backoff delay: 500ms → 1s → 2s
+ */
+function getBackoffDelay(attempt: number): number {
+    const config = CLOUDFLARE_KV.CONSISTENCY_CHECK;
+    const delay = config.INITIAL_DELAY_MS * Math.pow(2, attempt);
+    return Math.min(delay, config.MAX_DELAY_MS);
+}
 
 /**
  * Waits for KV keys to be available, verifying eventual consistency
@@ -48,24 +57,24 @@ export async function waitForKVConsistency(
     }
 
     const maxWait = CLOUDFLARE_KV.CONSISTENCY_CHECK.MAX_WAIT_MS;
-    const checkInterval = CLOUDFLARE_KV.CONSISTENCY_CHECK.CHECK_INTERVAL_MS;
-    const maxChecks = Math.ceil(maxWait / checkInterval);
+    const kvService = namespaceIdOverride ? new KVService(namespaceIdOverride) : new KVService();
+    const startTime = Date.now();
 
     logger.info('Starting KV consistency check', {
         resourceId,
         keyCount: expectedKeys.length,
         maxWaitMs: maxWait,
-        checkIntervalMs: checkInterval,
-        maxChecks,
-        namespaceIdOverride: namespaceIdOverride || 'default',
     });
 
-    const kvService = namespaceIdOverride ? new KVService(namespaceIdOverride) : new KVService();
-    const startTime = Date.now();
+    // Max 6 attempts with exponential backoff (500ms → 1s → 2s → 2s → 2s → 2s)
+    for (let attempt = 0; attempt < 6; attempt++) {
+        // Check if we've exceeded max wait time
+        if (Date.now() - startTime >= maxWait) {
+            break;
+        }
 
-    for (let attempt = 0; attempt < maxChecks; attempt++) {
         try {
-            // Check all keys in parallel for efficiency
+            // Check all keys in parallel
             const results = await Promise.all(
                 expectedKeys.map(async (key) => {
                     const value = await kvService.get(key);
@@ -74,7 +83,6 @@ export async function waitForKVConsistency(
             );
 
             const allPresent = results.every((r) => r.exists);
-            const missingKeys = results.filter((r) => !r.exists).map((r) => r.key);
 
             if (allPresent) {
                 const duration = Date.now() - startTime;
@@ -82,24 +90,20 @@ export async function waitForKVConsistency(
                     resourceId,
                     attempt: attempt + 1,
                     durationMs: duration,
-                    keyCount: expectedKeys.length,
                 });
                 return;
             }
 
-            // Some keys still missing - log and continue
-            if (attempt < maxChecks - 1) {
-                logger.debug('KV consistency check in progress', {
-                    resourceId,
-                    attempt: attempt + 1,
-                    maxChecks,
-                    missingKeys,
-                });
-            }
+            // Wait with exponential backoff before next check
+            if (attempt < 5) {
+                const delay = getBackoffDelay(attempt);
+                const elapsed = Date.now() - startTime;
+                const remainingWait = maxWait - elapsed;
+                const actualDelay = Math.min(delay, remainingWait);
 
-            // Wait before next check (unless this was the last attempt)
-            if (attempt < maxChecks - 1) {
-                await new Promise((resolve) => setTimeout(resolve, checkInterval));
+                if (actualDelay > 0) {
+                    await new Promise((resolve) => setTimeout(resolve, actualDelay));
+                }
             }
         } catch (error) {
             const err = error instanceof Error ? error : new Error(String(error));
@@ -109,9 +113,16 @@ export async function waitForKVConsistency(
                 error: err.message,
             });
 
-            // On error, wait before retrying (unless this was the last attempt)
-            if (attempt < maxChecks - 1) {
-                await new Promise((resolve) => setTimeout(resolve, checkInterval));
+            // Wait with exponential backoff before retry
+            if (attempt < 5) {
+                const delay = getBackoffDelay(attempt);
+                const elapsed = Date.now() - startTime;
+                const remainingWait = maxWait - elapsed;
+                const actualDelay = Math.min(delay, remainingWait);
+
+                if (actualDelay > 0) {
+                    await new Promise((resolve) => setTimeout(resolve, actualDelay));
+                }
             }
         }
     }

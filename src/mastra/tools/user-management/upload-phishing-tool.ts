@@ -55,7 +55,12 @@ export const uploadPhishingTool = createTool({
             const phishingContent = await kvService.getPhishing(phishingId);
 
             if (!phishingContent || !phishingContent.base) {
-                throw new Error(`Phishing content not found for ID: ${phishingId}`);
+                const errorInfo = errorService.notFound(`Phishing content not found for ID: ${phishingId}`, { phishingId });
+                logger.warn('Phishing content not found', errorInfo);
+                return {
+                    success: false,
+                    error: JSON.stringify(errorInfo)
+                };
             }
 
             const phishingData = phishingContent.base;
@@ -139,7 +144,9 @@ export const uploadPhishingTool = createTool({
 
                 if (!response.ok) {
                     const errorText = await response.text();
-                    throw new Error(`Worker failed: ${response.status} - ${errorText}`);
+                    const errorInfo = errorService.external(`Worker failed: ${response.status} - ${errorText}`, { status: response.status });
+                    logger.error('Worker upload failed', errorInfo);
+                    throw new Error(errorInfo.message);
                 }
 
                 return await response.json();

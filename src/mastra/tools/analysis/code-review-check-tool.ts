@@ -92,7 +92,9 @@ Return ONLY valid JSON - NO markdown, NO backticks, NO formatting. Start directl
 
       const parsedSeverity = result.severity || (result.isCorrect ? 'correct' : 'incorrect');
       if (!['correct', 'partial', 'incorrect'].includes(parsedSeverity)) {
-        throw new Error(`Invalid severity: ${parsedSeverity}`);
+        const errorInfo = errorService.validation(`Invalid severity: ${parsedSeverity}`, { severity: parsedSeverity });
+        logger.warn('Invalid severity', errorInfo);
+        throw new Error(errorInfo.message);
       }
 
       return {

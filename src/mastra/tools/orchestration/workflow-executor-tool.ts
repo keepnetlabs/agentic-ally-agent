@@ -212,7 +212,12 @@ export const workflowExecutorTool = createTool({
     try {
       if (workflowType === 'create-microlearning') {
         if (!params.prompt) {
-          throw new Error('Prompt is required for create-microlearning workflow');
+          const errorInfo = errorService.validation('Prompt is required for create-microlearning workflow');
+          logger.warn('Validation error', errorInfo);
+          return {
+            success: false,
+            error: JSON.stringify(errorInfo)
+          };
         }
 
         // Start workflow with writer parameter
@@ -291,7 +296,12 @@ export const workflowExecutorTool = createTool({
 
       } else if (workflowType === 'add-language') {
         if (!params.existingMicrolearningId || !params.targetLanguage) {
-          throw new Error('existingMicrolearningId and targetLanguage are required for add-language workflow');
+          const errorInfo = errorService.validation('existingMicrolearningId and targetLanguage are required for add-language workflow');
+          logger.warn('Validation error', errorInfo);
+          return {
+            success: false,
+            error: JSON.stringify(errorInfo)
+          };
         }
 
         const workflow = addLanguageWorkflow;
@@ -346,7 +356,12 @@ export const workflowExecutorTool = createTool({
 
       } else if (workflowType === 'add-multiple-languages') {
         if (!params.existingMicrolearningId || !params.targetLanguages || params.targetLanguages.length === 0) {
-          throw new Error('existingMicrolearningId and targetLanguages array are required for add-multiple-languages workflow');
+          const errorInfo = errorService.validation('existingMicrolearningId and targetLanguages array are required for add-multiple-languages workflow');
+          logger.warn('Validation error', errorInfo);
+          return {
+            success: false,
+            error: JSON.stringify(errorInfo)
+          };
         }
 
         const workflow = addMultipleLanguagesWorkflow;
@@ -397,12 +412,22 @@ export const workflowExecutorTool = createTool({
             status: result.result.status
           };
         } else {
-          throw new Error('Add multiple languages workflow failed');
+          const errorInfo = errorService.external('Add multiple languages workflow failed');
+          logger.error('Workflow failed', errorInfo);
+          return {
+            success: false,
+            error: JSON.stringify(errorInfo)
+          };
         }
 
       } else if (workflowType === 'update-microlearning') {
         if (!params.existingMicrolearningId || !params.updates) {
-          throw new Error('existingMicrolearningId and updates are required for update-microlearning workflow');
+          const errorInfo = errorService.validation('existingMicrolearningId and updates are required for update-microlearning workflow');
+          logger.warn('Validation error', errorInfo);
+          return {
+            success: false,
+            error: JSON.stringify(errorInfo)
+          };
         }
 
         const workflow = updateMicrolearningWorkflow;
@@ -447,7 +472,12 @@ export const workflowExecutorTool = createTool({
         };
 
       } else {
-        throw new Error(`Unknown workflow type: ${workflowType}`);
+        const errorInfo = errorService.validation(`Unknown workflow type: ${workflowType}`);
+        logger.warn('Unknown workflow type', errorInfo);
+        return {
+          success: false,
+          error: JSON.stringify(errorInfo)
+        };
       }
 
     } catch (error) {

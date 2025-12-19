@@ -145,8 +145,9 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
         // extractAndStreamReasoning(response, writer, 'Scene 1'); // Temporarily commented
         return response;
       }).catch(err => {
-        logger.error('Scene 1 generation failed', err);
-        throw new Error(`Scene 1 generation failed: ${err instanceof Error ? err.message : String(err)}`);
+        const errorInfo = errorService.aiModel(`Scene 1 generation failed: ${err instanceof Error ? err.message : String(err)}`, { scene: 1 });
+        logger.error('Scene 1 generation failed', errorInfo);
+        throw new Error(errorInfo.message);
       }),
       generateText({
         model: model,
@@ -156,8 +157,9 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
         // extractAndStreamReasoning(response, writer, 'Scene 2'); // Temporarily commented
         return response;
       }).catch(err => {
-        logger.error('Scene 2 generation failed', err);
-        throw new Error(`Scene 2 generation failed: ${err instanceof Error ? err.message : String(err)}`);
+        const errorInfo = errorService.aiModel(`Scene 2 generation failed: ${err instanceof Error ? err.message : String(err)}`, { scene: 2 });
+        logger.error('Scene 2 generation failed', errorInfo);
+        throw new Error(errorInfo.message);
       }),
       generateText({
         model: model,
@@ -167,8 +169,9 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
         // extractAndStreamReasoning(response, writer, 'Scene 3'); // Temporarily commented
         return response;
       }).catch(err => {
-        logger.error('Video generation failed', err);
-        throw new Error(`Video generation failed: ${err instanceof Error ? err.message : String(err)}`);
+        const errorInfo = errorService.aiModel(`Video generation failed: ${err instanceof Error ? err.message : String(err)}`, { scene: 3 });
+        logger.error('Video generation failed', errorInfo);
+        throw new Error(errorInfo.message);
       }),
       generateText({
         model: model,
@@ -178,8 +181,9 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
         // extractAndStreamReasoning(response, writer, 'Scene 4'); // Temporarily commented
         return response;
       }).catch(err => {
-        logger.error('Scene 4 generation failed', err);
-        throw new Error(`Scene 4 generation failed: ${err instanceof Error ? err.message : String(err)}`);
+        const errorInfo = errorService.aiModel(`Scene 4 generation failed: ${err instanceof Error ? err.message : String(err)}`, { scene: 4 });
+        logger.error('Scene 4 generation failed', errorInfo);
+        throw new Error(errorInfo.message);
       }),
       generateText({
         model: model,
@@ -189,8 +193,9 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
         // extractAndStreamReasoning(response, writer, 'Scene 5'); // Temporarily commented
         return response;
       }).catch(err => {
-        logger.error('Scene 5 generation failed', err);
-        throw new Error(`Scene 5 generation failed: ${err instanceof Error ? err.message : String(err)}`);
+        const errorInfo = errorService.aiModel(`Scene 5 generation failed: ${err instanceof Error ? err.message : String(err)}`, { scene: 5 });
+        logger.error('Scene 5 generation failed', errorInfo);
+        throw new Error(errorInfo.message);
       }),
       generateText({
         model: model,
@@ -200,8 +205,9 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
         // extractAndStreamReasoning(response, writer, 'Scene 6'); // Temporarily commented
         return response;
       }).catch(err => {
-        logger.error('Scene 6 generation failed', err);
-        throw new Error(`Scene 6 generation failed: ${err instanceof Error ? err.message : String(err)}`);
+        const errorInfo = errorService.aiModel(`Scene 6 generation failed: ${err instanceof Error ? err.message : String(err)}`, { scene: 6 });
+        logger.error('Scene 6 generation failed', errorInfo);
+        throw new Error(errorInfo.message);
       }),
       generateText({
         model: model,
@@ -211,8 +217,9 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
         // extractAndStreamReasoning(response, writer, 'Scene 7'); // Temporarily commented
         return response;
       }).catch(err => {
-        logger.error('Scene 7 generation failed', err);
-        throw new Error(`Scene 7 generation failed: ${err instanceof Error ? err.message : String(err)}`);
+        const errorInfo = errorService.aiModel(`Scene 7 generation failed: ${err instanceof Error ? err.message : String(err)}`, { scene: 7 });
+        logger.error('Scene 7 generation failed', errorInfo);
+        throw new Error(errorInfo.message);
       }),
       generateText({
         model: model,
@@ -222,8 +229,9 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
         // extractAndStreamReasoning(response, writer, 'Scene 8'); // Temporarily commented
         return response;
       }).catch(err => {
-        logger.error('Scene 8 generation failed', err);
-        throw new Error(`Scene 8 generation failed: ${err instanceof Error ? err.message : String(err)}`);
+        const errorInfo = errorService.aiModel(`Scene 8 generation failed: ${err instanceof Error ? err.message : String(err)}`, { scene: 8 });
+        logger.error('Scene 8 generation failed', errorInfo);
+        throw new Error(errorInfo.message);
       })
     ]);
 
@@ -261,8 +269,9 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
       scene1Scenes = JSON.parse(cleanedScene1);
       logger.debug('Scene 1 parsed successfully', { hasHighlights: !!scene1Scenes['1']?.highlights });
     } catch (parseErr) {
-      logger.error('Failed to parse scene 1', parseErr instanceof Error ? parseErr : new Error(String(parseErr)));
-      throw new Error(`Scene 1 JSON parsing failed: ${parseErr instanceof Error ? parseErr.message : String(parseErr)}`);
+      const errorInfo = errorService.aiModel(`Scene 1 JSON parsing failed: ${parseErr instanceof Error ? parseErr.message : String(parseErr)}`, { scene: 1, step: 'parsing' });
+      logger.error('Failed to parse scene 1', errorInfo);
+      throw new Error(errorInfo.message);
     }
 
     try {
@@ -271,8 +280,9 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
       scene2Scenes = JSON.parse(cleanedScene2);
       logger.debug('Scene 2 parsed successfully');
     } catch (parseErr) {
-      logger.error('Failed to parse scene 2', parseErr instanceof Error ? parseErr : new Error(String(parseErr)));
-      throw new Error(`Scene 2 JSON parsing failed: ${parseErr instanceof Error ? parseErr.message : String(parseErr)}`);
+      const errorInfo = errorService.aiModel(`Scene 2 JSON parsing failed: ${parseErr instanceof Error ? parseErr.message : String(parseErr)}`, { scene: 2, step: 'parsing' });
+      logger.error('Failed to parse scene 2', errorInfo);
+      throw new Error(errorInfo.message);
     }
 
     try {
@@ -309,8 +319,9 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
         logger.debug('Video scenes parsed successfully on retry');
 
       } catch (retryErr) {
-        logger.error('Video generation failed after retry', retryErr instanceof Error ? retryErr : new Error(String(retryErr)));
-        throw new Error(`Video content generation failed after retry. Please regenerate the entire microlearning.`);
+        const errorInfo = errorService.aiModel('Video content generation failed after retry. Please regenerate the entire microlearning.', { scene: 3, step: 'retry' });
+        logger.error('Video generation failed after retry', errorInfo);
+        throw new Error(errorInfo.message);
       }
     }
 
@@ -322,8 +333,9 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
       scene4Scenes = JSON.parse(cleanedScene4);
       logger.debug('Scene 4 parsed successfully');
     } catch (parseErr) {
-      logger.error('Failed to parse scene 4', parseErr instanceof Error ? parseErr : new Error(String(parseErr)));
-      throw new Error(`Scene 4 JSON parsing failed: ${parseErr instanceof Error ? parseErr.message : String(parseErr)}`);
+      const errorInfo = errorService.aiModel(`Scene 4 JSON parsing failed: ${parseErr instanceof Error ? parseErr.message : String(parseErr)}`, { scene: 4, step: 'parsing' });
+      logger.error('Failed to parse scene 4', errorInfo);
+      throw new Error(errorInfo.message);
     }
 
     try {
@@ -332,8 +344,9 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
       scene5Scenes = JSON.parse(cleanedScene5);
       logger.debug('Scene 5 parsed successfully');
     } catch (parseErr) {
-      logger.error('Failed to parse scene 5', parseErr instanceof Error ? parseErr : new Error(String(parseErr)));
-      throw new Error(`Scene 5 JSON parsing failed: ${parseErr instanceof Error ? parseErr.message : String(parseErr)}`);
+      const errorInfo = errorService.aiModel(`Scene 5 JSON parsing failed: ${parseErr instanceof Error ? parseErr.message : String(parseErr)}`, { scene: 5, step: 'parsing' });
+      logger.error('Failed to parse scene 5', errorInfo);
+      throw new Error(errorInfo.message);
     }
 
     try {
@@ -342,8 +355,9 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
       scene6Scenes = JSON.parse(cleanedScene6);
       logger.debug('Scene 6 parsed successfully');
     } catch (parseErr) {
-      logger.error('Failed to parse scene 6', parseErr instanceof Error ? parseErr : new Error(String(parseErr)));
-      throw new Error(`Scene 6 JSON parsing failed: ${parseErr instanceof Error ? parseErr.message : String(parseErr)}`);
+      const errorInfo = errorService.aiModel(`Scene 6 JSON parsing failed: ${parseErr instanceof Error ? parseErr.message : String(parseErr)}`, { scene: 6, step: 'parsing' });
+      logger.error('Failed to parse scene 6', errorInfo);
+      throw new Error(errorInfo.message);
     }
 
     mainScenes = { ...scene4Scenes, ...scene5Scenes, ...scene6Scenes };
@@ -357,8 +371,9 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
       scene7Scenes = JSON.parse(cleanedScene7);
       logger.debug('Scene 7 parsed successfully');
     } catch (parseErr) {
-      logger.error('Failed to parse scene 7', parseErr instanceof Error ? parseErr : new Error(String(parseErr)));
-      throw new Error(`Scene 7 JSON parsing failed: ${parseErr instanceof Error ? parseErr.message : String(parseErr)}`);
+      const errorInfo = errorService.aiModel(`Scene 7 JSON parsing failed: ${parseErr instanceof Error ? parseErr.message : String(parseErr)}`, { scene: 7, step: 'parsing' });
+      logger.error('Failed to parse scene 7', errorInfo);
+      throw new Error(errorInfo.message);
     }
 
     try {
@@ -367,8 +382,9 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
       scene8Scenes = JSON.parse(cleanedScene8);
       logger.debug('Scene 8 parsed successfully');
     } catch (parseErr) {
-      logger.error('Failed to parse scene 8', parseErr instanceof Error ? parseErr : new Error(String(parseErr)));
-      throw new Error(`Scene 8 JSON parsing failed: ${parseErr instanceof Error ? parseErr.message : String(parseErr)}`);
+      const errorInfo = errorService.aiModel(`Scene 8 JSON parsing failed: ${parseErr instanceof Error ? parseErr.message : String(parseErr)}`, { scene: 8, step: 'parsing' });
+      logger.error('Failed to parse scene 8', errorInfo);
+      throw new Error(errorInfo.message);
     }
 
 
@@ -406,7 +422,9 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
     logger.error('Critical error in language generation', err instanceof Error ? err : new Error(String(err)));
 
     // Re-throw the error instead of returning it as LanguageContent
-    throw new Error(`Language generation failed: ${err instanceof Error ? err.message : String(err)}`);
+    const errorInfo = errorService.aiModel(`Language generation failed: ${err instanceof Error ? err.message : String(err)}`, { step: 'language-generation' });
+    logger.error('Language generation failed', errorInfo);
+    throw new Error(errorInfo.message);
   }
 }
 

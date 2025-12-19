@@ -127,7 +127,8 @@ function extractStringsWithPaths(obj: any, protectedKeys: string[], currentPath 
  * =======================================================*/
 function bindTranslatedStrings(original: any, extracted: ExtractedString[], translated: string[]): any {
     if (extracted.length !== translated.length) {
-        throw new Error(`Mismatch: extracted ${extracted.length} strings but got ${translated.length} translations`);
+        const errorInfo = errorService.validation(`Mismatch: extracted ${extracted.length} strings but got ${translated.length} translations`, { extracted: extracted.length, translated: translated.length });
+        throw new Error(errorInfo.message);
     }
     const result = JSON.parse(JSON.stringify(original));
     extracted.forEach((item, idx) => {
@@ -294,7 +295,10 @@ export const inboxTranslateJsonTool = new Tool({
                     for (let i = 0; i < chunk.length; i++) {
                         const src = chunk[i].value;
                         let tgt = trivialMask[i] ? src : obj[String(i)];
-                        if (tgt === undefined) throw new Error(`Missing key "${i}" in translation output`);
+                        if (tgt === undefined) {
+                            const errorInfo = errorService.aiModel(`Missing key "${i}" in translation output`, { chunkNumber, index: i });
+                            throw new Error(errorInfo.message);
+                        }
 
                         // Placeholders // URL // email // whitespace koru
                         if (!placeholdersEqual(src, tgt)) {
@@ -336,7 +340,8 @@ export const inboxTranslateJsonTool = new Tool({
             }
 
             if (allTranslated.length !== extracted.length) {
-                throw new Error(`Total mismatch: expected ${extracted.length}, got ${allTranslated.length}`);
+                const errorInfo = errorService.validation(`Total mismatch: expected ${extracted.length}, got ${allTranslated.length}`, { expected: extracted.length, got: allTranslated.length });
+                throw new Error(errorInfo.message);
             }
 
             const result = bindTranslatedStrings(json, extracted, allTranslated);

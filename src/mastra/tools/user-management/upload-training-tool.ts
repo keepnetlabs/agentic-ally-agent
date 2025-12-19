@@ -48,7 +48,12 @@ export const uploadTrainingTool = createTool({
             const baseContent = await kvService.getMicrolearning(microlearningId);
 
             if (!baseContent || !baseContent.base) {
-                throw new Error(`Microlearning content not found for ID: ${microlearningId}`);
+                const errorInfo = errorService.notFound(`Microlearning content not found for ID: ${microlearningId}`, { microlearningId });
+                logger.warn('Microlearning not found', errorInfo);
+                return {
+                    success: false,
+                    error: JSON.stringify(errorInfo)
+                };
             }
 
             const microlearningData = baseContent.base;
@@ -121,7 +126,9 @@ export const uploadTrainingTool = createTool({
 
                 if (!response.ok) {
                     const errorText = await response.text();
-                    throw new Error(`Worker failed: ${response.status} - ${errorText}`);
+                    const errorInfo = errorService.external(`Worker failed: ${response.status} - ${errorText}`, { status: response.status });
+                    logger.error('Worker upload failed', errorInfo);
+                    throw new Error(errorInfo.message);
                 }
 
                 return await response.json();

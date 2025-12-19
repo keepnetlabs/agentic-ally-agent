@@ -220,12 +220,17 @@ export const getUserInfoTool = createTool({
                 body: JSON.stringify(userSearchPayload)
             });
 
-            if (!userSearchResponse.ok) throw new Error(`User search API error: ${userSearchResponse.status}`);
+            if (!userSearchResponse.ok) {
+                const errorInfo = errorService.external(`User search API error: ${userSearchResponse.status}`, { status: userSearchResponse.status });
+                throw new Error(errorInfo.message);
+            }
             const userSearchData = await userSearchResponse.json();
             const users = userSearchData?.items || userSearchData?.data?.results || [];
 
             if (users.length === 0) {
-                return { success: false, message: `User "${fullName}" not found.` };
+                const errorInfo = errorService.notFound(`User "${fullName}" not found.`, { fullName });
+                logger.warn('User not found', errorInfo);
+                return { success: false, error: JSON.stringify(errorInfo) };
             }
 
             const user = users[0];
