@@ -4,7 +4,7 @@ import { getModelWithOverride } from '../model-providers';
 import { cleanResponse } from '../utils/content-processors/json-cleaner';
 import { sanitizeHtml } from '../utils/content-processors/html-sanitizer';
 import { v4 as uuidv4 } from 'uuid';
-import { LANDING_PAGE } from '../constants';
+import { LANDING_PAGE, STRING_TRUNCATION } from '../constants';
 import { KVService } from '../services/kv-service';
 import {
   detectIndustry,
@@ -132,14 +132,14 @@ const analyzeRequest = createStep({
           logoInfo = contextualBrandInfo;
           logger.info('Using generated contextual brand', {
             brandName: logoInfo.brandName,
-            logoUrlPrefix: logoInfo.logoUrl.substring(0, 60)
+            logoUrlPrefix: logoInfo.logoUrl.substring(0, STRING_TRUNCATION.LOGO_URL_PREFIX_LENGTH)
           });
         }
       }
 
       logger.info('Brand detection complete', {
         brandName: logoInfo.brandName || 'Generic',
-        logoUrlPrefix: logoInfo.logoUrl.substring(0, 60),
+        logoUrlPrefix: logoInfo.logoUrl.substring(0, STRING_TRUNCATION.LOGO_URL_PREFIX_LENGTH),
         isRecognizedBrand: logoInfo.isRecognizedBrand
       });
 
@@ -297,8 +297,8 @@ const generateEmail = createStep({
           // Also handle cases where tag might be in the value without quotes (edge case)
           cleanedTemplate = cleanedTemplate.replace(/\{CUSTOMMAINLOGO\}/g, logoUrl);
           logger.info('Replaced CUSTOMMAINLOGO tag in email template with logo URL', {
-            logoUrlPrefix: logoUrl.substring(0, 80),
-            truncated: logoUrl.length > 80
+            logoUrlPrefix: logoUrl.substring(0, STRING_TRUNCATION.LOGO_URL_PREFIX_LENGTH_ALT),
+            truncated: logoUrl.length > STRING_TRUNCATION.LOGO_URL_PREFIX_LENGTH_ALT
           });
         }
 
@@ -479,8 +479,8 @@ const generateLandingPage = createStep({
               // Normalize img attributes and add centering styles
               cleanedTemplate = normalizeImgAttributes(cleanedTemplate);
               logger.info('Replaced CUSTOMMAINLOGO tag in landing page with logo from analysis', {
-                logoUrlPrefix: logoUrl.substring(0, 80),
-                truncated: logoUrl.length > 80
+                logoUrlPrefix: logoUrl.substring(0, STRING_TRUNCATION.LOGO_URL_PREFIX_LENGTH_ALT),
+                truncated: logoUrl.length > STRING_TRUNCATION.LOGO_URL_PREFIX_LENGTH_ALT
               });
             }
 

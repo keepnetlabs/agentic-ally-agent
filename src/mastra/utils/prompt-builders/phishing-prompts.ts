@@ -5,9 +5,11 @@
 
 import { PHISHING, PHISHING_EMAIL, LANDING_PAGE } from '../../constants';
 import { DIFFICULTY_CONFIG } from '../config/phishing-difficulty-config';
-import { DEFAULT_GENERIC_LOGO } from '../landing-page/image-validator';
 import { AnalysisSchema } from '../../schemas/phishing-workflow-schemas';
+import { getLogger } from '../core/logger';
 import { z } from 'zod';
+
+const logger = getLogger('PhishingPromptBuilder');
 
 // Type definitions for prompt parameters
 type AnalysisPromptParams = {
@@ -294,10 +296,12 @@ Write realistic phishing email content based on provided scenario blueprints for
        - **CRITICAL:** Outer td (with background color) MUST have padding: 20px; (all sides) to prevent content from touching edges on mobile and desktop.
        - Content: Inside a centered WHITE box (card) with rounded corners and shadow.
        - **CRITICAL:** Card format MUST have gray background (#f3f4f6) + white card box (#ffffff) with shadow.
+       - **TEXT ALIGNMENT:** Body content should use text-align: center for a professional, modern look (especially for SaaS/Tech brands).
        - Best for: "Reset Password", "Order Confirmation", "Security Alert", E-commerce, Tech brands.
      * **OPTION B: Corporate Letter (Bank/HR/Legal)**
        - Background: Full White (#ffffff).
-       - Content: Left-aligned or simple centered structure. No "card" box.
+       - Content: Left-aligned structure. No "card" box.
+       - **TEXT ALIGNMENT:** Body content should use text-align: left for formal corporate communications.
        - Best for: "Policy Update", "CEO Message", "HR Announcement".
 
    - **PREHEADER (MANDATORY):**
@@ -436,7 +440,7 @@ export function buildLandingPagePrompts(params: LandingPagePromptParams): {
 
   // 📝 LOG CHOSEN DESIGN FOR DEBUGGING
   // This helps us verify that randomization is working and what the agent is instructed to do
-  console.log('[Phishing Prompt Builder] Design Injection:', {
+  logger.debug('Design Injection:', {
     layout: randomLayout.id,
     style: randomStyle.id,
     layoutName: randomLayout.name,

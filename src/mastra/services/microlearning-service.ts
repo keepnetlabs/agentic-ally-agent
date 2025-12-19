@@ -44,6 +44,11 @@ export class MicrolearningService {
       };
     }
 
+    // Ensure inbox_items exists (defensive programming)
+    if (!inbox.inbox_items) {
+      inbox.inbox_items = [];
+    }
+
     // Check if already assigned
     const existingItem = inbox.inbox_items.find(item => item.microlearning_id === microlearningId);
     if (existingItem) {

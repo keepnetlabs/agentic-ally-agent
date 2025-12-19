@@ -4,6 +4,7 @@
  */
 
 import { getLogger } from '../core/logger';
+import { CACHE_CONFIG, TIMEOUT_VALUES } from '../../constants';
 
 const logger = getLogger('ImageValidator');
 
@@ -28,7 +29,7 @@ export async function getDefaultGenericLogoBase64(): Promise<string> {
 
     try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
+        const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_VALUES.DEFAULT_LOGO_FETCH_TIMEOUT_MS);
 
         const response = await fetch(DEFAULT_GENERIC_LOGO, {
             signal: controller.signal,
@@ -113,7 +114,7 @@ export function normalizeImgAttributes(html: string): string {
 export async function validateImageUrl(url: string): Promise<boolean> {
     try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3000); // 3s timeout
+        const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_VALUES.IMAGE_VALIDATION_TIMEOUT_MS);
 
         const response = await fetch(url, {
             method: 'HEAD', // Only get headers, not full image
@@ -234,7 +235,7 @@ interface CacheEntry {
 }
 
 const imageValidationCache = new Map<string, CacheEntry>();
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const CACHE_TTL_MS = CACHE_CONFIG.IMAGE_VALIDATION_TTL_MS;
 
 export async function validateImageUrlCached(url: string): Promise<boolean> {
     const cached = imageValidationCache.get(url);

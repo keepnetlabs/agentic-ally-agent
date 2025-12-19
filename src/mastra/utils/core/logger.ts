@@ -12,6 +12,7 @@
 import { PinoLogger } from '@mastra/loggers';
 
 const loggers = new Map<string, PinoLogger>();
+const DEFAULT_LOG_LEVEL = 'info';
 
 /**
  * Get or create a PinoLogger instance for a module
@@ -25,7 +26,7 @@ export function getLogger(moduleName: string): PinoLogger {
       moduleName,
       new PinoLogger({
         name: moduleName,
-        level: (process.env.LOG_LEVEL as any) || 'info',
+        level: DEFAULT_LOG_LEVEL,
       })
     );
   }

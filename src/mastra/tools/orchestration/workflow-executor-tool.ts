@@ -9,6 +9,8 @@ import { PROMPT_ANALYSIS, MODEL_PROVIDERS } from '../../constants';
 import { getLogger } from '../../utils/core/logger';
 import { errorService } from '../../services/error-service';
 
+const logger = getLogger('WorkflowExecutor');
+
 /**
  * Type definitions for workflow results
  */
@@ -19,6 +21,44 @@ interface WorkflowMetadata {
   microlearningId?: string;
   filesGenerated?: string[];
   [key: string]: unknown;
+}
+
+/**
+ * Validates workflow result structure
+ */
+function validateCreateMicrolearningResult(result: CreateMicrolearningResult): boolean {
+  if (result.status !== 'success') {
+    return false;
+  }
+  if (!result.result?.metadata) {
+    logger.warn('Workflow result missing metadata structure');
+    return false;
+  }
+  const metadata = result.result.metadata;
+  if (!metadata.trainingUrl) {
+    logger.warn('Workflow metadata missing trainingUrl');
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Validates add-language result structure
+ */
+function validateAddLanguageResult(result: AddLanguageResult): boolean {
+  if (result.status !== 'success') {
+    return false;
+  }
+  if (!result.result?.data) {
+    logger.warn('Workflow result missing data structure');
+    return false;
+  }
+  const data = result.result.data;
+  if (!data.trainingUrl) {
+    logger.warn('Workflow data missing trainingUrl');
+    return false;
+  }
+  return true;
 }
 
 interface CreateMicrolearningResult {
@@ -167,7 +207,6 @@ export const workflowExecutorTool = createTool({
   inputSchema: workflowExecutorSchema,
 
   execute: async ({ context, writer }) => {
-    const logger = getLogger('WorkflowExecutor');
     const { workflowType, ...params } = context;
 
     try {
@@ -203,21 +242,20 @@ export const workflowExecutorTool = createTool({
 
         logger.debug('Workflow result received', { status: workflowResult.status });
 
-        // Try to extract data from workflow result
-        if (
-          workflowResult.status === 'success' &&
-          workflowResult.result?.metadata
-        ) {
+        // Validate and extract data from workflow result
+        if (validateCreateMicrolearningResult(workflowResult)) {
           try {
-            const metadata = workflowResult.result.metadata;
-            trainingUrl = metadata.trainingUrl || trainingUrl;
+            const metadata = workflowResult.result!.metadata!;
+            trainingUrl = metadata.trainingUrl!;
             title = metadata.title || title;
             department = metadata.department || department;
             microlearningId = metadata.microlearningId || microlearningId;
           } catch (error) {
             const err = error instanceof Error ? error : new Error(String(error));
-            logger.warn('Could not extract workflow result data', { error: err.message });
+            logger.error('Failed to extract validated workflow result data', { error: err.message });
           }
+        } else {
+          logger.error('Workflow result validation failed', { status: workflowResult.status });
         }
 
         // Emit a custom UI signal for FE to open a canvas
@@ -272,15 +310,15 @@ export const workflowExecutorTool = createTool({
           }
         });
 
-        // Extract trainingUrl from result and send to frontend
-        const trainingUrl =
-          result?.status === 'success' && result.result?.data
-            ? result.result.data.trainingUrl
-            : null;
-        const title =
-          result?.status === 'success' && result.result?.data
-            ? result.result.data.title
-            : null;
+        // Validate and extract trainingUrl from result
+        const isValid = validateAddLanguageResult(result);
+        const trainingUrl = isValid ? result.result!.data!.trainingUrl! : null;
+        const title = isValid ? result.result!.data!.title : null;
+
+        if (!isValid) {
+          logger.error('Language workflow result validation failed', { status: result.status });
+        }
+
         logger.debug('Language translation completed', { hasTrainingUrl: !!trainingUrl });
         if (trainingUrl) {
           try {

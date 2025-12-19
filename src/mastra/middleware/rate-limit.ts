@@ -1,5 +1,6 @@
 import { Context } from 'hono';
 import { getLogger } from '../utils/core/logger';
+import { TIME_UNITS, RATE_LIMIT_CONFIG } from '../constants';
 
 const logger = getLogger('RateLimit');
 
@@ -36,7 +37,7 @@ export interface RateLimitConfig {
 /** Default configuration */
 const DEFAULT_CONFIG: RateLimitConfig = {
   maxRequests: 100,
-  windowMs: 60 * 1000, // 1 minute
+  windowMs: TIME_UNITS.MILLISECONDS_PER_MINUTE, // 1 minute
   keyPrefix: 'ratelimit:',
   message: 'Too many requests, please try again later.',
 };
@@ -46,17 +47,17 @@ export const RATE_LIMIT_TIERS = {
   // Chat endpoint: More generous (complex operations)
   CHAT: {
     maxRequests: 50,
-    windowMs: 60 * 1000, // 50 requests per minute
+    windowMs: TIME_UNITS.MILLISECONDS_PER_MINUTE, // 50 requests per minute
   },
   // Health check: Very generous
   HEALTH: {
     maxRequests: 300,
-    windowMs: 60 * 1000, // 300 requests per minute
+    windowMs: TIME_UNITS.MILLISECONDS_PER_MINUTE, // 300 requests per minute
   },
   // Default: Conservative
   DEFAULT: {
     maxRequests: 100,
-    windowMs: 60 * 1000, // 100 requests per minute
+    windowMs: TIME_UNITS.MILLISECONDS_PER_MINUTE, // 100 requests per minute
   },
 } as const;
 
@@ -123,15 +124,16 @@ function checkRateLimit(
   resetTime: number;
   retryAfter?: number;
 } {
-  // Periodic cleanup (every 100 requests to avoid performance impact)
+  // Periodic cleanup to avoid performance impact
   // Cloudflare Workers can't use setInterval in global scope
-  if (rateLimitStore.size > 0 && rateLimitStore.size % 100 === 0) {
+  if (rateLimitStore.size > 0 && rateLimitStore.size % RATE_LIMIT_CONFIG.CLEANUP_FREQUENCY === 0) {
     cleanupExpiredEntries();
   }
 
   const key = `${config.keyPrefix}${identifier}`;
   const now = Date.now();
-  const resetTime = now + config.windowMs;
+  const jitter = Math.random() * RATE_LIMIT_CONFIG.JITTER_VARIANCE_MS;
+  const resetTime = now + config.windowMs + jitter;
 
   // Get or create entry
   let entry = rateLimitStore.get(key);

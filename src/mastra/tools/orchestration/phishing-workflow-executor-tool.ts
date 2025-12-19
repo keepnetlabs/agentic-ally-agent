@@ -2,7 +2,7 @@ import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { createPhishingWorkflow } from '../../workflows/create-phishing-workflow';
 import { v4 as uuidv4 } from 'uuid';
-import { PHISHING, MODEL_PROVIDERS, ERROR_MESSAGES } from '../../constants';
+import { PHISHING, MODEL_PROVIDERS, ERROR_MESSAGES, TIMEOUT_VALUES } from '../../constants';
 import { getLogger } from '../../utils/core/logger';
 import { errorService } from '../../services/error-service';
 
@@ -64,9 +64,9 @@ export const phishingWorkflowExecutorTool = createTool({
                 // Stream result to frontend
                 if (writer) {
                     try {
-                        // Wait 3 seconds to let reasoning streams finish and build anticipation
+                        // Wait to let reasoning streams finish and build anticipation
                         // This ensures the UI component appears AT THE END, after all reasoning logs
-                        await new Promise(resolve => setTimeout(resolve, 3000));
+                        await new Promise(resolve => setTimeout(resolve, TIMEOUT_VALUES.PHISHING_WORKFLOW_STREAM_DELAY_MS));
 
                         const messageId = uuidv4();
                         await writer.write({ type: 'text-start', id: messageId });

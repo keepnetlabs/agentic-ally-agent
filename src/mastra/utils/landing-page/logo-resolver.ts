@@ -1,6 +1,6 @@
 /**
- * Logo URL resolver - Alternative to Clearbit
- * Uses multiple fallback services to ensure high-quality logo availability for email templates
+ * Logo URL resolver - Uses Apistemic Logos API as primary source
+ * Falls back to letter-based placeholder logos when brand not found
  * Optimized for 64x64 pixel logos in email templates
  */
 
@@ -9,18 +9,29 @@ import { getLogger } from '../core/logger';
 const logger = getLogger('LogoResolver');
 
 /**
- * Generate logo URL from domain using alternative services
- * Prioritizes high-quality logo services suitable for email templates (64x64px)
- * Falls back through multiple services if one fails
+ * Generate a random letter-based logo URL as fallback
+ * Uses single-letter domains (a.com, b.com, etc.) for generic logos
+ * 
+ * @returns Logo URL for a random letter domain
+ */
+export function getRandomLetterLogoUrl(): string {
+    const letters = 'abcdefghijklmnopqrstuvwxyz';
+    const randomLetter = letters[Math.floor(Math.random() * letters.length)];
+    return `https://logos-api.apistemic.com/domain:${randomLetter}.com`;
+}
+
+/**
+ * Generate logo URL from domain using Apistemic Logos API
+ * Falls back to random letter logo if domain is invalid
  * 
  * @param domain - Domain name (e.g., "google.com")
- * @param size - Logo size in pixels (default: 64 for email templates)
+ * @param size - Logo size in pixels (default: 64 for email templates) - not used by Apistemic API
  * @returns Logo URL string
  */
 export function getLogoUrl(domain: string, size: number = 64): string {
     if (!domain || !domain.includes('.')) {
-        logger.warn('Invalid domain provided for logo resolution', { domain });
-        return '';
+        logger.warn('Invalid domain provided for logo resolution, using random letter logo', { domain });
+        return getRandomLetterLogoUrl();
     }
 
     // Clean domain (remove protocol, www, paths, etc.)
@@ -33,24 +44,21 @@ export function getLogoUrl(domain: string, size: number = 64): string {
         .trim();
 
     if (!cleanDomain || !cleanDomain.includes('.')) {
-        logger.warn('Domain cleaning resulted in invalid domain', { original: domain, cleaned: cleanDomain });
-        return '';
+        logger.warn('Domain cleaning resulted in invalid domain, using random letter logo', { original: domain, cleaned: cleanDomain });
+        return getRandomLetterLogoUrl();
     }
 
-    // Primary: Icon Horse (high-quality logos, optimized for email templates)
-    // Format: https://icon.horse/icon/{domain}
-    // Provides high-resolution logos suitable for 64x64 email templates
-    // Icon Horse automatically serves the best quality favicon/logo available
-    // For fallback options, use getLogoUrlFallbacks() function
-    const iconHorseUrl = `https://icon.horse/icon/${cleanDomain}`;
+    // Primary: Apistemic Logos API (high-quality brand logos)
+    // Format: https://logos-api.apistemic.com/domain:{domain}
+    const apiUrl = `https://logos-api.apistemic.com/domain:${cleanDomain}`;
 
-    logger.info('Generated logo URL using Icon Horse', {
+    logger.info('Generated logo URL using Apistemic Logos API', {
         domain: cleanDomain,
         size,
-        logoUrl: iconHorseUrl
+        logoUrl: apiUrl
     });
 
-    return iconHorseUrl;
+    return apiUrl;
 }
 
 /**
@@ -64,7 +72,7 @@ export function getLogoUrl(domain: string, size: number = 64): string {
  */
 export function getLogoUrlFallbacks(domain: string, size: number = 64): string[] {
     if (!domain || !domain.includes('.')) {
-        return [];
+        return [getRandomLetterLogoUrl()];
     }
 
     const cleanDomain = domain
@@ -76,14 +84,14 @@ export function getLogoUrlFallbacks(domain: string, size: number = 64): string[]
         .trim();
 
     if (!cleanDomain || !cleanDomain.includes('.')) {
-        return [];
+        return [getRandomLetterLogoUrl()];
     }
 
     return [
-        `https://icon.horse/icon/${cleanDomain}`,                         // Primary: Icon Horse (high quality)
-        `https://logo.dev/${cleanDomain}`,                                 // Fallback 1: Logo.dev (high quality)
+        `https://logos-api.apistemic.com/domain:${cleanDomain}`,          // Primary: Apistemic Logos API
+        `https://icon.horse/icon/${cleanDomain}`,                         // Fallback 1: Icon Horse
         `https://www.google.com/s2/favicons?domain=${cleanDomain}&sz=${size}`,  // Fallback 2: Google Favicon
-        `https://api.faviconkit.com/${cleanDomain}/${size}`                // Fallback 3: FaviconKit
+        getRandomLetterLogoUrl()                                          // Fallback 3: Random letter logo
     ];
 }
 

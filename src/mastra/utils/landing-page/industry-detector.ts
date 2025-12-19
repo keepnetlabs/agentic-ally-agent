@@ -55,7 +55,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
                 'background-color: #f9fafb'
             ].join('; ')
         },
-        logoExample: 'https://icon.horse/icon/jpmorganchase.com'
+        logoExample: 'https://logos-api.apistemic.com/domain:jpmorganchase.com'
     },
     'Technology': {
         colors: {
@@ -99,7 +99,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
                 'background-color: #f9fafb'
             ].join('; ')
         },
-        logoExample: 'https://icon.horse/icon/google.com'
+        logoExample: 'https://logos-api.apistemic.com/domain:google.com'
     },
     'Healthcare': {
         colors: {
@@ -143,7 +143,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
                 'background-color: #f9fafb'
             ].join('; ')
         },
-        logoExample: 'https://icon.horse/icon/mayoclinic.org'
+        logoExample: 'https://logos-api.apistemic.com/domain:mayoclinic.org'
     },
     'E-commerce': {
         colors: {
@@ -187,7 +187,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
                 'background-color: #f9fafb'
             ].join('; ')
         },
-        logoExample: 'https://icon.horse/icon/amazon.com'
+        logoExample: 'https://logos-api.apistemic.com/domain:amazon.com'
     },
     'Corporate': {
         colors: {
@@ -231,7 +231,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
                 'background-color: #f9fafb'
             ].join('; ')
         },
-        logoExample: 'https://icon.horse/icon/accenture.com'
+        logoExample: 'https://logos-api.apistemic.com/domain:accenture.com'
     },
     'Education': {
         colors: {
@@ -275,7 +275,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
                 'background-color: #f9fafb'
             ].join('; ')
         },
-        logoExample: 'https://icon.horse/icon/coursera.org'
+        logoExample: 'https://logos-api.apistemic.com/domain:coursera.org'
     },
     'Media & Entertainment': {
         colors: {
@@ -319,7 +319,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
                 'background-color: #f9fafb'
             ].join('; ')
         },
-        logoExample: 'https://icon.horse/icon/netflix.com'
+        logoExample: 'https://logos-api.apistemic.com/domain:netflix.com'
     },
     'Government': {
         colors: {
@@ -363,7 +363,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
                 'background-color: #f9fafb'
             ].join('; ')
         },
-        logoExample: 'https://icon.horse/icon/usa.gov'
+        logoExample: 'https://logos-api.apistemic.com/domain:usa.gov'
     },
     'Real Estate': {
         colors: {
@@ -407,7 +407,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
                 'background-color: #f9fafb'
             ].join('; ')
         },
-        logoExample: 'https://icon.horse/icon/zillow.com'
+        logoExample: 'https://logos-api.apistemic.com/domain:zillow.com'
     },
     'Hospitality & Travel': {
         colors: {
@@ -451,7 +451,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
                 'background-color: #f9fafb'
             ].join('; ')
         },
-        logoExample: 'https://icon.horse/icon/booking.com'
+        logoExample: 'https://logos-api.apistemic.com/domain:booking.com'
     }
 };
 

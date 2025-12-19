@@ -154,6 +154,58 @@ export const RETRY = {
 export const AGENT_CALL_TIMEOUT_MS = 600000;
 
 // ============================================
+// TIME UNIT CONSTANTS
+// ============================================
+
+export const TIME_UNITS = {
+  SECONDS_PER_MINUTE: 60,
+  MILLISECONDS_PER_SECOND: 1000,
+  MILLISECONDS_PER_MINUTE: 60 * 1000,
+  MINUTES_PER_HOUR: 60,
+} as const;
+
+// ============================================
+// CACHE CONFIGURATION
+// ============================================
+
+export const CACHE_CONFIG = {
+  // Image validation cache TTL (5 minutes)
+  IMAGE_VALIDATION_TTL_MS: 5 * TIME_UNITS.MILLISECONDS_PER_MINUTE,
+} as const;
+
+// ============================================
+// TIMEOUT CONFIGURATION
+// ============================================
+
+export const TIMEOUT_VALUES = {
+  // Image validation timeouts (milliseconds)
+  DEFAULT_LOGO_FETCH_TIMEOUT_MS: 5000,
+  IMAGE_VALIDATION_TIMEOUT_MS: 3000,
+  // Workflow delays (milliseconds)
+  PHISHING_WORKFLOW_STREAM_DELAY_MS: 3000,
+  LANGUAGE_WORKFLOW_BACKOFF_MS: 1000,
+} as const;
+
+// ============================================
+// STRING TRUNCATION LENGTHS
+// ============================================
+
+export const STRING_TRUNCATION = {
+  LOGO_URL_PREFIX_LENGTH: 60,
+  LOGO_URL_PREFIX_LENGTH_ALT: 80,
+  JSON_SAMPLE_LENGTH: 200,
+} as const;
+
+// ============================================
+// RATE LIMIT CONFIGURATION
+// ============================================
+
+export const RATE_LIMIT_CONFIG = {
+  CLEANUP_FREQUENCY: 100,
+  JITTER_VARIANCE_MS: 1000,
+} as const;
+
+// ============================================
 // EXAMPLE REPOSITORY CONFIGURATION
 // ============================================
 

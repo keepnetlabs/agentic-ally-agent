@@ -295,7 +295,7 @@ export const errorService = {
    *
    * @example
    * const errorInfo = errorService.parse(errorString);
-   * if (errorInfo) console.log(errorInfo.code, errorInfo.message);
+   * if (errorInfo) logger.info(errorInfo.code, errorInfo.message);
    */
   parse: (errorString: string): ErrorInfo | null => {
     try {

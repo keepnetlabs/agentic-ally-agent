@@ -13,6 +13,20 @@ export enum ModelProvider {
     GOOGLE = 'google',
 }
 
+/**
+ * Validates if a string is a valid ModelProvider
+ */
+function isValidModelProvider(provider: string): provider is ModelProvider {
+    return Object.values(ModelProvider).includes(provider as ModelProvider);
+}
+
+/**
+ * Validates if a string is a valid Model
+ */
+function isValidModel(model: string): model is Model {
+    return Object.values(Model).includes(model as Model);
+}
+
 export enum Model {
     OPENAI_GPT_4O = 'gpt-4o',
     OPENAI_GPT_4O_MINI = 'gpt-4o-mini',
@@ -193,15 +207,21 @@ export function getModelWithOverride(
     }
 
     try {
-        const provider = ModelProvider[modelProvider as keyof typeof ModelProvider];
-        if (!provider) {
+        if (!isValidModelProvider(modelProvider)) {
             logger.warn('Invalid model provider, using default', {
                 modelProvider
             });
             return defaultFunc();
         }
 
-        const model = getModel(provider, Model[modelName as keyof typeof Model]);
+        if (!isValidModel(modelName)) {
+            logger.warn('Invalid model name, using default', {
+                modelName
+            });
+            return defaultFunc();
+        }
+
+        const model = getModel(modelProvider, modelName);
         logger.info('Using model override', {
             modelProvider,
             modelName

@@ -5,7 +5,7 @@ import { inboxTranslateJsonTool } from '../tools/inbox';
 import { KVService } from '../services/kv-service';
 import { normalizeDepartmentName } from '../utils/language/language-utils';
 import { validateInboxStructure, correctInboxStructure, detectJsonCorruption } from '../utils/validation/json-validation-utils';
-import { MODEL_PROVIDERS } from '../constants';
+import { MODEL_PROVIDERS, TIMEOUT_VALUES, STRING_TRUNCATION } from '../constants';
 import { getLogger } from '../utils/core/logger';
 import { waitForKVConsistency, buildExpectedKVKeys } from '../utils/kv-consistency';
 
@@ -305,7 +305,7 @@ const updateInboxStep = createStep({
       }
 
       if (baseInbox) {
-        logger.debug('Found base inbox', { sample: JSON.stringify(baseInbox).substring(0, 200) });
+        logger.debug('Found base inbox', { sample: JSON.stringify(baseInbox).substring(0, STRING_TRUNCATION.JSON_SAMPLE_LENGTH) });
 
         // Check for corruption in base inbox before translation
         const corruptionIssues = detectJsonCorruption(baseInbox);
@@ -342,7 +342,7 @@ const updateInboxStep = createStep({
               'difficulty', 'size', 'type', 'Return-Path', 'SPF', 'DMARC']
           };
 
-          await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second backoff
+          await new Promise(resolve => setTimeout(resolve, TIMEOUT_VALUES.LANGUAGE_WORKFLOW_BACKOFF_MS));
           translatedInbox = await inboxTranslateJsonTool.execute(enhancedParams);
           isValid = translatedInbox?.success && validateInboxStructure(baseInbox, translatedInbox.data);
         }
