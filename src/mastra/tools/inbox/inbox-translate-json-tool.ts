@@ -354,7 +354,7 @@ export const inboxTranslateJsonTool = new Tool({
                 step: 'inbox-translation',
                 stack: err.stack
             });
-            logger.error('Inbox translation failed', errorInfo);
+            logger.error('Inbox translation failed', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
             return {
                 success: false,
                 error: JSON.stringify(errorInfo)

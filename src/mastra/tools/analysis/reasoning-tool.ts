@@ -27,7 +27,7 @@ export const reasoningTool = new Tool({
     try {
       if (!thought) {
         const errorInfo = errorService.validation('Thought is required for reasoning tool');
-        logger.warn('Reasoning tool called without thought', errorInfo);
+        logger.warn('Reasoning tool called without thought', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
         return { success: false, error: JSON.stringify(errorInfo) };
       }
 
@@ -69,7 +69,7 @@ export const reasoningTool = new Tool({
         step: 'reasoning-emission',
         stack: err.stack
       });
-      logger.error('Reasoning tool error', errorInfo);
+      logger.error('Reasoning tool error', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
       return {
         success: false,
         error: JSON.stringify(errorInfo)

@@ -182,13 +182,12 @@ export const routeToAgent = async (
   // Debug: Routing response from orchestrator
   logger.info('✅ ORCHESTRATOR_RESPONSE Response from orchestrator', {
     agentName: routeResult.agentName,
-    reasoning: (routeResult as any).reasoning,
-    taskContext: (routeResult as any).taskContext
+    taskContext: routeResult.taskContext
   });
 
   logger.info('agent_routing_successful', {
     agentName: routeResult.agentName,
-    reasoning: (routeResult as any).reasoning
+    taskContext: routeResult.taskContext
   });
   return routeResult;
 };

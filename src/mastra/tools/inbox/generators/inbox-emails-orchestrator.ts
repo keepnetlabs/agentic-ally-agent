@@ -4,6 +4,7 @@ import { EmailVariant, variantDeltaBuilder, buildHintsFromInsights } from './inb
 import { cleanResponse } from '../../../utils/content-processors/json-cleaner';
 import { INBOX_GENERATION_PARAMS } from '../../../utils/config/llm-generation-params';
 import { getLogger } from '../../../utils/core/logger';
+import { errorService } from '../../../services/error-service';
 
 const logger = getLogger('InboxEmailsOrchestrator');
 
@@ -98,7 +99,7 @@ async function generateOneEmail(
     // If phishing variant + additionalContext exists, add dedicated context message
     // Both ObviousPhishing and SophisticatedPhishing benefit from user vulnerability intelligence
     const isPhishingVariant = variant === EmailVariant.SophisticatedPhishing ||
-                              variant === EmailVariant.ObviousPhishing;
+        variant === EmailVariant.ObviousPhishing;
     if (isPhishingVariant && additionalContext) {
         messages.push({
             role: 'user',
@@ -124,8 +125,16 @@ ${additionalContext}`
         const cleaned = cleanResponse(res.text, `inbox-email-${index + 1}`);
         const parsed = JSON.parse(cleaned);
         parsed.id = String(index + 1);
+        logger.debug('Email generated successfully', { variant, index: index + 1 });
         return parsed;
     } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        logger.warn('Email generation failed, retrying with fixed prompt', {
+            variant,
+            index: index + 1,
+            error: errorMessage,
+        });
+
         // minimal per-variant retry once - rebuild messages with retry instruction
         const retryMessages: any[] = [
             { role: 'system', content: systemPrompt }
@@ -146,15 +155,33 @@ ${additionalContext}`
             content: delta + '\nIf previous output was not valid JSON, fix and resend as a single JSON object.'
         });
 
-        const res2 = await generateText({
-            model,
-            messages: retryMessages,
-            ...INBOX_GENERATION_PARAMS,
-        });
-        const cleaned2 = cleanResponse(res2.text, `inbox-email-retry-${index + 1}`);
-        const parsed2 = JSON.parse(cleaned2);
-        parsed2.id = String(index + 1);
-        return parsed2;
+        try {
+            const res2 = await generateText({
+                model,
+                messages: retryMessages,
+                ...INBOX_GENERATION_PARAMS,
+            });
+            const cleaned2 = cleanResponse(res2.text, `inbox-email-retry-${index + 1}`);
+            const parsed2 = JSON.parse(cleaned2);
+            parsed2.id = String(index + 1);
+            logger.debug('Email generated successfully after retry', { variant, index: index + 1 });
+            return parsed2;
+        } catch (retryErr) {
+            const retryErrorMessage = retryErr instanceof Error ? retryErr.message : String(retryErr);
+            const errorInfo = errorService.aiModel(`Email generation failed for ${variant} after retry`, {
+                variant,
+                index: index + 1,
+                originalError: errorMessage,
+                retryError: retryErrorMessage,
+                topic,
+            });
+            logger.error('Email generation failed after retry', {
+                code: errorInfo.code,
+                message: errorInfo.message,
+                category: errorInfo.category,
+            });
+            throw retryErr;
+        }
     }
 }
 
@@ -190,12 +217,51 @@ export async function generateInboxEmailsParallel(args: OrchestratorArgs): Promi
         // Apply targeted context to both phishing variants (realistic - attackers research targets)
         // Legit emails don't need vulnerability context (they're normal workplace communication)
         const useTargetedPrompt = variant === EmailVariant.SophisticatedPhishing ||
-                                  variant === EmailVariant.ObviousPhishing;
+            variant === EmailVariant.ObviousPhishing;
         const contextForVariant = useTargetedPrompt ? args.additionalContext : undefined;
 
         return generateOneEmail(i, system, args.model, args.topic, args.department, variant, uniqueTimestamps[i], contextForVariant);
     });
-    const emails = await Promise.all(tasks);
+
+    // Use allSettled to continue even if some emails fail
+    const results = await Promise.allSettled(tasks);
+    const emails = results
+        .map((result, i) => {
+            if (result.status === 'fulfilled') {
+                return result.value;
+            }
+            // Log failed emails
+            logger.error('Email generation failed', {
+                variant: variantPlan[i],
+                index: i + 1,
+                error: result.reason instanceof Error ? result.reason.message : String(result.reason),
+            });
+            return null;
+        })
+        .filter((email): email is any => email !== null);
+
+    // Ensure at least one email was generated
+    if (emails.length === 0) {
+        const errorInfo = errorService.aiModel('All email generation attempts failed', {
+            topic: args.topic,
+            department: args.department,
+            attemptedVariants: variantPlan.length,
+        });
+        logger.error('All email generation failed', {
+            code: errorInfo.code,
+            message: errorInfo.message,
+            category: errorInfo.category,
+        });
+        throw new Error(errorInfo.message);
+    }
+
+    logger.info('Email generation completed', {
+        topic: args.topic,
+        successful: emails.length,
+        attempted: variantPlan.length,
+        failed: variantPlan.length - emails.length,
+    });
+
     return emails;
 }
 

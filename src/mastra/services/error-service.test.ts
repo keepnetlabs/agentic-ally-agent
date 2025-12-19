@@ -22,6 +22,8 @@ describe('ErrorService', () => {
       expect(error.category).toBe(ErrorCategory.AUTH);
       expect(error.retryable).toBe(false);
       expect(error.suggestion).toContain('authentication');
+      expect(error.nextStep).toBeDefined();
+      expect(error.nextStep).toContain('Ask user');
       expect(error.timestamp).toBeTypeOf('number');
     });
 
@@ -58,6 +60,20 @@ describe('ErrorService', () => {
 
       expect(error.details).toEqual({ field: 'email' });
     });
+
+    it('should include context-aware nextStep when field is provided', () => {
+      const error = errorService.validation('Email required', { field: 'email' });
+
+      expect(error.nextStep).toContain('email');
+      expect(error.nextStep).toContain('Ask user');
+    });
+
+    it('should include generic nextStep when field is not provided', () => {
+      const error = errorService.validation('Invalid input');
+
+      expect(error.nextStep).toBeDefined();
+      expect(error.nextStep).toContain('Ask user');
+    });
   });
 
   describe('external', () => {
@@ -75,6 +91,13 @@ describe('ErrorService', () => {
 
       expect(error.details).toEqual({ service: 'KV', status: 502 });
     });
+
+    it('should include context-aware nextStep when service is provided', () => {
+      const error = errorService.external('API error', { service: 'KV' });
+
+      expect(error.nextStep).toContain('KV');
+      expect(error.nextStep).toContain('Retry');
+    });
   });
 
   describe('notFound', () => {
@@ -90,6 +113,14 @@ describe('ErrorService', () => {
       const error = errorService.notFound('Resource missing', { resourceId: 'ml-123' });
 
       expect(error.details).toEqual({ resourceId: 'ml-123' });
+    });
+
+    it('should include context-aware nextStep when resourceType and resourceId are provided', () => {
+      const error = errorService.notFound('Resource missing', { resourceType: 'microlearning', resourceId: 'ml-123' });
+
+      expect(error.nextStep).toContain('microlearning');
+      expect(error.nextStep).toContain('ml-123');
+      expect(error.nextStep).toContain('Ask user');
     });
   });
 

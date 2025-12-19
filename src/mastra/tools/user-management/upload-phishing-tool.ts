@@ -3,9 +3,30 @@ import { z } from 'zod';
 import { requestStorage } from '../../utils/core/request-storage';
 import { getLogger } from '../../utils/core/logger';
 import { withRetry } from '../../utils/core/resilience-utils';
+import { callWorkerAPI } from '../../utils/core/worker-api-client';
 import { KVService } from '../../services/kv-service';
 import { ERROR_MESSAGES, API_ENDPOINTS } from '../../constants';
 import { errorService } from '../../services/error-service';
+import { validateToolResult } from '../../utils/tool-result-validation';
+
+// Output schema defined separately to avoid circular reference
+const uploadPhishingOutputSchema = z.object({
+    success: z.boolean(),
+    data: z.object({
+        resourceId: z.string(), // CRITICAL: Uses scenarioResourceId if available, otherwise templateResourceId (for assignment)
+        templateResourceId: z.string().optional(), // Original template resource ID
+        templateId: z.number().optional(),
+        landingPageResourceId: z.string().nullable().optional(),
+        landingPageId: z.number().nullable().optional(),
+        scenarioResourceId: z.string().nullable().optional(), // Scenario resource ID (preferred for assignment)
+        scenarioId: z.number().nullable().optional(),
+        languageId: z.string().optional(), // May not be in backend response, kept for compatibility
+        phishingId: z.string(),
+        title: z.string().optional(),
+    }).optional(),
+    message: z.string().optional(),
+    error: z.string().optional(),
+});
 
 export const uploadPhishingTool = createTool({
     id: 'upload-phishing',
@@ -13,23 +34,7 @@ export const uploadPhishingTool = createTool({
     inputSchema: z.object({
         phishingId: z.string().describe('The ID of the phishing content to upload'),
     }),
-    outputSchema: z.object({
-        success: z.boolean(),
-        data: z.object({
-            resourceId: z.string(), // CRITICAL: Uses scenarioResourceId if available, otherwise templateResourceId (for assignment)
-            templateResourceId: z.string().optional(), // Original template resource ID
-            templateId: z.number().optional(),
-            landingPageResourceId: z.string().nullable().optional(),
-            landingPageId: z.number().nullable().optional(),
-            scenarioResourceId: z.string().nullable().optional(), // Scenario resource ID (preferred for assignment)
-            scenarioId: z.number().nullable().optional(),
-            languageId: z.string().optional(), // May not be in backend response, kept for compatibility
-            phishingId: z.string(),
-            title: z.string().optional(),
-        }).optional(),
-        message: z.string().optional(),
-        error: z.string().optional(),
-    }),
+    outputSchema: uploadPhishingOutputSchema,
     execute: async ({ context }) => {
         const logger = getLogger('UploadPhishingTool');
         const { phishingId } = context;
@@ -44,7 +49,7 @@ export const uploadPhishingTool = createTool({
 
         if (!token) {
             const errorInfo = errorService.auth(ERROR_MESSAGES.PLATFORM.UPLOAD_TOKEN_MISSING);
-            logger.warn('Auth error: Token missing', errorInfo);
+            logger.warn('Auth error: Token missing', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
             return { success: false, error: JSON.stringify(errorInfo) };
         }
 
@@ -56,7 +61,7 @@ export const uploadPhishingTool = createTool({
 
             if (!phishingContent || !phishingContent.base) {
                 const errorInfo = errorService.notFound(`Phishing content not found for ID: ${phishingId}`, { phishingId });
-                logger.warn('Phishing content not found', errorInfo);
+                logger.warn('Phishing content not found', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
                 return {
                     success: false,
                     error: JSON.stringify(errorInfo)
@@ -120,37 +125,18 @@ export const uploadPhishingTool = createTool({
             logger.debug('Upload payload prepared', { payload: maskedPayload });
 
             // Wrap API call with retry (exponential backoff: 1s, 2s, 4s)
-            const result = await withRetry(async () => {
-                // Service Binding kullan (production) veya fallback to public URL (local dev)
-                let response: Response;
-
-                if (env?.PHISHING_CRUD_WORKER) {
-                    // ✅ SERVICE BINDING (Production - Internal Routing)
-                    logger.debug('Using Service Binding: PHISHING_CRUD_WORKER');
-                    response = await env.PHISHING_CRUD_WORKER.fetch('https://worker/submit', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-                } else {
-                    // ⚠️ FALLBACK: Public URL (Local Development)
-                    logger.debug('Using Public URL fallback for phishing upload', { url: API_ENDPOINTS.PHISHING_WORKER_URL });
-                    response = await fetch(API_ENDPOINTS.PHISHING_WORKER_URL, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-                }
-
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    const errorInfo = errorService.external(`Worker failed: ${response.status} - ${errorText}`, { status: response.status });
-                    logger.error('Worker upload failed', errorInfo);
-                    throw new Error(errorInfo.message);
-                }
-
-                return await response.json();
-            }, `Upload phishing content ${phishingId}`);
+            const result = await withRetry(
+                () => callWorkerAPI({
+                    env,
+                    serviceBinding: env?.PHISHING_CRUD_WORKER,
+                    publicUrl: API_ENDPOINTS.PHISHING_WORKER_URL,
+                    endpoint: 'https://worker/submit',
+                    payload,
+                    errorPrefix: 'Worker failed',
+                    operationName: `Upload phishing content ${phishingId}`
+                }),
+                `Upload phishing content ${phishingId}`
+            );
 
             logger.info('Phishing upload successful', {
                 success: result.success,
@@ -172,7 +158,7 @@ export const uploadPhishingTool = createTool({
             // Backend API expects scenarioResourceId for assignment (based on "Phishing scenario not found" error)
             const resourceIdForAssignment = scenarioResourceId || templateResourceId;
 
-            return {
+            const toolResult = {
                 success: true,
                 data: {
                     resourceId: resourceIdForAssignment, // Use scenarioResourceId if available, otherwise templateResourceId
@@ -189,6 +175,18 @@ export const uploadPhishingTool = createTool({
                 message: result.message || `Phishing simulation uploaded successfully. Resource ID ${resourceIdForAssignment} is ready for assignment.`
             };
 
+            // Validate result against output schema
+            const validation = validateToolResult(toolResult, uploadPhishingOutputSchema, 'upload-phishing');
+            if (!validation.success) {
+                logger.error('Upload phishing result validation failed', { code: validation.error.code, message: validation.error.message });
+                return {
+                    success: false,
+                    error: JSON.stringify(validation.error)
+                };
+            }
+
+            return validation.data;
+
         } catch (error) {
             const err = error instanceof Error ? error : new Error(String(error));
             const errorInfo = errorService.external(err.message, {
@@ -196,7 +194,7 @@ export const uploadPhishingTool = createTool({
                 stack: err.stack,
             });
 
-            logger.error('Upload tool failed', errorInfo);
+            logger.error('Upload tool failed', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
 
             return {
                 success: false,

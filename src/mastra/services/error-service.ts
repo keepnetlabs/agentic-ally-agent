@@ -54,6 +54,7 @@ export interface ErrorInfo {
   category: ErrorCategory;                // Error category for agent understanding
   retryable: boolean;                     // Whether this error can be retried
   suggestion?: string;                    // User-friendly suggestion for resolution
+  nextStep?: string;                      // Actionable next step for agent (e.g., "Ask user to provide missing information")
   details?: Record<string, unknown>;      // Additional context for debugging
   timestamp?: number;                     // When error occurred
 }
@@ -80,6 +81,7 @@ export const errorService = {
       category: ErrorCategory.AUTH,
       retryable: false,
       suggestion: 'Please verify your authentication credentials and try again.',
+      nextStep: 'Ask user to verify their authentication token or provide valid credentials.',
       details,
       timestamp: Date.now(),
     };
@@ -98,12 +100,19 @@ export const errorService = {
    * const error = errorService.validation('Email must be a valid email address', { field: 'email' });
    */
   validation: (message: string, details?: Record<string, unknown>): ErrorInfo => {
+    // Extract missing field from details or message for context-aware nextStep
+    const missingField = details?.field as string | undefined;
+    const nextStep = missingField
+      ? `Ask user to provide a valid ${missingField}.`
+      : 'Ask user to provide missing or correct the invalid information.';
+
     const errorInfo: ErrorInfo = {
       code: 'VALIDATION',
       message,
       category: ErrorCategory.VALIDATION,
       retryable: false,
       suggestion: 'Please check your input and try again with valid data.',
+      nextStep,
       details,
       timestamp: Date.now(),
     };
@@ -122,12 +131,18 @@ export const errorService = {
    * const error = errorService.external('Worker failed: 502 Bad Gateway', { service: 'phishing-worker', status: 502 });
    */
   external: (message: string, details?: Record<string, unknown>): ErrorInfo => {
+    const service = details?.service as string | undefined;
+    const nextStep = service
+      ? `Retry the operation after a brief delay. If ${service} continues to fail, inform user that the service is temporarily unavailable.`
+      : 'Retry the operation after a brief delay. If it continues to fail, inform user that an external service is temporarily unavailable.';
+
     const errorInfo: ErrorInfo = {
       code: 'EXTERNAL',
       message,
       category: ErrorCategory.EXTERNAL,
       retryable: true,
       suggestion: 'The external service is temporarily unavailable. Please try again in a moment.',
+      nextStep,
       details,
       timestamp: Date.now(),
     };
@@ -146,12 +161,21 @@ export const errorService = {
    * const error = errorService.notFound('Microlearning not found', { resourceId: 'ml-123' });
    */
   notFound: (message: string, details?: Record<string, unknown>): ErrorInfo => {
+    const resourceType = details?.resourceType as string | undefined;
+    const resourceId = details?.resourceId as string | undefined;
+    const nextStep = resourceType && resourceId
+      ? `Ask user to verify the ${resourceType} ID (${resourceId}) or provide a different ID.`
+      : resourceType
+        ? `Ask user to verify the ${resourceType} ID or provide a different one.`
+        : 'Ask user to verify the resource ID or provide a different one.';
+
     const errorInfo: ErrorInfo = {
       code: 'NOT_FOUND',
       message,
       category: ErrorCategory.NOT_FOUND,
       retryable: false,
       suggestion: 'The requested resource does not exist. Please verify the ID and try again.',
+      nextStep,
       details,
       timestamp: Date.now(),
     };
@@ -170,12 +194,18 @@ export const errorService = {
    * const error = errorService.aiModel('JSON parsing failed after 3 repair attempts', { model: 'gpt-4o' });
    */
   aiModel: (message: string, details?: Record<string, unknown>): ErrorInfo => {
+    const reason = details?.reason as string | undefined;
+    const nextStep = reason?.includes('JSON')
+      ? 'Retry the operation with a simpler prompt or different model. If JSON parsing fails, the AI may need clearer instructions.'
+      : 'Retry the operation with a simpler prompt or different model.';
+
     const errorInfo: ErrorInfo = {
       code: 'AI_MODEL',
       message,
       category: ErrorCategory.AI_MODEL,
       retryable: true,
       suggestion: 'The AI service encountered an issue. Try with a simpler input or use a different model.',
+      nextStep,
       details,
       timestamp: Date.now(),
     };
@@ -194,12 +224,18 @@ export const errorService = {
    * const error = errorService.timeout('Operation exceeded 60s timeout', { timeoutMs: 60000 });
    */
   timeout: (message: string, details?: Record<string, unknown>): ErrorInfo => {
+    const operation = details?.operation as string | undefined;
+    const nextStep = operation
+      ? `Retry the ${operation} operation with a smaller request or inform user that the operation is taking longer than expected.`
+      : 'Retry the operation with a smaller request or inform user that it is taking longer than expected.';
+
     const errorInfo: ErrorInfo = {
       code: 'TIMEOUT',
       message,
       category: ErrorCategory.TIMEOUT,
       retryable: true,
       suggestion: 'The operation took too long. Please try again, or try with a smaller request.',
+      nextStep,
       details,
       timestamp: Date.now(),
     };
@@ -218,12 +254,18 @@ export const errorService = {
    * const error = errorService.rateLimit('Too many requests', { limit: 100, remaining: 0 });
    */
   rateLimit: (message: string, details?: Record<string, unknown>): ErrorInfo => {
+    const resetAt = details?.resetAt as number | undefined;
+    const nextStep = resetAt
+      ? `Wait until ${new Date(resetAt).toISOString()} before retrying, or inform user to wait before trying again.`
+      : 'Wait before retrying, or inform user to wait before trying again.';
+
     const errorInfo: ErrorInfo = {
       code: 'RATE_LIMIT',
       message,
       category: ErrorCategory.RATE_LIMIT,
       retryable: true,
       suggestion: 'You have exceeded the rate limit. Please wait before trying again.',
+      nextStep,
       details,
       timestamp: Date.now(),
     };
@@ -248,6 +290,7 @@ export const errorService = {
       category: ErrorCategory.INTERNAL,
       retryable: false,
       suggestion: 'An unexpected error occurred. Please contact support if the problem persists.',
+      nextStep: 'Inform user that an unexpected error occurred and suggest contacting support if the problem persists.',
       details,
       timestamp: Date.now(),
     };

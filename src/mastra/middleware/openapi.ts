@@ -1,7 +1,8 @@
+import { Context, Next } from 'hono';
 import { isDevelopment } from '../utils'
 
 // Disable playground in production
-export const disablePlayground = async (c: any, next: any) => {
+export const disablePlayground = async (c: Context, next: Next) => {
     if (isDevelopment()) {
         return await next()
     }
@@ -19,7 +20,7 @@ export const disablePlayground = async (c: any, next: any) => {
 
 // Disable swagger in production
 export const disableSwagger = {
-    handler: async (c: any, next: any) => {
+    handler: async (c: Context, next: Next) => {
         if (isDevelopment()) {
             return await next()
         }

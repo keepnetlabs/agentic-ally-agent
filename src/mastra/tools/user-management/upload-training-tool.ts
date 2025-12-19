@@ -3,9 +3,24 @@ import { z } from 'zod';
 import { requestStorage } from '../../utils/core/request-storage';
 import { getLogger } from '../../utils/core/logger';
 import { withRetry } from '../../utils/core/resilience-utils';
+import { callWorkerAPI } from '../../utils/core/worker-api-client';
 import { KVService } from '../../services/kv-service';
 import { ERROR_MESSAGES, API_ENDPOINTS } from '../../constants';
 import { errorService } from '../../services/error-service';
+import { validateToolResult } from '../../utils/tool-result-validation';
+
+// Output schema defined separately to avoid circular reference
+const uploadTrainingOutputSchema = z.object({
+    success: z.boolean(),
+    data: z.object({
+        resourceId: z.string(),
+        sendTrainingLanguageId: z.string().optional(),
+        microlearningId: z.string(),
+        title: z.string().optional(),
+    }).optional(),
+    message: z.string().optional(),
+    error: z.string().optional(),
+});
 
 export const uploadTrainingTool = createTool({
     id: 'upload-training',
@@ -13,17 +28,7 @@ export const uploadTrainingTool = createTool({
     inputSchema: z.object({
         microlearningId: z.string().describe('The ID of the microlearning content to upload'),
     }),
-    outputSchema: z.object({
-        success: z.boolean(),
-        data: z.object({
-            resourceId: z.string(),
-            sendTrainingLanguageId: z.string().optional(), // Add this field
-            microlearningId: z.string(),
-            title: z.string().optional(),
-        }).optional(),
-        message: z.string().optional(),
-        error: z.string().optional(),
-    }),
+    outputSchema: uploadTrainingOutputSchema,
     execute: async ({ context }) => {
         const logger = getLogger('UploadTrainingTool');
         const { microlearningId } = context;
@@ -38,7 +43,7 @@ export const uploadTrainingTool = createTool({
 
         if (!token) {
             const errorInfo = errorService.auth(ERROR_MESSAGES.PLATFORM.UPLOAD_TOKEN_MISSING);
-            logger.warn('Auth error: Token missing', errorInfo);
+            logger.warn('Auth error: Token missing', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
             return { success: false, error: JSON.stringify(errorInfo) };
         }
 
@@ -49,7 +54,7 @@ export const uploadTrainingTool = createTool({
 
             if (!baseContent || !baseContent.base) {
                 const errorInfo = errorService.notFound(`Microlearning content not found for ID: ${microlearningId}`, { microlearningId });
-                logger.warn('Microlearning not found', errorInfo);
+                logger.warn('Microlearning not found', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
                 return {
                     success: false,
                     error: JSON.stringify(errorInfo)
@@ -102,41 +107,22 @@ export const uploadTrainingTool = createTool({
             logger.debug('Upload payload prepared', { payload: maskedPayload });
 
             // Wrap API call with retry (exponential backoff: 1s, 2s, 4s)
-            const result = await withRetry(async () => {
-                // Service Binding kullan (production) veya fallback to public URL (local dev)
-                let response: Response;
-
-                if (env?.CRUD_WORKER) {
-                    // ✅ SERVICE BINDING (Production - Internal Routing)
-                    logger.debug('Using Service Binding: CRUD_WORKER');
-                    response = await env.CRUD_WORKER.fetch('https://worker/submit', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-                } else {
-                    // ⚠️ FALLBACK: Public URL (Local Development)
-                    logger.debug('Using Public URL fallback for training upload', { url: API_ENDPOINTS.TRAINING_WORKER_URL });
-                    response = await fetch(API_ENDPOINTS.TRAINING_WORKER_URL, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-                }
-
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    const errorInfo = errorService.external(`Worker failed: ${response.status} - ${errorText}`, { status: response.status });
-                    logger.error('Worker upload failed', errorInfo);
-                    throw new Error(errorInfo.message);
-                }
-
-                return await response.json();
-            }, `Upload training content ${microlearningId}`);
+            const result = await withRetry(
+                () => callWorkerAPI({
+                    env,
+                    serviceBinding: env?.CRUD_WORKER,
+                    publicUrl: API_ENDPOINTS.TRAINING_WORKER_URL,
+                    endpoint: 'https://worker/submit',
+                    payload,
+                    errorPrefix: 'Worker failed',
+                    operationName: `Upload training content ${microlearningId}`
+                }),
+                `Upload training content ${microlearningId}`
+            );
 
             logger.info('Training upload successful', { resourceId: result.resourceId, microlearningId });
 
-            return {
+            const toolResult = {
                 success: true,
                 data: {
                     resourceId: result.resourceId,
@@ -147,6 +133,18 @@ export const uploadTrainingTool = createTool({
                 message: `Training uploaded successfully. Resource ID ${result.resourceId} is ready for assignment.`
             };
 
+            // Validate result against output schema
+            const validation = validateToolResult(toolResult, uploadTrainingOutputSchema, 'upload-training');
+            if (!validation.success) {
+                logger.error('Upload training result validation failed', { code: validation.error.code, message: validation.error.message });
+                return {
+                    success: false,
+                    error: JSON.stringify(validation.error)
+                };
+            }
+
+            return validation.data;
+
         } catch (error) {
             const err = error instanceof Error ? error : new Error(String(error));
             const errorInfo = errorService.external(err.message, {
@@ -154,7 +152,7 @@ export const uploadTrainingTool = createTool({
                 stack: err.stack,
             });
 
-            logger.error('Upload tool failed', errorInfo);
+            logger.error('Upload tool failed', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
 
             return {
                 success: false,

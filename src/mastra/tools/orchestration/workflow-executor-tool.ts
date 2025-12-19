@@ -8,6 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { PROMPT_ANALYSIS, MODEL_PROVIDERS } from '../../constants';
 import { getLogger } from '../../utils/core/logger';
 import { errorService } from '../../services/error-service';
+import { validateToolResult } from '../../utils/tool-result-validation';
 
 const logger = getLogger('WorkflowExecutor');
 
@@ -201,10 +202,25 @@ const workflowExecutorSchema = z.object({
   model: z.string().optional().describe('Model name override (e.g., OPENAI_GPT_4O_MINI)'),
 });
 
+// Output schema for workflow executor tool
+const workflowExecutorOutputSchema = z.object({
+  success: z.boolean(),
+  title: z.string().optional(),
+  department: z.string().optional(),
+  microlearningId: z.string().optional(),
+  status: z.string().optional(),
+  successCount: z.number().optional(),
+  failureCount: z.number().optional(),
+  languages: z.array(z.string()).optional(),
+  results: z.array(z.any()).optional(),
+  error: z.string().optional(),
+});
+
 export const workflowExecutorTool = createTool({
   id: 'workflow-executor',
   description: 'Execute microlearning workflows with streaming progress updates',
   inputSchema: workflowExecutorSchema,
+  outputSchema: workflowExecutorOutputSchema,
 
   execute: async ({ context, writer }) => {
     const { workflowType, ...params } = context;
@@ -213,7 +229,7 @@ export const workflowExecutorTool = createTool({
       if (workflowType === 'create-microlearning') {
         if (!params.prompt) {
           const errorInfo = errorService.validation('Prompt is required for create-microlearning workflow');
-          logger.warn('Validation error', errorInfo);
+          logger.warn('Validation error', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
           return {
             success: false,
             error: JSON.stringify(errorInfo)
@@ -286,7 +302,7 @@ export const workflowExecutorTool = createTool({
           // NOTE: Continue - don't block response, but log for monitoring
         }
 
-        return {
+        const result = {
           success: true,
           title,
           department,
@@ -294,10 +310,22 @@ export const workflowExecutorTool = createTool({
           status: 'success'
         };
 
+        // Validate result against output schema
+        const validation = validateToolResult(result, workflowExecutorOutputSchema, 'workflow-executor');
+        if (!validation.success) {
+          logger.error('Workflow executor result validation failed', { code: validation.error.code, message: validation.error.message });
+          return {
+            success: false,
+            error: JSON.stringify(validation.error)
+          };
+        }
+
+        return validation.data;
+
       } else if (workflowType === 'add-language') {
         if (!params.existingMicrolearningId || !params.targetLanguage) {
           const errorInfo = errorService.validation('existingMicrolearningId and targetLanguage are required for add-language workflow');
-          logger.warn('Validation error', errorInfo);
+          logger.warn('Validation error', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
           return {
             success: false,
             error: JSON.stringify(errorInfo)
@@ -307,7 +335,7 @@ export const workflowExecutorTool = createTool({
         const workflow = addLanguageWorkflow;
         const run = await workflow.createRunAsync();
 
-        const result: AddLanguageResult = await run.start({
+        const workflowResult: AddLanguageResult = await run.start({
           inputData: {
             existingMicrolearningId: params.existingMicrolearningId!,
             department: params.department || 'All',
@@ -321,12 +349,12 @@ export const workflowExecutorTool = createTool({
         });
 
         // Validate and extract trainingUrl from result
-        const isValid = validateAddLanguageResult(result);
-        const trainingUrl = isValid ? result.result!.data!.trainingUrl! : null;
-        const title = isValid ? result.result!.data!.title : null;
+        const isValid = validateAddLanguageResult(workflowResult);
+        const trainingUrl = isValid ? workflowResult.result!.data!.trainingUrl! : null;
+        const title = isValid ? workflowResult.result!.data!.title : null;
 
         if (!isValid) {
-          logger.error('Language workflow result validation failed', { status: result.status });
+          logger.error('Language workflow result validation failed', { status: workflowResult.status });
         }
 
         logger.debug('Language translation completed', { hasTrainingUrl: !!trainingUrl });
@@ -347,17 +375,29 @@ export const workflowExecutorTool = createTool({
           }
         }
 
-        return {
+        const toolResult = {
           success: true,
           department: params.department || 'All',
           title: title || 'Microlearning',
           status: 'success'
         };
 
+        // Validate result against output schema
+        const validation = validateToolResult(toolResult, workflowExecutorOutputSchema, 'workflow-executor');
+        if (!validation.success) {
+          logger.error('Add language result validation failed', { code: validation.error.code, message: validation.error.message });
+          return {
+            success: false,
+            error: JSON.stringify(validation.error)
+          };
+        }
+
+        return validation.data;
+
       } else if (workflowType === 'add-multiple-languages') {
         if (!params.existingMicrolearningId || !params.targetLanguages || params.targetLanguages.length === 0) {
           const errorInfo = errorService.validation('existingMicrolearningId and targetLanguages array are required for add-multiple-languages workflow');
-          logger.warn('Validation error', errorInfo);
+          logger.warn('Validation error', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
           return {
             success: false,
             error: JSON.stringify(errorInfo)
@@ -403,7 +443,7 @@ export const workflowExecutorTool = createTool({
             }
           }
 
-          return {
+          const resultData = {
             success: true,
             successCount: result.result.successCount,
             failureCount: result.result.failureCount,
@@ -411,9 +451,21 @@ export const workflowExecutorTool = createTool({
             results: result.result.results,
             status: result.result.status
           };
+
+          // Validate result against output schema
+          const validation = validateToolResult(resultData, workflowExecutorOutputSchema, 'workflow-executor');
+          if (!validation.success) {
+            logger.error('Add multiple languages result validation failed', { code: validation.error.code, message: validation.error.message });
+            return {
+              success: false,
+              error: JSON.stringify(validation.error)
+            };
+          }
+
+          return validation.data;
         } else {
           const errorInfo = errorService.external('Add multiple languages workflow failed');
-          logger.error('Workflow failed', errorInfo);
+          logger.error('Workflow failed', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
           return {
             success: false,
             error: JSON.stringify(errorInfo)
@@ -423,7 +475,7 @@ export const workflowExecutorTool = createTool({
       } else if (workflowType === 'update-microlearning') {
         if (!params.existingMicrolearningId || !params.updates) {
           const errorInfo = errorService.validation('existingMicrolearningId and updates are required for update-microlearning workflow');
-          logger.warn('Validation error', errorInfo);
+          logger.warn('Validation error', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
           return {
             success: false,
             error: JSON.stringify(errorInfo)
@@ -465,15 +517,27 @@ export const workflowExecutorTool = createTool({
           }
         }
 
-        return {
+        const resultData = {
           success: result?.result?.success ?? false,
           status: result?.result?.status ?? 'Update completed',
           microlearningId: params.existingMicrolearningId,
         };
 
+        // Validate result against output schema
+        const validation = validateToolResult(resultData, workflowExecutorOutputSchema, 'workflow-executor');
+        if (!validation.success) {
+          logger.error('Update microlearning result validation failed', { code: validation.error.code, message: validation.error.message });
+          return {
+            success: false,
+            error: JSON.stringify(validation.error)
+          };
+        }
+
+        return validation.data;
+
       } else {
         const errorInfo = errorService.validation(`Unknown workflow type: ${workflowType}`);
-        logger.warn('Unknown workflow type', errorInfo);
+        logger.warn('Unknown workflow type', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
         return {
           success: false,
           error: JSON.stringify(errorInfo)
@@ -488,7 +552,7 @@ export const workflowExecutorTool = createTool({
         stack: err.stack
       });
 
-      logger.error('Workflow execution failed', errorInfo);
+      logger.error('Workflow execution failed', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
 
       // Send error message to frontend
       try {

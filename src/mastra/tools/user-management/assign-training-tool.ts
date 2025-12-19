@@ -3,8 +3,17 @@ import { z } from 'zod';
 import { requestStorage } from '../../utils/core/request-storage';
 import { getLogger } from '../../utils/core/logger';
 import { withRetry } from '../../utils/core/resilience-utils';
+import { callWorkerAPI } from '../../utils/core/worker-api-client';
 import { ERROR_MESSAGES, API_ENDPOINTS } from '../../constants';
 import { errorService } from '../../services/error-service';
+import { validateToolResult } from '../../utils/tool-result-validation';
+
+// Output schema defined separately to avoid circular reference
+const assignTrainingOutputSchema = z.object({
+  success: z.boolean(),
+  message: z.string().optional(),
+  error: z.string().optional(),
+});
 
 export const assignTrainingTool = createTool({
   id: 'assign-training',
@@ -14,11 +23,7 @@ export const assignTrainingTool = createTool({
     sendTrainingLanguageId: z.string().describe('The Language ID returned from the upload process'),
     targetUserResourceId: z.string().describe('The User ID to assign the training to'),
   }),
-  outputSchema: z.object({
-    success: z.boolean(),
-    message: z.string().optional(),
-    error: z.string().optional(),
-  }),
+  outputSchema: assignTrainingOutputSchema,
   execute: async ({ context }) => {
     const logger = getLogger('AssignTrainingTool');
     const { resourceId, sendTrainingLanguageId, targetUserResourceId } = context;
@@ -33,7 +38,7 @@ export const assignTrainingTool = createTool({
 
     if (!token) {
       const errorInfo = errorService.auth(ERROR_MESSAGES.PLATFORM.ASSIGN_TOKEN_MISSING);
-      logger.warn('Auth error: Token missing', errorInfo);
+      logger.warn('Auth error: Token missing', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
       return { success: false, error: JSON.stringify(errorInfo) };
     }
 
@@ -55,50 +60,38 @@ export const assignTrainingTool = createTool({
 
     try {
       // Wrap API call with retry (exponential backoff: 1s, 2s, 4s)
-      const result = await withRetry(async () => {
-        // Service Binding kullan (production) veya fallback to public URL (local dev)
-        let response: Response;
-
-        if (env?.CRUD_WORKER) {
-          // ✅ SERVICE BINDING (Production - Internal Routing)
-          logger.debug('Using Service Binding: CRUD_WORKER');
-          response = await env.CRUD_WORKER.fetch('https://worker/send', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify(payload)
-          });
-        } else {
-          // ⚠️ FALLBACK: Public URL (Local Development)
-          logger.debug('Using Public URL (Fallback)', { url: API_ENDPOINTS.TRAINING_WORKER_SEND });
-          response = await fetch(API_ENDPOINTS.TRAINING_WORKER_SEND, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify(payload)
-          });
-        }
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          const errorInfo = errorService.external(`Assign API failed: ${response.status} - ${errorText}`, { status: response.status });
-          logger.error('Assign API failed', errorInfo);
-          throw new Error(errorInfo.message);
-        }
-
-        return await response.json();
-      }, `Assign training to user ${targetUserResourceId}`);
+      const result = await withRetry(
+        () => callWorkerAPI({
+          env,
+          serviceBinding: env?.CRUD_WORKER,
+          publicUrl: API_ENDPOINTS.TRAINING_WORKER_SEND,
+          endpoint: 'https://worker/send',
+          payload,
+          token,
+          errorPrefix: 'Assign API failed',
+          operationName: `Assign training to user ${targetUserResourceId}`
+        }),
+        `Assign training to user ${targetUserResourceId}`
+      );
 
       logger.info('Assignment success', { resultKeys: Object.keys(result) });
 
-      return {
+      const toolResult = {
         success: true,
         message: 'Training assigned successfully.'
       };
+
+      // Validate result against output schema
+      const validation = validateToolResult(toolResult, assignTrainingOutputSchema, 'assign-training');
+      if (!validation.success) {
+        logger.error('Assign training result validation failed', { code: validation.error.code, message: validation.error.message });
+        return {
+          success: false,
+          error: JSON.stringify(validation.error)
+        };
+      }
+
+      return validation.data;
 
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
@@ -108,7 +101,7 @@ export const assignTrainingTool = createTool({
         stack: err.stack,
       });
 
-      logger.error('Assign tool failed', errorInfo);
+      logger.error('Assign tool failed', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
 
       return {
         success: false,

@@ -3,8 +3,17 @@ import { z } from 'zod';
 import { requestStorage } from '../../utils/core/request-storage';
 import { getLogger } from '../../utils/core/logger';
 import { withRetry } from '../../utils/core/resilience-utils';
+import { callWorkerAPI } from '../../utils/core/worker-api-client';
 import { ERROR_MESSAGES, API_ENDPOINTS } from '../../constants';
 import { errorService } from '../../services/error-service';
+import { validateToolResult } from '../../utils/tool-result-validation';
+
+// Output schema defined separately to avoid circular reference
+const assignPhishingOutputSchema = z.object({
+    success: z.boolean(),
+    message: z.string().optional(),
+    error: z.string().optional(),
+});
 
 export const assignPhishingTool = createTool({
     id: 'assign-phishing',
@@ -16,11 +25,7 @@ export const assignPhishingTool = createTool({
         trainingId: z.string().optional().describe('The Training Resource ID to send after phishing simulation (if sendAfterPhishingSimulation is true)'),
         sendTrainingLanguageId: z.string().optional().describe('The Training Language ID to send after phishing simulation (if sendAfterPhishingSimulation is true)')
     }),
-    outputSchema: z.object({
-        success: z.boolean(),
-        message: z.string().optional(),
-        error: z.string().optional(),
-    }),
+    outputSchema: assignPhishingOutputSchema,
     execute: async ({ context }) => {
         const logger = getLogger('AssignPhishingTool');
         const { resourceId, languageId, targetUserResourceId, trainingId, sendTrainingLanguageId } = context;
@@ -42,7 +47,7 @@ export const assignPhishingTool = createTool({
 
         if (!token) {
             const errorInfo = errorService.auth(ERROR_MESSAGES.PLATFORM.ASSIGN_TOKEN_MISSING);
-            logger.warn('Auth error: Token missing', errorInfo);
+            logger.warn('Auth error: Token missing', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
             return { success: false, error: JSON.stringify(errorInfo) };
         }
 
@@ -67,50 +72,38 @@ export const assignPhishingTool = createTool({
 
         try {
             // Wrap API call with retry (exponential backoff: 1s, 2s, 4s)
-            const result = await withRetry(async () => {
-                // Service Binding kullan (production) veya fallback to public URL (local dev)
-                let response: Response;
-
-                if (env?.PHISHING_CRUD_WORKER) {
-                    // ✅ SERVICE BINDING (Production - Internal Routing)
-                    logger.debug('Using Service Binding: PHISHING_CRUD_WORKER');
-                    response = await env.PHISHING_CRUD_WORKER.fetch('https://worker/send', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`
-                        },
-                        body: JSON.stringify(payload)
-                    });
-                } else {
-                    // ⚠️ FALLBACK: Public URL (Local Development)
-                    logger.debug('Using Public URL fallback for phishing assignment', { url: API_ENDPOINTS.PHISHING_WORKER_SEND });
-                    response = await fetch(API_ENDPOINTS.PHISHING_WORKER_SEND, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`
-                        },
-                        body: JSON.stringify(payload)
-                    });
-                }
-
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    const errorInfo = errorService.external(`Assign API failed: ${response.status} - ${errorText}`, { status: response.status });
-                    logger.error('Assign API failed', errorInfo);
-                    throw new Error(errorInfo.message);
-                }
-
-                return await response.json();
-            }, `Assign phishing to user ${targetUserResourceId}`);
+            const result = await withRetry(
+                () => callWorkerAPI({
+                    env,
+                    serviceBinding: env?.PHISHING_CRUD_WORKER,
+                    publicUrl: API_ENDPOINTS.PHISHING_WORKER_SEND,
+                    endpoint: 'https://worker/send',
+                    payload,
+                    token,
+                    errorPrefix: 'Assign API failed',
+                    operationName: `Assign phishing to user ${targetUserResourceId}`
+                }),
+                `Assign phishing to user ${targetUserResourceId}`
+            );
 
             logger.info('Phishing assignment success', { resultKeys: Object.keys(result) });
 
-            return {
+            const toolResult = {
                 success: true,
                 message: 'Phishing simulation assigned successfully.'
             };
+
+            // Validate result against output schema
+            const validation = validateToolResult(toolResult, assignPhishingOutputSchema, 'assign-phishing');
+            if (!validation.success) {
+                logger.error('Assign phishing result validation failed', { code: validation.error.code, message: validation.error.message });
+                return {
+                    success: false,
+                    error: JSON.stringify(validation.error)
+                };
+            }
+
+            return validation.data;
 
         } catch (error) {
             const err = error instanceof Error ? error : new Error(String(error));
@@ -120,7 +113,7 @@ export const assignPhishingTool = createTool({
                 stack: err.stack,
             });
 
-            logger.error('Assign phishing tool failed', errorInfo);
+            logger.error('Assign phishing tool failed', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
 
             return {
                 success: false,

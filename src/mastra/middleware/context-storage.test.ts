@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Context } from 'hono';
 import { contextStorage } from './context-storage';
 import { requestStorage } from '../utils/core/request-storage';
+import { createMockContext } from '../../../src/__tests__/factories/context-factory';
 import '../../../src/__tests__/setup';
 
 /**
@@ -17,15 +18,15 @@ describe('ContextStorage Middleware', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    mockContext = {
+    mockContext = createMockContext({
       req: {
         header: vi.fn()
-      },
+      } as unknown as Context['req'],
       env: {
         KV: {},
         D1: {}
       }
-    } as unknown as Context;
+    });
 
     mockNext = vi.fn().mockResolvedValue(undefined);
   });

@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { MicrolearningService } from './microlearning-service';
 import { MicrolearningContent, LanguageContent, DepartmentInbox } from '../types/microlearning';
+import { createMicrolearningContent, createLanguageContent } from '../../../src/__tests__/factories/microlearning-factory';
 import '../../../src/__tests__/setup';
 
 /**
@@ -18,206 +19,51 @@ describe('MicrolearningService', () => {
 
   describe('storeMicrolearning', () => {
     it('should store microlearning content without error', async () => {
-      const content: MicrolearningContent = {
+      const content = createMicrolearningContent({
         microlearning_id: 'ml-123',
         microlearning_metadata: {
           title: 'Test Training',
-          description: 'Test description',
-          category: 'Security',
-          subcategory: 'Phishing',
-          industry_relevance: [],
-          department_relevance: ['IT'],
-          role_relevance: [],
-          regulation_compliance: [],
-          risk_area: 'Low',
-          content_provider: 'Test',
-          level: 'Intermediate',
-          ethical_inclusive_language_policy: {
-            title: 'Policy',
-            purpose: 'Purpose',
-            why_standards_matter: [],
-            applied_standards: { ISO: [], UN: [], Other: [] },
-            implementation_in_content: {
-              gender_inclusive_language: [],
-              positive_and_motivational_tone: [],
-              inclusive_and_universal_expression: [],
-              clear_and_plain_language: [],
-              accessibility: []
-            },
-            value_for_employees: { HR: [], CISO: [], Leaders: [] },
-            conclusion: []
-          },
-          language: 'en',
-          language_availability: ['en'],
-          gamification_enabled: false,
-          total_points: 0
-        },
-        scientific_evidence: {
-          overview: {
-            title: 'Evidence',
-            description: 'Description',
-            last_updated: '2024-01-01',
-            evidence_level: 'High',
-            peer_reviewed_sources: 0
-          },
-          learning_theories: {},
-          behavioral_psychology: {},
-          gamification_research: {},
-          cybersecurity_specific: {},
-          methodology_evidence: {},
-          effectiveness_metrics: {
-            learning_outcomes: {},
-            engagement_metrics: {},
-            business_impact: {}
-          },
-          research_sources: []
-        },
-        theme: {
-          fontFamily: { primary: 'Arial', secondary: 'Arial', monospace: 'Courier' },
-          colors: { background: '#fff' },
-          logo: { src: '', darkSrc: '', minimizedSrc: '', minimizedDarkSrc: '', alt: '' }
-        },
-        scenes: []
-      };
+          department_relevance: ['IT']
+        }
+      });
 
       await expect(service.storeMicrolearning(content)).resolves.not.toThrow();
     });
 
     it('should allow overwriting existing content', async () => {
-      const minimalContent = {
+      const minimalContent = createMicrolearningContent({
         microlearning_id: 'ml-123',
         microlearning_metadata: {
           title: 'Original',
-          description: '',
-          category: '',
-          subcategory: '',
-          industry_relevance: [],
-          department_relevance: [],
-          role_relevance: [],
-          regulation_compliance: [],
-          risk_area: '',
-          content_provider: '',
-          level: 'Beginner' as const,
-          ethical_inclusive_language_policy: {
-            title: '',
-            purpose: '',
-            why_standards_matter: [],
-            applied_standards: { ISO: [], UN: [], Other: [] },
-            implementation_in_content: {
-              gender_inclusive_language: [],
-              positive_and_motivational_tone: [],
-              inclusive_and_universal_expression: [],
-              clear_and_plain_language: [],
-              accessibility: []
-            },
-            value_for_employees: { HR: [], CISO: [], Leaders: [] },
-            conclusion: []
-          },
-          language: 'en',
-          language_availability: [],
-          gamification_enabled: false,
-          total_points: 0
-        },
-        scientific_evidence: {
-          overview: {
-            title: '',
-            description: '',
-            last_updated: '',
-            evidence_level: '',
-            peer_reviewed_sources: 0
-          },
-          learning_theories: {},
-          behavioral_psychology: {},
-          gamification_research: {},
-          cybersecurity_specific: {},
-          methodology_evidence: {},
-          effectiveness_metrics: {
-            learning_outcomes: {},
-            engagement_metrics: {},
-            business_impact: {}
-          },
-          research_sources: []
-        },
-        theme: {
-          fontFamily: { primary: '', secondary: '', monospace: '' },
-          colors: { background: '' },
-          logo: { src: '', darkSrc: '', minimizedSrc: '', minimizedDarkSrc: '', alt: '' }
-        },
-        scenes: []
-      } as MicrolearningContent;
-
-      const updatedContent = {
-        ...minimalContent,
-        microlearning_metadata: {
-          ...minimalContent.microlearning_metadata,
-          title: 'Updated',
-          level: 'Advanced' as const
+          level: 'Beginner'
         }
-      };
+      });
+
+      const updatedContent = createMicrolearningContent({
+        microlearning_id: 'ml-123',
+        microlearning_metadata: {
+          title: 'Updated',
+          level: 'Advanced'
+        }
+      });
 
       await service.storeMicrolearning(minimalContent);
       await expect(service.storeMicrolearning(updatedContent)).resolves.not.toThrow();
     });
 
     it('should handle content with all required fields', async () => {
-      const content: MicrolearningContent = {
+      const content = createMicrolearningContent({
         microlearning_id: 'ml-456',
         microlearning_metadata: {
           title: 'Complete Training',
-          description: 'Description',
           category: 'THREAT',
-          subcategory: 'Phishing',
-          industry_relevance: [],
           department_relevance: ['HR'],
-          role_relevance: [],
-          regulation_compliance: [],
           risk_area: 'High',
-          content_provider: 'Provider',
           level: 'Advanced',
-          ethical_inclusive_language_policy: {
-            title: 'Policy',
-            purpose: 'Purpose',
-            why_standards_matter: [],
-            applied_standards: { ISO: [], UN: [], Other: [] },
-            implementation_in_content: {
-              gender_inclusive_language: [],
-              positive_and_motivational_tone: [],
-              inclusive_and_universal_expression: [],
-              clear_and_plain_language: [],
-              accessibility: []
-            },
-            value_for_employees: { HR: [], CISO: [], Leaders: [] },
-            conclusion: []
-          },
           language: 'tr',
           language_availability: ['tr'],
           gamification_enabled: true,
           total_points: 100
-        },
-        scientific_evidence: {
-          overview: {
-            title: 'Evidence',
-            description: 'Description',
-            last_updated: '2024-01-01',
-            evidence_level: 'High',
-            peer_reviewed_sources: 5
-          },
-          learning_theories: {},
-          behavioral_psychology: {},
-          gamification_research: {},
-          cybersecurity_specific: {},
-          methodology_evidence: {},
-          effectiveness_metrics: {
-            learning_outcomes: {},
-            engagement_metrics: {},
-            business_impact: {}
-          },
-          research_sources: []
-        },
-        theme: {
-          fontFamily: { primary: 'Arial', secondary: 'Arial', monospace: 'Courier' },
-          colors: { background: '#fff' },
-          logo: { src: '', darkSrc: '', minimizedSrc: '', minimizedDarkSrc: '', alt: '' }
         },
         scenes: [
           {
@@ -232,7 +78,7 @@ describe('MicrolearningService', () => {
             }
           }
         ]
-      };
+      });
 
       await expect(service.storeMicrolearning(content)).resolves.not.toThrow();
     });
@@ -240,7 +86,7 @@ describe('MicrolearningService', () => {
 
   describe('storeLanguageContent', () => {
     it('should store language-specific content without error', async () => {
-      const languageContent: LanguageContent = {
+      const languageContent = createLanguageContent({
         '1': {
           iconName: 'shield',
           scene_type: 'intro',
@@ -257,16 +103,8 @@ describe('MicrolearningService', () => {
           duration: '15s',
           level: 'Intermediate',
           callToActionText: { mobile: 'Start', desktop: 'Start' }
-        },
-        '2': {} as any,
-        '3': {} as any,
-        '4': {} as any,
-        '5': {} as any,
-        '6': {} as any,
-        '7': {} as any,
-        '8': {} as any,
-        app: {} as any
-      };
+        }
+      });
 
       await expect(service.storeLanguageContent('ml-123', 'en', languageContent)).resolves.not.toThrow();
     });
@@ -290,36 +128,20 @@ describe('MicrolearningService', () => {
         callToActionText: { mobile: '', desktop: '' }
       };
 
-      const enContent: LanguageContent = {
-        '1': baseScene,
-        '2': {} as any,
-        '3': {} as any,
-        '4': {} as any,
-        '5': {} as any,
-        '6': {} as any,
-        '7': {} as any,
-        '8': {} as any,
-        app: {} as any
-      };
+      const enContent = createLanguageContent({
+        '1': baseScene
+      });
 
-      const trContent: LanguageContent = {
-        '1': { ...baseScene, title: 'Türkçe' },
-        '2': {} as any,
-        '3': {} as any,
-        '4': {} as any,
-        '5': {} as any,
-        '6': {} as any,
-        '7': {} as any,
-        '8': {} as any,
-        app: {} as any
-      };
+      const trContent = createLanguageContent({
+        '1': { ...baseScene, title: 'Türkçe' }
+      });
 
       await expect(service.storeLanguageContent('ml-123', 'en', enContent)).resolves.not.toThrow();
       await expect(service.storeLanguageContent('ml-123', 'tr', trContent)).resolves.not.toThrow();
     });
 
     it('should handle complex language content structure', async () => {
-      const languageContent: LanguageContent = {
+      const languageContent = createLanguageContent({
         '1': {
           iconName: 'shield',
           scene_type: 'intro',
@@ -372,14 +194,8 @@ describe('MicrolearningService', () => {
             transcriptLanguage: '',
             transcript: ''
           }
-        } as any,
-        '4': {} as any,
-        '5': {} as any,
-        '6': {} as any,
-        '7': {} as any,
-        '8': {} as any,
-        app: {} as any
-      };
+        } as any
+      });
 
       await expect(service.storeLanguageContent('ml-789', 'de', languageContent)).resolves.not.toThrow();
     });

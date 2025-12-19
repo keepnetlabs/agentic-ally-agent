@@ -93,7 +93,7 @@ Return ONLY valid JSON - NO markdown, NO backticks, NO formatting. Start directl
       const parsedSeverity = result.severity || (result.isCorrect ? 'correct' : 'incorrect');
       if (!['correct', 'partial', 'incorrect'].includes(parsedSeverity)) {
         const errorInfo = errorService.validation(`Invalid severity: ${parsedSeverity}`, { severity: parsedSeverity });
-        logger.warn('Invalid severity', errorInfo);
+        logger.warn('Invalid severity', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
         throw new Error(errorInfo.message);
       }
 
@@ -116,7 +116,7 @@ Return ONLY valid JSON - NO markdown, NO backticks, NO formatting. Start directl
         stack: err.stack,
       });
 
-      logger.error('Code review check failed', errorInfo);
+      logger.error('Code review check failed', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
 
       return {
         success: false,

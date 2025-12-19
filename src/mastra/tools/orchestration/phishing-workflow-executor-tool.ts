@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { PHISHING, MODEL_PROVIDERS, ERROR_MESSAGES, TIMEOUT_VALUES } from '../../constants';
 import { getLogger } from '../../utils/core/logger';
 import { errorService } from '../../services/error-service';
+import { validateToolResult } from '../../utils/tool-result-validation';
 
 const phishingWorkflowSchema = z.object({
     workflowType: z.literal(PHISHING.WORKFLOW_TYPE).describe('Workflow to execute'),
@@ -25,10 +26,34 @@ const phishingWorkflowSchema = z.object({
     model: z.string().optional(),
 });
 
+// Output schema for phishing workflow executor tool
+const phishingWorkflowOutputSchema = z.object({
+    success: z.boolean(),
+    status: z.string().optional(),
+    message: z.string().optional(),
+    data: z.object({
+        phishingId: z.string(),
+        topic: z.string().optional(),
+        language: z.string().optional(),
+        difficulty: z.string().optional(),
+        method: z.string().optional(),
+        subject: z.string().optional(),
+        fromAddress: z.string().optional(),
+        fromName: z.string().optional(),
+        scenario: z.string().optional(),
+        category: z.string().optional(),
+        psychologicalTriggers: z.array(z.string()).optional(),
+        keyRedFlags: z.array(z.string()).optional(),
+        targetAudience: z.any().optional(),
+    }).optional(),
+    error: z.string().optional(),
+});
+
 export const phishingWorkflowExecutorTool = createTool({
     id: 'phishing-workflow-executor',
     description: 'Execute phishing simulation generation workflows',
     inputSchema: phishingWorkflowSchema,
+    outputSchema: phishingWorkflowOutputSchema,
 
     execute: async ({ context, writer }) => {
         const { workflowType, ...params } = context;
@@ -111,7 +136,7 @@ export const phishingWorkflowExecutorTool = createTool({
                     }
                 }
 
-                return {
+                const toolResult = {
                     success: true,
                     status: 'success',
                     message: '✅ Phishing simulation generated successfully. Phishing ID: ' + output.phishingId + '. **STOP - Do NOT call this tool again. The simulation is complete.**',
@@ -133,6 +158,19 @@ export const phishingWorkflowExecutorTool = createTool({
                     }
                 };
 
+                // Validate result against output schema
+                const validation = validateToolResult(toolResult, phishingWorkflowOutputSchema, 'phishing-workflow-executor');
+                if (!validation.success) {
+                    logger.error('Phishing workflow result validation failed', { code: validation.error.code, message: validation.error.message });
+                    return {
+                        success: false,
+                        error: JSON.stringify(validation.error),
+                        message: '❌ Phishing workflow result validation failed.'
+                    };
+                }
+
+                return validation.data;
+
             }
 
             // Workflow succeeded but no result
@@ -152,7 +190,7 @@ export const phishingWorkflowExecutorTool = createTool({
                 stack: err.stack
             });
 
-            logger.error('Phishing workflow error', errorInfo);
+            logger.error('Phishing workflow error', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
 
             // User-friendly error message
             const userMessage = err.message.includes('analysis')

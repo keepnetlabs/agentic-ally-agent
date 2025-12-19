@@ -92,73 +92,73 @@ export const translateLanguageJsonTool = new Tool({
 
             logger.debug('Scene rewrite parameters', { sceneCount: scenesMetadata.length });
 
-        // Build rewrite context
-        const rewriteContext = {
-            sourceLanguage,
-            targetLanguage,
-            topic: topic || 'Cybersecurity training',
-            model
-        };
+            // Build rewrite context
+            const rewriteContext = {
+                sourceLanguage,
+                targetLanguage,
+                topic: topic || 'Cybersecurity training',
+                model
+            };
 
-        // Rewrite function for a single scene
-        async function rewriteScene(sceneMetadata: any, sceneIndex: number): Promise<{ sceneId: string, content: any }> {
-            const sceneNumber = sceneIndex + 1;
-            const sceneId = sceneMetadata.scene_id;
-            const sceneTypeRaw = sceneMetadata.metadata?.scene_type;
-            const sceneType = getSceneTypeOrDefault(sceneTypeRaw);
-            const sceneContent = json[sceneId];
+            // Rewrite function for a single scene
+            async function rewriteScene(sceneMetadata: any, sceneIndex: number): Promise<{ sceneId: string, content: any }> {
+                const sceneNumber = sceneIndex + 1;
+                const sceneId = sceneMetadata.scene_id;
+                const sceneTypeRaw = sceneMetadata.metadata?.scene_type;
+                const sceneType = getSceneTypeOrDefault(sceneTypeRaw);
+                const sceneContent = json[sceneId];
 
-            if (!sceneContent) {
-                logger.warn('No content found for scene', { sceneNumber, sceneId });
-                return { sceneId, content: null };
+                if (!sceneContent) {
+                    logger.warn('No content found for scene', { sceneNumber, sceneId });
+                    return { sceneId, content: null };
+                }
+
+                const rewriter = getSceneRewriter(sceneType);
+                logger.debug('Rewriting scene', { sceneNumber, totalScenes: scenesMetadata.length, sceneType, sceneId });
+
+                try {
+                    const rewrittenContent = await rewriter(sceneContent, rewriteContext);
+                    logger.debug('Scene rewrite completed', { sceneNumber, totalScenes: scenesMetadata.length });
+                    return { sceneId, content: rewrittenContent };
+                } catch (error) {
+                    const err = error instanceof Error ? error : new Error(String(error));
+                    logger.error('Scene rewrite failed', { sceneNumber, sceneId, error: err.message, stack: err.stack });
+                    logger.warn('Using original content as fallback', { sceneNumber, sceneId });
+                    return { sceneId, content: sceneContent }; // Graceful fallback
+                }
             }
 
-            const rewriter = getSceneRewriter(sceneType);
-            logger.debug('Rewriting scene', { sceneNumber, totalScenes: scenesMetadata.length, sceneType, sceneId });
+            // Process all scenes in parallel
+            logger.debug('Processing all scenes in parallel', { sceneCount: scenesMetadata.length });
 
+            const allResults = await Promise.all(
+                scenesMetadata.map((sceneMetadata: any, idx: number) => rewriteScene(sceneMetadata, idx))
+            );
+
+            // Map results to scene IDs
+            const rewrittenScenesMap: Record<string, any> = {};
+            allResults.forEach(({ sceneId, content }) => {
+                if (content) {
+                    rewrittenScenesMap[sceneId] = content;
+                }
+            });
+
+            // Rewrite app_texts
+            logger.debug('Rewriting application texts', {});
+            let rewrittenAppTexts = appTexts;
             try {
-                const rewrittenContent = await rewriter(sceneContent, rewriteContext);
-                logger.debug('Scene rewrite completed', { sceneNumber, totalScenes: scenesMetadata.length });
-                return { sceneId, content: rewrittenContent };
+                rewrittenAppTexts = await rewriteAppTexts(appTexts, rewriteContext);
+                logger.debug('Application texts rewrite completed', {});
             } catch (error) {
-                const err = error instanceof Error ? error : new Error(String(error));
-                logger.error('Scene rewrite failed', { sceneNumber, sceneId, error: err.message, stack: err.stack });
-                logger.warn('Using original content as fallback', { sceneNumber, sceneId });
-                return { sceneId, content: sceneContent }; // Graceful fallback
+                logger.error('Application texts rewrite failed, using original', error);
             }
-        }
 
-        // Process all scenes in parallel
-        logger.debug('Processing all scenes in parallel', { sceneCount: scenesMetadata.length });
-
-        const allResults = await Promise.all(
-            scenesMetadata.map((sceneMetadata: any, idx: number) => rewriteScene(sceneMetadata, idx))
-        );
-
-        // Map results to scene IDs
-        const rewrittenScenesMap: Record<string, any> = {};
-        allResults.forEach(({ sceneId, content }) => {
-            if (content) {
-                rewrittenScenesMap[sceneId] = content;
-            }
-        });
-
-        // Rewrite app_texts
-        logger.debug('Rewriting application texts', {});
-        let rewrittenAppTexts = appTexts;
-        try {
-            rewrittenAppTexts = await rewriteAppTexts(appTexts, rewriteContext);
-            logger.debug('Application texts rewrite completed', {});
-        } catch (error) {
-            logger.error('Application texts rewrite failed, using original', error);
-        }
-
-        // Combine results - preserve original structure with rewritten scenes
-        const result = {
-            ...json, // Keep all original keys
-            ...rewrittenScenesMap, // Override with rewritten scene content
-            app_texts: rewrittenAppTexts
-        };
+            // Combine results - preserve original structure with rewritten scenes
+            const result = {
+                ...json, // Keep all original keys
+                ...rewrittenScenesMap, // Override with rewritten scene content
+                app_texts: rewrittenAppTexts
+            };
 
             logger.debug('Scene rewrite batch completed', { scenesRewritten: Object.keys(rewrittenScenesMap).length });
 
@@ -174,7 +174,7 @@ export const translateLanguageJsonTool = new Tool({
                 stack: err.stack
             });
 
-            logger.error('Language translation failed', errorInfo);
+            logger.error('Language translation failed', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
 
             return {
                 success: false,

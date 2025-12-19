@@ -52,7 +52,7 @@ export const createInboxStructureTool = new Tool({
         stack: err.stack
       });
 
-      logger.error('Inbox structure creation failed', errorInfo);
+      logger.error('Inbox structure creation failed', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
 
       return {
         success: false,

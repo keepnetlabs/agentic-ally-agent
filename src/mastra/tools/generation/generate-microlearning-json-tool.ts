@@ -267,7 +267,7 @@ export const generateMicrolearningJsonTool = new Tool({
         stack: err.stack
       });
 
-      logger.error('JSON generation failed', errorInfo);
+      logger.error('JSON generation failed', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
 
       return {
         success: false,

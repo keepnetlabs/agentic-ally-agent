@@ -47,12 +47,22 @@ CRITICAL: NEVER use the topic name literally in email content (e.g., "Deepfake V
 
 STYLING: Wrap in <div class='text-[#1C1C1E] dark:text-[#F2F2F7]'>. Start greeting with <p>, not <h1> or <h2>.
 ATTACHMENTS: Maximum 1 attachment. CRITICAL: Attachment name and content MUST match email subject and body content.
-- Match email context: If email mentions "password reset", attachment should be password-related (e.g., password_reset_instructions.pdf, account_verification_form.pdf). If email mentions "invoice", use invoice attachment. NEVER mismatch topics.
-- Content must be REALISTIC DOCUMENT PREVIEW with actual data (numbers, dates, names) that matches email scenario.
-- PDF/DOC → Wrap in <div class='text-[#1C1C1E] dark:text-[#F2F2F7]'>. Include: Title (<h2 class='text-lg font-bold mb-2'>) matching email topic, 2-3 sections (<h3 class='text-md font-semibold mt-3'>), bullet lists or paragraphs
-- XLSX → Wrap in <div class='text-[#1C1C1E] dark:text-[#F2F2F7]'>. Include: Table with headers (<table class='border border-gray-300 w-full'><thead><tr class='bg-gray-100'><th class='border p-2'>), 3-5 data rows related to email content
-- QUISHING/QR CODE EMAILS (MANDATORY) → MUST include QR code image in content. Add this EXACT image tag: <img src="https://imagedelivery.net/KxWh-mxPGDbsqJB3c5_fmA/16344751-9716-4ff4-8fe7-5b77c311eb00/public" alt="QR Code" style="width:200px;height:auto;"> INSIDE the attachment content or email body. Context: "Scan this QR code to verify your account" or similar.
-- All types → Use Tailwind spacing (mb-2, mb-4, mt-3), keep simple but professional. Include specific data relevant to email scenario. DARK MODE: All attachment content MUST wrap in <div class='text-[#1C1C1E] dark:text-[#F2F2F7]'> for proper dark/light mode support.
+- Match email context: If email mentions "password reset", attachment should be password-related (e.g., password_reset_instructions.pdf). If email mentions "invoice", use invoice attachment. NEVER mismatch topics.
+- Content must be REALISTIC DOCUMENT PREVIEW with actual data (numbers, dates, names, IDs) that matches email scenario.
+
+TOPIC-SPECIFIC ATTACHMENT CONTENT (Use realistic data matching topic):
+- INVOICE/PAYMENT → Include: Invoice number (e.g., INV-2024-0847), date, line items with quantities/prices, tax, total (e.g., "Service Fee - $450.00", "Tax (8%) - $36.00", "Total - $486.00"), company details, payment terms.
+- PASSWORD/AUTH → Include: Account details (masked), timestamp, IP address (e.g., 192.168.1.45), device info (e.g., "Windows 11, Chrome"), location (e.g., "New York, USA"), verification steps, security recommendations.
+- CONTRACT/AGREEMENT → Include: Contract number (e.g., CNT-2024-0123), parties, effective date, key terms, signature sections.
+- REPORT/ANALYTICS → Include: Report title, period (e.g., "Q4 2024"), data tables with actual numbers (e.g., "Revenue: $125,000", "Growth: +12.5%"), key findings.
+- SOFTWARE/UPDATE → Include: Version number (e.g., "v2.4.1"), release date, changelog, installation instructions.
+- POLICY/COMPLIANCE → Include: Policy number (e.g., "POL-2024-089"), effective date, sections, compliance checklist.
+- QUISHING/QR CODE (MANDATORY) → Include QR code image: <img src="https://imagedelivery.net/KxWh-mxPGDbsqJB3c5_fmA/16344751-9716-4ff4-8fe7-5b77c311eb00/public" alt="QR Code" style="width:200px;height:auto;"> + verification instructions.
+
+ATTACHMENT FORMAT:
+- PDF/DOC → Wrap in <div class='text-[#1C1C1E] dark:text-[#F2F2F7]'>. Include: Title (<h2 class='text-lg font-bold mb-2'>), 2-3 sections (<h3 class='text-md font-semibold mt-3'>), realistic data (numbers, dates, IDs), bullet lists/paragraphs.
+- XLSX → Wrap in <div class='text-[#1C1C1E] dark:text-[#F2F2F7]'>. Include: Table with headers (<table class='border border-gray-300 w-full'><thead><tr class='bg-gray-100'><th class='border p-2'>), 3-5 data rows with realistic values, totals if applicable.
+- All types → Use Tailwind spacing (mb-2, mb-4, mt-3). Include specific data (invoice numbers, IPs, versions, etc.). DARK MODE: Wrap in <div class='text-[#1C1C1E] dark:text-[#F2F2F7]'>.
 File types: pdf, doc, xlsx, jpg, png, zip, txt.
 
 EXACT FORMAT (return as-is, single object):

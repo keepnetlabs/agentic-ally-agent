@@ -301,7 +301,7 @@ IMPORTANT: Edit UNLESS user explicitly said "email only" or similar exclusion.`;
         stack: err.stack
       });
 
-      logger.error('Phishing editor error', errorInfo);
+      logger.error('Phishing editor error', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
 
       return {
         success: false,

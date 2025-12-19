@@ -302,7 +302,7 @@ ${additionalContext}`
         step: 'prompt-analysis',
         stack: err.stack
       });
-      logger.error('Prompt analysis failed, using fallback', errorInfo);
+      logger.error('Prompt analysis failed, using fallback', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
 
       // Enhanced fallback analysis with context
       // Detect if code-related topic based on programming languages OR security keywords
