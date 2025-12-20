@@ -26,55 +26,38 @@ const VARIANTS: EmailVariant[] = [
     EmailVariant.FormalLegit,
 ];
 
-// Timestamp pool for email realism - ensures no repeats
-const TIMESTAMP_POOL = [
-    '15 minutes ago',
-    '30 minutes ago',
-    '1 hour ago',
-    '2 hours ago',
-    '3 hours ago',
-    '4 hours ago',
-    'This morning',
-    '1 day ago',
-    '2 days ago',
-    'Yesterday',
-    'This week',
-    '3 days ago',
-];
+// Get unique timestamp instructions for N emails (AI will generate timestamps in target language)
+// We use semantic descriptors instead of hard-coded English strings
+function getUniqueTimestampInstructions(count: number, languageCode: string): string[] {
+    // Define timestamp options as semantic descriptors (relative time concepts)
+    // AI will translate these to natural expressions in the target language
+    const timestampOptions = [
+        { key: 'very_recent', order: 12 },      // ~15-30 minutes ago
+        { key: 'recent_short', order: 11 },     // ~30-60 minutes ago  
+        { key: 'recent_medium', order: 10 },    // ~1-2 hours ago
+        { key: 'recent_long', order: 9 },       // ~2-3 hours ago
+        { key: 'today_morning', order: 8 },     // This morning / Earlier today
+        { key: 'today_afternoon', order: 7 },   // ~4-6 hours ago
+        { key: 'yesterday', order: 6 },         // Yesterday
+        { key: 'one_day_ago', order: 5 },       // 1 day ago
+        { key: 'two_days_ago', order: 4 },      // 2 days ago
+        { key: 'few_days_ago', order: 3 },      // 3 days ago
+        { key: 'this_week', order: 2 },         // This week
+        { key: 'older', order: 1 },             // Older options
+    ];
 
-// Shuffle array using Fisher-Yates algorithm
-function shuffleArray<T>(array: T[]): T[] {
-    const shuffled = [...array];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    return shuffled;
-}
+    // Select unique timestamps and sort by order (newest first)
+    const selected = timestampOptions
+        .slice(0, Math.min(count, timestampOptions.length))
+        .sort((a, b) => b.order - a.order);
 
-// Timestamp ordering for realistic inbox display (newest first)
-const TIMESTAMP_ORDER = {
-    '15 minutes ago': 12,
-    '30 minutes ago': 11,
-    '1 hour ago': 10,
-    '2 hours ago': 9,
-    '3 hours ago': 8,
-    'This morning': 7,
-    '4 hours ago': 6,
-    '1 day ago': 5,
-    'This week': 4,
-    '2 days ago': 3,
-    '3 days ago': 2,
-    'Yesterday': 1,
-};
-
-// Get unique timestamps for N emails (no repeats), ordered newest first
-function getUniqueTimestamps(count: number): string[] {
-    const shuffled = shuffleArray(TIMESTAMP_POOL);
-    const selected = shuffled.slice(0, Math.min(count, TIMESTAMP_POOL.length));
-
-    // Sort by TIMESTAMP_ORDER (newest first) for realistic inbox display
-    return selected.sort((a, b) => (TIMESTAMP_ORDER[b as keyof typeof TIMESTAMP_ORDER] || 0) - (TIMESTAMP_ORDER[a as keyof typeof TIMESTAMP_ORDER] || 0));
+    // Return instructions that tell AI to generate timestamps in target language
+    // Format: instruction that AI can interpret and translate naturally
+    return selected.map((opt) => {
+        // Create a natural instruction for AI to generate timestamp in target language
+        // AI will produce natural expressions like "15 dakika önce" (tr), "منذ 15 دقيقة" (ar), etc.
+        return `generate_timestamp_${opt.key}_in_${languageCode}`;
+    });
 }
 
 async function generateOneEmail(
@@ -84,12 +67,36 @@ async function generateOneEmail(
     topic: string,
     department: string,
     variant: EmailVariant,
-    timestamp: string,
+    timestampInstruction: string,
+    languageCode: string,
     additionalContext?: string // New parameter
 ): Promise<any> {
-    const timestampInstruction = `CRITICAL:Use timestamp "${timestamp}" for this email.`;
+    // Parse timestamp instruction and create natural language instruction for AI
+    // Extract the semantic key (e.g., "very_recent", "yesterday") from instruction
+    const timestampMatch = timestampInstruction.match(/generate_timestamp_(\w+)_in_/);
+    const timestampKey = timestampMatch ? timestampMatch[1] : 'recent_medium';
+
+    // Create natural instruction for AI to generate timestamp in target language
+    // Note: languageCode is BCP-47 format (e.g., "tr-tr", "ar-sa", "en-gb") but we want AI to produce natural expressions
+    const timestampInstructions: Record<string, string> = {
+        'very_recent': `CRITICAL: Use timestamp meaning "15-30 minutes ago" in ${languageCode} (write naturally as a native speaker would, e.g., Turkish: "15 dakika önce", Arabic: "منذ 15 دقيقة").`,
+        'recent_short': `CRITICAL: Use timestamp meaning "30-60 minutes ago" in ${languageCode} (write naturally as a native speaker would).`,
+        'recent_medium': `CRITICAL: Use timestamp meaning "1-2 hours ago" in ${languageCode} (write naturally as a native speaker would).`,
+        'recent_long': `CRITICAL: Use timestamp meaning "2-3 hours ago" in ${languageCode} (write naturally as a native speaker would).`,
+        'today_morning': `CRITICAL: Use timestamp meaning "this morning" or "earlier today" in ${languageCode} (write naturally as a native speaker would, e.g., Turkish: "bu sabah", Arabic: "هذا الصباح").`,
+        'today_afternoon': `CRITICAL: Use timestamp meaning "4-6 hours ago" in ${languageCode} (write naturally as a native speaker would).`,
+        'yesterday': `CRITICAL: Use timestamp meaning "yesterday" in ${languageCode} (write naturally as a native speaker would, e.g., Turkish: "dün", Arabic: "أمس").`,
+        'one_day_ago': `CRITICAL: Use timestamp meaning "1 day ago" in ${languageCode} (write naturally as a native speaker would).`,
+        'two_days_ago': `CRITICAL: Use timestamp meaning "2 days ago" in ${languageCode} (write naturally as a native speaker would).`,
+        'few_days_ago': `CRITICAL: Use timestamp meaning "3 days ago" in ${languageCode} (write naturally as a native speaker would).`,
+        'this_week': `CRITICAL: Use timestamp meaning "this week" in ${languageCode} (write naturally as a native speaker would).`,
+        'older': `CRITICAL: Use timestamp meaning "several days ago" in ${languageCode} (write naturally as a native speaker would).`,
+    };
+
+    const timestampInstructionText = timestampInstructions[timestampKey] || timestampInstructions['recent_medium'];
+
     // Pass additionalContext to buildHintsFromInsights
-    const delta = variantDeltaBuilder[variant](buildHintsFromInsights(topic, index, department, additionalContext)) + ` ${timestampInstruction}`;
+    const delta = variantDeltaBuilder[variant](buildHintsFromInsights(topic, index, department, additionalContext)) + ` ${timestampInstructionText}`;
 
     // Build messages array with multi-message pattern for consistency with scenes
     const messages: any[] = [
@@ -203,13 +210,15 @@ export async function generateInboxEmailsParallel(args: OrchestratorArgs): Promi
         EmailVariant.FormalLegit,
     ];
 
-    // Generate randomized, unique timestamps for each email variant
-    const uniqueTimestamps = getUniqueTimestamps(variantPlan.length);
+    // Generate randomized, unique timestamp instructions for each email variant
+    // AI will translate these to natural expressions in the target language
+    const uniqueTimestampInstructions = getUniqueTimestampInstructions(variantPlan.length, args.languageCode);
 
     logger.info('Generating emails', {
         topic: args.topic,
         department: args.department,
-        timestamps: uniqueTimestamps.join(', '),
+        languageCode: args.languageCode,
+        timestampCount: uniqueTimestampInstructions.length,
         hasAdditionalContext: !!args.additionalContext
     });
 
@@ -220,7 +229,7 @@ export async function generateInboxEmailsParallel(args: OrchestratorArgs): Promi
             variant === EmailVariant.ObviousPhishing;
         const contextForVariant = useTargetedPrompt ? args.additionalContext : undefined;
 
-        return generateOneEmail(i, system, args.model, args.topic, args.department, variant, uniqueTimestamps[i], contextForVariant);
+        return generateOneEmail(i, system, args.model, args.topic, args.department, variant, uniqueTimestampInstructions[i], args.languageCode, contextForVariant);
     });
 
     // Use allSettled to continue even if some emails fail
