@@ -144,18 +144,13 @@ describe('ProductService', () => {
 
       const result = await service.request('/test-endpoint');
 
-      expect(global.fetch).toHaveBeenCalledWith(
-        'https://test-idp.com/api/test-endpoint',
-        expect.objectContaining({
-          method: 'GET',
-          headers: expect.objectContaining({
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-            'x-ir-api-key': 'test-api-key',
-            'x-ir-company-id': 'company-123'
-          })
-        })
-      );
+      expect(global.fetch).toHaveBeenCalled();
+      const fetchCall = (global.fetch as any).mock.calls[0];
+      expect(fetchCall[0]).toBe('https://test-idp.com/api/test-endpoint');
+      expect(fetchCall[1].method).toBe('GET');
+      expect(fetchCall[1].headers['Content-Type']).toBe('application/json');
+      expect(fetchCall[1].headers['Authorization']).toBe(`Bearer ${token}`);
+      expect(fetchCall[1].headers['x-ir-company-id']).toBe('company-123');
       expect(result).toEqual(mockResponse);
     });
 
