@@ -3,6 +3,7 @@ import { DEFAULT_GENERIC_LOGO } from '../landing-page/image-validator';
 import { getLogger } from '../core/logger';
 import { cleanResponse } from '../content-processors/json-cleaner';
 import { getLogoUrl } from '../landing-page/logo-resolver';
+import { normalizeError } from '../core/error-utils';
 
 const logger = getLogger('BrandResolver');
 
@@ -96,7 +97,7 @@ export async function resolveLogoAndBrand(
       isRecognizedBrand: false
     };
   } catch (error) {
-    const err = error instanceof Error ? error : new Error(String(error));
+    const err = normalizeError(error);
     logger.warn('Logo and brand resolution failed, using default logo', {
       error: err.message,
       stack: err.stack
@@ -190,7 +191,7 @@ export async function generateContextualBrand(
       isRecognizedBrand: false
     };
   } catch (error) {
-    const err = error instanceof Error ? error : new Error(String(error));
+    const err = normalizeError(error);
     logger.warn('Contextual brand generation failed, using default', {
       error: err.message,
       stack: err.stack

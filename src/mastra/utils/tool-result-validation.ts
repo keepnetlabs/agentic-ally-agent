@@ -16,6 +16,7 @@
 import { z } from 'zod';
 import { getLogger } from './core/logger';
 import { errorService } from '../services/error-service';
+import { normalizeError } from './core/error-utils';
 
 const logger = getLogger('ToolResultValidation');
 
@@ -77,7 +78,7 @@ export function validateToolResult<T extends z.ZodTypeAny>(
       data: validated.data,
     };
   } catch (error) {
-    const err = error instanceof Error ? error : new Error(String(error));
+    const err = normalizeError(error);
     logger.error('Unexpected error during tool result validation', {
       toolName,
       error: err.message,

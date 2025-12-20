@@ -1,6 +1,7 @@
 import { createOpenAI } from '@ai-sdk/openai';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { getLogger } from './utils/core/logger';
+import { normalizeError } from './utils/core/error-utils';
 
 const logger = getLogger('ModelProviders');
 
@@ -228,7 +229,7 @@ export function getModelWithOverride(
         });
         return model;
     } catch (error) {
-        const err = error instanceof Error ? error : new Error(String(error));
+        const err = normalizeError(error);
         logger.warn('Failed to load model, using default', {
             modelProvider,
             modelName,

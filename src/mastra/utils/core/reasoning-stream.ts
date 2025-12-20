@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { generateText } from 'ai';
 import { getModelWithOverride } from '../../model-providers';
 import { getLogger } from './logger';
+import { normalizeError } from './error-utils';
 
 const logger = getLogger('ReasoningStream');
 
@@ -80,7 +81,7 @@ export async function streamReasoning(
     });
 
   } catch (error) {
-    const err = error instanceof Error ? error : new Error(String(error));
+    const err = normalizeError(error);
     logger.error('Failed to start reasoning stream', {
       error: err.message,
       stack: err.stack

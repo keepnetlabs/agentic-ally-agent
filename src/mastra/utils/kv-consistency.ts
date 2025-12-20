@@ -10,6 +10,7 @@
 import { CLOUDFLARE_KV } from '../constants';
 import { KVService } from '../services/kv-service';
 import { getLogger } from './core/logger';
+import { normalizeError } from './core/error-utils';
 
 const logger = getLogger('KVConsistency');
 
@@ -106,7 +107,7 @@ export async function waitForKVConsistency(
                 }
             }
         } catch (error) {
-            const err = error instanceof Error ? error : new Error(String(error));
+            const err = normalizeError(error);
             logger.warn('KV consistency check error', {
                 resourceId,
                 attempt: attempt + 1,

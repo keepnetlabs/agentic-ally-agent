@@ -3,6 +3,7 @@ import { getModel, Model, ModelProvider } from '../../model-providers';
 import { PromptAnalysis } from '../../types/prompt-analysis';
 import videoDatabase from '../../data/video-database.json';
 import { getLogger } from '../core/logger';
+import { normalizeError } from '../core/error-utils';
 
 const logger = getLogger('VideoSelector');
 
@@ -214,7 +215,7 @@ Return the best matching video URL only:`;
     }
 
   } catch (error) {
-    const err = error instanceof Error ? error : new Error(String(error));
+    const err = normalizeError(error);
     logger.error('Video selection failed, using fallback', {
       error: err.message,
       stack: err.stack
@@ -311,7 +312,7 @@ Return ONLY valid JSON, no markdown:
     };
 
   } catch (error) {
-    const err = error instanceof Error ? error : new Error(String(error));
+    const err = normalizeError(error);
     logger.warn('Video metadata generation failed, using fallback', {
       error: err.message,
       stack: err.stack

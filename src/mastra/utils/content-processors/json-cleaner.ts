@@ -1,5 +1,6 @@
 import { jsonrepair } from 'jsonrepair';
 import { getLogger } from '../core/logger';
+import { normalizeError } from '../core/error-utils';
 
 const logger = getLogger('JsonCleaner');
 
@@ -14,9 +15,9 @@ export function cleanResponse(text: string, sectionName: string): string {
     logger.debug('Cleaned successfully', { sectionName, cleanLength: clean.length });
     return clean;
   } catch (cleanErr) {
-    const err = cleanErr instanceof Error ? cleanErr : new Error(String(cleanErr));
+    const err = normalizeError(cleanErr);
     logger.error('Error cleaning response', { sectionName, error: err.message, stack: err.stack });
     logger.debug('Raw text sample', { sectionName, sample: text.substring(0, 500) });
-    throw new Error(`Failed to clean ${sectionName} response: ${cleanErr instanceof Error ? cleanErr.message : String(cleanErr)}`);
+    throw new Error(`Failed to clean ${sectionName} response: ${err.message}`);
   }
 }

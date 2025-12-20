@@ -8,6 +8,7 @@ import { z } from 'zod';
 import { getLogger } from '../core/logger';
 import { getDefaultGenerationModel } from '../../model-providers';
 import { cleanResponse } from '../content-processors/json-cleaner';
+import { normalizeError } from '../core/error-utils';
 
 const logger = getLogger('IndustryDetector');
 
@@ -588,7 +589,7 @@ Based on the company name and scenario description, determine the most appropria
         };
 
     } catch (error) {
-        const err = error instanceof Error ? error : new Error(String(error));
+        const err = normalizeError(error);
         logger.warn('AI industry detection failed, will use regex fallback', {
             error: err.message
         });

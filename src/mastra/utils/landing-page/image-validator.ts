@@ -4,6 +4,7 @@
  */
 
 import { getLogger } from '../core/logger';
+import { normalizeError } from '../core/error-utils';
 import { CACHE_CONFIG, TIMEOUT_VALUES } from '../../constants';
 
 const logger = getLogger('ImageValidator');
@@ -57,8 +58,10 @@ export async function getDefaultGenericLogoBase64(): Promise<string> {
         cachedDefaultLogoBase64 = dataUri; // Cache successful result
         return dataUri;
     } catch (error) {
+        const err = normalizeError(error);
         logger.warn('Error converting default logo URL to base64', {
-            error: error instanceof Error ? error.message : String(error)
+            error: err.message,
+            stack: err.stack
         });
         // Return empty 1x1 transparent PNG as fallback
         const fallback = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
