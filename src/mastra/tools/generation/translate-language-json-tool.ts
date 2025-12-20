@@ -14,6 +14,7 @@ import { rewriteScene8Summary } from '../scenes/rewriters/scene8-summary-rewrite
 import { rewriteAppTexts } from '../scenes/rewriters/app-texts-rewriter';
 import { getLogger } from '../../utils/core/logger';
 import { errorService } from '../../services/error-service';
+import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
 
 /* =========================================================
  * Schemas
@@ -121,7 +122,7 @@ export const translateLanguageJsonTool = new Tool({
                     logger.debug('Scene rewrite completed', { sceneNumber, totalScenes: scenesMetadata.length });
                     return { sceneId, content: rewrittenContent };
                 } catch (error) {
-                    const err = error instanceof Error ? error : new Error(String(error));
+                    const err = normalizeError(error);
                     logger.error('Scene rewrite failed', { sceneNumber, sceneId, error: err.message, stack: err.stack });
                     logger.warn('Using original content as fallback', { sceneNumber, sceneId });
                     return { sceneId, content: sceneContent }; // Graceful fallback
@@ -150,7 +151,8 @@ export const translateLanguageJsonTool = new Tool({
                 rewrittenAppTexts = await rewriteAppTexts(appTexts, rewriteContext);
                 logger.debug('Application texts rewrite completed', {});
             } catch (error) {
-                logger.error('Application texts rewrite failed, using original', error);
+                const err = normalizeError(error);
+                logger.error('Application texts rewrite failed, using original', { error: err.message, stack: err.stack });
             }
 
             // Combine results - preserve original structure with rewritten scenes
@@ -167,19 +169,16 @@ export const translateLanguageJsonTool = new Tool({
                 data: result
             };
         } catch (error) {
-            const err = error instanceof Error ? error : new Error(String(error));
+            const err = normalizeError(error);
             const errorInfo = errorService.aiModel(err.message, {
                 targetLanguage: context?.targetLanguage,
                 step: 'language-translation',
                 stack: err.stack
             });
 
-            logger.error('Language translation failed', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
+            logErrorInfo(logger, 'error', 'Language translation failed', errorInfo);
 
-            return {
-                success: false,
-                error: JSON.stringify(errorInfo)
-            };
+            return createToolErrorResponse(errorInfo);
         }
     }
 });

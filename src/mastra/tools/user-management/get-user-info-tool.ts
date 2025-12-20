@@ -2,6 +2,7 @@
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { getRequestContext } from '../../utils/core/request-storage';
+import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
 import { ERROR_MESSAGES, API_ENDPOINTS } from '../../constants';
 import { generatePIIHash } from '../../utils/parsers/pii-masking-utils';
 import { parseName, isValidName, normalizeName } from '../../utils/parsers/name-parser';
@@ -163,8 +164,8 @@ export const getUserInfoTool = createTool({
             if (inputFullName) {
                 if (!isValidName(inputFullName)) {
                     const errorInfo = errorService.validation(`Invalid name format: "${inputFullName}"`);
-                    logger.warn('Validation error: Invalid name format', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
-                    return { success: false, error: JSON.stringify(errorInfo) };
+                    logErrorInfo(logger, 'warn', 'Validation error: Invalid name format', errorInfo);
+                    return createToolErrorResponse(errorInfo);
                 }
                 const normalizedFullName = normalizeName(inputFullName);
                 parsed = parseName(normalizedFullName);
@@ -176,14 +177,14 @@ export const getUserInfoTool = createTool({
                 logger.debug('Using explicit normalized names', { firstName: normalizedFirstName, lastName: normalizedLastName });
             } else {
                 const errorInfo = errorService.validation('Either fullName or firstName must be provided');
-                logger.warn('Validation error: Name required', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
-                return { success: false, error: JSON.stringify(errorInfo) };
+                logErrorInfo(logger, 'warn', 'Validation error: Name required', errorInfo);
+                return createToolErrorResponse(errorInfo);
             }
         } catch (error) {
-            const err = error instanceof Error ? error : new Error(String(error));
+            const err = normalizeError(error);
             const errorInfo = errorService.validation(err.message, { step: 'name-parsing' });
-            logger.error('Name parsing error', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
-            return { success: false, error: JSON.stringify(errorInfo) };
+            logErrorInfo(logger, 'error', 'Name parsing error', errorInfo);
+            return createToolErrorResponse(errorInfo);
         }
 
         const { firstName, lastName, fullName } = parsed;
@@ -193,8 +194,8 @@ export const getUserInfoTool = createTool({
         const { token, companyId } = getRequestContext();
         if (!token) {
             const errorInfo = errorService.auth(ERROR_MESSAGES.USER_INFO.TOKEN_MISSING);
-            logger.warn('Auth error: Token missing', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
-            return { success: false, error: JSON.stringify(errorInfo) };
+            logErrorInfo(logger, 'warn', 'Auth error: Token missing', errorInfo);
+            return createToolErrorResponse(errorInfo);
         }
 
         try {
@@ -231,8 +232,8 @@ export const getUserInfoTool = createTool({
 
             if (users.length === 0) {
                 const errorInfo = errorService.notFound(`User "${fullName}" not found.`, { fullName });
-                logger.warn('User not found', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
-                return { success: false, error: JSON.stringify(errorInfo) };
+                logErrorInfo(logger, 'warn', 'User not found', errorInfo);
+                return createToolErrorResponse(errorInfo);
             }
 
             const user = users[0];
@@ -468,13 +469,13 @@ Use this exact JSON structure:
 
                 logger.debug('Analysis report generated successfully', {});
             } catch (aiError) {
-                const err = aiError instanceof Error ? aiError : new Error(String(aiError));
+                const err = normalizeError(aiError);
                 const errorInfo = errorService.aiModel(err.message, {
                     step: 'analysis-report-generation',
                     maskedId,
                     stack: err.stack
                 });
-                logger.error('AI analysis generation failed', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
+                logErrorInfo(logger, 'error', 'AI analysis generation failed', errorInfo);
                 // Don't return - analysis is optional, continue with partial data
             }
 
@@ -493,17 +494,14 @@ Use this exact JSON structure:
             // Validate result against output schema
             const validationResult = validateToolResult(toolResult, getUserInfoOutputSchema, 'get-user-info');
             if (!validationResult.success) {
-                logger.error('Get user info result validation failed', { code: validationResult.error.code, message: validationResult.error.message });
-                return {
-                    success: false,
-                    error: JSON.stringify(validationResult.error)
-                };
+                logErrorInfo(logger, 'error', 'Get user info result validation failed', validationResult.error);
+                return createToolErrorResponse(validationResult.error);
             }
 
             return validationResult.data;
 
         } catch (error) {
-            const err = error instanceof Error ? error : new Error(String(error));
+            const err = normalizeError(error);
             const errorInfo = errorService.external(err.message, {
                 fullName,
                 firstName,
@@ -511,12 +509,9 @@ Use this exact JSON structure:
                 stack: err.stack
             });
 
-            logger.error('Tool execution failed', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
+            logErrorInfo(logger, 'error', 'Tool execution failed', errorInfo);
 
-            return {
-                success: false,
-                error: JSON.stringify(errorInfo)
-            };
+            return createToolErrorResponse(errorInfo);
         }
     },
 });

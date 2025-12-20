@@ -3,6 +3,7 @@ import { WorkflowEntrypoint } from 'cloudflare:workers';
 import { executeAutonomousGeneration } from '../services/autonomous-service';
 import { getLogger } from '../utils/core/logger';
 import type { AutonomousRequestBody, CloudflareEnv } from '../types/api-types';
+import { normalizeError } from '../utils/core/error-utils';
 import { mastra } from '../index';
 /**
  * Cloudflare Workflow entrypoint for autonomous generation.
@@ -27,13 +28,14 @@ export class AutonomousWorkflow extends WorkflowEntrypoint {
             logger.info('autonomous_workflow_completed', { success: result.success });
             return result;
         } catch (error) {
+            const err = normalizeError(error);
             logger.error('autonomous_workflow_failed', {
-                error: error instanceof Error ? error.message : String(error),
+                error: err.message,
             });
 
             return {
                 success: false,
-                error: error instanceof Error ? error.message : 'Unknown workflow error',
+                error: err.message,
                 actions: event?.payload?.actions || [],
             };
         }

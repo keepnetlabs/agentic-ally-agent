@@ -9,6 +9,7 @@ import { buildSystemPrompt } from '../../utils/language/localization-language-ru
 import { getLogger } from '../../utils/core/logger';
 import { MODEL_PROVIDERS } from '../../constants';
 import { errorService } from '../../services/error-service';
+import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
 
 /* =========================================================
  * Schemas
@@ -41,8 +42,9 @@ function autoFixHtml(html: string): string {
         return parse5.serialize(frag);
     } catch (error) {
         const logger = getLogger('InboxTranslateJsonTool');
+        const err = normalizeError(error);
         logger.warn('Failed to normalize HTML, returning original', {
-            error: error instanceof Error ? error.message : String(error),
+            error: err.message,
             htmlLength: html.length,
         });
         return html; // graceful fallback
@@ -326,8 +328,8 @@ export const inboxTranslateJsonTool = new Tool({
                     return out;
 
                 } catch (e) {
-                    const err = e instanceof Error ? e : new Error(String(e));
-                    logger.warn(`Chunk translation failed, using originals`, { chunkNumber, error: err.message });
+                    const err = normalizeError(e);
+                    logger.warn(`Chunk translation failed, using originals`, { chunkNumber, error: err.message, stack: err.stack });
                     return chunk.map(c => c.value);
                 }
             }
@@ -347,18 +349,15 @@ export const inboxTranslateJsonTool = new Tool({
             const result = bindTranslatedStrings(json, extracted, allTranslated);
             return { success: true, data: result, error: issues.length ? `Completed with ${issues.length} soft issues` : undefined };
         } catch (error) {
-            const err = error instanceof Error ? error : new Error(String(error));
+            const err = normalizeError(error);
             const errorInfo = errorService.aiModel(err.message, {
                 sourceLanguage: context?.sourceLanguage,
                 targetLanguage: context?.targetLanguage,
                 step: 'inbox-translation',
                 stack: err.stack
             });
-            logger.error('Inbox translation failed', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
-            return {
-                success: false,
-                error: JSON.stringify(errorInfo)
-            };
+            logErrorInfo(logger, 'error', 'Inbox translation failed', errorInfo);
+            return createToolErrorResponse(errorInfo);
         }
     }
 });

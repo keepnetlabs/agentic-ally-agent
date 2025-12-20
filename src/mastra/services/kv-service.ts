@@ -1,5 +1,6 @@
 import { getLogger, startTimer } from '../utils/core/logger';
 import { withRetry } from '../utils/core/resilience-utils';
+import { normalizeError } from '../utils/core/error-utils';
 
 /**
  * KV Service for direct Cloudflare KV REST API operations
@@ -76,7 +77,7 @@ export class KVService {
         return result;
       });
     } catch (error) {
-      const errorMsg = error instanceof Error ? error : new Error(String(error));
+      const errorMsg = normalizeError(error);
       this.logger.error(`KV PUT failed after retries`, {
         error: errorMsg.message,
         stack: errorMsg.stack,
@@ -121,7 +122,7 @@ export class KVService {
         `KV GET ${key}`
       );
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
+      const err = normalizeError(error);
       this.logger.error(`KV GET failed after retries`, { key, error: err.message, stack: err.stack });
       return null;
     }
@@ -149,7 +150,7 @@ export class KVService {
         `KV DELETE ${key}`
       );
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
+      const err = normalizeError(error);
       this.logger.error(`KV DELETE failed after retries`, { key, error: err.message, stack: err.stack });
       return false;
     }
@@ -181,7 +182,7 @@ export class KVService {
       const data = await response.json();
       return data.result?.map((item: any) => item.name) || [];
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
+      const err = normalizeError(error);
       this.logger.error(`KV LIST error`, { error: err.message, stack: err.stack });
       return [];
     }
@@ -259,7 +260,7 @@ export class KVService {
 
       return allSuccess;
     } catch (error) {
-      const errorMsg = error instanceof Error ? error : new Error(String(error));
+      const errorMsg = normalizeError(error);
       this.logger.error(`Failed to save microlearning`, {
         microlearningId,
         language: normalizedLang,
@@ -294,7 +295,7 @@ export class KVService {
 
       return await this.put(baseKey, baseData);
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
+      const err = normalizeError(error);
       this.logger.error(`Failed to save phishing base`, { id, error: err.message, stack: err.stack });
       return false;
     }
@@ -318,7 +319,7 @@ export class KVService {
 
       return await this.put(emailKey, emailData);
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
+      const err = normalizeError(error);
       this.logger.error(`Failed to save phishing email`, { id, error: err.message, stack: err.stack });
       return false;
     }
@@ -340,7 +341,7 @@ export class KVService {
 
       return await this.put(landingKey, landingData);
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
+      const err = normalizeError(error);
       this.logger.error(`Failed to save phishing landing page`, { id, error: err.message, stack: err.stack });
       return false;
     }
@@ -384,7 +385,7 @@ export class KVService {
 
       return result;
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
+      const err = normalizeError(error);
       this.logger.error(`Failed to get phishing`, { phishingId, error: err.message, stack: err.stack });
       return null;
     }
@@ -409,7 +410,7 @@ export class KVService {
 
       return result;
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
+      const err = normalizeError(error);
       this.logger.error(`Failed to get microlearning`, { microlearningId, error: err.message, stack: err.stack });
       return null;
     }
@@ -430,7 +431,7 @@ export class KVService {
 
       return success;
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
+      const err = normalizeError(error);
       this.logger.error(`Failed to store language content`, { microlearningId, language, error: err.message, stack: err.stack });
       return false;
     }
@@ -455,7 +456,7 @@ export class KVService {
 
       return success;
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
+      const err = normalizeError(error);
       this.logger.error(`Failed to update microlearning`, { microlearningId: microlearning?.microlearning_id, error: err.message, stack: err.stack });
       return false;
     }
@@ -487,7 +488,7 @@ export class KVService {
       }
       return success;
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
+      const err = normalizeError(error);
       this.logger.error(`Failed to update language availability`, { microlearningId, error: err.message, stack: err.stack });
       return false;
     }
@@ -508,7 +509,7 @@ export class KVService {
 
       return success;
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
+      const err = normalizeError(error);
       this.logger.error(`Failed to store inbox content`, { microlearningId, department, language, error: err.message, stack: err.stack });
       return false;
     }
@@ -526,7 +527,7 @@ export class KVService {
 
       return inbox;
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
+      const err = normalizeError(error);
       this.logger.error(`Failed to get inbox content`, { microlearningId, department, language, error: err.message, stack: err.stack });
       return null;
     }
@@ -559,14 +560,14 @@ export class KVService {
             }
           }
         } catch (error) {
-          const err = error instanceof Error ? error : new Error(String(error));
+          const err = normalizeError(error);
           this.logger.warn(`Failed to check microlearning`, { key, error: err.message });
         }
       }
 
       return results;
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
+      const err = normalizeError(error);
       this.logger.error(`Failed to search microlearnings`, { searchTerm, error: err.message, stack: err.stack });
       return [];
     }
@@ -590,7 +591,7 @@ export class KVService {
         return false;
       }
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
+      const err = normalizeError(error);
       this.logger.error(`Namespace check error`, { error: err.message, stack: err.stack });
       return false;
     }
@@ -628,7 +629,7 @@ export class KVService {
 
       return true;
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
+      const err = normalizeError(error);
       this.logger.error(`KV health check failed`, { error: err.message, stack: err.stack });
       return false;
     }

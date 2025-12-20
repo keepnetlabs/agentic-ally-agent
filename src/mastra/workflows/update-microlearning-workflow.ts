@@ -4,6 +4,7 @@ import { generateText } from 'ai';
 import { KVService } from '../services/kv-service';
 import { getLogger } from '../utils/core/logger';
 import { normalizeDepartmentName } from '../utils/language/language-utils';
+import { normalizeError } from '../utils/core/error-utils';
 import { getModelWithOverride } from '../model-providers';
 import { THEME_COLORS } from '../constants';
 import { DEFAULT_GENERATION_PARAMS } from '../utils/config/llm-generation-params';
@@ -122,7 +123,8 @@ Respond with ONLY the CSS class name. Nothing else.`;
     logger.warn('Invalid color returned from AI', { input: colorInput, aiOutput: selectedColor });
     return THEME_COLORS.DEFAULT;
   } catch (error) {
-    logger.error('Color normalization failed', error as Error, { colorInput });
+    const err = normalizeError(error);
+    logger.error('Color normalization failed', { error: err.message, stack: err.stack, colorInput });
     return THEME_COLORS.DEFAULT;
   }
 }
@@ -323,13 +325,13 @@ const saveUpdatesStep = createStep({
         },
       };
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-      logger.error('Failed to save updates', error as Error, { microlearningId });
+      const err = normalizeError(error);
+      logger.error('Failed to save updates', { error: err.message, stack: err.stack, microlearningId });
 
       return {
         success: false,
         status: 'Update failed',
-        error: errorMsg,
+        error: err.message,
       };
     }
   },

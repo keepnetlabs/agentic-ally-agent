@@ -2,6 +2,7 @@ import { Tool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { getLogger } from '../../utils/core/logger';
 import { errorService } from '../../services/error-service';
+import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
 
 /**
  * Reasoning Tool - Allows agent to show its thinking process
@@ -27,8 +28,8 @@ export const reasoningTool = new Tool({
     try {
       if (!thought) {
         const errorInfo = errorService.validation('Thought is required for reasoning tool');
-        logger.warn('Reasoning tool called without thought', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
-        return { success: false, error: JSON.stringify(errorInfo) };
+        logErrorInfo(logger, 'warn', 'Reasoning tool called without thought', errorInfo);
+        return createToolErrorResponse(errorInfo);
       }
 
       // Get writer from context (Mastra stream writer)
@@ -63,17 +64,14 @@ export const reasoningTool = new Tool({
         success: true
       };
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
+      const err = normalizeError(error);
       const errorInfo = errorService.internal(err.message, {
         thought: thought?.substring(0, 100),
         step: 'reasoning-emission',
         stack: err.stack
       });
-      logger.error('Reasoning tool error', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
-      return {
-        success: false,
-        error: JSON.stringify(errorInfo)
-      };
+      logErrorInfo(logger, 'error', 'Reasoning tool error', errorInfo);
+      return createToolErrorResponse(errorInfo);
     }
   }
 });

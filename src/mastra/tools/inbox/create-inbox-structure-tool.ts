@@ -11,6 +11,7 @@ import { generateInboxEmailsParallel } from './generators/inbox-emails-orchestra
 import { LOCALIZER_PARAMS } from '../../utils/config/llm-generation-params';
 import { getLogger } from '../../utils/core/logger';
 import { errorService } from '../../services/error-service';
+import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
 
 const microlearningService = new MicrolearningService();
 
@@ -43,7 +44,7 @@ export const createInboxStructureTool = new Tool({
       };
 
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
+      const err = normalizeError(error);
       const errorInfo = errorService.external(err.message, {
         department,
         languageCode,
@@ -52,12 +53,9 @@ export const createInboxStructureTool = new Tool({
         stack: err.stack
       });
 
-      logger.error('Inbox structure creation failed', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
+      logErrorInfo(logger, 'error', 'Inbox structure creation failed', errorInfo);
 
-      return {
-        success: false,
-        error: JSON.stringify(errorInfo)
-      };
+      return createToolErrorResponse(errorInfo);
     }
   },
 });
@@ -99,7 +97,8 @@ async function createInboxStructure(
 
   } catch (firstError) {
     const logger = getLogger('CreateInboxStructure');
-    logger.warn('First attempt to generate dynamic inbox failed, retrying once', firstError instanceof Error ? firstError : new Error(String(firstError)));
+    const err = normalizeError(firstError);
+    logger.warn('First attempt to generate dynamic inbox failed, retrying once', { error: err.message, stack: err.stack });
 
     try {
       const model = getModelWithOverride(modelProvider, modelOverride);
@@ -115,7 +114,8 @@ async function createInboxStructure(
 
     } catch (secondError) {
       const logger2 = getLogger('CreateInboxStructure');
-      logger2.warn('Second attempt failed, using fallback', secondError instanceof Error ? secondError : new Error(String(secondError)));
+      const err = normalizeError(secondError);
+      logger2.warn('Second attempt failed, using fallback', { error: err.message, stack: err.stack });
       // Fallback to basic structure
       const fallbackPayload = { texts: {}, emails: [] };
       return fallbackPayload; // Return the fallback content
@@ -176,7 +176,8 @@ async function generateDynamicInboxWithAI(
       logger.debug('Inbox texts parsed successfully', {});
     } catch (textsError) {
       const logger = getLogger('GenerateDynamicInboxWithAI');
-      logger.warn('Texts JSON parse failed, using fallback', textsError instanceof Error ? textsError : new Error(String(textsError)));
+      const err = normalizeError(textsError);
+      logger.warn('Texts JSON parse failed, using fallback', { error: err.message, stack: err.stack });
       throw textsError;
     }
 
@@ -184,7 +185,8 @@ async function generateDynamicInboxWithAI(
 
   } catch (parseError) {
     const logger = getLogger('GenerateDynamicInboxWithAI');
-    logger.error('JSON parsing failed', parseError instanceof Error ? parseError : new Error(String(parseError)));
+    const err = normalizeError(parseError);
+    logger.error('JSON parsing failed', { error: err.message, stack: err.stack });
   }
 
   const aiResponse = {
@@ -200,7 +202,8 @@ async function generateDynamicInboxWithAI(
     return validatedInboxContent;
   } catch (validationError) {
     const logger = getLogger('GenerateDynamicInboxWithAI');
-    logger.warn('Inbox content validation failed, using fallback', validationError instanceof Error ? validationError : new Error(String(validationError)));
+    const err = normalizeError(validationError);
+    logger.warn('Inbox content validation failed, using fallback', { error: err.message, stack: err.stack });
   }
 }
 

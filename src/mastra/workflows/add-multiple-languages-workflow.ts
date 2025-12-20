@@ -4,6 +4,7 @@ import { addLanguageWorkflow } from './add-language-workflow';
 import { KVService } from '../services/kv-service';
 import { MODEL_PROVIDERS } from '../constants';
 import { getLogger } from '../utils/core/logger';
+import { normalizeError } from '../utils/core/error-utils';
 
 // Input/Output Schemas
 const addMultipleLanguagesInputSchema = z.object({
@@ -91,11 +92,11 @@ const processMultipleLanguagesStep = createStep({
 
           if (result?.status === 'success') {
             const trainingUrl = (result as any)?.result?.data?.trainingUrl ||
-                               (result as any)?.data?.trainingUrl ||
-                               (result as any)?.trainingUrl;
+              (result as any)?.data?.trainingUrl ||
+              (result as any)?.trainingUrl;
             const title = (result as any)?.result?.data?.title ||
-                         (result as any)?.data?.title ||
-                         (result as any)?.title;
+              (result as any)?.data?.title ||
+              (result as any)?.title;
 
             logger.info('Translation completed successfully', { language: targetLanguage, durationMs: duration });
 
@@ -108,9 +109,9 @@ const processMultipleLanguagesStep = createStep({
             };
           } else {
             const errorMsg = (result as any)?.error?.message ||
-                            (result as any)?.result?.message ||
-                            (result as any)?.message ||
-                            'Unknown error';
+              (result as any)?.result?.message ||
+              (result as any)?.message ||
+              'Unknown error';
             logger.error('Translation failed', { error: errorMsg, language: targetLanguage });
 
             return {
@@ -122,7 +123,7 @@ const processMultipleLanguagesStep = createStep({
           }
         } catch (error) {
           const duration = Date.now() - langStartTime;
-          const err = error instanceof Error ? error : new Error(String(error));
+          const err = normalizeError(error);
           logger.error('Translation exception', { error: err.message, stack: err.stack, language: targetLanguage });
 
           return {
@@ -148,10 +149,11 @@ const processMultipleLanguagesStep = createStep({
         if (result.status === 'fulfilled') {
           return result.value;
         } else {
+          const err = normalizeError(result.reason);
           return {
             language: normalizedLanguages[index],
             success: false,
-            error: result.reason instanceof Error ? result.reason.message : 'Unknown error'
+            error: err.message
           };
         }
       });
@@ -187,7 +189,7 @@ const processMultipleLanguagesStep = createStep({
         status: status as 'success' | 'partial' | 'failed'
       };
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
+      const err = normalizeError(error);
       logger.error('Multi-language workflow error', { error: err.message, stack: err.stack });
       throw error;
     }

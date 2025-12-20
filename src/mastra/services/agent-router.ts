@@ -3,6 +3,7 @@ import { cleanResponse } from '../utils/content-processors/json-cleaner';
 import { AGENT_NAMES } from '../constants';
 import { withRetry } from '../utils/core/resilience-utils';
 import { getLogger } from '../utils/core/logger';
+import { normalizeError } from '../utils/core/error-utils';
 
 const logger = getLogger('AgentRouter');
 
@@ -71,7 +72,7 @@ export class AgentRouter {
 
     } catch (error) {
       // withRetry exhausted all attempts - fallback to default
-      const err = error instanceof Error ? error : new Error(String(error));
+      const err = normalizeError(error);
       logger.error('Orchestrator routing failed after all retries', {
         error: err.message,
         stack: err.stack,

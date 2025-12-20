@@ -6,6 +6,7 @@ import { PHISHING, MODEL_PROVIDERS, ERROR_MESSAGES, TIMEOUT_VALUES } from '../..
 import { getLogger } from '../../utils/core/logger';
 import { errorService } from '../../services/error-service';
 import { validateToolResult } from '../../utils/tool-result-validation';
+import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
 
 const phishingWorkflowSchema = z.object({
     workflowType: z.literal(PHISHING.WORKFLOW_TYPE).describe('Workflow to execute'),
@@ -182,7 +183,7 @@ export const phishingWorkflowExecutorTool = createTool({
             };
 
         } catch (error) {
-            const err = error instanceof Error ? error : new Error(String(error));
+            const err = normalizeError(error);
             const errorInfo = errorService.external(err.message, {
                 topic: context?.topic,
                 difficulty: context?.difficulty,
@@ -190,7 +191,7 @@ export const phishingWorkflowExecutorTool = createTool({
                 stack: err.stack
             });
 
-            logger.error('Phishing workflow error', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
+            logErrorInfo(logger, 'error', 'Phishing workflow error', errorInfo);
 
             // User-friendly error message
             const userMessage = err.message.includes('analysis')
@@ -200,8 +201,7 @@ export const phishingWorkflowExecutorTool = createTool({
                     : ERROR_MESSAGES.PHISHING.GENERIC;
 
             return {
-                success: false,
-                error: JSON.stringify(errorInfo),
+                ...createToolErrorResponse(errorInfo),
                 message: userMessage
             };
         }

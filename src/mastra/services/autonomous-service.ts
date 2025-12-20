@@ -6,6 +6,7 @@ import { microlearningAgent } from '../agents/microlearning-agent';
 import { AGENT_CALL_TIMEOUT_MS } from '../constants';
 import { withTimeout, withRetry } from '../utils/core/resilience-utils';
 import { getLogger } from '../utils/core/logger';
+import { normalizeError } from '../utils/core/error-utils';
 import { AutonomousRequest, AutonomousResponse } from '../types/autonomous-types';
 import {
     buildPhishingGenerationPrompt,
@@ -47,7 +48,7 @@ async function generatePhishingSimulation(
             );
             logger.debug('Executive report added to agent memory');
         } catch (memoryError) {
-            const err = memoryError instanceof Error ? memoryError : new Error(String(memoryError));
+            const err = normalizeError(memoryError);
             logger.warn('Failed to add context to agent memory', { error: err.message });
             // Continue anyway - agent can work without full context
         }
@@ -141,7 +142,7 @@ async function generatePhishingSimulation(
                 };
             }
         } catch (fallback1Error) {
-            const err2 = fallback1Error instanceof Error ? fallback1Error : new Error(String(fallback1Error));
+            const err2 = normalizeError(fallback1Error);
             logger.warn('Fallback 1 failed, using basic', { error: err2.message });
 
             // LEVEL 3: Guaranteed fallback - Return structured error with recommendations
@@ -237,7 +238,7 @@ async function uploadAndAssignPhishing(
             agentResponse: uploadAssignResponse.text,
         };
     } catch (uploadAssignError) {
-        const err = uploadAssignError instanceof Error ? uploadAssignError : new Error(String(uploadAssignError));
+        const err = normalizeError(uploadAssignError);
         logger.error('Upload/Assign agent error', { error: err.message, stack: err.stack });
         return {
             success: false,
@@ -409,7 +410,7 @@ async function generateTrainingModule(
             );
             logger.debug('Executive report added to microlearningAgent memory');
         } catch (memoryError) {
-            const err = memoryError instanceof Error ? memoryError : new Error(String(memoryError));
+            const err = normalizeError(memoryError);
             logger.warn('Failed to add context to microlearningAgent memory', { error: err.message });
             // Continue anyway - agent can work without full context
         }
@@ -480,7 +481,7 @@ async function generateTrainingModule(
             };
         }
     } catch (primaryError) {
-        const err = primaryError instanceof Error ? primaryError : new Error(String(primaryError));
+        const err = normalizeError(primaryError);
         logger.warn('Primary failed, attempting fallback 1', { error: err.message });
 
         // LEVEL 2: Fallback - Simplified prompt without full context
@@ -514,7 +515,7 @@ async function generateTrainingModule(
                 };
             }
         } catch (fallback1Error) {
-            const err2 = fallback1Error instanceof Error ? fallback1Error : new Error(String(fallback1Error));
+            const err2 = normalizeError(fallback1Error);
             logger.warn('Fallback 1 failed, using basic', { error: err2.message });
 
             // LEVEL 3: Guaranteed fallback - Return structured error with recommendations
@@ -663,7 +664,7 @@ ${references || 'None provided'}`;
                         generatePhishingSimulation(simulation, executiveReport, toolResult, phishingThreadId, true)
                             .then(result => { phishingResult = result; })
                             .catch(error => {
-                                const err = error instanceof Error ? error : new Error(String(error));
+                                const err = normalizeError(error);
                                 logger.error('Phishing generation failed (sendAfterPhishing flow)', { error: err.message });
                                 phishingResult = { success: false, error: err.message };
                             })
@@ -677,7 +678,7 @@ ${references || 'None provided'}`;
                         generateTrainingModule(microlearning, executiveReport, toolResult, trainingThreadId, true)
                             .then(result => { trainingResult = result; })
                             .catch(error => {
-                                const err = error instanceof Error ? error : new Error(String(error));
+                                const err = normalizeError(error);
                                 logger.error('Training generation failed (sendAfterPhishing flow)', { error: err.message });
                                 trainingResult = { success: false, error: err.message };
                             })
@@ -717,7 +718,7 @@ ${references || 'None provided'}`;
                         generatePhishingSimulation(simulation, executiveReport, toolResult, phishingThreadId, false)
                             .then(result => { phishingResult = result; })
                             .catch(error => {
-                                const err = error instanceof Error ? error : new Error(String(error));
+                                const err = normalizeError(error);
                                 logger.error('Phishing generation failed', { error: err.message });
                                 phishingResult = { success: false, error: err.message };
                             })
@@ -730,7 +731,7 @@ ${references || 'None provided'}`;
                         generateTrainingModule(microlearning, executiveReport, toolResult, trainingThreadId, false)
                             .then(result => { trainingResult = result; })
                             .catch(error => {
-                                const err = error instanceof Error ? error : new Error(String(error));
+                                const err = normalizeError(error);
                                 logger.error('Training generation failed', { error: err.message });
                                 trainingResult = { success: false, error: err.message };
                             })
@@ -765,7 +766,7 @@ ${references || 'None provided'}`;
             };
         });
     } catch (error) {
-        const err = error instanceof Error ? error : new Error(String(error));
+        const err = normalizeError(error);
         logger.error('Autonomous service error', { error: err.message, stack: err.stack });
         return {
             success: false,

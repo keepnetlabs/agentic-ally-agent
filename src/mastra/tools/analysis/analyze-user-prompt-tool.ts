@@ -7,10 +7,11 @@ import { ExampleRepo } from '../../services/example-repo';
 import { validateBCP47LanguageCode, DEFAULT_LANGUAGE } from '../../utils/language/language-utils';
 import { cleanResponse } from '../../utils/content-processors/json-cleaner';
 import { PROMPT_ANALYSIS_PARAMS } from '../../utils/config/llm-generation-params';
-import { MICROLEARNING, PROMPT_ANALYSIS, ROLES, CATEGORIES, THEME_COLORS, MODEL_PROVIDERS, TRAINING_LEVELS, DEFAULT_TRAINING_LEVEL } from '../../constants';
+import { MICROLEARNING, ROLES, CATEGORIES, THEME_COLORS, MODEL_PROVIDERS, TRAINING_LEVELS, DEFAULT_TRAINING_LEVEL } from '../../constants';
 import { streamReasoning } from '../../utils/core/reasoning-stream';
 import { getLogger } from '../../utils/core/logger';
 import { errorService } from '../../services/error-service';
+import { normalizeError, logErrorInfo } from '../../utils/core/error-utils';
 
 // Cache formatted lists for performance
 const cachedRolesList = ROLES.VALUES.map((role) => `- "${role}"`).join('\n');
@@ -98,7 +99,7 @@ export const analyzeUserPromptTool = new Tool({
         schemaHints = await repo.getSmartSchemaHints(userPrompt, 3);
         logger.debug('Using semantic-enhanced schema hints', {});
       } catch (error) {
-        const err = error instanceof Error ? error : new Error(String(error));
+        const err = normalizeError(error);
         logger.warn('Semantic search unavailable, trying smart sampling', { error: err.message });
         try {
           // Level 2: Smart sampling without semantic search
@@ -106,7 +107,7 @@ export const analyzeUserPromptTool = new Tool({
           logger.debug('Using smart sampling schema hints', {});
         } catch (fallbackError) {
           // Level 3: Basic schema hints (guaranteed to work)
-          const fbErr = fallbackError instanceof Error ? fallbackError : new Error(String(fallbackError));
+          const fbErr = normalizeError(fallbackError);
           logger.warn('Smart sampling failed, using basic schema hints', { error: fbErr.message });
           schemaHints = repo.getSchemaHints(3);
           logger.debug('Using basic schema hints', {});
@@ -296,13 +297,13 @@ ${additionalContext}`
       };
 
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
+      const err = normalizeError(error);
       const errorInfo = errorService.aiModel(err.message, {
         userPrompt: userPrompt?.substring(0, 100),
         step: 'prompt-analysis',
         stack: err.stack
       });
-      logger.error('Prompt analysis failed, using fallback', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
+      logErrorInfo(logger, 'error', 'Prompt analysis failed, using fallback', errorInfo);
 
       // Enhanced fallback analysis with context
       // Detect if code-related topic based on programming languages OR security keywords

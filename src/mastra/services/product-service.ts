@@ -1,6 +1,7 @@
 import { getLogger } from '../utils/core/logger';
 import { requestStorage } from '../utils/core/request-storage';
 import { API_KEYS } from '../constants';
+import { normalizeError } from '../utils/core/error-utils';
 
 /**
  * ProductService for communicating with our product backend
@@ -146,7 +147,8 @@ export class ProductService {
 
       return await response.json();
     } catch (error) {
-      this.logger.error(`Request error to ${endpoint}`, error instanceof Error ? error : new Error(String(error)));
+      const err = normalizeError(error);
+      this.logger.error(`Request error to ${endpoint}`, { error: err.message, stack: err.stack });
       return null;
     }
   }
@@ -169,7 +171,8 @@ export class ProductService {
         brandName: response.data.brandName
       };
     } catch (error) {
-      this.logger.error('Failed to fetch whitelabeling config', error instanceof Error ? error : new Error(String(error)));
+      const err = normalizeError(error);
+      this.logger.error('Failed to fetch whitelabeling config', { error: err.message, stack: err.stack });
       return null;
     }
   }

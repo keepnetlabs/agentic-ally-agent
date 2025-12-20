@@ -6,6 +6,7 @@ import { cleanResponse } from '../../utils/content-processors/json-cleaner';
 import { MODEL_PROVIDERS } from '../../constants';
 import { getLogger } from '../../utils/core/logger';
 import { errorService } from '../../services/error-service';
+import { normalizeError, logErrorInfo } from '../../utils/core/error-utils';
 
 const CodeReviewCheckSchema = z.object({
   issueType: z.string().describe('Type of issue to fix (e.g., "SQL Injection", "XSS", "Logic Error", "Performance Issue")'),
@@ -93,7 +94,7 @@ Return ONLY valid JSON - NO markdown, NO backticks, NO formatting. Start directl
       const parsedSeverity = result.severity || (result.isCorrect ? 'correct' : 'incorrect');
       if (!['correct', 'partial', 'incorrect'].includes(parsedSeverity)) {
         const errorInfo = errorService.validation(`Invalid severity: ${parsedSeverity}`, { severity: parsedSeverity });
-        logger.warn('Invalid severity', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
+        logErrorInfo(logger, 'warn', 'Invalid severity', errorInfo);
         throw new Error(errorInfo.message);
       }
 
@@ -109,14 +110,14 @@ Return ONLY valid JSON - NO markdown, NO backticks, NO formatting. Start directl
         },
       };
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
+      const err = normalizeError(error);
       const errorInfo = errorService.aiModel(err.message, {
         issueType,
         language,
         stack: err.stack,
       });
 
-      logger.error('Code review check failed', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
+      logErrorInfo(logger, 'error', 'Code review check failed', errorInfo);
 
       return {
         success: false,

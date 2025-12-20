@@ -5,6 +5,7 @@ import { getLogger } from '../../utils/core/logger';
 import { withRetry } from '../../utils/core/resilience-utils';
 import { callWorkerAPI } from '../../utils/core/worker-api-client';
 import { maskSensitiveField } from '../../utils/core/security-utils';
+import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
 import { ERROR_MESSAGES, API_ENDPOINTS } from '../../constants';
 import { errorService } from '../../services/error-service';
 import { validateToolResult } from '../../utils/tool-result-validation';
@@ -36,8 +37,8 @@ export const assignTrainingTool = createTool({
 
     if (!token) {
       const errorInfo = errorService.auth(ERROR_MESSAGES.PLATFORM.ASSIGN_TOKEN_MISSING);
-      logger.warn('Auth error: Token missing', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
-      return { success: false, error: JSON.stringify(errorInfo) };
+      logErrorInfo(logger, 'warn', 'Auth error: Token missing', errorInfo);
+      return createToolErrorResponse(errorInfo);
     }
 
     const payload = {
@@ -79,29 +80,23 @@ export const assignTrainingTool = createTool({
       // Validate result against output schema
       const validation = validateToolResult(toolResult, assignTrainingOutputSchema, 'assign-training');
       if (!validation.success) {
-        logger.error('Assign training result validation failed', { code: validation.error.code, message: validation.error.message });
-        return {
-          success: false,
-          error: JSON.stringify(validation.error)
-        };
+        logErrorInfo(logger, 'error', 'Assign training result validation failed', validation.error);
+        return createToolErrorResponse(validation.error);
       }
 
       return validation.data;
 
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
+      const err = normalizeError(error);
       const errorInfo = errorService.external(err.message, {
         resourceId,
         targetUserResourceId,
         stack: err.stack,
       });
 
-      logger.error('Assign tool failed', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
+      logErrorInfo(logger, 'error', 'Assign tool failed', errorInfo);
 
-      return {
-        success: false,
-        error: JSON.stringify(errorInfo)
-      };
+      return createToolErrorResponse(errorInfo);
     }
   },
 });

@@ -5,6 +5,7 @@ import { getLogger } from '../../utils/core/logger';
 import { withRetry } from '../../utils/core/resilience-utils';
 import { callWorkerAPI } from '../../utils/core/worker-api-client';
 import { maskSensitiveField } from '../../utils/core/security-utils';
+import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
 import { KVService } from '../../services/kv-service';
 import { ERROR_MESSAGES, API_ENDPOINTS } from '../../constants';
 import { errorService } from '../../services/error-service';
@@ -41,8 +42,8 @@ export const uploadTrainingTool = createTool({
 
         if (!token) {
             const errorInfo = errorService.auth(ERROR_MESSAGES.PLATFORM.UPLOAD_TOKEN_MISSING);
-            logger.warn('Auth error: Token missing', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
-            return { success: false, error: JSON.stringify(errorInfo) };
+            logErrorInfo(logger, 'warn', 'Auth error: Token missing', errorInfo);
+            return createToolErrorResponse(errorInfo);
         }
 
         try {
@@ -52,11 +53,8 @@ export const uploadTrainingTool = createTool({
 
             if (!baseContent || !baseContent.base) {
                 const errorInfo = errorService.notFound(`Microlearning content not found for ID: ${microlearningId}`, { microlearningId });
-                logger.warn('Microlearning not found', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
-                return {
-                    success: false,
-                    error: JSON.stringify(errorInfo)
-                };
+                logErrorInfo(logger, 'warn', 'Microlearning not found', errorInfo);
+                return createToolErrorResponse(errorInfo);
             }
 
             const microlearningData = baseContent.base;
@@ -131,28 +129,22 @@ export const uploadTrainingTool = createTool({
             // Validate result against output schema
             const validation = validateToolResult(toolResult, uploadTrainingOutputSchema, 'upload-training');
             if (!validation.success) {
-                logger.error('Upload training result validation failed', { code: validation.error.code, message: validation.error.message });
-                return {
-                    success: false,
-                    error: JSON.stringify(validation.error)
-                };
+                logErrorInfo(logger, 'error', 'Upload training result validation failed', validation.error);
+                return createToolErrorResponse(validation.error);
             }
 
             return validation.data;
 
         } catch (error) {
-            const err = error instanceof Error ? error : new Error(String(error));
+            const err = normalizeError(error);
             const errorInfo = errorService.external(err.message, {
                 microlearningId,
                 stack: err.stack,
             });
 
-            logger.error('Upload tool failed', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
+            logErrorInfo(logger, 'error', 'Upload tool failed', errorInfo);
 
-            return {
-                success: false,
-                error: JSON.stringify(errorInfo)
-            };
+            return createToolErrorResponse(errorInfo);
         }
     },
 });

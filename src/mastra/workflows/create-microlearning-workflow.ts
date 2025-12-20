@@ -11,6 +11,7 @@ import { MODEL_PROVIDERS, TRAINING_LEVELS, DEFAULT_TRAINING_LEVEL, PRIORITY_LEVE
 import { StreamWriterSchema } from '../types/stream-writer';
 import { getLogger } from '../utils/core/logger';
 import { waitForKVConsistency, buildExpectedKVKeys } from '../utils/kv-consistency';
+import { normalizeError } from '../utils/core/error-utils';
 
 const logger = getLogger('CreateMicrolearningWorkflow');
 
@@ -308,11 +309,11 @@ const saveToKVStep = createStep({
         );
         logger.info('Microlearning saved to KV successfully', { microlearningId });
       } catch (saveError) {
-        const err = saveError instanceof Error ? saveError : new Error(String(saveError));
+        const err = normalizeError(saveError);
         logger.warn('KV save failed but continuing', { error: err.message, stack: err.stack, microlearningId });
       }
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
+      const err = normalizeError(error);
       logger.warn('KV initialization error', { error: err.message, stack: err.stack });
     }
 

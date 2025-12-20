@@ -30,6 +30,7 @@ import { retryGenerationWithStrongerPrompt } from '../utils/phishing/retry-gener
 import { getLogger } from '../utils/core/logger';
 import { waitForKVConsistency, buildExpectedPhishingKeys } from '../utils/kv-consistency';
 import { withRetry } from '../utils/core/resilience-utils';
+import { normalizeError } from '../utils/core/error-utils';
 
 // --- Steps ---
 
@@ -187,7 +188,7 @@ const analyzeRequest = createStep({
         industryDesign: industryDesign,
       };
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
+      const err = normalizeError(error);
       logger.error('Phishing analysis step failed', { error: err.message, stack: err.stack });
       throw new Error(`Phishing analysis workflow error: ${err.message}`);
     }
@@ -268,8 +269,9 @@ const generateEmail = createStep({
         parsedResult = JSON.parse(cleanedJson);
       } catch (error) {
         // Level 2 fallback: Retry with stronger prompt (for JSON parse errors, content issues)
+        const err = normalizeError(error);
         logger.warn('Primary generation failed, using stronger prompt retry', {
-          error: error instanceof Error ? error.message : String(error)
+          error: err.message
         });
         const retryResult = await retryGenerationWithStrongerPrompt(
           aiModel,
@@ -329,7 +331,7 @@ const generateEmail = createStep({
         includeLandingPage: analysis.includeLandingPage
       };
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
+      const err = normalizeError(error);
       logger.error('Phishing email generation step failed', { error: err.message, stack: err.stack });
       throw new Error(`Phishing email generation workflow error: ${err.message}`);
     }
@@ -448,8 +450,9 @@ const generateLandingPage = createStep({
         parsedResult = JSON.parse(cleanedJson);
       } catch (error) {
         // Level 2 fallback: Retry with stronger prompt (for JSON parse errors, content issues)
+        const err = normalizeError(error);
         logger.warn('Primary landing page generation failed, using stronger prompt retry', {
-          error: error instanceof Error ? error.message : String(error)
+          error: err.message
         });
         const retryResult = await retryGenerationWithStrongerPrompt(
           aiModel,
@@ -524,7 +527,7 @@ const generateLandingPage = createStep({
         }
       };
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
+      const err = normalizeError(error);
       logger.error('Landing page generation failed', { error: err.message, stack: err.stack });
       throw error;
     }

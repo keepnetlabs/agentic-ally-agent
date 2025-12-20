@@ -10,6 +10,7 @@ import { LanguageModelSchema } from '../../types/language-model';
 import { ProductService } from '../../services/product-service';
 import { getLogger } from '../../utils/core/logger';
 import { errorService } from '../../services/error-service';
+import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
 
 const GenerateMicrolearningJsonSchema = z.object({
   analysis: z.object({
@@ -153,7 +154,7 @@ async function generateTheme(themeColor?: string) {
     }
   } catch (error) {
     const logger = getLogger('GenerateTheme');
-    const err = error instanceof Error ? error : new Error(String(error));
+    const err = normalizeError(error);
     logger.warn('Failed to fetch whitelabeling config, using defaults', { error: err.message });
   }
 
@@ -237,7 +238,7 @@ CRITICAL JSON RULES:
     return enhanced;
   } catch (error) {
     const logger = getLogger('EnhanceMicrolearning');
-    const err = error instanceof Error ? error : new Error(String(error));
+    const err = normalizeError(error);
     logger.warn('Enhancement failed, returning original', { error: err.message });
     return microlearning;
   }
@@ -260,18 +261,17 @@ export const generateMicrolearningJsonTool = new Tool({
         data: result
       };
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
+      const err = normalizeError(error);
       const errorInfo = errorService.aiModel(err.message, {
         microlearningId,
         step: 'json-generation',
         stack: err.stack
       });
 
-      logger.error('JSON generation failed', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
+      logErrorInfo(logger, 'error', 'JSON generation failed', errorInfo);
 
       return {
-        success: false,
-        error: JSON.stringify(errorInfo),
+        ...createToolErrorResponse(errorInfo),
         data: null
       };
     }

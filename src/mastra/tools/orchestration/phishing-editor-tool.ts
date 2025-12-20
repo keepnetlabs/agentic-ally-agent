@@ -14,7 +14,7 @@ import { sanitizeHtml } from '../../utils/content-processors/html-sanitizer';
 import { KVService } from '../../services/kv-service';
 import { getLogger } from '../../utils/core/logger';
 import { errorService } from '../../services/error-service';
-import { ERROR_MESSAGES } from '../../constants';
+import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
 
 const phishingEditorSchema = z.object({
   phishingId: z.string().describe('ID of the existing phishing template to edit'),
@@ -293,7 +293,7 @@ IMPORTANT: Edit UNLESS user explicitly said "email only" or similar exclusion.`;
       };
 
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
+      const err = normalizeError(error);
       const errorInfo = errorService.external(err.message, {
         phishingId,
         editInstruction,
@@ -301,11 +301,10 @@ IMPORTANT: Edit UNLESS user explicitly said "email only" or similar exclusion.`;
         stack: err.stack
       });
 
-      logger.error('Phishing editor error', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
+      logErrorInfo(logger, 'error', 'Phishing editor error', errorInfo);
 
       return {
-        success: false,
-        error: JSON.stringify(errorInfo),
+        ...createToolErrorResponse(errorInfo),
         message: '❌ Failed to edit phishing template. Please try again or provide a different instruction.'
       };
     }

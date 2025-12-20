@@ -8,6 +8,7 @@ import { validateInboxStructure, correctInboxStructure, detectJsonCorruption } f
 import { MODEL_PROVIDERS, TIMEOUT_VALUES, STRING_TRUNCATION } from '../constants';
 import { getLogger } from '../utils/core/logger';
 import { waitForKVConsistency, buildExpectedKVKeys } from '../utils/kv-consistency';
+import { normalizeError } from '../utils/core/error-utils';
 
 const logger = getLogger('AddLanguageWorkflow');
 
@@ -366,7 +367,7 @@ const updateInboxStep = createStep({
         };
       }
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
+      const err = normalizeError(error);
       logger.error('Inbox translation failed', { error: err.message, stack: err.stack });
       return {
         success: false,

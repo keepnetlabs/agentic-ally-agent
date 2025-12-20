@@ -9,6 +9,7 @@ import { PROMPT_ANALYSIS, MODEL_PROVIDERS } from '../../constants';
 import { getLogger } from '../../utils/core/logger';
 import { errorService } from '../../services/error-service';
 import { validateToolResult } from '../../utils/tool-result-validation';
+import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
 
 const logger = getLogger('WorkflowExecutor');
 
@@ -229,11 +230,8 @@ export const workflowExecutorTool = createTool({
       if (workflowType === 'create-microlearning') {
         if (!params.prompt) {
           const errorInfo = errorService.validation('Prompt is required for create-microlearning workflow');
-          logger.warn('Validation error', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
-          return {
-            success: false,
-            error: JSON.stringify(errorInfo)
-          };
+          logErrorInfo(logger, 'warn', 'Validation error', errorInfo);
+          return createToolErrorResponse(errorInfo);
         }
 
         // Start workflow with writer parameter
@@ -272,7 +270,7 @@ export const workflowExecutorTool = createTool({
             department = metadata.department || department;
             microlearningId = metadata.microlearningId || microlearningId;
           } catch (error) {
-            const err = error instanceof Error ? error : new Error(String(error));
+            const err = normalizeError(error);
             logger.error('Failed to extract validated workflow result data', { error: err.message });
           }
         } else {
@@ -292,7 +290,7 @@ export const workflowExecutorTool = createTool({
           await writer?.write({ type: 'text-end', id: messageId });
           logger.debug('Training URL sent to frontend', { urlLength: trainingUrl?.length });
         } catch (error) {
-          const err = error instanceof Error ? error : new Error(String(error));
+          const err = normalizeError(error);
           logger.error('Failed to send training URL to frontend', {
             error: err.message,
             stack: err.stack,
@@ -325,11 +323,8 @@ export const workflowExecutorTool = createTool({
       } else if (workflowType === 'add-language') {
         if (!params.existingMicrolearningId || !params.targetLanguage) {
           const errorInfo = errorService.validation('existingMicrolearningId and targetLanguage are required for add-language workflow');
-          logger.warn('Validation error', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
-          return {
-            success: false,
-            error: JSON.stringify(errorInfo)
-          };
+          logErrorInfo(logger, 'warn', 'Validation error', errorInfo);
+          return createToolErrorResponse(errorInfo);
         }
 
         const workflow = addLanguageWorkflow;
@@ -370,7 +365,7 @@ export const workflowExecutorTool = createTool({
             await writer?.write({ type: 'text-end', id: messageId });
             logger.debug('Training URL sent to frontend', { urlLength: trainingUrl?.length });
           } catch (error) {
-            const err = error instanceof Error ? error : new Error(String(error));
+            const err = normalizeError(error);
             logger.error('Failed to send translated URL to frontend', { error: err.message, stack: err.stack });
           }
         }
@@ -397,11 +392,8 @@ export const workflowExecutorTool = createTool({
       } else if (workflowType === 'add-multiple-languages') {
         if (!params.existingMicrolearningId || !params.targetLanguages || params.targetLanguages.length === 0) {
           const errorInfo = errorService.validation('existingMicrolearningId and targetLanguages array are required for add-multiple-languages workflow');
-          logger.warn('Validation error', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
-          return {
-            success: false,
-            error: JSON.stringify(errorInfo)
-          };
+          logErrorInfo(logger, 'warn', 'Validation error', errorInfo);
+          return createToolErrorResponse(errorInfo);
         }
 
         const workflow = addMultipleLanguagesWorkflow;
@@ -438,7 +430,7 @@ export const workflowExecutorTool = createTool({
               await writer?.write({ type: 'text-end', id: messageId });
               logger.debug('Training URL sent to frontend', { urlLength: firstSuccess.trainingUrl?.length });
             } catch (error) {
-              const err = error instanceof Error ? error : new Error(String(error));
+              const err = normalizeError(error);
               logger.error('Failed to send translated URL to frontend', { error: err.message, stack: err.stack });
             }
           }
@@ -465,21 +457,15 @@ export const workflowExecutorTool = createTool({
           return validation.data;
         } else {
           const errorInfo = errorService.external('Add multiple languages workflow failed');
-          logger.error('Workflow failed', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
-          return {
-            success: false,
-            error: JSON.stringify(errorInfo)
-          };
+          logErrorInfo(logger, 'error', 'Workflow failed', errorInfo);
+          return createToolErrorResponse(errorInfo);
         }
 
       } else if (workflowType === 'update-microlearning') {
         if (!params.existingMicrolearningId || !params.updates) {
           const errorInfo = errorService.validation('existingMicrolearningId and updates are required for update-microlearning workflow');
-          logger.warn('Validation error', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
-          return {
-            success: false,
-            error: JSON.stringify(errorInfo)
-          };
+          logErrorInfo(logger, 'warn', 'Validation error', errorInfo);
+          return createToolErrorResponse(errorInfo);
         }
 
         const workflow = updateMicrolearningWorkflow;
@@ -511,7 +497,7 @@ export const workflowExecutorTool = createTool({
             await writer?.write({ type: 'text-end', id: messageId });
             logger.debug('Updated training URL sent to frontend', { microlearningId: params.existingMicrolearningId });
           } catch (error) {
-            const err = error instanceof Error ? error : new Error(String(error));
+            const err = normalizeError(error);
             logger.error('Failed to send updated training URL to frontend', { error: err.message, stack: err.stack });
             // Continue - don't block response
           }
@@ -537,22 +523,19 @@ export const workflowExecutorTool = createTool({
 
       } else {
         const errorInfo = errorService.validation(`Unknown workflow type: ${workflowType}`);
-        logger.warn('Unknown workflow type', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
-        return {
-          success: false,
-          error: JSON.stringify(errorInfo)
-        };
+        logErrorInfo(logger, 'warn', 'Unknown workflow type', errorInfo);
+        return createToolErrorResponse(errorInfo);
       }
 
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
+      const err = normalizeError(error);
       const errorInfo = errorService.external(err.message, {
         workflowType: context?.workflowType,
         step: 'workflow-execution',
         stack: err.stack
       });
 
-      logger.error('Workflow execution failed', { code: errorInfo.code, message: errorInfo.message, category: errorInfo.category });
+      logErrorInfo(logger, 'error', 'Workflow execution failed', errorInfo);
 
       // Send error message to frontend
       try {
@@ -565,14 +548,11 @@ export const workflowExecutorTool = createTool({
         });
         await writer?.write({ type: 'text-end', id: messageId });
       } catch (writeError) {
-        const writeErr = writeError instanceof Error ? writeError : new Error(String(writeError));
+        const writeErr = normalizeError(writeError);
         logger.error('Failed to send error message to frontend', { error: writeErr.message, stack: writeErr.stack });
       }
 
-      return {
-        success: false,
-        error: JSON.stringify(errorInfo)
-      };
+      return createToolErrorResponse(errorInfo);
     }
   }
 });
