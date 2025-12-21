@@ -54,7 +54,7 @@ const AnalyzeUserPromptOutputSchema = z.object({
   error: z.string().optional(),
 });
 
-// Helper function for language detection fallback
+// Character-based language detection fallback (final safety net)
 function detectLanguageFallback(text: string): string {
   // Basic language detection patterns
   if (/[ğüşıöçĞÜŞİÖÇ]/.test(text)) return 'tr';
@@ -69,6 +69,33 @@ function detectLanguageFallback(text: string): string {
   if (/[\u0600-\u06ff]/.test(text)) return 'ar';
   if (/[\uac00-\ud7af]/.test(text)) return 'ko';
   return 'en'; // default
+}
+
+// Ask AI to detect target language (returns BCP-47 code directly)
+async function detectTargetLanguageWithAI(text: string, model: any): Promise<string | null> {
+  try {
+    const response = await generateText({
+      model,
+      prompt: `What language should the training/content be created in? Look for "in {language}" patterns.
+If no explicit target language is mentioned, identify the language of the text itself.
+Return ONLY the BCP-47 code (e.g., ar-sa, tr-tr, en-gb, zh-cn, vi-vn, hi-in).
+
+Text: "${text.substring(0, 300)}"
+
+Target language code:`,
+      temperature: 0.3,
+    });
+
+    const code = response.text?.trim().toLowerCase() || '';
+    if (!code) return null;
+
+    // Validate it's a proper BCP-47 format, normalize if needed
+    const validated = validateBCP47LanguageCode(code);
+    return validated !== DEFAULT_LANGUAGE ? validated : null;
+  } catch (error) {
+    // If AI fails, return null and fall back to other methods
+    return null;
+  }
 }
 
 export const analyzeUserPromptTool = new Tool({
@@ -118,9 +145,22 @@ export const analyzeUserPromptTool = new Tool({
         ? `\n\nSCHEMA HINTS (structure only, do not copy texts):\n${schemaHints}`
         : '';
 
+      // Let AI determine target language from context (checks for "in {language}", text language, etc.)
+      let languageHint = 'en-gb'; // default
+      try {
+        const aiLang = await detectTargetLanguageWithAI(userPrompt, model);
+        if (aiLang) {
+          languageHint = aiLang.toLowerCase();
+        }
+      } catch (error) {
+        // Fallback to character detection if AI fails
+        const charBasedLang = validateBCP47LanguageCode(detectLanguageFallback(userPrompt));
+        languageHint = charBasedLang.toLowerCase();
+      }
+
       const analysisPrompt = `Create microlearning metadata from this request:
 
-USER: "${userPrompt}" (LANGUAGE: ${detectLanguageFallback(userPrompt).toUpperCase()})
+USER: "${userPrompt}" (LANGUAGE: ${languageHint})
 DEPARTMENT: ${suggestedDepartment || 'not specified'}
 SUGGESTED LEVEL: ${input.suggestedLevel || 'auto-detect'}${examplesBlock}
 
@@ -272,7 +312,7 @@ ${additionalContext}`
       return {
         success: true,
         data: {
-          language: analysis.language.toLowerCase(),
+          language: analysis.language,
           topic: analysis.topic,
           title: analysis.title,
           description: analysis.description,
@@ -326,8 +366,28 @@ ${additionalContext}`
       // CRITICAL: If ANY programming language is mentioned, it's a code topic (regardless of other content)
       const isCodeSecurityFallback = hasProgrammingLanguage || hasSpecificCodeSecurityKeyword;
 
+      // Detect target language: AI (checks for "in {language}", text language, etc.) → character fallback
+      let detectedLang: string | null = null;
+
+      logger.debug('Attempting AI target language detection in fallback');
+      try {
+        detectedLang = await detectTargetLanguageWithAI(userPrompt, model);
+        if (detectedLang) {
+          logger.debug('AI detected target language code', { language: detectedLang });
+        }
+      } catch (langError) {
+        logger.warn('AI language detection failed, falling back to character detection', {
+          error: normalizeError(langError).message
+        });
+      }
+
+      // Final fallback: character-based detection → normalize to BCP-47
+      if (!detectedLang) {
+        detectedLang = validateBCP47LanguageCode(detectLanguageFallback(userPrompt));
+      }
+
       const fallbackData = {
-        language: detectLanguageFallback(userPrompt),
+        language: detectedLang || DEFAULT_LANGUAGE,
         topic: userPrompt.substring(0, 50),
         title: `Training: ${userPrompt.substring(0, 30)}`,
         department: suggestedDepartment || 'All',
