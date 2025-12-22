@@ -26,7 +26,7 @@ import {
   createAgentStream,
   injectOrchestratorContext,
 } from './utils/chat-orchestration-helpers';
-import { executeAutonomousGeneration } from './services/autonomous-service';
+import { executeAutonomousGeneration } from './services/autonomous';
 import type {
   ChatRequestBody,
   CodeReviewRequestBody,

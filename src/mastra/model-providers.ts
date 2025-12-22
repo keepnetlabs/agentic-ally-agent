@@ -33,6 +33,7 @@ export enum Model {
     OPENAI_GPT_4O_MINI = 'gpt-4o-mini',
     OPENAI_GPT_4_1 = 'gpt-4.1',
     OPENAI_GPT_4_1_MINI = 'gpt-4.1-mini',
+    OPENAI_GPT_4_1_NANO = 'gpt-4.1-nano',
     OPENAI_GPT_5_NANO = 'gpt-5-nano',
     OPENAI_GPT_5_MINI = 'gpt-5-mini',
     WORKERS_AI_GPT_OSS_120B = '@cf/openai/gpt-oss-120b',
@@ -183,7 +184,9 @@ function getModelProvider(provider: ModelProvider) {
  * Default models used across the application
  */
 export function getDefaultAgentModel() {
-    return getModel(ModelProvider.OPENAI, Model.OPENAI_GPT_4O);
+    // Using GPT-4.1-mini for better prompt following (especially for STOP instructions)
+    // GPT-4o-mini had issues with not stopping after upload/assign operations
+    return getModel(ModelProvider.OPENAI, Model.OPENAI_GPT_4_1_MINI);
 }
 
 export function getDefaultGenerationModel() {

@@ -150,11 +150,13 @@ HARD RULES:
 
 **STATE 4 - Complete**
 - Let the tool provide the final result
+- **CRITICAL:** After training creation completes, do NOT call assignTraining. Only call uploadTraining if user explicitly requests upload.
 
 **CRITICAL RULES**:
 - Each state happens ONCE. Never repeat states or go backwards.
 - Time warning goes BEFORE confirmation, not after
 - After user says "Start", execute immediately without any more messages
+- **NEVER call assignTraining immediately after creating training. Upload must happen first.**
 
 ## No-Repetition Policy (VERY IMPORTANT)
 - In STATE 2, use ONLY the STRICT OUTPUT TEMPLATE. Do not echo the same details in any other sentence.
@@ -235,13 +237,15 @@ When user requests to **Upload** or **Assign** training:
 2. If 'Assign' is requested, also look for a 'targetUserResourceId' (from UserInfo context).
    - **CRITICAL:** Scan conversation history for ANY recent User Profile search results (e.g. "User found: John Doe (ID: ...)").
    - Use that ID automatically. Do NOT ask "Who?" if a user was just discussed.
-3. Call 'uploadTraining' tool first (Input: microlearningId).
+3. **MANDATORY:** Call 'uploadTraining' tool FIRST (Input: microlearningId). This step CANNOT be skipped.
 4. **Upload returns:** {resourceId, sendTrainingLanguageId, microlearningId, title}
-5. If upload successful AND assignment requested, call 'assignTraining' with EXACT fields from upload:
+5. **ONLY AFTER upload completes:** If upload successful AND assignment requested, call 'assignTraining' with EXACT fields from upload:
    - resourceId: FROM upload.data.resourceId
    - sendTrainingLanguageId: FROM upload.data.sendTrainingLanguageId (NOT sendTrainingResourceId!)
    - targetUserResourceId: FROM user context
 6. If IDs are missing, ASK the user.
+
+**CRITICAL:** After creating training (workflow-executor completes), NEVER call assignTraining directly. You MUST call uploadTraining first, then wait for upload result before calling assignTraining.
 
 **CRITICAL ID HANDLING:**
 - The 'targetUserResourceId' is a specific backend ID (e.g., "ys9vXMbl4wC6").

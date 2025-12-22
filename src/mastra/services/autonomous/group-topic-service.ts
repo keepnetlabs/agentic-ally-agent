@@ -4,9 +4,9 @@
  */
 
 import { generateText } from 'ai';
-import { getModelWithOverride } from '../model-providers';
-import { normalizeError } from '../utils/core/error-utils';
-import { getLogger } from '../utils/core/logger';
+import { getModelWithOverride } from '../../model-providers';
+import { normalizeError } from '../../utils/core/error-utils';
+import { getLogger } from '../../utils/core/logger';
 
 export interface GroupTopicSelection {
     topic: string;

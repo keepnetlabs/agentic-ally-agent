@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { WorkflowEntrypoint } from 'cloudflare:workers';
-import { executeAutonomousGeneration } from '../services/autonomous-service';
+import { executeAutonomousGeneration } from '../services/autonomous';
 import { getLogger } from '../utils/core/logger';
 import type { AutonomousRequestBody, CloudflareEnv } from '../types/api-types';
 import { normalizeError } from '../utils/core/error-utils';

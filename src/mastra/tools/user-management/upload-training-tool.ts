@@ -53,10 +53,22 @@ export const uploadTrainingTool = createTool({
             const expectedKeys = buildExpectedKVKeys(microlearningId);
             await waitForKVConsistency(microlearningId, expectedKeys);
 
+            // 1.5. Additional wait after consistency check (Cloudflare KV eventual consistency)
+            // Even if key exists, content might not be fully readable yet
+            logger.debug('Waiting additional time for KV content to be fully readable', { microlearningId });
+            await new Promise(resolve => setTimeout(resolve, 3000)); // 3 seconds additional wait for Cloudflare KV eventual consistency
+
             // 2. Fetch Content from KV with retry (handles eventual consistency edge cases)
             const kvService = new KVService();
             const baseContent = await withRetry(
-                () => kvService.getMicrolearning(microlearningId),
+                async () => {
+                    const result = await kvService.getMicrolearning(microlearningId);
+                    // Throw error if null to trigger retry mechanism
+                    if (!result || !result.base) {
+                        throw new Error(`Microlearning content not found for ID: ${microlearningId}. The content may still be processing.`);
+                    }
+                    return result;
+                },
                 `Fetch microlearning content ${microlearningId}`
             );
 
