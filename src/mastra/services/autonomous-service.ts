@@ -8,6 +8,7 @@ import { withTimeout, withRetry } from '../utils/core/resilience-utils';
 import { getLogger } from '../utils/core/logger';
 import { normalizeError } from '../utils/core/error-utils';
 import { AutonomousRequest, AutonomousResponse } from '../types/autonomous-types';
+import { validateBCP47LanguageCode, DEFAULT_LANGUAGE } from '../utils/language/language-utils';
 import {
     buildPhishingGenerationPrompt,
     buildPhishingGenerationPromptSimplified,
@@ -54,15 +55,21 @@ async function generatePhishingSimulation(
         }
     }
 
+    // Use user's preferredLanguage if available, otherwise fall back to default
+    const preferredLanguageRaw = toolResult.userInfo?.preferredLanguage || '';
+    const language = preferredLanguageRaw ? validateBCP47LanguageCode(preferredLanguageRaw) : DEFAULT_LANGUAGE;
+
     // Build goal-based prompts for 3-level fallback (more agentic approach)
     const fullPrompt = buildPhishingGenerationPrompt({
         simulation,
         toolResult,
+        language,
     });
 
     const simplifiedPrompt = buildPhishingGenerationPromptSimplified({
         simulation,
         toolResult,
+        language,
     });
 
     const memoryConfig = {
@@ -425,17 +432,23 @@ async function generateTrainingModule(
     const level = 'Intermediate';
     const rationale = microlearning.rationale || 'Based on user behavior analysis';
 
+    // Use user's preferredLanguage if available, otherwise fall back to microlearning.language or default
+    const preferredLanguageRaw = toolResult.userInfo?.preferredLanguage || microlearning.language || '';
+    const language = preferredLanguageRaw ? validateBCP47LanguageCode(preferredLanguageRaw) : DEFAULT_LANGUAGE;
+
     // Build goal-based prompts for 3-level fallback (more agentic approach)
     const fullPrompt = buildTrainingGenerationPrompt({
         microlearning,
         department,
         level,
+        language,
     });
 
     const simplifiedPrompt = buildTrainingGenerationPromptSimplified({
         microlearning,
         department,
         level,
+        language,
     });
 
     const memoryConfig = {
@@ -548,12 +561,12 @@ export async function executeAutonomousGeneration(
     request: AutonomousRequest
 ): Promise<AutonomousResponse> {
     const logger = getLogger('ExecuteAutonomousGeneration');
-    const { token, firstName, lastName, actions, sendAfterPhishingSimulation } = request;
+    const { token, firstName, lastName, actions, sendAfterPhishingSimulation, preferredLanguage } = request;
 
     try {
         // Set token in request storage so getUserInfoTool can access it
         return await requestStorage.run({ token }, async () => {
-            logger.info('Using getUserInfoTool with user details', { firstName, lastName });
+            logger.info('Using getUserInfoTool with user details', { firstName, lastName, preferredLanguage });
 
             // Use getUserInfoTool with firstName/lastName (as the tool expects)
             if (!getUserInfoTool.execute) {
@@ -577,6 +590,11 @@ export async function executeAutonomousGeneration(
                     error: toolResult.error || 'Failed to get user info',
                     actions,
                 };
+            }
+
+            // Override preferredLanguage from request if provided (request takes priority)
+            if (preferredLanguage && toolResult.userInfo) {
+                toolResult.userInfo.preferredLanguage = preferredLanguage;
             }
 
             // Use isolated thread IDs for each agent to prevent memory confusion
@@ -627,7 +645,7 @@ ${sim ? `- **Title:** ${sim.title}
 ${ml ? `- **Title:** ${ml.title}
 - **Objective:** ${ml.objective}
 - **Duration:** ${ml.duration_min} minutes
-- **Language:** ${ml.language}
+- **Language:** ${toolResult.userInfo?.preferredLanguage || ml.language || 'en-gb'}
 - **Rationale:** ${ml.rationale}` : 'None'}
 
 **Recommended Nudge Strategy:**

@@ -327,7 +327,7 @@ export const mastra = new Mastra({
         handler: async (c: Context) => {
           try {
             const body = await c.req.json<AutonomousRequestBody>();
-            const { token, firstName, lastName, actions, sendAfterPhishingSimulation } = body;
+            const { token, firstName, lastName, actions, sendAfterPhishingSimulation, preferredLanguage } = body;
             const env = c.env as CloudflareEnv | undefined;
             // Validation
             if (!token) {
@@ -355,7 +355,8 @@ export const mastra = new Mastra({
                     firstName,
                     lastName,
                     actions,
-                    sendAfterPhishingSimulation
+                    sendAfterPhishingSimulation,
+                    preferredLanguage
                   }
                 });
 
@@ -382,7 +383,8 @@ export const mastra = new Mastra({
               firstName,
               lastName,
               actions: actions as ('training' | 'phishing')[],
-              sendAfterPhishingSimulation
+              sendAfterPhishingSimulation,
+              preferredLanguage
             }).catch(err => {
               logger.error('autonomous_background_execution_failed', {
                 error: err instanceof Error ? err.message : String(err)

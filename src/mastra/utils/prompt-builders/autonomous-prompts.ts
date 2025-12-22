@@ -19,6 +19,7 @@ export interface PhishingGenerationContext {
             department?: string;
         };
     };
+    language?: string;
 }
 
 export interface TrainingGenerationContext {
@@ -29,6 +30,7 @@ export interface TrainingGenerationContext {
     };
     department: string;
     level: string;
+    language?: string;
 }
 
 /**
@@ -36,7 +38,7 @@ export interface TrainingGenerationContext {
  * Agent decides how to achieve the goal instead of following scripted steps
  */
 export function buildPhishingGenerationPrompt(context: PhishingGenerationContext): string {
-    const { simulation, toolResult } = context;
+    const { simulation, toolResult, language } = context;
 
     return `**AUTONOMOUS_EXECUTION_MODE**
 
@@ -55,6 +57,7 @@ export function buildPhishingGenerationPrompt(context: PhishingGenerationContext
 - Psychological Trigger: ${simulation.persuasion_tactic || 'Authority'}
 - Rationale: ${simulation.rationale || 'Based on user behavior analysis'}
 - Target Department: ${toolResult.userInfo?.department || 'All'}
+- Target Language: ${language || 'en-gb'} (BCP-47 code)
 
 **Available Tools:**
 - phishingExecutor: Generates phishing email and landing page
@@ -63,6 +66,7 @@ export function buildPhishingGenerationPrompt(context: PhishingGenerationContext
 - The scenario type (${simulation.scenario_type || 'CLICK_ONLY'}) may inform whether a landing page is needed
 - The difficulty level (${simulation.difficulty || 'Medium'}) suggests the sophistication required
 - The psychological trigger (${simulation.persuasion_tactic || 'Authority'}) should influence the approach
+- The target language (${language || 'en-gb'}) determines the language of the generated content
 - The analysis rationale provides insights into why this simulation was recommended
 
 **Critical Constraint:**
@@ -76,7 +80,7 @@ Analyze the context, check conversation history for existing phishingExecutor ca
  * Simplified fallback prompt (still goal-based but less context)
  */
 export function buildPhishingGenerationPromptSimplified(context: PhishingGenerationContext): string {
-    const { simulation, toolResult } = context;
+    const { simulation, toolResult, language } = context;
 
     return `**AUTONOMOUS_EXECUTION_MODE**
 
@@ -86,6 +90,7 @@ export function buildPhishingGenerationPromptSimplified(context: PhishingGenerat
 - Topic: ${simulation.title || 'Security Update'}
 - Difficulty: ${simulation.difficulty || 'Medium'}
 - Department: ${toolResult.userInfo?.department || 'All'}
+- Language: ${language || 'en-gb'}
 
 **Available Tools:**
 - phishingExecutor: Generates phishing content
@@ -97,7 +102,7 @@ Determine the best approach and generate the simulation.`;
  * Goal-based prompt for training generation
  */
 export function buildTrainingGenerationPrompt(context: TrainingGenerationContext): string {
-    const { microlearning, department, level } = context;
+    const { microlearning, department, level, language } = context;
 
     return `**AUTONOMOUS_EXECUTION_MODE**
 
@@ -108,6 +113,7 @@ export function buildTrainingGenerationPrompt(context: TrainingGenerationContext
 - Objective: ${microlearning.objective || ''}
 - Target Department: ${department}
 - Difficulty Level: ${level}
+- Target Language: ${language || 'en-gb'} (BCP-47 code)
 - Rationale: ${microlearning.rationale || 'Based on user behavior analysis'}
 
 **Available Tools:**
@@ -117,6 +123,7 @@ export function buildTrainingGenerationPrompt(context: TrainingGenerationContext
 - The orchestrator context (from previous messages) contains detailed behavioral analysis - include it in additionalContext
 - The user's risk level and learning needs should shape the content structure
 - The department (${department}) and difficulty level (${level}) inform the appropriate depth and focus
+- The target language (${language || 'en-gb'}) determines the language of the generated content
 - The rationale explains why this training was recommended - use it to guide content decisions
 
 **Critical Constraint:**
@@ -129,7 +136,7 @@ Review the context, determine the optimal training approach, and execute the gen
  * Simplified fallback prompt for training
  */
 export function buildTrainingGenerationPromptSimplified(context: TrainingGenerationContext): string {
-    const { microlearning, department, level } = context;
+    const { microlearning, department, level, language } = context;
 
     return `**AUTONOMOUS_EXECUTION_MODE**
 
@@ -139,6 +146,7 @@ export function buildTrainingGenerationPromptSimplified(context: TrainingGenerat
 - Topic: ${microlearning.title || 'Security Awareness'}
 - Department: ${department}
 - Level: ${level}
+- Language: ${language || 'en-gb'}
 
 **Available Tools:**
 - workflowExecutor: Creates training (workflowType: 'create-microlearning')

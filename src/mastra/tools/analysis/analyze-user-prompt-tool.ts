@@ -149,6 +149,7 @@ export const analyzeUserPromptTool = new Tool({
       let languageHint = 'en-gb'; // default
       try {
         const aiLang = await detectTargetLanguageWithAI(userPrompt, model);
+        logger.info('AI Lang', { aiLang })
         if (aiLang) {
           languageHint = aiLang.toLowerCase();
         }

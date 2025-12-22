@@ -37,6 +37,7 @@ import { normalizeError } from '../utils/core/error-utils';
 // Step 1: Analyze Request & Design Scenario
 const analyzeRequest = createStep({
   id: 'analyze-phishing-request',
+  description: 'Analyze phishing request, design scenario, detect brand/logo, and determine industry design',
   inputSchema: InputSchema,
   outputSchema: AnalysisSchema,
   execute: async ({ inputData }) => {
@@ -101,6 +102,15 @@ const analyzeRequest = createStep({
       // Validate required fields
       if (!parsedResult.scenario || !parsedResult.category || !parsedResult.fromAddress || !parsedResult.method) {
         throw new Error('Missing required fields in analysis response');
+      }
+
+      // Validate description length (max 300 characters)
+      if (parsedResult.description && parsedResult.description.length > 300) {
+        logger.warn('Description exceeds 300 characters, truncating', {
+          originalLength: parsedResult.description.length,
+          microlearningId: parsedResult.microlearningId
+        });
+        parsedResult.description = parsedResult.description.substring(0, 300).trim();
       }
 
       // Log generated scenario for debugging

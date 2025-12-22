@@ -128,6 +128,7 @@ const getUserInfoOutputSchema = z.object({
         fullName: z.string().optional(),
         department: z.string().optional(),
         email: z.string().optional(),
+        preferredLanguage: z.string().optional().describe('User preferred language (e.g., "English (United Kingdom)", "Arabic (Saudi Arabia)", "Turkish (Turkey)")'),
     }).optional(),
     recentActivities: z.array(z.object({
         actionType: z.string().optional(),
@@ -486,7 +487,8 @@ Use this exact JSON structure:
                     maskedId: maskedId,
                     fullName: userFullName,
                     department: user.departmentName || user.department || 'All',
-                    email: user.email
+                    email: user.email,
+                    preferredLanguage: user.preferredLanguage
                 },
                 analysisReport: analysisReport
             };

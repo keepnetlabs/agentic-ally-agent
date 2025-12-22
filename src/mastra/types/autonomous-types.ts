@@ -8,6 +8,7 @@ export interface AutonomousRequest {
     lastName?: string;
     actions: ('training' | 'phishing')[];
     sendAfterPhishingSimulation?: boolean;
+    preferredLanguage?: string;
     env?: CloudflareEnv;
     mastra?: any; // Mastra instance for agent access - optional for backward compatibility
 }

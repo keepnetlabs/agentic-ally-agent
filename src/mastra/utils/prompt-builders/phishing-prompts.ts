@@ -83,7 +83,7 @@ const LAYOUT_OPTIONS = [
     id: 'HERO',
     name: 'HERO HEADER (Marketing/Promo)',
     description: 'Top colored hero section with logo, content card overlapping the header. Looks like a modern promo or announcement page.',
-    cssRule: 'body { margin: 0; background: #f3f4f6; min-height: 100vh; font-family: system-ui, sans-serif; } .hero { height: 220px; background-color: var(--primary-color); width: 100%; display: flex; align-items: center; justify-content: center; } .main-container { margin-top: -80px; padding: 0 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; }'
+    cssRule: 'body { margin: 0; background: #f3f4f6; min-height: 100vh; font-family: system-ui, sans-serif; } .hero { height: 220px; background-color: var(--primary-color); width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; } .main-container { margin-top: -48px; padding: 0 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; }'
   }
 ];
 
@@ -179,6 +179,9 @@ Design highly realistic phishing simulation scenarios for cybersecurity training
 
 **OUTPUT FORMAT:**
 Return ONLY valid JSON matching the schema. No markdown, no backticks, no explanation, just JSON.
+
+**CRITICAL FIELD LIMITS:**
+- **description**: MUST be 300 characters or less. Keep it concise and focused on the simulation's purpose.
 
 **EXAMPLE OUTPUT (Scenario Analysis - for EMAIL generation):**
 {
@@ -501,6 +504,9 @@ Your job: generate modern, professional, trustworthy WEB PAGES (not emails) usin
      - Card: \`style='${industryDesign.patterns.cardStyle}'\`
      - Button: \`style='${industryDesign.patterns.buttonStyle}'\`
      - Input: \`style='${industryDesign.patterns.inputStyle}'\`
+   - **CRITICAL FOR HERO LAYOUT:** Hero section (class='hero') MUST use \`flex-direction: column;\` in inline style:
+     - ✅ Correct: \`style='display: flex; flex-direction: column; align-items: center; justify-content: center;'\`
+     - ❌ Wrong: \`style='display: flex; align-items: center; justify-content: center;'\` (missing flex-direction: column)
 
   6. **🚨 MANDATORY DESIGN DIRECTIVE (YOU MUST FOLLOW THIS):**
      
@@ -520,7 +526,7 @@ Your job: generate modern, professional, trustworthy WEB PAGES (not emails) usin
      ${randomLayout.id === 'MINIMAL' ? '- NO CARD CONTAINER. Content sits directly on background.\n     - Top-aligned logo.\n     - Very clean, sparse layout.' : ''}
      ${randomLayout.id === 'CENTERED' ? '- Classic centered card with shadow.\n     - Background color surrounds the card.' : ''}
      ${randomLayout.id === 'SIDEBAR' ? '- Left sidebar (light gray/white) with dummy nav links.\n     - Main content area with a card.\n     - Looks like an admin panel/dashboard.' : ''}
-     ${randomLayout.id === 'HERO' ? '- Top full-width hero bar (brand color, ~200px height).\n     - Content card overlaps the hero bar (negative margin-top).\n     - Centered layout below.' : ''}
+     ${randomLayout.id === 'HERO' ? '- Top full-width hero bar (brand color, ~200px height).\n     - Hero section: `display: flex; flex-direction: column;` (logo and title must stack vertically).\n     - Content card overlaps the hero bar (negative margin-top).' : ''}
 
   7. **INLINE CSS IS THE SOURCE OF TRUTH:**
 

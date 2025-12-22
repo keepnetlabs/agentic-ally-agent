@@ -191,10 +191,35 @@ export function getDefaultGenerationModel() {
 }
 
 /**
+ * Normalize model provider string to enum format
+ * Converts uppercase/underscore format (e.g., WORKERS_AI) to lowercase/hyphen (e.g., workers-ai)
+ * @param provider - Raw provider string from input
+ * @returns Normalized provider string
+ */
+function normalizeModelProvider(provider: string): string {
+    return provider
+        .toLowerCase()
+        .replace(/_/g, '-');
+}
+
+/**
+ * Normalize model name string to enum format
+ * Converts uppercase/underscore format (e.g., OPENAI_GPT_4O) to lowercase/hyphen (e.g., openai-gpt-4o)
+ * @param model - Raw model name from input
+ * @returns Normalized model string
+ */
+function normalizeModelName(model: string): string {
+    return model
+        .toLowerCase()
+        .replace(/_/g, '-');
+}
+
+/**
  * Get model with override support from frontend/backend
  * If modelProvider and modelName provided, use them; otherwise use default
- * @param modelProvider - Optional model provider (OPENAI, WORKERS_AI, GOOGLE)
- * @param modelName - Optional model name (e.g., OPENAI_GPT_4O, WORKERS_AI_GPT_OSS_120B)
+ * Supports both uppercase (WORKERS_AI) and lowercase (workers-ai) formats
+ * @param modelProvider - Optional model provider (OPENAI, WORKERS_AI, GOOGLE or openai, workers-ai, google)
+ * @param modelName - Optional model name (e.g., OPENAI_GPT_4O or openai-gpt-4o)
  * @param defaultFunc - Function to call if no override provided (default: getDefaultGenerationModel)
  * @returns Model instance
  */
@@ -208,24 +233,32 @@ export function getModelWithOverride(
     }
 
     try {
-        if (!isValidModelProvider(modelProvider)) {
+        // Normalize input to enum format
+        const normalizedProvider = normalizeModelProvider(modelProvider);
+        const normalizedModel = normalizeModelName(modelName);
+
+        if (!isValidModelProvider(normalizedProvider)) {
             logger.warn('Invalid model provider, using default', {
-                modelProvider
+                modelProvider,
+                normalizedProvider
             });
             return defaultFunc();
         }
 
-        if (!isValidModel(modelName)) {
+        if (!isValidModel(normalizedModel)) {
             logger.warn('Invalid model name, using default', {
-                modelName
+                modelName,
+                normalizedModel
             });
             return defaultFunc();
         }
 
-        const model = getModel(modelProvider, modelName);
+        const model = getModel(normalizedProvider as ModelProvider, normalizedModel as Model);
         logger.info('Using model override', {
             modelProvider,
-            modelName
+            modelName,
+            normalizedProvider,
+            normalizedModel
         });
         return model;
     } catch (error) {

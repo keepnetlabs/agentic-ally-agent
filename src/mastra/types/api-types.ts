@@ -64,6 +64,7 @@ export interface AutonomousRequestBody {
   lastName?: string;
   actions: ('training' | 'phishing')[];
   sendAfterPhishingSimulation?: boolean;
+  preferredLanguage?: string;
 }
 
 /**

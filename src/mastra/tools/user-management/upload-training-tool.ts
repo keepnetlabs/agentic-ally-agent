@@ -10,6 +10,7 @@ import { KVService } from '../../services/kv-service';
 import { ERROR_MESSAGES, API_ENDPOINTS } from '../../constants';
 import { errorService } from '../../services/error-service';
 import { validateToolResult } from '../../utils/tool-result-validation';
+import { waitForKVConsistency, buildExpectedKVKeys } from '../../utils/kv-consistency';
 
 // Output schema defined separately to avoid circular reference
 const uploadTrainingOutputSchema = z.object({
@@ -47,12 +48,23 @@ export const uploadTrainingTool = createTool({
         }
 
         try {
-            // 1. Fetch Content from KV
+            // 1. Wait for KV consistency (handles eventual consistency)
+            // Build expected keys - we only need base key for upload
+            const expectedKeys = buildExpectedKVKeys(microlearningId);
+            await waitForKVConsistency(microlearningId, expectedKeys);
+
+            // 2. Fetch Content from KV with retry (handles eventual consistency edge cases)
             const kvService = new KVService();
-            const baseContent = await kvService.getMicrolearning(microlearningId);
+            const baseContent = await withRetry(
+                () => kvService.getMicrolearning(microlearningId),
+                `Fetch microlearning content ${microlearningId}`
+            );
 
             if (!baseContent || !baseContent.base) {
-                const errorInfo = errorService.notFound(`Microlearning content not found for ID: ${microlearningId}`, { microlearningId });
+                const errorInfo = errorService.notFound(
+                    `Microlearning content not found for ID: ${microlearningId}. The content may still be processing.`,
+                    { microlearningId }
+                );
                 logErrorInfo(logger, 'warn', 'Microlearning not found', errorInfo);
                 return createToolErrorResponse(errorInfo);
             }
