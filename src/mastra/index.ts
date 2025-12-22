@@ -327,15 +327,26 @@ export const mastra = new Mastra({
         handler: async (c: Context) => {
           try {
             const body = await c.req.json<AutonomousRequestBody>();
-            const { token, firstName, lastName, actions, sendAfterPhishingSimulation, preferredLanguage } = body;
+            const { token, firstName, lastName, targetUserResourceId, targetGroupResourceId, departmentName, actions, sendAfterPhishingSimulation, preferredLanguage } = body;
             const env = c.env as CloudflareEnv | undefined;
+
             // Validation
             if (!token) {
               return c.json({ success: false, error: 'Missing token' }, 400);
             }
-            if (!firstName) {
-              return c.json({ success: false, error: 'Missing firstName' }, 400);
+
+            // Check assignment type: user or group (not both, not neither)
+            const isUserAssignment = !!(firstName || targetUserResourceId);
+            const isGroupAssignment = !!targetGroupResourceId;
+
+            if (isUserAssignment && isGroupAssignment) {
+              return c.json({ success: false, error: 'Cannot specify both user assignment (firstName/targetUserResourceId) and group assignment (targetGroupResourceId)' }, 400);
             }
+
+            if (!isUserAssignment && !isGroupAssignment) {
+              return c.json({ success: false, error: 'Must specify either user assignment (firstName) or group assignment (targetGroupResourceId)' }, 400);
+            }
+
             if (!actions || !Array.isArray(actions) || actions.length === 0) {
               return c.json({ success: false, error: 'Missing or invalid actions array' }, 400);
             }
@@ -343,7 +354,14 @@ export const mastra = new Mastra({
               return c.json({ success: false, error: 'Actions must be "training" and/or "phishing"' }, 400);
             }
 
-            logger.info('autonomous_request_received', { firstName, lastName, actionsCount: actions.length });
+            logger.info('autonomous_request_received', {
+              firstName,
+              lastName,
+              targetUserResourceId,
+              targetGroupResourceId,
+              actionsCount: actions.length,
+              assignmentType: isUserAssignment ? 'user' : 'group'
+            });
 
             // Primary path: Cloudflare Workflow binding
             try {
@@ -354,6 +372,9 @@ export const mastra = new Mastra({
                     token,
                     firstName,
                     lastName,
+                    targetUserResourceId,
+                    targetGroupResourceId,
+                    departmentName,
                     actions,
                     sendAfterPhishingSimulation,
                     preferredLanguage
@@ -367,6 +388,9 @@ export const mastra = new Mastra({
                   status: 'started',
                   firstName,
                   lastName,
+                  targetUserResourceId,
+                  targetGroupResourceId,
+                  assignmentType: isUserAssignment ? 'user' : 'group',
                   actions
                 }, 202);
               }
@@ -382,6 +406,9 @@ export const mastra = new Mastra({
               token,
               firstName,
               lastName,
+              targetUserResourceId,
+              targetGroupResourceId,
+              departmentName,
               actions: actions as ('training' | 'phishing')[],
               sendAfterPhishingSimulation,
               preferredLanguage
@@ -411,6 +438,9 @@ export const mastra = new Mastra({
               status: 'processing',
               firstName,
               lastName,
+              targetUserResourceId,
+              targetGroupResourceId,
+              assignmentType: isUserAssignment ? 'user' : 'group',
               actions
             }, 200);
 

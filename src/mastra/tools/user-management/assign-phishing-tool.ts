@@ -19,24 +19,34 @@ const assignPhishingOutputSchema = z.object({
 
 export const assignPhishingTool = createTool({
     id: 'assign-phishing',
-    description: 'Assigns an uploaded phishing simulation to a specific user.',
+    description: 'Assigns an uploaded phishing simulation to a specific user or group.',
     inputSchema: z.object({
         resourceId: z.string().describe('The Resource ID returned from the upload process'),
         languageId: z.string().optional().describe('The Language ID returned from the upload process'),
-        targetUserResourceId: z.string().describe('The User ID to assign the phishing simulation to'),
+        targetUserResourceId: z.string().optional().describe('The User ID to assign the phishing simulation to (user assignment)'),
+        targetGroupResourceId: z.string().optional().describe('The Group ID to assign the phishing simulation to (group assignment)'),
         trainingId: z.string().optional().describe('The Training Resource ID to send after phishing simulation (if sendAfterPhishingSimulation is true)'),
         sendTrainingLanguageId: z.string().optional().describe('The Training Language ID to send after phishing simulation (if sendAfterPhishingSimulation is true)')
-    }),
+    }).refine(
+        data => data.targetUserResourceId || data.targetGroupResourceId,
+        { message: 'Either targetUserResourceId (user assignment) or targetGroupResourceId (group assignment) must be provided' }
+    ),
     outputSchema: assignPhishingOutputSchema,
     execute: async ({ context }) => {
         const logger = getLogger('AssignPhishingTool');
-        const { resourceId, languageId, targetUserResourceId, trainingId, sendTrainingLanguageId } = context;
-        const name = `Phishing Campaign - ${targetUserResourceId} Agentic Ally`;
+        const { resourceId, languageId, targetUserResourceId, targetGroupResourceId, trainingId, sendTrainingLanguageId } = context;
 
-        logger.info('Preparing phishing assignment for resource to user', {
+        // Determine assignment type
+        const isUserAssignment = !!targetUserResourceId;
+        const assignmentType = isUserAssignment ? 'USER' : 'GROUP';
+        const targetId = targetUserResourceId || targetGroupResourceId;
+        const name = `Phishing Campaign - ${targetId} (${assignmentType}) Agentic Ally`;
+
+        logger.info(`Preparing phishing assignment for resource to ${assignmentType}`, {
             resourceId,
             languageId,
             targetUserResourceId,
+            targetGroupResourceId,
             trainingId,
             sendTrainingLanguageId
         });
@@ -56,7 +66,8 @@ export const assignPhishingTool = createTool({
             companyId: companyId,
             phishingId: resourceId,
             languageId: languageId,
-            targetUserResourceId: targetUserResourceId,
+            ...(targetUserResourceId && { targetUserResourceId }),
+            ...(targetGroupResourceId && { targetGroupResourceId }),
             name,
             ...(trainingId && { trainingId }),
             ...(sendTrainingLanguageId && { sendTrainingLanguageId })
@@ -77,9 +88,9 @@ export const assignPhishingTool = createTool({
                     payload,
                     token,
                     errorPrefix: 'Assign API failed',
-                    operationName: `Assign phishing to user ${targetUserResourceId}`
+                    operationName: `Assign phishing to ${assignmentType} ${targetId}`
                 }),
-                `Assign phishing to user ${targetUserResourceId}`
+                `Assign phishing to ${assignmentType} ${targetId}`
             );
 
             logger.info('Phishing assignment success', { resultKeys: Object.keys(result) });
@@ -103,6 +114,7 @@ export const assignPhishingTool = createTool({
             const errorInfo = errorService.external(err.message, {
                 resourceId,
                 targetUserResourceId,
+                targetGroupResourceId,
                 stack: err.stack,
             });
 

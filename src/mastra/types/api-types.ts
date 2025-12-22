@@ -60,8 +60,14 @@ export interface CodeReviewRequestBody {
  */
 export interface AutonomousRequestBody {
   token: string;
-  firstName: string;
+  // User assignment (individual user)
+  firstName?: string;
   lastName?: string;
+  targetUserResourceId?: string;
+  departmentName?: string; // Optional: for direct user ID, provide department to avoid extra API call
+  // Group assignment (bulk)
+  targetGroupResourceId?: string;
+  // Common
   actions: ('training' | 'phishing')[];
   sendAfterPhishingSimulation?: boolean;
   preferredLanguage?: string;

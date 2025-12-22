@@ -202,6 +202,8 @@ Supported: English (en), Turkish (tr), German (de), French (fr), Spanish (es), P
 - Don't assume single language
 - Don't ignore type errors
 - Don't mix concerns between layers
+- **Don't use git commands** (git add, git commit, git push, etc.)
+- **Don't suggest npm run build or other build commands** - Just make the code changes directly
 
 ## Environment Variables
 

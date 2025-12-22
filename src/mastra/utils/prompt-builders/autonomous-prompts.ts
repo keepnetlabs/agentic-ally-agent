@@ -42,6 +42,11 @@ export function buildPhishingGenerationPrompt(context: PhishingGenerationContext
 
     return `**AUTONOMOUS_EXECUTION_MODE**
 
+**🔴 CRITICAL: LANGUAGE REQUIREMENT**
+- ALL content MUST be generated in: **${language || 'en-gb'}** (BCP-47 code)
+- This is NOT optional - user expects phishing in this language
+- When calling phishingExecutor, INCLUDE THIS LANGUAGE in your instructions
+
 **CRITICAL: Check conversation history FIRST**
 - If you already executed phishingExecutor in this conversation, DO NOT execute again
 - Look for recent phishingExecutor tool calls in conversation history
@@ -57,7 +62,7 @@ export function buildPhishingGenerationPrompt(context: PhishingGenerationContext
 - Psychological Trigger: ${simulation.persuasion_tactic || 'Authority'}
 - Rationale: ${simulation.rationale || 'Based on user behavior analysis'}
 - Target Department: ${toolResult.userInfo?.department || 'All'}
-- Target Language: ${language || 'en-gb'} (BCP-47 code)
+- Target Language: **${language || 'en-gb'}** (MUST be used in generation)
 
 **Available Tools:**
 - phishingExecutor: Generates phishing email and landing page
@@ -66,12 +71,13 @@ export function buildPhishingGenerationPrompt(context: PhishingGenerationContext
 - The scenario type (${simulation.scenario_type || 'CLICK_ONLY'}) may inform whether a landing page is needed
 - The difficulty level (${simulation.difficulty || 'Medium'}) suggests the sophistication required
 - The psychological trigger (${simulation.persuasion_tactic || 'Authority'}) should influence the approach
-- The target language (${language || 'en-gb'}) determines the language of the generated content
+- The target language (${language || 'en-gb'}) MUST be explicitly mentioned in the prompt to phishingExecutor
 - The analysis rationale provides insights into why this simulation was recommended
 
 **Critical Constraint:**
 - Generate the content only - do not upload or assign in this step
 - Execute ONCE only - check history before executing
+- ALWAYS generate in ${language || 'en-gb'} regardless of default language
 
 Analyze the context, check conversation history for existing phishingExecutor calls, and execute only if not already done.`;
 }
@@ -84,18 +90,20 @@ export function buildPhishingGenerationPromptSimplified(context: PhishingGenerat
 
     return `**AUTONOMOUS_EXECUTION_MODE**
 
+**CRITICAL: Language Requirement - ${language || 'en-gb'}**
+
 **Goal:** Generate a phishing simulation.
 
 **Context:**
 - Topic: ${simulation.title || 'Security Update'}
 - Difficulty: ${simulation.difficulty || 'Medium'}
 - Department: ${toolResult.userInfo?.department || 'All'}
-- Language: ${language || 'en-gb'}
+- Language: **${language || 'en-gb'}** (MUST be used for content generation)
 
 **Available Tools:**
 - phishingExecutor: Generates phishing content
 
-Determine the best approach and generate the simulation.`;
+Determine the best approach and generate the simulation in ${language || 'en-gb'}.`;
 }
 
 /**
@@ -106,6 +114,11 @@ export function buildTrainingGenerationPrompt(context: TrainingGenerationContext
 
     return `**AUTONOMOUS_EXECUTION_MODE**
 
+**🔴 CRITICAL: LANGUAGE REQUIREMENT**
+- ALL content MUST be generated in: **${language || 'en-gb'}** (BCP-47 code)
+- This is NOT optional - user expects training in this language
+- When calling workflowExecutor, INCLUDE THIS LANGUAGE CODE in the prompt parameter
+
 **Goal:** Generate a training module that addresses the user's learning needs based on their behavioral profile.
 
 **Context from Analysis:**
@@ -113,7 +126,7 @@ export function buildTrainingGenerationPrompt(context: TrainingGenerationContext
 - Objective: ${microlearning.objective || ''}
 - Target Department: ${department}
 - Difficulty Level: ${level}
-- Target Language: ${language || 'en-gb'} (BCP-47 code)
+- Target Language: **${language || 'en-gb'}** (MUST include this in workflowExecutor call)
 - Rationale: ${microlearning.rationale || 'Based on user behavior analysis'}
 
 **Available Tools:**
@@ -123,11 +136,12 @@ export function buildTrainingGenerationPrompt(context: TrainingGenerationContext
 - The orchestrator context (from previous messages) contains detailed behavioral analysis - include it in additionalContext
 - The user's risk level and learning needs should shape the content structure
 - The department (${department}) and difficulty level (${level}) inform the appropriate depth and focus
-- The target language (${language || 'en-gb'}) determines the language of the generated content
+- The target language (${language || 'en-gb'}) MUST be explicitly mentioned in the prompt text passed to workflowExecutor
 - The rationale explains why this training was recommended - use it to guide content decisions
 
 **Critical Constraint:**
 - Generate the content only - do not upload or assign in this step
+- ALWAYS mention the language requirement in the prompt, e.g., "Create training module in ${language || 'en-gb'} for..."
 
 Review the context, determine the optimal training approach, and execute the generation.`;
 }
@@ -140,18 +154,20 @@ export function buildTrainingGenerationPromptSimplified(context: TrainingGenerat
 
     return `**AUTONOMOUS_EXECUTION_MODE**
 
+**CRITICAL: Language Requirement - ${language || 'en-gb'}**
+
 **Goal:** Generate a training module.
 
 **Context:**
 - Topic: ${microlearning.title || 'Security Awareness'}
 - Department: ${department}
 - Level: ${level}
-- Language: ${language || 'en-gb'}
+- Language: **${language || 'en-gb'}** (MUST be included in prompt to workflowExecutor)
 
 **Available Tools:**
 - workflowExecutor: Creates training (workflowType: 'create-microlearning')
 
-Determine the best approach and generate the training module.`;
+When calling workflowExecutor, mention the language requirement in the prompt. Determine the best approach and generate the training module in ${language || 'en-gb'}.`;
 }
 
 /**
@@ -166,7 +182,7 @@ export function buildUploadPrompt(
 
     return `**AUTONOMOUS_EXECUTION_MODE**
 
-**Goal:** Upload the ${artifactType} ${artifactLabel} to the platform so it can be assigned to users.
+**Goal:** Upload the ${artifactType} ${artifactLabel} to the platform and report the Resource IDs.
 
 **Context:**
 - The ${artifactType} has been generated successfully
@@ -175,7 +191,12 @@ export function buildUploadPrompt(
 **Available Tools:**
 - ${toolName}: Uploads ${artifactType} to platform
 
-Locate the ${idField} from conversation history and upload the ${artifactType}.`;
+**IMPORTANT - Response Format:**
+After uploading, you MUST report the results in this exact format:
+- If successful: "UPLOAD_SUCCESS: resourceId=<ID>, languageId=<LANG>"
+- If failed: "UPLOAD_FAILED: <error message>"
+
+Locate the ${idField} from conversation history, upload the ${artifactType}, and report results in the format above.`;
 }
 
 /**
@@ -215,29 +236,41 @@ Locate the ${idField}, upload first, then assign using the returned IDs.`;
  * Goal-based prompt for assigning phishing with training IDs
  */
 export function buildAssignPhishingWithTrainingPrompt(
-    targetUserResourceId: string
+    targetUserResourceId: string,
+    trainingId?: string,
+    sendTrainingLanguageId?: string
 ): string {
+    const trainingContext = trainingId
+        ? `**Training IDs to link:**
+- trainingId: ${trainingId}
+- sendTrainingLanguageId: ${sendTrainingLanguageId || 'default'}`
+        : `**Training IDs:**
+- Must be extracted from training upload result in conversation history
+- trainingId: From training upload response.data.resourceId
+- sendTrainingLanguageId: From training upload response.data.sendTrainingLanguageId`;
+
     return `**AUTONOMOUS_EXECUTION_MODE**
 
 **Goal:** Assign the phishing simulation to user ${targetUserResourceId}, linking it with the training module that was also generated.
 
 **Context:**
 - Both phishing simulation and training module have been uploaded successfully
-- Both upload results should be available in recent conversation history
 - Target user ID: ${targetUserResourceId}
+
+${trainingContext}
 
 **Available Tools:**
 - assignPhishing: Assigns phishing simulation (can include training IDs for linking)
 
-**What You Need:**
-- From phishing upload result (uploadPhishing tool): resourceId (data.resourceId), languageId (data.languageId, optional)
-- From training upload result (uploadTraining tool): trainingId (data.resourceId), sendTrainingLanguageId (data.sendTrainingLanguageId)
+**Required IDs:**
+- Phishing: resourceId (from phishing upload), languageId (optional)
+- Training: trainingId, sendTrainingLanguageId (${trainingId ? 'ALREADY PROVIDED ABOVE' : 'extract from history'})
 
 **Critical:**
-- Both upload results must be found in conversation history
-- Extract IDs from response.data fields (not top-level fields)
-- Use exact IDs returned by upload tools
+- Extract all IDs carefully and use exact values
+- For phishing: Get resourceId from conversation history if not provided
+- For training: ${trainingId ? `Use the provided values: trainingId="${trainingId}"` : 'Extract from conversation history'}
 
-Locate both upload results, extract the required IDs, and assign the phishing simulation with training linkage.`;
+Assign the phishing simulation to user ${targetUserResourceId} with training linkage.`;
 }
 

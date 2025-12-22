@@ -391,6 +391,8 @@ Returns new URL with langUrl=lang/tr
 3. **KV keys use `ml:` prefix** - Enables efficient listing and organization
 4. **All LLM outputs validated** - Always use `cleanResponse()` on AI JSON
 5. **Tools need 3-level fallbacks** - Primary → Fallback 1 → Guaranteed basic
+6. **Don't use git commands** - No git add, git commit, git push, etc. (User handles version control)
+7. **Don't suggest npm run build** - Just make code changes directly; don't ask to run build commands
 
 ---
 

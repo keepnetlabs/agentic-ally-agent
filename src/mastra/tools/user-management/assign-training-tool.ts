@@ -19,18 +19,27 @@ const assignTrainingOutputSchema = z.object({
 
 export const assignTrainingTool = createTool({
   id: 'assign-training',
-  description: 'Assigns an uploaded training resource to a specific user.',
+  description: 'Assigns an uploaded training resource to a specific user or group.',
   inputSchema: z.object({
     resourceId: z.string().describe('The Resource ID returned from the upload process'),
     sendTrainingLanguageId: z.string().describe('The Language ID returned from the upload process'),
-    targetUserResourceId: z.string().describe('The User ID to assign the training to'),
-  }),
+    targetUserResourceId: z.string().optional().describe('The User ID to assign the training to (user assignment)'),
+    targetGroupResourceId: z.string().optional().describe('The Group ID to assign the training to (group assignment)'),
+  }).refine(
+    data => data.targetUserResourceId || data.targetGroupResourceId,
+    { message: 'Either targetUserResourceId (user assignment) or targetGroupResourceId (group assignment) must be provided' }
+  ),
   outputSchema: assignTrainingOutputSchema,
   execute: async ({ context }) => {
     const logger = getLogger('AssignTrainingTool');
-    const { resourceId, sendTrainingLanguageId, targetUserResourceId } = context;
+    const { resourceId, sendTrainingLanguageId, targetUserResourceId, targetGroupResourceId } = context;
 
-    logger.info('Preparing assignment for resource to user', { resourceId, languageId: sendTrainingLanguageId, targetUserResourceId });
+    // Determine assignment type
+    const isUserAssignment = !!targetUserResourceId;
+    const assignmentType = isUserAssignment ? 'USER' : 'GROUP';
+    const targetId = targetUserResourceId || targetGroupResourceId;
+
+    logger.info(`Preparing assignment for resource to ${assignmentType}`, { resourceId, languageId: sendTrainingLanguageId, targetUserResourceId, targetGroupResourceId });
 
     // Get Auth Token & Cloudflare bindings from AsyncLocalStorage
     const { token, companyId, env } = getRequestContext();
@@ -47,7 +56,8 @@ export const assignTrainingTool = createTool({
       companyId: companyId,
       trainingId: resourceId,
       languageId: sendTrainingLanguageId, // Map languageId to resourceId param if API expects it
-      targetUserResourceId: targetUserResourceId,
+      ...(targetUserResourceId && { targetUserResourceId }),
+      ...(targetGroupResourceId && { targetGroupResourceId }),
     };
 
     // Log Payload with masked token
@@ -65,9 +75,9 @@ export const assignTrainingTool = createTool({
           payload,
           token,
           errorPrefix: 'Assign API failed',
-          operationName: `Assign training to user ${targetUserResourceId}`
+          operationName: `Assign training to ${assignmentType} ${targetId}`
         }),
-        `Assign training to user ${targetUserResourceId}`
+        `Assign training to ${assignmentType} ${targetId}`
       );
 
       logger.info('Assignment success', { resultKeys: Object.keys(result) });
@@ -91,6 +101,7 @@ export const assignTrainingTool = createTool({
       const errorInfo = errorService.external(err.message, {
         resourceId,
         targetUserResourceId,
+        targetGroupResourceId,
         stack: err.stack,
       });
 

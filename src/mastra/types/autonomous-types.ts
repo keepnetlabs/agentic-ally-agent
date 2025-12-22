@@ -4,8 +4,14 @@ import type { CloudflareEnv } from './api-types';
 
 export interface AutonomousRequest {
     token: string;
-    firstName: string;
+    // User assignment (individual user)
+    firstName?: string;
     lastName?: string;
+    targetUserResourceId?: string;
+    departmentName?: string; // Optional: for direct user ID, provide department to avoid extra API call
+    // Group assignment (bulk)
+    targetGroupResourceId?: string;
+    // Common
     actions: ('training' | 'phishing')[];
     sendAfterPhishingSimulation?: boolean;
     preferredLanguage?: string;
@@ -21,6 +27,7 @@ export interface AutonomousResponse {
         fullName?: string;
         department?: string;
         email?: string;
+        preferredLanguage?: string;
     };
     recentActivities?: Array<{
         actionType?: string;

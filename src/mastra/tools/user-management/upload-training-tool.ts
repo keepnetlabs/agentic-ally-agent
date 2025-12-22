@@ -90,21 +90,28 @@ export const uploadTrainingTool = createTool({
                 ? availableLangs[0]
                 : 'en-us';
 
+            // Extract department for inbox URL (from department_relevance array, default to 'all')
+            const departmentArray = meta.department_relevance || [];
+            const department = Array.isArray(departmentArray) && departmentArray.length > 0
+                ? departmentArray[0]
+                : 'all';
+            const inboxUrl = `inbox/${department.toLowerCase()}`;
+
             const trainingData = {
                 title,
                 description,
                 category,
                 targetAudience,
                 language,
+                inboxUrl,
             };
-
-            // 3. Upload to Worker
+            // 3. Upload to Worker (includes inboxUrl for department-specific inbox assignment)
             const payload = {
                 accessToken: token, // Sensitive!
-                companyId: companyId,
+                companyId,
                 url: API_ENDPOINTS.PLATFORM_API_URL,
                 baseUrl: API_ENDPOINTS.MICROLEARNING_API_URL + microlearningId,
-                trainingData: trainingData
+                trainingData
             };
 
             // Secure Logging (Mask token)

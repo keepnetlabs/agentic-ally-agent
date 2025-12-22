@@ -123,7 +123,7 @@ const AnalysisSchema = z.object({
 const getUserInfoOutputSchema = z.object({
     success: z.boolean(),
     userInfo: z.object({
-        targetUserResourceId: z.string(),
+        targetUserResourceId: z.string().optional().describe('Direct user ID (skips search step, faster). Use if ID is already known.'),
         maskedId: z.string().describe('Anonymized identifier for Zero PII compliance (e.g., [USER-ABC12345])'),
         fullName: z.string().optional(),
         department: z.string().optional(),
@@ -145,53 +145,23 @@ const getUserInfoOutputSchema = z.object({
 
 export const getUserInfoTool = createTool({
     id: 'get-user-info',
-    description: 'Searches for a user AND retrieves their recent activity timeline. Accepts either fullName or explicit firstName/lastName. Returns a structured AI analysis report.',
+    description: 'Retrieves user info AND their recent activity timeline. Accepts either targetUserResourceId (direct ID) OR fullName/firstName/lastName (search). Returns a structured AI analysis report.',
     inputSchema: z.object({
+        targetUserResourceId: z.string().optional().describe('Direct user ID (skips search step, faster). Use if ID is already known.'),
+        departmentName: z.string().optional().describe('Department name to use with targetUserResourceId (avoids extra API call).'),
         fullName: z.string().optional().describe('Full name of the user (e.g., "John Doe", "Peter Parker"). Will be automatically parsed into firstName/lastName.'),
         firstName: z.string().optional().describe('First name of the user (used if fullName is not provided)'),
         lastName: z.string().optional().describe('Last name of the user (optional, used with firstName)'),
     }).refine(
-        data => data.fullName || data.firstName,
-        { message: 'Either fullName or firstName must be provided' }
+        data => data.targetUserResourceId || data.fullName || data.firstName,
+        { message: 'Either targetUserResourceId OR fullName/firstName must be provided' }
     ),
     outputSchema: getUserInfoOutputSchema,
     execute: async ({ context }) => {
         const logger = getLogger('GetUserInfoTool');
-        const { fullName: inputFullName, firstName: inputFirstName, lastName: inputLastName } = context;
+        const { targetUserResourceId: inputTargetUserResourceId, departmentName: inputDepartmentName, fullName: inputFullName, firstName: inputFirstName, lastName: inputLastName } = context;
 
-        // Parse name using utility
-        let parsed;
-        try {
-            if (inputFullName) {
-                if (!isValidName(inputFullName)) {
-                    const errorInfo = errorService.validation(`Invalid name format: "${inputFullName}"`);
-                    logErrorInfo(logger, 'warn', 'Validation error: Invalid name format', errorInfo);
-                    return createToolErrorResponse(errorInfo);
-                }
-                const normalizedFullName = normalizeName(inputFullName);
-                parsed = parseName(normalizedFullName);
-                logger.debug('Name parsed and normalized', { original: inputFullName, normalized: normalizedFullName });
-            } else if (inputFirstName) {
-                const normalizedFirstName = normalizeName(inputFirstName);
-                const normalizedLastName = inputLastName ? normalizeName(inputLastName) : undefined;
-                parsed = parseName({ firstName: normalizedFirstName, lastName: normalizedLastName });
-                logger.debug('Using explicit normalized names', { firstName: normalizedFirstName, lastName: normalizedLastName });
-            } else {
-                const errorInfo = errorService.validation('Either fullName or firstName must be provided');
-                logErrorInfo(logger, 'warn', 'Validation error: Name required', errorInfo);
-                return createToolErrorResponse(errorInfo);
-            }
-        } catch (error) {
-            const err = normalizeError(error);
-            const errorInfo = errorService.validation(err.message, { step: 'name-parsing' });
-            logErrorInfo(logger, 'error', 'Name parsing error', errorInfo);
-            return createToolErrorResponse(errorInfo);
-        }
-
-        const { firstName, lastName, fullName } = parsed;
-        logger.debug('Searching for user', { fullName, firstName, lastName: lastName || 'N/A' });
-
-        // Get Auth Token & CompanyId
+        // Get Auth Token & CompanyId (needed for both paths)
         const { token, companyId } = getRequestContext();
         if (!token) {
             const errorInfo = errorService.auth(ERROR_MESSAGES.USER_INFO.TOKEN_MISSING);
@@ -200,49 +170,102 @@ export const getUserInfoTool = createTool({
         }
 
         try {
-            // --- STEP 1: Find User ---
-            const userSearchPayload = JSON.parse(JSON.stringify(GET_ALL_PAYLOAD));
-            userSearchPayload.filter.FilterGroups[0].FilterItems.push({
-                Value: firstName, FieldName: "firstName", Operator: "Contains"
-            });
-            if (lastName) {
+            // Variables for both paths
+            let userId: string;
+            let userFullName: string;
+            let maskedId: string;
+            let user: any = null;
+            let firstName: string = '';
+            let lastName: string | undefined = undefined;
+            let fullName: string = '';
+
+            // STEP 0: Determine user lookup path
+            if (inputTargetUserResourceId) {
+                // Fast path: Direct ID provided - skip user search
+                logger.info('Using provided targetUserResourceId, skipping user search', { targetUserResourceId: inputTargetUserResourceId });
+                userId = inputTargetUserResourceId;
+                // userFullName and maskedId will be set during timeline fetch or set to placeholder
+                userFullName = `User-${userId}`;
+                maskedId = `[USER-${userId}]`;
+                fullName = userFullName;
+            } else {
+                // Slow path: Search for user by name
+                // Parse name using utility
+                let parsed;
+                try {
+                    if (inputFullName) {
+                        if (!isValidName(inputFullName)) {
+                            const errorInfo = errorService.validation(`Invalid name format: "${inputFullName}"`);
+                            logErrorInfo(logger, 'warn', 'Validation error: Invalid name format', errorInfo);
+                            return createToolErrorResponse(errorInfo);
+                        }
+                        const normalizedFullName = normalizeName(inputFullName);
+                        parsed = parseName(normalizedFullName);
+                        logger.debug('Name parsed and normalized', { original: inputFullName, normalized: normalizedFullName });
+                    } else if (inputFirstName) {
+                        const normalizedFirstName = normalizeName(inputFirstName);
+                        const normalizedLastName = inputLastName ? normalizeName(inputLastName) : undefined;
+                        parsed = parseName({ firstName: normalizedFirstName, lastName: normalizedLastName });
+                        logger.debug('Using explicit normalized names', { firstName: normalizedFirstName, lastName: normalizedLastName });
+                    } else {
+                        const errorInfo = errorService.validation('Either targetUserResourceId, fullName, or firstName must be provided');
+                        logErrorInfo(logger, 'warn', 'Validation error: No identifier provided', errorInfo);
+                        return createToolErrorResponse(errorInfo);
+                    }
+                } catch (error) {
+                    const err = normalizeError(error);
+                    const errorInfo = errorService.validation(err.message, { step: 'name-parsing' });
+                    logErrorInfo(logger, 'error', 'Name parsing error', errorInfo);
+                    return createToolErrorResponse(errorInfo);
+                }
+
+                ({ firstName, lastName, fullName } = parsed);
+                logger.debug('Searching for user by name', { fullName, firstName, lastName: lastName || 'N/A' });
+
+                // --- STEP 1: Find User ---
+                const userSearchPayload = JSON.parse(JSON.stringify(GET_ALL_PAYLOAD));
                 userSearchPayload.filter.FilterGroups[0].FilterItems.push({
-                    Value: lastName, FieldName: "lastName", Operator: "Contains"
+                    Value: firstName, FieldName: "firstName", Operator: "Contains"
                 });
+                if (lastName) {
+                    userSearchPayload.filter.FilterGroups[0].FilterItems.push({
+                        Value: lastName, FieldName: "lastName", Operator: "Contains"
+                    });
+                }
+                const userSearchHeaders: Record<string, string> = {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                };
+                if (companyId) {
+                    userSearchHeaders['x-ir-company-id'] = companyId;
+                }
+
+                const userSearchResponse = await fetch(API_ENDPOINTS.USER_INFO_GET_ALL, {
+                    method: 'POST',
+                    headers: userSearchHeaders,
+                    body: JSON.stringify(userSearchPayload)
+                });
+
+                if (!userSearchResponse.ok) {
+                    const errorInfo = errorService.external(`User search API error: ${userSearchResponse.status}`, { status: userSearchResponse.status });
+                    throw new Error(errorInfo.message);
+                }
+                const userSearchData = await userSearchResponse.json();
+                const users = userSearchData?.items || userSearchData?.data?.results || [];
+
+                if (users.length === 0) {
+                    const errorInfo = errorService.notFound(`User "${fullName}" not found.`, { fullName });
+                    logErrorInfo(logger, 'warn', 'User not found', errorInfo);
+                    return createToolErrorResponse(errorInfo);
+                }
+
+                user = users[0];
+                userId = user.targetUserResourceId;
+                userFullName = `${user.firstName} ${user.lastName}`;
+                maskedId = `[USER-${generatePIIHash(userFullName)}]`;
+
+                logger.debug('User found', { userId, maskedId });
             }
-            const userSearchHeaders: Record<string, string> = {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            };
-            if (companyId) {
-                userSearchHeaders['x-ir-company-id'] = companyId;
-            }
-
-            const userSearchResponse = await fetch(API_ENDPOINTS.USER_INFO_GET_ALL, {
-                method: 'POST',
-                headers: userSearchHeaders,
-                body: JSON.stringify(userSearchPayload)
-            });
-
-            if (!userSearchResponse.ok) {
-                const errorInfo = errorService.external(`User search API error: ${userSearchResponse.status}`, { status: userSearchResponse.status });
-                throw new Error(errorInfo.message);
-            }
-            const userSearchData = await userSearchResponse.json();
-            const users = userSearchData?.items || userSearchData?.data?.results || [];
-
-            if (users.length === 0) {
-                const errorInfo = errorService.notFound(`User "${fullName}" not found.`, { fullName });
-                logErrorInfo(logger, 'warn', 'User not found', errorInfo);
-                return createToolErrorResponse(errorInfo);
-            }
-
-            const user = users[0];
-            const userId = user.targetUserResourceId;
-            const userFullName = `${user.firstName} ${user.lastName}`;
-            const maskedId = `[USER-${generatePIIHash(userFullName)}]`;
-
-            logger.debug('User found', { userId, maskedId });
 
             // --- STEP 2: Get Timeline ---
             const timelinePayload = JSON.parse(JSON.stringify(TIMELINE_PAYLOAD));
@@ -352,7 +375,7 @@ If a data point is unknown, leave the JSON field empty. NEVER fabricate metrics.
 
             const userPrompt = `Analyze this user:
 - Masked ID: ${maskedId}
-- Role/Dept: ${user.departmentName || 'Unknown'}
+- Role/Dept: ${inputDepartmentName || user?.departmentName || user?.department || 'Unknown'}
 - Recent Activities: ${JSON.stringify(recentActivities)}
 
 ---
@@ -486,11 +509,13 @@ Use this exact JSON structure:
                     targetUserResourceId: userId,
                     maskedId: maskedId,
                     fullName: userFullName,
-                    department: user.departmentName || user.department || 'All',
-                    email: user.email,
-                    preferredLanguage: user.preferredLanguage
+                    // Use provided departmentName if available (fast path), otherwise extract from user object
+                    department: inputDepartmentName || user?.departmentName || user?.department || 'All',
+                    email: user?.email,
+                    preferredLanguage: user?.preferredLanguage
                 },
-                analysisReport: analysisReport
+                analysisReport: analysisReport,
+                recentActivities: recentActivities
             };
 
             // Validate result against output schema
@@ -505,9 +530,7 @@ Use this exact JSON structure:
         } catch (error) {
             const err = normalizeError(error);
             const errorInfo = errorService.external(err.message, {
-                fullName,
-                firstName,
-                lastName,
+                step: 'tool-execution',
                 stack: err.stack
             });
 

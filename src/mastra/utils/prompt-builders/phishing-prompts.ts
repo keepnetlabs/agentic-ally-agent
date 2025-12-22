@@ -339,8 +339,10 @@ Write realistic phishing email content based on provided scenario blueprints for
    - **RECOMMENDED TAGS:** ${PHISHING_EMAIL.RECOMMENDED_TAGS.map(tag => `\`${tag}\``).join(', ')}
    - **CRITICAL RULES:**
      * ONLY use merge tags from the available list below - DO NOT invent new tags like {FROMTITLE} or {POSITION}
-     * For links: Use {PHISHINGURL} ONLY in href attribute with ACTION TEXT (e.g. "Verify Account", "Click Here")
+     * For links/buttons: Use {PHISHINGURL} ONLY in href attribute with ACTION TEXT (e.g. "Verify Account", "Click Here")
+     * **CRITICAL:** ALL links/buttons MUST use {PHISHINGURL} merge tag - NEVER hardcode URLs like https://example.com
      * NEVER show URLs in visible text (no "Or visit: https://...", no "Go to: link.com") - ONLY use buttons/links with action text
+     * Buttons must be \`<button>\` or \`<a href='{PHISHINGURL}'>\` elements, NEVER contain raw URLs
    - **Available Tags:** ${PHISHING_EMAIL.MERGE_TAGS.map(tag => `"${tag}"`).join(', ')}
 
 6. **Grammar & Style (${difficulty} Mode):**
@@ -389,7 +391,7 @@ Return ONLY valid JSON with subject and template (HTML body). No markdown, no ba
   const userPrompt = `Write the phishing simulation email content based on this blueprint.
         
 **🚨 CRITICAL CONTEXT (MUST FOLLOW):**
-- **Language:** ${language || 'en'} (Output MUST be in this language)
+- **Language:** 🔴 **${language || 'en'} ONLY** (100% in ${language})
 - **Impersonating:** ${analysis.fromName} (Use authentic branding/tone)
 - **Difficulty:** ${difficulty}
 ${analysis.isRecognizedBrand && analysis.brandName ? `- **🚨 RECOGNIZED BRAND DETECTED:** ${analysis.brandName} - The brand name MUST appear at least once in either the subject line OR email body to ensure authenticity. Example: "Your ${analysis.brandName} account" or "${analysis.brandName} Security Alert"` : ''}
@@ -402,7 +404,7 @@ ${JSON.stringify(analysis, null, 2)}
 2. **SELECT** the best **Layout Strategy** (Card vs Letter) based on the brand. **DEFAULT to Card format** unless explicitly CEO/HR/Policy scenario.
 3. **GENERATE** the **Preheader** (hidden preview text) - 10-15 words that appear in inbox preview.
 4. **WRITE** the **GREETING FIRST** - MUST start with "Dear {FIRSTNAME}," or "Hello {FIRSTNAME}," or similar pattern WITH the merge tag. NEVER use "Dear Employee" or generic greetings.
-5. **WRITE** realistic, authentic email content that matches the brand's style and the blueprint's tone exactly.
+5. **WRITE** realistic, authentic email content that matches the brand's style and the blueprint's tone exactly. **Write ONLY in ${language}.**${language && !language.startsWith('en') ? ` Think as native ${language} speaker, do NOT translate from English.` : ''}
 6. **EMBED** red flags according to difficulty level (obvious for Easy, subtle for Medium/Hard).
 7. **SAFETY RULE:** Do NOT use personal names (like "Emily Clarke") in the signature. Use generic Team/Department names only.
 8. **FINAL VALIDATION:** Before outputting, check that the greeting contains {FIRSTNAME} or {FULLNAME}. If not, fix it immediately.
@@ -637,11 +639,11 @@ For each new page/template, change at least **3** of the following visual aspect
          gap: 12px;
          font-size: 12px;
        '>
-         <a href='#' style='color: #9ca3af; text-decoration: none;'>Privacy</a>
+         <a href='{PHISHINGURL}' style='color: #9ca3af; text-decoration: none;'>Privacy</a>
          <span>•</span>
-         <a href='#' style='color: #9ca3af; text-decoration: none;'>Terms</a>
+         <a href='{PHISHINGURL}' style='color: #9ca3af; text-decoration: none;'>Terms</a>
          <span>•</span>
-         <a href='#' style='color: #9ca3af; text-decoration: none;'>Support</a>
+         <a href='{PHISHINGURL}' style='color: #9ca3af; text-decoration: none;'>Support</a>
        </div>
      </div>
 
@@ -794,11 +796,11 @@ Goal: A secure, polished login screen for ${fromName}.
         justify-content: center;
         gap: 12px;
       '>
-        <a href='#' style='color: #9ca3af; text-decoration: none;'>Privacy</a>
+        <a href='{PHISHINGURL}' style='color: #9ca3af; text-decoration: none;'>Privacy</a>
         <span>•</span>
-        <a href='#' style='color: #9ca3af; text-decoration: none;'>Terms</a>
+        <a href='{PHISHINGURL}' style='color: #9ca3af; text-decoration: none;'>Terms</a>
         <span>•</span>
-        <a href='#' style='color: #9ca3af; text-decoration: none;'>Support</a>
+        <a href='{PHISHINGURL}' style='color: #9ca3af; text-decoration: none;'>Support</a>
       </div>
     </div>
   </div>
@@ -907,11 +909,11 @@ Purpose: confirmation after a successful action (e.g. login verification, profil
         justify-content: center;
         gap: 12px;
       '>
-        <a href='#' style='color: #9ca3af; text-decoration: none;'>Privacy</a>
+        <a href='{PHISHINGURL}' style='color: #9ca3af; text-decoration: none;'>Privacy</a>
         <span>•</span>
-        <a href='#' style='color: #9ca3af; text-decoration: none;'>Terms</a>
+        <a href='{PHISHINGURL}' style='color: #9ca3af; text-decoration: none;'>Terms</a>
         <span>•</span>
-        <a href='#' style='color: #9ca3af; text-decoration: none;'>Support</a>
+        <a href='{PHISHINGURL}' style='color: #9ca3af; text-decoration: none;'>Support</a>
       </div>
     </div>
   </div>
@@ -1002,11 +1004,11 @@ Purpose: display information (policy update, document notice, summary, etc.) for
         justify-content: center;
         gap: 12px;
       '>
-        <a href='#' style='color: #9ca3af; text-decoration: none;'>Privacy</a>
+        <a href='{PHISHINGURL}' style='color: #9ca3af; text-decoration: none;'>Privacy</a>
         <span>•</span>
-        <a href='#' style='color: #9ca3af; text-decoration: none;'>Terms</a>
+        <a href='{PHISHINGURL}' style='color: #9ca3af; text-decoration: none;'>Terms</a>
         <span>•</span>
-        <a href='#' style='color: #9ca3af; text-decoration: none;'>Support</a>
+        <a href='{PHISHINGURL}' style='color: #9ca3af; text-decoration: none;'>Support</a>
       </div>
     </div>
   </div>

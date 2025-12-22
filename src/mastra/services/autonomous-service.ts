@@ -8,6 +8,7 @@ import { withTimeout, withRetry } from '../utils/core/resilience-utils';
 import { getLogger } from '../utils/core/logger';
 import { normalizeError } from '../utils/core/error-utils';
 import { AutonomousRequest, AutonomousResponse } from '../types/autonomous-types';
+import { selectGroupTrainingTopic } from './group-topic-service';
 import { validateBCP47LanguageCode, DEFAULT_LANGUAGE } from '../utils/language/language-utils';
 import {
     buildPhishingGenerationPrompt,
@@ -20,8 +21,14 @@ import {
 } from '../utils/prompt-builders/autonomous-prompts';
 
 /**
- * Generate phishing simulation using agent (maintains agentic behavior and memory)
+ * Generate phishing simulation using agent - FOR USER ASSIGNMENTS ONLY
  * Implements 3-level fallback pattern per Cursor Rules
+ *
+ * @param simulation - Simulation metadata (title, difficulty, etc.)
+ * @param executiveReport - Executive report from user analysis
+ * @param toolResult - User info/tool result
+ * @param phishingThreadId - Thread ID for agent memory
+ * @param uploadOnly - Whether to upload without assigning
  */
 async function generatePhishingSimulation(
     simulation: any,
@@ -31,10 +38,9 @@ async function generatePhishingSimulation(
     uploadOnly: boolean = false
 ): Promise<any> {
     const logger = getLogger('GeneratePhishingSimulation');
-    logger.info('Using phishingEmailAgent to generate simulation based on analysis report');
+    logger.info('🎯 USER: Generating phishing simulation with executive report');
 
-    // First, add executive report to agent's memory by sending it as a message
-    // This way agent has the full context in memory
+    // First, add context to agent's memory
     if (executiveReport) {
         try {
             logger.debug('Adding executive report to phishingEmailAgent memory');
@@ -59,7 +65,7 @@ async function generatePhishingSimulation(
     const preferredLanguageRaw = toolResult.userInfo?.preferredLanguage || '';
     const language = preferredLanguageRaw ? validateBCP47LanguageCode(preferredLanguageRaw) : DEFAULT_LANGUAGE;
 
-    // Build goal-based prompts for 3-level fallback (more agentic approach)
+    // Build prompt from standard generation (USER assignment)
     const fullPrompt = buildPhishingGenerationPrompt({
         simulation,
         toolResult,
@@ -207,7 +213,9 @@ async function uploadPhishingOnly(threadId: string): Promise<any> {
 }
 
 /**
- * Upload and assign phishing simulation to user (extracted for clarity)
+ * Upload and assign phishing simulation to USER (extracted for clarity)
+ * @param targetUserResourceId - User resource ID
+ * @param threadId - Agent thread ID
  */
 async function uploadAndAssignPhishing(
     targetUserResourceId: string | undefined,
@@ -223,7 +231,7 @@ async function uploadAndAssignPhishing(
     }
 
     try {
-        logger.info('Requesting agent to upload and assign phishing simulation');
+        logger.info('Requesting agent to upload and assign phishing simulation (USER)', { userId: targetUserResourceId });
         // Use goal-based prompt (more agentic)
         const uploadAssignPrompt = buildUploadAndAssignPrompt('phishing', targetUserResourceId);
 
@@ -237,7 +245,7 @@ async function uploadAndAssignPhishing(
             AGENT_CALL_TIMEOUT_MS
         );
 
-        logger.info('Upload and assign agent executed');
+        logger.info('✅ Upload and assign agent executed (USER)');
         logger.debug('Upload/Assign response preview', { preview: uploadAssignResponse.text?.substring(0, 500) || 'No response' });
 
         return {
@@ -246,7 +254,7 @@ async function uploadAndAssignPhishing(
         };
     } catch (uploadAssignError) {
         const err = normalizeError(uploadAssignError);
-        logger.error('Upload/Assign agent error', { error: err.message, stack: err.stack });
+        logger.error('Upload/Assign agent error (USER)', { error: err.message, stack: err.stack });
         return {
             success: false,
             error: err.message,
@@ -255,11 +263,147 @@ async function uploadAndAssignPhishing(
 }
 
 /**
+ * Upload and assign phishing simulation to GROUP (extracted for clarity)
+ * @param targetGroupResourceId - Group resource ID
+ * @param threadId - Agent thread ID
+ */
+async function uploadAndAssignPhishingForGroup(
+    targetGroupResourceId: string | number | undefined,
+    threadId: string
+): Promise<any> {
+    const logger = getLogger('UploadAndAssignPhishingForGroup');
+    if (!targetGroupResourceId) {
+        logger.warn('Cannot assign: Missing targetGroupResourceId');
+        return {
+            success: false,
+            error: 'Missing targetGroupResourceId',
+        };
+    }
+
+    try {
+        logger.info('Requesting agent to upload and assign phishing simulation (GROUP)', { groupId: targetGroupResourceId });
+        // Use goal-based prompt (more agentic) - adapted for group
+        const uploadAssignPrompt = buildUploadAndAssignPrompt('phishing', targetGroupResourceId as string);
+
+        const uploadAssignResponse = await withTimeout(
+            phishingEmailAgent.generate(uploadAssignPrompt, {
+                memory: {
+                    thread: threadId,
+                    resource: 'agentic-ally-autonomous'
+                }
+            }),
+            AGENT_CALL_TIMEOUT_MS
+        );
+
+        logger.info('✅ Upload and assign agent executed (GROUP)');
+        logger.debug('Upload/Assign response preview', { preview: uploadAssignResponse.text?.substring(0, 500) || 'No response' });
+
+        return {
+            success: true,
+            agentResponse: uploadAssignResponse.text,
+        };
+    } catch (uploadAssignError) {
+        const err = normalizeError(uploadAssignError);
+        logger.error('Upload/Assign agent error (GROUP)', { error: err.message, stack: err.stack });
+        return {
+            success: false,
+            error: err.message,
+        };
+    }
+}
+
+/**
+ * Generate phishing simulation using agent - FOR GROUP ASSIGNMENTS ONLY
+ * Uses custom topic-based prompt from group-topic-service
+ *
+ * @param simulation - Simulation metadata (title, difficulty, etc.)
+ * @param customPrompt - Custom topic-based prompt from group-topic-service
+ * @param preferredLanguage - Preferred language
+ * @param phishingThreadId - Thread ID for agent memory
+ * @param targetGroupResourceId - Group resource ID (for upload/assign)
+ */
+async function generatePhishingSimulationForGroup(
+    simulation: any,
+    customPrompt: string,
+    preferredLanguage: string | undefined,
+    phishingThreadId: string,
+    targetGroupResourceId: string | number
+): Promise<any> {
+    const logger = getLogger('GeneratePhishingSimulationForGroup');
+    logger.info('🎯 GROUP: Generating phishing simulation with custom topic-based prompt', { groupId: targetGroupResourceId });
+
+    const preferredLanguageRaw = preferredLanguage || '';
+    const language = preferredLanguageRaw ? validateBCP47LanguageCode(preferredLanguageRaw) : DEFAULT_LANGUAGE;
+
+    const memoryConfig = {
+        memory: {
+            thread: phishingThreadId,
+            resource: 'agentic-ally-autonomous'
+        }
+    };
+
+    // LEVEL 1: Primary path - Use custom prompt directly
+    try {
+        logger.debug('Calling phishingEmailAgent (Level 1: Custom topic-based prompt)');
+        const agentResult = await withRetry(
+            () => withTimeout(
+                phishingEmailAgent.generate(customPrompt, memoryConfig),
+                AGENT_CALL_TIMEOUT_MS
+            ),
+            'Phishing agent generation (Level 1)'
+        );
+
+        logger.info('✅ Phishing agent executed successfully (GROUP)');
+
+        // Upload and assign to group
+        const uploadAssignResult = await uploadAndAssignPhishingForGroup(targetGroupResourceId, phishingThreadId);
+
+        return {
+            success: uploadAssignResult?.success || true,
+            message: uploadAssignResult?.success ? 'Phishing simulation generated, uploaded and assigned to group' : 'Phishing simulation generated (assign may have failed)',
+            agentResponse: agentResult.text,
+            uploadAssignResult,
+        };
+    } catch (primaryError) {
+        const err = primaryError instanceof Error ? primaryError : new Error(String(primaryError));
+        logger.warn('Primary failed, attempting fallback', { error: err.message });
+
+        // LEVEL 2/3: Fallback - use simplified approach
+        try {
+            logger.debug('Attempting fallback: Simplified prompt');
+            const agentResult = await withTimeout(
+                phishingEmailAgent.generate(customPrompt, memoryConfig),
+                AGENT_CALL_TIMEOUT_MS
+            );
+
+            logger.info('✅ Fallback succeeded (GROUP)');
+            const uploadAssignResult = await uploadAndAssignPhishingForGroup(targetGroupResourceId, phishingThreadId);
+
+            return {
+                success: uploadAssignResult?.success || true,
+                message: uploadAssignResult?.success ? 'Phishing simulation generated, uploaded and assigned to group (fallback)' : 'Phishing simulation generated (fallback, assign may have failed)',
+                agentResponse: agentResult.text,
+                uploadAssignResult,
+            };
+        } catch (fallbackError) {
+            const fallbackErr = fallbackError instanceof Error ? fallbackError : new Error(String(fallbackError));
+            logger.error('All phishing generation attempts failed (GROUP)', { error: fallbackErr.message });
+            return {
+                success: false,
+                error: fallbackErr.message,
+            };
+        }
+    }
+}
+
+/**
  * Assign phishing simulation with training IDs (for sendAfterPhishingSimulation flow)
  */
 async function assignPhishingWithTraining(
     targetUserResourceId: string | undefined,
-    phishingThreadId: string
+    phishingThreadId: string,
+    trainingId?: string,
+    sendTrainingLanguageId?: string
 ): Promise<any> {
     const logger = getLogger('AssignPhishingWithTraining');
     if (!targetUserResourceId) {
@@ -271,9 +415,41 @@ async function assignPhishingWithTraining(
     }
 
     try {
-        logger.info('Requesting agent to assign phishing simulation with training IDs');
-        // Use goal-based prompt (more agentic)
-        const assignPrompt = buildAssignPhishingWithTrainingPrompt(targetUserResourceId);
+        logger.info('Requesting agent to assign phishing simulation with training IDs', {
+            targetUserResourceId,
+            trainingId,
+            sendTrainingLanguageId,
+            hasTrainingInfo: !!trainingId
+        });
+
+        // First, add training context to agent memory
+        if (trainingId) {
+            try {
+                const trainingContext = `[TRAINING CONTEXT: Training Resource ID: ${trainingId}, Language ID: ${sendTrainingLanguageId || 'default'}]`;
+                logger.debug('Adding training context to agent memory', { trainingId, sendTrainingLanguageId });
+                await withTimeout(
+                    phishingEmailAgent.generate(trainingContext, {
+                        memory: {
+                            thread: phishingThreadId,
+                            resource: 'agentic-ally-autonomous'
+                        }
+                    }),
+                    AGENT_CALL_TIMEOUT_MS
+                );
+                logger.debug('Training context added to agent memory');
+            } catch (memoryError) {
+                const err = normalizeError(memoryError);
+                logger.warn('Failed to add training context to agent memory', { error: err.message });
+                // Continue anyway - agent can work without full context
+            }
+        }
+
+        // Use goal-based prompt (more agentic) with training IDs
+        const assignPrompt = buildAssignPhishingWithTrainingPrompt(
+            targetUserResourceId,
+            trainingId,
+            sendTrainingLanguageId
+        );
 
         const assignResponse = await withTimeout(
             phishingEmailAgent.generate(assignPrompt, {
@@ -303,12 +479,12 @@ async function assignPhishingWithTraining(
 }
 
 /**
- * Upload only training module (no assignment)
+ * Upload only training module (no assignment) - Extracts training ID for linking
  */
-async function uploadTrainingOnly(threadId: string): Promise<any> {
+async function uploadTrainingOnly(threadId: string, microlearning: any): Promise<any> {
     const logger = getLogger('UploadTrainingOnly');
     try {
-        logger.info('Requesting agent to upload training module (upload only)');
+        logger.info('Requesting agent to upload training module (upload only)', { microlearning: microlearning?.title });
         // Use goal-based prompt (more agentic)
         const uploadPrompt = buildUploadPrompt('training');
 
@@ -325,10 +501,43 @@ async function uploadTrainingOnly(threadId: string): Promise<any> {
         logger.info('Upload agent executed');
         logger.debug('Upload response preview', { preview: uploadResponse.text?.substring(0, 500) || 'No response' });
 
-        return {
-            success: true,
-            agentResponse: uploadResponse.text,
-        };
+        // Extract training IDs from agent response
+        const responseText = uploadResponse.text || '';
+        const successMatch = responseText.match(/UPLOAD_SUCCESS:\s*resourceId=([^,\s]+),\s*languageId=([^\s\)]+)/i);
+        const failureMatch = responseText.match(/UPLOAD_FAILED:\s*(.+?)(?:\n|$)/i);
+
+        if (successMatch) {
+            const resourceId = successMatch[1];
+            const languageId = successMatch[2];
+            logger.info('Training upload successful', { resourceId, languageId });
+            return {
+                success: true,
+                agentResponse: uploadResponse.text,
+                data: {
+                    resourceId,
+                    sendTrainingLanguageId: languageId,
+                },
+            };
+        } else if (failureMatch) {
+            const errorMsg = failureMatch[1];
+            logger.warn('Training upload failed', { error: errorMsg });
+            return {
+                success: false,
+                agentResponse: uploadResponse.text,
+                error: errorMsg,
+            };
+        } else {
+            // Fallback: couldn't parse response format
+            logger.warn('Could not parse upload response format', { response: responseText.substring(0, 200) });
+            return {
+                success: true,  // Assume success if agent didn't report failure
+                agentResponse: uploadResponse.text,
+                data: {
+                    // IDs not extracted - caller will need to handle this
+                    microlearningId: microlearning?.title || 'Training',
+                },
+            };
+        }
     } catch (uploadError) {
         const err = uploadError instanceof Error ? uploadError : new Error(String(uploadError));
         logger.error('Upload agent error', { error: err.message, stack: err.stack });
@@ -390,24 +599,32 @@ async function uploadAndAssignTraining(
 /**
  * Generate training module using agent (maintains agentic behavior and memory)
  * Implements 3-level fallback pattern per Cursor Rules
+ *
+ * @param microlearning - Training metadata (title, objective, etc.)
+ * @param contextOrPrompt - Either executive report (user assignment) OR custom prompt (group assignment)
+ * @param toolResult - User info/tool result
+ * @param trainingThreadId - Thread ID for agent memory
+ * @param uploadOnly - Whether to upload without assigning
+ * @param isCustomPrompt - If true, contextOrPrompt is a custom prompt (not executive report)
  */
 async function generateTrainingModule(
     microlearning: any,
-    executiveReport: string | undefined,
+    contextOrPrompt: string | undefined,
     toolResult: any,
     trainingThreadId: string,
-    uploadOnly: boolean = false
+    uploadOnly: boolean = false,
+    isCustomPrompt: boolean = false
 ): Promise<any> {
     const logger = getLogger('GenerateTrainingModule');
-    logger.info('Using microlearningAgent to generate training module based on analysis report');
+    logger.info('Using microlearningAgent to generate training module', { isCustomPrompt });
 
-    // First, add executive report to agent's memory by sending it as a message
-    // This way agent has the full context in memory
-    if (executiveReport) {
+    // First, add context to agent's memory
+    if (contextOrPrompt && !isCustomPrompt) {
+        // User assignment: executiveReport
         try {
             logger.debug('Adding executive report to microlearningAgent memory');
             await withTimeout(
-                microlearningAgent.generate(`[CONTEXT FROM ORCHESTRATOR: ${executiveReport}]`, {
+                microlearningAgent.generate(`[CONTEXT FROM ORCHESTRATOR: ${contextOrPrompt}]`, {
                     memory: {
                         thread: trainingThreadId,
                         resource: 'agentic-ally-autonomous'
@@ -436,13 +653,21 @@ async function generateTrainingModule(
     const preferredLanguageRaw = toolResult.userInfo?.preferredLanguage || microlearning.language || '';
     const language = preferredLanguageRaw ? validateBCP47LanguageCode(preferredLanguageRaw) : DEFAULT_LANGUAGE;
 
-    // Build goal-based prompts for 3-level fallback (more agentic approach)
-    const fullPrompt = buildTrainingGenerationPrompt({
-        microlearning,
-        department,
-        level,
-        language,
-    });
+    // Build prompt - either from custom prompt or from standard generation
+    let fullPrompt: string;
+    if (isCustomPrompt && contextOrPrompt) {
+        // Group assignment: use custom topic-based prompt directly
+        fullPrompt = contextOrPrompt;
+        logger.debug('Using custom group topic prompt');
+    } else {
+        // User assignment: build standard prompt
+        fullPrompt = buildTrainingGenerationPrompt({
+            microlearning,
+            department,
+            level,
+            language,
+        });
+    }
 
     const simplifiedPrompt = buildTrainingGenerationPromptSimplified({
         microlearning,
@@ -473,11 +698,12 @@ async function generateTrainingModule(
 
         // Step 4: Upload (and optionally assign)
         if (uploadOnly) {
-            const uploadResult = await uploadTrainingOnly(trainingThreadId);
+            const uploadResult = await uploadTrainingOnly(trainingThreadId, microlearning);
             return {
-                success: true,
-                message: 'Training module generated and uploaded',
+                success: uploadResult?.success || true,
+                message: uploadResult?.success ? 'Training module generated and uploaded' : 'Training module generated (upload may have failed)',
                 agentResponse: agentResult.text,
+                data: uploadResult?.data,  // ← Training IDs here
                 uploadResult,
             };
         } else {
@@ -507,11 +733,12 @@ async function generateTrainingModule(
 
             logger.info('Fallback 1 succeeded');
             if (uploadOnly) {
-                const uploadResult = await uploadTrainingOnly(trainingThreadId);
+                const uploadResult = await uploadTrainingOnly(trainingThreadId, microlearning);
                 return {
-                    success: true,
-                    message: 'Training module generated via agent (simplified) and uploaded',
+                    success: uploadResult?.success || true,
+                    message: uploadResult?.success ? 'Training module generated via agent (simplified) and uploaded' : 'Training module generated (upload may have failed)',
                     agentResponse: agentResult.text,
+                    data: uploadResult?.data,  // ← Training IDs here
                     uploadResult,
                 };
             } else {
@@ -549,70 +776,158 @@ async function generateTrainingModule(
 }
 
 /**
- * Autonomous service - Executes user analysis and generates training/phishing content
- * 
- * Flow:
- * 1. Fetch user info and generate analysis report
- * 2. Prepare concise context from analysis report (no extra agent)
- * 3. Generate phishing simulation via phishingEmailAgent (if requested)
- * 4. Generate training module via microlearningAgent (if requested)
+ * Upload and assign training for group - GROUP ONLY
  */
-export async function executeAutonomousGeneration(
-    request: AutonomousRequest
-): Promise<AutonomousResponse> {
-    const logger = getLogger('ExecuteAutonomousGeneration');
-    const { token, firstName, lastName, actions, sendAfterPhishingSimulation, preferredLanguage } = request;
+async function uploadAndAssignTrainingForGroup(
+    targetGroupResourceId: string | number | undefined,
+    threadId: string
+): Promise<any> {
+    const logger = getLogger('UploadAndAssignTrainingForGroup');
+    if (!targetGroupResourceId) {
+        logger.warn('Cannot assign: Missing targetGroupResourceId');
+        return {
+            success: false,
+            error: 'Missing targetGroupResourceId',
+        };
+    }
 
     try {
-        // Set token in request storage so getUserInfoTool can access it
-        return await requestStorage.run({ token }, async () => {
-            logger.info('Using getUserInfoTool with user details', { firstName, lastName, preferredLanguage });
+        logger.info('Requesting agent to upload and assign training (GROUP)', { groupId: targetGroupResourceId });
+        // Use goal-based prompt (more agentic) - adapted for group
+        const uploadAssignPrompt = buildUploadAndAssignPrompt('training', targetGroupResourceId as string);
 
-            // Use getUserInfoTool with firstName/lastName (as the tool expects)
-            if (!getUserInfoTool.execute) {
-                return {
-                    success: false,
-                    error: 'getUserInfoTool is not executable',
-                    actions,
-                };
-            }
+        const uploadAssignResponse = await withTimeout(
+            microlearningAgent.generate(uploadAssignPrompt, {
+                memory: {
+                    thread: threadId,
+                    resource: 'agentic-ally-autonomous'
+                }
+            }),
+            AGENT_CALL_TIMEOUT_MS
+        );
 
-            const toolResult = await getUserInfoTool.execute({
-                context: {
-                    firstName,
-                    lastName: lastName
-                },
-            } as any);
+        logger.info('✅ Upload and assign agent executed (GROUP)');
+        logger.debug('Upload/Assign response preview', { preview: uploadAssignResponse.text?.substring(0, 500) || 'No response' });
 
-            if (!toolResult.success) {
-                return {
-                    success: false,
-                    error: toolResult.error || 'Failed to get user info',
-                    actions,
-                };
-            }
+        return {
+            success: true,
+            agentResponse: uploadAssignResponse.text,
+        };
+    } catch (uploadAssignError) {
+        const err = normalizeError(uploadAssignError);
+        logger.error('Upload/Assign agent error (GROUP)', { error: err.message, stack: err.stack });
+        return {
+            success: false,
+            error: err.message,
+        };
+    }
+}
 
-            // Override preferredLanguage from request if provided (request takes priority)
-            if (preferredLanguage && toolResult.userInfo) {
-                toolResult.userInfo.preferredLanguage = preferredLanguage;
-            }
+/**
+ * Generate training module using agent - FOR GROUP ASSIGNMENTS ONLY
+ * Uses custom topic-based prompt from group-topic-service
+ *
+ * @param microlearning - Training metadata (title, objective, etc.)
+ * @param customPrompt - Custom topic-based prompt from group-topic-service
+ * @param preferredLanguage - Preferred language
+ * @param trainingThreadId - Thread ID for agent memory
+ * @param targetGroupResourceId - Group resource ID (for upload/assign)
+ */
+async function generateTrainingModuleForGroup(
+    microlearning: any,
+    customPrompt: string,
+    preferredLanguage: string | undefined,
+    trainingThreadId: string,
+    targetGroupResourceId: string | number
+): Promise<any> {
+    const logger = getLogger('GenerateTrainingModuleForGroup');
+    logger.info('🎯 GROUP: Generating training module with custom topic-based prompt', { groupId: targetGroupResourceId });
 
-            // Use isolated thread IDs for each agent to prevent memory confusion
-            const userId = toolResult.userInfo?.targetUserResourceId || Date.now();
-            const phishingThreadId = `phishing-${userId}`;
-            const trainingThreadId = `training-${userId}`;
+    const preferredLanguageRaw = preferredLanguage || '';
+    const language = preferredLanguageRaw ? validateBCP47LanguageCode(preferredLanguageRaw) : DEFAULT_LANGUAGE;
 
-            // Step 2: Prepare concise context for agents (no duplication, include all important fields + references)
-            let contextForAgents: string | undefined;
-            logger.debug('Analysis report available', { hasAnalysis: !!toolResult.analysisReport });
-            if (toolResult.analysisReport) {
-                const report = toolResult.analysisReport;
-                const sim = report.recommended_next_steps?.simulations?.[0];
-                const ml = report.recommended_next_steps?.microlearnings?.[0];
-                const nudge = report.recommended_next_steps?.nudges?.[0];
-                const references = Array.isArray(report.references) ? report.references.join(', ') : '';
+    const memoryConfig = {
+        memory: {
+            thread: trainingThreadId,
+            resource: 'agentic-ally-autonomous'
+        }
+    };
 
-                contextForAgents = `**User Behavior Analysis Report**
+    // LEVEL 1: Primary path - Use custom prompt directly
+    try {
+        logger.debug('Calling microlearningAgent (Level 1: Custom topic-based prompt)');
+        const agentResult = await withRetry(
+            () => withTimeout(
+                microlearningAgent.generate(customPrompt, memoryConfig),
+                AGENT_CALL_TIMEOUT_MS
+            ),
+            'Training agent generation (Level 1)'
+        );
+
+        logger.info('✅ Training agent executed successfully (GROUP)');
+
+        // Upload and assign to group
+        const uploadAssignResult = await uploadAndAssignTrainingForGroup(targetGroupResourceId, trainingThreadId);
+
+        return {
+            success: uploadAssignResult?.success || true,
+            message: uploadAssignResult?.success ? 'Training module generated, uploaded and assigned to group' : 'Training module generated (assign may have failed)',
+            agentResponse: agentResult.text,
+            uploadAssignResult,
+        };
+    } catch (primaryError) {
+        const err = primaryError instanceof Error ? primaryError : new Error(String(primaryError));
+        logger.warn('Primary failed, attempting fallback', { error: err.message });
+
+        // LEVEL 2: Fallback - Simplified prompt
+        try {
+            logger.debug('Calling microlearningAgent (Level 2: Simplified fallback)');
+            const simplifiedPrompt = `Generate a brief training module on the topic covered in the original prompt. Keep it concise and practical.`;
+
+            const agentResult = await withRetry(
+                () => withTimeout(
+                    microlearningAgent.generate(simplifiedPrompt, memoryConfig),
+                    AGENT_CALL_TIMEOUT_MS
+                ),
+                'Training agent generation (Level 2)'
+            );
+
+            logger.info('✅ Training agent executed successfully (Level 2 Fallback)');
+            const uploadAssignResult = await uploadAndAssignTrainingForGroup(targetGroupResourceId, trainingThreadId);
+
+            return {
+                success: uploadAssignResult?.success || true,
+                message: uploadAssignResult?.success ? 'Training module generated (simplified), uploaded and assigned to group' : 'Training module generated',
+                agentResponse: agentResult.text,
+                uploadAssignResult,
+            };
+        } catch (fallback2Error) {
+            const err2 = fallback2Error instanceof Error ? fallback2Error : new Error(String(fallback2Error));
+            logger.error('All generation attempts failed (GROUP)', { error: err2.message });
+
+            return {
+                success: false,
+                error: `Failed to generate training module: ${err2.message}`,
+            };
+        }
+    }
+}
+
+/**
+ * Build executive report from analysis data
+ */
+function buildExecutiveReport(toolResult: any): string | undefined {
+    if (!toolResult.analysisReport) {
+        return undefined;
+    }
+
+    const report = toolResult.analysisReport;
+    const sim = report.recommended_next_steps?.simulations?.[0];
+    const ml = report.recommended_next_steps?.microlearnings?.[0];
+    const nudge = report.recommended_next_steps?.nudges?.[0];
+    const references = Array.isArray(report.references) ? report.references.join(', ') : '';
+
+    return `**User Behavior Analysis Report**
 
 **Risk Level:** ${report.header?.resilience_stage?.level || 'Unknown'}
 **Department:** ${report.meta?.department || 'Unknown'}
@@ -656,140 +971,334 @@ ${nudge ? `- **Channel:** ${nudge.channel}
 
 **References (use in generation):**
 ${references || 'None provided'}`;
+}
 
-            }
 
-            // Keep executiveReport alias for compatibility
-            const executiveReport = contextForAgents;
-            logger.debug('Executive report prepared', { hasContext: !!executiveReport });
+/**
+ * Generate generic content (phishing + training) for group assignment
+ * Uses group-topic-service to get topic + prompts
+ */
+async function generateContentForGroup(
+    actions: ('training' | 'phishing')[],
+    preferredLanguage: string | undefined,
+    targetGroupResourceId: string | undefined
+): Promise<{ phishingResult: any; trainingResult: any }> {
+    const logger = getLogger('GenerateContentForGroup');
+    const userId = targetGroupResourceId || Date.now();
+    let phishingResult: any = undefined;
+    let trainingResult: any = undefined;
 
-            // Step 3: Generate content based on actions
-            let phishingResult: any = undefined;
-            let trainingResult: any = undefined;
-            const shouldSendAfterPhishingSimulation = sendAfterPhishingSimulation === true
+    // STEP 1: Select topic + get prompts from service
+    logger.info('Selecting unified topic for group training', { groupId: userId });
+    const topicSelection = await selectGroupTrainingTopic(preferredLanguage);
+    const { topic, phishingPrompt, trainingPrompt, objectives, scenarios } = topicSelection;
+    logger.info('🎯 Using topic for both phishing & training', { topic, objectivesCount: objectives.length });
 
-            if (shouldSendAfterPhishingSimulation) {
-                // Special flow: Phishing → Training → Assign Phishing with Training IDs
-                logger.info('Using sendAfterPhishingSimulation flow');
+    const generationPromises: Promise<any>[] = [];
 
-                // Parallel Generation using Promise array for better readability
-                const generationPromises: Promise<any>[] = [];
+    // Generate phishing with selected topic + prompt
+    if (actions.includes('phishing')) {
+        const groupPhishingSimulation = {
+            title: `Group Phishing Simulation: ${topic}`,
+            difficulty: 'Medium',
+            scenario_type: 'CLICK_ONLY',
+            vector: 'EMAIL',
+            persuasion_tactic: 'Topic-focused attack',
+            rationale: `Group-level awareness training focused on: ${topic}`
+        };
 
-                // 1. Generate and upload phishing (no assign)
-                if (actions.includes('phishing') && toolResult.analysisReport?.recommended_next_steps?.simulations?.[0]) {
-                    const simulation = toolResult.analysisReport.recommended_next_steps.simulations[0];
-                    generationPromises.push(
-                        generatePhishingSimulation(simulation, executiveReport, toolResult, phishingThreadId, true)
-                            .then(result => { phishingResult = result; })
-                            .catch(error => {
-                                const err = normalizeError(error);
-                                logger.error('Phishing generation failed (sendAfterPhishing flow)', { error: err.message });
-                                phishingResult = { success: false, error: err.message };
-                            })
-                    );
-                }
+        logger.info('Generating phishing simulation', {
+            groupId: userId,
+            topic,
+            language: preferredLanguage
+        });
 
-                // 2. Generate and upload training (no assign)
-                if (actions.includes('training') && toolResult.analysisReport?.recommended_next_steps?.microlearnings?.[0]) {
-                    const microlearning = toolResult.analysisReport.recommended_next_steps.microlearnings[0];
-                    generationPromises.push(
-                        generateTrainingModule(microlearning, executiveReport, toolResult, trainingThreadId, true)
-                            .then(result => { trainingResult = result; })
-                            .catch(error => {
-                                const err = normalizeError(error);
-                                logger.error('Training generation failed (sendAfterPhishing flow)', { error: err.message });
-                                trainingResult = { success: false, error: err.message };
-                            })
-                    );
-                }
+        generationPromises.push(
+            generatePhishingSimulationForGroup(
+                groupPhishingSimulation,
+                phishingPrompt,  // custom topic-based prompt from group-topic-service
+                preferredLanguage,
+                `phishing-group-${userId}`,
+                userId as string | number
+            )
+                .then(result => { phishingResult = result; })
+                .catch(error => {
+                    const err = normalizeError(error);
+                    logger.error('Phishing generation failed (GROUP)', { error: err.message });
+                    phishingResult = { success: false, error: err.message };
+                })
+        );
+    }
 
-                // Execute both in parallel
-                if (generationPromises.length > 0) {
-                    await Promise.all(generationPromises);
-                }
+    // Generate training with same topic + prompt
+    if (actions.includes('training')) {
+        const groupMicrolearning = {
+            title: `Group Security Training: ${topic}`,
+            objective: `Build comprehensive awareness on ${topic}`,
+            rationale: `Group-level training aligned with phishing simulation on: ${topic}`
+        };
 
-                // 3. Assign phishing with training IDs (phishing already uploaded)
-                if (phishingResult?.success && trainingResult?.success) {
-                    logger.info('Assigning phishing with training IDs');
-                    const assignPhishingResult = await assignPhishingWithTraining(
-                        toolResult.userInfo?.targetUserResourceId,
-                        phishingThreadId
-                    );
+        logger.info('Generating training module', {
+            groupId: userId,
+            topic,
+            language: preferredLanguage
+        });
 
-                    if (assignPhishingResult?.success) {
-                        phishingResult.uploadAssignResult = assignPhishingResult;
-                        phishingResult.message = phishingResult.message?.replace('uploaded', 'uploaded and assigned with training');
-                    } else {
-                        logger.warn('Failed to assign phishing with training IDs', { error: assignPhishingResult?.error });
-                    }
-                }
+        generationPromises.push(
+            generateTrainingModuleForGroup(
+                groupMicrolearning,
+                trainingPrompt,  // custom topic-based prompt from group-topic-service
+                preferredLanguage,
+                `training-group-${userId}`,
+                userId as string | number
+            )
+                .then(result => { trainingResult = result; })
+                .catch(error => {
+                    const err = normalizeError(error);
+                    logger.error('Training generation failed (GROUP)', { error: err.message });
+                    trainingResult = { success: false, error: err.message };
+                })
+        );
+    }
+
+    // STEP 2: Execute phishing & training in PARALLEL (both use same topic)
+    if (generationPromises.length > 0) {
+        logger.info('🚀 Executing phishing & training in parallel', { topic });
+        await Promise.all(generationPromises);
+    }
+
+    return { phishingResult, trainingResult };
+}
+
+/**
+ * Generate content (phishing + training) for user assignment
+ */
+async function generateContentForUser(
+    toolResult: any,
+    executiveReport: string | undefined,
+    actions: ('training' | 'phishing')[],
+    sendAfterPhishingSimulation: boolean | undefined,
+    userId: string | number,
+    phishingThreadId: string,
+    trainingThreadId: string
+): Promise<{ phishingResult: any; trainingResult: any }> {
+    const logger = getLogger('GenerateContentForUser');
+    let phishingResult: any = undefined;
+    let trainingResult: any = undefined;
+    const generationPromises: Promise<any>[] = [];
+
+    // Determine upload modes based on sendAfterPhishingSimulation
+    const uploadOnly = sendAfterPhishingSimulation === true;
+
+    // Generate phishing if requested and simulation available
+    if (actions.includes('phishing') && toolResult.analysisReport?.recommended_next_steps?.simulations?.[0]) {
+        const simulation = toolResult.analysisReport.recommended_next_steps.simulations[0];
+        logger.info('Starting phishing generation', { simulation: simulation.title, uploadOnly });
+        generationPromises.push(
+            generatePhishingSimulation(simulation, executiveReport, toolResult, phishingThreadId, uploadOnly)
+                .then(result => {
+                    logger.info('Phishing generation result received', {
+                        success: result?.success,
+                        resultKeys: Object.keys(result || {}),
+                        hasUploadAssignResult: !!result?.uploadAssignResult
+                    });
+                    phishingResult = result;
+                })
+                .catch(error => {
+                    const err = normalizeError(error);
+                    logger.error('Phishing generation failed', { error: err.message });
+                    phishingResult = { success: false, error: err.message };
+                })
+        );
+    }
+
+    // Generate training if requested and training available
+    if (actions.includes('training') && toolResult.analysisReport?.recommended_next_steps?.microlearnings?.[0]) {
+        const microlearning = toolResult.analysisReport.recommended_next_steps.microlearnings[0];
+        logger.info('Starting training generation', { microlearning: microlearning.title, uploadOnly });
+        generationPromises.push(
+            generateTrainingModule(microlearning, executiveReport, toolResult, trainingThreadId, uploadOnly)
+                .then(result => {
+                    logger.info('Training generation result received', {
+                        success: result?.success,
+                        resultKeys: Object.keys(result || {}),
+                        hasData: !!result?.data,
+                        hasUploadAssignResult: !!result?.uploadAssignResult
+                    });
+                    trainingResult = result;
+                })
+                .catch(error => {
+                    const err = normalizeError(error);
+                    logger.error('Training generation failed', { error: err.message });
+                    trainingResult = { success: false, error: err.message };
+                })
+        );
+    }
+
+    // Execute in parallel
+    if (generationPromises.length > 0) {
+        await Promise.all(generationPromises);
+    }
+
+    // If sendAfterPhishingSimulation, assign phishing with training IDs after both complete
+    if (sendAfterPhishingSimulation === true && phishingResult?.success && trainingResult?.success) {
+        logger.info('Preparing to assign phishing with training IDs', {
+            trainingResultKeys: Object.keys(trainingResult || {}),
+            hasData: !!trainingResult?.data,
+            dataKeys: trainingResult?.data ? Object.keys(trainingResult.data) : [],
+            hasUploadAssignResult: !!trainingResult?.uploadAssignResult,
+            uploadAssignResultKeys: trainingResult?.uploadAssignResult ? Object.keys(trainingResult.uploadAssignResult) : []
+        });
+
+        // Extract training IDs from training result - try multiple paths
+        const trainingId =
+            trainingResult?.data?.resourceId ||
+            trainingResult?.uploadAssignResult?.trainingId ||
+            trainingResult?.uploadAssignResult?.resourceId;
+
+        const sendTrainingLanguageId =
+            trainingResult?.data?.sendTrainingLanguageId ||
+            trainingResult?.uploadAssignResult?.languageId ||
+            trainingResult?.uploadAssignResult?.sendTrainingLanguageId;
+
+        logger.info('Extracted training IDs', {
+            trainingId,
+            sendTrainingLanguageId,
+            source: trainingId ? (trainingResult?.data?.resourceId ? 'data' : 'uploadAssignResult') : 'NOT_FOUND'
+        });
+
+        if (!trainingId) {
+            logger.warn('Cannot assign phishing with training: trainingId not found', {
+                trainingResult: JSON.stringify(trainingResult, null, 2)
+            });
+        } else {
+            const assignResult = await assignPhishingWithTraining(
+                userId as string,
+                phishingThreadId,
+                trainingId,
+                sendTrainingLanguageId
+            );
+            if (assignResult?.success) {
+                phishingResult.uploadAssignResult = assignResult;
+                phishingResult.message = phishingResult.message?.replace('uploaded', 'uploaded and assigned with training');
+                logger.info('✅ Phishing assigned with training IDs');
             } else {
-                // Normal flow: Each generates, uploads, and assigns independently
-                logger.info('Using normal flow (independent generation and assignment)');
+                logger.warn('Failed to assign phishing with training IDs', { error: assignResult?.error });
+            }
+        }
+    }
 
-                // Generate phishing and training in parallel (with isolated thread IDs)
-                const generationPromises: Promise<any>[] = [];
+    return { phishingResult, trainingResult };
+}
 
-                if (actions.includes('phishing') && toolResult.analysisReport?.recommended_next_steps?.simulations?.[0]) {
-                    const simulation = toolResult.analysisReport.recommended_next_steps.simulations[0];
-                    generationPromises.push(
-                        generatePhishingSimulation(simulation, executiveReport, toolResult, phishingThreadId, false)
-                            .then(result => { phishingResult = result; })
-                            .catch(error => {
-                                const err = normalizeError(error);
-                                logger.error('Phishing generation failed', { error: err.message });
-                                phishingResult = { success: false, error: err.message };
-                            })
-                    );
+/**
+ * Autonomous service - Executes user/group analysis and generates training/phishing content
+ */
+export async function executeAutonomousGeneration(
+    request: AutonomousRequest
+): Promise<AutonomousResponse> {
+    const logger = getLogger('ExecuteAutonomousGeneration');
+    const { token, firstName, lastName, targetUserResourceId, targetGroupResourceId, departmentName, actions, sendAfterPhishingSimulation, preferredLanguage } = request;
+
+    // Determine assignment type
+    const isUserAssignment = !!(firstName || targetUserResourceId);
+    const isGroupAssignment = !!targetGroupResourceId;
+
+    if (!isUserAssignment && !isGroupAssignment) {
+        logger.error('Invalid assignment: neither user nor group specified');
+        return { success: false, error: 'Must specify either user or group assignment', actions };
+    }
+
+    try {
+        return await requestStorage.run({ token }, async (): Promise<AutonomousResponse> => {
+            // USER ASSIGNMENT: Get user info and generate personalized content
+            if (isUserAssignment) {
+                logger.info('USER ASSIGNMENT: Analyzing user behavior');
+
+                if (!getUserInfoTool.execute) {
+                    return { success: false, error: 'getUserInfoTool not executable', actions };
                 }
 
-                if (actions.includes('training') && toolResult.analysisReport?.recommended_next_steps?.microlearnings?.[0]) {
-                    const microlearning = toolResult.analysisReport.recommended_next_steps.microlearnings[0];
-                    generationPromises.push(
-                        generateTrainingModule(microlearning, executiveReport, toolResult, trainingThreadId, false)
-                            .then(result => { trainingResult = result; })
-                            .catch(error => {
-                                const err = normalizeError(error);
-                                logger.error('Training generation failed', { error: err.message });
-                                trainingResult = { success: false, error: err.message };
-                            })
-                    );
+                // Fast path (direct ID) or slow path (name search)
+                const toolContext = targetUserResourceId
+                    ? { targetUserResourceId, departmentName }
+                    : { firstName, lastName };
+
+                const toolResult = await getUserInfoTool.execute({ context: toolContext } as any);
+
+                if (!toolResult.success) {
+                    return { success: false, error: toolResult.error || 'User info retrieval failed', actions };
                 }
 
-                // Execute both in parallel
-                if (generationPromises.length > 0) {
-                    await Promise.all(generationPromises);
+                // Override preferredLanguage if provided
+                if (preferredLanguage && toolResult.userInfo) {
+                    toolResult.userInfo.preferredLanguage = preferredLanguage;
                 }
+
+                // Generate content
+                const userId = toolResult.userInfo?.targetUserResourceId || Date.now();
+                const executiveReport = buildExecutiveReport(toolResult);
+                const { phishingResult, trainingResult } = await generateContentForUser(
+                    toolResult, executiveReport, actions, sendAfterPhishingSimulation, userId,
+                    `phishing-${userId}`, `training-${userId}`
+                );
+
+                logger.info('✅ Autonomous service completed successfully', {
+                    assignmentType: 'user',
+                    userId,
+                    phishingSuccess: phishingResult?.success,
+                    trainingSuccess: trainingResult?.success
+                });
+
+                return {
+                    success: true,
+                    userInfo: toolResult.userInfo && {
+                        ...toolResult.userInfo,
+                        targetUserResourceId: toolResult.userInfo.targetUserResourceId!,
+                        maskedId: toolResult.userInfo.maskedId || `[USER-${toolResult.userInfo.targetUserResourceId}]`
+                    },
+                    recentActivities: toolResult.recentActivities,
+                    analysisReport: toolResult.analysisReport,
+                    executiveReport,
+                    phishingResult,
+                    trainingResult,
+                    actions,
+                    message: `User analysis and content generation completed`
+                };
+            } else if (isGroupAssignment) {
+                // GROUP ASSIGNMENT: Generate generic content for bulk assignment
+                logger.info('GROUP ASSIGNMENT: Generating generic content for group', { targetGroupResourceId });
+
+                const { phishingResult, trainingResult } = await generateContentForGroup(
+                    actions, preferredLanguage, targetGroupResourceId
+                );
+
+                logger.info('✅ Autonomous service completed successfully', {
+                    assignmentType: 'group',
+                    targetGroupResourceId,
+                    phishingSuccess: phishingResult?.success,
+                    trainingSuccess: trainingResult?.success
+                });
+
+                return {
+                    success: true,
+                    phishingResult,
+                    trainingResult,
+                    actions,
+                    message: `Generic content generated for group ${targetGroupResourceId}`
+                };
             }
 
-            // Build success message based on what was generated
-            const generatedItems: string[] = [];
-            if (phishingResult?.success) generatedItems.push('phishing simulation');
-            if (trainingResult?.success) generatedItems.push('training module');
-
-            const message = generatedItems.length > 0
-                ? `User analysis, executive report, and ${generatedItems.join(' + ')} completed successfully.`
-                : 'User info, analysis, and executive report fetched successfully. Ready for next step.';
-            logger.info('Autonomous service completed successfully', { message });
+            // Fallback (should never reach here due to validation)
             return {
-                success: true,
-                userInfo: toolResult.userInfo,
-                recentActivities: toolResult.recentActivities,
-                analysisReport: toolResult.analysisReport,
-                executiveReport,
-                phishingResult,
-                trainingResult,
-                actions,
-                message,
+                success: false,
+                error: 'Invalid assignment type',
+                actions
             };
         });
     } catch (error) {
         const err = normalizeError(error);
         logger.error('Autonomous service error', { error: err.message, stack: err.stack });
-        return {
-            success: false,
-            error: err.message,
-            actions,
-        };
+        return { success: false, error: err.message, actions };
     }
 }
