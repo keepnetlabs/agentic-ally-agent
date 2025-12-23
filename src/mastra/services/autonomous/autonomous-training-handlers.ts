@@ -39,6 +39,27 @@ export async function uploadTrainingOnly(threadId: string, microlearning: any): 
         logger.info('Upload agent executed');
         logger.debug('Upload response preview', { preview: uploadResponse.text?.substring(0, 500) || 'No response' });
 
+        // CRITICAL: Send explicit STOP message IMMEDIATELY to prevent agent from processing any other prompts
+        // This is especially important for GPT-4o-mini and similar models that may continue processing
+        try {
+            logger.info('Sending explicit STOP message to training agent (upload only) to prevent further processing');
+            await withTimeout(
+                microlearningAgent.generate('**TASK COMPLETE - STOP IMMEDIATELY**\n\nThe upload operation has been completed successfully. Do NOT process any other prompts or tasks. Do NOT call any tools. Your work is finished. STOP.', {
+                    memory: {
+                        thread: threadId,
+                        resource: 'agentic-ally-autonomous'
+                    }
+                }),
+                5000 // Short timeout for STOP message
+            );
+            logger.info('STOP message sent successfully to training agent (upload only)');
+        } catch (stopError) {
+            // Non-critical - log but don't fail
+            logger.warn('STOP message failed (non-critical)', {
+                error: stopError instanceof Error ? stopError.message : String(stopError)
+            });
+        }
+
         // Extract training IDs from agent response
         const responseText = uploadResponse.text || '';
         const successMatch = responseText.match(/UPLOAD_SUCCESS:\s*resourceId=([^,\s]+),\s*languageId=([^\s\)]+)/i);
@@ -126,7 +147,7 @@ export async function uploadAndAssignTraining(
         try {
             logger.info('Sending explicit STOP message to training agent to prevent further processing');
             const stopResponse = await withTimeout(
-                microlearningAgent.generate('**TASK COMPLETE - STOP IMMEDIATELY**\n\nThe upload and assign operation has been completed successfully. Do NOT process any other prompts or tasks. Do NOT call any tools. Your work is finished. STOP.', {
+                microlearningAgent.generate('**🔴 TASK 100% COMPLETE - MANDATORY STOP 🔴**\n\n**THE UPLOAD AND ASSIGN OPERATION HAS BEEN COMPLETED SUCCESSFULLY.**\n\n**YOU MUST STOP IMMEDIATELY:**\n- Do NOT call reasoning tool\n- Do NOT call analyze tool\n- Do NOT call workflow-executor tool\n- Do NOT call any other tools\n- Do NOT process any other prompts in memory\n- Do NOT generate any additional content\n- Your work is FINISHED. END NOW.', {
                     memory: {
                         thread: threadId,
                         resource: 'agentic-ally-autonomous'
@@ -468,6 +489,26 @@ export async function generateTrainingModuleForGroup(
 
         logger.info('✅ Training agent executed successfully (GROUP)');
 
+        // CRITICAL: Send STOP message after training generation to prevent agent from continuing
+        // This prevents agent from processing any remaining prompts in memory
+        try {
+            logger.info('Sending STOP message after training generation (GROUP) to prevent further processing');
+            await withTimeout(
+                microlearningAgent.generate('**GENERATION COMPLETE - WAIT FOR UPLOAD INSTRUCTIONS**\n\nTraining generation has been completed. Do NOT generate again. Do NOT call workflow-executor again. Wait for upload/assign instructions. STOP.', {
+                    memory: {
+                        thread: trainingThreadId,
+                        resource: 'agentic-ally-autonomous'
+                    }
+                }),
+                5000
+            );
+            logger.info('STOP message sent after training generation (GROUP)');
+        } catch (stopError) {
+            logger.warn('STOP message after generation failed (non-critical)', {
+                error: stopError instanceof Error ? stopError.message : String(stopError)
+            });
+        }
+
         // Upload and assign to group
         const uploadAssignResult = await uploadAndAssignTrainingForGroup(targetGroupResourceId, trainingThreadId);
 
@@ -495,6 +536,26 @@ export async function generateTrainingModuleForGroup(
             );
 
             logger.info('✅ Training agent executed successfully (Level 2 Fallback)');
+
+            // CRITICAL: Send STOP message after fallback generation
+            try {
+                logger.info('Sending STOP message after fallback training generation (GROUP)');
+                await withTimeout(
+                    microlearningAgent.generate('**GENERATION COMPLETE - WAIT FOR UPLOAD INSTRUCTIONS**\n\nTraining generation has been completed. Do NOT generate again. Do NOT call workflow-executor again. Wait for upload/assign instructions. STOP.', {
+                        memory: {
+                            thread: trainingThreadId,
+                            resource: 'agentic-ally-autonomous'
+                        }
+                    }),
+                    5000
+                );
+                logger.info('STOP message sent after fallback generation (GROUP)');
+            } catch (stopError) {
+                logger.warn('STOP message after fallback generation failed (non-critical)', {
+                    error: stopError instanceof Error ? stopError.message : String(stopError)
+                });
+            }
+
             const uploadAssignResult = await uploadAndAssignTrainingForGroup(targetGroupResourceId, trainingThreadId);
 
             return {

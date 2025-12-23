@@ -129,7 +129,9 @@ function extractStringsWithPaths(obj: any, protectedKeys: string[], currentPath 
  * =======================================================*/
 function bindTranslatedStrings(original: any, extracted: ExtractedString[], translated: string[]): any {
     if (extracted.length !== translated.length) {
+        const logger = getLogger('BindTranslatedStrings');
         const errorInfo = errorService.validation(`Mismatch: extracted ${extracted.length} strings but got ${translated.length} translations`, { extracted: extracted.length, translated: translated.length });
+        logErrorInfo(logger, 'error', 'Translation binding failed', errorInfo);
         throw new Error(errorInfo.message);
     }
     const result = JSON.parse(JSON.stringify(original));
@@ -343,6 +345,7 @@ export const inboxTranslateJsonTool = new Tool({
 
             if (allTranslated.length !== extracted.length) {
                 const errorInfo = errorService.validation(`Total mismatch: expected ${extracted.length}, got ${allTranslated.length}`, { expected: extracted.length, got: allTranslated.length });
+                logErrorInfo(logger, 'error', 'Translation length mismatch', errorInfo);
                 throw new Error(errorInfo.message);
             }
 

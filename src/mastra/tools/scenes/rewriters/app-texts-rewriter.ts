@@ -3,7 +3,8 @@ import { cleanResponse } from '../../../utils/content-processors/json-cleaner';
 import { LOCALIZER_PARAMS } from '../../../utils/config/llm-generation-params';
 import { getLanguagePrompt } from '../../../utils/language/localization-language-rules';
 import { getLogger } from '../../../utils/core/logger';
-import { normalizeError } from '../../../utils/core/error-utils';
+import { normalizeError, logErrorInfo } from '../../../utils/core/error-utils';
+import { errorService } from '../../../services/error-service';
 
 interface RewriteContext {
     sourceLanguage: string;
@@ -111,7 +112,8 @@ Output (JSON only):`;
         return rewritten;
     } catch (error) {
         const err = normalizeError(error);
-        logger.error('App Texts rewrite failed', { error: err.message, stack: err.stack });
+        const errorInfo = errorService.aiModel(`App Texts rewrite failed: ${err.message}`, { stack: err.stack });
+        logErrorInfo(logger, 'error', 'App Texts rewrite failed', errorInfo);
         throw error;
     }
 }

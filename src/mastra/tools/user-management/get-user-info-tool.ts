@@ -248,7 +248,8 @@ export const getUserInfoTool = createTool({
 
                 if (!userSearchResponse.ok) {
                     const errorInfo = errorService.external(`User search API error: ${userSearchResponse.status}`, { status: userSearchResponse.status });
-                    throw new Error(errorInfo.message);
+                    logErrorInfo(logger, 'error', 'User search API failed', errorInfo);
+                    return createToolErrorResponse(errorInfo);
                 }
                 const userSearchData = await userSearchResponse.json();
                 const users = userSearchData?.items || userSearchData?.data?.results || [];

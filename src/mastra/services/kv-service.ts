@@ -1,6 +1,7 @@
 import { getLogger, startTimer } from '../utils/core/logger';
 import { withRetry } from '../utils/core/resilience-utils';
-import { normalizeError } from '../utils/core/error-utils';
+import { normalizeError, logErrorInfo } from '../utils/core/error-utils';
+import { errorService } from './error-service';
 
 /**
  * KV Service for direct Cloudflare KV REST API operations
@@ -104,7 +105,14 @@ export class KVService {
               return null; // Key not found - don't retry
             }
             const errorText = await response.text();
-            throw new Error(`KV GET failed with status ${response.status}: ${errorText.substring(0, 200)}`);
+            const errorInfo = errorService.external(`KV GET failed with status ${response.status}`, {
+              status: response.status,
+              errorText: errorText.substring(0, 200),
+              key,
+              operation: 'GET'
+            });
+            logErrorInfo(this.logger, 'error', 'KV GET failed', errorInfo);
+            throw new Error(errorInfo.message);
           }
 
           const text = await response.text();
@@ -442,7 +450,9 @@ export class KVService {
     try {
       const microlearningId = microlearning.microlearning_id;
       if (!microlearningId) {
-        throw new Error('Microlearning ID is required');
+        const errorInfo = errorService.validation('Microlearning ID is required', { operation: 'saveMicrolearning' });
+        logErrorInfo(this.logger, 'error', 'Microlearning ID validation failed', errorInfo);
+        throw new Error(errorInfo.message);
       }
 
       const baseKey = `ml:${microlearningId}:base`;
@@ -469,7 +479,12 @@ export class KVService {
       const baseData = await this.get(baseKey);
 
       if (!baseData?.microlearning_metadata) {
-        throw new Error('Microlearning not found or invalid');
+        const errorInfo = errorService.notFound('Microlearning not found or invalid', {
+          microlearningId,
+          operation: 'getMicrolearning'
+        });
+        logErrorInfo(this.logger, 'error', 'Microlearning validation failed', errorInfo);
+        throw new Error(errorInfo.message);
       }
 
       // Merge existing + new languages

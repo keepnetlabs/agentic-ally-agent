@@ -77,7 +77,7 @@ const LAYOUT_OPTIONS = [
     id: 'SIDEBAR',
     name: 'SIDEBAR (Dashboard/Admin)',
     description: 'Left sidebar with navigation links, right side with content card. Looks like an internal portal or settings page.',
-    cssRule: 'body { display: flex; min-height: 100vh; margin: 0; background: #f9fafb; font-family: system-ui, sans-serif; } .sidebar { width: 240px; background: white; border-right: 1px solid #e5e7eb; padding: 24px; display: none; } @media(min-width: 768px) { .sidebar { display: flex; flex-direction: column; } } .main { flex: 1; padding: 40px 20px; display: flex; flex-direction: column; justify-content: center; align-items: center; }'
+    cssRule: 'body { position: relative; display: flex; min-height: 100vh; margin: 0; background: #f9fafb; font-family: system-ui, sans-serif; flex-direction: row; } .sidebar { position: absolute; left: 0; top: 0; width: 0; height: 100vh; background: white; border-right: 1px solid #e5e7eb; padding: 0; overflow: hidden; gap: 8px; z-index: 10; } .sidebar a { display: flex; align-items: center; min-height: 40px; padding: 10px 12px; border-radius: 6px; cursor: pointer; white-space: nowrap; } @media(min-width: 768px) { .sidebar { width: 240px; padding: 16px; overflow-y: auto; } body { padding-left: 240px; } } .main { flex: 1; padding: 24px; display: flex; flex-direction: column; justify-content: flex-start; align-items: center; gap: 24px; width: 100%; }'
   },
   {
     id: 'HERO',

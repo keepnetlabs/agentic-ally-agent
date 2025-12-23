@@ -11,7 +11,8 @@ import { MODEL_PROVIDERS, TRAINING_LEVELS, DEFAULT_TRAINING_LEVEL, PRIORITY_LEVE
 import { StreamWriterSchema } from '../types/stream-writer';
 import { getLogger } from '../utils/core/logger';
 import { waitForKVConsistency, buildExpectedKVKeys } from '../utils/kv-consistency';
-import { normalizeError } from '../utils/core/error-utils';
+import { normalizeError, logErrorInfo } from '../utils/core/error-utils';
+import { errorService } from '../services/error-service';
 
 const logger = getLogger('CreateMicrolearningWorkflow');
 
@@ -114,7 +115,11 @@ const analyzePromptStep = createStep({
       writer: inputData.writer,
     });
 
-    if (!analysisRes?.success) throw new Error(`Prompt analysis failed: ${analysisRes?.error}`);
+    if (!analysisRes?.success) {
+      const errorInfo = errorService.external(`Prompt analysis failed: ${analysisRes?.error}`, { step: 'analyze-user-prompt' });
+      logErrorInfo(logger, 'error', 'Prompt analysis failed', errorInfo);
+      throw new Error(errorInfo.message);
+    }
     logger.debug('Additional context received', { additionalContext: inputData.additionalContext });
     return {
       success: analysisRes.success,
@@ -148,7 +153,11 @@ const generateMicrolearningStep = createStep({
       analysis, microlearningId, model
     });
 
-    if (!genRes?.success) throw new Error(`Microlearning generation failed: ${genRes?.error}`);
+    if (!genRes?.success) {
+      const errorInfo = errorService.external(`Microlearning generation failed: ${genRes?.error}`, { step: 'generate-microlearning-json' });
+      logErrorInfo(logger, 'error', 'Microlearning generation failed', errorInfo);
+      throw new Error(errorInfo.message);
+    }
 
     const microlearningService = new MicrolearningService();
     await microlearningService.storeMicrolearning(genRes.data);
@@ -189,7 +198,11 @@ const generateLanguageStep = createStep({
       writer: inputData.writer
     });
 
-    if (!result?.success) throw new Error(`Language content generation failed: ${result?.error}`);
+    if (!result?.success) {
+      const errorInfo = errorService.external(`Language content generation failed: ${result?.error}`, { step: 'generate-language-json' });
+      logErrorInfo(logger, 'error', 'Language content generation failed', errorInfo);
+      throw new Error(errorInfo.message);
+    }
 
     const microlearningService = new MicrolearningService();
     await microlearningService.storeLanguageContent(
@@ -244,7 +257,11 @@ const createInboxStep = createStep({
       additionalContext: analysis.additionalContext // Pass user context to inbox generation
     })
 
-    if (!inboxResult?.success) throw new Error(`Inbox creation failed: ${inboxResult?.error}`);
+    if (!inboxResult?.success) {
+      const errorInfo = errorService.external(`Inbox creation failed: ${inboxResult?.error}`, { step: 'create-inbox-structure' });
+      logErrorInfo(logger, 'error', 'Inbox creation failed', errorInfo);
+      throw new Error(errorInfo.message);
+    }
 
 
     const baseUrl = encodeURIComponent(`https://microlearning-api.keepnet-labs-ltd-business-profile4086.workers.dev/microlearning/${microlearningId}`);

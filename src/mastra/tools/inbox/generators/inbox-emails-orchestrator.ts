@@ -5,6 +5,7 @@ import { cleanResponse } from '../../../utils/content-processors/json-cleaner';
 import { INBOX_GENERATION_PARAMS } from '../../../utils/config/llm-generation-params';
 import { getLogger } from '../../../utils/core/logger';
 import { errorService } from '../../../services/error-service';
+import { normalizeError, logErrorInfo } from '../../../utils/core/error-utils';
 
 const logger = getLogger('InboxEmailsOrchestrator');
 
@@ -182,11 +183,7 @@ ${additionalContext}`
                 retryError: retryErrorMessage,
                 topic,
             });
-            logger.error('Email generation failed after retry', {
-                code: errorInfo.code,
-                message: errorInfo.message,
-                category: errorInfo.category,
-            });
+            logErrorInfo(logger, 'error', 'Email generation failed after retry', errorInfo);
             throw retryErr;
         }
     }
@@ -256,11 +253,8 @@ export async function generateInboxEmailsParallel(args: OrchestratorArgs): Promi
             department: args.department,
             attemptedVariants: variantPlan.length,
         });
-        logger.error('All email generation failed', {
-            code: errorInfo.code,
-            message: errorInfo.message,
-            category: errorInfo.category,
-        });
+        logErrorInfo(logger, 'error', 'All email generation failed', errorInfo);
+        // Throw error with errorInfo message - this is a utility function, not a tool
         throw new Error(errorInfo.message);
     }
 

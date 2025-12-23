@@ -4,7 +4,8 @@ import { generateText } from 'ai';
 import { KVService } from '../services/kv-service';
 import { getLogger } from '../utils/core/logger';
 import { normalizeDepartmentName } from '../utils/language/language-utils';
-import { normalizeError } from '../utils/core/error-utils';
+import { normalizeError, logErrorInfo } from '../utils/core/error-utils';
+import { errorService } from '../services/error-service';
 import { getModelWithOverride } from '../model-providers';
 import { THEME_COLORS } from '../constants';
 import { DEFAULT_GENERATION_PARAMS } from '../utils/config/llm-generation-params';
@@ -280,7 +281,9 @@ const saveUpdatesStep = createStep({
       const saved = await kvService.put(baseKey, updatedContent);
 
       if (!saved) {
-        throw new Error('Failed to save updated microlearning to KV');
+        const errorInfo = errorService.external('Failed to save updated microlearning to KV', { microlearningId, step: 'save-updated-content' });
+        logErrorInfo(logger, 'error', 'KV save failed', errorInfo);
+        throw new Error(errorInfo.message);
       }
 
       // Save version history entry

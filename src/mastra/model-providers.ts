@@ -186,10 +186,11 @@ function getModelProvider(provider: ModelProvider) {
 export function getDefaultAgentModel() {
     // Using GPT-4.1-mini for better prompt following (especially for STOP instructions)
     // GPT-4o-mini had issues with not stopping after upload/assign operations
-    return getModel(ModelProvider.OPENAI, Model.OPENAI_GPT_4_1_MINI);
+    return getModel(ModelProvider.OPENAI, Model.OPENAI_GPT_5_MINI);
 }
 
 export function getDefaultGenerationModel() {
+    logger.info('Using default generation model', { model: Model.WORKERS_AI_GPT_OSS_120B });
     return getModel(ModelProvider.WORKERS_AI, Model.WORKERS_AI_GPT_OSS_120B);
 }
 

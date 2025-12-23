@@ -8,7 +8,8 @@ import { validateInboxStructure, correctInboxStructure, detectJsonCorruption } f
 import { MODEL_PROVIDERS, TIMEOUT_VALUES, STRING_TRUNCATION } from '../constants';
 import { getLogger } from '../utils/core/logger';
 import { waitForKVConsistency, buildExpectedKVKeys } from '../utils/kv-consistency';
-import { normalizeError } from '../utils/core/error-utils';
+import { normalizeError, logErrorInfo } from '../utils/core/error-utils';
+import { errorService } from '../services/error-service';
 
 const logger = getLogger('AddLanguageWorkflow');
 
@@ -110,7 +111,13 @@ const loadExistingStep = createStep({
 
     // Validate that target language is different from source
     if (actualSourceLanguage.toLowerCase() === targetLanguage.toLowerCase()) {
-      throw new Error(`Target language (${targetLanguage}) cannot be the same as source language (${actualSourceLanguage}). Please choose a different target language.`);
+      const errorInfo = errorService.validation(`Target language (${targetLanguage}) cannot be the same as source language (${actualSourceLanguage})`, {
+        targetLanguage,
+        actualSourceLanguage,
+        step: 'validate-languages'
+      });
+      logErrorInfo(logger, 'error', 'Language validation failed', errorInfo);
+      throw new Error(errorInfo.message);
     }
 
     // Check if training has code_review scene type (no inbox needed)
@@ -186,7 +193,9 @@ const translateLanguageStep = createStep({
     logger.info('Found base content, translating', { microlearningId, sourceLanguage, targetLanguage });
 
     if (!translateLanguageJsonTool.execute) {
-      throw new Error('translateLanguageJsonTool is not executable');
+      const errorInfo = errorService.internal('translateLanguageJsonTool is not executable', { step: 'translate-language-json' });
+      logErrorInfo(logger, 'error', 'Tool execution check failed', errorInfo);
+      throw new Error(errorInfo.message);
     }
 
     const translationParams = {
@@ -210,8 +219,9 @@ const translateLanguageStep = createStep({
 
     // Validate translation data is not empty
     if (!translated.data || Object.keys(translated.data).length === 0) {
-      logger.error('Translation succeeded but returned empty data');
-      throw new Error('Translation returned empty content - please retry or check source language content');
+      const errorInfo = errorService.external('Translation returned empty content', { step: 'translate-language-json' });
+      logErrorInfo(logger, 'error', 'Translation succeeded but returned empty data', errorInfo);
+      throw new Error(errorInfo.message);
     }
 
     // Store translated content using KVService
@@ -316,7 +326,9 @@ const updateInboxStep = createStep({
         }
 
         if (!inboxTranslateJsonTool.execute) {
-          throw new Error('inboxTranslateJsonTool is not executable');
+          const errorInfo = errorService.internal('inboxTranslateJsonTool is not executable', { step: 'translate-inbox-json' });
+          logErrorInfo(logger, 'error', 'Tool execution check failed', errorInfo);
+          throw new Error(errorInfo.message);
         }
 
         // First attempt with minimal protection
@@ -407,7 +419,9 @@ const combineResultsStep = createStep({
 
     // Check if translation succeeded
     if (!translateLanguage.success) {
-      throw new Error('Language translation failed - cannot generate training URL');
+      const errorInfo = errorService.external('Language translation failed - cannot generate training URL', { step: 'finalize-translation' });
+      logErrorInfo(logger, 'error', 'Language translation failed', errorInfo);
+      throw new Error(errorInfo.message);
     }
 
     // Verify KV consistency before returning URL to UI

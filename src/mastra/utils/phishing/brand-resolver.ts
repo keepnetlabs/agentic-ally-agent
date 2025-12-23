@@ -87,26 +87,48 @@ export async function resolveLogoAndBrand(
       }
     }
 
-    // Fallback to default logo for generic/internal companies
-    logger.info('No recognized brand found, using default logo', {
+    // Fallback to placeholder domain logo for generic/internal companies
+    // Instead of using generic corporate icon, generate a domain-based logo
+    logger.info('No recognized brand found, generating placeholder domain logo', {
       fromName
     });
+
+    // Generate placeholder domain from company name
+    const placeholderDomain = generatePlaceholderDomain(fromName);
+    const placeholderLogoUrl = getLogoUrl(placeholderDomain);
+
     return {
-      logoUrl: DEFAULT_GENERIC_LOGO,
+      logoUrl: placeholderLogoUrl,
       brandName: null,
       isRecognizedBrand: false
     };
   } catch (error) {
     const err = normalizeError(error);
-    logger.warn('Logo and brand resolution failed, using default logo', {
+    logger.warn('Logo and brand resolution failed, generating placeholder domain logo', {
       error: err.message,
       stack: err.stack
     });
-    return {
-      logoUrl: DEFAULT_GENERIC_LOGO,
-      brandName: null,
-      isRecognizedBrand: false
-    };
+
+    // Even on error, try to generate a placeholder domain logo instead of generic corporate icon
+    try {
+      const placeholderDomain = generatePlaceholderDomain(fromName);
+      const placeholderLogoUrl = getLogoUrl(placeholderDomain);
+      return {
+        logoUrl: placeholderLogoUrl,
+        brandName: null,
+        isRecognizedBrand: false
+      };
+    } catch (fallbackError) {
+      // Ultimate fallback - only use DEFAULT_GENERIC_LOGO if everything fails
+      logger.error('Placeholder logo generation failed, using default logo as last resort', {
+        fallbackError: normalizeError(fallbackError).message
+      });
+      return {
+        logoUrl: DEFAULT_GENERIC_LOGO,
+        brandName: null,
+        isRecognizedBrand: false
+      };
+    }
   }
 }
 
@@ -156,23 +178,32 @@ export async function generateContextualBrand(
     const domain = parsed.domain?.toLowerCase().trim();
 
     if (suggestedBrandName && suggestedBrandName.length > 0) {
-      // If domain is provided, try to use logo service
-      let logoUrl = DEFAULT_GENERIC_LOGO;
+      // Always try to use logo service - prefer provided domain, fallback to placeholder domain
+      let logoUrl: string;
 
       if (domain && domain.includes('.')) {
         const cleanDomain = domain.replace(/['"]/g, '').split(/[\s\n]/)[0];
         if (cleanDomain.includes('.')) {
           logoUrl = getLogoUrl(cleanDomain);
-          logger.info('Generated contextual brand with logo', {
+          logger.info('Generated contextual brand with logo from domain', {
             brandName: suggestedBrandName,
             domain: cleanDomain,
             logoUrl
           });
+        } else {
+          // Invalid domain format, use placeholder
+          logoUrl = getLogoUrl(generatePlaceholderDomain(suggestedBrandName));
+          logger.info('Generated contextual brand with placeholder logo (invalid domain)', {
+            brandName: suggestedBrandName,
+            logoUrl
+          });
         }
       } else {
-        logger.info('Generated contextual brand name (using default logo)', {
+        // No domain provided, generate placeholder domain logo
+        logoUrl = getLogoUrl(generatePlaceholderDomain(suggestedBrandName));
+        logger.info('Generated contextual brand with placeholder logo', {
           brandName: suggestedBrandName,
-          logoUrl: DEFAULT_GENERIC_LOGO
+          logoUrl
         });
       }
 
@@ -183,25 +214,66 @@ export async function generateContextualBrand(
       };
     }
 
-    // Fallback if brand name generation failed
-    logger.warn('Failed to generate contextual brand name, using default');
+    // Fallback if brand name generation failed - use placeholder domain logo
+    logger.warn('Failed to generate contextual brand name, using placeholder logo');
+    const placeholderLogoUrl = getLogoUrl(generatePlaceholderDomain('brand'));
     return {
-      logoUrl: DEFAULT_GENERIC_LOGO,
+      logoUrl: placeholderLogoUrl,
       brandName: null,
       isRecognizedBrand: false
     };
   } catch (error) {
     const err = normalizeError(error);
-    logger.warn('Contextual brand generation failed, using default', {
+    logger.warn('Contextual brand generation failed, attempting placeholder logo', {
       error: err.message,
       stack: err.stack
     });
-    return {
-      logoUrl: DEFAULT_GENERIC_LOGO,
-      brandName: null,
-      isRecognizedBrand: false
-    };
+
+    // Try to use placeholder logo, fallback to DEFAULT_GENERIC_LOGO only if that fails too
+    try {
+      const placeholderLogoUrl = getLogoUrl(generatePlaceholderDomain('brand'));
+      return {
+        logoUrl: placeholderLogoUrl,
+        brandName: null,
+        isRecognizedBrand: false
+      };
+    } catch (fallbackError) {
+      logger.error('Placeholder logo generation failed, using default logo as last resort', {
+        fallbackError: normalizeError(fallbackError).message
+      });
+      return {
+        logoUrl: DEFAULT_GENERIC_LOGO,
+        brandName: null,
+        isRecognizedBrand: false
+      };
+    }
   }
+}
+
+/**
+ * Generate a placeholder domain from a company/brand name
+ * Used to create domain-based logos instead of using generic corporate icons
+ *
+ * @param brandName - Company or brand name
+ * @returns A domain-like placeholder (e.g., "itsupport.local" from "IT Support")
+ */
+function generatePlaceholderDomain(brandName: string): string {
+  // Convert to lowercase and replace spaces/special chars with hyphens
+  const sanitized = brandName
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s]/g, '')  // Remove special characters
+    .replace(/\s+/g, '-')          // Replace spaces with hyphens
+    .replace(/-+/g, '-')           // Collapse multiple hyphens
+    .replace(/^-|-$/g, '');        // Remove leading/trailing hyphens
+
+  // Ensure non-empty result
+  const domainName = sanitized || 'brand';
+
+  // Use .local for internal companies to indicate placeholder domain
+  // This will go through getLogoUrl() which uses Apistemic API
+  // For invalid domains, getLogoUrl falls back to random letter logo
+  return `${domainName}.local`;
 }
 
 

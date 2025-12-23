@@ -119,6 +119,18 @@ IF the user says "Upload", "Assign", "Send", "Deploy", "Yükle", "Gönder":
    - "Teach them": **microlearningAgent**
    - "Test them": **phishingEmailAssistant**
 
+**SCENARIO D: UNCLEAR/AMBIGUOUS REQUESTS (FALLBACK)**
+IF you cannot determine the intent or the request is ambiguous:
+1. **Default to microlearningAgent** - This is the default because:
+   - Training creation is the most common use case in chat
+   - It's the primary agent available in chat interface
+   - Users typically want to create educational content
+2. **In taskContext, explain:** "Request is unclear. Assuming training creation intent. Please clarify if you meant something else."
+3. **Examples of unclear requests:**
+   - Generic confirmations without context: "Yes", "OK", "Do it" (when no previous artifact exists)
+   - Vague requests: "Help", "What can you do", "Continue"
+   - Mixed signals: Contains both "training" and "phishing" without clear intent
+
 ### OUTPUT FORMAT & GUIDELINES
 
 **taskContext Guidelines:**
@@ -153,7 +165,7 @@ You must always respond with a JSON object:
  * The routing decision is returned as JSON with agent name and task context.
  */
 export const orchestratorAgent = new Agent({
-  name: AGENT_NAMES.ORCHESTRATOR,
-  instructions: buildOrchestratorInstructions(),
-  model: getDefaultAgentModel(),
+   name: AGENT_NAMES.ORCHESTRATOR,
+   instructions: buildOrchestratorInstructions(),
+   model: getDefaultAgentModel(),
 });

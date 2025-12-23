@@ -4,7 +4,8 @@ import { addLanguageWorkflow } from './add-language-workflow';
 import { KVService } from '../services/kv-service';
 import { MODEL_PROVIDERS } from '../constants';
 import { getLogger } from '../utils/core/logger';
-import { normalizeError } from '../utils/core/error-utils';
+import { normalizeError, logErrorInfo } from '../utils/core/error-utils';
+import { errorService } from '../services/error-service';
 
 // Input/Output Schemas
 const addMultipleLanguagesInputSchema = z.object({
@@ -51,15 +52,24 @@ const processMultipleLanguagesStep = createStep({
     try {
       // Validation
       if (!existingMicrolearningId) {
-        throw new Error('existingMicrolearningId is required');
+        const errorInfo = errorService.validation('existingMicrolearningId is required', { step: 'validate-input' });
+        logErrorInfo(logger, 'error', 'Input validation failed', errorInfo);
+        throw new Error(errorInfo.message);
       }
 
       if (!Array.isArray(targetLanguages) || targetLanguages.length === 0) {
-        throw new Error('targetLanguages must be a non-empty array');
+        const errorInfo = errorService.validation('targetLanguages must be a non-empty array', { step: 'validate-input' });
+        logErrorInfo(logger, 'error', 'Input validation failed', errorInfo);
+        throw new Error(errorInfo.message);
       }
 
       if (targetLanguages.length > 12) {
-        throw new Error(`Too many languages requested (${targetLanguages.length}). Maximum supported: 12 languages.`);
+        const errorInfo = errorService.validation(`Too many languages requested (${targetLanguages.length}). Maximum supported: 12 languages.`, {
+          requestedCount: targetLanguages.length,
+          step: 'validate-input'
+        });
+        logErrorInfo(logger, 'error', 'Input validation failed', errorInfo);
+        throw new Error(errorInfo.message);
       }
 
       const normalizedLanguages = targetLanguages.map((lang) => lang.toLowerCase());

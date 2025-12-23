@@ -24,6 +24,7 @@
 
 import { getLogger } from './logger';
 import { errorService } from '../../services/error-service';
+import { logErrorInfo } from './error-utils';
 
 const logger = getLogger('WorkerAPIClient');
 
@@ -104,11 +105,7 @@ export async function callWorkerAPI<T = any>(options: CallWorkerAPIOptions): Pro
       `${errorPrefix}: ${response.status} - ${errorText}`,
       { status: response.status, endpoint, operationName }
     );
-    logger.error(`${operationName} failed`, {
-      code: errorInfo.code,
-      message: errorInfo.message,
-      category: errorInfo.category
-    });
+    logErrorInfo(logger, 'error', `${operationName} failed`, errorInfo);
     throw new Error(errorInfo.message);
   }
 

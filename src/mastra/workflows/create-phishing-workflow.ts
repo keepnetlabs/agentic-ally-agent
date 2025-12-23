@@ -30,7 +30,8 @@ import { retryGenerationWithStrongerPrompt } from '../utils/phishing/retry-gener
 import { getLogger } from '../utils/core/logger';
 import { waitForKVConsistency, buildExpectedPhishingKeys } from '../utils/kv-consistency';
 import { withRetry } from '../utils/core/resilience-utils';
-import { normalizeError } from '../utils/core/error-utils';
+import { normalizeError, logErrorInfo } from '../utils/core/error-utils';
+import { errorService } from '../services/error-service';
 
 // --- Steps ---
 
@@ -101,7 +102,14 @@ const analyzeRequest = createStep({
 
       // Validate required fields
       if (!parsedResult.scenario || !parsedResult.category || !parsedResult.fromAddress || !parsedResult.method) {
-        throw new Error('Missing required fields in analysis response');
+        const errorInfo = errorService.validation('Missing required fields in analysis response', {
+          hasScenario: !!parsedResult.scenario,
+          hasCategory: !!parsedResult.category,
+          hasFromAddress: !!parsedResult.fromAddress,
+          hasMethod: !!parsedResult.method
+        });
+        logErrorInfo(logger, 'error', 'Phishing analysis validation failed', errorInfo);
+        throw new Error(errorInfo.message);
       }
 
       // Validate description length (max 300 characters)
@@ -323,7 +331,12 @@ const generateEmail = createStep({
 
       // Validate required fields
       if (!parsedResult.subject || !parsedResult.template) {
-        throw new Error('Missing required fields (subject or template) in email content response');
+        const errorInfo = errorService.validation('Missing required fields (subject or template) in email content response', {
+          hasSubject: !!parsedResult.subject,
+          hasTemplate: !!parsedResult.template
+        });
+        logErrorInfo(logger, 'error', 'Email content validation failed', errorInfo);
+        throw new Error(errorInfo.message);
       }
 
       // Log generated content for debugging
@@ -369,7 +382,11 @@ const generateLandingPage = createStep({
       };
     }
 
-    if (!analysis) throw new Error('Analysis data missing from previous step');
+    if (!analysis) {
+      const errorInfo = errorService.validation('Analysis data missing from previous step', { step: 'generate-landing-page' });
+      logErrorInfo(logger, 'error', 'Analysis data validation failed', errorInfo);
+      throw new Error(errorInfo.message);
+    }
 
     const { language, modelProvider, model, difficulty, method, scenario, name, description, industryDesign } = analysis;
 
@@ -377,7 +394,9 @@ const generateLandingPage = createStep({
 
     // Validate industry design from analysis step (already detected, no need to call again)
     if (!industryDesign) {
-      throw new Error('Industry design missing from analysis step');
+      const errorInfo = errorService.validation('Industry design missing from analysis step', { step: 'generate-landing-page' });
+      logErrorInfo(logger, 'error', 'Industry design validation failed', errorInfo);
+      throw new Error(errorInfo.message);
     }
     logger.info('Using industry design from analysis', { industry: industryDesign.industry });
 

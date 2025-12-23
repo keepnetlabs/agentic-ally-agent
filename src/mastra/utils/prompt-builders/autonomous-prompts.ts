@@ -34,6 +34,20 @@ export interface TrainingGenerationContext {
 }
 
 /**
+ * Reusable STOP block to enforce immediate termination after success.
+ * Keeps STOP wording centralized for phishing/microlearning prompts.
+ */
+function buildStopAfterSuccessBlock(successCondition: string): string {
+    return `**🔴 CRITICAL - AFTER ASSIGNMENT SUCCESS:**
+- Once ${successCondition}, your task is **100% COMPLETE**
+- **IMMEDIATELY STOP** - Do NOT call any other tools
+- **DO NOT** call reasoning, analyze, workflow-executor, or any other tools
+- **DO NOT** process any other prompts in memory
+- **DO NOT** generate any additional content
+- Simply acknowledge completion and END`;
+}
+
+/**
  * Goal-based prompt for phishing generation
  * Agent decides how to achieve the goal instead of following scripted steps
  */
@@ -204,12 +218,21 @@ Locate the ${idField} from conversation history, upload the ${artifactType}, and
  */
 export function buildUploadAndAssignPrompt(
     artifactType: 'phishing' | 'training',
-    targetUserResourceId: string
+    targetUserResourceId: string,
+    generatedArtifactId?: string
 ): string {
     const uploadTool = artifactType === 'phishing' ? 'uploadPhishing' : 'uploadTraining';
     const assignTool = artifactType === 'phishing' ? 'assignPhishing' : 'assignTraining';
     const idField = artifactType === 'phishing' ? 'phishingId' : 'microlearningId';
     const artifactLabel = artifactType === 'phishing' ? 'simulation' : 'module';
+
+    // Generate type-appropriate example IDs for clarity
+    const exampleGeneratedId = artifactType === 'phishing' ? 'yl2JfA4r5yYl' : 'ml-generate-xyz123';
+    const exampleResourceId = artifactType === 'phishing' ? 'scenario-abc-def-123456' : 'resource-train-789xyz';
+
+    const contextInfo = generatedArtifactId
+        ? `- The ${idField} is: **${generatedArtifactId}**`
+        : `- The ${idField} should be available in recent conversation history`;
 
     return `**AUTONOMOUS_EXECUTION_MODE**
 
@@ -218,18 +241,50 @@ export function buildUploadAndAssignPrompt(
 **Context:**
 - The ${artifactType} has been generated successfully
 - Target user ID: ${targetUserResourceId}
-- The ${idField} should be available in recent conversation history
+${contextInfo}
 
 **Available Tools:**
-- ${uploadTool}: Uploads ${artifactType} to platform (returns resourceId and languageId in response.data)
-- ${assignTool}: Assigns ${artifactType} to user (requires resourceId, languageId optional, and targetUserResourceId)
+- ${uploadTool}: Uploads ${artifactType} to platform
+  INPUT: { ${idField}: "xyz" }
+  OUTPUT: { success: true, data: { resourceId: "RESOURCE_ID_ABC", languageId: "..." } }
 
-**Critical Sequence:**
-- Upload must complete successfully before assignment can proceed
-- Extract IDs from the upload tool's response.data field (resourceId, languageId)
-- Use the exact IDs returned by the upload tool for assignment
+- ${assignTool}: Assigns ${artifactType} to user
+  INPUT: { resourceId: "RESOURCE_ID_ABC", targetUserResourceId: "${targetUserResourceId}" }
+  OUTPUT: { success: true, message: "..." }
 
-Locate the ${idField}, upload first, then assign using the returned IDs.`;
+**CRITICAL STEP-BY-STEP SEQUENCE:**
+
+**⚠️ IMPORTANT DISTINCTION:**
+- ${idField} (INPUT to upload): "${exampleGeneratedId}" ← Generated ${artifactType} ID (FOR UPLOAD ONLY)
+- resourceId (OUTPUT from upload): "${exampleResourceId}" ← Backend-assigned ID (FOR ASSIGN)
+- These are DIFFERENT! Do not confuse them!
+
+1️⃣ **UPLOAD** - Call ${uploadTool} tool
+   - Input parameter: { ${idField}: "${generatedArtifactId || '[from history]'}" }
+   - Example: Call ${uploadTool} with ${idField}="${exampleGeneratedId}"
+   - Wait for response
+   - Response will contain: { success: true, data: { resourceId: "${exampleResourceId}", ... } }
+
+2️⃣ **EXTRACT** - From the upload response, extract ONLY the resourceId:
+   - resourceId = response.data.resourceId
+   - Example: From response { data: { resourceId: "${exampleResourceId}" } }, extract "${exampleResourceId}"
+   - **FORGET the ${idField}="${exampleGeneratedId}" NOW** - You don't need it anymore!
+
+3️⃣ **ASSIGN** - Call ${assignTool} tool
+   - Input parameter: { resourceId: "${exampleResourceId}", targetUserResourceId: "${targetUserResourceId}" }
+   - Use ONLY the resourceId from Step 2, NOT the original ${idField}
+   - Example: Call ${assignTool} with resourceId="${exampleResourceId}" (not "${exampleGeneratedId}"!)
+
+**🔴 COMMON MISTAKE TO AVOID:**
+❌ WRONG: ${assignTool}(${idField}="${exampleGeneratedId}", targetUserResourceId)  [uses original ID]
+✅ RIGHT: ${assignTool}(resourceId="${exampleResourceId}", targetUserResourceId)  [uses upload response ID]
+
+Execute this sequence:
+${uploadTool}(${idField}="${generatedArtifactId || '[from history]'}")
+→ Extract: resourceId="${exampleResourceId}"
+→ ${assignTool}(resourceId="${exampleResourceId}", targetUserResourceId="${targetUserResourceId}")
+
+${buildStopAfterSuccessBlock(`${assignTool} returns { success: true }`)}`;
 }
 
 /**
@@ -271,6 +326,8 @@ ${trainingContext}
 - For phishing: Get resourceId from conversation history if not provided
 - For training: ${trainingId ? `Use the provided values: trainingId="${trainingId}"` : 'Extract from conversation history'}
 
-Assign the phishing simulation to user ${targetUserResourceId} with training linkage.`;
+Assign the phishing simulation to user ${targetUserResourceId} with training linkage.
+
+${buildStopAfterSuccessBlock('assignPhishing returns { success: true }')}`;
 }
 

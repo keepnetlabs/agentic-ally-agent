@@ -65,7 +65,13 @@ export const uploadTrainingTool = createTool({
                     const result = await kvService.getMicrolearning(microlearningId);
                     // Throw error if null to trigger retry mechanism
                     if (!result || !result.base) {
-                        throw new Error(`Microlearning content not found for ID: ${microlearningId}. The content may still be processing.`);
+                        const errorInfo = errorService.notFound(`Microlearning content not found for ID: ${microlearningId}`, {
+                            microlearningId,
+                            step: 'fetch-microlearning-content'
+                        });
+                        // Note: This is inside retry mechanism, so we throw to trigger retry
+                        // The retry will eventually fail and return error response
+                        throw new Error(errorInfo.message);
                     }
                     return result;
                 },

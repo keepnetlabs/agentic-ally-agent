@@ -21,7 +21,11 @@
       "Bash(build)",
       "Bash(dir /s /b 'C:\\Users\\user\\Desktop\\Agentic Ally\\fleet-v2-main\\agent\\src')",
       "Bash(npm test)",
-      "Bash(npm run test:*)"
+      "Bash(npm run test:*)",
+      "Bash(wc:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(grep:*)"
     ],
     "deny": [],
     "ask": []
