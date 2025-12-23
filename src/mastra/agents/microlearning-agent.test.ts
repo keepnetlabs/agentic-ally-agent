@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import { API_ENDPOINTS } from '../constants';
 
 /**
  * Test suite for microlearning-agent
@@ -366,14 +367,14 @@ describe('Microlearning Agent', () => {
       const workflowResult = {
         success: true,
         data: {
-          trainingUrl: 'https://microlearning.pages.dev/?baseUrl=...&langUrl=lang/en',
+          trainingUrl: `${API_ENDPOINTS.FRONTEND_MICROLEARNING_URL}/?baseUrl=...&langUrl=lang/en`,
         },
       };
       expect(workflowResult.data.trainingUrl).toBeDefined();
     });
 
     it('should display final result to user', () => {
-      const trainingUrl = 'https://microlearning.pages.dev/?training=123';
+      const trainingUrl = `${API_ENDPOINTS.FRONTEND_MICROLEARNING_URL}/?training=123`;
       expect(trainingUrl).toContain('microlearning');
     });
 

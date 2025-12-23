@@ -88,7 +88,7 @@ curl -X POST http://localhost:8000/chat \
 
 # Expected response:
 # Stream with training URL like:
-# ::ui:canvas_open::https://microlearning.pages.dev/?baseUrl=...
+# ::ui:canvas_open::https://agentic-ai-microlearning.keepnetlabs.com/?baseUrl=...
 ```
 
 Or use an API client like Postman:

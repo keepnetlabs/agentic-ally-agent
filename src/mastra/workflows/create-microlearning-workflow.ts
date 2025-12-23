@@ -7,7 +7,7 @@ import { getModelWithOverride } from '../model-providers';
 import { MicrolearningService } from '../services/microlearning-service';
 import { KVService } from '../services/kv-service';
 import { generateMicrolearningId, normalizeDepartmentName } from '../utils/language/language-utils';
-import { MODEL_PROVIDERS, TRAINING_LEVELS, DEFAULT_TRAINING_LEVEL, PRIORITY_LEVELS, DEFAULT_PRIORITY } from '../constants';
+import { MODEL_PROVIDERS, TRAINING_LEVELS, DEFAULT_TRAINING_LEVEL, PRIORITY_LEVELS, DEFAULT_PRIORITY, API_ENDPOINTS } from '../constants';
 import { StreamWriterSchema } from '../types/stream-writer';
 import { getLogger } from '../utils/core/logger';
 import { waitForKVConsistency, buildExpectedKVKeys } from '../utils/kv-consistency';
@@ -267,7 +267,7 @@ const createInboxStep = createStep({
     const baseUrl = encodeURIComponent(`https://microlearning-api.keepnet-labs-ltd-business-profile4086.workers.dev/microlearning/${microlearningId}`);
     const langUrl = encodeURIComponent(`lang/${analysis.language}`);
     const inboxUrl = encodeURIComponent(`inbox/${normalizedDept}`);
-    const trainingUrl = `https://microlearning.pages.dev/?baseUrl=${baseUrl}&langUrl=${langUrl}&inboxUrl=${inboxUrl}&isEditMode=true`;
+    const trainingUrl = `${API_ENDPOINTS.FRONTEND_MICROLEARNING_URL}/?baseUrl=${baseUrl}&langUrl=${langUrl}&inboxUrl=${inboxUrl}&isEditMode=true`;
 
     // Verify KV consistency before returning URL to UI
     const expectedKeys = buildExpectedKVKeys(microlearningId, analysis.language, normalizedDept);

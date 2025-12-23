@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import '../../../src/__tests__/setup';
+import { API_ENDPOINTS } from '../constants';
 
 /**
  * Test Suite: Update Microlearning Workflow
@@ -223,9 +224,9 @@ describe('UpdateMicrolearningWorkflow', () => {
       );
       const langUrl = encodeURIComponent(`lang/${language}`);
       const inboxUrl = encodeURIComponent(`inbox/${department}`);
-      const trainingUrl = `https://microlearning.pages.dev/?baseUrl=${baseUrl}&langUrl=${langUrl}&inboxUrl=${inboxUrl}&isEditMode=true`;
+      const trainingUrl = `${API_ENDPOINTS.FRONTEND_MICROLEARNING_URL}/?baseUrl=${baseUrl}&langUrl=${langUrl}&inboxUrl=${inboxUrl}&isEditMode=true`;
 
-      expect(trainingUrl).toContain('https://microlearning.pages.dev/');
+      expect(trainingUrl).toContain(API_ENDPOINTS.FRONTEND_MICROLEARNING_URL);
       expect(trainingUrl).toContain('baseUrl=');
       expect(trainingUrl).toContain('langUrl=');
       expect(trainingUrl).toContain('inboxUrl=');
@@ -250,7 +251,7 @@ describe('UpdateMicrolearningWorkflow', () => {
 
       languages.forEach((lang) => {
         const langUrl = encodeURIComponent(`lang/${lang}`);
-        const trainingUrl = `https://microlearning.pages.dev/?langUrl=${langUrl}`;
+        const trainingUrl = `${API_ENDPOINTS.FRONTEND_MICROLEARNING_URL}/?langUrl=${langUrl}`;
 
         expect(trainingUrl).toContain(`lang%2F${lang}`);
       });
@@ -261,7 +262,7 @@ describe('UpdateMicrolearningWorkflow', () => {
 
       departments.forEach((dept) => {
         const inboxUrl = encodeURIComponent(`inbox/${dept}`);
-        const trainingUrl = `https://microlearning.pages.dev/?inboxUrl=${inboxUrl}`;
+        const trainingUrl = `${API_ENDPOINTS.FRONTEND_MICROLEARNING_URL}/?inboxUrl=${inboxUrl}`;
 
         expect(trainingUrl).toContain(`inbox%2F${dept}`);
       });
@@ -370,7 +371,7 @@ describe('UpdateMicrolearningWorkflow', () => {
           version: 2,
           changes: { 'theme.colors': { background: '#000' } },
           trainingUrl:
-            'https://microlearning.pages.dev/?baseUrl=...&isEditMode=true',
+            `${API_ENDPOINTS.FRONTEND_MICROLEARNING_URL}/?baseUrl=...&isEditMode=true`,
           timestamp: new Date().toISOString(),
         },
       };

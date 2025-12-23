@@ -7,7 +7,7 @@ import { normalizeDepartmentName } from '../utils/language/language-utils';
 import { normalizeError, logErrorInfo } from '../utils/core/error-utils';
 import { errorService } from '../services/error-service';
 import { getModelWithOverride } from '../model-providers';
-import { THEME_COLORS } from '../constants';
+import { THEME_COLORS, API_ENDPOINTS } from '../constants';
 import { DEFAULT_GENERATION_PARAMS } from '../utils/config/llm-generation-params';
 import { waitForKVConsistency, buildExpectedKVKeys } from '../utils/kv-consistency';
 
@@ -303,7 +303,7 @@ const saveUpdatesStep = createStep({
       const baseUrl = encodeURIComponent(`https://microlearning-api.keepnet-labs-ltd-business-profile4086.workers.dev/microlearning/${microlearningId}`);
       const langUrl = encodeURIComponent(`lang/${language}`);
       const inboxUrl = encodeURIComponent(`inbox/${normalizedDepartment}`);
-      const trainingUrl = `https://microlearning.pages.dev/?baseUrl=${baseUrl}&langUrl=${langUrl}&inboxUrl=${inboxUrl}&isEditMode=true`;
+      const trainingUrl = `${API_ENDPOINTS.FRONTEND_MICROLEARNING_URL}/?baseUrl=${baseUrl}&langUrl=${langUrl}&inboxUrl=${inboxUrl}&isEditMode=true`;
 
       logger.info('Microlearning updated successfully', {
         microlearningId,

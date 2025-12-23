@@ -5,7 +5,7 @@ import { inboxTranslateJsonTool } from '../tools/inbox';
 import { KVService } from '../services/kv-service';
 import { normalizeDepartmentName } from '../utils/language/language-utils';
 import { validateInboxStructure, correctInboxStructure, detectJsonCorruption } from '../utils/validation/json-validation-utils';
-import { MODEL_PROVIDERS, TIMEOUT_VALUES, STRING_TRUNCATION } from '../constants';
+import { MODEL_PROVIDERS, TIMEOUT_VALUES, STRING_TRUNCATION, API_ENDPOINTS } from '../constants';
 import { getLogger } from '../utils/core/logger';
 import { waitForKVConsistency, buildExpectedKVKeys } from '../utils/kv-consistency';
 import { normalizeError, logErrorInfo } from '../utils/core/error-utils';
@@ -440,7 +440,7 @@ const combineResultsStep = createStep({
     if (hasInbox && updateInbox.success) {
       // Both language and inbox successful
       const inboxUrl = encodeURIComponent(`inbox/${normalizedDept}`);
-      trainingUrl = `https://microlearning.pages.dev/?baseUrl=${baseUrl}&langUrl=${langUrl}&inboxUrl=${inboxUrl}&isEditMode=true`;
+      trainingUrl = `${API_ENDPOINTS.FRONTEND_MICROLEARNING_URL}/?baseUrl=${baseUrl}&langUrl=${langUrl}&inboxUrl=${inboxUrl}&isEditMode=true`;
       filesGenerated = [
         `${microlearningId}/${targetLanguage}.json`,
         ...(updateInbox.filesGenerated || [])
@@ -448,12 +448,12 @@ const combineResultsStep = createStep({
     } else if (hasInbox && !updateInbox.success) {
       // Language succeeded but inbox failed - graceful degradation
       logger.warn('Inbox translation failed, but language content is available');
-      trainingUrl = `https://microlearning.pages.dev/?baseUrl=${baseUrl}&langUrl=${langUrl}&isEditMode=true`;
+      trainingUrl = `${API_ENDPOINTS.FRONTEND_MICROLEARNING_URL}/?baseUrl=${baseUrl}&langUrl=${langUrl}&isEditMode=true`;
       filesGenerated = [`${microlearningId}/${targetLanguage}.json`];
       message = `🌐 Language translation completed! Note: Inbox translation failed but training content is ready.`;
     } else {
       // No inbox needed
-      trainingUrl = `https://microlearning.pages.dev/?baseUrl=${baseUrl}&langUrl=${langUrl}&isEditMode=true`;
+      trainingUrl = `${API_ENDPOINTS.FRONTEND_MICROLEARNING_URL}/?baseUrl=${baseUrl}&langUrl=${langUrl}&isEditMode=true`;
       filesGenerated = [`${microlearningId}/${targetLanguage}.json`];
     }
 

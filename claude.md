@@ -213,7 +213,7 @@ GOOGLE_GENERATIVE_AI_API_KEY, MASTRA_MEMORY_URL, MASTRA_MEMORY_TOKEN
 delta: `::ui:canvas_open::${trainingUrl}\n`
 
 // Example URL:
-// https://microlearning.pages.dev/?baseUrl=...&langUrl=lang/en&isEditMode=true
+// https://agentic-ai-microlearning.keepnetlabs.com/?baseUrl=...&langUrl=lang/en&isEditMode=true
 
 // Frontend listens for ::ui:canvas_open:: prefix and opens editor
 ```

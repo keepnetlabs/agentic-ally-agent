@@ -25,7 +25,9 @@
       "Bash(wc:*)",
       "Bash(ls:*)",
       "Bash(cat:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(cd:*)",
+      "Bash(xargs -I {} bash -c 'wc -l \"\"$1\"\" 2>/dev/null | head -1' _ {})"
     ],
     "deny": [],
     "ask": []

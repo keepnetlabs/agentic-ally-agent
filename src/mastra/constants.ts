@@ -680,6 +680,9 @@ export const API_ENDPOINTS = {
   PRODUCT_API_URL: process.env.PRODUCT_API_URL || '',
   PRODUCT_WHITELABELING_ENDPOINT: '/whitelabeling',
 
+  // Frontend URLs
+  FRONTEND_MICROLEARNING_URL: 'https://agentic-ai-microlearning.keepnetlabs.com',
+
   // User info / leaderboard endpoints (built on PLATFORM_API_URL)
   USER_INFO_GET_ALL: `${process.env.PLATFORM_API_URL || 'https://test-api.devkeepnet.com'}/api/leaderboard/get-all`,
   USER_INFO_GET_TIMELINE: `${process.env.PLATFORM_API_URL || 'https://test-api.devkeepnet.com'}/api/leaderboard/get-user-timeline`,
