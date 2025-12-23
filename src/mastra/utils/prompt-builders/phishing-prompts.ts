@@ -215,13 +215,20 @@ Return ONLY valid JSON matching the schema. No markdown, no backticks, no explan
   "subjectLineStrategy": "Creates urgency with 'Your order is on hold' message"
 }`;
 
+  // Add department context ONLY if provided and not 'All'
+  let departmentContext = '';
+  if (targetProfile?.department && targetProfile.department !== 'All') {
+    departmentContext = `\n**TARGET DEPARTMENT:** ${targetProfile.department}
+Tailor the scenario specifically for this department's typical workflows, vulnerabilities, and attack vectors.`;
+  }
+
   const userPrompt = `Design a phishing simulation scenario for SECURITY AWARENESS TRAINING based on this context:
 
 **Training Topic:** ${topic || 'General Security Test'}
 **Difficulty Level:** ${difficulty}
 **Language:** ${language} (MUST use BCP-47 format like en-gb, tr-tr, de-de)
 **Requested Method:** ${method || 'Auto-Detect'}
-**Target Audience Profile:** ${JSON.stringify(targetProfile || {})}
+**Target Audience Profile:** ${JSON.stringify(targetProfile || {})}${departmentContext}
 
 Create a sophisticated blueprint for an educational phishing simulation email that will help employees learn to recognize and report phishing attacks.
 

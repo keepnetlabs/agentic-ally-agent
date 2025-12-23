@@ -5,6 +5,7 @@ import { getLanguagePrompt } from '../../../utils/language/localization-language
 import { getLogger } from '../../../utils/core/logger';
 import { normalizeError, logErrorInfo } from '../../../utils/core/error-utils';
 import { errorService } from '../../../services/error-service';
+import { withRetry } from '../../../utils/core/resilience-utils';
 
 interface RewriteContext {
     sourceLanguage: string;
@@ -97,15 +98,18 @@ CRITICAL: Keep isCorrect booleans unchanged.
 Output (JSON only):`;
 
     try {
-        const response = await generateText({
-            model,
-            messages: [
-                { role: 'system', content: systemPrompt },
-                { role: 'user', content: userPrompt }
-            ],
-            ...LOCALIZER_PARAMS,
-            temperature: 0.4,
-        });
+        const response = await withRetry(
+            () => generateText({
+                model,
+                messages: [
+                    { role: 'system', content: systemPrompt },
+                    { role: 'user', content: userPrompt }
+                ],
+                ...LOCALIZER_PARAMS,
+                temperature: 0.4,
+            }),
+            'Scene 5 (Quiz) rewrite'
+        );
 
         const cleaned = cleanResponse(response.text, 'scene5-quiz');
         const rewritten = JSON.parse(cleaned);

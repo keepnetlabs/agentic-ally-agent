@@ -6,6 +6,7 @@ import { getLogger } from '../../../utils/core/logger';
 import { normalizeError } from '../../../utils/core/error-utils';
 import { errorService } from '../../../services/error-service';
 import { logErrorInfo } from '../../../utils/core/error-utils';
+import { withRetry } from '../../../utils/core/resilience-utils';
 
 interface RewriteContext {
     sourceLanguage: string;
@@ -95,15 +96,18 @@ Focus on natural flow while keeping all technical details and UI structure exact
 Output (JSON only):`;
 
     try {
-        const response = await generateText({
-            model,
-            messages: [
-                { role: 'system', content: systemPrompt },
-                { role: 'user', content: userPrompt }
-            ],
-            ...LOCALIZER_PARAMS,
-            temperature: 0.4,
-        });
+        const response = await withRetry(
+            () => generateText({
+                model,
+                messages: [
+                    { role: 'system', content: systemPrompt },
+                    { role: 'user', content: userPrompt }
+                ],
+                ...LOCALIZER_PARAMS,
+                temperature: 0.4,
+            }),
+            'Scene 1 (Intro) rewrite'
+        );
 
         const cleaned = cleanResponse(response.text, 'scene1-intro');
         const rewritten = JSON.parse(cleaned);

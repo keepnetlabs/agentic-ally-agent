@@ -15,11 +15,14 @@ import { generateScene6Prompt } from '../scenes/generators/scene6-survey-generat
 import { generateScene7Prompt } from '../scenes/generators/scene7-nudge-generator';
 import { generateScene8Prompt } from '../scenes/generators/scene8-summary-generator';
 import { cleanResponse } from '../../utils/content-processors/json-cleaner';
-import { SCENE_GENERATION_PARAMS } from '../../utils/config/llm-generation-params';
+import { translateTranscript } from '../../utils/content-processors/transcript-translator';
+import { SCENE_GENERATION_PARAMS, LOCALIZER_PARAMS } from '../../utils/config/llm-generation-params';
 import { trackCost } from '../../utils/core/cost-tracker';
 import { getLogger } from '../../utils/core/logger';
 import { errorService } from '../../services/error-service';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
+import { getLanguagePrompt } from '../../utils/language/localization-language-rules';
+import { withRetry } from '../../utils/core/resilience-utils';
 
 export const generateLanguageJsonTool = new Tool({
   id: 'generate_language_json',
@@ -99,7 +102,10 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
   const videoData = await generateVideoPrompt(analysis, microlearning);
   const videoPrompt = videoData.prompt;
   const selectedVideoUrl = videoData.videoUrl;
-  const selectedTranscript = videoData.transcript;
+  const baseTranscript = videoData.transcript;
+
+  // Translate transcript if not English
+  const selectedTranscript = await translateTranscript(baseTranscript, analysis.language, model);
 
   // Determine Scene 4 type and generate appropriate prompt based on analysis
   const isCodeTopic = analysis.isCodeTopic || false;
@@ -135,110 +141,70 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
     // Generate content in parallel for better performance and reliability
     const startTime = Date.now();
     const [scene1Response, scene2Response, videoResponse, scene4Response, scene5Response, scene6Response, scene7Response, scene8Response] = await Promise.all([
-      generateText({
-        model: model,
-        messages: buildSceneMessages(systemPrompt, scene1Prompt, analysis),
-        ...SCENE_GENERATION_PARAMS[1]  // Scene 1: Intro (creative)
-      }).then((response) => {
-        // extractAndStreamReasoning(response, writer, 'Scene 1'); // Temporarily commented
-        return response;
-      }).catch(err => {
-        const normalizedErr = normalizeError(err);
-        const errorInfo = errorService.aiModel(`Scene 1 generation failed: ${normalizedErr.message}`, { scene: 1 });
-        logErrorInfo(logger, 'error', 'Scene 1 generation failed', errorInfo);
-        throw new Error(errorInfo.message);
-      }),
-      generateText({
-        model: model,
-        messages: buildSceneMessages(systemPrompt, scene2Prompt, analysis),
-        ...SCENE_GENERATION_PARAMS[2]  // Scene 2: Goals (factual)
-      }).then((response) => {
-        // extractAndStreamReasoning(response, writer, 'Scene 2'); // Temporarily commented
-        return response;
-      }).catch(err => {
-        const normalizedErr = normalizeError(err);
-        const errorInfo = errorService.aiModel(`Scene 2 generation failed: ${normalizedErr.message}`, { scene: 2 });
-        logErrorInfo(logger, 'error', 'Scene 2 generation failed', errorInfo);
-        throw new Error(errorInfo.message);
-      }),
-      generateText({
-        model: model,
-        messages: buildSceneMessages(videoSystemPrompt, videoPrompt, analysis),
-        ...SCENE_GENERATION_PARAMS[3]  // Scene 3: Video (balanced)
-      }).then((response) => {
-        // extractAndStreamReasoning(response, writer, 'Scene 3'); // Temporarily commented
-        return response;
-      }).catch(err => {
-        const normalizedErr = normalizeError(err);
-        const errorInfo = errorService.aiModel(`Video generation failed: ${normalizedErr.message}`, { scene: 3 });
-        logErrorInfo(logger, 'error', 'Video generation failed', errorInfo);
-        throw new Error(errorInfo.message);
-      }),
-      generateText({
-        model: model,
-        messages: buildSceneMessages(systemPrompt, scene4Prompt, analysis),
-        ...SCENE_GENERATION_PARAMS[4]  // Scene 4: Actions (specific)
-      }).then((response) => {
-        // extractAndStreamReasoning(response, writer, 'Scene 4'); // Temporarily commented
-        return response;
-      }).catch(err => {
-        const normalizedErr = normalizeError(err);
-        const errorInfo = errorService.aiModel(`Scene 4 generation failed: ${normalizedErr.message}`, { scene: 4 });
-        logErrorInfo(logger, 'error', 'Scene 4 generation failed', errorInfo);
-        throw new Error(errorInfo.message);
-      }),
-      generateText({
-        model: model,
-        messages: buildSceneMessages(systemPrompt, scene5Prompt, analysis),
-        ...SCENE_GENERATION_PARAMS[5]  // Scene 5: Quiz (precise)
-      }).then((response) => {
-        // extractAndStreamReasoning(response, writer, 'Scene 5'); // Temporarily commented
-        return response;
-      }).catch(err => {
-        const normalizedErr = normalizeError(err);
-        const errorInfo = errorService.aiModel(`Scene 5 generation failed: ${normalizedErr.message}`, { scene: 5 });
-        logErrorInfo(logger, 'error', 'Scene 5 generation failed', errorInfo);
-        throw new Error(errorInfo.message);
-      }),
-      generateText({
-        model: model,
-        messages: buildSceneMessages(systemPrompt, scene6Prompt, analysis),
-        ...SCENE_GENERATION_PARAMS[6]  // Scene 6: Survey (neutral)
-      }).then((response) => {
-        // extractAndStreamReasoning(response, writer, 'Scene 6'); // Temporarily commented
-        return response;
-      }).catch(err => {
-        const normalizedErr = normalizeError(err);
-        const errorInfo = errorService.aiModel(`Scene 6 generation failed: ${normalizedErr.message}`, { scene: 6 });
-        logErrorInfo(logger, 'error', 'Scene 6 generation failed', errorInfo);
-        throw new Error(errorInfo.message);
-      }),
-      generateText({
-        model: model,
-        messages: buildSceneMessages(systemPrompt, scene7Prompt, analysis),
-        ...SCENE_GENERATION_PARAMS[7]  // Scene 7: Nudge (engaging)
-      }).then((response) => {
-        // extractAndStreamReasoning(response, writer, 'Scene 7'); // Temporarily commented
-        return response;
-      }).catch(err => {
-        const normalizedErr = normalizeError(err);
-        const errorInfo = errorService.aiModel(`Scene 7 generation failed: ${normalizedErr.message}`, { scene: 7 });
-        logErrorInfo(logger, 'error', 'Scene 7 generation failed', errorInfo);
-        throw new Error(errorInfo.message);
-      }),
-      generateText({
-        model: model,
-        messages: buildSceneMessages(systemPrompt, scene8Prompt, analysis),
-        ...SCENE_GENERATION_PARAMS[8]  // Scene 8: Summary (consistent)
-      }).then((response) => {
-        // extractAndStreamReasoning(response, writer, 'Scene 8'); // Temporarily commented
-        return response;
-      }).catch(err => {
-        const normalizedErr = normalizeError(err);
-        const errorInfo = errorService.aiModel(`Scene 8 generation failed: ${normalizedErr.message}`, { scene: 8 });
-        logErrorInfo(logger, 'error', 'Scene 8 generation failed', errorInfo);
-        throw new Error(errorInfo.message);
-      })
+      withRetry(
+        () => generateText({
+          model: model,
+          messages: buildSceneMessages(systemPrompt, scene1Prompt, analysis),
+          ...SCENE_GENERATION_PARAMS[1]  // Scene 1: Intro (creative)
+        }),
+        'Scene 1 generation'
+      ),
+      withRetry(
+        () => generateText({
+          model: model,
+          messages: buildSceneMessages(systemPrompt, scene2Prompt, analysis),
+          ...SCENE_GENERATION_PARAMS[2]  // Scene 2: Goals (factual)
+        }),
+        'Scene 2 generation'
+      ),
+      withRetry(
+        () => generateText({
+          model: model,
+          messages: buildSceneMessages(videoSystemPrompt, videoPrompt, analysis),
+          ...SCENE_GENERATION_PARAMS[3]  // Scene 3: Video (balanced)
+        }),
+        'Scene 3 generation'
+      ),
+      withRetry(
+        () => generateText({
+          model: model,
+          messages: buildSceneMessages(systemPrompt, scene4Prompt, analysis),
+          ...SCENE_GENERATION_PARAMS[4]  // Scene 4: Actions (specific)
+        }),
+        'Scene 4 generation'
+      ),
+      withRetry(
+        () => generateText({
+          model: model,
+          messages: buildSceneMessages(systemPrompt, scene5Prompt, analysis),
+          ...SCENE_GENERATION_PARAMS[5]  // Scene 5: Quiz (precise)
+        }),
+        'Scene 5 generation'
+      ),
+      withRetry(
+        () => generateText({
+          model: model,
+          messages: buildSceneMessages(systemPrompt, scene6Prompt, analysis),
+          ...SCENE_GENERATION_PARAMS[6]  // Scene 6: Survey (neutral)
+        }),
+        'Scene 6 generation'
+      ),
+      withRetry(
+        () => generateText({
+          model: model,
+          messages: buildSceneMessages(systemPrompt, scene7Prompt, analysis),
+          ...SCENE_GENERATION_PARAMS[7]  // Scene 7: Nudge (engaging)
+        }),
+        'Scene 7 generation'
+      ),
+      withRetry(
+        () => generateText({
+          model: model,
+          messages: buildSceneMessages(systemPrompt, scene8Prompt, analysis),
+          ...SCENE_GENERATION_PARAMS[8]  // Scene 8: Summary (consistent)
+        }),
+        'Scene 8 generation'
+      )
     ]);
 
     const generationTime = Date.now() - startTime;
@@ -308,11 +274,14 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
       logger.warn('Video JSON parsing failed, attempting retry', { originalError: parseErr instanceof Error ? parseErr.message : String(parseErr) });
 
       try {
-        // Retry with fresh AI call using same optimized prompt
-        const retryResponse = await generateText({
-          model: model,
-          messages: buildSceneMessages(videoSystemPrompt, videoPrompt, analysis)
-        });
+        // Retry with fresh AI call using same optimized prompt (withRetry handles exponential backoff)
+        const retryResponse = await withRetry(
+          () => generateText({
+            model: model,
+            messages: buildSceneMessages(videoSystemPrompt, videoPrompt, analysis)
+          }),
+          'Video generation retry'
+        );
 
         const retryCleanedVideo = cleanResponse(retryResponse.text, 'video');
         videoScenes = JSON.parse(retryCleanedVideo);

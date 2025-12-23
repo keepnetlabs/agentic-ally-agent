@@ -1,5 +1,6 @@
 import { PromptAnalysis } from '../../types/prompt-analysis';
 import { MicrolearningContent } from '../../types/microlearning';
+import { getLanguagePrompt } from '../language/localization-language-rules';
 
 /**
  * Get level-specific vocabulary guidance for RULE 3
@@ -31,6 +32,8 @@ function getVocabularyGuidance(level: string): { simplification: string; convers
 export function buildSystemPrompt(language: string, level?: string): string {
    // Level-specific technical vocabulary guidance
    const vocabularyGuidance = getVocabularyGuidance(level || 'Beginner');
+   // Language-specific style rules
+   const languageRules = getLanguagePrompt(language);
 
    return `You are a native ${language} microlearning content generator.
 
@@ -53,6 +56,22 @@ RULE 2: Expression Quality (Create, Don't Translate)
 • Express each idea naturally in ${language}, using authentic tone, rhythm, and idioms
 • WRONG ❌: Literal, mechanical, or word-for-word phrasing
 • RIGHT ✅: Fluent, natural, idiomatic, and professional writing that feels native
+
+NATIVE LANGUAGE RULE (CRITICAL):
+If the output language is NOT English,
+NEVER translate, mirror, or adapt English wording,
+sentence structures, or headline-style phrases
+(e.g. "Know that", "Remember that", "See how", "Stop X").
+
+Think directly in ${language}.
+Write naturally as a native professional would,
+following meaning and intent—not English phrasing.
+
+Final self-check:
+If any sentence sounds like it was written in English first,
+rewrite it until it sounds native.
+
+${languageRules}
 
 RULE 3: Quality & Readability
 • Professional, confident, approachable tone — colleague-to-colleague
@@ -89,6 +108,7 @@ If the answer is NO → rewrite before output.
 - Keep JSON structure EXACTLY as provided (no extra keys, no omissions)
 - Output must be STRICT JSON only
 `;
+   ;
 }
 
 /**

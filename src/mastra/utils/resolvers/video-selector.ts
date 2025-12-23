@@ -3,9 +3,20 @@ import { getModel, Model, ModelProvider } from '../../model-providers';
 import { PromptAnalysis } from '../../types/prompt-analysis';
 import videoDatabase from '../../data/video-database.json';
 import { getLogger } from '../core/logger';
-import { normalizeError } from '../core/error-utils';
+import { normalizeError, logErrorInfo } from '../core/error-utils';
+import { errorService } from '../../services/error-service';
 
 const logger = getLogger('VideoSelector');
+
+// Type definition for video database entries
+// Note: audience comes from JSON as string, but we validate it at runtime
+interface VideoDatabaseEntry {
+  title: string;
+  description?: string;
+  url: string;
+  topics: string[];
+  audience?: string; // JSON imports as string, validated at runtime
+}
 
 /**
  * Selects the most appropriate SCENARIO video from database based on topic analysis
@@ -28,7 +39,7 @@ export async function selectVideoForTopic(analysis: PromptAnalysis): Promise<str
     const userAudience = analysis.isCodeTopic ? 'development' : 'general';
 
     // CRITICAL: Filter for SCENARIO videos only (not tutorials, tool demos, or how-to guides)
-    const isScenarioVideo = (video: any) => {
+    const isScenarioVideo = (video: VideoDatabaseEntry | any) => {
       const videoTitle = (video.title || '').toLowerCase();
       const videoDesc = (video.description || '').toLowerCase();
       const fullText = `${videoTitle} ${videoDesc}`;
@@ -216,10 +227,12 @@ Return the best matching video URL only:`;
 
   } catch (error) {
     const err = normalizeError(error);
-    logger.error('Video selection failed, using fallback', {
-      error: err.message,
+    const errorInfo = errorService.aiModel(`Video selection failed: ${err.message}`, {
+      topic: analysis.topic,
+      audience: analysis.isCodeTopic ? 'development' : 'general',
       stack: err.stack
     });
+    logErrorInfo(logger, 'error', 'Video selection failed, using fallback', errorInfo);
     return fallbackUrl;
   }
 }
@@ -300,7 +313,22 @@ Return ONLY valid JSON, no markdown:
 
     // Parse the JSON response
     const cleanedResponse = result.text.trim();
-    const metadata = JSON.parse(cleanedResponse);
+    let metadata: { title?: string; subtitle?: string };
+    try {
+      metadata = JSON.parse(cleanedResponse);
+    } catch (parseError) {
+      const parseErr = normalizeError(parseError);
+      const errorInfo = errorService.validation(`Video metadata JSON parsing failed: ${parseErr.message}`, {
+        topic,
+        language,
+        responsePreview: cleanedResponse.substring(0, 200)
+      });
+      logErrorInfo(logger, 'warn', 'Video metadata JSON parsing failed, using fallback', errorInfo);
+      return {
+        title: `Real ${topic} Scenario`,
+        subtitle: 'Learn to recognize and respond to threats'
+      };
+    }
 
     logger.info('Generated video metadata', {
       topic,
@@ -313,10 +341,13 @@ Return ONLY valid JSON, no markdown:
 
   } catch (error) {
     const err = normalizeError(error);
-    logger.warn('Video metadata generation failed, using fallback', {
-      error: err.message,
+    const errorInfo = errorService.aiModel(`Video metadata generation failed: ${err.message}`, {
+      topic,
+      language,
+      department,
       stack: err.stack
     });
+    logErrorInfo(logger, 'warn', 'Video metadata generation failed, using fallback', errorInfo);
 
     // Fallback values if AI generation fails
     return {

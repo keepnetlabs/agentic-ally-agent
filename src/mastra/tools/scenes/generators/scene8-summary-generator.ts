@@ -43,12 +43,22 @@ export function generateScene8Prompt(analysis: PromptAnalysis, microlearning: Mi
 
 CRITICAL RULES:
 1. Use ONLY the resources provided below - NEVER generate, invent, or suggest alternatives
-2. Keep resource titles as provided (from database)
-3. Translate only if explicitly needed for language: ${analysis.language}
+2. Translate resource "title" values to ${analysis.language} naturally (max 5 words, keep concise)
+3. NEVER change "type" (keep as "URL") or "url" values - only translate titles
+4. Resource titles must be topic-specific and natural in ${analysis.language}
 
 Topic: ${analysis.topic}
 Language: ${analysis.language}
 isCodeTopic: ${analysis.isCodeTopic}
+
+⚠️ RESOURCES TRANSLATION (CRITICAL):
+- The "resources" array below contains resource objects with "title", "type", and "url" fields
+${analysis.language.toLowerCase().startsWith('en')
+      ? '- If language is English, keep resource "title" values EXACTLY as provided - do NOT translate or modify'
+      : `- Translate each resource "title" to ${analysis.language} naturally (max 5 words, keep concise and topic-specific)
+- Write titles naturally in ${analysis.language} as a native speaker would - do NOT literally translate word-by-word
+- Example: English "Phishing Detection Guide" → Turkish "Oltalama Tespit Rehberi" (natural, not literal)`}
+- NEVER change "type" (keep as "URL") or "url" values - only translate titles if language is NOT English
 
 Generate scene 8 (summary):
 {

@@ -8,6 +8,7 @@ export function generateScene1Prompt(analysis: PromptAnalysis, microlearning: Mi
   return `${contextData}
 
 SCENE 1 - INTRO (PATTERN-BASED GENERATION):
+
 Topic: ${analysis.topic} | Department: ${analysis.department || 'General'} | Language: ${analysis.language}
 
 ⚠️ HIGHLIGHTS & KEY_MESSAGE:

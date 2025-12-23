@@ -11,7 +11,7 @@ Generate scene 6 (survey):
 {
   "6": {
     "iconName": "list-checks",
-    "title": "Localize 'Share Your Experience' into ${analysis.language}. Output localized text directly, not instructions.",
+    "title": "CRITICAL: MUST be exactly 'Share Your Experience' localized to ${analysis.language} - NEVER include topic name (${analysis.topic}) or any other text. Output only the localized translation of 'Share Your Experience'.",
     "subtitle": "Localize 'Help us improve your training experience' into ${analysis.language}. Output localized text directly, not instructions.",
     "texts": {
       "ratingQuestion": "Confidence question for ${analysis.topic} (${analysis.department}), max 12 words in ${analysis.language}",
@@ -59,9 +59,8 @@ Generate scene 6 (survey):
 
 CRITICAL:
 1. iconName MUST be "list-checks" - NEVER use topic-specific icons
-2. title MUST be "Share Your Experience" - NEVER include topic name
-3. Questions (ratingQuestion, topicsQuestion, feedbackQuestion) must be generic, applicable to any topic
-4. ONLY topics array should be topic-specific (2 skills/areas for ${analysis.topic})
-5. Where you see "Return like 'example'" - output text SIMILAR to example, NOT the instruction itself
-6. SCENE_TYPE MUST ALWAYS BE "survey" - NEVER "summary" or anything else`;
+2. Questions (ratingQuestion, topicsQuestion, feedbackQuestion) must be generic, applicable to any topic
+3. ONLY topics array should be topic-specific (2 skills/areas for ${analysis.topic})
+4. Where you see "Return like 'example'" - output text SIMILAR to example, NOT the instruction itself
+5. SCENE_TYPE MUST ALWAYS BE "survey" - NEVER "summary" or anything else`;
 }
