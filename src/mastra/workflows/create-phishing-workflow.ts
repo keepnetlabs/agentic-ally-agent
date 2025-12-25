@@ -404,6 +404,8 @@ const generateEmail = createStep({
 });
 
 // Step 3: Generate Landing Page
+// NOTE: Landing page generation is STANDARD for both normal phishing and quishing.
+// No special handling for isQuishing - same quality and standards apply.
 const generateLandingPage = createStep({
   id: 'generate-landing-page',
   inputSchema: EmailOutputSchema,
@@ -466,6 +468,7 @@ const generateLandingPage = createStep({
       subject,
       template,
       additionalContext: additionalContext || analysis.additionalContext,
+      isQuishing: analysis.isQuishing || false,
     });
 
     // Build messages array with multi-message pattern for targeted context

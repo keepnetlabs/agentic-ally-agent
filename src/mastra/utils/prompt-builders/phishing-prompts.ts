@@ -52,6 +52,7 @@ type LandingPagePromptParams = {
   subject?: string;
   template?: string;
   additionalContext?: string;
+  isQuishing?: boolean;
 };
 
 // Layout and Style Options for Dynamic Generation
@@ -767,6 +768,7 @@ export function buildLandingPagePrompts(params: LandingPagePromptParams): {
     subject,
     template,
     additionalContext,
+    isQuishing = false,
   } = params;
 
   // 🎲 RANDOMIZE DESIGN 🎲
@@ -796,6 +798,10 @@ Your job: generate modern, professional, trustworthy WEB PAGES (not emails) usin
 ---
 
 **CRITICAL RULES:**
+
+${isQuishing ? `**🚫 QUISHING LANDING PAGE - NO QR CODES:**
+   - This is a quishing scenario. Landing pages must NOT contain QR codes. QR codes are only in the email. Landing pages are standard forms (login, success, info).` : `**🚫 NO QR CODES IN LANDING PAGES:**
+   - Do NOT add QR codes to landing pages. Landing pages are standard web forms (login, success, info pages).`}
 
 1. **LOGO STRATEGY (MANDATORY - Always include a logo):**
    ${template && template.includes('{CUSTOMMAINLOGO}') ? `🚨 **HIGHEST PRIORITY - EMAIL USES LOGO TAG:**\n   - **ABSOLUTE REQUIREMENT:** The phishing email uses the \`{CUSTOMMAINLOGO}\` merge tag for the logo.\n   - **YOU MUST USE THE SAME TAG IN ALL LANDING PAGES:** \`<img src='{CUSTOMMAINLOGO}' alt='${fromName}' width='64' height='64' style='display: block; margin: 0 auto; object-fit: contain;' />\`\n   - **DO NOT** generate a different logo URL.\n   - **DO NOT** use any logo service or direct image URLs.\n   - **CRITICAL:** Landing page logo MUST use the same \`{CUSTOMMAINLOGO}\` tag as the email for brand consistency.\n   - The tag will be automatically replaced with the appropriate logo URL during post-processing.\n\n   **IF YOU SEE {CUSTOMMAINLOGO} TAG ABOVE, IGNORE ALL OTHER LOGO RULES BELOW AND USE ONLY THAT TAG.**\n\n   ---\n\n   **FALLBACK RULES (ONLY IF NO {CUSTOMMAINLOGO} TAG IN EMAIL):**` : `   - **CRITICAL:** Every landing page MUST include a logo image.`}
@@ -1390,6 +1396,7 @@ Create modern, professional pages that match ${industryDesign.industry} standard
 
 **REMEMBER:**
 ${emailUsesLogoTag ? `- 🚨 **LOGO CRITICAL:** The phishing email uses \`{CUSTOMMAINLOGO}\` tag. YOU MUST USE THE SAME TAG IN ALL LANDING PAGES. DO NOT generate a different logo URL.` : `- **LOGO IS MANDATORY:** Use \`{CUSTOMMAINLOGO}\` tag in all landing pages. The tag will be automatically replaced with the appropriate logo URL during post-processing.`}
+${isQuishing ? `- 🚫 **QUISHING:** Landing page must NOT contain QR codes. Email has QR codes, landing page is standard form.` : `- 🚫 **NO QR CODES:** Do NOT add QR codes to landing pages. Landing pages are standard web forms only.`}
 - Add natural design variations (don't make all pages identical)
 - Ensure login page is properly centered with inline styles: \`min-height: 100vh; display: flex; align-items: center; justify-content: center;\`
 - Card MUST have generous internal padding (32px+)
@@ -1412,6 +1419,8 @@ ${additionalContext}
 **From:** ${fromName} <${fromAddress}>
 
 **CRITICAL:** The landing pages MUST match the branding and style used in the phishing email above. Use the SAME logo, colors, and design language to maintain consistency. Users clicking from the email should see a seamless transition to the landing page.
+
+${isQuishing ? `**🚫 QUISHING:** Landing pages must NOT contain QR codes. Email has QR codes, landing pages are standard forms.` : `**🚫 IMPORTANT:** If the email contains QR codes, DO NOT include QR codes in landing pages. Landing pages are standard web forms.`}
 
 ${emailUsesLogoTag ? `\n🚨 **LOGO REQUIREMENT (MANDATORY):**\nThe phishing email uses the \`{CUSTOMMAINLOGO}\` merge tag for the logo.\n\n**YOU MUST USE THE SAME TAG IN ALL LANDING PAGES.**\n\n**DO NOT:**\n- Generate a different logo URL\n- Use any logo service or direct image URLs\n- Create any other logo\n\n**YOU MUST:**\n- Use the same \`{CUSTOMMAINLOGO}\` tag\n- Include it in ALL pages (login, success, info, etc.)\n- Match the exact same logo tag that appears in the email\n\n**Example usage:**\n<img src='{CUSTOMMAINLOGO}' alt='${fromName}' width='64' height='64' style='display: block; margin: 0 auto; object-fit: contain;' />` : ''}
 ${emailBrandContext ? `\n${emailBrandContext}` : ''}
