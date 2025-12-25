@@ -132,6 +132,7 @@ Upload result: {resourceId: "xyz789", languageId: "lang456"}
 Call 'phishingExecutor' (ONLY in STATE 3) with:
 - **workflowType**: '${PHISHING.WORKFLOW_TYPE}'
     - **topic**: [Final Topic]
+    - **isQuishing**: [true/false - CRITICAL: Set to true if user explicitly mentions "quishing", "QR code phishing", "QR phishing", "QR code", or any variant of QR code-based phishing. Default: false]
     - **language**: [Detected BCP-47 code (e.g. en-gb, tr-tr, de-de)]
     - **difficulty**: [${PHISHING.DIFFICULTY_LEVELS.join('/')}]
     - **method**: [${PHISHING.ATTACK_METHODS[0]}/${PHISHING.ATTACK_METHODS[1]}] (If user didn't specify, DEFAULT to '${PHISHING.DEFAULT_ATTACK_METHOD}')
@@ -143,8 +144,17 @@ Call 'phishingExecutor' (ONLY in STATE 3) with:
     behavioralTriggers: [Triggers from UserInfo Context],
     vulnerabilities: [Vulnerabilities from UserInfo Context]
   }
-- **modelProvider**: [Optional Override]
-- **model**: [Optional Override]
+    - **modelProvider**: [Optional Override]
+    - **model**: [Optional Override]
+
+**QUISHING DETECTION RULE:**
+- **ALWAYS check user's request** for quishing keywords: "quishing", "QR code", "QR phishing", "QR-code", "qr code", "qr-phishing" (case-insensitive)
+- **Examples that require isQuishing: true:**
+  * "Create Quishing Email Template"
+  * "QR code phishing email"
+  * "Quishing simulation"
+  * "QR phishing"
+- **If user explicitly requests quishing/QR code phishing, you MUST set isQuishing: true**
 
 ## Auto Context Capture
 - **CRITICAL: ORCHESTRATOR CONTEXT**: If your prompt starts with "[CONTEXT FROM ORCHESTRATOR: ...]", YOU MUST USE THE ENTIRE ORCHESTRATOR CONTEXT for the targetProfile.

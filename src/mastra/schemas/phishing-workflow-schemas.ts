@@ -13,6 +13,7 @@ import { StreamWriterSchema } from '../types/stream-writer';
  */
 export const InputSchema = z.object({
     topic: z.string().describe('The main theme or topic of the phishing simulation'),
+    isQuishing: z.boolean().optional().default(false).describe('Whether this is a quishing (QR code phishing) simulation. Set by agent based on user request.'),
     targetProfile: z.object({
         name: z.string().optional(),
         department: z.string().optional(),
@@ -80,6 +81,8 @@ export const AnalysisSchema = z.object({
         }),
         logoExample: z.string(),
     }).optional().describe('Detected industry design system (colors, typography, patterns)'),
+    // Quishing detection (determined by AI during analysis)
+    isQuishing: z.boolean().describe('Whether this is a quishing (QR code phishing) simulation. Set to true if the topic/scenario involves QR codes or quishing attacks.'),
     // Passthrough fields
     difficulty: z.enum(PHISHING.DIFFICULTY_LEVELS).optional(),
     language: z.string().optional(),

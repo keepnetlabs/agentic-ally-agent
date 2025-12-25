@@ -43,13 +43,22 @@ const analyzeRequest = createStep({
   outputSchema: AnalysisSchema,
   execute: async ({ inputData }) => {
     const logger = getLogger('AnalyzePhishingRequest');
-    const { topic, targetProfile, difficulty, language, method, includeLandingPage, includeEmail, additionalContext, modelProvider, model } = inputData;
+    const { topic, isQuishing, targetProfile, difficulty, language, method, includeLandingPage, includeEmail, additionalContext, modelProvider, model } = inputData;
 
-    logger.info('Starting phishing scenario analysis', { topic, difficulty, language, method, includeLandingPage, includeEmail });
+    logger.info('Starting phishing scenario analysis', { topic, isQuishing, difficulty, language, method, includeLandingPage, includeEmail });
 
     const aiModel = getModelWithOverride(modelProvider, model);
 
-    // Build prompts using prompt builder
+    // Agent determines isQuishing - use it directly (no pre-check needed)
+    const isQuishingDetected = isQuishing || false;
+
+    if (isQuishingDetected) {
+      logger.info('✅ Quishing detected by agent - will use quishing-specific prompts');
+    } else {
+      logger.info('❌ Normal phishing - will use normal phishing prompts');
+    }
+
+    // Build prompts using prompt builder (pass quishing detection result from agent)
     const { systemPrompt, userPrompt, additionalContextMessage } = buildAnalysisPrompts({
       topic,
       difficulty,
@@ -57,6 +66,13 @@ const analyzeRequest = createStep({
       method,
       targetProfile,
       additionalContext,
+      isQuishingDetected,
+    });
+
+    logger.info('Analysis prompt type', {
+      promptType: isQuishingDetected ? 'QUISHING' : 'NORMAL_PHISHING',
+      systemPromptLength: systemPrompt.length,
+      userPromptLength: userPrompt.length
     });
 
     // Build messages array
@@ -119,6 +135,28 @@ const analyzeRequest = createStep({
           microlearningId: parsedResult.microlearningId
         });
         parsedResult.description = parsedResult.description.substring(0, 300).trim();
+      }
+
+      // Ensure isQuishing is set (prioritize agent's decision, fallback to AI's output, default to false)
+      if (typeof inputData.isQuishing === 'boolean') {
+        // Agent explicitly set isQuishing - use it (overrides AI's decision if different)
+        parsedResult.isQuishing = inputData.isQuishing;
+        logger.info('Using agent-provided isQuishing flag', {
+          topic: inputData.topic,
+          isQuishing: parsedResult.isQuishing,
+          agentProvided: true
+        });
+      } else if (typeof parsedResult.isQuishing !== 'boolean') {
+        // Neither agent nor AI provided it - default to false
+        logger.warn('isQuishing not provided by agent or AI, defaulting to false', { topic: inputData.topic });
+        parsedResult.isQuishing = false;
+      } else {
+        // AI provided it, agent didn't - use AI's decision
+        logger.info('Using AI-provided isQuishing flag', {
+          topic: inputData.topic,
+          isQuishing: parsedResult.isQuishing,
+          agentProvided: false
+        });
       }
 
       // Log generated scenario for debugging
@@ -322,8 +360,12 @@ const generateEmail = createStep({
           });
         }
 
+        // NOTE: {QRCODEURLIMAGE} placeholder is NOT replaced here - backend will replace it with actual QR code URL
+        // fixBrokenImages will skip placeholder validation (preserves {QRCODEURLIMAGE} and {CUSTOMMAINLOGO})
+
         // Fix broken images with real HTTP validation (same as landing pages)
         // This runs AFTER replace/normalize
+        // fixBrokenImages will skip any placeholders (merge tags like {QRCODEURLIMAGE}, {CUSTOMMAINLOGO})
         cleanedTemplate = await fixBrokenImages(cleanedTemplate, analysis.fromName);
 
         parsedResult.template = cleanedTemplate;

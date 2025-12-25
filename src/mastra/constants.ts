@@ -563,6 +563,7 @@ export const PHISHING_EMAIL = {
     '{DATEEMAILSENT}',
     '{COMPANYNAME}',
     '{CUSTOMMAINLOGO}',
+    '{QRCODEURLIMAGE}',
     '{DATE_SENT}',
     '{CURRENT_DATE}',
     '{CURRENT_DATE_PLUS_10_DAYS}',

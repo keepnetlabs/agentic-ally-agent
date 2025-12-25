@@ -11,6 +11,7 @@ import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../uti
 const phishingWorkflowSchema = z.object({
     workflowType: z.literal(PHISHING.WORKFLOW_TYPE).describe('Workflow to execute'),
     topic: z.string().describe('Topic for phishing simulation (e.g. "Reset Password")'),
+    isQuishing: z.boolean().optional().describe('Whether this is a quishing (QR code phishing) simulation. Set to true if user explicitly requests quishing/QR code phishing.'),
     targetProfile: z.object({
         name: z.string().optional(),
         department: z.string().optional(),
@@ -69,6 +70,7 @@ export const phishingWorkflowExecutorTool = createTool({
             const result = await run.start({
                 inputData: {
                     topic: params.topic,
+                    isQuishing: params.isQuishing || false, // Agent determines if this is quishing
                     targetProfile: params.targetProfile,
                     difficulty: params.difficulty || PHISHING.DEFAULT_DIFFICULTY,
                     language: params.language || 'en',

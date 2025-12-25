@@ -23,6 +23,7 @@ export const assignPhishingTool = createTool({
     inputSchema: z.object({
         resourceId: z.string().describe('The Resource ID returned from the upload process'),
         languageId: z.string().optional().describe('The Language ID returned from the upload process'),
+        isQuishing: z.boolean().optional().describe('Quishing flag (can be passed from upload result)'),
         targetUserResourceId: z.string().optional().describe('The User ID to assign the phishing simulation to (user assignment)'),
         targetGroupResourceId: z.string().optional().describe('The Group ID to assign the phishing simulation to (group assignment)'),
         trainingId: z.string().optional().describe('The Training Resource ID to send after phishing simulation (if sendAfterPhishingSimulation is true)'),
@@ -34,7 +35,7 @@ export const assignPhishingTool = createTool({
     outputSchema: assignPhishingOutputSchema,
     execute: async ({ context }) => {
         const logger = getLogger('AssignPhishingTool');
-        const { resourceId, languageId, targetUserResourceId, targetGroupResourceId, trainingId, sendTrainingLanguageId } = context;
+        const { resourceId, languageId, isQuishing, targetUserResourceId, targetGroupResourceId, trainingId, sendTrainingLanguageId } = context;
 
         // Determine assignment type
         const isUserAssignment = !!targetUserResourceId;
@@ -66,6 +67,7 @@ export const assignPhishingTool = createTool({
             companyId: companyId,
             phishingId: resourceId,
             languageId: languageId,
+            isQuishing: isQuishing || false, // Add quishing flag for backend routing
             ...(targetUserResourceId && { targetUserResourceId }),
             ...(targetGroupResourceId && { targetGroupResourceId }),
             name,

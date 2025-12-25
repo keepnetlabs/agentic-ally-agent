@@ -159,6 +159,12 @@ export async function fixBrokenImages(html: string, brandName: string): Promise<
         const fullImgTag = match[0];
         const imgSrc = match[1];
 
+        // Skip merge tags/placeholders (these are replaced by backend, not validated as URLs)
+        if (imgSrc.includes('{') && imgSrc.includes('}')) {
+            logger.info('Skipping validation for placeholder/merge tag', { imgSrc });
+            return;
+        }
+
         if (!urlToMatches.has(imgSrc)) {
             urlToMatches.set(imgSrc, []);
             uniqueUrls.add(imgSrc);

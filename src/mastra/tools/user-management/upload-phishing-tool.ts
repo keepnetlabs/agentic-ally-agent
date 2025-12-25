@@ -74,6 +74,9 @@ export const uploadPhishingTool = createTool({
             const topic = phishingData.topic?.trim();
             const difficulty = phishingData.difficulty;
             const method = phishingData.method;
+            const isQuishing = phishingData.isQuishing || false;
+
+            logger.info('Quishing flag extracted from KV', { phishingId, isQuishing });
 
             // Extract language from availability list (default to 'en-gb' if empty)
             const availableLangs = phishingData.language_availability || [];
@@ -94,6 +97,7 @@ export const uploadPhishingTool = createTool({
                 difficulty,
                 method,
                 language,
+                isQuishing, // Add quishing flag for backend routing
                 email: emailContent ? {
                     subject: emailContent.subject,
                     template: emailContent.template,

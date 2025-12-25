@@ -24,6 +24,7 @@ type AnalysisPromptParams = {
     vulnerabilities?: string[];
   };
   additionalContext?: string;
+  isQuishingDetected?: boolean; // Pre-detected quishing flag (from lightweight AI check)
 };
 
 type EmailPromptParams = {
@@ -106,9 +107,139 @@ const STYLE_OPTIONS = [
 ];
 
 /**
- * Build system and user prompts for analysis step (Step 1)
+ * Build system and user prompts for quishing analysis step
  */
-export function buildAnalysisPrompts(params: AnalysisPromptParams): {
+function buildQuishingAnalysisPrompts(params: AnalysisPromptParams): {
+  systemPrompt: string;
+  userPrompt: string;
+  additionalContextMessage?: string;
+} {
+  const { topic, difficulty, language, method, targetProfile, additionalContext } = params;
+  const difficultyRules = DIFFICULTY_CONFIG[difficulty as keyof typeof DIFFICULTY_CONFIG] || DIFFICULTY_CONFIG.Medium;
+
+  const quishingSystemPrompt = `You are an expert Quishing (QR Code Phishing) Simulation Architect working for a LEGITIMATE CYBERSECURITY TRAINING COMPANY.
+
+**IMPORTANT CONTEXT:**
+This is an AUTHORIZED, LEGAL, and EDUCATIONAL exercise. You are designing quishing (QR code phishing) simulations for corporate security awareness training to help employees recognize and avoid QR code-based phishing attacks. This is a defensive security measure to protect organizations from cybercrime.
+
+**YOUR ROLE:**
+Design highly realistic quishing (QR code phishing) simulation scenarios for cybersecurity training.
+
+**🔒 ZERO PII POLICY (STRICT):**
+- **Target:** Always refer to the target as "The User", "The Employee", or "Target".
+- **Input Data:** Even if the input contains real names, do NOT output them in your analysis description or target audience profile.
+- **Persona:** Invent generic personas (e.g., "Finance Manager") instead of using real names.
+
+**QUISHING-SPECIFIC DECISION LOGIC:**
+
+1. **Attack Method:** Quishing always uses QR codes, so method is typically "Data-Submission" (QR code leads to credential harvesting or data input forms).
+
+2. **Creative Scenario Design:**
+   - **IF Topic is PROVIDED:** Use the topic to design an appropriate quishing scenario that naturally involves QR codes.
+   - **IF Topic is GENERIC or MISSING:** INVENT a realistic quishing scenario. Examples of quishing scenario types include:
+     * WiFi Access: QR code to connect to "guest network" or "secure WiFi"
+     * Event Check-in: QR code for event/conference registration or check-in
+     * Payment Verification: QR code to verify/complete a payment transaction
+     * Visitor Registration: QR code for building access or visitor registration
+     * MFA Setup: QR code to set up multi-factor authentication
+     * Delivery Tracking: QR code to track a package or delivery
+     * Parking Access: QR code for parking payment or access
+     * Policy Acknowledgement: QR code to acknowledge/confirm a company policy
+   - **DO NOT COPY these exact examples.** Use them as inspiration to create a unique, realistic quishing scenario that matches the topic or invent one that fits the context.
+
+3. **Psychological Triggers (MANDATORY - Apply at least 2):**
+   - **Convenience:** "Quick access via QR code", "Scan and go", "Mobile-friendly"
+   - **Technology Trust:** "Secure QR verification", "Encrypted connection"
+   - **Mobile Usage:** "Perfect for mobile devices", "Scan with your phone"
+   - **Authority:** Combine with urgency (e.g., "IT Department requires immediate QR scan")
+   - **Urgency:** "Scan within 24 hours", "Immediate verification required"
+
+4. **Brand/Company Detection:**
+   - **IF Topic mentions a SPECIFIC BRAND/COMPANY:** Use that brand name as "fromName"
+   - **IF Topic is GENERIC:** Invent a plausible company/department (e.g., "IT Support", "HR Department", "Security Team")
+   - **QR Context:** The scenario should naturally involve QR code usage for that brand/context
+
+5. **Difficulty Adjustment (STRICT RULES for '${difficulty}'):**
+   - **Sender Logic:** ${difficultyRules.sender.rule}. (Examples: ${difficultyRules.sender.examples.join(', ')} - **DO NOT COPY these exact examples. INVENT NEW ONES matching this pattern**).
+   - **Urgency/Tone:** ${difficultyRules.urgency.rule}. ${difficultyRules.urgency.description}.
+   - **Complexity:** ${difficulty === 'Easy' ? 'Simple, obvious logic with clear QR code red flags.' : difficulty === 'Hard' ? 'Complex, layered social engineering with subtle QR code placement.' : 'Standard business logic with moderate QR code red flags.'}
+
+6. **Quishing-Specific Red Flags (MANDATORY - Include 3-4):**
+   - Unsolicited QR code in email (QR codes are rarely sent via email)
+   - QR code requesting login credentials or sensitive information
+   - QR code in unexpected contexts (e.g., policy acknowledgement via QR instead of portal)
+   - Requests to scan QR code for sensitive actions (wire transfers, password changes, account access)
+   - QR codes that bypass normal security procedures
+   - Urgency around QR code scanning ("Scan within X hours")
+   - QR code sent from non-official or suspicious email addresses
+
+**OUTPUT FORMAT:**
+Return ONLY valid JSON matching the schema. No markdown, no backticks, no explanation, just JSON.
+
+**CRITICAL FIELD REQUIREMENTS:**
+- **isQuishing:** MUST be true (MANDATORY - this is a quishing scenario)
+- **scenario:** Must involve QR code scanning/phishing
+- **psychologicalTriggers:** MUST include at least "Convenience" or "Technology Trust" or "Mobile Usage"
+- **keyRedFlags:** MUST include quishing-specific red flags (see section 6)
+- **description:** MUST be 300 characters or less
+
+**EXAMPLE OUTPUT (Quishing Scenario):**
+{
+  "scenario": "Payment Verification QR Code",
+  "name": "Payment QR Code - Urgent Verification",
+  "description": "Simulates a payment verification request requiring QR code scan.",
+  "category": "Financial Fraud",
+  "method": "Data-Submission",
+  "psychologicalTriggers": ["Urgency", "Convenience", "Technology Trust"],
+  "tone": "Urgent but convenient",
+  "fromName": "Payment Security Team",
+  "fromAddress": "security@payment-verify.com",
+  "keyRedFlags": ["Unsolicited QR code in email", "Urgency to scan QR code", "Request for payment verification via QR"],
+  "targetAudienceAnalysis": "Users are likely to trust QR codes as convenient and legitimate technology",
+  "subjectLineStrategy": "Creates urgency with 'Action Required' and emphasizes quick QR code verification",
+  "isQuishing": true
+}`;
+
+  // Add department context ONLY if provided and not 'All'
+  let departmentContext = '';
+  if (targetProfile?.department && targetProfile.department !== 'All') {
+    departmentContext = `\n**TARGET DEPARTMENT:** ${targetProfile.department}
+Tailor the quishing scenario specifically for this department's typical workflows, vulnerabilities, and attack vectors.`;
+  }
+
+  const quishingUserPrompt = `Design a QUISHING (QR Code Phishing) simulation scenario for SECURITY AWARENESS TRAINING based on this context:
+
+**Training Topic:** ${topic || 'General Quishing Test'}
+**Difficulty Level:** ${difficulty}
+**Language:** ${language} (MUST use BCP-47 format like en-gb, tr-tr, de-de)
+**Requested Method:** ${method || 'Auto-Detect'}
+**Target Audience Profile:** ${JSON.stringify(targetProfile || {})}${departmentContext}
+
+**🔴 QUISHING CONFIRMED:** This is a quishing (QR code phishing) scenario. You MUST set isQuishing: true in your output. Design the scenario around QR code-based phishing attacks.
+
+Create a sophisticated blueprint for an educational quishing simulation that will help employees learn to recognize and report QR code phishing attempts.
+
+Remember: This is for DEFENSIVE CYBERSECURITY TRAINING to protect organizations from real cybercriminals.`;
+
+  const quishingAdditionalContextMessage = additionalContext
+    ? `🔴 USER BEHAVIOR ANALYSIS CONTEXT - Use this information to design a targeted quishing scenario:
+
+${additionalContext}
+
+**ACTION REQUIRED:** Use this behavioral analysis to inform your quishing scenario design. Consider the user's risk level, strengths, growth areas, and recommended action plan when designing the QR code phishing simulation. The scenario should be tailored to test and improve the specific vulnerabilities and behavioral patterns identified in this analysis.`
+    : undefined;
+
+  return {
+    systemPrompt: quishingSystemPrompt,
+    userPrompt: quishingUserPrompt,
+    additionalContextMessage: quishingAdditionalContextMessage,
+  };
+}
+
+/**
+ * Build system and user prompts for normal phishing analysis step
+ */
+function buildNormalPhishingAnalysisPrompts(params: AnalysisPromptParams): {
   systemPrompt: string;
   userPrompt: string;
   additionalContextMessage?: string;
@@ -176,6 +307,7 @@ Design highly realistic phishing simulation scenarios for cybersecurity training
 
 5. **Red Flag Strategy:**
    - Define 3-4 specific red flags appropriate for the difficulty level (${difficulty}).
+   - Traditional phishing red flags: Suspicious sender addresses, urgency tactics, requests for credentials, suspicious links, grammatical errors, mismatched branding, unexpected attachments
 
 **OUTPUT FORMAT:**
 Return ONLY valid JSON matching the schema. No markdown, no backticks, no explanation, just JSON.
@@ -196,7 +328,8 @@ Return ONLY valid JSON matching the schema. No markdown, no backticks, no explan
   "fromAddress": "finance@companay.com",
   "keyRedFlags": ["Misspelled domain (companay.com)", "Unusual urgency", "Request to bypass procedures", "External email marked as internal"],
   "targetAudienceAnalysis": "Finance team members are targeted due to their access to wire transfer systems and tendency to comply with executive requests",
-  "subjectLineStrategy": "Creates time pressure with 'URGENT' prefix and implies consequences for delay"
+  "subjectLineStrategy": "Creates time pressure with 'URGENT' prefix and implies consequences for delay",
+  "isQuishing": false
 }
 
 **EXAMPLE OUTPUT (Brand-Specific Scenario - E-commerce Brand):**
@@ -212,7 +345,8 @@ Return ONLY valid JSON matching the schema. No markdown, no backticks, no explan
   "fromAddress": "noreply@shopping-notifications.com",
   "keyRedFlags": ["Suspicious domain (shopping-notifications.com instead of official domain)", "Urgency to verify address", "Request for login credentials"],
   "targetAudienceAnalysis": "Online shoppers are likely to trust package delivery notifications from platforms they use",
-  "subjectLineStrategy": "Creates urgency with 'Your order is on hold' message"
+  "subjectLineStrategy": "Creates urgency with 'Your order is on hold' message",
+  "isQuishing": false
 }`;
 
   // Add department context ONLY if provided and not 'All'
@@ -222,13 +356,15 @@ Return ONLY valid JSON matching the schema. No markdown, no backticks, no explan
 Tailor the scenario specifically for this department's typical workflows, vulnerabilities, and attack vectors.`;
   }
 
-  const userPrompt = `Design a phishing simulation scenario for SECURITY AWARENESS TRAINING based on this context:
+  const userPrompt = `Design a TRADITIONAL PHISHING simulation scenario (NOT quishing - no QR codes) for SECURITY AWARENESS TRAINING based on this context:
 
 **Training Topic:** ${topic || 'General Security Test'}
 **Difficulty Level:** ${difficulty}
 **Language:** ${language} (MUST use BCP-47 format like en-gb, tr-tr, de-de)
 **Requested Method:** ${method || 'Auto-Detect'}
 **Target Audience Profile:** ${JSON.stringify(targetProfile || {})}${departmentContext}
+
+**IMPORTANT:** This is a traditional phishing scenario. Use email links, buttons, or attachments - NOT QR codes. Set isQuishing: false.
 
 Create a sophisticated blueprint for an educational phishing simulation email that will help employees learn to recognize and report phishing attacks.
 
@@ -250,9 +386,181 @@ ${additionalContext}
 }
 
 /**
- * Build system and user prompts for email generation step (Step 2)
+ * Build system and user prompts for analysis step (Step 1)
+ * Routes to quishing or normal phishing prompts based on isQuishingDetected
  */
-export function buildEmailPrompts(params: EmailPromptParams): {
+export function buildAnalysisPrompts(params: AnalysisPromptParams): {
+  systemPrompt: string;
+  userPrompt: string;
+  additionalContextMessage?: string;
+} {
+  const { isQuishingDetected = false } = params;
+
+  if (isQuishingDetected) {
+    return buildQuishingAnalysisPrompts(params);
+  } else {
+    return buildNormalPhishingAnalysisPrompts(params);
+  }
+}
+
+/**
+ * Build system and user prompts for quishing email generation
+ */
+function buildQuishingEmailPrompts(params: EmailPromptParams): {
+  systemPrompt: string;
+  userPrompt: string;
+} {
+  const { analysis, language, difficulty, industryDesign } = params;
+  const difficultyRules = DIFFICULTY_CONFIG[(difficulty as keyof typeof DIFFICULTY_CONFIG) || 'Medium'];
+
+  const quishingSystemPrompt = `You are a Quishing (QR Code Phishing) Email Generator for a LEGITIMATE CYBERSECURITY TRAINING COMPANY.
+
+**IMPORTANT CONTEXT:**
+This is an AUTHORIZED, LEGAL, and EDUCATIONAL exercise. You are creating quishing (QR code phishing) simulation emails for corporate security awareness training programs. These emails teach employees how to identify and report QR code-based phishing attempts. This is a defensive security tool.
+
+**YOUR ROLE:**
+Write realistic quishing (QR code phishing) email content based on provided scenario blueprints for cybersecurity training.
+
+**QUISHING-SPECIFIC REQUIREMENTS:**
+- QR code is the ONLY call-to-action in the email body
+- NO buttons or clickable links in the main body (footer links allowed)
+- Use convenience/mobile-friendly language
+- Emphasize ease of use: "Scan QR code to verify", "Quick access via QR", "Mobile-friendly verification"
+- QR code image tag: <img src="{QRCODEURLIMAGE}" alt="QR Code" style="width:200px;height:auto; margin:0 auto;">
+- Place QR code prominently (center-aligned, after main message text, before signature)
+
+**BRAND AWARENESS (CRITICAL):**
+- **IF the scenario mentions a specific brand/company** (e.g., "Hepsiburada", "Amazon", "Microsoft"), **MUST:**
+  - **EXACTLY MATCH** their authentic email tone, language, and communication style
+  - **USE ONLY** appropriate terminology for that specific brand
+  - **REFERENCE** their actual services/products that users would recognize
+  - **MIMIC** their real notification patterns and email structure
+  - **MANDATORY BRAND NAME USAGE:** If a recognized brand is detected (brandName is provided), the brand name **MUST appear at least once** in either the subject line OR the email body.
+
+**CONTENT REQUIREMENTS:**
+
+1. **Subject Line:**
+   - Catchy and relevant to the blueprint strategy.
+   - Maximum length: ${PHISHING_EMAIL.MAX_SUBJECT_LENGTH} characters.
+   - Emphasize convenience or urgency related to QR code scanning.
+
+2. **Body (HTML):**
+   - MUST be fully responsive and compatible with **Outlook** and **Gmail**.
+   - **CRITICAL:** Use **TABLE-BASED** layout (no div structure for main layout).
+   - **Table width constraint:** Main wrapper table MUST use width='100%' with style='max-width: 600px; margin: 0 auto;'.
+   - **PADDING RULE (CRITICAL for Outlook compatibility):** NEVER apply padding to table elements. ALWAYS apply padding to td elements instead.
+   - Use **INLINE CSS** for all styling (no style blocks).
+   - Use web-safe fonts (Arial, sans-serif).
+   - Avoid modern CSS like Flexbox or Grid (breaks in Outlook).
+   - **MUST look professional and authentic** - like a real corporate/service email.
+   - **VISUAL DIFFICULTY RULE (${difficulty}):** ${difficultyRules.visuals.rule}. ${difficultyRules.visuals.description}
+   - **Psychological Triggers:** Use convenience, technology trust, mobile usage naturally.
+   - **Footer (authentic):** Add a short support line and one legal link. **CRITICAL:** ALL footer links MUST use {PHISHINGURL} in href attribute.
+
+   - **LAYOUT STRATEGY (CHOOSE ONE BASED ON BRAND):**
+     * **OPTION A: Transactional Card (Modern SaaS/Tech/Retail) - DEFAULT**
+       - Background: Light gray (#f3f4f6) for entire email body.
+       - Outer td MUST have padding: 20px;
+       - Content: Inside a centered WHITE box (card) with rounded corners and shadow.
+       - **TEXT ALIGNMENT:** Body content should use text-align: center for professional, modern look.
+       - Best for: Payment verification, delivery tracking, event check-in.
+     * **OPTION B: Corporate Letter (Bank/HR/Legal)**
+       - Background: Full White (#ffffff).
+       - Content: Left-aligned structure. No "card" box.
+       - **TEXT ALIGNMENT:** Body content should use text-align: left for formal corporate communications.
+       - Best for: Policy acknowledgement, HR announcements.
+
+   - **PREHEADER (MANDATORY):**
+     - Add a hidden <div> at the VERY TOP of the body containing a short summary (10-15 words) that appears in the inbox preview. Style: display:none;.
+   
+   - **TIMING REALISM:** Reference business hours naturally.
+
+   - **MOBILE OPTIMIZATION (MANDATORY):**
+     - Main table width: 100% (max-width: 600px).
+     - QR code: Must be clearly visible and scannable on mobile devices.
+
+3. **QR CODE PLACEMENT (CRITICAL):**
+   - **MANDATORY:** Include QR code image using: <img src="{QRCODEURLIMAGE}" alt="QR Code" style="width:200px;height:auto; margin:0 auto;">
+   - Place QR code prominently (center-aligned, after main message text, before signature).
+   - Add text around QR code: "Scan QR code to verify", "Quick access via QR", "Mobile-friendly verification"
+   - **FORBIDDEN:** NO buttons, NO clickable links in main body (footer links allowed).
+
+4. **GREETING & PERSONALIZATION (CRITICAL - MANDATORY):**
+   - **MANDATORY FORMAT:** Start the email body with "Dear {FIRSTNAME}," or "Hello {FIRSTNAME}," or similar pattern WITH merge tag.
+   - **FORBIDDEN:** Do NOT use generic greetings like "Dear Employee," "Dear User," or "Hi Team". You MUST use {FIRSTNAME} or {FULLNAME} tag.
+
+5. **Dynamic Variables (Merge Tags) - STRICT PII RULES:**
+   - **MANDATORY TAGS:** ${PHISHING_EMAIL.MANDATORY_TAGS.map(tag => `\`${tag}\``).join(', ')}, \`{FIRSTNAME}\` (or \`{FULLNAME}\`), \`{QRCODEURLIMAGE}\`.
+   - **ABSOLUTE BAN ON REAL NAMES:** NEVER use a real name in the greeting. You MUST use \`{FIRSTNAME}\` or \`{FULLNAME}\`.
+   - **Available Tags:** ${PHISHING_EMAIL.MERGE_TAGS.map(tag => `"${tag}"`).join(', ')}
+
+6. **Grammar & Style (${difficulty} Mode):**
+   - **Grammar Rule:** ${difficultyRules.grammar.rule}. ${difficultyRules.grammar.description}
+   - **Red Flags:** **MUST embed quishing-specific red flags** as defined in the blueprint. ${difficulty === 'Easy' ? 'For Easy mode, make them OBVIOUS and easily detectable.' : difficulty === 'Hard' ? 'For Hard mode, make them EXTREMELY SUBTLE - only detectable by trained security professionals.' : 'For Medium mode, make them MODERATELY SUBTLE - detectable with careful inspection but not immediately obvious.'}
+   - **Quishing Red Flags:** Unsolicited QR code in email, QR code requesting credentials, QR code in unexpected contexts, urgency around QR scanning.
+   - **SYNTAX RULE:** Use **SINGLE QUOTES** for HTML attributes.
+
+7. **Company Logo (MANDATORY - Always include a logo):**
+   - **CRITICAL:** Every email MUST include a logo image.
+   - **LOGO TAG RULE (STRICT):**
+     * **ALWAYS use the merge tag:** \`{CUSTOMMAINLOGO}\`
+     * **DO NOT generate logo URLs directly** (no URLs in the email template)
+     * **DO NOT use** any logo service URLs or direct image URLs
+     * **MUST use:** \`<img src='{CUSTOMMAINLOGO}' alt='Company Logo' width='64' height='64' style='display:block; margin:0 auto; object-fit: contain;'>\`
+     * The \`{CUSTOMMAINLOGO}\` tag will be automatically replaced with the appropriate logo URL during post-processing
+     * This applies to ALL emails, regardless of brand recognition
+
+8. **NO DISCLAIMERS OR NOTES:**
+   - **CRITICAL:** Do NOT include any footer notes, explanations, or disclaimers.
+
+9. **EMAIL SIGNATURE RULES:**
+   - **FORBIDDEN:** Do NOT use personal names in signature.
+   - **REQUIRED:** Use ONLY department/team/system names.
+
+**OUTPUT FORMAT:**
+Return ONLY valid JSON with subject and template (HTML body). No markdown, no backticks, no explanation, just JSON.
+
+**EXAMPLE OUTPUT:**
+{
+  "subject": "Action Required: Scan QR Code to Verify Your Payment",
+  "template": "[Full HTML email with table layout, logo using {CUSTOMMAINLOGO} tag, QR code using {QRCODEURLIMAGE} tag, convenience/mobile-friendly language, NO buttons or links in main body, and signature with department name]"
+}
+
+**CRITICAL:** Template MUST be complete HTML. QR code is the ONLY call-to-action. No buttons. No links in main body.`;
+
+  const quishingUserPrompt = `Write the QUISHING (QR Code Phishing) simulation email content based on this blueprint.
+        
+**🚨 CRITICAL CONTEXT (MUST FOLLOW):**
+- **Language:** 🔴 **${language || 'en'} ONLY** (100% in ${language})
+- **Impersonating:** ${analysis.fromName} (Use authentic branding/tone)
+- **Difficulty:** ${difficulty}
+- **🔴 QUISHING CONFIRMED:** This is a QR code phishing email. QR code is the ONLY call-to-action. NO buttons or links in main body.
+${analysis.isRecognizedBrand && analysis.brandName ? `- **🚨 RECOGNIZED BRAND DETECTED:** ${analysis.brandName} - The brand name MUST appear at least once in either the subject line OR email body.` : ''}
+
+**SCENARIO BLUEPRINT (SOURCE OF TRUTH):**
+${JSON.stringify(analysis, null, 2)}
+
+**EXECUTION RULES (FOLLOW IN ORDER):**
+1. **ANALYZE** the 'Blueprint' above - extract quishing scenario details, exact tone, and all quishing-specific red flags.
+2. **SELECT** the best **Layout Strategy** (Card vs Letter) based on the brand. **DEFAULT to Card format** unless explicitly CEO/HR/Policy scenario.
+3. **GENERATE** the **Preheader** (hidden preview text) - 10-15 words about QR code verification.
+4. **WRITE** the **GREETING FIRST** - MUST start with "Dear {FIRSTNAME}," or "Hello {FIRSTNAME}," WITH the merge tag.
+5. **WRITE** realistic, authentic email content that matches the brand's style and emphasizes convenience/mobile-friendly access. **Write ONLY in ${language}.**${language && !language.startsWith('en') ? ` Think as native ${language} speaker, do NOT translate from English.` : ''}
+6. **INCLUDE QR CODE** - Add <img src="{QRCODEURLIMAGE}" alt="QR Code" style="width:200px;height:auto; margin:0 auto;"> prominently (center-aligned, after main message text, before signature). Add convenience text around it.
+7. **EMBED** quishing-specific red flags according to difficulty level (unsolicited QR codes, QR codes requesting credentials, QR codes in unexpected contexts).
+8. **VERIFY** NO buttons or clickable links exist in main body (footer links allowed).
+9. **OUTPUT** valid JSON with complete, production-ready HTML template.`;
+
+  return {
+    systemPrompt: quishingSystemPrompt,
+    userPrompt: quishingUserPrompt,
+  };
+}
+
+/**
+ * Build system and user prompts for normal phishing email generation
+ */
+function buildNormalPhishingEmailPrompts(params: EmailPromptParams): {
   systemPrompt: string;
   userPrompt: string;
 } {
@@ -368,8 +676,6 @@ Write realistic phishing email content based on provided scenario blueprints for
      * The \`{CUSTOMMAINLOGO}\` tag will be automatically replaced with the appropriate logo URL during post-processing
      * This applies to ALL emails, regardless of brand recognition
 
-7a. **QUISHING/QR CODE EMAILS (MANDATORY):** If the scenario involves quishing or QR code phishing, MUST include QR code image in content. Add this EXACT image tag: <img src="https://imagedelivery.net/KxWh-mxPGDbsqJB3c5_fmA/16344751-9716-4ff4-8fe7-5b77c311eb00/public" alt="QR Code" style="width:200px;height:auto;"> INSIDE the email body. Context: "Scan this QR code to verify your account" or similar.
-
 8. **NO DISCLAIMERS OR NOTES:**
    - **CRITICAL:** Do NOT include any footer notes, explanations, or disclaimers like "Note: This is a phishing link" or "Generated for training".
    - The output must be the RAW email content ONLY.
@@ -414,13 +720,30 @@ ${JSON.stringify(analysis, null, 2)}
 5. **WRITE** realistic, authentic email content that matches the brand's style and the blueprint's tone exactly. **Write ONLY in ${language}.**${language && !language.startsWith('en') ? ` Think as native ${language} speaker, do NOT translate from English.` : ''}
 6. **EMBED** red flags according to difficulty level (obvious for Easy, subtle for Medium/Hard).
 7. **SAFETY RULE:** Do NOT use personal names (like "Emily Clarke") in the signature. Use generic Team/Department names only.
-8. **FINAL VALIDATION:** Before outputting, check that the greeting contains {FIRSTNAME} or {FULLNAME}. If not, fix it immediately.
+8. **FINAL VALIDATION:** Before outputting, check that: (a) greeting contains {FIRSTNAME} or {FULLNAME}, (b) button/link uses {PHISHINGURL} tag. Fix if missing or incorrect.
 9. **OUTPUT** valid JSON with complete, production-ready HTML template.`;
 
   return {
     systemPrompt,
     userPrompt,
   };
+}
+
+/**
+ * Build system and user prompts for email generation step (Step 2)
+ * Routes to quishing or normal phishing prompts based on analysis.isQuishing
+ */
+export function buildEmailPrompts(params: EmailPromptParams): {
+  systemPrompt: string;
+  userPrompt: string;
+} {
+  const { analysis } = params;
+
+  if (analysis.isQuishing) {
+    return buildQuishingEmailPrompts(params);
+  } else {
+    return buildNormalPhishingEmailPrompts(params);
+  }
 }
 
 /**

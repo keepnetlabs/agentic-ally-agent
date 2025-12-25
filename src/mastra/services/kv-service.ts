@@ -296,6 +296,7 @@ export class KVService {
         topic: data.analysis?.scenario || 'Unknown Topic',
         difficulty: data.analysis?.difficulty || 'Medium',
         method: data.analysis?.method || 'Click-Only',
+        isQuishing: data.analysis?.isQuishing || false, // Add quishing flag (AI-determined)
         targetProfile: data.analysis?.targetAudienceAnalysis || {},
         createdAt: new Date().toISOString(),
         language_availability: [normalizedLang]
