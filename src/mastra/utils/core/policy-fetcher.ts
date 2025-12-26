@@ -65,22 +65,24 @@ export async function getPolicyContext(): Promise<string> {
     }
 
     logger.info('Found policies', { count: policies.length, policyNames: policies.map((p: any) => p.name) });
-
+    logger.info('Policies', { policies });
     // 2. Read each policy content in parallel
     const policyContents = await Promise.all(
       policies.map(async (policy: any) => {
         try {
-          const policyUrl = `/api/policies/policies/${companyId}/${encodeURIComponent(policy.blobUrl)}`;
+          // Remove "policies/{companyId}/" prefix from blobUrl
+          const cleanBlobUrl = policy.blobUrl.replace(/^policies\/[^\/]+\//, '');
+          const policyUrl = `/api/policies/policies/${encodeURIComponent(cleanBlobUrl)}`;
           const fullUrl = policyUrl.startsWith('http')
             ? policyUrl
             : `http://agentic-ai-chat.keepnetlabs.com${policyUrl}`;
-
+          logger.info('Full URL', { fullUrl });
           const response = await fetch(fullUrl, {
             headers: {
               'X-COMPANY-ID': companyId,
             },
           });
-
+          logger.info('Response', { response });
           if (!response.ok) {
             logger.warn('Failed to read policy', { policyName: policy.name, status: response.status });
             return null;
@@ -106,6 +108,7 @@ export async function getPolicyContext(): Promise<string> {
 
     const context = validPolicies.join('\n\n---\n\n');
     logger.info('Policy context prepared', { totalPolicies: validPolicies.length, contextLength: context.length });
+    logger.info('FULL CONTEXT CONTENT', { context });
 
     return context;
   } catch (error) {

@@ -4,7 +4,7 @@ import { createPhishingWorkflow } from '../../workflows/create-phishing-workflow
 import { v4 as uuidv4 } from 'uuid';
 import { PHISHING, MODEL_PROVIDERS, ERROR_MESSAGES, TIMEOUT_VALUES } from '../../constants';
 import { getLogger } from '../../utils/core/logger';
-import { getPolicyContext } from '../../utils/core/policy-fetcher';
+import { getPolicySummary } from '../../utils/core/policy-cache';
 import { errorService } from '../../services/error-service';
 import { validateToolResult } from '../../utils/tool-result-validation';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
@@ -67,10 +67,10 @@ export const phishingWorkflowExecutorTool = createTool({
         try {
             logger.info('Starting Phishing Workflow', { topic: params.topic });
 
-            // Fetch policy context ONCE at workflow start
-            logger.info('Fetching policy context for workflow');
-            const policyContext = await getPolicyContext();
-            logger.info('Policy context ready', { hasContent: !!policyContext, length: policyContext.length });
+            // Get cached policy summary ONCE at workflow start
+            logger.info('Getting policy summary for workflow');
+            const policyContext = await getPolicySummary();
+            logger.info('Policy summary ready', { hasContent: !!policyContext, length: policyContext.length });
 
             const workflow = createPhishingWorkflow;
             const run = await workflow.createRunAsync();

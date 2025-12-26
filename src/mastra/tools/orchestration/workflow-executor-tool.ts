@@ -7,7 +7,7 @@ import { updateMicrolearningWorkflow } from '../../workflows/update-microlearnin
 import { v4 as uuidv4 } from 'uuid';
 import { PROMPT_ANALYSIS, MODEL_PROVIDERS } from '../../constants';
 import { getLogger } from '../../utils/core/logger';
-import { getPolicyContext } from '../../utils/core/policy-fetcher';
+import { getPolicySummary } from '../../utils/core/policy-cache';
 import { errorService } from '../../services/error-service';
 import { validateToolResult } from '../../utils/tool-result-validation';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
@@ -235,10 +235,10 @@ export const workflowExecutorTool = createTool({
           return createToolErrorResponse(errorInfo);
         }
 
-        // Fetch policy context ONCE at workflow start (automatically extracts companyId from JWT token)
-        logger.info('Fetching policy context for workflow');
-        const policyContext = await getPolicyContext();
-        logger.info('Policy context ready', { hasContent: !!policyContext, length: policyContext.length });
+        // Get cached policy summary ONCE at workflow start
+        logger.info('Getting policy summary for workflow');
+        const policyContext = await getPolicySummary();
+        logger.info('Policy summary ready', { hasContent: !!policyContext, length: policyContext.length });
 
         // Start workflow with writer parameter
         const workflow = createMicrolearningWorkflow;

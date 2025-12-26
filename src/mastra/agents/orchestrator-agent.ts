@@ -87,6 +87,10 @@ Before routing, perform this internal analysis:
    - **Triggers:** "Phishing email", "Draft template", "Simulate attack", "Fake landing page", "Upload simulation".
    - **Role:** Creates deceptive content (simulations) and handles phishing assignments.
 
+4. **policySummaryAssistant** (The Policy Expert)
+   - **Triggers:** "What's our", "Summarize policy", "Tell me about" (policy context), "Policy question".
+   - **Role:** Answers company policy questions, provides guidance on security policies.
+
 ### INTELLIGENT ROUTING LOGIC
 
 **SCENARIO A: CONTINUATION & CONFIRMATION**
@@ -111,10 +115,11 @@ IF the user says "Upload", "Assign", "Send", "Deploy", "Yükle", "Gönder":
 
 **SCENARIO C: NEW REQUESTS (INTENT MATCHING)**
 1. **User Analysis:** Input contains "Who is", "Find", "Analyze" -> **userInfoAssistant**
-2. **Explicit Creation:**
+2. **Policy Questions:** Input contains "What's our", "Summarize policy", "Tell me about" (in policy context) -> **policySummaryAssistant**
+3. **Explicit Creation:**
    - "Create training about X" -> **microlearningAgent**
    - "Create phishing email about X" -> **phishingEmailAssistant**
-3. **Implicit/Ambiguous:**
+4. **Implicit/Ambiguous:**
    - "Create for [USER-123]": Route to **userInfoAssistant** (Always analyze user first).
    - "Teach them": **microlearningAgent**
    - "Test them": **phishingEmailAssistant**

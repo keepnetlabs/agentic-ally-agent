@@ -6,6 +6,7 @@ import { microlearningAgent } from './agents/microlearning-agent';
 import { orchestratorAgent } from './agents/orchestrator-agent';
 import { phishingEmailAgent } from './agents/phishing-email-agent';
 import { userInfoAgent } from './agents/user-info-agent';
+import { policySummaryAgent } from './agents/policy-summary-agent';
 import { disablePlayground, disableSwagger } from './middleware/openapi';
 import { contextStorage } from './middleware/context-storage';
 import { rateLimitMiddleware } from './middleware/rate-limit';
@@ -76,6 +77,7 @@ export const mastra = new Mastra({
     microlearningAgent,
     phishingEmailAssistant: phishingEmailAgent,
     userInfoAssistant: userInfoAgent,
+    policySummaryAssistant: policySummaryAgent,
     orchestrator: orchestratorAgent
   },
   logger,

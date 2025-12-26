@@ -515,6 +515,7 @@ export const AGENT_NAMES = {
   PHISHING: 'phishingEmailAssistant',
   MICROLEARNING: 'microlearningAgent',
   USER_INFO: 'userInfoAssistant',
+  POLICY_SUMMARY: 'policySummaryAssistant',
   ORCHESTRATOR: 'orchestrator'
 } as const;
 
