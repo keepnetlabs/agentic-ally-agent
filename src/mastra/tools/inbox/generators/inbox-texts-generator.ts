@@ -39,6 +39,7 @@ Generate the following structure:
   "mobileTitle": "${topic} Training",
   "backToInboxText": "Localize 'Back to Inbox' into ${languageCode}",
   "headersButtonText": "Localize 'Headers' into ${languageCode}",
+  "attachmentsLabel": "Localize 'Attachments' into ${languageCode}",
   "correctReportMessage": "Localize 'Well done identifying the issue' into ${languageCode}",
   "cautiousReportMessage": "Localize 'Good caution with suspicious content' into ${languageCode}",
   "phishingReportModal": {

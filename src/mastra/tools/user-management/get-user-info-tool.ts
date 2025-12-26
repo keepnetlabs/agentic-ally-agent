@@ -50,7 +50,7 @@ const TIMELINE_PAYLOAD = {
 const AnalysisSchema = z.object({
     version: z.string(),
     meta: z.object({
-        masked_user_id: z.string(),
+        user_id: z.string(),
         role: z.string().optional(),
         department: z.string().optional(),
         location: z.string().optional(),
@@ -60,24 +60,24 @@ const AnalysisSchema = z.object({
     }),
     header: z.object({
         title: z.string(),
-        resilience_stage: z.object({
+        behavioral_resilience: z.object({
             framework: z.string(),
-            level: z.string(),
+            current_stage: z.string(),
+            target_stage: z.string(),
         }),
-        progression_target: z.string(),
         progression_hint: z.string(),
         footnote: z.string(),
     }),
     strengths: z.array(z.string()),
     growth_opportunities: z.array(z.string()),
-    recommended_next_steps: z.object({
+    ai_recommended_next_steps: z.object({
         simulations: z.array(z.object({
             vector: z.string(),
             scenario_type: z.string(),
             difficulty: z.string(),
             persuasion_tactic: z.string(),
             title: z.string(),
-            rationale: z.string(),
+            why_this: z.string(),
             nist_phish_scale: z.object({
                 cue_difficulty: z.string(),
                 premise_alignment: z.string(),
@@ -86,29 +86,28 @@ const AnalysisSchema = z.object({
         })),
         microlearnings: z.array(z.object({
             title: z.string(),
-            objective: z.string(),
             duration_min: z.number(),
             language: z.string(),
-            rationale: z.string(),
+            objective: z.string(),
+            why_this: z.string(),
         })),
         nudges: z.array(z.object({
             channel: z.string(),
-            message: z.string(),
             cadence: z.string(),
-            rationale: z.string(),
+            message: z.string(),
+            why_this: z.string(),
         })),
     }),
     maturity_mapping: z.object({
-        gartner_sbcp: z.object({
+        enisa_security_culture: z.object({
             current: z.string(),
             description: z.string(),
             next: z.string(),
             what_it_takes: z.string(),
         }),
-        enisa_security_culture: z.object({
-            current: z.string(),
+        gartner_sbcp_context_only: z.object({
+            label: z.string(),
             description: z.string(),
-            next: z.string(),
             what_it_takes: z.string(),
         }),
     }),
@@ -117,6 +116,23 @@ const AnalysisSchema = z.object({
         strategic: z.array(z.string()),
     }),
     references: z.array(z.string()),
+    internal: z.object({
+        evidence_summary: z.object({
+            key_signals_used: z.array(z.string()),
+            data_gaps: z.array(z.string()),
+        }),
+        behavior_science_engine: z.object({
+            diagnosis_model: z.string(),
+            com_b: z.object({
+                capability: z.string(),
+                opportunity: z.string(),
+                motivation: z.string(),
+            }),
+            trigger_model: z.string(),
+            fogg_trigger_type: z.string(),
+            design_notes: z.string(),
+        }),
+    }),
 });
 
 // Output schema defined separately to avoid circular reference
@@ -307,148 +323,214 @@ export const getUserInfoTool = createTool({
 
             // --- STEP 3: Generate Analysis Report (Internal LLM Call) ---
             logger.debug('Starting user analysis with LLM', {});
+            const systemPrompt = `
+You are an Enterprise Security Behavior Analyst for a Human Risk Management platform.
 
-            const systemPrompt = `You are the **User Security Behavior Analyst & Profiler**.
-Your job is to build a deep **Psychological, Cultural & Security Behavior Profile** based on the provided user data and output a structured executive JSON report.
+GOAL
+Generate a ONE-PAGE executive behavioral resilience report for a single employee based strictly on provided activity history.
 
-🚫 NO TECH JARGON:
-- Never mention model names, providers, or infrastructure.
-- Focus ONLY on user behavior, intent, and business logic.
+STRICT OUTPUT
+- Output MUST be a single valid JSON object.
+- Output MUST match the JSON contract provided by the user EXACTLY (same keys, same nesting, no extra keys, no missing keys).
+- Do NOT wrap in markdown. Do NOT add any text before/after JSON.
+- If unknown, use "" (string) or null where appropriate. Never fabricate.
 
-🔒 ZERO PII POLICY:
-- In ALL text fields of the JSON:
-  - Refer to "The user", "This person", "They".
-  - NEVER output real names, emails, phone numbers.
-- For \`meta.user_name\`, do NOT use a real name. You may:
-  - Put a masked ID (e.g., "${maskedId}"), OR
-  - Leave it as an empty string "".
+PRIMARY EVIDENCE
+- Recent activities are the PRIMARY source of truth for behavior.
+- Role/department/access level are SECONDARY context only. Do not infer behaviors from role.
 
-🎯 FRAMEWORKS & LOGIC:
-- Primary framework: **Gartner Security Behavior & Culture Program (SBCP)**.
-- Secondary context (optional): **ENISA Security Culture Framework (individual view)**.
-- Simulation difficulty selection: **NIST Phish Scale**.
-- Tone: positive, supportive, growth-oriented.
+PRIVACY / PII
+- Do NOT output real names, emails, phone numbers.
+- In narrative fields, refer to "the user", "this person", "they".
+- meta.user_id is a masked identifier only.
 
-📈 BUSINESS VALUE:
-When linking behavior to impact, reference industry standards (IBM Cost of a Data Breach, Verizon DBIR, etc.).
+NO TECH JARGON
+- Never mention models, providers, infrastructure, or implementation details.
+
+SUPPORTED CAPABILITIES (HARD CONSTRAINT)
+- Simulation vectors: EMAIL, QR
+- Scenario types: CLICK_ONLY, DATA_SUBMISSION
+- Do NOT suggest any other vector or scenario type.
+
+PRIMARY INDIVIDUAL MODEL (ENISA-ALIGNED)
+- Individual Security Behavior Stages (ONLY individual model):
+  Foundational -> Building -> Consistent -> Champion
+- Determine current_stage strictly from observed behaviors:
+  - If data is insufficient, default to Foundational.
+  - Foundational: no/very limited data OR no stable reporting habit
+  - Building: some correct actions; inconsistent reporting or vector coverage
+  - Consistent: regular reporting; stable performance across EMAIL and QR
+  - Champion: near error-free; proactive reporting; sets a positive example
+- target_stage is the next stage (Champion targets Champion).
+- progression_hint: one short sentence describing what is needed to advance.
+
+BEHAVIOR SCIENCE ENGINE (USED FOR DECISIONS)
+- Diagnose barriers using COM-B: Capability, Opportunity, Motivation.
+- Choose trigger type using Fogg B=MAT:
+  SIGNAL (ability+motivation ok), SPARK (motivation low), FACILITATOR (ability low).
+- Emphasize self-efficacy and friction reduction.
+- Avoid fear-based or blaming language.
+
+NEXT STEPS (REQUIRED)
+- Recommend next phishing simulation(s) and training(s) tailored to observed patterns.
+- Apply NIST Phish Scale explicitly:
+  difficulty = EASY|MEDIUM|HARD
+  cue_difficulty = LOW|MEDIUM|HIGH
+  premise_alignment = LOW|MEDIUM|HIGH
+- Progression logic:
+  - Clicked & not reported -> keep MEDIUM, change vector (EMAIL <-> QR), increase premise_alignment
+  - Resisted & reported -> increase difficulty one step
+  - Ignored -> retry same difficulty, change cues
+- Each simulation must include:
+  - why_this (one short line)
+  - designed_to_progress (one short line)
+
+ONE-PAGE LIMITS (HARD)
+- strengths max 4, growth_opportunities max 4
+- simulations max 2, microlearnings max 2, nudges max 1
+- business_value operational max 3, strategic max 3
+- Short sentences only.
+
+GARTNER SBCP (CONTEXT ONLY)
+- Gartner is organizational context only.
+- Never rate the individual using Gartner.
+- Keep the label exactly: "Context only — not an individual rating".
+
+REFERENCES (STATIC)
+- The "references" array MUST be copied exactly from the JSON contract template.
+- Do NOT add, remove, or modify references.
+- In why_this fields, name the behavioral principle used (e.g., Authority Bias, Curiosity Gap, Habit Loop, self-efficacy, friction reduction).
+- Optionally append a lightweight reference tag from the static list (no academic formatting), e.g.:
+  "(Curiosity Gap – Loewenstein)", "(Authority Bias – Milgram)", "(Habit Loop – Duhigg)", "(ENISA)".
+`;
+
+
+            const userPrompt = `
+USER CONTEXT (SOURCE OF TRUTH)
+
+Masked user id: ${maskedId}
+Role: ${user?.role || ""}
+Department: ${user?.departmentName || user?.department || "All"}
+Location: ${user?.location || ""}
+Language: ${user?.preferredLanguage || "en"}
+Access level: ${user?.accessLevel || ""}
+
+Recent activities (primary behavioral evidence):
+${JSON.stringify(recentActivities)}
 
 ---
 
-## ANALYSIS INSTRUCTIONS
+OUTPUT INSTRUCTIONS
 
-Analyze the provided user data.
-**🚨 CRITICAL PRIORITY:** The \`Recent Activities\` list is the **SINGLE MOST IMPORTANT** source of truth.
-- You MUST derive the user's risk level and behavior pattern primarily from their past actions (clicks, reports, training completions).
-- Role and Department are secondary context.
+Using the user context above, generate a ONE-PAGE executive behavioral resilience report.
 
-Analyze:
-1. Role & Department (Context)
-2. **Recent Activities (BEHAVIORAL CORE)**
-If a data point is unknown, leave the JSON field empty. NEVER fabricate metrics.
+You MUST:
+- Base all analysis primarily on Recent activities.
+- Use role and access level as secondary context only.
+- Follow the system instructions exactly.
 
----
+Event parsing rules:
+- Determine simulation outcomes from productType == "PHISHING SIMULATOR - CLICK-ONLY" and ActionType (Clicked Link, Submitted Data).
+- Determine training completion from productType == "SECURITY AWARENESS - TRAINING" and ActionType (Training Completed, Exam Passed).
+- Determine reporting events from productType == "INCIDENT RESPONDER" and ActionType == "Reported Email".
+- Use difficultyType if present; otherwise leave difficulty-related inferences out of evidence bullets.
 
-## ANALYSIS LOGIC (HOW TO THINK)
+Additional rules:
+- Time format: ActionTime is DD/MM/YYYY HH:mm (UTC). If uncertain, avoid relative recency claims.
+- Scenario mapping:
+  - If ActionType == "Submitted Data" => simulations[].scenario_type = DATA_SUBMISSION
+  - Else if ActionType == "Clicked Link" => simulations[].scenario_type = CLICK_ONLY
+- Reporting evidence:
+  - If productType == "INCIDENT RESPONDER" and ActionType == "Reported Email", treat as positive evidence of using the reporting workflow, regardless of result value (e.g., "Undetected").
 
-1. **Stage classification (Gartner SBCP):**
-   - Levels: Emerging → Developing → Established → Leading.
-   - Use behavior to classify.
-
-2. **Exception Rules:**
-   - Critical Role but No Data → Emerging (prioritize baseline).
-   - Very Low Performance → Developing.
-   - Leading User → Leading.
-
-3. **Behavior & triggers:**
-   - Identify themes (Finance, Urgency, Curiosity, Authority) from recent activities.
-
-4. **Simulation & Next Steps (NIST Phish Scale):**
-   - Clicked & No Report → Medium difficulty, change vector.
-   - Resisted & Reported → Increase difficulty.
-   - Ignored → Retry same difficulty.
-
----
-
-## MATURITY MAPPING & BUSINESS VALUE
-
-- Fill maturity mapping with short descriptions.
-- Add operational and strategic business value points.`;
-
-            const userPrompt = `Analyze this user:
-- Masked ID: ${maskedId}
-- Role/Dept: ${inputDepartmentName || user?.departmentName || user?.department || 'Unknown'}
-- Recent Activities: ${JSON.stringify(recentActivities)}
+Allowed values (use ONLY these):
+- meta.access_level: LOW | MEDIUM | HIGH
+- header.behavioral_resilience.current_stage / target_stage: Foundational | Building | Consistent | Champion
+- simulations[].vector: EMAIL | QR
+- simulations[].scenario_type: CLICK_ONLY | DATA_SUBMISSION
+- simulations[].difficulty: EASY | MEDIUM | HARD
+- simulations[].persuasion_tactic: AUTHORITY | URGENCY | CURIOSITY
+- simulations[].nist_phish_scale.cue_difficulty: LOW | MEDIUM | HIGH
+- simulations[].nist_phish_scale.premise_alignment: LOW | MEDIUM | HIGH
+- nudges[].channel: TEAMS | EMAIL
+- nudges[].cadence: ONE_OFF | WEEKLY | MONTHLY
+- internal.behavior_science_engine.fogg_trigger_type: SIGNAL | SPARK | FACILITATOR
 
 ---
 
-## OUTPUT FORMAT (STRICT)
+JSON CONTRACT TEMPLATE (MUST MATCH EXACTLY)
 
-You MUST respond with **ONLY** a single valid JSON object that matches this contract exactly.
-- Do NOT wrap it in markdown.
-- Do NOT add commentary before or after.
-- Do NOT add or remove keys.
-- If you do not know a value, set it to "" or null.
-- All text must be in English.
-
-**RULE FOR RATIONALE:**
-When writing 'rationale' fields (for simulations, microlearnings, nudges), YOU MUST CITE A SPECIFIC REFERENCE from the provided list (e.g., "Uses Authority Bias (Milgram)..." or "Aligns with Gartner SBCP...").
-
-Use this exact JSON structure:
+Return ONLY a single valid JSON object using the structure below.
+Do NOT add, remove, or rename keys.
+If a value is unknown, use "" or null.
 
 {
-  "version": "1.0",
+  "version": "1.1",
   "meta": {
-    "user_name": "",
+    "user_id": "",
     "role": "",
     "department": "",
     "location": "",
-    "language": "",
-    "access_level": null,
+    "language": "en",
+    "access_level": "",
     "generated_at_utc": ""
   },
   "header": {
     "title": "Behavioral Resilience Report",
-    "resilience_stage": { "framework": "Gartner SBCP", "level": "" },
-    "progression_target": "",
+    "behavioral_resilience": {
+      "framework": "Individual Security Behavior (ENISA-aligned)",
+      "current_stage": "",
+      "target_stage": ""
+    },
     "progression_hint": "",
-    "footnote": "(aligned with Gartner SBCP framework)"
+    "footnote": "(ENISA-aligned individual behavior model; Gartner mapping is context-only)"
   },
   "strengths": [],
   "growth_opportunities": [],
-  "recommended_next_steps": {
+  "ai_recommended_next_steps": {
     "simulations": [
       {
-        "vector": "EMAIL|QUISHING",
-        "scenario_type": "CLICK_ONLY|DATA_SUBMISSION",
-        "difficulty": "EASY|MEDIUM|HARD",
-        "persuasion_tactic": "AUTHORITY|URGENCY|CURIOSITY",
+        "vector": "",
+        "scenario_type": "",
+        "difficulty": "",
+        "persuasion_tactic": "",
         "title": "",
-        "rationale": "",
+        "why_this": "",
         "nist_phish_scale": {
-          "cue_difficulty": "LOW|MEDIUM|HIGH",
-          "premise_alignment": "LOW|MEDIUM|HIGH"
+          "cue_difficulty": "",
+          "premise_alignment": ""
         },
         "designed_to_progress": ""
       }
     ],
     "microlearnings": [
-      { "title": "", "objective": "", "duration_min": 0, "language": "", "rationale": "" }
+      {
+        "title": "",
+        "duration_min": 0,
+        "language": "en",
+        "objective": "",
+        "why_this": ""
+      }
     ],
     "nudges": [
-      { "channel": "TEAMS", "message": "", "cadence": "ONE_OFF|WEEKLY|MONTHLY", "rationale": "" }
+      {
+        "channel": "",
+        "cadence": "",
+        "message": "",
+        "why_this": ""
+      }
     ]
   },
   "maturity_mapping": {
-    "gartner_sbcp": {
+    "enisa_security_culture": {
       "current": "",
       "description": "",
       "next": "",
       "what_it_takes": ""
     },
-    "enisa_security_culture": {
-      "current": "",
+    "gartner_sbcp_context_only": {
+      "label": "Context only — not an individual rating",
       "description": "",
-      "next": "",
       "what_it_takes": ""
     }
   },
@@ -457,15 +539,34 @@ Use this exact JSON structure:
     "strategic": []
   },
   "references": [
+    "ENISA – Cybersecurity Culture Guidelines (Behavioural Aspects of Cybersecurity)",
     "Loewenstein (1994) – Curiosity Gap",
     "Milgram (1963) – Authority Bias",
     "Duhigg (2012) – Habit Loop",
     "Kahneman & Tversky (1979) – Loss Aversion",
-    "IBM (2023) – Cost of a Data Breach",
-    "Verizon DBIR (latest)",
-    "Gartner SBCP"
-  ]
-}`;
+    "IBM – Cost of a Data Breach Report",
+    "Verizon – Data Breach Investigations Report (DBIR)",
+    "Gartner – Security Behavior and Culture Program (Context Only)"
+  ],
+  "internal": {
+    "evidence_summary": {
+      "key_signals_used": [],
+      "data_gaps": []
+    },
+    "behavior_science_engine": {
+      "diagnosis_model": "COM-B",
+      "com_b": {
+        "capability": "",
+        "opportunity": "",
+        "motivation": ""
+      },
+      "trigger_model": "Fogg B=MAT",
+      "fogg_trigger_type": "",
+      "design_notes": ""
+    }
+  }
+}
+`;
 
             let analysisReport;
             try {
@@ -484,12 +585,12 @@ Use this exact JSON structure:
                 const cleanedJson = cleanResponse(response.text, 'analysis-report');
                 analysisReport = JSON.parse(cleanedJson);
 
-                // Ensure masked_user_id is set in meta (required by schema)
+                // Ensure user_id is set in meta (required by schema)
                 if (analysisReport && !analysisReport.meta) {
                     analysisReport.meta = {};
                 }
-                if (analysisReport?.meta && !analysisReport.meta.masked_user_id) {
-                    analysisReport.meta.masked_user_id = maskedId;
+                if (analysisReport?.meta && !analysisReport.meta.user_id) {
+                    analysisReport.meta.user_id = maskedId;
                 }
 
                 logger.debug('Analysis report generated successfully', {});

@@ -814,8 +814,13 @@ Your job: generate modern, professional, trustworthy WEB PAGES (not emails) usin
 
 **CRITICAL RULES:**
 
-${isQuishing ? `**🚫 QUISHING LANDING PAGE - NO QR CODES:**
-   - This is a quishing scenario. Landing pages must NOT contain QR codes. QR codes are only in the email. Landing pages are standard forms (login, success, info).` : `**🚫 NO QR CODES IN LANDING PAGES:**
+${isQuishing ? `**🚫 QUISHING LANDING PAGE - NO QR CODE REFERENCES:**
+   - This is a quishing landing page scenario. Landing pages must NOT contain QR codes.
+   - Landing pages are STANDARD FORMS (login, success, info) with ZERO mention of QR codes.
+   - ⚠️ CRITICAL: Do NOT reference "QR Code", "scan", "verify", or any QR-related text in headings/descriptions.
+   - ❌ WRONG: "QR Code Verification", "Verify Your Account via QR", "Account Verification Required" (exposes the QR code phishing)
+   - ✅ CORRECT: "Sign In", "Log In to Your Account", "Enter Your Credentials" (normal login heading)
+   - ✅ Landing page must look like a legitimate company login page (no quishing indicators).` : `**🚫 NO QR CODES IN LANDING PAGES:**
    - Do NOT add QR codes to landing pages. Landing pages are standard web forms (login, success, info pages).`}
 
 1. **LOGO STRATEGY (MANDATORY - Always include a logo):**
@@ -940,6 +945,10 @@ For each new page/template, change at least **3** of the following visual aspect
    - Main heading: clear, strong, around 22–28px, bold.
    - Subheading: smaller, muted color (e.g. #4b5563), explaining context.
    - Helper/footer text: 11–13px, subtle.
+   - **FOR QUISHING LANDING PAGES:**
+     - Heading MUST be a normal login heading: "Sign In", "Log In to Your Account", "Sign In Securely", etc.
+     - Do NOT use: "QR Code Verification", "Verify via QR", "Account Verification via QR", or any QR-related text.
+     - Description MUST be neutral: "Enter your credentials to continue" or "Sign in with your work account" — NOT "verify your account" or "account verification required" which exposes the attack.
 
 3. **Inputs:**
    - Use this pattern:
