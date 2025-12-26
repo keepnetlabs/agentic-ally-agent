@@ -4,9 +4,12 @@ import { createPhishingWorkflow } from '../../workflows/create-phishing-workflow
 import { v4 as uuidv4 } from 'uuid';
 import { PHISHING, MODEL_PROVIDERS, ERROR_MESSAGES, TIMEOUT_VALUES } from '../../constants';
 import { getLogger } from '../../utils/core/logger';
+import { getPolicyContext } from '../../utils/core/policy-fetcher';
 import { errorService } from '../../services/error-service';
 import { validateToolResult } from '../../utils/tool-result-validation';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
+
+const logger = getLogger('PhishingWorkflowExecutor');
 
 const phishingWorkflowSchema = z.object({
     workflowType: z.literal(PHISHING.WORKFLOW_TYPE).describe('Workflow to execute'),
@@ -64,6 +67,11 @@ export const phishingWorkflowExecutorTool = createTool({
         try {
             logger.info('Starting Phishing Workflow', { topic: params.topic });
 
+            // Fetch policy context ONCE at workflow start
+            logger.info('Fetching policy context for workflow');
+            const policyContext = await getPolicyContext();
+            logger.info('Policy context ready', { hasContent: !!policyContext, length: policyContext.length });
+
             const workflow = createPhishingWorkflow;
             const run = await workflow.createRunAsync();
 
@@ -81,6 +89,7 @@ export const phishingWorkflowExecutorTool = createTool({
                     modelProvider: params.modelProvider,
                     model: params.model,
                     writer: writer,
+                    policyContext: policyContext || undefined // Pass if available
                 }
             });
 
@@ -108,6 +117,7 @@ export const phishingWorkflowExecutorTool = createTool({
                                 fromAddress: output.fromAddress,
                                 fromName: output.fromName,
                                 method: output.analysis?.method,
+                                isQuishing: params.isQuishing || false,
                             };
                             const emailJson = JSON.stringify(emailObject);
                             const encodedEmail = Buffer.from(emailJson).toString('base64');
@@ -122,7 +132,11 @@ export const phishingWorkflowExecutorTool = createTool({
                         // 2. Landing Page (if exists) - Single object encoding
                         if (output.landingPage && output.landingPage.pages.length > 0) {
                             // Encode entire landingPage object as JSON string
-                            const landingPageJson = JSON.stringify(output.landingPage);
+                            const landingPageObject = {
+                                ...output.landingPage,
+                                isQuishing: params.isQuishing || false,
+                            };
+                            const landingPageJson = JSON.stringify(landingPageObject);
                             const encodedLandingPage = Buffer.from(landingPageJson).toString('base64');
 
                             await writer.write({

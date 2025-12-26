@@ -5,6 +5,7 @@ import { MicrolearningContent, LanguageContent } from '../../types/microlearning
 import { GenerateLanguageJsonSchema, GenerateLanguageJsonOutputSchema } from '../../schemas/generate-language-json-schema';
 import { getAppTexts, getAppAriaTexts } from '../../utils/language/app-texts';
 import { buildSystemPrompt } from '../../utils/prompt-builders/base-context-builder';
+import { buildPolicyScenePrompt } from '../../utils/prompt-builders/policy-context-builder';
 import { generateScene1Prompt } from '../scenes/generators/scene1-intro-generator';
 import { generateScene2Prompt } from '../scenes/generators/scene2-goal-generator';
 import { generateVideoPrompt } from '../scenes/generators/scene3-video-generator';
@@ -16,12 +17,11 @@ import { generateScene7Prompt } from '../scenes/generators/scene7-nudge-generato
 import { generateScene8Prompt } from '../scenes/generators/scene8-summary-generator';
 import { cleanResponse } from '../../utils/content-processors/json-cleaner';
 import { translateTranscript } from '../../utils/content-processors/transcript-translator';
-import { SCENE_GENERATION_PARAMS, LOCALIZER_PARAMS } from '../../utils/config/llm-generation-params';
+import { SCENE_GENERATION_PARAMS } from '../../utils/config/llm-generation-params';
 import { trackCost } from '../../utils/core/cost-tracker';
 import { getLogger } from '../../utils/core/logger';
 import { errorService } from '../../services/error-service';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
-import { getLanguagePrompt } from '../../utils/language/localization-language-rules';
 import { withRetry } from '../../utils/core/resilience-utils';
 
 export const generateLanguageJsonTool = new Tool({
@@ -32,10 +32,10 @@ export const generateLanguageJsonTool = new Tool({
   execute: async (context: any) => {
     const logger = getLogger('GenerateLanguageJsonTool');
     const input = context?.inputData || context?.input || context;
-    const { analysis, microlearning, model, writer } = input;
+    const { analysis, microlearning, model, writer, policyContext } = input;
 
     try {
-      const languageContent = await generateLanguageJsonWithAI(analysis, microlearning, model, writer);
+      const languageContent = await generateLanguageJsonWithAI(analysis, microlearning, model, writer, policyContext);
 
       return {
         success: true,
@@ -59,11 +59,19 @@ export const generateLanguageJsonTool = new Tool({
 
 /**
  * Build messages array with multi-message pattern for scene generation
- * Ensures additionalContext receives dedicated attention from LLM
+ * Ensures additionalContext and policy context receive dedicated attention from LLM
  */
-function buildSceneMessages(systemPrompt: string, scenePrompt: string, analysis: PromptAnalysis): any[] {
+function buildSceneMessages(systemPrompt: string, scenePrompt: string, analysis: PromptAnalysis, policyContext?: string): any[] {
+  let system = systemPrompt;
+
+  // Add policy context to system prompt using centralized builder
+  const policyBlock = buildPolicyScenePrompt(policyContext);
+  if (policyBlock) {
+    system += policyBlock;
+  }
+
   const messages: any[] = [
-    { role: 'system', content: systemPrompt }
+    { role: 'system', content: system }
   ];
 
   // If we have rich user behavior context, add it as a dedicated message
@@ -90,9 +98,9 @@ ${analysis.additionalContext}`
 }
 
 // Generate language-specific training content from microlearning.json metadata with rich context
-async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearning: MicrolearningContent, model: any, writer?: any): Promise<LanguageContent> {
+async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearning: MicrolearningContent, model: any, writer?: any, policyContext?: string): Promise<LanguageContent> {
   const logger = getLogger('GenerateLanguageJsonWithAI');
-  logger.debug('Initializing language content generation', { hasWriter: !!writer });
+  logger.debug('Initializing language content generation', { hasWriter: !!writer, hasPolicies: !!policyContext });
 
   // Generate scene 1 & 2 prompts using modular generators
   const scene1Prompt = generateScene1Prompt(analysis, microlearning);
@@ -144,7 +152,7 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
       withRetry(
         () => generateText({
           model: model,
-          messages: buildSceneMessages(systemPrompt, scene1Prompt, analysis),
+          messages: buildSceneMessages(systemPrompt, scene1Prompt, analysis, policyContext),
           ...SCENE_GENERATION_PARAMS[1]  // Scene 1: Intro (creative)
         }),
         'Scene 1 generation'
@@ -152,7 +160,7 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
       withRetry(
         () => generateText({
           model: model,
-          messages: buildSceneMessages(systemPrompt, scene2Prompt, analysis),
+          messages: buildSceneMessages(systemPrompt, scene2Prompt, analysis, policyContext),
           ...SCENE_GENERATION_PARAMS[2]  // Scene 2: Goals (factual)
         }),
         'Scene 2 generation'
@@ -160,7 +168,7 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
       withRetry(
         () => generateText({
           model: model,
-          messages: buildSceneMessages(videoSystemPrompt, videoPrompt, analysis),
+          messages: buildSceneMessages(videoSystemPrompt, videoPrompt, analysis, policyContext),
           ...SCENE_GENERATION_PARAMS[3]  // Scene 3: Video (balanced)
         }),
         'Scene 3 generation'
@@ -168,7 +176,7 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
       withRetry(
         () => generateText({
           model: model,
-          messages: buildSceneMessages(systemPrompt, scene4Prompt, analysis),
+          messages: buildSceneMessages(systemPrompt, scene4Prompt, analysis, policyContext),
           ...SCENE_GENERATION_PARAMS[4]  // Scene 4: Actions (specific)
         }),
         'Scene 4 generation'
@@ -176,7 +184,7 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
       withRetry(
         () => generateText({
           model: model,
-          messages: buildSceneMessages(systemPrompt, scene5Prompt, analysis),
+          messages: buildSceneMessages(systemPrompt, scene5Prompt, analysis, policyContext),
           ...SCENE_GENERATION_PARAMS[5]  // Scene 5: Quiz (precise)
         }),
         'Scene 5 generation'
@@ -184,7 +192,7 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
       withRetry(
         () => generateText({
           model: model,
-          messages: buildSceneMessages(systemPrompt, scene6Prompt, analysis),
+          messages: buildSceneMessages(systemPrompt, scene6Prompt, analysis, policyContext),
           ...SCENE_GENERATION_PARAMS[6]  // Scene 6: Survey (neutral)
         }),
         'Scene 6 generation'
@@ -192,7 +200,7 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
       withRetry(
         () => generateText({
           model: model,
-          messages: buildSceneMessages(systemPrompt, scene7Prompt, analysis),
+          messages: buildSceneMessages(systemPrompt, scene7Prompt, analysis, policyContext),
           ...SCENE_GENERATION_PARAMS[7]  // Scene 7: Nudge (engaging)
         }),
         'Scene 7 generation'
@@ -200,7 +208,7 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
       withRetry(
         () => generateText({
           model: model,
-          messages: buildSceneMessages(systemPrompt, scene8Prompt, analysis),
+          messages: buildSceneMessages(systemPrompt, scene8Prompt, analysis, policyContext),
           ...SCENE_GENERATION_PARAMS[8]  // Scene 8: Summary (consistent)
         }),
         'Scene 8 generation'
@@ -278,7 +286,7 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
         const retryResponse = await withRetry(
           () => generateText({
             model: model,
-            messages: buildSceneMessages(videoSystemPrompt, videoPrompt, analysis)
+            messages: buildSceneMessages(videoSystemPrompt, videoPrompt, analysis, policyContext)
           }),
           'Video generation retry'
         );

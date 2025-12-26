@@ -1,0 +1,125 @@
+import { getRequestContext } from './request-storage';
+import { getLogger } from './logger';
+
+const logger = getLogger('PolicyFetcher');
+
+/**
+ * Extract companyId from JWT token
+ * Token format: header.payload.signature
+ * Payload contains: { idp, user_company_resourceid, ... }
+ */
+function extractCompanyIdFromToken(token: string): string | undefined {
+  try {
+    const payload = token.split('.')[1];
+    if (!payload) {
+      return undefined;
+    }
+
+    // Add padding if needed for base64 decode
+    const padded = payload + '='.repeat((4 - payload.length % 4) % 4);
+    const decoded = JSON.parse(Buffer.from(padded, 'base64').toString('utf-8'));
+
+    // companyId is stored as user_company_resourceid in JWT
+    return decoded.user_company_resourceid;
+  } catch (error) {
+    return undefined;
+  }
+}
+
+/**
+ * Fetch and prepare company policies as context string
+ * Automatically extracts companyId from JWT token
+ * Called once at workflow start to avoid repeated API calls
+ */
+export async function getPolicyContext(): Promise<string> {
+  try {
+    const { token } = getRequestContext();
+
+    // Extract companyId from JWT token
+    const companyId = token ? extractCompanyIdFromToken(token) : undefined;
+
+    if (!companyId) {
+      logger.debug('No companyId found in token, skipping policy context');
+      return '';
+    }
+
+    logger.info('Fetching company policies', { companyId });
+
+    // 1. List all policies
+    const listResponse = await fetch('http://agentic-ai-chat.keepnetlabs.com/api/files', {
+      headers: {
+        'X-COMPANY-ID': companyId,
+      },
+    });
+
+    if (!listResponse.ok) {
+      logger.warn('Failed to list policies', { status: listResponse.status });
+      return '';
+    }
+
+    const policies = await listResponse.json();
+
+    if (!Array.isArray(policies) || policies.length === 0) {
+      logger.info('No policies found for company', { companyId });
+      return '';
+    }
+
+    logger.info('Found policies', { count: policies.length, policyNames: policies.map((p: any) => p.name) });
+
+    // 2. Read each policy content in parallel
+    const policyContents = await Promise.all(
+      policies.map(async (policy: any) => {
+        try {
+          const policyUrl = `/api/policies/policies/${companyId}/${encodeURIComponent(policy.blobUrl)}`;
+          const fullUrl = policyUrl.startsWith('http')
+            ? policyUrl
+            : `http://agentic-ai-chat.keepnetlabs.com${policyUrl}`;
+
+          const response = await fetch(fullUrl, {
+            headers: {
+              'X-COMPANY-ID': companyId,
+            },
+          });
+
+          if (!response.ok) {
+            logger.warn('Failed to read policy', { policyName: policy.name, status: response.status });
+            return null;
+          }
+
+          const content = await response.text();
+          return `**Policy: ${policy.name}**\n${content}`;
+        } catch (error) {
+          const err = error instanceof Error ? error : new Error(String(error));
+          logger.warn('Error reading policy', { policyName: policy.name, error: err.message });
+          return null;
+        }
+      })
+    );
+
+    // 3. Filter out failures and join
+    const validPolicies = policyContents.filter((p) => p !== null);
+
+    if (validPolicies.length === 0) {
+      logger.warn('No valid policies could be read');
+      return '';
+    }
+
+    const context = validPolicies.join('\n\n---\n\n');
+    logger.info('Policy context prepared', { totalPolicies: validPolicies.length, contextLength: context.length });
+
+    return context;
+  } catch (error) {
+    const err = error instanceof Error ? error : new Error(String(error));
+    logger.error('Error fetching policy context', { error: err.message, stack: err.stack });
+    return ''; // Graceful fallback
+  }
+}
+
+/**
+ * Extract companyId from JWT token (can be used independently if needed)
+ * @param token JWT token string
+ * @returns companyId if found, undefined otherwise
+ */
+export function extractCompanyIdFromTokenExport(token: string): string | undefined {
+  return extractCompanyIdFromToken(token);
+}

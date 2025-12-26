@@ -29,6 +29,7 @@ export const InputSchema = z.object({
     modelProvider: z.string().optional(),
     model: z.string().optional(),
     writer: StreamWriterSchema.optional(),
+    policyContext: z.string().optional().describe('Company policy context (prepared at workflow start)'),
 });
 
 /**
@@ -91,6 +92,7 @@ export const AnalysisSchema = z.object({
     modelProvider: z.string().optional(),
     model: z.string().optional(),
     writer: StreamWriterSchema.optional(),
+    policyContext: z.string().optional().describe('Company policy context (prepared at workflow start)'),
 });
 
 /**
@@ -106,6 +108,7 @@ export const EmailOutputSchema = z.object({
     analysis: AnalysisSchema, // Full analysis context
     additionalContext: z.string().optional().describe('User behavior context (also available in analysis.additionalContext)'),
     includeLandingPage: z.boolean().default(true).optional(), // Pass explicit flag
+    policyContext: z.string().optional(),
 });
 
 /**
@@ -130,5 +133,6 @@ export const OutputSchema = z.object({
         }))
     }).optional(),
     analysis: AnalysisSchema.omit({ language: true, modelProvider: true, model: true }).optional(), // Include analysis in output for reasoning display
+    policyContext: z.string().optional(),
 });
 

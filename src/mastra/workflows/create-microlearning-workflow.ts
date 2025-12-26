@@ -27,6 +27,7 @@ const createInputSchema = z.object({
   modelProvider: z.enum(MODEL_PROVIDERS.NAMES).optional().describe('Model provider (OPENAI, WORKERS_AI, GOOGLE)'),
   model: z.string().optional().describe('Model name (e.g., OPENAI_GPT_4O_MINI, WORKERS_AI_GPT_OSS_120B)'),
   writer: StreamWriterSchema.optional(),
+  policyContext: z.string().optional().describe('Company policy context (prepared at workflow start)'),
 });
 
 const promptAnalysisSchema = z.object({
@@ -50,6 +51,7 @@ const promptAnalysisSchema = z.object({
   modelProvider: z.enum(MODEL_PROVIDERS.NAMES).optional(),
   model: z.string().optional(),
   writer: StreamWriterSchema.optional(),
+  policyContext: z.string().optional(),
 });
 
 const microlearningSchema = z.object({
@@ -61,6 +63,7 @@ const microlearningSchema = z.object({
   modelProvider: z.enum(MODEL_PROVIDERS.NAMES).optional(),
   model: z.string().optional(),
   writer: StreamWriterSchema.optional(),
+  policyContext: z.string().optional(),
 });
 
 const languageContentSchema = z.object({
@@ -72,6 +75,7 @@ const languageContentSchema = z.object({
   modelProvider: z.enum(MODEL_PROVIDERS.NAMES).optional(),
   model: z.string().optional(),
   writer: StreamWriterSchema.optional(),
+  policyContext: z.string().optional(),
 });
 
 const finalResultSchema = z.object({
@@ -103,7 +107,7 @@ const analyzePromptStep = createStep({
       throw new Error('Analyze user prompt tool is not executable');
     }
 
-    // Pass model provider, model, and writer to analyze step
+    // Pass model provider, model, writer, and policy context to analyze step
     const analysisRes = await analyzeUserPromptTool.execute({
       userPrompt: inputData.prompt,
       additionalContext: inputData.additionalContext,
@@ -113,6 +117,7 @@ const analyzePromptStep = createStep({
       modelProvider: inputData.modelProvider,
       model: inputData.model,
       writer: inputData.writer,
+      policyContext: inputData.policyContext,
     });
 
     if (!analysisRes?.success) {
@@ -130,6 +135,7 @@ const analyzePromptStep = createStep({
       modelProvider: inputData.modelProvider,
       model: inputData.model,
       writer: inputData.writer,
+      policyContext: inputData.policyContext,
     };
   }
 });
@@ -150,7 +156,7 @@ const generateMicrolearningStep = createStep({
     }
 
     const genRes = await generateMicrolearningJsonTool.execute({
-      analysis, microlearningId, model
+      analysis, microlearningId, model, policyContext: inputData.policyContext
     });
 
     if (!genRes?.success) {
@@ -171,6 +177,7 @@ const generateMicrolearningStep = createStep({
       modelProvider: inputData.modelProvider,
       model: inputData.model,
       writer: inputData.writer,
+      policyContext: inputData.policyContext,
     } as any;
   }
 });
@@ -195,7 +202,8 @@ const generateLanguageStep = createStep({
       analysis,
       microlearning: microlearningStructure,
       model,
-      writer: inputData.writer
+      writer: inputData.writer,
+      policyContext: inputData.policyContext
     });
 
     if (!result?.success) {
@@ -219,6 +227,7 @@ const generateLanguageStep = createStep({
       modelProvider: inputData.modelProvider,
       model: inputData.model,
       writer: inputData.writer,
+      policyContext: inputData.policyContext,
     } as any;
   }
 });
@@ -236,6 +245,7 @@ const createInboxStep = createStep({
     modelProvider: z.enum(MODEL_PROVIDERS.NAMES).optional(),
     model: z.string().optional(),
     writer: StreamWriterSchema.optional(),
+    policyContext: z.string().optional(),
   }),
   outputSchema: finalResultSchema,
   execute: async ({ inputData }) => {

@@ -25,6 +25,7 @@ const uploadPhishingOutputSchema = z.object({
         languageId: z.string().optional(), // May not be in backend response, kept for compatibility
         phishingId: z.string(),
         title: z.string().optional(),
+        isQuishing: z.boolean().optional(), // Quishing flag for passing to assign tool
     }).optional(),
     message: z.string().optional(),
     error: z.string().optional(),
@@ -167,7 +168,8 @@ export const uploadPhishingTool = createTool({
                     scenarioId: result.scenarioId || null,
                     languageId: result.languageId, // May not exist in backend response, kept for compatibility
                     phishingId: phishingId,
-                    title: name
+                    title: name,
+                    isQuishing: isQuishing, // Pass isQuishing flag for assign tool
                 },
                 message: result.message || `Phishing simulation uploaded successfully. Resource ID ${resourceIdForAssignment} is ready for assignment.`
             };

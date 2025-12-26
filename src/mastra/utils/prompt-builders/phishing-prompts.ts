@@ -7,6 +7,7 @@ import { PHISHING, PHISHING_EMAIL, LANDING_PAGE } from '../../constants';
 import { DIFFICULTY_CONFIG } from '../config/phishing-difficulty-config';
 import { AnalysisSchema } from '../../schemas/phishing-workflow-schemas';
 import { getLogger } from '../core/logger';
+import { buildPolicyScenePrompt } from './policy-context-builder';
 import { z } from 'zod';
 
 const logger = getLogger('PhishingPromptBuilder');
@@ -25,6 +26,7 @@ type AnalysisPromptParams = {
   };
   additionalContext?: string;
   isQuishingDetected?: boolean; // Pre-detected quishing flag (from lightweight AI check)
+  policyContext?: string; // Company policy context
 };
 
 type EmailPromptParams = {
@@ -35,6 +37,7 @@ type EmailPromptParams = {
     industry: string;
     colors: { primary: string; secondary: string; accent: string };
   };
+  policyContext?: string; // Company policy context
 };
 
 type LandingPagePromptParams = {
@@ -53,6 +56,7 @@ type LandingPagePromptParams = {
   template?: string;
   additionalContext?: string;
   isQuishing?: boolean;
+  policyContext?: string; // Company policy context
 };
 
 // Layout and Style Options for Dynamic Generation
@@ -72,14 +76,8 @@ const LAYOUT_OPTIONS = [
   {
     id: 'MINIMAL',
     name: 'MINIMAL / URGENT (Alert)',
-    description: 'No card container. Content sits directly on a plain white or very light background. Top-aligned logo. Best for simple alerts.',
-    cssRule: 'body { padding: 40px 20px; max-width: 600px; margin: 0 auto; background-color: #ffffff; font-family: system-ui, sans-serif; } .content { text-align: left; }'
-  },
-  {
-    id: 'SIDEBAR',
-    name: 'SIDEBAR (Dashboard/Admin)',
-    description: 'Left sidebar with navigation links, right side with content card. Looks like an internal portal or settings page.',
-    cssRule: 'body { position: relative; display: flex; min-height: 100vh; margin: 0; background: #f9fafb; font-family: system-ui, sans-serif; flex-direction: row; } .sidebar { position: absolute; left: 0; top: 0; width: 0; height: 100vh; background: white; border-right: 1px solid #e5e7eb; padding: 0; overflow: hidden; gap: 8px; z-index: 10; } .sidebar a { display: flex; align-items: center; min-height: 40px; padding: 10px 12px; border-radius: 6px; cursor: pointer; white-space: nowrap; } @media(min-width: 768px) { .sidebar {position:absolute; width: 240px; padding: 16px; overflow-y: auto; } body { padding-left: 240px; } } .main { flex: 1; padding: 24px; display: flex; flex-direction: column; justify-content: flex-start; align-items: center; gap: 24px; width: 100%; }'
+    description: 'No card container. Content sits directly on a plain white or very light background. Centered, well-spaced layout. Best for simple alerts.',
+    cssRule: 'body { padding: 40px 20px; max-width: 600px; margin: 0 auto; background-color: #ffffff; font-family: system-ui, sans-serif; } .content { display: flex; flex-direction: column; gap: 24px; padding: 20px; text-align: center; }'
   },
   {
     id: 'HERO',
@@ -115,7 +113,7 @@ function buildQuishingAnalysisPrompts(params: AnalysisPromptParams): {
   userPrompt: string;
   additionalContextMessage?: string;
 } {
-  const { topic, difficulty, language, method, targetProfile, additionalContext } = params;
+  const { topic, difficulty, language, method, targetProfile, additionalContext, policyContext } = params;
   const difficultyRules = DIFFICULTY_CONFIG[difficulty as keyof typeof DIFFICULTY_CONFIG] || DIFFICULTY_CONFIG.Medium;
 
   const quishingSystemPrompt = `You are an expert Quishing (QR Code Phishing) Simulation Architect working for a LEGITIMATE CYBERSECURITY TRAINING COMPANY.
@@ -230,8 +228,12 @@ ${additionalContext}
 **ACTION REQUIRED:** Use this behavioral analysis to inform your quishing scenario design. Consider the user's risk level, strengths, growth areas, and recommended action plan when designing the QR code phishing simulation. The scenario should be tailored to test and improve the specific vulnerabilities and behavioral patterns identified in this analysis.`
     : undefined;
 
+  // Add policy context if available
+  const policyBlock = buildPolicyScenePrompt(policyContext);
+  const finalSystemPrompt = quishingSystemPrompt + policyBlock;
+
   return {
-    systemPrompt: quishingSystemPrompt,
+    systemPrompt: finalSystemPrompt,
     userPrompt: quishingUserPrompt,
     additionalContextMessage: quishingAdditionalContextMessage,
   };
@@ -245,7 +247,7 @@ function buildNormalPhishingAnalysisPrompts(params: AnalysisPromptParams): {
   userPrompt: string;
   additionalContextMessage?: string;
 } {
-  const { topic, difficulty, language, method, targetProfile, additionalContext } = params;
+  const { topic, difficulty, language, method, targetProfile, additionalContext, policyContext } = params;
   const difficultyRules = DIFFICULTY_CONFIG[difficulty as keyof typeof DIFFICULTY_CONFIG] || DIFFICULTY_CONFIG.Medium;
 
   const systemPrompt = `You are an expert Social Engineering Architect and Cyber Psychologist working for a LEGITIMATE CYBERSECURITY TRAINING COMPANY.
@@ -379,8 +381,12 @@ ${additionalContext}
 **ACTION REQUIRED:** Use this behavioral analysis to inform your scenario design. Consider the user's risk level, strengths, growth areas, and recommended action plan when designing the phishing simulation. The scenario should be tailored to test and improve the specific vulnerabilities and behavioral patterns identified in this analysis.`
     : undefined;
 
+  // Add policy context if available
+  const policyBlock = buildPolicyScenePrompt(policyContext);
+  const finalSystemPrompt = systemPrompt + policyBlock;
+
   return {
-    systemPrompt,
+    systemPrompt: finalSystemPrompt,
     userPrompt,
     additionalContextMessage,
   };
@@ -395,7 +401,7 @@ export function buildAnalysisPrompts(params: AnalysisPromptParams): {
   userPrompt: string;
   additionalContextMessage?: string;
 } {
-  const { isQuishingDetected = false } = params;
+  const { isQuishingDetected = false, policyContext } = params;
 
   if (isQuishingDetected) {
     return buildQuishingAnalysisPrompts(params);
@@ -411,7 +417,7 @@ function buildQuishingEmailPrompts(params: EmailPromptParams): {
   systemPrompt: string;
   userPrompt: string;
 } {
-  const { analysis, language, difficulty, industryDesign } = params;
+  const { analysis, language, difficulty, industryDesign, policyContext } = params;
   const difficultyRules = DIFFICULTY_CONFIG[(difficulty as keyof typeof DIFFICULTY_CONFIG) || 'Medium'];
 
   const quishingSystemPrompt = `You are a Quishing (QR Code Phishing) Email Generator for a LEGITIMATE CYBERSECURITY TRAINING COMPANY.
@@ -552,8 +558,12 @@ ${JSON.stringify(analysis, null, 2)}
 8. **VERIFY** NO buttons or clickable links exist in main body (footer links allowed).
 9. **OUTPUT** valid JSON with complete, production-ready HTML template.`;
 
+  // Add policy context if available
+  const policyBlock = buildPolicyScenePrompt(policyContext);
+  const finalSystemPrompt = quishingSystemPrompt + policyBlock;
+
   return {
-    systemPrompt: quishingSystemPrompt,
+    systemPrompt: finalSystemPrompt,
     userPrompt: quishingUserPrompt,
   };
 }
@@ -565,7 +575,7 @@ function buildNormalPhishingEmailPrompts(params: EmailPromptParams): {
   systemPrompt: string;
   userPrompt: string;
 } {
-  const { analysis, language, difficulty, industryDesign } = params;
+  const { analysis, language, difficulty, industryDesign, policyContext } = params;
   const difficultyRules = DIFFICULTY_CONFIG[(difficulty as keyof typeof DIFFICULTY_CONFIG) || 'Medium'];
 
   const systemPrompt = `You are a Phishing Content Generator for a LEGITIMATE CYBERSECURITY TRAINING COMPANY.
@@ -724,8 +734,12 @@ ${JSON.stringify(analysis, null, 2)}
 8. **FINAL VALIDATION:** Before outputting, check that: (a) greeting contains {FIRSTNAME} or {FULLNAME}, (b) button/link uses {PHISHINGURL} tag. Fix if missing or incorrect.
 9. **OUTPUT** valid JSON with complete, production-ready HTML template.`;
 
+  // Add policy context if available
+  const policyBlock = buildPolicyScenePrompt(policyContext);
+  const finalSystemPrompt = systemPrompt + policyBlock;
+
   return {
-    systemPrompt,
+    systemPrompt: finalSystemPrompt,
     userPrompt,
   };
 }
@@ -769,6 +783,7 @@ export function buildLandingPagePrompts(params: LandingPagePromptParams): {
     template,
     additionalContext,
     isQuishing = false,
+    policyContext,
   } = params;
 
   // 🎲 RANDOMIZE DESIGN 🎲
@@ -777,7 +792,7 @@ export function buildLandingPagePrompts(params: LandingPagePromptParams): {
 
   // 📝 LOG CHOSEN DESIGN FOR DEBUGGING
   // This helps us verify that randomization is working and what the agent is instructed to do
-  logger.debug('Design Injection:', {
+  logger.info('Design Injection:', {
     layout: randomLayout.id,
     style: randomStyle.id,
     layoutName: randomLayout.name,
@@ -861,9 +876,8 @@ ${isQuishing ? `**🚫 QUISHING LANDING PAGE - NO QR CODES:**
      
      **Specific Implementation Rules for ${randomLayout.id}:**
      ${randomLayout.id === 'SPLIT' ? '- Use `display: flex; flex-wrap: wrap;` on body.\n     - Left side: Brand color background, centered logo/text.\n     - Right side: White background, form content.' : ''}
-     ${randomLayout.id === 'MINIMAL' ? '- NO CARD CONTAINER. Content sits directly on background.\n     - Top-aligned logo.\n     - Very clean, sparse layout.' : ''}
+     ${randomLayout.id === 'MINIMAL' ? '- NO CARD CONTAINER. Content sits directly on background.\n     - Centered logo and form with generous spacing (24px gaps).\n     - Clean, minimalist, alert-like layout with breathing room.' : ''}
      ${randomLayout.id === 'CENTERED' ? '- Classic centered card with shadow.\n     - Background color surrounds the card.' : ''}
-     ${randomLayout.id === 'SIDEBAR' ? '- Left sidebar (light gray/white) with dummy nav links.\n     - Main content area with a card.\n     - Looks like an admin panel/dashboard.' : ''}
      ${randomLayout.id === 'HERO' ? '- Top full-width hero bar (brand color, ~200px height).\n     - Hero section: `display: flex; flex-direction: column;` (logo and title must stack vertically).\n     - Content card overlaps the hero bar (negative margin-top).' : ''}
 
   7. **INLINE CSS IS THE SOURCE OF TRUTH:**
@@ -919,6 +933,8 @@ For each new page/template, change at least **3** of the following visual aspect
      <div style='${industryDesign.patterns.cardStyle}'>
        ...
      </div>
+   - **🚨 IMPORTANT:** If you see \`margin: 0 auto;\` already in templates/examples above, **DO NOT change or remove it** – it's correct centering. If adding new containers, ensure they use \`margin: 0 auto;\` (never \`margin: 0 16px;\` or asymmetric margins).
+   - **For wrapper divs**: Use \`display: flex; justify-content: center;\` to center content horizontally.
 
 2. **Typography Hierarchy:**
    - Main heading: clear, strong, around 22–28px, bold.
@@ -1428,8 +1444,12 @@ ${emailBrandContext ? `\n${emailBrandContext}` : ''}
 **Email Preview (first 500 chars):** ${template.substring(0, 500)}...`
       : undefined;
 
+  // Add policy context if available
+  const policyBlock = buildPolicyScenePrompt(policyContext);
+  const finalSystemPrompt = systemPrompt + policyBlock;
+
   return {
-    systemPrompt,
+    systemPrompt: finalSystemPrompt,
     userPrompt,
     userContextMessage,
     emailContextMessage,

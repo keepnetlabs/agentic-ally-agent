@@ -26,6 +26,7 @@ export const GenerateLanguageJsonSchema = z.object({
   microlearning: z.any(),
   model: LanguageModelSchema,
   writer: StreamWriterSchema.optional(),
+  policyContext: z.string().optional().describe('Company policy context'),
 });
 
 export const GenerateLanguageJsonOutputSchema = z.object({

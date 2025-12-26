@@ -4,6 +4,7 @@ import { generateText } from 'ai';
 import { PromptAnalysis } from '../../types/prompt-analysis';
 import { MicrolearningContent, Scene } from '../../types/microlearning';
 import { cleanResponse } from '../../utils/content-processors/json-cleaner';
+import { buildPolicyEnhancementPrompt } from '../../utils/prompt-builders/policy-context-builder';
 import { METADATA_GENERATION_PARAMS } from '../../utils/config/llm-generation-params';
 import { CATEGORIES } from '../../constants';
 import { LanguageModelSchema } from '../../types/language-model';
@@ -30,6 +31,7 @@ const GenerateMicrolearningJsonSchema = z.object({
   }),
   microlearningId: z.string(),
   model: LanguageModelSchema,
+  policyContext: z.string().optional().describe('Company policy context'),
 });
 
 const GenerateMicrolearningJsonOutputSchema = z.object({
@@ -79,7 +81,8 @@ function generateEthicalPolicy() {
 async function generateMicrolearningJsonWithAI(
   analysis: PromptAnalysis & { additionalContext?: string },
   microlearningId: string,
-  model: any
+  model: any,
+  policyContext?: string
 ) {
   // Basic structure creation - detailed enhancement happens in Stage 2
 
@@ -115,7 +118,7 @@ async function generateMicrolearningJsonWithAI(
   // Stage 2: Enhance the microlearning object with AI
   const logger = getLogger('GenerateMicrolearningJson');
   logger.info('Starting Stage 2: Enhancement');
-  const enhancedMicrolearning = await enhanceMicrolearningContent(microlearning, model, analysis.additionalContext);
+  const enhancedMicrolearning = await enhanceMicrolearningContent(microlearning, model, analysis.additionalContext, policyContext);
   logger.info('Stage 2 completed');
 
   return enhancedMicrolearning;
@@ -171,8 +174,11 @@ async function generateTheme(themeColor?: string) {
   }
 }
 
-async function enhanceMicrolearningContent(microlearning: MicrolearningContent, model: any, additionalContext?: string): Promise<MicrolearningContent> {
+async function enhanceMicrolearningContent(microlearning: MicrolearningContent, model: any, additionalContext?: string, policyContext?: string): Promise<MicrolearningContent> {
   const categoriesList = CATEGORIES.VALUES.join(', ');
+
+  // Prepare policy context block using centralized builder
+  const policyBlock = buildPolicyEnhancementPrompt(policyContext);
 
   const enhancementPrompt = `CRITICAL: Return ONLY valid JSON. No explanations, no markdown, no backticks.
 
@@ -182,7 +188,7 @@ ${JSON.stringify(microlearning, null, 2)}
 
 USER CONTEXT & SPECIFIC REQUIREMENTS:
 ${additionalContext ? `"${additionalContext}"` : "No specific context provided."}
-(Use this context to refine the Title, Risk Area, and relevance.)
+(Use this context to refine the Title, Risk Area, and relevance.)${policyBlock}
 
 ENHANCEMENT RULES (apply ONLY if needed):
 1. Title: 2-5 words max, professional training format
@@ -251,11 +257,11 @@ export const generateMicrolearningJsonTool = new Tool({
   outputSchema: GenerateMicrolearningJsonOutputSchema,
   execute: async (context: any) => {
     const input = context?.inputData || context?.input || context;
-    const { analysis, microlearningId, model } = input;
+    const { analysis, microlearningId, model, policyContext } = input;
     const logger = getLogger('GenerateMicrolearningJsonTool');
 
     try {
-      const result = await generateMicrolearningJsonWithAI(analysis, microlearningId, model);
+      const result = await generateMicrolearningJsonWithAI(analysis, microlearningId, model, policyContext);
       return {
         success: true,
         data: result

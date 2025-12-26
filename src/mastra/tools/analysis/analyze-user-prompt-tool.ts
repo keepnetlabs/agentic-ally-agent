@@ -6,6 +6,7 @@ import { PromptAnalysis } from '../../types/prompt-analysis';
 import { ExampleRepo } from '../../services/example-repo';
 import { validateBCP47LanguageCode, DEFAULT_LANGUAGE } from '../../utils/language/language-utils';
 import { cleanResponse } from '../../utils/content-processors/json-cleaner';
+import { buildPolicySystemPrompt } from '../../utils/prompt-builders/policy-context-builder';
 import { PROMPT_ANALYSIS_PARAMS } from '../../utils/config/llm-generation-params';
 import { MICROLEARNING, ROLES, CATEGORIES, THEME_COLORS, MODEL_PROVIDERS, TRAINING_LEVELS, DEFAULT_TRAINING_LEVEL } from '../../constants';
 import { streamReasoning } from '../../utils/core/reasoning-stream';
@@ -25,6 +26,7 @@ const AnalyzeUserPromptSchema = z.object({
   customRequirements: z.string().optional(),
   modelProvider: z.enum(MODEL_PROVIDERS.NAMES).optional().describe('Model provider'),
   model: z.string().optional().describe('Model name (e.g., OPENAI_GPT_4O_MINI, WORKERS_AI_GPT_OSS_120B)'),
+  policyContext: z.string().optional().describe('Company policy context'),
 });
 
 const AnalyzeUserPromptOutputSchema = z.object({
@@ -51,6 +53,7 @@ const AnalyzeUserPromptOutputSchema = z.object({
     customRequirements: z.string().optional(),
     isCodeTopic: z.boolean().optional(),
   }),
+  policyContext: z.string().optional(),
   error: z.string().optional(),
 });
 
@@ -106,7 +109,7 @@ export const analyzeUserPromptTool = new Tool({
   execute: async (context: any) => {
     const logger = getLogger('AnalyzeUserPromptTool');
     const input = context?.inputData || context?.input || context;
-    const { userPrompt, additionalContext, suggestedDepartment, customRequirements, modelProvider, model: modelOverride } = input;
+    const { userPrompt, additionalContext, suggestedDepartment, customRequirements, modelProvider, model: modelOverride, policyContext } = input;
     const writer = input?.writer; // Get writer for streaming
 
     // Use model override if provided, otherwise use default
@@ -145,6 +148,9 @@ export const analyzeUserPromptTool = new Tool({
         ? `\n\nSCHEMA HINTS (structure only, do not copy texts):\n${schemaHints}`
         : '';
 
+      // Prepare policy context if available (using optimized builder)
+      const policyBlock = buildPolicySystemPrompt(policyContext);
+
       // Let AI determine target language from context (checks for "in {language}", text language, etc.)
       let languageHint = 'en-gb'; // default
       try {
@@ -163,7 +169,7 @@ export const analyzeUserPromptTool = new Tool({
 
 USER: "${userPrompt}" (LANGUAGE: ${languageHint})
 DEPARTMENT: ${suggestedDepartment || 'not specified'}
-SUGGESTED LEVEL: ${input.suggestedLevel || 'auto-detect'}${examplesBlock}
+SUGGESTED LEVEL: ${input.suggestedLevel || 'auto-detect'}${examplesBlock}${policyBlock}
 
 ROLE SELECTION OPTIONS (pick ONE based on audience):
 ${cachedRolesList}
@@ -334,7 +340,8 @@ ${additionalContext}`
           additionalContext: analysis.additionalContext,
           customRequirements: analysis.customRequirements,
           isCodeTopic: analysis.isCodeTopic,
-        }
+        },
+        policyContext
       };
 
     } catch (error) {
@@ -413,6 +420,7 @@ ${additionalContext}`
       return {
         success: true,
         data: fallbackData,
+        policyContext,
         error: JSON.stringify(errorInfo)
       };
     }

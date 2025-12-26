@@ -43,7 +43,7 @@ const analyzeRequest = createStep({
   outputSchema: AnalysisSchema,
   execute: async ({ inputData }) => {
     const logger = getLogger('AnalyzePhishingRequest');
-    const { topic, isQuishing, targetProfile, difficulty, language, method, includeLandingPage, includeEmail, additionalContext, modelProvider, model } = inputData;
+    const { topic, isQuishing, targetProfile, difficulty, language, method, includeLandingPage, includeEmail, additionalContext, modelProvider, model, policyContext } = inputData;
 
     logger.info('Starting phishing scenario analysis', { topic, isQuishing, difficulty, language, method, includeLandingPage, includeEmail });
 
@@ -67,6 +67,7 @@ const analyzeRequest = createStep({
       targetProfile,
       additionalContext,
       isQuishingDetected,
+      policyContext,
     });
 
     logger.info('Analysis prompt type', {
@@ -235,6 +236,7 @@ const analyzeRequest = createStep({
         modelProvider,
         model,
         writer: inputData.writer,
+        policyContext,
         // Brand detection results
         logoUrl: logoInfo.logoUrl,
         brandName: logoInfo.brandName,
@@ -259,7 +261,7 @@ const generateEmail = createStep({
   execute: async ({ inputData }) => {
     const logger = getLogger('GeneratePhishingEmail');
     const analysis = inputData;
-    const { language, modelProvider, model, difficulty, includeEmail, includeLandingPage, industryDesign } = analysis;
+    const { language, modelProvider, model, difficulty, includeEmail, includeLandingPage, industryDesign, policyContext } = analysis;
 
     // If email generation is disabled, skip this step but pass context
     if (includeEmail === false) {
@@ -270,7 +272,8 @@ const generateEmail = createStep({
         fromAddress: analysis.fromAddress,
         fromName: analysis.fromName,
         analysis,
-        includeLandingPage
+        includeLandingPage,
+        policyContext: analysis.policyContext
       };
     }
 
@@ -290,6 +293,7 @@ const generateEmail = createStep({
       difficulty: difficulty || 'Medium',
       language: language || 'en',
       industryDesign,
+      policyContext,
     });
 
     try {
@@ -393,7 +397,8 @@ const generateEmail = createStep({
         fromName: analysis.fromName,
         analysis: inputData, // Include the analysis in the final output for transparency
         additionalContext: analysis.additionalContext, // Also pass directly for easier access
-        includeLandingPage: analysis.includeLandingPage
+        includeLandingPage: analysis.includeLandingPage,
+        policyContext: analysis.policyContext
       };
     } catch (error) {
       const err = normalizeError(error);
@@ -412,7 +417,7 @@ const generateLandingPage = createStep({
   outputSchema: OutputSchema,
   execute: async ({ inputData }) => {
     const logger = getLogger('GenerateLandingPage');
-    const { analysis, fromAddress, fromName, subject, template, includeLandingPage, additionalContext } = inputData;
+    const { analysis, fromAddress, fromName, subject, template, includeLandingPage, additionalContext, policyContext } = inputData;
 
     // If landing page generation is disabled, skip this step
     if (includeLandingPage === false) {
@@ -423,6 +428,7 @@ const generateLandingPage = createStep({
         fromAddress,
         fromName,
         analysis,
+        policyContext: inputData.policyContext,
       };
     }
 
@@ -469,6 +475,7 @@ const generateLandingPage = createStep({
       template,
       additionalContext: additionalContext || analysis.additionalContext,
       isQuishing: analysis.isQuishing || false,
+      policyContext,
     });
 
     // Build messages array with multi-message pattern for targeted context
@@ -598,7 +605,8 @@ const generateLandingPage = createStep({
           method: method as any,
           difficulty: difficulty as any,
           pages: parsedResult.pages
-        }
+        },
+        policyContext: analysis.policyContext
       };
     } catch (error) {
       const err = normalizeError(error);
