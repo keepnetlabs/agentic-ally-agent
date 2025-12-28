@@ -10,6 +10,7 @@ import { getLogger } from '../../utils/core/logger';
 import { MODEL_PROVIDERS } from '../../constants';
 import { errorService } from '../../services/error-service';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
+import { withRetry } from '../../utils/core/resilience-utils';
 
 /* =========================================================
  * Schemas
@@ -283,14 +284,17 @@ export const inboxTranslateJsonTool = new Tool({
 
                         OUTPUT (${targetLanguage} ONLY, valid JSON object with keys "0".."${chunk.length - 1}"):`;
 
-                    const res = await generateText({
-                        model,
-                        messages: [
-                            { role: 'system', content: system },
-                            { role: 'user', content: user }
-                        ],
-                        ...LOCALIZER_PARAMS,
-                    });
+                    const res = await withRetry(
+                        () => generateText({
+                            model,
+                            messages: [
+                                { role: 'system', content: system },
+                                { role: 'user', content: user }
+                            ],
+                            ...LOCALIZER_PARAMS,
+                        }),
+                        `Inbox chunk ${chunkNumber} translation`
+                    );
 
                     const cleaned = cleanResponse(res.text, `inbox-chunk-${chunkNumber}`);
                     const obj = JSON.parse(cleaned);
@@ -339,8 +343,18 @@ export const inboxTranslateJsonTool = new Tool({
             const allTranslated: string[] = [];
             for (let start = 0; start < chunks.length; start += BATCH_SIZE) {
                 const batch = chunks.slice(start, Math.min(start + BATCH_SIZE, chunks.length));
-                const results = await Promise.all(batch.map((ch, idx) => translateChunk(ch, start + idx)));
-                results.forEach(r => allTranslated.push(...r));
+                const results = await Promise.allSettled(batch.map((ch, idx) => translateChunk(ch, start + idx)));
+                results.forEach((result, idx) => {
+                    if (result.status === 'fulfilled') {
+                        allTranslated.push(...result.value);
+                    } else {
+                        logger.warn('Chunk translation promise rejected', { batchStart: start, chunkIndex: idx, error: result.reason });
+                        // Fallback: add original strings
+                        const chunkIdx = start + idx;
+                        const chunk = chunks[chunkIdx];
+                        allTranslated.push(...chunk.map(c => c.value));
+                    }
+                });
             }
 
             if (allTranslated.length !== extracted.length) {

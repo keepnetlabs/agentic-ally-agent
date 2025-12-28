@@ -15,6 +15,7 @@ import { KVService } from '../../services/kv-service';
 import { getLogger } from '../../utils/core/logger';
 import { errorService } from '../../services/error-service';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
+import { withRetry } from '../../utils/core/resilience-utils';
 
 const phishingEditorSchema = z.object({
   phishingId: z.string().describe('ID of the existing phishing template to edit'),
@@ -102,14 +103,17 @@ Body: ${existingEmail.template}
 Instruction: ${editInstruction}`;
 
       logger.info('Calling LLM for email editing');
-      const emailPromise = generateText({
-        model: aiModel,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: emailUserPrompt }
-        ],
-        temperature: 0.7,
-      });
+      const emailPromise = withRetry(
+        () => generateText({
+          model: aiModel,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: emailUserPrompt }
+          ],
+          temperature: 0.7,
+        }),
+        'Phishing email editing'
+      );
 
       // 3b. Landing page edit (if exists) - each page separate
       let landingPagePromises: ReturnType<typeof generateText>[] = [];
@@ -142,22 +146,38 @@ Instruction: ${editInstruction}
 IMPORTANT: Edit UNLESS user explicitly said "email only" or similar exclusion.`;
 
           logger.info(`Calling LLM for landing page ${idx + 1} editing`);
-          return generateText({
-            model: aiModel,
-            messages: [
-              { role: 'system', content: landingSystemPrompt },
-              { role: 'user', content: landingUserPrompt }
-            ],
-            temperature: 0.7,
-          });
+          return withRetry(
+            () => generateText({
+              model: aiModel,
+              messages: [
+                { role: 'system', content: landingSystemPrompt },
+                { role: 'user', content: landingUserPrompt }
+              ],
+              temperature: 0.7,
+            }),
+            `Phishing landing page ${idx + 1} editing`
+          );
         });
       }
 
       // 3c. Parallel execution - email + all landing pages
-      const [emailResponse, ...landingResponses] = await Promise.all([
+      const allResults = await Promise.allSettled([
         emailPromise,
         ...landingPagePromises
       ]);
+
+      // Extract email result
+      const emailResult = allResults[0];
+      if (emailResult.status !== 'fulfilled') {
+        logger.error('Email editing failed', { reason: emailResult.reason });
+        return {
+          success: false,
+          error: 'Email editing failed after retries',
+          message: '❌ Failed to edit email template. Please try again.'
+        };
+      }
+
+      const emailResponse = emailResult.value;
 
       // 3d. Parse email response
       logger.info('Email response received, parsing...');
@@ -166,12 +186,20 @@ IMPORTANT: Edit UNLESS user explicitly said "email only" or similar exclusion.`;
 
       // 3e. Parse landing page responses (each page separate)
       let editedLandingPages = [];
-      if (landingResponses?.length > 0) {
-        logger.info(`Landing page responses received, parsing ${landingResponses.length} pages...`);
-        editedLandingPages = landingResponses.map((response, idx) => {
-          const pageCleanedJson = cleanResponse(response.text, `phishing-edit-landing-${idx}`);
-          return JSON.parse(pageCleanedJson);
-        });
+      const landingResults = allResults.slice(1);
+      if (landingResults.length > 0) {
+        logger.info(`Landing page responses received, parsing ${landingResults.length} pages...`);
+        editedLandingPages = landingResults
+          .map((result, idx) => {
+            if (result.status !== 'fulfilled') {
+              logger.warn(`Landing page ${idx + 1} editing failed, skipping`, { reason: result.reason });
+              return null;
+            }
+            const response = result.value;
+            const pageCleanedJson = cleanResponse(response.text, `phishing-edit-landing-${idx}`);
+            return JSON.parse(pageCleanedJson);
+          })
+          .filter(Boolean);
       }
 
       // 3f. Combine landing pages into single object

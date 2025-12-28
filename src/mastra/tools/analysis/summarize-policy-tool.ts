@@ -8,6 +8,7 @@ import { validateToolResult } from '../../utils/tool-result-validation';
 import { getLogger } from '../../utils/core/logger';
 import { errorService } from '../../services/error-service';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
+import { withRetry } from '../../utils/core/resilience-utils';
 
 const logger = getLogger('SummarizePolicyTool');
 
@@ -97,12 +98,15 @@ Return ONLY a valid JSON object with this structure (no markdown, no extra text)
 
       const modelToUse = getModelWithOverride(modelProvider as any, model);
 
-      const { text } = await generateText({
-        model: modelToUse,
-        system: systemPrompt,
-        prompt: userPrompt,
-        temperature: 0.7,
-      });
+      const { text } = await withRetry(
+        () => generateText({
+          model: modelToUse,
+          system: systemPrompt,
+          prompt: userPrompt,
+          temperature: 0.7,
+        }),
+        `[SummarizePolicyTool] policy-summary-${focusArea || 'general'}`
+      );
 
       logger.debug('Policy summary generated', { textLength: text.length });
 

@@ -82,13 +82,21 @@ export async function getPolicyContext(): Promise<string> {
               'X-COMPANY-ID': companyId,
             },
           });
-          logger.info('Response', { response });
+
           if (!response.ok) {
             logger.warn('Failed to read policy', { policyName: policy.name, status: response.status });
             return null;
           }
 
-          const content = await response.text();
+          const policyData = await response.json();
+          logger.info('Policy data received', {
+            policyName: policy.name,
+            policyId: policyData.policyId,
+            textLength: policyData.text?.length || 0
+          });
+
+          const content = policyData.text;
+          logger.info('Extracted text from policy', { policyName: policy.name, contentLength: content.length });
           return `**Policy: ${policy.name}**\n${content}`;
         } catch (error) {
           const err = error instanceof Error ? error : new Error(String(error));

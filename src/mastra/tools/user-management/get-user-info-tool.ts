@@ -7,6 +7,7 @@ import { ERROR_MESSAGES, API_ENDPOINTS } from '../../constants';
 import { generatePIIHash } from '../../utils/parsers/pii-masking-utils';
 import { parseName, isValidName, normalizeName } from '../../utils/parsers/name-parser';
 import { generateText } from 'ai';
+import { withRetry } from '../../utils/core/resilience-utils';
 import { getModelWithOverride } from '../../model-providers'; // Use override to pick stronger model
 import { cleanResponse } from '../../utils/content-processors/json-cleaner';
 import { validateToolResult } from '../../utils/tool-result-validation';
@@ -573,14 +574,17 @@ If a value is unknown, use "" or null.
                 // Use default model (GPT-OSS via Workers AI)
                 const model = getModelWithOverride();
 
-                const response = await generateText({
-                    model,
-                    messages: [
-                        { role: 'system', content: systemPrompt },
-                        { role: 'user', content: userPrompt }
-                    ],
-                    // No temperature param to be safe with OSS models
-                });
+                const response = await withRetry(
+                    () => generateText({
+                        model,
+                        messages: [
+                            { role: 'system', content: systemPrompt },
+                            { role: 'user', content: userPrompt }
+                        ],
+                        // No temperature param to be safe with OSS models
+                    }),
+                    '[GetUserInfoTool] analysis-report-generation'
+                );
 
                 const cleanedJson = cleanResponse(response.text, 'analysis-report');
                 analysisReport = JSON.parse(cleanedJson);

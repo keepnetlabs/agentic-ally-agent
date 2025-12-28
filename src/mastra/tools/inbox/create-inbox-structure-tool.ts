@@ -12,6 +12,7 @@ import { LOCALIZER_PARAMS } from '../../utils/config/llm-generation-params';
 import { getLogger } from '../../utils/core/logger';
 import { errorService } from '../../services/error-service';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
+import { withRetry } from '../../utils/core/resilience-utils';
 
 const microlearningService = new MicrolearningService();
 
@@ -70,6 +71,8 @@ async function createInboxStructure(
   modelProvider?: string,
   modelOverride?: string
 ) {
+  const logger = getLogger('CreateInboxStructure');
+
   // Maintain in-memory assignment for analytics and tools
   await microlearningService.assignMicrolearningToDepartment(
     department || 'all',
@@ -96,7 +99,6 @@ async function createInboxStructure(
     return dynamicInboxData; // Return the generated content
 
   } catch (firstError) {
-    const logger = getLogger('CreateInboxStructure');
     const err = normalizeError(firstError);
     logger.warn('First attempt to generate dynamic inbox failed, retrying once', { error: err.message, stack: err.stack });
 
@@ -113,12 +115,19 @@ async function createInboxStructure(
       return dynamicInboxData; // Return the generated content after retry
 
     } catch (secondError) {
-      const logger2 = getLogger('CreateInboxStructure');
       const err = normalizeError(secondError);
-      logger2.warn('Second attempt failed, using fallback', { error: err.message, stack: err.stack });
-      // Fallback to basic structure
-      const fallbackPayload = { texts: {}, emails: [] };
-      return fallbackPayload; // Return the fallback content
+      logger.warn('Second attempt failed, using fallback structure', { error: err.message, stack: err.stack });
+      // Fallback with user-friendly messages instead of empty structure
+      const fallbackPayload = {
+        texts: {
+          title: 'Training Materials',
+          description: 'The inbox is loading or temporarily unavailable.',
+          emptyState: 'No simulations available at this time. Please try again later.',
+          retry: 'Retry'
+        },
+        emails: []
+      };
+      return fallbackPayload;
     }
   }
 }
@@ -140,53 +149,49 @@ async function generateDynamicInboxWithAI(
 
   // Execute both phases
   const [textsResponse, emailsArray] = await Promise.all([
-    generateText({
-      model: model,
-      messages: [
-        {
-          role: 'system',
-          content: `Generate ${topic} UI texts. Return only valid JSON - no markdown, no backticks. Use exact format shown in user prompt.`
-        },
-        { role: 'user', content: textsPrompt }
-      ],
-      ...LOCALIZER_PARAMS,
-    }),
-    generateInboxEmailsParallel({
-      topic,
-      languageCode,
-      category,
-      riskArea,
-      level,
-      department,  // NEW: Pass department for context-specific emails
-      additionalContext,
-      model
-    })
+    withRetry(
+      () => generateText({
+        model: model,
+        messages: [
+          {
+            role: 'system',
+            content: `Generate ${topic} UI texts. Return only valid JSON - no markdown, no backticks. Use exact format shown in user prompt.`
+          },
+          { role: 'user', content: textsPrompt }
+        ],
+        ...LOCALIZER_PARAMS,
+      }),
+      `Inbox texts generation for ${topic}`
+    ),
+    withRetry(
+      () => generateInboxEmailsParallel({
+        topic,
+        languageCode,
+        category,
+        riskArea,
+        level,
+        department,  // NEW: Pass department for context-specific emails
+        additionalContext,
+        model
+      }),
+      `Inbox emails generation for ${topic}`
+    )
   ]);
 
-  // Parse responses with simplified error handling
-  let textsData, emailsData;
+  // Parse responses with graceful fallbacks
+  const logger = getLogger('GenerateDynamicInboxWithAI');
+  let textsData: any = {};  // Default fallback
+  let emailsData = emailsArray;  // Emails already generated
 
   try {
     // Use json-cleaner for robust JSON cleaning with jsonrepair
     const cleanedTexts = cleanResponse(textsResponse.text, 'inbox-texts');
-
-    try {
-      textsData = JSON.parse(cleanedTexts);
-      const logger = getLogger('GenerateDynamicInboxWithAI');
-      logger.debug('Inbox texts parsed successfully', {});
-    } catch (textsError) {
-      const logger = getLogger('GenerateDynamicInboxWithAI');
-      const err = normalizeError(textsError);
-      logger.warn('Texts JSON parse failed, using fallback', { error: err.message, stack: err.stack });
-      throw textsError;
-    }
-
-    emailsData = emailsArray;
-
+    textsData = JSON.parse(cleanedTexts);
+    logger.debug('Inbox texts parsed successfully', {});
   } catch (parseError) {
-    const logger = getLogger('GenerateDynamicInboxWithAI');
     const err = normalizeError(parseError);
-    logger.error('JSON parsing failed', { error: err.message, stack: err.stack });
+    logger.warn('Texts JSON parsing failed, using empty fallback', { error: err.message, stack: err.stack });
+    // textsData stays as {} - no throw, no propagation
   }
 
   const aiResponse = {
@@ -197,13 +202,16 @@ async function generateDynamicInboxWithAI(
   // Validate with schema
   try {
     const validatedInboxContent = InboxContentSchema.parse(aiResponse);
-    const logger = getLogger('GenerateDynamicInboxWithAI');
     logger.debug('Generated inbox content validated successfully', { topic });
     return validatedInboxContent;
   } catch (validationError) {
-    const logger = getLogger('GenerateDynamicInboxWithAI');
     const err = normalizeError(validationError);
     logger.warn('Inbox content validation failed, using fallback', { error: err.message, stack: err.stack });
+    // Return fallback structure instead of undefined
+    return {
+      texts: textsData || {},
+      emails: emailsData || []
+    };
   }
 }
 

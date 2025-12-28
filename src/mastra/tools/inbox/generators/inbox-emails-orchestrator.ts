@@ -6,6 +6,7 @@ import { INBOX_GENERATION_PARAMS } from '../../../utils/config/llm-generation-pa
 import { getLogger } from '../../../utils/core/logger';
 import { errorService } from '../../../services/error-service';
 import { normalizeError, logErrorInfo } from '../../../utils/core/error-utils';
+import { withRetry } from '../../../utils/core/resilience-utils';
 
 const logger = getLogger('InboxEmailsOrchestrator');
 
@@ -124,11 +125,14 @@ ${additionalContext}`
     });
 
     try {
-        const res = await generateText({
-            model,
-            messages: messages,
-            ...INBOX_GENERATION_PARAMS,
-        });
+        const res = await withRetry(
+            () => generateText({
+                model,
+                messages: messages,
+                ...INBOX_GENERATION_PARAMS,
+            }),
+            `[InboxEmailsOrchestrator] email-generation-${variant}-${index + 1}`
+        );
 
         const cleaned = cleanResponse(res.text, `inbox-email-${index + 1}`);
         const parsed = JSON.parse(cleaned);
@@ -164,11 +168,14 @@ ${additionalContext}`
         });
 
         try {
-            const res2 = await generateText({
-                model,
-                messages: retryMessages,
-                ...INBOX_GENERATION_PARAMS,
-            });
+            const res2 = await withRetry(
+                () => generateText({
+                    model,
+                    messages: retryMessages,
+                    ...INBOX_GENERATION_PARAMS,
+                }),
+                `[InboxEmailsOrchestrator] email-generation-retry-${variant}-${index + 1}`
+            );
             const cleaned2 = cleanResponse(res2.text, `inbox-email-retry-${index + 1}`);
             const parsed2 = JSON.parse(cleaned2);
             parsed2.id = String(index + 1);

@@ -7,6 +7,7 @@ import { MODEL_PROVIDERS } from '../../constants';
 import { getLogger } from '../../utils/core/logger';
 import { errorService } from '../../services/error-service';
 import { normalizeError, logErrorInfo } from '../../utils/core/error-utils';
+import { withRetry } from '../../utils/core/resilience-utils';
 
 const CodeReviewCheckSchema = z.object({
   issueType: z.string().describe('Type of issue to fix (e.g., "SQL Injection", "XSS", "Logic Error", "Performance Issue")'),
@@ -65,24 +66,27 @@ export const codeReviewCheckTool = new Tool({
         outputLanguage
       );
 
-      // Call AI for validation
-      const response = await generateText({
-        model: model,
-        messages: [
-          {
-            role: 'system',
-            content: `You are a pragmatic code reviewer. Your job is to validate if a developer correctly fixed a code issue (could be a security vulnerability, logic error, performance problem, or other code defect).
+      // Call AI for validation with automatic retry
+      const response = await withRetry(
+        () => generateText({
+          model: model,
+          messages: [
+            {
+              role: 'system',
+              content: `You are a pragmatic code reviewer. Your job is to validate if a developer correctly fixed a code issue (could be a security vulnerability, logic error, performance problem, or other code defect).
 
 Focus on: Does the fix solve the issue? If yes, it's correct - don't worry about whether it's the most elegant or best-practice approach. There are infinite ways to solve a problem.
 
 IMPORTANT: Respond in ${outputLanguage} language. All feedback, explanation, and hint must be in ${outputLanguage}.
 
 Return ONLY valid JSON - NO markdown, NO backticks, NO formatting. Start directly with {.`,
-          },
-          { role: 'user', content: validationPrompt },
-        ],
-        temperature: 0.3, // Lower temperature for consistency
-      });
+            },
+            { role: 'user', content: validationPrompt },
+          ],
+          temperature: 0.3, // Lower temperature for consistency
+        }),
+        `[CodeReviewCheckTool] code-review-validation-${issueType}`
+      );
 
       // Parse and validate response
       const cleanedResponse = cleanResponse(response.text, 'code-review-check');

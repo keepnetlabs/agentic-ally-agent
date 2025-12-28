@@ -5,7 +5,7 @@ import { phishingWorkflowExecutorTool, phishingEditorTool } from '../tools/orche
 import { uploadPhishingTool, assignPhishingTool } from '../tools/user-management';
 import { getDefaultAgentModel } from '../model-providers';
 import { Memory } from '@mastra/memory';
-import { PHISHING, AGENT_NAMES } from '../constants';
+import { PHISHING, AGENT_NAMES, MESSAGING_GUIDELINES, PII_POLICY } from '../constants';
 
 const buildPhishingInstructions = () => `
 You are the **Phishing Simulation Specialist**.
@@ -13,12 +13,9 @@ Your role is to design and execute realistic phishing email simulations based on
 
 🚫 **NO TECH JARGON:** Reasoning must NOT mention model names (GPT-4, Workers AI), providers, specific tool IDs, or infrastructure details. Focus ONLY on user intent and business logic.
 
-🔒 **ZERO PII POLICY:** NEVER expose real names, emails, or phone numbers in ANY output (responses, reasoning, etc).
-- Context may contain real names for internal tool calls, but YOU must sanitize all outputs
-- In reasoning: Use "the user" / "this person" instead of real names
-- In responses: "Creating simulation for the identified user" NOT "Creating simulation for John Doe"
-- Example reasoning: "User profile shows Authority Bias" NOT "John Doe shows Authority Bias"
-- Tools need real names to work, but human-facing outputs must be anonymous
+🔒 **ZERO PII POLICY** (from PII_POLICY):
+${PII_POLICY.CORE_RULE}
+${PII_POLICY.GUIDELINES.map(g => `- ${g}`).join('\n')}
 
 🧠 REASONING RULE: Show your thinking process using the show_reasoning tool.
 - Before ANY major decision or analysis, call show_reasoning tool
@@ -205,6 +202,13 @@ User: "Change email subject to Urgent, don't touch landing page"
 **Example (no template):**
 User: "Change subject to Urgent Action Required"
 → Agent: "No existing template found. Do you have a phishing ID to edit, or should I create a new template first?"
+
+## Messaging Guidelines (Enterprise-Safe)
+
+When assigning simulations:
+- Confirmation: "${MESSAGING_GUIDELINES.EMPLOYEE_MATCH}"
+- Success: "${MESSAGING_GUIDELINES.ASSIGNMENT_SUCCESS.SIMULATION}"
+- NEVER use: ${MESSAGING_GUIDELINES.BLACKLIST_WORDS.join(', ')}
 
 ## Example Interaction
 **User:** "Create a phishing email for password reset"

@@ -13,6 +13,7 @@ import { streamReasoning } from '../../utils/core/reasoning-stream';
 import { getLogger } from '../../utils/core/logger';
 import { errorService } from '../../services/error-service';
 import { normalizeError, logErrorInfo } from '../../utils/core/error-utils';
+import { withRetry } from '../../utils/core/resilience-utils';
 
 // Cache formatted lists for performance
 const cachedRolesList = ROLES.VALUES.map((role) => `- "${role}"`).join('\n');
@@ -77,17 +78,20 @@ function detectLanguageFallback(text: string): string {
 // Ask AI to detect target language (returns BCP-47 code directly)
 async function detectTargetLanguageWithAI(text: string, model: any): Promise<string | null> {
   try {
-    const response = await generateText({
-      model,
-      prompt: `What language should the training/content be created in? Look for "in {language}" patterns.
+    const response = await withRetry(
+      () => generateText({
+        model,
+        prompt: `What language should the training/content be created in? Look for "in {language}" patterns.
 If no explicit target language is mentioned, identify the language of the text itself.
 Return ONLY the BCP-47 code (e.g., ar-sa, tr-tr, en-gb, zh-cn, vi-vn, hi-in).
 
 Text: "${text.substring(0, 300)}"
 
 Target language code:`,
-      temperature: 0.3,
-    });
+        temperature: 0.3,
+      }),
+      `[AnalyzeUserPromptTool] language-detection`
+    );
 
     const code = response.text?.trim().toLowerCase() || '';
     if (!code) return null;
@@ -277,11 +281,14 @@ ${additionalContext}`
         content: analysisPrompt
       });
 
-      const response = await generateText({
-        model: model,
-        messages: messages,
-        ...PROMPT_ANALYSIS_PARAMS
-      });
+      const response = await withRetry(
+        () => generateText({
+          model: model,
+          messages: messages,
+          ...PROMPT_ANALYSIS_PARAMS
+        }),
+        `[AnalyzeUserPromptTool] prompt-analysis`
+      );
 
       // Extract reasoning from response.response.body.reasoning
       let reasoning = (response as any).response?.body?.reasoning;

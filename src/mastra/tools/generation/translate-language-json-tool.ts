@@ -15,6 +15,7 @@ import { rewriteAppTexts } from '../scenes/rewriters/app-texts-rewriter';
 import { getLogger } from '../../utils/core/logger';
 import { errorService } from '../../services/error-service';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
+import { withRetry } from '../../utils/core/resilience-utils';
 
 /* =========================================================
  * Schemas
@@ -118,12 +119,15 @@ export const translateLanguageJsonTool = new Tool({
                 logger.debug('Rewriting scene', { sceneNumber, totalScenes: scenesMetadata.length, sceneType, sceneId });
 
                 try {
-                    const rewrittenContent = await rewriter(sceneContent, rewriteContext);
+                    const rewrittenContent = await withRetry(
+                        () => rewriter(sceneContent, rewriteContext),
+                        `Scene ${sceneNumber} rewrite (${sceneType})`
+                    );
                     logger.debug('Scene rewrite completed', { sceneNumber, totalScenes: scenesMetadata.length });
                     return { sceneId, content: rewrittenContent };
                 } catch (error) {
                     const err = normalizeError(error);
-                    logger.error('Scene rewrite failed', { sceneNumber, sceneId, error: err.message, stack: err.stack });
+                    logger.error('Scene rewrite failed after retries', { sceneNumber, sceneId, error: err.message, stack: err.stack });
                     logger.warn('Using original content as fallback', { sceneNumber, sceneId });
                     return { sceneId, content: sceneContent }; // Graceful fallback
                 }
@@ -132,15 +136,20 @@ export const translateLanguageJsonTool = new Tool({
             // Process all scenes in parallel
             logger.debug('Processing all scenes in parallel', { sceneCount: scenesMetadata.length });
 
-            const allResults = await Promise.all(
+            const allResults = await Promise.allSettled(
                 scenesMetadata.map((sceneMetadata: any, idx: number) => rewriteScene(sceneMetadata, idx))
             );
 
-            // Map results to scene IDs
+            // Map results to scene IDs - handle both fulfilled and rejected promises
             const rewrittenScenesMap: Record<string, any> = {};
-            allResults.forEach(({ sceneId, content }) => {
-                if (content) {
-                    rewrittenScenesMap[sceneId] = content;
+            allResults.forEach((result, idx) => {
+                if (result.status === 'fulfilled') {
+                    const { sceneId, content } = result.value;
+                    if (content) {
+                        rewrittenScenesMap[sceneId] = content;
+                    }
+                } else {
+                    logger.warn('Scene rewrite promise rejected', { sceneIndex: idx, error: result.reason });
                 }
             });
 
@@ -148,11 +157,14 @@ export const translateLanguageJsonTool = new Tool({
             logger.debug('Rewriting application texts', {});
             let rewrittenAppTexts = appTexts;
             try {
-                rewrittenAppTexts = await rewriteAppTexts(appTexts, rewriteContext);
+                rewrittenAppTexts = await withRetry(
+                    () => rewriteAppTexts(appTexts, rewriteContext),
+                    'App texts rewrite'
+                );
                 logger.debug('Application texts rewrite completed', {});
             } catch (error) {
                 const err = normalizeError(error);
-                logger.error('Application texts rewrite failed, using original', { error: err.message, stack: err.stack });
+                logger.error('Application texts rewrite failed after retries, using original', { error: err.message, stack: err.stack });
             }
 
             // Combine results - preserve original structure with rewritten scenes

@@ -695,3 +695,54 @@ export const API_KEYS = {
   // Product API key (from environment or default placeholder)
   PRODUCT_API_KEY: process.env.PRODUCT_API_KEY || 'apikey',
 } as const;
+
+// ============================================
+// SAFE COMMUNICATION GUIDELINES
+// (PII Protection + Enterprise-Safe Messaging)
+// ============================================
+
+export const SAFE_COMMUNICATION = {
+  // --- PII PROTECTION ---
+  PII: {
+    CORE_RULE: 'NEVER expose real names, emails, or phone numbers in ANY output (responses, reasoning, etc)',
+    GUIDELINES: [
+      'Context may contain real names for internal tool calls, but YOU must sanitize all outputs',
+      'In reasoning: Use "the employee" / "this person" instead of real names',
+      'In responses: "Creating training for the identified employee" NOT "Creating training for John Doe"',
+      'Tools need real names to work, but human-facing outputs must be anonymous',
+    ] as const,
+  },
+
+  // --- ENTERPRISE-SAFE MESSAGING ---
+  MESSAGING: {
+    // Employee matching confirmation message
+    EMPLOYEE_MATCH: 'The employee was matched automatically.\nNo personal information was used.\nWould you like to proceed?',
+
+    // Assignment success messages
+    ASSIGNMENT_SUCCESS: {
+      SIMULATION: 'Simulation assigned successfully.',
+      TRAINING: 'Training assigned successfully.',
+    },
+
+    // Words to NEVER use in user-facing messages
+    BLACKLIST_WORDS: [
+      'data',
+      'anonymized',
+      'masked',
+      'identifier',
+      'reference',
+      'hash',
+      'token',
+      'PII',
+      'personal data',
+      'internal ID',
+    ] as const,
+
+    // Why these rules matter
+    RATIONALE: 'Avoid triggering compliance/security questions. No over-explaining technical details.',
+  },
+} as const;
+
+// Backwards compatibility aliases (for existing code)
+export const PII_POLICY = SAFE_COMMUNICATION.PII;
+export const MESSAGING_GUIDELINES = SAFE_COMMUNICATION.MESSAGING;

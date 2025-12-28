@@ -12,6 +12,7 @@ import { ProductService } from '../../services/product-service';
 import { getLogger } from '../../utils/core/logger';
 import { errorService } from '../../services/error-service';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
+import { withRetry } from '../../utils/core/resilience-utils';
 
 const GenerateMicrolearningJsonSchema = z.object({
   analysis: z.object({
@@ -227,14 +228,17 @@ CRITICAL JSON RULES:
 - Return complete enhanced JSON with same structure`;
 
   try {
-    const response = await generateText({
-      model: model,
-      messages: [
-        { role: 'system', content: 'You are enhancing microlearning content. Keep the exact same JSON structure, only improve content values. Return ONLY valid JSON, no markdown blocks or commentary.' },
-        { role: 'user', content: enhancementPrompt }
-      ],
-      ...METADATA_GENERATION_PARAMS,
-    });
+    const response = await withRetry(
+      () => generateText({
+        model: model,
+        messages: [
+          { role: 'system', content: 'You are enhancing microlearning content. Keep the exact same JSON structure, only improve content values. Return ONLY valid JSON, no markdown blocks or commentary.' },
+          { role: 'user', content: enhancementPrompt }
+        ],
+        ...METADATA_GENERATION_PARAMS,
+      }),
+      `[GenerateMicrolearningJsonTool] microlearning-enhancement`
+    );
 
     // Use professional JSON repair library
     const cleanedResponse = cleanResponse(response.text, 'microlearning-enhancement');

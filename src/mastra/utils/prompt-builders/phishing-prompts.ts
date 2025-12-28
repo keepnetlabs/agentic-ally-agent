@@ -65,7 +65,7 @@ const LAYOUT_OPTIONS = [
     id: 'CENTERED',
     name: 'CENTERED CARD (Classic)',
     description: 'A centered white card on a colored background. Best for generic login.',
-    cssRule: 'body { display: flex; align-items: center; justify-content: center; background-color: #f3f4f6; } .card { max-width: 420px; margin: 0 auto; background: white; padding: 32px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }'
+    cssRule: 'body { display: flex; align-items: center; justify-content: center; background-color: #f3f4f6; } .card { max-width: 420px; margin: 0 auto !important; background: white; padding: 32px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }'
   },
   {
     id: 'SPLIT',
@@ -83,7 +83,7 @@ const LAYOUT_OPTIONS = [
     id: 'HERO',
     name: 'HERO HEADER (Marketing/Promo)',
     description: 'Top colored hero section with logo, content card overlapping the header. Looks like a modern promo or announcement page.',
-    cssRule: 'body { margin: 0; background: #f3f4f6; min-height: 100vh; font-family: system-ui, sans-serif; } .hero { height: 220px; background-color: var(--primary-color); width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; } .main-container { margin-top: -48px; padding: 0 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; }'
+    cssRule: 'body { margin: 0; background: #f3f4f6; min-height: 100vh; font-family: system-ui, sans-serif; } .hero { height: 220px; background-color: var(--primary-color); width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; } .main-container { margin-top: -20px; padding: 0 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; }'
   }
 ];
 
@@ -1054,7 +1054,7 @@ Goal: A secure, polished login screen for ${fromName}.
   <div style='
     width: 100%;
     max-width: 420px;
-    margin: 0 auto;
+    margin: 0 auto !important;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -1215,7 +1215,7 @@ Purpose: confirmation after a successful action (e.g. login verification, profil
   <div style='
     width: 100%;
     max-width: 420px;
-    margin: 0 auto;
+    margin: 0 auto !important;
     display: flex;
     flex-direction: column;
     justify-content: center;

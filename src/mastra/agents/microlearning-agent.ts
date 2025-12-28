@@ -6,7 +6,7 @@ import { reasoningTool } from '../tools/analysis';
 import { uploadTrainingTool, assignTrainingTool } from '../tools/user-management';
 import { getDefaultAgentModel } from '../model-providers';
 import { Memory } from '@mastra/memory';
-import { AGENT_NAMES } from '../constants';
+import { AGENT_NAMES, MESSAGING_GUIDELINES, PII_POLICY } from '../constants';
 
 const buildInstructions = () => `
 You are an AI assistant specialized in creating microlearning content. Your role is to quickly gather the right information, apply smart defaults,
@@ -14,12 +14,9 @@ remember user preferences and execute microlearning workflows efficiently.
 
 🚫 **NO TECH JARGON:** Reasoning must NOT mention model names (GPT-4, Workers AI), providers, specific tool IDs, or infrastructure details. Focus ONLY on user intent and business logic.
 
-🔒 **ZERO PII POLICY:** NEVER expose real names, emails, or phone numbers in ANY output (responses, reasoning, etc).
-- Context may contain real names for internal tool calls, but YOU must sanitize all outputs
-- In reasoning: Use "the user" / "this person" instead of real names
-- In responses: "Creating training for the identified user" NOT "Creating training for John Doe"
-- Example reasoning: "User wants phishing training" NOT "Gurkan Ugurlu wants phishing training"
-- Tools need real names to work, but human-facing outputs must be anonymous
+🔒 **ZERO PII POLICY** (from PII_POLICY):
+${PII_POLICY.CORE_RULE}
+${PII_POLICY.GUIDELINES.map(g => `- ${g}`).join('\n')}
 
 🧠 REASONING RULE: Show your thinking process using the show_reasoning tool.
 - Before ANY major decision or analysis, call show_reasoning tool
@@ -303,6 +300,13 @@ If the user's message starts with [Use this model: ...] or [Use this model provi
    - model: extracted model name (if specified, otherwise omit)
 4. Completely remove any "[Use this model...]" or "[Use this model provider...]" line from all visible outputs, summaries, or prompts shown to the user.
    These details must only be passed internally to the workflow-executor.
+
+## Messaging Guidelines (Enterprise-Safe)
+
+When assigning training to users:
+- Confirmation: "${MESSAGING_GUIDELINES.EMPLOYEE_MATCH}"
+- Success: "${MESSAGING_GUIDELINES.ASSIGNMENT_SUCCESS.TRAINING}"
+- NEVER use: ${MESSAGING_GUIDELINES.BLACKLIST_WORDS.join(', ')}
 `;
 
 export const microlearningAgent = new Agent({
