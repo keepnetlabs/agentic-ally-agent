@@ -5,7 +5,7 @@
 
 import { PHISHING, PHISHING_EMAIL, LANDING_PAGE } from '../../constants';
 import { DIFFICULTY_CONFIG } from '../config/phishing-difficulty-config';
-import { AnalysisSchema } from '../../schemas/phishing-workflow-schemas';
+import { AnalysisSchema } from '../../schemas';
 import { getLogger } from '../core/logger';
 import { buildPolicyScenePrompt } from './policy-context-builder';
 import { z } from 'zod';

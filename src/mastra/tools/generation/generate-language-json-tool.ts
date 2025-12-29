@@ -2,7 +2,7 @@ import { Tool } from '@mastra/core/tools';
 import { generateText } from 'ai';
 import { PromptAnalysis } from '../../types/prompt-analysis';
 import { MicrolearningContent, LanguageContent } from '../../types/microlearning';
-import { GenerateLanguageJsonSchema, GenerateLanguageJsonOutputSchema } from '../../schemas/generate-language-json-schema';
+import { GenerateLanguageJsonSchema, GenerateLanguageJsonOutputSchema } from '../../schemas';
 import { getAppTexts, getAppAriaTexts } from '../../utils/language/app-texts';
 import { buildSystemPrompt } from '../../utils/prompt-builders/base-context-builder';
 import { buildPolicyScenePrompt } from '../../utils/prompt-builders/policy-context-builder';
@@ -303,8 +303,7 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
 
         logger.debug('Video scenes parsed successfully on retry');
 
-      } catch (retryErr) {
-        const normalizedErr = normalizeError(retryErr);
+      } catch {
         const errorInfo = errorService.aiModel('Video content generation failed after retry. Please regenerate the entire microlearning.', { scene: 3, step: 'retry' });
         logErrorInfo(logger, 'error', 'Video generation failed after retry', errorInfo);
         throw new Error(errorInfo.message);
@@ -349,6 +348,7 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
       throw new Error(errorInfo.message);
     }
 
+    // eslint-disable-next-line prefer-const
     mainScenes = { ...scene4Scenes, ...scene5Scenes, ...scene6Scenes };
     logger.debug('Main scenes combined', { sceneCount: Object.keys(mainScenes).length });
 
@@ -379,6 +379,7 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
     }
 
 
+    // eslint-disable-next-line prefer-const
     closingScenes = { ...scene7Scenes, ...scene8Scenes };
     logger.debug('Closing scenes combined', { sceneCount: Object.keys(closingScenes).length });
 

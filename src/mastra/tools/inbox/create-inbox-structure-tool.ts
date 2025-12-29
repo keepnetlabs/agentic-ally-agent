@@ -3,8 +3,11 @@ import { generateText } from 'ai';
 import { MicrolearningContent } from '../../types/microlearning';
 import { MicrolearningService } from '../../services/microlearning-service';
 import { getModelWithOverride } from '../../model-providers';
-import { InboxContentSchema } from '../../schemas/microlearning-schema';
-import { CreateInboxStructureSchema, CreateInboxStructureOutputSchema } from '../../schemas/create-inbox-structure-schema';
+import {
+  InboxContentSchema,
+  CreateInboxStructureSchema,
+  CreateInboxStructureOutputSchema
+} from '../../schemas';
 import { cleanResponse } from '../../utils/content-processors/json-cleaner';
 import { generateInboxTextsPrompt } from './generators/inbox-texts-generator';
 import { generateInboxEmailsParallel } from './generators/inbox-emails-orchestrator';

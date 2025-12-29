@@ -2,22 +2,10 @@ import { Mastra } from '@mastra/core/mastra';
 import { PinoLogger } from '@mastra/loggers';
 import { registerApiRoute } from '@mastra/core/server';
 import { Context, Next } from 'hono';
-import { microlearningAgent } from './agents/microlearning-agent';
-import { orchestratorAgent } from './agents/orchestrator-agent';
-import { phishingEmailAgent } from './agents/phishing-email-agent';
-import { userInfoAgent } from './agents/user-info-agent';
-import { policySummaryAgent } from './agents/policy-summary-agent';
-import { disablePlayground, disableSwagger } from './middleware/openapi';
-import { contextStorage } from './middleware/context-storage';
-import { rateLimitMiddleware } from './middleware/rate-limit';
-import { createMicrolearningWorkflow } from './workflows/create-microlearning-workflow';
-import { addLanguageWorkflow } from './workflows/add-language-workflow';
-import { addMultipleLanguagesWorkflow } from './workflows/add-multiple-languages-workflow';
-import { updateMicrolearningWorkflow } from './workflows/update-microlearning-workflow';
-import { getDeployer } from './deployer';
-import { ExampleRepo, type D1Database } from './services/example-repo';
 import { D1Store } from '@mastra/cloudflare-d1';
-import { codeReviewCheckTool } from './tools/analysis';
+import { RATE_LIMIT_CONFIG } from './constants';
+import { getDeployer } from './deployer';
+import { codeReviewCheckTool } from './tools';
 import { parseAndValidateRequest } from './utils/chat-request-helpers';
 import {
   preparePIIMaskedInput,
@@ -27,13 +15,44 @@ import {
   createAgentStream,
   injectOrchestratorContext,
 } from './utils/chat-orchestration-helpers';
-import { executeAutonomousGeneration } from './services/autonomous';
+
+// Barrel imports - clean organization
+import {
+  microlearningAgent,
+  orchestratorAgent,
+  phishingEmailAgent,
+  userInfoAgent,
+  policySummaryAgent,
+} from './agents';
+import {
+  contextStorage,
+  requestLoggingMiddleware,
+  securityHeadersMiddleware,
+  bodySizeLimitMiddleware,
+  rateLimitMiddleware,
+  disablePlayground,
+  disableSwagger,
+} from './middleware';
+import {
+  createMicrolearningWorkflow,
+  addLanguageWorkflow,
+  addMultipleLanguagesWorkflow,
+  updateMicrolearningWorkflow,
+} from './workflows';
+import { ExampleRepo, executeAutonomousGeneration } from './services';
+import { validateEnvironmentOrThrow } from './utils/core';
 import type {
   ChatRequestBody,
   CodeReviewRequestBody,
   AutonomousRequestBody,
   CloudflareEnv,
-} from './types/api-types';
+} from './types';
+
+// Type import for D1 database
+import type { D1Database } from './services/example-repo';
+
+// Validate environment variables at startup (fail-fast)
+validateEnvironmentOrThrow();
 
 const logger = new PinoLogger({
   name: 'Mastra',
@@ -82,12 +101,15 @@ export const mastra = new Mastra({
   },
   logger,
   deployer: getDeployer(),
+  // Note: These env vars are validated at startup by validateEnvironmentOrThrow()
+  /* eslint-disable @typescript-eslint/no-non-null-assertion */
   storage: new D1Store({
-    accountId: process.env.CLOUDFLARE_ACCOUNT_ID!, // Cloudflare Account ID
-    databaseId: process.env.CLOUDFLARE_D1_DATABASE_ID!, // D1 Database ID
-    apiToken: process.env.CLOUDFLARE_KV_TOKEN!, // Cloudflare API Token
-    tablePrefix: "dev_", // Optional: isolate tables per environment
+    accountId: process.env.CLOUDFLARE_ACCOUNT_ID!,
+    databaseId: process.env.CLOUDFLARE_D1_DATABASE_ID!,
+    apiToken: process.env.CLOUDFLARE_KV_TOKEN!,
+    tablePrefix: "dev_",
   }),
+  /* eslint-enable @typescript-eslint/no-non-null-assertion */
   server: {
     /**
      * MIDDLEWARE EXECUTION ORDER (left to right = first to last)
@@ -96,24 +118,39 @@ export const mastra = new Mastra({
      * ORDER MATTERS! Each middleware depends on previous ones.
      *
      * 1. contextStorage (FIRST)
-     *    - Purpose: Initialize request context
+     *    - Purpose: Initialize request context + correlation ID
      *    - Why first: All subsequent middleware/handlers need context to be available
      *    - Dependency: None
-     *    - Provides: c.get('mastra'), request context
+     *    - Provides: c.get('mastra'), request context, correlationId
      *
-     * 2. rateLimitMiddleware (SECOND)
+     * 2. requestLoggingMiddleware (SECOND)
+     *    - Purpose: Log all requests with timing and status
+     *    - Why second: Needs correlationId, measures total request duration
+     *    - Logs: method, path, status, duration (ms)
+     *
+     * 3. securityHeadersMiddleware (THIRD)
+     *    - Purpose: Add OWASP security headers to all responses
+     *    - Why third: Security headers should be applied early
+     *    - Adds: X-Content-Type-Options, X-Frame-Options, X-XSS-Protection, etc.
+     *
+     * 4. bodySizeLimitMiddleware (FOURTH)
+     *    - Purpose: Prevent DoS via oversized payloads
+     *    - Why fourth: Reject large requests before rate limiting counts them
+     *    - Rejects: Requests > 1MB with 413 Payload Too Large
+     *
+     * 5. rateLimitMiddleware (FIFTH)
      *    - Purpose: Rate limiting (security boundary)
-     *    - Why second: Applied before any business logic executes
+     *    - Why fifth: Applied before any business logic executes
      *    - Dependency: contextStorage (for request identification)
      *    - Rejects: Requests exceeding rate limit with 429 (Retry-After header)
      *
-     * 3. injectD1Database (THIRD)
+     * 6. injectD1Database (SIXTH)
      *    - Purpose: Inject Cloudflare D1 database binding into ExampleRepo
-     *    - Why third: Handlers need DB access, rate limiting should reject before DB setup
+     *    - Why sixth: Handlers need DB access, security checks should complete first
      *    - Dependency: contextStorage
      *    - Modifies: ExampleRepo singleton with D1 database instance
      *
-     * 4. disablePlayground & disableSwagger (LAST)
+     * 7. disablePlayground & disableSwagger (LAST)
      *    - Purpose: Modify OpenAPI/Swagger documentation
      *    - Why last: Applied after all service setup is complete
      *    - Dependency: All previous middleware
@@ -123,9 +160,12 @@ export const mastra = new Mastra({
      */
     middleware: [
       contextStorage,
+      requestLoggingMiddleware,
+      securityHeadersMiddleware,
+      bodySizeLimitMiddleware,
       rateLimitMiddleware({
-        maxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100'),
-        windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '60000'),
+        maxRequests: RATE_LIMIT_CONFIG.MAX_REQUESTS,
+        windowMs: RATE_LIMIT_CONFIG.WINDOW_MS,
         skip: (c) => c.req.path === '/health', // Skip health checks from rate limiting
       }),
       injectD1Database,
@@ -173,7 +213,7 @@ export const mastra = new Mastra({
           let body: ChatRequestBody = {};
           try {
             body = await c.req.json<ChatRequestBody>();
-          } catch (_err) {
+          } catch {
             // ignore JSON parse errors
           }
 
@@ -276,13 +316,47 @@ export const mastra = new Mastra({
           const agents = mastra.getAgents();
           const workflows = mastra.getWorkflows();
 
+          // Check component health
+          const agentNames = Object.keys(agents);
+          const workflowNames = Object.keys(workflows);
+          const hasAgents = agentNames.length > 0;
+          const hasWorkflows = workflowNames.length > 0;
+
+          // Check KV health (non-blocking, with timeout)
+          let kvHealthy = false;
+          try {
+            const { KVService } = await import('./services/kv-service');
+            const kvService = new KVService();
+            // Quick namespace check with 3 second timeout
+            const kvCheckPromise = kvService.checkNamespace();
+            const timeoutPromise = new Promise<boolean>((resolve) =>
+              setTimeout(() => resolve(false), 3000)
+            );
+            kvHealthy = await Promise.race([kvCheckPromise, timeoutPromise]);
+          } catch {
+            kvHealthy = false;
+          }
+
+          // Determine overall status
+          const allHealthy = hasAgents && hasWorkflows && kvHealthy;
+          const status = allHealthy ? 'healthy' : 'degraded';
+
           return c.json({
             success: true,
             message: 'Agentic Ally deployment successful',
             timestamp: new Date().toISOString(),
-            status: 'healthy',
-            agents: Object.keys(agents).length > 0 ? Object.keys(agents) : [],
-            workflows: Object.keys(workflows).length > 0 ? Object.keys(workflows) : [],
+            status,
+            checks: {
+              agents: hasAgents,
+              workflows: hasWorkflows,
+              kv: kvHealthy,
+            },
+            details: {
+              agents: agentNames,
+              workflows: workflowNames,
+              agentCount: agentNames.length,
+              workflowCount: workflowNames.length,
+            },
           });
         },
       }),
@@ -429,7 +503,7 @@ export const mastra = new Mastra({
               } else {
                 throw new Error('No execution context');
               }
-            } catch (e) {
+            } catch {
               // Fallback 2: floating promise (local dev / platforms without waitUntil)
               logger.warn('waituntil_not_available_using_floating_promise');
             }

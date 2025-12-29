@@ -1,5 +1,5 @@
 import { Agent } from '@mastra/core/agent';
-import { summarizePolicyTool } from '../tools/analysis/summarize-policy-tool';
+import { summarizePolicyTool } from '../tools';
 import { getDefaultAgentModel } from '../model-providers';
 import { Memory } from '@mastra/memory';
 import { AGENT_NAMES } from '../constants';

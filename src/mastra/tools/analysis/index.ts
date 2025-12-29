@@ -11,3 +11,5 @@ export { codeReviewCheckTool } from './code-review-check-tool';
 export type { CodeReviewCheckInput, CodeReviewCheckOutput } from './code-review-check-tool';
 
 export { reasoningTool } from './reasoning-tool';
+
+export { summarizePolicyTool } from './summarize-policy-tool';

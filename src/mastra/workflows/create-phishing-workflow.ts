@@ -18,7 +18,7 @@ import {
   AnalysisSchema,
   EmailOutputSchema,
   OutputSchema
-} from '../schemas/phishing-workflow-schemas';
+} from '../schemas';
 import {
   buildAnalysisPrompts,
   buildEmailPrompts,

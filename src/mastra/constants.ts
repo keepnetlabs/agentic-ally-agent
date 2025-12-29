@@ -201,7 +201,13 @@ export const STRING_TRUNCATION = {
 // ============================================
 
 export const RATE_LIMIT_CONFIG = {
+  /** Maximum requests per window (default: 100) */
+  MAX_REQUESTS: 100,
+  /** Time window in milliseconds (default: 60000 = 1 minute) */
+  WINDOW_MS: 60000,
+  /** Cleanup frequency for expired entries */
   CLEANUP_FREQUENCY: 100,
+  /** Jitter variance for reset time */
   JITTER_VARIANCE_MS: 1000,
 } as const;
 

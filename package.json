@@ -13,7 +13,11 @@
     "test": "vitest run",
     "test:watch": "vitest watch",
     "test:coverage": "vitest run --coverage",
-    "test:ui": "vitest --ui"
+    "test:ui": "vitest --ui",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\""
   },
   "keywords": [],
   "author": "",
@@ -42,10 +46,14 @@
   },
   "devDependencies": {
     "@types/node": "^24.3.0",
+    "@typescript-eslint/eslint-plugin": "^8.33.0",
+    "@typescript-eslint/parser": "^8.33.0",
     "@vitest/ui": "^4.0.5",
     "cross-env": "^10.0.0",
+    "eslint": "^9.28.0",
     "happy-dom": "^20.0.10",
     "mastra": "^0.17.0",
+    "prettier": "^3.5.3",
     "typescript": "^5.9.2",
     "vitest": "^4.0.5",
     "wrangler": "^4.32.0"
