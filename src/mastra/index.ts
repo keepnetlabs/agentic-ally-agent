@@ -41,7 +41,7 @@ import {
   addMultipleLanguagesWorkflow,
   updateMicrolearningWorkflow,
 } from './workflows';
-import { ExampleRepo, executeAutonomousGeneration } from './services';
+import { ExampleRepo, executeAutonomousGeneration, performHealthCheck } from './services';
 import { validateEnvironmentOrThrow } from './utils/core';
 import type {
   ChatRequestBody,
@@ -320,48 +320,19 @@ export const mastra = new Mastra({
           const agents = mastra.getAgents();
           const workflows = mastra.getWorkflows();
 
-          // Check component health
-          const agentNames = Object.keys(agents);
-          const workflowNames = Object.keys(workflows);
-          const hasAgents = agentNames.length > 0;
-          const hasWorkflows = workflowNames.length > 0;
+          // Perform deep health check with 5s timeout
+          const healthResponse = await performHealthCheck(agents, workflows, 5000);
 
-          // Check KV health (non-blocking, with timeout)
-          let kvHealthy = false;
-          try {
-            const { KVService } = await import('./services/kv-service');
-            const kvService = new KVService();
-            // Quick namespace check with 3 second timeout
-            const kvCheckPromise = kvService.checkNamespace();
-            const timeoutPromise = new Promise<boolean>((resolve) =>
-              setTimeout(() => resolve(false), 3000)
-            );
-            kvHealthy = await Promise.race([kvCheckPromise, timeoutPromise]);
-          } catch {
-            kvHealthy = false;
-          }
-
-          // Determine overall status
-          const allHealthy = hasAgents && hasWorkflows && kvHealthy;
-          const status = allHealthy ? 'healthy' : 'degraded';
+          // Return appropriate HTTP status based on health
+          const httpStatus = healthResponse.status === 'healthy' ? 200
+            : healthResponse.status === 'degraded' ? 200
+              : 503;
 
           return c.json({
-            success: true,
+            success: healthResponse.status !== 'unhealthy',
             message: 'Agentic Ally deployment successful',
-            timestamp: new Date().toISOString(),
-            status,
-            checks: {
-              agents: hasAgents,
-              workflows: hasWorkflows,
-              kv: kvHealthy,
-            },
-            details: {
-              agents: agentNames,
-              workflows: workflowNames,
-              agentCount: agentNames.length,
-              workflowCount: workflowNames.length,
-            },
-          });
+            ...healthResponse,
+          }, httpStatus);
         },
       }),
 

@@ -5,20 +5,23 @@ import { inboxTranslateJsonTool } from '../tools/inbox';
 import { KVService } from '../services/kv-service';
 import { normalizeDepartmentName } from '../utils/language/language-utils';
 import { validateInboxStructure, correctInboxStructure } from '../utils/validation/json-validation-utils';
-import { MODEL_PROVIDERS, TIMEOUT_VALUES, STRING_TRUNCATION, API_ENDPOINTS } from '../constants';
+import { MODEL_PROVIDERS, TIMEOUT_VALUES, STRING_TRUNCATION, API_ENDPOINTS, LANGUAGE, CLOUDFLARE_KV } from '../constants';
 import { getLogger } from '../utils/core/logger';
+import { loadInboxWithFallback } from '../utils/kv-helpers';
 import { waitForKVConsistency, buildExpectedKVKeys } from '../utils/kv-consistency';
 import { normalizeError, logErrorInfo } from '../utils/core/error-utils';
 import { errorService } from '../services/error-service';
+import { withRetry } from '../utils/core/resilience-utils';
+import { LanguageCodeSchema } from '../utils/validation/language-validation';
 
 const logger = getLogger('AddLanguageWorkflow');
 
 // Input/Output Schemas
 const addLanguageInputSchema = z.object({
-  existingMicrolearningId: z.string().describe('ID of existing microlearning'),
-  targetLanguage: z.string().describe('Target language code - supports any language code (e.g., tr-tr, de-de, fr-fr, ja-jp, ko-kr, zh-cn,fr-ca etc.)'),
-  sourceLanguage: z.string().optional().describe('Source language code (e.g., en-US, tr-TR). If not provided, auto-detected from microlearning metadata'),
-  department: z.string().optional().default('All'),
+  existingMicrolearningId: z.string().min(1, 'Microlearning ID is required').describe('ID of existing microlearning'),
+  targetLanguage: LanguageCodeSchema.describe('Target language code in BCP-47 format (e.g., tr-TR, de-DE, fr-FR, ja-JP, ko-KR, zh-CN, fr-CA)'),
+  sourceLanguage: LanguageCodeSchema.optional().describe('Source language code in BCP-47 format (e.g., en-US, tr-TR). If not provided, auto-detected from microlearning metadata'),
+  department: z.string().optional().default(LANGUAGE.DEFAULT_DEPARTMENT),
   modelProvider: z.enum(MODEL_PROVIDERS.NAMES).optional().describe('Model provider (OPENAI, WORKERS_AI, GOOGLE)'),
   model: z.string().optional().describe('Model name (e.g., OPENAI_GPT_4O_MINI, WORKERS_AI_GPT_OSS_120B)'),
 });
@@ -74,7 +77,10 @@ const loadExistingStep = createStep({
     try {
       const kvService = new KVService();
       logger.info('Using KVService to load microlearning', { existingMicrolearningId });
-      const kvResult = await kvService.getMicrolearning(existingMicrolearningId);
+      const kvResult = await withRetry(
+        () => kvService.getMicrolearning(existingMicrolearningId),
+        'KV load (microlearning base)'
+      );
       existing = kvResult?.base;
 
       if (existing) {
@@ -95,15 +101,15 @@ const loadExistingStep = createStep({
       language: targetLanguage.toLowerCase(),  // Normalize to lowercase for KV key consistency
       topic: meta.topic || (existing as any).title || 'Training',
       title: meta.title || (existing as any).title || 'Training',
-      department: (department && department !== 'All') ? department : (meta.department || 'All'),
+      department: (department && department !== LANGUAGE.DEFAULT_DEPARTMENT) ? department : (meta.department || LANGUAGE.DEFAULT_DEPARTMENT),
       level: meta.level || 'beginner',
       category: meta.category || 'General',
       subcategory: meta.subcategory,
       learningObjectives: meta.learning_objectives || [],
     } as any;
 
-    // Detect actual source language from microlearning metadata (default to 'en')
-    const actualSourceLanguage = meta.language || meta.primary_language || sourceLanguage || 'en-gb';
+    // Detect actual source language from microlearning metadata (default to en-gb)
+    const actualSourceLanguage = meta.language || meta.primary_language || sourceLanguage || LANGUAGE.DEFAULT_SOURCE;
 
     if (!meta.language && !meta.primary_language && !sourceLanguage) {
       logger.info('Source language not specified, defaulting to en');
@@ -173,7 +179,7 @@ const translateLanguageStep = createStep({
     try {
       const kvService = new KVService();
       logger.info('Using KVService to get language content', { microlearningId, sourceLanguage });
-      const langKey = `ml:${microlearningId}:lang:${sourceLanguage}`;
+      const langKey = CLOUDFLARE_KV.KEY_TEMPLATES.language(microlearningId, sourceLanguage);
       baseContent = await kvService.get(langKey);
 
       if (baseContent) {
@@ -192,12 +198,6 @@ const translateLanguageStep = createStep({
 
     logger.info('Found base content, translating', { microlearningId, sourceLanguage, targetLanguage });
 
-    if (!translateLanguageJsonTool.execute) {
-      const errorInfo = errorService.internal('translateLanguageJsonTool is not executable', { step: 'translate-language-json' });
-      logErrorInfo(logger, 'error', 'Tool execution check failed', errorInfo);
-      throw new Error(errorInfo.message);
-    }
-
     const translationParams = {
       json: baseContent,
       microlearningStructure: microlearningStructure, // Pass scenes metadata for proper scene mapping
@@ -209,8 +209,16 @@ const translateLanguageStep = createStep({
       model: inputData.model // Pass model override if provided
     };
 
-
-    const translated = await translateLanguageJsonTool.execute(translationParams);
+    // Execute with retry for resilience against transient AI failures
+    const translated = await withRetry(
+      async () => {
+        if (!translateLanguageJsonTool.execute) {
+          throw new Error('translateLanguageJsonTool.execute is not available');
+        }
+        return await translateLanguageJsonTool.execute(translationParams);
+      },
+      `Language translation (${sourceLanguage} → ${targetLanguage})`
+    );
 
     if (!translated?.success) {
       logger.error('Translation tool failed', { response: translated });
@@ -294,26 +302,18 @@ const updateInboxStep = createStep({
 
     logger.info('Step 3: Creating inbox', { targetLanguage, sourceLanguage });
 
-    const normalizedDept = analysis.department ? normalizeDepartmentName(analysis.department) : 'all';
+    const normalizedDept = analysis.department ? normalizeDepartmentName(analysis.department) : normalizeDepartmentName(LANGUAGE.DEFAULT_DEPARTMENT);
     const kvService = new KVService();
 
     // Try to translate existing inbox using KVService
     try {
-      logger.info('Looking for base inbox in KV', { microlearningId, normalizedDept, sourceLanguage });
-
-      // Try to get inbox from KVService
-      const inboxKey = `ml:${microlearningId}:inbox:${normalizedDept}:${sourceLanguage}`;
-      let baseInbox = await kvService.get(inboxKey);
-
-      // Fallback to 'en' if source language inbox not found
-      if (!baseInbox && sourceLanguage !== 'en-gb') {
-        logger.info('No inbox found for source language, trying fallback to en-gb', { sourceLanguage });
-        const fallbackKey = `ml:${microlearningId}:inbox:${normalizedDept}:en-gb`;
-        baseInbox = await kvService.get(fallbackKey);
-        if (baseInbox) {
-          logger.info('Found fallback inbox in en-gb');
-        }
-      }
+      // Load inbox with automatic fallback to en-gb
+      const baseInbox = await loadInboxWithFallback(
+        kvService,
+        microlearningId,
+        normalizedDept,
+        sourceLanguage
+      );
 
       if (baseInbox) {
         logger.debug('Found base inbox', { sample: JSON.stringify(baseInbox).substring(0, STRING_TRUNCATION.JSON_SAMPLE_LENGTH) });
@@ -404,9 +404,9 @@ const combineResultsStep = createStep({
   execute: async ({ inputData }) => {
     const translateLanguage = inputData['translate-language-content'];
     const updateInbox = inputData['update-inbox'];
-    const { microlearningId, analysis, microlearningStructure } = translateLanguage;
+    const { microlearningId, analysis } = translateLanguage;
     const targetLanguage = analysis.language;
-    const normalizedDept = analysis.department ? normalizeDepartmentName(analysis.department) : 'all';
+    const normalizedDept = analysis.department ? normalizeDepartmentName(analysis.department) : normalizeDepartmentName(LANGUAGE.DEFAULT_DEPARTMENT);
     const hasInbox = (translateLanguage as any).hasInbox;
 
     // Check if translation succeeded

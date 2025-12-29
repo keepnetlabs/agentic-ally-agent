@@ -11,6 +11,9 @@ export { MicrolearningService } from './microlearning-service';
 export { ProductService } from './product-service';
 export { AgentRouter } from './agent-router';
 
+// Health check service
+export { performHealthCheck, type HealthCheckResponse } from './health-service';
+
 // Autonomous service (re-export from subdirectory)
 export { executeAutonomousGeneration } from './autonomous';
 

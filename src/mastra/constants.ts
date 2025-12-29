@@ -121,6 +121,21 @@ export const CLOUDFLARE_KV = {
 } as const;
 
 // ============================================
+// LANGUAGE & LOCALIZATION
+// ============================================
+
+export const LANGUAGE = {
+  // Default source language for translations (fallback)
+  DEFAULT_SOURCE: 'en-gb',
+
+  // Default department
+  DEFAULT_DEPARTMENT: 'All',
+
+  // Language codes follow BCP-47 standard (e.g., en-us, tr-tr, de-de)
+  // System supports unlimited languages via auto-detection
+} as const;
+
+// ============================================
 // RETRY & TIMEOUT CONFIGURATION
 // ============================================
 
@@ -128,15 +143,40 @@ export const RETRY = {
   // KV retry attempts
   MAX_ATTEMPTS: 3,
 
-  // Exponential backoff delays (in milliseconds)
+  // Base delay in milliseconds
+  BASE_DELAY_MS: 1000,
+
+  // Maximum delay cap (prevents excessive waits)
+  MAX_DELAY_MS: 10000,
+
+  // Jitter configuration (AWS Best Practice)
+  JITTER_ENABLED: true,
+
+  // Exponential backoff delays (in milliseconds) - legacy, kept for reference
   BACKOFF_DELAYS_MS: [1000, 2000, 4000],
 
-  // Calculate delay: Math.pow(2, attempt) * 1000
-  // Attempt 0: 1000ms
-  // Attempt 1: 2000ms
-  // Attempt 2: 4000ms
+  /**
+   * Calculate delay with Full Jitter (AWS recommended)
+   * Formula: random(0, min(cap, base * 2^attempt))
+   * 
+   * Benefits:
+   * - Prevents thundering herd problem
+   * - Spreads retry load across time
+   * - More efficient than fixed delays
+   * 
+   * @param attempt - Current attempt number (0-indexed)
+   * @returns Jittered delay in milliseconds
+   */
   getBackoffDelay(attempt: number): number {
-    return Math.pow(2, attempt) * 1000;
+    const baseDelay = Math.pow(2, attempt) * this.BASE_DELAY_MS;
+    const cappedDelay = Math.min(baseDelay, this.MAX_DELAY_MS);
+    
+    if (this.JITTER_ENABLED) {
+      // Full Jitter: random value between 0 and cappedDelay
+      return Math.floor(Math.random() * cappedDelay);
+    }
+    
+    return cappedDelay;
   },
 
   // Semantic search retry fallback levels

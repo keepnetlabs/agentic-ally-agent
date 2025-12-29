@@ -11,19 +11,26 @@ import { errorService } from '../../services/error-service';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
 import { withRetry } from '../../utils/core/resilience-utils';
 import { repairHtml } from '../../utils/validation/json-validation-utils';
+import { LanguageCodeSchema, validateLanguagesDifferent } from '../../utils/validation/language-validation';
 
 /* =========================================================
  * Schemas
  * =======================================================*/
 const InboxTranslateInputSchema = z.object({
     json: z.any(),
-    sourceLanguage: z.string().optional().default('English'),
-    targetLanguage: z.string(),
+    sourceLanguage: LanguageCodeSchema.optional().default('en-gb'),
+    targetLanguage: LanguageCodeSchema,
     topic: z.string().optional(),
     doNotTranslateKeys: z.array(z.string()).optional(),
     modelProvider: z.enum(MODEL_PROVIDERS.NAMES).optional().describe('Model provider'),
     model: z.string().optional().describe('Model name (e.g., OPENAI_GPT_4O_MINI, WORKERS_AI_GPT_OSS_120B)'),
-});
+}).refine(
+    (data) => validateLanguagesDifferent(data.sourceLanguage, data.targetLanguage),
+    {
+        message: 'Source and target languages must be different',
+        path: ['targetLanguage']
+    }
+);
 
 const InboxTranslateOutputSchema = z.object({
     success: z.boolean(),
@@ -207,7 +214,7 @@ export const inboxTranslateJsonTool = new Tool({
         try {
             const {
                 json,
-                sourceLanguage = 'English',
+                sourceLanguage,
                 targetLanguage,
                 topic,
                 doNotTranslateKeys = [],

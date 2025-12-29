@@ -377,4 +377,47 @@ export const errorService = {
     }
     return error.retryable;
   },
+
+  /**
+   * Log recovery/fallback attempt for structured error tracking
+   * Use this when attempting retries or fallbacks to track recovery progress
+   *
+   * @param attempt - Current attempt number (1-based)
+   * @param maxAttempts - Maximum number of attempts
+   * @param operation - Name of the operation being retried
+   * @param error - Error message from the failed attempt
+   * @param context - Additional context for debugging
+   *
+   * @example
+   * try {
+   *   await someOperation();
+   * } catch (error) {
+   *   errorService.recoveryAttempt(1, 3, 'OpenAI call', error.message, { scene: 3 });
+   *   // retry logic...
+   * }
+   */
+  recoveryAttempt: (
+    attempt: number,
+    maxAttempts: number,
+    operation: string,
+    error: string,
+    context?: Record<string, unknown>
+  ): void => {
+    const isLastAttempt = attempt >= maxAttempts;
+    const logData = {
+      attempt,
+      maxAttempts,
+      remainingAttempts: maxAttempts - attempt,
+      operation,
+      error,
+      willRetry: !isLastAttempt,
+      ...context,
+    };
+
+    if (isLastAttempt) {
+      logger.error('🔄 Recovery failed - all attempts exhausted', logData);
+    } else {
+      logger.warn('🔄 Recovery attempt', logData);
+    }
+  },
 };

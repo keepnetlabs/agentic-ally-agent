@@ -13,6 +13,7 @@ import { getLogger } from '../utils/core/logger';
 import { waitForKVConsistency, buildExpectedKVKeys } from '../utils/kv-consistency';
 import { normalizeError, logErrorInfo } from '../utils/core/error-utils';
 import { errorService } from '../services/error-service';
+import { withRetry } from '../utils/core/resilience-utils';
 
 const logger = getLogger('CreateMicrolearningWorkflow');
 
@@ -324,15 +325,19 @@ const saveToKVStep = createStep({
       const normalizedDept = analysis.department ? normalizeDepartmentName(analysis.department) : 'all';
 
       try {
-        await kvService.saveMicrolearning(
-          microlearningId,
-          {
-            microlearning: microlearningStructure,
-            languageContent: languageResult.data,
-            inboxContent: inboxResult.data
-          },
-          analysis.language,
-          normalizedDept
+        await withRetry(
+          () =>
+            kvService.saveMicrolearning(
+              microlearningId,
+              {
+                microlearning: microlearningStructure,
+                languageContent: languageResult.data,
+                inboxContent: inboxResult.data
+              },
+              analysis.language,
+              normalizedDept
+            ),
+          `KV save microlearning ${microlearningId}`
         );
         logger.info('Microlearning saved to KV successfully', { microlearningId });
       } catch (saveError) {

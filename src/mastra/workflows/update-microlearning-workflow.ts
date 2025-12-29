@@ -10,6 +10,7 @@ import { getModelWithOverride } from '../model-providers';
 import { THEME_COLORS, API_ENDPOINTS } from '../constants';
 import { DEFAULT_GENERATION_PARAMS } from '../utils/config/llm-generation-params';
 import { waitForKVConsistency, buildExpectedKVKeys } from '../utils/kv-consistency';
+import { withRetry } from '../utils/core/resilience-utils';
 
 const logger = getLogger('UpdateMicrolearningWorkflow');
 
@@ -104,7 +105,7 @@ Respond with ONLY the CSS class name. Nothing else.`;
     });
 
     // Parse response - extract and validate color
-    let selectedColor = text.trim().split('\n')[0].trim();
+    const selectedColor = text.trim().split('\n')[0].trim();
 
     // Try direct match
     if (THEME_COLORS.VALUES.includes(selectedColor as any)) {
@@ -151,7 +152,10 @@ const loadMicrolearningStep = createStep({
     logger.info('Loading microlearning', { microlearningId, department });
 
     const baseKey = `ml:${microlearningId}:base`;
-    const currentContent = await kvService.get(baseKey);
+    const currentContent = await withRetry(
+      () => kvService.get(baseKey),
+      `KV load (microlearning base ${microlearningId})`
+    );
 
     if (!currentContent) {
       throw new Error(`Microlearning ${microlearningId} not found`);

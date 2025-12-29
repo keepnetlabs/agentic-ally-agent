@@ -1,8 +1,6 @@
 // src/mastra/utils/core/resilience-utils.ts
 import { RETRY } from '../../constants';
-import { getLogger } from './logger';
-
-const logger = getLogger('ResilienceUtils');
+import { errorService } from '../../services/error-service';
 
 /**
  * Wraps a promise with timeout protection
@@ -26,9 +24,11 @@ export function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<
 }
 
 /**
- * Retries an operation with exponential backoff
- * Uses RETRY constants from codebase for consistency
- * Composable - can wrap any async operation
+ * Retries an operation with exponential backoff + Full Jitter (AWS Best Practice)
+ * 
+ * Jitter prevents "thundering herd" problem where all retries happen at the same time.
+ * Uses RETRY constants from codebase for consistency.
+ * Composable - can wrap any async operation.
  * 
  * @example
  * ```typescript
@@ -54,14 +54,24 @@ export async function withRetry<T>(
         try {
             return await operation();
         } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+
+            // Log recovery attempt using structured error service
+            errorService.recoveryAttempt(
+                attempt + 1,
+                RETRY.MAX_ATTEMPTS,
+                operationName,
+                errorMessage,
+                {
+                    jitterEnabled: RETRY.JITTER_ENABLED,
+                }
+            );
+
             if (attempt === RETRY.MAX_ATTEMPTS - 1) throw error;
+
+            // Get jittered delay (if enabled in constants)
             const delay = RETRY.getBackoffDelay(attempt);
-            logger.warn('Operation failed, retrying', {
-                operation: operationName,
-                attempt: attempt + 1,
-                maxAttempts: RETRY.MAX_ATTEMPTS,
-                retryDelayMs: delay
-            });
+
             await new Promise(resolve => setTimeout(resolve, delay));
         }
     }
