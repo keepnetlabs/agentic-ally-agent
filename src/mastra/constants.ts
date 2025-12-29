@@ -752,3 +752,64 @@ export const SAFE_COMMUNICATION = {
 // Backwards compatibility aliases (for existing code)
 export const PII_POLICY = SAFE_COMMUNICATION.PII;
 export const MESSAGING_GUIDELINES = SAFE_COMMUNICATION.MESSAGING;
+
+// ============================================
+// STRUCTURED ERROR CODES
+// ============================================
+
+/**
+ * Standardized error codes for debugging and tracking.
+ * Format: ERR_{CATEGORY}_{NUMBER}
+ * 
+ * Usage:
+ * - Logs: Easy to grep/search
+ * - Monitoring: Track error frequency by code
+ * - Support: Customer can report specific error code
+ */
+export const ERROR_CODES = {
+  // Authentication errors (AUTH)
+  AUTH_TOKEN_MISSING: 'ERR_AUTH_001',
+  AUTH_TOKEN_INVALID: 'ERR_AUTH_002',
+  AUTH_UNAUTHORIZED: 'ERR_AUTH_003',
+
+  // Validation errors (VAL)
+  VALIDATION_INPUT: 'ERR_VAL_001',
+  VALIDATION_SCHEMA: 'ERR_VAL_002',
+  VALIDATION_LANGUAGE: 'ERR_VAL_003',
+  VALIDATION_JSON: 'ERR_VAL_004',
+
+  // KV/Storage errors (KV)
+  KV_READ_FAILED: 'ERR_KV_001',
+  KV_WRITE_FAILED: 'ERR_KV_002',
+  KV_DELETE_FAILED: 'ERR_KV_003',
+  KV_LIST_FAILED: 'ERR_KV_004',
+
+  // External API errors (API)
+  API_REQUEST_FAILED: 'ERR_API_001',
+  API_RESPONSE_INVALID: 'ERR_API_002',
+  API_TIMEOUT: 'ERR_API_003',
+
+  // AI Model errors (AI)
+  AI_GENERATION_FAILED: 'ERR_AI_001',
+  AI_PARSING_FAILED: 'ERR_AI_002',
+  AI_TIMEOUT: 'ERR_AI_003',
+  AI_RATE_LIMITED: 'ERR_AI_004',
+
+  // Resource errors (NF = Not Found)
+  NOT_FOUND_MICROLEARNING: 'ERR_NF_001',
+  NOT_FOUND_LANGUAGE: 'ERR_NF_002',
+  NOT_FOUND_USER: 'ERR_NF_003',
+
+  // Rate limiting (RL)
+  RATE_LIMITED: 'ERR_RL_001',
+
+  // Timeout errors (TO)
+  TIMEOUT_GENERAL: 'ERR_TO_001',
+  TIMEOUT_WORKFLOW: 'ERR_TO_002',
+
+  // Internal errors (INT)
+  INTERNAL_UNEXPECTED: 'ERR_INT_001',
+  INTERNAL_CONFIG: 'ERR_INT_002',
+} as const;
+
+export type ErrorCode = typeof ERROR_CODES[keyof typeof ERROR_CODES];

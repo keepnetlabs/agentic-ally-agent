@@ -12,6 +12,7 @@
  */
 
 import { getLogger } from '../utils/core/logger';
+import { ERROR_CODES, ErrorCode } from '../constants';
 
 const logger = getLogger('ErrorService');
 
@@ -74,9 +75,10 @@ export const errorService = {
    * const error = errorService.auth('Token missing or expired');
    * return { success: false, error: JSON.stringify(error) };
    */
-  auth: (message: string, details?: Record<string, unknown>): ErrorInfo => {
+  auth: (message: string, details?: Record<string, unknown>, errorCode?: ErrorCode): ErrorInfo => {
+    const code = errorCode || ERROR_CODES.AUTH_TOKEN_MISSING;
     const errorInfo: ErrorInfo = {
-      code: 'AUTH',
+      code,
       message,
       category: ErrorCategory.AUTH,
       retryable: false,
@@ -86,7 +88,7 @@ export const errorService = {
       timestamp: Date.now(),
     };
 
-    logger.warn('Auth error', { code: errorInfo.code, message });
+    logger.warn('Auth error', { code, message });
     return errorInfo;
   },
 
@@ -99,15 +101,16 @@ export const errorService = {
    * @example
    * const error = errorService.validation('Email must be a valid email address', { field: 'email' });
    */
-  validation: (message: string, details?: Record<string, unknown>): ErrorInfo => {
+  validation: (message: string, details?: Record<string, unknown>, errorCode?: ErrorCode): ErrorInfo => {
     // Extract missing field from details or message for context-aware nextStep
     const missingField = details?.field as string | undefined;
     const nextStep = missingField
       ? `Ask user to provide a valid ${missingField}.`
       : 'Ask user to provide missing or correct the invalid information.';
 
+    const code = errorCode || ERROR_CODES.VALIDATION_INPUT;
     const errorInfo: ErrorInfo = {
-      code: 'VALIDATION',
+      code,
       message,
       category: ErrorCategory.VALIDATION,
       retryable: false,
@@ -117,7 +120,7 @@ export const errorService = {
       timestamp: Date.now(),
     };
 
-    logger.warn('Validation error', { code: errorInfo.code, message });
+    logger.warn('Validation error', { code, message });
     return errorInfo;
   },
 
@@ -130,14 +133,15 @@ export const errorService = {
    * @example
    * const error = errorService.external('Worker failed: 502 Bad Gateway', { service: 'phishing-worker', status: 502 });
    */
-  external: (message: string, details?: Record<string, unknown>): ErrorInfo => {
+  external: (message: string, details?: Record<string, unknown>, errorCode?: ErrorCode): ErrorInfo => {
     const service = details?.service as string | undefined;
     const nextStep = service
       ? `Retry the operation after a brief delay. If ${service} continues to fail, inform user that the service is temporarily unavailable.`
       : 'Retry the operation after a brief delay. If it continues to fail, inform user that an external service is temporarily unavailable.';
 
+    const code = errorCode || ERROR_CODES.API_REQUEST_FAILED;
     const errorInfo: ErrorInfo = {
-      code: 'EXTERNAL',
+      code,
       message,
       category: ErrorCategory.EXTERNAL,
       retryable: true,
@@ -147,7 +151,7 @@ export const errorService = {
       timestamp: Date.now(),
     };
 
-    logger.warn('External service error', { code: errorInfo.code, message });
+    logger.warn('External service error', { code, message });
     return errorInfo;
   },
 
@@ -160,7 +164,7 @@ export const errorService = {
    * @example
    * const error = errorService.notFound('Microlearning not found', { resourceId: 'ml-123' });
    */
-  notFound: (message: string, details?: Record<string, unknown>): ErrorInfo => {
+  notFound: (message: string, details?: Record<string, unknown>, errorCode?: ErrorCode): ErrorInfo => {
     const resourceType = details?.resourceType as string | undefined;
     const resourceId = details?.resourceId as string | undefined;
     const nextStep = resourceType && resourceId
@@ -169,8 +173,9 @@ export const errorService = {
         ? `Ask user to verify the ${resourceType} ID or provide a different one.`
         : 'Ask user to verify the resource ID or provide a different one.';
 
+    const code = errorCode || ERROR_CODES.NOT_FOUND_MICROLEARNING;
     const errorInfo: ErrorInfo = {
-      code: 'NOT_FOUND',
+      code,
       message,
       category: ErrorCategory.NOT_FOUND,
       retryable: false,
@@ -180,7 +185,7 @@ export const errorService = {
       timestamp: Date.now(),
     };
 
-    logger.warn('Not found error', { code: errorInfo.code, message });
+    logger.warn('Not found error', { code, message });
     return errorInfo;
   },
 
@@ -193,14 +198,15 @@ export const errorService = {
    * @example
    * const error = errorService.aiModel('JSON parsing failed after 3 repair attempts', { model: 'gpt-4o' });
    */
-  aiModel: (message: string, details?: Record<string, unknown>): ErrorInfo => {
+  aiModel: (message: string, details?: Record<string, unknown>, errorCode?: ErrorCode): ErrorInfo => {
     const reason = details?.reason as string | undefined;
     const nextStep = reason?.includes('JSON')
       ? 'Retry the operation with a simpler prompt or different model. If JSON parsing fails, the AI may need clearer instructions.'
       : 'Retry the operation with a simpler prompt or different model.';
 
+    const code = errorCode || ERROR_CODES.AI_GENERATION_FAILED;
     const errorInfo: ErrorInfo = {
-      code: 'AI_MODEL',
+      code,
       message,
       category: ErrorCategory.AI_MODEL,
       retryable: true,
@@ -210,7 +216,7 @@ export const errorService = {
       timestamp: Date.now(),
     };
 
-    logger.warn('AI model error', { code: errorInfo.code, message });
+    logger.warn('AI model error', { code, message });
     return errorInfo;
   },
 
@@ -223,14 +229,15 @@ export const errorService = {
    * @example
    * const error = errorService.timeout('Operation exceeded 60s timeout', { timeoutMs: 60000 });
    */
-  timeout: (message: string, details?: Record<string, unknown>): ErrorInfo => {
+  timeout: (message: string, details?: Record<string, unknown>, errorCode?: ErrorCode): ErrorInfo => {
     const operation = details?.operation as string | undefined;
     const nextStep = operation
       ? `Retry the ${operation} operation with a smaller request or inform user that the operation is taking longer than expected.`
       : 'Retry the operation with a smaller request or inform user that it is taking longer than expected.';
 
+    const code = errorCode || ERROR_CODES.TIMEOUT_GENERAL;
     const errorInfo: ErrorInfo = {
-      code: 'TIMEOUT',
+      code,
       message,
       category: ErrorCategory.TIMEOUT,
       retryable: true,
@@ -240,7 +247,7 @@ export const errorService = {
       timestamp: Date.now(),
     };
 
-    logger.warn('Timeout error', { code: errorInfo.code, message });
+    logger.warn('Timeout error', { code, message });
     return errorInfo;
   },
 
@@ -253,14 +260,15 @@ export const errorService = {
    * @example
    * const error = errorService.rateLimit('Too many requests', { limit: 100, remaining: 0 });
    */
-  rateLimit: (message: string, details?: Record<string, unknown>): ErrorInfo => {
+  rateLimit: (message: string, details?: Record<string, unknown>, errorCode?: ErrorCode): ErrorInfo => {
     const resetAt = details?.resetAt as number | undefined;
     const nextStep = resetAt
       ? `Wait until ${new Date(resetAt).toISOString()} before retrying, or inform user to wait before trying again.`
       : 'Wait before retrying, or inform user to wait before trying again.';
 
+    const code = errorCode || ERROR_CODES.RATE_LIMITED;
     const errorInfo: ErrorInfo = {
-      code: 'RATE_LIMIT',
+      code,
       message,
       category: ErrorCategory.RATE_LIMIT,
       retryable: true,
@@ -270,7 +278,7 @@ export const errorService = {
       timestamp: Date.now(),
     };
 
-    logger.warn('Rate limit error', { code: errorInfo.code, message });
+    logger.warn('Rate limit error', { code, message });
     return errorInfo;
   },
 
@@ -283,9 +291,10 @@ export const errorService = {
    * @example
    * const error = errorService.internal('Unexpected error occurred', { originalError: error.message });
    */
-  internal: (message: string, details?: Record<string, unknown>): ErrorInfo => {
+  internal: (message: string, details?: Record<string, unknown>, errorCode?: ErrorCode): ErrorInfo => {
+    const code = errorCode || ERROR_CODES.INTERNAL_UNEXPECTED;
     const errorInfo: ErrorInfo = {
-      code: 'INTERNAL',
+      code,
       message,
       category: ErrorCategory.INTERNAL,
       retryable: false,
@@ -295,7 +304,7 @@ export const errorService = {
       timestamp: Date.now(),
     };
 
-    logger.error('Internal error', { code: errorInfo.code, message });
+    logger.error('Internal error', { code, message });
     return errorInfo;
   },
 

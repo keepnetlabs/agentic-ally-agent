@@ -1,7 +1,6 @@
 import { Tool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { generateText } from 'ai';
-import * as parse5 from 'parse5';
 import { getModelWithOverride } from '../../model-providers';
 import { cleanResponse } from '../../utils/content-processors/json-cleaner';
 import { LOCALIZER_PARAMS } from '../../utils/config/llm-generation-params';
@@ -11,6 +10,7 @@ import { MODEL_PROVIDERS } from '../../constants';
 import { errorService } from '../../services/error-service';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
 import { withRetry } from '../../utils/core/resilience-utils';
+import { repairHtml } from '../../utils/validation/json-validation-utils';
 
 /* =========================================================
  * Schemas
@@ -32,25 +32,9 @@ const InboxTranslateOutputSchema = z.object({
 });
 
 /* =========================================================
- * HTML: auto-fix (parse5) + protect/restore
+ * HTML: protect/restore
+ * Note: HTML repair is handled by repairHtml() from json-validation-utils
  * =======================================================*/
-
-/** Bozuk/eksik kapanışlı HTML'i tarayıcı standardına göre normalize eder. */
-function autoFixHtml(html: string): string {
-    try {
-        // Fragment kullan: <p>..</p> gibi gömülü HTML'lerde <html><body> sarmalaması eklenmez
-        const frag = parse5.parseFragment(html);
-        return parse5.serialize(frag);
-    } catch (error) {
-        const logger = getLogger('InboxTranslateJsonTool');
-        const err = normalizeError(error);
-        logger.warn('Failed to normalize HTML, returning original', {
-            error: err.message,
-            htmlLength: html.length,
-        });
-        return html; // graceful fallback
-    }
-}
 
 /** Tag'leri token'layıp koru (LLM dokunmasın). */
 function protectHtmlTags(text: string): { protectedText: string; tagMap: Map<number, string> } {
@@ -108,7 +92,7 @@ function extractStringsWithPaths(obj: any, protectedKeys: string[], currentPath 
 
             const hasHtml = current.includes('<') && current.includes('>');
             if (hasHtml) {
-                const fixed = autoFixHtml(current);                    // ← önce onar
+                const fixed = repairHtml(current);                    // ← önce onar (shared utility)
                 const { protectedText, tagMap } = protectHtmlTags(fixed); // ← sonra koru
                 results.push({ path, value: protectedText, context, tagMap });
             } else {
@@ -140,6 +124,8 @@ function bindTranslatedStrings(original: any, extracted: ExtractedString[], tran
         let val = translated[idx];
         if (item.tagMap && item.tagMap.size > 0) {
             val = restoreHtmlTags(val, item.tagMap);
+            // Repair HTML after restore (AI may have added broken HTML during translation)
+            val = repairHtml(val);
         }
         const parts = item.path.split(/\.|\[|\]/).filter(Boolean);
         let cur = result;

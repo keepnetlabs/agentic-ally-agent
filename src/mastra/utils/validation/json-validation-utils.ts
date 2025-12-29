@@ -3,6 +3,7 @@
  */
 
 import { getLogger } from '../core/logger';
+import * as parse5 from 'parse5';
 
 const logger = getLogger('JsonValidation');
 
@@ -334,4 +335,149 @@ export function truncateText(text: string, maxLength: number): string {
     truncatedLength: truncated.length
   });
   return truncated;
+}
+
+/**
+ * Repairs HTML by auto-closing unclosed tags using parse5
+ * @param html - The HTML string to repair
+ * @returns Repaired HTML with properly closed tags
+ */
+export function repairHtml(html: string): string {
+  if (!html || typeof html !== 'string') {
+    return html;
+  }
+
+  // Skip if no HTML tags found
+  if (!html.includes('<') || !html.includes('>')) {
+    return html;
+  }
+
+  try {
+    // Parse and serialize to auto-close tags
+    const fragment = parse5.parseFragment(html);
+    return parse5.serialize(fragment);
+  } catch (error) {
+    const err = error instanceof Error ? error : new Error(String(error));
+    logger.warn('Failed to repair HTML, returning original', {
+      error: err.message,
+      htmlLength: html.length
+    });
+    return html; // Graceful fallback
+  }
+}
+
+/**
+ * Repairs HTML in all emails and attachments in an inbox object
+ * @param inbox - Inbox object containing emails array
+ * @returns Repaired inbox object
+ */
+export function repairInboxHtml(inbox: any): any {
+  if (!inbox || typeof inbox !== 'object') {
+    return inbox;
+  }
+
+  const repaired = { ...inbox };
+
+  // Repair all emails
+  if (repaired.emails && Array.isArray(repaired.emails)) {
+    let totalRepairs = 0;
+
+    repaired.emails = repaired.emails.map((email: any, emailIndex: number) => {
+      const repairedEmail = { ...email };
+
+      // Repair email content
+      if (repairedEmail.content && typeof repairedEmail.content === 'string') {
+        const before = repairedEmail.content;
+        repairedEmail.content = repairHtml(before);
+        if (before !== repairedEmail.content) {
+          totalRepairs++;
+          logger.debug('Repaired email content HTML', { emailIndex, emailId: email.id });
+        }
+      }
+
+      // Repair attachments
+      if (repairedEmail.attachments && Array.isArray(repairedEmail.attachments)) {
+        repairedEmail.attachments = repairedEmail.attachments.map((attachment: any, attIndex: number) => {
+          if (attachment.content && typeof attachment.content === 'string') {
+            const before = attachment.content;
+            const after = repairHtml(before);
+            if (before !== after) {
+              totalRepairs++;
+              logger.debug('Repaired attachment HTML', {
+                emailIndex,
+                emailId: email.id,
+                attachmentIndex: attIndex,
+                attachmentName: attachment.name
+              });
+            }
+            return { ...attachment, content: after };
+          }
+          return attachment;
+        });
+      }
+
+      return repairedEmail;
+    });
+
+    if (totalRepairs > 0) {
+      logger.info('Repaired HTML in inbox', {
+        totalEmails: repaired.emails.length,
+        totalRepairs
+      });
+    }
+  }
+
+  return repaired;
+}
+
+/**
+ * Detects corruption in inbox and repairs if needed
+ * Returns repaired inbox and indicates if repair was performed
+ * @param inbox - Inbox object to check and repair
+ * @returns Object with repaired inbox and metadata
+ */
+export function detectAndRepairInbox(inbox: any): {
+  inbox: any;
+  hadCorruption: boolean;
+  issuesFound: string[];
+  issuesRemaining: string[];
+  wasRepaired: boolean;
+} {
+  // Check for corruption
+  const issuesFound = detectJsonCorruption(inbox);
+
+  if (issuesFound.length === 0) {
+    return {
+      inbox,
+      hadCorruption: false,
+      issuesFound: [],
+      issuesRemaining: [],
+      wasRepaired: false
+    };
+  }
+
+  // Attempt repair
+  logger.info('Attempting to repair HTML in inbox', { issuesCount: issuesFound.length });
+  const repairedInbox = repairInboxHtml(inbox);
+
+  // Verify repair
+  const issuesRemaining = detectJsonCorruption(repairedInbox);
+  const wasRepaired = issuesRemaining.length < issuesFound.length;
+
+  if (issuesRemaining.length === 0) {
+    logger.info('Successfully repaired all inbox HTML issues');
+  } else {
+    logger.warn('Some corruption issues remain after repair', {
+      issuesFound: issuesFound.length,
+      issuesRemaining: issuesRemaining.length
+    });
+  }
+
+  return {
+    inbox: repairedInbox,
+    hadCorruption: true,
+    issuesFound,
+    issuesRemaining,
+    wasRepaired
+  };
 }

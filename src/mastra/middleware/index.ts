@@ -3,6 +3,10 @@
  * Clean imports: import { contextStorage, rateLimitMiddleware } from './middleware';
  */
 
+// Security & Auth
+export { errorHandlerMiddleware } from './error-handler';
+export { authTokenMiddleware } from './auth-token';
+
 // Core middleware
 export { contextStorage } from './context-storage';
 export { requestLoggingMiddleware } from './request-logging';

@@ -2,6 +2,7 @@ import { getLogger, startTimer } from '../utils/core/logger';
 import { withRetry } from '../utils/core/resilience-utils';
 import { normalizeError, logErrorInfo } from '../utils/core/error-utils';
 import { errorService } from './error-service';
+import { detectAndRepairInbox } from '../utils/validation/json-validation-utils';
 
 /**
  * KV Service for direct Cloudflare KV REST API operations
@@ -211,6 +212,19 @@ export class KVService {
         department,
       });
 
+      // Repair inbox HTML before saving (ensures clean HTML from creation)
+      let inboxToSave = data.inboxContent;
+      if (data.inboxContent) {
+        const repairResult = detectAndRepairInbox(data.inboxContent);
+        if (repairResult.hadCorruption) {
+          this.logger.info(`Repaired HTML corruption in inbox before saving`, {
+            issuesFound: repairResult.issuesFound.length,
+            issuesRemaining: repairResult.issuesRemaining.length
+          });
+          inboxToSave = repairResult.inbox;
+        }
+      }
+
       // Save all three components in parallel with Promise.allSettled
       const [baseResult, langResult, inboxResult] = await Promise.allSettled([
         this.put(baseKey, {
@@ -218,7 +232,7 @@ export class KVService {
           microlearning_id: microlearningId
         }),
         this.put(langKey, data.languageContent),
-        this.put(inboxKey, data.inboxContent),
+        this.put(inboxKey, inboxToSave),
       ]);
 
       // Check results

@@ -4,7 +4,7 @@ import { translateLanguageJsonTool } from '../tools/generation';
 import { inboxTranslateJsonTool } from '../tools/inbox';
 import { KVService } from '../services/kv-service';
 import { normalizeDepartmentName } from '../utils/language/language-utils';
-import { validateInboxStructure, correctInboxStructure, detectJsonCorruption } from '../utils/validation/json-validation-utils';
+import { validateInboxStructure, correctInboxStructure } from '../utils/validation/json-validation-utils';
 import { MODEL_PROVIDERS, TIMEOUT_VALUES, STRING_TRUNCATION, API_ENDPOINTS } from '../constants';
 import { getLogger } from '../utils/core/logger';
 import { waitForKVConsistency, buildExpectedKVKeys } from '../utils/kv-consistency';
@@ -317,14 +317,6 @@ const updateInboxStep = createStep({
 
       if (baseInbox) {
         logger.debug('Found base inbox', { sample: JSON.stringify(baseInbox).substring(0, STRING_TRUNCATION.JSON_SAMPLE_LENGTH) });
-
-        // Check for corruption in base inbox before translation
-        const corruptionIssues = detectJsonCorruption(baseInbox);
-        if (corruptionIssues.length > 0) {
-          logger.warn('Detected corruption in base inbox', { issues: corruptionIssues.join(', ') });
-          logger.warn('Translation may produce incomplete results due to source corruption');
-        }
-
         if (!inboxTranslateJsonTool.execute) {
           const errorInfo = errorService.internal('inboxTranslateJsonTool is not executable', { step: 'translate-inbox-json' });
           logErrorInfo(logger, 'error', 'Tool execution check failed', errorInfo);

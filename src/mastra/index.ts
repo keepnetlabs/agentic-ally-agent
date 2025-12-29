@@ -25,6 +25,8 @@ import {
   policySummaryAgent,
 } from './agents';
 import {
+  errorHandlerMiddleware,
+  authTokenMiddleware,
   contextStorage,
   requestLoggingMiddleware,
   securityHeadersMiddleware,
@@ -159,6 +161,8 @@ export const mastra = new Mastra({
      * CRITICAL: Do not reorder without understanding dependencies!
      */
     middleware: [
+      errorHandlerMiddleware, // First: catch all unhandled errors
+      authTokenMiddleware, // Second: require X-AGENTIC-ALLY-TOKEN (skip /health)
       contextStorage,
       requestLoggingMiddleware,
       securityHeadersMiddleware,
