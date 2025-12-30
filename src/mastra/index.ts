@@ -4,6 +4,9 @@ import { registerApiRoute } from '@mastra/core/server';
 import { Context, Next } from 'hono';
 import { D1Store } from '@mastra/cloudflare-d1';
 import { RATE_LIMIT_CONFIG } from './constants';
+
+// Silence AI SDK warnings (e.g., unsupported presencePenalty/frequencyPenalty for some models)
+(globalThis as any).AI_SDK_LOG_WARNINGS = false;
 import { getDeployer } from './deployer';
 import { codeReviewCheckTool } from './tools';
 import { parseAndValidateRequest } from './utils/chat-request-helpers';
@@ -452,8 +455,7 @@ export const mastra = new Mastra({
               });
             }
 
-            // Fallback 1: run in background via waitUntil if available
-            const executionPromise = executeAutonomousGeneration({
+            const requestPayload = {
               token,
               firstName,
               lastName,
@@ -463,36 +465,47 @@ export const mastra = new Mastra({
               actions: actions as ('training' | 'phishing')[],
               sendAfterPhishingSimulation,
               preferredLanguage
-            }).catch(err => {
-              logger.error('autonomous_background_execution_failed', {
-                error: err instanceof Error ? err.message : String(err)
-              });
-            });
+            };
 
+            // Fallback 1: run in background via waitUntil if available (preferred in Workers)
             try {
               // @ts-ignore - ExecutionContext check for Cloudflare Workers
               if (c.executionCtx && typeof c.executionCtx.waitUntil === 'function') {
+                const executionPromise = executeAutonomousGeneration(requestPayload).catch(err => {
+                  logger.error('autonomous_background_execution_failed', {
+                    error: err instanceof Error ? err.message : String(err)
+                  });
+                });
                 // @ts-ignore
                 c.executionCtx.waitUntil(executionPromise);
                 logger.debug('background_task_registered_with_waituntil');
-              } else {
-                throw new Error('No execution context');
+
+                return c.json({
+                  success: true,
+                  message: 'Autonomous generation started in background. This process may take 5-10 minutes.',
+                  status: 'processing',
+                  firstName,
+                  lastName,
+                  targetUserResourceId,
+                  targetGroupResourceId,
+                  assignmentType: isUserAssignment ? 'user' : 'group',
+                  actions
+                }, 200);
               }
-            } catch {
-              // Fallback 2: floating promise (local dev / platforms without waitUntil)
-              logger.warn('waituntil_not_available_using_floating_promise');
+            } catch (waitUntilError) {
+              logger.warn('waituntil_not_available_using_floating_promise', {
+                error: waitUntilError instanceof Error ? waitUntilError.message : String(waitUntilError),
+              });
             }
 
+            // Fallback 2 (LOCAL DEV): no workflow binding and no waitUntil.
+            // Run inline so local requests reliably complete (avoids "floating promise" being dropped).
+            logger.warn('autonomous_no_workflow_no_waituntil_running_inline');
+            const result = await executeAutonomousGeneration(requestPayload);
+
             return c.json({
-              success: true,
-              message: 'Autonomous generation started in background. This process may take 5-10 minutes.',
-              status: 'processing',
-              firstName,
-              lastName,
-              targetUserResourceId,
-              targetGroupResourceId,
-              assignmentType: isUserAssignment ? 'user' : 'group',
-              actions
+              ...result,
+              status: result.success ? 'completed' : 'failed',
             }, 200);
 
           } catch (error) {

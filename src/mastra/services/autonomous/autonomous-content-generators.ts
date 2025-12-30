@@ -7,14 +7,10 @@ import { getLogger } from '../../utils/core/logger';
 import { normalizeError } from '../../utils/core/error-utils';
 import {
     generatePhishingSimulation,
-    uploadAndAssignPhishing,
     generatePhishingSimulationForGroup,
     assignPhishingWithTraining,
 } from './autonomous-phishing-handlers';
 import {
-    uploadTrainingOnly,
-    uploadAndAssignTraining,
-    uploadAndAssignTrainingForGroup,
     generateTrainingModule,
     generateTrainingModuleForGroup,
 } from './autonomous-training-handlers';
@@ -23,15 +19,28 @@ import { selectGroupTrainingTopic } from './group-topic-service';
 /**
  * Build executive report from analysis data
  */
+function getRecommendedNextSteps(report: any) {
+    return (
+        report?.recommended_next_steps ??
+        report?.ai_recommended_next_steps ??
+        {
+            simulations: [],
+            microlearnings: [],
+            nudges: [],
+        }
+    );
+}
+
 export function buildExecutiveReport(toolResult: any): string | undefined {
     if (!toolResult.analysisReport) {
         return undefined;
     }
 
     const report = toolResult.analysisReport;
-    const sim = report.recommended_next_steps?.simulations?.[0];
-    const ml = report.recommended_next_steps?.microlearnings?.[0];
-    const nudge = report.recommended_next_steps?.nudges?.[0];
+    const steps = getRecommendedNextSteps(report);
+    const sim = steps.simulations?.[0];
+    const ml = steps.microlearnings?.[0];
+    const nudge = steps.nudges?.[0];
     const references = Array.isArray(report.references) ? report.references.join(', ') : '';
 
     return `**User Behavior Analysis Report**
@@ -97,7 +106,7 @@ export async function generateContentForGroup(
     // STEP 1: Select topic + get prompts from service
     logger.info('Selecting unified topic for group training', { groupId: userId });
     const topicSelection = await selectGroupTrainingTopic(preferredLanguage);
-    const { topic, phishingPrompt, trainingPrompt, objectives, scenarios } = topicSelection;
+    const { topic, phishingPrompt, trainingPrompt, objectives } = topicSelection;
     logger.info('🎯 Using topic for both phishing & training', { topic, objectivesCount: objectives.length });
 
     const generationPromises: Promise<any>[] = [];
@@ -196,9 +205,11 @@ export async function generateContentForUser(
     // Determine upload modes based on sendAfterPhishingSimulation
     const uploadOnly = sendAfterPhishingSimulation === true;
 
+    const recommendedSteps = getRecommendedNextSteps(toolResult.analysisReport);
+
     // Generate phishing if requested and simulation available
-    if (actions.includes('phishing') && toolResult.analysisReport?.recommended_next_steps?.simulations?.[0]) {
-        const simulation = toolResult.analysisReport.recommended_next_steps.simulations[0];
+    if (actions.includes('phishing') && recommendedSteps.simulations?.[0]) {
+        const simulation = recommendedSteps.simulations[0];
         logger.info('Starting phishing generation', { simulation: simulation.title, uploadOnly });
         generationPromises.push(
             generatePhishingSimulation(simulation, executiveReport, toolResult, phishingThreadId, uploadOnly)
@@ -219,8 +230,8 @@ export async function generateContentForUser(
     }
 
     // Generate training if requested and training available
-    if (actions.includes('training') && toolResult.analysisReport?.recommended_next_steps?.microlearnings?.[0]) {
-        const microlearning = toolResult.analysisReport.recommended_next_steps.microlearnings[0];
+    if (actions.includes('training') && recommendedSteps.microlearnings?.[0]) {
+        const microlearning = recommendedSteps.microlearnings[0];
         logger.info('Starting training generation', { microlearning: microlearning.title, uploadOnly });
         generationPromises.push(
             generateTrainingModule(microlearning, executiveReport, toolResult, trainingThreadId, uploadOnly)

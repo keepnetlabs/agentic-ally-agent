@@ -12,7 +12,9 @@ const logger = getLogger('AuthToken');
 const SKIP_AUTH_PATHS = [
     '/health',
     '/__refresh',
+    '/__hot-reload-status',
     '/api/telemetry',
+    '/autonomous',
 ] as const;
 
 /**

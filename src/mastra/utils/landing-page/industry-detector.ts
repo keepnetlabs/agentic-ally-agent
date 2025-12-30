@@ -80,7 +80,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
                 'margin: 0 auto'
             ].join('; '),
             buttonStyle: [
-                'background: linear-gradient(135deg, #4285f4, #8b5cf6)',
+                'background: #4285f4',
                 'color: #ffffff',
                 'border-radius: 8px',
                 'padding: 12px 24px',
@@ -124,7 +124,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
                 'margin: 0 auto'
             ].join('; '),
             buttonStyle: [
-                'background: linear-gradient(135deg, #059669, #0d9488)',
+                'background: #059669',
                 'color: #ffffff',
                 'border-radius: 8px',
                 'padding: 12px 24px',
@@ -168,7 +168,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
                 'margin: 0 auto'
             ].join('; '),
             buttonStyle: [
-                'background: linear-gradient(135deg, #ea580c, #f97316)',
+                'background: #ea580c',
                 'color: #ffffff',
                 'border-radius: 8px',
                 'padding: 12px 24px',
@@ -212,7 +212,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
                 'margin: 0 auto'
             ].join('; '),
             buttonStyle: [
-                'background: linear-gradient(135deg, #334155, #020617)',
+                'background: #334155',
                 'color: #ffffff',
                 'border-radius: 8px',
                 'padding: 12px 24px',
@@ -256,7 +256,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
                 'margin: 0 auto'
             ].join('; '),
             buttonStyle: [
-                'background: linear-gradient(135deg, #7c3aed, #6366f1)',
+                'background: #7c3aed',
                 'color: #ffffff',
                 'border-radius: 8px',
                 'padding: 12px 24px',
@@ -300,7 +300,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
                 'margin: 0 auto'
             ].join('; '),
             buttonStyle: [
-                'background: linear-gradient(135deg, #dc2626, #ef4444)',
+                'background: #dc2626',
                 'color: #ffffff',
                 'border-radius: 8px',
                 'padding: 12px 24px',
@@ -344,7 +344,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
                 'margin: 0 auto'
             ].join('; '),
             buttonStyle: [
-                'background: linear-gradient(135deg, #1e40af, #3b82f6)',
+                'background: #1e40af',
                 'color: #ffffff',
                 'border-radius: 8px',
                 'padding: 12px 24px',
@@ -388,7 +388,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
                 'margin: 0 auto'
             ].join('; '),
             buttonStyle: [
-                'background: linear-gradient(135deg, #c2410c, #ea580c)',
+                'background: #c2410c',
                 'color: #ffffff',
                 'border-radius: 8px',
                 'padding: 12px 24px',
@@ -432,7 +432,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
                 'margin: 0 auto'
             ].join('; '),
             buttonStyle: [
-                'background: linear-gradient(135deg, #0891b2, #06b6d4)',
+                'background: #0891b2',
                 'color: #ffffff',
                 'border-radius: 8px',
                 'padding: 12px 24px',

@@ -44,7 +44,7 @@ export async function executeAutonomousGeneration(
                     : { firstName, lastName };
 
                 const toolResult = await getUserInfoTool.execute({ context: toolContext } as any);
-
+                console.log('toolResult', JSON.stringify(toolResult, null, 2));
                 if (!toolResult.success) {
                     return { success: false, error: toolResult.error || 'User info retrieval failed', actions };
                 }
