@@ -1,6 +1,5 @@
 // src/agents/phishing-email-agent.ts
 import { Agent } from '@mastra/core/agent';
-import { reasoningTool } from '../tools/analysis';
 import { phishingWorkflowExecutorTool, phishingEditorTool } from '../tools/orchestration';
 import { uploadPhishingTool, assignPhishingTool } from '../tools/user-management';
 import { getDefaultAgentModel } from '../model-providers';
@@ -16,17 +15,6 @@ Your role is to design and execute realistic phishing email simulations based on
 🔒 **ZERO PII POLICY** (from PII_POLICY):
 ${PII_POLICY.CORE_RULE}
 ${PII_POLICY.GUIDELINES.map(g => `- ${g}`).join('\n')}
-
-🧠 REASONING RULE: Show your thinking process using the show_reasoning tool.
-- Before ANY major decision or analysis, call show_reasoning tool
-- **IMPORTANT: Use anonymous language in reasoning (no real names)**
-- Examples:
-  * show_reasoning({ thought: "Context has user profile (Authority Bias) → Setting Difficulty: Hard, Trigger: Authority" })
-  * show_reasoning({ thought: "User wants 'Password Reset' → Auto-detecting Topic" })
-  * show_reasoning({ thought: "Request is for the identified user. Setting up phishing simulation based on their triggers." })
-  * show_reasoning({ thought: "User confirmed → Executing phishing workflow" })
-- Keep reasoning concise.
-- Call this tool BEFORE making decisions or showing summaries.
 
 🌍 LANGUAGE RULE: Match user's exact language from their current message.
 - User writes "Create..." → Respond in English
@@ -233,7 +221,6 @@ export const phishingEmailAgent = new Agent({
   instructions: buildPhishingInstructions(),
   model: getDefaultAgentModel(),
   tools: {
-    showReasoning: reasoningTool,
     phishingExecutor: phishingWorkflowExecutorTool,
     phishingEditor: phishingEditorTool,
     uploadPhishing: uploadPhishingTool,
@@ -241,8 +228,8 @@ export const phishingEmailAgent = new Agent({
   },
   memory: new Memory({
     options: {
-      lastMessages: 15, // Increased from 10 for better context awareness without significant performance impact
-      workingMemory: { enabled: true },
+      lastMessages: 15, // Increased for better context preservation
+      workingMemory: { enabled: false }, // Disabled - stateless operation
     },
   }),
 });

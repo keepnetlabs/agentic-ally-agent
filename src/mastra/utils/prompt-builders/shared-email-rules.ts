@@ -52,10 +52,11 @@ export const EMAIL_SIGNATURE_RULES = `**EMAIL SIGNATURE RULES:**
  */
 export const TABLE_LAYOUT_RULES = `**Body (HTML) - Outlook/Gmail Compatible:**
 - Use TABLE-BASED layout (no divs for main structure)
-- Main table: width='100%' with style='max-width: 600px; margin: 0 auto;'
+- Main table: width='100%' with style='max-width: 600px; margin: 0 auto; border-collapse: separate;'
 - **PADDING RULE:** NEVER put padding on <table>. ALWAYS put padding on <td> elements.
   ❌ Wrong: <table style='padding:32px'>
   ✅ Correct: <td style='padding:32px'>
+- **BORDER RULE:** Always use border-collapse: separate on tables for better spacing control
 - INLINE CSS only (no style blocks), web-safe fonts (Arial, sans-serif)
 - No Flexbox/Grid (breaks Outlook). Must look professional and authentic.`;
 

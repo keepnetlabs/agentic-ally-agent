@@ -186,7 +186,12 @@ function getModelProvider(provider: ModelProvider) {
 export function getDefaultAgentModel() {
     // Using GPT-4.1-mini for better prompt following (especially for STOP instructions)
     // GPT-4o-mini had issues with not stopping after upload/assign operations
-    return getModel(ModelProvider.OPENAI, Model.OPENAI_GPT_4O);
+    return getModel(ModelProvider.OPENAI, Model.OPENAI_GPT_4O_MINI);
+}
+
+// Lightweight model for simple agents (routing, policy summary)
+export function getLightAgentModel() {
+    return getModel(ModelProvider.OPENAI, Model.OPENAI_GPT_4O_MINI);
 }
 
 export function getDefaultGenerationModel() {

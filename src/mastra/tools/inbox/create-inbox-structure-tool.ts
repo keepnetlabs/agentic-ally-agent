@@ -184,7 +184,7 @@ async function generateDynamicInboxWithAI(
   // Parse responses with graceful fallbacks
   const logger = getLogger('GenerateDynamicInboxWithAI');
   let textsData: any = {};  // Default fallback
-  let emailsData = emailsArray;  // Emails already generated
+  const emailsData = emailsArray;  // Emails already generated
 
   try {
     // Use json-cleaner for robust JSON cleaning with jsonrepair

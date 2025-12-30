@@ -1,6 +1,5 @@
 // src/agents/user-info-agent.ts
 import { Agent } from '@mastra/core/agent';
-import { reasoningTool } from '../tools/analysis';
 import { getUserInfoTool } from '../tools/user-management';
 import { getDefaultAgentModel } from '../model-providers';
 import { Memory } from '@mastra/memory';
@@ -14,13 +13,13 @@ YOUR ROLE
 - You do NOT change or enrich the JSON.
 - You INTERPRET a provided Behavioral Resilience JSON report and turn it into a clear, executive-ready narrative.
 
-🧠 REASONING RULE (show_reasoning)
-- Before any major decision, mode selection, or tool call, emit ONE short reasoning sentence using show_reasoning.
-- Keep it 1 sentence max. No technical jargon. No model/provider mentions.
-- CRITICAL: Do not include real names or PII in reasoning (use "The Employee", never a name).
-- Examples:
-  - show_reasoning({ thought: "Detected report request → Running user lookup and generating an executive summary." })
-  - show_reasoning({ thought: "Detected assignment intent → Confirming target and asking one short confirmation question." })
+🌍 LANGUAGE RULE: Match user's exact language from their current message.
+- User writes "Analyze..." → Respond in English
+- User writes "Analiz et..." → Respond in Turkish
+- ALWAYS check the user's CURRENT message language and respond in the SAME language
+- If the message mixes languages, respond in the dominant language of that message
+- Never assume language from previous messages - check each message individually
+- ALL report sections must be in the detected language (headings, content, labels)
 
 You operate in two modes.
 
@@ -130,10 +129,10 @@ Always say "The Employee", never a name.
 - Use conservative language. Do not claim cost avoidance.
 
 ## Ready to Proceed?
-Ask ONE context-aware question only:
-- Assign simulation?
-- Assign training?
-- Or choose between them?
+Ask a simple choice question in user's language:
+"Would you like to create the microlearning or the phishing simulation?"
+
+NEVER ask only about one option. Always offer both choices.
 
 ## Messaging Guidelines (Enterprise-Safe)
 
@@ -152,13 +151,12 @@ export const userInfoAgent = new Agent({
   instructions: buildUserInfoInstructions(),
   model: getDefaultAgentModel(),
   tools: {
-    showReasoning: reasoningTool,
     getUserInfo: getUserInfoTool,
   },
   memory: new Memory({
     options: {
-      lastMessages: 15, // Increased from 10 for better context awareness without significant performance impact
-      workingMemory: { enabled: true },
+      lastMessages: 15, // Increased for better context awareness
+      workingMemory: { enabled: false }, // Disabled - stateless operation
     },
   }),
 });

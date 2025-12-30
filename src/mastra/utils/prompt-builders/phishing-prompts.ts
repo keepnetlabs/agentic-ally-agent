@@ -235,7 +235,10 @@ ${ZERO_PII_POLICY}
      - '${PHISHING.ATTACK_METHODS[1]}' (Data-Submission): For scenarios requiring login, password reset, verification, payment, survey.
      - '${PHISHING.ATTACK_METHODS[0]}' (Click-Only): For scenarios requiring viewing a document, tracking a package, reading news, downloading a file.
 
-1a. **PSYCHOLOGICAL STRATEGY (Cialdini Principles):**
+1a. **TRADITIONAL PHISHING ONLY:**
+   - **MANDATORY:** isQuishing MUST be false (NO QR codes, use buttons/links only)
+
+1b. **PSYCHOLOGICAL STRATEGY (Cialdini Principles):**
    - **MANDATORY:** You MUST select and apply at least 2 of Cialdini's 6 Principles (Reciprocity, Commitment, Social Proof, Authority, Liking, Scarcity).
    - **Contextual Match:**
      * Finance/Legal → **Authority** ("CEO Request") + **Urgency/Scarcity** ("Immediate action required")

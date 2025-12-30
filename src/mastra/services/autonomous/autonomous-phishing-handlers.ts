@@ -434,9 +434,6 @@ export async function generatePhishingSimulationForGroup(
     const logger = getLogger('GeneratePhishingSimulationForGroup');
     logger.info('🎯 GROUP: Generating phishing simulation with custom topic-based prompt', { groupId: targetGroupResourceId });
 
-    const preferredLanguageRaw = preferredLanguage || '';
-    const language = preferredLanguageRaw ? validateBCP47LanguageCode(preferredLanguageRaw) : DEFAULT_LANGUAGE;
-
     const memoryConfig = {
         memory: {
             thread: phishingThreadId,

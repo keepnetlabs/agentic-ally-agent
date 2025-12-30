@@ -25,17 +25,6 @@ Topic: ${analysis.topic} | Department: ${analysis.department || 'General'} | Lan
   • Adapt pattern to your topic context (do NOT copy phishing example)
   • Focus on relevant threat → preventive action → positive outcome
 
-- Key messages: 3 statements, max 5 words each
-  • Pattern: Fact → Impact → Action
-
-  REFERENCE EXAMPLE (Phishing):
-  • "Phishing is common" (fact)
-  • "Anyone can be targeted" (impact)
-  • "Report quickly" (action)
-
-  FOR ${analysis.topic} (${analysis.department}):
-  • Adapt fact/impact/action pattern to your topic
-
 - Duration: "~5 minutes" (adjust based on total scene duration), duration_seconds: 15-20.
 
 USE EXACTLY THESE KEYS BUT REPLACE PLACEHOLDERS WITH REAL CONTENT:

@@ -1,26 +1,48 @@
 import { MicrolearningContent, LanguageContent, DepartmentInbox } from '../types/microlearning';
 
 export class MicrolearningService {
-  private contentStorage: Map<string, MicrolearningContent> = new Map();
-  private languageContentStorage: Map<string, LanguageContent> = new Map();
-  private departmentInboxes: Map<string, DepartmentInbox> = new Map();
+  private static contentStorage: Map<string, MicrolearningContent> = new Map();
+  private static languageContentStorage: Map<string, LanguageContent> = new Map();
+  private static departmentInboxes: Map<string, DepartmentInbox> = new Map();
 
   /**
    * Store microlearning content
    */
   async storeMicrolearning(content: MicrolearningContent): Promise<void> {
-    this.contentStorage.set(content.microlearning_id, content);
+    MicrolearningService.contentStorage.set(content.microlearning_id, content);
+
+    // Simple monitoring - log cache size periodically
+    const cacheSize = MicrolearningService.contentStorage.size;
+    if (cacheSize % 10 === 0 || cacheSize > 30) {
+      console.log(`📊 In-memory cache size: ${cacheSize} items (~${Math.round(cacheSize * 50 / 1024)}MB estimated)`);
+    }
   }
 
+  /**
+   * Retrieve cached microlearning content if available
+   */
+  static getCachedMicrolearning(microlearningId: string): MicrolearningContent | undefined {
+    return MicrolearningService.contentStorage.get(microlearningId);
+  }
+
+  /**
+   * Get cache statistics for monitoring
+   */
+  static getCacheStats() {
+    const count = MicrolearningService.contentStorage.size;
+    return {
+      microlearningCount: count,
+      estimatedSizeMB: Math.round((count * 50 / 1024) * 100) / 100 // Assuming ~50KB per item
+    };
+  }
 
   /**
    * Store language-specific content
    */
   async storeLanguageContent(microlearningId: string, languageCode: string, content: LanguageContent): Promise<void> {
     const key = `${microlearningId}_${languageCode}`;
-    this.languageContentStorage.set(key, content);
+    MicrolearningService.languageContentStorage.set(key, content);
   }
-
 
 
   /**
@@ -34,7 +56,7 @@ export class MicrolearningService {
     dueDate?: string
   ): Promise<void> {
     const key = `${department}_${languageCode}`;
-    let inbox = this.departmentInboxes.get(key);
+    let inbox = MicrolearningService.departmentInboxes.get(key);
 
     if (!inbox) {
       inbox = {
@@ -68,7 +90,7 @@ export class MicrolearningService {
     }
 
     inbox.last_updated = new Date().toISOString();
-    this.departmentInboxes.set(key, inbox);
+    MicrolearningService.departmentInboxes.set(key, inbox);
   }
 
 }

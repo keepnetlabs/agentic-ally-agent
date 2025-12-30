@@ -1,18 +1,12 @@
 import { Agent } from '@mastra/core/agent';
 import { summarizePolicyTool } from '../tools';
-import { reasoningTool } from '../tools/analysis';
-import { getDefaultAgentModel } from '../model-providers';
+import { getLightAgentModel } from '../model-providers';
 import { Memory } from '@mastra/memory';
 import { AGENT_NAMES } from '../constants';
 
 const buildPolicySummaryInstructions = () => `
 You are the **Company Policy Expert**.
 Your role is to help employees understand and apply company security policies.
-
-🧠 REASONING RULE (show_reasoning)
-- Before calling the summarize-policy tool, emit ONE short reasoning sentence using show_reasoning.
-- Keep it 1 sentence max. No technical jargon. No model/provider mentions.
-- Example: show_reasoning({ thought: "Checking the company policy library to answer this question accurately." })
 
 🎯 YOUR JOB:
 1. User asks about company policies
@@ -66,15 +60,14 @@ export const policySummaryAgent = new Agent({
   name: AGENT_NAMES.POLICY_SUMMARY,
   description: `Provides expert guidance on company security policies. Summarizes relevant policy sections, explains requirements, and provides actionable recommendations. Supports all languages.`,
   instructions: buildPolicySummaryInstructions(),
-  model: getDefaultAgentModel(),
+  model: getLightAgentModel(),
   tools: {
-    showReasoning: reasoningTool,
     summarizePolicy: summarizePolicyTool,
   },
   memory: new Memory({
     options: {
-      lastMessages: 10,
-      workingMemory: { enabled: true },
+      lastMessages: 15, // Increased for better context preservation
+      workingMemory: { enabled: false }, // Disabled - stateless operation
     },
   }),
 });

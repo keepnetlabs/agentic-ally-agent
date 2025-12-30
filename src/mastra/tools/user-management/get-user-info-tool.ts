@@ -13,6 +13,7 @@ import { cleanResponse } from '../../utils/content-processors/json-cleaner';
 import { validateToolResult } from '../../utils/tool-result-validation';
 import { getLogger } from '../../utils/core/logger';
 import { errorService } from '../../services/error-service';
+import { validateBCP47LanguageCode, DEFAULT_LANGUAGE } from '../../utils/language/language-utils';
 
 // Payload for Step 1: Find User
 const GET_ALL_PAYLOAD = {
@@ -413,7 +414,7 @@ Masked user id: ${maskedId}
 Role: ${user?.role || ""}
 Department: ${user?.departmentName || user?.department || "All"}
 Location: ${user?.location || ""}
-Language: ${user?.preferredLanguage || "en"}
+        Language: ${validateBCP47LanguageCode(user?.preferredLanguage || DEFAULT_LANGUAGE)}
 Access level: ${user?.accessLevel || ""}
 
 Recent activities (primary behavioral evidence):
@@ -609,6 +610,9 @@ If a value is unknown, use "" or null.
                 // Don't return - analysis is optional, continue with partial data
             }
 
+            // Normalize preferred language to BCP-47 (default en-gb)
+            const preferredLanguageCode = validateBCP47LanguageCode(user?.preferredLanguage || DEFAULT_LANGUAGE);
+
             const toolResult = {
                 success: true,
                 userInfo: {
@@ -618,7 +622,7 @@ If a value is unknown, use "" or null.
                     // Use provided departmentName if available (fast path), otherwise extract from user object
                     department: inputDepartmentName || user?.departmentName || user?.department || 'All',
                     email: user?.email,
-                    preferredLanguage: user?.preferredLanguage
+                    preferredLanguage: preferredLanguageCode
                 },
                 analysisReport: analysisReport,
                 recentActivities: recentActivities

@@ -43,7 +43,7 @@ export const LAYOUT_OPTIONS: LayoutOption[] = [
     id: 'HERO',
     name: 'HERO HEADER (Marketing/Promo)',
     description: 'Top colored hero section with logo, content card overlapping the header. Looks like a modern promo or announcement page.',
-    cssRule: 'body { margin: 0; background: #f3f4f6; min-height: 100vh; font-family: system-ui, sans-serif; } .hero { height: 220px; background-color: var(--primary-color); width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; } .main-container { margin-top: -20px; padding: 0 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; }'
+    cssRule: 'body { margin: 0; background: #f3f4f6; min-height: 100vh; font-family: system-ui, sans-serif; } .hero { height: 220px; background-color: var(--primary-color); width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; } .main-container { width: 100%; max-width: 420px; margin: -20px auto 0; padding: 0 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; }'
   }
 ];
 

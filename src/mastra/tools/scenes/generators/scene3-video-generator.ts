@@ -39,33 +39,7 @@ Topic: ${analysis.topic} | Department: ${analysis.department || 'General'} | Lan
 CRITICAL INSTRUCTIONS:
 - Generate ONLY actual content in ${analysis.language}, NO placeholders, NO instructions
 - **TITLE AND SUBTITLE ARE FIXED - DO NOT MODIFY OR GENERATE NEW ONES**
-- Key messages follow topic-specific action patterns (NOT generic verbs)
 - Aria descriptions are natural language, not templated instructions
-
-KEY MESSAGE PATTERNS (output ONLY final text, not instructions):
-
-THREAT topics (Phishing, Deepfake, Ransomware, Vishing, Malware, Social Engineering):
-- Phishing: 'Spotting phishing' | 'Verifying sender' | 'Reporting email'
-- Quishing: 'Spotting QR threats' | 'Verifying QR source' | 'Reporting QR code'
-- Deepfake: 'Spotting fakes' | 'Verifying authenticity' | 'Reporting deepfake'
-- Ransomware: 'Recognizing encryption' | 'Isolating systems' | 'Starting recovery'
-- Vishing: 'Identifying impersonation' | 'Verifying caller identity' | 'Reporting fraud'
-- Smishing: 'Spotting SMS threats' | 'Verifying message source' | 'Reporting SMS'
-- Malware: 'Recognizing suspicious files' | 'Isolating infected systems' | 'Reporting malware'
-- Social-Engineering: 'Recognizing manipulation' | 'Verifying requests' | 'Reporting attempts'
-
-TOOL topics (Password, MFA, Backup, Encryption, Data Privacy):
-- MFA: 'Enabling protection' or 'Testing recovery' or 'Securing access'
-- Password: 'Securing accounts' or 'Using manager' or 'Enabling MFA'
-- Backup: 'Verifying backup' or 'Testing restore' or 'Ensuring recovery'
-- Encryption: 'Protecting data' or 'Encrypting files' or 'Securing transmission'
-
-PROCESS topics (Incident Response, Decision Trees, Security Protocols, Playbooks, Checklists):
-- Incident Response: 'Following protocol' or 'Executing response'
-- Decision Trees: 'Applying framework' or 'Following procedure'
-- Security Protocols: 'Implementing policy' or 'Following procedures'
-
-For OTHER topics: action verb + object related to topic
 
 Generate scene 3 (video scenario). IMPORTANT: Create actual content in ${analysis.language}, not placeholders or instructions. **USE THESE EXACT VALUES FOR TITLE AND SUBTITLE - THEY ARE PRE-GENERATED AND FINAL:**
 

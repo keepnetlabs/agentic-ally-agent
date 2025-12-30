@@ -11,6 +11,7 @@ import { ERROR_MESSAGES, API_ENDPOINTS } from '../../constants';
 import { errorService } from '../../services/error-service';
 import { validateToolResult } from '../../utils/tool-result-validation';
 import { waitForKVConsistency, buildExpectedKVKeys } from '../../utils/kv-consistency';
+import { MicrolearningService } from '../../services/microlearning-service';
 
 // Output schema defined separately to avoid circular reference
 const uploadTrainingOutputSchema = z.object({
@@ -60,23 +61,36 @@ export const uploadTrainingTool = createTool({
 
             // 2. Fetch Content from KV with retry (handles eventual consistency edge cases)
             const kvService = new KVService();
-            const baseContent = await withRetry(
-                async () => {
-                    const result = await kvService.getMicrolearning(microlearningId);
-                    // Throw error if null to trigger retry mechanism
-                    if (!result || !result.base) {
-                        const errorInfo = errorService.notFound(`Microlearning content not found for ID: ${microlearningId}`, {
-                            microlearningId,
-                            step: 'fetch-microlearning-content'
-                        });
-                        // Note: This is inside retry mechanism, so we throw to trigger retry
-                        // The retry will eventually fail and return error response
-                        throw new Error(errorInfo.message);
-                    }
-                    return result;
-                },
-                `Fetch microlearning content ${microlearningId}`
-            );
+            let baseContent: { base?: any } | undefined;
+            try {
+                baseContent = await withRetry(
+                    async () => {
+                        const result = await kvService.getMicrolearning(microlearningId);
+                        // Throw error if null to trigger retry mechanism
+                        if (!result || !result.base) {
+                            const errorInfo = errorService.notFound(`Microlearning content not found for ID: ${microlearningId}`, {
+                                microlearningId,
+                                step: 'fetch-microlearning-content'
+                            });
+                            throw new Error(errorInfo.message);
+                        }
+                        return result;
+                    },
+                    `Fetch microlearning content ${microlearningId}`
+                );
+            } catch (kvError) {
+                const cachedMicrolearning = MicrolearningService.getCachedMicrolearning(microlearningId);
+                if (cachedMicrolearning) {
+                    const normalizedError = normalizeError(kvError);
+                    logger.warn('KV fetch failed, falling back to in-memory microlearning cache', {
+                        microlearningId,
+                        error: normalizedError.message
+                    });
+                    baseContent = { base: cachedMicrolearning };
+                } else {
+                    throw kvError;
+                }
+            }
 
             if (!baseContent || !baseContent.base) {
                 const errorInfo = errorService.notFound(

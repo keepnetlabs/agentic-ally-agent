@@ -102,9 +102,9 @@ Generate scene 8 (summary):
       }
     ],
     "key_message": [
-      "Meta-level completion message (generic, same for ALL topics). Max 3 words in ${analysis.language}. REFERENCE: 'Training completed'",
-      "Meta-level application message (generic, same for ALL topics). Max 5 words in ${analysis.language}. REFERENCE: 'Apply what you've practised'",
-      "Meta-level social message (generic, same for ALL topics). Max 4 words in ${analysis.language}. REFERENCE: 'Share and encourage others'"
+      "Completion message, max 3 words in ${analysis.language}",
+      "Application message, max 5 words in ${analysis.language}",
+      "Social message, max 4 words in ${analysis.language}"
     ],
     "resources": ${resourcesJson},
     "scientific_basis": "Summary – Consolidation: Review reinforces learning and provides closure.",

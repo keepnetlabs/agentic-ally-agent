@@ -47,9 +47,6 @@ Topic: ${analysis.topic} | Department: ${analysis.department || 'General'} | Lan
 
           For OTHER topics: Use closest pattern structure and adapt to topice→ Identify the Incident → Follow the Playbook → Validate Resolution; leadership→ Notice Team Needs → Apply Active Listening → Reflect on Feedback
 
-        - Key messages: Three phrases (recognition, action, escalation/resilience/verification)
-          • Max 5-7 words each, topic-specific
-
         - Duration: 20 seconds (goal scene standard)
 
 USE EXACTLY THESE KEYS BUT REPLACE PLACEHOLDERS WITH REAL CONTENT:

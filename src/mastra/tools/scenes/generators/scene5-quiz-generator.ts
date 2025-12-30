@@ -45,9 +45,9 @@ CRITICAL:
     "callToActionText": "Localize 'Answer to Continue' into ${analysis.language}. Output localized text directly, not instructions.",
     "quizCompletionCallToActionText": "Localize 'Continue' into ${analysis.language}. Output localized text directly, not instructions.",
     "key_message": [
-      "Action message (${analysis.category}) for ${analysis.topic} (${analysis.department}), max 5 words in ${analysis.language}",
-      "Action message (${analysis.category}) for ${analysis.topic} (${analysis.department}), max 5 words in ${analysis.language}",
-      "Action message (${analysis.category}) for ${analysis.topic} (${analysis.department}), max 5 words in ${analysis.language}"
+      "Action message for ${analysis.topic}, max 5 words in ${analysis.language}",
+      "Action message for ${analysis.topic}, max 5 words in ${analysis.language}",
+      "Action message for ${analysis.topic}, max 5 words in ${analysis.language}"
     ],
     "questions": {
       "totalCount": 2,

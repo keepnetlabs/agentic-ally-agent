@@ -16,7 +16,7 @@
  */
 
 import { Agent } from '@mastra/core/agent';
-import { getDefaultAgentModel } from '../model-providers';
+import { getLightAgentModel } from '../model-providers';
 import { AGENT_NAMES } from '../constants';
 
 /**
@@ -144,7 +144,10 @@ IF you cannot determine the intent or the request is ambiguous:
 
 - **For microlearningAgent or phishingEmailAssistant:**
   - Use artifact ID/details from the Note if available (e.g., "Upload training phishing-awareness-224229 to platform")
-  - State the target LANGUAGE if mentioned (e.g., "in Turkish", "Language: TR")
+  - **CRITICAL: Extract language from conversation history**
+    - Look for: [LANGUAGE_CONTEXT: <BCP-47>] marker
+    - If found, include in taskContext: "Create in <language> (<BCP-47>)"
+    - Example: User-info shows [LANGUAGE_CONTEXT: tr-tr] → taskContext: "Create Phishing training in Turkish (tr-tr)"
   - Keep it concise - agent has full history context
   - Example: "Upload training phishing-awareness-224229 to platform"
 
@@ -172,5 +175,5 @@ You must always respond with a JSON object:
 export const orchestratorAgent = new Agent({
    name: AGENT_NAMES.ORCHESTRATOR,
    instructions: buildOrchestratorInstructions(),
-   model: getDefaultAgentModel(),
+   model: getLightAgentModel(),
 });

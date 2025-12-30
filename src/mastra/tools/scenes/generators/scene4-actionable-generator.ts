@@ -19,15 +19,6 @@ CRITICAL: This scene is ALWAYS an email inbox simulation, regardless of topic.
   • PROCESS: "Review [practices], identify [gaps], verify [compliance]"
   • Production examples: "Check emails, spot threats, and report safely" | "Review practices, identify risks, verify compliance"
 
-- Key messages: 3 email-checking actions (3-5 words each) - PRODUCTION QUALITY
-  • THREATS/TOOLS Step 1: 'Check the email' or 'Review sender source'
-  • THREATS/TOOLS Step 2: 'Don't click links' or 'Spot warning signs'
-  • THREATS/TOOLS Step 3: 'Press Report' or 'Report if suspicious'
-  • PROCESS Step 1: 'Review the email' or 'Check practices'
-  • PROCESS Step 2: 'Identify violations' or 'Spot gaps'
-  • PROCESS Step 3: 'Verify compliance' or 'Report findings'
-  • Examples: phishing→['Check the email', 'Don't click links', 'Press Report'] | Security Protocols→['Review practices', 'Identify violations', 'Verify compliance']
-
 - Actions: 3 cards (email inspection steps) - PRODUCTION QUALITY
   • Titles: 3-5 words | Descriptions: max 15 words showing what to check | Tips: max 12 words with specific warning signs
   • Action 1: Check sender/source. Tip should be specific (e.g., 'Mismatched URLs and urgent requests are warning signs')

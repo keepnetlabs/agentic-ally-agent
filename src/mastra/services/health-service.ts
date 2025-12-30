@@ -8,6 +8,7 @@
 import { getLogger } from '../utils/core/logger';
 import { KVService } from './kv-service';
 import { withRetry } from '../utils/core/resilience-utils';
+import { MicrolearningService } from './microlearning-service';
 
 const logger = getLogger('HealthService');
 
@@ -41,6 +42,10 @@ export interface HealthCheckResponse {
         workflows: string[];
         agentCount: number;
         workflowCount: number;
+    };
+    cache?: {
+        microlearningCount: number;
+        estimatedSizeMB: number;
     };
 }
 
@@ -154,6 +159,9 @@ export async function performHealthCheck(
 
     const overallStatus = determineOverallStatus(checks);
 
+    // Get in-memory cache stats for monitoring
+    const cacheStats = MicrolearningService.getCacheStats();
+
     return {
         status: overallStatus,
         timestamp: new Date().toISOString(),
@@ -166,6 +174,7 @@ export async function performHealthCheck(
             agentCount: agentNames.length,
             workflowCount: workflowNames.length,
         },
+        cache: cacheStats,
     };
 }
 

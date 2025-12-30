@@ -69,12 +69,16 @@ export async function executeAutonomousGeneration(
                     trainingSuccess: trainingResult?.success
                 });
 
+                const resolvedTargetUserResourceId =
+                    toolResult.userInfo?.targetUserResourceId ?? String(userId);
+
                 return {
                     success: true,
                     userInfo: toolResult.userInfo && {
                         ...toolResult.userInfo,
-                        targetUserResourceId: toolResult.userInfo.targetUserResourceId!,
-                        maskedId: toolResult.userInfo.maskedId || `[USER-${toolResult.userInfo.targetUserResourceId}]`
+                        targetUserResourceId: resolvedTargetUserResourceId,
+                        maskedId:
+                            toolResult.userInfo.maskedId || `[USER-${resolvedTargetUserResourceId}]`
                     },
                     recentActivities: toolResult.recentActivities,
                     analysisReport: toolResult.analysisReport,
