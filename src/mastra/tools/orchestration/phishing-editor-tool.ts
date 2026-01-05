@@ -11,19 +11,52 @@ import { v4 as uuidv4 } from 'uuid';
 import { getModelWithOverride } from '../../model-providers';
 import { cleanResponse } from '../../utils/content-processors/json-cleaner';
 import { sanitizeHtml } from '../../utils/content-processors/html-sanitizer';
+import { normalizeEmailNestedTablePadding } from '../../utils/content-processors/email-table-padding-normalizer';
 import { KVService } from '../../services/kv-service';
 import { getLogger } from '../../utils/core/logger';
 import { errorService } from '../../services/error-service';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
 import { withRetry } from '../../utils/core/resilience-utils';
 
+// Utility: Add timeout to AI calls
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number = 30000): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`AI request timeout after ${timeoutMs}ms`)), timeoutMs)
+    )
+  ]);
+}
+
 const phishingEditorSchema = z.object({
   phishingId: z.string().describe('ID of the existing phishing template to edit'),
-  editInstruction: z.string().describe('Natural language instruction for editing (e.g. "Tüm textleri urgency ile yaz", "Logo\'yu kaldır", "Türkçe\'ye çevir")'),
+  editInstruction: z.string().describe('Natural language instruction for editing (e.g. "Add urgency to all text", "Remove logo", "Translate to Turkish")'),
   language: z.string().optional().default('en-gb').describe('Target language (BCP-47 code)'),
   modelProvider: z.string().optional().describe('Override model provider'),
   model: z.string().optional().describe('Override model name'),
 });
+
+// Response validation schemas
+const emailResponseSchema = z.object({
+  subject: z.string().min(1, 'Subject must not be empty'),
+  template: z.string().min(20, 'Template must contain valid HTML'),
+  summary: z.string().min(5, 'Summary must be at least 5 characters')
+});
+
+const landingPageResponseSchema = z.object({
+  type: z.enum(['login', 'success', 'info']).describe('Landing page type'),
+  template: z.string().min(50, 'Template must contain complete HTML'),
+  edited: z.boolean().describe('Whether page was edited'),
+  summary: z.string().min(5, 'Summary must be at least 5 characters')
+});
+
+// Input landing page schema for type inference
+type LandingPageInput = {
+  type: 'login' | 'success' | 'info';
+  template: string;
+  edited?: boolean;
+  summary?: string;
+};
 
 export const phishingEditorTool = createTool({
   id: 'phishing-editor',
@@ -60,7 +93,7 @@ export const phishingEditorTool = createTool({
       try {
         existingLanding = await kvServicePhishing.get(landingKey);
         logger.debug('Landing page loaded', { landingKey, hasPagesLength: existingLanding?.pages?.length });
-      } catch (err) {
+      } catch {
         logger.debug('Landing page not found or error loading', { landingKey });
       }
 
@@ -75,50 +108,61 @@ CRITICAL RULES:
 3. ✅ PRESERVE all form elements and their functionality
 4. ✅ Update: Text content, tone, urgency, language, psychological triggers
 5. ✅ Validate that the result is complete HTML, not truncated
-6. ✅ All HTML attributes must use SINGLE QUOTES
+6. ✅ All HTML attributes must use SINGLE QUOTES (e.g., style='color:red;', class='header')
 7. ✅ If instruction is to "remove logo", remove only the img tag, keep {CUSTOMMAINLOGO} tag in comments
 
-OUTPUT:
-Return ONLY valid JSON (no markdown, no backticks):
-{
-  "subject": "New or updated subject line",
-  "template": "Complete HTML template with all edits applied",
-  "summary": "Brief summary of changes made (1-2 sentences)"
-}
+OUTPUT FORMAT - CRITICAL:
+Return ONLY a valid JSON object. Do NOT include:
+- Markdown code blocks (no \`\`\`json\`\`\`)
+- Extra backticks or quotes
+- Explanatory text
+- Line breaks before/after JSON
 
-VALIDATION:
-- [ ] Merge tags present: {FIRSTNAME}, {PHISHINGURL}
-- [ ] HTML is complete (DOCTYPE, html tags, body tags all present)
-- [ ] All attributes use single quotes
-- [ ] JSON is valid and parseable`;
+EXACT JSON FORMAT:
+{"subject":"New subject line here","template":"<html>...complete HTML...</html>","summary":"Brief 1-2 sentence summary"}
+
+VALIDATION CHECKLIST BEFORE RETURNING:
+✓ subject field: non-empty string
+✓ template field: contains complete HTML (doctype, html, head, body tags)
+✓ summary field: 1-2 sentence description of changes
+✓ All HTML attributes use SINGLE quotes (style='...', class='...', id='...')
+✓ Merge tags {FIRSTNAME}, {PHISHINGURL} are still present
+✓ JSON is valid (matching braces and quotes)
+✓ No markdown formatting or backticks
+✓ No text before or after the JSON object`;
 
       // 3. Parallel LLM calls - Email and Landing Page separate
 
       // 3a. Email edit
+      // Escape user input to prevent prompt injection
+      const escapedInstruction = JSON.stringify(editInstruction).slice(1, -1);  // Remove outer quotes
       const emailUserPrompt = `Edit this email template:
 
 Subject: ${existingEmail.subject}
 Body: ${existingEmail.template}
 
-Instruction: ${editInstruction}`;
+Instruction: "${escapedInstruction}"`;
 
       logger.info('Calling LLM for email editing');
       const emailPromise = withRetry(
-        () => generateText({
-          model: aiModel,
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: emailUserPrompt }
-          ],
-          temperature: 0.7,
-        }),
+        () => withTimeout(
+          generateText({
+            model: aiModel,
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: emailUserPrompt }
+            ],
+            temperature: 0.3,  // Lower temperature for more consistent JSON output
+          }),
+          30000  // 30 second timeout
+        ),
         'Phishing email editing'
       );
 
       // 3b. Landing page edit (if exists) - each page separate
       let landingPagePromises: ReturnType<typeof generateText>[] = [];
       if (existingLanding?.pages?.length > 0) {
-        landingPagePromises = existingLanding.pages.map((page: any, idx: number) => {
+        landingPagePromises = existingLanding.pages.map((page: LandingPageInput, idx: number) => {
           const landingSystemPrompt = `You are editing a phishing landing page for CYBERSECURITY TRAINING.
 
 CRITICAL RULES:
@@ -127,34 +171,48 @@ CRITICAL RULES:
 3. ✅ PRESERVE all form elements and functionality
 4. ✅ Only SKIP if user explicitly said "email only" or "email template only"
 5. ✅ Return COMPLETE page HTML (never empty)
-6. ✅ All HTML attributes must use SINGLE QUOTES (e.g. style='color:red') to ensure valid JSON
+6. ✅ All HTML attributes must use SINGLE QUOTES (style='...', class='...', etc.)
 
-OUTPUT JSON:
-{
-  "type": "login/success/info", 
-  "template": "Complete HTML template...", 
-  "edited": true, 
-  "summary": "Changed background color..."
-}`;
+OUTPUT FORMAT - CRITICAL:
+Return ONLY a valid JSON object. Do NOT include:
+- Markdown code blocks (no \`\`\`json\`\`\`)
+- Extra backticks or quotes
+- Explanatory text
+- Line breaks before/after JSON
+
+EXACT JSON FORMAT:
+{"type":"login","template":"<html>...complete HTML...</html>","edited":true,"summary":"Description of changes"}
+
+VALIDATION CHECKLIST:
+✓ type field: "login", "success", or "info"
+✓ template field: complete HTML with all tags
+✓ edited field: boolean (true if modified, false if unchanged)
+✓ summary field: 1-2 sentence description
+✓ All HTML attributes use SINGLE quotes
+✓ JSON is valid and complete`;
 
           const landingUserPrompt = `Edit landing page ${idx + 1}:
 
 ${JSON.stringify(page)}
 
-Instruction: ${editInstruction}
+Instruction: "${escapedInstruction}"
 
-IMPORTANT: Edit UNLESS user explicitly said "email only" or similar exclusion.`;
+IMPORTANT: Edit UNLESS user explicitly said "email only" or similar exclusion.
+Return ONLY the JSON object with no extra text.`;
 
           logger.info(`Calling LLM for landing page ${idx + 1} editing`);
           return withRetry(
-            () => generateText({
-              model: aiModel,
-              messages: [
-                { role: 'system', content: landingSystemPrompt },
-                { role: 'user', content: landingUserPrompt }
-              ],
-              temperature: 0.7,
-            }),
+            () => withTimeout(
+              generateText({
+                model: aiModel,
+                messages: [
+                  { role: 'system', content: landingSystemPrompt },
+                  { role: 'user', content: landingUserPrompt }
+                ],
+                temperature: 0.3,  // Lower temperature for more consistent JSON output
+              }),
+              30000  // 30 second timeout
+            ),
             `Phishing landing page ${idx + 1} editing`
           );
         });
@@ -179,27 +237,58 @@ IMPORTANT: Edit UNLESS user explicitly said "email only" or similar exclusion.`;
 
       const emailResponse = emailResult.value;
 
-      // 3d. Parse email response
-      logger.info('Email response received, parsing...');
-      const emailCleanedJson = cleanResponse(emailResponse.text, 'phishing-edit-email');
-      const editedEmail = JSON.parse(emailCleanedJson);
+      // 3d. Parse and validate email response
+      logger.info('Email response received, parsing and validating...');
+      let editedEmail: z.infer<typeof emailResponseSchema>;
+      try {
+        const emailCleanedJson = cleanResponse(emailResponse.text, 'phishing-edit-email');
+        const parsed = JSON.parse(emailCleanedJson);
+        editedEmail = emailResponseSchema.parse(parsed);  // Validate against schema
+        logger.debug('Email response validated successfully', { subject: editedEmail.subject });
+      } catch (parseErr) {
+        const errMsg = parseErr instanceof Error ? parseErr.message : String(parseErr);
+        logger.error('Email response parsing or validation failed', {
+          error: errMsg,
+          responsePreview: emailResponse.text.substring(0, 200)
+        });
+        return {
+          success: false,
+          error: 'Email response validation failed',
+          message: `❌ Email validation error: ${errMsg}`
+        };
+      }
 
-      // 3e. Parse landing page responses (each page separate)
-      let editedLandingPages = [];
+      // 3e. Parse and validate landing page responses (each page separate)
+      const editedLandingPages: z.infer<typeof landingPageResponseSchema>[] = [];
       const landingResults = allResults.slice(1);
       if (landingResults.length > 0) {
-        logger.info(`Landing page responses received, parsing ${landingResults.length} pages...`);
-        editedLandingPages = landingResults
+        logger.info(`Landing page responses received, parsing and validating ${landingResults.length} pages...`);
+        const landingPageResults = landingResults
           .map((result, idx) => {
             if (result.status !== 'fulfilled') {
               logger.warn(`Landing page ${idx + 1} editing failed, skipping`, { reason: result.reason });
               return null;
             }
-            const response = result.value;
-            const pageCleanedJson = cleanResponse(response.text, `phishing-edit-landing-${idx}`);
-            return JSON.parse(pageCleanedJson);
+            try {
+              const response = result.value;
+              const pageCleanedJson = cleanResponse(response.text, `phishing-edit-landing-${idx}`);
+              const parsed = JSON.parse(pageCleanedJson);
+
+              // Validate against schema
+              const validated = landingPageResponseSchema.parse(parsed);
+              logger.debug(`Landing page ${idx + 1} validated successfully`, { type: validated.type });
+              return validated;
+            } catch (parseErr) {
+              const errMsg = parseErr instanceof Error ? parseErr.message : String(parseErr);
+              logger.warn(`Landing page ${idx + 1} parsing or validation error, skipping`, {
+                error: errMsg
+              });
+              return null;
+            }
           })
-          .filter(Boolean);
+          .filter((page): page is z.infer<typeof landingPageResponseSchema> => page !== null);
+
+        editedLandingPages.push(...landingPageResults);
       }
 
       // 3f. Combine landing pages into single object
@@ -214,9 +303,18 @@ IMPORTANT: Edit UNLESS user explicitly said "email only" or similar exclusion.`;
       // Rename for compatibility
       const editedContent = editedEmail;
 
-      // 3a. Validate template exists and is not empty
-      if (editedContent.template === undefined || editedContent.template === null) {
-        logger.error('LLM response missing template field', { editedContent });
+      // 3a. Validate email fields
+      if (!editedEmail.subject || typeof editedEmail.subject !== 'string' || editedEmail.subject.trim() === '') {
+        logger.error('LLM response invalid subject', { editedEmail });
+        return {
+          success: false,
+          error: 'LLM response missing or invalid subject',
+          message: '❌ Edit failed: Invalid email subject. Please try again.'
+        };
+      }
+
+      if (editedEmail.template === undefined || editedEmail.template === null) {
+        logger.error('LLM response missing template field', { editedEmail });
         return {
           success: false,
           error: 'LLM response missing template field',
@@ -224,20 +322,27 @@ IMPORTANT: Edit UNLESS user explicitly said "email only" or similar exclusion.`;
         };
       }
 
-      if (editedContent.template.trim() === '') {
-        logger.error('LLM returned empty template', { editedContent });
+      if (typeof editedEmail.template !== 'string' || editedEmail.template.trim() === '') {
+        logger.error('LLM returned empty template', { editedEmail });
         return {
           success: false,
           error: 'LLM returned empty template',
-          message: `❌ Edit failed: No changes were made. LLM says: "${editedContent.summary}". Please try a different edit instruction.`
+          message: `❌ Edit failed: No changes were made. LLM says: "${editedEmail.summary || 'Unable to edit'}". Please try a different instruction.`
         };
       }
 
+      // Validate HTML structure (should contain basic HTML tags)
+      const templateStr = editedEmail.template;
+      if (!templateStr.includes('<html') && !templateStr.includes('<body')) {
+        logger.warn('Template missing HTML structure tags', { templateLength: templateStr.length });
+        // Don't fail, but log warning
+      }
+
       // 3b. Use returned template
-      let finalTemplate = editedContent.template;
+      const finalTemplate = editedContent.template;
 
       // 3c. Sanitize HTML
-      const sanitizedTemplate = sanitizeHtml(finalTemplate);
+      const sanitizedTemplate = normalizeEmailNestedTablePadding(sanitizeHtml(finalTemplate));
 
       // 4. Save updated email with same ID and language
       const updatedEmail = {

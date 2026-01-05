@@ -50,20 +50,24 @@ export enum Model {
  * @returns The model instance
  */
 export function getModel(provider: ModelProvider, model: Model) {
-    // Check if provider is already cached
+    // Initialize provider if not already cached
     if (!modelProviderCache.has(provider)) {
         const modelProvider = getModelProvider(provider);
         modelProviderCache.set(provider, modelProvider);
+        return modelProvider(model);
     }
 
-    const modelProvider = modelProviderCache.get(provider);
-
-    // Return the specific model from the provider
-    return modelProvider(model);
+    // Return from cache (guaranteed to exist at this point)
+    const cachedProvider = modelProviderCache.get(provider);
+    if (!cachedProvider) {
+        // This should never happen, but fail gracefully if logic changes
+        throw new Error(`Internal error: model provider ${provider} not found in cache after initialization`);
+    }
+    return cachedProvider(model);
 }
 
 // Singleton cache for model providers
-const modelProviderCache = new Map<ModelProvider, any>();
+const modelProviderCache = new Map<ModelProvider, ReturnType<typeof getModelProvider>>();
 
 /**
  * Creates a model provider factory that can be called at runtime
@@ -94,17 +98,17 @@ function getModelProvider(provider: ModelProvider) {
             }
             // Fallback to direct OpenAI
             if (!openAIApiKey) {
-                throw new Error('OPENAI_API_KEY is required');
+                throw new Error('Failed to initialize ModelProvider.OPENAI: OPENAI_API_KEY environment variable is not set');
             }
             return createOpenAI({ apiKey: openAIApiKey });
 
         case 'workers-ai':
             // Workers AI provider - using OpenAI SDK with Workers AI endpoint
             if (!cloudflareAccountId || !cloudflareApiKey) {
-                throw new Error('CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_KEY are required for Workers AI');
+                throw new Error('Failed to initialize ModelProvider.WORKERS_AI: missing CLOUDFLARE_ACCOUNT_ID or CLOUDFLARE_API_KEY environment variables');
             }
             if (!cloudflareGatewayId) {
-                throw new Error('CLOUDFLARE_AI_GATEWAY_ID is required for Workers AI');
+                throw new Error('Failed to initialize ModelProvider.WORKERS_AI: CLOUDFLARE_AI_GATEWAY_ID environment variable is not set');
             }
 
             const workerApiToken = process.env.CLOUDFLARE_WORKERS_API_TOKEN || cloudflareApiKey;
@@ -168,7 +172,7 @@ function getModelProvider(provider: ModelProvider) {
         case 'google':
             // Google Gemini provider
             if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-                throw new Error('GOOGLE_GENERATIVE_AI_API_KEY is required for Google Gemini');
+                throw new Error('Failed to initialize ModelProvider.GOOGLE: GOOGLE_GENERATIVE_AI_API_KEY environment variable is not set');
             }
             const googleProvider = createGoogleGenerativeAI({
                 apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,

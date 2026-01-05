@@ -136,6 +136,27 @@ export const LANGUAGE = {
 } as const;
 
 // ============================================
+// TRANSLATION CONFIGURATION
+// ============================================
+
+export const TRANSLATION_CONFIG = {
+  // Max JSON character size for each chunk before reduction
+  MAX_JSON_CHARS: 28_000,
+
+  // Initial chunk size - will be reduced if JSON exceeds MAX_JSON_CHARS
+  INITIAL_CHUNK_SIZE: 50,
+
+  // Minimum chunk size - won't reduce below this threshold
+  MIN_CHUNK_SIZE: 5,
+
+  // Reduction factor when chunks exceed max size (multiply by this factor)
+  SIZE_REDUCTION_FACTOR: 0.7,
+
+  // Number of translation chunks to process in parallel
+  BATCH_SIZE: 3,
+} as const;
+
+// ============================================
 // RETRY & TIMEOUT CONFIGURATION
 // ============================================
 

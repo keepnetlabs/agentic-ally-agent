@@ -5,6 +5,12 @@
  * This makes the system more agentic - agents can plan and adapt
  */
 
+import {
+    getLanguageOrDefault,
+    buildLanguageRequirementBlock,
+    EXAMPLE_IDS
+} from './autonomous-helpers';
+
 export interface PhishingGenerationContext {
     simulation: {
         title?: string;
@@ -53,13 +59,11 @@ function buildStopAfterSuccessBlock(successCondition: string): string {
  */
 export function buildPhishingGenerationPrompt(context: PhishingGenerationContext): string {
     const { simulation, toolResult, language } = context;
+    const lang = getLanguageOrDefault(language);
 
     return `**AUTONOMOUS_EXECUTION_MODE**
 
-**🔴 CRITICAL: LANGUAGE REQUIREMENT**
-- ALL content MUST be generated in: **${language || 'en-gb'}** (BCP-47 code)
-- This is NOT optional - user expects phishing in this language
-- When calling phishingExecutor, INCLUDE THIS LANGUAGE in your instructions
+${buildLanguageRequirementBlock('phishingExecutor', language)}
 
 **CRITICAL: Check conversation history FIRST**
 - If you already executed phishingExecutor in this conversation, DO NOT execute again
@@ -76,7 +80,7 @@ export function buildPhishingGenerationPrompt(context: PhishingGenerationContext
 - Psychological Trigger: ${simulation.persuasion_tactic || 'Authority'}
 - Rationale: ${simulation.rationale || 'Based on user behavior analysis'}
 - Target Department: ${toolResult.userInfo?.department || 'All'}
-- Target Language: **${language || 'en-gb'}** (MUST be used in generation)
+- Target Language: **${lang}** (MUST be used in generation)
 
 **Available Tools:**
 - phishingExecutor: Generates phishing email and landing page
@@ -85,13 +89,13 @@ export function buildPhishingGenerationPrompt(context: PhishingGenerationContext
 - The scenario type (${simulation.scenario_type || 'CLICK_ONLY'}) may inform whether a landing page is needed
 - The difficulty level (${simulation.difficulty || 'Medium'}) suggests the sophistication required
 - The psychological trigger (${simulation.persuasion_tactic || 'Authority'}) should influence the approach
-- The target language (${language || 'en-gb'}) MUST be explicitly mentioned in the prompt to phishingExecutor
+- The target language (${lang}) MUST be explicitly mentioned in the prompt to phishingExecutor
 - The analysis rationale provides insights into why this simulation was recommended
 
 **Critical Constraint:**
 - Generate the content only - do not upload or assign in this step
 - Execute ONCE only - check history before executing
-- ALWAYS generate in ${language || 'en-gb'} regardless of default language
+- ALWAYS generate in ${lang} regardless of default language
 
 Analyze the context, check conversation history for existing phishingExecutor calls, and execute only if not already done.`;
 }
@@ -101,10 +105,11 @@ Analyze the context, check conversation history for existing phishingExecutor ca
  */
 export function buildPhishingGenerationPromptSimplified(context: PhishingGenerationContext): string {
     const { simulation, toolResult, language } = context;
+    const lang = getLanguageOrDefault(language);
 
     return `**AUTONOMOUS_EXECUTION_MODE**
 
-**CRITICAL: Language Requirement - ${language || 'en-gb'}**
+**CRITICAL: Language Requirement - ${lang}**
 
 **Goal:** Generate a phishing simulation.
 
@@ -112,12 +117,12 @@ export function buildPhishingGenerationPromptSimplified(context: PhishingGenerat
 - Topic: ${simulation.title || 'Security Update'}
 - Difficulty: ${simulation.difficulty || 'Medium'}
 - Department: ${toolResult.userInfo?.department || 'All'}
-- Language: **${language || 'en-gb'}** (MUST be used for content generation)
+- Language: **${lang}** (MUST be used for content generation)
 
 **Available Tools:**
 - phishingExecutor: Generates phishing content
 
-Determine the best approach and generate the simulation in ${language || 'en-gb'}.`;
+Determine the best approach and generate the simulation in ${lang}.`;
 }
 
 /**
@@ -125,13 +130,11 @@ Determine the best approach and generate the simulation in ${language || 'en-gb'
  */
 export function buildTrainingGenerationPrompt(context: TrainingGenerationContext): string {
     const { microlearning, department, level, language } = context;
+    const lang = getLanguageOrDefault(language);
 
     return `**AUTONOMOUS_EXECUTION_MODE**
 
-**🔴 CRITICAL: LANGUAGE REQUIREMENT**
-- ALL content MUST be generated in: **${language || 'en-gb'}** (BCP-47 code)
-- This is NOT optional - user expects training in this language
-- When calling workflowExecutor, INCLUDE THIS LANGUAGE CODE in the prompt parameter
+${buildLanguageRequirementBlock('workflowExecutor', language)}
 
 **Goal:** Generate a training module that addresses the user's learning needs based on their behavioral profile.
 
@@ -140,7 +143,7 @@ export function buildTrainingGenerationPrompt(context: TrainingGenerationContext
 - Objective: ${microlearning.objective || ''}
 - Target Department: ${department}
 - Difficulty Level: ${level}
-- Target Language: **${language || 'en-gb'}** (MUST include this in workflowExecutor call)
+- Target Language: **${lang}** (MUST include this in workflowExecutor call)
 - Rationale: ${microlearning.rationale || 'Based on user behavior analysis'}
 
 **Available Tools:**
@@ -150,12 +153,12 @@ export function buildTrainingGenerationPrompt(context: TrainingGenerationContext
 - The orchestrator context (from previous messages) contains detailed behavioral analysis - include it in additionalContext
 - The user's risk level and learning needs should shape the content structure
 - The department (${department}) and difficulty level (${level}) inform the appropriate depth and focus
-- The target language (${language || 'en-gb'}) MUST be explicitly mentioned in the prompt text passed to workflowExecutor
+- The target language (${lang}) MUST be explicitly mentioned in the prompt text passed to workflowExecutor
 - The rationale explains why this training was recommended - use it to guide content decisions
 
 **Critical Constraint:**
 - Generate the content only - do not upload or assign in this step
-- ALWAYS mention the language requirement in the prompt, e.g., "Create training module in ${language || 'en-gb'} for..."
+- ALWAYS mention the language requirement in the prompt, e.g., "Create training module in ${lang} for..."
 
 Review the context, determine the optimal training approach, and execute the generation.`;
 }
@@ -165,10 +168,11 @@ Review the context, determine the optimal training approach, and execute the gen
  */
 export function buildTrainingGenerationPromptSimplified(context: TrainingGenerationContext): string {
     const { microlearning, department, level, language } = context;
+    const lang = getLanguageOrDefault(language);
 
     return `**AUTONOMOUS_EXECUTION_MODE**
 
-**CRITICAL: Language Requirement - ${language || 'en-gb'}**
+**CRITICAL: Language Requirement - ${lang}**
 
 **Goal:** Generate a training module.
 
@@ -176,12 +180,12 @@ export function buildTrainingGenerationPromptSimplified(context: TrainingGenerat
 - Topic: ${microlearning.title || 'Security Awareness'}
 - Department: ${department}
 - Level: ${level}
-- Language: **${language || 'en-gb'}** (MUST be included in prompt to workflowExecutor)
+- Language: **${lang}** (MUST be included in prompt to workflowExecutor)
 
 **Available Tools:**
 - workflowExecutor: Creates training (workflowType: 'create-microlearning')
 
-When calling workflowExecutor, mention the language requirement in the prompt. Determine the best approach and generate the training module in ${language || 'en-gb'}.`;
+When calling workflowExecutor, mention the language requirement in the prompt. Determine the best approach and generate the training module in ${lang}.`;
 }
 
 /**
@@ -226,9 +230,9 @@ export function buildUploadAndAssignPrompt(
     const idField = artifactType === 'phishing' ? 'phishingId' : 'microlearningId';
     const artifactLabel = artifactType === 'phishing' ? 'simulation' : 'module';
 
-    // Generate type-appropriate example IDs for clarity
-    const exampleGeneratedId = artifactType === 'phishing' ? 'yl2JfA4r5yYl' : 'ml-generate-xyz123';
-    const exampleResourceId = artifactType === 'phishing' ? 'scenario-abc-def-123456' : 'resource-train-789xyz';
+    // Use consistent example IDs from constants
+    const exampleGeneratedId = EXAMPLE_IDS[artifactType].generated;
+    const exampleResourceId = EXAMPLE_IDS[artifactType].resource;
 
     const contextInfo = generatedArtifactId
         ? `- The ${idField} is: **${generatedArtifactId}**`

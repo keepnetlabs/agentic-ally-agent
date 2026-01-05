@@ -30,6 +30,16 @@ import { z } from 'zod';
 
 const logger = getLogger('PhishingPromptBuilder');
 
+/**
+ * Helper function to generate department context (DRY)
+ */
+function getDepartmentContext(department?: string, isQuishing = false): string {
+  if (!department || department === 'All') return '';
+  const scenarioType = isQuishing ? 'quishing scenario' : 'scenario';
+  return `\n**TARGET DEPARTMENT:** ${department}
+Tailor the ${scenarioType} specifically for this department's typical workflows, vulnerabilities, and attack vectors.`;
+}
+
 // Type definitions for prompt parameters
 type AnalysisPromptParams = {
   topic?: string;
@@ -167,12 +177,7 @@ Return ONLY valid JSON matching the schema. No markdown, no backticks, no explan
   "isQuishing": true
 }`;
 
-  // Add department context ONLY if provided and not 'All'
-  let departmentContext = '';
-  if (targetProfile?.department && targetProfile.department !== 'All') {
-    departmentContext = `\n**TARGET DEPARTMENT:** ${targetProfile.department}
-Tailor the quishing scenario specifically for this department's typical workflows, vulnerabilities, and attack vectors.`;
-  }
+  const departmentContext = getDepartmentContext(targetProfile?.department, true);
 
   const quishingUserPrompt = `Design a QUISHING (QR Code Phishing) simulation scenario for SECURITY AWARENESS TRAINING based on this context:
 
@@ -319,12 +324,7 @@ Return ONLY valid JSON matching the schema. No markdown, no backticks, no explan
   "isQuishing": false
 }`;
 
-  // Add department context ONLY if provided and not 'All'
-  let departmentContext = '';
-  if (targetProfile?.department && targetProfile.department !== 'All') {
-    departmentContext = `\n**TARGET DEPARTMENT:** ${targetProfile.department}
-Tailor the scenario specifically for this department's typical workflows, vulnerabilities, and attack vectors.`;
-  }
+  const departmentContext = getDepartmentContext(targetProfile?.department, false);
 
   const userPrompt = `Design a TRADITIONAL PHISHING simulation scenario (NOT quishing - no QR codes) for SECURITY AWARENESS TRAINING based on this context:
 
@@ -426,7 +426,8 @@ ${BRAND_AWARENESS_RULES}
    - QR code: Must be clearly visible and scannable on mobile devices.
 
 3. **QR CODE PLACEMENT (CRITICAL):**
-   - **MANDATORY:** Include QR code image using: <img src="{QRCODEURLIMAGE}" alt="QR Code" style="width:200px;height:auto; margin:0 auto;">
+   - **MANDATORY:** Include QR code image using {QRCODEURLIMAGE} merge tag: <img src="{QRCODEURLIMAGE}" alt="QR Code" style="width:200px;height:auto; margin:0 auto;">
+   - **FORBIDDEN:** Do NOT use placeholder src or empty src - ALWAYS use {QRCODEURLIMAGE} tag
    - Place QR code prominently (center-aligned, after main message text, before signature).
    - Add text around QR code: "Scan QR code to verify", "Quick access via QR", "Mobile-friendly verification"
    - **FORBIDDEN:** NO buttons, NO clickable links in main body (footer links allowed).
@@ -453,10 +454,10 @@ Return ONLY valid JSON with subject and template (HTML body). No markdown, no ba
 **EXAMPLE OUTPUT:**
 {
   "subject": "Action Required: Scan QR Code to Verify Your Payment",
-  "template": "[Full HTML email with table layout, logo using {CUSTOMMAINLOGO} tag, QR code using {QRCODEURLIMAGE} tag, convenience/mobile-friendly language, NO buttons or links in main body, and signature with department name]"
+  "template": "[Full HTML email with table layout, logo using {CUSTOMMAINLOGO} tag, QR code with <img src='{QRCODEURLIMAGE}' alt='QR Code' style='width:200px;height:auto; margin:0 auto;'>, convenience/mobile-friendly language, NO buttons or links in main body, and signature with department name]"
 }
 
-**CRITICAL:** Template MUST be complete HTML. QR code is the ONLY call-to-action. No buttons. No links in main body.`;
+**CRITICAL:** Template MUST be complete HTML with {QRCODEURLIMAGE} merge tag for QR code (never placeholder images). QR code is the ONLY call-to-action. No buttons. No links in main body.`;
 
   const quishingUserPrompt = `Write the QUISHING (QR Code Phishing) simulation email content based on this blueprint.
         
@@ -476,7 +477,7 @@ ${JSON.stringify(analysis, null, 2)}
 3. **GENERATE** the **Preheader** (hidden preview text) - 10-15 words about QR code verification.
 4. **WRITE** the **GREETING FIRST** - MUST start with "Dear {FIRSTNAME}," or "Hello {FIRSTNAME}," WITH the merge tag.
 5. **WRITE** realistic, authentic email content that matches the brand's style and emphasizes convenience/mobile-friendly access. **Write ONLY in ${language}.**${language && !language.startsWith('en') ? ` Think as native ${language} speaker, do NOT translate from English.` : ''}
-6. **INCLUDE QR CODE** - Add <img src="{QRCODEURLIMAGE}" alt="QR Code" style="width:200px;height:auto; margin:0 auto;"> prominently (center-aligned, after main message text, before signature). Add convenience text around it.
+6. **🚨 CRITICAL - QR CODE MERGE TAG:** You MUST use {QRCODEURLIMAGE} merge tag for QR code. Add <img src="{QRCODEURLIMAGE}" alt="QR Code" style="width:200px;height:auto; margin:0 auto;"> prominently (center-aligned, after main message text, before signature). **FORBIDDEN:** Do NOT use placeholder src like "qr-code.png" or empty src - ALWAYS use {QRCODEURLIMAGE} tag. Add convenience text around QR code.
 7. **EMBED** quishing-specific red flags according to difficulty level (unsolicited QR codes, QR codes requesting credentials, QR codes in unexpected contexts).
 8. **VERIFY** NO buttons or clickable links exist in main body (footer links allowed).
 9. **OUTPUT** valid JSON with complete, production-ready HTML template.`;

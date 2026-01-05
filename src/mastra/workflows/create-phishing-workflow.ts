@@ -3,6 +3,7 @@ import { generateText } from 'ai';
 import { getModelWithOverride } from '../model-providers';
 import { cleanResponse } from '../utils/content-processors/json-cleaner';
 import { sanitizeHtml } from '../utils/content-processors/html-sanitizer';
+import { normalizeEmailNestedTablePadding } from '../utils/content-processors/email-table-padding-normalizer';
 import { v4 as uuidv4 } from 'uuid';
 import { LANDING_PAGE, STRING_TRUNCATION } from '../constants';
 import { KVService } from '../services/kv-service';
@@ -350,6 +351,9 @@ const generateEmail = createStep({
       // Sanitize HTML content to fix quoting/escaping issues
       if (parsedResult.template) {
         let cleanedTemplate = sanitizeHtml(parsedResult.template);
+
+        // Email-client compatibility: move padding from nested <table> to containing <td>
+        cleanedTemplate = normalizeEmailNestedTablePadding(cleanedTemplate);
 
         // Replace {CUSTOMMAINLOGO} tag with actual logo URL (same as landing pages)
         if (cleanedTemplate.includes('{CUSTOMMAINLOGO}')) {

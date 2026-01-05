@@ -1,4 +1,7 @@
 import { MicrolearningContent, LanguageContent, DepartmentInbox } from '../types/microlearning';
+import { getLogger } from '../utils/core/logger';
+
+const logger = getLogger('MicrolearningService');
 
 export class MicrolearningService {
   private static contentStorage: Map<string, MicrolearningContent> = new Map();
@@ -14,7 +17,10 @@ export class MicrolearningService {
     // Simple monitoring - log cache size periodically
     const cacheSize = MicrolearningService.contentStorage.size;
     if (cacheSize % 10 === 0 || cacheSize > 30) {
-      console.log(`📊 In-memory cache size: ${cacheSize} items (~${Math.round(cacheSize * 50 / 1024)}MB estimated)`);
+      logger.info('📊 In-memory cache size', {
+        items: cacheSize,
+        estimatedMB: Math.round(cacheSize * 50 / 1024)
+      });
     }
   }
 

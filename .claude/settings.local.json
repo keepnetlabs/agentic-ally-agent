@@ -28,7 +28,9 @@
       "Bash(grep:*)",
       "Bash(cd:*)",
       "Bash(xargs -I {} bash -c 'wc -l \"\"$1\"\" 2>/dev/null | head -1' _ {})",
-      "Bash(test:*)"
+      "Bash(test:*)",
+      "Bash(npm run lint:*)",
+      "Bash(npm test:*)"
     ],
     "deny": [],
     "ask": []

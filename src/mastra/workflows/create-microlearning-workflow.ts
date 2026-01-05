@@ -280,10 +280,6 @@ const createInboxStep = createStep({
     const inboxUrl = encodeURIComponent(`inbox/${normalizedDept}`);
     const trainingUrl = `${API_ENDPOINTS.FRONTEND_MICROLEARNING_URL}/?baseUrl=${baseUrl}&langUrl=${langUrl}&inboxUrl=${inboxUrl}&isEditMode=true`;
 
-    // Verify KV consistency before returning URL to UI
-    const expectedKeys = buildExpectedKVKeys(microlearningId, analysis.language, normalizedDept);
-    await waitForKVConsistency(microlearningId, expectedKeys);
-
     return {
       success: true,
       message: `🎉 New microlearning created successfully! Training URL: ${trainingUrl}`,
@@ -340,6 +336,10 @@ const saveToKVStep = createStep({
           `KV save microlearning ${microlearningId}`
         );
         logger.info('Microlearning saved to KV successfully', { microlearningId });
+
+        // Verify KV consistency after save
+        const expectedKeys = buildExpectedKVKeys(microlearningId, analysis.language, normalizedDept);
+        await waitForKVConsistency(microlearningId, expectedKeys);
       } catch (saveError) {
         const err = normalizeError(saveError);
         logger.warn('KV save failed but continuing', { error: err.message, stack: err.stack, microlearningId });

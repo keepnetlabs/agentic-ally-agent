@@ -6,7 +6,7 @@ import { cleanResponse } from '../../utils/content-processors/json-cleaner';
 import { LOCALIZER_PARAMS } from '../../utils/config/llm-generation-params';
 import { buildSystemPrompt } from '../../utils/language/localization-language-rules';
 import { getLogger } from '../../utils/core/logger';
-import { MODEL_PROVIDERS } from '../../constants';
+import { MODEL_PROVIDERS, TRANSLATION_CONFIG } from '../../constants';
 import { errorService } from '../../services/error-service';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
 import { withRetry } from '../../utils/core/resilience-utils';
@@ -189,12 +189,12 @@ function isTrivialValue(s: string) {
 /* =========================================================
  * Chunking
  * =======================================================*/
-function computeChunkSize(items: ExtractedString[], maxJsonChars = 28_000) {
-    let size = 50;
+function computeChunkSize(items: ExtractedString[], maxJsonChars = TRANSLATION_CONFIG.MAX_JSON_CHARS) {
+    let size = TRANSLATION_CONFIG.INITIAL_CHUNK_SIZE;
     let sample = Object.fromEntries(items.slice(0, size).map((it, i) => [String(i), it.value]));
     let test = JSON.stringify(sample).length;
-    while (test > maxJsonChars && size > 5) {
-        size = Math.max(5, Math.floor(size * 0.7));
+    while (test > maxJsonChars && size > TRANSLATION_CONFIG.MIN_CHUNK_SIZE) {
+        size = Math.max(TRANSLATION_CONFIG.MIN_CHUNK_SIZE, Math.floor(size * TRANSLATION_CONFIG.SIZE_REDUCTION_FACTOR));
         sample = Object.fromEntries(items.slice(0, size).map((it, i) => [String(i), it.value]));
         test = JSON.stringify(sample).length;
     }
@@ -257,7 +257,7 @@ export const inboxTranslateJsonTool = new Tool({
             });
 
             // 4) Translate
-            const BATCH_SIZE = 3;
+            const BATCH_SIZE = TRANSLATION_CONFIG.BATCH_SIZE;
             const issues: string[] = [];
 
             async function translateChunk(chunk: ExtractedString[], chunkIndex: number): Promise<string[]> {
