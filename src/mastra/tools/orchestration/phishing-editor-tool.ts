@@ -12,11 +12,15 @@ import { getModelWithOverride } from '../../model-providers';
 import { cleanResponse } from '../../utils/content-processors/json-cleaner';
 import { sanitizeHtml } from '../../utils/content-processors/html-sanitizer';
 import { normalizeEmailNestedTablePadding } from '../../utils/content-processors/email-table-padding-normalizer';
+import { repairHtml } from '../../utils/validation/json-validation-utils';
 import { KVService } from '../../services/kv-service';
 import { getLogger } from '../../utils/core/logger';
 import { errorService } from '../../services/error-service';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
 import { withRetry } from '../../utils/core/resilience-utils';
+import { ProductService } from '../../services/product-service';
+import { fixBrokenImages } from '../../utils/landing-page/image-validator';
+import { resolveLogoAndBrand } from '../../utils/phishing/brand-resolver';
 
 // Utility: Add timeout to AI calls
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number = 30000): Promise<T> {
@@ -30,7 +34,8 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number = 30000): Promise
 
 const phishingEditorSchema = z.object({
   phishingId: z.string().describe('ID of the existing phishing template to edit'),
-  editInstruction: z.string().describe('Natural language instruction for editing (e.g. "Add urgency to all text", "Remove logo", "Translate to Turkish")'),
+  editInstruction: z.string().describe('Natural language instruction for editing (e.g. "Add urgency to all text", "Remove logo", "Translate to German")'),
+  hasBrandUpdate: z.boolean().optional().default(false).describe('True if the instruction implies changing the brand, logo, or visual identity'),
   language: z.string().optional().default('en-gb').describe('Target language (BCP-47 code)'),
   modelProvider: z.string().optional().describe('Override model provider'),
   model: z.string().optional().describe('Override model name'),
@@ -67,6 +72,15 @@ export const phishingEditorTool = createTool({
     const { phishingId, editInstruction, language: inputLanguage, modelProvider, model } = context;
     const logger = getLogger('PhishingEditor');
 
+    // Fetch whitelabeling config for potential logo fallback
+    const productService = new ProductService();
+    let whitelabelConfig: { mainLogoUrl?: string } | null = null;
+    try {
+      whitelabelConfig = await productService.getWhitelabelingConfig();
+    } catch (err) {
+      logger.warn('Failed to fetch whitelabeling config', { error: err });
+    }
+
     try {
       logger.info('Starting phishing template edit', { phishingId, editInstruction });
 
@@ -100,6 +114,31 @@ export const phishingEditorTool = createTool({
       // 3. Prepare LLM prompts
       const aiModel = getModelWithOverride(modelProvider, model);
 
+      // ENHANCEMENT: Analyze instruction for brand/logo requests
+      // If user asks for "Amazon logo", we resolve the real logo URL and force LLM to use it
+      // This prevents hallucinated URLs like "example.com/amazon.png"
+      let brandContext = '';
+
+      // Only run expensive brand resolution if Agent flagged this as a brand update
+      if (context.hasBrandUpdate) {
+        try {
+          // Pass editInstruction as both name and scenario to help LLM extract brand name
+          // Previously 'Phishing Editor' was passed as name, confusing the resolver
+          const brandInfo = await resolveLogoAndBrand(editInstruction, editInstruction, aiModel);
+          if (brandInfo.isRecognizedBrand && brandInfo.logoUrl) {
+            logger.info('Brand detected in edit instruction', { brand: brandInfo.brandName, logo: brandInfo.logoUrl });
+            brandContext = `
+CRITICAL - BRAND DETECTED:
+The user wants to use "${brandInfo.brandName}".
+You MUST use EXACTLY this logo URL: "${brandInfo.logoUrl}"
+ACTION: REPLACE the existing logo src (or {CUSTOMMAINLOGO} placeholder) with this URL.
+DO NOT use any other URL for the logo.`;
+          }
+        } catch (err) {
+          logger.warn('Brand detection in editor failed, continuing without brand context', { error: err });
+        }
+      }
+
       const systemPrompt = `You are editing a phishing email template for a LEGITIMATE CYBERSECURITY TRAINING COMPANY.
 
 CRITICAL RULES:
@@ -110,6 +149,9 @@ CRITICAL RULES:
 5. ✅ Validate that the result is complete HTML, not truncated
 6. ✅ All HTML attributes must use SINGLE QUOTES (e.g., style='color:red;', class='header')
 7. ✅ If instruction is to "remove logo", remove only the img tag, keep {CUSTOMMAINLOGO} tag in comments
+8. ✅ If instruction is to "change logo", REPLACE the src attribute. DO NOT add a second img tag.
+9. ✅ PRESERVE {PHISHINGURL} in all Call-to-Action buttons and links. Do NOT replace with real URLs.
+10. ✅ ONLY use image URLs provided in instructions or existing in the template. NEVER generate new image URLs from external domains (like wikipedia, example.com).
 
 OUTPUT FORMAT - CRITICAL:
 Return ONLY a valid JSON object. Do NOT include:
@@ -141,7 +183,10 @@ VALIDATION CHECKLIST BEFORE RETURNING:
 Subject: ${existingEmail.subject}
 Body: ${existingEmail.template}
 
-Instruction: "${escapedInstruction}"`;
+Instruction: "${escapedInstruction}"
+
+${brandContext}
+`;
 
       logger.info('Calling LLM for email editing');
       const emailPromise = withRetry(
@@ -172,6 +217,10 @@ CRITICAL RULES:
 4. ✅ Only SKIP if user explicitly said "email only" or "email template only"
 5. ✅ Return COMPLETE page HTML (never empty)
 6. ✅ All HTML attributes must use SINGLE QUOTES (style='...', class='...', etc.)
+7. ✅ If instruction is to "remove logo", remove only the img tag.
+8. ✅ If instruction is to "change logo", REPLACE the src attribute. DO NOT add a second img tag.
+9. ✅ PRESERVE {PHISHINGURL} in links. Do NOT replace with real URLs.
+10. ✅ ONLY use image URLs provided in instructions or existing in the template. NEVER generate new image URLs from external domains (like wikipedia, example.com).
 
 OUTPUT FORMAT - CRITICAL:
 Return ONLY a valid JSON object. Do NOT include:
@@ -197,7 +246,11 @@ ${JSON.stringify(page)}
 
 Instruction: "${escapedInstruction}"
 
+${brandContext}
+${brandContext ? 'IMPORTANT: You MUST use the logo URL provided above. Do NOT use any other URL even if you think it is better.' : ''}
+
 IMPORTANT: Edit UNLESS user explicitly said "email only" or similar exclusion.
+PRESERVE {PHISHINGURL} in links.
 Return ONLY the JSON object with no extra text.`;
 
           logger.info(`Calling LLM for landing page ${idx + 1} editing`);
@@ -244,6 +297,11 @@ Return ONLY the JSON object with no extra text.`;
         const emailCleanedJson = cleanResponse(emailResponse.text, 'phishing-edit-email');
         const parsed = JSON.parse(emailCleanedJson);
         editedEmail = emailResponseSchema.parse(parsed);  // Validate against schema
+
+        // Log image sources for debugging hallucinated URLs
+        const imgSources = (editedEmail.template.match(/src=['"]([^'"]*)['"]/g) || []).map(s => s.replace(/src=['"]|['"]/g, ''));
+        logger.info('Email edited template images', { imgCount: imgSources.length, sources: imgSources });
+
         logger.debug('Email response validated successfully', { subject: editedEmail.subject });
       } catch (parseErr) {
         const errMsg = parseErr instanceof Error ? parseErr.message : String(parseErr);
@@ -258,13 +316,33 @@ Return ONLY the JSON object with no extra text.`;
         };
       }
 
-      // 3e. Parse and validate landing page responses (each page separate)
+      // 3e. Create updated email object structure FIRST (needed for landing page processing)
+      const finalTemplate = editedEmail.template;
+      const sanitizedTemplate = normalizeEmailNestedTablePadding(sanitizeHtml(finalTemplate));
+
+      const updatedEmail = {
+        ...existingEmail,
+        subject: editedEmail.subject || existingEmail.subject,
+        template: sanitizedTemplate, // Will update this after fixing images
+        lastModified: Date.now()
+      };
+
+      // 3f. Fix Broken Images & Enforce Single Logo in Email
+      const finalFixedTemplate = await fixBrokenImages(
+        sanitizedTemplate,
+        updatedEmail.fromName || 'Security Team',
+        whitelabelConfig?.mainLogoUrl
+      );
+      updatedEmail.template = finalFixedTemplate;
+
+      // 3g. Parse and validate landing page responses (now that updatedEmail is ready)
       const editedLandingPages: z.infer<typeof landingPageResponseSchema>[] = [];
       const landingResults = allResults.slice(1);
+
       if (landingResults.length > 0) {
         logger.info(`Landing page responses received, parsing and validating ${landingResults.length} pages...`);
-        const landingPageResults = landingResults
-          .map((result, idx) => {
+        const landingPageResults = await Promise.all(landingResults
+          .map(async (result, idx) => {
             if (result.status !== 'fulfilled') {
               logger.warn(`Landing page ${idx + 1} editing failed, skipping`, { reason: result.reason });
               return null;
@@ -274,24 +352,35 @@ Return ONLY the JSON object with no extra text.`;
               const pageCleanedJson = cleanResponse(response.text, `phishing-edit-landing-${idx}`);
               const parsed = JSON.parse(pageCleanedJson);
 
-              // Validate against schema
               const validated = landingPageResponseSchema.parse(parsed);
+
+              const sanitized = sanitizeHtml(validated.template);
+              let repaired = repairHtml(sanitized);
+
+              // Use updatedEmail context for landing page image fixing
+              repaired = await fixBrokenImages(
+                repaired,
+                updatedEmail.fromName || 'Security Team',
+                whitelabelConfig?.mainLogoUrl
+              );
+
+              validated.template = repaired;
               logger.debug(`Landing page ${idx + 1} validated successfully`, { type: validated.type });
               return validated;
             } catch (parseErr) {
               const errMsg = parseErr instanceof Error ? parseErr.message : String(parseErr);
-              logger.warn(`Landing page ${idx + 1} parsing or validation error, skipping`, {
-                error: errMsg
-              });
+              logger.warn(`Landing page ${idx + 1} parsing or validation error, skipping`, { error: errMsg });
               return null;
             }
-          })
+          }));
+
+        const validLandingPages = landingPageResults
           .filter((page): page is z.infer<typeof landingPageResponseSchema> => page !== null);
 
-        editedLandingPages.push(...landingPageResults);
+        editedLandingPages.push(...validLandingPages);
       }
 
-      // 3f. Combine landing pages into single object
+      // 3h. Combine landing pages
       let editedLanding = null;
       if (editedLandingPages.length > 0) {
         editedLanding = {
@@ -300,57 +389,8 @@ Return ONLY the JSON object with no extra text.`;
         };
       }
 
-      // Rename for compatibility
+      // Rename for compatibility (legacy code usage)
       const editedContent = editedEmail;
-
-      // 3a. Validate email fields
-      if (!editedEmail.subject || typeof editedEmail.subject !== 'string' || editedEmail.subject.trim() === '') {
-        logger.error('LLM response invalid subject', { editedEmail });
-        return {
-          success: false,
-          error: 'LLM response missing or invalid subject',
-          message: '❌ Edit failed: Invalid email subject. Please try again.'
-        };
-      }
-
-      if (editedEmail.template === undefined || editedEmail.template === null) {
-        logger.error('LLM response missing template field', { editedEmail });
-        return {
-          success: false,
-          error: 'LLM response missing template field',
-          message: '❌ Edit failed: LLM did not return a valid template. Please try again.'
-        };
-      }
-
-      if (typeof editedEmail.template !== 'string' || editedEmail.template.trim() === '') {
-        logger.error('LLM returned empty template', { editedEmail });
-        return {
-          success: false,
-          error: 'LLM returned empty template',
-          message: `❌ Edit failed: No changes were made. LLM says: "${editedEmail.summary || 'Unable to edit'}". Please try a different instruction.`
-        };
-      }
-
-      // Validate HTML structure (should contain basic HTML tags)
-      const templateStr = editedEmail.template;
-      if (!templateStr.includes('<html') && !templateStr.includes('<body')) {
-        logger.warn('Template missing HTML structure tags', { templateLength: templateStr.length });
-        // Don't fail, but log warning
-      }
-
-      // 3b. Use returned template
-      const finalTemplate = editedContent.template;
-
-      // 3c. Sanitize HTML
-      const sanitizedTemplate = normalizeEmailNestedTablePadding(sanitizeHtml(finalTemplate));
-
-      // 4. Save updated email with same ID and language
-      const updatedEmail = {
-        ...existingEmail,
-        subject: editedContent.subject || existingEmail.subject,
-        template: sanitizedTemplate,
-        lastModified: Date.now()
-      };
 
       // 4a. Save email
       await kvServicePhishing.put(emailKey, updatedEmail);

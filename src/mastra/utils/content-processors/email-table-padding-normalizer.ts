@@ -3,7 +3,8 @@
  *
  * Goal (minimal + deterministic):
  * - If a <table> is nested inside a <td> and the <table> has padding styles, move that padding
- *   onto the containing <td>, because many email clients ignore table padding but respect td padding.
+ *   onto the FIRST <td> *inside the nested table*, because many email clients ignore table padding
+ *   but consistently respect td padding.
  *
  * This avoids relying on prompt compliance and fixes the specific rendering issue without changing
  * broader structure/styling choices.
@@ -86,23 +87,37 @@ function tdHasPaddingStyle(td: HtmlNode): boolean {
     return style.includes('padding');
 }
 
-function moveNestedTablePadding(table: HtmlNode, containingTd: HtmlNode): boolean {
+function findFirstTdDescendant(node: HtmlNode): HtmlNode | undefined {
+    const children = Array.isArray(node.childNodes) ? node.childNodes : [];
+    for (const child of children) {
+        if (!isElement(child)) continue;
+        if (nodeName(child) === 'td') return child;
+        const found = findFirstTdDescendant(child);
+        if (found) return found;
+    }
+    return undefined;
+}
+
+function moveNestedTablePadding(table: HtmlNode): boolean {
     const tableStyle = getAttr(table, 'style');
     if (!tableStyle) return false;
 
     const { paddingDecls, rest } = extractPaddingDecls(tableStyle);
     if (paddingDecls.length === 0) return false;
 
-    // If td already has padding, do NOT remove padding from table (avoid accidental padding loss
-    // in clients that might respect table padding). In that case, we leave as-is.
-    if (tdHasPaddingStyle(containingTd)) {
+    // Move padding to the first td inside this table (email clients reliably respect td padding).
+    const innerTd = findFirstTdDescendant(table);
+    if (innerTd) {
+        if (!tdHasPaddingStyle(innerTd)) {
+            const tdStyle = getAttr(innerTd, 'style') ?? '';
+            const tdParts = splitStyle(tdStyle);
+            const merged = joinStyle([...tdParts, ...paddingDecls]);
+            setAttr(innerTd, 'style', merged);
+        }
+    } else {
+        // No inner td found; don't mutate structure.
         return false;
     }
-
-    const tdStyle = getAttr(containingTd, 'style') ?? '';
-    const tdParts = splitStyle(tdStyle);
-    const merged = joinStyle([...tdParts, ...paddingDecls]);
-    setAttr(containingTd, 'style', merged);
 
     const newTableStyle = joinStyle(rest);
     if (newTableStyle) setAttr(table, 'style', newTableStyle);
@@ -121,7 +136,7 @@ function primaryNormalize(html: string): { html: string; movedCount: number } {
 
         // We care specifically about: td -> table (direct child)
         if (nodeName(node) === 'table' && parent && nodeName(parent) === 'td') {
-            if (moveNestedTablePadding(node, parent)) movedCount += 1;
+            if (moveNestedTablePadding(node)) movedCount += 1;
         }
 
         for (const child of children) {
@@ -159,7 +174,7 @@ export function normalizeEmailNestedTablePadding(html: string): string {
         // Level 1: parse5-based migration
         const result = primaryNormalize(html);
         if (result.movedCount > 0) {
-            logger.info('✅ Moved nested table padding to containing td', { movedCount: result.movedCount });
+            logger.info('✅ Moved nested table padding to inner td', { movedCount: result.movedCount });
         }
         return result.html;
     } catch (error) {

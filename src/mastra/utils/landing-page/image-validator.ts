@@ -128,7 +128,7 @@ export async function validateImageUrl(url: string): Promise<boolean> {
 
         // Check if response is successful (200-299)
         return response.ok;
-    } catch (error) {
+    } catch {
         // Network error, timeout, or invalid URL
         return false;
     }
@@ -144,7 +144,7 @@ export async function validateImageUrl(url: string): Promise<boolean> {
  * @param brandName - Brand name to use as fallback text logo
  * @returns Promise<string> - HTML with broken images replaced
  */
-export async function fixBrokenImages(html: string, brandName: string): Promise<string> {
+export async function fixBrokenImages(html: string, brandName: string, fallbackLogoUrl?: string): Promise<string> {
     // Find all img tags with src attributes
     const imgRegex = /<img[^>]+src=['"]([^'"]+)['"][^>]*>/gi;
 
@@ -169,7 +169,7 @@ export async function fixBrokenImages(html: string, brandName: string): Promise<
             urlToMatches.set(imgSrc, []);
             uniqueUrls.add(imgSrc);
         }
-        urlToMatches.get(imgSrc)!.push({ fullTag: fullImgTag, index });
+        urlToMatches.get(imgSrc)?.push({ fullTag: fullImgTag, index });
     });
 
     // Validate all unique URLs in parallel (with cached validation)
@@ -223,8 +223,24 @@ export async function fixBrokenImages(html: string, brandName: string): Promise<
             });
 
             matchesForUrl.forEach(({ fullTag }) => {
-                // Replace src attribute with default logo URL
-                const fixedTag = fullTag.replace(/src\s*=\s*['"]([^'"]*)['"]/i, `src='${DEFAULT_GENERIC_LOGO}'`);
+                // Replace src attribute with fallback or default logo URL
+                const targetLogo = fallbackLogoUrl || DEFAULT_GENERIC_LOGO;
+                let fixedTag = fullTag.replace(/src\s*=\s*['"]([^'"]*)['"]/i, `src='${targetLogo}'`);
+
+                // Robustly remove width and height attributes (handling spaces and quotes)
+                fixedTag = fixedTag.replace(/(\s+)(width|height)\s*=\s*['"][^'"]*['"]/gi, '');
+                fixedTag = fixedTag.replace(/(\s+)(width|height)\s*=\s*[^'"\s>]+/gi, ''); // Handle unquoted
+
+                // Update style for responsive sizing (max 200x100)
+                const responsiveStyle = "max-width: 200px; max-height: 100px; width: auto; height: auto; object-fit: contain; margin: 0 auto; display: block;";
+
+                if (fixedTag.includes('style=')) {
+                    // Replace existing style completely to avoid conflicts and ensure clean layout for logo
+                    fixedTag = fixedTag.replace(/style\s*=\s*['"][^'"]*['"]/i, `style='${responsiveStyle}'`);
+                } else {
+                    fixedTag = fixedTag.replace(/>$/, ` style='${responsiveStyle}'>`);
+                }
+
                 fixedHtml = fixedHtml.replace(fullTag, fixedTag);
             });
         }

@@ -37,7 +37,7 @@ export const LAYOUT_OPTIONS: LayoutOption[] = [
     id: 'MINIMAL',
     name: 'MINIMAL / URGENT (Alert)',
     description: 'No card container. Content sits directly on a plain white or very light background. Centered layout with max-width constraint. Best for simple alerts.',
-    cssRule: 'body { padding: 40px 20px; max-width: 480px; margin: 0 auto; background-color: #ffffff; font-family: system-ui, sans-serif; } form { max-width: 400px; margin: 0 auto; } input, button { max-width: 100%; }'
+    cssRule: 'body { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 40px 20px; background-color: #ffffff; font-family: system-ui, sans-serif; } form { max-width: 400px; width: 100%; margin: 0 auto; } input, button { max-width: 100%; }'
   },
   {
     id: 'HERO',

@@ -16,7 +16,7 @@
  */
 
 import { Agent } from '@mastra/core/agent';
-import { getLightAgentModel } from '../model-providers';
+import { getDefaultAgentModel } from '../model-providers';
 import { AGENT_NAMES } from '../constants';
 
 /**
@@ -175,5 +175,5 @@ You must always respond with a JSON object:
 export const orchestratorAgent = new Agent({
    name: AGENT_NAMES.ORCHESTRATOR,
    instructions: buildOrchestratorInstructions(),
-   model: getLightAgentModel(),
+   model: getDefaultAgentModel(),
 });

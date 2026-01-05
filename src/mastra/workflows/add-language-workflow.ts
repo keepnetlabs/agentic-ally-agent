@@ -421,9 +421,7 @@ const combineResultsStep = createStep({
     await waitForKVConsistency(microlearningId, expectedKeys);
 
     // Generate training URL
-    const baseUrl = encodeURIComponent(`https://microlearning-api.keepnet-labs-ltd-business-profile4086.workers.dev/microlearning/${microlearningId}`);
     const langUrl = encodeURIComponent(`lang/${targetLanguage}`);
-
     let trainingUrl: string;
     let filesGenerated: string[];
     let message = `🌐 Language translation completed successfully!`;
@@ -432,7 +430,7 @@ const combineResultsStep = createStep({
     if (hasInbox && updateInbox.success) {
       // Both language and inbox successful
       const inboxUrl = encodeURIComponent(`inbox/${normalizedDept}`);
-      trainingUrl = `${API_ENDPOINTS.FRONTEND_MICROLEARNING_URL}/?baseUrl=${baseUrl}&langUrl=${langUrl}&inboxUrl=${inboxUrl}&isEditMode=true`;
+      trainingUrl = `${API_ENDPOINTS.FRONTEND_MICROLEARNING_URL}/?courseId=${microlearningId}&langUrl=${langUrl}&inboxUrl=${inboxUrl}&isEditMode=true`;
       filesGenerated = [
         `${microlearningId}/${targetLanguage}.json`,
         ...(updateInbox.filesGenerated || [])
@@ -440,12 +438,12 @@ const combineResultsStep = createStep({
     } else if (hasInbox && !updateInbox.success) {
       // Language succeeded but inbox failed - graceful degradation
       logger.warn('Inbox translation failed, but language content is available');
-      trainingUrl = `${API_ENDPOINTS.FRONTEND_MICROLEARNING_URL}/?baseUrl=${baseUrl}&langUrl=${langUrl}&isEditMode=true`;
+      trainingUrl = `${API_ENDPOINTS.FRONTEND_MICROLEARNING_URL}/?courseId=${microlearningId}&langUrl=${langUrl}&isEditMode=true`;
       filesGenerated = [`${microlearningId}/${targetLanguage}.json`];
       message = `🌐 Language translation completed! Note: Inbox translation failed but training content is ready.`;
     } else {
       // No inbox needed
-      trainingUrl = `${API_ENDPOINTS.FRONTEND_MICROLEARNING_URL}/?baseUrl=${baseUrl}&langUrl=${langUrl}&isEditMode=true`;
+      trainingUrl = `${API_ENDPOINTS.FRONTEND_MICROLEARNING_URL}/?courseId=${microlearningId}&langUrl=${langUrl}&isEditMode=true`;
       filesGenerated = [`${microlearningId}/${targetLanguage}.json`];
     }
 

@@ -4,6 +4,7 @@ import { getModelWithOverride } from '../model-providers';
 import { cleanResponse } from '../utils/content-processors/json-cleaner';
 import { sanitizeHtml } from '../utils/content-processors/html-sanitizer';
 import { normalizeEmailNestedTablePadding } from '../utils/content-processors/email-table-padding-normalizer';
+import { repairHtml } from '../utils/validation/json-validation-utils';
 import { v4 as uuidv4 } from 'uuid';
 import { LANDING_PAGE, STRING_TRUNCATION } from '../constants';
 import { KVService } from '../services/kv-service';
@@ -26,13 +27,14 @@ import {
   buildLandingPagePrompts
 } from '../utils/prompt-builders/phishing-prompts';
 import { resolveLogoAndBrand, generateContextualBrand } from '../utils/phishing/brand-resolver';
-import { DEFAULT_GENERIC_LOGO, normalizeImgAttributes } from '../utils/landing-page/image-validator';
+import { DEFAULT_GENERIC_LOGO, normalizeImgAttributes, validateImageUrlCached } from '../utils/landing-page/image-validator';
 import { retryGenerationWithStrongerPrompt } from '../utils/phishing/retry-generator';
 import { getLogger } from '../utils/core/logger';
 import { waitForKVConsistency, buildExpectedPhishingKeys } from '../utils/kv-consistency';
 import { withRetry } from '../utils/core/resilience-utils';
 import { normalizeError, logErrorInfo } from '../utils/core/error-utils';
 import { errorService } from '../services/error-service';
+import { ProductService } from '../services/product-service';
 
 // --- Steps ---
 
@@ -47,6 +49,15 @@ const analyzeRequest = createStep({
     const { topic, isQuishing, targetProfile, difficulty, language, method, includeLandingPage, includeEmail, additionalContext, modelProvider, model, policyContext } = inputData;
 
     logger.info('Starting phishing scenario analysis', { topic, isQuishing, difficulty, language, method, includeLandingPage, includeEmail });
+
+    // Fetch whitelabeling config for potential logo fallback
+    const productService = new ProductService();
+    let whitelabelConfig: { mainLogoUrl?: string } | null = null;
+    try {
+      whitelabelConfig = await productService.getWhitelabelingConfig();
+    } catch (err) {
+      logger.warn('Failed to fetch whitelabeling config', { error: err });
+    }
 
     const aiModel = getModelWithOverride(modelProvider, model);
 
@@ -175,9 +186,44 @@ const analyzeRequest = createStep({
       logger.info('Detecting brand and resolving logo URL');
       let logoInfo = await resolveLogoAndBrand(parsedResult.fromName, parsedResult.scenario, aiModel);
 
-      // If brand detection failed, sometimes generate a contextual brand name and logo based on analysis
+      // Validate the resolved logo URL to ensure it's accessible
+      if (logoInfo.logoUrl && logoInfo.logoUrl !== DEFAULT_GENERIC_LOGO) {
+        try {
+          // We assume empty/null is invalid
+          const isLogoValid = await validateImageUrlCached(logoInfo.logoUrl);
+          if (!isLogoValid) {
+            logger.warn('Resolved logo URL is invalid/broken - resetting to empty', { url: logoInfo.logoUrl });
+            logoInfo.logoUrl = '';
+          }
+        } catch (e) {
+          logger.warn('Error validating logo URL - resetting to empty', { error: e });
+          logoInfo.logoUrl = '';
+        }
+      }
+
+      // ENHANCEMENT: Whitelabel Logo Fallback
+      // If the brand is NOT recognized (generic/internal) OR the resolved logo is the generic fallback,
+      // OR the resolved logo is BROKEN/INVALID (empty), and we have a whitelabel logo configured, use it.
+      // This ensures generic emails (HR, IT, etc.) look like they come from the target organization.
+      const useWhitelabelLogo = whitelabelConfig?.mainLogoUrl && (
+        !logoInfo.isRecognizedBrand ||
+        logoInfo.logoUrl === DEFAULT_GENERIC_LOGO ||
+        !logoInfo.logoUrl
+      );
+
+      if (useWhitelabelLogo) {
+        const logoUrl = whitelabelConfig?.mainLogoUrl || '';
+        logger.info('Using Whitelabel Logo configuration', {
+          reason: !logoInfo.isRecognizedBrand ? 'Brand not recognized' : 'Generic/Empty/Broken logo detected',
+          logoUrlPrefix: logoUrl.substring(0, STRING_TRUNCATION.LOGO_URL_PREFIX_LENGTH)
+        });
+
+        logoInfo.logoUrl = logoUrl;
+        // We keep logoInfo.isRecognizedBrand as is (likely false), so downstream logic knows it's not a public brand
+      }
+      // If brand detection failed and we didn't use whitelabel logo, sometimes generate a contextual brand name and logo
       // This adds variety and makes phishing simulations more realistic
-      if (!logoInfo.isRecognizedBrand && Math.random() < 0.5) {
+      else if (!logoInfo.isRecognizedBrand && Math.random() < 0.5) {
         logger.info('Brand detection failed, generating contextual brand based on analysis');
         const contextualBrandInfo = await generateContextualBrand(
           parsedResult.scenario,
@@ -556,6 +602,8 @@ const generateLandingPage = createStep({
           parsedResult.pages.map(async (page: any) => {
             // Step 1: Sanitize HTML
             let cleanedTemplate = sanitizeHtml(page.template);
+            // Step 1b: Repair malformed HTML (parse5 normalize) - helps with broken attributes/tags
+            cleanedTemplate = repairHtml(cleanedTemplate);
 
             // Step 2: Replace {CUSTOMMAINLOGO} tag FIRST (before fixBrokenImages)
             if (cleanedTemplate.includes('{CUSTOMMAINLOGO}')) {

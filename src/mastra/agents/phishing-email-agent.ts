@@ -172,6 +172,7 @@ If user message contains edit keywords (change, update, modify, remove, make, se
 **Call phishingEditor tool with:**
 - **phishingId**: [from conversation history - MOST RECENT]
 - **editInstruction**: [user's natural language request - VERBATIM]
+- **hasBrandUpdate**: [TRUE if request involves logo, brand, image, or company identity changes. FALSE otherwise.]
 - **language**: [detected from user message, optional]
 - **modelProvider**: [Optional Override]
 - **model**: [Optional Override]

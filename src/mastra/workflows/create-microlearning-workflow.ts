@@ -275,10 +275,9 @@ const createInboxStep = createStep({
     }
 
 
-    const baseUrl = encodeURIComponent(`https://microlearning-api.keepnet-labs-ltd-business-profile4086.workers.dev/microlearning/${microlearningId}`);
     const langUrl = encodeURIComponent(`lang/${analysis.language}`);
     const inboxUrl = encodeURIComponent(`inbox/${normalizedDept}`);
-    const trainingUrl = `${API_ENDPOINTS.FRONTEND_MICROLEARNING_URL}/?baseUrl=${baseUrl}&langUrl=${langUrl}&inboxUrl=${inboxUrl}&isEditMode=true`;
+    const trainingUrl = `${API_ENDPOINTS.FRONTEND_MICROLEARNING_URL}/?courseId=${microlearningId}&langUrl=${langUrl}&inboxUrl=${inboxUrl}&isEditMode=true`;
 
     return {
       success: true,

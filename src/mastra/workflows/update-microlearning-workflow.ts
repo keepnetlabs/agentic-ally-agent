@@ -304,10 +304,9 @@ const saveUpdatesStep = createStep({
       // Build training URL
       const language = updatedContent.microlearning_metadata?.language || 'en';
       const normalizedDepartment = normalizeDepartmentName(department || 'All');
-      const baseUrl = encodeURIComponent(`https://microlearning-api.keepnet-labs-ltd-business-profile4086.workers.dev/microlearning/${microlearningId}`);
       const langUrl = encodeURIComponent(`lang/${language}`);
       const inboxUrl = encodeURIComponent(`inbox/${normalizedDepartment}`);
-      const trainingUrl = `${API_ENDPOINTS.FRONTEND_MICROLEARNING_URL}/?baseUrl=${baseUrl}&langUrl=${langUrl}&inboxUrl=${inboxUrl}&isEditMode=true`;
+      const trainingUrl = `${API_ENDPOINTS.FRONTEND_MICROLEARNING_URL}/?courseId=${microlearningId}&langUrl=${langUrl}&inboxUrl=${inboxUrl}&isEditMode=true`;
 
       logger.info('Microlearning updated successfully', {
         microlearningId,
