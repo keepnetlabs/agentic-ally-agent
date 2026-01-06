@@ -82,9 +82,19 @@ function extractPaddingDecls(style: string): { paddingDecls: string[]; rest: str
     return { paddingDecls, rest };
 }
 
-function tdHasPaddingStyle(td: HtmlNode): boolean {
-    const style = (getAttr(td, 'style') ?? '').toLowerCase();
-    return style.includes('padding');
+function declKey(decl: string): string | undefined {
+    const key = decl.split(':')[0]?.trim().toLowerCase();
+    return key || undefined;
+}
+
+function filterMissingPaddingDecls(paddingDecls: string[], existingTdParts: string[]): string[] {
+    const existingKeys = new Set(existingTdParts.map(declKey).filter(Boolean) as string[]);
+    return paddingDecls.filter(d => {
+        const key = declKey(d);
+        if (!key) return false;
+        // Only add if td doesn't already define this specific padding key
+        return !existingKeys.has(key);
+    });
 }
 
 function findFirstTdDescendant(node: HtmlNode): HtmlNode | undefined {
@@ -108,12 +118,19 @@ function moveNestedTablePadding(table: HtmlNode): boolean {
     // Move padding to the first td inside this table (email clients reliably respect td padding).
     const innerTd = findFirstTdDescendant(table);
     if (innerTd) {
-        if (!tdHasPaddingStyle(innerTd)) {
-            const tdStyle = getAttr(innerTd, 'style') ?? '';
-            const tdParts = splitStyle(tdStyle);
-            const merged = joinStyle([...tdParts, ...paddingDecls]);
-            setAttr(innerTd, 'style', merged);
-        }
+        // IMPORTANT:
+        // Even if the inner td already has padding-* (e.g., padding-bottom), we STILL want to
+        // migrate the table's padding to the td. Otherwise we'd remove padding from the table
+        // and the email becomes "paddingsiz".
+        //
+        // Ordering matters: put migrated padding FIRST so existing td padding-* (more specific)
+        // can override it if present. Also, avoid duplicate keys (e.g., don't add padding-bottom
+        // if td already has padding-bottom).
+        const tdStyle = getAttr(innerTd, 'style') ?? '';
+        const tdParts = splitStyle(tdStyle);
+        const missingPaddingDecls = filterMissingPaddingDecls(paddingDecls, tdParts);
+        const merged = joinStyle([...missingPaddingDecls, ...tdParts]);
+        setAttr(innerTd, 'style', merged);
     } else {
         // No inner td found; don't mutate structure.
         return false;

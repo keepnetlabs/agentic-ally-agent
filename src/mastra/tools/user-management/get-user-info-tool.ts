@@ -324,7 +324,10 @@ export const getUserInfoTool = createTool({
             }
 
             // --- STEP 3: Generate Analysis Report (Internal LLM Call) ---
-            logger.debug('Starting user analysis with LLM', {});
+            if (recentActivities.length === 0) {
+                logger.warn('No recent activities found; AI will apply Foundational defaults', { maskedId });
+            }
+            logger.debug('Starting user analysis with LLM', { hasActivities: recentActivities.length > 0 });
             const systemPrompt = `
 You are an Enterprise Security Behavior Analyst for a Human Risk Management platform.
 
@@ -418,7 +421,9 @@ Location: ${user?.location || ""}
 Access level: ${user?.accessLevel || ""}
 
 Recent activities (primary behavioral evidence):
-${JSON.stringify(recentActivities)}
+${recentActivities.length === 0 ?
+  'NO ACTIVITY DATA AVAILABLE - Apply Foundational defaults per system instructions.' :
+  JSON.stringify(recentActivities)}
 
 ---
 

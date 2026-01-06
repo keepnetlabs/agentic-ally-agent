@@ -23,6 +23,30 @@ describe('normalizeEmailNestedTablePadding', () => {
     expect(out).not.toMatch(/<table[^>]*style=['"][^'"]*padding:/i);
   });
 
+  it('preserves existing td padding-* while migrating table padding (avoids "paddingsiz")', () => {
+    const input = `
+      <table width='100%'>
+        <tr>
+          <td>
+            <table style='padding: 24px; background: #fff;'>
+              <tr><td style='padding-bottom: 16px;'>Hi</td></tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    `;
+
+    const out = normalizeEmailNestedTablePadding(input);
+
+    // Table padding removed
+    expect(out).not.toMatch(/<table[^>]*style=['"][^'"]*padding:/i);
+    // Inner td still has its padding-bottom, and also has migrated padding
+    expect(out).toMatch(/<td[^>]*style=['"][^'"]*padding:\s*24px/i);
+    expect(out).toMatch(/<td[^>]*style=['"][^'"]*padding-bottom:\s*16px/i);
+    // And we should not duplicate padding-bottom (keep it defined once)
+    expect((out.match(/padding-bottom:/gi) || []).length).toBe(1);
+  });
+
   it('keeps existing outer td padding and still moves nested table padding inward', () => {
     const input = `
       <table width='100%'>

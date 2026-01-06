@@ -1,16 +1,14 @@
 import { createStep, createWorkflow } from '@mastra/core/workflows';
 import { z } from 'zod';
-import { generateText } from 'ai';
 import { KVService } from '../services/kv-service';
 import { getLogger } from '../utils/core/logger';
 import { normalizeDepartmentName } from '../utils/language/language-utils';
 import { normalizeError, logErrorInfo } from '../utils/core/error-utils';
 import { errorService } from '../services/error-service';
-import { getModelWithOverride } from '../model-providers';
-import { THEME_COLORS, API_ENDPOINTS } from '../constants';
-import { DEFAULT_GENERATION_PARAMS } from '../utils/config/llm-generation-params';
+import { API_ENDPOINTS } from '../constants';
 import { waitForKVConsistency, buildExpectedKVKeys } from '../utils/kv-consistency';
 import { withRetry } from '../utils/core/resilience-utils';
+import { normalizeThemeBackgroundClass } from '../utils/theme/theme-color-normalizer';
 
 const logger = getLogger('UpdateMicrolearningWorkflow');
 
@@ -63,73 +61,7 @@ function deepMerge(target: any, source: any): any {
   return result;
 }
 
-// Color normalization - AI-powered CSS class matching
-async function normalizeThemeColor(colorInput: string, modelProvider?: string, modelName?: string): Promise<string> {
-  // Check if already a valid CSS class
-  if (THEME_COLORS.VALUES.includes(colorInput as any)) {
-    return colorInput;
-  }
-
-  try {
-    // Use model override if provided, otherwise use default (Cloudflare Workers AI)
-    const finalModel = getModelWithOverride(modelProvider, modelName);
-
-    const systemPrompt = `ROLE: CSS Color Class Matcher
-TASK: Return ONLY the CSS class name - nothing else
-
-CRITICAL RULES:
-1. Output ONLY one CSS class name from the provided list
-2. NO explanation text, NO quotes, NO backticks, NO markdown
-3. NO newlines, NO whitespace before/after
-4. NO "The answer is..." or any prefix/suffix
-5. Just the class name: bg-gradient-red (EXAMPLE ONLY)
-6. If multiple matches, choose closest semantic match
-7. If no perfect match, pick best approximation
-
-CONSTRAINT: Your response must be exactly one line with only the CSS class name`;
-
-    const userPrompt = `User requested color: "${colorInput}"
-
-Available colors:
-${THEME_COLORS.VALUES.map((c) => `- ${c}`).join('\n')}
-
-Respond with ONLY the CSS class name. Nothing else.`;
-
-    const { text } = await generateText({
-      model: finalModel,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
-      ...DEFAULT_GENERATION_PARAMS,
-    });
-
-    // Parse response - extract and validate color
-    const selectedColor = text.trim().split('\n')[0].trim();
-
-    // Try direct match
-    if (THEME_COLORS.VALUES.includes(selectedColor as any)) {
-      logger.info('Color normalized', { input: colorInput, output: selectedColor });
-      return selectedColor;
-    }
-
-    // Fallback: search for pattern in response (in case AI added explanation)
-    const classNamePattern = /bg-gradient-[\w-]+/;
-    const match = text.match(classNamePattern);
-    if (match && THEME_COLORS.VALUES.includes(match[0] as any)) {
-      logger.info('Color normalized', { input: colorInput, output: match[0] });
-      return match[0];
-    }
-
-    // No valid color found, use default
-    logger.warn('Invalid color returned from AI', { input: colorInput, aiOutput: selectedColor });
-    return THEME_COLORS.DEFAULT;
-  } catch (error) {
-    const err = normalizeError(error);
-    logger.error('Color normalization failed', { error: err.message, stack: err.stack, colorInput });
-    return THEME_COLORS.DEFAULT;
-  }
-}
+// Color normalization moved to utils/theme/theme-color-normalizer.ts (preset → AI fallback → default)
 
 // Step 1: Load and validate existing microlearning
 const loadMicrolearningStep = createStep({
@@ -218,7 +150,7 @@ const mergeUpdatesStep = createStep({
       // Normalize color if provided
       if (updates.theme.colors?.background) {
         const inputColor = updates.theme.colors.background;
-        const normalizedColor = await normalizeThemeColor(inputColor, modelProvider, model);
+        const normalizedColor = await normalizeThemeBackgroundClass(inputColor, modelProvider, model);
         updates.theme.colors.background = normalizedColor;
         logger.info('Color normalized in merge', {
           microlearningId,
