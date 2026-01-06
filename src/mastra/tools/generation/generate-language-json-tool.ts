@@ -276,6 +276,7 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
       if (videoScenes['3'] && videoScenes['3'].video) {
         videoScenes['3'].video.src = selectedVideoUrl;
         videoScenes['3'].video.transcript = selectedTranscript;
+        videoScenes['3'].video.transcriptLanguage = analysis.language.toLowerCase().startsWith('en') ? 'English' : analysis.language;
         logger.debug('Video URL overridden', { videoUrl: selectedVideoUrl.substring(0, 50) });
       }
     } catch (parseErr) {
@@ -286,7 +287,8 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
         const retryResponse = await withRetry(
           () => generateText({
             model: model,
-            messages: buildSceneMessages(videoSystemPrompt, videoPrompt, analysis, policyContext)
+            messages: buildSceneMessages(videoSystemPrompt, videoPrompt, analysis, policyContext),
+            ...SCENE_GENERATION_PARAMS[3]  // Scene 3: Video (balanced) - keep retry consistent with primary call
           }),
           'Video generation retry'
         );
@@ -298,6 +300,7 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
         if (videoScenes['3'] && videoScenes['3'].video) {
           videoScenes['3'].video.src = selectedVideoUrl;
           videoScenes['3'].video.transcript = selectedTranscript;
+          videoScenes['3'].video.transcriptLanguage = analysis.language.toLowerCase().startsWith('en') ? 'English' : analysis.language;
           logger.debug('Video URL overridden on retry', { videoUrl: selectedVideoUrl.substring(0, 50) });
         }
 

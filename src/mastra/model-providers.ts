@@ -217,14 +217,48 @@ function normalizeModelProvider(provider: string): string {
 
 /**
  * Normalize model name string to enum format
- * Converts uppercase/underscore format (e.g., OPENAI_GPT_4O) to lowercase/hyphen (e.g., openai-gpt-4o)
+ * Accepts multiple input formats and resolves to a valid Model enum VALUE:
+ * - Enum key: WORKERS_AI_GPT_OSS_120B
+ * - Kebab-case key: workers-ai-gpt-oss-120b
+ * - Raw model id: gpt-4o-mini, @cf/openai/gpt-oss-120b, gemini-2.5-pro
  * @param model - Raw model name from input
- * @returns Normalized model string
+ * @returns Resolved model id (must match Model enum values)
  */
 function normalizeModelName(model: string): string {
-    return model
+    const raw = String(model || '').trim();
+    if (!raw) return raw;
+
+    // 1) If already a valid enum value, keep as-is
+    if (Object.values(Model).includes(raw as Model)) {
+        return raw;
+    }
+
+    // 2) If user passed the enum KEY (e.g., WORKERS_AI_GPT_OSS_120B), resolve it
+    if (raw in Model) {
+        return Model[raw as keyof typeof Model];
+    }
+
+    // 3) Accept kebab/snake versions of enum keys (e.g., workers-ai-gpt-oss-120b)
+    // Normalize into an enum key candidate: WORKERS_AI_GPT_OSS_120B
+    const enumKeyCandidate = raw
+        .toUpperCase()
+        .replace(/[^A-Z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '');
+
+    if (enumKeyCandidate in Model) {
+        return Model[enumKeyCandidate as keyof typeof Model];
+    }
+
+    // 4) Best-effort: if they included provider prefixes for OpenAI/Gemini, strip them
+    // openai-gpt-4o-mini -> gpt-4o-mini (valid enum value)
+    const stripped = raw
         .toLowerCase()
-        .replace(/_/g, '-');
+        .replace(/^openai[-_]/, '')
+        .replace(/^google[-_]/, '')
+        .replace(/^gemini[-_]/, '')
+        .trim();
+
+    return stripped;
 }
 
 /**

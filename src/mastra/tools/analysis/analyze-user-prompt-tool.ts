@@ -14,6 +14,7 @@ import { getLogger } from '../../utils/core/logger';
 import { errorService } from '../../services/error-service';
 import { normalizeError, logErrorInfo } from '../../utils/core/error-utils';
 import { withRetry } from '../../utils/core/resilience-utils';
+import { autoRepairPromptAnalysis } from './prompt-analysis-normalizer';
 
 // Cache formatted lists for performance
 const cachedRolesList = ROLES.VALUES.map((role) => `- "${role}"`).join('\n');
@@ -298,16 +299,20 @@ ${additionalContext}`
       }
       // Use professional JSON repair library
       const cleanedText = cleanResponse(response.text, 'prompt-analysis');
-      const analysis = JSON.parse(cleanedText) as PromptAnalysis;
+      const analysis = JSON.parse(cleanedText) as Partial<PromptAnalysis>;
 
       // Validate and normalize BCP-47 language code (includes en-* variant normalization to en-US)
-      analysis.language = validateBCP47LanguageCode(analysis.language || DEFAULT_LANGUAGE);
+      const normalizedLanguage = validateBCP47LanguageCode(analysis.language || DEFAULT_LANGUAGE);
+      analysis.language = normalizedLanguage;
 
       // Validate themeColor - only allow values from THEME_COLORS.VALUES
       if (analysis.themeColor && !THEME_COLORS.VALUES.includes(analysis.themeColor as any)) {
         logger.warn('Invalid theme color, resetting to null', { providedColor: analysis.themeColor });
         analysis.themeColor = undefined;
       }
+
+      // Auto-repair critical fields for production stability (minimal, deterministic)
+      const repaired = autoRepairPromptAnalysis(analysis, { suggestedDepartment });
 
       logger.debug('Enhanced prompt analysis completed', { language: analysis.language, topic: analysis.topic });
 
@@ -323,30 +328,36 @@ ${additionalContext}`
         logger.debug('Custom requirements set', { requirementsLength: customRequirements.length });
       }
 
+      // Preserve enriched fields (context + custom requirements) after repair
+      repaired.hasRichContext = analysis.hasRichContext;
+      repaired.additionalContext = analysis.additionalContext;
+      repaired.customRequirements = analysis.customRequirements;
+      repaired.themeColor = analysis.themeColor;
+
       return {
         success: true,
         data: {
-          language: analysis.language,
-          topic: analysis.topic,
-          title: analysis.title,
-          description: analysis.description,
-          department: analysis.department,
-          level: analysis.level,
-          category: analysis.category,
-          subcategory: analysis.subcategory,
-          learningObjectives: analysis.learningObjectives,
-          duration: analysis.duration,
-          industries: analysis.industries,
-          roles: analysis.roles,
-          keyTopics: analysis.keyTopics,
-          practicalApplications: analysis.practicalApplications,
-          assessmentAreas: analysis.assessmentAreas,
-          regulationCompliance: analysis.regulationCompliance,
-          themeColor: analysis.themeColor,
-          hasRichContext: analysis.hasRichContext,
-          additionalContext: analysis.additionalContext,
-          customRequirements: analysis.customRequirements,
-          isCodeTopic: analysis.isCodeTopic,
+          language: repaired.language,
+          topic: repaired.topic,
+          title: repaired.title,
+          description: repaired.description,
+          department: repaired.department,
+          level: repaired.level,
+          category: repaired.category,
+          subcategory: repaired.subcategory,
+          learningObjectives: repaired.learningObjectives,
+          duration: repaired.duration,
+          industries: repaired.industries,
+          roles: repaired.roles,
+          keyTopics: repaired.keyTopics,
+          practicalApplications: repaired.practicalApplications,
+          assessmentAreas: repaired.assessmentAreas,
+          regulationCompliance: repaired.regulationCompliance,
+          themeColor: repaired.themeColor,
+          hasRichContext: repaired.hasRichContext,
+          additionalContext: repaired.additionalContext,
+          customRequirements: repaired.customRequirements,
+          isCodeTopic: repaired.isCodeTopic,
         },
         policyContext
       };

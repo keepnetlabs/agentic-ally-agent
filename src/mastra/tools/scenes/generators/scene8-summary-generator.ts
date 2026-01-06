@@ -76,7 +76,7 @@ Generate scene 8 (summary):
       "motivationalMessage": "Organizational benefit message (generic, works for ANY topic). Pattern: '[Action/Training] helps keep your organisation [safer/secure/protected]'. Max 12 words in ${analysis.language}. Example: 'Completing this training helps keep your organisation safer.'",
       "saveAndFinish": "Localize 'Save and Finish' into ${analysis.language}",
       "savingText": "Localize 'Saving…' into ${analysis.language}",
-      "finishedText": "Saved. You can now close this window' (max 10 words, ${analysis.language})",
+      "finishedText": "Saved. You can now close this window (max 10 words, ${analysis.language})",
       "finishErrorText": "LMS connection failed. Share the logs with your IT team (max 12 words, ${analysis.language})",
       "downloadButton": "Localize 'Download certificate' into ${analysis.language}",
       "downloadingText": "Localize 'Downloading…' into ${analysis.language}",
@@ -89,7 +89,6 @@ Generate scene 8 (summary):
       "certificateAwardedText": "Localize 'This certificate is awarded to' into ${analysis.language}",
       "certificateCompletionText": "Localize 'for successful completion of' into ${analysis.language}",
       "certificateDateText": "Localize 'on' into ${analysis.language}",
-      "downloadTrainingLogsText": "Localize 'Download Training Logs' into ${analysis.language}",
     },
     "immediateActions": [
       {

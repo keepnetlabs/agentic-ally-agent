@@ -31,6 +31,8 @@ export async function generateVideoPrompt(analysis: PromptAnalysis, microlearnin
   );
   logger.info('Video metadata generated', { title: videoMetadata.title, subtitle: videoMetadata.subtitle });
 
+  const transcriptLanguageLabel = analysis.language.toLowerCase().startsWith('en') ? 'English' : analysis.language;
+
   const prompt = `${contextData}
 
 SCENE 3 - VIDEO SCENARIO (TOPIC-SPECIFIC PATTERNS):
@@ -52,7 +54,7 @@ Follow this exact format:
     "iconName": "monitor-play",
     "title": "${videoMetadata.title}",
     "subtitle": "${videoMetadata.subtitle}",
-    "callToActionText": "Continue",
+    "callToActionText": "Localize 'Continue' into ${analysis.language}. Output localized text directly, not instructions.",
     "key_message": [
       "Real case",
       "Action phrase (2-3 words, -ING verb). Topic: ${analysis.topic}. Examples from patterns above. Reference: Phishing→'Spotting threats' | Deepfake→'Spotting fakes' | Ransomware→'Recognizing signs' | MFA→'Enabling protection' | Password→'Securing accounts' | Vishing→'Identifying impersonation' | Incident Response→'Following protocol' | Security Protocols→'Implementing policy'",
@@ -63,14 +65,14 @@ Follow this exact format:
       "poster": null,
       "disableForwardSeek": false,
       "showTranscript": true,
-      "transcriptTitle": "Transcript",
-      "transcriptLanguage": "English",
+      "transcriptTitle": "Localize 'Transcript' into ${analysis.language}. Output localized text directly, not instructions.",
+      "transcriptLanguage": "${transcriptLanguageLabel}",
       "transcript": "PLACEHOLDER_TRANSCRIPT"
     },
     "texts": {
-      "transcriptLoading": "Loading transcript…",
-      "ctaLocked": "Watch to continue",
-      "ctaUnlocked": "Continue"
+      "transcriptLoading": "Localize 'Loading transcript…' into ${analysis.language}. Output localized text directly, not instructions.",
+      "ctaLocked": "Localize 'Watch to continue' into ${analysis.language}. Output localized text directly, not instructions.",
+      "ctaUnlocked": "Localize 'Continue' into ${analysis.language}. Output localized text directly, not instructions."
     },
     "ariaTexts": {
       "mainLabel": "Scenario video",
@@ -88,7 +90,9 @@ Follow this exact format:
 CRITICAL:
 1. Use EXACTLY these JSON keys - do not add or remove any
 2. Output all text fields in ${analysis.language} (translate English template values)
-3. Keep transcript in English (transcriptLanguage: "English")
+3. Transcript handling:
+   - If ${analysis.language} is English, transcriptLanguage MUST be "English" and transcript MUST be English.
+   - If ${analysis.language} is NOT English, transcriptLanguage MUST be "${analysis.language}" and transcript MUST be in ${analysis.language}.
 4. Where you see "Output ONLY..." - return ONLY the final text, NO instructions, NO patterns, NO "Write..." directives
 5. TERMINOLOGY: Use correct grammar for compound topics (e.g., 'Real Ransomware Attack' NOT 'Real Ransomware Backups Story')`;
 

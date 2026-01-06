@@ -40,8 +40,8 @@ CRITICAL:
 {
   "5": {
     "iconName": "brain",
-    "title": "Test Your Knowledge",
-    "subtitle": "Make the right decision when it matters most",
+    "title": "Localize 'Test Your Knowledge' into ${analysis.language}. Output localized text directly, not instructions.",
+    "subtitle": "Localize 'Make the right decision when it matters most' into ${analysis.language}. Output localized text directly, not instructions.",
     "callToActionText": "Localize 'Answer to Continue' into ${analysis.language}. Output localized text directly, not instructions.",
     "quizCompletionCallToActionText": "Localize 'Continue' into ${analysis.language}. Output localized text directly, not instructions.",
     "key_message": [

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { AnalyzeUserPromptInput } from './analyze-user-prompt-tool';
 import { ExampleRepo } from '../../services/example-repo';
 import { z } from 'zod';
-import '../../../src/__tests__/setup';
+import '../../../__tests__/setup';
 
 /**
  * Test Suite: analyzeUserPromptTool
