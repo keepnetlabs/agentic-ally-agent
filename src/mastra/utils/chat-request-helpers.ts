@@ -244,6 +244,24 @@ export const buildRoutingContext = (messages: ChatMessage[]): string => {
   return context;
 };
 
+export function extractArtifactIdsFromRoutingContext(routingContext: string): {
+  microlearningId?: string;
+  phishingId?: string;
+} {
+  if (!routingContext) return {};
+
+  // Use the semantic markers we generate in cleanMessageContent:
+  // - microlearningId=...
+  // - phishingId=...
+  const microMatches = [...routingContext.matchAll(/microlearningId=([a-zA-Z0-9_-]{6,})/g)];
+  const phishingMatches = [...routingContext.matchAll(/phishingId=([a-zA-Z0-9_-]{6,})/g)];
+
+  const microlearningId = microMatches.length ? microMatches[microMatches.length - 1]?.[1] : undefined;
+  const phishingId = phishingMatches.length ? phishingMatches[phishingMatches.length - 1]?.[1] : undefined;
+
+  return { microlearningId, phishingId };
+}
+
 /**
  * Extracts user's intent from messages (last user message)
  *

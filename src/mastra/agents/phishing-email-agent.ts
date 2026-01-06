@@ -91,7 +91,10 @@ If you find issues, refine your parameters internally BEFORE calling the tool.
 
 ## Platform Integration (Upload & Assign)
 When user requests to **Upload** or **Assign** phishing simulation:
-1. Look for the most recent 'phishingId' in conversation history (from phishingExecutor tool result).
+1. Look for the most recent **phishing ID marker** in conversation history:
+   - Prefer marker: [Phishing Simulation Email Created: phishingId=...] OR [Phishing Simulation Landing Page Created: phishingId=...] (from UI signals)
+   - Also accept the [ARTIFACT_IDS] block if present (phishingId=...)
+   - If not found: ask the user for the phishingId (DO NOT guess, DO NOT use training IDs)
 2. If 'Assign' is requested, also look for a 'targetUserResourceId' (from UserInfo context).
    - **CRITICAL:** Scan conversation history for ANY recent User Profile search results (e.g. "User found: John Doe (ID: ...)").
    - Use that ID automatically. Do NOT ask "Who?" if a user was just discussed.

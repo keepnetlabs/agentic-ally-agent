@@ -10,6 +10,7 @@ import { RATE_LIMIT_CONFIG } from './constants';
 import { getDeployer } from './deployer';
 import { codeReviewCheckTool } from './tools';
 import { parseAndValidateRequest } from './utils/chat-request-helpers';
+import { extractArtifactIdsFromRoutingContext } from './utils/chat-request-helpers';
 import {
   preparePIIMaskedInput,
   extractAndPrepareThreadId,
@@ -282,6 +283,16 @@ export const mastra = new Mastra({
             body?.modelProvider,
             body?.model
           );
+
+          // Inject deterministic artifact IDs (short, code-derived) so agents don't have to guess from long history
+          const { microlearningId, phishingId } = extractArtifactIdsFromRoutingContext(routingContext);
+          if (microlearningId || phishingId) {
+            const parts = [
+              microlearningId ? `microlearningId=${microlearningId}` : undefined,
+              phishingId ? `phishingId=${phishingId}` : undefined,
+            ].filter(Boolean);
+            finalPrompt = `[ARTIFACT_IDS] ${parts.join(' ')}\n\n${finalPrompt}`;
+          }
 
           // Step 6: Inject orchestrator context (unmasked)
           finalPrompt = injectOrchestratorContext(

@@ -210,7 +210,8 @@ When user requests to update theme (e.g., "Change background color", "Change fon
 
 **Platform Integration (Upload & Assign):**
 When user requests to **Upload** or **Assign** training:
-1. Look for the most recent 'microlearningId' in conversation history.
+1. Look for the most recent 'microlearningId' in conversation history (or in the [ARTIFACT_IDS] block if present).
+   - If not found: ask the user for the microlearningId (DO NOT guess, DO NOT use URLs)
 2. If 'Assign' is requested, also look for a 'targetUserResourceId' (from UserInfo context).
    - **CRITICAL:** Scan conversation history for ANY recent User Profile search results (e.g. "User found: John Doe (ID: ...)").
    - Use that ID automatically. Do NOT ask "Who?" if a user was just discussed.
