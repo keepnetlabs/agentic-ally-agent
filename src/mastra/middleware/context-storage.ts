@@ -10,6 +10,8 @@ import { randomUUID } from 'crypto';
 export const contextStorage = async (c: Context, next: Next) => {
     // Use custom header for specific agent authentication
     const token = c.req.header('X-AGENTIC-ALLY-TOKEN');
+    // Company scope header (used for product backend + policy fetch)
+    const companyId = c.req.header('X-COMPANY-ID');
 
     // Get Cloudflare env bindings (KV, D1, Service Bindings, etc.)
     const env = c.env;
@@ -19,7 +21,7 @@ export const contextStorage = async (c: Context, next: Next) => {
     const correlationId = c.req.header('X-Correlation-ID') || randomUUID();
 
     // Wrap the next handlers in the AsyncLocalStorage run context
-    return requestStorage.run({ correlationId, token, env }, async () => {
+    return requestStorage.run({ correlationId, token, env, companyId }, async () => {
         await next();
     });
 };

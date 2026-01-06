@@ -2,10 +2,6 @@ import { createStep, createWorkflow } from '@mastra/core/workflows';
 import { generateText } from 'ai';
 import { getModelWithOverride } from '../model-providers';
 import { cleanResponse } from '../utils/content-processors/json-cleaner';
-import { sanitizeHtml } from '../utils/content-processors/html-sanitizer';
-import { normalizeEmailNestedTablePadding } from '../utils/content-processors/email-table-padding-normalizer';
-import { normalizeEmailCentering } from '../utils/content-processors/email-centering-normalizer';
-import { repairHtml } from '../utils/validation/json-validation-utils';
 import { v4 as uuidv4 } from 'uuid';
 import { LANDING_PAGE, STRING_TRUNCATION } from '../constants';
 import { KVService } from '../services/kv-service';
@@ -36,6 +32,7 @@ import { withRetry } from '../utils/core/resilience-utils';
 import { normalizeError, logErrorInfo } from '../utils/core/error-utils';
 import { errorService } from '../services/error-service';
 import { ProductService } from '../services/product-service';
+import { postProcessPhishingEmailHtml, postProcessPhishingLandingHtml } from '../utils/content-processors/phishing-html-postprocessors';
 
 // --- Steps ---
 
@@ -397,13 +394,7 @@ const generateEmail = createStep({
 
       // Sanitize HTML content to fix quoting/escaping issues
       if (parsedResult.template) {
-        let cleanedTemplate = sanitizeHtml(parsedResult.template);
-
-        // Email-client compatibility: move padding from nested <table> to containing <td>
-        cleanedTemplate = normalizeEmailNestedTablePadding(cleanedTemplate);
-
-        // Email-client compatibility (Outlook): enforce reliable centered container
-        cleanedTemplate = normalizeEmailCentering(cleanedTemplate);
+        let cleanedTemplate = postProcessPhishingEmailHtml({ html: parsedResult.template });
 
         // Replace {CUSTOMMAINLOGO} tag with actual logo URL (same as landing pages)
         if (cleanedTemplate.includes('{CUSTOMMAINLOGO}')) {
@@ -604,10 +595,8 @@ const generateLandingPage = createStep({
       if (parsedResult.pages && Array.isArray(parsedResult.pages)) {
         parsedResult.pages = await Promise.all(
           parsedResult.pages.map(async (page: any) => {
-            // Step 1: Sanitize HTML
-            let cleanedTemplate = sanitizeHtml(page.template);
-            // Step 1b: Repair malformed HTML (parse5 normalize) - helps with broken attributes/tags
-            cleanedTemplate = repairHtml(cleanedTemplate);
+            // Step 1: Post-process landing HTML (sanitize/repair/centering/wrapper)
+            let cleanedTemplate = postProcessPhishingLandingHtml({ html: page.template, title: `${fromName} Login` });
 
             // Step 2: Replace {CUSTOMMAINLOGO} tag FIRST (before fixBrokenImages)
             if (cleanedTemplate.includes('{CUSTOMMAINLOGO}')) {

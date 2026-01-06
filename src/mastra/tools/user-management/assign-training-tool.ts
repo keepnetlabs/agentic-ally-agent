@@ -9,6 +9,7 @@ import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../uti
 import { ERROR_MESSAGES, API_ENDPOINTS } from '../../constants';
 import { errorService } from '../../services/error-service';
 import { validateToolResult } from '../../utils/tool-result-validation';
+import { extractCompanyIdFromTokenExport } from '../../utils/core/policy-fetcher';
 
 // Output schema defined separately to avoid circular reference
 const assignTrainingOutputSchema = z.object({
@@ -43,6 +44,7 @@ export const assignTrainingTool = createTool({
 
     // Get Auth Token & Cloudflare bindings from AsyncLocalStorage
     const { token, companyId, env } = getRequestContext();
+    const effectiveCompanyId = companyId || (token ? extractCompanyIdFromTokenExport(token) : undefined);
 
     if (!token) {
       const errorInfo = errorService.auth(ERROR_MESSAGES.PLATFORM.ASSIGN_TOKEN_MISSING);
@@ -53,7 +55,7 @@ export const assignTrainingTool = createTool({
     const payload = {
       apiUrl: API_ENDPOINTS.PLATFORM_API_URL,
       accessToken: token,
-      companyId: companyId,
+      companyId: effectiveCompanyId,
       trainingId: resourceId,
       languageId: sendTrainingLanguageId, // Map languageId to resourceId param if API expects it
       ...(targetUserResourceId && { targetUserResourceId }),

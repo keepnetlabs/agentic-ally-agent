@@ -86,6 +86,26 @@ describe('getUserInfoTool', () => {
   });
 
   describe('Input Validation', () => {
+    it('should accept valid input with email', async () => {
+      (global.fetch as any)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => mockUserSearchResponse
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => mockTimelineResponse
+        });
+
+      const input = {
+        email: 'john.doe@example.com'
+      };
+
+      const result = await getUserInfoTool.execute({ context: input } as any);
+      expect(result).toBeDefined();
+      expect(result.success).toBe(true);
+    });
+
     it('should accept valid input with fullName', async () => {
       (global.fetch as any)
         .mockResolvedValueOnce({
@@ -194,6 +214,35 @@ describe('getUserInfoTool', () => {
   });
 
   describe('User Search', () => {
+    it('should search for user by email when provided', async () => {
+      const fetchSpy = (global.fetch as any)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => mockUserSearchResponse
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => mockTimelineResponse
+        });
+
+      const input = {
+        email: 'john.doe@example.com'
+      };
+
+      await getUserInfoTool.execute({ context: input } as any);
+
+      // First call: user search
+      const firstCall = fetchSpy.mock.calls[0];
+      expect(firstCall[0]).toBe(API_ENDPOINTS.USER_INFO_GET_ALL);
+      const body = JSON.parse(firstCall[1].body);
+      const filterItems = body.filter.FilterGroups[0].FilterItems;
+      expect(filterItems).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ FieldName: 'email' })
+        ])
+      );
+    });
+
     it('should search for user with correct payload', async () => {
       const fetchSpy = (global.fetch as any)
         .mockResolvedValueOnce({

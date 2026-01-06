@@ -53,7 +53,8 @@ export class ProductService {
       const store = requestStorage.getStore();
       return store?.token;
     } catch (error) {
-      this.logger.warn('Failed to get token from requestStorage');
+      const err = normalizeError(error);
+      this.logger.warn('Failed to get token from requestStorage', { error: err.message });
       return undefined;
     }
   }
@@ -66,7 +67,8 @@ export class ProductService {
       const store = requestStorage.getStore();
       return store?.companyId;
     } catch (error) {
-      this.logger.warn('Failed to get companyId from requestStorage');
+      const err = normalizeError(error);
+      this.logger.warn('Failed to get companyId from requestStorage', { error: err.message });
       return undefined;
     }
   }
@@ -90,7 +92,8 @@ export class ProductService {
         companyId: decoded.user_company_resourceid
       };
     } catch (error) {
-      this.logger.warn('Failed to parse JWT token');
+      const err = normalizeError(error);
+      this.logger.warn('Failed to parse JWT token', { error: err.message });
       return {};
     }
   }

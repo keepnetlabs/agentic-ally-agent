@@ -21,7 +21,7 @@ function extractCompanyIdFromToken(token: string): string | undefined {
 
     // companyId is stored as user_company_resourceid in JWT
     return decoded.user_company_resourceid;
-  } catch (error) {
+  } catch {
     return undefined;
   }
 }

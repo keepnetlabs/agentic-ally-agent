@@ -14,7 +14,11 @@ const logger = getLogger('EnvValidation');
  */
 const REQUIRED_ENV_VARS = [
     'CLOUDFLARE_ACCOUNT_ID',
+    'CLOUDFLARE_API_KEY',             // MOVED: Required for KV API calls
     'CLOUDFLARE_KV_TOKEN',
+    'CLOUDFLARE_D1_DATABASE_ID',      // MOVED: Required for embedding cache
+    'CLOUDFLARE_AI_GATEWAY_ID',       // MOVED: Required for Workers AI content generation
+    'CLOUDFLARE_GATEWAY_AUTHENTICATION_KEY', // MOVED: Required for Workers AI auth
     'OPENAI_API_KEY',
 ] as const;
 
@@ -23,12 +27,9 @@ const REQUIRED_ENV_VARS = [
  * Application will work without these but some features may be limited
  */
 const OPTIONAL_ENV_VARS = [
-    'CLOUDFLARE_D1_DATABASE_ID',
-    'CLOUDFLARE_AI_GATEWAY_ID',
-    'CLOUDFLARE_GATEWAY_AUTHENTICATION_KEY',
-    'GOOGLE_GENERATIVE_AI_API_KEY',
-    'MASTRA_MEMORY_URL',
-    'MASTRA_MEMORY_TOKEN',
+    'GOOGLE_GENERATIVE_AI_API_KEY',   // Optional: Falls back to OpenAI
+    'MASTRA_MEMORY_URL',              // Optional: External memory storage
+    'MASTRA_MEMORY_TOKEN',            // Optional: External memory auth
     // Note: RATE_LIMIT_* moved to constants.ts (RATE_LIMIT_CONFIG)
 ] as const;
 

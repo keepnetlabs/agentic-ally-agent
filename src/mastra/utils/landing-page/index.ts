@@ -25,3 +25,12 @@ export {
     logValidationResults,
     type ValidationResult
 } from './html-validator';
+
+// HTML normalization
+export {
+    normalizeLandingFormCentering,
+    normalizeLandingMaxWidthCentering,
+    normalizeLandingCentering
+} from './form-centering-normalizer';
+
+export { ensureLandingFullHtmlDocument } from './full-document-normalizer';

@@ -68,8 +68,13 @@ describe('ContextStorage Middleware', () => {
 
   it('should propagate context to requestStorage', async () => {
     const token = 'test-token';
+    const companyId = 'company-123';
     const mockEnv = { KV: {} };
-    (mockContext.req.header as any).mockReturnValue(token);
+    (mockContext.req.header as any).mockImplementation((header: string) => {
+      if (header === 'X-AGENTIC-ALLY-TOKEN') return token;
+      if (header === 'X-COMPANY-ID') return companyId;
+      return undefined;
+    });
     mockContext.env = mockEnv as any;
 
     await contextStorage(mockContext, async () => {
@@ -77,6 +82,7 @@ describe('ContextStorage Middleware', () => {
       const context = requestStorage.getStore();
       expect(context).toBeDefined();
       expect(context?.token).toBe(token);
+      expect(context?.companyId).toBe(companyId);
       expect(context?.env).toBe(mockEnv);
       expect(context?.correlationId).toBeDefined();
       expect(typeof context?.correlationId).toBe('string');

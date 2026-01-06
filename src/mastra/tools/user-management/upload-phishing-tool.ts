@@ -10,6 +10,7 @@ import { KVService } from '../../services/kv-service';
 import { ERROR_MESSAGES, API_ENDPOINTS } from '../../constants';
 import { errorService } from '../../services/error-service';
 import { validateToolResult } from '../../utils/tool-result-validation';
+import { extractCompanyIdFromTokenExport } from '../../utils/core/policy-fetcher';
 
 // Output schema defined separately to avoid circular reference
 const uploadPhishingOutputSchema = z.object({
@@ -46,6 +47,7 @@ export const uploadPhishingTool = createTool({
 
         // Get Auth Token & Cloudflare bindings from AsyncLocalStorage
         const { token, companyId, env } = getRequestContext();
+        const effectiveCompanyId = companyId || (token ? extractCompanyIdFromTokenExport(token) : undefined);
 
         if (!token) {
             const errorInfo = errorService.auth(ERROR_MESSAGES.PLATFORM.UPLOAD_TOKEN_MISSING);
@@ -113,7 +115,7 @@ export const uploadPhishingTool = createTool({
             // 3. Upload to Worker
             const payload = {
                 accessToken: token, // Sensitive!
-                companyId: companyId,
+                companyId: effectiveCompanyId,
                 url: API_ENDPOINTS.PLATFORM_API_URL,
                 phishingData: phishingPayload
             };
@@ -130,6 +132,7 @@ export const uploadPhishingTool = createTool({
                     publicUrl: API_ENDPOINTS.PHISHING_WORKER_URL,
                     endpoint: 'https://worker/submit',
                     payload,
+                    token,
                     errorPrefix: 'Worker failed',
                     operationName: `Upload phishing content ${phishingId}`
                 }),

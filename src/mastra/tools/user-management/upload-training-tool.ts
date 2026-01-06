@@ -12,6 +12,7 @@ import { errorService } from '../../services/error-service';
 import { validateToolResult } from '../../utils/tool-result-validation';
 import { waitForKVConsistency, buildExpectedKVKeys } from '../../utils/kv-consistency';
 import { MicrolearningService } from '../../services/microlearning-service';
+import { extractCompanyIdFromTokenExport } from '../../utils/core/policy-fetcher';
 
 // Output schema defined separately to avoid circular reference
 const uploadTrainingOutputSchema = z.object({
@@ -41,6 +42,7 @@ export const uploadTrainingTool = createTool({
 
         // Get Auth Token & Cloudflare bindings from AsyncLocalStorage
         const { token, companyId, env } = getRequestContext();
+        const effectiveCompanyId = companyId || (token ? extractCompanyIdFromTokenExport(token) : undefined);
 
         if (!token) {
             const errorInfo = errorService.auth(ERROR_MESSAGES.PLATFORM.UPLOAD_TOKEN_MISSING);
@@ -140,7 +142,7 @@ export const uploadTrainingTool = createTool({
             // 3. Upload to Worker (includes inboxUrl for department-specific inbox assignment)
             const payload = {
                 accessToken: token, // Sensitive!
-                companyId,
+                companyId: effectiveCompanyId,
                 url: API_ENDPOINTS.PLATFORM_API_URL,
                 baseUrl: API_ENDPOINTS.MICROLEARNING_API_URL + microlearningId,
                 trainingData
@@ -158,6 +160,7 @@ export const uploadTrainingTool = createTool({
                     publicUrl: API_ENDPOINTS.TRAINING_WORKER_URL,
                     endpoint: 'https://worker/submit',
                     payload,
+                    token,
                     errorPrefix: 'Worker failed',
                     operationName: `Upload training content ${microlearningId}`
                 }),

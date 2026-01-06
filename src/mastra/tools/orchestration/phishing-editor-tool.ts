@@ -12,7 +12,6 @@ import { getModelWithOverride } from '../../model-providers';
 import { cleanResponse } from '../../utils/content-processors/json-cleaner';
 import { sanitizeHtml } from '../../utils/content-processors/html-sanitizer';
 import { normalizeEmailNestedTablePadding } from '../../utils/content-processors/email-table-padding-normalizer';
-import { repairHtml } from '../../utils/validation/json-validation-utils';
 import { KVService } from '../../services/kv-service';
 import { getLogger } from '../../utils/core/logger';
 import { errorService } from '../../services/error-service';
@@ -22,6 +21,7 @@ import { ProductService } from '../../services/product-service';
 import { fixBrokenImages } from '../../utils/landing-page/image-validator';
 import { resolveLogoAndBrand } from '../../utils/phishing/brand-resolver';
 import { preserveLandingFormControlStyles } from '../../utils/content-processors/landing-form-style-preserver';
+import { postProcessPhishingLandingHtml } from '../../utils/content-processors/phishing-html-postprocessors';
 
 // Utility: Add timeout to AI calls
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number = 30000): Promise<T> {
@@ -357,8 +357,7 @@ Return ONLY the JSON object with no extra text.`;
 
               const validated = landingPageResponseSchema.parse(parsed);
 
-              const sanitized = sanitizeHtml(validated.template);
-              let repaired = repairHtml(sanitized);
+              let repaired = postProcessPhishingLandingHtml({ html: validated.template, title: 'Secure Portal' });
 
               // Use updatedEmail context for landing page image fixing
               repaired = await fixBrokenImages(
