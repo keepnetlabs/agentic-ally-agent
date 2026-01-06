@@ -89,47 +89,75 @@ HOW TO INTERPRET THE JSON
 - Use business_value_zone.strategic to anchor executive value.
 - Do NOT expose internal fields (internal.*) in the output.
 
-REPORT STRUCTURE (MARKDOWN)
+REPORT STRUCTURE (MARKDOWN - MUST MATCH PDF FORMAT)
 
 # Behavioral Resilience Report
+**Individual Security Behavior (ENISA-aligned)**
 
-## Executive Summary
-Write a concise paragraph covering:
-- Current stage to target stage
-- What this means in plain language
-- Why this matters now
-Always say "The Employee", never a name.
+## Behavioral Resilience: [header.behavioral_resilience.current_stage] → [header.behavioral_resilience.target_stage]
+**Progression Hint:** [header.progression_hint]
+
+| Field | Value |
+|-------|-------|
+| Name | [fullName] |
+| Department | [meta.department] |
+| Report Date | [meta.generated_at_utc as DD MMM YYYY] |
 
 ## Strengths
-- Select the top 2 to 3 strengths.
-- Briefly explain why each matters for risk reduction or decision-making.
+- [strengths[0]]
+- [strengths[1]]
+- [strengths[2]]
+(Render ALL items from strengths[] as bullet points)
 
 ## Growth Opportunities
-- Select the most important next behaviors.
-- Frame them as next-level habits, not weaknesses.
+- [growth_opportunities[0]]
+- [growth_opportunities[1]]
+- [growth_opportunities[2]]
+(Render ALL items from growth_opportunities[] as bullet points)
 
-## Recommended Action Plan
+## AI-Recommended Next Steps
 
-### 1) Next Simulation
-- Vector and difficulty (EMAIL or QR only).
-- One sentence explaining why this scenario.
-- One sentence explaining the behavior it is meant to build.
+### Next Simulation: [simulations[0].vector] / [simulations[0].scenario_type] / [simulations[0].difficulty] ([simulations[0].persuasion_tactic])
+**NIST Phish Scale:** cue [simulations[0].nist_phish_scale.cue_difficulty], premise [simulations[0].nist_phish_scale.premise_alignment]
+**Why:** [simulations[0].why_this]
+**Designed to progress:** [simulations[0].designed_to_progress]
 
-### 2) Microlearning
-- Title
-- Focus (one sentence)
-- Why this supports progression
+### Next Microlearning: [microlearnings[0].title] ([microlearnings[0].duration_min] min, [microlearnings[0].language])
+**Objective:** [microlearnings[0].objective]
+**Why:** [microlearnings[0].why_this]
 
-### 3) Nudge
-- Message and channel
-- One sentence explaining how this reinforces habit formation
+### Nudge: [nudges[0].cadence] via [nudges[0].channel]
+**Message:** [nudges[0].message]
+**Why:** [nudges[0].why_this]
 
 ## Business Value
-- One short paragraph using strategic business value.
-- Use conservative language. Do not claim cost avoidance.
+
+### Operational
+- [business_value_zone.operational[0]]
+- [business_value_zone.operational[1]]
+- [business_value_zone.operational[2]]
+(Render ALL items from business_value_zone.operational[] as bullet points)
+
+### Strategic
+- [business_value_zone.strategic[0]]
+- [business_value_zone.strategic[1]]
+- [business_value_zone.strategic[2]]
+(Render ALL items from business_value_zone.strategic[] as bullet points)
+
+## Organizational Context (Gartner SBCP – Mapping Only)
+[maturity_mapping.gartner_sbcp_context_only.description]
+**Contextual only; not an individual rating.**
+
+## References
+- [references[0]]
+- [references[1]]
+- [references[2]]
+(Render ALL items from references[] as bullet points)
+
+---
 
 ## Ready to Proceed?
-Ask a simple choice question in user's language:
+Ask a simple choice question in user's language (SAME as user's current message language):
 "Would you like to create the microlearning or the phishing simulation?"
 
 NEVER ask only about one option. Always offer both choices.

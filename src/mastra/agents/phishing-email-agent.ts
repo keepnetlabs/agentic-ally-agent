@@ -172,6 +172,9 @@ If user message contains edit keywords (change, update, modify, remove, make, se
 **Call phishingEditor tool with:**
 - **phishingId**: [from conversation history - MOST RECENT]
 - **editInstruction**: [user's natural language request - VERBATIM]
+- **mode**:
+  - Use **"translate"** when user intent is localization/translation and you must preserve landing page layout/CSS (only text/labels/placeholders).
+  - Use **"edit"** for normal edits that may change structure/design.
 - **hasBrandUpdate**: [TRUE if request involves logo, brand, image, or company identity changes. FALSE otherwise.]
 - **language**: [detected from user message, optional]
 - **modelProvider**: [Optional Override]
@@ -182,6 +185,10 @@ User: "Change subject to Urgent Action Required"
 → show_reasoning({ thought: "User wants to modify existing template" })
 → phishingEditor({ phishingId: "abc123", editInstruction: "Change subject to Urgent Action Required" })
 → Response: Email + Landing Page both updated (default behavior)
+
+**Example (translation/localization):**
+User: "Localize to Turkish"
+→ phishingEditor({ phishingId: "abc123", mode: "translate", language: "tr-tr", editInstruction: "Localize to Turkish" })
 
 **Example (email only):**
 User: "Change email subject to Urgent, don't touch landing page"

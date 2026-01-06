@@ -683,12 +683,12 @@ ${isQuishing ? `**🚫 QUISHING LANDING PAGE - NO QR CODE REFERENCES:**
    - Do NOT add QR codes to landing pages. Landing pages are standard web forms (login, success, info pages).`}
 
 1. **LOGO STRATEGY (MANDATORY - Always include a logo):**
-   ${template && template.includes('{CUSTOMMAINLOGO}') ? `🚨 **HIGHEST PRIORITY - EMAIL USES LOGO TAG:**\n   - **ABSOLUTE REQUIREMENT:** The phishing email uses the \`{CUSTOMMAINLOGO}\` merge tag for the logo.\n   - **YOU MUST USE THE SAME TAG IN ALL LANDING PAGES:** \`<img src='{CUSTOMMAINLOGO}' alt='${fromName}' width='64' height='64' style='display: block; margin: 0 auto; object-fit: contain;' />\`\n   - **DO NOT** generate a different logo URL.\n   - **DO NOT** use any logo service or direct image URLs.\n   - **CRITICAL:** Landing page logo MUST use the same \`{CUSTOMMAINLOGO}\` tag as the email for brand consistency.\n   - The tag will be automatically replaced with the appropriate logo URL during post-processing.\n\n   **IF YOU SEE {CUSTOMMAINLOGO} TAG ABOVE, IGNORE ALL OTHER LOGO RULES BELOW AND USE ONLY THAT TAG.**\n\n   ---\n\n   **FALLBACK RULES (ONLY IF NO {CUSTOMMAINLOGO} TAG IN EMAIL):**` : `   - **CRITICAL:** Every landing page MUST include a logo image.`}
+   ${template && template.includes('{CUSTOMMAINLOGO}') ? `🚨 **HIGHEST PRIORITY - EMAIL USES LOGO TAG:**\n   - **ABSOLUTE REQUIREMENT:** The phishing email uses the \`{CUSTOMMAINLOGO}\` merge tag for the logo.\n   - **YOU MUST USE THE SAME TAG IN ALL LANDING PAGES:** \`<img src='{CUSTOMMAINLOGO}' alt='${fromName}' width='96' height='96' style='display: block; margin: 0 auto; object-fit: contain;' />\`\n   - **DO NOT** generate a different logo URL.\n   - **DO NOT** use any logo service or direct image URLs.\n   - **CRITICAL:** Landing page logo MUST use the same \`{CUSTOMMAINLOGO}\` tag as the email for brand consistency.\n   - The tag will be automatically replaced with the appropriate logo URL during post-processing.\n\n   **IF YOU SEE {CUSTOMMAINLOGO} TAG ABOVE, IGNORE ALL OTHER LOGO RULES BELOW AND USE ONLY THAT TAG.**\n\n   ---\n\n   **FALLBACK RULES (ONLY IF NO {CUSTOMMAINLOGO} TAG IN EMAIL):**` : `   - **CRITICAL:** Every landing page MUST include a logo image.`}
    - **LOGO TAG RULE (STRICT):**
      * **ALWAYS use the merge tag:** \`{CUSTOMMAINLOGO}\`
      * **DO NOT generate logo URLs directly** (no URLs in the landing page template)
      * **DO NOT use** any logo service URLs or direct image URLs
-     * **MUST use:** \`<img src='{CUSTOMMAINLOGO}' alt='Company Logo' width='64' height='64' style='display: block; margin: 0 auto; object-fit: contain;' />\`
+     * **MUST use:** \`<img src='{CUSTOMMAINLOGO}' alt='Company Logo' width='96' height='96' style='display: block; margin: 0 auto; object-fit: contain;' />\`
      * The \`{CUSTOMMAINLOGO}\` tag will be automatically replaced with the appropriate logo URL during post-processing
      * This applies to ALL landing pages, regardless of brand recognition
    - **FORBIDDEN:** 
@@ -954,7 +954,7 @@ ${additionalContext}
 
 ${isQuishing ? `**🚫 QUISHING:** Landing pages must NOT contain QR codes. Email has QR codes, landing pages are standard forms.` : `**🚫 IMPORTANT:** If the email contains QR codes, DO NOT include QR codes in landing pages. Landing pages are standard web forms.`}
 
-${emailUsesLogoTag ? `\n🚨 **LOGO REQUIREMENT (MANDATORY):**\nThe phishing email uses the \`{CUSTOMMAINLOGO}\` merge tag for the logo.\n\n**YOU MUST USE THE SAME TAG IN ALL LANDING PAGES.**\n\n**DO NOT:**\n- Generate a different logo URL\n- Use any logo service or direct image URLs\n- Create any other logo\n\n**YOU MUST:**\n- Use the same \`{CUSTOMMAINLOGO}\` tag\n- Include it in ALL pages (login, success, info, etc.)\n- Match the exact same logo tag that appears in the email\n\n**Example usage:**\n<img src='{CUSTOMMAINLOGO}' alt='${fromName}' width='64' height='64' style='display: block; margin: 0 auto; object-fit: contain;' />` : ''}
+${emailUsesLogoTag ? `\n🚨 **LOGO REQUIREMENT (MANDATORY):**\nThe phishing email uses the \`{CUSTOMMAINLOGO}\` merge tag for the logo.\n\n**YOU MUST USE THE SAME TAG IN ALL LANDING PAGES.**\n\n**DO NOT:**\n- Generate a different logo URL\n- Use any logo service or direct image URLs\n- Create any other logo\n\n**YOU MUST:**\n- Use the same \`{CUSTOMMAINLOGO}\` tag\n- Include it in ALL pages (login, success, info, etc.)\n- Match the exact same logo tag that appears in the email\n\n**Example usage:**\n<img src='{CUSTOMMAINLOGO}' alt='${fromName}' width='96' height='96' style='display: block; margin: 0 auto; object-fit: contain;' />` : ''}
 ${emailBrandContext ? `\n${emailBrandContext}` : ''}
 
 **Email Preview (first 500 chars):** ${template.substring(0, 500)}...`

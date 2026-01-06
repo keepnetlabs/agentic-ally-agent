@@ -234,6 +234,7 @@ export const workflowExecutorTool = createTool({
           logErrorInfo(logger, 'warn', 'Validation error', errorInfo);
           return createToolErrorResponse(errorInfo);
         }
+        const prompt = params.prompt;
 
         // Get cached policy summary ONCE at workflow start
         logger.info('Getting policy summary for workflow');
@@ -247,7 +248,7 @@ export const workflowExecutorTool = createTool({
         // Start workflow - let it fail if it fails
         const workflowResult: CreateMicrolearningResult = await run.start({
           inputData: {
-            prompt: params.prompt!,
+            prompt,
             additionalContext: params.additionalContext,
             customRequirements: params.customRequirements,
             department: params.department || 'All',
@@ -271,11 +272,11 @@ export const workflowExecutorTool = createTool({
         // Validate and extract data from workflow result
         if (validateCreateMicrolearningResult(workflowResult)) {
           try {
-            const metadata = workflowResult.result!.metadata!;
-            trainingUrl = metadata.trainingUrl!;
-            title = metadata.title || title;
-            department = metadata.department || department;
-            microlearningId = metadata.microlearningId || microlearningId;
+            const metadata = workflowResult.result?.metadata;
+            if (metadata?.trainingUrl) trainingUrl = metadata.trainingUrl;
+            if (metadata?.title) title = metadata.title;
+            if (metadata?.department) department = metadata.department;
+            if (metadata?.microlearningId) microlearningId = metadata.microlearningId;
           } catch (error) {
             const err = normalizeError(error);
             logger.error('Failed to extract validated workflow result data', { error: err.message });
@@ -333,15 +334,17 @@ export const workflowExecutorTool = createTool({
           logErrorInfo(logger, 'warn', 'Validation error', errorInfo);
           return createToolErrorResponse(errorInfo);
         }
+        const existingMicrolearningId = params.existingMicrolearningId;
+        const targetLanguage = params.targetLanguage;
 
         const workflow = addLanguageWorkflow;
         const run = await workflow.createRunAsync();
 
         const workflowResult: AddLanguageResult = await run.start({
           inputData: {
-            existingMicrolearningId: params.existingMicrolearningId!,
+            existingMicrolearningId,
             department: params.department || 'All',
-            targetLanguage: params.targetLanguage!,
+            targetLanguage,
             // sourceLanguage omitted: workflow will auto-detect from microlearning_metadata.language
             // This ensures correct language code (e.g., en-US not just en)
             sourceLanguage: params.sourceLanguage || undefined,  // Only pass if explicitly provided
@@ -352,8 +355,9 @@ export const workflowExecutorTool = createTool({
 
         // Validate and extract trainingUrl from result
         const isValid = validateAddLanguageResult(workflowResult);
-        const trainingUrl = isValid ? workflowResult.result!.data!.trainingUrl! : null;
-        const title = isValid ? workflowResult.result!.data!.title : null;
+        const data = isValid ? workflowResult.result?.data : undefined;
+        const trainingUrl = data?.trainingUrl ?? null;
+        const title = data?.title ?? null;
 
         if (!isValid) {
           logger.error('Language workflow result validation failed', { status: workflowResult.status });

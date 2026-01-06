@@ -26,7 +26,7 @@ export const ZERO_PII_POLICY = `**🔒 ZERO PII POLICY (STRICT):**
 export const LOGO_TAG_RULE = `**Company Logo (MANDATORY):**
 - Every email MUST include a logo image using \`{CUSTOMMAINLOGO}\` tag
 - Never generate logo URLs directly - only use the merge tag
-- Format: \`<img src='{CUSTOMMAINLOGO}' alt='Company Logo' width='64' height='64' style='display:block; margin:0 auto; object-fit: contain;'>\`
+- Format: \`<img src='{CUSTOMMAINLOGO}' alt='Company Logo' width='96' height='96' style='display:block; margin:0 auto; object-fit: contain;'>\`
 - Tag will be replaced with appropriate logo URL during post-processing`;
 
 /**
@@ -70,7 +70,8 @@ export const LAYOUT_STRATEGY_RULES = `**LAYOUT STRATEGY:**
   - text-align: center. Best for: Password Reset, Order, Security Alert, E-commerce
 * **OPTION B: Corporate Letter** - For formal internal communications
   - Background: Full White (#ffffff), no card box
-  - text-align: left. Best for: Policy Update, CEO Message, HR Announcement`;
+  - **IMPORTANT:** Container MUST still be CENTERED in the viewport (Outlook-safe table centering). Only the letter text can be left-aligned.
+  - text-align: left (inside the centered container). Best for: Policy Update, CEO Message, HR Announcement`;
 
 /**
  * Preheader rule for inbox preview

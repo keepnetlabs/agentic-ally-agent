@@ -21,6 +21,7 @@ import { withRetry } from '../../utils/core/resilience-utils';
 import { ProductService } from '../../services/product-service';
 import { fixBrokenImages } from '../../utils/landing-page/image-validator';
 import { resolveLogoAndBrand } from '../../utils/phishing/brand-resolver';
+import { preserveLandingFormControlStyles } from '../../utils/content-processors/landing-form-style-preserver';
 
 // Utility: Add timeout to AI calls
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number = 30000): Promise<T> {
@@ -35,6 +36,7 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number = 30000): Promise
 const phishingEditorSchema = z.object({
   phishingId: z.string().describe('ID of the existing phishing template to edit'),
   editInstruction: z.string().describe('Natural language instruction for editing (e.g. "Add urgency to all text", "Remove logo", "Translate to German")'),
+  mode: z.enum(['edit', 'translate']).optional().default('edit').describe('Operation mode: "translate" locks layout/CSS and only updates text/labels/placeholders; "edit" allows full content + design edits'),
   hasBrandUpdate: z.boolean().optional().default(false).describe('True if the instruction implies changing the brand, logo, or visual identity'),
   language: z.string().optional().default('en-gb').describe('Target language (BCP-47 code)'),
   modelProvider: z.string().optional().describe('Override model provider'),
@@ -69,7 +71,7 @@ export const phishingEditorTool = createTool({
   inputSchema: phishingEditorSchema,
 
   execute: async ({ context, writer }) => {
-    const { phishingId, editInstruction, language: inputLanguage, modelProvider, model } = context;
+    const { phishingId, editInstruction, mode, language: inputLanguage, modelProvider, model } = context;
     const logger = getLogger('PhishingEditor');
 
     // Fetch whitelabeling config for potential logo fallback
@@ -214,6 +216,7 @@ CRITICAL RULES:
 1. ✅ PRESERVE HTML structure and design (colors, spacing, layout)
 2. ✅ EDIT page content based on user instruction
 3. ✅ PRESERVE all form elements and functionality
+${mode === 'translate' ? `4. ✅ **TRANSLATE MODE - DO NOT CHANGE FORM CONTROL CSS:** For <input>, <select>, <textarea>, <button> you MUST preserve existing style/class attributes exactly. Only translate visible text, labels, and placeholders.` : `4. ✅ If instruction is translation/localization, preserve existing layout and CSS.`}
 4. ✅ Only SKIP if user explicitly said "email only" or "email template only"
 5. ✅ Return COMPLETE page HTML (never empty)
 6. ✅ All HTML attributes must use SINGLE QUOTES (style='...', class='...', etc.)
@@ -364,7 +367,15 @@ Return ONLY the JSON object with no extra text.`;
                 whitelabelConfig?.mainLogoUrl
               );
 
-              validated.template = repaired;
+              // Translate mode: enforce original form-control styles (LLM localization can rewrite input CSS)
+              if (mode === 'translate') {
+                const originalTemplate = existingLanding?.pages?.[idx]?.template;
+                validated.template = originalTemplate
+                  ? preserveLandingFormControlStyles(originalTemplate, repaired)
+                  : repaired;
+              } else {
+                validated.template = repaired;
+              }
               logger.debug(`Landing page ${idx + 1} validated successfully`, { type: validated.type });
               return validated;
             } catch (parseErr) {

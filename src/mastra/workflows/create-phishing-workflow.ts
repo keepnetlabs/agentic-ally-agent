@@ -4,6 +4,7 @@ import { getModelWithOverride } from '../model-providers';
 import { cleanResponse } from '../utils/content-processors/json-cleaner';
 import { sanitizeHtml } from '../utils/content-processors/html-sanitizer';
 import { normalizeEmailNestedTablePadding } from '../utils/content-processors/email-table-padding-normalizer';
+import { normalizeEmailCentering } from '../utils/content-processors/email-centering-normalizer';
 import { repairHtml } from '../utils/validation/json-validation-utils';
 import { v4 as uuidv4 } from 'uuid';
 import { LANDING_PAGE, STRING_TRUNCATION } from '../constants';
@@ -400,6 +401,9 @@ const generateEmail = createStep({
 
         // Email-client compatibility: move padding from nested <table> to containing <td>
         cleanedTemplate = normalizeEmailNestedTablePadding(cleanedTemplate);
+
+        // Email-client compatibility (Outlook): enforce reliable centered container
+        cleanedTemplate = normalizeEmailCentering(cleanedTemplate);
 
         // Replace {CUSTOMMAINLOGO} tag with actual logo URL (same as landing pages)
         if (cleanedTemplate.includes('{CUSTOMMAINLOGO}')) {
