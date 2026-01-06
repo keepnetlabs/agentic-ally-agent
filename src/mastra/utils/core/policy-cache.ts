@@ -1,7 +1,6 @@
 import { getPolicyContext } from './policy-fetcher';
 import { generateText } from 'ai';
 import { getModelWithOverride } from '../../model-providers';
-import { cleanResponse } from '../content-processors/json-cleaner';
 import { getLogger } from './logger';
 import { normalizeError } from './error-utils';
 
@@ -31,7 +30,7 @@ export async function getPolicySummary(): Promise<string> {
 
   // Check cache validity
   if (policyCache.has(cacheKey)) {
-    const cached = policyCache.get(cacheKey)!;
+    const cached = policyCache.get(cacheKey) as CachedPolicy;
     if (now < cached.expiresAt) {
       logger.debug('Returning cached policy summary', { cacheAge: now - cached.timestamp });
       return cached.summary;

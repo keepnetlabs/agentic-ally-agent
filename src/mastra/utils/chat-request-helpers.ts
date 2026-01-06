@@ -15,7 +15,63 @@ import { getLogger } from './core/logger';
 const logger = getLogger('ChatRequestHelpers');
 
 // Window size for conversation context
-const CONTEXT_WINDOW_SIZE = 10;
+const CONTEXT_WINDOW_SIZE = 20;
+
+function extractUiPayload(content: string, signalType: string): string | undefined {
+  // With explicit closing tag: ::ui:type::PAYLOAD::/ui:type::
+  const withClosing = new RegExp(`::ui:${signalType}::([\\s\\S]*?)::\\/ui:${signalType}::`, 'i');
+  const m1 = content.match(withClosing);
+  if (m1?.[1]) return m1[1].trim();
+
+  // Without closing tag (used by canvas_open): ::ui:type::PAYLOAD\n
+  const withoutClosing = new RegExp(`::ui:${signalType}::([^\\n]+)`, 'i');
+  const m2 = content.match(withoutClosing);
+  if (m2?.[1]) return m2[1].trim();
+
+  return undefined;
+}
+
+function decodeBase64Json(payload: string): unknown {
+  const raw = Buffer.from(payload, 'base64').toString('utf-8');
+  return JSON.parse(raw);
+}
+
+function safeExtractPhishingIdFromUiPayload(payload: string): string | undefined {
+  try {
+    const decoded = decodeBase64Json(payload);
+    if (decoded && typeof decoded === 'object' && 'phishingId' in decoded) {
+      const value = (decoded as Record<string, unknown>).phishingId;
+      return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+    }
+    return undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function safeExtractMicrolearningIdFromUrl(url: string): string | undefined {
+  try {
+    // Best-effort: take the last non-empty path segment if it looks like an ID.
+    // Examples we want to support:
+    // - https://.../training/<id>
+    // - https://.../microlearning/<id>
+    // - https://.../<id>
+    const cleaned = url.split('?')[0]?.split('#')[0] ?? url;
+    const parts = cleaned.split('/').filter(Boolean);
+    const last = parts[parts.length - 1];
+    if (!last) return undefined;
+
+    // Avoid returning domain-like segments
+    if (last.includes('.')) return undefined;
+
+    // Heuristic: IDs are typically >= 8 chars and alphanumeric-ish
+    if (/^[a-zA-Z0-9_-]{8,}$/.test(last)) return last;
+
+    return undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 /**
  * Extracts text content from a message in various formats
@@ -90,13 +146,40 @@ const cleanMessageContent = (content: string): string => {
 
   // Convert UI signals to semantic messages (for orchestrator context)
   // Matches both with and without closing tags: ::ui:canvas_open:: or ::ui:canvas_open::data::/ui:canvas_open::
+  if (content.match(/::ui:training_meta::/)) {
+    const payload = extractUiPayload(content, 'training_meta');
+    if (payload) {
+      try {
+        const decoded = decodeBase64Json(payload);
+        if (decoded && typeof decoded === 'object' && 'microlearningId' in decoded) {
+          const value = (decoded as Record<string, unknown>).microlearningId;
+          const microlearningId = typeof value === 'string' && value.trim() ? value.trim() : undefined;
+          if (microlearningId) return `[Training Created: microlearningId=${microlearningId}]`;
+        }
+      } catch {
+        // ignore
+      }
+    }
+    return '[Training Created]';
+  }
   if (content.match(/::ui:canvas_open::/)) {
+    const trainingUrl = extractUiPayload(content, 'canvas_open') || '';
+    const microlearningId = trainingUrl ? safeExtractMicrolearningIdFromUrl(trainingUrl) : undefined;
+    if (microlearningId) {
+      return `[Training Created: microlearningId=${microlearningId}]`;
+    }
     return '[Training Created]';
   }
   if (content.match(/::ui:phishing_email::/)) {
+    const payload = extractUiPayload(content, 'phishing_email');
+    const phishingId = payload ? safeExtractPhishingIdFromUiPayload(payload) : undefined;
+    if (phishingId) return `[Phishing Simulation Email Created: phishingId=${phishingId}]`;
     return '[Phishing Simulation Email Created]';
   }
   if (content.match(/::ui:landing_page::/)) {
+    const payload = extractUiPayload(content, 'landing_page');
+    const phishingId = payload ? safeExtractPhishingIdFromUiPayload(payload) : undefined;
+    if (phishingId) return `[Phishing Simulation Landing Page Created: phishingId=${phishingId}]`;
     return '[Phishing Simulation Landing Page Created]';
   }
   if (content.match(/::ui:training_uploaded::/)) {

@@ -1,22 +1,24 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { codeReviewCheckTool } from './code-review-check-tool';
 
 /**
  * Test suite for codeReviewCheckTool
  * Tests code review validation with support for multiple issue types and languages
  */
+const executeTool = (codeReviewCheckTool as any).execute;
+
 describe('codeReviewCheckTool', () => {
   // ==================== INPUT VALIDATION TESTS ====================
   describe('Input Validation', () => {
     it('should accept valid input with all required fields', async () => {
       const input = {
         issueType: 'SQL Injection',
-        originalCode: "SELECT * FROM users WHERE id = " + userInput,
+        originalCode: "SELECT * FROM users WHERE id = " + "'user_input'",
         fixedCode: 'SELECT * FROM users WHERE id = ?',
         language: 'javascript',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
       expect(result.success !== undefined).toBe(true);
     });
@@ -28,7 +30,7 @@ describe('codeReviewCheckTool', () => {
         language: 'javascript',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result.success === false || result.error).toBeDefined();
     });
 
@@ -39,7 +41,7 @@ describe('codeReviewCheckTool', () => {
         language: 'javascript',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result.success === false || result.error).toBeDefined();
     });
 
@@ -50,43 +52,43 @@ describe('codeReviewCheckTool', () => {
         language: 'c',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result.success === false || result.error).toBeDefined();
     });
 
     it('should require language', async () => {
       const input: any = {
         issueType: 'SQL Injection',
-        originalCode: 'SELECT * FROM users WHERE id = ' + id,
+        originalCode: 'SELECT * FROM users WHERE id = ' + "'user_input'",
         fixedCode: 'SELECT * FROM users WHERE id = ?',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result.success === false || result.error).toBeDefined();
     });
 
     it('should accept outputLanguage as optional field', async () => {
       const input = {
         issueType: 'SQL Injection',
-        originalCode: 'SELECT * FROM users WHERE id = ' + id,
+        originalCode: 'SELECT * FROM users WHERE id = ' + "'user_input'",
         fixedCode: 'SELECT * FROM users WHERE id = ?',
         language: 'javascript',
         outputLanguage: 'en',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
     it('should default outputLanguage to en', async () => {
       const input = {
         issueType: 'SQL Injection',
-        originalCode: 'SELECT * FROM users WHERE id = ' + id,
+        originalCode: 'SELECT * FROM users WHERE id = ' + "'user_input'",
         fixedCode: 'SELECT * FROM users WHERE id = ?',
         language: 'javascript',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -99,7 +101,7 @@ describe('codeReviewCheckTool', () => {
         modelProvider: 'OPENAI',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -112,7 +114,7 @@ describe('codeReviewCheckTool', () => {
         model: 'gpt-4o',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
   });
@@ -122,12 +124,12 @@ describe('codeReviewCheckTool', () => {
     it('should validate SQL Injection fix', async () => {
       const input = {
         issueType: 'SQL Injection',
-        originalCode: "const query = 'SELECT * FROM users WHERE id = ' + userId;",
+        originalCode: "const query = 'SELECT * FROM users WHERE id = ' + 'user-123';",
         fixedCode: "const stmt = db.prepare('SELECT * FROM users WHERE id = ?'); stmt.run(userId);",
         language: 'javascript',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -139,7 +141,7 @@ describe('codeReviewCheckTool', () => {
         language: 'javascript',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -151,7 +153,7 @@ describe('codeReviewCheckTool', () => {
         language: 'javascript',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -163,7 +165,7 @@ describe('codeReviewCheckTool', () => {
         language: 'c',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -175,7 +177,7 @@ describe('codeReviewCheckTool', () => {
         language: 'javascript',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -187,7 +189,7 @@ describe('codeReviewCheckTool', () => {
         language: 'javascript',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -199,7 +201,7 @@ describe('codeReviewCheckTool', () => {
         language: 'javascript',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -211,7 +213,7 @@ describe('codeReviewCheckTool', () => {
         language: 'javascript',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -223,7 +225,7 @@ describe('codeReviewCheckTool', () => {
         language: 'javascript',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -235,7 +237,7 @@ describe('codeReviewCheckTool', () => {
         language: 'javascript',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -247,7 +249,7 @@ describe('codeReviewCheckTool', () => {
         language: 'javascript',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
   });
@@ -257,12 +259,12 @@ describe('codeReviewCheckTool', () => {
     it('should validate JavaScript code', async () => {
       const input = {
         issueType: 'SQL Injection',
-        originalCode: "SELECT * FROM users WHERE id = " + userId,
+        originalCode: "SELECT * FROM users WHERE id = " + 'user-123',
         fixedCode: "SELECT * FROM users WHERE id = ?",
         language: 'javascript',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -274,7 +276,7 @@ describe('codeReviewCheckTool', () => {
         language: 'typescript',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -286,19 +288,19 @@ describe('codeReviewCheckTool', () => {
         language: 'python',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
     it('should validate Java code', async () => {
       const input = {
         issueType: 'SQL Injection',
-        originalCode: "String query = \"SELECT * FROM users WHERE id = \" + userId;",
+        originalCode: "String query = \"SELECT * FROM users WHERE id = \" + 'user-123';",
         fixedCode: "PreparedStatement stmt = con.prepareStatement(\"SELECT * FROM users WHERE id = ?\"); stmt.setInt(1, userId);",
         language: 'java',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -310,7 +312,7 @@ describe('codeReviewCheckTool', () => {
         language: 'c',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -322,7 +324,7 @@ describe('codeReviewCheckTool', () => {
         language: 'cpp',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -334,7 +336,7 @@ describe('codeReviewCheckTool', () => {
         language: 'go',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -346,7 +348,7 @@ describe('codeReviewCheckTool', () => {
         language: 'ruby',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -358,7 +360,7 @@ describe('codeReviewCheckTool', () => {
         language: 'php',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -370,7 +372,7 @@ describe('codeReviewCheckTool', () => {
         language: 'csharp',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
   });
@@ -380,13 +382,13 @@ describe('codeReviewCheckTool', () => {
     it('should generate feedback in English', async () => {
       const input = {
         issueType: 'SQL Injection',
-        originalCode: "SELECT * FROM users WHERE id = " + userId,
+        originalCode: "SELECT * FROM users WHERE id = " + 'user-123',
         fixedCode: "SELECT * FROM users WHERE id = ?",
         language: 'javascript',
         outputLanguage: 'en',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data) {
         expect(typeof result.data.feedback).toBe('string');
       }
@@ -395,13 +397,13 @@ describe('codeReviewCheckTool', () => {
     it('should generate feedback in Turkish', async () => {
       const input = {
         issueType: 'SQL Injection',
-        originalCode: "SELECT * FROM users WHERE id = " + userId,
+        originalCode: "SELECT * FROM users WHERE id = " + 'user-123',
         fixedCode: "SELECT * FROM users WHERE id = ?",
         language: 'javascript',
         outputLanguage: 'tr',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data) {
         expect(typeof result.data.feedback).toBe('string');
       }
@@ -416,7 +418,7 @@ describe('codeReviewCheckTool', () => {
         outputLanguage: 'de',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data) {
         expect(typeof result.data.feedback).toBe('string');
       }
@@ -431,7 +433,7 @@ describe('codeReviewCheckTool', () => {
         outputLanguage: 'fr',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data) {
         expect(typeof result.data.feedback).toBe('string');
       }
@@ -446,7 +448,7 @@ describe('codeReviewCheckTool', () => {
         outputLanguage: 'es',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data) {
         expect(typeof result.data.feedback).toBe('string');
       }
@@ -461,7 +463,7 @@ describe('codeReviewCheckTool', () => {
         outputLanguage: 'zh',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data) {
         expect(typeof result.data.feedback).toBe('string');
       }
@@ -476,7 +478,7 @@ describe('codeReviewCheckTool', () => {
         outputLanguage: 'ja',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data) {
         expect(typeof result.data.feedback).toBe('string');
       }
@@ -488,12 +490,12 @@ describe('codeReviewCheckTool', () => {
     it('should return 25 points for correct fix', async () => {
       const input = {
         issueType: 'SQL Injection',
-        originalCode: "SELECT * FROM users WHERE id = " + userId,
+        originalCode: "SELECT * FROM users WHERE id = " + 'user-123',
         fixedCode: "SELECT * FROM users WHERE id = ?",
         language: 'javascript',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data) {
         expect(result.data.points).toBeDefined();
         if (result.data.isCorrect) {
@@ -505,12 +507,12 @@ describe('codeReviewCheckTool', () => {
     it('should return 10 points for partial fix', async () => {
       const input = {
         issueType: 'SQL Injection',
-        originalCode: "SELECT * FROM users WHERE id = " + userId,
-        fixedCode: "SELECT * FROM users WHERE id = '" + sanitize(userId) + "'", // Partial solution
+        originalCode: "SELECT * FROM users WHERE id = " + 'user-123',
+        fixedCode: "SELECT * FROM users WHERE id = '" + 'user-123'.replace(/[^0-9]/g, '') + "'", // Partial solution
         language: 'javascript',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data) {
         expect(result.data.points).toBeDefined();
         if (result.data.severity === 'partial') {
@@ -522,12 +524,12 @@ describe('codeReviewCheckTool', () => {
     it('should return 0 points for incorrect fix', async () => {
       const input = {
         issueType: 'SQL Injection',
-        originalCode: "SELECT * FROM users WHERE id = " + userId,
-        fixedCode: "SELECT * FROM users WHERE id = " + userId,
+        originalCode: "SELECT * FROM users WHERE id = " + 'user-123',
+        fixedCode: "SELECT * FROM users WHERE id = " + 'user-123',
         language: 'javascript',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data) {
         expect(result.data.points).toBeDefined();
         if (!result.data.isCorrect && result.data.severity === 'incorrect') {
@@ -539,12 +541,12 @@ describe('codeReviewCheckTool', () => {
     it('should mark severity as correct when isCorrect=true', async () => {
       const input = {
         issueType: 'SQL Injection',
-        originalCode: "SELECT * FROM users WHERE id = " + userId,
+        originalCode: "SELECT * FROM users WHERE id = " + 'user-123',
         fixedCode: "SELECT * FROM users WHERE id = ?",
         language: 'javascript',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data) {
         if (result.data.isCorrect) {
           expect(result.data.severity).toBe('correct');
@@ -555,12 +557,12 @@ describe('codeReviewCheckTool', () => {
     it('should mark severity as incorrect when isCorrect=false and not partial', async () => {
       const input = {
         issueType: 'SQL Injection',
-        originalCode: "SELECT * FROM users WHERE id = " + userId,
-        fixedCode: "SELECT * FROM users WHERE id = " + userId,
+        originalCode: "SELECT * FROM users WHERE id = " + 'user-123',
+        fixedCode: "SELECT * FROM users WHERE id = " + 'user-123',
         language: 'javascript',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data) {
         if (!result.data.isCorrect) {
           expect(['incorrect', 'partial']).toContain(result.data.severity);
@@ -574,24 +576,24 @@ describe('codeReviewCheckTool', () => {
     it('should return success flag', async () => {
       const input = {
         issueType: 'SQL Injection',
-        originalCode: "SELECT * FROM users WHERE id = " + userId,
+        originalCode: "SELECT * FROM users WHERE id = " + 'user-123',
         fixedCode: "SELECT * FROM users WHERE id = ?",
         language: 'javascript',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(typeof result.success).toBe('boolean');
     });
 
     it('should return data object when successful', async () => {
       const input = {
         issueType: 'SQL Injection',
-        originalCode: "SELECT * FROM users WHERE id = " + userId,
+        originalCode: "SELECT * FROM users WHERE id = " + 'user-123',
         fixedCode: "SELECT * FROM users WHERE id = ?",
         language: 'javascript',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       if (result.success) {
         expect(result.data).toBeDefined();
         expect(typeof result.data).toBe('object');
@@ -606,7 +608,7 @@ describe('codeReviewCheckTool', () => {
         language: 'javascript',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data) {
         expect(typeof result.data.isCorrect).toBe('boolean');
       }
@@ -620,7 +622,7 @@ describe('codeReviewCheckTool', () => {
         language: 'javascript',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data) {
         expect(['correct', 'partial', 'incorrect']).toContain(result.data.severity);
       }
@@ -634,7 +636,7 @@ describe('codeReviewCheckTool', () => {
         language: 'javascript',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data) {
         expect(typeof result.data.feedback).toBe('string');
         expect(result.data.feedback.length).toBeGreaterThan(0);
@@ -649,7 +651,7 @@ describe('codeReviewCheckTool', () => {
         language: 'javascript',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data) {
         expect(typeof result.data.explanation).toBe('string');
         expect(result.data.explanation.length).toBeGreaterThan(0);
@@ -664,7 +666,7 @@ describe('codeReviewCheckTool', () => {
         language: 'javascript',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data) {
         expect(typeof result.data.points).toBe('number');
         expect(result.data.points).toBeGreaterThanOrEqual(0);
@@ -680,7 +682,7 @@ describe('codeReviewCheckTool', () => {
         language: 'javascript',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data) {
         expect('hint' in result.data).toBe(true);
         expect(typeof result.data.hint).toBe('string');
@@ -690,12 +692,12 @@ describe('codeReviewCheckTool', () => {
     it('should not have error when success=true', async () => {
       const input = {
         issueType: 'SQL Injection',
-        originalCode: "SELECT * FROM users WHERE id = " + userId,
+        originalCode: "SELECT * FROM users WHERE id = " + 'user-123',
         fixedCode: "SELECT * FROM users WHERE id = ?",
         language: 'javascript',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       if (result.success) {
         expect(result.error).toBeUndefined();
       }
@@ -707,12 +709,12 @@ describe('codeReviewCheckTool', () => {
     it('should provide hint when fix is incorrect', async () => {
       const input = {
         issueType: 'SQL Injection',
-        originalCode: "SELECT * FROM users WHERE id = " + userId,
-        fixedCode: "SELECT * FROM users WHERE id = " + userId + ";",
+        originalCode: "SELECT * FROM users WHERE id = " + 'user-123',
+        fixedCode: "SELECT * FROM users WHERE id = " + 'user-123' + ";",
         language: 'javascript',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data && !result.data.isCorrect) {
         expect('hint' in result.data).toBe(true);
       }
@@ -727,7 +729,7 @@ describe('codeReviewCheckTool', () => {
         outputLanguage: 'tr',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data && result.data.hint) {
         expect(typeof result.data.hint).toBe('string');
       }
@@ -739,31 +741,31 @@ describe('codeReviewCheckTool', () => {
     it('should accept parameterized queries as valid SQL Injection fix', async () => {
       const input = {
         issueType: 'SQL Injection',
-        originalCode: "SELECT * FROM users WHERE id = " + userId,
+        originalCode: "SELECT * FROM users WHERE id = " + 'user-123',
         fixedCode: "SELECT * FROM users WHERE id = ?",
         language: 'javascript',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
     it('should accept multiple valid approaches for same issue', async () => {
       const approaches = [
-        "const safe = userId.replace(/[^0-9]/g, ''); SELECT * FROM users WHERE id = " + safe,
+        "const safe = userId.replace(/[^0-9]/g, ''); SELECT * FROM users WHERE id = 123",
         "SELECT * FROM users WHERE id = ?",
-        "const escaped = escapeSQL(userId); SELECT * FROM users WHERE id = " + escaped,
+        "const escaped = escapeSQL(userId); SELECT * FROM users WHERE id = 'user-123'",
       ];
 
       for (const fixedCode of approaches) {
         const input = {
           issueType: 'SQL Injection',
-          originalCode: "SELECT * FROM users WHERE id = " + userId,
+          originalCode: "SELECT * FROM users WHERE id = " + 'user-123',
           fixedCode: fixedCode,
           language: 'javascript',
         };
 
-        const result = await codeReviewCheckTool.execute(input);
+        const result = await executeTool(input);
         expect(result).toBeDefined();
       }
     });
@@ -771,12 +773,12 @@ describe('codeReviewCheckTool', () => {
     it('should not penalize for non-optimal code style', async () => {
       const input = {
         issueType: 'SQL Injection',
-        originalCode: "SELECT * FROM users WHERE id = " + userId,
+        originalCode: "SELECT * FROM users WHERE id = " + 'user-123',
         fixedCode: "SELECT * FROM users WHERE id = ?",
         language: 'javascript',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
   });
@@ -786,36 +788,36 @@ describe('codeReviewCheckTool', () => {
     it('should handle missing required field gracefully', async () => {
       const input: any = {
         issueType: 'SQL Injection',
-        originalCode: "SELECT * FROM users WHERE id = " + userId,
+        originalCode: "SELECT * FROM users WHERE id = " + 'user-123',
         // Missing fixedCode
         language: 'javascript',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result.success === false || result.error).toBeDefined();
     });
 
     it('should handle null values gracefully', async () => {
       const input: any = {
         issueType: null,
-        originalCode: "SELECT * FROM users WHERE id = " + userId,
+        originalCode: "SELECT * FROM users WHERE id = " + 'user-123',
         fixedCode: "SELECT * FROM users WHERE id = ?",
         language: 'javascript',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result.success === false || result.error).toBeDefined();
     });
 
     it('should return error message on failure', async () => {
       const input: any = {
         issueType: 'SQL Injection',
-        originalCode: "SELECT * FROM users WHERE id = " + userId,
+        originalCode: "SELECT * FROM users WHERE id = " + 'user-123',
         fixedCode: "SELECT * FROM users WHERE id = ?",
         // Missing language
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       if (!result.success) {
         expect(typeof result.error).toBe('string');
       }
@@ -833,7 +835,7 @@ describe('codeReviewCheckTool', () => {
         language: 'javascript',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -845,7 +847,7 @@ describe('codeReviewCheckTool', () => {
         language: 'javascript',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -857,31 +859,31 @@ describe('codeReviewCheckTool', () => {
         language: 'javascript',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
     it('should handle empty fixedCode', async () => {
       const input = {
         issueType: 'SQL Injection',
-        originalCode: "SELECT * FROM users WHERE id = " + userId,
+        originalCode: "SELECT * FROM users WHERE id = " + 'user-123',
         fixedCode: '',
         language: 'javascript',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
     it('should handle identical originalCode and fixedCode', async () => {
       const input = {
         issueType: 'SQL Injection',
-        originalCode: "SELECT * FROM users WHERE id = " + userId,
-        fixedCode: "SELECT * FROM users WHERE id = " + userId,
+        originalCode: "SELECT * FROM users WHERE id = " + 'user-123',
+        fixedCode: "SELECT * FROM users WHERE id = " + 'user-123',
         language: 'javascript',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -893,7 +895,7 @@ describe('codeReviewCheckTool', () => {
         language: 'javascript',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -903,7 +905,7 @@ describe('codeReviewCheckTool', () => {
         originalCode: `// Get user ID from request
 const userId = req.query.id;
 // Build query (VULNERABLE)
-SELECT * FROM users WHERE id = ${userId}`,
+SELECT * FROM users WHERE id = user-123`,
         fixedCode: `// Get user ID from request
 const userId = req.query.id;
 // Build query (SAFE)
@@ -911,19 +913,19 @@ SELECT * FROM users WHERE id = ?`,
         language: 'javascript',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
     it('should handle code with regex patterns', async () => {
       const input = {
         issueType: 'SQL Injection',
-        originalCode: "const pattern = /[a-z]+/; SELECT * FROM users WHERE id = " + userId,
+        originalCode: "const pattern = /[a-z]+/; SELECT * FROM users WHERE id = " + 'user-123',
         fixedCode: "const pattern = /[a-z]+/; SELECT * FROM users WHERE id = ?",
         language: 'javascript',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
   });
@@ -939,7 +941,7 @@ SELECT * FROM users WHERE id = ?`,
         outputLanguage: 'en',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
       if (result.success && result.data) {
         expect(result.data.feedback).toBeDefined();
@@ -957,7 +959,7 @@ SELECT * FROM users WHERE id = ?`,
         outputLanguage: 'tr',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
       if (result.success && result.data) {
         expect(result.data.feedback).toBeDefined();
@@ -973,7 +975,7 @@ SELECT * FROM users WHERE id = ?`,
         outputLanguage: 'en',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -987,7 +989,7 @@ SELECT * FROM users WHERE id = ?`,
         model: 'gpt-4o',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -1000,7 +1002,7 @@ SELECT * FROM users WHERE id = ?`,
         outputLanguage: 'en',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -1016,7 +1018,7 @@ SELECT * FROM users WHERE id = ?`,
           outputLanguage: lang,
         };
 
-        const result = await codeReviewCheckTool.execute(input);
+        const result = await executeTool(input);
         expect(result).toBeDefined();
       }
     });
@@ -1027,12 +1029,12 @@ SELECT * FROM users WHERE id = ?`,
     it('should accept fix that solves the primary issue even if not optimal', async () => {
       const input = {
         issueType: 'SQL Injection',
-        originalCode: "SELECT * FROM users WHERE id = " + userId,
+        originalCode: "SELECT * FROM users WHERE id = " + 'user-123',
         fixedCode: "SELECT * FROM users WHERE id = ?", // Simple parameterized query
         language: 'javascript',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -1046,12 +1048,12 @@ SELECT * FROM users WHERE id = ?`,
       for (const fixedCode of validApproaches) {
         const input = {
           issueType: 'SQL Injection',
-          originalCode: "SELECT * FROM users WHERE id = " + userId,
+          originalCode: "SELECT * FROM users WHERE id = " + 'user-123',
           fixedCode: fixedCode,
           language: 'javascript',
         };
 
-        const result = await codeReviewCheckTool.execute(input);
+        const result = await executeTool(input);
         expect(result).toBeDefined();
       }
     });
@@ -1059,12 +1061,12 @@ SELECT * FROM users WHERE id = ?`,
     it('should reject fixes that do not solve the issue', async () => {
       const input = {
         issueType: 'SQL Injection',
-        originalCode: "SELECT * FROM users WHERE id = " + userId,
-        fixedCode: "SELECT * FROM users WHERE id = " + userId, // Not fixed
+        originalCode: "SELECT * FROM users WHERE id = " + 'user-123',
+        fixedCode: "SELECT * FROM users WHERE id = " + 'user-123', // Not fixed
         language: 'javascript',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data) {
         expect(result.data.isCorrect === false || result.data.severity !== 'correct').toBe(true);
       }
@@ -1073,12 +1075,12 @@ SELECT * FROM users WHERE id = ?`,
     it('should mark correct when issue is definitively solved', async () => {
       const input = {
         issueType: 'SQL Injection',
-        originalCode: "SELECT * FROM users WHERE id = " + userId,
+        originalCode: "SELECT * FROM users WHERE id = " + 'user-123',
         fixedCode: "SELECT * FROM users WHERE id = ?",
         language: 'javascript',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
   });
@@ -1088,13 +1090,13 @@ SELECT * FROM users WHERE id = ?`,
     it('should accept OPENAI provider', async () => {
       const input = {
         issueType: 'SQL Injection',
-        originalCode: "SELECT * FROM users WHERE id = " + userId,
+        originalCode: "SELECT * FROM users WHERE id = " + 'user-123',
         fixedCode: "SELECT * FROM users WHERE id = ?",
         language: 'javascript',
         modelProvider: 'OPENAI',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -1107,7 +1109,7 @@ SELECT * FROM users WHERE id = ?`,
         modelProvider: 'WORKERS_AI',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -1120,7 +1122,7 @@ SELECT * FROM users WHERE id = ?`,
         modelProvider: 'GOOGLE',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -1133,7 +1135,7 @@ SELECT * FROM users WHERE id = ?`,
         model: 'claude-3-sonnet-20240229',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -1147,7 +1149,7 @@ SELECT * FROM users WHERE id = ?`,
         model: 'gpt-4-turbo',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
   });
@@ -1157,12 +1159,12 @@ SELECT * FROM users WHERE id = ?`,
     it('should always include all data fields in success response', async () => {
       const input = {
         issueType: 'SQL Injection',
-        originalCode: "SELECT * FROM users WHERE id = " + userId,
+        originalCode: "SELECT * FROM users WHERE id = " + 'user-123',
         fixedCode: "SELECT * FROM users WHERE id = ?",
         language: 'javascript',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data) {
         expect(result.data.isCorrect).toBeDefined();
         expect(result.data.severity).toBeDefined();
@@ -1181,7 +1183,7 @@ SELECT * FROM users WHERE id = ?`,
         language: 'javascript',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data) {
         if (result.data.severity === 'correct') {
           expect(result.data.points).toBe(25);
@@ -1202,7 +1204,7 @@ SELECT * FROM users WHERE id = ?`,
         outputLanguage: 'tr',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data) {
         expect(typeof result.data.feedback).toBe('string');
         expect(result.data.feedback.length).toBeGreaterThan(0);
@@ -1220,7 +1222,7 @@ SELECT * FROM users WHERE id = ?`,
         language: 'kotlin',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -1232,7 +1234,7 @@ SELECT * FROM users WHERE id = ?`,
         language: 'swift',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -1244,7 +1246,7 @@ SELECT * FROM users WHERE id = ?`,
         language: 'rust',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -1256,13 +1258,9 @@ SELECT * FROM users WHERE id = ?`,
         language: 'sql',
       };
 
-      const result = await codeReviewCheckTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
   });
 });
 
-// Helper functions for test examples (not actually called, just for reference)
-function sanitize(input: string): string {
-  return input.replace(/[^a-zA-Z0-9]/g, '');
-}

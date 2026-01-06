@@ -1,21 +1,13 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { translateLanguageJsonTool } from './translate-language-json-tool';
 
 /**
  * Test suite for translateLanguageJsonTool
  * Tests scene-by-scene translation/rewriting of training content
  */
-describe('translateLanguageJsonTool', () => {
-  // Mock scene rewriter responses
-  const createMockSceneContent = (sceneId: string, language: string = 'en') => ({
-    [sceneId]: {
-      id: sceneId,
-      title: `Scene ${sceneId}`,
-      content: `Content in ${language}`,
-      highlights: [`Highlight 1 in ${language}`, `Highlight 2 in ${language}`],
-    },
-  });
+const executeTool = (translateLanguageJsonTool as any).execute;
 
+describe('translateLanguageJsonTool', () => {
   // Base valid microlearning structure
   const baseMicrolearningStructure = {
     microlearning_id: 'phishing-101',
@@ -58,7 +50,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'de',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
       expect(result.success !== undefined).toBe(true);
     });
@@ -69,7 +61,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'de',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result.success === false || result.error).toBeDefined();
     });
 
@@ -79,7 +71,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'de',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result.success === false || result.error).toBeDefined();
     });
 
@@ -89,7 +81,7 @@ describe('translateLanguageJsonTool', () => {
         microlearningStructure: baseMicrolearningStructure,
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result.success === false || result.error).toBeDefined();
     });
 
@@ -101,7 +93,7 @@ describe('translateLanguageJsonTool', () => {
         sourceLanguage: 'en',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -112,7 +104,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'fr',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -124,7 +116,7 @@ describe('translateLanguageJsonTool', () => {
         topic: 'Phishing Prevention',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -136,7 +128,7 @@ describe('translateLanguageJsonTool', () => {
         doNotTranslateKeys: ['id', 'timestamp'],
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -148,7 +140,7 @@ describe('translateLanguageJsonTool', () => {
         modelProvider: 'OPENAI',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -160,7 +152,7 @@ describe('translateLanguageJsonTool', () => {
         model: 'gpt-4o',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
   });
@@ -174,7 +166,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'de',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -185,7 +177,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'tr',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -196,7 +188,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'fr',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -207,7 +199,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'es',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -218,7 +210,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'zh',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -229,7 +221,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'ja',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -240,7 +232,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'pt',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -251,7 +243,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'it',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -263,7 +255,7 @@ describe('translateLanguageJsonTool', () => {
         sourceLanguage: 'en-gb',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
   });
@@ -278,7 +270,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'de',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -290,7 +282,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'fr',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -302,7 +294,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'es',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -313,7 +305,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'tr',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
   });
@@ -330,7 +322,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'de',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -344,7 +336,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'de',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -358,7 +350,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'de',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -372,7 +364,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'de',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -388,7 +380,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'de',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -402,7 +394,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'de',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -416,7 +408,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'de',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -430,7 +422,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'de',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -444,7 +436,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'de',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -455,7 +447,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'tr',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
   });
@@ -469,7 +461,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'de',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data) {
         expect(result.data['1']).toBeDefined();
         expect(result.data['2']).toBeDefined();
@@ -489,7 +481,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'fr',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data) {
         // Check that rewritten scenes have same keys as original
         expect(result.data['1']).toBeDefined();
@@ -510,7 +502,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'es',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -524,7 +516,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'de',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
   });
@@ -538,7 +530,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'de',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data) {
         expect(result.data.app_texts).toBeDefined();
       }
@@ -551,7 +543,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'tr',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data) {
         expect(result.data.app_texts).toBeDefined();
         expect(typeof result.data.app_texts).toBe('object');
@@ -565,7 +557,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'fr',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data) {
         // App texts should have same structure as input
         expect(result.data.app_texts).toBeDefined();
@@ -579,7 +571,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'es',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -590,7 +582,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'de',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
   });
@@ -605,7 +597,7 @@ describe('translateLanguageJsonTool', () => {
       };
 
       const startTime = Date.now();
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       const endTime = Date.now();
 
       expect(result).toBeDefined();
@@ -619,7 +611,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'tr',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       // Should still return success with partial results
       expect(result).toBeDefined();
     });
@@ -631,7 +623,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'fr',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       if (result.success) {
         // Result should have some content even if some scenes fail
         expect(result.data).toBeDefined();
@@ -648,7 +640,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'de',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data) {
         expect(result.data.extra_field).toBe('extra_value');
       }
@@ -661,7 +653,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'es',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data) {
         expect(result.data['1']).toBeDefined();
       }
@@ -680,7 +672,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'fr',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data) {
         expect(result.data.metadata).toBeDefined();
         expect(result.data.config).toBeDefined();
@@ -697,7 +689,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'de',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(typeof result.success).toBe('boolean');
     });
 
@@ -708,7 +700,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'tr',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       if (result.success) {
         expect(result.data).toBeDefined();
         expect(typeof result.data).toBe('object');
@@ -722,7 +714,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'de',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data) {
         for (let i = 1; i <= 8; i++) {
           expect(result.data[String(i)]).toBeDefined();
@@ -737,7 +729,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'de',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       if (!result.success) {
         expect(typeof result.error).toBe('string');
       }
@@ -754,7 +746,7 @@ describe('translateLanguageJsonTool', () => {
         topic: 'Phishing Prevention',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -766,7 +758,7 @@ describe('translateLanguageJsonTool', () => {
         topic: 'Phishing Prevention',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -778,7 +770,7 @@ describe('translateLanguageJsonTool', () => {
         topic: 'Password Security',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -790,7 +782,7 @@ describe('translateLanguageJsonTool', () => {
         topic: 'Data Protection',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -801,7 +793,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'es',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
   });
@@ -814,7 +806,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'de',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result.success === false || result.error).toBeDefined();
     });
 
@@ -824,7 +816,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'de',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result.success === false || result.error).toBeDefined();
     });
 
@@ -835,7 +827,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'de',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result.success === false || result.error).toBeDefined();
     });
 
@@ -846,7 +838,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'de',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result.success === false || result.error).toBeDefined();
     });
 
@@ -860,7 +852,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'de',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
       if (result.success) {
         expect(result.data).toBeDefined();
@@ -876,7 +868,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'de',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -887,7 +879,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'tr',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
   });
@@ -909,7 +901,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'de',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -923,7 +915,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'de',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -937,7 +929,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'de',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -959,7 +951,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'fr',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -976,7 +968,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'es',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -992,7 +984,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'de',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -1003,7 +995,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'invalid-lang',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
   });
@@ -1019,7 +1011,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'de',
       };
 
-      let result = await translateLanguageJsonTool.execute(input);
+      let result = await executeTool(input);
       expect(result).toBeDefined();
 
       if (result.success && result.data) {
@@ -1031,7 +1023,7 @@ describe('translateLanguageJsonTool', () => {
           targetLanguage: 'tr',
         };
 
-        result = await translateLanguageJsonTool.execute(input);
+        result = await executeTool(input);
         expect(result).toBeDefined();
       }
     });
@@ -1046,7 +1038,7 @@ describe('translateLanguageJsonTool', () => {
           targetLanguage: lang,
         };
 
-        const result = await translateLanguageJsonTool.execute(input);
+        const result = await executeTool(input);
         expect(result).toBeDefined();
       }
     });
@@ -1062,7 +1054,7 @@ describe('translateLanguageJsonTool', () => {
         modelProvider: 'OPENAI',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -1074,7 +1066,7 @@ describe('translateLanguageJsonTool', () => {
         modelProvider: 'WORKERS_AI',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -1086,7 +1078,7 @@ describe('translateLanguageJsonTool', () => {
         modelProvider: 'GOOGLE',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -1098,7 +1090,7 @@ describe('translateLanguageJsonTool', () => {
         model: 'gpt-4o',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -1111,7 +1103,7 @@ describe('translateLanguageJsonTool', () => {
         model: 'gpt-4-turbo',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
   });
@@ -1127,7 +1119,7 @@ describe('translateLanguageJsonTool', () => {
         topic: 'Phishing Prevention',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
       if (result.success && result.data) {
         expect(result.data.app_texts).toBeDefined();
@@ -1147,7 +1139,7 @@ describe('translateLanguageJsonTool', () => {
         modelProvider: 'OPENAI',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -1159,7 +1151,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'pt-br', // Brazilian Portuguese
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
   });
@@ -1173,9 +1165,8 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'de',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data) {
-        const inputSceneCount = Object.keys(baseJson).filter(k => k !== 'app_texts').length;
         const outputSceneCount = Object.keys(result.data).filter(k => k !== 'app_texts').length;
         expect(outputSceneCount).toBeGreaterThanOrEqual(0); // May lose failed scenes
       }
@@ -1188,7 +1179,7 @@ describe('translateLanguageJsonTool', () => {
         targetLanguage: 'tr',
       };
 
-      const result = await translateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data && result.data.app_texts) {
         expect(typeof result.data.app_texts).toBe('object');
         expect(Object.keys(result.data.app_texts).length).toBeGreaterThan(0);

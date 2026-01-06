@@ -5,8 +5,7 @@
  * Covers: create-microlearning, add-language, add-multiple-languages, update-microlearning
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { workflowExecutorTool } from './workflow-executor-tool';
+import { describe, it, expect } from 'vitest';
 import { PROMPT_ANALYSIS, MODEL_PROVIDERS } from '../../constants';
 
 describe('Workflow Executor Tool', () => {
@@ -116,26 +115,14 @@ describe('Workflow Executor Tool', () => {
 
     describe('Level (difficulty) validation', () => {
       it('should accept Beginner level', () => {
-        const input = {
-          level: 'Beginner',
-        };
-
         expect([...PROMPT_ANALYSIS.DIFFICULTY_LEVELS]).toContain('Beginner');
       });
 
       it('should accept Intermediate level', () => {
-        const input = {
-          level: 'Intermediate',
-        };
-
         expect([...PROMPT_ANALYSIS.DIFFICULTY_LEVELS]).toContain('Intermediate');
       });
 
       it('should accept Advanced level', () => {
-        const input = {
-          level: 'Advanced',
-        };
-
         expect([...PROMPT_ANALYSIS.DIFFICULTY_LEVELS]).toContain('Advanced');
       });
 
@@ -149,10 +136,6 @@ describe('Workflow Executor Tool', () => {
       });
 
       it('should reject invalid level', () => {
-        const input = {
-          level: 'Expert', // Not in enum
-        };
-
         expect([...PROMPT_ANALYSIS.DIFFICULTY_LEVELS]).not.toContain('Expert');
       });
     });

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { generateVideoPrompt } from './scene3-video-generator';
 import { PromptAnalysis } from '../../../types/prompt-analysis';
 import { MicrolearningContent } from '../../../types/microlearning';

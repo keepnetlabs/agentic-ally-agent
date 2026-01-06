@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { executeAutonomousGeneration } from './autonomous-service';
-import { requestStorage } from '../../utils/core/request-storage';
 import '../../../../src/__tests__/setup';
 import * as userManagementModule from '../../tools/user-management';
 import * as phishingAgentModule from '../../agents/phishing-email-agent';

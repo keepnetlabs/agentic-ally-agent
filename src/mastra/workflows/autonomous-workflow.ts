@@ -13,7 +13,8 @@ export class AutonomousWorkflow extends WorkflowEntrypoint {
     async run(event: { payload: AutonomousRequestBody }, env: CloudflareEnv) {
         const logger = getLogger('AutonomousWorkflow');
         // @ts-ignore this is because of the way mastra is exported in the index.mjs file
-        const mastraObj = mastra()
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const _mastraObj = mastra()
         try {
             logger.info('autonomous_workflow_started', { hasEnv: !!env });
             const { token, firstName, lastName, actions, sendAfterPhishingSimulation, preferredLanguage, targetUserResourceId, targetGroupResourceId } = event.payload;

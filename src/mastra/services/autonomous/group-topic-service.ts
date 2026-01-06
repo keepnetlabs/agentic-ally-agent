@@ -21,7 +21,7 @@ export interface GroupTopicSelection {
  * Returns topic + ready-to-use prompts for phishing & training
  */
 export async function selectGroupTrainingTopic(
-    preferredLanguage: string | undefined
+    _preferredLanguage: string | undefined
 ): Promise<GroupTopicSelection> {
     const logger = getLogger('GroupTopicService');
 

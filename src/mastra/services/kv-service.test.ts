@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { KVService } from './kv-service';
 import '../../../src/__tests__/setup';
 
@@ -10,9 +10,6 @@ import '../../../src/__tests__/setup';
 
 describe('KVService', () => {
   let kvService: KVService;
-  const mockAccountId = 'test-account-id';
-  const mockKVToken = 'test-kv-token';
-  const mockNamespaceId = 'c96ef0b5a2424edca1426f6e7a85b9dc';
 
   beforeEach(() => {
     // Reset fetch mock
@@ -30,14 +27,16 @@ describe('KVService', () => {
     it('should warn when CLOUDFLARE_ACCOUNT_ID is missing', () => {
       const warnSpy = vi.spyOn(console, 'warn');
       delete process.env.CLOUDFLARE_ACCOUNT_ID;
-      const service = new KVService();
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const _service = new KVService();
       expect(warnSpy).toHaveBeenCalled();
     });
 
     it('should warn when CLOUDFLARE_KV_TOKEN is missing', () => {
       const warnSpy = vi.spyOn(console, 'warn');
       delete process.env.CLOUDFLARE_KV_TOKEN;
-      const service = new KVService();
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const _service = new KVService();
       expect(warnSpy).toHaveBeenCalled();
     });
   });

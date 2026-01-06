@@ -1,12 +1,12 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { generateLanguageJsonTool } from './generate-language-json-tool';
-import { PromptAnalysis } from '../../types/prompt-analysis';
-import { MicrolearningContent } from '../../types/microlearning';
 
 /**
  * Test suite for generateLanguageJsonTool
  * Tests language-specific content generation for all 8 scenes
  */
+const executeTool = (generateLanguageJsonTool as any).execute;
+
 describe('generateLanguageJsonTool', () => {
   // Mock model
   const mockModel = {
@@ -62,7 +62,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
       expect(result.success || result.error).toBeDefined();
     });
@@ -73,7 +73,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
     });
@@ -85,7 +85,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
     });
@@ -97,7 +97,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
     });
@@ -108,7 +108,7 @@ describe('generateLanguageJsonTool', () => {
         microlearning: baseMicrolearning,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
     });
@@ -119,7 +119,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
     });
@@ -131,7 +131,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -142,7 +142,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -153,7 +153,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -165,7 +165,7 @@ describe('generateLanguageJsonTool', () => {
         writer: { write: vi.fn() },
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
   });
@@ -179,7 +179,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
       if (result.success && result.data) {
         expect(result.data.app?.texts).toBeDefined();
@@ -193,7 +193,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -204,7 +204,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -215,7 +215,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -226,7 +226,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -237,7 +237,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -248,7 +248,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -259,7 +259,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
   });
@@ -273,7 +273,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -284,7 +284,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -295,7 +295,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
   });
@@ -309,7 +309,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data) {
         expect(result.data['1']).toBeDefined();
       }
@@ -322,7 +322,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data) {
         expect(result.data['2']).toBeDefined();
       }
@@ -335,7 +335,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data) {
         expect(result.data['3']).toBeDefined();
       }
@@ -348,7 +348,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data) {
         expect(result.data['4']).toBeDefined();
       }
@@ -361,7 +361,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data) {
         expect(result.data['4']).toBeDefined();
       }
@@ -374,7 +374,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data) {
         expect(result.data['5']).toBeDefined();
       }
@@ -387,7 +387,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data) {
         expect(result.data['6']).toBeDefined();
       }
@@ -400,7 +400,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data) {
         expect(result.data['7']).toBeDefined();
       }
@@ -413,7 +413,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data) {
         expect(result.data['8']).toBeDefined();
       }
@@ -426,7 +426,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data) {
         const sceneKeys = Object.keys(result.data).filter(k => k !== 'app');
         expect(sceneKeys).toHaveLength(8);
@@ -440,7 +440,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data) {
         for (let i = 1; i <= 8; i++) {
           expect(result.data[String(i)]).toBeDefined();
@@ -458,7 +458,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data && result.data['3']) {
         expect(result.data['3'].video).toBeDefined();
       }
@@ -471,7 +471,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data && result.data['3']?.video) {
         expect(result.data['3'].video.src).toBeDefined();
       }
@@ -484,7 +484,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data && result.data['3']?.video) {
         expect(result.data['3'].video.transcript).toBeDefined();
       }
@@ -497,7 +497,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data && result.data['3']?.video?.src) {
         expect(result.data['3'].video.src).not.toBeNull();
       }
@@ -510,7 +510,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data && result.data['3']) {
         expect(result.data['3'].video).toBeDefined();
       }
@@ -526,7 +526,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data) {
         expect(result.data.app).toBeDefined();
         expect(result.data.app.texts).toBeDefined();
@@ -540,7 +540,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data) {
         expect(result.data.app).toBeDefined();
         expect(result.data.app.ariaTexts).toBeDefined();
@@ -554,7 +554,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data) {
         expect(result.data.app.texts).toBeDefined();
         expect(Object.keys(result.data.app.texts).length).toBeGreaterThan(0);
@@ -568,7 +568,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data) {
         expect(result.data.app.texts).toBeDefined();
       }
@@ -581,7 +581,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data) {
         expect(result.data.app.ariaTexts).toBeDefined();
         expect(Object.keys(result.data.app.ariaTexts).length).toBeGreaterThan(0);
@@ -598,7 +598,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -609,7 +609,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -620,7 +620,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -631,7 +631,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
   });
@@ -648,7 +648,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -662,7 +662,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -677,7 +677,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -692,7 +692,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
   });
@@ -706,7 +706,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -717,7 +717,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -728,7 +728,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -739,7 +739,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -750,7 +750,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -761,7 +761,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
   });
@@ -775,7 +775,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -786,7 +786,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -797,7 +797,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -808,7 +808,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
   });
@@ -823,7 +823,7 @@ describe('generateLanguageJsonTool', () => {
       };
 
       const startTime = Date.now();
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       const endTime = Date.now();
 
       // Parallel execution should complete relatively quickly
@@ -839,7 +839,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       // Result should either be successful or have detailed error
       expect(result.success !== undefined).toBe(true);
     });
@@ -854,7 +854,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(typeof result.success).toBe('boolean');
     });
 
@@ -865,7 +865,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       if (result.success) {
         expect(result.data).toBeDefined();
       }
@@ -878,7 +878,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       if (!result.success) {
         expect(typeof result.error).toBe('string');
       }
@@ -891,7 +891,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(!(result.data && result.error)).toBe(true);
     });
 
@@ -902,7 +902,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data) {
         expect(typeof result.data).toBe('object');
         expect(result.data).not.toBeNull();
@@ -919,7 +919,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -930,7 +930,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -941,7 +941,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -952,7 +952,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -963,7 +963,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
   });
@@ -980,7 +980,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -991,7 +991,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -1005,7 +1005,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
   });
@@ -1022,7 +1022,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -1033,7 +1033,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
   });
@@ -1047,7 +1047,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -1058,7 +1058,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -1069,7 +1069,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -1080,7 +1080,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
   });
@@ -1097,7 +1097,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -1108,7 +1108,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
   });
@@ -1125,7 +1125,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
   });
@@ -1142,7 +1142,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -1153,7 +1153,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
   });
@@ -1167,7 +1167,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -1178,7 +1178,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -1189,7 +1189,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -1200,7 +1200,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
   });
@@ -1214,7 +1214,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -1225,7 +1225,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -1236,7 +1236,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
   });
@@ -1250,7 +1250,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -1261,7 +1261,7 @@ describe('generateLanguageJsonTool', () => {
         model: { modelId: '@cf/openai/gpt-oss-120b' },
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -1272,7 +1272,7 @@ describe('generateLanguageJsonTool', () => {
         model: { constructor: { name: 'OpenAILanguageModel' } },
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
   });
@@ -1286,7 +1286,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result.success || result.error).toBeDefined();
     });
 
@@ -1297,7 +1297,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result.success || result.error).toBeDefined();
     });
 
@@ -1307,7 +1307,7 @@ describe('generateLanguageJsonTool', () => {
         microlearning: baseMicrolearning,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result.success || result.error).toBeDefined();
     });
 
@@ -1318,7 +1318,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result.success === false || result.error !== undefined).toBe(true);
     });
 
@@ -1329,7 +1329,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result.success === false || result.error !== undefined).toBe(true);
     });
 
@@ -1340,7 +1340,7 @@ describe('generateLanguageJsonTool', () => {
         model: null,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result.success === false || result.error !== undefined).toBe(true);
     });
   });
@@ -1359,7 +1359,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
       if (result.success && result.data) {
         expect(result.data.app).toBeDefined();
@@ -1376,7 +1376,7 @@ describe('generateLanguageJsonTool', () => {
           model: mockModel,
         };
 
-        const result = await generateLanguageJsonTool.execute(input);
+        const result = await executeTool(input);
         expect(result).toBeDefined();
       }
     });
@@ -1392,7 +1392,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -1408,7 +1408,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -1424,7 +1424,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
   });
@@ -1441,7 +1441,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -1455,7 +1455,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -1469,7 +1469,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -1480,7 +1480,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -1491,7 +1491,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -1506,7 +1506,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
   });
@@ -1520,7 +1520,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data && result.data['1']) {
         // Scene 1 typically has highlights for intro points
         expect(result.data['1']).toBeDefined();
@@ -1534,7 +1534,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data && result.data['2']) {
         // Scene 2 should contain goal-related content
         expect(result.data['2']).toBeDefined();
@@ -1548,7 +1548,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data && result.data['5']) {
         // Scene 5 should contain quiz items
         expect(result.data['5']).toBeDefined();
@@ -1565,7 +1565,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data) {
         expect(result.data.app?.texts).toBeDefined();
       }
@@ -1578,7 +1578,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       if (result.success && result.data) {
         // All scenes should relate to Data Protection
         expect(result.data['1']).toBeDefined();
@@ -1597,7 +1597,7 @@ describe('generateLanguageJsonTool', () => {
         writer: mockWriter,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
 
@@ -1608,7 +1608,7 @@ describe('generateLanguageJsonTool', () => {
         model: mockModel,
       };
 
-      const result = await generateLanguageJsonTool.execute(input);
+      const result = await executeTool(input);
       expect(result).toBeDefined();
     });
   });

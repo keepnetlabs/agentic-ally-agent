@@ -55,7 +55,6 @@ export interface CallWorkerAPIOptions {
  */
 export async function callWorkerAPI<T = any>(options: CallWorkerAPIOptions): Promise<T> {
   const {
-    env,
     serviceBinding,
     publicUrl,
     endpoint,

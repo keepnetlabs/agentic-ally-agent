@@ -4,7 +4,6 @@
  */
 
 import { generateText } from 'ai';
-import { z } from 'zod';
 import { getLogger } from '../core/logger';
 import { getDefaultGenerationModel } from '../../model-providers';
 import { cleanResponse } from '../content-processors/json-cleaner';

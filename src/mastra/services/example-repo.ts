@@ -840,7 +840,7 @@ Scene metadata keys: ${Array.from(sceneMetaKeys).join(', ')}`;
             if (!categorized.has(category)) {
                 categorized.set(category, []);
             }
-            categorized.get(category)!.push(doc);
+            (categorized.get(category) as ExampleDoc[]).push(doc);
         }
 
         // Pick one from each category, then fill remaining slots
@@ -850,7 +850,7 @@ Scene metadata keys: ${Array.from(sceneMetaKeys).join(', ')}`;
         // First, pick one from each category
         for (const category of categories) {
             if (selected.length >= maxFiles) break;
-            selected.push(categorized.get(category)![0]);
+            selected.push((categorized.get(category) as ExampleDoc[])[0]);
         }
 
         // Fill remaining slots

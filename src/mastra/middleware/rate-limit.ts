@@ -223,7 +223,7 @@ export function rateLimitMiddleware(customConfig?: Partial<RateLimitConfig>) {
 
     // If rate limit exceeded
     if (!result.allowed) {
-      c.res.headers.set('Retry-After', result.retryAfter!.toString());
+      c.res.headers.set('Retry-After', (result.retryAfter as number).toString());
 
       // Log rate limit violation
       logger.warn('Rate limit exceeded', {

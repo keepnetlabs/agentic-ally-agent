@@ -43,7 +43,7 @@ export function validateBCP47LanguageCode(input: string): string {
     // @ts-ignore
     const canon = (Intl.getCanonicalLocales?.(tag) || [])[0];
     if (canon) tag = canon;
-  } catch (error) {
+  } catch {
     // Fallback if Intl.getCanonicalLocales not available (older Node.js)
     logger.info('Intl.getCanonicalLocales not available, using fallback BCP-47 normalization');
   }

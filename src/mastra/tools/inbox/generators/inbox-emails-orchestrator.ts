@@ -5,7 +5,7 @@ import { cleanResponse } from '../../../utils/content-processors/json-cleaner';
 import { INBOX_GENERATION_PARAMS } from '../../../utils/config/llm-generation-params';
 import { getLogger } from '../../../utils/core/logger';
 import { errorService } from '../../../services/error-service';
-import { normalizeError, logErrorInfo } from '../../../utils/core/error-utils';
+import { logErrorInfo } from '../../../utils/core/error-utils';
 import { withRetry } from '../../../utils/core/resilience-utils';
 
 const logger = getLogger('InboxEmailsOrchestrator');
@@ -20,13 +20,6 @@ export type OrchestratorArgs = {
     additionalContext?: string; // NEW: User context, vulnerabilities, or specific requirements
     model: any;
 };
-
-const VARIANTS: EmailVariant[] = [
-    EmailVariant.ObviousPhishing,
-    EmailVariant.SophisticatedPhishing,
-    EmailVariant.CasualLegit,
-    EmailVariant.FormalLegit,
-];
 
 // Get unique timestamp instructions for N emails (AI will generate timestamps in target language)
 // We use semantic descriptors instead of hard-coded English strings

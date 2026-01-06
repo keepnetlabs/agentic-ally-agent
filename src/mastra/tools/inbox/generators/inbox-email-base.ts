@@ -1,9 +1,9 @@
 export function buildInboxEmailBaseSystem(
   topic: string,
   languageCode: string,
-  category: string,
-  riskArea: string,
-  level: string
+  _category: string,
+  _riskArea: string,
+  _level: string
 ): string {
   return `Generate ONE realistic business email as a single valid JSON object in ${languageCode} ONLY.
 

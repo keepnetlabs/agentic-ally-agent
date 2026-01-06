@@ -3,7 +3,7 @@ import { MicrolearningContent } from '../../../types/microlearning';
 export function generateInboxTextsPrompt(
   topic: string,
   languageCode: string,
-  microlearning: MicrolearningContent
+  _microlearning: MicrolearningContent
 ): string {
   return `Create inbox UI texts for "${topic}" training in ${languageCode}. 
 

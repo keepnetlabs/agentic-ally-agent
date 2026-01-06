@@ -466,9 +466,6 @@ export async function generateTrainingModuleForGroup(
     const logger = getLogger('GenerateTrainingModuleForGroup');
     logger.info('🎯 GROUP: Generating training module with custom topic-based prompt', { groupId: targetGroupResourceId });
 
-    const preferredLanguageRaw = preferredLanguage || '';
-    const language = preferredLanguageRaw ? validateBCP47LanguageCode(preferredLanguageRaw) : DEFAULT_LANGUAGE;
-
     const memoryConfig = {
         memory: {
             thread: trainingThreadId,

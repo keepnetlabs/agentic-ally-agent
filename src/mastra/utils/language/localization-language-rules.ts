@@ -953,7 +953,7 @@ const memo = new Map<LangKey, string>();
 
 export function getLanguagePrompt(langCode: string): string {
     const key = normLang(langCode);
-    if (memo.has(key)) return memo.get(key)!;
+    if (memo.has(key)) return memo.get(key) as string;
     const out = RULES_BY_LANG[key] || RULES_BY_LANG.generic;
     memo.set(key, out);
     return out;

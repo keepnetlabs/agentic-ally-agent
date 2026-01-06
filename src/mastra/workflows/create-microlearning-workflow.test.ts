@@ -5,7 +5,7 @@
  * Covers: prompt analysis → generation → language content → inbox creation
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { TRAINING_LEVELS, DEFAULT_TRAINING_LEVEL, PRIORITY_LEVELS, DEFAULT_PRIORITY } from '../constants';
 
 describe('Create Microlearning Workflow - Integration', () => {
@@ -667,11 +667,6 @@ describe('Create Microlearning Workflow - Integration', () => {
     });
 
     it('Scenario: Department-specific training', () => {
-      const input = {
-        prompt: 'Create malware training',
-        department: 'IT',
-      };
-
       const expected = {
         microlearning_id: 'malware-101',
         department: 'IT',
@@ -701,10 +696,6 @@ describe('Create Microlearning Workflow - Integration', () => {
       });
 
       it('should reject invalid level', () => {
-        const input = {
-          level: 'InvalidLevel',
-        };
-
         expect([...TRAINING_LEVELS]).not.toContain('InvalidLevel');
       });
     });

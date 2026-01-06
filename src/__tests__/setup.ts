@@ -28,7 +28,7 @@ export const createMockFetchResponse = (data: any, ok = true, status = 200) => {
 };
 
 export const mockFetch = (responses: Map<string, any>) => {
-  return vi.fn(async (url: string, options?: any) => {
+  return vi.fn(async (url: string, _options?: any) => {
     const response = responses.get(url) || responses.get('default');
     if (!response) {
       return createMockFetchResponse({ error: 'Not mocked' }, false, 404);

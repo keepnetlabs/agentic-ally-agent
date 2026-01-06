@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { MicrolearningService } from './microlearning-service';
-import { MicrolearningContent, LanguageContent, DepartmentInbox } from '../types/microlearning';
 import { createMicrolearningContent, createLanguageContent } from '../../../src/__tests__/factories/microlearning-factory';
 import '../../../src/__tests__/setup';
 

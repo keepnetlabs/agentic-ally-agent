@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { analyzeUserPromptTool, AnalyzeUserPromptInput, AnalyzeUserPromptOutput } from './analyze-user-prompt-tool';
+import { AnalyzeUserPromptInput } from './analyze-user-prompt-tool';
 import { ExampleRepo } from '../../services/example-repo';
 import { z } from 'zod';
 import '../../../src/__tests__/setup';
@@ -48,7 +48,6 @@ const outputSchema = z.object({
 
 describe('analyzeUserPromptTool', () => {
   let mockExampleRepo: any;
-  let mockGenerateText: any;
 
   beforeEach(() => {
     // Mock ExampleRepo singleton
@@ -62,9 +61,6 @@ describe('analyzeUserPromptTool', () => {
 
     // Mock ExampleRepo.getInstance to return mock
     vi.spyOn(ExampleRepo, 'getInstance').mockReturnValue(mockExampleRepo as any);
-
-    // Mock generateText
-    mockGenerateText = vi.fn();
   });
 
   afterEach(() => {
@@ -236,11 +232,6 @@ describe('analyzeUserPromptTool', () => {
 
   describe('schema hints retrieval - 3-level fallback', () => {
     it('should attempt Level 1: semantic search first', async () => {
-      const input = {
-        userPrompt: 'Create phishing training for IT department',
-        additionalContext: 'Focus on advanced threats',
-      };
-
       mockExampleRepo.loadExamplesOnce.mockResolvedValue(undefined);
       mockExampleRepo.getSmartSchemaHints.mockResolvedValue('Semantic hints');
 
@@ -250,10 +241,6 @@ describe('analyzeUserPromptTool', () => {
     });
 
     it('should fallback to Level 2: smart sampling on semantic search failure', async () => {
-      const input = {
-        userPrompt: 'Create phishing training',
-      };
-
       mockExampleRepo.loadExamplesOnce.mockResolvedValue(undefined);
       // First call fails, second succeeds
       mockExampleRepo.getSmartSchemaHints
@@ -264,9 +251,6 @@ describe('analyzeUserPromptTool', () => {
     });
 
     it('should fallback to Level 3: basic schema hints on all failures', async () => {
-      const input = {
-        userPrompt: 'Create phishing training',
-      };
 
       mockExampleRepo.loadExamplesOnce.mockResolvedValue(undefined);
       // Both semantic and smart sampling fail

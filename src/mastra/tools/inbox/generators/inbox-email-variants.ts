@@ -5,31 +5,6 @@ export enum EmailVariant {
     FormalLegit = 'FormalLegit',
 }
 
-// Obviously fake domains for obvious phishing (red flags are clear)
-const OBVIOUS_DOMAINS = [
-    'billing@invoice-systems.net',
-    'accounting@payments-hub.org',
-    'support@update-portal.net',
-    'admin@verify-account.org',
-    'security@confirm-identity.net',
-    'finance@process-payment.io',
-    'compliance@check-status.com',
-];
-
-// Realistic-looking fake domains for sophisticated phishing (lookalike effect)
-const SOPHISTICATED_DOMAINS = [
-    'acme-solutions.net',
-    'global-services.com',
-    'corporate-group.io',
-    'enterprise-hub.org',
-    'business-portal.net',
-    'professional-systems.com',
-    'allied-services.org',
-    'integrated-solutions.io',
-    'premier-consulting.net',
-    'universal-group.com',
-];
-
 export type DiversityHints = {
     domainHint: string;
     attachmentHint: string;

@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ProductService } from './product-service';
 import { requestStorage } from '../utils/core/request-storage';
-import { API_KEYS } from '../constants';
 import '../../../src/__tests__/setup';
 
 // Mock fetch globally

@@ -295,6 +295,24 @@ export const workflowExecutorTool = createTool({
             id: messageId,
             delta: `::ui:canvas_open::${trainingUrl}\n`
           });
+          // Emit structured training metadata for routing/agent context (FE can ignore if unsupported)
+          try {
+            const meta = {
+              microlearningId,
+              trainingUrl,
+              title,
+              department,
+            };
+            const encoded = Buffer.from(JSON.stringify(meta)).toString('base64');
+            await writer?.write({
+              type: 'text-delta',
+              id: messageId,
+              delta: `::ui:training_meta::${encoded}::/ui:training_meta::\n`
+            });
+          } catch (metaErr) {
+            const err = normalizeError(metaErr);
+            logger.warn('Failed to send training meta to frontend', { error: err.message });
+          }
           await writer?.write({ type: 'text-end', id: messageId });
           logger.debug('Training URL sent to frontend', { urlLength: trainingUrl?.length });
         } catch (error) {

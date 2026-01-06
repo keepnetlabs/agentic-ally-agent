@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { errorService, ErrorCategory, ErrorInfo } from './error-service';
+import { errorService, ErrorCategory } from './error-service';
 import '../../../src/__tests__/setup';
 
 /**

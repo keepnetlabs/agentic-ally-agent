@@ -67,7 +67,7 @@ export async function streamReasoning(
         });
 
         logger.info('User-friendly reasoning streamed');
-      } catch (writeError) {
+      } catch {
         // Stream likely closed, ignore silently
       }
     }).catch(() => {
@@ -77,7 +77,7 @@ export async function streamReasoning(
           type: 'reasoning-end',
           id: messageId
         }).catch(() => { });
-      } catch (e) { }
+      } catch {}
     });
 
   } catch (error) {
@@ -115,7 +115,7 @@ export async function streamDirectReasoning(
     await writer.write({ type: 'reasoning-start', id: messageId });
     await writer.write({ type: 'reasoning-delta', id: messageId, delta: reasoning });
     await writer.write({ type: 'reasoning-end', id: messageId });
-  } catch (e) {
+  } catch {
     // Ignore write errors silently (e.g. if stream closed)
   }
 }

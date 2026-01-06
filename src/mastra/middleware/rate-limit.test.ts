@@ -105,7 +105,7 @@ describe('Rate Limiting Middleware', () => {
       }
 
       // 4th request should be blocked
-      const result = await middleware(mockContext, next);
+      await middleware(mockContext, next);
 
       expect(next).toHaveBeenCalledTimes(3);
       expect(mockContext.json).toHaveBeenCalled();

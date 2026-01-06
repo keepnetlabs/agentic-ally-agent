@@ -62,7 +62,7 @@ describe('AgentRouter', () => {
       });
 
       (cleanResponse as any).mockReturnValue(mockRoutingText);
-      (withRetry as any).mockImplementation(async (fn: any) => {
+      (withRetry as any).mockImplementation(async (_fn: any) => {
         // Execute the function passed to withRetry
         const routingResult = await mockOrchestrator.generate('Create a training about cybersecurity');
         const routingText = routingResult.text;
@@ -90,7 +90,7 @@ describe('AgentRouter', () => {
       });
 
       (cleanResponse as any).mockReturnValue(mockRoutingText);
-      (withRetry as any).mockImplementation(async (fn: any) => {
+      (withRetry as any).mockImplementation(async (_fn: any) => {
         const routingResult = await mockOrchestrator.generate('Generate a phishing email');
         const routingText = routingResult.text;
         const cleanJsonText = (cleanResponse as any)(routingText, 'orchestrator-decision');
@@ -109,7 +109,7 @@ describe('AgentRouter', () => {
       };
 
       (cleanResponse as any).mockReturnValue(JSON.stringify(mockDecision));
-      (withRetry as any).mockImplementation(async (fn: any) => {
+      (withRetry as any).mockImplementation(async (_fn: any) => {
         const routingText = JSON.stringify(mockDecision);
         const cleanJsonText = cleanResponse(routingText, 'orchestrator-decision');
         return JSON.parse(cleanJsonText);
@@ -134,7 +134,7 @@ describe('AgentRouter', () => {
       };
 
       (cleanResponse as any).mockReturnValue(JSON.stringify(mockDecision));
-      (withRetry as any).mockImplementation(async (fn: any) => {
+      (withRetry as any).mockImplementation(async (_fn: any) => {
         const routingText = JSON.stringify(mockDecision);
         const cleanJsonText = cleanResponse(routingText, 'orchestrator-decision');
         return JSON.parse(cleanJsonText);
@@ -157,7 +157,7 @@ describe('AgentRouter', () => {
       };
 
       (cleanResponse as any).mockReturnValue(JSON.stringify(mockDecision));
-      (withRetry as any).mockImplementation(async (fn: any) => {
+      (withRetry as any).mockImplementation(async (_fn: any) => {
         const routingText = JSON.stringify(mockDecision);
         const cleanJsonText = cleanResponse(routingText, 'orchestrator-decision');
         return JSON.parse(cleanJsonText);
@@ -215,7 +215,7 @@ describe('AgentRouter', () => {
       };
 
       (cleanResponse as any).mockReturnValue(JSON.stringify(mockDecision));
-      (withRetry as any).mockImplementation(async (fn: any) => {
+      (withRetry as any).mockImplementation(async (_fn: any) => {
         const routingText = JSON.stringify(mockDecision);
         const cleanJsonText = cleanResponse(routingText, 'orchestrator-decision');
         return JSON.parse(cleanJsonText);
@@ -244,7 +244,7 @@ describe('AgentRouter', () => {
         .mockReturnValueOnce('Invalid JSON')
         .mockReturnValueOnce(JSON.stringify(mockDecision));
 
-      (withRetry as any).mockImplementation(async (fn: any) => {
+      (withRetry as any).mockImplementation(async (_fn: any) => {
         attemptCount++;
         if (attemptCount === 1) {
           throw new Error('JSON parse error');
@@ -271,7 +271,7 @@ describe('AgentRouter', () => {
       };
 
       (cleanResponse as any).mockReturnValue(JSON.stringify(mockDecision));
-      (withRetry as any).mockImplementation(async (fn: any) => {
+      (withRetry as any).mockImplementation(async (_fn: any) => {
         const routingText = JSON.stringify(mockDecision);
         const cleanJsonText = cleanResponse(routingText, 'orchestrator-decision');
         return JSON.parse(cleanJsonText);

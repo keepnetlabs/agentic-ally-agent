@@ -72,7 +72,7 @@ export function getLogger(moduleName: string): LoggerWithCorrelation {
     });
     loggers.set(moduleName, pinoLogger);
   }
-  const pinoLogger = loggers.get(moduleName)!;
+  const pinoLogger = loggers.get(moduleName) as PinoLogger;
   return new LoggerWithCorrelation(pinoLogger);
 }
 

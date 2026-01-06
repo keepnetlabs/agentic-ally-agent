@@ -99,7 +99,7 @@ Target language code:`,
     // Validate it's a proper BCP-47 format, normalize if needed
     const validated = validateBCP47LanguageCode(code);
     return validated !== DEFAULT_LANGUAGE ? validated : null;
-  } catch (error) {
+  } catch {
     // If AI fails, return null and fall back to other methods
     return null;
   }
@@ -163,7 +163,7 @@ export const analyzeUserPromptTool = new Tool({
         if (aiLang) {
           languageHint = aiLang.toLowerCase();
         }
-      } catch (error) {
+      } catch {
         // Fallback to character detection if AI fails
         const charBasedLang = validateBCP47LanguageCode(detectLanguageFallback(userPrompt));
         languageHint = charBasedLang.toLowerCase();

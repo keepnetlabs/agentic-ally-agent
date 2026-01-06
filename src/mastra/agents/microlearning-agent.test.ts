@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { API_ENDPOINTS } from '../constants';
 
 /**
@@ -36,7 +36,6 @@ describe('Microlearning Agent', () => {
 
     it('should not go backward from STATE 2 to STATE 1', () => {
       const agentState = { current: 'STATE2' };
-      const userRequest = 'Can we change the topic?';
       // Agent should ask for clarification, not go back
       expect(agentState.current).toBe('STATE2');
     });
@@ -396,7 +395,6 @@ describe('Microlearning Agent', () => {
           department: 'IT',
           // Level missing
         };
-        const userMessage = 'Create it';
         const level = conversationHistory.level || 'Intermediate'; // Default
         expect(level).toBe('Intermediate');
       });
@@ -474,7 +472,6 @@ describe('Microlearning Agent', () => {
       });
 
       it('should auto-detect department from keywords in new request', () => {
-        const userMessage = 'Create SQL Injection training';
         const hasDept = /IT|Finance|HR|Sales/.test('IT'); // Would be auto-detected
         expect(hasDept).toBe(true);
       });
@@ -568,8 +565,6 @@ describe('Microlearning Agent', () => {
     });
 
     it('should NOT assume language from previous messages', () => {
-      const currentMessage = 'Create training';
-      const previousLanguage = 'tr';
       const shouldDetectFromCurrent = true;
       expect(shouldDetectFromCurrent).toBe(true);
     });
@@ -728,7 +723,6 @@ describe('Microlearning Agent', () => {
     });
 
     it('should separate customRequirements from additionalContext', () => {
-      const message = 'Create training for high-risk CFO without jargon';
       const additionalContext = 'high-risk CFO';
       const customRequirements = 'without jargon';
       expect(additionalContext).not.toContain('jargon');

@@ -426,6 +426,7 @@ Return ONLY the JSON object with no extra text.`;
           // Stream email
           if (editedContent.template) {
             const emailObject = {
+              phishingId,
               subject: editedContent.subject,
               template: sanitizedTemplate,
               fromAddress: updatedEmail.fromAddress,
@@ -443,7 +444,7 @@ Return ONLY the JSON object with no extra text.`;
 
           // Stream landing pages
           if (editedLanding && editedLanding.pages && editedLanding.pages.length > 0) {
-            const landingObject = { pages: editedLanding.pages };
+            const landingObject = { phishingId, pages: editedLanding.pages };
             const landingJson = JSON.stringify(landingObject);
             const encodedLanding = Buffer.from(landingJson).toString('base64');
 

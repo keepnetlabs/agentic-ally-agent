@@ -9,8 +9,6 @@ import { errorService } from '../../services/error-service';
 import { validateToolResult } from '../../utils/tool-result-validation';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
 
-const logger = getLogger('PhishingWorkflowExecutor');
-
 const phishingWorkflowSchema = z.object({
     workflowType: z.literal(PHISHING.WORKFLOW_TYPE).describe('Workflow to execute'),
     topic: z.string().describe('Topic for phishing simulation (e.g. "Reset Password")'),
@@ -61,7 +59,7 @@ export const phishingWorkflowExecutorTool = createTool({
     outputSchema: phishingWorkflowOutputSchema,
 
     execute: async ({ context, writer }) => {
-        const { workflowType, ...params } = context;
+        const params = context;
         const logger = getLogger('PhishingWorkflowExecutor');
 
         try {
@@ -112,6 +110,7 @@ export const phishingWorkflowExecutorTool = createTool({
                         if (output.template) {
                             // Encode entire email object as JSON string
                             const emailObject = {
+                                phishingId: output.phishingId,
                                 subject: output.subject,
                                 template: output.template,
                                 fromAddress: output.fromAddress,
@@ -133,6 +132,7 @@ export const phishingWorkflowExecutorTool = createTool({
                         if (output.landingPage && output.landingPage.pages.length > 0) {
                             // Encode entire landingPage object as JSON string
                             const landingPageObject = {
+                                phishingId: output.phishingId,
                                 ...output.landingPage,
                                 isQuishing: params.isQuishing || false,
                             };

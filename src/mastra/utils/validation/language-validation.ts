@@ -82,7 +82,7 @@ export const LanguageCodeSchema = z
  * Zod schema for language codes that must differ (source vs target)
  * Usage: z.object({ source: LanguageCodeSchema, target: LanguageCodeSchemaDifferent('source') })
  */
-export function createDifferentLanguageSchema(otherFieldName: string) {
+export function createDifferentLanguageSchema(_otherFieldName: string) {
   return z
     .string()
     .trim()
