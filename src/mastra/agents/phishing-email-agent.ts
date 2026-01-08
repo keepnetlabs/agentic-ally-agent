@@ -103,6 +103,8 @@ When user requests to **Upload** or **Assign** phishing simulation:
    - resourceId: FROM upload.data.resourceId
    - languageId: FROM upload.data.languageId (optional, include if available)
    - targetUserResourceId: FROM user context (CRITICAL - must be present for assignment)
+   - targetUserEmail: FROM user context if available (optional; improves user-facing summaries)
+   - targetUserFullName: FROM user context if available (optional; improves user-facing summaries)
 7. If IDs are missing, ASK the user.
 
 **CRITICAL RULES:**
@@ -115,7 +117,7 @@ When user requests to **Upload** or **Assign** phishing simulation:
 Phishing workflow result: {phishingId: "abc123"}
 → uploadPhishing({phishingId: "abc123"})
 Upload result: {resourceId: "xyz789", languageId: "lang456"}
-→ assignPhishing({resourceId: "xyz789", languageId: "lang456", targetUserResourceId: "user123"})
+→ assignPhishing({resourceId: "xyz789", languageId: "lang456", targetUserResourceId: "user123", targetUserEmail: "user@company.com", targetUserFullName: "User Name"})
 
 ## Tool Usage & Parameters
 Call 'phishingExecutor' (ONLY in STATE 3) with:

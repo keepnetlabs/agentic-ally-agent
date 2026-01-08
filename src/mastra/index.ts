@@ -286,15 +286,51 @@ export const mastra = new Mastra({
           );
 
           // Inject deterministic artifact IDs (short, code-derived) so agents don't have to guess from long history
-          const { microlearningId, phishingId } = extractArtifactIdsFromRoutingContext(routingContext);
-          if (microlearningId || phishingId) {
+          const {
+            microlearningId,
+            phishingId,
+            resourceId,
+            scenarioResourceId,
+            landingPageResourceId,
+            languageId,
+            sendTrainingLanguageId,
+            targetUserResourceId,
+            targetGroupResourceId,
+          } = extractArtifactIdsFromRoutingContext(routingContext);
+
+          if (
+            microlearningId ||
+            phishingId ||
+            resourceId ||
+            scenarioResourceId ||
+            landingPageResourceId ||
+            languageId ||
+            sendTrainingLanguageId ||
+            targetUserResourceId ||
+            targetGroupResourceId
+          ) {
             // Canonical / allowlisted [ARTIFACT_IDS] block (key=value, stable order, safe chars only)
             const safeMicrolearningId = normalizeSafeId(microlearningId);
             const safePhishingId = normalizeSafeId(phishingId);
+            const safeResourceId = normalizeSafeId(resourceId);
+            const safeScenarioResourceId = normalizeSafeId(scenarioResourceId);
+            const safeLandingPageResourceId = normalizeSafeId(landingPageResourceId);
+            const safeLanguageId = normalizeSafeId(languageId);
+            const safeSendTrainingLanguageId = normalizeSafeId(sendTrainingLanguageId);
+            const safeTargetUserResourceId = normalizeSafeId(targetUserResourceId);
+            const safeTargetGroupResourceId = normalizeSafeId(targetGroupResourceId);
 
             const parts = [
               safeMicrolearningId ? `microlearningId=${safeMicrolearningId}` : undefined,
               safePhishingId ? `phishingId=${safePhishingId}` : undefined,
+              // upload/assign IDs (phishing + training)
+              safeResourceId ? `resourceId=${safeResourceId}` : undefined,
+              safeScenarioResourceId ? `scenarioResourceId=${safeScenarioResourceId}` : undefined,
+              safeLandingPageResourceId ? `landingPageResourceId=${safeLandingPageResourceId}` : undefined,
+              safeLanguageId ? `languageId=${safeLanguageId}` : undefined,
+              safeSendTrainingLanguageId ? `sendTrainingLanguageId=${safeSendTrainingLanguageId}` : undefined,
+              safeTargetUserResourceId ? `targetUserResourceId=${safeTargetUserResourceId}` : undefined,
+              safeTargetGroupResourceId ? `targetGroupResourceId=${safeTargetGroupResourceId}` : undefined,
             ].filter(Boolean);
 
             if (parts.length > 0) {

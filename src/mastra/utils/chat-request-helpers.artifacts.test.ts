@@ -42,6 +42,32 @@ describe('chat-request-helpers artifact id extraction', () => {
         expect(ids.microlearningId).toBe('ml-22222222');
         expect(ids.phishingId).toBe('ph-222222');
     });
+
+    it('extracts operational IDs from tool summary lines', () => {
+        const routingContext = buildRoutingContext([
+            {
+                role: 'assistant',
+                content: `✅ Phishing uploaded: "Test Scenario". Ready to assign (resourceId=scenario-123, scenarioResourceId=scenario-123, landingPageResourceId=landing-999, phishingId=ph-777777).`
+            } as any,
+            {
+                role: 'assistant',
+                content: `✅ Training uploaded: "Security Basics". Ready to assign (resourceId=res-555, sendTrainingLanguageId=lang-456, microlearningId=ml-88888888).`
+            } as any,
+            {
+                role: 'assistant',
+                content: `✅ Phishing campaign assigned to USER user@company.com (campaignName="Phishing Campaign - user-789 (USER) Agentic Ally", resourceId=scenario-123, languageId=lang-abc).`
+            } as any,
+        ]);
+
+        const ids = extractArtifactIdsFromRoutingContext(routingContext);
+        expect(ids.resourceId).toBe('scenario-123');
+        expect(ids.scenarioResourceId).toBe('scenario-123');
+        expect(ids.landingPageResourceId).toBe('landing-999');
+        expect(ids.phishingId).toBe('ph-777777');
+        expect(ids.sendTrainingLanguageId).toBe('lang-456');
+        expect(ids.microlearningId).toBe('ml-88888888');
+        expect(ids.languageId).toBe('lang-abc');
+    });
 });
 
 

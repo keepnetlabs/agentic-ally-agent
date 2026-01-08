@@ -22,6 +22,7 @@ import { fixBrokenImages } from '../../utils/landing-page/image-validator';
 import { resolveLogoAndBrand } from '../../utils/phishing/brand-resolver';
 import { preserveLandingFormControlStyles } from '../../utils/content-processors/landing-form-style-preserver';
 import { postProcessPhishingLandingHtml } from '../../utils/content-processors/phishing-html-postprocessors';
+import { summarizeForLog } from '../../utils/core/log-redaction-utils';
 
 // Utility: Add timeout to AI calls
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number = 30000): Promise<T> {
@@ -84,7 +85,10 @@ export const phishingEditorTool = createTool({
     }
 
     try {
-      logger.info('Starting phishing template edit', { phishingId, editInstruction });
+      logger.info('Starting phishing template edit', {
+        phishingId,
+        editInstruction: summarizeForLog(editInstruction),
+      });
 
       // 1. Load existing phishing email from KV
       const kvServicePhishing = new KVService('f6609d79aa2642a99584b05c64ecaa9f');

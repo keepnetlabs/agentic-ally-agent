@@ -245,11 +245,9 @@ describe('resilience-utils', () => {
 
       // Mock setTimeout to capture delays
       const originalSetTimeout = global.setTimeout;
-      let lastDelay = 0;
       vi.stubGlobal(
         'setTimeout',
         vi.fn((callback, delay) => {
-          lastDelay = delay;
           delays.push(delay);
           return originalSetTimeout(callback, delay);
         })

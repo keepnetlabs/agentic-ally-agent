@@ -417,7 +417,7 @@ describe('Base Context Builder', () => {
           return buildContextData(analysis as any, baseMicrolearning);
         });
 
-        contexts.forEach((context, index) => {
+        contexts.forEach((context) => {
           expect(context).toContain('CONTEXT');
           expect(context).toContain('CONTENT RULES');
         });

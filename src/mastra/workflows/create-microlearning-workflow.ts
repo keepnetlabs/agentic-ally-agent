@@ -14,6 +14,7 @@ import { waitForKVConsistency, buildExpectedKVKeys } from '../utils/kv-consisten
 import { normalizeError, logErrorInfo } from '../utils/core/error-utils';
 import { errorService } from '../services/error-service';
 import { withRetry } from '../utils/core/resilience-utils';
+import { summarizeForLog } from '../utils/core/log-redaction-utils';
 
 const logger = getLogger('CreateMicrolearningWorkflow');
 
@@ -126,7 +127,9 @@ const analyzePromptStep = createStep({
       logErrorInfo(logger, 'error', 'Prompt analysis failed', errorInfo);
       throw new Error(errorInfo.message);
     }
-    logger.debug('Additional context received', { additionalContext: inputData.additionalContext });
+    logger.debug('Additional context received', {
+      additionalContext: summarizeForLog(inputData.additionalContext),
+    });
     return {
       success: analysisRes.success,
       data: {

@@ -247,6 +247,13 @@ export const buildRoutingContext = (messages: ChatMessage[]): string => {
 export function extractArtifactIdsFromRoutingContext(routingContext: string): {
   microlearningId?: string;
   phishingId?: string;
+  resourceId?: string;
+  scenarioResourceId?: string;
+  landingPageResourceId?: string;
+  languageId?: string;
+  sendTrainingLanguageId?: string;
+  targetUserResourceId?: string;
+  targetGroupResourceId?: string;
 } {
   if (!routingContext) return {};
 
@@ -259,7 +266,35 @@ export function extractArtifactIdsFromRoutingContext(routingContext: string): {
   const microlearningId = microMatches.length ? microMatches[microMatches.length - 1]?.[1] : undefined;
   const phishingId = phishingMatches.length ? phishingMatches[phishingMatches.length - 1]?.[1] : undefined;
 
-  return { microlearningId, phishingId };
+  // Also extract operational IDs from tool summary lines and other assistant messages.
+  // Keep these regexes conservative: safe IDs only (alnum/underscore/hyphen, min 3 chars).
+  const resourceMatches = [...routingContext.matchAll(/\bresourceId=([a-zA-Z0-9_-]{3,})\b/g)];
+  const scenarioResourceMatches = [...routingContext.matchAll(/\bscenarioResourceId=([a-zA-Z0-9_-]{3,})\b/g)];
+  const landingPageResourceMatches = [...routingContext.matchAll(/\blandingPageResourceId=([a-zA-Z0-9_-]{3,})\b/g)];
+  const languageMatches = [...routingContext.matchAll(/\blanguageId=([a-zA-Z0-9_-]{3,})\b/g)];
+  const sendTrainingLanguageMatches = [...routingContext.matchAll(/\bsendTrainingLanguageId=([a-zA-Z0-9_-]{3,})\b/g)];
+  const targetUserMatches = [...routingContext.matchAll(/\btargetUserResourceId=([a-zA-Z0-9_-]{3,})\b/g)];
+  const targetGroupMatches = [...routingContext.matchAll(/\btargetGroupResourceId=([a-zA-Z0-9_-]{3,})\b/g)];
+
+  const resourceId = resourceMatches.length ? resourceMatches[resourceMatches.length - 1]?.[1] : undefined;
+  const scenarioResourceId = scenarioResourceMatches.length ? scenarioResourceMatches[scenarioResourceMatches.length - 1]?.[1] : undefined;
+  const landingPageResourceId = landingPageResourceMatches.length ? landingPageResourceMatches[landingPageResourceMatches.length - 1]?.[1] : undefined;
+  const languageId = languageMatches.length ? languageMatches[languageMatches.length - 1]?.[1] : undefined;
+  const sendTrainingLanguageId = sendTrainingLanguageMatches.length ? sendTrainingLanguageMatches[sendTrainingLanguageMatches.length - 1]?.[1] : undefined;
+  const targetUserResourceId = targetUserMatches.length ? targetUserMatches[targetUserMatches.length - 1]?.[1] : undefined;
+  const targetGroupResourceId = targetGroupMatches.length ? targetGroupMatches[targetGroupMatches.length - 1]?.[1] : undefined;
+
+  return {
+    microlearningId,
+    phishingId,
+    resourceId,
+    scenarioResourceId,
+    landingPageResourceId,
+    languageId,
+    sendTrainingLanguageId,
+    targetUserResourceId,
+    targetGroupResourceId,
+  };
 }
 
 /**

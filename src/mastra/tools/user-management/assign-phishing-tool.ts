@@ -11,10 +11,20 @@ import { errorService } from '../../services/error-service';
 import { validateToolResult } from '../../utils/tool-result-validation';
 import { extractCompanyIdFromTokenExport } from '../../utils/core/policy-fetcher';
 import { isSafeId } from '../../utils/core/id-utils';
+import { formatToolSummary } from '../../utils/core/tool-summary-formatter';
 
 // Output schema defined separately to avoid circular reference
 const assignPhishingOutputSchema = z.object({
     success: z.boolean(),
+    data: z.object({
+        campaignName: z.string(),
+        assignmentType: z.enum(['USER', 'GROUP']),
+        targetId: z.string(),
+        targetLabel: z.string(),
+        resourceId: z.string(),
+        languageId: z.string().optional(),
+        followUpTrainingId: z.string().optional(),
+    }).optional(),
     message: z.string().optional(),
     error: z.string().optional(),
 });
@@ -108,7 +118,24 @@ export const assignPhishingTool = createTool({
 
             const toolResult = {
                 success: true,
-                message: `✅ ${isQuishing ? 'Quishing' : 'Phishing'} campaign assigned to ${assignmentType} ${targetLabel} (campaignName="${name}", resourceId=${resourceId}${languageId ? `, languageId=${languageId}` : ''}${trainingId ? `, followUpTrainingId=${trainingId}` : ''}).`
+                data: {
+                    campaignName: name,
+                    assignmentType,
+                    targetId: String(targetId || ''),
+                    targetLabel: String(targetLabel || ''),
+                    resourceId,
+                    ...(languageId ? { languageId } : {}),
+                    ...(trainingId ? { followUpTrainingId: trainingId } : {}),
+                },
+                message: formatToolSummary({
+                    prefix: `✅ ${isQuishing ? 'Quishing' : 'Phishing'} campaign assigned to ${assignmentType} ${targetLabel}`,
+                    kv: [
+                        { key: 'campaignName', value: name },
+                        { key: 'resourceId', value: resourceId },
+                        { key: 'languageId', value: languageId },
+                        { key: 'followUpTrainingId', value: trainingId },
+                    ],
+                })
             };
 
             // Validate result against output schema

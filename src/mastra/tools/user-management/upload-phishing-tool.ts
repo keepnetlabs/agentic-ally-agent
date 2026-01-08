@@ -11,6 +11,21 @@ import { ERROR_MESSAGES, API_ENDPOINTS } from '../../constants';
 import { errorService } from '../../services/error-service';
 import { validateToolResult } from '../../utils/tool-result-validation';
 import { extractCompanyIdFromTokenExport } from '../../utils/core/policy-fetcher';
+import { formatToolSummary } from '../../utils/core/tool-summary-formatter';
+import { summarizeForLog } from '../../utils/core/log-redaction-utils';
+
+interface UploadPhishingWorkerResult {
+    success?: boolean;
+    templateResourceId?: string;
+    templateId?: number;
+    landingPageResourceId?: string;
+    landingPageId?: number;
+    scenarioResourceId?: string;
+    scenarioId?: number;
+    languageId?: string;
+    resourceId?: string; // fallback older worker response
+    message?: string;
+}
 
 // Output schema defined separately to avoid circular reference
 const uploadPhishingOutputSchema = z.object({
@@ -122,10 +137,15 @@ export const uploadPhishingTool = createTool({
 
             // Secure Logging (Mask token)
             const maskedPayload = maskSensitiveField(payload, 'accessToken', token);
-            logger.debug('Upload payload prepared', { payload: maskedPayload });
+            logger.debug('Upload payload prepared (redacted)', {
+                payload: summarizeForLog(maskedPayload),
+                phishingData: summarizeForLog((maskedPayload as any)?.phishingData),
+                emailTemplate: summarizeForLog((maskedPayload as any)?.phishingData?.email?.template),
+                landingPage: summarizeForLog((maskedPayload as any)?.phishingData?.landingPage),
+            });
 
             // Wrap API call with retry (exponential backoff: 1s, 2s, 4s)
-            const result = await withRetry(
+            const result = await withRetry<UploadPhishingWorkerResult>(
                 () => callWorkerAPI({
                     env,
                     serviceBinding: env?.PHISHING_CRUD_WORKER,
@@ -135,7 +155,7 @@ export const uploadPhishingTool = createTool({
                     token,
                     errorPrefix: 'Worker failed',
                     operationName: `Upload phishing content ${phishingId}`
-                }),
+                }) as Promise<UploadPhishingWorkerResult>,
                 `Upload phishing content ${phishingId}`
             );
 
@@ -159,6 +179,19 @@ export const uploadPhishingTool = createTool({
             // Backend API expects scenarioResourceId for assignment (based on "Phishing scenario not found" error)
             const resourceIdForAssignment = scenarioResourceId || templateResourceId;
 
+            const formattedMessage = formatToolSummary({
+                prefix: `✅ ${isQuishing ? 'Quishing' : 'Phishing'} uploaded`,
+                title: name,
+                suffix: 'Ready to assign',
+                kv: [
+                    { key: 'scenarioName', value: name },
+                    { key: 'resourceId', value: resourceIdForAssignment },
+                    { key: 'scenarioResourceId', value: scenarioResourceId || undefined },
+                    { key: 'landingPageResourceId', value: result.landingPageResourceId || undefined },
+                    { key: 'phishingId', value: phishingId },
+                ],
+            });
+
             const toolResult = {
                 success: true,
                 data: {
@@ -175,7 +208,8 @@ export const uploadPhishingTool = createTool({
                     scenarioName: name,
                     isQuishing: isQuishing, // Pass isQuishing flag for assign tool
                 },
-                message: result.message || `✅ ${isQuishing ? 'Quishing' : 'Phishing'} uploaded${name ? `: "${name}"` : ''}. Ready to assign (scenarioName=${name || ''}, resourceId=${resourceIdForAssignment}${scenarioResourceId ? `, scenarioResourceId=${scenarioResourceId}` : ''}${result.landingPageResourceId ? `, landingPageResourceId=${result.landingPageResourceId}` : ''}, phishingId=${phishingId}).`
+                // Always return our high-signal summary to user (backend messages can be generic).
+                message: formattedMessage,
             };
 
             // Validate result against output schema

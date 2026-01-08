@@ -62,6 +62,9 @@ Before routing, perform this internal analysis:
    - Scan history for: email addresses OR real alphanumeric resource IDs OR Real Names (e.g., "Peter Parker").
    - This person is the "Target" for subsequent Create/Assign actions.
    - *If found, pass it in 'taskContext'.*
+   - If you see user identity fields from tools (email/full name), include them in taskContext as:
+     - targetUserEmail=<email> (if present)
+     - targetUserFullName=<full name> (if present)
 
 2. **WHAT is the Active Artifact?**
    - Check the semantic descriptions in recent assistant messages:

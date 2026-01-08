@@ -13,6 +13,8 @@ import { validateToolResult } from '../../utils/tool-result-validation';
 import { waitForKVConsistency, buildExpectedKVKeys } from '../../utils/kv-consistency';
 import { MicrolearningService } from '../../services/microlearning-service';
 import { extractCompanyIdFromTokenExport } from '../../utils/core/policy-fetcher';
+import { formatToolSummary } from '../../utils/core/tool-summary-formatter';
+import { summarizeForLog } from '../../utils/core/log-redaction-utils';
 
 // Output schema defined separately to avoid circular reference
 const uploadTrainingOutputSchema = z.object({
@@ -150,7 +152,10 @@ export const uploadTrainingTool = createTool({
 
             // Secure Logging (Mask token)
             const maskedPayload = maskSensitiveField(payload, 'accessToken', token);
-            logger.debug('Upload payload prepared', { payload: maskedPayload });
+            logger.debug('Upload payload prepared (redacted)', {
+                payload: summarizeForLog(maskedPayload),
+                trainingData: summarizeForLog((maskedPayload as any)?.trainingData),
+            });
 
             // Wrap API call with retry (exponential backoff: 1s, 2s, 4s)
             const result = await withRetry(
@@ -177,7 +182,16 @@ export const uploadTrainingTool = createTool({
                     microlearningId: microlearningId,
                     title: title
                 },
-                message: `✅ Training uploaded${title ? `: "${title}"` : ''}. Ready to assign (resourceId=${result.resourceId}${result.languageId ? `, sendTrainingLanguageId=${result.languageId}` : ''}, microlearningId=${microlearningId}).`
+                message: formatToolSummary({
+                    prefix: '✅ Training uploaded',
+                    title,
+                    suffix: 'Ready to assign',
+                    kv: [
+                        { key: 'resourceId', value: result.resourceId },
+                        { key: 'sendTrainingLanguageId', value: result.languageId },
+                        { key: 'microlearningId', value: microlearningId },
+                    ],
+                })
             };
 
             // Validate result against output schema

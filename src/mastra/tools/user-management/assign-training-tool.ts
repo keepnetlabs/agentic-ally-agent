@@ -11,10 +11,18 @@ import { errorService } from '../../services/error-service';
 import { validateToolResult } from '../../utils/tool-result-validation';
 import { extractCompanyIdFromTokenExport } from '../../utils/core/policy-fetcher';
 import { isSafeId } from '../../utils/core/id-utils';
+import { formatToolSummary } from '../../utils/core/tool-summary-formatter';
 
 // Output schema defined separately to avoid circular reference
 const assignTrainingOutputSchema = z.object({
   success: z.boolean(),
+  data: z.object({
+    assignmentType: z.enum(['USER', 'GROUP']),
+    targetId: z.string(),
+    targetLabel: z.string(),
+    resourceId: z.string(),
+    sendTrainingLanguageId: z.string(),
+  }).optional(),
   message: z.string().optional(),
   error: z.string().optional(),
 });
@@ -26,6 +34,8 @@ export const assignTrainingTool = createTool({
     resourceId: z.string().describe('The Resource ID returned from the upload process').refine(isSafeId, { message: 'Invalid resourceId format.' }),
     sendTrainingLanguageId: z.string().describe('The Language ID returned from the upload process').refine(isSafeId, { message: 'Invalid sendTrainingLanguageId format.' }),
     targetUserResourceId: z.string().optional().describe('The User ID to assign the training to (user assignment)').refine((v) => (v ? isSafeId(v) : true), { message: 'Invalid targetUserResourceId format.' }),
+    targetUserEmail: z.string().email().optional().describe('Optional: user email for display in summary messages (does not affect assignment).'),
+    targetUserFullName: z.string().optional().describe('Optional: user full name for display in summary messages (does not affect assignment).'),
     targetGroupResourceId: z.string().optional().describe('The Group ID to assign the training to (group assignment)').refine((v) => (v ? isSafeId(v) : true), { message: 'Invalid targetGroupResourceId format.' }),
   }).refine(
     data => Boolean(data.targetUserResourceId) !== Boolean(data.targetGroupResourceId),
@@ -34,12 +44,16 @@ export const assignTrainingTool = createTool({
   outputSchema: assignTrainingOutputSchema,
   execute: async ({ context }) => {
     const logger = getLogger('AssignTrainingTool');
-    const { resourceId, sendTrainingLanguageId, targetUserResourceId, targetGroupResourceId } = context;
+    const { resourceId, sendTrainingLanguageId, targetUserResourceId, targetUserEmail, targetUserFullName, targetGroupResourceId } = context;
 
     // Determine assignment type
     const isUserAssignment = !!targetUserResourceId;
     const assignmentType = isUserAssignment ? 'USER' : 'GROUP';
     const targetId = targetUserResourceId || targetGroupResourceId;
+    const userLabel = isUserAssignment
+      ? (targetUserEmail?.trim() || targetUserFullName?.trim() || targetUserResourceId)
+      : undefined;
+    const targetLabel = isUserAssignment ? userLabel : targetId;
 
     logger.info(`Preparing assignment for resource to ${assignmentType}`, { resourceId, languageId: sendTrainingLanguageId, targetUserResourceId, targetGroupResourceId });
 
@@ -87,7 +101,20 @@ export const assignTrainingTool = createTool({
 
       const toolResult = {
         success: true,
-        message: `✅ Training assigned to ${assignmentType} ${targetId} (resourceId=${resourceId}, sendTrainingLanguageId=${sendTrainingLanguageId}).`
+        data: {
+          assignmentType,
+          targetId: String(targetId || ''),
+          targetLabel: String(targetLabel || ''),
+          resourceId,
+          sendTrainingLanguageId,
+        },
+        message: formatToolSummary({
+          prefix: `✅ Training assigned to ${assignmentType} ${targetLabel}`,
+          kv: [
+            { key: 'resourceId', value: resourceId },
+            { key: 'sendTrainingLanguageId', value: sendTrainingLanguageId },
+          ],
+        })
       };
 
       // Validate result against output schema

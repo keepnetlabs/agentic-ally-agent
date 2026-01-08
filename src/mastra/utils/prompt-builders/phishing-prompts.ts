@@ -639,7 +639,6 @@ export function buildLandingPagePrompts(params: LandingPagePromptParams): {
     template,
     additionalContext,
     isQuishing = false,
-    policyContext,
   } = params;
 
   // 🎲 RANDOMIZE DESIGN 🎲

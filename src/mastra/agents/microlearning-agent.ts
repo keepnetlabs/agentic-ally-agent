@@ -217,6 +217,8 @@ When user requests to **Upload** or **Assign** training:
    - resourceId: FROM upload.data.resourceId
    - sendTrainingLanguageId: FROM upload.data.sendTrainingLanguageId (NOT sendTrainingResourceId!)
    - targetUserResourceId: FROM user context
+   - targetUserEmail: FROM user context if available (optional; improves user-facing summaries)
+   - targetUserFullName: FROM user context if available (optional; improves user-facing summaries)
 6. If IDs are missing, ASK the user.
 
 **CRITICAL:** After creating training (workflow-executor completes), NEVER call assignTraining directly. You MUST call uploadTraining first, then wait for upload result before calling assignTraining.
@@ -228,7 +230,7 @@ When user requests to **Upload** or **Assign** training:
 
 **EXAMPLE:**
 Upload result: {resourceId: "abc123", sendTrainingLanguageId: "xyz789"}
-→ assignTraining({resourceId: "abc123", sendTrainingLanguageId: "xyz789", targetUserResourceId: "ys9vXMbl4wC6"})
+→ assignTraining({resourceId: "abc123", sendTrainingLanguageId: "xyz789", targetUserResourceId: "ys9vXMbl4wC6", targetUserEmail: "user@company.com", targetUserFullName: "User Name"})
 
 Theme structure:
 - fontFamily: {primary, secondary, monospace}

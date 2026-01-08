@@ -8,6 +8,7 @@ import { AGENT_CALL_TIMEOUT_MS } from '../../constants';
 import { withTimeout, withRetry } from '../../utils/core/resilience-utils';
 import { getLogger } from '../../utils/core/logger';
 import { normalizeError } from '../../utils/core/error-utils';
+import { summarizeForLog } from '../../utils/core/log-redaction-utils';
 import { validateBCP47LanguageCode, DEFAULT_LANGUAGE } from '../../utils/language/language-utils';
 import {
     buildTrainingGenerationPrompt,
@@ -37,7 +38,9 @@ export async function uploadTrainingOnly(threadId: string, microlearning: any): 
         );
 
         logger.info('Upload agent executed');
-        logger.debug('Upload response preview', { preview: uploadResponse.text?.substring(0, 500) || 'No response' });
+        logger.debug('Upload response received (redacted)', {
+            text: summarizeForLog(uploadResponse.text),
+        });
 
         // CRITICAL: Send explicit STOP message IMMEDIATELY to prevent agent from processing any other prompts
         // This is especially important for GPT-4o-mini and similar models that may continue processing
@@ -139,7 +142,9 @@ export async function uploadAndAssignTraining(
         );
 
         logger.info('Upload and assign agent executed');
-        logger.debug('Upload/Assign response preview', { preview: uploadAssignResponse.text?.substring(0, 500) || 'No response' });
+        logger.debug('Upload/Assign response received (redacted)', {
+            text: summarizeForLog(uploadAssignResponse.text),
+        });
 
         // CRITICAL: Send explicit STOP message IMMEDIATELY to prevent agent from processing any other prompts
         // This is especially important for GPT-4o-mini and similar models that may continue processing
@@ -410,7 +415,9 @@ export async function uploadAndAssignTrainingForGroup(
         );
 
         logger.info('✅ Upload and assign agent executed (GROUP)');
-        logger.debug('Upload/Assign response preview', { preview: uploadAssignResponse.text?.substring(0, 500) || 'No response' });
+        logger.debug('Upload/Assign response received (redacted)', {
+            text: summarizeForLog(uploadAssignResponse.text),
+        });
 
         // CRITICAL: Send explicit STOP message to prevent agent from processing any other prompts
         try {

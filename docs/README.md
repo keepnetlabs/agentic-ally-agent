@@ -26,6 +26,7 @@ Welcome to **Agentic Ally** - an AI-powered microlearning platform that automati
 
 ### Reference
 - **[GLOSSARY.md](./GLOSSARY.md)** - Key terms and definitions
+- **[OPERATIONAL_PLAYBOOK.md](./OPERATIONAL_PLAYBOOK.md)** - Upload/Assign runbook, ID mapping, [ARTIFACT_IDS], troubleshooting
 - **[FAQ.md](./FAQ.md)** - Common questions and troubleshooting
 - **[CHANGELOG.md](./CHANGELOG.md)** - Version history and updates
 
