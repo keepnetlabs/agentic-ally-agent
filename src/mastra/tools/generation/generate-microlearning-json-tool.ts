@@ -4,7 +4,6 @@ import { generateText } from 'ai';
 import { PromptAnalysis } from '../../types/prompt-analysis';
 import { MicrolearningContent, Scene } from '../../types/microlearning';
 import { cleanResponse } from '../../utils/content-processors/json-cleaner';
-import { buildPolicyEnhancementPrompt } from '../../utils/prompt-builders/policy-context-builder';
 import { METADATA_GENERATION_PARAMS } from '../../utils/config/llm-generation-params';
 import { CATEGORIES } from '../../constants';
 import { LanguageModelSchema } from '../../types/language-model';
@@ -83,7 +82,7 @@ async function generateMicrolearningJsonWithAI(
   analysis: PromptAnalysis & { additionalContext?: string },
   microlearningId: string,
   model: any,
-  policyContext?: string
+  _policyContext?: string
 ) {
   // Basic structure creation - detailed enhancement happens in Stage 2
 
@@ -119,7 +118,7 @@ async function generateMicrolearningJsonWithAI(
   // Stage 2: Enhance the microlearning object with AI
   const logger = getLogger('GenerateMicrolearningJson');
   logger.info('Starting Stage 2: Enhancement');
-  const enhancedMicrolearning = await enhanceMicrolearningContent(microlearning, model, analysis.additionalContext, policyContext);
+  const enhancedMicrolearning = await enhanceMicrolearningContent(microlearning, model, analysis.additionalContext);
   logger.info('Stage 2 completed');
 
   return enhancedMicrolearning;
@@ -175,11 +174,8 @@ async function generateTheme(themeColor?: string) {
   }
 }
 
-async function enhanceMicrolearningContent(microlearning: MicrolearningContent, model: any, additionalContext?: string, policyContext?: string): Promise<MicrolearningContent> {
+async function enhanceMicrolearningContent(microlearning: MicrolearningContent, model: any, additionalContext?: string): Promise<MicrolearningContent> {
   const categoriesList = CATEGORIES.VALUES.join(', ');
-
-  // Prepare policy context block using centralized builder
-  const policyBlock = buildPolicyEnhancementPrompt(policyContext);
 
   const enhancementPrompt = `CRITICAL: Return ONLY valid JSON. No explanations, no markdown, no backticks.
 
@@ -189,7 +185,7 @@ ${JSON.stringify(microlearning, null, 2)}
 
 USER CONTEXT & SPECIFIC REQUIREMENTS:
 ${additionalContext ? `"${additionalContext}"` : "No specific context provided."}
-(Use this context to refine the Title, Risk Area, and relevance.)${policyBlock}
+(Use this context to refine the Title, Risk Area, and relevance.)
 
 ENHANCEMENT RULES (apply ONLY if needed):
 1. Title: 2-5 words max, professional training format

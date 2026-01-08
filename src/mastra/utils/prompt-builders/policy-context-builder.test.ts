@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest';
 import {
   buildPolicyContextBlock,
   buildPolicySystemPrompt,
-  buildPolicyEnhancementPrompt,
   buildPolicyScenePrompt,
 } from './policy-context-builder';
 
@@ -40,7 +39,7 @@ describe('Policy Context Builder', () => {
     describe('System Format', () => {
       it('should include critical marker for system format', () => {
         const result = buildPolicyContextBlock(samplePolicy, 'system');
-        expect(result).toContain('🔴 CRITICAL - MANDATORY COMPANY POLICIES:');
+        expect(result).toContain('🔴 CRITICAL - COMPANY POLICIES (HIGHEST PRIORITY):');
       });
 
       it('should include policy content for system format', () => {
@@ -50,41 +49,19 @@ describe('Policy Context Builder', () => {
 
       it('should include reference instruction for system format', () => {
         const result = buildPolicyContextBlock(samplePolicy, 'system');
-        expect(result).toContain('Reference and align all content');
+        expect(result).toContain('Ensure ALL content generation complies');
       });
 
       it('should include mandatory guidelines text for system format', () => {
         const result = buildPolicyContextBlock(samplePolicy, 'system');
-        expect(result).toContain('mandatory guidelines');
-      });
-    });
-
-    describe('Enhancement Format', () => {
-      it('should include critical marker for enhancement format', () => {
-        const result = buildPolicyContextBlock(samplePolicy, 'enhancement');
-        expect(result).toContain('🔴 CRITICAL - MANDATORY COMPANY POLICIES:');
-      });
-
-      it('should include policy content for enhancement format', () => {
-        const result = buildPolicyContextBlock(samplePolicy, 'enhancement');
-        expect(result).toContain(samplePolicy);
-      });
-
-      it('should include enhance instruction for enhancement format', () => {
-        const result = buildPolicyContextBlock(samplePolicy, 'enhancement');
-        expect(result).toContain('Enhance content to strictly align');
-      });
-
-      it('should include "Do not ignore" warning for enhancement format', () => {
-        const result = buildPolicyContextBlock(samplePolicy, 'enhancement');
-        expect(result).toContain('Do not ignore');
+        expect(result).toContain('POLICY HANDLING RULES (MANDATORY)');
       });
     });
 
     describe('Scene Format', () => {
       it('should include critical marker for scene format', () => {
         const result = buildPolicyContextBlock(samplePolicy, 'scene');
-        expect(result).toContain('🔴 CRITICAL - MANDATORY COMPANY POLICIES:');
+        expect(result).toContain('🔴 CRITICAL - COMPANY POLICIES (HIGHEST PRIORITY):');
       });
 
       it('should include policy content for scene format', () => {
@@ -94,12 +71,12 @@ describe('Policy Context Builder', () => {
 
       it('should include generate instruction for scene format', () => {
         const result = buildPolicyContextBlock(samplePolicy, 'scene');
-        expect(result).toContain('Generate content that strictly respects');
+        expect(result).toContain('Generate scene content that is strictly policy-compliant');
       });
 
       it('should include every section reference for scene format', () => {
         const result = buildPolicyContextBlock(samplePolicy, 'scene');
-        expect(result).toContain('every section');
+        expect(result).toContain('<COMPANY_POLICIES>');
       });
     });
 
@@ -184,30 +161,7 @@ Policy 3: Third policy`;
 
     it('should include system format instruction', () => {
       const result = buildPolicySystemPrompt(samplePolicy);
-      expect(result).toContain('Reference and align all content');
-    });
-  });
-
-  describe('buildPolicyEnhancementPrompt', () => {
-    it('should call buildPolicyContextBlock with enhancement format', () => {
-      const expected = buildPolicyContextBlock(samplePolicy, 'enhancement');
-      const result = buildPolicyEnhancementPrompt(samplePolicy);
-      expect(result).toBe(expected);
-    });
-
-    it('should return empty string for undefined policy', () => {
-      const result = buildPolicyEnhancementPrompt(undefined);
-      expect(result).toBe('');
-    });
-
-    it('should include enhancement format instruction', () => {
-      const result = buildPolicyEnhancementPrompt(samplePolicy);
-      expect(result).toContain('Enhance content to strictly align');
-    });
-
-    it('should include do not ignore warning', () => {
-      const result = buildPolicyEnhancementPrompt(samplePolicy);
-      expect(result).toContain('Do not ignore');
+      expect(result).toContain('Ensure ALL content generation complies');
     });
   });
 
@@ -225,43 +179,37 @@ Policy 3: Third policy`;
 
     it('should include scene format instruction', () => {
       const result = buildPolicyScenePrompt(samplePolicy);
-      expect(result).toContain('Generate content that strictly respects');
+      expect(result).toContain('Generate scene content that is strictly policy-compliant');
     });
 
     it('should reference every section', () => {
       const result = buildPolicyScenePrompt(samplePolicy);
-      expect(result).toContain('every section');
+      expect(result).toContain('<COMPANY_POLICIES>');
     });
   });
 
   describe('Consistency Across Helpers', () => {
     it('should all include critical marker', () => {
       const system = buildPolicySystemPrompt(samplePolicy);
-      const enhancement = buildPolicyEnhancementPrompt(samplePolicy);
       const scene = buildPolicyScenePrompt(samplePolicy);
 
       expect(system).toContain('🔴 CRITICAL');
-      expect(enhancement).toContain('🔴 CRITICAL');
       expect(scene).toContain('🔴 CRITICAL');
     });
 
     it('should all include policy content', () => {
       const system = buildPolicySystemPrompt(samplePolicy);
-      const enhancement = buildPolicyEnhancementPrompt(samplePolicy);
       const scene = buildPolicyScenePrompt(samplePolicy);
 
       expect(system).toContain(samplePolicy);
-      expect(enhancement).toContain(samplePolicy);
       expect(scene).toContain(samplePolicy);
     });
 
     it('should all include INSTRUCTION directive', () => {
       const system = buildPolicySystemPrompt(samplePolicy);
-      const enhancement = buildPolicyEnhancementPrompt(samplePolicy);
       const scene = buildPolicyScenePrompt(samplePolicy);
 
       expect(system).toContain('INSTRUCTION:');
-      expect(enhancement).toContain('INSTRUCTION:');
       expect(scene).toContain('INSTRUCTION:');
     });
   });
@@ -291,7 +239,7 @@ Policy 3: Maintain data privacy`;
 
     it('should work for enhancement scenarios', () => {
       const policy = 'Content must be family-friendly and inclusive.';
-      const result = buildPolicyEnhancementPrompt(policy);
+      const result = buildPolicySystemPrompt(policy);
       expect(result).toContain('family-friendly');
     });
 

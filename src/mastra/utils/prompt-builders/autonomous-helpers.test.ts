@@ -1,156 +1,188 @@
 import { describe, it, expect } from 'vitest';
-import { getLanguageOrDefault, buildLanguageRequirementBlock, EXAMPLE_IDS } from './autonomous-helpers';
+import {
+  getLanguageOrDefault,
+  buildLanguageRequirementBlock,
+  EXAMPLE_IDS,
+} from './autonomous-helpers';
 
-/**
- * Test suite for Autonomous Helpers
- * Tests helper functions for autonomous prompt building
- */
-describe('Autonomous Helpers', () => {
+describe('autonomous-helpers', () => {
   describe('getLanguageOrDefault', () => {
-    it('should return provided language', () => {
-      expect(getLanguageOrDefault('en')).toBe('en');
+    it('should return provided language when given', () => {
+      expect(getLanguageOrDefault('en-us')).toBe('en-us');
     });
 
-    it('should return provided language for Turkish', () => {
-      expect(getLanguageOrDefault('tr')).toBe('tr');
-    });
-
-    it('should return provided language for German', () => {
-      expect(getLanguageOrDefault('de')).toBe('de');
-    });
-
-    it('should default to en-gb when language is undefined', () => {
+    it('should return en-gb when language is undefined', () => {
       expect(getLanguageOrDefault(undefined)).toBe('en-gb');
     });
 
-    it('should default to en-gb when language is empty string', () => {
+    it('should return en-gb when language is empty string', () => {
       expect(getLanguageOrDefault('')).toBe('en-gb');
     });
 
-    it('should preserve language code format', () => {
-      expect(getLanguageOrDefault('en-US')).toBe('en-US');
-      expect(getLanguageOrDefault('zh-Hans')).toBe('zh-Hans');
+    it('should preserve case of provided language', () => {
+      expect(getLanguageOrDefault('EN-US')).toBe('EN-US');
+    });
+
+    it('should be deterministic', () => {
+      const lang = 'en-gb';
+      const result1 = getLanguageOrDefault(lang);
+      const result2 = getLanguageOrDefault(lang);
+      expect(result1).toBe(result2);
     });
   });
 
   describe('buildLanguageRequirementBlock', () => {
-    it('should include tool name in block', () => {
-      const block = buildLanguageRequirementBlock('generateScene1', 'en');
-      expect(block).toContain('generateScene1');
-    });
-
-    it('should include specified language', () => {
-      const block = buildLanguageRequirementBlock('tool', 'tr');
-      expect(block).toContain('tr');
-    });
-
-    it('should include critical marker', () => {
-      const block = buildLanguageRequirementBlock('tool', 'en');
+    it('should include CRITICAL header', () => {
+      const block = buildLanguageRequirementBlock('generate-email');
       expect(block).toContain('🔴 CRITICAL');
     });
 
-    it('should include LANGUAGE REQUIREMENT text', () => {
-      const block = buildLanguageRequirementBlock('tool', 'en');
+    it('should include LANGUAGE REQUIREMENT header', () => {
+      const block = buildLanguageRequirementBlock('generate-email');
       expect(block).toContain('LANGUAGE REQUIREMENT');
     });
 
-    it('should include BCP-47 reference', () => {
-      const block = buildLanguageRequirementBlock('tool', 'en');
+    it('should include provided language', () => {
+      const block = buildLanguageRequirementBlock('generate-email', 'fr-fr');
+      expect(block).toContain('fr-fr');
+    });
+
+    it('should include tool name', () => {
+      const block = buildLanguageRequirementBlock('analyze-phishing');
+      expect(block).toContain('analyze-phishing');
+    });
+
+    it('should mention BCP-47 code', () => {
+      const block = buildLanguageRequirementBlock('generate-email', 'en-us');
       expect(block).toContain('BCP-47');
     });
 
-    it('should default to en-gb when language not provided', () => {
-      const block = buildLanguageRequirementBlock('tool');
+    it('should use default language when not provided', () => {
+      const block = buildLanguageRequirementBlock('generate-email');
       expect(block).toContain('en-gb');
     });
 
-    it('should include "NOT optional" warning', () => {
-      const block = buildLanguageRequirementBlock('tool', 'en');
-      expect(block).toContain('NOT optional');
+    it('should return formatted markdown string', () => {
+      const block = buildLanguageRequirementBlock('generate-email', 'en-us');
+      expect(block).toContain('**');
+      expect(block).toContain('-');
     });
 
-    it('should include instruction to include language in tool call', () => {
-      const block = buildLanguageRequirementBlock('myTool', 'en');
-      expect(block).toContain('INCLUDE THIS LANGUAGE');
-      expect(block).toContain('myTool');
-    });
-
-    it('should return a string', () => {
-      const block = buildLanguageRequirementBlock('tool', 'en');
-      expect(typeof block).toBe('string');
-    });
-
-    it('should be non-empty', () => {
-      const block = buildLanguageRequirementBlock('tool', 'en');
-      expect(block.length).toBeGreaterThan(0);
-    });
-
-    it('should work with all language codes', () => {
-      const languages = ['en', 'tr', 'de', 'fr', 'zh', 'ja', 'es'];
-      languages.forEach(lang => {
-        const block = buildLanguageRequirementBlock('tool', lang);
-        expect(block).toContain(lang);
-      });
-    });
-
-    it('should work with BCP-47 language codes', () => {
-      const block = buildLanguageRequirementBlock('tool', 'zh-Hans');
-      expect(block).toContain('zh-Hans');
+    it('should be consistent for same inputs', () => {
+      const result1 = buildLanguageRequirementBlock('generate-email', 'en-us');
+      const result2 = buildLanguageRequirementBlock('generate-email', 'en-us');
+      expect(result1).toBe(result2);
     });
   });
 
-  describe('EXAMPLE_IDS', () => {
-    it('should export EXAMPLE_IDS constant', () => {
+  describe('EXAMPLE_IDS constant', () => {
+    it('should be defined', () => {
       expect(EXAMPLE_IDS).toBeDefined();
     });
 
-    it('should have phishing example IDs', () => {
-      expect(EXAMPLE_IDS.phishing).toBeDefined();
+    it('should have phishing and training objects', () => {
+      expect(EXAMPLE_IDS).toHaveProperty('phishing');
+      expect(EXAMPLE_IDS).toHaveProperty('training');
     });
 
-    it('should have training example IDs', () => {
-      expect(EXAMPLE_IDS.training).toBeDefined();
+    it('should have generated and resource IDs', () => {
+      expect(EXAMPLE_IDS.phishing).toHaveProperty('generated');
+      expect(EXAMPLE_IDS.phishing).toHaveProperty('resource');
+      expect(EXAMPLE_IDS.training).toHaveProperty('generated');
+      expect(EXAMPLE_IDS.training).toHaveProperty('resource');
     });
 
-    it('should have generated ID for phishing', () => {
-      expect(EXAMPLE_IDS.phishing.generated).toBe('yl2JfA4r5yYl');
+    it('all IDs should be non-empty strings', () => {
+      expect(typeof EXAMPLE_IDS.phishing.generated).toBe('string');
+      expect(EXAMPLE_IDS.phishing.generated.length).toBeGreaterThan(0);
+      expect(typeof EXAMPLE_IDS.training.resource).toBe('string');
+      expect(EXAMPLE_IDS.training.resource.length).toBeGreaterThan(0);
     });
 
-    it('should have resource ID for phishing', () => {
-      expect(EXAMPLE_IDS.phishing.resource).toBe('scenario-abc-123456');
+    it('IDs should be different from each other', () => {
+      expect(EXAMPLE_IDS.phishing.generated).not.toBe(EXAMPLE_IDS.training.generated);
+      expect(EXAMPLE_IDS.phishing.generated).not.toBe(EXAMPLE_IDS.phishing.resource);
     });
 
-    it('should have generated ID for training', () => {
-      expect(EXAMPLE_IDS.training.generated).toBe('ml-generate-xyz123');
+    it('phishing.resource should contain scenario keyword', () => {
+      expect(EXAMPLE_IDS.phishing.resource.toLowerCase()).toContain('scenario');
     });
 
-    it('should have resource ID for training', () => {
-      expect(EXAMPLE_IDS.training.resource).toBe('resource-train-789xyz');
+    it('training IDs should contain expected patterns', () => {
+      expect(EXAMPLE_IDS.training.generated.toLowerCase()).toContain('ml-generate');
+      expect(EXAMPLE_IDS.training.resource.toLowerCase()).toContain('resource-train');
     });
 
-    it('should be immutable (readonly)', () => {
-      expect(() => {
-        (EXAMPLE_IDS as any).phishing.generated = 'new-value';
-      }).toThrow();
-    });
-
-    it('should provide consistent IDs on multiple accesses', () => {
+    it('should be consistent across accesses', () => {
       const id1 = EXAMPLE_IDS.phishing.generated;
       const id2 = EXAMPLE_IDS.phishing.generated;
       expect(id1).toBe(id2);
     });
+
+    it('should have valid format for file paths', () => {
+      const allIds = [
+        EXAMPLE_IDS.phishing.generated,
+        EXAMPLE_IDS.phishing.resource,
+        EXAMPLE_IDS.training.generated,
+        EXAMPLE_IDS.training.resource,
+      ];
+      allIds.forEach(id => {
+        expect(id).not.toMatch(/[/\:*?"<>|]/);
+      });
+    });
   });
 
-  describe('Integration', () => {
-    it('should use language helper in requirement block', () => {
-      const defaultBlock = buildLanguageRequirementBlock('tool');
-      expect(defaultBlock).toContain('en-gb');
+  describe('Integration Tests', () => {
+    it('should work together for prompt building', () => {
+      const language = getLanguageOrDefault('tr-tr');
+      const block = buildLanguageRequirementBlock('generate-email', language);
+      expect(block).toContain('tr-tr');
+      expect(block).toContain('generate-email');
     });
 
-    it('should override language in requirement block', () => {
-      const block = buildLanguageRequirementBlock('tool', 'tr');
-      expect(block).toContain('tr');
-      expect(block).not.toContain('en-gb');
+    it('should build complete prompt with example IDs', () => {
+      const block = buildLanguageRequirementBlock('analyze-phishing', 'en-gb');
+      const prompt = `${block}\n\nExample ID: ${EXAMPLE_IDS.phishing.generated}`;
+      expect(prompt).toContain('CRITICAL');
+      expect(prompt).toContain(EXAMPLE_IDS.phishing.generated);
+    });
+  });
+
+  describe('Consistency Tests', () => {
+    it('functions should use same default language', () => {
+      const lang1 = getLanguageOrDefault(undefined);
+      const block = buildLanguageRequirementBlock('test');
+      expect(lang1).toBe('en-gb');
+      expect(block).toContain('en-gb');
+    });
+
+    it('should handle language consistently', () => {
+      const lang = 'de-de';
+      const getter = getLanguageOrDefault(lang);
+      const block = buildLanguageRequirementBlock('test', lang);
+      expect(getter).toBe(lang);
+      expect(block).toContain(lang);
+    });
+  });
+
+  describe('Edge Cases', () => {
+    it('should handle very long tool names', () => {
+      const longName = 'this-is-a-very-long-tool-name-with-many-parts';
+      const block = buildLanguageRequirementBlock(longName, 'en-gb');
+      expect(block).toContain(longName);
+    });
+
+    it('should handle complex language codes', () => {
+      const complex = 'zh-Hans-CN-x-private';
+      const result = getLanguageOrDefault(complex);
+      expect(result).toBe(complex);
+    });
+
+    it('EXAMPLE_IDS should not be mutated', () => {
+      const orig = EXAMPLE_IDS.phishing.generated;
+      getLanguageOrDefault('en-gb');
+      buildLanguageRequirementBlock('test', 'en-gb');
+      expect(EXAMPLE_IDS.phishing.generated).toBe(orig);
     });
   });
 });

@@ -384,7 +384,7 @@ function buildQuishingEmailPrompts(params: EmailPromptParams): {
   systemPrompt: string;
   userPrompt: string;
 } {
-  const { analysis, language, difficulty, policyContext } = params;
+  const { analysis, language, difficulty } = params;
   const difficultyRules = DIFFICULTY_CONFIG[(difficulty as keyof typeof DIFFICULTY_CONFIG) || 'Medium'];
 
   const quishingSystemPrompt = `You are a Quishing (QR Code Phishing) Email Generator for a LEGITIMATE CYBERSECURITY TRAINING COMPANY.
@@ -482,12 +482,8 @@ ${JSON.stringify(analysis, null, 2)}
 8. **VERIFY** NO buttons or clickable links exist in main body (footer links allowed).
 9. **OUTPUT** valid JSON with complete, production-ready HTML template.`;
 
-  // Add policy context if available
-  const policyBlock = buildPolicyScenePrompt(policyContext);
-  const finalSystemPrompt = quishingSystemPrompt + policyBlock;
-
   return {
-    systemPrompt: finalSystemPrompt,
+    systemPrompt: quishingSystemPrompt,
     userPrompt: quishingUserPrompt,
   };
 }
@@ -499,7 +495,7 @@ function buildNormalPhishingEmailPrompts(params: EmailPromptParams): {
   systemPrompt: string;
   userPrompt: string;
 } {
-  const { analysis, language, difficulty, industryDesign, policyContext } = params;
+  const { analysis, language, difficulty, industryDesign } = params;
   const difficultyRules = DIFFICULTY_CONFIG[(difficulty as keyof typeof DIFFICULTY_CONFIG) || 'Medium'];
 
   const systemPrompt = `You are a Phishing Content Generator for a LEGITIMATE CYBERSECURITY TRAINING COMPANY.
@@ -593,12 +589,8 @@ ${JSON.stringify(analysis, null, 2)}
 8. **FINAL VALIDATION:** Before outputting, check that: (a) greeting contains {FIRSTNAME} or {FULLNAME}, (b) button/link uses {PHISHINGURL} tag. Fix if missing or incorrect.
 9. **OUTPUT** valid JSON with complete, production-ready HTML template.`;
 
-  // Add policy context if available
-  const policyBlock = buildPolicyScenePrompt(policyContext);
-  const finalSystemPrompt = systemPrompt + policyBlock;
-
   return {
-    systemPrompt: finalSystemPrompt,
+    systemPrompt,
     userPrompt,
   };
 }
@@ -960,12 +952,8 @@ ${emailBrandContext ? `\n${emailBrandContext}` : ''}
 **Email Preview (first 500 chars):** ${template.substring(0, 500)}...`
       : undefined;
 
-  // Add policy context if available
-  const policyBlock = buildPolicyScenePrompt(policyContext);
-  const finalSystemPrompt = systemPrompt + policyBlock;
-
   return {
-    systemPrompt: finalSystemPrompt,
+    systemPrompt,
     userPrompt,
     userContextMessage,
     emailContextMessage,
