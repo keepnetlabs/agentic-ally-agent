@@ -287,4 +287,52 @@ describe('AgentRouter', () => {
       expect(AGENT_NAMES.ORCHESTRATOR).toBeDefined();
     });
   });
+
+  describe('AgentRoutingResult interface', () => {
+    it('should have agentName field', async () => {
+      const mockDecision = {
+        agent: AGENT_NAMES.MICROLEARNING,
+        taskContext: 'Create training'
+      };
+
+      (cleanResponse as any).mockReturnValue(JSON.stringify(mockDecision));
+      (withRetry as any).mockImplementation(async (_fn: any) => {
+        const routingText = JSON.stringify(mockDecision);
+        const cleanJsonText = cleanResponse(routingText, 'orchestrator-decision');
+        return JSON.parse(cleanJsonText);
+      });
+
+      mockOrchestrator.generate.mockResolvedValue({
+        text: JSON.stringify(mockDecision)
+      });
+
+      const result = await agentRouter.route('Test');
+
+      expect(result).toHaveProperty('agentName');
+      expect(typeof result.agentName).toBe('string');
+    });
+
+    it('should have optional taskContext field', async () => {
+      const mockDecision = {
+        agent: AGENT_NAMES.MICROLEARNING,
+        taskContext: 'Build intermediate training'
+      };
+
+      (cleanResponse as any).mockReturnValue(JSON.stringify(mockDecision));
+      (withRetry as any).mockImplementation(async (_fn: any) => {
+        const routingText = JSON.stringify(mockDecision);
+        const cleanJsonText = cleanResponse(routingText, 'orchestrator-decision');
+        return JSON.parse(cleanJsonText);
+      });
+
+      mockOrchestrator.generate.mockResolvedValue({
+        text: JSON.stringify(mockDecision)
+      });
+
+      const result = await agentRouter.route('Test');
+
+      expect(result).toHaveProperty('taskContext');
+      expect(result.taskContext).toBe('Build intermediate training');
+    });
+  });
 });
