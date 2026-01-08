@@ -67,7 +67,7 @@ describe('Orchestrator Agent - Request Routing', () => {
       it('should treat "Yes, but create different..." as new request, not confirmation', () => {
         const userPrompt = 'Yes, but create something different';
         const hasNewIntent = userPrompt.toLowerCase().includes('but') ||
-                            userPrompt.toLowerCase().includes('create');
+          userPrompt.toLowerCase().includes('create');
 
         expect(hasNewIntent).toBe(true);
       });
@@ -123,10 +123,10 @@ describe('Orchestrator Agent - Request Routing', () => {
     });
 
     describe('User ID validation for assignments', () => {
-      it('should validate masked IDs [USER-abc123]', () => {
+      it('should treat bracketed placeholders like [USER-*] as NOT valid for assignment', () => {
         const userId = '[USER-abc123]';
-        const maskPattern = /\[USER-[a-zA-Z0-9]+\]/;
-        expect(maskPattern.test(userId)).toBe(true);
+        const resourcePattern = /^[a-zA-Z0-9]{8,}$/;
+        expect(resourcePattern.test(userId)).toBe(false);
       });
 
       it('should validate alphanumeric resource IDs', () => {
@@ -137,7 +137,7 @@ describe('Orchestrator Agent - Request Routing', () => {
 
       it('should reject plain names as user IDs', () => {
         const name = 'Peter Parker';
-        const resourcePattern = /\[USER-[a-zA-Z0-9]+\]|^[a-zA-Z0-9]{8,}$/;
+        const resourcePattern = /^[a-zA-Z0-9]{8,}$/;
         expect(resourcePattern.test(name)).toBe(false);
       });
 
@@ -149,9 +149,9 @@ describe('Orchestrator Agent - Request Routing', () => {
       });
 
       it('should handle name + ID combination', () => {
-        const userRef = 'Peter Parker [USER-123]';
+        const userRef = 'Peter Parker (ID: ys9vXMbl4wC6)';
         const hasName = userRef.includes('Peter Parker');
-        const hasId = /\[USER-[a-zA-Z0-9]+\]/.test(userRef);
+        const hasId = /ID:\s*[a-zA-Z0-9]{8,}/.test(userRef);
 
         expect(hasName).toBe(true);
         expect(hasId).toBe(true);
@@ -162,7 +162,7 @@ describe('Orchestrator Agent - Request Routing', () => {
       it('should require user ID before assignment', () => {
         const userPrompt = 'Assign training';
         // No user specified - must ask or lookup
-        expect(userPrompt).not.toContain('[USER-');
+        expect(userPrompt).toBe('Assign training');
       });
 
       it('should require resource ID for upload', () => {
@@ -284,8 +284,8 @@ describe('Orchestrator Agent - Request Routing', () => {
 
   describe('Edge Cases & Error Scenarios', () => {
     describe('Ambiguous requests', () => {
-      it('should handle "Create something for [USER-123]"', () => {
-        const userPrompt = 'Create something for [USER-123]';
+      it('should handle "Create something for alice@company.com"', () => {
+        const userPrompt = 'Create something for alice@company.com';
         // Vague intent - should route to userInfoAssistant first
         expect(userPrompt).toContain('something');
       });
@@ -394,7 +394,7 @@ describe('Orchestrator Agent - Request Routing', () => {
     it('should not return empty taskContext', () => {
       const output = {
         agent: 'userInfoAssistant',
-        taskContext: '',
+        taskContext: 'Find user alice@company.com and prepare for assignment',
       };
 
       expect(output.taskContext.length).toBeGreaterThan(0);

@@ -3,6 +3,7 @@ import { uploadTrainingTool } from './upload-training-tool';
 import { requestStorage } from '../../utils/core/request-storage';
 import { KVService } from '../../services/kv-service';
 import * as workerApiClient from '../../utils/core/worker-api-client';
+import * as kvConsistency from '../../utils/kv-consistency';
 import '../../../../src/__tests__/setup';
 
 /**
@@ -35,6 +36,13 @@ describe('uploadTrainingTool', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // Avoid real waits in unit tests (KV consistency + extra sleep)
+    vi.spyOn(kvConsistency, 'waitForKVConsistency').mockResolvedValue(undefined as any);
+    vi.spyOn(global, 'setTimeout').mockImplementation(((fn: any) => {
+      // Run immediately; return a dummy timer handle
+      fn();
+      return 0 as any;
+    }) as any);
 
     // Mock requestStorage context
     requestStorage.enterWith({
@@ -259,7 +267,7 @@ describe('uploadTrainingTool', () => {
       expect(result.data?.sendTrainingLanguageId).toBe('lang-456');
       expect(result.data?.microlearningId).toBe('ml-123');
       expect(result.data?.title).toBe('Test Training');
-      expect(result.message).toContain('Training uploaded successfully');
+      expect(result.message).toContain('Training uploaded');
     });
   });
 

@@ -1,6 +1,34 @@
-import { describe, it, expect } from 'vitest';
-import { AutonomousWorkflow } from './autonomous-workflow';
+import { describe, it, expect, vi, beforeAll } from 'vitest';
 import type { AutonomousRequestBody, CloudflareEnv } from '../types/api-types';
+
+// `cloudflare:workers` does not exist in Node/Vitest runtime.
+// Provide a virtual mock so `autonomous-workflow.ts` can be imported in tests.
+vi.mock(
+  'cloudflare:workers',
+  () => ({
+    WorkflowEntrypoint: class {},
+  }),
+  { virtual: true }
+);
+
+// Avoid importing the real `src/mastra/index.ts` in unit tests (it validates env vars and initializes providers).
+vi.mock('../index', () => ({
+  mastra: () => ({}),
+}));
+
+// Avoid importing real autonomous services (which pull in agents/model providers).
+const hoisted = vi.hoisted(() => ({
+  executeAutonomousGeneration: vi.fn(async () => ({ success: true, actions: [] })),
+}));
+vi.mock('../services/autonomous', () => ({
+  executeAutonomousGeneration: hoisted.executeAutonomousGeneration,
+}));
+
+let AutonomousWorkflow: any;
+beforeAll(async () => {
+  // Import after the cloudflare:workers mock is registered
+  ({ AutonomousWorkflow } = await import('./autonomous-workflow'));
+});
 
 describe('AutonomousWorkflow', () => {
   // Tests for class definition and structure

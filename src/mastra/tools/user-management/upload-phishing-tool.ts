@@ -172,9 +172,10 @@ export const uploadPhishingTool = createTool({
                     languageId: result.languageId, // May not exist in backend response, kept for compatibility
                     phishingId: phishingId,
                     title: name,
+                    scenarioName: name,
                     isQuishing: isQuishing, // Pass isQuishing flag for assign tool
                 },
-                message: result.message || `Phishing simulation uploaded successfully. Resource ID ${resourceIdForAssignment} is ready for assignment.`
+                message: result.message || `✅ ${isQuishing ? 'Quishing' : 'Phishing'} uploaded${name ? `: "${name}"` : ''}. Ready to assign (scenarioName=${name || ''}, resourceId=${resourceIdForAssignment}${scenarioResourceId ? `, scenarioResourceId=${scenarioResourceId}` : ''}${result.landingPageResourceId ? `, landingPageResourceId=${result.landingPageResourceId}` : ''}, phishingId=${phishingId}).`
             };
 
             // Validate result against output schema

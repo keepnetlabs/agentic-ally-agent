@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import {
   AUTH_CONTEXT,
-  ZERO_PII_POLICY,
   LOGO_TAG_RULE,
   NO_DISCLAIMERS_RULE,
   EMAIL_SIGNATURE_RULES,
+  NO_FAKE_PERSONAL_IDENTITIES_RULES,
   TABLE_LAYOUT_RULES,
   LAYOUT_STRATEGY_RULES,
   PREHEADER_RULE,
@@ -26,13 +26,7 @@ describe('shared-email-rules', () => {
       expect(AUTH_CONTEXT).toContain('defensive security');
     });
 
-    it('should define ZERO_PII_POLICY with strict PII rules', () => {
-      expect(ZERO_PII_POLICY).toBeDefined();
-      expect(ZERO_PII_POLICY).toContain('ZERO PII');
-      expect(ZERO_PII_POLICY).toContain('The User');
-      expect(ZERO_PII_POLICY).toContain('The Employee');
-      expect(ZERO_PII_POLICY).toContain('do NOT');
-    });
+    // Note: ZERO_PII_POLICY constant removed (PII policy text no longer embedded in prompts)
 
     it('should define LOGO_TAG_RULE with CUSTOMMAINLOGO requirement', () => {
       expect(LOGO_TAG_RULE).toBeDefined();
@@ -52,8 +46,14 @@ describe('shared-email-rules', () => {
       expect(EMAIL_SIGNATURE_RULES).toBeDefined();
       expect(EMAIL_SIGNATURE_RULES).toContain('FORBIDDEN');
       expect(EMAIL_SIGNATURE_RULES).toContain('Security Notifications Team');
-      expect(EMAIL_SIGNATURE_RULES).toContain('Department');
-      expect(EMAIL_SIGNATURE_RULES).toContain('Team Name');
+      expect(EMAIL_SIGNATURE_RULES).toContain('department/team/system names');
+    });
+
+    it('should define NO_FAKE_PERSONAL_IDENTITIES_RULES to prevent invented names', () => {
+      expect(NO_FAKE_PERSONAL_IDENTITIES_RULES).toBeDefined();
+      expect(NO_FAKE_PERSONAL_IDENTITIES_RULES).toContain('NO FAKE PERSONAL IDENTITIES');
+      expect(NO_FAKE_PERSONAL_IDENTITIES_RULES).toContain('Do NOT invent');
+      expect(NO_FAKE_PERSONAL_IDENTITIES_RULES).toContain('{FIRSTNAME}');
     });
 
     it('should define TABLE_LAYOUT_RULES for Outlook compatibility', () => {
@@ -120,23 +120,27 @@ describe('shared-email-rules', () => {
   describe('getMergeTagsRules Function', () => {
     it('should return merge tag rules without QR code by default', () => {
       const rules = getMergeTagsRules();
+      const requiredLine = rules.split('\n').find((l) => l.includes('**Required:**')) || '';
 
       expect(rules).toBeDefined();
       expect(rules).toContain('Merge Tags');
       expect(rules).toContain('{FIRSTNAME}');
-      expect(rules).not.toContain('{QRCODEURLIMAGE}');
+      // QRCODE tag can exist in the Available list; ensure it's not REQUIRED by default
+      expect(requiredLine).not.toContain('{QRCODEURLIMAGE}');
     });
 
     it('should include QR code tag when includeQRCode is true', () => {
       const rules = getMergeTagsRules(true);
+      const requiredLine = rules.split('\n').find((l) => l.includes('**Required:**')) || '';
 
-      expect(rules).toContain('{QRCODEURLIMAGE}');
+      expect(requiredLine).toContain('{QRCODEURLIMAGE}');
     });
 
     it('should not include QR code tag when includeQRCode is false', () => {
       const rules = getMergeTagsRules(false);
+      const requiredLine = rules.split('\n').find((l) => l.includes('**Required:**')) || '';
 
-      expect(rules).not.toContain('{QRCODEURLIMAGE}');
+      expect(requiredLine).not.toContain('{QRCODEURLIMAGE}');
     });
 
     it('should include FIRSTNAME as required tag', () => {
@@ -205,12 +209,7 @@ describe('shared-email-rules', () => {
       expect(AUTH_CONTEXT).toMatch(/AUTHORIZED|LEGAL|EDUCATIONAL/);
     });
 
-    it('ZERO_PII_POLICY should prevent output of real names', () => {
-      const policyItems = ZERO_PII_POLICY.split('-');
-      const hasStrictRequirement = policyItems.some(item => item.includes('do NOT'));
-
-      expect(hasStrictRequirement).toBe(true);
-    });
+    // Note: ZERO_PII_POLICY constant removed (PII policy text no longer embedded in prompts)
 
     it('EMAIL_SIGNATURE_RULES should explicitly forbid personal names', () => {
       expect(EMAIL_SIGNATURE_RULES).toContain('FORBIDDEN');
@@ -338,7 +337,6 @@ describe('shared-email-rules', () => {
     it('all rules should use markdown formatting', () => {
       const allRules = [
         AUTH_CONTEXT,
-        ZERO_PII_POLICY,
         LOGO_TAG_RULE,
         NO_DISCLAIMERS_RULE,
         EMAIL_SIGNATURE_RULES,
@@ -359,7 +357,6 @@ describe('shared-email-rules', () => {
 
     it('rules should use consistent bullet point format', () => {
       const rulesWithBullets = [
-        ZERO_PII_POLICY,
         EMAIL_SIGNATURE_RULES,
         TABLE_LAYOUT_RULES,
         GREETING_RULES,
@@ -372,7 +369,6 @@ describe('shared-email-rules', () => {
 
     it('rules should use emphasis (bold) for critical points', () => {
       const rulesWithEmphasis = [
-        ZERO_PII_POLICY,
         EMAIL_SIGNATURE_RULES,
         TABLE_LAYOUT_RULES,
         GREETING_RULES,
@@ -392,10 +388,7 @@ describe('shared-email-rules', () => {
 
   // ==================== CONTENT VALIDATION ====================
   describe('Content Validation', () => {
-    it('ZERO_PII_POLICY should distinguish real names vs personas', () => {
-      expect(ZERO_PII_POLICY).toContain('Even if');
-      expect(ZERO_PII_POLICY).toContain('do NOT output');
-    });
+    // Note: ZERO_PII_POLICY constant removed (PII policy text no longer embedded in prompts)
 
     it('EMAIL_SIGNATURE_RULES should list examples of correct teams', () => {
       expect(EMAIL_SIGNATURE_RULES).toContain('Security Notifications Team');
@@ -423,14 +416,12 @@ describe('shared-email-rules', () => {
   // ==================== CONSISTENCY ACROSS RULES ====================
   describe('Consistency and Cross-References', () => {
     it('all signature-related rules should align', () => {
-      // EMAIL_SIGNATURE_RULES and ZERO_PII_POLICY should both forbid real names
+      // Signature rules should forbid personal names
       expect(EMAIL_SIGNATURE_RULES).toContain('personal names');
-      expect(ZERO_PII_POLICY).toContain('do NOT');
     });
 
-    it('GREETING_RULES and zero PII should both allow merge tags', () => {
+    it('GREETING_RULES should allow merge tags', () => {
       expect(GREETING_RULES).toContain('{FIRSTNAME}');
-      expect(ZERO_PII_POLICY).toContain('merge');
     });
 
     it('footer and greeting should both require merge tags not hardcoding', () => {
@@ -463,7 +454,6 @@ describe('shared-email-rules', () => {
     it('all constants should be non-empty strings', () => {
       const allConstants = [
         AUTH_CONTEXT,
-        ZERO_PII_POLICY,
         LOGO_TAG_RULE,
         NO_DISCLAIMERS_RULE,
         EMAIL_SIGNATURE_RULES,
@@ -493,7 +483,7 @@ describe('shared-email-rules', () => {
     });
 
     it('constants should handle markdown rendering', () => {
-      const allConstants = [AUTH_CONTEXT, ZERO_PII_POLICY, EMAIL_SIGNATURE_RULES];
+      const allConstants = [AUTH_CONTEXT, EMAIL_SIGNATURE_RULES];
 
       allConstants.forEach((constant) => {
         // Should not have unmatched markdown
@@ -510,10 +500,7 @@ describe('shared-email-rules', () => {
       expect(AUTH_CONTEXT).toContain('LEGAL');
     });
 
-    it('ZERO_PII_POLICY should protect against generating real PII', () => {
-      expect(ZERO_PII_POLICY).toContain('STRICT');
-      expect(ZERO_PII_POLICY).toContain('do NOT output');
-    });
+    // Note: ZERO_PII_POLICY constant removed (PII policy text no longer embedded in prompts)
 
     it('NO_DISCLAIMERS_RULE ensures emails look authentic', () => {
       expect(NO_DISCLAIMERS_RULE).toContain('RAW email content');

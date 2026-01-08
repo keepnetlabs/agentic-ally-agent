@@ -10,6 +10,7 @@ import { ERROR_MESSAGES, API_ENDPOINTS } from '../../constants';
 import { errorService } from '../../services/error-service';
 import { validateToolResult } from '../../utils/tool-result-validation';
 import { extractCompanyIdFromTokenExport } from '../../utils/core/policy-fetcher';
+import { isSafeId } from '../../utils/core/id-utils';
 
 // Output schema defined separately to avoid circular reference
 const assignTrainingOutputSchema = z.object({
@@ -22,13 +23,13 @@ export const assignTrainingTool = createTool({
   id: 'assign-training',
   description: 'Assigns an uploaded training resource to a specific user or group.',
   inputSchema: z.object({
-    resourceId: z.string().describe('The Resource ID returned from the upload process'),
-    sendTrainingLanguageId: z.string().describe('The Language ID returned from the upload process'),
-    targetUserResourceId: z.string().optional().describe('The User ID to assign the training to (user assignment)'),
-    targetGroupResourceId: z.string().optional().describe('The Group ID to assign the training to (group assignment)'),
+    resourceId: z.string().describe('The Resource ID returned from the upload process').refine(isSafeId, { message: 'Invalid resourceId format.' }),
+    sendTrainingLanguageId: z.string().describe('The Language ID returned from the upload process').refine(isSafeId, { message: 'Invalid sendTrainingLanguageId format.' }),
+    targetUserResourceId: z.string().optional().describe('The User ID to assign the training to (user assignment)').refine((v) => (v ? isSafeId(v) : true), { message: 'Invalid targetUserResourceId format.' }),
+    targetGroupResourceId: z.string().optional().describe('The Group ID to assign the training to (group assignment)').refine((v) => (v ? isSafeId(v) : true), { message: 'Invalid targetGroupResourceId format.' }),
   }).refine(
-    data => data.targetUserResourceId || data.targetGroupResourceId,
-    { message: 'Either targetUserResourceId (user assignment) or targetGroupResourceId (group assignment) must be provided' }
+    data => Boolean(data.targetUserResourceId) !== Boolean(data.targetGroupResourceId),
+    { message: 'Provide EXACTLY ONE: targetUserResourceId (user assignment) OR targetGroupResourceId (group assignment).' }
   ),
   outputSchema: assignTrainingOutputSchema,
   execute: async ({ context }) => {
@@ -86,7 +87,7 @@ export const assignTrainingTool = createTool({
 
       const toolResult = {
         success: true,
-        message: 'Training assigned successfully.'
+        message: `✅ Training assigned to ${assignmentType} ${targetId} (resourceId=${resourceId}, sendTrainingLanguageId=${sendTrainingLanguageId}).`
       };
 
       // Validate result against output schema

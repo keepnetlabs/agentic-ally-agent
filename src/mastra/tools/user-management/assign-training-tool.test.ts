@@ -74,7 +74,7 @@ describe('assignTrainingTool', () => {
       }
     });
 
-    it('should require targetUserResourceId', async () => {
+    it('should require exactly one assignment target (user OR group)', async () => {
       const input: any = {
         resourceId: 'resource-123',
         sendTrainingLanguageId: 'lang-456'
@@ -85,6 +85,24 @@ describe('assignTrainingTool', () => {
       expect(result).toBeDefined();
       if (result && typeof result === 'object' && 'error' in result) {
         expect(result.error).toBeTruthy();
+      }
+    });
+
+    it('should reject when both targetUserResourceId and targetGroupResourceId are provided', async () => {
+      const input: any = {
+        resourceId: 'resource-123',
+        sendTrainingLanguageId: 'lang-456',
+        targetUserResourceId: 'user-789',
+        targetGroupResourceId: 'group-123',
+      };
+
+      const result = await assignTrainingTool.execute({ context: input } as any);
+      expect(result).toBeDefined();
+      // Schema validation errors may not include `success: false` depending on tool framework
+      if (result && typeof result === 'object' && 'error' in result) {
+        expect(result.error).toBeTruthy();
+      } else {
+        expect(false).toBe(true); // must not succeed silently
       }
     });
   });
@@ -135,7 +153,7 @@ describe('assignTrainingTool', () => {
 
       const result = await assignTrainingTool.execute({ context: input } as any);
       expect(result.success).toBe(true);
-      expect(result.message).toBe('Training assigned successfully.');
+      expect(result.message).toContain('Training assigned to');
       expect(result.error).toBeUndefined();
     });
 
@@ -164,6 +182,28 @@ describe('assignTrainingTool', () => {
             companyId: mockCompanyId
           }),
           token: mockToken
+        })
+      );
+    });
+
+    it('should assign training to a group and include targetGroupResourceId in payload', async () => {
+      const mockCallWorkerAPI = vi.spyOn(workerApiClient, 'callWorkerAPI').mockResolvedValue({});
+
+      const input = {
+        resourceId: 'resource-123',
+        sendTrainingLanguageId: 'lang-456',
+        targetGroupResourceId: 'group-123'
+      };
+
+      const result = await assignTrainingTool.execute({ context: input } as any);
+
+      expect(result.success).toBe(true);
+      expect(result.message).toContain('GROUP');
+      expect(mockCallWorkerAPI).toHaveBeenCalledWith(
+        expect.objectContaining({
+          payload: expect.objectContaining({
+            targetGroupResourceId: 'group-123',
+          }),
         })
       );
     });

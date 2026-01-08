@@ -76,9 +76,7 @@ export async function executeAutonomousGeneration(
                     success: true,
                     userInfo: toolResult.userInfo && {
                         ...toolResult.userInfo,
-                        targetUserResourceId: resolvedTargetUserResourceId,
-                        maskedId:
-                            toolResult.userInfo.maskedId || `[USER-${resolvedTargetUserResourceId}]`
+                        targetUserResourceId: resolvedTargetUserResourceId
                     },
                     recentActivities: toolResult.recentActivities,
                     analysisReport: toolResult.analysisReport,

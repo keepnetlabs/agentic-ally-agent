@@ -1,6 +1,10 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+vi.mock('../model-providers', () => ({
+  getDefaultAgentModel: () => ({}),
+}));
+
 import { userInfoAgent } from './user-info-agent';
-import { AGENT_NAMES, MESSAGING_GUIDELINES, PII_POLICY } from '../constants';
+import { AGENT_NAMES, MESSAGING_GUIDELINES } from '../constants';
 
 /**
  * Test suite for User Info Agent
@@ -65,9 +69,10 @@ describe('User Info Agent', () => {
       expect(userInfoAgent.instructions).toContain('CRITICAL');
     });
 
-    it('should mention PII policy in instructions', () => {
-      expect(userInfoAgent.instructions).toContain('CRITICAL PRIVACY RULES');
-      expect(userInfoAgent.instructions).toContain(PII_POLICY.CORE_RULE);
+    it('should not mention PII policy in instructions', () => {
+      expect(userInfoAgent.instructions).not.toContain('CRITICAL PRIVACY RULES');
+      expect(userInfoAgent.instructions).not.toContain('PII_POLICY');
+      expect(userInfoAgent.instructions).not.toContain('ZERO PII');
     });
   });
 
@@ -101,80 +106,56 @@ describe('User Info Agent', () => {
   });
 
   // ==================== MODE SELECTION TESTS ====================
-  describe('Mode Selection (ASSIGNMENT_MODE vs REPORT_MODE)', () => {
-    it('should define ASSIGNMENT_MODE in instructions', () => {
-      expect(userInfoAgent.instructions).toContain('ASSIGNMENT_MODE');
+  describe('Mode Selection (ASSIGNMENT MODE vs REPORT MODE)', () => {
+    it('should define ASSIGNMENT MODE in instructions', () => {
+      expect(userInfoAgent.instructions).toContain('ASSIGNMENT MODE');
     });
 
-    it('should define REPORT_MODE in instructions', () => {
-      expect(userInfoAgent.instructions).toContain('REPORT_MODE');
+    it('should define REPORT MODE in instructions', () => {
+      expect(userInfoAgent.instructions).toContain('REPORT MODE');
     });
 
-    it('should specify ASSIGNMENT_MODE triggers', () => {
+    it('should specify ASSIGNMENT MODE triggers', () => {
       expect(userInfoAgent.instructions).toContain('Assign this');
       expect(userInfoAgent.instructions).toContain('Assign to X');
       expect(userInfoAgent.instructions).toContain('Send training');
       expect(userInfoAgent.instructions).toContain('Launch simulation');
     });
 
-    it('should specify REPORT_MODE triggers', () => {
+    it('should specify REPORT MODE triggers', () => {
       expect(userInfoAgent.instructions).toContain('Who is');
       expect(userInfoAgent.instructions).toContain('Analyze');
       expect(userInfoAgent.instructions).toContain('Show report');
     });
 
-    it('should mark REPORT_MODE as default', () => {
-      expect(userInfoAgent.instructions).toContain('REPORT_MODE (Default)');
+    it('should mark REPORT MODE as default', () => {
+      expect(userInfoAgent.instructions).toContain('REPORT MODE (Default)');
     });
 
-    it('should specify ASSIGNMENT_MODE confirmation behavior', () => {
+    it('should specify ASSIGNMENT MODE confirmation behavior', () => {
       expect(userInfoAgent.instructions).toContain('Confirm the user is identified');
       expect(userInfoAgent.instructions).toContain('Ask ONE short confirmation question');
     });
 
-    it('should prohibit report generation in ASSIGNMENT_MODE', () => {
+    it('should prohibit report generation in ASSIGNMENT MODE', () => {
       expect(userInfoAgent.instructions).toContain('Do NOT generate a report in this mode');
     });
 
-    it('should specify REPORT_MODE report generation', () => {
-      expect(userInfoAgent.instructions).toContain('Write a ONE-PAGE executive report');
+    it('should specify REPORT MODE report generation', () => {
+      expect(userInfoAgent.instructions.toLowerCase()).toContain('one-page executive report');
     });
 
-    it('should prohibit JSON output in REPORT_MODE', () => {
+    it('should prohibit JSON output in REPORT MODE', () => {
       expect(userInfoAgent.instructions).toContain('Do NOT output JSON in this mode');
     });
   });
 
-  // ==================== PII POLICY INTEGRATION TESTS ====================
-  describe('PII Policy Implementation', () => {
-    it('should include PII policy core rule', () => {
-      expect(userInfoAgent.instructions).toContain(PII_POLICY.CORE_RULE);
-    });
-
-    it('should never include real name in output', () => {
-      expect(userInfoAgent.instructions).toContain('Never include the employee\'s real name');
-    });
-
-    it('should mandate using "The Employee" reference', () => {
-      expect(userInfoAgent.instructions).toContain('The Employee');
-      expect(userInfoAgent.instructions).toContain('This Employee');
-      expect(userInfoAgent.instructions).toContain('The Team Member');
-    });
-
-    it('should prohibit repeating name from JSON', () => {
-      expect(userInfoAgent.instructions).toContain('If the JSON contains a name, do NOT repeat it');
-    });
-
-    it('should state PII never exposed in outputs', () => {
-      expect(userInfoAgent.instructions).toContain('NEVER expose real names');
-    });
-
-    it('should define general privacy rule', () => {
-      expect(userInfoAgent.instructions).toContain('General rule');
-    });
-
-    it('should have privacy section header', () => {
-      expect(userInfoAgent.instructions).toContain('CRITICAL PRIVACY RULES');
+  // ==================== PII POLICY REMOVAL TESTS ====================
+  describe('PII Policy Removal', () => {
+    it('should not include hard-coded PII policy section in instructions', () => {
+      expect(userInfoAgent.instructions).not.toContain('PII_POLICY');
+      expect(userInfoAgent.instructions).not.toContain('CRITICAL PRIVACY RULES');
+      expect(userInfoAgent.instructions).not.toContain('ZERO PII');
     });
   });
 
@@ -186,8 +167,8 @@ describe('User Info Agent', () => {
     });
 
     it('should mandate one-page format', () => {
-      expect(userInfoAgent.instructions).toContain('ONE PAGE');
-      expect(userInfoAgent.instructions).toContain('one page');
+      expect(userInfoAgent.instructions).toContain('ONE-PAGE');
+      expect(userInfoAgent.instructions.toLowerCase()).toContain('one-page');
     });
 
     it('should include report title section', () => {
@@ -235,9 +216,9 @@ describe('User Info Agent', () => {
       expect(userInfoAgent.instructions).toContain('Strategic');
     });
 
-    it('should include Gartner SBCP context section', () => {
-      expect(userInfoAgent.instructions).toContain('Organizational Context');
-      expect(userInfoAgent.instructions).toContain('Gartner SBCP');
+    it('should include program context section (non-evaluative)', () => {
+      expect(userInfoAgent.instructions).toContain('Program Context');
+      expect(userInfoAgent.instructions).toContain('Non-evaluative');
     });
 
     it('should include references section', () => {
@@ -605,14 +586,14 @@ describe('User Info Agent', () => {
 
   // ==================== INTEGRATION TESTS ====================
   describe('Complete Workflow Integration', () => {
-    it('should support ASSIGNMENT_MODE workflow', () => {
-      expect(userInfoAgent.instructions).toContain('ASSIGNMENT_MODE');
+    it('should support ASSIGNMENT MODE workflow', () => {
+      expect(userInfoAgent.instructions).toContain('ASSIGNMENT MODE');
       expect(userInfoAgent.instructions).toContain('confirmation question');
     });
 
-    it('should support REPORT_MODE workflow', () => {
-      expect(userInfoAgent.instructions).toContain('REPORT_MODE');
-      expect(userInfoAgent.instructions).toContain('ONE-PAGE executive report');
+    it('should support REPORT MODE workflow', () => {
+      expect(userInfoAgent.instructions).toContain('REPORT MODE');
+      expect(userInfoAgent.instructions.toLowerCase()).toContain('one-page executive report');
     });
 
     it('should support language-aware report generation', () => {
@@ -638,7 +619,7 @@ describe('User Info Agent', () => {
     });
 
     it('should handle multiple sections render correctly', () => {
-      expect(userInfoAgent.instructions).toContain('render ALL items');
+      expect(userInfoAgent.instructions).toContain('Render ALL items');
     });
   });
 });

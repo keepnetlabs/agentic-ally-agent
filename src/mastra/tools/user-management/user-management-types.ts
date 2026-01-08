@@ -139,7 +139,6 @@ export const getUserInfoOutputSchema = z.object({
     success: z.boolean(),
     userInfo: z.object({
         targetUserResourceId: z.string().optional().describe('Direct user ID (skips search step, faster). Use if ID is already known.'),
-        maskedId: z.string().describe('Anonymized identifier for Zero PII compliance (e.g., [USER-ABC12345])'),
         fullName: z.string().optional(),
         department: z.string().optional(),
         email: z.string().optional(),

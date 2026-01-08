@@ -1,5 +1,6 @@
 import { getRequestContext } from './request-storage';
 import { getLogger } from './logger';
+import { withRetry } from './resilience-utils';
 
 const logger = getLogger('PolicyFetcher');
 
@@ -46,11 +47,15 @@ export async function getPolicyContext(): Promise<string> {
     logger.info('Fetching company policies', { companyId });
 
     // 1. List all policies
-    const listResponse = await fetch('http://agentic-ai-chat.keepnetlabs.com/api/files', {
-      headers: {
-        'X-COMPANY-ID': companyId,
-      },
-    });
+    const listResponse = await withRetry(
+      () =>
+        fetch('http://agentic-ai-chat.keepnetlabs.com/api/files', {
+          headers: {
+            'X-COMPANY-ID': companyId,
+          },
+        }),
+      'policy-list-fetch'
+    );
 
     if (!listResponse.ok) {
       logger.warn('Failed to list policies', { status: listResponse.status });
@@ -64,8 +69,12 @@ export async function getPolicyContext(): Promise<string> {
       return '';
     }
 
-    logger.info('Found policies', { count: policies.length, policyNames: policies.map((p: any) => p.name) });
-    logger.info('Policies', { policies });
+    // IMPORTANT: Do not log full policy objects or content (sensitive).
+    logger.info('Found policies', {
+      companyId,
+      count: policies.length,
+      policyNames: policies.map((p: any) => p?.name).filter(Boolean),
+    });
     // 2. Read each policy content in parallel
     const policyContents = await Promise.all(
       policies.map(async (policy: any) => {
@@ -76,12 +85,15 @@ export async function getPolicyContext(): Promise<string> {
           const fullUrl = policyUrl.startsWith('http')
             ? policyUrl
             : `http://agentic-ai-chat.keepnetlabs.com${policyUrl}`;
-          logger.info('Full URL', { fullUrl });
-          const response = await fetch(fullUrl, {
-            headers: {
-              'X-COMPANY-ID': companyId,
-            },
-          });
+          const response = await withRetry(
+            () =>
+              fetch(fullUrl, {
+                headers: {
+                  'X-COMPANY-ID': companyId,
+                },
+              }),
+            'policy-read-fetch'
+          );
 
           if (!response.ok) {
             logger.warn('Failed to read policy', { policyName: policy.name, status: response.status });
@@ -96,7 +108,6 @@ export async function getPolicyContext(): Promise<string> {
           });
 
           const content = policyData.text;
-          logger.info('Extracted text from policy', { policyName: policy.name, contentLength: content.length });
           return `**Policy: ${policy.name}**\n${content}`;
         } catch (error) {
           const err = error instanceof Error ? error : new Error(String(error));
@@ -116,7 +127,6 @@ export async function getPolicyContext(): Promise<string> {
 
     const context = validPolicies.join('\n\n---\n\n');
     logger.info('Policy context prepared', { totalPolicies: validPolicies.length, contextLength: context.length });
-    logger.info('FULL CONTEXT CONTENT', { context });
 
     return context;
   } catch (error) {

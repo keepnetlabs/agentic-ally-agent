@@ -21,6 +21,12 @@ describe('normalizeLandingMaxWidthCentering', () => {
     const out = normalizeLandingMaxWidthCentering(input);
     expect(out).toMatch(/margin:\s*0 auto/i);
   });
+
+  it('adds margin:0 auto when max-width width:100% container is missing margin', () => {
+    const input = `<div style='max-width: 480px; width: 100%; padding: 24px; background: #fff;'>X</div>`;
+    const out = normalizeLandingMaxWidthCentering(input);
+    expect(out).toMatch(/margin:\s*0 auto/i);
+  });
 });
 
 describe('normalizeLandingCentering', () => {

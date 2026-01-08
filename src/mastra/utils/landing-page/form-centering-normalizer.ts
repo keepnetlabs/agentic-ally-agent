@@ -106,6 +106,15 @@ export function normalizeLandingMaxWidthCentering(html: string): string {
             if (!hasMaxWidth(lower) || !hasWidth100(lower)) return full;
             if (hasAutoMargin(lower)) return full;
 
+            // If a max-width + width:100% container has NO margin at all, add margin:0 auto for centering.
+            // This is a common LLM omission on minimal layouts and causes left-aligned containers.
+            if (!hasMargin(lower)) {
+                const nextStyle = `margin: 0 auto; ${ensureTrailingSemicolon(style)}`.trim();
+                const nextAttrs = attrs.replace(/\bstyle\s*=\s*(['"])(.*?)\1/i, `style='${nextStyle}'`);
+                changed = true;
+                return `<${tag}${nextAttrs}>`;
+            }
+
             // Only change common "gutter margin" patterns that break centering with max-width
             // Examples: "margin: 0 16px" or "margin:0 16px 0 16px"
             const marginPattern = /\bmargin\s*:\s*0\s+\d+px(?:\s+0\s+\d+px)?\s*;/i;

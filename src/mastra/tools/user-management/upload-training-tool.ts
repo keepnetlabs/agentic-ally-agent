@@ -177,7 +177,7 @@ export const uploadTrainingTool = createTool({
                     microlearningId: microlearningId,
                     title: title
                 },
-                message: `Training uploaded successfully. Resource ID ${result.resourceId} is ready for assignment.`
+                message: `✅ Training uploaded${title ? `: "${title}"` : ''}. Ready to assign (resourceId=${result.resourceId}${result.languageId ? `, sendTrainingLanguageId=${result.languageId}` : ''}, microlearningId=${microlearningId}).`
             };
 
             // Validate result against output schema

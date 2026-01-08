@@ -12,10 +12,10 @@ import { getLogger } from '../core/logger';
 import { buildPolicyScenePrompt } from './policy-context-builder';
 import {
   AUTH_CONTEXT,
-  ZERO_PII_POLICY,
   LOGO_TAG_RULE,
   NO_DISCLAIMERS_RULE,
   EMAIL_SIGNATURE_RULES,
+  NO_FAKE_PERSONAL_IDENTITIES_RULES,
   TABLE_LAYOUT_RULES,
   LAYOUT_STRATEGY_RULES,
   PREHEADER_RULE,
@@ -104,8 +104,6 @@ ${AUTH_CONTEXT}
 
 **YOUR ROLE:**
 Design highly realistic quishing (QR code phishing) simulation scenarios for cybersecurity training.
-
-${ZERO_PII_POLICY}
 
 **QUISHING-SPECIFIC DECISION LOGIC:**
 
@@ -230,8 +228,6 @@ ${AUTH_CONTEXT}
 **YOUR ROLE:**
 Design highly realistic phishing simulation scenarios for cybersecurity training.
 
-${ZERO_PII_POLICY}
-
 **DECISION LOGIC (ADAPTIVE MODE):**
 
 1. **Attack Method Determination:**
@@ -257,7 +253,7 @@ ${ZERO_PII_POLICY}
    - Use 'department' context (Finance -> Invoice Fraud, IT -> VPN Update).
 
 3. **Creative Invention (IF Profile is MISSING/EMPTY):**
-   - **INVENT a plausible target persona** based on the Topic.
+   - **INVENT a plausible target persona** based on the Topic (role/team-based only; DO NOT invent personal names).
    - Example: If Topic is "Payroll", assume Target is an Employee, trigger is "Greed/Curiosity".
    - Example: If Topic is "General", pick a universal theme like "Password Expiry" or "Storage Full".
    - **Do NOT fail** if profile is missing. Create the most effective scenario for the given Topic/Difficulty.
@@ -278,7 +274,7 @@ ${ZERO_PII_POLICY}
    - **Sender Logic:** ${difficultyRules.sender.rule}. (Examples: ${difficultyRules.sender.examples.join(', ')} - **DO NOT COPY these exact examples. INVENT NEW ONES matching this pattern**).
    - **Urgency/Tone:** ${difficultyRules.urgency.rule}. ${difficultyRules.urgency.description}.
    - **Complexity:** ${difficulty === 'Easy' ? 'Simple, obvious logic.' : difficulty === 'Hard' ? 'Complex, layered social engineering.' : 'Standard business logic.'}
-   - **VARIATION RULE:** Ensure every scenario is unique. Change names, company types, and pretext stories even if the Topic is the same.
+   - **VARIATION RULE:** Ensure every scenario is unique. Change company types, departments, and pretext stories even if the Topic is the same. **Do NOT invent personal names**; use role/team labels.
 
 5. **Red Flag Strategy:**
    - Define 3-4 specific red flags appropriate for the difficulty level (${difficulty}).
@@ -436,17 +432,19 @@ ${BRAND_AWARENESS_RULES}
 
 5. ${getMergeTagsRules(true)}
 
-6. **Grammar & Style (${difficulty} Mode):**
+6. ${NO_FAKE_PERSONAL_IDENTITIES_RULES}
+
+7. **Grammar & Style (${difficulty} Mode):**
    - **Grammar Rule:** ${difficultyRules.grammar.rule}. ${difficultyRules.grammar.description}
    - **Red Flags:** **MUST embed quishing-specific red flags** as defined in the blueprint. ${difficulty === 'Easy' ? 'For Easy mode, make them OBVIOUS and easily detectable.' : difficulty === 'Hard' ? 'For Hard mode, make them EXTREMELY SUBTLE - only detectable by trained security professionals.' : 'For Medium mode, make them MODERATELY SUBTLE - detectable with careful inspection but not immediately obvious.'}
    - **Quishing Red Flags:** Unsolicited QR code in email, QR code requesting credentials, QR code in unexpected contexts, urgency around QR scanning.
    ${SYNTAX_RULE}
 
-7. ${LOGO_TAG_RULE}
+8. ${LOGO_TAG_RULE}
 
-8. ${NO_DISCLAIMERS_RULE}
+9. ${NO_DISCLAIMERS_RULE}
 
-9. ${EMAIL_SIGNATURE_RULES}
+10. ${EMAIL_SIGNATURE_RULES}
 
 **OUTPUT FORMAT:**
 Return ONLY valid JSON with subject and template (HTML body). No markdown, no backticks, no explanation, just JSON.
@@ -475,7 +473,9 @@ ${JSON.stringify(analysis, null, 2)}
 1. **ANALYZE** the 'Blueprint' above - extract quishing scenario details, exact tone, and all quishing-specific red flags.
 2. **SELECT** the best **Layout Strategy** (Card vs Letter) based on the brand. **DEFAULT to Card format** unless explicitly CEO/HR/Policy scenario.
 3. **GENERATE** the **Preheader** (hidden preview text) - 10-15 words about QR code verification.
-4. **WRITE** the **GREETING FIRST** - MUST start with "Dear {FIRSTNAME}," or "Hello {FIRSTNAME}," WITH the merge tag.
+4. **WRITE** the **GREETING FIRST** - MUST be in ${language} and MUST include the merge tag {FIRSTNAME}.
+   - English examples: "Dear {FIRSTNAME}," / "Hello {FIRSTNAME},"
+   - Turkish examples: "Merhaba {FIRSTNAME}," / "Sayın {FIRSTNAME},"
 5. **WRITE** realistic, authentic email content that matches the brand's style and emphasizes convenience/mobile-friendly access. **Write ONLY in ${language}.**${language && !language.startsWith('en') ? ` Think as native ${language} speaker, do NOT translate from English.` : ''}
 6. **🚨 CRITICAL - QR CODE MERGE TAG:** You MUST use {QRCODEURLIMAGE} merge tag for QR code. Add <img src="{QRCODEURLIMAGE}" alt="QR Code" style="width:200px;height:auto; margin:0 auto;"> prominently (center-aligned, after main message text, before signature). **FORBIDDEN:** Do NOT use placeholder src like "qr-code.png" or empty src - ALWAYS use {QRCODEURLIMAGE} tag. Add convenience text around QR code.
 7. **EMBED** quishing-specific red flags according to difficulty level (unsolicited QR codes, QR codes requesting credentials, QR codes in unexpected contexts).
@@ -544,17 +544,19 @@ ${BRAND_AWARENESS_RULES}
 
 5. ${getMergeTagsRules(false)}
 
-6. **Grammar & Style (${difficulty} Mode):**
+6. ${NO_FAKE_PERSONAL_IDENTITIES_RULES}
+
+7. **Grammar & Style (${difficulty} Mode):**
    - **Grammar Rule:** ${difficultyRules.grammar.rule}. ${difficultyRules.grammar.description}
    - **Red Flags:** **MUST embed the red flags** as defined in the blueprint. ${difficulty === 'Easy' ? 'For Easy mode, make them OBVIOUS and easily detectable. For Medium/Hard, make them subtle but detectable.' : difficulty === 'Hard' ? 'For Hard mode, make them EXTREMELY SUBTLE - only detectable by trained security professionals. They should blend naturally into the email.' : 'For Medium mode, make them MODERATELY SUBTLE - detectable with careful inspection but not immediately obvious.'}
    - **CREATIVITY RULE:** Do NOT use generic "lorem ipsum" style fillers. **MUST write specific, plausible, realistic content** directly relevant to the Scenario that feels authentic and genuine.
    ${SYNTAX_RULE}
 
-7. ${LOGO_TAG_RULE}
+8. ${LOGO_TAG_RULE}
 
-8. ${NO_DISCLAIMERS_RULE}
+9. ${NO_DISCLAIMERS_RULE}
 
-9. ${EMAIL_SIGNATURE_RULES}
+10. ${EMAIL_SIGNATURE_RULES}
 
 **OUTPUT FORMAT:**
 Return ONLY valid JSON with subject and template (HTML body). No markdown, no backticks, no explanation, just JSON.
@@ -582,7 +584,10 @@ ${JSON.stringify(analysis, null, 2)}
 1. **ANALYZE** the 'Blueprint' above - extract specific scenario details, exact tone, and all red flags that must be embedded.
 2. **SELECT** the best **Layout Strategy** (Card vs Letter) based on the brand. **DEFAULT to Card format** unless explicitly CEO/HR/Policy scenario.
 3. **GENERATE** the **Preheader** (hidden preview text) - 10-15 words that appear in inbox preview.
-4. **WRITE** the **GREETING FIRST** - MUST start with "Dear {FIRSTNAME}," or "Hello {FIRSTNAME}," or similar pattern WITH the merge tag. NEVER use "Dear Employee" or generic greetings.
+4. **WRITE** the **GREETING FIRST** - MUST be in ${language} and MUST include the merge tag {FIRSTNAME} (or {FULLNAME}).
+   - English examples: "Dear {FIRSTNAME}," / "Hello {FIRSTNAME},"
+   - Turkish examples: "Merhaba {FIRSTNAME}," / "Sayın {FIRSTNAME},"
+   NEVER use "Dear Employee" or generic greetings.
 5. **WRITE** realistic, authentic email content that matches the brand's style and the blueprint's tone exactly. **Write ONLY in ${language}.**${language && !language.startsWith('en') ? ` Think as native ${language} speaker, do NOT translate from English.` : ''}
 6. **EMBED** red flags according to difficulty level (obvious for Easy, subtle for Medium/Hard).
 7. **SAFETY RULE:** Do NOT use personal names (like "Emily Clarke") in the signature. Use generic Team/Department names only.
@@ -657,13 +662,13 @@ export function buildLandingPagePrompts(params: LandingPagePromptParams): {
 
 Your job: generate modern, professional, trustworthy WEB PAGES (not emails) using ONLY pure HTML + inline CSS. No CSS frameworks.
 
-**🔒 ZERO PII POLICY (STRICT):**
-- **No Real Names:** Never display real user names (e.g. "Welcome, Gurkan").
-- **Safe Greetings:** Use "Welcome back", "Hello", "Sign in", or show the email address (e.g. "user@company.com").
-
 ---
 
 **CRITICAL RULES:**
+
+**NO FAKE PERSONAL IDENTITIES (CRITICAL):**
+- Do NOT invent or include personal names (first/last names) anywhere in landing page copy (headings, helper text, footer, support/contact).
+- If a person must be referenced, use role/team labels only (e.g., "Support Team", "Security Team", "IT Helpdesk").
 
 ${isQuishing ? `**🚫 QUISHING LANDING PAGE - NO QR CODE REFERENCES:**
    - This is a quishing landing page scenario. Landing pages must NOT contain QR codes.

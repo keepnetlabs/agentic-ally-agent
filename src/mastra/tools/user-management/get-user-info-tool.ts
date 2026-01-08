@@ -4,7 +4,6 @@ import { z } from 'zod';
 import { getRequestContext } from '../../utils/core/request-storage';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
 import { ERROR_MESSAGES, API_ENDPOINTS } from '../../constants';
-import { generatePIIHash } from '../../utils/parsers/pii-masking-utils';
 import { parseName, isValidName, normalizeName } from '../../utils/parsers/name-parser';
 import { generateText } from 'ai';
 import { withRetry } from '../../utils/core/resilience-utils';
@@ -15,7 +14,7 @@ import { getLogger } from '../../utils/core/logger';
 import { errorService } from '../../services/error-service';
 import { validateBCP47LanguageCode, DEFAULT_LANGUAGE } from '../../utils/language/language-utils';
 import { ANALYSIS_REFERENCES, ALLOWED_ENUMS_TEXT } from './behavior-analyst-constants';
-import { GET_ALL_PAYLOAD, TIMELINE_PAYLOAD, getUserInfoOutputSchema } from './user-management-types';
+import { AnalysisSchema, GET_ALL_PAYLOAD, TIMELINE_PAYLOAD, getUserInfoOutputSchema } from './user-management-types';
 import { enrichActivities, formatEnrichedActivitiesForPrompt } from './activity-enrichment-utils';
 import { findUserByEmail, findUserByNameWithFallbacks } from './utils/user-search-utils';
 export const getUserInfoTool = createTool({
@@ -51,7 +50,6 @@ export const getUserInfoTool = createTool({
       // Keep them optional until we pass a single guard; avoids "used before assigned" lint.
       let userId: string | undefined;
       let userFullName: string | undefined;
-      let maskedId: string | undefined;
       let user: any = null;
       let firstName: string = '';
       let lastName: string | undefined = undefined;
@@ -62,9 +60,8 @@ export const getUserInfoTool = createTool({
         // Fast path: Direct ID provided - skip user search
         logger.info('Using provided targetUserResourceId, skipping user search', { targetUserResourceId: inputTargetUserResourceId });
         userId = inputTargetUserResourceId;
-        // userFullName and maskedId will be set during timeline fetch or set to placeholder
+        // userFullName will be set to a non-PII placeholder (avoid leaking names)
         userFullName = `User-${userId}`;
-        maskedId = `[USER-${userId}]`;
         fullName = userFullName;
       } else {
         // Slow path: Search for user (prefer email, then name with fallbacks)
@@ -85,9 +82,8 @@ export const getUserInfoTool = createTool({
           if (user) {
             userId = user.targetUserResourceId;
             userFullName = `${user.firstName} ${user.lastName}`;
-            maskedId = `[USER-${generatePIIHash(userFullName)}]`;
             fullName = userFullName;
-            logger.debug('User found by email', { userId, maskedId });
+            logger.debug('User found by email', { userId });
           } else if (!inputFullName && !inputFirstName) {
             const errorInfo = errorService.notFound(`User "${email}" not found.`, { email });
             logErrorInfo(logger, 'warn', 'User not found', errorInfo);
@@ -144,17 +140,15 @@ export const getUserInfoTool = createTool({
 
           userId = user.targetUserResourceId;
           userFullName = `${user.firstName} ${user.lastName}`;
-          maskedId = `[USER-${generatePIIHash(userFullName)}]`;
 
-          logger.debug('User found', { userId, maskedId });
+          logger.debug('User found', { userId });
         }
       }
 
-      // Guard: by this point we must have resolved a userId + maskedId
-      if (!userId || !maskedId) {
-        const errorInfo = errorService.validation('User resolution failed (missing userId/maskedId)', {
+      // Guard: by this point we must have resolved a userId
+      if (!userId) {
+        const errorInfo = errorService.validation('User resolution failed (missing userId)', {
           hasUserId: !!userId,
-          hasMaskedId: !!maskedId,
           hasEmail: !!inputEmail,
           hasFullName: !!inputFullName,
           hasFirstName: !!inputFirstName,
@@ -164,7 +158,6 @@ export const getUserInfoTool = createTool({
       }
 
       const resolvedUserId = userId;
-      const resolvedMaskedId = maskedId;
 
       // --- STEP 2: Get Timeline ---
       const timelinePayload = JSON.parse(JSON.stringify(TIMELINE_PAYLOAD));
@@ -209,7 +202,7 @@ export const getUserInfoTool = createTool({
 
       // --- STEP 3: Generate Analysis Report (Internal LLM Call) ---
       if (recentActivities.length === 0) {
-        logger.warn('No recent activities found; AI will apply Foundational defaults', { maskedId: resolvedMaskedId });
+        logger.warn('No recent activities found; AI will apply Foundational defaults', { userId: resolvedUserId });
       }
       logger.debug('Starting user analysis with LLM', { hasActivities: recentActivities.length > 0 });
       const systemPrompt = `
@@ -223,15 +216,23 @@ STRICT OUTPUT
 - Output MUST match the JSON contract provided by the user EXACTLY (same keys, same nesting, no extra keys, no missing keys).
 - Do NOT wrap in markdown. Do NOT add any text before/after JSON.
 - If unknown, use "" (string) or null where appropriate. Never fabricate.
+- If there is insufficient evidence for a section, keep it brief and use empty arrays [] where applicable.
+- meta.generated_at_utc MUST be a UTC timestamp string (ISO 8601 preferred).
 
 PRIMARY EVIDENCE
 - Recent activities are the PRIMARY source of truth for behavior.
 - Role/department/access level are SECONDARY context only. Do not infer behaviors from role.
 
+EVIDENCE LINKING (MANDATORY)
+- Every item in strengths[] and growth_opportunities[] MUST be supported by observed activity signals.
+- Use conservative phrasing when evidence is weak (e.g., "Limited evidence suggests...").
+- Populate internal.evidence_summary.key_signals_used with 3-8 short bullets describing the strongest signals you used.
+- Populate internal.evidence_summary.data_gaps with 1-4 short bullets describing missing evidence (e.g., "No reporting events observed", "No QR simulations observed").
+
 PRIVACY / PII
 - Do NOT output real names, emails, phone numbers.
 - In narrative fields, refer to "the user", "this person", "they".
-- meta.user_id is a masked identifier only.
+- meta.user_id is an internal identifier. Do NOT expose personal data in outputs.
 
 NO TECH JARGON
 - Never mention models, providers, infrastructure, or implementation details.
@@ -274,6 +275,22 @@ NEXT STEPS (REQUIRED)
   - why_this (one short line)
   - designed_to_progress (one short line)
 
+RECOMMENDATION RUBRIC (HIGH PRIORITY)
+- First, classify the primary behavior pattern from Recent activities (pick ONE as primary):
+  1) SUBMITTED_DATA pattern (Submitted Data events)
+  2) CLICKED_LINK pattern (Clicked Link events)
+  3) REPORTED pattern (Reported Email events)
+  4) TRAINING_ONLY pattern (Training Completed/Exam Passed but little simulation evidence)
+  5) NO_DATA pattern (no activity evidence)
+- Then choose recommendations that directly address that pattern:
+  - If SUBMITTED_DATA pattern: prioritize DATA_SUBMISSION next; start EASY or MEDIUM; focus on form-trust cues; keep why_this concrete.
+  - If CLICKED_LINK pattern: prioritize CLICK_ONLY next; change vector from last observed; focus on link inspection cues.
+  - If REPORTED pattern: increase difficulty one step; vary premise_alignment; reinforce reporting as a strength.
+  - If TRAINING_ONLY pattern: start with EASY CLICK_ONLY in EMAIL (then QR as second if you include a second simulation).
+  - If NO_DATA pattern: keep recommendations foundational (EASY, CLICK_ONLY, EMAIL; ONE_OFF nudge) and explicitly note data gaps.
+- Microlearning objectives MUST align with the primary pattern (e.g., reporting workflow, link verification, credential hygiene, QR safety).
+- Nudge message must be short, non-blaming, and directly actionable; cadence must be ONE_OFF unless evidence supports a higher cadence need.
+
 ONE-PAGE LIMITS (HARD)
 - strengths max 4, growth_opportunities max 4
 - simulations max 2, microlearnings max 2, nudges max 1
@@ -297,14 +314,14 @@ REFERENCES (STATIC)
       const userPrompt = `
 USER CONTEXT (SOURCE OF TRUTH)
 
-Masked user id: ${resolvedMaskedId}
+User id: ${resolvedUserId}
 Role: ${user?.role || ""}
 Department: ${user?.departmentName || user?.department || "All"}
 Location: ${user?.location || ""}
         Language: ${validateBCP47LanguageCode(user?.preferredLanguage || DEFAULT_LANGUAGE)}
 Access level: ${user?.accessLevel || ""}
 
-Recent activities (primary behavioral evidence):
+Recent Activities (primary behavioral evidence):
 ${enrichedActivities.length === 0 ?
           'NO ACTIVITY DATA AVAILABLE - Apply Foundational defaults per system instructions.' :
           formatEnrichedActivitiesForPrompt(enrichedActivities)}
@@ -439,7 +456,7 @@ If a value is unknown, use "" or null.
 }
 `;
 
-      let analysisReport;
+      let analysisReport: unknown;
       try {
         // Use default model (GPT-OSS via Workers AI)
         const model = getModelWithOverride();
@@ -460,11 +477,44 @@ If a value is unknown, use "" or null.
         analysisReport = JSON.parse(cleanedJson);
 
         // Ensure user_id is set in meta (required by schema)
-        if (analysisReport && !analysisReport.meta) {
-          analysisReport.meta = {};
+        if (analysisReport && typeof analysisReport === 'object' && !(analysisReport as any).meta) {
+          (analysisReport as any).meta = {};
         }
-        if (analysisReport?.meta && !analysisReport.meta.user_id) {
-          analysisReport.meta.user_id = maskedId;
+        if ((analysisReport as any)?.meta && !(analysisReport as any).meta.user_id) {
+          (analysisReport as any).meta.user_id = resolvedUserId;
+        }
+
+        // Deterministic variation: if we have NO activity evidence, keep recommendations foundational
+        // but vary the first simulation vector/tactic per user (stable across runs, avoids always identical output).
+        if (analysisReport && typeof analysisReport === 'object' && recentActivities.length === 0) {
+          const report = analysisReport as any;
+          const seed = String(resolvedUserId);
+          const parity = seed.split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0) % 2;
+          const vector = parity === 0 ? 'EMAIL' : 'QR';
+          const tactic = parity === 0 ? 'CURIOSITY' : 'AUTHORITY';
+
+          const sim0 = report?.ai_recommended_next_steps?.simulations?.[0];
+          if (sim0 && typeof sim0 === 'object') {
+            sim0.vector = vector;
+            sim0.scenario_type = sim0.scenario_type || 'CLICK_ONLY';
+            sim0.difficulty = sim0.difficulty || 'EASY';
+            sim0.persuasion_tactic = tactic;
+            if (sim0.nist_phish_scale && typeof sim0.nist_phish_scale === 'object') {
+              sim0.nist_phish_scale.cue_difficulty = sim0.nist_phish_scale.cue_difficulty || 'LOW';
+              sim0.nist_phish_scale.premise_alignment = sim0.nist_phish_scale.premise_alignment || 'LOW';
+            }
+          }
+        }
+
+        // Analysis is OPTIONAL: if the model returns invalid JSON contract, drop it and continue.
+        const parsedAnalysis = AnalysisSchema.safeParse(analysisReport);
+        if (!parsedAnalysis.success) {
+          logger.warn('⚠️ Analysis report schema validation failed; continuing without analysisReport', {
+            issueCount: parsedAnalysis.error.issues.length,
+          });
+          analysisReport = undefined;
+        } else {
+          analysisReport = parsedAnalysis.data;
         }
 
         logger.debug('Analysis report generated successfully', {});
@@ -472,7 +522,7 @@ If a value is unknown, use "" or null.
         const err = normalizeError(aiError);
         const errorInfo = errorService.aiModel(err.message, {
           step: 'analysis-report-generation',
-          maskedId,
+          userId: resolvedUserId,
           stack: err.stack
         });
         logErrorInfo(logger, 'error', 'AI analysis generation failed', errorInfo);
@@ -486,14 +536,13 @@ If a value is unknown, use "" or null.
         success: true,
         userInfo: {
           targetUserResourceId: userId,
-          maskedId: maskedId,
           fullName: userFullName,
           // Use provided departmentName if available (fast path), otherwise extract from user object
           department: inputDepartmentName || user?.departmentName || user?.department || 'All',
           email: user?.email,
           preferredLanguage: preferredLanguageCode
         },
-        analysisReport: analysisReport,
+        analysisReport,
         recentActivities: recentActivities
       };
 

@@ -10,6 +10,7 @@ import { ERROR_MESSAGES, API_ENDPOINTS } from '../../constants';
 import { errorService } from '../../services/error-service';
 import { validateToolResult } from '../../utils/tool-result-validation';
 import { extractCompanyIdFromTokenExport } from '../../utils/core/policy-fetcher';
+import { isSafeId } from '../../utils/core/id-utils';
 
 // Output schema defined separately to avoid circular reference
 const assignPhishingOutputSchema = z.object({
@@ -22,26 +23,32 @@ export const assignPhishingTool = createTool({
     id: 'assign-phishing',
     description: 'Assigns an uploaded phishing simulation to a specific user or group.',
     inputSchema: z.object({
-        resourceId: z.string().describe('The Resource ID returned from the upload process'),
-        languageId: z.string().optional().describe('The Language ID returned from the upload process'),
+        resourceId: z.string().describe('The Resource ID returned from the upload process').refine(isSafeId, { message: 'Invalid resourceId format.' }),
+        languageId: z.string().optional().describe('The Language ID returned from the upload process').refine((v) => (v ? isSafeId(v) : true), { message: 'Invalid languageId format.' }),
         isQuishing: z.boolean().optional().describe('Quishing flag (can be passed from upload result)'),
-        targetUserResourceId: z.string().optional().describe('The User ID to assign the phishing simulation to (user assignment)'),
-        targetGroupResourceId: z.string().optional().describe('The Group ID to assign the phishing simulation to (group assignment)'),
-        trainingId: z.string().optional().describe('The Training Resource ID to send after phishing simulation (if sendAfterPhishingSimulation is true)'),
-        sendTrainingLanguageId: z.string().optional().describe('The Training Language ID to send after phishing simulation (if sendAfterPhishingSimulation is true)')
+        targetUserResourceId: z.string().optional().describe('The User ID to assign the phishing simulation to (user assignment)').refine((v) => (v ? isSafeId(v) : true), { message: 'Invalid targetUserResourceId format.' }),
+        targetUserEmail: z.string().email().optional().describe('Optional: user email for display in summary messages (does not affect assignment).'),
+        targetUserFullName: z.string().optional().describe('Optional: user full name for display in summary messages (does not affect assignment).'),
+        targetGroupResourceId: z.string().optional().describe('The Group ID to assign the phishing simulation to (group assignment)').refine((v) => (v ? isSafeId(v) : true), { message: 'Invalid targetGroupResourceId format.' }),
+        trainingId: z.string().optional().describe('The Training Resource ID to send after phishing simulation (if sendAfterPhishingSimulation is true)').refine((v) => (v ? isSafeId(v) : true), { message: 'Invalid trainingId format.' }),
+        sendTrainingLanguageId: z.string().optional().describe('The Training Language ID to send after phishing simulation (if sendAfterPhishingSimulation is true)').refine((v) => (v ? isSafeId(v) : true), { message: 'Invalid sendTrainingLanguageId format.' })
     }).refine(
-        data => data.targetUserResourceId || data.targetGroupResourceId,
-        { message: 'Either targetUserResourceId (user assignment) or targetGroupResourceId (group assignment) must be provided' }
+        data => Boolean(data.targetUserResourceId) !== Boolean(data.targetGroupResourceId),
+        { message: 'Provide EXACTLY ONE: targetUserResourceId (user assignment) OR targetGroupResourceId (group assignment).' }
     ),
     outputSchema: assignPhishingOutputSchema,
     execute: async ({ context }) => {
         const logger = getLogger('AssignPhishingTool');
-        const { resourceId, languageId, isQuishing, targetUserResourceId, targetGroupResourceId, trainingId, sendTrainingLanguageId } = context;
+        const { resourceId, languageId, isQuishing, targetUserResourceId, targetUserEmail, targetUserFullName, targetGroupResourceId, trainingId, sendTrainingLanguageId } = context;
 
         // Determine assignment type
         const isUserAssignment = !!targetUserResourceId;
         const assignmentType = isUserAssignment ? 'USER' : 'GROUP';
         const targetId = targetUserResourceId || targetGroupResourceId;
+        const userLabel = isUserAssignment
+            ? (targetUserEmail?.trim() || targetUserFullName?.trim() || targetUserResourceId)
+            : undefined;
+        const targetLabel = isUserAssignment ? userLabel : targetId;
         const name = `Phishing Campaign - ${targetId} (${assignmentType}) Agentic Ally`;
 
         logger.info(`Preparing phishing assignment for resource to ${assignmentType}`, {
@@ -101,7 +108,7 @@ export const assignPhishingTool = createTool({
 
             const toolResult = {
                 success: true,
-                message: 'Phishing simulation assigned successfully.'
+                message: `✅ ${isQuishing ? 'Quishing' : 'Phishing'} campaign assigned to ${assignmentType} ${targetLabel} (campaignName="${name}", resourceId=${resourceId}${languageId ? `, languageId=${languageId}` : ''}${trainingId ? `, followUpTrainingId=${trainingId}` : ''}).`
             };
 
             // Validate result against output schema

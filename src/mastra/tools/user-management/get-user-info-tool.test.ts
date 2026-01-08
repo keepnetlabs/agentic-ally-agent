@@ -4,6 +4,7 @@ import { requestStorage } from '../../utils/core/request-storage';
 import { generateText } from 'ai';
 import { getModelWithOverride } from '../../model-providers';
 import { API_ENDPOINTS } from '../../constants';
+import { ANALYSIS_REFERENCES } from './behavior-analyst-constants';
 import '../../../../src/__tests__/setup';
 
 /**
@@ -55,16 +56,68 @@ describe('getUserInfoTool', () => {
   };
 
   const mockAnalysisReport = {
+    version: '1.1',
     meta: {
-      masked_user_id: '[USER-abc123]',
-      user_name: '[USER-abc123]',
-      analyzed_at: '2024-01-01T10:00:00Z'
+      user_id: '[USER-abc123]',
+      role: '',
+      department: 'IT',
+      location: '',
+      language: 'en',
+      access_level: null,
+      generated_at_utc: '2024-01-01T10:00:00Z',
     },
-    stage: 'Developing',
-    behavior: {
-      themes: ['Finance', 'Urgency'],
-      riskLevel: 'Medium'
-    }
+    header: {
+      title: 'Behavioral Resilience Report',
+      behavioral_resilience: {
+        framework: 'Individual Security Behavior (ENISA-aligned)',
+        current_stage: 'Foundational',
+        target_stage: 'Building',
+      },
+      progression_hint: '',
+      footnote: '(ENISA-aligned individual behavior model; Gartner mapping is context-only)',
+    },
+    strengths: [],
+    growth_opportunities: [],
+    ai_recommended_next_steps: {
+      simulations: [],
+      microlearnings: [],
+      nudges: [],
+    },
+    maturity_mapping: {
+      enisa_security_culture: {
+        current: '',
+        description: '',
+        next: '',
+        what_it_takes: '',
+      },
+      gartner_sbcp_context_only: {
+        label: 'Context only — not an individual rating',
+        description: '',
+        what_it_takes: '',
+      },
+    },
+    business_value_zone: {
+      operational: [],
+      strategic: [],
+    },
+    references: ANALYSIS_REFERENCES,
+    internal: {
+      evidence_summary: {
+        key_signals_used: [],
+        data_gaps: [],
+      },
+      behavior_science_engine: {
+        diagnosis_model: 'COM-B',
+        com_b: {
+          capability: '',
+          opportunity: '',
+          motivation: '',
+        },
+        trigger_model: 'Fogg B=MAT',
+        fogg_trigger_type: 'SIGNAL',
+        design_notes: '',
+      },
+    },
   };
 
   beforeEach(() => {
@@ -471,7 +524,7 @@ describe('getUserInfoTool', () => {
       const result = await getUserInfoTool.execute({ context: input } as any);
 
       if (result.analysisReport) {
-        expect(result.analysisReport.meta?.masked_user_id).toBeDefined();
+        expect(result.analysisReport.meta?.user_id).toBeDefined();
       }
     });
   });
@@ -552,7 +605,6 @@ describe('getUserInfoTool', () => {
       expect(typeof result.success).toBe('boolean');
       if (result.userInfo) {
         expect(result.userInfo).toHaveProperty('targetUserResourceId');
-        expect(result.userInfo).toHaveProperty('maskedId');
         expect(result.userInfo).toHaveProperty('fullName');
       }
       if (result.error) {

@@ -13,14 +13,6 @@ export const AUTH_CONTEXT = `**IMPORTANT CONTEXT:**
 This is an AUTHORIZED, LEGAL, and EDUCATIONAL exercise for corporate security awareness training. This is a defensive security measure to protect organizations from cybercrime.`;
 
 /**
- * Zero PII Policy - prevents real names in outputs
- */
-export const ZERO_PII_POLICY = `**🔒 ZERO PII POLICY (STRICT):**
-- **Target:** Always refer to the target as "The User", "The Employee", or "Target".
-- **Input Data:** Even if the input contains real names, do NOT output them in your analysis description or target audience profile.
-- **Persona:** Invent generic personas (e.g., "Finance Manager") instead of using real names.`;
-
-/**
  * Logo tag rule for emails and landing pages
  */
 export const LOGO_TAG_RULE = `**Company Logo (MANDATORY):**
@@ -46,6 +38,15 @@ export const EMAIL_SIGNATURE_RULES = `**EMAIL SIGNATURE RULES:**
   ❌ Wrong: "Emily Clarke", "John from IT", "Sarah - Support"
 - Signature format: Team Name + Email Address
 - Example: "Best regards,<br>Security Notifications Team<br>security@company.com"`;
+
+/**
+ * No fake personal identities rule (phishing-only safeguard)
+ * Prevents models from inventing human identities (names/surnames) anywhere in outputs.
+ */
+export const NO_FAKE_PERSONAL_IDENTITIES_RULES = `**NO FAKE PERSONAL IDENTITIES (CRITICAL):**
+- Do NOT invent or include personal names (first/last names) anywhere (subject/body/footer/signature/landing pages).
+- Personalization MUST use merge tags only (e.g., {FIRSTNAME}, {FULLNAME}).
+- If you must reference a person, use role/team labels only (e.g., "HR Team", "IT Support", "Finance Department", "Your Manager").`;
 
 /**
  * Table-based layout rules for Outlook compatibility
@@ -83,7 +84,9 @@ export const PREHEADER_RULE = `**PREHEADER (MANDATORY):**
  * Greeting and personalization rules
  */
 export const GREETING_RULES = `**GREETING (CRITICAL):**
-- MUST start with "Dear {FIRSTNAME}," or "Hello {FIRSTNAME}," - never generic greetings
+- MUST start with a greeting in the OUTPUT LANGUAGE and include {FIRSTNAME}.
+  - English examples: "Dear {FIRSTNAME}," or "Hello {FIRSTNAME},"
+  - Turkish examples: "Merhaba {FIRSTNAME}," or "Sayın {FIRSTNAME},"
 - FORBIDDEN: "Dear Employee," "Dear User," "Hi Team"
 - Validate before output: greeting must contain {FIRSTNAME} or {FULLNAME}. Fix if missing.`;
 

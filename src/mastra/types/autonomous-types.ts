@@ -23,7 +23,6 @@ export interface AutonomousResponse {
     success: boolean;
     userInfo?: {
         targetUserResourceId: string;
-        maskedId: string;
         fullName?: string;
         department?: string;
         email?: string;

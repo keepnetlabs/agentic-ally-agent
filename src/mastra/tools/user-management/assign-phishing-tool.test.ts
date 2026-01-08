@@ -84,7 +84,7 @@ describe('assignPhishingTool', () => {
       }
     });
 
-    it('should require targetUserResourceId', async () => {
+    it('should require exactly one assignment target (user OR group)', async () => {
       const input: any = {
         resourceId: 'phishing-resource-123'
       };
@@ -94,6 +94,23 @@ describe('assignPhishingTool', () => {
       expect(result).toBeDefined();
       if (result && typeof result === 'object' && 'error' in result) {
         expect(result.error).toBeTruthy();
+      }
+    });
+
+    it('should reject when both targetUserResourceId and targetGroupResourceId are provided', async () => {
+      const input: any = {
+        resourceId: 'phishing-resource-123',
+        targetUserResourceId: 'user-789',
+        targetGroupResourceId: 'group-123',
+      };
+
+      const result = await assignPhishingTool.execute({ context: input } as any);
+      expect(result).toBeDefined();
+      // Schema validation errors may not include `success: false` depending on tool framework
+      if (result && typeof result === 'object' && 'error' in result) {
+        expect(result.error).toBeTruthy();
+      } else {
+        expect(false).toBe(true); // must not succeed silently
       }
     });
   });
@@ -141,7 +158,7 @@ describe('assignPhishingTool', () => {
 
       const result = await assignPhishingTool.execute({ context: input } as any);
       expect(result.success).toBe(true);
-      expect(result.message).toBe('Phishing simulation assigned successfully.');
+      expect(result.message).toContain('campaign assigned to');
       expect(result.error).toBeUndefined();
     });
 
@@ -193,6 +210,27 @@ describe('assignPhishingTool', () => {
             trainingId: 'training-123',
             sendTrainingLanguageId: 'lang-456'
           })
+        })
+      );
+    });
+
+    it('should assign phishing to a group and include targetGroupResourceId in payload', async () => {
+      const mockCallWorkerAPI = vi.spyOn(workerApiClient, 'callWorkerAPI').mockResolvedValue({});
+
+      const input = {
+        resourceId: 'phishing-resource-123',
+        targetGroupResourceId: 'group-123'
+      };
+
+      const result = await assignPhishingTool.execute({ context: input } as any);
+
+      expect(result.success).toBe(true);
+      expect(result.message).toContain('GROUP');
+      expect(mockCallWorkerAPI).toHaveBeenCalledWith(
+        expect.objectContaining({
+          payload: expect.objectContaining({
+            targetGroupResourceId: 'group-123',
+          }),
         })
       );
     });

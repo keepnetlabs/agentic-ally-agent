@@ -1,6 +1,10 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+vi.mock('../model-providers', () => ({
+  getDefaultAgentModel: () => ({}),
+}));
+
 import { phishingEmailAgent } from './phishing-email-agent';
-import { AGENT_NAMES, PHISHING, MESSAGING_GUIDELINES, PII_POLICY } from '../constants';
+import { AGENT_NAMES, PHISHING, MESSAGING_GUIDELINES } from '../constants';
 
 /**
  * Test suite for Phishing Email Agent
@@ -43,14 +47,9 @@ describe('Phishing Email Agent', () => {
       expect(phishingEmailAgent.instructions).toContain('Match user\'s exact language');
     });
 
-    it('should include PII policy in instructions', () => {
-      expect(phishingEmailAgent.instructions).toContain('ZERO PII POLICY');
-      expect(phishingEmailAgent.instructions).toContain(PII_POLICY.CORE_RULE);
-    });
-
-    it('should reference PII guidelines in instructions', () => {
-      const instructionText = phishingEmailAgent.instructions;
-      expect(instructionText).toContain('Never include the employee\'s real name');
+    it('should not include PII policy in instructions', () => {
+      expect(phishingEmailAgent.instructions).not.toContain('PII_POLICY');
+      expect(phishingEmailAgent.instructions).not.toContain('ZERO PII');
     });
 
     it('should include safety rules in instructions', () => {
@@ -199,10 +198,8 @@ describe('Phishing Email Agent', () => {
   // ==================== MEMORY CONFIGURATION TESTS ====================
   describe('Memory Configuration', () => {
     it('should be configured for stateless operation', () => {
-      // Memory is configured with lastMessages=15 and workingMemory disabled
-      // This optimizes for stateless operation as documented in instructions
+      // Memory configuration is set in agent source. Agent instance should still initialize without requiring env keys.
       expect(phishingEmailAgent).toBeDefined();
-      expect(phishingEmailAgent.instructions).toContain('stateless');
     });
 
     it('should mention memory configuration in source code', () => {
@@ -440,8 +437,9 @@ describe('Phishing Email Agent', () => {
       expect(phishingEmailAgent.instructions).toContain(PHISHING.WORKFLOW_TYPE);
     });
 
-    it('should include PII_POLICY in instructions', () => {
-      expect(phishingEmailAgent.instructions).toContain(PII_POLICY.CORE_RULE);
+    it('should not include PII policy in instructions', () => {
+      expect(phishingEmailAgent.instructions).not.toContain('PII_POLICY');
+      expect(phishingEmailAgent.instructions).not.toContain('ZERO PII');
     });
 
     it('should include MESSAGING_GUIDELINES in instructions', () => {

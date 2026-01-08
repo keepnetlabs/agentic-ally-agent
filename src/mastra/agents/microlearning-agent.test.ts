@@ -514,7 +514,7 @@ describe('Microlearning Agent', () => {
       });
 
       it('should detect assign intent with "Assign"', () => {
-        const userMessage = 'Assign to [USER-123]';
+        const userMessage = 'Assign to alice@company.com';
         const isAssign = /assign|send|distribute/i.test(userMessage);
         expect(isAssign).toBe(true);
       });
@@ -710,10 +710,10 @@ describe('Microlearning Agent', () => {
       expect(userIdMatch?.[1]).toBe('ys9vXMbl4wC6');
     });
 
-    it('should ignore masked IDs like [USER-*]', () => {
+    it('should treat bracketed placeholders like [USER-*] as non-assignable identifiers', () => {
       const context = '[USER-123] wants training';
-      const isMasked = /\[USER-/.test(context);
-      expect(isMasked).toBe(true); // Recognized as masked
+      const isPlaceholder = /\[USER-/.test(context);
+      expect(isPlaceholder).toBe(true); // Recognize placeholder so we can avoid using it for assignment
     });
 
     it('should detect language preference from context', () => {

@@ -79,7 +79,8 @@ export async function findUserByEmail(
         const err = normalizeError(error);
         const errorInfo = errorService.external('User search by email failed', { error: err.message });
         logErrorInfo(deps.logger as any, 'error', 'User search error', errorInfo);
-        throw new Error(errorInfo.message);
+        // Preserve original error message for higher-level handlers/tests (e.g., "Network error")
+        throw new Error(err.message);
     }
 }
 
@@ -128,7 +129,8 @@ export async function findUserByNameWithFallbacks(
         const err = normalizeError(error);
         const errorInfo = errorService.external('User search failed', { error: err.message });
         logErrorInfo(deps.logger as any, 'error', 'User search error', errorInfo);
-        throw new Error(errorInfo.message);
+        // Preserve original error message for higher-level handlers/tests (e.g., "Network error")
+        throw new Error(err.message);
     }
 }
 

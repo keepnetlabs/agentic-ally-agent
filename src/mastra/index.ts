@@ -19,6 +19,7 @@ import {
   createAgentStream,
   injectOrchestratorContext,
 } from './utils/chat-orchestration-helpers';
+import { normalizeSafeId } from './utils/core/id-utils';
 
 // Barrel imports - clean organization
 import {
@@ -287,11 +288,18 @@ export const mastra = new Mastra({
           // Inject deterministic artifact IDs (short, code-derived) so agents don't have to guess from long history
           const { microlearningId, phishingId } = extractArtifactIdsFromRoutingContext(routingContext);
           if (microlearningId || phishingId) {
+            // Canonical / allowlisted [ARTIFACT_IDS] block (key=value, stable order, safe chars only)
+            const safeMicrolearningId = normalizeSafeId(microlearningId);
+            const safePhishingId = normalizeSafeId(phishingId);
+
             const parts = [
-              microlearningId ? `microlearningId=${microlearningId}` : undefined,
-              phishingId ? `phishingId=${phishingId}` : undefined,
+              safeMicrolearningId ? `microlearningId=${safeMicrolearningId}` : undefined,
+              safePhishingId ? `phishingId=${safePhishingId}` : undefined,
             ].filter(Boolean);
-            finalPrompt = `[ARTIFACT_IDS] ${parts.join(' ')}\n\n${finalPrompt}`;
+
+            if (parts.length > 0) {
+              finalPrompt = `[ARTIFACT_IDS] ${parts.join(' ')}\n\n${finalPrompt}`;
+            }
           }
 
           // Step 6: Inject orchestrator context (unmasked)

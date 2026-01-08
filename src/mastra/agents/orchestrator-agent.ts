@@ -6,7 +6,7 @@
  * should handle the task (userInfoAssistant, microlearningAgent, or phishingEmailAssistant).
  *
  * Key Responsibilities:
- * - Extract active user from conversation history (masked IDs or real names)
+ * - Extract active user from conversation history (emails or real identifiers)
  * - Identify artifact type (Training vs Phishing simulation)
  * - Classify user intent (creation, upload, analysis, confirmation)
  * - Route to appropriate specialist agent with task context
@@ -23,7 +23,7 @@ import { AGENT_NAMES } from '../constants';
  * Builds the system instructions for the orchestrator agent.
  *
  * The orchestrator uses a "DETECTIVE" approach:
- * 1. WHO - Identify active user (masked IDs or real names)
+ * 1. WHO - Identify active user (email or real ID)
  * 2. WHAT - Identify artifact type (Training or Phishing)
  * 3. HOW - Classify intent (create, upload, analyze, confirm)
  *
@@ -59,7 +59,7 @@ The history is provided in STRUCTURED FORMAT:
 Before routing, perform this internal analysis:
 
 1. **WHO is the Active User?**
-   - Scan history for: Masked IDs like [USER-*] OR Real Names (e.g., "Peter Parker").
+   - Scan history for: email addresses OR real alphanumeric resource IDs OR Real Names (e.g., "Peter Parker").
    - This person is the "Target" for subsequent Create/Assign actions.
    - *If found, pass it in 'taskContext'.*
 
@@ -75,7 +75,7 @@ Before routing, perform this internal analysis:
 
 1. **userInfoAssistant** (The Analyst)
    - **Triggers:** "Who is...", "Check risk", "Find user [ID]".
-   - **Also triggers when:** A NEW user identifier is provided with a generic intent (e.g., "Create something for [USER-123]").
+   - **Also triggers when:** A NEW user identifier is provided with a generic intent (e.g., "Create something for alice@company.com").
    - **Role:** Finds users, analyzes risk, suggests plans. DOES NOT create content.
 
 2. **microlearningAgent** (The Educator)
@@ -105,10 +105,21 @@ IF the user says "Upload", "Assign", "Send", "Deploy", "Yükle", "Gönder":
    - If the item is a "Simulation", "Template", or "Attack" -> **phishingEmailAssistant**.
    - If last topic was Phishing (Context Only) -> **phishingEmailAssistant**
    - If last topic was Training (Context Only) -> **microlearningAgent**
+2. **CRITICAL: Prefer STRUCTURED ID SOURCES (highest reliability).**
+   - **First choice:** If you see a [ARTIFACT_IDS] ... block, treat it as the PRIMARY source of truth for artifact IDs (microlearningId, phishingId, resourceId, languageId, sendTrainingLanguageId, targetUserResourceId, targetGroupResourceId).
+   - Extract IDs from [ARTIFACT_IDS] first whenever present.
+   - **Second choice:** Tool summary lines.
+   - If you see tool output messages like:
+     - "Ready to assign (resourceId=..., sendTrainingLanguageId=...)" or
+     - "campaign assigned to USER/GROUP ... (resourceId=...)"
+   - Then extract those IDs directly and use them in taskContext.
+   - **Recency rule:** If multiple tool summary lines exist, ALWAYS prefer the MOST RECENT one (latest in history). Older IDs may be stale/overwritten.
 2. Check **Active User**.
    - **Step 1 (Context Check):** Does the conversation history ALREADY contain a 'targetUserResourceId' for this user?
      - *IF YES:* Use the known ID (e.g. "ys9vXMbl4wC6" or "uB4jc...") and proceed.
      - *IF NO:* You CANNOT proceed.
+   - **GROUP ASSIGNMENT RULE (CRITICAL):** If the conversation history contains a 'targetGroupResourceId', you can proceed with GROUP assignment without calling userInfoAssistant.
+     - Use 'targetGroupResourceId' directly for assignment actions.
    - **CRITICAL:** If user is ONLY a Name (e.g. "Peter Parker") and NO alphanumeric ID (like "ys9vXMbl4wC6") is found -> Route to **userInfoAssistant**.
    - *Constraint:* A Human Name (e.g. "Peter Parker") is NEVER a valid Resource ID.
    - *Example:* "Peter Parker" (No ID in Context) -> Route to UserInfo. "Peter Parker" (ID exists in Context) -> Proceed.
@@ -120,7 +131,7 @@ IF the user says "Upload", "Assign", "Send", "Deploy", "Yükle", "Gönder":
    - "Create training about X" -> **microlearningAgent**
    - "Create phishing email about X" -> **phishingEmailAssistant**
 4. **Implicit/Ambiguous:**
-   - "Create for [USER-123]": Route to **userInfoAssistant** (Always analyze user first).
+   - "Create for alice@company.com": Route to **userInfoAssistant** (Always analyze user first).
    - "Teach them": **microlearningAgent**
    - "Test them": **phishingEmailAssistant**
 
@@ -140,7 +151,7 @@ IF you cannot determine the intent or the request is ambiguous:
 
 **taskContext Guidelines:**
 - **For userInfoAssistant:**
-  - Clearly state which user to find (masked ID or name) and for what purpose.
+  - Clearly state which user to find (email or name) and for what purpose.
 
 - **For microlearningAgent or phishingEmailAssistant:**
   - Use artifact ID/details from the Note if available (e.g., "Upload training phishing-awareness-224229 to platform")
