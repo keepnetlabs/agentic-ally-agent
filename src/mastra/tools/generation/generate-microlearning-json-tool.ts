@@ -6,7 +6,7 @@ import { MicrolearningContent, Scene } from '../../types/microlearning';
 import { cleanResponse } from '../../utils/content-processors/json-cleaner';
 import { METADATA_GENERATION_PARAMS } from '../../utils/config/llm-generation-params';
 import { CATEGORIES } from '../../constants';
-import { LanguageModelSchema } from '../../types/language-model';
+import { LanguageModelSchema, type LanguageModel } from '../../types/language-model';
 import { ProductService } from '../../services/product-service';
 import { getLogger } from '../../utils/core/logger';
 import { errorService } from '../../services/error-service';
@@ -81,7 +81,7 @@ function generateEthicalPolicy() {
 async function generateMicrolearningJsonWithAI(
   analysis: PromptAnalysis & { additionalContext?: string },
   microlearningId: string,
-  model: any,
+  model: LanguageModel,
   _policyContext?: string
 ) {
   // Basic structure creation - detailed enhancement happens in Stage 2
@@ -174,7 +174,7 @@ async function generateTheme(themeColor?: string) {
   }
 }
 
-async function enhanceMicrolearningContent(microlearning: MicrolearningContent, model: any, additionalContext?: string): Promise<MicrolearningContent> {
+async function enhanceMicrolearningContent(microlearning: MicrolearningContent, model: LanguageModel, additionalContext?: string): Promise<MicrolearningContent> {
   const categoriesList = CATEGORIES.VALUES.join(', ');
 
   const enhancementPrompt = `CRITICAL: Return ONLY valid JSON. No explanations, no markdown, no backticks.

@@ -7,6 +7,30 @@ import { z } from 'zod';
 // API PAYLOADS
 // ============================================================================
 
+export interface PlatformUser {
+    targetUserResourceId: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    department?: string;
+    departmentName?: string;
+    role?: string;
+    location?: string;
+    preferredLanguage?: string;
+    accessLevel?: string;
+}
+
+export interface ApiActivity {
+    ActionType: string;
+    name: string;
+    productType: string;
+    difficultyType?: string;
+    points?: number;
+    ActionTime: string;
+    ActionTimeWithDay?: string;
+    [key: string]: unknown;
+}
+
 // Payload for Step 1: Find User
 export const GET_ALL_PAYLOAD = {
     datePeriod: 0,

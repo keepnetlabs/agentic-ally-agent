@@ -11,11 +11,13 @@ import { normalizeError, logErrorInfo } from '../../../utils/core/error-utils';
 import { errorService } from '../../../services/error-service';
 import { withRetry } from '../../../utils/core/resilience-utils';
 
+import { LanguageModel } from '../../../types/language-model';
+
 export interface RewriteContext {
     sourceLanguage: string;
     targetLanguage: string;
     topic: string;
-    model: any;
+    model: LanguageModel;
     department?: string;
 }
 
@@ -24,15 +26,15 @@ export interface RewriteContext {
  * Each scene type has a unique prompt instruction
  */
 type SceneType =
-  | 'intro'
-  | 'goal'
-  | 'video'
-  | 'actionable'
-  | 'quiz'
-  | 'survey'
-  | 'nudge'
-  | 'summary'
-  | 'app-texts';
+    | 'intro'
+    | 'goal'
+    | 'video'
+    | 'actionable'
+    | 'quiz'
+    | 'survey'
+    | 'nudge'
+    | 'summary'
+    | 'app-texts';
 
 interface SceneConfig {
     displayName: string;              // e.g., "Intro", "Goals", "Video Transcript"
@@ -199,11 +201,11 @@ Output (JSON only):`;
  * @param context The rewrite context (languages, model, etc.)
  * @returns The rewritten scene
  */
-export async function rewriteSceneWithBase(
-    scene: any,
+export async function rewriteSceneWithBase<T>(
+    scene: T,
     sceneType: SceneType,
     context: RewriteContext
-): Promise<any> {
+): Promise<T> {
     const config = SCENE_CONFIGS[sceneType];
     const logger = getLogger(`RewriteScene${config.displayName.replace(/\s+/g, '')}`);
     const { sourceLanguage, targetLanguage, topic, model, department } = context;

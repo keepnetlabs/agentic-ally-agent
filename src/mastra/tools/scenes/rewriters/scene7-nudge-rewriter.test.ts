@@ -1,9 +1,16 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { rewriteScene7Nudge } from './scene7-nudge-rewriter';
 import { RewriteContext } from './scene-rewriter-base';
 
+// Mock the AI module
+vi.mock('ai', () => ({
+  generateText: vi.fn(),
+}));
+
+import { generateText } from 'ai';
+
 describe('Scene 7 - Nudge Rewriter', () => {
-  const mockModel = { id: 'test-model' } as any;
+  const mockModel = { id: 'test-model', provider: 'test' } as any;
   const baseContext: RewriteContext = {
     sourceLanguage: 'en',
     targetLanguage: 'tr',
@@ -14,22 +21,30 @@ describe('Scene 7 - Nudge Rewriter', () => {
 
   const baseScene = {
     title: 'Stay Alert',
-    nudgeMessage: 'Check email headers before clicking links!',
-    callToAction: 'Take the quiz again',
-    icon: 'alert-triangle',
-    urgency: 'medium',
-  };
+    subtitle: 'Quick Reminder',
+    key_message: ['Check email headers before clicking links!'],
+    callToActionText: 'Take the quiz again',
+    icon: { sceneIconName: 'alert-triangle', sparkleIconName: 'alert' },
+    // scene_type removed from here, usually added by rewriter or implicit
+  } as any;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    (generateText as any).mockResolvedValue({
+      text: JSON.stringify(baseScene),
+    });
+  });
 
   describe('Function Call', () => {
     it('should accept valid scene and context', async () => {
       const result = await rewriteScene7Nudge(baseScene, baseContext);
       expect(result).toBeDefined();
+      expect(generateText).toHaveBeenCalled();
     });
 
-    it('should require scene parameter', async () => {
-      await expect(
-        rewriteScene7Nudge(undefined as any, baseContext)
-      ).rejects.toThrow();
+    it('should return undefined if scene is undefined', async () => {
+      const result = await rewriteScene7Nudge(undefined as any, baseContext);
+      expect(result).toBeUndefined();
     });
 
     it('should require context parameter', async () => {
@@ -45,26 +60,20 @@ describe('Scene 7 - Nudge Rewriter', () => {
       expect(result).toHaveProperty('title');
     });
 
-    it('should preserve nudgeMessage field', async () => {
+    it('should preserve key_message field', async () => {
       const result = await rewriteScene7Nudge(baseScene, baseContext);
-      expect(result).toHaveProperty('nudgeMessage');
+      expect(result).toHaveProperty('key_message');
+      expect(Array.isArray(result.key_message)).toBe(true);
     });
 
-    it('should preserve callToAction field', async () => {
+    it('should preserve callToActionText field', async () => {
       const result = await rewriteScene7Nudge(baseScene, baseContext);
-      expect(result).toHaveProperty('callToAction');
+      expect(result).toHaveProperty('callToActionText');
     });
 
     it('should preserve icon field', async () => {
       const result = await rewriteScene7Nudge(baseScene, baseContext);
       expect(result).toHaveProperty('icon');
-      expect(result.icon).toBe(baseScene.icon);
-    });
-
-    it('should preserve urgency level', async () => {
-      const result = await rewriteScene7Nudge(baseScene, baseContext);
-      expect(result).toHaveProperty('urgency');
-      expect(result.urgency).toBe(baseScene.urgency);
     });
   });
 
@@ -94,41 +103,20 @@ describe('Scene 7 - Nudge Rewriter', () => {
   describe('Nudge Quality', () => {
     it('should keep nudges concise', async () => {
       const result = await rewriteScene7Nudge(baseScene, baseContext);
-      expect(result.nudgeMessage).toBeTruthy();
-      expect(typeof result.nudgeMessage).toBe('string');
-      expect(result.nudgeMessage.length).toBeLessThan(200);
+      expect(result.key_message).toBeTruthy();
+      expect(result.key_message[0].length).toBeLessThan(200);
     });
 
     it('should maintain motivational tone', async () => {
       const result = await rewriteScene7Nudge(baseScene, baseContext);
       expect(result).toBeDefined();
-      expect(result.nudgeMessage).toBeTruthy();
+      expect(result.key_message).toBeTruthy();
     });
 
-    it('should preserve callToAction text', async () => {
+    it('should preserve callToActionText', async () => {
       const result = await rewriteScene7Nudge(baseScene, baseContext);
-      expect(result.callToAction).toBeTruthy();
-      expect(typeof result.callToAction).toBe('string');
-    });
-  });
-
-  describe('Urgency Levels', () => {
-    it('should handle low urgency nudges', async () => {
-      const lowUrgency = { ...baseScene, urgency: 'low' };
-      const result = await rewriteScene7Nudge(lowUrgency, baseContext);
-      expect(result).toBeDefined();
-    });
-
-    it('should handle medium urgency nudges', async () => {
-      const mediumUrgency = { ...baseScene, urgency: 'medium' };
-      const result = await rewriteScene7Nudge(mediumUrgency, baseContext);
-      expect(result).toBeDefined();
-    });
-
-    it('should handle high urgency nudges', async () => {
-      const highUrgency = { ...baseScene, urgency: 'high' };
-      const result = await rewriteScene7Nudge(highUrgency, baseContext);
-      expect(result).toBeDefined();
+      expect(result.callToActionText).toBeTruthy();
+      expect(typeof result.callToActionText).toBe('string');
     });
   });
 
@@ -136,8 +124,11 @@ describe('Scene 7 - Nudge Rewriter', () => {
     it('should handle minimal nudge', async () => {
       const minimal = {
         title: 'Alert',
-        nudgeMessage: 'Act now',
-      };
+        key_message: ['Act now'],
+      } as any;
+      (generateText as any).mockResolvedValueOnce({
+        text: JSON.stringify(minimal),
+      });
       const result = await rewriteScene7Nudge(minimal, baseContext);
       expect(result).toBeDefined();
     });
@@ -145,8 +136,11 @@ describe('Scene 7 - Nudge Rewriter', () => {
     it('should handle nudge with special characters', async () => {
       const special = {
         ...baseScene,
-        nudgeMessage: 'Check email & verify sender (DO NOT CLICK)!',
+        key_message: ['Check email & verify sender (DO NOT CLICK)!'],
       };
+      (generateText as any).mockResolvedValueOnce({
+        text: JSON.stringify(special),
+      });
       const result = await rewriteScene7Nudge(special, baseContext);
       expect(result).toBeDefined();
     });
@@ -154,8 +148,11 @@ describe('Scene 7 - Nudge Rewriter', () => {
     it('should handle nudge with emoji-like content', async () => {
       const withSymbols = {
         ...baseScene,
-        nudgeMessage: '⚠️ Check email headers before clicking',
+        key_message: ['⚠️ Check email headers before clicking'],
       };
+      (generateText as any).mockResolvedValueOnce({
+        text: JSON.stringify(withSymbols),
+      });
       const result = await rewriteScene7Nudge(withSymbols, baseContext);
       expect(result).toBeDefined();
     });

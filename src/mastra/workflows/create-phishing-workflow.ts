@@ -116,6 +116,7 @@ const analyzeRequest = createStep({
       );
 
       // Extract reasoning if available (Workers AI returns it)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const reasoning = (response as any).response?.body?.reasoning;
       if (reasoning && inputData.writer) {
         logger.info('Streaming scenario reasoning to frontend');
@@ -647,7 +648,9 @@ const generateLandingPage = createStep({
         landingPage: {
           name: name,
           description: description,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           method: method as any,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           difficulty: difficulty as any,
           pages: parsedResult.pages
         },

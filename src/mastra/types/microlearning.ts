@@ -132,6 +132,16 @@ export interface MicrolearningContent {
   scenes: Scene[];
 }
 
+// Scene Metadata Aliases for Rewriter Tools
+export type Scene1Metadata = IntroScene;
+export type Scene2Metadata = GoalScene;
+export type Scene3Metadata = ScenarioScene;
+export type Scene4Metadata = ActionableScene | CodeReviewScene;
+export type Scene5Metadata = QuizScene;
+export type Scene6Metadata = SurveyScene;
+export type Scene7Metadata = ActionPlanScene;
+export type Scene8Metadata = SummaryScene;
+
 // Base scene interface
 interface BaseScene {
   iconName: string;
@@ -287,7 +297,7 @@ interface SummaryScene extends BaseScene {
 }
 
 // App-level content
-interface AppContent {
+export interface AppContent {
   texts: {
     loading: string;
     languageNotFound: string;

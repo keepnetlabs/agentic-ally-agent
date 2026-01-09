@@ -14,7 +14,7 @@ import { getLogger } from '../../utils/core/logger';
 import { errorService } from '../../services/error-service';
 import { validateBCP47LanguageCode, DEFAULT_LANGUAGE } from '../../utils/language/language-utils';
 import { ANALYSIS_REFERENCES, ALLOWED_ENUMS_TEXT } from './behavior-analyst-constants';
-import { AnalysisSchema, GET_ALL_PAYLOAD, TIMELINE_PAYLOAD, getUserInfoOutputSchema } from './user-management-types';
+import { AnalysisSchema, GET_ALL_PAYLOAD, TIMELINE_PAYLOAD, getUserInfoOutputSchema, PlatformUser, ApiActivity } from './user-management-types';
 import { enrichActivities, formatEnrichedActivitiesForPrompt } from './activity-enrichment-utils';
 import { findUserByEmail, findUserByNameWithFallbacks } from './utils/user-search-utils';
 export const getUserInfoTool = createTool({
@@ -50,7 +50,7 @@ export const getUserInfoTool = createTool({
       // Keep them optional until we pass a single guard; avoids "used before assigned" lint.
       let userId: string | undefined;
       let userFullName: string | undefined;
-      let user: any = null;
+      let user: PlatformUser | null = null;
       let firstName: string = '';
       let lastName: string | undefined = undefined;
       let fullName: string = '';
@@ -187,7 +187,7 @@ export const getUserInfoTool = createTool({
       if (timelineResponse.ok) {
         const timelineData = await timelineResponse.json();
         const results = timelineData?.data?.results || [];
-        recentActivities = results.map((r: any) => ({
+        recentActivities = results.map((r: ApiActivity) => ({
           actionType: r.ActionType,
           campaignName: r.name,
           productType: r.productType,

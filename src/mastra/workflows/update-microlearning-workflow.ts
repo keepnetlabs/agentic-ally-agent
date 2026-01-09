@@ -41,19 +41,21 @@ const updateOutputSchema = z.object({
 });
 
 // Deep merge utility - handles nested objects properly
-function deepMerge(target: any, source: any): any {
+function deepMerge<T>(target: T, source: any): T {
   if (!source) return target;
 
   const result = JSON.parse(JSON.stringify(target)); // Deep clone
 
   for (const key in source) {
-    if (source.hasOwnProperty(key)) {
+    if (Object.prototype.hasOwnProperty.call(source, key)) {
       if (typeof source[key] === 'object' && source[key] !== null && !Array.isArray(source[key])) {
         // Recursive merge for nested objects
-        result[key] = deepMerge(result[key] || {}, source[key]);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        result[key] = deepMerge((result as any)[key] || {}, source[key]);
       } else {
         // Direct assignment for primitives and arrays
-        result[key] = source[key];
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (result as any)[key] = source[key];
       }
     }
   }

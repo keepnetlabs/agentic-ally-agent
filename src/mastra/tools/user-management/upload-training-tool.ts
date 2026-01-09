@@ -12,6 +12,7 @@ import { errorService } from '../../services/error-service';
 import { validateToolResult } from '../../utils/tool-result-validation';
 import { waitForKVConsistency, buildExpectedKVKeys } from '../../utils/kv-consistency';
 import { MicrolearningService } from '../../services/microlearning-service';
+import { MicrolearningContent } from '../../types/microlearning';
 import { extractCompanyIdFromTokenExport } from '../../utils/core/policy-fetcher';
 import { formatToolSummary } from '../../utils/core/tool-summary-formatter';
 import { summarizeForLog } from '../../utils/core/log-redaction-utils';
@@ -65,7 +66,7 @@ export const uploadTrainingTool = createTool({
 
             // 2. Fetch Content from KV with retry (handles eventual consistency edge cases)
             const kvService = new KVService();
-            let baseContent: { base?: any } | undefined;
+            let baseContent: { base?: MicrolearningContent } | undefined;
             try {
                 baseContent = await withRetry(
                     async () => {
@@ -112,7 +113,8 @@ export const uploadTrainingTool = createTool({
 
             const category = (meta.category || 'General').trim().replace(/\s+/g, '');
 
-            const rolesInput = meta.role_relevance || 'AllEmployees';
+            // Handle potential legacy data where role_relevance might be string or undefined
+            const rolesInput = (meta.role_relevance as unknown as (string[] | string | undefined)) || 'AllEmployees';
             const targetAudience = Array.isArray(rolesInput)
                 ? rolesInput.join('').replace(/\s+/g, '')
                 : (rolesInput || 'AllEmployees').toString().trim().replace(/\s+/g, '');
@@ -154,7 +156,7 @@ export const uploadTrainingTool = createTool({
             const maskedPayload = maskSensitiveField(payload, 'accessToken', token);
             logger.debug('Upload payload prepared (redacted)', {
                 payload: summarizeForLog(maskedPayload),
-                trainingData: summarizeForLog((maskedPayload as any)?.trainingData),
+                trainingData: summarizeForLog(maskedPayload.trainingData),
             });
 
             // Wrap API call with retry (exponential backoff: 1s, 2s, 4s)

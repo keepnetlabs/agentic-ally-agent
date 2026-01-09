@@ -31,7 +31,8 @@ describe('normalizeLandingLogoCentering', () => {
     const input = `<div style="width: 100%; padding: 20px; display: flex;"><p>Content</p></div>`;
     const out = normalizeLandingLogoCentering(input);
     // Should not add extra wrapper for non-icon divs
-    expect(out.match(/display: flex; justify-content: center;/g) || []).length === 0 ? true : false;
+    const wrapperMatches = out.match(/display: flex; justify-content: center;/g) || [];
+    expect(wrapperMatches.length).toBe(0);
   });
 
   it('handles div with margin-bottom in wrapper', () => {

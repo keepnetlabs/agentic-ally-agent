@@ -28,17 +28,19 @@ import { logErrorInfo } from './error-utils';
 
 const logger = getLogger('WorkerAPIClient');
 
-export interface CallWorkerAPIOptions {
+export interface CallWorkerAPIOptions<TPayload = any> {
   /** Cloudflare environment bindings */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   env: any;
   /** Service binding (e.g., env.PHISHING_CRUD_WORKER) */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   serviceBinding?: any;
   /** Public URL fallback (for local development) */
   publicUrl: string;
   /** Worker endpoint path (e.g., 'https://worker/submit') */
   endpoint: string;
   /** Request payload */
-  payload: any;
+  payload: TPayload;
   /** Optional auth token */
   token?: string;
   /** Error message prefix (e.g., 'Worker failed', 'Assign API failed') */
@@ -53,7 +55,7 @@ export interface CallWorkerAPIOptions {
  * @returns Parsed JSON response
  * @throws Error with formatted error message if request fails
  */
-export async function callWorkerAPI<T = any>(options: CallWorkerAPIOptions): Promise<T> {
+export async function callWorkerAPI<TResponse = any, TPayload = any>(options: CallWorkerAPIOptions<TPayload>): Promise<TResponse> {
   const {
     serviceBinding,
     publicUrl,

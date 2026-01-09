@@ -1,6 +1,8 @@
 // src/mastra/types/autonomous-types.ts
 
 import type { CloudflareEnv } from './api-types';
+import { Mastra } from '@mastra/core';
+import type { PromptAnalysis } from './prompt-analysis';
 
 export interface AutonomousRequest {
     token: string;
@@ -16,7 +18,7 @@ export interface AutonomousRequest {
     sendAfterPhishingSimulation?: boolean;
     preferredLanguage?: string;
     env?: CloudflareEnv;
-    mastra?: any; // Mastra instance for agent access - optional for backward compatibility
+    mastra?: Mastra; // Mastra instance for agent access
 }
 
 export interface AutonomousResponse {
@@ -36,7 +38,7 @@ export interface AutonomousResponse {
         score?: number;
         actionTime?: string;
     }>;
-    analysisReport?: any;
+    analysisReport?: PromptAnalysis;
     executiveReport?: string; // Human-readable report from agent
     phishingResult?: {
         success: boolean;

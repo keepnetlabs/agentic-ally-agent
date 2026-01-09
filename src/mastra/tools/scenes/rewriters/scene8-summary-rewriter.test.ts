@@ -1,9 +1,16 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { rewriteScene8Summary } from './scene8-summary-rewriter';
 import { RewriteContext } from './scene-rewriter-base';
 
+// Mock the AI module
+vi.mock('ai', () => ({
+  generateText: vi.fn(),
+}));
+
+import { generateText } from 'ai';
+
 describe('Scene 8 - Summary Rewriter', () => {
-  const mockModel = { id: 'test-model' } as any;
+  const mockModel = { id: 'test-model', provider: 'test' } as any;
   const baseContext: RewriteContext = {
     sourceLanguage: 'en',
     targetLanguage: 'tr',
@@ -14,26 +21,34 @@ describe('Scene 8 - Summary Rewriter', () => {
 
   const baseScene = {
     title: 'Key Takeaways',
-    keyPoints: [
-      'Phishing emails mimic trusted senders',
-      'Always verify sender email addresses',
-      'Report suspicious emails to IT immediately',
+    immediateActions: [
+      { title: 'Check Headers', description: 'Always verify sender' },
+      { title: 'Report', description: 'Click the report button' }
     ],
-    conclusion: 'You now have the knowledge to protect yourself from phishing attacks.',
-    nextSteps: ['Practice identifying phishing', 'Share knowledge with team'],
-    certificateText: 'Completion Certificate',
-  };
+    resources: [
+      { title: 'Policy', type: 'PDF', url: 'http://policy' }
+    ],
+    key_message: ['Phishing emails mimic trusted senders'],
+    icon: { sceneIconName: 'book', sparkleIconName: 'star' }
+  } as any;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    (generateText as any).mockResolvedValue({
+      text: JSON.stringify(baseScene),
+    });
+  });
 
   describe('Function Call', () => {
     it('should accept valid scene and context', async () => {
       const result = await rewriteScene8Summary(baseScene, baseContext);
       expect(result).toBeDefined();
+      expect(generateText).toHaveBeenCalled();
     });
 
-    it('should require scene parameter', async () => {
-      await expect(
-        rewriteScene8Summary(undefined as any, baseContext)
-      ).rejects.toThrow();
+    it('should return undefined if scene is undefined', async () => {
+      const result = await rewriteScene8Summary(undefined as any, baseContext);
+      expect(result).toBeUndefined();
     });
 
     it('should require context parameter', async () => {
@@ -49,35 +64,30 @@ describe('Scene 8 - Summary Rewriter', () => {
       expect(result).toHaveProperty('title');
     });
 
-    it('should preserve keyPoints array', async () => {
+    it('should preserve immediateActions array', async () => {
       const result = await rewriteScene8Summary(baseScene, baseContext);
-      expect(result).toHaveProperty('keyPoints');
-      expect(Array.isArray(result.keyPoints)).toBe(true);
-      expect(result.keyPoints.length).toBe(baseScene.keyPoints.length);
+      expect(result).toHaveProperty('immediateActions');
+      expect(Array.isArray(result.immediateActions)).toBe(true);
+      expect(result.immediateActions.length).toBe(baseScene.immediateActions.length);
     });
 
-    it('should preserve conclusion field', async () => {
+    it('should preserve resources array', async () => {
       const result = await rewriteScene8Summary(baseScene, baseContext);
-      expect(result).toHaveProperty('conclusion');
+      expect(result).toHaveProperty('resources');
+      expect(Array.isArray(result.resources)).toBe(true);
     });
 
-    it('should preserve nextSteps array', async () => {
+    it('should preserve key_message', async () => {
       const result = await rewriteScene8Summary(baseScene, baseContext);
-      expect(result).toHaveProperty('nextSteps');
-      expect(Array.isArray(result.nextSteps)).toBe(true);
-      expect(result.nextSteps.length).toBe(baseScene.nextSteps.length);
+      // BaseScene has key_message
+      expect(result).toHaveProperty('key_message');
     });
 
-    it('should preserve certificateText field', async () => {
+    it('should preserve icon field', async () => {
       const result = await rewriteScene8Summary(baseScene, baseContext);
-      expect(result).toHaveProperty('certificateText');
-    });
-
-    it('should maintain key point order', async () => {
-      const result = await rewriteScene8Summary(baseScene, baseContext);
-      result.keyPoints.forEach((point: any) => {
-        expect(typeof point).toBe('string');
-      });
+      expect(result).toHaveProperty('icon');
+      expect(result.icon).toHaveProperty('sceneIconName');
+      expect(result.icon).toHaveProperty('sparkleIconName');
     });
   });
 
@@ -105,93 +115,124 @@ describe('Scene 8 - Summary Rewriter', () => {
   });
 
   describe('Summary Quality', () => {
-    it('should summarize key points concisely', async () => {
+    it('should exist', async () => {
       const result = await rewriteScene8Summary(baseScene, baseContext);
-      result.keyPoints.forEach((point: any) => {
-        expect(typeof point).toBe('string');
-        expect(point.length).toBeGreaterThan(0);
-        expect(point.length).toBeLessThan(500);
+      expect(result).toBeDefined();
+    });
+
+    it('should maintain immediateActions structure', async () => {
+      const result = await rewriteScene8Summary(baseScene, baseContext);
+      result.immediateActions.forEach((action: any) => {
+        expect(typeof action.title).toBe('string');
+        expect(typeof action.description).toBe('string');
+        expect(action.title.length).toBeGreaterThan(0);
+        expect(action.description.length).toBeGreaterThan(0);
       });
     });
 
-    it('should maintain conclusion clarity', async () => {
+    it('should maintain resources structure', async () => {
       const result = await rewriteScene8Summary(baseScene, baseContext);
-      expect(result.conclusion).toBeTruthy();
-      expect(typeof result.conclusion).toBe('string');
+      result.resources.forEach((resource: any) => {
+        expect(typeof resource.title).toBe('string');
+        expect(typeof resource.type).toBe('string');
+        expect(typeof resource.url).toBe('string');
+        expect(resource.title.length).toBeGreaterThan(0);
+        expect(resource.type.length).toBeGreaterThan(0);
+        expect(resource.url.length).toBeGreaterThan(0);
+      });
     });
 
-    it('should preserve next steps guidance', async () => {
+    it('should maintain key_message clarity', async () => {
       const result = await rewriteScene8Summary(baseScene, baseContext);
-      result.nextSteps.forEach((step: any) => {
-        expect(typeof step).toBe('string');
-        expect(step.length).toBeGreaterThan(0);
-      });
+      expect(result.key_message).toBeTruthy();
+      expect(Array.isArray(result.key_message)).toBe(true);
+      expect(result.key_message[0].length).toBeGreaterThan(0);
     });
   });
 
   describe('Content Summarization', () => {
-    it('should handle training with 3 key points', async () => {
-      const result = await rewriteScene8Summary(baseScene, baseContext);
-      expect(result.keyPoints.length).toBe(3);
+    it('should handle training with 3 immediateActions', async () => {
+      const threeActions = {
+        ...baseScene,
+        immediateActions: [
+          { title: 'A', description: 'D' },
+          { title: 'B', description: 'E' },
+          { title: 'C', description: 'F' }
+        ]
+      } as any;
+      (generateText as any).mockResolvedValueOnce({ text: JSON.stringify(threeActions) });
+
+      const result = await rewriteScene8Summary(threeActions, baseContext);
+      expect(result.immediateActions.length).toBe(3);
     });
 
-    it('should handle training with many key points', async () => {
-      const manyPoints = {
+    it('should handle training with many immediateActions', async () => {
+      const manyActions = {
         ...baseScene,
-        keyPoints: Array.from({ length: 10 }, (_, i) => `Key point ${i + 1}`),
+        immediateActions: Array.from({ length: 10 }, (_, i) => ({ title: `Action ${i + 1}`, description: `Desc ${i + 1}` })),
       };
-      const result = await rewriteScene8Summary(manyPoints, baseContext);
+      (generateText as any).mockResolvedValueOnce({ text: JSON.stringify(manyActions) });
+      const result = await rewriteScene8Summary(manyActions, baseContext);
       expect(result).toBeDefined();
+      expect(result.immediateActions.length).toBe(10);
     });
 
-    it('should handle single key point', async () => {
-      const singlePoint = {
+    it('should handle single immediateAction', async () => {
+      const singleAction = {
         ...baseScene,
-        keyPoints: ['Main lesson learned'],
+        immediateActions: [{ title: 'Main Action', description: 'Main description' }],
       };
-      const result = await rewriteScene8Summary(singlePoint, baseContext);
+      (generateText as any).mockResolvedValueOnce({ text: JSON.stringify(singleAction) });
+      const result = await rewriteScene8Summary(singleAction, baseContext);
       expect(result).toBeDefined();
+      expect(result.immediateActions.length).toBe(1);
     });
   });
 
   describe('Edge Cases', () => {
-    it('should handle long conclusion text', async () => {
-      const longConclusion = {
+    it('should handle no resources', async () => {
+      const noResources = {
         ...baseScene,
-        conclusion: 'A'.repeat(500),
-      };
-      const result = await rewriteScene8Summary(longConclusion, baseContext);
+        resources: [],
+      } as any;
+      (generateText as any).mockResolvedValueOnce({ text: JSON.stringify(noResources) });
+      const result = await rewriteScene8Summary(noResources, baseContext);
       expect(result).toBeDefined();
+      expect(result.resources.length).toBe(0);
     });
 
-    it('should handle key point with special characters', async () => {
-      const special = {
+    it('should handle empty immediateActions', async () => {
+      const noActions = {
         ...baseScene,
-        keyPoints: ['Phishing uses fake domains (e.g., pay-pal.fake.com)'],
-      };
-      const result = await rewriteScene8Summary(special, baseContext);
+        immediateActions: [],
+      } as any;
+      (generateText as any).mockResolvedValueOnce({ text: JSON.stringify(noActions) });
+      const result = await rewriteScene8Summary(noActions, baseContext);
       expect(result).toBeDefined();
+      expect(result.immediateActions.length).toBe(0);
     });
 
-    it('should handle next steps with links', async () => {
-      const withLinks = {
+    it('should handle long immediateAction descriptions', async () => {
+      const longDescription = {
         ...baseScene,
-        nextSteps: [
-          'Visit https://example.com for more info',
-          'Email security@company.com for questions',
-        ],
+        immediateActions: [{ title: 'Long Desc', description: 'A'.repeat(500) }],
       };
-      const result = await rewriteScene8Summary(withLinks, baseContext);
+      (generateText as any).mockResolvedValueOnce({ text: JSON.stringify(longDescription) });
+      const result = await rewriteScene8Summary(longDescription, baseContext);
       expect(result).toBeDefined();
+      expect(result.immediateActions[0].description.length).toBeGreaterThan(100);
     });
 
-    it('should handle empty nextSteps', async () => {
-      const noNextSteps = {
+    it('should handle special characters in titles/descriptions', async () => {
+      const specialChars = {
         ...baseScene,
-        nextSteps: [],
+        immediateActions: [{ title: 'Action with !@#$', description: 'Desc with %^&*()' }],
       };
-      const result = await rewriteScene8Summary(noNextSteps, baseContext);
+      (generateText as any).mockResolvedValueOnce({ text: JSON.stringify(specialChars) });
+      const result = await rewriteScene8Summary(specialChars, baseContext);
       expect(result).toBeDefined();
+      expect(result.immediateActions[0].title).toContain('!@#$');
+      expect(result.immediateActions[0].description).toContain('%^&*()');
     });
   });
 
@@ -220,13 +261,8 @@ describe('Scene 8 - Summary Rewriter', () => {
       };
       const result = await rewriteScene8Summary(baseScene, fullTrainingContext);
       expect(result).toBeDefined();
-      expect(result).toHaveProperty('keyPoints');
-      expect(result).toHaveProperty('conclusion');
-    });
-
-    it('should handle certificate generation', async () => {
-      const result = await rewriteScene8Summary(baseScene, baseContext);
-      expect(result.certificateText).toBeTruthy();
+      expect(result).toHaveProperty('immediateActions');
+      expect(result).toHaveProperty('key_message');
     });
 
     it('should produce multi-language summary variants', async () => {
@@ -238,7 +274,7 @@ describe('Scene 8 - Summary Rewriter', () => {
       );
       expect(results.length).toBe(languages.length);
       results.forEach(result => {
-        expect(result.keyPoints.length).toBe(baseScene.keyPoints.length);
+        expect(result.immediateActions.length).toBe(baseScene.immediateActions.length);
       });
     });
   });

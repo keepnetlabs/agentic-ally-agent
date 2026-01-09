@@ -1,5 +1,6 @@
 import { normalizeError, logErrorInfo } from '../../../utils/core/error-utils';
 import { errorService } from '../../../services/error-service';
+import { PlatformUser } from '../user-management-types';
 
 export interface UserSearchFilterItem {
     Value: string;
@@ -23,7 +24,7 @@ export async function fetchUsersWithFilters(
     deps: UserSearchDeps,
     getAllPayloadTemplate: unknown,
     filterItems: UserSearchFilterItem[]
-): Promise<any[]> {
+): Promise<PlatformUser[]> {
     const { token, companyId, baseApiUrl, logger } = deps;
     const headers: Record<string, string> = {
         'Content-Type': 'application/json',
@@ -63,7 +64,7 @@ export async function findUserByEmail(
     deps: UserSearchDeps,
     getAllPayloadTemplate: unknown,
     email: string
-): Promise<any | null> {
+): Promise<PlatformUser | null> {
     const normalizedEmail = String(email).trim().toLowerCase();
 
     try {
@@ -93,10 +94,10 @@ export async function findUserByNameWithFallbacks(
     firstName: string,
     lastName?: string,
     fullNameForLogs?: string
-): Promise<any | null> {
+): Promise<PlatformUser | null> {
     const fullName = fullNameForLogs || `${firstName}${lastName ? ` ${lastName}` : ''}`;
 
-    const fetchByName = async (fName: string, lName?: string): Promise<any[]> => {
+    const fetchByName = async (fName: string, lName?: string): Promise<PlatformUser[]> => {
         return fetchUsersWithFilters(deps, getAllPayloadTemplate, [
             { Value: fName, FieldName: 'firstName', Operator: 'Contains' },
             ...(lName ? [{ Value: lName, FieldName: 'lastName', Operator: 'Contains' }] : []),

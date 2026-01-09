@@ -13,7 +13,7 @@ const logger = getLogger('JsonValidation');
  * @param translated - The translated JSON object
  * @returns boolean indicating if structure is valid
  */
-export function validateInboxStructure(original: any, translated: any): boolean {
+export function validateInboxStructure(original: Record<string, any>, translated: Record<string, any>): boolean {
   if (!original || !translated) {
     logger.warn('Missing original or translated data for validation');
     return false;
@@ -142,7 +142,7 @@ export function validateInboxStructure(original: any, translated: any): boolean 
  * @param translated - The translated JSON object that may have structural issues
  * @returns Corrected JSON object
  */
-export function correctInboxStructure(original: any, translated: any): any {
+export function correctInboxStructure(original: Record<string, any>, translated: Record<string, any>): Record<string, any> {
   if (!original || !translated) {
     logger.warn('Cannot correct structure - missing original or translated data');
     return original;

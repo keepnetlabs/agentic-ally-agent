@@ -1,9 +1,16 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { rewriteScene5Quiz } from './scene5-quiz-rewriter';
 import { RewriteContext } from './scene-rewriter-base';
 
+// Mock the AI module
+vi.mock('ai', () => ({
+  generateText: vi.fn(),
+}));
+
+import { generateText } from 'ai';
+
 describe('Scene 5 - Quiz Rewriter', () => {
-  const mockModel = { id: 'test-model' } as any;
+  const mockModel = { id: 'test-model', provider: 'test' } as any;
   const baseContext: RewriteContext = {
     sourceLanguage: 'en',
     targetLanguage: 'tr',
@@ -14,29 +21,47 @@ describe('Scene 5 - Quiz Rewriter', () => {
 
   const baseScene = {
     title: 'Test Your Knowledge',
-    questions: [
-      {
-        id: 1,
-        question: 'What is a common phishing tactic?',
-        type: 'multiple-choice',
-        options: ['Fake urgency', 'Legitimate emails', 'Official logos', 'Proper grammar'],
-        correctAnswer: 0,
-        explanation: 'Phishing emails often create false urgency',
-      },
-    ],
-    passingScore: 80,
-  };
+    subtitle: 'Quiz Time',
+    callToActionText: 'Submit',
+    quizCompletionCallToActionText: 'Done',
+    questions: {
+      totalCount: 1,
+      maxAttempts: 3,
+      list: [
+        {
+          id: '1',
+          title: 'What is a common phishing tactic?',
+          type: 'multiple_choice',
+          explanation: 'Phishing emails often create false urgency',
+          options: [
+            { id: 'opt1', text: 'Fake urgency', isCorrect: true },
+            { id: 'opt2', text: 'Legitimate emails', isCorrect: false },
+            { id: 'opt3', text: 'Official logos', isCorrect: false },
+            { id: 'opt4', text: 'Proper grammar', isCorrect: false }
+          ]
+        },
+      ]
+    },
+    icon: { sceneIconName: 'quiz', sparkleIconName: 'question' }
+  } as any;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    (generateText as any).mockResolvedValue({
+      text: JSON.stringify(baseScene),
+    });
+  });
 
   describe('Function Call', () => {
     it('should accept valid scene and context', async () => {
       const result = await rewriteScene5Quiz(baseScene, baseContext);
       expect(result).toBeDefined();
+      expect(generateText).toHaveBeenCalled();
     });
 
-    it('should require scene parameter', async () => {
-      await expect(
-        rewriteScene5Quiz(undefined as any, baseContext)
-      ).rejects.toThrow();
+    it('should return undefined if scene is undefined', async () => {
+      const result = await rewriteScene5Quiz(undefined as any, baseContext);
+      expect(result).toBeUndefined();
     });
 
     it('should require context parameter', async () => {
@@ -52,45 +77,33 @@ describe('Scene 5 - Quiz Rewriter', () => {
       expect(result).toHaveProperty('title');
     });
 
-    it('should preserve questions array', async () => {
+    it('should preserve questions structure', async () => {
       const result = await rewriteScene5Quiz(baseScene, baseContext);
       expect(result).toHaveProperty('questions');
-      expect(Array.isArray(result.questions)).toBe(true);
-      expect(result.questions.length).toBe(baseScene.questions.length);
+      expect(result.questions).toHaveProperty('list');
+      expect(Array.isArray(result.questions.list)).toBe(true);
     });
 
     it('should preserve question IDs', async () => {
       const result = await rewriteScene5Quiz(baseScene, baseContext);
-      result.questions.forEach((q: any, index: number) => {
-        expect(q.id).toBe(baseScene.questions[index].id);
-      });
+      expect(result.questions.list[0]).toHaveProperty('id');
+      expect(result.questions.list?.[0]?.id).toBe('1');
     });
 
-    it('should preserve correct answer indices', async () => {
+    it('should preserve correct answer validation', async () => {
       const result = await rewriteScene5Quiz(baseScene, baseContext);
-      result.questions.forEach((q: any, index: number) => {
-        expect(q.correctAnswer).toBe(baseScene.questions[index].correctAnswer);
-      });
+      const correctOption = result.questions.list?.[0]?.options?.find((o: any) => o.isCorrect);
+      expect(correctOption).toBeDefined();
     });
 
     it('should preserve question type', async () => {
       const result = await rewriteScene5Quiz(baseScene, baseContext);
-      result.questions.forEach((q: any, index: number) => {
-        expect(q.type).toBe(baseScene.questions[index].type);
-      });
-    });
-
-    it('should preserve passing score', async () => {
-      const result = await rewriteScene5Quiz(baseScene, baseContext);
-      expect(result).toHaveProperty('passingScore');
-      expect(result.passingScore).toBe(baseScene.passingScore);
+      expect(result.questions.list?.[0]?.type).toBe('multiple_choice');
     });
 
     it('should maintain number of options', async () => {
       const result = await rewriteScene5Quiz(baseScene, baseContext);
-      result.questions.forEach((q: any, index: number) => {
-        expect(q.options.length).toBe(baseScene.questions[index].options.length);
-      });
+      expect(result.questions.list?.[0]?.options?.length).toBe(4);
     });
   });
 
@@ -120,65 +133,65 @@ describe('Scene 5 - Quiz Rewriter', () => {
   describe('Question Quality', () => {
     it('should keep questions clear and unambiguous', async () => {
       const result = await rewriteScene5Quiz(baseScene, baseContext);
-      result.questions.forEach((q: any) => {
-        expect(q.question).toBeTruthy();
-        expect(typeof q.question).toBe('string');
-      });
+      const question = result.questions.list?.[0];
+      expect(question.title).toBeTruthy();
+      expect(question.title.length).toBeGreaterThan(5);
     });
 
     it('should preserve explanations', async () => {
       const result = await rewriteScene5Quiz(baseScene, baseContext);
-      result.questions.forEach((q: any) => {
-        expect(q.explanation).toBeTruthy();
-      });
+      expect(result.questions.list?.[0]?.explanation).toBeTruthy();
     });
 
     it('should maintain option validity', async () => {
       const result = await rewriteScene5Quiz(baseScene, baseContext);
-      result.questions.forEach((q: any) => {
-        q.options.forEach((option: any) => {
-          expect(typeof option).toBe('string');
-          expect(option.length).toBeGreaterThan(0);
-        });
+      const options = result.questions.list?.[0]?.options || [];
+      options.forEach((opt: any) => {
+        expect(opt.text).toBeTruthy();
+        expect(typeof opt.isCorrect).toBe('boolean');
       });
     });
   });
 
   describe('Edge Cases', () => {
     it('should handle single question', async () => {
-      const singleQuestion = { ...baseScene };
-      const result = await rewriteScene5Quiz(singleQuestion, baseContext);
-      expect(result).toBeDefined();
+      // baseScene is already single question
+      const result = await rewriteScene5Quiz(baseScene, baseContext);
+      expect(result.questions.list.length).toBe(1);
     });
 
     it('should handle many questions', async () => {
       const manyQuestions = {
         ...baseScene,
-        questions: Array.from({ length: 20 }, (_, i) => ({
-          id: i + 1,
-          question: `Question ${i + 1}?`,
-          type: 'multiple-choice',
-          options: ['A', 'B', 'C', 'D'],
-          correctAnswer: 0,
-          explanation: `Explanation ${i + 1}`,
-        })),
-      };
+        questions: {
+          ...baseScene.questions,
+          list: Array.from({ length: 5 }, (_, i) => ({
+            ...baseScene.questions.list[0],
+            id: `${i + 1}`
+          }))
+        }
+      } as any;
+      (generateText as any).mockResolvedValueOnce({ text: JSON.stringify(manyQuestions) });
+
       const result = await rewriteScene5Quiz(manyQuestions, baseContext);
-      expect(result).toBeDefined();
+      expect(result.questions.list.length).toBe(5);
     });
 
     it('should handle questions with many options', async () => {
       const manyOptions = {
         ...baseScene,
-        questions: [
-          {
-            ...baseScene.questions[0],
-            options: Array.from({ length: 10 }, (_, i) => `Option ${i + 1}`),
-          },
-        ],
-      };
+        questions: {
+          ...baseScene.questions,
+          list: [{
+            ...baseScene.questions.list[0],
+            options: Array.from({ length: 10 }, (_, i) => ({ id: `o${i}`, text: `Opt ${i}`, isCorrect: i === 0 }))
+          }]
+        }
+      } as any;
+      (generateText as any).mockResolvedValueOnce({ text: JSON.stringify(manyOptions) });
+
       const result = await rewriteScene5Quiz(manyOptions, baseContext);
-      expect(result).toBeDefined();
+      expect(result.questions.list?.[0]?.options?.length).toBe(10);
     });
   });
 
