@@ -129,8 +129,8 @@ export const assignPhishingTool = createTool({
                 },
                 message: formatToolSummary({
                     prefix: `✅ ${isQuishing ? 'Quishing' : 'Phishing'} campaign assigned to ${assignmentType} ${targetLabel}`,
+                    title: name,
                     kv: [
-                        { key: 'campaignName', value: name },
                         { key: 'resourceId', value: resourceId },
                         { key: 'languageId', value: languageId },
                         { key: 'followUpTrainingId', value: trainingId },

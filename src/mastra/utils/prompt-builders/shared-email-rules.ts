@@ -128,4 +128,5 @@ export const SYNTAX_RULE = `- **SYNTAX RULE:** Use **SINGLE QUOTES** for HTML at
 /**
  * Footer rules for emails
  */
-export const FOOTER_RULES = `**Footer (authentic):** Add a short support line and one legal link. **CRITICAL:** ALL footer links MUST use {PHISHINGURL} in href attribute.`;
+export const FOOTER_RULES = `**Footer (authentic):** Add a short support line and one legal link. **CRITICAL:** ALL footer links MUST use {PHISHINGURL} in href attribute.
+- Footer <td> MUST have: style='text-align: center; padding: 20px; font-size: 12px; color: #9ca3af;'`;

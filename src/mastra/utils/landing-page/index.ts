@@ -33,4 +33,6 @@ export {
     normalizeLandingCentering
 } from './form-centering-normalizer';
 
+export { normalizeLandingLogoCentering } from './logo-centering-normalizer';
+
 export { ensureLandingFullHtmlDocument } from './full-document-normalizer';

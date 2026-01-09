@@ -5,6 +5,7 @@
  */
 
 export { getUserInfoTool } from './get-user-info-tool';
+export { getTargetGroupInfoTool } from './get-target-group-info-tool';
 
 export { assignTrainingTool } from './assign-training-tool';
 

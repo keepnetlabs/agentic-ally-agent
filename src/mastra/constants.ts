@@ -191,12 +191,12 @@ export const RETRY = {
   getBackoffDelay(attempt: number): number {
     const baseDelay = Math.pow(2, attempt) * this.BASE_DELAY_MS;
     const cappedDelay = Math.min(baseDelay, this.MAX_DELAY_MS);
-    
+
     if (this.JITTER_ENABLED) {
       // Full Jitter: random value between 0 and cappedDelay
       return Math.floor(Math.random() * cappedDelay);
     }
-    
+
     return cappedDelay;
   },
 
@@ -432,6 +432,13 @@ export const ERROR_MESSAGES = {
     UNKNOWN_ERROR: 'Unknown error occurred while fetching user info.'
   },
 
+  // Group info errors
+  GROUP_INFO: {
+    TOKEN_MISSING: 'Authentication token missing.',
+    FETCH_FAILED: 'Failed to fetch group information.',
+    NOT_FOUND: 'Group not found.',
+    UNKNOWN_ERROR: 'Unknown error occurred while fetching group info.'
+  },
   // Search errors
   SEARCH: {
     FAILED: 'Search failed. Please try again.'
@@ -755,6 +762,7 @@ export const API_ENDPOINTS = {
   // User info / leaderboard endpoints (built on PLATFORM_API_URL)
   USER_INFO_GET_ALL: `${process.env.PLATFORM_API_URL || 'https://test-api.devkeepnet.com'}/api/leaderboard/get-all`,
   USER_INFO_GET_TIMELINE: `${process.env.PLATFORM_API_URL || 'https://test-api.devkeepnet.com'}/api/leaderboard/get-user-timeline`,
+  TARGET_GROUP_SEARCH: `${process.env.PLATFORM_API_URL || 'https://test-api.devkeepnet.com'}/api/target-groups/search`,
 } as const;
 
 // API Keys and authentication

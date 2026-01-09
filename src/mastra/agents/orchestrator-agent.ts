@@ -109,8 +109,9 @@ IF the user says "Upload", "Assign", "Send", "Deploy", "Yükle", "Gönder":
    - If last topic was Phishing (Context Only) -> **phishingEmailAssistant**
    - If last topic was Training (Context Only) -> **microlearningAgent**
 2. **CRITICAL: Prefer STRUCTURED ID SOURCES (highest reliability).**
-   - **First choice:** If you see a [ARTIFACT_IDS] ... block, treat it as the PRIMARY source of truth for artifact IDs (microlearningId, phishingId, resourceId, languageId, sendTrainingLanguageId, targetUserResourceId, targetGroupResourceId).
-   - Extract IDs from [ARTIFACT_IDS] first whenever present.
+   - **First choice:** If you see a [ARTIFACT_IDS] ... block (key=value pairs), treat it as the PRIMARY source of truth for artifact IDs:
+     microlearningId, phishingId, resourceId, scenarioResourceId, landingPageResourceId, languageId, sendTrainingLanguageId, targetUserResourceId, targetGroupResourceId.
+   - Extract IDs from [ARTIFACT_IDS] first whenever present (ignore anything else if it conflicts).
    - **Second choice:** Tool summary lines.
    - If you see tool output messages like:
      - "Ready to assign (resourceId=..., sendTrainingLanguageId=...)" or
@@ -123,6 +124,11 @@ IF the user says "Upload", "Assign", "Send", "Deploy", "Yükle", "Gönder":
      - *IF NO:* You CANNOT proceed.
    - **GROUP ASSIGNMENT RULE (CRITICAL):** If the conversation history contains a 'targetGroupResourceId', you can proceed with GROUP assignment without calling userInfoAssistant.
      - Use 'targetGroupResourceId' directly for assignment actions.
+   - **GROUP NAME RULE (CRITICAL):** If the user explicitly says they want to assign to a GROUP (e.g. contains "group", "grup", "ekip", "department group") but there is NO 'targetGroupResourceId' in history:
+     - Route to **userInfoAssistant** so it can resolve the groupName into a real 'targetGroupResourceId' via getTargetGroupInfo.
+     - In taskContext, include:
+       - groupName="<the group name from the user's message>"
+       - "Resolve targetGroupResourceId via getTargetGroupInfo and surface it in a short, parseable form (targetGroupResourceId=...) for downstream assignment."
    - **CRITICAL:** If user is ONLY a Name (e.g. "Peter Parker") and NO alphanumeric ID (like "ys9vXMbl4wC6") is found -> Route to **userInfoAssistant**.
    - *Constraint:* A Human Name (e.g. "Peter Parker") is NEVER a valid Resource ID.
    - *Example:* "Peter Parker" (No ID in Context) -> Route to UserInfo. "Peter Parker" (ID exists in Context) -> Proceed.

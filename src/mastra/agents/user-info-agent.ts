@@ -1,6 +1,6 @@
 // src/agents/user-info-agent.ts
 import { Agent } from '@mastra/core/agent';
-import { getUserInfoTool } from '../tools/user-management';
+import { getTargetGroupInfoTool, getUserInfoTool } from '../tools/user-management';
 import { getDefaultAgentModel } from '../model-providers';
 import { Memory } from '@mastra/memory';
 import { AGENT_NAMES, MESSAGING_GUIDELINES } from '../constants';
@@ -29,6 +29,11 @@ MODE SELECTION (CRITICAL)
 - Trigger: "Assign this", "Assign to X", "Send training", "Launch simulation".
 - Action:
   - Confirm the user is identified.
+  - If the request is for a GROUP and only a group name/description is present (no targetGroupResourceId in history), call getTargetGroupInfo first to resolve it.
+    - After the tool returns, ALWAYS surface the resolved ID explicitly and cleanly (user-friendly + parseable), using this EXACT 2-line pattern:
+      - "✅ Group found: <groupName>"
+      - "Reference: targetGroupResourceId=<id>"
+      (Keep the key=value token EXACT so downstream routing can reliably extract it.)
   - Ask ONE short confirmation question only.
   - Example:
     "User found. Ready to assign the recommended next step. Proceed?"
@@ -43,7 +48,8 @@ MODE SELECTION (CRITICAL)
      - Otherwise use fullName/firstName/lastName.
   2) The tool returns a structured Behavioral Resilience JSON (ENISA-aligned, v1.1).
   3) You MUST interpret this JSON and write a ONE-PAGE executive report in Markdown.
-  4) Do NOT output JSON in this mode.
+  4) If the user mentions assigning to a group but provides only a name or description, call "getTargetGroupInfo" before proceeding so assignments can resolve the "targetGroupResourceId".
+  5) Do NOT output JSON in this mode.
 
 WRITING STYLE AND TONE
 - Executive, calm, supportive, non-blaming.
@@ -187,6 +193,7 @@ export const userInfoAgent = new Agent({
   model: getDefaultAgentModel(),
   tools: {
     getUserInfo: getUserInfoTool,
+    getTargetGroupInfo: getTargetGroupInfoTool,
   },
   memory: new Memory({
     options: {

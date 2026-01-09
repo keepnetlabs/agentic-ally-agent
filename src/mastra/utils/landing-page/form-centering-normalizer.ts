@@ -136,11 +136,59 @@ export function normalizeLandingMaxWidthCentering(html: string): string {
 }
 
 /**
+ * ENFORCE max-width on form elements that are missing it entirely.
+ * This handles the case where LLM omits max-width completely (not just margin).
+ * Critical for MINIMAL layouts where max-width is mandatory.
+ */
+export function enforceMinimalLayoutMaxWidth(html: string): string {
+    if (!html || typeof html !== 'string') return html;
+    if (!html.toLowerCase().includes('<form')) return html;
+
+    try {
+        let changed = false;
+        const out = html.replace(/<form\b([^>]*)>/gi, (full, attrsRaw) => {
+            const attrs = String(attrsRaw ?? '');
+            const styleMatch = attrs.match(/\bstyle\s*=\s*(['"])(.*?)\1/i);
+
+            // If no style attribute at all, add one
+            if (!styleMatch) {
+                const newStyle = "style='max-width: 400px; width: 100%; margin: 0 auto;'";
+                changed = true;
+                return `<form${attrs} ${newStyle}>`;
+            }
+
+            const style = String(styleMatch[2] ?? '');
+            const lower = style.toLowerCase();
+
+            // Already has max-width, skip
+            if (/max-width\s*:/i.test(lower)) return full;
+
+            // Form has inline style but missing max-width - add it
+            const nextStyle = `max-width: 400px; width: 100%; margin: 0 auto; ${ensureTrailingSemicolon(style)}`.trim();
+            const nextAttrs = attrs.replace(/\bstyle\s*=\s*(['"])(.*?)\1/i, `style='${nextStyle}'`);
+            changed = true;
+            return `<form${nextAttrs}>`;
+        });
+
+        if (changed) logger.info('✅ Enforced max-width on form elements (MINIMAL layout fix)');
+        return out;
+    } catch (error) {
+        const err = normalizeError(error);
+        logger.warn('⚠️ Form max-width enforcement failed, continuing', { error: err.message });
+        return html;
+    }
+}
+
+/**
  * One-shot helper: apply all landing centering normalizations (container + form).
  */
 export function normalizeLandingCentering(html: string): string {
-    // Container centering first, then form centering
-    return normalizeLandingFormCentering(normalizeLandingMaxWidthCentering(html));
+    // 1. Enforce max-width on forms that are missing it
+    let out = enforceMinimalLayoutMaxWidth(html);
+    // 2. Container centering for existing max-width declarations
+    out = normalizeLandingMaxWidthCentering(out);
+    // 3. Form centering for existing max-width declarations
+    return normalizeLandingFormCentering(out);
 }
 
 
