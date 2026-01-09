@@ -8,8 +8,10 @@ const logger = getLogger('RetryGenerator');
 /**
  * Retry generation with stronger authorization prompt if first attempt fails
  */
+import { LanguageModel } from 'ai';
+
 export async function retryGenerationWithStrongerPrompt(
-  aiModel: any,
+  aiModel: LanguageModel,
   systemPrompt: string,
   messages: Array<{ role: 'system' | 'user'; content: string }>,
   responseType: 'email' | 'landing-page',

@@ -69,10 +69,10 @@ export const DEFAULT_PRIORITY = 'medium' as const;
 export const PROMPT_ANALYSIS = {
   // Input constraints
   MIN_PROMPT_LENGTH: 5,
-  MAX_PROMPT_LENGTH: 5000,
-  MAX_ADDITIONAL_CONTEXT_LENGTH: 5000,
-  MAX_CUSTOM_REQUIREMENTS_LENGTH: 1000,
-  MAX_DEPARTMENT_NAME_LENGTH: 100,
+  MAX_PROMPT_LENGTH: 10000,        // ~2000 words - Detailed scenarios/requirements
+  MAX_ADDITIONAL_CONTEXT_LENGTH: 15000,  // Policy context, examples, references
+  MAX_CUSTOM_REQUIREMENTS_LENGTH: 5000,  // Specific custom requirements
+  MAX_DEPARTMENT_NAME_LENGTH: 200,       // Company/department names can be long
 
   // Language code validation
   LANGUAGE_CODE_REGEX: /^[a-z]{2}(-[a-z]{2})?$/i,
@@ -209,10 +209,11 @@ export const RETRY = {
 // ============================================
 
 /**
- * Default timeout for agent calls (600s - extended to 10 mins for long-running generation tasks)
+ * Default timeout for agent calls (30s - matches Cloudflare Workers CPU limit)
+ * Long-running tasks should be handled asynchronously with fire-and-forget patterns
  * Can be overridden per operation if needed
  */
-export const AGENT_CALL_TIMEOUT_MS = 600000;
+export const AGENT_CALL_TIMEOUT_MS = 30000;
 
 // ============================================
 // TIME UNIT CONSTANTS
@@ -745,9 +746,6 @@ export const API_ENDPOINTS = {
   // Training worker endpoints
   TRAINING_WORKER_URL: process.env.TRAINING_WORKER_URL || 'https://crud-training-worker.keepnet-labs-ltd-business-profile4086.workers.dev/submit',
   TRAINING_WORKER_SEND: process.env.TRAINING_WORKER_SEND || 'https://crud-training-worker.keepnet-labs-ltd-business-profile4086.workers.dev/send',
-
-  // Platform API endpoints
-  PLATFORM_API_URL: process.env.PLATFORM_API_URL || 'https://test-api.devkeepnet.com',
 
   // Microlearning API endpoints
   MICROLEARNING_API_URL: process.env.MICROLEARNING_API_URL || 'https://microlearning-api.keepnet-labs-ltd-business-profile4086.workers.dev/microlearning/',

@@ -20,9 +20,9 @@ export const contextStorage = async (c: Context, next: Next) => {
     // Check if correlation ID is provided in header (for distributed tracing)
     const correlationId = c.req.header('X-Correlation-ID') || randomUUID();
 
-    // Get base API URL from header or environment (used for upload/assign operations)
+    // Get base API URL from header or fallback to default (used for upload/assign operations)
+    // URL is provided via X-BASE-API-URL header by client, fallback to test environment
     const baseApiUrl = c.req.header('X-BASE-API-URL') ||
-        process.env.PLATFORM_API_URL ||
         'https://test-api.devkeepnet.com';
 
     // Wrap the next handlers in the AsyncLocalStorage run context

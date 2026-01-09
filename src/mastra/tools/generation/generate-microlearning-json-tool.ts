@@ -15,23 +15,27 @@ import { withRetry } from '../../utils/core/resilience-utils';
 
 const GenerateMicrolearningJsonSchema = z.object({
   analysis: z.object({
-    title: z.string(),
-    category: z.string(),
-    subcategory: z.string(),
-    industries: z.array(z.string()),
-    department: z.string(),
-    roles: z.array(z.string()),
-    regulationCompliance: z.array(z.string()).optional(),
-    topic: z.string(),
-    level: z.string(),
-    language: z.string(),
-    learningObjectives: z.array(z.string()),
+    title: z.string().max(500, 'Title must not exceed 500 characters'),
+    category: z.string().max(200, 'Category must not exceed 200 characters'),
+    subcategory: z.string().max(200, 'Subcategory must not exceed 200 characters'),
+    industries: z.array(z.string().max(200)),
+    department: z.string().max(200, 'Department must not exceed 200 characters'),
+    roles: z.array(z.string().max(200)),
+    regulationCompliance: z.array(z.string().max(200)).optional(),
+    topic: z.string().max(500, 'Topic must not exceed 500 characters'),
+    level: z.string().max(50, 'Level must not exceed 50 characters'),
+    language: z.string().max(10, 'Language code must not exceed 10 characters'),
+    learningObjectives: z.array(z.string().max(1000)),
     duration: z.number(),
-    additionalContext: z.string().optional().describe('User context, vulnerabilities, or specific requirements'),
+    additionalContext: z.string()
+      .max(5000, 'Additional context must not exceed 5000 characters')
+      .optional().describe('User context, vulnerabilities, or specific requirements'),
   }),
-  microlearningId: z.string(),
+  microlearningId: z.string().max(256, 'Microlearning ID must not exceed 256 characters'),
   model: LanguageModelSchema,
-  policyContext: z.string().optional().describe('Company policy context'),
+  policyContext: z.string()
+    .max(10000, 'Policy context must not exceed 10000 characters')
+    .optional().describe('Company policy context'),
 });
 
 const GenerateMicrolearningJsonOutputSchema = z.object({

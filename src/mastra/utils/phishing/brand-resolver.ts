@@ -1,4 +1,4 @@
-import { generateText } from 'ai';
+import { generateText, LanguageModel } from 'ai';
 import { DEFAULT_GENERIC_LOGO } from '../landing-page/image-validator';
 import { getLogger } from '../core/logger';
 import { cleanResponse } from '../content-processors/json-cleaner';
@@ -31,7 +31,7 @@ export interface LogoAndBrandInfo {
 export async function resolveLogoAndBrand(
   fromName: string,
   scenario: string,
-  model: any,
+  model: LanguageModel,
   emailTemplate?: string
 ): Promise<LogoAndBrandInfo> {
   try {
@@ -146,7 +146,7 @@ export async function generateContextualBrand(
   scenario: string,
   category: string,
   fromName: string,
-  model: any
+  model: LanguageModel
 ): Promise<LogoAndBrandInfo> {
   try {
     logger.info('Generating contextual brand based on scenario analysis', {

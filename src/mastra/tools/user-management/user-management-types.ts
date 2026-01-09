@@ -184,3 +184,22 @@ export const getUserInfoOutputSchema = z.object({
 // Type exports for convenience
 export type AnalysisReport = z.infer<typeof AnalysisSchema>;
 export type GetUserInfoOutput = z.infer<typeof getUserInfoOutputSchema>;
+
+// Partial interface for safe access before full schema validation
+export interface PartialAnalysisReport {
+    meta?: {
+        user_id?: string;
+    };
+    ai_recommended_next_steps?: {
+        simulations?: Array<{
+            vector?: string;
+            scenario_type?: string;
+            difficulty?: string;
+            persuasion_tactic?: string;
+            nist_phish_scale?: {
+                cue_difficulty?: string;
+                premise_alignment?: string;
+            };
+        }>;
+    };
+}

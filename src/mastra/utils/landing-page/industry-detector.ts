@@ -3,7 +3,7 @@
  * Automatically detects company industry and provides appropriate color schemes
  */
 
-import { generateText } from 'ai';
+import { generateText, LanguageModel } from 'ai';
 import { getLogger } from '../core/logger';
 import { getDefaultGenerationModel } from '../../model-providers';
 import { cleanResponse } from '../content-processors/json-cleaner';
@@ -509,7 +509,7 @@ export interface IndustryDesign {
 async function detectIndustryWithAI(
     fromName: string,
     scenario: string,
-    model?: any
+    model?: LanguageModel
 ): Promise<IndustryDesign | null> {
     try {
         const aiModel = model || getDefaultGenerationModel();
@@ -698,7 +698,7 @@ function detectIndustryWithRegex(fromName: string, scenario: string): IndustryDe
 export async function detectIndustry(
     fromName: string,
     scenario: string,
-    model?: any
+    model?: LanguageModel
 ): Promise<IndustryDesign> {
     // Level 1: Try AI-based detection if model is provided
     if (model) {

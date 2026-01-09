@@ -10,13 +10,25 @@ import { normalizeError, logErrorInfo } from '../../utils/core/error-utils';
 import { withRetry } from '../../utils/core/resilience-utils';
 
 const CodeReviewCheckSchema = z.object({
-  issueType: z.string().describe('Type of issue to fix (e.g., "SQL Injection", "XSS", "Logic Error", "Performance Issue")'),
-  originalCode: z.string().describe('The original code with the issue'),
-  fixedCode: z.string().describe('The code after developer attempted to fix it'),
-  language: z.string().describe('Programming language (javascript, python, java, etc.)'),
-  outputLanguage: z.string().optional().default('en').describe('Output language for feedback, explanation and hint (e.g., "en", "tr", "de", "fr", etc.)'),
+  issueType: z.string()
+    .max(200, 'Issue type must not exceed 200 characters')
+    .describe('Type of issue to fix (e.g., "SQL Injection", "XSS", "Logic Error", "Performance Issue")'),
+  originalCode: z.string()
+    .max(100000, 'Code must not exceed 100,000 characters')
+    .describe('The original code with the issue'),
+  fixedCode: z.string()
+    .max(100000, 'Code must not exceed 100,000 characters')
+    .describe('The code after developer attempted to fix it'),
+  language: z.string()
+    .max(50, 'Language name must not exceed 50 characters')
+    .describe('Programming language (javascript, python, java, etc.)'),
+  outputLanguage: z.string()
+    .max(10, 'Language code must not exceed 10 characters')
+    .optional().default('en').describe('Output language for feedback, explanation and hint (e.g., "en", "tr", "de", "fr", etc.)'),
   modelProvider: z.enum(MODEL_PROVIDERS.NAMES).optional().describe('Model provider'),
-  model: z.string().optional().describe('Model name override'),
+  model: z.string()
+    .max(100, 'Model name must not exceed 100 characters')
+    .optional().describe('Model name override'),
 });
 
 const CodeReviewCheckOutputSchema = z.object({

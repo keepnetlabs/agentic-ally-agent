@@ -95,7 +95,7 @@ export const assignPhishingTool = createTool({
         };
 
         // Log Payload with masked token
-        const maskedPayload = maskSensitiveField(payload, 'accessToken', token);
+        const maskedPayload = maskSensitiveField(payload, 'accessToken');
         logger.debug('Assign phishing payload prepared', { payload: maskedPayload });
 
         try {

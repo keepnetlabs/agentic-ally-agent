@@ -26,10 +26,14 @@ const TranslateJsonInputSchema = z.object({
     microlearningStructure: z.any().describe('Base microlearning structure with scenes metadata'),
     sourceLanguage: LanguageCodeSchema.optional().default('en-gb'),
     targetLanguage: LanguageCodeSchema,
-    topic: z.string().optional(),
+    topic: z.string()
+        .max(500, 'Topic must not exceed 500 characters')
+        .optional(),
     doNotTranslateKeys: z.array(z.string()).optional(),
     modelProvider: z.enum(MODEL_PROVIDERS.NAMES).optional().describe('Model provider'),
-    model: z.string().optional().describe('Model name (e.g., OPENAI_GPT_4O_MINI, WORKERS_AI_GPT_OSS_120B)'),
+    model: z.string()
+        .max(100, 'Model name must not exceed 100 characters')
+        .optional().describe('Model name (e.g., OPENAI_GPT_4O_MINI, WORKERS_AI_GPT_OSS_120B)'),
 }).refine(
     (data) => validateLanguagesDifferent(data.sourceLanguage, data.targetLanguage),
     {

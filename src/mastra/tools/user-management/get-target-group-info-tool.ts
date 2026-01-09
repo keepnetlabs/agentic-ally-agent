@@ -131,8 +131,8 @@ async function fetchGroupsWithFilters(deps: GroupSearchDeps, groupName: string):
 
     const payload = createGroupSearchPayload(groupName);
 
-    // Build search URL dynamically from baseApiUrl
-    const groupSearchUrl = `${baseApiUrl || (process.env.PLATFORM_API_URL || 'https://test-api.devkeepnet.com')}/api/target-groups/search`;
+    // Build search URL dynamically from baseApiUrl (defaults to test environment)
+    const groupSearchUrl = `${baseApiUrl || 'https://test-api.devkeepnet.com'}/api/target-groups/search`;
 
     const response = await withRetry(
         () =>

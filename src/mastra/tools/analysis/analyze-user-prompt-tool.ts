@@ -8,7 +8,7 @@ import { validateBCP47LanguageCode, DEFAULT_LANGUAGE } from '../../utils/languag
 import { cleanResponse } from '../../utils/content-processors/json-cleaner';
 import { buildPolicySystemPrompt } from '../../utils/prompt-builders/policy-context-builder';
 import { PROMPT_ANALYSIS_PARAMS } from '../../utils/config/llm-generation-params';
-import { MICROLEARNING, ROLES, CATEGORIES, THEME_COLORS, MODEL_PROVIDERS, TRAINING_LEVELS, DEFAULT_TRAINING_LEVEL } from '../../constants';
+import { MICROLEARNING, ROLES, CATEGORIES, THEME_COLORS, MODEL_PROVIDERS, TRAINING_LEVELS, DEFAULT_TRAINING_LEVEL, PROMPT_ANALYSIS } from '../../constants';
 import { streamReasoning } from '../../utils/core/reasoning-stream';
 import { getLogger } from '../../utils/core/logger';
 import { errorService } from '../../services/error-service';
@@ -21,14 +21,24 @@ const cachedRolesList = ROLES.VALUES.map((role) => `- "${role}"`).join('\n');
 const cachedCategoriesList = CATEGORIES.VALUES.map((cat) => `- "${cat}"`).join('\n');
 
 const AnalyzeUserPromptSchema = z.object({
-  userPrompt: z.string().min(1, 'User prompt is required'),
-  additionalContext: z.string().optional(),
-  suggestedDepartment: z.string().optional(),
+  userPrompt: z.string()
+    .min(PROMPT_ANALYSIS.MIN_PROMPT_LENGTH, `Prompt must be at least ${PROMPT_ANALYSIS.MIN_PROMPT_LENGTH} characters`)
+    .max(PROMPT_ANALYSIS.MAX_PROMPT_LENGTH, `Prompt must not exceed ${PROMPT_ANALYSIS.MAX_PROMPT_LENGTH} characters`),
+  additionalContext: z.string()
+    .max(PROMPT_ANALYSIS.MAX_ADDITIONAL_CONTEXT_LENGTH, `Additional context must not exceed ${PROMPT_ANALYSIS.MAX_ADDITIONAL_CONTEXT_LENGTH} characters`)
+    .optional(),
+  suggestedDepartment: z.string()
+    .max(PROMPT_ANALYSIS.MAX_DEPARTMENT_NAME_LENGTH, `Department name must not exceed ${PROMPT_ANALYSIS.MAX_DEPARTMENT_NAME_LENGTH} characters`)
+    .optional(),
   suggestedLevel: z.enum(TRAINING_LEVELS).optional().default(DEFAULT_TRAINING_LEVEL),
-  customRequirements: z.string().optional(),
+  customRequirements: z.string()
+    .max(PROMPT_ANALYSIS.MAX_CUSTOM_REQUIREMENTS_LENGTH, `Custom requirements must not exceed ${PROMPT_ANALYSIS.MAX_CUSTOM_REQUIREMENTS_LENGTH} characters`)
+    .optional(),
   modelProvider: z.enum(MODEL_PROVIDERS.NAMES).optional().describe('Model provider'),
   model: z.string().optional().describe('Model name (e.g., OPENAI_GPT_4O_MINI, WORKERS_AI_GPT_OSS_120B)'),
-  policyContext: z.string().optional().describe('Company policy context'),
+  policyContext: z.string()
+    .max(PROMPT_ANALYSIS.MAX_ADDITIONAL_CONTEXT_LENGTH, `Policy context must not exceed ${PROMPT_ANALYSIS.MAX_ADDITIONAL_CONTEXT_LENGTH} characters`)
+    .optional().describe('Company policy context'),
 });
 
 const AnalyzeUserPromptOutputSchema = z.object({

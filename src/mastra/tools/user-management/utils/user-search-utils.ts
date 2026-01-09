@@ -42,8 +42,8 @@ export async function fetchUsersWithFilters(
         filterGroup.FilterItems.push(item);
     }
 
-    // Build URL dynamically from baseApiUrl
-    const getUserAllUrl = `${baseApiUrl || (process.env.PLATFORM_API_URL || 'https://test-api.devkeepnet.com')}/api/leaderboard/get-all`;
+    // Build URL dynamically from baseApiUrl (defaults to test environment)
+    const getUserAllUrl = `${baseApiUrl || 'https://test-api.devkeepnet.com'}/api/leaderboard/get-all`;
 
     const resp = await fetch(getUserAllUrl, {
         method: 'POST',

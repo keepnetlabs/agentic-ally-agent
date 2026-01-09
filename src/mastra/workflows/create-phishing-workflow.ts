@@ -12,6 +12,7 @@ import {
   logValidationResults
 } from '../utils/landing-page';
 import { streamDirectReasoning } from '../utils/core/reasoning-stream';
+import { extractReasoning } from '../utils/core/ai-utils';
 import {
   InputSchema,
   AnalysisSchema,
@@ -116,8 +117,7 @@ const analyzeRequest = createStep({
       );
 
       // Extract reasoning if available (Workers AI returns it)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const reasoning = (response as any).response?.body?.reasoning;
+      const reasoning = extractReasoning(response);
       if (reasoning && inputData.writer) {
         logger.info('Streaming scenario reasoning to frontend');
         // Stream reasoning directly without LLM processing
@@ -302,6 +302,7 @@ const analyzeRequest = createStep({
 // Step 2: Generate Email Content
 const generateEmail = createStep({
   id: 'generate-phishing-email',
+  description: 'Generate phishing email content including subject, body, and sender details',
   inputSchema: AnalysisSchema,
   outputSchema: EmailOutputSchema,
   execute: async ({ inputData }) => {
@@ -363,7 +364,7 @@ const generateEmail = createStep({
         );
 
         // Extract reasoning if available (Workers AI returns it)
-        const emailReasoning = (response as any).response?.body?.reasoning;
+        const emailReasoning = extractReasoning(response);
         if (emailReasoning && analysis.writer) {
           logger.info('Streaming email generation reasoning to frontend');
           // Stream reasoning directly without LLM processing
@@ -459,6 +460,7 @@ const generateEmail = createStep({
 // No special handling for isQuishing - same quality and standards apply.
 const generateLandingPage = createStep({
   id: 'generate-landing-page',
+  description: 'Generate phishing landing page content including logic and layout',
   inputSchema: EmailOutputSchema,
   outputSchema: OutputSchema,
   execute: async ({ inputData }) => {
@@ -568,7 +570,7 @@ const generateLandingPage = createStep({
         );
 
         // Reasoning handling
-        const lpReasoning = (response as any).response?.body?.reasoning;
+        const lpReasoning = extractReasoning(response);
         if (lpReasoning && analysis.writer) {
           await streamDirectReasoning(lpReasoning, analysis.writer);
         }
@@ -595,7 +597,7 @@ const generateLandingPage = createStep({
       // Sanitize HTML, fix broken images, enforce email logo, and validate for all pages
       if (parsedResult.pages && Array.isArray(parsedResult.pages)) {
         parsedResult.pages = await Promise.all(
-          parsedResult.pages.map(async (page: any) => {
+          parsedResult.pages.map(async (page: { type: string; template: string }) => {
             // Step 1: Post-process landing HTML (sanitize/repair/centering/wrapper)
             let cleanedTemplate = postProcessPhishingLandingHtml({ html: page.template, title: `${fromName} Login` });
 
@@ -648,10 +650,8 @@ const generateLandingPage = createStep({
         landingPage: {
           name: name,
           description: description,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          method: method as any,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          difficulty: difficulty as any,
+          method: method || 'Data-Submission',
+          difficulty: difficulty || 'Medium',
           pages: parsedResult.pages
         },
         policyContext: analysis.policyContext
@@ -667,6 +667,7 @@ const generateLandingPage = createStep({
 // Step 4: Save to KV
 const savePhishingContent = createStep({
   id: 'save-phishing-content',
+  description: 'Save generated phishing simulation content to KV store',
   inputSchema: OutputSchema, // Use OutputSchema directly as input
   outputSchema: OutputSchema,
   execute: async ({ inputData }) => {

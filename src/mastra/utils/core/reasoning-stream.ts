@@ -16,9 +16,14 @@ const logger = getLogger('ReasoningStream');
  * - reasoning-delta: Stream reasoning content
  * - reasoning-end: Complete reasoning block
  */
+
+export interface StreamWriter {
+  write(data: any): Promise<void>;
+}
+
 export async function streamReasoning(
   reasoningText: string,
-  writer: any
+  writer: StreamWriter
 ): Promise<void> {
   if (!reasoningText || !writer) return;
 
@@ -77,7 +82,7 @@ export async function streamReasoning(
           type: 'reasoning-end',
           id: messageId
         }).catch(() => { });
-      } catch {}
+      } catch { }
     });
 
   } catch (error) {
@@ -94,7 +99,7 @@ export async function streamReasoning(
  */
 export async function streamReasoningUpdates(
   reasoningTexts: string[],
-  writer: any
+  writer: StreamWriter
 ): Promise<void> {
   for (const text of reasoningTexts) {
     await streamReasoning(text, writer);
@@ -107,7 +112,7 @@ export async function streamReasoningUpdates(
  */
 export async function streamDirectReasoning(
   reasoning: string,
-  writer: any
+  writer: StreamWriter
 ): Promise<void> {
   if (!reasoning || !writer) return;
   const messageId = uuidv4();

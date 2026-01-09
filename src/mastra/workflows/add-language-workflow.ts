@@ -13,6 +13,7 @@ import { normalizeError, logErrorInfo } from '../utils/core/error-utils';
 import { errorService } from '../services/error-service';
 import { withRetry } from '../utils/core/resilience-utils';
 import { LanguageCodeSchema } from '../utils/validation/language-validation';
+import { MicrolearningContent } from '../types/microlearning';
 
 const logger = getLogger('AddLanguageWorkflow');
 
@@ -96,22 +97,23 @@ const loadExistingStep = createStep({
       throw new Error(`Microlearning not found with ID: "${existingMicrolearningId}". Please ensure the microlearning exists and provide the correct ID.`);
     }
 
-    const meta = (existing as any).microlearning_metadata || {};
+    const existingTyped = existing as unknown as MicrolearningContent;
+    const meta = existingTyped.microlearning_metadata || {};
     const analysis = {
       language: targetLanguage.toLowerCase(),  // Normalize to lowercase for KV key consistency
-      topic: meta.topic || (existing as any).title || 'Training',
-      title: meta.title || (existing as any).title || 'Training',
-      department: (department && department !== LANGUAGE.DEFAULT_DEPARTMENT) ? department : (meta.department || LANGUAGE.DEFAULT_DEPARTMENT),
+      topic: meta.title || 'Training',
+      title: meta.title || 'Training',
+      department: (department && department !== LANGUAGE.DEFAULT_DEPARTMENT) ? department : (meta.department_relevance?.[0] || LANGUAGE.DEFAULT_DEPARTMENT),
       level: meta.level || 'beginner',
       category: meta.category || 'General',
       subcategory: meta.subcategory,
-      learningObjectives: meta.learning_objectives || [],
+      learningObjectives: (meta as any).learning_objectives || [],
     } as any;
 
-    // Detect actual source language from microlearning metadata (default to en-gb)
-    const actualSourceLanguage = meta.language || meta.primary_language || sourceLanguage || LANGUAGE.DEFAULT_SOURCE;
+    // Detect actualSourceLanguage from microlearning metadata (default to en-gb)
+    const actualSourceLanguage = meta.language || (meta as any).primary_language || sourceLanguage || LANGUAGE.DEFAULT_SOURCE;
 
-    if (!meta.language && !meta.primary_language && !sourceLanguage) {
+    if (!meta.language && !(meta as any).primary_language && !sourceLanguage) {
       logger.info('Source language not specified, defaulting to en');
     }
 
@@ -128,8 +130,8 @@ const loadExistingStep = createStep({
 
     // Check if training has code_review scene type (no inbox needed)
     let hasInbox = true; // Default: inbox is required for most trainings
-    const scenes = (existing as any).scenes || [];
-    const hasCodeReview = scenes.some((scene: any) => scene?.metadata?.scene_type === 'code_review');
+    const scenes = existingTyped.scenes || [];
+    const hasCodeReview = scenes.some((scene) => scene?.metadata?.scene_type === 'code_review');
     if (hasCodeReview) {
       hasInbox = false; // Only disable inbox for code_review trainings
     }
@@ -150,7 +152,7 @@ const loadExistingStep = createStep({
     return {
       success: true,
       data: existing,
-      microlearningId: (existing as any).microlearning_id,
+      microlearningId: existingTyped.microlearning_id,
       analysis,
       sourceLanguage: actualSourceLanguage.toLowerCase(), // Use detected source language
       targetLanguage, // Pass to parallel steps

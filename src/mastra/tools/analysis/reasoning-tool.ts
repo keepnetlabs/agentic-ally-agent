@@ -12,7 +12,9 @@ export const reasoningTool = new Tool({
   id: 'show_reasoning',
   description: 'Show your thinking process to the user. Call this before making any important decision or analysis.',
   inputSchema: z.object({
-    thought: z.string().describe('Your reasoning, analysis, or thinking process (1-2 sentences)')
+    thought: z.string()
+      .max(2000, 'Reasoning must not exceed 2000 characters')
+      .describe('Your reasoning, analysis, or thinking process (1-2 sentences)')
   }),
   outputSchema: z.object({
     success: z.boolean()

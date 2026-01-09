@@ -153,7 +153,7 @@ export const uploadTrainingTool = createTool({
             };
 
             // Secure Logging (Mask token)
-            const maskedPayload = maskSensitiveField(payload, 'accessToken', token);
+            const maskedPayload = maskSensitiveField(payload, 'accessToken');
             logger.debug('Upload payload prepared (redacted)', {
                 payload: summarizeForLog(maskedPayload),
                 trainingData: summarizeForLog(maskedPayload.trainingData),

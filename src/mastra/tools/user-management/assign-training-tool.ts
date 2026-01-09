@@ -78,7 +78,7 @@ export const assignTrainingTool = createTool({
     };
 
     // Log Payload with masked token
-    const maskedPayload = maskSensitiveField(payload, 'accessToken', token);
+    const maskedPayload = maskSensitiveField(payload, 'accessToken');
     logger.debug('Assign payload prepared', { payload: maskedPayload });
 
     try {

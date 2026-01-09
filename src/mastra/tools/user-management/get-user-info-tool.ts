@@ -14,7 +14,7 @@ import { getLogger } from '../../utils/core/logger';
 import { errorService } from '../../services/error-service';
 import { validateBCP47LanguageCode, DEFAULT_LANGUAGE } from '../../utils/language/language-utils';
 import { ANALYSIS_REFERENCES, ALLOWED_ENUMS_TEXT } from './behavior-analyst-constants';
-import { AnalysisSchema, GET_ALL_PAYLOAD, TIMELINE_PAYLOAD, getUserInfoOutputSchema, PlatformUser, ApiActivity } from './user-management-types';
+import { AnalysisSchema, GET_ALL_PAYLOAD, TIMELINE_PAYLOAD, getUserInfoOutputSchema, PlatformUser, ApiActivity, PartialAnalysisReport } from './user-management-types';
 import { enrichActivities, formatEnrichedActivitiesForPrompt } from './activity-enrichment-utils';
 import { findUserByEmail, findUserByNameWithFallbacks } from './utils/user-search-utils';
 export const getUserInfoTool = createTool({
@@ -173,8 +173,8 @@ export const getUserInfoTool = createTool({
         timelineHeaders['x-ir-company-id'] = companyId;
       }
 
-      // Build timeline URL dynamically from baseApiUrl
-      const timelineUrl = `${baseApiUrl || (process.env.PLATFORM_API_URL || 'https://test-api.devkeepnet.com')}/api/leaderboard/get-user-timeline`;
+      // Build timeline URL dynamically from baseApiUrl (defaults to test environment)
+      const timelineUrl = `${baseApiUrl || 'https://test-api.devkeepnet.com'}/api/leaderboard/get-user-timeline`;
 
       const timelineResponse = await fetch(timelineUrl, {
         method: 'POST',
@@ -478,25 +478,25 @@ If a value is unknown, use "" or null.
 
         const cleanedJson = cleanResponse(response.text, 'analysis-report');
         analysisReport = JSON.parse(cleanedJson);
+        const reportTyped = analysisReport as PartialAnalysisReport;
 
         // Ensure user_id is set in meta (required by schema)
-        if (analysisReport && typeof analysisReport === 'object' && !(analysisReport as any).meta) {
-          (analysisReport as any).meta = {};
+        if (reportTyped && typeof reportTyped === 'object' && !reportTyped.meta) {
+          reportTyped.meta = {};
         }
-        if ((analysisReport as any)?.meta && !(analysisReport as any).meta.user_id) {
-          (analysisReport as any).meta.user_id = resolvedUserId;
+        if (reportTyped?.meta && !reportTyped.meta.user_id) {
+          reportTyped.meta.user_id = resolvedUserId;
         }
 
         // Deterministic variation: if we have NO activity evidence, keep recommendations foundational
         // but vary the first simulation vector/tactic per user (stable across runs, avoids always identical output).
         if (analysisReport && typeof analysisReport === 'object' && recentActivities.length === 0) {
-          const report = analysisReport as any;
           const seed = String(resolvedUserId);
           const parity = seed.split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0) % 2;
           const vector = parity === 0 ? 'EMAIL' : 'QR';
           const tactic = parity === 0 ? 'CURIOSITY' : 'AUTHORITY';
 
-          const sim0 = report?.ai_recommended_next_steps?.simulations?.[0];
+          const sim0 = reportTyped.ai_recommended_next_steps?.simulations?.[0];
           if (sim0 && typeof sim0 === 'object') {
             sim0.vector = vector;
             sim0.scenario_type = sim0.scenario_type || 'CLICK_ONLY';
