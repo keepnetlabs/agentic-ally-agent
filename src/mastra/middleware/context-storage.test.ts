@@ -133,4 +133,119 @@ describe('ContextStorage Middleware', () => {
       expect(context2?.token).toBe(token2);
     });
   });
+
+  describe('X-BASE-API-URL Header Validation', () => {
+    it('should use default baseApiUrl when header is not provided', async () => {
+      (mockContext.req.header as any).mockImplementation((header: string) => {
+        if (header === 'X-BASE-API-URL') return undefined;
+        return undefined;
+      });
+
+      await contextStorage(mockContext, async () => {
+        const context = requestStorage.getStore();
+        expect(context?.baseApiUrl).toBe('https://test-api.devkeepnet.com');
+      });
+    });
+
+    it('should accept production URL (https://dash.keepnetlabs.com)', async () => {
+      (mockContext.req.header as any).mockImplementation((header: string) => {
+        if (header === 'X-BASE-API-URL') return 'https://dash.keepnetlabs.com';
+        return undefined;
+      });
+
+      await contextStorage(mockContext, async () => {
+        const context = requestStorage.getStore();
+        expect(context?.baseApiUrl).toBe('https://dash.keepnetlabs.com');
+      });
+    });
+
+    it('should accept test URL (https://test-api.devkeepnet.com)', async () => {
+      (mockContext.req.header as any).mockImplementation((header: string) => {
+        if (header === 'X-BASE-API-URL') return 'https://test-api.devkeepnet.com';
+        return undefined;
+      });
+
+      await contextStorage(mockContext, async () => {
+        const context = requestStorage.getStore();
+        expect(context?.baseApiUrl).toBe('https://test-api.devkeepnet.com');
+      });
+    });
+
+    it('should reject invalid URL format and use default', async () => {
+      (mockContext.req.header as any).mockImplementation((header: string) => {
+        if (header === 'X-BASE-API-URL') return 'not-a-valid-url';
+        return undefined;
+      });
+
+      await contextStorage(mockContext, async () => {
+        const context = requestStorage.getStore();
+        expect(context?.baseApiUrl).toBe('https://test-api.devkeepnet.com');
+      });
+    });
+
+    it('should reject unknown URL and use default', async () => {
+      (mockContext.req.header as any).mockImplementation((header: string) => {
+        if (header === 'X-BASE-API-URL') return 'https://evil.com';
+        return undefined;
+      });
+
+      await contextStorage(mockContext, async () => {
+        const context = requestStorage.getStore();
+        expect(context?.baseApiUrl).toBe('https://test-api.devkeepnet.com');
+      });
+    });
+
+    it('should trim whitespace from valid URL', async () => {
+      (mockContext.req.header as any).mockImplementation((header: string) => {
+        if (header === 'X-BASE-API-URL') return '  https://dash.keepnetlabs.com  ';
+        return undefined;
+      });
+
+      await contextStorage(mockContext, async () => {
+        const context = requestStorage.getStore();
+        expect(context?.baseApiUrl).toBe('https://dash.keepnetlabs.com');
+      });
+    });
+
+    it('should be case-insensitive for URL validation', async () => {
+      (mockContext.req.header as any).mockImplementation((header: string) => {
+        if (header === 'X-BASE-API-URL') return 'HTTPS://DASH.KEEPNETLABS.COM';
+        return undefined;
+      });
+
+      await contextStorage(mockContext, async () => {
+        const context = requestStorage.getStore();
+        // Validated URL should match the original case from header
+        expect(context?.baseApiUrl).toBe('HTTPS://DASH.KEEPNETLABS.COM');
+      });
+    });
+
+    it('should reject localhost URLs', async () => {
+      (mockContext.req.header as any).mockImplementation((header: string) => {
+        if (header === 'X-BASE-API-URL') return 'http://localhost:3000';
+        return undefined;
+      });
+
+      await contextStorage(mockContext, async () => {
+        const context = requestStorage.getStore();
+        expect(context?.baseApiUrl).toBe('https://test-api.devkeepnet.com');
+      });
+    });
+
+    it('should propagate baseApiUrl to requestStorage', async () => {
+      const baseApiUrl = 'https://dash.keepnetlabs.com';
+      (mockContext.req.header as any).mockImplementation((header: string) => {
+        if (header === 'X-BASE-API-URL') return baseApiUrl;
+        if (header === 'X-AGENTIC-ALLY-TOKEN') return 'token-123';
+        return undefined;
+      });
+
+      await contextStorage(mockContext, async () => {
+        const context = requestStorage.getStore();
+        expect(context).toBeDefined();
+        expect(context?.baseApiUrl).toBe(baseApiUrl);
+        expect(context?.token).toBe('token-123');
+      });
+    });
+  });
 });

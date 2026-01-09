@@ -9,11 +9,27 @@ const logger = getLogger('AuthToken');
  * - PATTERN: Allow alphanumeric, hyphens, underscores (safe characters)
  * - Rejects: placeholder tokens like 'test', 'apikey', empty strings
  */
+const JWT_SEGMENT_PATTERN = /^[A-Za-z0-9_-]+={0,2}$/;
+
 const TOKEN_CONFIG = {
     MIN_LENGTH: 32,
     // Alphanumeric + hyphen/underscore only (no spaces, special chars)
-    PATTERN: /^[a-zA-Z0-9_-]{32,}$/,
+    SIMPLE_PATTERN: /^[a-zA-Z0-9_-]{32,}$/,
+    JWT_PATTERN: /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/,
 } as const;
+
+const isValidJwtToken = (token: string): boolean => {
+    if (!TOKEN_CONFIG.JWT_PATTERN.test(token)) {
+        return false;
+    }
+
+    const segments = token.split('.');
+    if (segments.length !== 3) {
+        return false;
+    }
+
+    return segments.every(segment => JWT_SEGMENT_PATTERN.test(segment));
+};
 
 /**
  * Paths that don't require authentication token
@@ -64,15 +80,19 @@ export const authTokenMiddleware = async (c: Context, next: Next): Promise<Respo
         );
     }
 
-    // 2. Validate token format (min length + alphanumeric)
+    // 2. Validate token format (min length + alphanumeric OR JWT)
     const tokenTrimmed = token.trim();
-    if (!TOKEN_CONFIG.PATTERN.test(tokenTrimmed)) {
+    const isSimpleToken = TOKEN_CONFIG.SIMPLE_PATTERN.test(tokenTrimmed);
+    const isJwtToken = isValidJwtToken(tokenTrimmed);
+    const isTooShort = tokenTrimmed.length < TOKEN_CONFIG.MIN_LENGTH;
+
+    if ((!isSimpleToken && !isJwtToken) || (isTooShort && !isJwtToken)) {
         logger.warn('❌ Unauthorized: invalid token format', {
             path: c.req.path,
             method: c.req.method,
             ip: clientIp,
             tokenLength: tokenTrimmed.length,
-            reason: tokenTrimmed.length < TOKEN_CONFIG.MIN_LENGTH
+            reason: isTooShort && !isJwtToken
                 ? `too short (${tokenTrimmed.length} < ${TOKEN_CONFIG.MIN_LENGTH})`
                 : 'invalid characters or format',
         });
@@ -96,4 +116,5 @@ export const authTokenMiddleware = async (c: Context, next: Next): Promise<Respo
 
     await next();
 };
+
 

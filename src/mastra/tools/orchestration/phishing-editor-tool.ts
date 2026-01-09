@@ -132,7 +132,8 @@ export const phishingEditorTool = createTool({
           // Previously 'Phishing Editor' was passed as name, confusing the resolver
           const brandInfo = await resolveLogoAndBrand(editInstruction, editInstruction, aiModel);
           if (brandInfo.isRecognizedBrand && brandInfo.logoUrl) {
-            logger.info('Brand detected in edit instruction', { brand: brandInfo.brandName, logo: brandInfo.logoUrl });
+            // Log brand name but mask URL for security
+            logger.info('Brand detected in edit instruction', { brand: brandInfo.brandName, logoResolved: true });
             brandContext = `
 CRITICAL - BRAND DETECTED:
 The user wants to use "${brandInfo.brandName}".

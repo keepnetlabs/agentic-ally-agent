@@ -32,7 +32,7 @@ USE EXACTLY THESE KEYS BUT REPLACE PLACEHOLDERS WITH REAL CONTENT:
   "1": {
     "iconName": "Choose lucide-react icon for ${analysis.topic}: phishing→'mail-warning', quishing/qr code→'qr-code', BEC/business email/spoofing→'briefcase', email security→'mail-check', deepfake→'video-off', vishing→'phone', malware→'bug', ransomware→'lock-keyhole', social engineering→'users-round', MFA→'shield-check', password→'key-round', backup→'hard-drive', encryption→'shield-lock', data privacy→'eye-off', incident response/playbooks/decision trees→'git-branch', checklists→'list-checks', general security→'shield', awareness→'brain', culture→'people', mindset→'lightbulb', compliance→'document', policy→'clipboard', best practices→'star'",
     "title": "Write simple title for ${analysis.topic}. Pattern by category: THREATS→'Stop [Threat]' (Phishing/Deepfake/Ransomware), TOOLS→'Secure with [Tool]' (MFA/Password), PROCESSES→'Follow [Protocol/Process]' (Incident Response/Security Protocols). Examples: 'Stop Phishing Attacks', 'Secure with MFA', 'Follow Security Protocols'. Keep direct and clear.",
-    "subtitle": "One sentence showing ACTION + OUTCOME (≤12 words) - empowering, NOT technical. Pattern adapts by category:
+    "subtitle": "One sentence showing ACTION + OUTCOME (≤12 words) - empowering, NOT technical. Adapt to ${analysis.roles}. Pattern adapts by category:
 - THREATS: 'Learn to [recognize] and [report/prevent]' → Examples: 'Learn to spot and report safely' | 'Spot fakes and verify before acting'
 - TOOLS: 'Learn to [use/enable] and [protect/benefit]' → Examples: 'Use strong passwords to protect accounts' | 'Enable MFA and secure access'
 - PROCESSES: 'Learn to [follow/apply] and [outcome]' → Examples: 'Learn to follow playbooks and respond quickly' | 'Apply decision trees and prevent mistakes'
@@ -41,36 +41,36 @@ NOT: 'Sender addresses fake' (technical) or 'Always verify' (imperative).",
     "highlights": [
       {
         "iconName": "alert-triangle",
-        "text": "KNOW statement (≤8 words): Topic and Department-aware impact. Pattern: [topic fact] [impacts department outcome]. Department focus: Finance→fraud/money | Operations/IT→system/reliability | HR/General→team/safety. CRITICAL LANGUAGE RULES: If ${analysis.language} is English, MUST start with 'Know that...' (e.g., 'Know that phishing targets payment requests'). If ${analysis.language} is NOT English, DO NOT use 'Know that' pattern at all - write naturally as a native ${analysis.language} speaker would express this idea. DO NOT translate 'Know that' literally. Think directly in ${analysis.language}. NOTE: Examples are REFERENCE ONLY - adapt the pattern to ${analysis.topic} + ${analysis.department}. Examples: English→'Know that phishing targets payment requests' | Turkish→'Oltalama saldırıları BT sistemlerini hedef alır'. Generate contextually for ${analysis.topic} + ${analysis.department} in ${analysis.language}."
+        "text": "KNOW statement (≤8 words): Topic and Department-aware impact. Pattern: [topic fact] [impacts department outcome]. Department focus: Finance→fraud/money | Operations/IT→system/reliability | HR/General→team/safety. CRITICAL LANGUAGE RULES: If ${analysis.language} is English, MUST start with 'Know that...' (e.g., 'Know that phishing targets payment requests'). If ${analysis.language} is NOT English, DO NOT use 'Know that' pattern at all - write naturally as a native ${analysis.language} speaker would express this idea. DO NOT translate 'Know that' literally. Think directly in ${analysis.language}. NOTE: Examples demonstrate the pattern. Adapt for ${analysis.topic} + ${analysis.department}. Examples: English→'Know that phishing targets payment requests' | Turkish→'Oltalama saldırıları BT sistemlerini hedef alır'. Generate contextually for ${analysis.topic} + ${analysis.department} in ${analysis.language}."
       },
       {
         "iconName": "users",
-        "text": "REMEMBER statement (≤8 words): Topic and Department-aware empowering action. Pattern: [action/strategy] [prevents/protects/stops] [outcome]. Department focus: Finance→fraud/money/verification | Operations/IT→system/speed/reliability | HR/General→team/safety. CRITICAL LANGUAGE RULES: If ${analysis.language} is English, MUST start with 'Remember that...' (e.g., 'Remember that verification prevents fraud'). If ${analysis.language} is NOT English, DO NOT use 'Remember that' pattern at all - write naturally as a native ${analysis.language} speaker would express this idea. DO NOT translate 'Remember that' literally. Think directly in ${analysis.language}. NOTE: Examples are REFERENCE ONLY - adapt the pattern to ${analysis.topic} + ${analysis.department}. Examples: English→'Remember that verification prevents fraud' | Turkish→'Doğrulama dolandırıcılığı önler'. Use conversational language. Generate contextually for ${analysis.topic} + ${analysis.department} in ${analysis.language}."
+        "text": "REMEMBER statement (≤8 words): Topic and Department-aware empowering action. Pattern: [action/strategy] [prevents/protects/stops] [outcome]. Department focus: Finance→fraud/money/verification | Operations/IT→system/speed/reliability | HR/General→team/safety. CRITICAL LANGUAGE RULES: If ${analysis.language} is English, MUST start with 'Remember that...' (e.g., 'Remember that verification prevents fraud'). If ${analysis.language} is NOT English, DO NOT use 'Remember that' pattern at all - write naturally as a native ${analysis.language} speaker would express this idea. DO NOT translate 'Remember that' literally. Think directly in ${analysis.language}. NOTE: Examples demonstrate the pattern. Adapt for ${analysis.topic} + ${analysis.department}. Examples: English→'Remember that verification prevents fraud' | Turkish→'Doğrulama dolandırıcılığı önler'. Use conversational language. Generate contextually for ${analysis.topic} + ${analysis.department} in ${analysis.language}."
       },
       {
         "iconName": "shield-check",
-        "text": "SEE statement (≤8 words): Topic and Department-aware positive outcome. Pattern: [learner action] [leads to/enables/protects] [positive outcome]. Department focus: Finance→transaction/asset protection | Operations/IT→system/reliability | HR/General→team/colleague safety. CRITICAL LANGUAGE RULES: If ${analysis.language} is English, MUST start with 'See how...' (e.g., 'See how verification protects transactions'). If ${analysis.language} is NOT English, DO NOT use 'See how' pattern at all - write naturally as a native ${analysis.language} speaker would express this idea. DO NOT translate 'See how' literally. Think directly in ${analysis.language}. NOTE: Examples are REFERENCE ONLY - adapt the pattern to ${analysis.topic} + ${analysis.department}. Examples: English→'See how verification protects transactions' | Turkish→'Doğrulama işlemleri nasıl korur'. Generate contextually for ${analysis.topic} + ${analysis.department} in ${analysis.language}."
+        "text": "SEE statement (≤8 words): Topic and Department-aware positive outcome. Pattern: [learner action] [leads to/enables/protects] [positive outcome]. Department focus: Finance→transaction/asset protection | Operations/IT→system/reliability | HR/General→team/colleague safety. CRITICAL LANGUAGE RULES: If ${analysis.language} is English, MUST start with 'See how...' (e.g., 'See how verification protects transactions'). If ${analysis.language} is NOT English, DO NOT use 'See how' pattern at all - write naturally as a native ${analysis.language} speaker would express this idea. DO NOT translate 'See how' literally. Think directly in ${analysis.language}. NOTE: Examples demonstrate the pattern. Adapt for ${analysis.topic} + ${analysis.department}. Examples: English→'See how verification protects transactions' | Turkish→'Doğrulama işlemleri nasıl korur'. Generate contextually for ${analysis.topic} + ${analysis.department} in ${analysis.language}."
       }
     ],
     "key_message": [
-      "What to know (≤5 words): Topic-focused fact. Examples: Phishing→'Phishing is common threat' | Ransomware→'Ransomware encrypts systems' | Password→'Weak passwords fail fast'. Generate for ${analysis.topic}.",
-      "Why it matters (≤5 words): Department-aware impact. Examples: Finance→'Fraud costs millions' | Operations→'Systems go down' | General→'Everyone gets targeted'. Generate for ${analysis.department}.",
-      "What you do (≤5 words): Action-focused behavior. Examples: 'Verify payment requests' | 'Report suspicious email' | 'Use strong passwords'. Generate for ${analysis.topic}."
+      "What to know (≤5 words): Fact about ${analysis.topic}.",
+      "Why it matters (≤5 words): Impact on ${analysis.department}.",
+      "What you do (≤5 words): Action to take."
     ],
     "duration": "~${Math.max(2, Math.round((microlearning.scenes?.reduce((total, scene) => total + (scene?.metadata?.duration_seconds || 30), 0) || 300) / 60))} minutes",
-    "level": "Localize '${analysis.level}' into ${analysis.language} with proper capitalization (e.g., 'Beginner', 'Intermediate', 'Advanced')",
+    "level": "Localize '${analysis.level}' into ${analysis.language} (e.g., 'Beginner', 'Intermediate')",
     "callToActionText": {
-      "mobile": "Localize 'Swipe to get started' to ${analysis.language} naturally.",
-      "desktop": "Localize 'Click to get started' to ${analysis.language} naturally."
+      "mobile": "Localize 'Swipe to get started' naturally.",
+      "desktop": "Localize 'Click to get started' naturally."
     },
     "texts": {
       "sceneLabel": "Intro scene",
-      "sceneDescription": "${analysis.topic} introduction focused on awareness and practical benefits.",
+      "sceneDescription": "${analysis.topic} introduction.",
       "iconLabel": "Training icon",
       "titleLabel": "Training title",
       "subtitleLabel": "Training introduction",
       "cardLabel": "Learning overview card",
-      "cardDescription": "Translate 'What this training will help you with' into ${analysis.language} (natural phrasing; do not expand).",
+      "cardDescription": "Translate 'What this training will help you with' into ${analysis.language}.",
       "highlightItemLabel": "Learning goal",
       "statsLabel": "Training details",
       "durationLabel": "Completion time",
@@ -89,6 +89,6 @@ NOT: 'Sender addresses fake' (technical) or 'Always verify' (imperative).",
     }
   }
 }
-⚠️ QUALITY CHECK: Before outputting, review every sentence. If any sounds translated or contains literal English patterns (for non-English), rewrite it naturally in ${analysis.language}. Only output when ALL sentences sound native.
+⚠️ QUALITY CHECK: Verify all sentences are natural in ${analysis.language}. No literal translations.
 `;
 }

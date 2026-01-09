@@ -27,6 +27,7 @@ export const getUserInfoTool = createTool({
     fullName: z.string().optional().describe('Full name of the user (e.g., "John Doe", "Peter Parker"). Will be automatically parsed into firstName/lastName.'),
     firstName: z.string().optional().describe('First name of the user (used if fullName is not provided)'),
     lastName: z.string().optional().describe('Last name of the user (optional, used with firstName)'),
+    skipAnalysis: z.boolean().optional().describe('If true, skips the expensive AI behavioral report generation. Use when you ONLY need the user ID for assignment.'),
   }).refine(
     data => data.targetUserResourceId || data.email || data.fullName || data.firstName,
     { message: 'Either targetUserResourceId OR email OR fullName/firstName must be provided' }
@@ -69,7 +70,9 @@ export const getUserInfoTool = createTool({
 
         if (inputEmail) {
           const email = String(inputEmail).trim().toLowerCase();
-          logger.debug('Searching for user by email', { email });
+          // Mask email for logging (show only domain)
+          const maskedEmail = email.replace(/^[^@]+/, '[REDACTED]');
+          logger.debug('Searching for user by email', { email: maskedEmail });
           try {
             user = await findUserByEmail(searchDeps, GET_ALL_PAYLOAD, email);
           } catch (err) {
@@ -204,11 +207,17 @@ export const getUserInfoTool = createTool({
       }
 
       // --- STEP 3: Generate Analysis Report (Internal LLM Call) ---
-      if (recentActivities.length === 0) {
-        logger.warn('No recent activities found; AI will apply Foundational defaults', { userId: resolvedUserId });
-      }
-      logger.debug('Starting user analysis with LLM', { hasActivities: recentActivities.length > 0 });
-      const systemPrompt = `
+      let analysisReport: any;
+
+      // OPTIMIZATION: Check skipAnalysis flag
+      if (context.skipAnalysis) {
+        logger.info('Skipping AI analysis report generation (requested via skipAnalysis)', { userId: resolvedUserId });
+      } else {
+        if (recentActivities.length === 0) {
+          logger.warn('No recent activities found; AI will apply Foundational defaults', { userId: resolvedUserId });
+        }
+        logger.debug('Starting user analysis with LLM', { hasActivities: recentActivities.length > 0 });
+        const systemPrompt = `
 You are an Enterprise Security Behavior Analyst for a Human Risk Management platform.
 
 GOAL
@@ -314,7 +323,7 @@ REFERENCES (STATIC)
 `;
 
 
-      const userPrompt = `
+        const userPrompt = `
 USER CONTEXT (SOURCE OF TRUTH)
 
 User id: ${resolvedUserId}
@@ -326,8 +335,8 @@ Access level: ${user?.accessLevel || ""}
 
 Recent Activities (primary behavioral evidence):
 ${enrichedActivities.length === 0 ?
-          'NO ACTIVITY DATA AVAILABLE - Apply Foundational defaults per system instructions.' :
-          formatEnrichedActivitiesForPrompt(enrichedActivities)}
+            'NO ACTIVITY DATA AVAILABLE - Apply Foundational defaults per system instructions.' :
+            formatEnrichedActivitiesForPrompt(enrichedActivities)}
 
 ---
 
@@ -459,78 +468,79 @@ If a value is unknown, use "" or null.
 }
 `;
 
-      let analysisReport: unknown;
-      try {
-        // Use default model (GPT-OSS via Workers AI)
-        const model = getModelWithOverride();
+        let analysisReport: unknown;
+        try {
+          // Use default model (GPT-OSS via Workers AI)
+          const model = getModelWithOverride();
 
-        const response = await withRetry(
-          () => generateText({
-            model,
-            messages: [
-              { role: 'system', content: systemPrompt },
-              { role: 'user', content: userPrompt }
-            ],
-            // No temperature param to be safe with OSS models
-          }),
-          '[GetUserInfoTool] analysis-report-generation'
-        );
+          const response = await withRetry(
+            () => generateText({
+              model,
+              messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: userPrompt }
+              ],
+              // No temperature param to be safe with OSS models
+            }),
+            '[GetUserInfoTool] analysis-report-generation'
+          );
 
-        const cleanedJson = cleanResponse(response.text, 'analysis-report');
-        analysisReport = JSON.parse(cleanedJson);
-        const reportTyped = analysisReport as PartialAnalysisReport;
+          const cleanedJson = cleanResponse(response.text, 'analysis-report');
+          analysisReport = JSON.parse(cleanedJson);
+          const reportTyped = analysisReport as PartialAnalysisReport;
 
-        // Ensure user_id is set in meta (required by schema)
-        if (reportTyped && typeof reportTyped === 'object' && !reportTyped.meta) {
-          reportTyped.meta = {};
-        }
-        if (reportTyped?.meta && !reportTyped.meta.user_id) {
-          reportTyped.meta.user_id = resolvedUserId;
-        }
+          // Ensure user_id is set in meta (required by schema)
+          if (reportTyped && typeof reportTyped === 'object' && !reportTyped.meta) {
+            reportTyped.meta = {};
+          }
+          if (reportTyped?.meta && !reportTyped.meta.user_id) {
+            reportTyped.meta.user_id = resolvedUserId;
+          }
 
-        // Deterministic variation: if we have NO activity evidence, keep recommendations foundational
-        // but vary the first simulation vector/tactic per user (stable across runs, avoids always identical output).
-        if (analysisReport && typeof analysisReport === 'object' && recentActivities.length === 0) {
-          const seed = String(resolvedUserId);
-          const parity = seed.split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0) % 2;
-          const vector = parity === 0 ? 'EMAIL' : 'QR';
-          const tactic = parity === 0 ? 'CURIOSITY' : 'AUTHORITY';
+          // Deterministic variation: if we have NO activity evidence, keep recommendations foundational
+          // but vary the first simulation vector/tactic per user (stable across runs, avoids always identical output).
+          if (analysisReport && typeof analysisReport === 'object' && recentActivities.length === 0) {
+            const seed = String(resolvedUserId);
+            const parity = seed.split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0) % 2;
+            const vector = parity === 0 ? 'EMAIL' : 'QR';
+            const tactic = parity === 0 ? 'CURIOSITY' : 'AUTHORITY';
 
-          const sim0 = reportTyped.ai_recommended_next_steps?.simulations?.[0];
-          if (sim0 && typeof sim0 === 'object') {
-            sim0.vector = vector;
-            sim0.scenario_type = sim0.scenario_type || 'CLICK_ONLY';
-            sim0.difficulty = sim0.difficulty || 'EASY';
-            sim0.persuasion_tactic = tactic;
-            if (sim0.nist_phish_scale && typeof sim0.nist_phish_scale === 'object') {
-              sim0.nist_phish_scale.cue_difficulty = sim0.nist_phish_scale.cue_difficulty || 'LOW';
-              sim0.nist_phish_scale.premise_alignment = sim0.nist_phish_scale.premise_alignment || 'LOW';
+            const sim0 = reportTyped.ai_recommended_next_steps?.simulations?.[0];
+            if (sim0 && typeof sim0 === 'object') {
+              sim0.vector = vector;
+              sim0.scenario_type = sim0.scenario_type || 'CLICK_ONLY';
+              sim0.difficulty = sim0.difficulty || 'EASY';
+              sim0.persuasion_tactic = tactic;
+              if (sim0.nist_phish_scale && typeof sim0.nist_phish_scale === 'object') {
+                sim0.nist_phish_scale.cue_difficulty = sim0.nist_phish_scale.cue_difficulty || 'LOW';
+                sim0.nist_phish_scale.premise_alignment = sim0.nist_phish_scale.premise_alignment || 'LOW';
+              }
             }
           }
-        }
 
-        // Analysis is OPTIONAL: if the model returns invalid JSON contract, drop it and continue.
-        const parsedAnalysis = AnalysisSchema.safeParse(analysisReport);
-        if (!parsedAnalysis.success) {
-          logger.warn('⚠️ Analysis report schema validation failed; continuing without analysisReport', {
-            issueCount: parsedAnalysis.error.issues.length,
+          // Analysis is OPTIONAL: if the model returns invalid JSON contract, drop it and continue.
+          const parsedAnalysis = AnalysisSchema.safeParse(analysisReport);
+          if (!parsedAnalysis.success) {
+            logger.warn('⚠️ Analysis report schema validation failed; continuing without analysisReport', {
+              issueCount: parsedAnalysis.error.issues.length,
+            });
+            analysisReport = undefined;
+          } else {
+            analysisReport = parsedAnalysis.data;
+          }
+
+          logger.debug('Analysis report generated successfully', {});
+        } catch (aiError) {
+          const err = normalizeError(aiError);
+          const errorInfo = errorService.aiModel(err.message, {
+            step: 'analysis-report-generation',
+            userId: resolvedUserId,
+            stack: err.stack
           });
-          analysisReport = undefined;
-        } else {
-          analysisReport = parsedAnalysis.data;
+          logErrorInfo(logger, 'error', 'AI analysis generation failed', errorInfo);
+          // Don't return - analysis is optional, continue with partial data
         }
-
-        logger.debug('Analysis report generated successfully', {});
-      } catch (aiError) {
-        const err = normalizeError(aiError);
-        const errorInfo = errorService.aiModel(err.message, {
-          step: 'analysis-report-generation',
-          userId: resolvedUserId,
-          stack: err.stack
-        });
-        logErrorInfo(logger, 'error', 'AI analysis generation failed', errorInfo);
-        // Don't return - analysis is optional, continue with partial data
-      }
+      } // End of skipAnalysis block
 
       // Normalize preferred language to BCP-47 (default en-gb)
       const preferredLanguageCode = validateBCP47LanguageCode(user?.preferredLanguage || DEFAULT_LANGUAGE);

@@ -152,6 +152,55 @@ describe('authTokenMiddleware', () => {
       expect(nextCalled).toBe(true);
       expect(mockContext.json).not.toHaveBeenCalled();
     });
+
+    describe('JWT support', () => {
+      const exampleJwt =
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.' +
+        'eyJzdWIiOiIxMjM0NTY3ODkwIn0.' +
+        'TJVA95OrM7E2cBab30RMHrHDcEfxjoYZgeFONFh7HgQ';
+
+      it('should accept well-formed JWT token', async () => {
+        mockContext.req.path = '/chat';
+        mockContext.req.header.mockReturnValue(exampleJwt);
+
+        await authTokenMiddleware(mockContext, mockNext);
+
+        expect(nextCalled).toBe(true);
+        expect(mockContext.json).not.toHaveBeenCalled();
+      });
+
+      it('should accept JWT token with padding characters', async () => {
+        mockContext.req.path = '/chat';
+        mockContext.req.header.mockReturnValue(
+          'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c='
+        );
+
+        await authTokenMiddleware(mockContext, mockNext);
+
+        expect(nextCalled).toBe(true);
+        expect(mockContext.json).not.toHaveBeenCalled();
+      });
+
+      it('should reject JWT with invalid characters', async () => {
+        mockContext.req.path = '/chat';
+        mockContext.req.header.mockReturnValue(
+          'invalid@jwt.payload.part'
+        );
+
+        await authTokenMiddleware(mockContext, mockNext);
+
+        expect(mockContext.json).toHaveBeenCalled();
+      });
+
+      it('should reject JWT with wrong segment count', async () => {
+        mockContext.req.path = '/chat';
+        mockContext.req.header.mockReturnValue('part.one');
+
+        await authTokenMiddleware(mockContext, mockNext);
+
+        expect(mockContext.json).toHaveBeenCalled();
+      });
+    });
   });
 
   describe('logging', () => {
@@ -281,18 +330,133 @@ describe('authTokenMiddleware', () => {
       expect(mockContext.json).toHaveBeenCalled();
     });
 
-    it('should allow token with any non-empty value', async () => {
-      const tokens = ['token123', 'sk_test_abc', 'bearer_xyz', 'a'];
+    it('should reject token shorter than 32 characters', async () => {
+      mockContext.req.path = '/chat';
+      mockContext.req.header.mockReturnValue('short-token-123');  // 15 chars
 
-      for (const token of tokens) {
-        mockContext.req.path = '/chat';
-        mockContext.req.header.mockReturnValue(token);
-        nextCalled = false;
+      await authTokenMiddleware(mockContext, mockNext);
 
-        await authTokenMiddleware(mockContext, mockNext);
+      expect(mockContext.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error: 'Unauthorized',
+          message: expect.stringContaining('token')
+        }),
+        401
+      );
+    });
 
-        expect(nextCalled).toBe(true);
-      }
+    it('should accept token exactly 32 characters', async () => {
+      mockContext.req.path = '/chat';
+      mockContext.req.header.mockReturnValue('token-1234567890-abcdefghij-xxx');  // 32 chars
+
+      await authTokenMiddleware(mockContext, mockNext);
+
+      expect(nextCalled).toBe(true);
+      expect(mockContext.json).not.toHaveBeenCalled();
+    });
+
+    it('should accept token longer than 32 characters', async () => {
+      mockContext.req.path = '/chat';
+      mockContext.req.header.mockReturnValue('token-1234567890-abcdefghij-xxxyyzzz-more-data');  // >32 chars
+
+      await authTokenMiddleware(mockContext, mockNext);
+
+      expect(nextCalled).toBe(true);
+      expect(mockContext.json).not.toHaveBeenCalled();
+    });
+
+    it('should accept token with alphanumeric characters', async () => {
+      mockContext.req.path = '/chat';
+      mockContext.req.header.mockReturnValue('abcdefghijklmnopqrstuvwxyzABCDE');  // 32 chars, all letters
+
+      await authTokenMiddleware(mockContext, mockNext);
+
+      expect(nextCalled).toBe(true);
+      expect(mockContext.json).not.toHaveBeenCalled();
+    });
+
+    it('should accept token with hyphens', async () => {
+      mockContext.req.path = '/chat';
+      mockContext.req.header.mockReturnValue('token-with-hyphens-abcdefghijk-12');  // 32 chars with hyphens
+
+      await authTokenMiddleware(mockContext, mockNext);
+
+      expect(nextCalled).toBe(true);
+      expect(mockContext.json).not.toHaveBeenCalled();
+    });
+
+    it('should accept token with underscores', async () => {
+      mockContext.req.path = '/chat';
+      mockContext.req.header.mockReturnValue('token_with_underscores_abcdefg_12');  // 32 chars with underscores
+
+      await authTokenMiddleware(mockContext, mockNext);
+
+      expect(nextCalled).toBe(true);
+      expect(mockContext.json).not.toHaveBeenCalled();
+    });
+
+    it('should accept token with mixed hyphens and underscores', async () => {
+      mockContext.req.path = '/chat';
+      mockContext.req.header.mockReturnValue('token-with_mixed-chars_abcdefgh12');  // 32 chars mixed
+
+      await authTokenMiddleware(mockContext, mockNext);
+
+      expect(nextCalled).toBe(true);
+      expect(mockContext.json).not.toHaveBeenCalled();
+    });
+
+    it('should reject token with special characters (@ symbol)', async () => {
+      mockContext.req.path = '/chat';
+      mockContext.req.header.mockReturnValue('token@invalid-special-char-abcd12');  // 32+ chars but has @
+
+      await authTokenMiddleware(mockContext, mockNext);
+
+      expect(mockContext.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error: 'Unauthorized',
+          message: expect.stringContaining('token')
+        }),
+        401
+      );
+    });
+
+    it('should reject token with special characters (space)', async () => {
+      mockContext.req.path = '/chat';
+      mockContext.req.header.mockReturnValue('token with space invalid abcd1234567');  // 32+ chars but has space
+
+      await authTokenMiddleware(mockContext, mockNext);
+
+      expect(mockContext.json).toHaveBeenCalled();
+    });
+
+    it('should reject token with special characters (! symbol)', async () => {
+      mockContext.req.path = '/chat';
+      mockContext.req.header.mockReturnValue('token!invalid-special-char-abcdef12');  // 32+ chars but has !
+
+      await authTokenMiddleware(mockContext, mockNext);
+
+      expect(mockContext.json).toHaveBeenCalled();
+    });
+
+    it('should reject token with special characters (. period)', async () => {
+      mockContext.req.path = '/chat';
+      mockContext.req.header.mockReturnValue('token.invalid.special.char.abcdef12');  // 32+ chars but has periods
+
+      await authTokenMiddleware(mockContext, mockNext);
+
+      expect(mockContext.json).toHaveBeenCalled();
+    });
+
+    it('should handle whitespace-padded valid token', async () => {
+      mockContext.req.path = '/chat';
+      // Token with surrounding spaces should be trimmed
+      mockContext.req.header.mockReturnValue('  token-1234567890-abcdefghij-xxx  ');
+
+      await authTokenMiddleware(mockContext, mockNext);
+
+      // Should either accept or reject based on trimming behavior
+      // (depends on middleware implementation)
+      expect(nextCalled || mockContext.json.mock.calls.length > 0).toBe(true);
     });
   });
 

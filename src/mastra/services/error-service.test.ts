@@ -17,7 +17,7 @@ describe('ErrorService', () => {
     it('should create AUTH error with correct structure', () => {
       const error = errorService.auth('Token expired');
 
-      expect(error.code).toBe('AUTH');
+      expect(error.code).toBe('ERR_AUTH_001');
       expect(error.message).toBe('Token expired');
       expect(error.category).toBe(ErrorCategory.AUTH);
       expect(error.retryable).toBe(false);
@@ -38,9 +38,16 @@ describe('ErrorService', () => {
       const serialized = JSON.stringify(error);
       const parsed = JSON.parse(serialized);
 
-      expect(parsed.code).toBe('AUTH');
+      expect(parsed.code).toBe('ERR_AUTH_001');
       expect(parsed.message).toBe('Token expired');
       expect(parsed.category).toBe('AUTH');
+    });
+
+    it('should accept custom error code', () => {
+      const error = errorService.auth('Token invalid', {}, 'ERR_AUTH_002');
+
+      expect(error.code).toBe('ERR_AUTH_002');
+      expect(error.message).toBe('Token invalid');
     });
   });
 
@@ -48,7 +55,7 @@ describe('ErrorService', () => {
     it('should create VALIDATION error with correct structure', () => {
       const error = errorService.validation('Invalid email format');
 
-      expect(error.code).toBe('VALIDATION');
+      expect(error.code).toBe('ERR_VAL_001');
       expect(error.message).toBe('Invalid email format');
       expect(error.category).toBe(ErrorCategory.VALIDATION);
       expect(error.retryable).toBe(false);
@@ -80,7 +87,7 @@ describe('ErrorService', () => {
     it('should create EXTERNAL error with retryable flag', () => {
       const error = errorService.external('Worker failed: 502');
 
-      expect(error.code).toBe('EXTERNAL');
+      expect(error.code).toBe('ERR_API_001');
       expect(error.category).toBe(ErrorCategory.EXTERNAL);
       expect(error.retryable).toBe(true);
       expect(error.suggestion).toContain('temporarily unavailable');
@@ -104,7 +111,7 @@ describe('ErrorService', () => {
     it('should create NOT_FOUND error', () => {
       const error = errorService.notFound('Microlearning not found');
 
-      expect(error.code).toBe('NOT_FOUND');
+      expect(error.code).toBe('ERR_NF_001');
       expect(error.category).toBe(ErrorCategory.NOT_FOUND);
       expect(error.retryable).toBe(false);
     });
@@ -128,7 +135,7 @@ describe('ErrorService', () => {
     it('should create AI_MODEL error', () => {
       const error = errorService.aiModel('JSON parsing failed');
 
-      expect(error.code).toBe('AI_MODEL');
+      expect(error.code).toBe('ERR_AI_001');
       expect(error.category).toBe(ErrorCategory.AI_MODEL);
       expect(error.retryable).toBe(true);
     });
@@ -144,7 +151,7 @@ describe('ErrorService', () => {
     it('should create TIMEOUT error', () => {
       const error = errorService.timeout('Request timed out');
 
-      expect(error.code).toBe('TIMEOUT');
+      expect(error.code).toBe('ERR_TO_001');
       expect(error.category).toBe(ErrorCategory.TIMEOUT);
       expect(error.retryable).toBe(true);
     });
@@ -154,7 +161,7 @@ describe('ErrorService', () => {
     it('should create RATE_LIMIT error', () => {
       const error = errorService.rateLimit('Too many requests');
 
-      expect(error.code).toBe('RATE_LIMIT');
+      expect(error.code).toBe('ERR_RL_001');
       expect(error.category).toBe(ErrorCategory.RATE_LIMIT);
       expect(error.retryable).toBe(true);
     });
@@ -164,7 +171,7 @@ describe('ErrorService', () => {
     it('should create INTERNAL error', () => {
       const error = errorService.internal('Unexpected error');
 
-      expect(error.code).toBe('INTERNAL');
+      expect(error.code).toBe('ERR_INT_001');
       expect(error.category).toBe(ErrorCategory.INTERNAL);
       expect(error.retryable).toBe(false);
     });
@@ -181,7 +188,7 @@ describe('ErrorService', () => {
       expect(toolResponse.success).toBe(false);
       expect(() => JSON.parse(toolResponse.error)).not.toThrow();
       const parsed = JSON.parse(toolResponse.error);
-      expect(parsed.code).toBe('VALIDATION');
+      expect(parsed.code).toBe('ERR_VAL_001');
     });
 
     it('should have consistent timestamp format', () => {

@@ -1,24 +1,11 @@
 import { Tool } from '@mastra/core/tools';
 import { z } from 'zod';
-import { generateText } from 'ai';
 import { getModelWithOverride } from '../../model-providers';
-import { PromptAnalysis } from '../../types/prompt-analysis';
-import { ExampleRepo } from '../../services/example-repo';
-import { validateBCP47LanguageCode, DEFAULT_LANGUAGE } from '../../utils/language/language-utils';
-import { cleanResponse } from '../../utils/content-processors/json-cleaner';
-import { buildPolicySystemPrompt } from '../../utils/prompt-builders/policy-context-builder';
-import { PROMPT_ANALYSIS_PARAMS } from '../../utils/config/llm-generation-params';
-import { MICROLEARNING, ROLES, CATEGORIES, THEME_COLORS, MODEL_PROVIDERS, TRAINING_LEVELS, DEFAULT_TRAINING_LEVEL, PROMPT_ANALYSIS } from '../../constants';
-import { streamReasoning } from '../../utils/core/reasoning-stream';
+import { PROMPT_ANALYSIS, TRAINING_LEVELS, DEFAULT_TRAINING_LEVEL, MODEL_PROVIDERS } from '../../constants';
 import { getLogger } from '../../utils/core/logger';
 import { errorService } from '../../services/error-service';
 import { normalizeError, logErrorInfo } from '../../utils/core/error-utils';
-import { withRetry } from '../../utils/core/resilience-utils';
-import { autoRepairPromptAnalysis } from './prompt-analysis-normalizer';
-
-// Cache formatted lists for performance
-const cachedRolesList = ROLES.VALUES.map((role) => `- "${role}"`).join('\n');
-const cachedCategoriesList = CATEGORIES.VALUES.map((cat) => `- "${cat}"`).join('\n');
+import { analyzeUserPromptWithAI, getFallbackAnalysis } from './utils/prompt-analyzer';
 
 const AnalyzeUserPromptSchema = z.object({
   userPrompt: z.string()
@@ -69,53 +56,6 @@ const AnalyzeUserPromptOutputSchema = z.object({
   error: z.string().optional(),
 });
 
-// Character-based language detection fallback (final safety net)
-function detectLanguageFallback(text: string): string {
-  // Basic language detection patterns
-  if (/[ğüşıöçĞÜŞİÖÇ]/.test(text)) return 'tr';
-  if (/[äöüßÄÖÜ]/.test(text)) return 'de';
-  if (/[àáâäèéêëìíîïòóôöùúûü]/.test(text)) return 'fr';
-  if (/[áéíóúñü¿¡]/.test(text)) return 'es';
-  if (/[àáâãäåæçèéêëìíîïðñòóôõöøùúûüýþß]/.test(text)) return 'pt';
-  if (/[àáäèéëìíîïòóôùúûü]/.test(text)) return 'it';
-  if (/[а-я]/.test(text.toLowerCase())) return 'ru';
-  if (/[\u4e00-\u9fff]/.test(text)) return 'zh';
-  if (/[\u3040-\u309f\u30a0-\u30ff]/.test(text)) return 'ja';
-  if (/[\u0600-\u06ff]/.test(text)) return 'ar';
-  if (/[\uac00-\ud7af]/.test(text)) return 'ko';
-  return 'en'; // default
-}
-
-// Ask AI to detect target language (returns BCP-47 code directly)
-async function detectTargetLanguageWithAI(text: string, model: any): Promise<string | null> {
-  try {
-    const response = await withRetry(
-      () => generateText({
-        model,
-        prompt: `What language should the training/content be created in? Look for "in {language}" patterns.
-If no explicit target language is mentioned, identify the language of the text itself.
-Return ONLY the BCP-47 code (e.g., ar-sa, tr-tr, en-gb, zh-cn, vi-vn, hi-in).
-
-Text: "${text.substring(0, 300)}"
-
-Target language code:`,
-        temperature: 0.3,
-      }),
-      `[AnalyzeUserPromptTool] language-detection`
-    );
-
-    const code = response.text?.trim().toLowerCase() || '';
-    if (!code) return null;
-
-    // Validate it's a proper BCP-47 format, normalize if needed
-    const validated = validateBCP47LanguageCode(code);
-    return validated !== DEFAULT_LANGUAGE ? validated : null;
-  } catch {
-    // If AI fails, return null and fall back to other methods
-    return null;
-  }
-}
-
 export const analyzeUserPromptTool = new Tool({
   id: 'analyze_user_prompt',
   description: 'AI-powered analysis of user prompt with rich context processing and semantic hints',
@@ -124,254 +64,24 @@ export const analyzeUserPromptTool = new Tool({
   execute: async (context: any) => {
     const logger = getLogger('AnalyzeUserPromptTool');
     const input = context?.inputData || context?.input || context;
-    const { userPrompt, additionalContext, suggestedDepartment, customRequirements, modelProvider, model: modelOverride, policyContext } = input;
+    const { userPrompt, additionalContext, suggestedDepartment, customRequirements, modelProvider, model: modelOverride, policyContext, suggestedLevel } = input;
     const writer = input?.writer; // Get writer for streaming
 
-    // Use model override if provided, otherwise use default
     const model = getModelWithOverride(modelProvider, modelOverride);
 
     logger.debug('Starting user prompt analysis', { promptLength: userPrompt.length, hasContext: !!additionalContext });
 
     try {
-      // Load examples and retrieve semantically relevant ones
-      const repo = ExampleRepo.getInstance();
-      await repo.loadExamplesOnce();
-
-      // Try semantic search first, with multiple fallback levels
-      let schemaHints: string;
-      try {
-        // Level 1: Smart semantic search with query context
-        schemaHints = await repo.getSmartSchemaHints(userPrompt, 3);
-        logger.debug('Using semantic-enhanced schema hints', {});
-      } catch (error) {
-        const err = normalizeError(error);
-        logger.warn('Semantic search unavailable, trying smart sampling', { error: err.message });
-        try {
-          // Level 2: Smart sampling without semantic search
-          schemaHints = await repo.getSmartSchemaHints(undefined, 3);
-          logger.debug('Using smart sampling schema hints', {});
-        } catch (fallbackError) {
-          // Level 3: Basic schema hints (guaranteed to work)
-          const fbErr = normalizeError(fallbackError);
-          logger.warn('Smart sampling failed, using basic schema hints', { error: fbErr.message });
-          schemaHints = repo.getSchemaHints(3);
-          logger.debug('Using basic schema hints', {});
-        }
-      }
-
-      const examplesBlock = schemaHints
-        ? `\n\nSCHEMA HINTS (structure only, do not copy texts):\n${schemaHints}`
-        : '';
-
-      // Prepare policy context if available (using optimized builder)
-      const policyBlock = buildPolicySystemPrompt(policyContext);
-
-      // Let AI determine target language from context (checks for "in {language}", text language, etc.)
-      let languageHint = 'en-gb'; // default
-      try {
-        const aiLang = await detectTargetLanguageWithAI(userPrompt, model);
-        logger.info('AI Lang', { aiLang })
-        if (aiLang) {
-          languageHint = aiLang.toLowerCase();
-        }
-      } catch {
-        // Fallback to character detection if AI fails
-        const charBasedLang = validateBCP47LanguageCode(detectLanguageFallback(userPrompt));
-        languageHint = charBasedLang.toLowerCase();
-      }
-
-      const analysisPrompt = `Create microlearning metadata from this request:
-
-USER: "${userPrompt}" (LANGUAGE: ${languageHint})
-DEPARTMENT: ${suggestedDepartment || 'not specified'}
-SUGGESTED LEVEL: ${input.suggestedLevel || 'auto-detect'}${examplesBlock}${policyBlock}
-
-ROLE SELECTION OPTIONS (pick ONE based on audience):
-${cachedRolesList}
-
-CATEGORY SELECTION OPTIONS (pick ONE based on topic domain):
-${cachedCategoriesList}
-
-Return JSON:
-{
-  "language": "BCP-47 tag (language-lowercase + region-lowercase; prefer regional if known, e.g., en-gb/en-us/fr-ca/tr-tr; else use primary, e.g. en-gb)"
-  "topic": "2-3 words max - core subject only",
-  "title": "3-5 words max - professional training title",
-  "description": "1-2 sentences max - professional training description",
-  "department": "target department or 'All'",
-  "level": "beginner/intermediate/advanced - use SUGGESTED LEVEL if provided, else detect from complexity",
-  "category": "One category from the list above that matches the topic domain",
-  "subcategory": "specific subcategory based on focus",
-  "learningObjectives": ["specific skills learner can DO after 5-min training. Use Bloom's Taxonomy Action Verbs (Analyze, Create, Verify, Spot, Report). NOT passive verbs (Understand, Know) or meta-tasks (pass quiz)"],
-  "duration": ${MICROLEARNING.DURATION_MINUTES},
-  "industries": ["relevant industries from context or 'General Business'"],
-  "roles": ["One role from the list above that matches the target audience"],
-  "themeColor": "ONLY if user mentioned a color (standard: bg-gradient-red, or simple: red/blue/green/teal/indigo/emerald/violet/amber) - convert to standard format. Otherwise null.",
-  "keyTopics": ["3-5 main learning areas"],
-  "practicalApplications": ["3-4 workplace situations"],
-  "assessmentAreas": ["testable skills - focus on 'can they do X'"],
-  "regulationCompliance": ["relevant regulations by topic/industry"],
-  "isCodeTopic": false
-}
-
-RULES:
-- For "roles": Pick ONE option that best matches the topic's target audience
-  - Technical/IT content → "IT Department"
-  - Fraud/finance content → "Finance Department"
-  - HR/culture topics → "Human Resource Department"
-  - Sales topics → "Sales Department"
-  - Unknown audience → "All Employees"
-- For "category": Pick ONE option that best matches the topic domain
-  - Email phishing → "Email Security"
-  - Malware/virus → "Malware"
-  - Ransomware → "Ransomware & Extortion"
-  - Remote work → "Remote Working Security"
-  - GDPR/privacy → "GDPR"
-  - Social engineering → "Social Engineering"
-  - Cloud → "Cloud Security"
-  - If unsure → "General"
-- For "themeColor": ONLY fill if user explicitly mentioned a color
-  - Accept both standard codes and simple names
-  - Convert simple color names to standard codes:
-    * "red" // "danger" // "risk" → "bg-gradient-red"
-    * "blue" // "tech" // "technology" → "bg-gradient-blue"
-    * "green" // "safe" // "safety" → "bg-gradient-green"
-    * "purple" // "compliance" → "bg-gradient-purple"
-    * "gray" // "grey" // "general" → "bg-gradient-gray"
-    * "orange" // "innovation" → "bg-gradient-orange"
-    * "yellow" // "smoke" → "bg-gradient-yellow" or "bg-gradient-yellow-smoke"
-    * "light-yellow" // "light yellow" → "bg-gradient-light-yellow"
-    * "light-blue" // "light blue" → "bg-gradient-light-blue"
-    * "pink" // "social" → "bg-gradient-pink"
-  - CRITICAL: ONLY return colors from this exact list. If user mentions any invalid color, return null.
-  - Valid colors: bg-gradient-red, bg-gradient-blue, bg-gradient-green, bg-gradient-gray, bg-gradient-purple, bg-gradient-yellow-smoke, bg-gradient-yellow, bg-gradient-light-yellow, bg-gradient-orange, bg-gradient-light-blue, bg-gradient-pink, bg-gradient-teal, bg-gradient-indigo, bg-gradient-emerald, bg-gradient-violet, bg-gradient-amber
-  - Otherwise leave as null/empty string
-  - User must explicitly state the color - do not infer or choose colors automatically
-- isCodeTopic: Set to true if topic mentions programming languages OR code-focused topics. Otherwise false.
-- DON'T copy user instructions as title/topic
-- CREATE professional titles from user intent
-- EXTRACT core subject, not full request
-- USE BCP-47 language codes only
-- RESPOND in user's language for content
-- isCodeTopic: **CRITICAL** - Return as boolean (true/false). Set to true IF ANY of these conditions are met:
-  1. Topic mentions a PROGRAMMING LANGUAGE: JavaScript, Python, Java, C++, C#, Go, Rust, TypeScript, Kotlin, PHP, Ruby, Swift, etc.
-  2. Topic mentions CODE-FOCUSED CONCEPTS: code review, secure coding, vulnerabilities, injection, XSS, SQL injection, API security, encryption, authentication, authorization, buffer overflow, memory management, testing, refactoring, debugging, legacy code, etc.
-  3. Topic mentions SECURITY CODING: OWASP, CWE, CVE, secure coding, secure design, security testing, etc.
-  Set to FALSE ONLY for: threat awareness, phishing, ransomware, social engineering, compliance, policy, incident response, password management, MFA, data protection (non-code).
-
-  **EXAMPLES:**
-  TRUE: "JavaScript" → true, "JavaScript Arrays" → true, "Python workshop" → true, "Java security" → true, "SQL Injection" → true, "XSS prevention" → true, "Code review" → true, "API security" → true, "Secure coding" → true
-  FALSE: "Phishing" → false, "Ransomware" → false, "MFA" → false, "Password security" → false, "Data protection" → false`;
-
-      // Build messages array with multi-message pattern
-      const messages: any[] = [
-        {
-          role: 'system',
-          content: 'You are an expert instructional designer and Pedagogical Advisor. CRITICAL: Analyze user requests intelligently and create professional microlearning metadata. Do NOT copy user instructions as titles/topics. Extract the core learning subject. Learning objectives MUST use Bloom\'s Taxonomy Action Verbs (e.g. "Analyze", "Evaluate", "Create", "Demonstrate") and be realistic for 5-minute training. Focus on specific, immediately actionable skills. For roles field: select exactly ONE role. For category field: select exactly ONE category. For themeColor field: ONLY fill if user explicitly mentioned a color. Return ONLY VALID JSON - NO markdown. Use BCP-47 language codes.'
-        }
-      ];
-
-      // If we have rich user behavior context, add it as a dedicated message
-      // This uses the multi-message pattern recommended by OpenAI/Anthropic:
-      // - Semantic separation signals importance to the LLM
-      // - Recency bias ensures context receives more attention
-      // - Dedicated attention slot for critical information
-      if (additionalContext) {
-        messages.push({
-          role: 'user',
-          content: `🔴 CRITICAL USER CONTEXT - Behavior & Risk Analysis:
-
-${additionalContext}`
-        });
-        logger.debug('Added dedicated context message', { contextLength: additionalContext.length });
-      }
-
-      // Add main analysis request
-      messages.push({
-        role: 'user',
-        content: analysisPrompt
+      return await analyzeUserPromptWithAI({
+        userPrompt,
+        additionalContext,
+        suggestedDepartment,
+        suggestedLevel,
+        customRequirements,
+        policyContext,
+        model,
+        writer
       });
-
-      const response = await withRetry(
-        () => generateText({
-          model: model,
-          messages: messages,
-          ...PROMPT_ANALYSIS_PARAMS
-        }),
-        `[AnalyzeUserPromptTool] prompt-analysis`
-      );
-
-      // Extract reasoning from response.response.body.reasoning
-      let reasoning = (response as any).response?.body?.reasoning;
-      if (reasoning && writer) {
-        reasoning += `\n 'I will create an 8-scene code editor training module if isCodeTopic is true, otherwise I will create an 8-scene inbox-based training module.'`;
-        streamReasoning(reasoning, writer);
-      }
-      // Use professional JSON repair library
-      const cleanedText = cleanResponse(response.text, 'prompt-analysis');
-      const analysis = JSON.parse(cleanedText) as Partial<PromptAnalysis>;
-
-      // Validate and normalize BCP-47 language code (includes en-* variant normalization to en-US)
-      const normalizedLanguage = validateBCP47LanguageCode(analysis.language || DEFAULT_LANGUAGE);
-      analysis.language = normalizedLanguage;
-
-      // Validate themeColor - only allow values from THEME_COLORS.VALUES
-      if (analysis.themeColor && !THEME_COLORS.VALUES.includes(analysis.themeColor as any)) {
-        logger.warn('Invalid theme color, resetting to null', { providedColor: analysis.themeColor });
-        analysis.themeColor = undefined;
-      }
-
-      // Auto-repair critical fields for production stability (minimal, deterministic)
-      const repaired = autoRepairPromptAnalysis(analysis, { suggestedDepartment });
-
-      logger.debug('Enhanced prompt analysis completed', { language: analysis.language, topic: analysis.topic });
-
-      // Enrich analysis with context if provided
-      if (additionalContext) {
-        analysis.hasRichContext = true;
-        analysis.additionalContext = additionalContext;
-        logger.debug('Rich context provided', { contextLength: additionalContext.length });
-      }
-
-      if (customRequirements) {
-        analysis.customRequirements = customRequirements;
-        logger.debug('Custom requirements set', { requirementsLength: customRequirements.length });
-      }
-
-      // Preserve enriched fields (context + custom requirements) after repair
-      repaired.hasRichContext = analysis.hasRichContext;
-      repaired.additionalContext = analysis.additionalContext;
-      repaired.customRequirements = analysis.customRequirements;
-      repaired.themeColor = analysis.themeColor;
-
-      return {
-        success: true,
-        data: {
-          language: repaired.language,
-          topic: repaired.topic,
-          title: repaired.title,
-          description: repaired.description,
-          department: repaired.department,
-          level: repaired.level,
-          category: repaired.category,
-          subcategory: repaired.subcategory,
-          learningObjectives: repaired.learningObjectives,
-          duration: repaired.duration,
-          industries: repaired.industries,
-          roles: repaired.roles,
-          keyTopics: repaired.keyTopics,
-          practicalApplications: repaired.practicalApplications,
-          assessmentAreas: repaired.assessmentAreas,
-          regulationCompliance: repaired.regulationCompliance,
-          themeColor: repaired.themeColor,
-          hasRichContext: repaired.hasRichContext,
-          additionalContext: repaired.additionalContext,
-          customRequirements: repaired.customRequirements,
-          isCodeTopic: repaired.isCodeTopic,
-        },
-        policyContext
-      };
-
     } catch (error) {
       const err = normalizeError(error);
       const errorInfo = errorService.aiModel(err.message, {
@@ -381,69 +91,13 @@ ${additionalContext}`
       });
       logErrorInfo(logger, 'error', 'Prompt analysis failed, using fallback', errorInfo);
 
-      // Enhanced fallback analysis with context
-      // Detect if code-related topic based on programming languages OR security keywords
-      const specificCodeSecurityKeywords = [
-        'injection', 'xss', 'cross-site scripting', 'vulnerability', 'vulnerable',
-        'buffer overflow', 'memory leak', 'sql injection', 'code review',
-        'secure coding', 'api security', 'encryption', 'hash', 'authentication',
-        'authorization', 'owasp', 'cwe', 'cvss', 'refactoring', 'debugging',
-        'testing', 'legacy code', 'memory management', 'design pattern'
-      ];
-
-      const programmingLanguages = ['javascript', 'python', 'java', 'c++', 'c#', 'php', 'go', 'rust', 'typescript', 'kotlin', 'ruby', 'swift', 'scala', 'r language'];
-
-      const promptLower = userPrompt.toLowerCase();
-
-      // Logic: programming language OR code security keyword
-      const hasSpecificCodeSecurityKeyword = specificCodeSecurityKeywords.some(kw => promptLower.includes(kw));
-      const hasProgrammingLanguage = programmingLanguages.some(lang => promptLower.includes(lang));
-
-      // CRITICAL: If ANY programming language is mentioned, it's a code topic (regardless of other content)
-      const isCodeSecurityFallback = hasProgrammingLanguage || hasSpecificCodeSecurityKeyword;
-
-      // Detect target language: AI (checks for "in {language}", text language, etc.) → character fallback
-      let detectedLang: string | null = null;
-
-      logger.debug('Attempting AI target language detection in fallback');
-      try {
-        detectedLang = await detectTargetLanguageWithAI(userPrompt, model);
-        if (detectedLang) {
-          logger.debug('AI detected target language code', { language: detectedLang });
-        }
-      } catch (langError) {
-        logger.warn('AI language detection failed, falling back to character detection', {
-          error: normalizeError(langError).message
-        });
-      }
-
-      // Final fallback: character-based detection → normalize to BCP-47
-      if (!detectedLang) {
-        detectedLang = validateBCP47LanguageCode(detectLanguageFallback(userPrompt));
-      }
-
-      const fallbackData = {
-        language: detectedLang || DEFAULT_LANGUAGE,
-        topic: userPrompt.substring(0, 50),
-        title: `Training: ${userPrompt.substring(0, 30)}`,
-        department: suggestedDepartment || 'All',
-        level: 'intermediate',
-        category: CATEGORIES.DEFAULT,
-        subcategory: 'Skills Training',
-        learningObjectives: [`Learn about ${userPrompt.substring(0, 30)}`, 'Apply new skills', 'Improve performance'],
-        duration: MICROLEARNING.DURATION_MINUTES,
-        industries: ['General'],
-        roles: [ROLES.DEFAULT],
-        themeColor: undefined,
-        keyTopics: [userPrompt.substring(0, 30)],
-        practicalApplications: [`Apply ${userPrompt.substring(0, 20)} skills`],
-        assessmentAreas: [`${userPrompt.substring(0, 20)} knowledge`],
-        regulationCompliance: [],
-        hasRichContext: !!additionalContext,
-        additionalContext: additionalContext || undefined,
-        customRequirements: customRequirements,
-        isCodeTopic: isCodeSecurityFallback,
-      };
+      const fallbackData = await getFallbackAnalysis({
+        userPrompt,
+        suggestedDepartment,
+        additionalContext,
+        customRequirements,
+        model
+      });
 
       return {
         success: true,
@@ -454,6 +108,7 @@ ${additionalContext}`
     }
   },
 });
+
 
 export type AnalyzeUserPromptInput = z.infer<typeof AnalyzeUserPromptSchema>;
 export type AnalyzeUserPromptOutput = z.infer<typeof AnalyzeUserPromptOutputSchema>;
