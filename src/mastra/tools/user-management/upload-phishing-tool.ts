@@ -61,7 +61,7 @@ export const uploadPhishingTool = createTool({
         logger.info('Preparing upload for phishing content', { phishingId });
 
         // Get Auth Token & Cloudflare bindings from AsyncLocalStorage
-        const { token, companyId, env } = getRequestContext();
+        const { token, companyId, env, baseApiUrl } = getRequestContext();
         const effectiveCompanyId = companyId || (token ? extractCompanyIdFromTokenExport(token) : undefined);
 
         if (!token) {
@@ -131,7 +131,7 @@ export const uploadPhishingTool = createTool({
             const payload = {
                 accessToken: token, // Sensitive!
                 companyId: effectiveCompanyId,
-                url: API_ENDPOINTS.PLATFORM_API_URL,
+                url: baseApiUrl, // Dynamic URL from header or environment
                 phishingData: phishingPayload
             };
 

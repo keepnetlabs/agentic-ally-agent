@@ -3,7 +3,7 @@ import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { getRequestContext } from '../../utils/core/request-storage';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
-import { ERROR_MESSAGES, API_ENDPOINTS } from '../../constants';
+import { ERROR_MESSAGES } from '../../constants';
 import { parseName, isValidName, normalizeName } from '../../utils/parsers/name-parser';
 import { generateText } from 'ai';
 import { withRetry } from '../../utils/core/resilience-utils';
@@ -36,8 +36,8 @@ export const getUserInfoTool = createTool({
     const logger = getLogger('GetUserInfoTool');
     const { targetUserResourceId: inputTargetUserResourceId, departmentName: inputDepartmentName, email: inputEmail, fullName: inputFullName, firstName: inputFirstName, lastName: inputLastName } = context;
 
-    // Get Auth Token & CompanyId (needed for both paths)
-    const { token, companyId } = getRequestContext();
+    // Get Auth Token, CompanyId & baseApiUrl (needed for both paths)
+    const { token, companyId, baseApiUrl } = getRequestContext();
     if (!token) {
       const errorInfo = errorService.auth(ERROR_MESSAGES.USER_INFO.TOKEN_MISSING);
       logErrorInfo(logger, 'warn', 'Auth error: Token missing', errorInfo);
@@ -65,7 +65,7 @@ export const getUserInfoTool = createTool({
         fullName = userFullName;
       } else {
         // Slow path: Search for user (prefer email, then name with fallbacks)
-        const searchDeps = { token, companyId, logger };
+        const searchDeps = { token, companyId, baseApiUrl, logger };
 
         if (inputEmail) {
           const email = String(inputEmail).trim().toLowerCase();
@@ -173,7 +173,10 @@ export const getUserInfoTool = createTool({
         timelineHeaders['x-ir-company-id'] = companyId;
       }
 
-      const timelineResponse = await fetch(API_ENDPOINTS.USER_INFO_GET_TIMELINE, {
+      // Build timeline URL dynamically from baseApiUrl
+      const timelineUrl = `${baseApiUrl || (process.env.PLATFORM_API_URL || 'https://test-api.devkeepnet.com')}/api/leaderboard/get-user-timeline`;
+
+      const timelineResponse = await fetch(timelineUrl, {
         method: 'POST',
         headers: timelineHeaders,
         body: JSON.stringify(timelinePayload)

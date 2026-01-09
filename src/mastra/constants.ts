@@ -759,10 +759,6 @@ export const API_ENDPOINTS = {
   // Frontend URLs
   FRONTEND_MICROLEARNING_URL: 'https://agentic-ai-microlearning.keepnetlabs.com',
 
-  // User info / leaderboard endpoints (built on PLATFORM_API_URL)
-  USER_INFO_GET_ALL: `${process.env.PLATFORM_API_URL || 'https://test-api.devkeepnet.com'}/api/leaderboard/get-all`,
-  USER_INFO_GET_TIMELINE: `${process.env.PLATFORM_API_URL || 'https://test-api.devkeepnet.com'}/api/leaderboard/get-user-timeline`,
-  TARGET_GROUP_SEARCH: `${process.env.PLATFORM_API_URL || 'https://test-api.devkeepnet.com'}/api/target-groups/search`,
 } as const;
 
 // API Keys and authentication

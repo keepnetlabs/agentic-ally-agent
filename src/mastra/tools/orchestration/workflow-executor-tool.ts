@@ -1,3 +1,34 @@
+/**
+ * Workflow Executor Tool - Main Orchestrator
+ *
+ * Routes microlearning requests to appropriate workflow pipelines:
+ *
+ * CREATE-MICROLEARNING Workflow:
+ * 1. Analyze user prompt (language detection, intent extraction)
+ * 2. Generate 8-scene metadata structure
+ * 3. [PARALLEL] Generate scene content (8 scenes in parallel)
+ * 3. [PARALLEL] Generate inbox structure (phishing emails/SMS)
+ * 4. Save to Cloudflare KV (fire-and-forget, non-blocking)
+ * Output: Training URL for interactive module
+ *
+ * ADD-LANGUAGE Workflow:
+ * 1. Load existing microlearning from KV
+ * 2. Translate all scenes (multi-level retry + auto-correction)
+ * 3. Update department inboxes for new language
+ * 4. Save updated version to KV
+ * Output: Updated training URL with new language
+ *
+ * Also supports:
+ * - addMultipleLanguagesWorkflow: Translate to multiple languages in parallel
+ * - updateMicrolearningWorkflow: Modify existing modules
+ *
+ * UI Integration:
+ * - Sends `::ui:canvas_open::{trainingUrl}` signal for frontend handlers
+ * - Returns structured responses with metadata
+ *
+ * See CLAUDE.md for detailed workflow documentation and patterns.
+ */
+
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { createMicrolearningWorkflow } from '../../workflows/create-microlearning-workflow';

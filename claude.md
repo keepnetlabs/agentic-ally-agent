@@ -336,14 +336,130 @@ Validates if a developer correctly fixed a code issue (security vulnerability, l
 
 ---
 
+## 🎨 Landing Page Normalization Pipeline
+
+**File:** `src/mastra/utils/content-processors/phishing-html-postprocessors.ts`
+
+The landing page post-processor applies normalizations in strict order to ensure consistent rendering:
+
+1. **Sanitization** - Removes dangerous HTML/JS elements
+2. **Repair** - Fixes malformed HTML (unbalanced tags, broken nesting)
+3. **Logo Centering** - Wraps circular icons in centered flex containers
+4. **Form/Container Centering** - Enforces max-width and margin rules
+5. **Document Structure** - Ensures valid HTML5 shell
+
+### Key Normalizers
+
+| Normalizer | Problem Solved | Example |
+|-----------|----------------|---------|
+| `normalizeLandingLogoCentering()` | Circular logo/icons generated without centering | Wraps `<div>icon</div>` in flex container with `justify-content: center` |
+| `enforceMinimalLayoutMaxWidth()` | Forms missing `max-width` entirely (minimal layouts) | Injects `max-width: 400px; width: 100%; margin: 0 auto;` on `<form>` elements |
+| `normalizeLandingMaxWidthCentering()` | Existing max-width but missing margin centering | Adds `margin: 0 auto;` to containers with max-width |
+| `normalizeLandingFormCentering()` | Forms in card layouts need proper spacing | Adjusts padding and alignment within containers |
+
+### Order Matters
+Logo centering MUST run BEFORE form/container centering to avoid conflicts. All sanitization/repair runs BEFORE normalization (don't fix broken HTML).
+
+---
+
+## 🔧 Tool Output Format
+
+**Convention:** All user-management and assignment tools return structured outputs with metadata.
+
+### Standard Response Format
+```typescript
+{
+  success: boolean,
+  data: {
+    // Tool-specific fields
+    resourceId: string,           // Unique identifier
+    campaignName?: string,        // Human-readable name
+    assignmentType?: string,      // USER | GROUP | etc.
+    languageId?: string,          // Optional language
+    followUpTrainingId?: string   // Optional related ID
+  },
+  message: string,                // Generated via formatToolSummary()
+  metadata?: {
+    duration?: number,            // Operation duration in ms
+    timestamp?: string            // ISO timestamp
+  },
+  error?: string                  // Error message if failed
+}
+```
+
+### Message Generation Pattern
+Use `formatToolSummary()` helper to generate consistent, structured messages:
+
+```typescript
+import { formatToolSummary } from '../../utils/core/tool-summary-formatter';
+
+const result = formatToolSummary({
+  prefix: '✅ Campaign assigned',
+  title: campaignName,
+  kv: [
+    { key: 'resourceId', value: resourceId },
+    { key: 'targetType', value: assignmentType },
+    { key: 'email', value: targetUserEmail }
+  ]
+});
+// Output: "✅ Campaign assigned - Phishing Campaign Simulation (resourceId=[...], targetType=USER, email=[...])"
+```
+
+### Input Validation Pattern
+Use `isSafeId()` to validate all resource IDs:
+
+```typescript
+import { isSafeId } from '../../utils/core/safety-validators';
+
+const schema = z.object({
+  phishingResourceId: z.string().refine(isSafeId, 'Invalid resource ID format')
+});
+```
+
+---
+
+## 📧 Email Prompt Rules Updates
+
+**File:** `src/mastra/utils/prompt-builders/shared-email-rules.ts`
+
+### Footer Styling (CRITICAL)
+All email footers MUST use consistent styling in the `<td>` element:
+```
+style='text-align: center; padding: 20px; font-size: 12px; color: #9ca3af;'
+```
+
+This ensures footers are centered, properly spaced, and use subtle gray text for authenticity.
+
+### PII Prevention
+**Rule:** No fake personal identities (names/surnames) anywhere in outputs.
+
+- ✅ Use `{FIRSTNAME}`, `{FULLNAME}` merge tags for personalization
+- ✅ Use role/team labels only: "IT Support Team", "HR Department", "Your Manager"
+- ❌ Never invent personal names: "Emily Clarke", "John Smith"
+
+### Language-Specific Greetings
+Greeting rules now include culture-specific examples:
+
+**English Examples:**
+- "Dear {FIRSTNAME},"
+- "Hello {FIRSTNAME},"
+
+**Turkish Examples:**
+- "Merhaba {FIRSTNAME},"
+- "Sayın {FIRSTNAME},"
+
+---
+
 ## 💡 Common Tasks
 
 ### Add New Tool
 1. Create `src/mastra/tools/{action}-{object}-tool.ts`
 2. Define Zod input/output schemas
 3. Implement execute() with 3-level fallbacks
-4. Register in `index.ts` (formerly agentic-ally.ts) tools object
-5. Return `{success, data, error, metadata}`
+4. For assignment tools: Use `isSafeId()` to validate all resource IDs
+5. For user-facing output: Use `formatToolSummary()` to generate structured messages
+6. Register in `index.ts` (formerly agentic-ally.ts) tools object
+7. Return `{success, data, error, metadata}` following standard response format
 
 ### Add New Language
 1. Add code to `language-utils.ts` with character detection
@@ -357,6 +473,10 @@ Validates if a developer correctly fixed a code issue (security vulnerability, l
 3. Verify KV keys match convention: `ml:{id}:{type}:{lang}`
 4. Verify JSON valid (check cleanResponse() repairs)
 5. Check 3-level fallbacks were attempted
+6. For landing page rendering issues: Check normalizations applied in order
+   - Logo/icons not centered? → `normalizeLandingLogoCentering()` before form centering
+   - Forms left-aligned? → Check `enforceMinimalLayoutMaxWidth()` injects max-width
+   - Spacing off? → Verify margin rules in `normalizeLandingMaxWidthCentering()`
 
 ### Translate Existing Training
 ```
@@ -413,6 +533,14 @@ Returns new URL with langUrl=lang/tr
 **See Also:** `.cursorrules` for code standards and best practices
 
 ---
+
+### Recent Updates (Jan 9, 2025)
+- **Landing Page Normalizers:** Added `normalizeLandingLogoCentering()` for centering circular icon/logo divs, `enforceMinimalLayoutMaxWidth()` for injecting missing max-width on minimal layouts
+- **Tool Output Format:** Standardized all assignment tools to use `formatToolSummary()` for consistent, structured user messages with metadata
+- **Input Validation:** Added `isSafeId()` validation pattern for all resource ID parameters
+- **Email Footer Rules:** Updated `FOOTER_RULES` to specify consistent footer styling (`text-align: center; padding: 20px; font-size: 12px; color: #9ca3af;`)
+- **PII Prevention:** Added `NO_FAKE_PERSONAL_IDENTITIES_RULES` to prevent LLM from inventing personal names anywhere in outputs
+- **Language-Specific Greetings:** Enhanced `GREETING_RULES` with English and Turkish examples for culturally appropriate email greetings
 
 ### Recent Updates (Nov 7, 2025)
 - **Code Review Check Tool:** Added full documentation with multi-language support, output schema includes `hint` field, `outputLanguage` parameter for non-English feedback

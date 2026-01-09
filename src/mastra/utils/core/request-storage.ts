@@ -6,6 +6,7 @@ export interface RequestContext {
   companyId?: string;
   user?: any; // İleride user objesi de ekleyebiliriz
   env?: any;  // Cloudflare bindings (KV, D1, Service Bindings, etc.)
+  baseApiUrl?: string; // Platform API URL for upload/assign operations
 }
 
 // Global storage instance for Request Isolation
@@ -30,6 +31,7 @@ export function getRequestContext(): {
   companyId?: string;
   env?: any;
   correlationId?: string;
+  baseApiUrl?: string;
 } {
   const store = requestStorage.getStore();
   return {
@@ -37,6 +39,7 @@ export function getRequestContext(): {
     companyId: store?.companyId,
     env: store?.env,
     correlationId: store?.correlationId,
+    baseApiUrl: store?.baseApiUrl,
   };
 }
 

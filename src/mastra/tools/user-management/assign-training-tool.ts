@@ -58,7 +58,7 @@ export const assignTrainingTool = createTool({
     logger.info(`Preparing assignment for resource to ${assignmentType}`, { resourceId, languageId: sendTrainingLanguageId, targetUserResourceId, targetGroupResourceId });
 
     // Get Auth Token & Cloudflare bindings from AsyncLocalStorage
-    const { token, companyId, env } = getRequestContext();
+    const { token, companyId, env, baseApiUrl } = getRequestContext();
     const effectiveCompanyId = companyId || (token ? extractCompanyIdFromTokenExport(token) : undefined);
 
     if (!token) {
@@ -68,7 +68,7 @@ export const assignTrainingTool = createTool({
     }
 
     const payload = {
-      apiUrl: API_ENDPOINTS.PLATFORM_API_URL,
+      apiUrl: baseApiUrl, // Dynamic URL from header or environment
       accessToken: token,
       companyId: effectiveCompanyId,
       trainingId: resourceId,

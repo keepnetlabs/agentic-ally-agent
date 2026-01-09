@@ -1,4 +1,3 @@
-import { API_ENDPOINTS } from '../../../constants';
 import { normalizeError, logErrorInfo } from '../../../utils/core/error-utils';
 import { errorService } from '../../../services/error-service';
 
@@ -11,6 +10,7 @@ export interface UserSearchFilterItem {
 export interface UserSearchDeps {
     token: string;
     companyId?: string;
+    baseApiUrl?: string; // Dynamic API URL from request context
     logger: {
         info: (message: string, context?: Record<string, unknown>) => void;
         debug: (message: string, context?: Record<string, unknown>) => void;
@@ -24,7 +24,7 @@ export async function fetchUsersWithFilters(
     getAllPayloadTemplate: unknown,
     filterItems: UserSearchFilterItem[]
 ): Promise<any[]> {
-    const { token, companyId, logger } = deps;
+    const { token, companyId, baseApiUrl, logger } = deps;
     const headers: Record<string, string> = {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
@@ -41,7 +41,10 @@ export async function fetchUsersWithFilters(
         filterGroup.FilterItems.push(item);
     }
 
-    const resp = await fetch(API_ENDPOINTS.USER_INFO_GET_ALL, {
+    // Build URL dynamically from baseApiUrl
+    const getUserAllUrl = `${baseApiUrl || (process.env.PLATFORM_API_URL || 'https://test-api.devkeepnet.com')}/api/leaderboard/get-all`;
+
+    const resp = await fetch(getUserAllUrl, {
         method: 'POST',
         headers,
         body: JSON.stringify(payload),

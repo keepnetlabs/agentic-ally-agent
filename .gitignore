@@ -1,11 +1,45 @@
+# Build outputs
+dist/
 output.txt
-node_modules
-dist
-.mastra
-.env.development
+
+# Dependencies
+node_modules/
+
+# Environment files (NEVER commit with credentials)
 .env
 .env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Mastra framework
+.mastra/
+
+# Databases
 *.db
 *.db-*
-.env.example
-.claude
+
+# IDE & Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing
+coverage/
+.nyc_output/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Temporary
+.wrangler/
+dist/
+build/
+
+# Keep .env.example for developers (this is the template)
+# .env.example should be committed with placeholder values only

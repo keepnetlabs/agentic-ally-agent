@@ -3,7 +3,6 @@ import { getUserInfoTool } from './get-user-info-tool';
 import { requestStorage } from '../../utils/core/request-storage';
 import { generateText } from 'ai';
 import { getModelWithOverride } from '../../model-providers';
-import { API_ENDPOINTS } from '../../constants';
 import { ANALYSIS_REFERENCES } from './behavior-analyst-constants';
 import '../../../../src/__tests__/setup';
 
@@ -26,6 +25,11 @@ vi.mock('../../model-providers', () => ({
 describe('getUserInfoTool', () => {
   const mockToken = 'test-token-123';
   const mockCompanyId = 'test-company-id';
+  const mockBaseApiUrl = 'https://platform.test';
+  const leaderboardEndpoints = {
+    getAll: `${mockBaseApiUrl}/api/leaderboard/get-all`,
+    timeline: `${mockBaseApiUrl}/api/leaderboard/get-user-timeline`,
+  };
 
   const mockUserSearchResponse = {
     items: [
@@ -126,7 +130,8 @@ describe('getUserInfoTool', () => {
     // Mock requestStorage context
     requestStorage.enterWith({
       token: mockToken,
-      companyId: mockCompanyId
+      companyId: mockCompanyId,
+      baseApiUrl: mockBaseApiUrl,
     });
 
     // Mock global fetch
@@ -286,7 +291,7 @@ describe('getUserInfoTool', () => {
 
       // First call: user search
       const firstCall = fetchSpy.mock.calls[0];
-      expect(firstCall[0]).toBe(API_ENDPOINTS.USER_INFO_GET_ALL);
+      expect(firstCall[0]).toBe(leaderboardEndpoints.getAll);
       const body = JSON.parse(firstCall[1].body);
       const filterItems = body.filter.FilterGroups[0].FilterItems;
       expect(filterItems).toEqual(
@@ -314,7 +319,7 @@ describe('getUserInfoTool', () => {
       await getUserInfoTool.execute({ context: input } as any);
 
       expect(fetchSpy).toHaveBeenCalledWith(
-        API_ENDPOINTS.USER_INFO_GET_ALL,
+        leaderboardEndpoints.getAll,
         expect.objectContaining({
           method: 'POST',
           headers: expect.objectContaining({
@@ -398,7 +403,7 @@ describe('getUserInfoTool', () => {
 
       expect(fetchSpy).toHaveBeenCalledTimes(2);
       expect(fetchSpy).toHaveBeenCalledWith(
-        API_ENDPOINTS.USER_INFO_GET_TIMELINE,
+        leaderboardEndpoints.timeline,
         expect.objectContaining({
           method: 'POST',
           headers: expect.objectContaining({

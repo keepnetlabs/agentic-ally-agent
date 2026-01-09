@@ -1,11 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { getTargetGroupInfoTool } from './get-target-group-info-tool';
 import { requestStorage } from '../../utils/core/request-storage';
-import { API_ENDPOINTS } from '../../constants';
 import '../../../../src/__tests__/setup';
 
 const mockToken = 'group-token-123';
 const mockCompanyId = 'company-xyz';
+const mockBaseApiUrl = 'https://platform.test';
+const groupSearchUrl = `${mockBaseApiUrl}/api/target-groups/search`;
 
 describe('getTargetGroupInfoTool', () => {
   beforeEach(() => {
@@ -13,6 +14,7 @@ describe('getTargetGroupInfoTool', () => {
     requestStorage.enterWith({
       token: mockToken,
       companyId: mockCompanyId,
+      baseApiUrl: mockBaseApiUrl,
     });
     global.fetch = vi.fn();
   });
@@ -39,7 +41,7 @@ describe('getTargetGroupInfoTool', () => {
     expect(result.groupInfo?.memberCount).toBe(42);
 
     const firstCall = (global.fetch as any).mock.calls[0];
-    expect(firstCall[0]).toBe(API_ENDPOINTS.TARGET_GROUP_SEARCH);
+    expect(firstCall[0]).toBe(groupSearchUrl);
 
     const payload = JSON.parse(firstCall[1].body);
     const filterItems = payload.filter.FilterGroups[1].FilterItems;

@@ -71,7 +71,7 @@ export const assignPhishingTool = createTool({
         });
 
         // Get Auth Token & Cloudflare bindings from AsyncLocalStorage
-        const { token, companyId, env } = getRequestContext();
+        const { token, companyId, env, baseApiUrl } = getRequestContext();
         const effectiveCompanyId = companyId || (token ? extractCompanyIdFromTokenExport(token) : undefined);
 
         if (!token) {
@@ -81,7 +81,7 @@ export const assignPhishingTool = createTool({
         }
 
         const payload = {
-            apiUrl: API_ENDPOINTS.PLATFORM_API_URL,
+            apiUrl: baseApiUrl, // Dynamic URL from header or environment
             accessToken: token,
             companyId: effectiveCompanyId,
             phishingId: resourceId,

@@ -1,7 +1,7 @@
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { errorService } from '../../services/error-service';
-import { API_ENDPOINTS, ERROR_MESSAGES } from '../../constants';
+import { ERROR_MESSAGES } from '../../constants';
 import { getLogger } from '../../utils/core/logger';
 import { getRequestContext } from '../../utils/core/request-storage';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
@@ -29,6 +29,7 @@ const getTargetGroupInfoOutputSchema = z.object({
 interface GroupSearchDeps {
     token: string;
     companyId?: string;
+    baseApiUrl?: string; // Dynamic API URL from request context
     logger: ReturnType<typeof getLogger>;
 }
 
@@ -119,7 +120,7 @@ function createGroupSearchPayload(groupName: string) {
 }
 
 async function fetchGroupsWithFilters(deps: GroupSearchDeps, groupName: string): Promise<Record<string, unknown>[]> {
-    const { token, companyId, logger } = deps;
+    const { token, companyId, baseApiUrl, logger } = deps;
     const headers: Record<string, string> = {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
@@ -130,10 +131,13 @@ async function fetchGroupsWithFilters(deps: GroupSearchDeps, groupName: string):
 
     const payload = createGroupSearchPayload(groupName);
 
+    // Build search URL dynamically from baseApiUrl
+    const groupSearchUrl = `${baseApiUrl || (process.env.PLATFORM_API_URL || 'https://test-api.devkeepnet.com')}/api/target-groups/search`;
+
     const response = await withRetry(
         () =>
             withTimeout(
-                fetch(API_ENDPOINTS.TARGET_GROUP_SEARCH, {
+                fetch(groupSearchUrl, {
                     method: 'POST',
                     headers,
                     body: JSON.stringify(payload),
@@ -207,7 +211,7 @@ export const getTargetGroupInfoTool = createTool({
     execute: async ({ context }) => {
         const logger = getLogger('GetTargetGroupInfoTool');
         const { targetGroupResourceId: providedId, groupName: rawGroupName, departmentName: providedDepartment } = context;
-        const { token, companyId } = getRequestContext();
+        const { token, companyId, baseApiUrl } = getRequestContext();
 
         if (!token) {
             const errorInfo = errorService.auth(ERROR_MESSAGES.GROUP_INFO.TOKEN_MISSING);
@@ -268,7 +272,7 @@ export const getTargetGroupInfoTool = createTool({
         }
 
         try {
-            const trySearch = async (name: string) => fetchGroupsWithFilters({ token, companyId, logger }, name);
+            const trySearch = async (name: string) => fetchGroupsWithFilters({ token, companyId, baseApiUrl, logger }, name);
 
             // Level 1: full search string
             let groups = await trySearch(normalizedGroupName);

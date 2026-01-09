@@ -1,4 +1,32 @@
-// src/agents/microlearning-agent.ts
+/**
+ * Microlearning Generation Agent
+ *
+ * Core orchestrator for creating interactive training modules. Implements strict 4-state machine:
+ *
+ * STATE 1: GATHER - Collect topic, department, level, learning objectives
+ * STATE 2: SUMMARY - Show structured summary + time estimate (HTML template)
+ * STATE 3: EXECUTE - Run workflow on explicit user confirmation
+ * STATE 4: COMPLETE - Return training URL with deployment status
+ *
+ * Key Behaviors:
+ * - Multi-language support (12+ languages with auto-detection)
+ * - Reasoning tool for assumption documentation (max 1 per turn)
+ * - Strict state validation (prevents premature tool execution)
+ * - Fire-and-forget KV saves (non-blocking responses)
+ * - Parallel scene generation (8 scenes in ~25-35 seconds)
+ *
+ * Tools Available:
+ * - workflowExecutorTool: CREATE-MICROLEARNING or ADD-LANGUAGE workflows
+ * - reasoningTool: Document reasoning for non-obvious decisions
+ * - uploadTrainingTool: Direct upload to platform
+ * - assignTrainingTool: Assign training to users/groups
+ *
+ * Configuration:
+ * - See CLAUDE.md for state machine enforcement rules
+ * - See constants.ts for timing, limits, merge tags
+ * - See model-providers.ts for LLM routing
+ */
+
 import { Agent } from '@mastra/core/agent';
 import { workflowExecutorTool } from '../tools/orchestration';
 import { reasoningTool } from '../tools/analysis';

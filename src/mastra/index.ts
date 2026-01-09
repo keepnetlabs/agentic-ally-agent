@@ -1,3 +1,34 @@
+/**
+ * Agentic Ally - Main Agent Framework Entry Point
+ *
+ * Sets up and configures 5 specialized agents:
+ * 1. Microlearning Agent - 4-state orchestrator for training generation
+ * 2. Orchestrator Agent - Routes requests to appropriate agents
+ * 3. User Info Agent - Gathers user profile and context
+ * 4. Policy Summary Agent - Generates legal compliance content
+ * 5. Phishing Email Agent - Creates realistic phishing simulations
+ *
+ * API Endpoints:
+ * - POST /chat - Main chat endpoint (routes through orchestrator)
+ * - GET /health - Health check endpoint with system status
+ *
+ * Request Flow:
+ * 1. Request arrives at /chat
+ * 2. PII masking applied
+ * 3. Orchestrator agent determines target agent
+ * 4. Specific agent executes (microlearning, phishing, etc.)
+ * 5. Response streamed to client
+ *
+ * Configuration:
+ * - Environment variables in .env file
+ * - Rate limiting: 50 req/min for /chat, 300 req/min for /health
+ * - Cloudflare Workers deployment with KV + D1 backends
+ * - Memory: D1Store with optional Turso persistence
+ *
+ * See CLAUDE.md for architectural philosophy and design decisions.
+ * See .cursorrules for code standards and patterns.
+ */
+
 import { Mastra } from '@mastra/core/mastra';
 import { PinoLogger } from '@mastra/loggers';
 import { registerApiRoute } from '@mastra/core/server';

@@ -26,7 +26,7 @@ Welcome to **Agentic Ally** - an AI-powered microlearning platform that automati
 
 ### Reference
 - **[GLOSSARY.md](./GLOSSARY.md)** - Key terms and definitions
-- **[OPERATIONAL_PLAYBOOK.md](./OPERATIONAL_PLAYBOOK.md)** - Upload/Assign runbook, ID mapping, [ARTIFACT_IDS], troubleshooting
+- **[OPERATIONAL_PLAYBOOK.md](./OPERATIONAL_PLAYBOOK.md)** - Upload/Assign runbook, ID mapping, troubleshooting
 - **[FAQ.md](./FAQ.md)** - Common questions and troubleshooting
 - **[CHANGELOG.md](./CHANGELOG.md)** - Version history and updates
 
@@ -34,33 +34,36 @@ Welcome to **Agentic Ally** - an AI-powered microlearning platform that automati
 
 ## 🎯 Quick Navigation
 
-**New to the project?** Start with [OVERVIEW.md](./OVERVIEW.md) then [QUICKSTART.md](./QUICKSTART.md)
-
-**Want to contribute?** Read [DEVELOPMENT.md](./DEVELOPMENT.md) and [ADDING_FEATURES.md](./ADDING_FEATURES.md)
-
-**Deploying to production?** Check [DEPLOYMENT.md](./DEPLOYMENT.md) and [CONFIGURATION.md](./CONFIGURATION.md)
-
-**Understanding the system?** Read [ARCHITECTURE.md](./ARCHITECTURE.md) and [WORKFLOWS.md](./WORKFLOWS.md)
-
----
-
-## 🔗 Related Resources
-
-- **Project Root:** See `.cursorrules` for code standards and best practices
-- **Technical Reference:** See `CLAUDE.md` for architecture philosophy and critical files
-- **Code Examples:** See `examples/` folder for sample microlearning structures
+| Use Case | Start Here |
+|----------|-----------|
+| **New to project** | [OVERVIEW.md](./OVERVIEW.md) → [QUICKSTART.md](./QUICKSTART.md) |
+| **Want to contribute** | [DEVELOPMENT.md](./DEVELOPMENT.md) → [ADDING_FEATURES.md](./ADDING_FEATURES.md) |
+| **Deploying to production** | [DEPLOYMENT.md](./DEPLOYMENT.md) → [CONFIGURATION.md](./CONFIGURATION.md) |
+| **Understanding architecture** | [ARCHITECTURE.md](./ARCHITECTURE.md) → [WORKFLOWS.md](./WORKFLOWS.md) |
+| **Code standards** | [../.cursorrules](../.cursorrules) (TypeScript patterns) |
+| **Technical philosophy** | [../CLAUDE.md](../CLAUDE.md) (architecture decisions) |
 
 ---
 
-## 📖 How to Use This Documentation
+## 🔗 Key Resources
 
-Each document is written for a specific audience:
-
-- **Managers/Product:** Start with OVERVIEW.md
-- **Engineers:** Start with ARCHITECTURE.md
-- **DevOps/Infrastructure:** Start with DEPLOYMENT.md
-- **Translators/Content:** Start with MULTI_LANGUAGE.md
+- **Project Root README:** [../../README.md](../../README.md) - Project overview
+- **Code Standards:** [../.cursorrules](../.cursorrules) - Patterns, conventions, best practices
+- **Architecture Guide:** [../CLAUDE.md](../CLAUDE.md) - Philosophy, critical files, decision rationale
+- **Development Setup:** [DEVELOPMENT.md](./DEVELOPMENT.md) - Local environment, debugging, testing
 
 ---
 
-**Last Updated:** October 27, 2025
+## 📊 Documentation by Role
+
+| Role | Primary Resources |
+|------|-------------------|
+| **Product Manager** | [OVERVIEW.md](./OVERVIEW.md), [FAQ.md](./FAQ.md) |
+| **Engineer** | [ARCHITECTURE.md](./ARCHITECTURE.md), [../CLAUDE.md](../CLAUDE.md), [../.cursorrules](../.cursorrules) |
+| **DevOps/Infrastructure** | [DEPLOYMENT.md](./DEPLOYMENT.md), [CONFIGURATION.md](./CONFIGURATION.md), [MONITORING.md](./MONITORING.md) |
+| **Translator/Content** | [MULTI_LANGUAGE.md](./MULTI_LANGUAGE.md), [DATA_MODEL.md](./DATA_MODEL.md) |
+| **Trainer/User** | [QUICKSTART.md](./QUICKSTART.md), [OPERATIONAL_PLAYBOOK.md](./OPERATIONAL_PLAYBOOK.md) |
+
+---
+
+**Last Updated:** January 9, 2025 | **Framework:** Mastra 0.1.x | **Runtime:** Cloudflare Workers

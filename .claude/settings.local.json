@@ -32,7 +32,14 @@
       "Bash(npm run lint:*)",
       "Bash(npm test:*)",
       "Bash(dir:*)",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(for f in health-service example-repo autonomous-content-generators autonomous-phishing-handlers autonomous-training-handlers group-topic-service)",
+      "Bash(do echo \"\")",
+      "Bash(echo:*)",
+      "Bash([ -f \"src/mastra/services/autonomous/$f.test.ts\" ])",
+      "Bash(then wc -l \"src/mastra/services/autonomous/$f.test.ts\" \"src/mastra/services/$f.test.ts\")",
+      "mcp__ide__getDiagnostics",
+      "Bash(npm audit:*)"
     ],
     "deny": [],
     "ask": []

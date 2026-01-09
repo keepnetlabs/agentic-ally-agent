@@ -100,17 +100,30 @@ STATE 4: Return training URL
 ### Tool Input/Output Format
 
 ```typescript
-// Input: Always Zod schema
-const schema = z.object({ param: z.string() });
+// Input: Always Zod schema + validation
+const schema = z.object({
+  resourceId: z.string().refine(isSafeId, 'Invalid resource ID')
+});
 
 // Output: Always structured
 {
   success: boolean;
-  data?: T;
+  data?: {
+    resourceId: string;
+    campaignName?: string;
+    assignmentType?: string;
+    [key: string]: any;
+  };
+  message?: string;  // Generated via formatToolSummary()
   error?: string;
   metadata?: { id, timestamp, path, ... };
 }
 ```
+
+**Key Patterns:**
+- Use `isSafeId()` to validate all resource IDs in assignment tools
+- Use `formatToolSummary()` to generate human-readable messages with metadata
+- All assignment tools return structured data with message for user display
 
 ## Data Model
 
@@ -159,6 +172,17 @@ PromptAnalysis {
 6. **Survey** - Feedback
 7. **Nudge** - Behavior trigger + action plan
 8. **Summary** - Takeaways + 2 resource URLs
+
+### Landing Page Post-Processing
+
+Landing pages go through strict normalization pipeline:
+1. **Sanitization** - Remove dangerous elements
+2. **Repair** - Fix malformed HTML
+3. **Logo Centering** - Wrap circular icons in flex containers (`normalizeLandingLogoCentering()`)
+4. **Form/Container Centering** - Enforce max-width on forms missing it (`enforceMinimalLayoutMaxWidth()`)
+5. **Document Structure** - Ensure valid HTML5 shell
+
+**Order matters:** Logo centering BEFORE form centering. All sanitization/repair BEFORE normalization.
 
 ## Multi-Language (12 Languages)
 
@@ -223,9 +247,11 @@ REMOTE_STORAGE_URL (optional)
 
 1. Create `src/mastra/tools/{action}-{object}-tool.ts`
 2. Define Zod input/output schemas
-3. Implement execute() with 3-level fallbacks
-4. Register in agentic-ally.ts tools list
-5. Return `{success, data, error, metadata}`
+3. For assignment tools: Validate resource IDs with `isSafeId()`
+4. Implement execute() with 3-level fallbacks
+5. For user-facing output: Use `formatToolSummary()` for structured messages
+6. Register in agentic-ally.ts tools list
+7. Return `{success, data, error, metadata}` following standard response format
 
 ### Adding a Language
 
@@ -241,6 +267,10 @@ REMOTE_STORAGE_URL (optional)
 3. Check KV keys: `ml:{id}:{type}:{lang}`
 4. Verify JSON validity (not corrupted)
 5. Check 3-level fallbacks were tried
+6. **For landing page issues:**
+   - Icons not centered? → Check `normalizeLandingLogoCentering()` runs before form centering
+   - Forms left-aligned? → Verify `enforceMinimalLayoutMaxWidth()` injects max-width
+   - Normalizers not applying? → Check order in `phishing-html-postprocessors.ts`
 
 ## Architecture Philosophy
 
@@ -250,7 +280,14 @@ System never crashes. Quality degrades gracefully. Primary fails → Fallback 1 
 
 ---
 
-**Last Updated:** November 7, 2025 | **Framework:** Mastra 0.1.x | **Runtime:** Cloudflare Workers
+**Last Updated:** January 9, 2025 | **Framework:** Mastra 0.1.x | **Runtime:** Cloudflare Workers
 
-**Recent Updates (Nov 7, 2025):**
+**Recent Updates (Jan 9, 2025):**
+- **Landing Page Normalizers:** `normalizeLandingLogoCentering()` for icon centering, `enforceMinimalLayoutMaxWidth()` for missing max-width injection
+- **Tool Output Format:** `formatToolSummary()` for consistent user-facing messages, `isSafeId()` for resource ID validation
+- **Email Footer Rules:** Updated prompt directive for footer styling (`text-align: center; padding: 20px; font-size: 12px; color: #9ca3af;`)
+- **PII Prevention:** `NO_FAKE_PERSONAL_IDENTITIES_RULES` to prevent LLM name generation
+- **Language-Specific Greetings:** Enhanced `GREETING_RULES` with English/Turkish examples
+
+**Previous Updates (Nov 7, 2025):**
 - Code Review Check Tool: Multi-language support, `hint` field for solution-oriented feedback, `outputLanguage` parameter
