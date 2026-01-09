@@ -1,4 +1,4 @@
-import { generateText } from 'ai';
+import { generateText, LanguageModel } from 'ai';
 import { getLanguagePrompt } from '../language/localization-language-rules';
 import { LOCALIZER_PARAMS } from '../config/llm-generation-params';
 import { withRetry } from '../core/resilience-utils';
@@ -14,7 +14,7 @@ const logger = getLogger('TranscriptTranslator');
 export async function translateTranscript(
   transcript: string,
   targetLanguage: string,
-  model: any
+  model: LanguageModel
 ): Promise<string> {
   // Return original if English
   if (targetLanguage.toLowerCase().startsWith('en')) {

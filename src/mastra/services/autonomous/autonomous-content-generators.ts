@@ -16,10 +16,45 @@ import {
 } from './autonomous-training-handlers';
 import { selectGroupTrainingTopic } from './group-topic-service';
 
+interface ContentGenerationReport {
+    header?: {
+        resilience_stage?: { level?: string };
+        progression_target?: string;
+        progression_hint?: string;
+    };
+    meta?: {
+        department?: string;
+    };
+    strengths?: string[];
+    growth_opportunities?: string[];
+    maturity_mapping?: {
+        gartner_sbcp?: { current?: string; next?: string; what_it_takes?: string };
+        enisa_security_culture?: { current?: string; next?: string; what_it_takes?: string };
+    };
+    references?: string[];
+    recommended_next_steps?: NextSteps;
+    ai_recommended_next_steps?: NextSteps;
+}
+
+interface NextSteps {
+    simulations?: any[];
+    microlearnings?: any[];
+    nudges?: any[];
+}
+
+interface AutonomousToolResult {
+    analysisReport?: ContentGenerationReport;
+    userInfo?: {
+        preferredLanguage?: string;
+        department?: string;
+        targetUserResourceId?: string;
+    };
+}
+
 /**
  * Build executive report from analysis data
  */
-function getRecommendedNextSteps(report: any) {
+function getRecommendedNextSteps(report: ContentGenerationReport | undefined) {
     return (
         report?.recommended_next_steps ??
         report?.ai_recommended_next_steps ??
@@ -31,7 +66,7 @@ function getRecommendedNextSteps(report: any) {
     );
 }
 
-export function buildExecutiveReport(toolResult: any): string | undefined {
+export function buildExecutiveReport(toolResult: AutonomousToolResult): string | undefined {
     if (!toolResult.analysisReport) {
         return undefined;
     }
@@ -41,7 +76,7 @@ export function buildExecutiveReport(toolResult: any): string | undefined {
     const sim = steps.simulations?.[0];
     const ml = steps.microlearnings?.[0];
     const nudge = steps.nudges?.[0];
-    const references = Array.isArray(report.references) ? report.references.join(', ') : '';
+    const references = (report.references && Array.isArray(report.references)) ? report.references.join(', ') : '';
 
     return `**User Behavior Analysis Report**
 
@@ -189,7 +224,7 @@ export async function generateContentForGroup(
  * Generate content (phishing + training) for user assignment
  */
 export async function generateContentForUser(
-    toolResult: any,
+    toolResult: AutonomousToolResult,
     executiveReport: string | undefined,
     actions: ('training' | 'phishing')[],
     sendAfterPhishingSimulation: boolean | undefined,

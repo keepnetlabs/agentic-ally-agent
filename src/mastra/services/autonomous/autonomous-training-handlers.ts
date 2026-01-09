@@ -17,10 +17,27 @@ import {
     buildUploadAndAssignPrompt,
 } from '../../utils/prompt-builders/autonomous-prompts';
 
+interface MicrolearningRecommendation {
+    title: string;
+    objective?: string;
+    description?: string;
+    rationale?: string;
+    language?: string;
+    duration_min?: number;
+}
+
+interface AutonomousToolResult {
+    userInfo?: {
+        targetUserResourceId?: string;
+        department?: string;
+        preferredLanguage?: string;
+    };
+}
+
 /**
  * Upload only training module (no assignment) - Extracts training ID for linking
  */
-export async function uploadTrainingOnly(threadId: string, microlearning: any): Promise<any> {
+export async function uploadTrainingOnly(threadId: string, microlearning: MicrolearningRecommendation): Promise<any> {
     const logger = getLogger('UploadTrainingOnly');
     try {
         logger.info('Requesting agent to upload training module (upload only)', { microlearning: microlearning?.title });
@@ -196,9 +213,9 @@ export async function uploadAndAssignTraining(
  * @param isCustomPrompt - If true, contextOrPrompt is a custom prompt (not executive report)
  */
 export async function generateTrainingModule(
-    microlearning: any,
+    microlearning: MicrolearningRecommendation,
     contextOrPrompt: string | undefined,
-    toolResult: any,
+    toolResult: AutonomousToolResult,
     trainingThreadId: string,
     uploadOnly: boolean = false,
     isCustomPrompt: boolean = false
@@ -464,7 +481,7 @@ export async function uploadAndAssignTrainingForGroup(
  * @param targetGroupResourceId - Group resource ID (for upload/assign)
  */
 export async function generateTrainingModuleForGroup(
-    microlearning: any,
+    microlearning: MicrolearningRecommendation,
     customPrompt: string,
     preferredLanguage: string | undefined,
     trainingThreadId: string,

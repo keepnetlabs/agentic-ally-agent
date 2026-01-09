@@ -1,11 +1,15 @@
 import { Context, Next } from 'hono';
 import { requestStorage } from '../utils/core/request-storage';
+import { validateBaseApiUrl } from '../utils/core/url-validator';
 import { randomUUID } from 'crypto';
 
 /**
  * Middleware to initialize AsyncLocalStorage for request-scoped data.
  * Captures custom auth token, Cloudflare env bindings, and wraps the request execution in the storage context.
  * Generates a unique correlation ID for request tracking across all logs.
+ *
+ * Also validates the X-BASE-API-URL header against allowed list (https://dash.keepnetlabs.com, https://test-api.devkeepnet.com)
+ * Invalid or missing URLs fall back to test environment default.
  */
 export const contextStorage = async (c: Context, next: Next) => {
     // Use custom header for specific agent authentication
@@ -20,10 +24,10 @@ export const contextStorage = async (c: Context, next: Next) => {
     // Check if correlation ID is provided in header (for distributed tracing)
     const correlationId = c.req.header('X-Correlation-ID') || randomUUID();
 
-    // Get base API URL from header or fallback to default (used for upload/assign operations)
-    // URL is provided via X-BASE-API-URL header by client, fallback to test environment
-    const baseApiUrl = c.req.header('X-BASE-API-URL') ||
-        'https://test-api.devkeepnet.com';
+    // Get base API URL from header with validation
+    // URL is provided via X-BASE-API-URL header by client
+    // Validates against allowed list and falls back to default if invalid
+    const baseApiUrl = validateBaseApiUrl(c.req.header('X-BASE-API-URL'));
 
     // Wrap the next handlers in the AsyncLocalStorage run context
     return requestStorage.run({ correlationId, token, env, companyId, baseApiUrl }, async () => {

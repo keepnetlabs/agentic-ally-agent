@@ -15,6 +15,11 @@ export type AgentRoutingResult = {
   taskContext?: string;
 };
 
+interface RoutingDecision {
+  agent: AgentName;
+  taskContext?: string;
+}
+
 export class AgentRouter {
   private mastra: Mastra;
 
@@ -29,14 +34,14 @@ export class AgentRouter {
    */
   async route(prompt: string): Promise<AgentRoutingResult> {
     const orchestrator = this.mastra.getAgent('orchestrator');
-    const validAgents = Object.values(AGENT_NAMES).filter(name => name !== AGENT_NAMES.ORCHESTRATOR);
+    const validAgents: AgentName[] = Object.values(AGENT_NAMES).filter(name => name !== AGENT_NAMES.ORCHESTRATOR);
 
     try {
       logger.info('Orchestrator analyzing intent');
 
       // Wrap orchestrator call + JSON parsing in retry mechanism
       // withRetry will automatically retry on errors with exponential backoff
-      const decision = await withRetry(
+      const decision = await withRetry<RoutingDecision>(
         async () => {
           // Get response from orchestrator
           const routingResult = await orchestrator.generate(prompt);
@@ -46,7 +51,7 @@ export class AgentRouter {
           const cleanJsonText = cleanResponse(routingText, 'orchestrator-decision');
           const parsed = JSON.parse(cleanJsonText);
 
-          return parsed;
+          return parsed as RoutingDecision;
         },
         'orchestrator-routing'
       );

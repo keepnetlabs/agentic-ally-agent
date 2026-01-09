@@ -4,6 +4,7 @@
 
 import { getLogger } from '../core/logger';
 import * as parse5 from 'parse5';
+import { EmailSimulationInbox, SimulatedEmail, EmailAttachment } from '../../types/microlearning';
 
 const logger = getLogger('JsonValidation');
 
@@ -265,7 +266,7 @@ export function correctInboxStructure(original: Record<string, any>, translated:
  * @param jsonData - The JSON object to check
  * @returns Array of detected issues
  */
-export function detectJsonCorruption(jsonData: any): string[] {
+export function detectJsonCorruption(jsonData: EmailSimulationInbox | any): string[] {
   const issues: string[] = [];
 
   if (!jsonData) {
@@ -281,7 +282,7 @@ export function detectJsonCorruption(jsonData: any): string[] {
 
   // Check for malformed HTML in content fields
   if (jsonData.emails && Array.isArray(jsonData.emails)) {
-    jsonData.emails.forEach((email: any, index: number) => {
+    jsonData.emails.forEach((email: SimulatedEmail, index: number) => {
       if (email.content && typeof email.content === 'string') {
         // Check for unclosed HTML tags
         const openTags = (email.content.match(/<[^\/][^>]*>/g) || []).length;
@@ -299,7 +300,7 @@ export function detectJsonCorruption(jsonData: any): string[] {
 
       // Check attachment content
       if (email.attachments && Array.isArray(email.attachments)) {
-        email.attachments.forEach((attachment: any, attIndex: number) => {
+        email.attachments.forEach((attachment: EmailAttachment, attIndex: number) => {
           if (attachment.content && typeof attachment.content === 'string') {
             const openTags = (attachment.content.match(/<[^\/][^>]*>/g) || []).length;
             const closeTags = (attachment.content.match(/<\/[^>]*>/g) || []).length;
@@ -371,7 +372,7 @@ export function repairHtml(html: string): string {
  * @param inbox - Inbox object containing emails array
  * @returns Repaired inbox object
  */
-export function repairInboxHtml(inbox: any): any {
+export function repairInboxHtml(inbox: EmailSimulationInbox | any): EmailSimulationInbox | any {
   if (!inbox || typeof inbox !== 'object') {
     return inbox;
   }
@@ -382,7 +383,7 @@ export function repairInboxHtml(inbox: any): any {
   if (repaired.emails && Array.isArray(repaired.emails)) {
     let totalRepairs = 0;
 
-    repaired.emails = repaired.emails.map((email: any, emailIndex: number) => {
+    repaired.emails = repaired.emails.map((email: SimulatedEmail, emailIndex: number) => {
       const repairedEmail = { ...email };
 
       // Repair email content
@@ -395,9 +396,8 @@ export function repairInboxHtml(inbox: any): any {
         }
       }
 
-      // Repair attachments
       if (repairedEmail.attachments && Array.isArray(repairedEmail.attachments)) {
-        repairedEmail.attachments = repairedEmail.attachments.map((attachment: any, attIndex: number) => {
+        repairedEmail.attachments = repairedEmail.attachments.map((attachment: EmailAttachment, attIndex: number) => {
           if (attachment.content && typeof attachment.content === 'string') {
             const before = attachment.content;
             const after = repairHtml(before);
@@ -436,8 +436,8 @@ export function repairInboxHtml(inbox: any): any {
  * @param inbox - Inbox object to check and repair
  * @returns Object with repaired inbox and metadata
  */
-export function detectAndRepairInbox(inbox: any): {
-  inbox: any;
+export function detectAndRepairInbox(inbox: EmailSimulationInbox | any): {
+  inbox: EmailSimulationInbox | any;
   hadCorruption: boolean;
   issuesFound: string[];
   issuesRemaining: string[];

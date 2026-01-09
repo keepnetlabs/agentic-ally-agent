@@ -156,7 +156,7 @@ Return ONLY a valid JSON object with this structure (no markdown, no extra text)
 
       return {
         success: false,
-        error: errorInfo.message,
+        error: JSON.stringify(errorInfo),
       };
     }
   },

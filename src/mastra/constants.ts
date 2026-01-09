@@ -757,6 +757,16 @@ export const API_ENDPOINTS = {
   // Frontend URLs
   FRONTEND_MICROLEARNING_URL: 'https://agentic-ai-microlearning.keepnetlabs.com',
 
+  // Allowed base API URLs for X-BASE-API-URL header validation
+  // Production and test environments
+  ALLOWED_BASE_API_URLS: [
+    'https://dash.keepnetlabs.com',          // Production
+    'https://test-api.devkeepnet.com',       // Test/Default
+  ] as const,
+
+  // Default base API URL (fallback when header not provided)
+  DEFAULT_BASE_API_URL: 'https://test-api.devkeepnet.com',
+
 } as const;
 
 // API Keys and authentication

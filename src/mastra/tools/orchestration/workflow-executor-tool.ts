@@ -369,10 +369,7 @@ export const workflowExecutorTool = createTool({
         const validation = validateToolResult(result, workflowExecutorOutputSchema, 'workflow-executor');
         if (!validation.success) {
           logger.error('Workflow executor result validation failed', { code: validation.error.code, message: validation.error.message });
-          return {
-            success: false,
-            error: JSON.stringify(validation.error)
-          };
+          return createToolErrorResponse(validation.error);
         }
 
         return validation.data;
@@ -441,10 +438,7 @@ export const workflowExecutorTool = createTool({
         const validation = validateToolResult(toolResult, workflowExecutorOutputSchema, 'workflow-executor');
         if (!validation.success) {
           logger.error('Add language result validation failed', { code: validation.error.code, message: validation.error.message });
-          return {
-            success: false,
-            error: JSON.stringify(validation.error)
-          };
+          return createToolErrorResponse(validation.error);
         }
 
         return validation.data;
@@ -508,10 +502,7 @@ export const workflowExecutorTool = createTool({
           const validation = validateToolResult(resultData, workflowExecutorOutputSchema, 'workflow-executor');
           if (!validation.success) {
             logger.error('Add multiple languages result validation failed', { code: validation.error.code, message: validation.error.message });
-            return {
-              success: false,
-              error: JSON.stringify(validation.error)
-            };
+            return createToolErrorResponse(validation.error);
           }
 
           return validation.data;
@@ -573,10 +564,7 @@ export const workflowExecutorTool = createTool({
         const validation = validateToolResult(resultData, workflowExecutorOutputSchema, 'workflow-executor');
         if (!validation.success) {
           logger.error('Update microlearning result validation failed', { code: validation.error.code, message: validation.error.message });
-          return {
-            success: false,
-            error: JSON.stringify(validation.error)
-          };
+          return createToolErrorResponse(validation.error);
         }
 
         return validation.data;

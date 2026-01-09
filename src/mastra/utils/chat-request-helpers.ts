@@ -12,6 +12,14 @@ import type {
 } from '../types/api-types';
 import { getLogger } from './core/logger';
 
+interface ChatRequestBody {
+  prompt?: string;
+  text?: string;
+  input?: string;
+  messages?: ChatMessage[];
+  [key: string]: unknown;
+}
+
 const logger = getLogger('ChatRequestHelpers');
 
 // Window size for conversation context
@@ -346,7 +354,7 @@ export const extractUserPrompt = (messages: ChatMessage[]): string | undefined =
  * @returns Object with { prompt, routingContext } or null if validation fails
  */
 export const parseAndValidateRequest = (
-  body: any
+  body: ChatRequestBody
 ): { prompt: string; routingContext: string } | null => {
   let prompt: string | undefined;
   let routingContext: string = '';

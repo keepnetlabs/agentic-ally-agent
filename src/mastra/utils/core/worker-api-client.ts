@@ -28,13 +28,15 @@ import { logErrorInfo } from './error-utils';
 
 const logger = getLogger('WorkerAPIClient');
 
+interface ServiceBinding {
+  fetch(request: Request | string, init?: RequestInit | Request): Promise<Response>;
+}
+
 export interface CallWorkerAPIOptions<TPayload = any> {
   /** Cloudflare environment bindings */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  env: any;
+  env: Record<string, unknown>;
   /** Service binding (e.g., env.PHISHING_CRUD_WORKER) */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  serviceBinding?: any;
+  serviceBinding?: ServiceBinding;
   /** Public URL fallback (for local development) */
   publicUrl: string;
   /** Worker endpoint path (e.g., 'https://worker/submit') */

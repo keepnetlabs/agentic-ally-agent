@@ -513,6 +513,119 @@ Returns new URL with langUrl=lang/tr
 5. **Tools need 3-level fallbacks** - Primary → Fallback 1 → Guaranteed basic
 6. **Don't use git commands** - No git add, git commit, git push, etc. (User handles version control)
 7. **Don't suggest npm run build** - Just make code changes directly; don't ask to run build commands
+8. **Error responses must be standardized** - Always use `createToolErrorResponse(errorInfo)` + `logErrorInfo()` before returning
+9. **URL validation is enforced** - X-BASE-API-URL header validated against whitelist, defaults to test environment
+
+---
+
+## 🔐 Error Format Standardization
+
+**File:** `src/mastra/services/error-service.ts` + `src/mastra/utils/core/error-utils.ts`
+
+### Error Response Pattern
+
+**All error responses must follow this format:**
+
+```typescript
+// Step 1: Create error info from service
+const errorInfo = errorService.validation('Email is required');
+
+// Step 2: Log the error (optional but recommended)
+logErrorInfo(logger, 'warn', 'Validation failed', errorInfo);
+
+// Step 3: Return standardized response
+return createToolErrorResponse(errorInfo);
+
+// Returns:
+{
+  success: false,
+  error: JSON.stringify({
+    code: "ERR_VAL_001",
+    message: "Email is required",
+    category: "VALIDATION",
+    retryable: false,
+    suggestion: "Please check your input and try again with valid data.",
+    nextStep: "Ask user to provide missing or correct the invalid information.",
+    details: { /* optional context */ },
+    timestamp: 1704816000000
+  })
+}
+```
+
+### Error Categories & Codes
+
+**File:** `src/mastra/constants.ts` (ERROR_CODES object)
+
+All error codes are centralized and semantic:
+- `ERR_AUTH_*` - Authentication/authorization failures
+- `ERR_VAL_*` - Input validation errors
+- `ERR_KV_*` - Cloudflare KV storage errors
+- `ERR_API_*` - External API failures
+- `ERR_AI_*` - AI model generation errors
+- `ERR_NF_*` - Resource not found errors
+- `ERR_RL_*` - Rate limiting errors
+- `ERR_TO_*` - Timeout errors
+- `ERR_INT_*` - Internal/unexpected errors
+
+### Error Service Methods
+
+```typescript
+errorService.auth(message, details?, errorCode?)
+errorService.validation(message, details?, errorCode?)
+errorService.external(message, details?, errorCode?)
+errorService.notFound(message, details?, errorCode?)
+errorService.aiModel(message, details?, errorCode?)
+errorService.timeout(message, details?, errorCode?)
+errorService.rateLimit(message, details?, errorCode?)
+errorService.internal(message, details?, errorCode?)
+
+// Agent-decision helpers
+errorService.isRetryable(error: ErrorInfo | string): boolean
+errorService.parse(errorString: string): ErrorInfo | null
+```
+
+---
+
+## 🛡️ Request Validation - Base API URL
+
+**File:** `src/mastra/middleware/context-storage.ts` + `src/mastra/utils/core/url-validator.ts`
+
+### URL Validation Pattern
+
+All requests with `X-BASE-API-URL` header are validated against allowed list:
+
+```typescript
+// Allowed URLs (in constants.ts)
+ALLOWED_BASE_API_URLS: [
+  'https://dash.keepnetlabs.com',          // Production
+  'https://test-api.devkeepnet.com',       // Test/Default
+]
+
+// Middleware validates automatically
+const baseApiUrl = validateBaseApiUrl(c.req.header('X-BASE-API-URL'));
+// Returns: Validated URL OR default if invalid/missing
+```
+
+### Validation Rules
+
+1. ✅ **No header provided** → Use `DEFAULT_BASE_API_URL` (test environment)
+2. ✅ **Invalid URL format** → Log warning + use default
+3. ✅ **Not in whitelist** → Log warning + use default
+4. ✅ **Valid & allowed** → Use provided URL
+5. ✅ **Case-insensitive** → Both variants match
+
+### Utility Functions
+
+```typescript
+// Validate and return safe URL (auto-used in middleware)
+validateBaseApiUrl(headerUrl?: string): string
+
+// Type guard for TypeScript
+isAllowedBaseApiUrl(url: string): boolean
+
+// Get allowed list (for debugging/docs)
+getAllowedBaseApiUrls(): readonly string[]
+```
 
 ---
 
@@ -528,11 +641,17 @@ Returns new URL with langUrl=lang/tr
 
 ---
 
-**Last Updated:** November 7, 2025
+**Last Updated:** January 9, 2026
 **Compatibility:** Mastra 0.1.x, TypeScript 5.x, Cloudflare Workers
 **See Also:** `.cursorrules` for code standards and best practices
 
 ---
+
+### Recent Updates (Jan 9, 2026)
+- **Error Format Standardization:** All error responses now use `createToolErrorResponse()` + `logErrorInfo()` pattern with centralized `ERROR_CODES` in constants.ts. Covers 8 error categories (AUTH, VALIDATION, KV, API, AI_MODEL, NOT_FOUND, RATE_LIMIT, TIMEOUT, INTERNAL)
+- **URL Validation Middleware:** Added `validateBaseApiUrl()` utility to validate X-BASE-API-URL header against whitelist (production + test environments). Automatic fallback to test default on invalid/missing header
+- **Request Context Integration:** baseApiUrl now extracted and validated in `context-storage.ts` middleware, available to all tools via `getRequestContext().baseApiUrl`
+- **Log Redaction Enhancement:** All masking utilities in `security-utils.ts` updated to full redaction format `[REDACTED_FIELDNAME]` with support for deepRedact, maskEmail, maskPhone, maskUrlParams, maskHeaders
 
 ### Recent Updates (Jan 9, 2025)
 - **Landing Page Normalizers:** Added `normalizeLandingLogoCentering()` for centering circular icon/logo divs, `enforceMinimalLayoutMaxWidth()` for injecting missing max-width on minimal layouts

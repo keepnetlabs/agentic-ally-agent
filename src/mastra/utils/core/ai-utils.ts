@@ -9,5 +9,5 @@ import { GenerateTextResult } from 'ai';
  */
 export function extractReasoning(response: GenerateTextResult<any, any>): string | undefined {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (response as any).response?.body?.reasoning;
+    return (response as any)?.response?.body?.reasoning;
 }

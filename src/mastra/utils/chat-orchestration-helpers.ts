@@ -41,6 +41,14 @@ import { PinoLogger } from '@mastra/loggers';
 import { Mastra } from '@mastra/core/mastra';
 import { AgentRouter } from '../services/agent-router';
 import { maskPII, unmaskPII } from './parsers/pii-masking-utils';
+import { Agent } from '@mastra/core/agent';
+
+interface ChatRequestBody {
+  conversationId?: string;
+  threadId?: string;
+  sessionId?: string;
+  [key: string]: unknown;
+}
 
 const logger = new PinoLogger({
   name: 'ChatOrchestration',
@@ -112,7 +120,7 @@ export const preparePIIMaskedInput = (
  * @param body - Request body containing optional threadId/conversationId/sessionId
  * @returns Generated or provided thread ID
  */
-export const extractAndPrepareThreadId = (body: any): string => {
+export const extractAndPrepareThreadId = (body: ChatRequestBody): string => {
   let threadId = body?.conversationId || body?.threadId || body?.sessionId;
 
   if (!threadId) {
@@ -206,7 +214,7 @@ export const routeToAgent = async (
  * @throws Error if stream creation fails
  */
 export const createAgentStream = async (
-  agent: any,
+  agent: Agent<any, any, any>,
   finalPrompt: string,
   threadId: string,
   agentName: string

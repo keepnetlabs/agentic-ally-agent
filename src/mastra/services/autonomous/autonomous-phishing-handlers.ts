@@ -17,6 +17,23 @@ import {
     buildAssignPhishingWithTrainingPrompt,
 } from '../../utils/prompt-builders/autonomous-prompts';
 
+interface PhishingSimulationRecommendation {
+    title?: string;
+    difficulty?: string;
+    vector?: string;
+    persuasion_tactic?: string;
+    scenario_type?: string;
+    [key: string]: any;
+}
+
+interface AutonomousToolResult {
+    userInfo?: {
+        targetUserResourceId?: string;
+        department?: string;
+        preferredLanguage?: string;
+    };
+}
+
 /**
  * Generate phishing simulation using agent - FOR USER ASSIGNMENTS ONLY
  * Implements 3-level fallback pattern per Cursor Rules
@@ -28,9 +45,9 @@ import {
  * @param uploadOnly - Whether to upload without assigning
  */
 export async function generatePhishingSimulation(
-    simulation: any,
+    simulation: PhishingSimulationRecommendation,
     executiveReport: string | undefined,
-    toolResult: any,
+    toolResult: AutonomousToolResult,
     phishingThreadId: string,
     uploadOnly: boolean = false
 ): Promise<any> {
@@ -425,7 +442,7 @@ export async function uploadAndAssignPhishingForGroup(
  * @param targetGroupResourceId - Group resource ID (for upload/assign)
  */
 export async function generatePhishingSimulationForGroup(
-    simulation: any,
+    simulation: PhishingSimulationRecommendation,
     customPrompt: string,
     preferredLanguage: string | undefined,
     phishingThreadId: string,
