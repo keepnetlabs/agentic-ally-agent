@@ -4,290 +4,108 @@ You are an expert senior software engineer specializing in AI agent frameworks, 
 
 ## Project Context
 
-**Agentic Ally** generates 8-scene interactive microlearning modules for compliance training using AI agents. TypeScript/Mastra on Cloudflare Workers + KV + D1.
+**Agentic Ally** is a comprehensive Security Awareness Platform driven by a **Multi-Agent System**. It operates in two modes: **Reactive** (User Chat) and **Proactive** (Autonomous Schedule).
 
-**Key Flow:**
-User → Agent (state machine) → Workflow Executor → [Parallel: Language Gen + Inbox Gen] → KV Save → Training URL
+### 🤖 The 5 Specialist Agents
+1.  **Microlearning Agent:** Generates 8-scene interactive training modules (Intro, Video, Quiz, etc.).
+2.  **Phishing Agent:** Creates psychological phishing simulations (Emails + Landing Pages).
+3.  **User Info Agent:** Analyzes user footprints, timeline, and calculates Risk Scores.
+4.  **Policy Agent:** RAG-based expert. Retrieves and summarizes security policies.
+5.  **Orchestrator Agent:** The Router. Analyzes user intent and directs traffic to the right specialist.
 
-**Tech Stack:** Mastra, TypeScript ES2022, Cloudflare Workers, OpenAI (gpt-4o-mini), Workers AI (content generation)
+### 🔄 Operational Flows
+1.  **Reactive (Chat):**
+    *   `POST /chat` -> Orchestrator -> Routes to Specialist -> Returns JSON/URL.
+2.  **Proactive (Autonomous):**
+    *   Cron Job -> `AutonomousService` -> Fetch Users -> Check Frequency Policy -> Trigger Specialist (Phishing/Training) -> Save to KV.
+
+**Tech Stack:** Mastra 0.1.x, TypeScript ES2022, Cloudflare Workers, OpenAI (gpt-4o-mini).
 
 ## Before Any Task
 
-1. **Understand Impact** - Which components affected? (agents/tools/workflows/services)
-2. **Preserve Patterns** - Maintain state machine, 3-level fallbacks, parallel processing
-3. **Check KV Model** - Key convention: `ml:{id}:{type}:{lang}`
-4. **Maintain Multi-Language** - 12 languages supported, BCP-47 codes
+1.  **Identify Agent:** Which specialist is being modified? (e.g., `microlearning-agent`, `phishing-email-agent`).
+2.  **Check Constants:** Use `LONG_RUNNING_AGENT_TIMEOUT_MS` (10m) for generation.
+3.  **Preserve Patterns:** Maintain 3-level fallbacks, parallel processing.
+4.  **Check KV Model:** Key convention: `ml:{id}:base`, `phishing:{id}:base`.
 
 ## Code Standards
 
 ### Structure & Naming
 
-- **Tools:** `{action}-{object}-tool.ts` (e.g., analyze-user-prompt-tool.ts)
+- **Agents:** `src/mastra/agents/` (The 5 Specialists)
+- **Services:** `src/mastra/services/` (Core Infra: KV, Error, Health, Autonomous)
+- **Tools:** `{action}-{object}-tool.ts`
 - **Workflows:** `{action}-{object}-workflow.ts`
-- **Services:** `{domain}-service.ts`
-- Separate concerns: Agents → Workflows → Tools → Services
-- Use early returns, functional patterns, DRY
 
 ### TypeScript Rules
 
-- No `any` types; use `satisfies` for validation
-- Prefer interfaces over types
-- Zod for all tool input/output schemas
-- Strict type safety without compromises
+- No `any` types; use `satisfies` or Zod schemas.
+- Prefer interfaces over types.
+- **Strict Zod Validations** for all LLM outputs.
 
 ### Error Handling: 3-Level Fallback Pattern
 
 ```typescript
 try {
-  // Level 1: Optimized primary path
+  // Level 1: Optimized primary path (e.g. Semantic Search)
   return primarySolution();
 } catch (error) {
-  console.warn('Primary failed, fallback 1:', error);
   try {
-    // Level 2: Degraded but functional
+    // Level 2: Degraded but functional (e.g. Heuristic)
     return fallback1();
   } catch (err) {
-    console.warn('Fallback 1 failed, using basic:', err);
-    // Level 3: Guaranteed to work
+    // Level 3: Guaranteed safe default
     return fallback2();
   }
 }
 ```
 
-**Never crash.** System degrades gracefully → semantic search fails → use sampling → use basic hints.
+### Critical Configurations (DO NOT CHANGE)
 
-### Async & Performance
-
-- Fire-and-forget KV saves (no await, no blocking)
-- `Promise.all()` for parallel scene generation (8 scenes parallel = 50% faster)
-- Always set timeouts on external API calls
-- Never block response on non-critical operations
+1.  **Timeouts:**
+    - `AGENT_CALL_TIMEOUT_MS`: 90,000 (Chat)
+    - `LONG_RUNNING_AGENT_TIMEOUT_MS`: **600,000** (Microlearning/Autonomous)
+2.  **Thread IDs (Autonomous):**
+    - Must be unique per run: `phishing-{userId}-{timestamp}`
+    - Reason: Prevents agent hallucination of past runs.
 
 ### Logging
 
-Use emoji prefixes for clarity:
+Use emoji prefixes:
 - 🔍 Info/debug
 - ⚠️ Warnings/fallbacks
 - ❌ Errors
 - ✅ Success
 - 🤖 AI operations
-- 📦 Data operations
 
-## Agent & Workflow Rules
+## Data Model (KV)
 
-### State Machine (Strict)
-
+### Microlearning (`ml:*`)
 ```
-STATE 1: Gather topic, department, level
-STATE 2: Show summary + time estimate (HTML template only, no repetition)
-STATE 3: Execute workflow on confirmation
-STATE 4: Return training URL
+ml:{id}:base           // Metadata + 8 scenes structure
+ml:{id}:lang:{code}    // Localized content
+ml:{id}:inbox:{dept}   // Simulation inbox
 ```
 
-**Tool Gate:** Never call tools before STATE 2 completion + explicit confirmation.
-
-### Workflow Pattern
-
+### Phishing (`phishing:*`)
 ```
-1. SEQUENTIAL: Analyze input
-2. SEQUENTIAL: Generate base structure
-3. PARALLEL:
-   a. Language content (8 scenes via scene generators)
-   b. Inbox structure (emails + texts)
-4. SEQUENTIAL: Save to KV (fire-and-forget)
+phishing:{id}:base     // Simulation metadata
+phishing:{id}:email    // Email template
+phishing:{id}:landing  // Landing page HTML
 ```
 
-### Tool Input/Output Format
-
-```typescript
-// Input: Always Zod schema + validation
-const schema = z.object({
-  resourceId: z.string().refine(isSafeId, 'Invalid resource ID')
-});
-
-// Output: Always structured
-{
-  success: boolean;
-  data?: {
-    resourceId: string;
-    campaignName?: string;
-    assignmentType?: string;
-    [key: string]: any;
-  };
-  message?: string;  // Generated via formatToolSummary()
-  error?: string;
-  metadata?: { id, timestamp, path, ... };
-}
+### Autonomous State (`autonomous:*`)
 ```
-
-**Key Patterns:**
-- Use `isSafeId()` to validate all resource IDs in assignment tools
-- Use `formatToolSummary()` to generate human-readable messages with metadata
-- All assignment tools return structured data with message for user display
-
-## Data Model
-
-### KV Key Convention
-
+autonomous:policy:{userId}  // Frequency tracking
+autonomous:thread:{id}      // Conversation history
 ```
-ml:{microlearning_id}:base                    // Metadata + 8 scenes
-ml:{microlearning_id}:lang:{language_code}   // Language-specific content
-ml:{microlearning_id}:inbox:{dept}:{lang}    // Simulated emails/texts
-```
-
-### Core Interfaces
-
-```typescript
-MicrolearningContent {
-  microlearning_id: string;
-  microlearning_metadata: { title, category, level, language_availability, ... };
-  scientific_evidence: { theories, psychology, sources };
-  scenes: [Scene1, ..., Scene8];
-}
-
-LanguageContent {
-  microlearning_id: string;
-  language: string;
-  scenes: [Scene1Content, ..., Scene8Content];
-  app_texts: { key: value };
-}
-
-PromptAnalysis {
-  language, topic, title, department, level,
-  category, learningObjectives, duration, etc.
-}
-```
-
-### 8-Scene Structure
-
-1. **Intro** - 3 highlights + 3 key messages
-2. **Goals** - 3-4 SMART objectives
-3. **Video** - Scenario + transcript
-4. **Actions** - 4 actionable steps (includes code review scenarios)
-   - For security training: Uses `code-review-check-tool.ts` to validate learner's code fixes
-   - Input: Issue type, original code, learner's fix, language, outputLanguage
-   - Output: Correctness score, feedback, explanation, solution hint (in learner's language)
-   - Scoring: 25pts (correct), 10pts (partial), 0pts (incorrect)
-5. **Quiz** - Knowledge check
-6. **Survey** - Feedback
-7. **Nudge** - Behavior trigger + action plan
-8. **Summary** - Takeaways + 2 resource URLs
-
-### Landing Page Post-Processing
-
-Landing pages go through strict normalization pipeline:
-1. **Sanitization** - Remove dangerous elements
-2. **Repair** - Fix malformed HTML
-3. **Logo Centering** - Wrap circular icons in flex containers (`normalizeLandingLogoCentering()`)
-4. **Form/Container Centering** - Enforce max-width on forms missing it (`enforceMinimalLayoutMaxWidth()`)
-5. **Document Structure** - Ensure valid HTML5 shell
-
-**Order matters:** Logo centering BEFORE form centering. All sanitization/repair BEFORE normalization.
-
-## Multi-Language (12 Languages)
-
-Supported: English (en), Turkish (tr), German (de), French (fr), Spanish (es), Portuguese (pt), Italian (it), Russian (ru), Chinese (zh), Japanese (ja), Arabic (ar), Korean (ko)
-
-**Detection:** Character patterns → BCP-47 normalization
-**Generation:** Analyze in user language → generate in target language
-**Translation:** Via add-language-workflow with multi-level retry + corruption detection
-
-## Services
-
-- **KVService:** Cloudflare KV REST wrapper (put, get, delete, list, search)
-- **ExampleRepo:** Singleton with D1 embeddings cache for semantic search hints
-- **MicrolearningService:** In-memory cache for reads (storeMicrolearning, storeLanguageContent, assignMicrolearningToDepartment)
-- **RemoteStorageService:** Backup persistence to remote API (fire-and-forget pattern)
-
-## Code Quality: Do's & Don'ts
-
-### ✅ Do
-
-- Implement 3-level fallbacks on all uncertain operations
-- Use semantic search (ExampleRepo) for contextual hints
-- Fire-and-forget KV saves
-- Parallel processing (Promise.all)
-- Strict types (no any)
-- Handle all error paths
-- Respect state machine in agent
-- Support all 12 languages
-- Use Zod validation
-- Console logging with emoji prefixes
-
-### ❌ Don't
-
-- Don't block response on KV saves
-- Don't skip fallback chains
-- Don't call tools before state completion
-- Don't hardcode languages
-- Don't use .then() chains
-- Don't add commented code (delete or document)
-- Don't break parallel processing
-- Don't assume single language
-- Don't ignore type errors
-- Don't mix concerns between layers
-- **Don't use git commands** (git add, git commit, git push, etc.)
-- **Don't suggest npm run build or other build commands** - Just make the code changes directly
-
-## Environment Variables
-
-```
-CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_KV_TOKEN, CLOUDFLARE_API_KEY
-CLOUDFLARE_AI_GATEWAY_ID, CLOUDFLARE_GATEWAY_AUTHENTICATION_KEY
-CLOUDFLARE_D1_DATABASE_ID
-OPENAI_API_KEY (required)
-GOOGLE_GENERATIVE_AI_API_KEY (optional)
-MASTRA_MEMORY_URL, MASTRA_MEMORY_TOKEN (optional)
-REMOTE_STORAGE_URL (optional)
-```
-
-## Quick Reference: Common Tasks
-
-### Adding a Tool
-
-1. Create `src/mastra/tools/{action}-{object}-tool.ts`
-2. Define Zod input/output schemas
-3. For assignment tools: Validate resource IDs with `isSafeId()`
-4. Implement execute() with 3-level fallbacks
-5. For user-facing output: Use `formatToolSummary()` for structured messages
-6. Register in agentic-ally.ts tools list
-7. Return `{success, data, error, metadata}` following standard response format
-
-### Adding a Language
-
-1. Add code to language-utils.ts + character patterns
-2. Add UI strings to app-texts.ts
-3. Add transcripts to transcript-database.json (if needed)
-4. Test add-language-workflow with new code
-
-### Debugging Workflows
-
-1. Check console logs (🔍, ❌ emojis)
-2. Verify state machine completion
-3. Check KV keys: `ml:{id}:{type}:{lang}`
-4. Verify JSON validity (not corrupted)
-5. Check 3-level fallbacks were tried
-6. **For landing page issues:**
-   - Icons not centered? → Check `normalizeLandingLogoCentering()` runs before form centering
-   - Forms left-aligned? → Verify `enforceMinimalLayoutMaxWidth()` injects max-width
-   - Normalizers not applying? → Check order in `phishing-html-postprocessors.ts`
 
 ## Architecture Philosophy
 
 > "Resilience through layered fallbacks. Every step must have an escape route."
 
-System never crashes. Quality degrades gracefully. Primary fails → Fallback 1 → Fallback 2 (guaranteed).
+- **System never crashes.** Quality degrades gracefully.
+- **Fire-and-forget** KV saves where possible.
+- **Parallel processing** (Promise.all) for speed.
 
----
-
-**Last Updated:** January 9, 2025 | **Framework:** Mastra 0.1.x | **Runtime:** Cloudflare Workers
-
-**Recent Updates (Jan 9, 2025):**
-- **Landing Page Normalizers:** `normalizeLandingLogoCentering()` for icon centering, `enforceMinimalLayoutMaxWidth()` for missing max-width injection
-- **Tool Output Format:** `formatToolSummary()` for consistent user-facing messages, `isSafeId()` for resource ID validation
-- **Email Footer Rules:** Updated prompt directive for footer styling (`text-align: center; padding: 20px; font-size: 12px; color: #9ca3af;`)
-- **PII Prevention:** `NO_FAKE_PERSONAL_IDENTITIES_RULES` to prevent LLM name generation
-- **Language-Specific Greetings:** Enhanced `GREETING_RULES` with English/Turkish examples
-
-**Previous Updates (Nov 7, 2025):**
-- Code Review Check Tool: Multi-language support, `hint` field for solution-oriented feedback, `outputLanguage` parameter
+**Last Updated:** January 10, 2026

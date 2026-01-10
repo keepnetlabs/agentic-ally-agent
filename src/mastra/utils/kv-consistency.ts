@@ -130,11 +130,23 @@ export async function waitForKVConsistency(
 
     // Max wait time reached - log warning but don't throw (graceful degradation)
     const duration = Date.now() - startTime;
+
+    // Diagnose missing keys
+    const finalChecks = await Promise.all(
+        expectedKeys.map(async (key) => {
+            const val = await kvService.get(key);
+            return { key, exists: !!val };
+        })
+    );
+    const missingKeys = finalChecks.filter(f => !f.exists).map(f => f.key);
+
     logger.warn('KV consistency check timeout', {
         resourceId,
         durationMs: duration,
         maxWaitMs: maxWait,
         keyCount: expectedKeys.length,
+        missingKeys, // Show exactly what is missing
+        namespaceId: (kvService as any).namespaceId || 'unknown', // Check namespace
         message: 'Continuing despite timeout - keys may not be immediately available',
     });
 }
@@ -155,11 +167,13 @@ export function buildExpectedKVKeys(
     const keys: string[] = [CLOUDFLARE_KV.KEY_TEMPLATES.base(microlearningId)];
 
     if (language) {
-        keys.push(CLOUDFLARE_KV.KEY_TEMPLATES.language(microlearningId, language));
+        const normalizedLang = language.toLowerCase();
+        keys.push(CLOUDFLARE_KV.KEY_TEMPLATES.language(microlearningId, normalizedLang));
     }
 
     if (department && language) {
-        keys.push(CLOUDFLARE_KV.KEY_TEMPLATES.inbox(microlearningId, department, language));
+        const normalizedLang = language.toLowerCase();
+        keys.push(CLOUDFLARE_KV.KEY_TEMPLATES.inbox(microlearningId, department, normalizedLang));
     }
 
     return keys;

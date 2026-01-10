@@ -1,210 +1,268 @@
-<svg viewBox="0 0 1500 1250" xmlns="http://www.w3.org/2000/svg">
-  <!-- Define styles -->
+<svg viewBox="0 0 2000 1450" xmlns="http://www.w3.org/2000/svg">
+  <!-- Define styles (Original Palette) -->
   <defs>
     <style>
       .box { fill: #f0f4f8; stroke: #2c3e50; stroke-width: 2; }
       .box-header { fill: #34495e; }
-      .box-header-ml { fill: #3498db; }
-      .box-header-phishing { fill: #e74c3c; }
-      .box-header-userinfo { fill: #27ae60; }
-      .box-header-worker { fill: #f39c12; }
-      .workflow-box-ml { fill: #f0f4f8; stroke: #3498db; stroke-width: 2; }
-      .workflow-box-phishing { fill: #f0f4f8; stroke: #e74c3c; stroke-width: 2; }
-      .workflow-box-userinfo { fill: #f0f4f8; stroke: #27ae60; stroke-width: 2; }
-      .workflow-box-worker { fill: #fef9e7; stroke: #f39c12; stroke-width: 2; }
-      .text-header { fill: white; font-size: 14px; font-weight: bold; }
-      .text-normal { fill: #2c3e50; font-size: 12px; }
+      .box-header-ml { fill: #3498db; }       /* Blue */
+      .box-header-phishing { fill: #e74c3c; } /* Red */
+      .box-header-userinfo { fill: #27ae60; } /* Green */
+      .box-header-policy { fill: #8e44ad; }   /* Purple (New) */
+      .box-header-auto { fill: #d35400; }     /* Orange (New) */
+      .box-header-worker { fill: #f39c12; }   /* Yellow */
+
+      .workflow-box { fill: #ffffff; stroke-width: 2; }
+      .workflow-box-ml { stroke: #3498db; }
+      .workflow-box-phishing { stroke: #e74c3c; }
+      .workflow-box-userinfo { stroke: #27ae60; }
+      .workflow-box-policy { stroke: #8e44ad; }
+      .workflow-box-worker { fill: #fef9e7; stroke: #f39c12; }
+
+      .text-header { fill: white; font-size: 14px; font-weight: bold; font-family: sans-serif; }
+      .text-normal { fill: #2c3e50; font-size: 12px; font-family: sans-serif; }
+      .text-small { fill: #7f8c8d; font-size: 10px; font-family: sans-serif; }
+      
       .arrow { stroke: #34495e; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
-      .arrow-label { fill: #34495e; font-size: 10px; font-weight: bold; }
+      .arrow-colored { stroke-width: 2; fill: none; }
+      .arrow-label { fill: #34495e; font-size: 11px; font-weight: bold; font-family: sans-serif; }
     </style>
-    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
-      <polygon points="0 0, 10 3, 0 6" fill="#34495e" />
-    </marker>
-    <marker id="arrowhead-ml" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
-      <polygon points="0 0, 10 3, 0 6" fill="#3498db" />
-    </marker>
-    <marker id="arrowhead-phishing" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
-      <polygon points="0 0, 10 3, 0 6" fill="#e74c3c" />
-    </marker>
-    <marker id="arrowhead-userinfo" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
-      <polygon points="0 0, 10 3, 0 6" fill="#27ae60" />
-    </marker>
-    <marker id="arrowhead-worker" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
-      <polygon points="0 0, 10 3, 0 6" fill="#f39c12" />
-    </marker>
+    
+    <!-- Markers -->
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><polygon points="0 0, 10 3, 0 6" fill="#34495e" /></marker>
+    <marker id="arrowhead-ml" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><polygon points="0 0, 10 3, 0 6" fill="#3498db" /></marker>
+    <marker id="arrowhead-phishing" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><polygon points="0 0, 10 3, 0 6" fill="#e74c3c" /></marker>
+    <marker id="arrowhead-userinfo" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><polygon points="0 0, 10 3, 0 6" fill="#27ae60" /></marker>
+    <marker id="arrowhead-policy" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><polygon points="0 0, 10 3, 0 6" fill="#8e44ad" /></marker>
+    <marker id="arrowhead-worker" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><polygon points="0 0, 10 3, 0 6" fill="#f39c12" /></marker>
   </defs>
 
   <!-- Title -->
-  <text x="750" y="30" font-size="24" font-weight="bold" text-anchor="middle" fill="#2c3e50">
-    Agentic Ally - High-Level Architecture (v2)
+  <text x="1000" y="30" font-size="28" font-weight="bold" text-anchor="middle" fill="#2c3e50" font-family="sans-serif">
+    Agentic Ally - Complete Platform Architecture
   </text>
 
-  <!-- 1. User Input -->
-  <rect class="box" x="550" y="50" width="400" height="70" rx="5"/>
-  <rect class="box-header" x="550" y="50" width="400" height="25" rx="5"/>
-  <text class="text-header" x="750" y="67" text-anchor="middle">HTTP POST /chat</text>
-  <text class="text-normal" x="570" y="90">• prompt: string</text>
-  <text class="text-normal" x="570" y="105">• modelProvider?: OPENAI | WORKERS_AI</text>
+  <!-- ============================================== -->
+  <!-- 1. INPUT LAYER (Dual Trigger) -->
+  <!-- ============================================== -->
+  
+  <!-- Reactive Box -->
+  <rect class="box" x="600" y="50" width="350" height="60" rx="5"/>
+  <rect class="box-header" x="600" y="50" width="350" height="25" rx="5"/>
+  <text class="text-header" x="775" y="67" text-anchor="middle">Reactive: HTTP POST /chat</text>
+  <text class="text-normal" x="620" y="85">• User Prompt (String)</text>
+  <text class="text-normal" x="620" y="100">• Context (UserId, Dept)</text>
 
-  <!-- Arrow 1 -->
-  <path class="arrow" d="M 750 120 L 750 145"/>
+  <!-- Proactive Box (New) -->
+  <rect class="box" x="1050" y="50" width="350" height="60" rx="5"/>
+  <rect class="box-header-auto" x="1050" y="50" width="350" height="25" rx="5"/>
+  <text class="text-header" x="1225" y="67" text-anchor="middle">Proactive: Autonomous Loop</text>
+  <text class="text-normal" x="1070" y="85">• Cron Schedule (Daily)</text>
+  <text class="text-normal" x="1070" y="100">• Risk-based Trigger</text>
 
+  <!-- Converging Arrows to Middleware -->
+  <path class="arrow" d="M 775 110 L 1000 145"/> <!-- Reactive -->
+  <path class="arrow" d="M 1225 110 L 1000 145"/> <!-- Proactive -->
+
+  <!-- ============================================== -->
+  <!-- 2. MIDDLEWARE & ORCHESTRATOR -->
+  <!-- ============================================== -->
+  
   <!-- Middleware Layer -->
-  <rect class="box" x="450" y="145" width="600" height="70" rx="5"/>
-  <rect class="box-header" x="450" y="145" width="600" height="25" rx="5"/>
-  <text class="text-header" x="750" y="162" text-anchor="middle">Middleware Layer (Request Context)</text>
-  <text class="text-normal" x="470" y="185">✓ AsyncLocalStorage context | ✓ Auth token | ✓ Rate limiting</text>
+  <rect class="box" x="700" y="145" width="600" height="60" rx="5"/>
+  <rect class="box-header" x="700" y="145" width="600" height="25" rx="5"/>
+  <text class="text-header" x="1000" y="162" text-anchor="middle">Middleware Layer (Request Context)</text>
+  <text class="text-normal" x="720" y="185">✓ AsyncLocalStorage | ✓ Auth Token | ✓ Rate Limiting</text>
 
-  <!-- Arrow 2 -->
-  <path class="arrow" d="M 750 215 L 750 240"/>
+  <path class="arrow" d="M 1000 205 L 1000 230"/>
 
-  <!-- Orchestrator Agent -->
-  <rect class="box" x="450" y="240" width="600" height="70" rx="5"/>
-  <rect fill="#9b59b6" x="450" y="240" width="600" height="25" rx="5"/>
-  <text class="text-header" x="750" y="257" text-anchor="middle">Orchestrator Agent (Router)</text>
-  <text class="text-normal" x="470" y="280">Routes to: Microlearning | Phishing Email | User Info specialist agents</text>
+  <!-- Orchestrator -->
+  <rect class="box" x="700" y="230" width="600" height="60" rx="5"/>
+  <rect fill="#9b59b6" x="700" y="230" width="600" height="25" rx="5"/>
+  <text class="text-header" x="1000" y="247" text-anchor="middle">Orchestrator Agent (The Router)</text>
+  <text class="text-normal" x="750" y="270">Analyzes Intent &amp; History -> Routes to 4 Specialist Agents</text>
 
-  <!-- Arrow from Orchestrator - splits to 3 -->
-  <path class="arrow" stroke="#3498db" marker-end="url(#arrowhead-ml)" d="M 600 310 L 250 350"/>
-  <path class="arrow" stroke="#e74c3c" marker-end="url(#arrowhead-phishing)" d="M 750 310 L 750 350"/>
-  <path class="arrow" stroke="#27ae60" marker-end="url(#arrowhead-userinfo)" d="M 900 310 L 1250 350"/>
+  <!-- Routing Arrows -->
+  <path class="arrow-colored" stroke="#3498db" marker-end="url(#arrowhead-ml)" d="M 850 290 L 250 340"/>     <!-- ML -->
+  <path class="arrow-colored" stroke="#e74c3c" marker-end="url(#arrowhead-phishing)" d="M 950 290 L 750 340"/> <!-- Phishing -->
+  <path class="arrow-colored" stroke="#8e44ad" marker-end="url(#arrowhead-policy)" d="M 1050 290 L 1250 340"/> <!-- Policy -->
+  <path class="arrow-colored" stroke="#27ae60" marker-end="url(#arrowhead-userinfo)" d="M 1150 290 L 1750 340"/> <!-- UserInfo -->
 
-  <!-- Labels for arrows -->
-  <text x="380" y="325" class="arrow-label" fill="#3498db">Microlearning</text>
-  <text x="770" y="335" class="arrow-label" fill="#e74c3c">Phishing</text>
-  <text x="1050" y="325" class="arrow-label" fill="#27ae60">User Info</text>
+  <!-- Labels -->
+  <text x="500" y="320" class="arrow-label" fill="#3498db">Microlearning</text>
+  <text x="800" y="320" class="arrow-label" fill="#e74c3c">Phishing</text>
+  <text x="1130" y="320" class="arrow-label" fill="#8e44ad">Policy</text>
+  <text x="1500" y="320" class="arrow-label" fill="#27ae60">User Info</text>
 
-  <!-- 2a. MICROLEARNING AGENT - LEFT -->
-  <rect class="box" x="30" y="350" width="440" height="340" rx="5"/>
-  <rect class="box-header-ml" x="30" y="350" width="440" height="30" rx="5"/>
-  <text class="text-header" x="250" y="370" text-anchor="middle">Microlearning Agent</text>
-  <text fill="#3498db" font-weight="bold" x="50" y="395" font-size="10">(4-State Machine | Gamification | Adaptive Learning)</text>
 
-  <rect class="box" x="50" y="410" width="400" height="35" rx="3"/>
-  <text class="text-normal" x="70" y="432" font-size="10">↓ calls workflowExecutorTool (create-ml or add-language)</text>
+  <!-- ============================================== -->
+  <!-- 3. AGENTS LAYER (Columns) -->
+  <!-- ============================================== -->
 
-  <!-- CREATE Workflow -->
-  <rect class="workflow-box-ml" x="50" y="455" width="190" height="130" rx="3"/>
-  <rect fill="#3498db" x="50" y="455" width="190" height="22" rx="3"/>
-  <text class="text-header" x="145" y="471" text-anchor="middle" font-size="11">CREATE</text>
-  <text class="text-normal" x="60" y="493" font-size="9">1. Analyze (lang detect, topic)</text>
-  <text class="text-normal" x="60" y="508" font-size="9">2. Generate (8-scene metadata)</text>
-  <text class="text-normal" x="60" y="523" font-size="9">3. [PARALLEL]</text>
-  <text class="text-normal" x="65" y="538" font-size="9">• Lang Content</text>
-  <text class="text-normal" x="65" y="553" font-size="9">• Inbox Simulation</text>
-  <text class="text-normal" x="60" y="568" font-size="9">4. Upload to Worker</text>
+  <!-- A. MICROLEARNING (Left) -->
+  <rect class="box" x="30" y="340" width="440" height="340" rx="5"/>
+  <rect class="box-header-ml" x="30" y="340" width="440" height="30" rx="5"/>
+  <text class="text-header" x="250" y="360" text-anchor="middle">Microlearning Agent</text>
+  <text fill="#3498db" font-weight="bold" x="80" y="385" font-size="10">(4-State Machine | Gamification | Adaptive Learning)</text>
 
-  <!-- ADD-LANGUAGE Workflow -->
-  <rect class="workflow-box-ml" x="260" y="455" width="190" height="130" rx="3"/>
-  <rect fill="#3498db" x="260" y="455" width="190" height="22" rx="3"/>
-  <text class="text-header" x="355" y="471" text-anchor="middle" font-size="11">ADD-LANG</text>
-  <text class="text-normal" x="270" y="493" font-size="9">1. Load (Fetch from KV)</text>
-  <text class="text-normal" x="270" y="508" font-size="9">2. Localize (3-level retry)</text>
-  <text class="text-normal" x="270" y="523" font-size="9">3. Save</text>
-  <text class="text-normal" x="275" y="538" font-size="9">• ml:{id}:lang</text>
-  <text class="text-normal" x="275" y="553" font-size="9">• ml:{id}:inbox</text>
+  <!-- Create Workflow -->
+  <rect class="workflow-box workflow-box-ml" x="50" y="445" width="190" height="150" rx="3"/>
+  <rect fill="#3498db" x="50" y="445" width="190" height="20" rx="3"/>
+  <text class="text-header" x="145" y="460" text-anchor="middle" font-size="10">CREATE WORKFLOW</text>
+  <text class="text-normal" x="60" y="480" font-size="9">1. Analyze (Lang, Topic)</text>
+  <text class="text-normal" x="60" y="495" font-size="9">2. Generate Structure</text>
+  <text class="text-normal" x="60" y="510" font-size="9">3. Video Search (D1)</text>
+  <text class="text-normal" x="60" y="525" font-size="9">4. Feature Generation</text>
+  <text class="text-normal" x="60" y="540" font-size="9">5. Validate (Zod)</text>
 
-  <text fill="#9b59b6" font-size="9" x="50" y="610">🔗 OpenAI/Workers AI | KV Storage</text>
+  <!-- Add Lang Workflow -->
+  <rect class="workflow-box workflow-box-ml" x="260" y="445" width="190" height="150" rx="3"/>
+  <rect fill="#3498db" x="260" y="445" width="190" height="20" rx="3"/>
+  <text class="text-header" x="355" y="460" text-anchor="middle" font-size="10">ADD-LANG WORKFLOW</text>
+  <text class="text-normal" x="270" y="480" font-size="9">1. Load Master (KV)</text>
+  <text class="text-normal" x="270" y="495" font-size="9">2. Localize (Parallel)</text>
+  <text class="text-normal" x="270" y="510" font-size="9">3. Retry Strategy</text>
 
-  <!-- 2b. PHISHING AGENT - MIDDLE -->
-  <rect class="box" x="530" y="350" width="440" height="340" rx="5"/>
-  <rect class="box-header-phishing" x="530" y="350" width="440" height="30" rx="5"/>
-  <text class="text-header" x="750" y="370" text-anchor="middle">Phishing Email Agent</text>
-  <text fill="#e74c3c" font-weight="bold" x="550" y="395" font-size="10">(Cialdini Principles | Social Engineering | NIST CVE)</text>
+  <text fill="#9b59b6" font-size="9" x="50" y="660">🔗 OpenAI | Workers AI | D1 Vector DB</text>
 
-  <rect class="box" x="550" y="410" width="400" height="35" rx="3"/>
-  <text class="text-normal" x="570" y="432" font-size="10">↓ calls phishingWorkflowExecutorTool</text>
+  
+  <!-- B. PHISHING (Mid-Left) -->
+  <rect class="box" x="530" y="340" width="440" height="340" rx="5"/>
+  <rect class="box-header-phishing" x="530" y="340" width="440" height="30" rx="5"/>
+  <text class="text-header" x="750" y="360" text-anchor="middle">Phishing Email Agent</text>
+  <text fill="#e74c3c" font-weight="bold" x="580" y="385" font-size="10">(Cialdini | Simulation | Quishing Support)</text>
 
-  <!-- PHISHING Workflow -->
-  <rect class="workflow-box-phishing" x="550" y="455" width="400" height="160" rx="3"/>
-  <rect fill="#e74c3c" x="550" y="455" width="400" height="22" rx="3"/>
-  <text class="text-header" x="750" y="471" text-anchor="middle" font-size="11">PHISHING SIMULATION</text>
-  <text class="text-normal" x="560" y="493" font-size="9">1. Profile Analysis (vulnerabilities, triggers)</text>
-  <text class="text-normal" x="560" y="510" font-size="9">2. Generate Simulation (Cialdini Principles)</text>
-  <text class="text-normal" x="560" y="527" font-size="9">3. Edit (refine emails via phishing-editor)</text>
-  <text class="text-normal" x="560" y="544" font-size="9">4. Save (ps:{id}:base, emails per user/dept)</text>
-  <text class="text-normal" x="560" y="561" font-size="9">5. Upload &amp; Assign to Worker</text>
-  <text class="text-normal" x="560" y="578" font-size="9">6. Generate Landing Pages (industry-aware)</text>
+  <rect class="workflow-box workflow-box-phishing" x="550" y="445" width="400" height="150" rx="3"/>
+  <rect fill="#e74c3c" x="550" y="445" width="400" height="20" rx="3"/>
+  <text class="text-header" x="750" y="460" text-anchor="middle" font-size="10">SIMULATION WORKFLOW</text>
+  <text class="text-normal" x="560" y="480" font-size="9">1. Profile Analysis (Vulnerabilities)</text>
+  <text class="text-normal" x="560" y="495" font-size="9">2. Generate Email OR Quishing (QR)</text>
+  <text class="text-normal" x="560" y="510" font-size="9">3. Generate Landing Page (Fake Login)</text>
+  <text class="text-normal" x="560" y="525" font-size="9">4. Department Customization</text>
+  <text class="text-normal" x="560" y="540" font-size="9">5. Brand Spoofing Check</text>
 
-  <text fill="#9b59b6" font-size="9" x="550" y="640">🔗 OpenAI | NIST CVE API | Apistemic Logos API</text>
+  <text fill="#9b59b6" font-size="9" x="550" y="660">🔗 OpenAI | NIST CVE | Apistemic Logos</text>
 
-  <!-- 2c. USER INFO AGENT - RIGHT -->
-  <rect class="box" x="1030" y="350" width="440" height="340" rx="5"/>
-  <rect class="box-header-userinfo" x="1030" y="350" width="440" height="30" rx="5"/>
-  <text class="text-header" x="1250" y="370" text-anchor="middle">User Info Agent</text>
-  <text fill="#27ae60" font-weight="bold" x="1050" y="395" font-size="10">(Risk Analyst | Behavioral Profiling | Timeline Analysis)</text>
 
-  <rect class="box" x="1050" y="410" width="400" height="35" rx="3"/>
-  <text class="text-normal" x="1070" y="432" font-size="10">No workflow - Analysis only (provides context)</text>
+  <!-- C. POLICY (Mid-Right) - NEW -->
+  <rect class="box" x="1030" y="340" width="440" height="340" rx="5"/>
+  <rect class="box-header-policy" x="1030" y="340" width="440" height="30" rx="5"/>
+  <text class="text-header" x="1250" y="360" text-anchor="middle">Policy Summary Agent</text>
+  <text fill="#8e44ad" font-weight="bold" x="1100" y="385" font-size="10">(RAG Expert | Compliance Q&amp;A)</text>
 
-  <!-- RISK ANALYSIS -->
-  <rect class="workflow-box-userinfo" x="1050" y="455" width="400" height="130" rx="3"/>
-  <rect fill="#27ae60" x="1050" y="455" width="400" height="22" rx="3"/>
-  <text class="text-header" x="1250" y="471" text-anchor="middle" font-size="11">RISK ANALYSIS</text>
-  <text class="text-normal" x="1060" y="493" font-size="9">1. Fetch User Details (profile, history)</text>
-  <text class="text-normal" x="1060" y="510" font-size="9">2. Analyze Timeline (vulnerability patterns)</text>
-  <text class="text-normal" x="1060" y="527" font-size="9">3. Behavioral Scoring (click rates, report rates)</text>
-  <text class="text-normal" x="1060" y="544" font-size="9">4. Recommend Level (Beginner/Intermediate/Advanced)</text>
-  <text class="text-normal" x="1060" y="561" font-size="9">5. Generate Action Plan</text>
+  <rect class="workflow-box workflow-box-policy" x="1050" y="445" width="400" height="150" rx="3"/>
+  <rect fill="#8e44ad" x="1050" y="445" width="400" height="20" rx="3"/>
+  <text class="text-header" x="1250" y="460" text-anchor="middle" font-size="10">POLICY RAG WORKFLOW</text>
+  <text class="text-normal" x="1060" y="480" font-size="9">1. Detect Intent ("What is the policy?")</text>
+  <text class="text-normal" x="1060" y="495" font-size="9">2. Embed Query (Workers AI)</text>
+  <text class="text-normal" x="1060" y="510" font-size="9">3. Search Vector DB (D1)</text>
+  <text class="text-normal" x="1060" y="525" font-size="9">4. Summarize Context</text>
+  <text class="text-normal" x="1060" y="540" font-size="9">5. Format as HTML</text>
 
-  <text fill="#9b59b6" font-size="9" x="1050" y="610">🔗 OpenAI | Fleet Backend API | Phishing History</text>
 
-  <!-- EXTERNAL WORKERS SECTION -->
-  <rect class="workflow-box-worker" x="100" y="720" width="280" height="100" rx="5"/>
-  <rect class="box-header-worker" x="100" y="720" width="280" height="25" rx="5"/>
-  <text class="text-header" x="240" y="738" text-anchor="middle" font-size="11">crud-training-worker</text>
-  <text class="text-normal" x="115" y="765" font-size="9">• Create/Update microlearning content</text>
-  <text class="text-normal" x="115" y="782" font-size="9">• Assign training to users/groups</text>
-  <text class="text-normal" x="115" y="799" font-size="9">• Track completion &amp; progress</text>
+  <!-- D. USER INFO (Right) -->
+  <rect class="box" x="1530" y="340" width="440" height="340" rx="5"/>
+  <rect class="box-header-userinfo" x="1530" y="340" width="440" height="30" rx="5"/>
+  <text class="text-header" x="1750" y="360" text-anchor="middle">User Info Agent</text>
+  <text fill="#27ae60" font-weight="bold" x="1600" y="385" font-size="10">(Risk Analyst | Behavioral Profiling)</text>
 
-  <rect class="workflow-box-worker" x="610" y="720" width="280" height="100" rx="5"/>
-  <rect class="box-header-worker" x="610" y="720" width="280" height="25" rx="5"/>
-  <text class="text-header" x="750" y="738" text-anchor="middle" font-size="11">crud-phishing-worker</text>
-  <text class="text-normal" x="625" y="765" font-size="9">• Create/Update phishing simulations</text>
-  <text class="text-normal" x="625" y="782" font-size="9">• Deploy to users/departments</text>
-  <text class="text-normal" x="625" y="799" font-size="9">• Collect click &amp; report analytics</text>
+  <rect class="workflow-box workflow-box-userinfo" x="1550" y="445" width="400" height="150" rx="3"/>
+  <rect fill="#27ae60" x="1550" y="445" width="400" height="20" rx="3"/>
+  <text class="text-header" x="1750" y="460" text-anchor="middle" font-size="10">RISK ANALYSIS WORKFLOW</text>
+  <text class="text-normal" x="1560" y="480" font-size="9">1. Fetch User Timeline (API)</text>
+  <text class="text-normal" x="1560" y="495" font-size="9">2. Calculate Risk Score</text>
+  <text class="text-normal" x="1560" y="510" font-size="9">3. Detect Knowledge Gaps</text>
+  <text class="text-normal" x="1560" y="525" font-size="9">4. Recommend Training Level</text>
+  
+  <text fill="#9b59b6" font-size="9" x="1550" y="660">🔗 Fleet Backend API | Phishing History</text>
 
-  <!-- Arrows from agents to workers -->
-  <path class="arrow" stroke="#f39c12" marker-end="url(#arrowhead-worker)" d="M 250 690 L 250 720"/>
-  <path class="arrow" stroke="#f39c12" marker-end="url(#arrowhead-worker)" d="M 750 690 L 750 720"/>
 
-  <!-- Converge arrows to KV -->
-  <path class="arrow" stroke="#3498db" marker-end="url(#arrowhead-ml)" d="M 240 820 L 500 870"/>
-  <path class="arrow" stroke="#e74c3c" marker-end="url(#arrowhead-phishing)" d="M 750 820 L 750 870"/>
-  <path class="arrow" stroke="#27ae60" marker-end="url(#arrowhead-userinfo)" d="M 1250 690 L 1000 870"/>
+  <!-- ============================================== -->
+  <!-- 4. WORKERS LAYER (Restored!) -->
+  <!-- ============================================== -->
+  
+  <!-- crud-training-worker -->
+  <rect class="box" x="100" y="750" width="300" height="100" rx="5"/>
+  <rect class="box-header-worker" x="100" y="750" width="300" height="25" rx="5"/>
+  <text class="text-header" x="250" y="768" text-anchor="middle">crud-training-worker</text>
+  <text class="text-normal" x="110" y="790">• Assigns Training to LMS</text>
+  <text class="text-normal" x="110" y="805">• Tracks Completion</text>
+  <text class="text-normal" x="110" y="820">• Updates User Progress</text>
 
-  <text x="340" y="850" class="arrow-label" fill="#3498db" font-size="9">ml:{id}</text>
-  <text x="765" y="850" class="arrow-label" fill="#e74c3c" font-size="9">ps:{id}</text>
-  <text x="1100" y="800" class="arrow-label" fill="#27ae60" font-size="9">context</text>
+  <!-- crud-phishing-worker -->
+  <rect class="box" x="600" y="750" width="300" height="100" rx="5"/>
+  <rect class="box-header-worker" x="600" y="750" width="300" height="25" rx="5"/>
+  <text class="text-header" x="750" y="768" text-anchor="middle">crud-phishing-worker</text>
+  <text class="text-normal" x="610" y="790">• Deploys Campaigns</text>
+  <text class="text-normal" x="610" y="805">• Tracks Clicks &amp; Reports</text>
+  <text class="text-normal" x="610" y="820">• Updates Vulnerability</text>
 
-  <!-- 3. Common: Save to KV -->
-  <rect class="box" x="400" y="870" width="700" height="70" rx="5"/>
-  <rect class="box-header" x="400" y="870" width="700" height="25" rx="5"/>
-  <text class="text-header" x="750" y="887" text-anchor="middle" font-size="12">3. Common: Save to KV (Fire-and-forget)</text>
-  <text class="text-normal" x="420" y="915" font-size="10">Training: ml:{id}:base | Simulations: ps:{id}:base + per-dept, per-lang</text>
+  <!-- Connect Agents to Workers -->
+  <path class="arrow" stroke="#f39c12" marker-end="url(#arrowhead-worker)" d="M 250 680 L 250 750"/>
+  <path class="arrow" stroke="#f39c12" marker-end="url(#arrowhead-worker)" d="M 750 680 L 750 750"/>
 
-  <!-- Arrow down -->
-  <path class="arrow" d="M 750 940 L 750 970"/>
 
-  <!-- 4. Return Response -->
-  <rect class="box" x="450" y="970" width="600" height="60" rx="5"/>
-  <rect class="box-header" x="450" y="970" width="600" height="25" rx="5"/>
-  <text class="text-header" x="750" y="987" text-anchor="middle" font-size="12">4. Return Response (Training URL or Simulation Link)</text>
-  <text class="text-normal" x="470" y="1010" font-size="10">Ready-to-deploy microlearning URL | Phishing test link with analytics</text>
+  <!-- ============================================== -->
+  <!-- 5. STORAGE LAYER (KV) -->
+  <!-- ============================================== -->
 
-  <!-- Bottom legend -->
-  <rect class="box" x="100" y="1060" width="1300" height="180" rx="5"/>
-  <text x="120" y="1090" font-size="13" font-weight="bold" fill="#2c3e50">Key Features:</text>
+  <rect class="box" x="400" y="900" width="1200" height="80" rx="5"/>
+  <rect class="box-header" x="400" y="900" width="1200" height="25" rx="5"/>
+  <text class="text-header" x="1000" y="917" text-anchor="middle">Cloudflare KV Storage (The Memory) + D1</text>
+  
+  <text class="text-normal" x="420" y="945" font-family="monospace">ml:{id}:base</text>
+  <text class="text-normal" x="420" y="960" font-family="monospace">ml:{id}:lang:{code}</text>
 
-  <text x="120" y="1115" font-size="11" fill="#2c3e50">✓ Orchestrator Router: Analyzes intent → Routes to specialist agents</text>
-  <text x="120" y="1135" font-size="11" fill="#2c3e50">✓ Middleware Layer: Context isolation (AsyncLocalStorage), rate limiting</text>
-  <text x="120" y="1155" font-size="11" fill="#2c3e50">✓ 4-State Machine: Strict STATE 1→4 progression with confirmation gates</text>
-  <text x="120" y="1175" font-size="11" fill="#2c3e50">✓ Unlimited Languages: Auto-detect via BCP-47 codes (en, tr, de, ja, etc.)</text>
-  <text x="120" y="1195" font-size="11" fill="#2c3e50">✓ Parallel Execution: 8 scenes + Inbox generation run simultaneously</text>
+  <text class="text-normal" x="620" y="945" font-family="monospace">ps:{id}:base</text>
+  <text class="text-normal" x="620" y="960" font-family="monospace">ps:{id}:email</text>
 
-  <text x="750" y="1115" font-size="11" fill="#2c3e50">✓ 3-Level Retry: Corruption detection, HTML tag protection, auto-fix</text>
-  <text x="750" y="1135" font-size="11" fill="#2c3e50">✓ Phishing Workflow: Profile analysis → Generate → Upload &amp; Deploy (Cialdini)</text>
-  <text x="750" y="1155" font-size="11" fill="#2c3e50">✓ KV Storage: ml:{id}:* + ps:{id}:* with per-dept, per-lang isolation</text>
-  <text x="750" y="1175" font-size="11" fill="#2c3e50">✓ External Workers: crud-training-worker, crud-phishing-worker</text>
-  <text x="750" y="1195" font-size="11" fill="#2c3e50">✓ Brand Detection: Apistemic Logos API with letter fallback</text>
+  <text class="text-normal" x="820" y="945" font-family="monospace">autonomous:thread:{id}</text>
+  <text class="text-normal" x="820" y="960" font-family="monospace">autonomous:policy:{id}</text>
+
+  <!-- Converge Arrows -->
+  <path class="arrow" stroke="#3498db" marker-end="url(#arrowhead-ml)" d="M 250 850 L 500 900"/>
+  <path class="arrow" stroke="#e74c3c" marker-end="url(#arrowhead-phishing)" d="M 750 850 L 800 900"/>
+  <path class="arrow" stroke="#27ae60" marker-end="url(#arrowhead-userinfo)" d="M 1750 680 L 1400 900"/> <!-- UserInfo writes to KV? Indirectly via Autonomous -->
+  
+  <!-- ============================================== -->
+  <!-- 6. RESPONSE LAYER -->
+  <!-- ============================================== -->
+
+  <rect class="box" x="450" y="1030" width="1100" height="50" rx="5"/>
+  <rect class="box-header" x="450" y="1030" width="1100" height="25" rx="5"/>
+  <text class="text-header" x="1000" y="1047" text-anchor="middle">4. Return Response (Streamed)</text>
+  <text class="text-normal" x="700" y="1070">Ready-to-deploy Learning URL | Phishing Simulation Links | Policy HTML | Risk Report</text>
+  
+  <path class="arrow" d="M 1000 980 L 1000 1030"/>
+
+
+  <!-- ============================================== -->
+  <!-- LEGEND / FEATURES (Restored Detailed Version) -->
+  <!-- ============================================== -->
+  
+  <rect class="box" x="100" y="1120" width="1800" height="200" rx="5"/>
+  <text x="120" y="1150" font-size="16" font-weight="bold" fill="#2c3e50" font-family="sans-serif">Key Features &amp; Capabilities:</text>
+
+  <g transform="translate(120, 1180)">
+    <text y="0"  class="text-normal">✓ Orchestrator Router: NLP-based intent analysis to route between 4 Agents.</text>
+    <text y="20" class="text-normal">✓ Middleware Layer: AsyncLocalStorage for request isolation, Rate Limiting, &amp; Auth.</text>
+    <text y="40" class="text-normal">✓ 4-State Machine: Strict checks (Gather -> Summary -> Execute -> Complete) before generation.</text>
+    <text y="60" class="text-normal">✓ Unlimited Languages: Auto-detection (BCP-47) &amp; Parallel Localization.</text>
+    <text y="80" class="text-normal">✓ Brand Detection: Apistemic Logos API integration with text fallback.</text>
+  </g>
+
+  <g transform="translate(700, 1180)">
+    <text y="0"  class="text-normal">✓ 3-Level Retry: Corruption detection, JSON repair, and HTML tag protection.</text>
+    <text y="20" class="text-normal">✓ Phishing &amp; Quishing: Cialdini-based email generation + QR code simulated attacks.</text>
+    <text y="40" class="text-normal">✓ Policy Expert: RAG-based search over internal documents with Vector DB (D1).</text>
+    <text y="60" class="text-normal">✓ Risk Profiling: Behavioral analysis to auto-assign training levels.</text>
+    <text y="80" class="text-normal">✓ External Workers: Async execution for LMS assignment &amp; campaign deployment.</text>
+  </g>
+
+  <g transform="translate(1300, 1180)">
+     <text y="0"  class="text-normal">✓ Cloudflare KV: Atomic writes with namespace isolation (ml:*, ps:*).</text>
+     <text y="20" class="text-normal">✓ Autonomous Loop: Proactive cron job used to 'heal' high-risk users.</text>
+     <text y="40" class="text-normal">✓ Streamed Responses: Low TTFB architecture for instant feedback.</text>
+     <text y="60" class="text-normal">✓ D1 Vector DB: Semantic search for video &amp; policy matching.</text>
+  </g>
+
 </svg>

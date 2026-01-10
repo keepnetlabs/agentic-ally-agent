@@ -2,7 +2,7 @@
 
 ## System Overview
 
-Agentic Ally is built on the **Mastra** framework and deployed on **Cloudflare Workers**. The system uses a **strict 4-state conversational agent** paired with **parallel workflow execution** to generate microlearning modules.
+Agentic Ally is built on the **Mastra** framework and deployed on **Cloudflare Workers**. The system uses a **multi-agent orchestration layer** paired with **parallel workflow execution** to generate microlearning modules and phishing simulations.
 
 **Core Philosophy:** "Resilience through layered fallbacks. Every step must have an escape route."
 
@@ -12,36 +12,38 @@ Agentic Ally is built on the **Mastra** framework and deployed on **Cloudflare W
 
 ```
 ┌──────────────────────────────────────────────────────┐
-│               HTTP Request (POST /chat)              │
+│  Orchestration Layer (Router & Decision Maker)       │
+│  • Analyzes User Intent (NLP)                        │
+│  • Routes to Specialist Agents                       │
+└────────────────────┬─────────────────────────────────┘
+                     │
+          ┌──────────┼──────────┐
+          ▼          ▼          ▼
+    MICROLEARNING  PHISHING   USER INFO
+       AGENT        AGENT      AGENT
+          │          │          │
+          └─────┬────┴──────────┘
+                │
+                ▼
+┌──────────────────────────────────────────────────────┐
+│       Workflow Engine (Parallel Execution)           │
+│  • Create Microlearning (8 scenes parallel)          │
+│  • Create Phishing (Email + Landing Page)            │
+│  • Autonomous Loop (Scheduled generation)            │
 └────────────────────┬─────────────────────────────────┘
                      │
                      ▼
 ┌──────────────────────────────────────────────────────┐
-│     Middleware Layer (Context & Rate Limiting)       │
-│  • AsyncLocalStorage for request-scoped context      │
-│  • Auto-generate correlation ID                      │
-│  • Rate limiting with X-RateLimit-* headers          │
-└────────────────────┬─────────────────────────────────┘
-                     │
-                     ▼
-┌──────────────────────────────────────────────────────┐
-│      Microlearning Agent (4-State Machine)           │
-│  • STATE 1: Gather topic, dept, level               │
-│  • STATE 2: Show summary + time estimate             │
-│  • STATE 3: Execute workflow on confirmation         │
-│  • STATE 4: Return training URL                      │
-└────────────────────┬─────────────────────────────────┘
-                     │
-          ┌──────────┴──────────┐
-          │                     │
-          ▼                     ▼
-    CREATE WORKFLOW        ADD-LANGUAGE
-    (Parallel Gen)         WORKFLOW
+│        Storage & Infrastructure (Cloudflare)         │
+│  • KV: Content storage (ml:*, phishing:*)            │
+│  • D1: Vector DB for semantic search                 │
+│  • Workers AI: LLM Inference (Fallback)              │
+└──────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 1. Middleware Layer
+## 1. Middleware Layer (The Gatekeeper)
 
 ### Context Storage Middleware (`context-storage.ts`)
 
@@ -67,450 +69,139 @@ const context = {
 Sliding window counter with configurable tiers:
 
 ```
-CHAT endpoint:         50 req/min
+CHAT endpoint:         100 req/min
 HEALTH endpoint:      300 req/min
 DEFAULT:             100 req/min
 ```
 
 **Response headers:**
+`X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`
+
+---
+
+## 2. Core Services Layer (The Foundation)
+
+Located in `src/mastra/services/`, these services power the entire application.
+
+### Key Components:
+1.  **KV Service:** Abstraction layer for Cloudflare KV. Handles atomic writes, retries (`KV_MAX_RETRIES`), and key namespace management.
+2.  **Error Service:** Centralized error handling. Captures exceptions, formats them for logging, and determines HTTP status codes.
+3.  **Health Service:** Diagnostics. Checks connectivity to OpenAI, Cloudflare KV, and other dependencies.
+4.  **Autonomous Service:** The "Proactive Brain". Manages the scheduling and execution of background security checks.
+
+---
+
+## 3. Agent Layer (Specialist Squad)
+
+### Orchestrator Agent (The Dispatcher)
+- **Role:** Router.
+- **Logic:** Analyzes user prompts -> Routes to specific agent.
+- **State:** Stateless.
+
+### 1. Microlearning Agent (The Teacher)
+- **Role:** Generates 5-minute security training modules.
+- **Mechanism:** Strict 4-State Machine (Gather -> Summary -> Execute -> Complete).
+- **Safety:** Never executes before explicit user confirmation (State 2 -> 3).
+
+### 2. Phishing Email Agent (The Attacker)
+- **Role:** Designs realistic phishing simulations (Emails & Landing Pages).
+- **Features:**
+    - uses **Cialdini's 6 Principles** (Reciprocity, Urgency, etc.).
+    - Generates **person-specific** attacks based on user info.
+    - **Safe-Guards:** Never uses real PII in final output.
+
+### 3. User Info Agent (The Profiler)
+- **Role:** Analyzes user risk profile.
+- **Input:** User activity timeline, department, past incidents.
+- **Output:** Risk Score (Low/Med/High) & Recommended Training Level.
+
+### 4. Policy Summary Agent (The Librarian)
+- **Role:** Summarizes complex security policies.
+- **Usage:** RAG-based lookup. Fetches relevant policy docs and condenses them for other agents to use as context.
+
+---
+
+## 4. Workflow Execution Layer
+
+Workflows handle the heavy lifting. They are **long-running, resilient, and parallel**.
+
+### A. Autonomous Workflow (New!)
+**Purpose:** Scheduled background generation.
+- **Trigger:** Cron or API.
+- **Logic:**
+    1. Iterate all users/groups.
+    2. Check **Frequency Policy** (e.g., "Max 1 training per week").
+    3. If eligible, trigger `Microlearning` or `Phishing` agents.
+    4. **Unique Threading:** Uses `phishing-{userId}-{timestamp}` to ensure fresh context.
+
+### B. Create Microlearning Workflow
+**Purpose:** Generate full training module.
+- **Steps:**
+    1. **Analyze:** Extract topic/language.
+    2. **Generate Structure:** 8 Scenes (Intro, Goals, Video, Quiz, etc.).
+    3. **Enhance:** Parallel generation of content for all 8 scenes.
+    4. **Inbox:** Generate simulated email/sms for the scenario.
+    5. **Save:** Atomic write to KV (`ml:{id}:base`).
+
+### C. Create Phishing Workflow
+**Purpose:** Generate a full attack simulation.
+- **Steps:**
+    1. **Analyze:** Determine vector (Email/SMS) and tactic (Urgency/Curiosity).
+    2. **Generate Email:** Subject, Body, Custom Headers.
+    3. **Generate Landing:** Login page or Success page.
+    4. **Save:** Atomic write to KV (`phishing:{id}:*`).
+
+### D. Add Language / Multiple Languages
+**Purpose:** Localization.
+- **Logic:** Parallel translation of existing content.
+- **Resilience:** Uses 3-level translation fallback (Direct -> Integrity Check -> Auto-Repair).
+
+---
+
+## 5. Storage Architecture (KV Schema)
+
+### Microlearning
 ```
-X-RateLimit-Limit: 100
-X-RateLimit-Remaining: 95
-X-RateLimit-Reset: 1699999999999
-Retry-After: 42 (if rate-limited)
+ml:{id}:base           -> Core metadata & structure
+ml:{id}:lang:{code}    -> Translated content (e.g., tr-TR, en-GB)
+ml:{id}:inbox:{dept}   -> Department-specific inbox simulation
+```
+
+### Phishing
+```
+phishing:{id}:base     -> Simulation metadata
+phishing:{id}:email    -> Email template content
+phishing:{id}:landing  -> Landing page content
+```
+
+### Autonomous Memory
+```
+autonomous:threads:{id} -> Conversation history
+autonomous:policy:{id}  -> Frequency tracking (last_run_time)
 ```
 
 ---
 
-## 2. Agent Layer (Routing + Specialist Execution)
+## 6. Resilience Strategy (The "Safety Net")
 
-### Orchestrator Agent (Router)
+Reliability is baked into the core via a **3-Level Fallback Pattern**:
 
-The **Orchestrator Agent** acts as the intelligent router:
+1.  **Level 1 (Ideal):** Try the most sophisticated method (e.g., Semantic Search, Vector DB).
+2.  **Level 2 (Heuristic):** If L1 fails/timeouts, use smart heuristics (e.g., Keyword matching).
+3.  **Level 3 (Hardcoded):** If L2 fails, fallback to safe defaults (e.g., "General Security" topic).
 
-- **Analyzes** user requests and conversation context
-- **Identifies** which specialist agent should handle the task:
-  - `userInfoAssistant` - User analysis & risk assessment
-  - `microlearningAgent` - Training creation & management (4-state machine)
-  - `phishingEmailAssistant` - Phishing simulation creation & testing
-- **Routes** with task context for precision handling
-- **Design:** Stateless routing with explicit history analysis
-
-### Specialist Agents
-
-#### 1. Microlearning Agent (State Machine)
-
-Handles training module creation with strict 4-state progression:
-
-### 4-State Enforcement
-
-The agent implements strict state progression:
-
-```
-STATE 1: GATHER
-├─ User provides: "Create phishing training"
-├─ Agent asks for missing info: department, level
-└─ Collects structured data
-
-     ↓ (only proceed after STATE 1 complete)
-
-STATE 2: SUMMARY
-├─ Display: topic, dept, level, time estimate
-├─ Show: what will be generated
-└─ Prompt: "Ready to proceed?" or "Modify?"
-
-     ↓ (only proceed after explicit confirmation)
-
-STATE 3: EXECUTE
-├─ Launch workflow (create-microlearning OR add-language)
-├─ Show progress
-└─ Wait for completion
-
-     ↓ (only proceed after STATE 3 complete)
-
-STATE 4: COMPLETE
-├─ Return training URL
-├─ Show: metadata (language, dept, level)
-└─ Offer: "Want another?" or "Translate?"
-```
-
-### Key Constraint
-
-**No tools execute before STATE 2 completion + explicit user confirmation.**
-
-This ensures:
-- ✅ User confirms requirements before processing
-- ✅ No surprise API calls
-- ✅ Clear cost visibility (time estimate shown)
-- ✅ Prevents accidental generation
-
-#### 2. Phishing Email Agent (Psychological Profiler)
-
-Designs and executes realistic phishing email simulations:
-
-- **Analyzes** target user profiles (risk factors, vulnerabilities)
-- **Applies** Cialdini's 6 Principles (Reciprocity, Commitment, Social Proof, Authority, Liking, Scarcity)
-- **Generates** context-aware phishing scenarios (e.g., Invoice for Finance dept, Policy change for HR)
-- **Maintains** PII privacy (no real names in outputs)
-- **Supports** customizable difficulty levels and psychological triggers
-
-#### 3. User Info Agent (Risk Analyst)
-
-Analyzes user profiles and recommends training levels:
-
-- **Fetches** user details from system
-- **Analyzes** user timeline and vulnerability patterns
-- **Recommends** risk level assessment
-- **Suggests** appropriate training level (Beginner, Intermediate, Advanced)
-- **Provides** context for microlearning agent's smart defaults
-
-#### 4. Reasoning Tool (Universal)
-
-All agents support psychological reasoning:
-
-- **Analyzes** decision rationale before major actions
-- **Anonymous** language (no PII in reasoning)
-- **Transparent** thinking process
-- **Consistent** decision framework
+**Result:** The system almost *never* crashes. It just degrades gracefully.
 
 ---
 
-## 3. Workflow Execution Layer
-
-### Two Main Workflows
-
-#### A. CREATE-MICROLEARNING Workflow
-
-**Purpose:** Generate new training module from scratch
-
-**Flow:**
-```
-1. ANALYZE step
-   ├─ Language detection (NLP)
-   ├─ Topic extraction
-   ├─ Learning objectives
-   ├─ Department relevance
-   └─ Difficulty inference
-
-2. GENERATE step
-   ├─ Create 8-scene metadata
-   ├─ Generate theme + branding
-   ├─ Create compliance framework
-   └─ Parallel: language content (8 scenes)
-
-3. [PARALLEL] Language Generation
-   ├─ Scene 1: Intro
-   ├─ Scene 2: Goals
-   ├─ Scene 3: Video scenario
-   ├─ Scene 4: Actionable items
-   ├─ Scene 5: Knowledge quiz
-   ├─ Scene 6: Feedback survey
-   ├─ Scene 7: Behavioral nudge
-   └─ Scene 8: Summary
-
-4. [PARALLEL] Inbox Generation
-   ├─ Department-specific emails
-   ├─ SMS variants
-   ├─ Realistic phishing scenarios
-   └─ Interactive inbox simulation
-
-5. SAVE step
-   ├─ Wait for KV consistency
-   ├─ Save: ml:{id}:base
-   ├─ Save: ml:{id}:lang:{code}
-   ├─ Save: ml:{id}:inbox:{dept}:{code}
-   └─ Return training URL
-
-Total time: 25-35 seconds (due to parallel execution)
-```
-
-#### B. ADD-LANGUAGE Workflow
-
-**Purpose:** Translate existing training to new language
-
-**Flow:**
-```
-1. LOAD step
-   ├─ Fetch base from KV
-   ├─ Validate structure
-   ├─ Extract all 8 scenes
-   └─ Load inbox variants
-
-2. LOCALIZE step (3-level)
-   ├─ Attempt 1: Direct translation
-   ├─ Attempt 2: If corruption detected → retry + auto-fix
-   ├─ Attempt 3: If still failing → basic translation fallback
-   └─ Preserve: URLs, IDs, HTML tags, types
-
-3. LOCALIZE INBOXES
-   ├─ Per-department emails in target language
-   ├─ Maintain original structure
-   └─ Validate no corruption
-
-4. SAVE step
-   ├─ ml:{id}:lang:{newCode}
-   ├─ ml:{id}:inbox:{dept}:{newCode}
-   └─ Return URL with new language
-
-Total time: 15-25 seconds
-```
-
----
-
-## 4. Storage Architecture
-
-### KV Key Convention
-
-```
-ml:{microlearning_id}:base
-├─ Microlearning metadata
-├─ Theme info
-├─ 8 scenes (all languages point here for structure)
-└─ Scientific evidence + compliance framework
-
-ml:{microlearning_id}:lang:{code}
-├─ Language-specific scene content
-├─ {code} = BCP-47 code (en, tr, de, ja, zh-cn, ar, etc.)
-└─ Complete translated 8 scenes
-
-ml:{microlearning_id}:inbox:{dept}:{code}
-├─ Department-specific simulated inbox
-├─ {dept} = IT, HR, Sales, Finance, Operations, Management, All
-├─ {code} = Language code
-└─ Phishing emails + SMS variants
-```
-
-### Why This Structure?
-
-- ✅ **Deduplication:** Base scene structure stored once
-- ✅ **Efficiency:** Per-language overrides only store translations
-- ✅ **Isolation:** Department inboxes separate by role
-- ✅ **Enumerable:** Can list all trainings: `ml:*:base`
-- ✅ **Atomic:** Each save is independent (no distributed transactions)
-
----
-
-## 5. Constants & Timing
-
-### TIMING Constants (`constants.ts`)
-
-All timing values consolidated to avoid magic numbers:
-
-```typescript
-export const TIMING = {
-  KV_RETRY_DELAY_MS: 500,           // Delay between KV retries
-  KV_MAX_RETRIES: 10,               // Max KV read attempts
-  ASSIGN_PRE_DELAY_MS: 3000,        // Delay before assignment
-  PHISHING_WORKFLOW_DELAY_MS: 3000, // Delay before phishing workflow
-  IMAGE_FETCH_TIMEOUT_MS: 5000,     // Image fetch timeout
-  IMAGE_VALIDATION_TIMEOUT_MS: 3000, // Image validation timeout
-  LLM_TIMEOUT_MS: 30000,            // LLM call timeout
-  STREAMING_TIMEOUT_MS: 120000,     // Stream response timeout
-}
-```
-
-### LIMITS Constants
-
-```typescript
-export const LIMITS = {
-  CONTEXT_WINDOW_SIZE: 10,  // Previous messages in context
-}
-```
-
-**Why constants?**
-- ✅ Single source of truth
-- ✅ Easy to tune performance
-- ✅ No scattered magic numbers
-- ✅ Enables A/B testing
-
----
-
-## 6. Error Handling Strategy
-
-### 3-Level Fallback Pattern
-
-Every major operation has 3 escape routes:
-
-**Example: Semantic Analysis**
-```
-Level 1: Try semantic search (high quality)
-   ↓ (if fails)
-Level 2: Try sampling approach (medium quality)
-   ↓ (if fails)
-Level 3: Use basic defaults (guaranteed result)
-   Result: System never crashes
-```
-
-**Example: JSON Parsing**
-```
-Level 1: Direct JSON.parse()
-   ↓ (if fails)
-Level 2: Use jsonrepair library (auto-fix)
-   ↓ (if fails)
-Level 3: Extract data from response text manually
-   Result: Always recovers corrupted JSON
-```
-
-**Example: Translation**
-```
-Level 1: Translate with full context
-   ↓ (if fails or corrupts)
-Level 2: Retry with corruption guards
-   ↓ (if still fails)
-Level 3: Auto-correct + fallback translation
-   Result: Always completes translation
-```
-
----
-
-## 7. Tools Architecture
-
-### 18 Total Tools
-
-**Main Tools (9):**
-1. `analyze-user-prompt-tool` - Intent analysis + language detection
-2. `generate-microlearning-tool` - Create 8-scene metadata
-3. `translate-language-tool` - Translate content to target language
-4. `generate-language-tool` - Generate translated scenes
-5. `create-inbox-tool` - Generate simulated inbox
-6. `workflow-executor-tool` - Route & execute workflows
-7. `upload-training-tool` - Save to KV
-8. `assign-training-tool` - Assign to users
-9. `code-review-check-tool` - Validate code fixes (Scene 4)
-
-**Scene Generators (8):**
-- `scene1-intro-generator`
-- `scene2-goals-generator`
-- `scene3-video-generator`
-- `scene4-actionable-generator`
-- `scene5-quiz-generator`
-- `scene6-survey-generator`
-- `scene7-nudge-generator`
-- `scene8-summary-generator`
-
-**Inbox Generators (4):**
-- `email-base-generator` - Core emails
-- `email-variants-generator` - Variations
-- `emails-orchestrator-tool` - Coordinate emails
-- `texts-generator` - SMS variants
-
----
-
-## 8. Data Flow Diagram
-
-```
-User → /chat endpoint
-  ↓
-Request Middleware (AsyncLocalStorage + Rate Limit)
-  ↓
-Microlearning Agent (State Machine)
-  ├─ STATE 1: Gather requirements
-  ├─ STATE 2: Show summary
-  ├─ STATE 3: Execute workflow
-  │   ├─ Route: CREATE or ADD-LANGUAGE
-  │   ├─ [PARALLEL] Language generation (8 scenes)
-  │   ├─ [PARALLEL] Inbox generation
-  │   ├─ Consistency check → Save to KV
-  │   └─ Return metadata
-  ├─ STATE 4: Complete
-  └─ Return training URL
-    ↓
-Response → User
-```
-
----
-
-## 9. Deployment Architecture
-
-### Cloudflare Workers
-
-**Compute Runtime:**
-- Serverless execution
-- Auto-scaling
-- Edge locations worldwide
-- ~50ms cold start
-
-### Storage Stack
-
-| Component | Purpose | Limit |
-|-----------|---------|-------|
-| **KV** | Microlearning storage | Unlimited (per account) |
-| **D1** | Embedding cache + memory | 1GB SQLite per database |
-| **Workers AI** | Free LLM inference | 10K requests/day free tier |
-
----
-
-## 10. Configuration & Environment
-
-### Required Env Variables
-
-```bash
-# Cloudflare
-CLOUDFLARE_ACCOUNT_ID
-CLOUDFLARE_KV_TOKEN
-CLOUDFLARE_API_KEY
-CLOUDFLARE_AI_GATEWAY_ID
-CLOUDFLARE_GATEWAY_AUTHENTICATION_KEY
-CLOUDFLARE_D1_DATABASE_ID
-
-# OpenAI (for gpt-4o-mini agent)
-OPENAI_API_KEY
-
-# Optional
-GOOGLE_GENERATIVE_AI_API_KEY
-MASTRA_MEMORY_URL
-MASTRA_MEMORY_TOKEN
-LOG_LEVEL  # Default: 'info'
-RATE_LIMIT_MAX_REQUESTS  # Default: 100
-RATE_LIMIT_WINDOW_MS     # Default: 60000
-```
-
----
-
-## 11. Performance Characteristics
-
-| Operation | Time | Notes |
-|-----------|------|-------|
-| **Create microlearning** | 25-35 sec | Parallel execution |
-| **Add language** | 15-25 sec | Translation + inbox |
-| **KV write** | ~100 ms | Per save operation |
-| **KV read (retry)** | ~500-5000 ms | Up to 10 retries |
-| **LLM generation** | 5-15 sec | Depends on model |
-| **Cold start** | ~50 ms | Workers edge compute |
-
----
-
-## 12. Security Model
-
-### Request Context Isolation
-- ✅ Per-request AsyncLocalStorage
-- ✅ No global state contamination
-- ✅ Credentials never logged
-- ✅ Token extracted from header, not body
-
-### Rate Limiting
-- ✅ IP-based identification (Cloudflare-aware)
-- ✅ Sliding window counter
-- ✅ Health check bypass
-- ✅ Standard X-RateLimit headers
-
----
-
-## Tech Stack Summary
-
-| Layer | Technology |
-|-------|-----------|
-| **Framework** | Mastra 0.1.x |
-| **Runtime** | Cloudflare Workers |
-| **Compute** | Serverless (Edge) |
-| **Storage** | KV + D1 |
-| **Language** | TypeScript 5.x |
-| **Agent** | OpenAI gpt-4o-mini |
-| **LLM Fallback** | Cloudflare Workers AI |
-| **Logger** | PinoLogger |
-| **HTTP Server** | Hono |
-
----
-
-**Last Updated:** December 18, 2025
-**Key Updates:** State machine clarification, middleware layers (context + rate limiting), logging architecture, constants consolidation, 3-level fallback strategy
+## 7. Critical Configurations
+
+| Constant | Value | Purpose |
+|----------|-------|---------|
+| `AGENT_CALL_TIMEOUT_MS` | 90,000 | Standard timeout for simple chats |
+| `LONG_RUNNING_AGENT_TIMEOUT_MS` | **600,000** | **10 Mins.** for Microlearning/Autonomous tasks |
+| `KV_MAX_RETRIES` | 10 | High retry count for eventual consistency |
+
+**Deployment:**
+- Runtime: Cloudflare Workers
+- AI: OpenAI (`gpt-4o-mini` default) + Workers AI (Backup)

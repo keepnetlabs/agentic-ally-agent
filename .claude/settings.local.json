@@ -39,7 +39,10 @@
       "Bash([ -f \"src/mastra/services/autonomous/$f.test.ts\" ])",
       "Bash(then wc -l \"src/mastra/services/autonomous/$f.test.ts\" \"src/mastra/services/$f.test.ts\")",
       "mcp__ide__getDiagnostics",
-      "Bash(npm audit:*)"
+      "Bash(npm audit:*)",
+      "Bash(while read f)",
+      "Bash(do testfile=\"$f%.ts.test.ts\")",
+      "Bash([ ! -f \"$testfile\" ])"
     ],
     "deny": [],
     "ask": []

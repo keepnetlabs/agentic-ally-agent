@@ -42,13 +42,8 @@ import { Mastra } from '@mastra/core/mastra';
 import { AgentRouter } from '../services/agent-router';
 import { maskPII, unmaskPII } from './parsers/pii-masking-utils';
 import { Agent } from '@mastra/core/agent';
+import { ChatRequestBody } from '../types/api-types';
 
-interface ChatRequestBody {
-  conversationId?: string;
-  threadId?: string;
-  sessionId?: string;
-  [key: string]: unknown;
-}
 
 const logger = new PinoLogger({
   name: 'ChatOrchestration',

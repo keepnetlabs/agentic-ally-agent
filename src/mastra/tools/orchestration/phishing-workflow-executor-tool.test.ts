@@ -167,7 +167,7 @@ describe('phishingWorkflowExecutorTool', () => {
         expect.objectContaining({
           inputData: expect.objectContaining({
             topic: 'Reset Password',
-            difficulty: 'medium',
+            difficulty: 'Medium',
             language: 'en-gb',
             includeEmail: true,
             includeLandingPage: true
@@ -188,6 +188,24 @@ describe('phishingWorkflowExecutorTool', () => {
         expect.objectContaining({
           inputData: expect.objectContaining({
             difficulty: PHISHING.DEFAULT_DIFFICULTY
+          })
+        })
+      );
+    });
+
+    it('should normalize advanced difficulty to Hard', async () => {
+      const input = {
+        workflowType: PHISHING.WORKFLOW_TYPE,
+        topic: 'Reset Password',
+        difficulty: 'Advanced',
+      };
+
+      await phishingWorkflowExecutorTool.execute({ context: input } as any);
+
+      expect(mockWorkflowRun.start).toHaveBeenCalledWith(
+        expect.objectContaining({
+          inputData: expect.objectContaining({
+            difficulty: 'Hard'
           })
         })
       );

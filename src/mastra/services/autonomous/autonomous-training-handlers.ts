@@ -4,7 +4,7 @@
  */
 
 import { microlearningAgent } from '../../agents/microlearning-agent';
-import { AGENT_CALL_TIMEOUT_MS } from '../../constants';
+import { AGENT_CALL_TIMEOUT_MS, LONG_RUNNING_AGENT_TIMEOUT_MS } from '../../constants';
 import { withTimeout, withRetry } from '../../utils/core/resilience-utils';
 import { getLogger } from '../../utils/core/logger';
 import { normalizeError } from '../../utils/core/error-utils';
@@ -294,7 +294,7 @@ export async function generateTrainingModule(
         const agentResult = await withRetry(
             () => withTimeout(
                 microlearningAgent.generate(fullPrompt, memoryConfig),
-                AGENT_CALL_TIMEOUT_MS
+                LONG_RUNNING_AGENT_TIMEOUT_MS
             ),
             'Training agent generation (Level 1)'
         );
@@ -353,7 +353,7 @@ export async function generateTrainingModule(
             logger.debug('Attempting fallback 1: Simplified prompt');
             const agentResult = await withTimeout(
                 microlearningAgent.generate(simplifiedPrompt, memoryConfig),
-                AGENT_CALL_TIMEOUT_MS
+                LONG_RUNNING_AGENT_TIMEOUT_MS
             );
 
             logger.info('Fallback 1 succeeded');
@@ -503,7 +503,7 @@ export async function generateTrainingModuleForGroup(
         const agentResult = await withRetry(
             () => withTimeout(
                 microlearningAgent.generate(customPrompt, memoryConfig),
-                AGENT_CALL_TIMEOUT_MS
+                LONG_RUNNING_AGENT_TIMEOUT_MS
             ),
             'Training agent generation (Level 1)'
         );
@@ -551,7 +551,7 @@ export async function generateTrainingModuleForGroup(
             const agentResult = await withRetry(
                 () => withTimeout(
                     microlearningAgent.generate(simplifiedPrompt, memoryConfig),
-                    AGENT_CALL_TIMEOUT_MS
+                    LONG_RUNNING_AGENT_TIMEOUT_MS
                 ),
                 'Training agent generation (Level 2)'
             );

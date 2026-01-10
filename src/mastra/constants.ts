@@ -213,7 +213,13 @@ export const RETRY = {
  * Long-running tasks should be handled asynchronously with fire-and-forget patterns
  * Can be overridden per operation if needed
  */
-export const AGENT_CALL_TIMEOUT_MS = 30000;
+export const AGENT_CALL_TIMEOUT_MS = 90000;
+
+/**
+ * Timeout for heavy agent tasks (10 mins - consistently safe for microlearning)
+ * Structure generation + enhancement + email generation can exceed 90s widely
+ */
+export const LONG_RUNNING_AGENT_TIMEOUT_MS = 600000;
 
 // ============================================
 // TIME UNIT CONSTANTS

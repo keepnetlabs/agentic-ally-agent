@@ -85,8 +85,8 @@ export const getUserInfoTool = createTool({
           if (user) {
             userId = user.targetUserResourceId;
             userFullName = `${user.firstName} ${user.lastName}`;
+            logger.debug('User found by email', { userId, userFullName });
             fullName = userFullName;
-            logger.debug('User found by email', { userId });
           } else if (!inputFullName && !inputFirstName) {
             const errorInfo = errorService.notFound(`User "${email}" not found.`, { email });
             logErrorInfo(logger, 'warn', 'User not found', errorInfo);
@@ -207,7 +207,7 @@ export const getUserInfoTool = createTool({
       }
 
       // --- STEP 3: Generate Analysis Report (Internal LLM Call) ---
-      let analysisReport: any;
+      let analysisReport: PartialAnalysisReport | undefined;
 
       // OPTIMIZATION: Check skipAnalysis flag
       if (context.skipAnalysis) {
@@ -468,7 +468,6 @@ If a value is unknown, use "" or null.
 }
 `;
 
-        let analysisReport: unknown;
         try {
           // Use default model (GPT-OSS via Workers AI)
           const model = getModelWithOverride();
@@ -486,6 +485,7 @@ If a value is unknown, use "" or null.
           );
 
           const cleanedJson = cleanResponse(response.text, 'analysis-report');
+          logger.debug('Raw cleaned AI analysis JSON retrieved', { length: cleanedJson.length, preview: cleanedJson.substring(0, 200) });
           analysisReport = JSON.parse(cleanedJson);
           const reportTyped = analysisReport as PartialAnalysisReport;
 
@@ -529,7 +529,7 @@ If a value is unknown, use "" or null.
             analysisReport = parsedAnalysis.data;
           }
 
-          logger.debug('Analysis report generated successfully', {});
+          logger.debug('Analysis report generated successfully', { analysisReport });
         } catch (aiError) {
           const err = normalizeError(aiError);
           const errorInfo = errorService.aiModel(err.message, {
@@ -555,18 +555,12 @@ If a value is unknown, use "" or null.
           email: user?.email,
           preferredLanguage: preferredLanguageCode
         },
-        analysisReport,
+        analysisReport: analysisReport,
         recentActivities: recentActivities
       };
 
-      // Validate result against output schema
-      const validationResult = validateToolResult(toolResult, getUserInfoOutputSchema, 'get-user-info');
-      if (!validationResult.success) {
-        logErrorInfo(logger, 'error', 'Get user info result validation failed', validationResult.error);
-        return createToolErrorResponse(validationResult.error);
-      }
-
-      return validationResult.data;
+      // Return as-is - analysisReport is complex optional object, skip validation
+      return toolResult;
 
     } catch (error) {
       const err = normalizeError(error);

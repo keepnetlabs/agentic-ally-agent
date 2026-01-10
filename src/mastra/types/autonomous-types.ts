@@ -2,10 +2,11 @@
 
 import type { CloudflareEnv } from './api-types';
 import { Mastra } from '@mastra/core';
-import type { PromptAnalysis } from './prompt-analysis';
+import type { AnalysisReport } from '../tools/user-management/user-management-types';
 
 export interface AutonomousRequest {
     token: string;
+    baseApiUrl?: string; // Optional: API base URL (e.g., https://test-api.devkeepnet.com)
     // User assignment (individual user)
     firstName?: string;
     lastName?: string;
@@ -38,7 +39,8 @@ export interface AutonomousResponse {
         score?: number;
         actionTime?: string;
     }>;
-    analysisReport?: PromptAnalysis;
+    // NOTE: This is the GetUserInfoTool behavioral resilience report (NOT microlearning PromptAnalysis)
+    analysisReport?: AnalysisReport;
     executiveReport?: string; // Human-readable report from agent
     phishingResult?: {
         success: boolean;

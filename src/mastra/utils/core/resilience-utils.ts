@@ -48,9 +48,11 @@ export function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<
  */
 export async function withRetry<T>(
     operation: () => Promise<T>,
-    operationName: string = 'operation'
+    operationName: string = 'operation',
+    options?: { maxAttempts?: number }
 ): Promise<T> {
-    for (let attempt = 0; attempt < RETRY.MAX_ATTEMPTS; attempt++) {
+    const maxAttempts = options?.maxAttempts || RETRY.MAX_ATTEMPTS;
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
         try {
             return await operation();
         } catch (error) {
@@ -59,7 +61,7 @@ export async function withRetry<T>(
             // Log recovery attempt using structured error service
             errorService.recoveryAttempt(
                 attempt + 1,
-                RETRY.MAX_ATTEMPTS,
+                maxAttempts,
                 operationName,
                 errorMessage,
                 {
@@ -67,7 +69,7 @@ export async function withRetry<T>(
                 }
             );
 
-            if (attempt === RETRY.MAX_ATTEMPTS - 1) throw error;
+            if (attempt === maxAttempts - 1) throw error;
 
             // Get jittered delay (if enabled in constants)
             const delay = RETRY.getBackoffDelay(attempt);

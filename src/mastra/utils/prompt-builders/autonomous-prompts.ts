@@ -83,7 +83,7 @@ ${buildLanguageRequirementBlock('phishingExecutor', language)}
 - Target Language: **${lang}** (MUST be used in generation)
 
 **Available Tools:**
-- phishingExecutor: Generates phishing email and landing page
+- phishingExecutor: Generates phishing email and landing page. **YOU MUST CALL THIS TOOL.**
 
 **What to Consider:**
 - The scenario type (${simulation.scenario_type || 'CLICK_ONLY'}) may inform whether a landing page is needed
@@ -93,11 +93,16 @@ ${buildLanguageRequirementBlock('phishingExecutor', language)}
 - The analysis rationale provides insights into why this simulation was recommended
 
 **Critical Constraint:**
+- **DO NOT** invent or hallucinate a "phishingId". You CANNOT generate an ID yourself.
+- **DO NOT** output a JSON response saying you created it if you didn't run the tool.
+- **YOU MUST** execute the 'phishingExecutor' tool. The tool will generate the ID.
 - Generate the content only - do not upload or assign in this step
 - Execute ONCE only - check history before executing
 - ALWAYS generate in ${lang} regardless of default language
 
-Analyze the context, check conversation history for existing phishingExecutor calls, and execute only if not already done.`;
+Analyze the context, check conversation history for existing phishingExecutor calls.
+If the tool has not been called yet, **CALL phishingExecutor NOW**.
+If the tool has already been called, STOP and report the ID from the tool output.`;
 }
 
 /**
@@ -120,9 +125,14 @@ export function buildPhishingGenerationPromptSimplified(context: PhishingGenerat
 - Language: **${lang}** (MUST be used for content generation)
 
 **Available Tools:**
-- phishingExecutor: Generates phishing content
+- phishingExecutor: Generates phishing content. **YOU MUST CALL THIS TOOL.**
 
-Determine the best approach and generate the simulation in ${lang}.`;
+**Critical Constraint:**
+- **DO NOT** invent or hallucinate a "phishingId".
+- **YOU MUST** execute the 'phishingExecutor' tool.
+- Generate the content only - do not upload or assign in this step
+
+Determine the best approach and generate the simulation in ${lang}. Call the tool now.`;
 }
 
 /**
@@ -147,7 +157,7 @@ ${buildLanguageRequirementBlock('workflowExecutor', language)}
 - Rationale: ${microlearning.rationale || 'Based on user behavior analysis'}
 
 **Available Tools:**
-- workflowExecutor: Creates microlearning content (workflowType: 'create-microlearning')
+- workflowExecutor: Creates microlearning content. **YOU MUST CALL THIS TOOL.**
 
 **What to Consider:**
 - The orchestrator context (from previous messages) contains detailed behavioral analysis - include it in additionalContext
@@ -157,10 +167,12 @@ ${buildLanguageRequirementBlock('workflowExecutor', language)}
 - The rationale explains why this training was recommended - use it to guide content decisions
 
 **Critical Constraint:**
+- **DO NOT** invent or hallucinate a "microlearningId".
+- **YOU MUST** execute the 'workflowExecutor' tool.
 - Generate the content only - do not upload or assign in this step
 - ALWAYS mention the language requirement in the prompt, e.g., "Create training module in ${lang} for..."
 
-Review the context, determine the optimal training approach, and execute the generation.`;
+Review the context, determine the optimal training approach, and execute the generation. Call the tool now.`;
 }
 
 /**
@@ -183,20 +195,29 @@ export function buildTrainingGenerationPromptSimplified(context: TrainingGenerat
 - Language: **${lang}** (MUST be included in prompt to workflowExecutor)
 
 **Available Tools:**
-- workflowExecutor: Creates training (workflowType: 'create-microlearning')
+- workflowExecutor: Creates training. **YOU MUST CALL THIS TOOL.**
 
-When calling workflowExecutor, mention the language requirement in the prompt. Determine the best approach and generate the training module in ${lang}.`;
+**Critical Constraint:**
+- **DO NOT** invent or hallucinate a "microlearningId".
+- **YOU MUST** execute the 'workflowExecutor' tool.
+
+When calling workflowExecutor, mention the language requirement in the prompt. Determine the best approach and generate the training module in ${lang}. Call the tool now.`;
 }
 
 /**
  * Goal-based prompt for upload (less prescriptive)
  */
 export function buildUploadPrompt(
-    artifactType: 'phishing' | 'training'
+    artifactType: 'phishing' | 'training',
+    generatedArtifactId?: string
 ): string {
     const toolName = artifactType === 'phishing' ? 'uploadPhishing' : 'uploadTraining';
     const idField = artifactType === 'phishing' ? 'phishingId' : 'microlearningId';
     const artifactLabel = artifactType === 'phishing' ? 'simulation' : 'module';
+
+    const contextInfo = generatedArtifactId
+        ? `- The ${idField} is: **${generatedArtifactId}** (Use this EXACT ID)`
+        : `- The ${idField} should be available in recent conversation history`;
 
     return `**AUTONOMOUS_EXECUTION_MODE**
 
@@ -204,7 +225,7 @@ export function buildUploadPrompt(
 
 **Context:**
 - The ${artifactType} has been generated successfully
-- The ${idField} should be available in recent conversation history
+${contextInfo}
 
 **Available Tools:**
 - ${toolName}: Uploads ${artifactType} to platform
@@ -214,7 +235,10 @@ After uploading, you MUST report the results in this exact format:
 - If successful: "UPLOAD_SUCCESS: resourceId=<ID>, languageId=<LANG>"
 - If failed: "UPLOAD_FAILED: <error message>"
 
-Locate the ${idField} from conversation history, upload the ${artifactType}, and report results in the format above.`;
+${generatedArtifactId
+            ? `Call ${toolName} using ${idField}="${generatedArtifactId}".`
+            : `Locate the ${idField} from conversation history and call ${toolName}.`}
+Report results in the format above.`;
 }
 
 /**

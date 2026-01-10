@@ -8,6 +8,7 @@ import { getPolicySummary } from '../../utils/core/policy-cache';
 import { errorService } from '../../services/error-service';
 import { validateToolResult } from '../../utils/tool-result-validation';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
+import { normalizeDifficultyValue } from '../../utils/difficulty-level-mapper';
 
 const phishingWorkflowSchema = z.object({
     workflowType: z.literal(PHISHING.WORKFLOW_TYPE).describe('Workflow to execute'),
@@ -19,7 +20,10 @@ const phishingWorkflowSchema = z.object({
         behavioralTriggers: z.array(z.string()).optional(),
         vulnerabilities: z.array(z.string()).optional(),
     }).optional().describe('Target user profile for personalization'),
-    difficulty: z.enum(PHISHING.DIFFICULTY_LEVELS).optional().default(PHISHING.DEFAULT_DIFFICULTY),
+    difficulty: z
+        .preprocess((value) => normalizeDifficultyValue(value) ?? value, z.enum(PHISHING.DIFFICULTY_LEVELS))
+        .optional()
+        .default(PHISHING.DEFAULT_DIFFICULTY),
     language: z.string().optional().default('en-gb').describe('Target language (BCP-47 code, e.g. en-gb, tr-tr)'),
     method: z.enum(PHISHING.ATTACK_METHODS).optional().describe('Type of phishing attack'),
     includeEmail: z.boolean().optional().default(true).describe('Whether to generate an email'),

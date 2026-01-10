@@ -9,16 +9,10 @@ import type {
   ChatMessage,
   MessageContentPart,
   MessageParts,
+  ChatRequestBody,
 } from '../types/api-types';
 import { getLogger } from './core/logger';
 
-interface ChatRequestBody {
-  prompt?: string;
-  text?: string;
-  input?: string;
-  messages?: ChatMessage[];
-  [key: string]: unknown;
-}
 
 const logger = getLogger('ChatRequestHelpers');
 

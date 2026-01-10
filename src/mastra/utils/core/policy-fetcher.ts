@@ -54,7 +54,8 @@ export async function getPolicyContext(): Promise<string> {
             'X-COMPANY-ID': companyId,
           },
         }),
-      'policy-list-fetch'
+      'policy-list-fetch',
+      { maxAttempts: 1 }
     );
 
     if (!listResponse.ok) {
@@ -92,7 +93,8 @@ export async function getPolicyContext(): Promise<string> {
                   'X-COMPANY-ID': companyId,
                 },
               }),
-            'policy-read-fetch'
+            'policy-read-fetch',
+            { maxAttempts: 1 }
           );
 
           if (!response.ok) {

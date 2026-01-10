@@ -3,6 +3,7 @@ import { getUserInfoTool } from '../../tools/user-management';
 import { requestStorage } from '../../utils/core/request-storage';
 import { getLogger } from '../../utils/core/logger';
 import { normalizeError } from '../../utils/core/error-utils';
+import { API_ENDPOINTS } from '../../constants';
 import { AutonomousRequest, AutonomousResponse } from '../../types/autonomous-types';
 import {
     buildExecutiveReport,
@@ -17,7 +18,10 @@ export async function executeAutonomousGeneration(
     request: AutonomousRequest
 ): Promise<AutonomousResponse> {
     const logger = getLogger('ExecuteAutonomousGeneration');
-    const { token, firstName, lastName, targetUserResourceId, targetGroupResourceId, departmentName, actions, sendAfterPhishingSimulation, preferredLanguage } = request;
+    const { token, firstName, lastName, targetUserResourceId, targetGroupResourceId, departmentName, actions, sendAfterPhishingSimulation, preferredLanguage, baseApiUrl } = request;
+
+    // Use provided baseApiUrl or fallback to default
+    const effectiveBaseApiUrl = baseApiUrl || API_ENDPOINTS.DEFAULT_BASE_API_URL;
 
     // Determine assignment type
     const isUserAssignment = !!(firstName || targetUserResourceId);
@@ -29,7 +33,7 @@ export async function executeAutonomousGeneration(
     }
 
     try {
-        return await requestStorage.run({ token }, async (): Promise<AutonomousResponse> => {
+        return await requestStorage.run({ token, baseApiUrl: effectiveBaseApiUrl }, async (): Promise<AutonomousResponse> => {
             // USER ASSIGNMENT: Get user info and generate personalized content
             if (isUserAssignment) {
                 logger.info('USER ASSIGNMENT: Analyzing user behavior');
@@ -54,12 +58,18 @@ export async function executeAutonomousGeneration(
                     toolResult.userInfo.preferredLanguage = preferredLanguage;
                 }
 
-                // Generate content
-                const userId = toolResult.userInfo?.targetUserResourceId || Date.now();
+                const runTimestamp = Date.now();
+                const userId = toolResult.userInfo?.targetUserResourceId || runTimestamp;
                 const executiveReport = buildExecutiveReport(toolResult);
+
+                // CRITICAL: Append timestamp to thread IDs to ensure UNIQUE memory context per run
+                // This prevents "pollution" from previous runs and prevents the agent from hallucinating based on old history
+                const phishingThreadId = `phishing-${userId}-${runTimestamp}`;
+                const trainingThreadId = `training-${userId}-${runTimestamp}`;
+
                 const { phishingResult, trainingResult } = await generateContentForUser(
                     toolResult, executiveReport, actions, sendAfterPhishingSimulation, userId,
-                    `phishing-${userId}`, `training-${userId}`
+                    phishingThreadId, trainingThreadId
                 );
 
                 logger.info('✅ Autonomous service completed successfully', {

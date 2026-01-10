@@ -60,6 +60,7 @@ export interface CodeReviewRequestBody {
  */
 export interface AutonomousRequestBody {
   token: string;
+  baseApiUrl?: string; // Optional: API base URL (e.g., https://test-api.devkeepnet.com)
   // User assignment (individual user)
   firstName?: string;
   lastName?: string;

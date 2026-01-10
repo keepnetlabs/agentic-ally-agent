@@ -21,7 +21,7 @@
  *
  * Configuration:
  * - Environment variables in .env file
- * - Rate limiting: 50 req/min for /chat, 300 req/min for /health
+ * - Rate limiting: 100 req/min for /chat, 300 req/min for /health
  * - Cloudflare Workers deployment with KV + D1 backends
  * - Memory: D1Store with optional Turso persistence
  *
@@ -467,7 +467,7 @@ export const mastra = new Mastra({
         handler: async (c: Context) => {
           try {
             const body = await c.req.json<AutonomousRequestBody>();
-            const { token, firstName, lastName, targetUserResourceId, targetGroupResourceId, departmentName, actions, sendAfterPhishingSimulation, preferredLanguage } = body;
+            const { token, firstName, lastName, targetUserResourceId, targetGroupResourceId, departmentName, actions, sendAfterPhishingSimulation, preferredLanguage, baseApiUrl } = body;
             const env = c.env as CloudflareEnv | undefined;
 
             // Validation
@@ -517,7 +517,8 @@ export const mastra = new Mastra({
                     departmentName,
                     actions,
                     sendAfterPhishingSimulation,
-                    preferredLanguage
+                    preferredLanguage,
+                    baseApiUrl
                   }
                 });
 
@@ -550,7 +551,8 @@ export const mastra = new Mastra({
               departmentName,
               actions: actions as ('training' | 'phishing')[],
               sendAfterPhishingSimulation,
-              preferredLanguage
+              preferredLanguage,
+              baseApiUrl
             };
 
             // Fallback 1: run in background via waitUntil if available (preferred in Workers)

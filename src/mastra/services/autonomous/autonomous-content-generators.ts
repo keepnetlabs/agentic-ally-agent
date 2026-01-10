@@ -144,6 +144,7 @@ export async function generateContentForGroup(
     const { topic, phishingPrompt, trainingPrompt, objectives } = topicSelection;
     logger.info('🎯 Using topic for both phishing & training', { topic, objectivesCount: objectives.length });
 
+    const runTimestamp = Date.now();
     const generationPromises: Promise<any>[] = [];
 
     // Generate phishing with selected topic + prompt
@@ -157,10 +158,13 @@ export async function generateContentForGroup(
             rationale: `Group-level awareness training focused on: ${topic}`
         };
 
+        const phishingThreadId = `phishing-group-${userId}-${runTimestamp}`;
+
         logger.info('Generating phishing simulation', {
             groupId: userId,
             topic,
-            language: preferredLanguage
+            language: preferredLanguage,
+            threadId: phishingThreadId
         });
 
         generationPromises.push(
@@ -168,7 +172,7 @@ export async function generateContentForGroup(
                 groupPhishingSimulation,
                 phishingPrompt,  // custom topic-based prompt from group-topic-service
                 preferredLanguage,
-                `phishing-group-${userId}`,
+                phishingThreadId,
                 userId as string | number
             )
                 .then(result => { phishingResult = result; })
@@ -188,10 +192,13 @@ export async function generateContentForGroup(
             rationale: `Group-level training aligned with phishing simulation on: ${topic}`
         };
 
+        const trainingThreadId = `training-group-${userId}-${runTimestamp}`;
+
         logger.info('Generating training module', {
             groupId: userId,
             topic,
-            language: preferredLanguage
+            language: preferredLanguage,
+            threadId: trainingThreadId
         });
 
         generationPromises.push(
@@ -199,7 +206,7 @@ export async function generateContentForGroup(
                 groupMicrolearning,
                 trainingPrompt,  // custom topic-based prompt from group-topic-service
                 preferredLanguage,
-                `training-group-${userId}`,
+                trainingThreadId,
                 userId as string | number
             )
                 .then(result => { trainingResult = result; })
@@ -245,7 +252,7 @@ export async function generateContentForUser(
     // Generate phishing if requested and simulation available
     if (actions.includes('phishing') && recommendedSteps.simulations?.[0]) {
         const simulation = recommendedSteps.simulations[0];
-        logger.info('Starting phishing generation', { simulation: simulation.title, uploadOnly });
+        logger.debug('Starting phishing generation', { simulation: simulation.title, uploadOnly });
         generationPromises.push(
             generatePhishingSimulation(simulation, executiveReport, toolResult, phishingThreadId, uploadOnly)
                 .then(result => {

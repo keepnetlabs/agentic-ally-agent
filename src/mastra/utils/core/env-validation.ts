@@ -30,7 +30,6 @@ const OPTIONAL_ENV_VARS = [
     'GOOGLE_GENERATIVE_AI_API_KEY',   // Optional: Falls back to OpenAI
     'MASTRA_MEMORY_URL',              // Optional: External memory storage
     'MASTRA_MEMORY_TOKEN',            // Optional: External memory auth
-    'PRODUCT_API_KEY',                // Optional: Defaults to 'apikey' if not set
     // Note: RATE_LIMIT_* moved to constants.ts (RATE_LIMIT_CONFIG)
     // Note: Platform API URL provided via X-BASE-API-URL header (not env var)
 ] as const;

@@ -17,9 +17,10 @@ export class AutonomousWorkflow extends WorkflowEntrypoint {
         const _mastraObj = mastra()
         try {
             logger.info('autonomous_workflow_started', { hasEnv: !!env });
-            const { token, firstName, lastName, actions, sendAfterPhishingSimulation, preferredLanguage, targetUserResourceId, targetGroupResourceId } = event.payload;
+            const { token, firstName, lastName, actions, sendAfterPhishingSimulation, preferredLanguage, targetUserResourceId, targetGroupResourceId, baseApiUrl } = event.payload;
             const result = await executeAutonomousGeneration({
                 token,
+                baseApiUrl,
                 firstName,
                 lastName,
                 actions,
