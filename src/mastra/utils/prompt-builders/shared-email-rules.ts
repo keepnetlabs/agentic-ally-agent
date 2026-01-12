@@ -37,7 +37,8 @@ export const EMAIL_SIGNATURE_RULES = `**EMAIL SIGNATURE RULES:**
   ✅ Correct: "Security Notifications Team", "IT Support Team", "Customer Service", "Microsoft Account Team", "Automated System"
   ❌ Wrong: "Emily Clarke", "John from IT", "Sarah - Support"
 - Signature format: Team Name + Email Address
-- Example: "Best regards,<br>Security Notifications Team<br>security@company.com"`;
+- **PADDING RULE (Outlook-Critical):** Signature MUST be wrapped in its own \`<tr><td>\` block with padding. NEVER use \`<div>\` padding for signatures.
+- Example: "<tr><td style='padding-top:16px; padding-left:20px;'>Best regards,<br>Security Notifications Team<br>security@company.com</td></tr>"`;
 
 /**
  * No fake personal identities rule (phishing-only safeguard)

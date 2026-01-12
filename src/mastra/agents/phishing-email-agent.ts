@@ -71,7 +71,7 @@ TEMPLATE (Localize to Interaction Language):
 Topic: {Topic}<br>
 Target: {Target Profile} ({Difficulty})<br>
 Method: {Attack Method}<br>
-Language: {Content Language}<br>
+Language: {Content Language}<br><br>
 This will take about 30 seconds. Should I generate the simulation?
 
 **STATE 3 - Execute**

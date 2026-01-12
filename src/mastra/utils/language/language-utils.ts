@@ -1,4 +1,5 @@
 import { getLogger } from '../core/logger';
+import { generateSlugId } from '../core/id-utils';
 
 const logger = getLogger('LanguageUtils');
 
@@ -92,12 +93,11 @@ export function validateBCP47LanguageCode(input: string): string {
   return normalized;
 }
 
+
+
 // Generate unique microlearning ID from topic
 export function generateMicrolearningId(topic: string): string {
-  return topic.toLowerCase()
-    .replace(/[^a-z0-9\s]/g, '')
-    .replace(/\s+/g, '-')
-    .substring(0, 50) + '-' + Date.now().toString().slice(-6);
+  return generateSlugId(topic);
 }
 
 // Normalize department name for file paths (replace spaces with hyphens)

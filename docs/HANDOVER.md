@@ -30,6 +30,7 @@ Agentic Ally is an **Autonomous Security Awareness Platform** powered by **5 Spe
 3.  **[ARCHITECTURE.md](./ARCHITECTURE.md)** - Deep dive into resilience & state machines.
 4.  **[API_REFERENCE.md](./API_REFERENCE.md)** - Full list of endpoints (`/chat`, `/autonomous`).
 5.  **[DEVELOPMENT.md](./DEVELOPMENT.md)** - How to debug & run locally.
+6.  **[FUTURE_IMPROVEMENTS.md](./FUTURE_IMPROVEMENTS.md)** - Roadmap for Autonomous Agentic System (Active Learning, Memory).
 
 ---
 

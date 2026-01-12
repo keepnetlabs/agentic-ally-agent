@@ -2,7 +2,7 @@ import { createStep, createWorkflow } from '@mastra/core/workflows';
 import { generateText } from 'ai';
 import { getModelWithOverride } from '../model-providers';
 import { cleanResponse } from '../utils/content-processors/json-cleaner';
-import { v4 as uuidv4 } from 'uuid';
+import { generateUniqueId } from '../utils/core/id-utils';
 import { LANDING_PAGE, STRING_TRUNCATION } from '../constants';
 import { KVService } from '../services/kv-service';
 import {
@@ -672,7 +672,7 @@ const savePhishingContent = createStep({
   outputSchema: OutputSchema,
   execute: async ({ inputData }) => {
     const logger = getLogger('SavePhishingContent');
-    const phishingId = uuidv4();
+    const phishingId = generateUniqueId();
     const language = 'en-gb'; // Default language for phishing content
 
     logger.info('Saving phishing content to KV', { phishingId });

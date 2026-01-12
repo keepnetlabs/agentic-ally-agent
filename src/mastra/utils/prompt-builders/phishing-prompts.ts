@@ -539,8 +539,11 @@ ${BRAND_AWARENESS_RULES}
      - Button Text: "View Document", "Track Package", "Read Announcement", "See Photos".
      - Urgency: Low to Medium. Focus on curiosity or helpfulness.
    ${industryDesign ? `\n   - **Brand Colors (${industryDesign.industry}):** Use primary color \`${industryDesign.colors.primary}\` for buttons/links to match brand identity.` : ''}
+   - **LAYOUT RULE:** Buttons MUST be in their own \`<div>\` container with \`text-align: center\`. Do NOT overlap with lists.
+   - **NO INLINE-BLOCK ADJACENCY:** Do NOT place buttons immediately next to lists or text using \`display: inline-block\`. Always ensure the button starts on a NEW line below previous content.
 
 4. ${GREETING_RULES}
+   - **NO DOUBLE GREETINGS:** Never use "Dear X... Dear Colleague...". Use exactly ONE greeting. If {FIRSTNAME} is used, do not add "Dear User" or "Dear Colleague" afterwards.
 
 5. ${getMergeTagsRules(false)}
 
