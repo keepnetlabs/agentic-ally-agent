@@ -4,84 +4,84 @@
 // =========================
 
 type LangKey =
-    | "tr" | "en" | "fr" | "es" | "de" | "it" | "pt" | "nl" | "sv" | "no" | "da"
-    | "pl" | "cs" | "ru" | "ar" | "fa" | "hi" | "zh" | "ja" | "ko" | "th" | "vi"
-    | "uk" | "el" | "ro" | "hu" | "sk" | "id" | "bn" | "ur" | "he" | "sw"
-    | "ku" | "hr" | "sr" | "bg" | "mk" | "sq" | "is" | "fi"
-    | "generic";
+  | "tr" | "en" | "fr" | "es" | "de" | "it" | "pt" | "nl" | "sv" | "no" | "da"
+  | "pl" | "cs" | "ru" | "ar" | "fa" | "hi" | "zh" | "ja" | "ko" | "th" | "vi"
+  | "uk" | "el" | "ro" | "hu" | "sk" | "id" | "bn" | "ur" | "he" | "sw"
+  | "ku" | "hr" | "sr" | "bg" | "mk" | "sq" | "is" | "fi"
+  | "generic";
 
 // --- 1) Lang-code normalizer (aliases + fallback) ---
-function normLang(code?: string): LangKey {
-    if (!code) return "generic";
-    const raw = code.toLowerCase().trim().replace(/_/g, "-");
-    const primary = raw.split("-")[0];
+export function normLang(code?: string): LangKey {
+  if (!code) return "generic";
+  const raw = code.toLowerCase().trim().replace(/_/g, "-");
+  const primary = raw.split("-")[0];
 
-    const aliases: Record<string, LangKey> = {
-        // Base language codes (39 languages)
-        tr: "tr", en: "en", fr: "fr", es: "es", de: "de", it: "it", pt: "pt", nl: "nl",
-        sv: "sv", no: "no", nb: "no", nn: "no", da: "da", pl: "pl", cs: "cs", ru: "ru",
-        ar: "ar", fa: "fa", hi: "hi", zh: "zh", ja: "ja", ko: "ko", th: "th", vi: "vi",
-        uk: "uk", el: "el", ro: "ro", hu: "hu", sk: "sk", id: "id", bn: "bn", ur: "ur",
-        he: "he", sw: "sw", ku: "ku", hr: "hr", sr: "sr", bg: "bg", mk: "mk", sq: "sq",
-        is: "is", fi: "fi",
-        // Common regional variants
-        "pt-br": "pt", "pt-pt": "pt",
-        "zh-cn": "zh", "zh-sg": "zh", "zh-hans": "zh", "zh-hant": "zh", "zh-tw": "zh", "zh-hk": "zh",
-        "en-gb": "en", "en-us": "en", "en-au": "en", "en-ca": "en",
-        "fr-ca": "fr",
-        "es-mx": "es", "es-419": "es",
-        "tr-tr": "tr", "de-de": "de", "it-it": "it",
-        "sr-latn": "sr", "sr-cyrl": "sr",
-        "zh-yue": "zh",
-        // Full language names (for AI outputs like "Turkish", "English", etc.)
-        "turkish": "tr", "türkçe": "tr", "turkce": "tr", "turk": "tr",
-        "english": "en", "eng": "en",
-        "german": "de", "deutsch": "de",
-        "french": "fr", "francais": "fr", "français": "fr",
-        "spanish": "es", "espanol": "es", "español": "es",
-        "italian": "it", "italiano": "it",
-        "portuguese": "pt", "português": "pt",
-        "russian": "ru", "россия": "ru",
-        "chinese": "zh",
-        "japanese": "ja",
-        "arabic": "ar",
-        "korean": "ko",
-        "dutch": "nl", "nederlands": "nl",
-        "polish": "pl", "polski": "pl",
-        "swedish": "sv", "svenska": "sv",
-        "norwegian": "no", "norsk": "no",
-        "danish": "da", "dansk": "da",
-        "czech": "cs", "česky": "cs",
-        "persian": "fa", "farsi": "fa",
-        "hindi": "hi",
-        "thai": "th",
-        "vietnamese": "vi",
-        "ukrainian": "uk", "українська": "uk",
-        "greek": "el", "ελληνικά": "el",
-        "romanian": "ro", "română": "ro",
-        "hungarian": "hu", "magyar": "hu",
-        "slovak": "sk", "slovenčina": "sk",
-        "indonesian": "id", "bahasa indonesia": "id",
-        "bengali": "bn", "বাংলা": "bn",
-        "urdu": "ur", "اردو": "ur",
-        "hebrew": "he", "עברית": "he",
-        "swahili": "sw",
-        "kurdish": "ku", "کوردی": "ku",
-        "croatian": "hr", "hrvatski": "hr",
-        "serbian": "sr", "србија": "sr",
-        "bulgarian": "bg", "български": "bg",
-        "macedonian": "mk", "македонски": "mk",
-        "albanian": "sq", "shqiptare": "sq",
-        "icelandic": "is", "íslenska": "is",
-        "finnish": "fi", "suomi": "fi"
-    };
+  const aliases: Record<string, LangKey> = {
+    // Base language codes (39 languages)
+    tr: "tr", en: "en", fr: "fr", es: "es", de: "de", it: "it", pt: "pt", nl: "nl",
+    sv: "sv", no: "no", nb: "no", nn: "no", da: "da", pl: "pl", cs: "cs", ru: "ru",
+    ar: "ar", fa: "fa", hi: "hi", zh: "zh", ja: "ja", ko: "ko", th: "th", vi: "vi",
+    uk: "uk", el: "el", ro: "ro", hu: "hu", sk: "sk", id: "id", bn: "bn", ur: "ur",
+    he: "he", sw: "sw", ku: "ku", hr: "hr", sr: "sr", bg: "bg", mk: "mk", sq: "sq",
+    is: "is", fi: "fi",
+    // Common regional variants
+    "pt-br": "pt", "pt-pt": "pt",
+    "zh-cn": "zh", "zh-sg": "zh", "zh-hans": "zh", "zh-hant": "zh", "zh-tw": "zh", "zh-hk": "zh",
+    "en-gb": "en", "en-us": "en", "en-au": "en", "en-ca": "en",
+    "fr-ca": "fr",
+    "es-mx": "es", "es-419": "es",
+    "tr-tr": "tr", "de-de": "de", "it-it": "it",
+    "sr-latn": "sr", "sr-cyrl": "sr",
+    "zh-yue": "zh",
+    // Full language names (for AI outputs like "Turkish", "English", etc.)
+    "turkish": "tr", "türkçe": "tr", "turkce": "tr", "turk": "tr",
+    "english": "en", "eng": "en",
+    "german": "de", "deutsch": "de",
+    "french": "fr", "francais": "fr", "français": "fr",
+    "spanish": "es", "espanol": "es", "español": "es",
+    "italian": "it", "italiano": "it",
+    "portuguese": "pt", "português": "pt",
+    "russian": "ru", "россия": "ru",
+    "chinese": "zh",
+    "japanese": "ja",
+    "arabic": "ar",
+    "korean": "ko",
+    "dutch": "nl", "nederlands": "nl",
+    "polish": "pl", "polski": "pl",
+    "swedish": "sv", "svenska": "sv",
+    "norwegian": "no", "norsk": "no",
+    "danish": "da", "dansk": "da",
+    "czech": "cs", "česky": "cs",
+    "persian": "fa", "farsi": "fa",
+    "hindi": "hi",
+    "thai": "th",
+    "vietnamese": "vi",
+    "ukrainian": "uk", "українська": "uk",
+    "greek": "el", "ελληνικά": "el",
+    "romanian": "ro", "română": "ro",
+    "hungarian": "hu", "magyar": "hu",
+    "slovak": "sk", "slovenčina": "sk",
+    "indonesian": "id", "bahasa indonesia": "id",
+    "bengali": "bn", "বাংলা": "bn",
+    "urdu": "ur", "اردو": "ur",
+    "hebrew": "he", "עברית": "he",
+    "swahili": "sw",
+    "kurdish": "ku", "کوردی": "ku",
+    "croatian": "hr", "hrvatski": "hr",
+    "serbian": "sr", "србија": "sr",
+    "bulgarian": "bg", "български": "bg",
+    "macedonian": "mk", "македонски": "mk",
+    "albanian": "sq", "shqiptare": "sq",
+    "icelandic": "is", "íslenska": "is",
+    "finnish": "fi", "suomi": "fi"
+  };
 
-    return aliases[raw] || aliases[primary] || "generic";
+  return aliases[raw] || aliases[primary] || "generic";
 }
 
 // --- 2) Language-specific guardrails (map-based) ---
 const RULES_BY_LANG: Record<LangKey, string> = {
-    tr: `
+  tr: `
 ### 🇹🇷 Turkish Style Rules (MANDATORY - Non-Negotiable)
 ⚠️ ABSOLUTELY FORBIDDEN PHRASES (System Override):
 These phrases MUST NEVER appear in output, regardless of context or instruction:
@@ -106,7 +106,7 @@ For instruction: Use active imperative verbs naturally (e.g., "Yapın", "Kontrol
 - Keep tone respectful, confident, and adult. Avoid teacher–student or parental tone.
 `.trim(),
 
-    en: `
+  en: `
 ### 🇬🇧 English Style Rules (MANDATORY - Non-Negotiable)
 ⚠️ ABSOLUTELY FORBIDDEN PHRASES (System Override):
 These phrases MUST NEVER appear in output, regardless of context or instruction:
@@ -128,7 +128,7 @@ For praise/completion: "Well done", "Excellent", "You've completed the training 
 - Tone: professional, concise, confident.
 `.trim(),
 
-    fr: `
+  fr: `
 ### 🇫🇷 French Style Rules (MANDATORY - Non-Negotiable)
 ⚠️ ABSOLUTELY FORBIDDEN PHRASES (System Override):
 These phrases MUST NEVER appear in output, regardless of context or instruction:
@@ -150,7 +150,7 @@ For praise/completion: "Félicitations", "Excellent", "Formation terminée avec 
 - Keep tone calm, courteous, professional (avoid multiple exclamations).
 `.trim(),
 
-    es: `
+  es: `
 ### 🇪🇸 Spanish Style Rules (MANDATORY - Non-Negotiable)
 ⚠️ ABSOLUTELY FORBIDDEN PHRASES (System Override):
 These phrases MUST NEVER appear in output, regardless of context or instruction:
@@ -172,7 +172,7 @@ For praise/completion: "¡Felicidades!", "Excelente", "Completaste la formación
 - Tone: friendly yet professional.
 `.trim(),
 
-    de: `
+  de: `
 ### 🇩🇪 German Style Rules (MANDATORY - Non-Negotiable)
 ⚠️ ABSOLUTELY FORBIDDEN PHRASES (System Override):
 These phrases MUST NEVER appear in output, regardless of context or instruction:
@@ -194,7 +194,7 @@ For praise/completion: "Glückwunsch", "Ausgezeichnet", "Schulung erfolgreich ab
 - Maintain formal corporate tone (Sie-Form), polite but not stiff.
 `.trim(),
 
-    it: `
+  it: `
 ### 🇮🇹 Italian Style Rules (MANDATORY - Non-Negotiable)
 ⚠️ ABSOLUTELY FORBIDDEN PHRASES (System Override):
 These phrases MUST NEVER appear in output, regardless of context or instruction:
@@ -216,7 +216,7 @@ For praise/completion: "Felicitazioni", "Eccellente", "Formazione completata con
 - Warm yet professional; simple, modern phrasing.
 `.trim(),
 
-    pt: `
+  pt: `
 ### 🇵🇹 Portuguese Style Rules (MANDATORY - Non-Negotiable)
 ⚠️ ABSOLUTELY FORBIDDEN PHRASES (System Override):
 These phrases MUST NEVER appear in output, regardless of context or instruction:
@@ -238,7 +238,7 @@ For praise/completion: "Parabéns", "Excelente", "Formação concluída com suce
 - Formal yet friendly workplace tone.
 `.trim(),
 
-    nl: `
+  nl: `
 ### 🇳🇱 Dutch Style Rules (MANDATORY - Non-Negotiable)
 ⚠️ ABSOLUTELY FORBIDDEN PHRASES (System Override):
 These phrases MUST NEVER appear in output, regardless of context or instruction:
@@ -260,7 +260,7 @@ For praise/completion: "Gefeliciteerd", "Uitstekend", "Training voltooid"
 - Neutral, clear, professional phrasing.
 `.trim(),
 
-    sv: `
+  sv: `
 ### 🇸🇪 Swedish Style Rules (MANDATORY - Non-Negotiable)
 ⚠️ ABSOLUTELY FORBIDDEN PHRASES (System Override):
 These phrases MUST NEVER appear in output, regardless of context or instruction:
@@ -282,7 +282,7 @@ For praise/completion: "Grattis", "Utmärkt", "Utbildning slutförd"
 - Factual, polite, workplace-appropriate tone.
 `.trim(),
 
-    no: `
+  no: `
 ### 🇳🇴 Norwegian Style Rules (MANDATORY - Non-Negotiable)
 ⚠️ ABSOLUTELY FORBIDDEN PHRASES (System Override):
 These phrases MUST NEVER appear in output, regardless of context or instruction:
@@ -303,7 +303,7 @@ For praise/completion: "Gratulerer", "Utmerket", "Opplæring fullført"
 - Violations are TRACKED and logged for improvement
 `.trim(),
 
-    da: `
+  da: `
 ### 🇩🇰 Danish Style Rules (MANDATORY - Non-Negotiable)
 ⚠️ ABSOLUTELY FORBIDDEN PHRASES (System Override):
 These phrases MUST NEVER appear in output, regardless of context or instruction:
@@ -324,7 +324,7 @@ For praise/completion: "Tillykke", "Udmærket", "Træning afsluttet"
 - Violations are TRACKED and logged for improvement
 `.trim(),
 
-    pl: `
+  pl: `
 ### 🇵🇱 Polish Style Rules (MANDATORY - Non-Negotiable)
 ⚠️ ABSOLUTELY FORBIDDEN PHRASES (System Override):
 These phrases MUST NEVER appear in output, regardless of context or instruction:
@@ -345,7 +345,7 @@ For praise/completion: "Gratulacje", "Doskonale", "Szkolenie ukończone"
 - Violations are TRACKED and logged for improvement
 `.trim(),
 
-    cs: `
+  cs: `
 ### 🇨🇿 Czech Style Rules (MANDATORY - Non-Negotiable)
 ⚠️ ABSOLUTELY FORBIDDEN PHRASES (System Override):
 These phrases MUST NEVER appear in output, regardless of context or instruction:
@@ -366,7 +366,7 @@ For praise/completion: "Gratuluji", "Vynikající", "Školení dokončeno"
 - Violations are TRACKED and logged for improvement
 `.trim(),
 
-    ru: `
+  ru: `
 ### 🇷🇺 Russian Style Rules (MANDATORY - Non-Negotiable)
 ⚠️ ABSOLUTELY FORBIDDEN PHRASES (System Override):
 These phrases MUST NEVER appear in output, regardless of context or instruction:
@@ -388,7 +388,7 @@ For praise/completion: "Поздравляем", "Превосходно", "Об
 - Calm, professional, respectful.
 `.trim(),
 
-    ar: `
+  ar: `
 ### Arabic Style Rules (MANDATORY - Non-Negotiable)
 ⚠️ ABSOLUTELY FORBIDDEN PHRASES (System Override):
 These phrases MUST NEVER appear in output, regardless of context or instruction:
@@ -410,7 +410,7 @@ For praise/completion: "تهانينا", "ممتاز", "اكتمل التدري�
 - Use neutral, professional Modern Standard Arabic (no dialects).
 `.trim(),
 
-    fa: `
+  fa: `
 ### 🇮🇷 Persian Style Rules (MANDATORY - Non-Negotiable)
 ⚠️ ABSOLUTELY FORBIDDEN PHRASES (System Override):
 These phrases MUST NEVER appear in output, regardless of context or instruction:
@@ -431,7 +431,7 @@ For praise/completion: "تبریک می‌گوییم", "عالی", "آموزش �
 - Violations are TRACKED and logged for improvement
 `.trim(),
 
-    hi: `
+  hi: `
 ### 🇮🇳 Hindi Style Rules (MANDATORY - Non-Negotiable)
 ⚠️ ABSOLUTELY FORBIDDEN PHRASES (System Override):
 These phrases MUST NEVER appear in output, regardless of context or instruction:
@@ -453,7 +453,7 @@ For praise/completion: "बधाई हो", "उत्कृष्ट", "प�
 - Polite, modern, workplace-professional.
 `.trim(),
 
-    zh: `
+  zh: `
 ### 🇨🇳 Chinese (Simplified) Style Rules (MANDATORY - Non-Negotiable)
 ⚠️ ABSOLUTELY FORBIDDEN PHRASES (System Override):
 These phrases MUST NEVER appear in output, regardless of context or instruction:
@@ -475,7 +475,7 @@ For praise/completion: "恭喜您", "非常好", "培训已成功完成"
 - Concise, polite, business tone (no exclamation stacking).
 `.trim(),
 
-    ja: `
+  ja: `
 ### 🇯🇵 Japanese Style Rules (MANDATORY - Non-Negotiable)
 ⚠️ ABSOLUTELY FORBIDDEN PHRASES (System Override):
 These phrases MUST NEVER appear in output, regardless of context or instruction:
@@ -497,7 +497,7 @@ For praise/completion: "おめでとうございます", "素晴らしい", "ト
 - Polite workplace style (です・ます調), no casual tone.
 `.trim(),
 
-    ko: `
+  ko: `
 ### 🇰🇷 Korean Style Rules (MANDATORY - Non-Negotiable)
 ⚠️ ABSOLUTELY FORBIDDEN PHRASES (System Override):
 These phrases MUST NEVER appear in output, regardless of context or instruction:
@@ -519,7 +519,7 @@ For praise/completion: "축하합니다", "훌륭합니다", "교육이 완료�
 - Professional, adult, polite.
 `.trim(),
 
-    th: `
+  th: `
 ### 🇹🇭 Thai Style Rules (MANDATORY - Non-Negotiable)
 ⚠️ ABSOLUTELY FORBIDDEN PHRASES (System Override):
 These phrases MUST NEVER appear in output, regardless of context or instruction:
@@ -541,7 +541,7 @@ For praise/completion: "ขอแสดงความยินดี", "ยอ�
 - Polite, corporate, natural.
 `.trim(),
 
-    vi: `
+  vi: `
 ### 🇻🇳 Vietnamese Style Rules (MANDATORY - Non-Negotiable)
 ⚠️ ABSOLUTELY FORBIDDEN PHRASES (System Override):
 These phrases MUST NEVER appear in output, regardless of context or instruction:
@@ -563,7 +563,7 @@ For praise/completion: "Chúc mừng", "Tuyệt vời", "Khóa đào tạo hoàn
 - Polite workplace tone.
 `.trim(),
 
-    uk: `
+  uk: `
 ### 🇺🇦 Ukrainian Style Rules (MANDATORY - Non-Negotiable)
 ⚠️ ABSOLUTELY FORBIDDEN PHRASES (System Override):
   - FORBIDDEN: "Будьте обережні!", "Стережіться!", "Уважайте!", "Тримайте вухо востро!", "Обережно!"
@@ -583,7 +583,7 @@ For praise/completion: "Вітаємо", "Відмінно", "Навчання �
 - Violations are TRACKED and logged for improvement
 `.trim(),
 
-    el: `
+  el: `
 ### 🇬🇷 Greek Style Rules (MANDATORY - Non-Negotiable)
 ⚠️ ABSOLUTELY FORBIDDEN PHRASES (System Override):
   - FORBIDDEN: "Προσοχή!", "Πρόσεχε!", "Να είσαι προσεκτικός!", "Μην ξεχάσεις!", "Φύλαξε το"
@@ -603,7 +603,7 @@ For praise/completion: "Συγχαρητήρια", "Εξαιρετικά", "Η �
 - Violations are TRACKED and logged for improvement
 `.trim(),
 
-    ro: `
+  ro: `
 ### 🇷🇴 Romanian Style Rules (MANDATORY - Non-Negotiable)
 ⚠️ ABSOLUTELY FORBIDDEN PHRASES (System Override):
   - FORBIDDEN: "Atenție!", "Fii atent!", "Aveți grijă!", "Rămâi vigilent!", "Caut"
@@ -623,7 +623,7 @@ For praise/completion: "Felicitări", "Excelent", "Antrenamentul completat"
 - Violations are TRACKED and logged for improvement
 `.trim(),
 
-    hu: `
+  hu: `
 ### 🇭🇺 Hungarian Style Rules (MANDATORY - Non-Negotiable)
 ⚠️ ABSOLUTELY FORBIDDEN PHRASES (System Override):
   - FORBIDDEN: "Figyelem!", "Légy óvatos!", "Vigyázz!", "Maradj résen!", "Óvakodj"
@@ -643,7 +643,7 @@ For praise/completion: "Gratulálunk", "Kitűnő", "A képzés befejeződött"
 - Violations are TRACKED and logged for improvement
 `.trim(),
 
-    sk: `
+  sk: `
 ### 🇸🇰 Slovak Style Rules (MANDATORY - Non-Negotiable)
 ⚠️ ABSOLUTELY FORBIDDEN PHRASES (System Override):
   - FORBIDDEN: "Pozor!", "Buď opatrný!", "Majte sa na pozore!", "Buďte ostražití!", "Dávajte si"
@@ -663,7 +663,7 @@ For praise/completion: "Gratulujem", "Výborné", "Školenie dokončené"
 - Violations are TRACKED and logged for improvement
 `.trim(),
 
-    id: `
+  id: `
 ### 🇮🇩 Indonesian Style Rules (MANDATORY - Non-Negotiable)
 ⚠️ ABSOLUTELY FORBIDDEN PHRASES (System Override):
   - FORBIDDEN: "Hati-hati!", "Berhati-hatilah!", "Awas!", "Waspada!", "Jangan lupa"
@@ -683,7 +683,7 @@ For praise/completion: "Selamat", "Luar biasa", "Pelatihan selesai"
 - Violations are TRACKED and logged for improvement
 `.trim(),
 
-    bn: `
+  bn: `
 ### 🇧🇩 Bengali Style Rules (MANDATORY - Non-Negotiable)
 ⚠️ ABSOLUTELY FORBIDDEN PHRASES (System Override):
   - FORBIDDEN: "সাবধান!", "সতর্ক থাকুন!", "সাবধানে থাকুন!", "মনোযোগ দিন!", "খেয়াল রাখুন"
@@ -703,7 +703,7 @@ For praise/completion: "অভিনন্দন", "চমৎকার", "প্
 - Violations are TRACKED and logged for improvement
 `.trim(),
 
-    ur: `
+  ur: `
 ### 🇵🇰 Urdu Style Rules (MANDATORY - Non-Negotiable)
 ⚠️ ABSOLUTELY FORBIDDEN PHRASES (System Override):
   - FORBIDDEN: "احتیاط!", "احتیاط سے!", "خطرے سے بچیں!", "تنبیہ!", "فوری توجہ"
@@ -723,7 +723,7 @@ For praise/completion: "مبارک ہو", "شاندار", "تربیت مکمل"
 - Violations are TRACKED and logged for improvement
 `.trim(),
 
-    he: `
+  he: `
 ### 🇮🇱 Hebrew Style Rules (MANDATORY - Non-Negotiable)
 ⚠️ ABSOLUTELY FORBIDDEN PHRASES (System Override):
   - FORBIDDEN: "זהירות!", "היזהר!", "תיזהר!", "עמוד בתיקבה!", "הזהרה"
@@ -743,7 +743,7 @@ For praise/completion: "ברכות", "מעולה", "ההכשרה הושלמה"
 - Violations are TRACKED and logged for improvement
 `.trim(),
 
-    sw: `
+  sw: `
 ### 🇹🇿 Swahili Style Rules (MANDATORY - Non-Negotiable)
 ⚠️ ABSOLUTELY FORBIDDEN PHRASES (System Override):
   - FORBIDDEN: "Onyo!", "Kuwa na tahadhari!", "Nenda nyuma!", "Jitambue!", "Karibu na hatari"
@@ -763,7 +763,7 @@ For praise/completion: "Karibu", "Safi", "Mafunzo yamekamilika"
 - Violations are TRACKED and logged for improvement
 `.trim(),
 
-    ku: `
+  ku: `
 ### 🇹🇷 Kurdish Style Rules (MANDATORY - Non-Negotiable)
 ⚠️ ABSOLUTELY FORBIDDEN PHRASES (System Override):
   - FORBIDDEN: "Ava!", "Mezinbîn!", "Mîna!", "Ewledarî!", "Heşdarî"
@@ -783,7 +783,7 @@ For praise/completion: "Piraz", "Gelek baş", "Hûnîndinê qediya bû"
 - Violations are TRACKED and logged for improvement
 `.trim(),
 
-    hr: `
+  hr: `
 ### 🇭🇷 Croatian Style Rules (MANDATORY - Non-Negotiable)
 ⚠️ ABSOLUTELY FORBIDDEN PHRASES (System Override):
   - FORBIDDEN: "Oprez!", "Budi oprezan!", "Čuvaj se!", "Ostani bdjagen!", "Paziti"
@@ -803,7 +803,7 @@ For praise/completion: "Čestitam", "Odličan", "Obuka je završena"
 - Violations are TRACKED and logged for improvement
 `.trim(),
 
-    sr: `
+  sr: `
 ### 🇷🇸 Serbian Style Rules (MANDATORY - Non-Negotiable)
 ⚠️ ABSOLUTELY FORBIDDEN PHRASES (System Override):
   - FORBIDDEN: "Опрез!", "Будите опрезни!", "Чувајте се!", "Останите бдели!", "Пазите"
@@ -823,7 +823,7 @@ For praise/completion: "Честитам", "Одличан", "Обука је з
 - Violations are TRACKED and logged for improvement
 `.trim(),
 
-    bg: `
+  bg: `
 ### 🇧🇬 Bulgarian Style Rules (MANDATORY - Non-Negotiable)
 ⚠️ ABSOLUTELY FORBIDDEN PHRASES (System Override):
   - FORBIDDEN: "Внимание!", "Будете внимателни!", "Пазете се!", "Останете начеку!", "Обърнете внимание"
@@ -843,7 +843,7 @@ For praise/completion: "Поздравления", "Отлично", "Обуче
 - Violations are TRACKED and logged for improvement
 `.trim(),
 
-    mk: `
+  mk: `
 ### 🇲🇰 Macedonian Style Rules (MANDATORY - Non-Negotiable)
 ⚠️ ABSOLUTELY FORBIDDEN PHRASES (System Override):
   - FORBIDDEN: "Внимание!", "Будете внимателни!", "Пазете се!", "Останете бдени!", "Обра внимание"
@@ -863,7 +863,7 @@ For praise/completion: "Честитаме", "Одлично", "Обука е з
 - Violations are TRACKED and logged for improvement
 `.trim(),
 
-    sq: `
+  sq: `
 ### 🇦🇱 Albanian Style Rules (MANDATORY - Non-Negotiable)
 ⚠️ ABSOLUTELY FORBIDDEN PHRASES (System Override):
   - FORBIDDEN: "Kujdes!", "Ki kujdes!", "Ruhu!", "Mbetet vigjilent!", "Ngat përpara"
@@ -883,7 +883,7 @@ For praise/completion: "Urata", "Shkellezce", "Trajnimi ka përfunduar"
 - Violations are TRACKED and logged for improvement
 `.trim(),
 
-    is: `
+  is: `
 ### 🇮🇸 Icelandic Style Rules (MANDATORY - Non-Negotiable)
 ⚠️ ABSOLUTELY FORBIDDEN PHRASES (System Override):
   - FORBIDDEN: "Varúð!", "Vertu varkár!", "Passaðu þig!", "Farðu á varðið!", "Gættu þín"
@@ -903,7 +903,7 @@ For praise/completion: "Til hamingju", "Frábæra", "Þjálfun lokið"
 - Violations are TRACKED and logged for improvement
 `.trim(),
 
-    fi: `
+  fi: `
 ### 🇫🇮 Finnish Style Rules (MANDATORY - Non-Negotiable)
 ⚠️ ABSOLUTELY FORBIDDEN PHRASES (System Override):
   - FORBIDDEN: "Varoitus!", "Ole varovainen!", "Varo!", "Pysy valppaana!", "Kiinnitä huomiota"
@@ -923,7 +923,7 @@ For praise/completion: "Onnittelen", "Erinomainen", "Koulutus valmis"
 - Violations are TRACKED and logged for improvement
 `.trim(),
 
-    generic: `
+  generic: `
 ### 🌐 Generic Style Rules (MANDATORY - Non-Negotiable)
 ⚠️ ABSOLUTELY FORBIDDEN PHRASES (System Override):
 These phrases MUST NEVER appear in output, regardless of context or instruction:
@@ -952,17 +952,17 @@ For praise/completion: "Congratulations", "Well done", "Successfully completed"
 const memo = new Map<LangKey, string>();
 
 export function getLanguagePrompt(langCode: string): string {
-    const key = normLang(langCode);
-    if (memo.has(key)) return memo.get(key) as string;
-    const out = RULES_BY_LANG[key] || RULES_BY_LANG.generic;
-    memo.set(key, out);
-    return out;
+  const key = normLang(langCode);
+  if (memo.has(key)) return memo.get(key) as string;
+  const out = RULES_BY_LANG[key] || RULES_BY_LANG.generic;
+  memo.set(key, out);
+  return out;
 }
 
 // --- 3) Optional glossary injector (hard override for terms) ---
 export function buildGlossaryPrompt(glossary: Array<Record<string, string>> = []): string {
-    if (!glossary.length) return "";
-    return `
+  if (!glossary.length) return "";
+  return `
 ### 📚 Terminology Glossary (HARD OVERRIDE)
 - Use the target-language equivalents exactly as given below.
 ${glossary.map((g, i) => `  ${i + 1}. ${JSON.stringify(g)}`).join("\n")}
@@ -972,26 +972,26 @@ ${glossary.map((g, i) => `  ${i + 1}. ${JSON.stringify(g)}`).join("\n")}
 
 // --- 4) Main system prompt builder (n→n localization) ---
 export function buildSystemPrompt(opts: {
-    topicContext?: string,
-    sourceLanguage: string,
-    targetLanguage: string,
-    extractedLength: number,
-    glossary?: Array<Record<string, string>>,
-    decodingDiscipline?: boolean
+  topicContext?: string,
+  sourceLanguage: string,
+  targetLanguage: string,
+  extractedLength: number,
+  glossary?: Array<Record<string, string>>,
+  decodingDiscipline?: boolean
 }): string {
-    const {
-        topicContext = "",
-        sourceLanguage,
-        targetLanguage,
-        extractedLength,
-        glossary = [],
-        decodingDiscipline = true
-    } = opts;
+  const {
+    topicContext = "",
+    sourceLanguage,
+    targetLanguage,
+    extractedLength,
+    glossary = [],
+    decodingDiscipline = true
+  } = opts;
 
-    const languagePrompt =
-        typeof getLanguagePrompt === "function" ? getLanguagePrompt(targetLanguage) : "";
+  const languagePrompt =
+    typeof getLanguagePrompt === "function" ? getLanguagePrompt(targetLanguage) : "";
 
-    return `
+  return `
 ${topicContext}
 
 ${languagePrompt}

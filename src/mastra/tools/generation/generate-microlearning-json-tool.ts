@@ -1,6 +1,5 @@
 import { Tool } from '@mastra/core/tools';
 import { z } from 'zod';
-import { PromptAnalysis } from '../../types/prompt-analysis';
 import { LanguageModelSchema } from '../../types/language-model';
 import { getLogger } from '../../utils/core/logger';
 import { errorService } from '../../services/error-service';

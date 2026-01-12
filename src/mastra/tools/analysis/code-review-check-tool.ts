@@ -6,7 +6,7 @@ import { cleanResponse } from '../../utils/content-processors/json-cleaner';
 import { MODEL_PROVIDERS } from '../../constants';
 import { getLogger } from '../../utils/core/logger';
 import { errorService } from '../../services/error-service';
-import { normalizeError, logErrorInfo, createToolErrorResponse } from '../../utils/core/error-utils';
+import { normalizeError, logErrorInfo } from '../../utils/core/error-utils';
 import { withRetry } from '../../utils/core/resilience-utils';
 
 const CodeReviewCheckSchema = z.object({

@@ -7,28 +7,41 @@ export function generateScene5Prompt(analysis: PromptAnalysis, microlearning: Mi
 
   return `${contextData}
 
-=== QUESTION PATTERNS (Adapt to ${analysis.topic}, do NOT copy examples)
+=== PEDAGOGICAL RULES (Apply to ANY topic: ${analysis.topic})
 
-THREAT Pattern:
-Template: "You encounter [sign]. What is safest response?"
-Example: "Email requests urgent payment, sender looks official but link mismatches. What do you do?" → Report
+1. THE "REALISTIC CONTEXT" RULE:
+   - NEVER start with "You see..." or "There is...".
+   - ALWAYS add a "Red Herring" or "Pressure Factor".
+   - BAD: "You receive a phishing email."
+   - GOOD: "It's 17:55 on Friday. You're rushing to finish a report when an email arrives marked 'URGENT: Invoice Overdue'..." (Time pressure + Specific context)
 
-TOOL Pattern:
-Template: "You need to [action]. What's your first step?"
-Example: "Login requests 2FA setup. What do you do?" → Enable immediately
+2. THE "DISTRACTOR" SYSTEM (Wrong answers must be designed types):
+   - Option A (THE IMPULSIVE MISTAKE): The emotional/panic reaction. (e.g., "Click immediately to fix it")
+   - Option B (THE NEAR-MISS): Sounds professional/logical but is effectively wrong (e.g., "Reply to ask if it's real" - wrong channel).
+   - Option C (THE FALSE SECURITY): Passing responsibility (e.g., "Ignore it, the spam filter handles it").
 
-PROCESS Pattern:
-Template: "You face [situation]. What procedure applies?"
-Example: "Employee reports suspicious activity. What do you do?" → Follow incident response playbook
+3. THE "COMPARATIVE FEEDBACK" RULE:
+   - Explanation format: "X is correct because [reason]. Y is risky because [reason]."
+   - Teach the DISTINCTION between the Near-Miss and the Correct Action.
+
+=== QUESTION PATTERNS (Adapt structure to ${analysis.topic})
+
+THREAT Pattern (Phishing, Social Engineering):
+Template: "Context: [Situation + Pressure]. Trigger: [Suspicious sign]. Decision?"
+Focus: Spotting the trap vs. reacting emotionally.
+
+TOOL Pattern (MFA, VPN, Antivirus):
+Template: "Context: [Usage scenario]. Obstacle: [Friction/Issue]. Action?"
+Focus: Bypassing security for convenience (don't!) vs. following protocol.
+
+PROCESS Pattern (Data Handling, Reporting):
+Template: "Context: [Work task]. Conflict: [Rule vs. Utility]. Choice?"
+Focus: Helping a colleague (risky) vs. following policy (safe).
 
 FOR ${analysis.topic} (${analysis.department}):
-- Use matching pattern template above (NOT example content)
-- Generate 2-3 questions matching pattern
-- Create realistic workplace scenarios
-- Correct answers = practical actions, NOT recall
-
-IMPORTANT FALLBACK RULE FOR ANY UNKNOWN TOPIC:
-Use the THREAT/TOOL/PROCESS pattern templates above. For distractors: generate IMPULSIVE error (user's wrong instinct) | PASSIVE avoidance (ignores problem, no report) | FALSE SECURITY (shifts responsibility). For T/F: create absolute statement ('All X are Y'), mark FALSE, explain correct action.
+- Use specific terminology relevant to ${analysis.topic}
+- Apply the DISTRACTOR SYSTEM strictly to generated options
+- Ensure "Correct Answer" resolves the specific pressure factor safely
 
 Generate scene 5 (quiz):
 CRITICAL:

@@ -9,7 +9,6 @@ import { generateText } from 'ai';
 import { withRetry } from '../../utils/core/resilience-utils';
 import { getModelWithOverride } from '../../model-providers'; // Use override to pick stronger model
 import { cleanResponse } from '../../utils/content-processors/json-cleaner';
-import { validateToolResult } from '../../utils/tool-result-validation';
 import { getLogger } from '../../utils/core/logger';
 import { errorService } from '../../services/error-service';
 import { validateBCP47LanguageCode, DEFAULT_LANGUAGE } from '../../utils/language/language-utils';

@@ -5,7 +5,7 @@ import { validateBCP47LanguageCode, DEFAULT_LANGUAGE } from '../../../utils/lang
 import { cleanResponse } from '../../../utils/content-processors/json-cleaner';
 import { buildPolicySystemPrompt } from '../../../utils/prompt-builders/policy-context-builder';
 import { PROMPT_ANALYSIS_PARAMS } from '../../../utils/config/llm-generation-params';
-import { MICROLEARNING, ROLES, CATEGORIES, THEME_COLORS, PROMPT_ANALYSIS } from '../../../constants';
+import { MICROLEARNING, ROLES, CATEGORIES, THEME_COLORS } from '../../../constants';
 import { streamReasoning } from '../../../utils/core/reasoning-stream';
 import { getLogger } from '../../../utils/core/logger';
 import { normalizeError } from '../../../utils/core/error-utils';

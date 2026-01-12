@@ -306,3 +306,11 @@ function cleanupExpiredCacheEntries(): void {
         });
     }
 }
+
+/**
+ * Reset internal caches (for testing only)
+ */
+export function resetCaches(): void {
+    cachedDefaultLogoBase64 = null;
+    imageValidationCache.clear();
+}
