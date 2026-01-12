@@ -44,7 +44,7 @@ describe('brand-resolver', () => {
             expect(result.isRecognizedBrand).toBe(true);
             expect(result.brandName).toBe('Microsoft');
             expect(result.logoUrl).toBe('http://mock-logo.com');
-            expect(getLogoUrl).toHaveBeenCalledWith('microsoft.com');
+            expect(getLogoUrl).toHaveBeenCalledWith('microsoft.com', 96);
         });
 
         it('handles unrecognized brand', async () => {
@@ -60,7 +60,7 @@ describe('brand-resolver', () => {
             expect(result.isRecognizedBrand).toBe(false);
             expect(result.logoUrl).toBe('http://mock-logo.com');
             // Should generate placeholder domain
-            expect(getLogoUrl).toHaveBeenCalledWith('generic.local');
+            expect(getLogoUrl).toHaveBeenCalledWith('generic.local', 96);
         });
 
         it('handles AI failure', async () => {
@@ -85,7 +85,7 @@ describe('brand-resolver', () => {
 
             const result = await generateContextualBrand('scenario', 'cat', 'from', mockModel);
             expect(result.brandName).toBe('SecurePay');
-            expect(getLogoUrl).toHaveBeenCalledWith('securepay.com');
+            expect(getLogoUrl).toHaveBeenCalledWith('securepay.com', 96);
         });
 
         it('generates brand without domain (uses placeholder)', async () => {
@@ -99,7 +99,7 @@ describe('brand-resolver', () => {
 
             const result = await generateContextualBrand('scenario', 'cat', 'from', mockModel);
             expect(result.brandName).toBe('LocalShop');
-            expect(getLogoUrl).toHaveBeenCalledWith('localshop.local');
+            expect(getLogoUrl).toHaveBeenCalledWith('localshop.local', 96);
         });
     });
 });

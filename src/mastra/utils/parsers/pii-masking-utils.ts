@@ -72,8 +72,8 @@ function maskNames(text: string, mapping: PIIMapping): string {
   // Turkish letters: ğ, ü, ş, ı, ö, ç, Ğ, Ü, Ş, İ, Ö, Ç
   const namePattern = /\b([A-ZÇĞİÖŞÜ][a-zçğıöşü]+(?:\s+[A-ZÇĞİÖŞÜ][a-zçğıöşü]+)+)\b/g;
 
-  // Introducer words that should NOT be part of a name
-  const introducerWords = /^(for|to|by|from|with|için|kullanıcı|kişi|para|pour|für|von|por|par|de|an|ad|isim)$/i;
+  // Introducer words that should NOT be part of a name (including English, Turkish, Spanish, French, German, Portuguese)
+  const introducerWords = /^(for|to|by|from|with|contact|about|regarding|için|kullanıcı|kişi|ad|isim|para|pour|für|von|por|par|de|an|iletisim|sobre|respecto|sobre|acerca|da|do|das|dos)$/i;
 
   // Command keywords that should NOT be part of a name
   const commandKeywords = /^(training|course|education|module|content|eğitim|kurs|içerik|modül)$/i;
@@ -117,25 +117,16 @@ function maskNames(text: string, mapping: PIIMapping): string {
       /:\s*$/,                    // "User: ", "Name: " (universal)
       /\(\s*$/,                   // "Training (" (universal)
       /@[A-Za-z0-9.-]+/,          // Email nearby (strong indicator)
-      /^\s*[-–—]\s*/,             // "- John Doe" (list item)
+      /[-–—]\s*$/,                // "- John Doe" (list item)
 
       // English introducers (word boundary + space, no $ end anchor)
-      /\b(for|to|by|from|with)\s+$/i,
+      /\b(for|to|by|from|with|contact|about|regarding)\s+$/i,
 
       // Turkish introducers
-      /\b(için|kullanıcı|kişi|ad|isim)\s+$/i,
+      /\b(için|kullanıcı|kişi|ad|isim|iletisim)\s+$/i,
 
-      // Spanish introducers
-      /\b(para|por|de)\s+$/i,
-
-      // French introducers
-      /\b(pour|par|de)\s+$/i,
-
-      // German introducers
-      /\b(für|von|an)\s+$/i,
-
-      // Portuguese introducers
-      /\b(para|por|de)\s+$/i,
+      // Spanish/Portuguese/French/German introducers
+      /\b(para|por|de|pour|par|für|von|an|sobre|da|do)\s+$/i,
     ];
 
     // ❌ COMMAND/TECHNICAL SIGNALS: These indicate it's NOT a name
@@ -179,7 +170,7 @@ function maskNames(text: string, mapping: PIIMapping): string {
 
     // 🎯 TARGET OBJECT PATTERNS: "Create training [Name]", "Create phishing email [Name]", "Assign course to [Name]"
     // These indicate the name is the TARGET of an action (highest priority)
-    const targetObjectPattern = /\b(create|build|make|generate|assign|send|give|upload|oluştur|yap|gönder|ver)\s+(training|course|education|module|content|eğitim|kurs|içerik|modül|phishing\s+email|phishing\s+simulation|draft\s+email|landing\s+page)\s+/i;
+    const targetObjectPattern = /\b(create|build|make|generate|assign|send|give|upload|oluştur|yap|gönder|ver|write|draft)\s+(training|course|education|module|content|eğitim|kurs|içerik|modül|phishing\s+email|phishing\s+simulation|phishing\s+training|draft\s+email|landing\s+page)\s+/i;
     const hasTargetObjectPattern = targetObjectPattern.test(before);
 
     // Decision logic (priority order: target pattern > end position > strong signal > start/command)
@@ -237,7 +228,8 @@ function maskEmails(text: string, mapping: PIIMapping): string {
  * Mask phone numbers (international formats)
  */
 function maskPhones(text: string, mapping: PIIMapping): string {
-  const phonePattern = /(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/g;
+  // Flexible pattern for international phone numbers - requires at least one separator to avoid matching hashes
+  const phonePattern = /(?:\+?\d{1,3}[-.\s]?)?\(?\d{1,4}\)?[-.\s]\d{1,4}[-.\s]?\d{2,9}/g;
 
   return text.replace(phonePattern, (match) => {
     const hash = generatePIIHash(match);

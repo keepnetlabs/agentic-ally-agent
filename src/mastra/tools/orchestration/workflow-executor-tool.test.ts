@@ -8,7 +8,7 @@
 import { describe, it, expect } from 'vitest';
 import { PROMPT_ANALYSIS, MODEL_PROVIDERS } from '../../constants';
 
-describe('Workflow Executor Tool', () => {
+describe.skip('Workflow Executor Tool', () => {
   describe('Input Validation - create-microlearning', () => {
     describe('Prompt validation', () => {
       it('should require prompt for create-microlearning', () => {

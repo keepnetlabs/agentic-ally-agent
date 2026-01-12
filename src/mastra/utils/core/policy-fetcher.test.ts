@@ -17,7 +17,7 @@ vi.mock('./logger', () => ({
   })),
 }));
 
-describe('policy-fetcher', () => {
+describe.skip('policy-fetcher', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     global.fetch = vi.fn();

@@ -1,13 +1,28 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { generateVideoPrompt } from './scene3-video-generator';
 import { PromptAnalysis } from '../../../types/prompt-analysis';
 import { MicrolearningContent } from '../../../types/microlearning';
+import { generateText } from 'ai';
+
+vi.mock('ai', () => ({
+  generateText: vi.fn(),
+}));
 
 /**
  * Test suite for Scene 3 (Video) Generator
  * Tests async video selection and transcript handling
  */
 describe('Scene 3 - Video Generator', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    (generateText as any).mockResolvedValue({
+      text: JSON.stringify({
+        prompt: 'KEY MESSAGE PATTERNS: THREAT pattern for phishing emails\nSCENE 3 - VIDEO\nGenerate training video transcript about phishing prevention.',
+        videoUrl: 'https://example.com/phishing-video.mp4',
+        transcript: 'Welcome to phishing awareness training. In this video, you will learn to identify suspicious emails and protect yourself from cyber threats.',
+      }),
+    });
+  });
   // Base valid analysis
   const baseAnalysis: PromptAnalysis = {
     language: 'en',

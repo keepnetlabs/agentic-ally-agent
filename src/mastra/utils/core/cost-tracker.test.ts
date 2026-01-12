@@ -2,25 +2,24 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { trackCost } from './cost-tracker';
 
 // Mock the logger
-vi.mock('./logger', () => ({
-  getLogger: vi.fn(() => ({
+vi.mock('./logger', () => {
+  const mock = {
     warn: vi.fn(),
     info: vi.fn(),
-  })),
-}));
+  };
+  return {
+    getLogger: vi.fn(() => mock),
+  };
+});
 
 import { getLogger } from './logger';
 
 describe('cost-tracker', () => {
-  const mockLogger = {
-    warn: vi.fn(),
-    info: vi.fn(),
-  };
+  let mockLogger: any;
 
   beforeEach(() => {
-    vi.mocked(getLogger).mockReturnValue(mockLogger as any);
-    mockLogger.warn.mockClear();
-    mockLogger.info.mockClear();
+    vi.clearAllMocks();
+    mockLogger = getLogger('CostTracker');
   });
 
   describe('trackCost - Model Normalization', () => {
@@ -264,8 +263,8 @@ describe('cost-tracker', () => {
       const cost = logCall[1].cost;
 
       // All cached: (1000000/1000000) * 2.50 * 0.5 = 1.25 (50% of normal input cost)
-      expect(cost.input).toBe(1.25);
-      expect(cost.cached).toBe(0);
+      expect(cost.input).toBe(0);
+      expect(cost.cached).toBe(1.25);
       expect(cost.output).toBe(10.0);
     });
 

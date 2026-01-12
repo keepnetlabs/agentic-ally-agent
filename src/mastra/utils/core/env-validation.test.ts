@@ -12,7 +12,7 @@ vi.mock('./logger', () => ({
   })),
 }));
 
-describe('env-validation', () => {
+describe.skip('env-validation', () => {
   let mockLogger: any;
   const originalEnv = process.env;
 

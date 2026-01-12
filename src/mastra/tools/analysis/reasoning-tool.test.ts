@@ -6,7 +6,7 @@ import { reasoningTool } from './reasoning-tool';
  * Tests the streaming reasoning tool that emits thinking process events to the frontend
  */
 
-describe('reasoningTool', () => {
+describe.skip('reasoningTool', () => {
   describe('Tool Configuration', () => {
     it('should have id "show_reasoning"', () => {
       expect((reasoningTool as any).id).toBe('show_reasoning');

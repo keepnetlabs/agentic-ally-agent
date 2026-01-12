@@ -1,4 +1,10 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+
+// Mock cloudflare:workers module
+vi.mock('cloudflare:workers', () => ({
+  WorkflowEntrypoint: class {},
+}));
+
 import {
   createMicrolearningWorkflow,
   addLanguageWorkflow,
@@ -320,12 +326,12 @@ describe('workflows/index.ts - Barrel Export', () => {
       expect(typeof (createPhishingWorkflow as any).createRunAsync).toBe('function');
     });
 
-    it('createMicrolearningWorkflow should have start method', () => {
-      expect(typeof (createMicrolearningWorkflow as any).start).toBe('function');
+    it('createMicrolearningWorkflow should have createRunAsync method', () => {
+      expect(typeof (createMicrolearningWorkflow as any).createRunAsync).toBe('function');
     });
 
-    it('addLanguageWorkflow should have start method', () => {
-      expect(typeof (addLanguageWorkflow as any).start).toBe('function');
+    it('addLanguageWorkflow should have createRunAsync method', () => {
+      expect(typeof (addLanguageWorkflow as any).createRunAsync).toBe('function');
     });
   });
 

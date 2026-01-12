@@ -1,14 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { errorHandlerMiddleware } from './error-handler';
 
-// Mock logger
-vi.mock('../utils/core/logger', () => ({
-  getLogger: () => ({
+// Use vi.hoisted to create mock logger before vi.mock
+const { mockLoggerInstance } = vi.hoisted(() => {
+  const mockLogger = {
     error: vi.fn(),
     warn: vi.fn(),
     info: vi.fn(),
     debug: vi.fn(),
-  }),
+  };
+  return { mockLoggerInstance: mockLogger };
+});
+
+// Mock logger - returns the same instance
+vi.mock('../utils/core/logger', () => ({
+  getLogger: () => mockLoggerInstance,
 }));
 
 describe('errorHandlerMiddleware', () => {
@@ -18,6 +24,12 @@ describe('errorHandlerMiddleware', () => {
 
   beforeEach(() => {
     nextCalled = false;
+
+    // Clear logger mocks
+    mockLoggerInstance.error.mockClear();
+    mockLoggerInstance.warn.mockClear();
+    mockLoggerInstance.info.mockClear();
+    mockLoggerInstance.debug.mockClear();
 
     mockNext = vi.fn(async () => {
       nextCalled = true;
@@ -196,76 +208,58 @@ describe('errorHandlerMiddleware', () => {
 
   describe('logging behavior', () => {
     it('should log error details', async () => {
-      const { getLogger } = await import('../utils/core/logger');
-      const mockLogger = (getLogger as any)('ErrorHandler');
-
       mockNext.mockRejectedValueOnce(new Error('Test error'));
 
       await errorHandlerMiddleware(mockContext, mockNext);
 
-      expect(mockLogger.error).toHaveBeenCalled();
+      expect(mockLoggerInstance.error).toHaveBeenCalled();
     });
 
     it('should include path in log', async () => {
-      const { getLogger } = await import('../utils/core/logger');
-      const mockLogger = (getLogger as any)('ErrorHandler');
-
       mockContext.req.path = '/sensitive-endpoint';
       mockNext.mockRejectedValueOnce(new Error('Test error'));
 
       await errorHandlerMiddleware(mockContext, mockNext);
 
-      const callArgs = mockLogger.error.mock.calls[0];
+      const callArgs = mockLoggerInstance.error.mock.calls[0];
       expect(callArgs[1].path).toBe('/sensitive-endpoint');
     });
 
     it('should include method in log', async () => {
-      const { getLogger } = await import('../utils/core/logger');
-      const mockLogger = (getLogger as any)('ErrorHandler');
-
       mockContext.req.method = 'POST';
       mockNext.mockRejectedValueOnce(new Error('Test error'));
 
       await errorHandlerMiddleware(mockContext, mockNext);
 
-      const callArgs = mockLogger.error.mock.calls[0];
+      const callArgs = mockLoggerInstance.error.mock.calls[0];
       expect(callArgs[1].method).toBe('POST');
     });
 
     it('should log error message from Error object', async () => {
-      const { getLogger } = await import('../utils/core/logger');
-      const mockLogger = (getLogger as any)('ErrorHandler');
-
       mockNext.mockRejectedValueOnce(new Error('Specific error message'));
 
       await errorHandlerMiddleware(mockContext, mockNext);
 
-      const callArgs = mockLogger.error.mock.calls[0];
+      const callArgs = mockLoggerInstance.error.mock.calls[0];
       expect(callArgs[1].error).toBe('Specific error message');
     });
 
     it('should log stack trace from Error object', async () => {
-      const { getLogger } = await import('../utils/core/logger');
-      const mockLogger = (getLogger as any)('ErrorHandler');
-
       mockNext.mockRejectedValueOnce(new Error('Test error'));
 
       await errorHandlerMiddleware(mockContext, mockNext);
 
-      const callArgs = mockLogger.error.mock.calls[0];
+      const callArgs = mockLoggerInstance.error.mock.calls[0];
       expect(callArgs[1]).toHaveProperty('stack');
       expect(typeof callArgs[1].stack).toBe('string');
     });
 
     it('should handle non-Error object logging', async () => {
-      const { getLogger } = await import('../utils/core/logger');
-      const mockLogger = (getLogger as any)('ErrorHandler');
-
       mockNext.mockRejectedValueOnce('String error');
 
       await errorHandlerMiddleware(mockContext, mockNext);
 
-      const callArgs = mockLogger.error.mock.calls[0];
+      const callArgs = mockLoggerInstance.error.mock.calls[0];
       expect(callArgs[1].error).toBe('String error');
     });
   });
@@ -406,15 +400,12 @@ describe('errorHandlerMiddleware', () => {
     });
 
     it('should include method in error log', async () => {
-      const { getLogger } = await import('../utils/core/logger');
-      const mockLogger = (getLogger as any)('ErrorHandler');
-
       mockContext.req.method = 'PATCH';
       mockNext.mockRejectedValueOnce(new Error('Test error'));
 
       await errorHandlerMiddleware(mockContext, mockNext);
 
-      const callArgs = mockLogger.error.mock.calls[0];
+      const callArgs = mockLoggerInstance.error.mock.calls[0];
       expect(callArgs[1].method).toBe('PATCH');
     });
   });

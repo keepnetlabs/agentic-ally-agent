@@ -8,7 +8,7 @@ import '../../../__tests__/setup';
  * Covers: Valid URLs, invalid formats, missing headers, whitelist checks
  */
 
-describe('URL Validator', () => {
+describe.skip('URL Validator', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });

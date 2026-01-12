@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { disablePlayground, disableSwagger } from './openapi';
+import { isDevelopment } from '../utils';
 
 // Mock isDevelopment utility
 vi.mock('../utils', () => ({
@@ -20,7 +21,7 @@ describe('openapi middleware', () => {
 
     mockContext = {
       req: {
-        path: '/workflows',
+        path: '/allowed-path',
         method: 'GET',
       },
       res: {
@@ -33,8 +34,7 @@ describe('openapi middleware', () => {
     };
 
     // Reset isDevelopment mock
-    const { isDevelopment } = require('../utils');
-    isDevelopment.mockReturnValue(false);
+    vi.mocked(isDevelopment).mockReturnValue(false);
   });
 
   describe('disablePlayground function', () => {
@@ -54,8 +54,7 @@ describe('openapi middleware', () => {
 
   describe('disablePlayground - development mode', () => {
     beforeEach(() => {
-      const { isDevelopment } = require('../utils');
-      isDevelopment.mockReturnValue(true);
+      vi.mocked(isDevelopment).mockReturnValue(true);
     });
 
     it('should allow access in development mode', async () => {
@@ -122,8 +121,7 @@ describe('openapi middleware', () => {
 
   describe('disablePlayground - production mode', () => {
     beforeEach(() => {
-      const { isDevelopment } = require('../utils');
-      isDevelopment.mockReturnValue(false);
+      vi.mocked(isDevelopment).mockReturnValue(false);
     });
 
     it('should block /workflows path in production', async () => {
@@ -276,19 +274,18 @@ describe('openapi middleware', () => {
     });
 
     it('handler should accept Context and Next parameters', async () => {
-      const mockNextHandler = vi.fn(async () => {});
+      const mockNextHandler = vi.fn(async () => { });
       await disableSwagger.handler(mockContext, mockNextHandler);
     });
   });
 
   describe('disableSwagger - development mode', () => {
     beforeEach(() => {
-      const { isDevelopment } = require('../utils');
-      isDevelopment.mockReturnValue(true);
+      vi.mocked(isDevelopment).mockReturnValue(true);
     });
 
     it('should allow access in development', async () => {
-      const mockNextHandler = vi.fn(async () => {});
+      const mockNextHandler = vi.fn(async () => { });
 
       await disableSwagger.handler(mockContext, mockNextHandler);
 
@@ -296,7 +293,7 @@ describe('openapi middleware', () => {
     });
 
     it('should call next in development', async () => {
-      const mockNextHandler = vi.fn(async () => {});
+      const mockNextHandler = vi.fn(async () => { });
 
       await disableSwagger.handler(mockContext, mockNextHandler);
 
@@ -304,7 +301,7 @@ describe('openapi middleware', () => {
     });
 
     it('should return void in development', async () => {
-      const mockNextHandler = vi.fn(async () => {});
+      const mockNextHandler = vi.fn(async () => { });
 
       const result = await disableSwagger.handler(mockContext, mockNextHandler);
 
@@ -314,12 +311,11 @@ describe('openapi middleware', () => {
 
   describe('disableSwagger - production mode', () => {
     beforeEach(() => {
-      const { isDevelopment } = require('../utils');
-      isDevelopment.mockReturnValue(false);
+      vi.mocked(isDevelopment).mockReturnValue(false);
     });
 
     it('should block access in production', async () => {
-      const mockNextHandler = vi.fn(async () => {});
+      const mockNextHandler = vi.fn(async () => { });
 
       const result = await disableSwagger.handler(mockContext, mockNextHandler);
 
@@ -328,7 +324,7 @@ describe('openapi middleware', () => {
     });
 
     it('should return 404 in production', async () => {
-      const mockNextHandler = vi.fn(async () => {});
+      const mockNextHandler = vi.fn(async () => { });
 
       const result = await disableSwagger.handler(mockContext, mockNextHandler) as Response;
 
@@ -336,7 +332,7 @@ describe('openapi middleware', () => {
     });
 
     it('should return Response in production', async () => {
-      const mockNextHandler = vi.fn(async () => {});
+      const mockNextHandler = vi.fn(async () => { });
 
       const result = await disableSwagger.handler(mockContext, mockNextHandler);
 
@@ -344,7 +340,7 @@ describe('openapi middleware', () => {
     });
 
     it('should return Not found message', async () => {
-      const mockNextHandler = vi.fn(async () => {});
+      const mockNextHandler = vi.fn(async () => { });
 
       const result = await disableSwagger.handler(mockContext, mockNextHandler) as Response;
       const text = await result.text();
@@ -355,8 +351,7 @@ describe('openapi middleware', () => {
 
   describe('playground paths blocking', () => {
     beforeEach(() => {
-      const { isDevelopment } = require('../utils');
-      isDevelopment.mockReturnValue(false);
+      vi.mocked(isDevelopment).mockReturnValue(false);
     });
 
     it('should block /workflows start', async () => {
@@ -402,8 +397,6 @@ describe('openapi middleware', () => {
 
   describe('isDevelopment utility integration', () => {
     it('should call isDevelopment in disablePlayground', async () => {
-      const { isDevelopment } = require('../utils');
-
       mockContext.req.path = '/chat';
       await disablePlayground(mockContext, mockNext);
 
@@ -411,10 +404,9 @@ describe('openapi middleware', () => {
     });
 
     it('should call isDevelopment in disableSwagger', async () => {
-      const { isDevelopment } = require('../utils');
-      isDevelopment.mockClear();
+      vi.mocked(isDevelopment).mockClear();
 
-      const mockNextHandler = vi.fn(async () => {});
+      const mockNextHandler = vi.fn(async () => { });
       await disableSwagger.handler(mockContext, mockNextHandler);
 
       expect(isDevelopment).toHaveBeenCalled();
@@ -423,8 +415,7 @@ describe('openapi middleware', () => {
 
   describe('edge cases', () => {
     beforeEach(() => {
-      const { isDevelopment } = require('../utils');
-      isDevelopment.mockReturnValue(false);
+      vi.mocked(isDevelopment).mockReturnValue(false);
     });
 
     it('should handle paths with trailing slash', async () => {
@@ -494,8 +485,7 @@ describe('openapi middleware', () => {
 
   describe('response properties', () => {
     beforeEach(() => {
-      const { isDevelopment } = require('../utils');
-      isDevelopment.mockReturnValue(false);
+      vi.mocked(isDevelopment).mockReturnValue(false);
     });
 
     it('should return Response with 404 status', async () => {
@@ -526,8 +516,7 @@ describe('openapi middleware', () => {
 
   describe('multiple requests', () => {
     beforeEach(() => {
-      const { isDevelopment } = require('../utils');
-      isDevelopment.mockReturnValue(false);
+      vi.mocked(isDevelopment).mockReturnValue(false);
     });
 
     it('should handle multiple blocked requests', async () => {
@@ -561,8 +550,7 @@ describe('openapi middleware', () => {
 
   describe('HTTP methods', () => {
     beforeEach(() => {
-      const { isDevelopment } = require('../utils');
-      isDevelopment.mockReturnValue(false);
+      vi.mocked(isDevelopment).mockReturnValue(false);
     });
 
     it('should block GET /workflows', async () => {

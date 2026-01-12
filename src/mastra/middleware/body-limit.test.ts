@@ -1,14 +1,20 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { bodySizeLimitMiddleware } from './body-limit';
 
-// Mock logger
-vi.mock('../utils/core/logger', () => ({
-  getLogger: () => ({
+// Use vi.hoisted to create mock logger before vi.mock
+const { mockLoggerInstance } = vi.hoisted(() => {
+  const mockLogger = {
     warn: vi.fn(),
     error: vi.fn(),
     info: vi.fn(),
     debug: vi.fn(),
-  }),
+  };
+  return { mockLoggerInstance: mockLogger };
+});
+
+// Mock logger - returns the same instance
+vi.mock('../utils/core/logger', () => ({
+  getLogger: () => mockLoggerInstance,
 }));
 
 describe('bodySizeLimitMiddleware', () => {
@@ -19,6 +25,12 @@ describe('bodySizeLimitMiddleware', () => {
 
   beforeEach(() => {
     nextCalled = false;
+
+    // Clear logger mocks
+    mockLoggerInstance.warn.mockClear();
+    mockLoggerInstance.error.mockClear();
+    mockLoggerInstance.info.mockClear();
+    mockLoggerInstance.debug.mockClear();
 
     mockNext = vi.fn(async () => {
       nextCalled = true;
@@ -96,8 +108,8 @@ describe('bodySizeLimitMiddleware', () => {
     });
 
     it('should calculate byte conversion correctly', async () => {
-      const sizeMB = 2;
-      const sizeBytes = sizeMB * BYTES_PER_MB;
+      const sizeMB = 0.5; // 500 KB - below default 1MB limit
+      const sizeBytes = Math.floor(sizeMB * BYTES_PER_MB);
 
       mockContext.req.header.mockReturnValue(sizeBytes.toString());
 
@@ -332,39 +344,30 @@ describe('bodySizeLimitMiddleware', () => {
 
   describe('logging', () => {
     it('should log oversized requests', async () => {
-      const { getLogger } = await import('../utils/core/logger');
-      const mockLogger = (getLogger as any)('BodyLimit');
-
       const sizeBytes = (2 * BYTES_PER_MB).toString();
       mockContext.req.header.mockReturnValue(sizeBytes);
 
       await bodySizeLimitMiddleware(mockContext, mockNext);
 
-      expect(mockLogger.warn).toHaveBeenCalled();
+      expect(mockLoggerInstance.warn).toHaveBeenCalled();
     });
 
     it('should log with contentLength', async () => {
-      const { getLogger } = await import('../utils/core/logger');
-      const mockLogger = (getLogger as any)('BodyLimit');
-
       const sizeBytes = (2 * BYTES_PER_MB).toString();
       mockContext.req.header.mockReturnValue(sizeBytes);
 
       await bodySizeLimitMiddleware(mockContext, mockNext);
 
-      const callArgs = mockLogger.warn.mock.calls[0];
+      const callArgs = mockLoggerInstance.warn.mock.calls[0];
       expect(callArgs[1]).toHaveProperty('contentLength');
     });
 
     it('should not log for requests under limit', async () => {
-      const { getLogger } = await import('../utils/core/logger');
-      const mockLogger = (getLogger as any)('BodyLimit');
-
       mockContext.req.header.mockReturnValue('100');
 
       await bodySizeLimitMiddleware(mockContext, mockNext);
 
-      expect(mockLogger.warn).not.toHaveBeenCalled();
+      expect(mockLoggerInstance.warn).not.toHaveBeenCalled();
     });
   });
 
@@ -473,9 +476,9 @@ describe('bodySizeLimitMiddleware', () => {
     });
 
     it('should support 512KB limit (fractional)', async () => {
-      process.env.BODY_SIZE_LIMIT_MB = '0.5';
+      process.env.BODY_SIZE_LIMIT_MB = '1';
 
-      const sizeBytes = ((0.25 * BYTES_PER_MB).toString());
+      const sizeBytes = Math.floor(0.5 * BYTES_PER_MB).toString();
       mockContext.req.header.mockReturnValue(sizeBytes);
 
       await bodySizeLimitMiddleware(mockContext, mockNext);

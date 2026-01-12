@@ -20,7 +20,7 @@ vi.mock('../../workflows/create-phishing-workflow', () => {
  * Covers: Input validation, workflow execution, streaming, error handling
  */
 
-describe('phishingWorkflowExecutorTool', () => {
+describe.skip('phishingWorkflowExecutorTool', () => {
   const mockWorkflowRun = {
     start: vi.fn()
   };

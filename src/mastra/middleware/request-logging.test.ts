@@ -1,14 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { requestLoggingMiddleware } from './request-logging';
 
-// Mock logger
-vi.mock('../utils/core/logger', () => ({
-  getLogger: () => ({
+// Use vi.hoisted to create mock logger before vi.mock
+const { mockLoggerInstance } = vi.hoisted(() => {
+  const mockLogger = {
     debug: vi.fn(),
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
-  }),
+  };
+  return { mockLoggerInstance: mockLogger };
+});
+
+// Mock logger - returns the same instance
+vi.mock('../utils/core/logger', () => ({
+  getLogger: () => mockLoggerInstance,
 }));
 
 describe('requestLoggingMiddleware', () => {
@@ -18,6 +24,12 @@ describe('requestLoggingMiddleware', () => {
 
   beforeEach(() => {
     nextCalled = false;
+
+    // Clear logger mocks
+    mockLoggerInstance.debug.mockClear();
+    mockLoggerInstance.info.mockClear();
+    mockLoggerInstance.warn.mockClear();
+    mockLoggerInstance.error.mockClear();
 
     mockNext = vi.fn(async () => {
       nextCalled = true;
@@ -64,9 +76,7 @@ describe('requestLoggingMiddleware', () => {
       mockContext.res.status = 200;
       await requestLoggingMiddleware(mockContext, mockNext);
 
-      const { getLogger } = await import('../utils/core/logger');
-      const mockLogger = (getLogger as any)('RequestLog');
-      const calls = mockLogger.info.mock.calls.length + mockLogger.debug.mock.calls.length;
+      const calls = mockLoggerInstance.info.mock.calls.length + mockLoggerInstance.debug.mock.calls.length;
       expect(calls).toBeGreaterThan(0);
     });
 
@@ -74,54 +84,42 @@ describe('requestLoggingMiddleware', () => {
       mockContext.res.status = 201;
       await requestLoggingMiddleware(mockContext, mockNext);
 
-      const { getLogger } = await import('../utils/core/logger');
-      const mockLogger = (getLogger as any)('RequestLog');
-      expect(mockLogger.info).toHaveBeenCalled();
+      expect(mockLoggerInstance.info).toHaveBeenCalled();
     });
 
     it('should return info for 204 No Content', async () => {
       mockContext.res.status = 204;
       await requestLoggingMiddleware(mockContext, mockNext);
 
-      const { getLogger } = await import('../utils/core/logger');
-      const mockLogger = (getLogger as any)('RequestLog');
-      expect(mockLogger.info).toHaveBeenCalled();
+      expect(mockLoggerInstance.info).toHaveBeenCalled();
     });
 
     it('should return warn for 4xx status codes', async () => {
       mockContext.res.status = 400;
       await requestLoggingMiddleware(mockContext, mockNext);
 
-      const { getLogger } = await import('../utils/core/logger');
-      const mockLogger = (getLogger as any)('RequestLog');
-      expect(mockLogger.warn).toHaveBeenCalled();
+      expect(mockLoggerInstance.warn).toHaveBeenCalled();
     });
 
     it('should return warn for 404 Not Found', async () => {
       mockContext.res.status = 404;
       await requestLoggingMiddleware(mockContext, mockNext);
 
-      const { getLogger } = await import('../utils/core/logger');
-      const mockLogger = (getLogger as any)('RequestLog');
-      expect(mockLogger.warn).toHaveBeenCalled();
+      expect(mockLoggerInstance.warn).toHaveBeenCalled();
     });
 
     it('should return error for 5xx status codes', async () => {
       mockContext.res.status = 500;
       await requestLoggingMiddleware(mockContext, mockNext);
 
-      const { getLogger } = await import('../utils/core/logger');
-      const mockLogger = (getLogger as any)('RequestLog');
-      expect(mockLogger.error).toHaveBeenCalled();
+      expect(mockLoggerInstance.error).toHaveBeenCalled();
     });
 
     it('should return error for 503 Service Unavailable', async () => {
       mockContext.res.status = 503;
       await requestLoggingMiddleware(mockContext, mockNext);
 
-      const { getLogger } = await import('../utils/core/logger');
-      const mockLogger = (getLogger as any)('RequestLog');
-      expect(mockLogger.error).toHaveBeenCalled();
+      expect(mockLoggerInstance.error).toHaveBeenCalled();
     });
   });
 
@@ -137,10 +135,7 @@ describe('requestLoggingMiddleware', () => {
 
       await requestLoggingMiddleware(mockContext, mockNext);
 
-      const { getLogger } = await import('../utils/core/logger');
-      const mockLogger = (getLogger as any)('RequestLog');
-
-      const logCall = mockLogger.info.mock.calls[0] || mockLogger.debug.mock.calls[0];
+      const logCall = mockLoggerInstance.info.mock.calls[0] || mockLoggerInstance.debug.mock.calls[0];
       expect(logCall[1]).toHaveProperty('durationMs');
       expect(typeof logCall[1].durationMs).toBe('number');
       expect(logCall[1].durationMs).toBeGreaterThanOrEqual(0);
@@ -151,10 +146,8 @@ describe('requestLoggingMiddleware', () => {
 
       await requestLoggingMiddleware(mockContext, mockNext);
 
-      const { getLogger } = await import('../utils/core/logger');
-      const mockLogger = (getLogger as any)('RequestLog');
 
-      const logCall = mockLogger.info.mock.calls[0] || mockLogger.debug.mock.calls[0];
+      const logCall = mockLoggerInstance.info.mock.calls[0] || mockLoggerInstance.debug.mock.calls[0];
       expect(logCall[1].durationMs).toBeLessThan(1000);
     });
 
@@ -163,10 +156,8 @@ describe('requestLoggingMiddleware', () => {
 
       await requestLoggingMiddleware(mockContext, mockNext);
 
-      const { getLogger } = await import('../utils/core/logger');
-      const mockLogger = (getLogger as any)('RequestLog');
 
-      const logCall = mockLogger.info.mock.calls[0] || mockLogger.debug.mock.calls[0];
+      const logCall = mockLoggerInstance.info.mock.calls[0] || mockLoggerInstance.debug.mock.calls[0];
       expect(logCall[1]).toHaveProperty('duration');
       expect(typeof logCall[1].duration).toBe('string');
       expect(logCall[1].duration).toMatch(/\d+ms/);
@@ -180,10 +171,8 @@ describe('requestLoggingMiddleware', () => {
 
       await requestLoggingMiddleware(mockContext, mockNext);
 
-      const { getLogger } = await import('../utils/core/logger');
-      const mockLogger = (getLogger as any)('RequestLog');
 
-      const logCall = mockLogger.info.mock.calls[0] || mockLogger.debug.mock.calls[0];
+      const logCall = mockLoggerInstance.info.mock.calls[0] || mockLoggerInstance.debug.mock.calls[0];
       expect(logCall[1].method).toBe('POST');
     });
 
@@ -193,10 +182,8 @@ describe('requestLoggingMiddleware', () => {
 
       await requestLoggingMiddleware(mockContext, mockNext);
 
-      const { getLogger } = await import('../utils/core/logger');
-      const mockLogger = (getLogger as any)('RequestLog');
 
-      const logCall = mockLogger.info.mock.calls[0] || mockLogger.debug.mock.calls[0];
+      const logCall = mockLoggerInstance.info.mock.calls[0] || mockLoggerInstance.debug.mock.calls[0];
       expect(logCall[1].path).toBe('/chat');
     });
 
@@ -206,10 +193,8 @@ describe('requestLoggingMiddleware', () => {
 
       await requestLoggingMiddleware(mockContext, mockNext);
 
-      const { getLogger } = await import('../utils/core/logger');
-      const mockLogger = (getLogger as any)('RequestLog');
 
-      const logCall = mockLogger.info.mock.calls[0] || mockLogger.debug.mock.calls[0];
+      const logCall = mockLoggerInstance.info.mock.calls[0] || mockLoggerInstance.debug.mock.calls[0];
       expect(logCall[1]).toHaveProperty('userAgent');
     });
 
@@ -219,10 +204,8 @@ describe('requestLoggingMiddleware', () => {
 
       await requestLoggingMiddleware(mockContext, mockNext);
 
-      const { getLogger } = await import('../utils/core/logger');
-      const mockLogger = (getLogger as any)('RequestLog');
 
-      const logCall = mockLogger.info.mock.calls[0] || mockLogger.debug.mock.calls[0];
+      const logCall = mockLoggerInstance.info.mock.calls[0] || mockLoggerInstance.debug.mock.calls[0];
       expect(logCall[1].userAgent).toBe('unknown');
     });
   });
@@ -233,10 +216,8 @@ describe('requestLoggingMiddleware', () => {
 
       await requestLoggingMiddleware(mockContext, mockNext);
 
-      const { getLogger } = await import('../utils/core/logger');
-      const mockLogger = (getLogger as any)('RequestLog');
 
-      const logCall = mockLogger.info.mock.calls[0] || mockLogger.debug.mock.calls[0];
+      const logCall = mockLoggerInstance.info.mock.calls[0] || mockLoggerInstance.debug.mock.calls[0];
       expect(logCall[1].status).toBe(200);
     });
 
@@ -245,10 +226,8 @@ describe('requestLoggingMiddleware', () => {
 
       await requestLoggingMiddleware(mockContext, mockNext);
 
-      const { getLogger } = await import('../utils/core/logger');
-      const mockLogger = (getLogger as any)('RequestLog');
 
-      const logCall = mockLogger.warn.mock.calls[0];
+      const logCall = mockLoggerInstance.warn.mock.calls[0];
       expect(logCall[1].status).toBe(404);
     });
 
@@ -257,10 +236,8 @@ describe('requestLoggingMiddleware', () => {
 
       await requestLoggingMiddleware(mockContext, mockNext);
 
-      const { getLogger } = await import('../utils/core/logger');
-      const mockLogger = (getLogger as any)('RequestLog');
 
-      const logCall = mockLogger.error.mock.calls[0];
+      const logCall = mockLoggerInstance.error.mock.calls[0];
       expect(logCall[1].status).toBe(500);
     });
   });
@@ -272,11 +249,9 @@ describe('requestLoggingMiddleware', () => {
 
       await requestLoggingMiddleware(mockContext, mockNext);
 
-      const { getLogger } = await import('../utils/core/logger');
-      const mockLogger = (getLogger as any)('RequestLog');
 
       // Should call debug for successful health checks
-      expect(mockLogger.debug).toHaveBeenCalled();
+      expect(mockLoggerInstance.debug).toHaveBeenCalled();
     });
 
     it('should use debug level for successful health checks', async () => {
@@ -285,10 +260,8 @@ describe('requestLoggingMiddleware', () => {
 
       await requestLoggingMiddleware(mockContext, mockNext);
 
-      const { getLogger } = await import('../utils/core/logger');
-      const mockLogger = (getLogger as any)('RequestLog');
 
-      expect(mockLogger.debug).toHaveBeenCalledWith('Health check', expect.any(Object));
+      expect(mockLoggerInstance.debug).toHaveBeenCalledWith('Health check', expect.any(Object));
     });
 
     it('should exclude userAgent from health check logs', async () => {
@@ -297,10 +270,8 @@ describe('requestLoggingMiddleware', () => {
 
       await requestLoggingMiddleware(mockContext, mockNext);
 
-      const { getLogger } = await import('../utils/core/logger');
-      const mockLogger = (getLogger as any)('RequestLog');
 
-      const logCall = mockLogger.debug.mock.calls[0];
+      const logCall = mockLoggerInstance.debug.mock.calls[0];
       expect(logCall[1]).not.toHaveProperty('userAgent');
     });
 
@@ -310,11 +281,9 @@ describe('requestLoggingMiddleware', () => {
 
       await requestLoggingMiddleware(mockContext, mockNext);
 
-      const { getLogger } = await import('../utils/core/logger');
-      const mockLogger = (getLogger as any)('RequestLog');
 
       // Should use error level, not debug
-      expect(mockLogger.error).toHaveBeenCalled();
+      expect(mockLoggerInstance.error).toHaveBeenCalled();
     });
 
     it('should not log userAgent for successful health check', async () => {
@@ -324,10 +293,8 @@ describe('requestLoggingMiddleware', () => {
 
       await requestLoggingMiddleware(mockContext, mockNext);
 
-      const { getLogger } = await import('../utils/core/logger');
-      const mockLogger = (getLogger as any)('RequestLog');
 
-      const logCall = mockLogger.debug.mock.calls[0];
+      const logCall = mockLoggerInstance.debug.mock.calls[0];
       expect(logCall[1]).not.toHaveProperty('userAgent');
     });
 
@@ -338,10 +305,8 @@ describe('requestLoggingMiddleware', () => {
 
       await requestLoggingMiddleware(mockContext, mockNext);
 
-      const { getLogger } = await import('../utils/core/logger');
-      const mockLogger = (getLogger as any)('RequestLog');
 
-      const logCall = mockLogger.info.mock.calls[0];
+      const logCall = mockLoggerInstance.info.mock.calls[0];
       expect(logCall[1]).toHaveProperty('userAgent');
     });
   });
@@ -354,14 +319,12 @@ describe('requestLoggingMiddleware', () => {
     });
 
     it('should log after next completes', async () => {
-      const { getLogger } = await import('../utils/core/logger');
-      const mockLogger = (getLogger as any)('RequestLog');
 
       let loggedBeforeNextReturned = false;
 
       mockNext.mockImplementation(async () => {
-        loggedBeforeNextReturned = mockLogger.info.mock.calls.length > 0 ||
-                                    mockLogger.debug.mock.calls.length > 0;
+        loggedBeforeNextReturned = mockLoggerInstance.info.mock.calls.length > 0 ||
+                                    mockLoggerInstance.debug.mock.calls.length > 0;
       });
 
       await requestLoggingMiddleware(mockContext, mockNext);
@@ -383,10 +346,8 @@ describe('requestLoggingMiddleware', () => {
 
       await requestLoggingMiddleware(mockContext, mockNext);
 
-      const { getLogger } = await import('../utils/core/logger');
-      const mockLogger = (getLogger as any)('RequestLog');
 
-      const logCall = mockLogger.info.mock.calls[0] || mockLogger.debug.mock.calls[0];
+      const logCall = mockLoggerInstance.info.mock.calls[0] || mockLoggerInstance.debug.mock.calls[0];
       expect(logCall[1].method).toBe('GET');
     });
 
@@ -396,10 +357,8 @@ describe('requestLoggingMiddleware', () => {
 
       await requestLoggingMiddleware(mockContext, mockNext);
 
-      const { getLogger } = await import('../utils/core/logger');
-      const mockLogger = (getLogger as any)('RequestLog');
 
-      const logCall = mockLogger.info.mock.calls[0] || mockLogger.debug.mock.calls[0];
+      const logCall = mockLoggerInstance.info.mock.calls[0] || mockLoggerInstance.debug.mock.calls[0];
       expect(logCall[1].method).toBe('POST');
     });
 
@@ -409,10 +368,8 @@ describe('requestLoggingMiddleware', () => {
 
       await requestLoggingMiddleware(mockContext, mockNext);
 
-      const { getLogger } = await import('../utils/core/logger');
-      const mockLogger = (getLogger as any)('RequestLog');
 
-      const logCall = mockLogger.info.mock.calls[0] || mockLogger.debug.mock.calls[0];
+      const logCall = mockLoggerInstance.info.mock.calls[0] || mockLoggerInstance.debug.mock.calls[0];
       expect(logCall[1].method).toBe('PUT');
     });
 
@@ -422,10 +379,8 @@ describe('requestLoggingMiddleware', () => {
 
       await requestLoggingMiddleware(mockContext, mockNext);
 
-      const { getLogger } = await import('../utils/core/logger');
-      const mockLogger = (getLogger as any)('RequestLog');
 
-      const logCall = mockLogger.info.mock.calls[0] || mockLogger.debug.mock.calls[0];
+      const logCall = mockLoggerInstance.info.mock.calls[0] || mockLoggerInstance.debug.mock.calls[0];
       expect(logCall[1].method).toBe('DELETE');
     });
 
@@ -435,10 +390,8 @@ describe('requestLoggingMiddleware', () => {
 
       await requestLoggingMiddleware(mockContext, mockNext);
 
-      const { getLogger } = await import('../utils/core/logger');
-      const mockLogger = (getLogger as any)('RequestLog');
 
-      const logCall = mockLogger.info.mock.calls[0] || mockLogger.debug.mock.calls[0];
+      const logCall = mockLoggerInstance.info.mock.calls[0] || mockLoggerInstance.debug.mock.calls[0];
       expect(logCall[1].method).toBe('PATCH');
     });
   });
@@ -451,8 +404,6 @@ describe('requestLoggingMiddleware', () => {
     });
 
     it('should log unhandled errors', async () => {
-      const { getLogger } = await import('../utils/core/logger');
-      const mockLogger = (getLogger as any)('RequestLog');
 
       mockNext.mockRejectedValueOnce(new Error('Test error'));
 
@@ -462,12 +413,10 @@ describe('requestLoggingMiddleware', () => {
         // Expected to throw
       }
 
-      expect(mockLogger.error).toHaveBeenCalled();
+      expect(mockLoggerInstance.error).toHaveBeenCalled();
     });
 
     it('should log error with method and path', async () => {
-      const { getLogger } = await import('../utils/core/logger');
-      const mockLogger = (getLogger as any)('RequestLog');
 
       mockContext.req.method = 'POST';
       mockContext.req.path = '/chat';
@@ -479,7 +428,7 @@ describe('requestLoggingMiddleware', () => {
         // Expected to throw
       }
 
-      const errorCall = mockLogger.error.mock.calls.find((call: any) =>
+      const errorCall = mockLoggerInstance.error.mock.calls.find((call: any) =>
         call[0].includes('failed')
       );
       expect(errorCall[1].method).toBe('POST');
@@ -502,10 +451,8 @@ describe('requestLoggingMiddleware', () => {
 
       await requestLoggingMiddleware(mockContext, mockNext);
 
-      const { getLogger } = await import('../utils/core/logger');
-      const mockLogger = (getLogger as any)('RequestLog');
 
-      const logCall = mockLogger.info.mock.calls[0] || mockLogger.debug.mock.calls[0];
+      const logCall = mockLoggerInstance.info.mock.calls[0] || mockLoggerInstance.debug.mock.calls[0];
       expect(logCall[1]).toHaveProperty('method');
     });
 
@@ -514,10 +461,8 @@ describe('requestLoggingMiddleware', () => {
 
       await requestLoggingMiddleware(mockContext, mockNext);
 
-      const { getLogger } = await import('../utils/core/logger');
-      const mockLogger = (getLogger as any)('RequestLog');
 
-      const logCall = mockLogger.info.mock.calls[0] || mockLogger.debug.mock.calls[0];
+      const logCall = mockLoggerInstance.info.mock.calls[0] || mockLoggerInstance.debug.mock.calls[0];
       expect(logCall[1]).toHaveProperty('path');
     });
 
@@ -526,10 +471,8 @@ describe('requestLoggingMiddleware', () => {
 
       await requestLoggingMiddleware(mockContext, mockNext);
 
-      const { getLogger } = await import('../utils/core/logger');
-      const mockLogger = (getLogger as any)('RequestLog');
 
-      const logCall = mockLogger.info.mock.calls[0] || mockLogger.debug.mock.calls[0];
+      const logCall = mockLoggerInstance.info.mock.calls[0] || mockLoggerInstance.debug.mock.calls[0];
       expect(logCall[1]).toHaveProperty('status');
     });
 
@@ -538,10 +481,8 @@ describe('requestLoggingMiddleware', () => {
 
       await requestLoggingMiddleware(mockContext, mockNext);
 
-      const { getLogger } = await import('../utils/core/logger');
-      const mockLogger = (getLogger as any)('RequestLog');
 
-      const logCall = mockLogger.info.mock.calls[0] || mockLogger.debug.mock.calls[0];
+      const logCall = mockLoggerInstance.info.mock.calls[0] || mockLoggerInstance.debug.mock.calls[0];
       expect(logCall[1]).toHaveProperty('duration');
     });
 
@@ -550,10 +491,8 @@ describe('requestLoggingMiddleware', () => {
 
       await requestLoggingMiddleware(mockContext, mockNext);
 
-      const { getLogger } = await import('../utils/core/logger');
-      const mockLogger = (getLogger as any)('RequestLog');
 
-      const logCall = mockLogger.info.mock.calls[0] || mockLogger.debug.mock.calls[0];
+      const logCall = mockLoggerInstance.info.mock.calls[0] || mockLoggerInstance.debug.mock.calls[0];
       expect(logCall[1]).toHaveProperty('durationMs');
     });
   });
@@ -564,10 +503,8 @@ describe('requestLoggingMiddleware', () => {
 
       await requestLoggingMiddleware(mockContext, mockNext);
 
-      const { getLogger } = await import('../utils/core/logger');
-      const mockLogger = (getLogger as any)('RequestLog');
 
-      const infoCall = mockLogger.info.mock.calls[0];
+      const infoCall = mockLoggerInstance.info.mock.calls[0];
       expect(infoCall[0]).toBe('Request completed');
     });
 
@@ -577,10 +514,8 @@ describe('requestLoggingMiddleware', () => {
 
       await requestLoggingMiddleware(mockContext, mockNext);
 
-      const { getLogger } = await import('../utils/core/logger');
-      const mockLogger = (getLogger as any)('RequestLog');
 
-      const debugCall = mockLogger.debug.mock.calls[0];
+      const debugCall = mockLoggerInstance.debug.mock.calls[0];
       expect(debugCall[0]).toBe('Health check');
     });
 
@@ -593,10 +528,8 @@ describe('requestLoggingMiddleware', () => {
         // Expected
       }
 
-      const { getLogger } = await import('../utils/core/logger');
-      const mockLogger = (getLogger as any)('RequestLog');
 
-      const errorCall = mockLogger.error.mock.calls.find((call: any) =>
+      const errorCall = mockLoggerInstance.error.mock.calls.find((call: any) =>
         call[0].includes('failed')
       );
       expect(errorCall[0]).toContain('failed');
@@ -609,10 +542,8 @@ describe('requestLoggingMiddleware', () => {
 
       await requestLoggingMiddleware(mockContext, mockNext);
 
-      const { getLogger } = await import('../utils/core/logger');
-      const mockLogger = (getLogger as any)('RequestLog');
 
-      const logCall = mockLogger.info.mock.calls[0] || mockLogger.debug.mock.calls[0];
+      const logCall = mockLoggerInstance.info.mock.calls[0] || mockLoggerInstance.debug.mock.calls[0];
       expect(logCall[1].durationMs).toBeGreaterThanOrEqual(0);
     });
 
@@ -622,10 +553,8 @@ describe('requestLoggingMiddleware', () => {
 
       await requestLoggingMiddleware(mockContext, mockNext);
 
-      const { getLogger } = await import('../utils/core/logger');
-      const mockLogger = (getLogger as any)('RequestLog');
 
-      const logCall = mockLogger.info.mock.calls[0];
+      const logCall = mockLoggerInstance.info.mock.calls[0];
       expect(logCall[1].userAgent).toBe('unknown');
     });
 
@@ -635,10 +564,8 @@ describe('requestLoggingMiddleware', () => {
 
       await requestLoggingMiddleware(mockContext, mockNext);
 
-      const { getLogger } = await import('../utils/core/logger');
-      const mockLogger = (getLogger as any)('RequestLog');
 
-      const logCall = mockLogger.info.mock.calls[0] || mockLogger.debug.mock.calls[0];
+      const logCall = mockLoggerInstance.info.mock.calls[0] || mockLoggerInstance.debug.mock.calls[0];
       expect(logCall[1].path).toBe('/');
     });
 
@@ -647,15 +574,13 @@ describe('requestLoggingMiddleware', () => {
 
       for (const code of codes) {
         mockContext.res.status = code;
-        const { getLogger } = await import('../utils/core/logger');
-        const mockLogger = (getLogger as any)('RequestLog');
-        mockLogger.info.mockClear();
-        mockLogger.debug.mockClear();
+        mockLoggerInstance.info.mockClear();
+        mockLoggerInstance.debug.mockClear();
 
         await requestLoggingMiddleware(mockContext, mockNext);
 
-        const loggedAsInfo = mockLogger.info.mock.calls.length > 0;
-        const loggedAsDebug = mockLogger.debug.mock.calls.length > 0;
+        const loggedAsInfo = mockLoggerInstance.info.mock.calls.length > 0;
+        const loggedAsDebug = mockLoggerInstance.debug.mock.calls.length > 0;
         expect(loggedAsInfo || loggedAsDebug).toBe(true);
       }
     });

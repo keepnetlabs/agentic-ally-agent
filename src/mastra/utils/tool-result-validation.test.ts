@@ -65,7 +65,7 @@ describe('Tool Result Validation', () => {
 
       expect(validation.success).toBe(false);
       if (!validation.success) {
-        expect(validation.error.code).toBe('INTERNAL');
+        expect(validation.error.code).toBe('ERR_INT_001');
         expect(validation.error.message).toContain('validation failed');
       }
     });
@@ -82,7 +82,7 @@ describe('Tool Result Validation', () => {
 
       expect(validation.success).toBe(false);
       if (!validation.success) {
-        expect(validation.error.code).toBe('INTERNAL');
+        expect(validation.error.code).toBe('ERR_INT_001');
       }
     });
 

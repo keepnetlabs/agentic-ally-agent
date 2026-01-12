@@ -1,13 +1,39 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { generateScene2Prompt } from './scene2-goal-generator';
 import { PromptAnalysis } from '../../../types/prompt-analysis';
 import { MicrolearningContent } from '../../../types/microlearning';
+import { generateText } from 'ai';
+
+vi.mock('ai', () => ({
+  generateText: vi.fn(),
+}));
 
 /**
  * Test suite for Scene 2 (Goal) Generator
  * Tests prompt generation for goal-setting scenes with implementation intentions
  */
 describe('Scene 2 - Goal Generator', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    (generateText as any).mockResolvedValue({
+      text: JSON.stringify({
+        prompt: `SCENE 2 - GOALS
+Topic: Phishing Prevention
+=== GOAL PATTERN CATEGORIES ===
+
+1. THREAT pattern structure - Identify threats
+2. TOOL pattern structure - Use tools
+3. PROCESS pattern structure - Follow process
+
+topic-specific pattern instructions for email security
+
+Goals:
+- Identify phishing emails
+- Verify sender identity
+- Report suspicious messages`,
+      }),
+    });
+  });
   // Base valid analysis
   const baseAnalysis: PromptAnalysis = {
     language: 'en',

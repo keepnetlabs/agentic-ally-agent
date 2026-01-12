@@ -1,7 +1,16 @@
 // Test setup and utilities
 import { beforeEach, afterEach, vi } from 'vitest';
 
-// Mock environment variables
+// Set environment variables BEFORE module imports (module load time)
+process.env.CLOUDFLARE_ACCOUNT_ID = 'test-account-id';
+process.env.CLOUDFLARE_KV_TOKEN = 'test-kv-token';
+process.env.CLOUDFLARE_API_KEY = 'test-api-key';
+process.env.CLOUDFLARE_D1_DATABASE_ID = 'test-d1-db-id';
+process.env.OPENAI_API_KEY = 'test-openai-key';
+process.env.CLOUDFLARE_AI_GATEWAY_ID = 'test-gateway-id';
+process.env.CLOUDFLARE_GATEWAY_AUTHENTICATION_KEY = 'test-gateway-auth';
+
+// Reset environment variables before each test (for tests that modify them)
 beforeEach(() => {
   process.env.CLOUDFLARE_ACCOUNT_ID = 'test-account-id';
   process.env.CLOUDFLARE_KV_TOKEN = 'test-kv-token';

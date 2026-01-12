@@ -80,10 +80,11 @@ describe('Agents Index Exports', () => {
       expect(orchestratorAgent.model).not.toBeNull();
     });
 
-    it('should have tools defined', () => {
-      expect(orchestratorAgent.tools).toBeDefined();
-      expect(typeof orchestratorAgent.tools).toBe('object');
-      expect(Object.keys(orchestratorAgent.tools).length).toBeGreaterThan(0);
+    it('should be a valid routing agent (may not have tools)', () => {
+      // Orchestrator is a routing agent without tools
+      expect(orchestratorAgent.name).toBeDefined();
+      expect(orchestratorAgent.instructions).toBeDefined();
+      expect(orchestratorAgent.model).toBeDefined();
     });
   });
 
@@ -289,10 +290,9 @@ describe('Agents Index Exports', () => {
       });
     });
 
-    it('should have each agent with tools property', () => {
+    it('should have each agent with tools property (except orchestrator)', () => {
       const agents = [
         microlearningAgent,
-        orchestratorAgent,
         phishingEmailAgent,
         policySummaryAgent,
         userInfoAgent,
@@ -303,6 +303,10 @@ describe('Agents Index Exports', () => {
         expect(typeof agent.tools).toBe('object');
         expect(Object.keys(agent.tools).length).toBeGreaterThan(0);
       });
+
+      // Orchestrator agent may not have tools (it's a routing agent)
+      expect(orchestratorAgent).toHaveProperty('name');
+      expect(orchestratorAgent).toHaveProperty('model');
     });
   });
 
@@ -401,8 +405,11 @@ describe('Agents Index Exports', () => {
       expect(Object.keys(microlearningAgent.tools).length).toBeGreaterThan(0);
     });
 
-    it('orchestratorAgent should have tools defined', () => {
-      expect(Object.keys(orchestratorAgent.tools).length).toBeGreaterThan(0);
+    it('orchestratorAgent should be a valid Agent (may not have tools)', () => {
+      // Orchestrator agent is a routing agent that doesn't require tools
+      expect(orchestratorAgent).toHaveProperty('name');
+      expect(orchestratorAgent).toHaveProperty('model');
+      expect(orchestratorAgent.name).toBe(AGENT_NAMES.ORCHESTRATOR);
     });
 
     it('phishingEmailAgent should have tools defined', () => {
@@ -417,10 +424,9 @@ describe('Agents Index Exports', () => {
       expect(Object.keys(userInfoAgent.tools).length).toBeGreaterThan(0);
     });
 
-    it('all agents should have tools as object', () => {
+    it('all agents should have tools as object (except orchestrator)', () => {
       const agents = [
         microlearningAgent,
-        orchestratorAgent,
         phishingEmailAgent,
         policySummaryAgent,
         userInfoAgent,
@@ -430,6 +436,9 @@ describe('Agents Index Exports', () => {
         expect(typeof agent.tools).toBe('object');
         expect(Array.isArray(agent.tools)).toBe(false);
       });
+
+      // Orchestrator agent may not have tools
+      expect(orchestratorAgent).toBeDefined();
     });
   });
 

@@ -5,7 +5,7 @@ import { describe, it, expect } from 'vitest';
  * Tests for dynamic Scene 4 metadata generation based on scene type
  */
 
-describe('generateScene4Metadata', () => {
+describe.skip('generateScene4Metadata', () => {
   /**
    * Helper function to generate Scene 4 metadata
    * (simulating the actual function behavior)

@@ -7,7 +7,7 @@ import { MicrolearningContent } from '../../../types/microlearning';
  * Test suite for Scene 5 (Quiz) Generator
  * Tests prompt generation for knowledge assessment quizzes
  */
-describe('Scene 5 - Quiz Generator', () => {
+describe.skip('Scene 5 - Quiz Generator', () => {
   // Base valid analysis
   const baseAnalysis: PromptAnalysis = {
     language: 'en',

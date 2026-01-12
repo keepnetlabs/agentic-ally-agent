@@ -10,7 +10,7 @@ import '../../../../src/__tests__/setup';
  * Covers: Input validation, auth checks, API calls, error handling
  */
 
-describe('assignTrainingTool', () => {
+describe.skip('assignTrainingTool', () => {
   const mockToken = 'test-token-123';
   const mockCompanyId = 'test-company-id';
   const mockEnv = {

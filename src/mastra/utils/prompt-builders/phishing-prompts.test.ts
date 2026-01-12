@@ -88,7 +88,7 @@ describe('phishing-prompts', () => {
             const result = buildEmailPrompts(params as any);
             expect(result.systemPrompt).toContain('You are a Quishing (QR Code Phishing) Email Generator');
             expect(result.userPrompt).toContain('Write the QUISHING (QR Code Phishing) simulation email content');
-            expect(result.userPrompt).toContain('QUISHING CONFIRMED');
+            expect(result.userPrompt).toContain('Quishing Confirmed');
         });
     });
 
@@ -110,7 +110,7 @@ describe('phishing-prompts', () => {
             const result = buildLandingPagePrompts(params as any);
             expect(result.systemPrompt).toContain('You are a web developer creating realistic landing pages');
             expect(result.systemPrompt).toContain('Finance industry');
-            expect(result.systemPrompt).toContain('NO QR CODES IN LANDING PAGES');
+            expect(result.systemPrompt).toContain('No QR Codes in Landing Pages');
             expect(result.systemPrompt).toContain('Finance');
         });
 
@@ -126,7 +126,7 @@ describe('phishing-prompts', () => {
                 isQuishing: true
             };
             const result = buildLandingPagePrompts(params as any);
-            expect(result.systemPrompt).toContain('QUISHING LANDING PAGE - NO QR CODE REFERENCES');
+            expect(result.systemPrompt).toContain('Quishing Landing Page - No QR Code References');
         });
     });
 });

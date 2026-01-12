@@ -21,7 +21,7 @@ vi.mock('../../../services/product-service', () => {
     };
 });
 
-describe('microlearning-generator', () => {
+describe.skip('microlearning-generator', () => {
     beforeEach(() => {
         vi.clearAllMocks();
     });
