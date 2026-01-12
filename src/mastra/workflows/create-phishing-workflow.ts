@@ -3,7 +3,7 @@ import { generateText } from 'ai';
 import { getModelWithOverride } from '../model-providers';
 import { cleanResponse } from '../utils/content-processors/json-cleaner';
 import { generateUniqueId } from '../utils/core/id-utils';
-import { LANDING_PAGE, STRING_TRUNCATION } from '../constants';
+import { LANDING_PAGE, STRING_TRUNCATION, KV_NAMESPACES } from '../constants';
 import { KVService } from '../services/kv-service';
 import {
   detectIndustry,
@@ -678,8 +678,8 @@ const savePhishingContent = createStep({
 
     logger.info('Saving phishing content to KV', { phishingId });
 
-    // Initialize KVService with Phishing Namespace ID (Hardcoded for now)
-    const kvService = new KVService('f6609d79aa2642a99584b05c64ecaa9f');
+    // Initialize KVService with Phishing Namespace ID
+    const kvService = new KVService(KV_NAMESPACES.PHISHING);
 
     // Save Base (Meta)
     await kvService.savePhishingBase(phishingId, inputData, language);
@@ -702,7 +702,7 @@ const savePhishingContent = createStep({
       !!inputData.template,
       !!inputData.landingPage
     );
-    await waitForKVConsistency(phishingId, expectedKeys, 'f6609d79aa2642a99584b05c64ecaa9f');
+    await waitForKVConsistency(phishingId, expectedKeys, KV_NAMESPACES.PHISHING);
 
     return {
       ...inputData,

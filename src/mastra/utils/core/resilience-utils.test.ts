@@ -101,8 +101,6 @@ describe('resilience-utils', () => {
       const promise = Promise.resolve('success');
       const timeoutPromise = withTimeout(promise, 0);
 
-      vi.advanceTimersByTime(0);
-
       await expect(timeoutPromise).rejects.toThrow('Timeout after 0ms');
     });
 

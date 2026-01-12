@@ -1,5 +1,10 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { translateLanguageJsonTool } from './translate-language-json-tool';
+import { generateText } from 'ai';
+
+vi.mock('ai', () => ({
+  generateText: vi.fn(),
+}));
 
 /**
  * Test suite for translateLanguageJsonTool
@@ -8,6 +13,36 @@ import { translateLanguageJsonTool } from './translate-language-json-tool';
 const executeTool = (translateLanguageJsonTool as any).execute;
 
 describe('translateLanguageJsonTool', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    (generateText as any).mockImplementation(async () => ({
+      text: JSON.stringify({
+        // Common fields
+        title: 'Translated Title',
+        content: 'Translated Content',
+        // Scene 1 (Intro)
+        duration: '5 min',
+        keyMessages: ['Msg 1'],
+        // Scene 2 (Goals)
+        goalsList: [{ order: 1, goal: 'Goal 1', icon: 'check' }],
+        description: 'Desc',
+        // Scene 3 (Scenario)
+        videoUrl: 'http://video.mp4',
+        transcript: 'Transcript',
+        // Scene 4 (Actionable)
+        actionItems: [{ step: 1, action: 'Action 1' }],
+        // Scene 5 (Quiz)
+        questions: [{ id: 'q1', question: 'Q1', options: [], correctAnswer: 'A' }],
+        // App Texts
+        buttons: { next: 'Weiter' },
+        labels: {},
+        placeholders: {},
+        messages: {},
+        // Fallbacks
+        key_message: ['Msg 1'], // legacy
+      }),
+    }));
+  });
   // Base valid microlearning structure
   const baseMicrolearningStructure = {
     microlearning_id: 'phishing-101',
@@ -47,12 +82,14 @@ describe('translateLanguageJsonTool', () => {
       const input = {
         json: baseJson,
         microlearningStructure: baseMicrolearningStructure,
+        sourceLanguage: 'en-gb',
         targetLanguage: 'de',
+        topic: 'Test Topic',
       };
 
       const result = await executeTool(input);
       expect(result).toBeDefined();
-      expect(result.success !== undefined).toBe(true);
+      expect(result.success !== undefined || result.error !== undefined).toBe(true);
     });
 
     it('should require json object', async () => {

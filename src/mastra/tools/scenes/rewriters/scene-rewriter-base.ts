@@ -210,7 +210,7 @@ export async function rewriteSceneWithBase<T>(
     const logger = getLogger(`RewriteScene${config.displayName.replace(/\s+/g, '')}`);
     const { sourceLanguage, targetLanguage, topic, model, department } = context;
 
-    // Early return for empty content (e.g., app-texts with no entries)
+    // Early return for empty content
     if (!scene || (typeof scene === 'object' && Object.keys(scene).length === 0)) {
         return scene;
     }

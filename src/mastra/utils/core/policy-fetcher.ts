@@ -1,6 +1,7 @@
 import { getRequestContext } from './request-storage';
 import { getLogger } from './logger';
 import { withRetry } from './resilience-utils';
+import { API_ENDPOINTS } from '../../constants';
 
 const logger = getLogger('PolicyFetcher');
 
@@ -47,9 +48,10 @@ export async function getPolicyContext(): Promise<string> {
     logger.info('Fetching company policies', { companyId });
 
     // 1. List all policies
+    const apiBaseUrl = API_ENDPOINTS.AGENTIC_AI_CHAT_URL;
     const listResponse = await withRetry(
       () =>
-        fetch('http://agentic-ai-chat.keepnetlabs.com/api/files', {
+        fetch(`${apiBaseUrl}/api/files`, {
           headers: {
             'X-COMPANY-ID': companyId,
           },
@@ -85,7 +87,7 @@ export async function getPolicyContext(): Promise<string> {
           const policyUrl = `/api/policies/policies/${encodeURIComponent(cleanBlobUrl)}`;
           const fullUrl = policyUrl.startsWith('http')
             ? policyUrl
-            : `http://agentic-ai-chat.keepnetlabs.com${policyUrl}`;
+            : `${apiBaseUrl}${policyUrl}`;
           const response = await withRetry(
             () =>
               fetch(fullUrl, {
@@ -98,7 +100,7 @@ export async function getPolicyContext(): Promise<string> {
           );
 
           if (!response.ok) {
-            logger.warn('Failed to read policy', { policyName: policy.name, status: response.status });
+            logger.info('Failed to read policy (skipping)', { policyName: policy.name, status: response.status });
             return null;
           }
 

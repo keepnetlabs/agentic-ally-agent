@@ -7,7 +7,7 @@ import { callWorkerAPI } from '../../utils/core/worker-api-client';
 import { maskSensitiveField } from '../../utils/core/security-utils';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
 import { KVService } from '../../services/kv-service';
-import { ERROR_MESSAGES, API_ENDPOINTS } from '../../constants';
+import { ERROR_MESSAGES, API_ENDPOINTS, KV_NAMESPACES } from '../../constants';
 import { errorService } from '../../services/error-service';
 import { validateToolResult } from '../../utils/tool-result-validation';
 import { extractCompanyIdFromTokenExport } from '../../utils/core/policy-fetcher';
@@ -73,7 +73,7 @@ export const uploadPhishingTool = createTool({
         try {
             // 1. Fetch Content from KV
             // Use phishing namespace ID (same as in create-phishing-workflow.ts)
-            const kvService = new KVService('f6609d79aa2642a99584b05c64ecaa9f');
+            const kvService = new KVService(KV_NAMESPACES.PHISHING);
             const phishingContent = await kvService.getPhishing(phishingId);
 
             if (!phishingContent || !phishingContent.base) {

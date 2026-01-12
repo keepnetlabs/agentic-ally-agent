@@ -23,6 +23,7 @@ import { resolveLogoAndBrand } from '../../utils/phishing/brand-resolver';
 import { preserveLandingFormControlStyles } from '../../utils/content-processors/landing-form-style-preserver';
 import { postProcessPhishingLandingHtml } from '../../utils/content-processors/phishing-html-postprocessors';
 import { summarizeForLog } from '../../utils/core/log-redaction-utils';
+import { KV_NAMESPACES } from '../../constants';
 
 // Utility: Add timeout to AI calls
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number = 30000): Promise<T> {
@@ -91,7 +92,7 @@ export const phishingEditorTool = createTool({
       });
 
       // 1. Load existing phishing email from KV
-      const kvServicePhishing = new KVService('f6609d79aa2642a99584b05c64ecaa9f');
+      const kvServicePhishing = new KVService(KV_NAMESPACES.PHISHING);
       const language = inputLanguage || 'en-gb';
       const emailKey = `phishing:${phishingId}:email:${language}`;
       const existingEmail = await kvServicePhishing.get(emailKey);

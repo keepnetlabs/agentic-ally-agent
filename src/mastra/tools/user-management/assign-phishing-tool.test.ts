@@ -177,7 +177,7 @@ describe('assignPhishingTool', () => {
         expect.objectContaining({
           env: mockEnv,
           serviceBinding: mockEnv.PHISHING_CRUD_WORKER,
-          endpoint: 'https://worker/send',
+          endpoint: expect.stringContaining('/send'),
           payload: expect.objectContaining({
             phishingId: 'phishing-resource-123',
             languageId: 'lang-456',
@@ -187,7 +187,8 @@ describe('assignPhishingTool', () => {
             companyId: mockCompanyId,
             name: expect.stringContaining('Agentic Ally')
           }),
-          token: mockToken
+          token: mockToken,
+          publicUrl: expect.any(String)
         })
       );
     });

@@ -122,7 +122,7 @@ describe('uploadPhishingTool', () => {
 
   describe('KV Content Fetching', () => {
     it('should fetch phishing content from KV with phishing namespace', async () => {
-      // Note: uploadPhishingTool uses namespace ID override: 'f6609d79aa2642a99584b05c64ecaa9f'
+      // Note: uploadPhishingTool uses KV_NAMESPACES.PHISHING override
       const getPhishingSpy = vi.spyOn(KVService.prototype, 'getPhishing')
         .mockResolvedValue(mockPhishingContent);
       vi.spyOn(workerApiClient, 'callWorkerAPI').mockResolvedValue({
@@ -230,7 +230,7 @@ describe('uploadPhishingTool', () => {
 
       await uploadPhishingTool.execute({ context: input } as any);
 
-      const callArgs = mockCallWorkerAPI.mock.calls[0][0];
+      const callArgs = mockCallWorkerAPI.mock.calls[0][0] as any;
       expect(callArgs.payload.phishingData.language).toBe('en-gb');
     });
 
@@ -253,7 +253,7 @@ describe('uploadPhishingTool', () => {
 
       await uploadPhishingTool.execute({ context: input } as any);
 
-      const callArgs = mockCallWorkerAPI.mock.calls[0][0];
+      const callArgs = mockCallWorkerAPI.mock.calls[0][0] as any;
       expect(callArgs.payload.phishingData.email).toBeUndefined();
     });
 
@@ -276,7 +276,7 @@ describe('uploadPhishingTool', () => {
 
       await uploadPhishingTool.execute({ context: input } as any);
 
-      const callArgs = mockCallWorkerAPI.mock.calls[0][0];
+      const callArgs = mockCallWorkerAPI.mock.calls[0][0] as any;
       expect(callArgs.payload.phishingData.landingPage).toBeUndefined();
     });
   });

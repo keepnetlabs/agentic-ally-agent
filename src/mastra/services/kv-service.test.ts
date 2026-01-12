@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { KVService } from './kv-service';
 import '../../../src/__tests__/setup';
 
@@ -12,11 +12,16 @@ describe('KVService', () => {
   let kvService: KVService;
 
   beforeEach(() => {
-    // Reset fetch mock
-    vi.resetAllMocks();
+    // Reset all mocks and spies
+    vi.clearAllMocks();
+    vi.restoreAllMocks();
 
     // Create KVService instance
     kvService = new KVService();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   describe('constructor', () => {

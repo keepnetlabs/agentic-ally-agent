@@ -120,6 +120,14 @@ export const CLOUDFLARE_KV = {
   },
 } as const;
 
+export const KV_NAMESPACES = {
+  // Phishing KV Namespace (Hardcoded fallback for now, ideally env var)
+  PHISHING: process.env.PHISHING_KV_NAMESPACE_ID || 'f6609d79aa2642a99584b05c64ecaa9f',
+
+  // Microlearning KV Namespace (Usually handled by default env binding, but good to have explicit)
+  MICROLEARNING: process.env.MICROLEARNING_KV_NAMESPACE_ID || '',
+} as const;
+
 // ============================================
 // LANGUAGE & LOCALIZATION
 // ============================================
@@ -773,6 +781,8 @@ export const API_ENDPOINTS = {
   // Default base API URL (fallback when header not provided)
   DEFAULT_BASE_API_URL: 'https://test-api.devkeepnet.com',
 
+  // Agentic AI Chat endpoint (Policy)
+  AGENTIC_AI_CHAT_URL: 'http://agentic-ai-chat.keepnetlabs.com',
 } as const;
 
 // API Keys and authentication
