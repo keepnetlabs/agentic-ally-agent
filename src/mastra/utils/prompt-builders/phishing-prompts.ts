@@ -25,6 +25,11 @@ import {
   BRAND_AWARENESS_RULES,
   SYNTAX_RULE,
   FOOTER_RULES,
+  LANDING_PAGE_LOGO_RULE,
+  QUISHING_LANDING_PAGE_RULE,
+  NO_QR_CODE_LANDING_PAGE_RULE,
+  GREETING_INSTRUCTION,
+  JSON_OUTPUT_RULE,
 } from './shared-email-rules';
 import { z } from 'zod';
 
@@ -36,8 +41,7 @@ const logger = getLogger('PhishingPromptBuilder');
 function getDepartmentContext(department?: string, isQuishing = false): string {
   if (!department || department === 'All') return '';
   const scenarioType = isQuishing ? 'quishing scenario' : 'scenario';
-  return `\n**TARGET DEPARTMENT:** ${department}
-Tailor the ${scenarioType} specifically for this department's typical workflows, vulnerabilities, and attack vectors.`;
+  return `\n**Target Department:** ${department} - Tailor ${scenarioType} to department workflows, vulnerabilities, and attack vectors.`;
 }
 
 // Type definitions for prompt parameters
@@ -122,7 +126,7 @@ Design highly realistic quishing (QR code phishing) simulation scenarios for cyb
      * Policy Acknowledgement: QR code to acknowledge/confirm a company policy
    - **DO NOT COPY these exact examples.** Use them as inspiration to create a unique, realistic quishing scenario that matches the topic or invent one that fits the context.
 
-3. **Psychological Triggers (MANDATORY - Apply at least 2):**
+3. **Psychological Triggers (apply at least 2):**
    - **Convenience:** "Quick access via QR code", "Scan and go", "Mobile-friendly"
    - **Technology Trust:** "Secure QR verification", "Encrypted connection"
    - **Mobile Usage:** "Perfect for mobile devices", "Scan with your phone"
@@ -139,7 +143,7 @@ Design highly realistic quishing (QR code phishing) simulation scenarios for cyb
    - **Urgency/Tone:** ${difficultyRules.urgency.rule}. ${difficultyRules.urgency.description}.
    - **Complexity:** ${difficulty === 'Easy' ? 'Simple, obvious logic with clear QR code red flags.' : difficulty === 'Hard' ? 'Complex, layered social engineering with subtle QR code placement.' : 'Standard business logic with moderate QR code red flags.'}
 
-6. **Quishing-Specific Red Flags (MANDATORY - Include 3-4):**
+6. **Quishing-Specific Red Flags (include 3-4):**
    - Unsolicited QR code in email (QR codes are rarely sent via email)
    - QR code requesting login credentials or sensitive information
    - QR code in unexpected contexts (e.g., policy acknowledgement via QR instead of portal)
@@ -148,15 +152,14 @@ Design highly realistic quishing (QR code phishing) simulation scenarios for cyb
    - Urgency around QR code scanning ("Scan within X hours")
    - QR code sent from non-official or suspicious email addresses
 
-**OUTPUT FORMAT:**
-Return ONLY valid JSON matching the schema. No markdown, no backticks, no explanation, just JSON.
+${JSON_OUTPUT_RULE}
 
-**CRITICAL FIELD REQUIREMENTS:**
-- **isQuishing:** MUST be true (MANDATORY - this is a quishing scenario)
+**Field Requirements:**
+- **isQuishing:** Must be true (required for quishing scenarios)
 - **scenario:** Must involve QR code scanning/phishing
-- **psychologicalTriggers:** MUST include at least "Convenience" or "Technology Trust" or "Mobile Usage"
-- **keyRedFlags:** MUST include quishing-specific red flags (see section 6)
-- **description:** MUST be 300 characters or less
+- **psychologicalTriggers:** Must include at least "Convenience" or "Technology Trust" or "Mobile Usage"
+- **keyRedFlags:** Must include quishing-specific red flags (see section 6)
+- **description:** 300 characters or less
 
 **EXAMPLE OUTPUT (Quishing Scenario):**
 {
@@ -236,11 +239,11 @@ Design highly realistic phishing simulation scenarios for cybersecurity training
      - '${PHISHING.ATTACK_METHODS[1]}' (Data-Submission): For scenarios requiring login, password reset, verification, payment, survey.
      - '${PHISHING.ATTACK_METHODS[0]}' (Click-Only): For scenarios requiring viewing a document, tracking a package, reading news, downloading a file.
 
-1a. **TRADITIONAL PHISHING ONLY:**
-   - **MANDATORY:** isQuishing MUST be false (NO QR codes, use buttons/links only)
+1a. **Traditional Phishing Only:**
+   - isQuishing must be false (required: no QR codes, use buttons/links only)
 
-1b. **PSYCHOLOGICAL STRATEGY (Cialdini Principles):**
-   - **MANDATORY:** You MUST select and apply at least 2 of Cialdini's 6 Principles (Reciprocity, Commitment, Social Proof, Authority, Liking, Scarcity).
+1b. **Psychological Strategy (Cialdini Principles):**
+   - Must select and apply at least 2 of Cialdini's 6 Principles (Reciprocity, Commitment, Social Proof, Authority, Liking, Scarcity).
    - **Contextual Match:**
      * Finance/Legal → **Authority** ("CEO Request") + **Urgency/Scarcity** ("Immediate action required")
      * HR/Internal → **Social Proof** ("Everyone has completed") + **Commitment** ("As agreed in meeting")
@@ -258,7 +261,7 @@ Design highly realistic phishing simulation scenarios for cybersecurity training
    - Example: If Topic is "General", pick a universal theme like "Password Expiry" or "Storage Full".
    - **Do NOT fail** if profile is missing. Create the most effective scenario for the given Topic/Difficulty.
 
-3a. **BRAND/COMPANY DETECTION (CRITICAL):**
+3a. **Brand/Company Detection:**
    - **IF Topic mentions a SPECIFIC BRAND/COMPANY** (e.g., "Shopping platform", "Amazon", "Microsoft", "PayPal"):
      * Set "fromName" to that BRAND NAME (e.g., "Amazon")
      * Create scenarios matching that brand's context (e.g., E-commerce → package delivery, order confirmation)
@@ -280,11 +283,10 @@ Design highly realistic phishing simulation scenarios for cybersecurity training
    - Define 3-4 specific red flags appropriate for the difficulty level (${difficulty}).
    - Traditional phishing red flags: Suspicious sender addresses, urgency tactics, requests for credentials, suspicious links, grammatical errors, mismatched branding, unexpected attachments
 
-**OUTPUT FORMAT:**
-Return ONLY valid JSON matching the schema. No markdown, no backticks, no explanation, just JSON.
+${JSON_OUTPUT_RULE}
 
-**CRITICAL FIELD LIMITS:**
-- **description**: MUST be 300 characters or less. Keep it concise and focused on the simulation's purpose.
+**Field Limits:**
+- **description**: 300 characters or less. Keep it concise and focused on the simulation's purpose.
 
 **EXAMPLE OUTPUT (Scenario Analysis - for EMAIL generation):**
 {
@@ -421,12 +423,12 @@ ${BRAND_AWARENESS_RULES}
    ${MOBILE_OPTIMIZATION_RULES}
    - QR code: Must be clearly visible and scannable on mobile devices.
 
-3. **QR CODE PLACEMENT (CRITICAL):**
-   - **MANDATORY:** Include QR code image using {QRCODEURLIMAGE} merge tag: <img src="{QRCODEURLIMAGE}" alt="QR Code" style="width:200px;height:auto; margin:0 auto;">
-   - **FORBIDDEN:** Do NOT use placeholder src or empty src - ALWAYS use {QRCODEURLIMAGE} tag
-   - Place QR code prominently (center-aligned, after main message text, before signature).
+3. **QR Code Placement:**
+   - Must include QR code image using {QRCODEURLIMAGE} merge tag: <img src="{QRCODEURLIMAGE}" alt="QR Code" style="width:200px;height:auto; margin:0 auto;">
+   - Required: Use {QRCODEURLIMAGE} tag only (never placeholder src or empty src)
+   - Place QR code prominently (center-aligned, after main message text, before signature)
    - Add text around QR code: "Scan QR code to verify", "Quick access via QR", "Mobile-friendly verification"
-   - **FORBIDDEN:** NO buttons, NO clickable links in main body (footer links allowed).
+   - No buttons or clickable links in main body (footer links allowed)
 
 4. ${GREETING_RULES}
 
@@ -446,8 +448,7 @@ ${BRAND_AWARENESS_RULES}
 
 10. ${EMAIL_SIGNATURE_RULES}
 
-**OUTPUT FORMAT:**
-Return ONLY valid JSON with subject and template (HTML body). No markdown, no backticks, no explanation, just JSON.
+${JSON_OUTPUT_RULE}
 
 **EXAMPLE OUTPUT:**
 {
@@ -455,29 +456,27 @@ Return ONLY valid JSON with subject and template (HTML body). No markdown, no ba
   "template": "[Full HTML email with table layout, logo using {CUSTOMMAINLOGO} tag, QR code with <img src='{QRCODEURLIMAGE}' alt='QR Code' style='width:200px;height:auto; margin:0 auto;'>, convenience/mobile-friendly language, NO buttons or links in main body, and signature with department name]"
 }
 
-**CRITICAL:** Template MUST be complete HTML with {QRCODEURLIMAGE} merge tag for QR code (never placeholder images). QR code is the ONLY call-to-action. No buttons. No links in main body.`;
+Note: Template must be complete HTML with {QRCODEURLIMAGE} merge tag for QR code (never placeholder images). QR code is the only call-to-action. No buttons or links in main body.`;
 
   const quishingUserPrompt = `Write the QUISHING (QR Code Phishing) simulation email content based on this blueprint.
-        
-**🚨 CRITICAL CONTEXT (MUST FOLLOW):**
-- **Language:** 🔴 **${language || 'en'} ONLY** (100% in ${language})
+
+**Context:**
+- **Language:** Must use ${language || 'en'} only (100% in ${language})${language && !language.startsWith('en') ? ` - Think as native ${language} speaker, not translator.` : ''}
 - **Impersonating:** ${analysis.fromName} (Use authentic branding/tone)
 - **Difficulty:** ${difficulty}
-- **🔴 QUISHING CONFIRMED:** This is a QR code phishing email. QR code is the ONLY call-to-action. NO buttons or links in main body.
-${analysis.isRecognizedBrand && analysis.brandName ? `- **🚨 RECOGNIZED BRAND DETECTED:** ${analysis.brandName} - The brand name MUST appear at least once in either the subject line OR email body.` : ''}
+- **Quishing Confirmed:** This is a QR code phishing email. QR code is the only call-to-action. No buttons or links in main body.
+${analysis.isRecognizedBrand && analysis.brandName ? `- **Recognized Brand:** ${analysis.brandName} - Include brand name in subject line or email body.` : ''}
 
-**SCENARIO BLUEPRINT (SOURCE OF TRUTH):**
+**Blueprint:**
 ${JSON.stringify(analysis, null, 2)}
 
-**EXECUTION RULES (FOLLOW IN ORDER):**
+**Generation Steps:**
 1. **ANALYZE** the 'Blueprint' above - extract quishing scenario details, exact tone, and all quishing-specific red flags.
 2. **SELECT** the best **Layout Strategy** (Card vs Letter) based on the brand. **DEFAULT to Card format** unless explicitly CEO/HR/Policy scenario.
 3. **GENERATE** the **Preheader** (hidden preview text) - 10-15 words about QR code verification.
-4. **WRITE** the **GREETING FIRST** - MUST be in ${language} and MUST include the merge tag {FIRSTNAME}.
-   - English examples: "Dear {FIRSTNAME}," / "Hello {FIRSTNAME},"
-   - Turkish examples: "Merhaba {FIRSTNAME}," / "Sayın {FIRSTNAME},"
-5. **WRITE** realistic, authentic email content that matches the brand's style and emphasizes convenience/mobile-friendly access. **Write ONLY in ${language}.**${language && !language.startsWith('en') ? ` Think as native ${language} speaker, do NOT translate from English.` : ''}
-6. **🚨 CRITICAL - QR CODE MERGE TAG:** You MUST use {QRCODEURLIMAGE} merge tag for QR code. Add <img src="{QRCODEURLIMAGE}" alt="QR Code" style="width:200px;height:auto; margin:0 auto;"> prominently (center-aligned, after main message text, before signature). **FORBIDDEN:** Do NOT use placeholder src like "qr-code.png" or empty src - ALWAYS use {QRCODEURLIMAGE} tag. Add convenience text around QR code.
+4. ${GREETING_INSTRUCTION(language)}
+5. **WRITE** realistic, authentic email content that matches the brand's style and emphasizes convenience/mobile-friendly access.
+6. **QR Code Merge Tag:** Must use {QRCODEURLIMAGE} merge tag for QR code. Add <img src="{QRCODEURLIMAGE}" alt="QR Code" style="width:200px;height:auto; margin:0 auto;"> prominently (center-aligned, after main message text, before signature). Required: Never use placeholder src like "qr-code.png" or empty src - always use {QRCODEURLIMAGE} tag. Add convenience text around QR code.
 7. **EMBED** quishing-specific red flags according to difficulty level (unsolicited QR codes, QR codes requesting credentials, QR codes in unexpected contexts).
 8. **VERIFY** NO buttons or clickable links exist in main body (footer links allowed).
 9. **OUTPUT** valid JSON with complete, production-ready HTML template.`;
@@ -561,8 +560,7 @@ ${BRAND_AWARENESS_RULES}
 
 10. ${EMAIL_SIGNATURE_RULES}
 
-**OUTPUT FORMAT:**
-Return ONLY valid JSON with subject and template (HTML body). No markdown, no backticks, no explanation, just JSON.
+${JSON_OUTPUT_RULE}
 
 **EXAMPLE OUTPUT:**
 {
@@ -570,28 +568,25 @@ Return ONLY valid JSON with subject and template (HTML body). No markdown, no ba
   "template": "[Full HTML email with table layout, logo using {CUSTOMMAINLOGO} tag, urgent message, call-to-action button with {PHISHINGURL}, and signature with department name]"
 }
 
-**CRITICAL:** Template MUST be complete HTML (not truncated). Use table-based layout with inline CSS. The email must be production-ready and fully functional.`;
+Note: Template must be complete HTML (not truncated). Use table-based layout with inline CSS. The email must be production-ready and fully functional.`;
 
   const userPrompt = `Write the phishing simulation email content based on this blueprint.
-        
-**🚨 CRITICAL CONTEXT (MUST FOLLOW):**
-- **Language:** 🔴 **${language || 'en'} ONLY** (100% in ${language})
+
+**Context:**
+- **Language:** Must use ${language || 'en'} only (100% in ${language})${language && !language.startsWith('en') ? ` - Think as native ${language} speaker, not translator.` : ''}
 - **Impersonating:** ${analysis.fromName} (Use authentic branding/tone)
 - **Difficulty:** ${difficulty}
-${analysis.isRecognizedBrand && analysis.brandName ? `- **🚨 RECOGNIZED BRAND DETECTED:** ${analysis.brandName} - The brand name MUST appear at least once in either the subject line OR email body to ensure authenticity. Example: "Your ${analysis.brandName} account" or "${analysis.brandName} Security Alert"` : ''}
+${analysis.isRecognizedBrand && analysis.brandName ? `- **Recognized Brand:** ${analysis.brandName} - Include brand name in subject line or email body. Example: "Your ${analysis.brandName} account" or "${analysis.brandName} Security Alert"` : ''}
 
-**SCENARIO BLUEPRINT (SOURCE OF TRUTH):**
+**Blueprint:**
 ${JSON.stringify(analysis, null, 2)}
 
-**EXECUTION RULES (FOLLOW IN ORDER):**
+**Generation Steps:**
 1. **ANALYZE** the 'Blueprint' above - extract specific scenario details, exact tone, and all red flags that must be embedded.
 2. **SELECT** the best **Layout Strategy** (Card vs Letter) based on the brand. **DEFAULT to Card format** unless explicitly CEO/HR/Policy scenario.
 3. **GENERATE** the **Preheader** (hidden preview text) - 10-15 words that appear in inbox preview.
-4. **WRITE** the **GREETING FIRST** - MUST be in ${language} and MUST include the merge tag {FIRSTNAME} (or {FULLNAME}).
-   - English examples: "Dear {FIRSTNAME}," / "Hello {FIRSTNAME},"
-   - Turkish examples: "Merhaba {FIRSTNAME}," / "Sayın {FIRSTNAME},"
-   NEVER use "Dear Employee" or generic greetings.
-5. **WRITE** realistic, authentic email content that matches the brand's style and the blueprint's tone exactly. **Write ONLY in ${language}.**${language && !language.startsWith('en') ? ` Think as native ${language} speaker, do NOT translate from English.` : ''}
+4. ${GREETING_INSTRUCTION(language)}
+5. **WRITE** realistic, authentic email content that matches the brand's style and the blueprint's tone exactly.
 6. **EMBED** red flags according to difficulty level (obvious for Easy, subtle for Medium/Hard).
 7. **SAFETY RULE:** Do NOT use personal names (like "Emily Clarke") in the signature. Use generic Team/Department names only.
 8. **FINAL VALIDATION:** Before outputting, check that: (a) greeting contains {FIRSTNAME} or {FULLNAME}, (b) button/link uses {PHISHINGURL} tag. Fix if missing or incorrect.
@@ -666,40 +661,22 @@ Your job: generate modern, professional, trustworthy WEB PAGES (not emails) usin
 
 ---
 
-**CRITICAL RULES:**
+**Rules:**
 
-**NO FAKE PERSONAL IDENTITIES (CRITICAL):**
-- Do NOT invent or include personal names (first/last names) anywhere in landing page copy (headings, helper text, footer, support/contact).
-- If a person must be referenced, use role/team labels only (e.g., "Support Team", "Security Team", "IT Helpdesk").
+**No Fake Personal Identities:**
+- Do not invent or include personal names (first/last names) anywhere in landing page copy (headings, helper text, footer, support/contact)
+- If a person must be referenced, use role/team labels only (e.g., "Support Team", "Security Team", "IT Helpdesk")
 
-${isQuishing ? `**🚫 QUISHING LANDING PAGE - NO QR CODE REFERENCES:**
-   - This is a quishing landing page scenario. Landing pages must NOT contain QR codes.
-   - Landing pages are STANDARD FORMS (login, success, info) with ZERO mention of QR codes.
-   - ⚠️ CRITICAL: Do NOT reference "QR Code", "scan", "verify", or any QR-related text in headings/descriptions.
-   - ❌ WRONG: "QR Code Verification", "Verify Your Account via QR", "Account Verification Required" (exposes the QR code phishing)
-   - ✅ CORRECT: "Sign In", "Log In to Your Account", "Enter Your Credentials" (normal login heading)
-   - ✅ Landing page must look like a legitimate company login page (no quishing indicators).` : `**🚫 NO QR CODES IN LANDING PAGES:**
-   - Do NOT add QR codes to landing pages. Landing pages are standard web forms (login, success, info pages).`}
+${isQuishing ? QUISHING_LANDING_PAGE_RULE : NO_QR_CODE_LANDING_PAGE_RULE}
 
-1. **LOGO STRATEGY (MANDATORY - Always include a logo):**
-   ${template && template.includes('{CUSTOMMAINLOGO}') ? `🚨 **HIGHEST PRIORITY - EMAIL USES LOGO TAG:**\n   - **ABSOLUTE REQUIREMENT:** The phishing email uses the \`{CUSTOMMAINLOGO}\` merge tag for the logo.\n   - **YOU MUST USE THE SAME TAG IN ALL LANDING PAGES:** \`<img src='{CUSTOMMAINLOGO}' alt='${fromName}' width='96' height='96' style='display: block; margin: 0 auto; object-fit: contain;' />\`\n   - **DO NOT** generate a different logo URL.\n   - **DO NOT** use any logo service or direct image URLs.\n   - **CRITICAL:** Landing page logo MUST use the same \`{CUSTOMMAINLOGO}\` tag as the email for brand consistency.\n   - The tag will be automatically replaced with the appropriate logo URL during post-processing.\n\n   **IF YOU SEE {CUSTOMMAINLOGO} TAG ABOVE, IGNORE ALL OTHER LOGO RULES BELOW AND USE ONLY THAT TAG.**\n\n   ---\n\n   **FALLBACK RULES (ONLY IF NO {CUSTOMMAINLOGO} TAG IN EMAIL):**` : `   - **CRITICAL:** Every landing page MUST include a logo image.`}
-   - **LOGO TAG RULE (STRICT):**
-     * **ALWAYS use the merge tag:** \`{CUSTOMMAINLOGO}\`
-     * **DO NOT generate logo URLs directly** (no URLs in the landing page template)
-     * **DO NOT use** any logo service URLs or direct image URLs
-     * **MUST use:** \`<img src='{CUSTOMMAINLOGO}' alt='Company Logo' width='96' height='96' style='display: block; margin: 0 auto; object-fit: contain;' />\`
-     * The \`{CUSTOMMAINLOGO}\` tag will be automatically replaced with the appropriate logo URL during post-processing
-     * This applies to ALL landing pages, regardless of brand recognition
-   - **FORBIDDEN:** 
-     - Do NOT use any logo service or direct image URLs in templates. Only use the \`{CUSTOMMAINLOGO}\` tag.
-     - Never use placeholder services (via.placeholder.com) – looks fake.
+1. ${LANDING_PAGE_LOGO_RULE}${emailUsesLogoTag ? `\n   Note: Email uses {CUSTOMMAINLOGO} tag - maintain consistency in landing pages.` : ''}
 
 2. **SINGLE QUOTES for ALL HTML attributes** (required for JSON safety)
    - Good: <div style='margin: 0 auto; padding: 32px;'>
    - Bad:  <div style="margin: 0 auto;">
    - JSON keys/values can use normal double quotes. ONLY HTML attributes must use SINGLE quotes.
 
-3. **Full HTML document is MANDATORY for every page:**
+3. **Full HTML document required for every page:**
    - \`<!DOCTYPE html>\`
    - \`<html>\`
    - \`<head>\` with:
@@ -887,7 +864,7 @@ ${requiredPages.includes('info') ? getInfoPageSection({ fromName, industryDesign
 
 **TECHNICAL CONSTRAINTS:**
 1. **Single File per Page:** Each \`template\` must be a complete HTML document as shown above.
-2. **Assets:** Use ONLY public CDN-hosted images (neutral icons). No local files. For logos, use the \`{CUSTOMMAINLOGO}\` tag.
+2. **Assets:** Use ONLY public CDN-hosted images (neutral icons). No local files.
 3. **STRICT PAGE COUNT:** Generate ONLY the pages requested in \`requiredPages\`.
    - If only 'info' is requested, DO NOT generate 'login' or 'success'.
 4. **NO DISCLAIMERS:** Do NOT add any security warnings like "this is a fake site" or "look-alike domain". The output is a mockup.
@@ -920,18 +897,16 @@ Create modern, professional pages that match ${industryDesign.industry} standard
 
 **GENERATION STEPS (Follow this order):**
 1. **Plan first:** Review checklist above, decide on colors, layout, spacing
-2. **Match email branding:** Use SAME logo, colors, and style from phishing email${emailUsesLogoTag ? ' - EMAIL USES {CUSTOMMAINLOGO} TAG (MUST USE SAME TAG)' : ''}
+2. **Match email branding:** Use same logo, colors, and style from phishing email
 3. **Generate HTML:** Create complete, valid HTML with all required elements
 4. **Validate:** Check output validation list before returning
 5. **Ensure variation:** If multiple pages, make them related but NOT identical. Adapt button text, messages, and content to match the specific scenario - make it look like a real ${fromName} page, not a generic template.
 
-**REMEMBER:**
-${emailUsesLogoTag ? `- 🚨 **LOGO CRITICAL:** The phishing email uses \`{CUSTOMMAINLOGO}\` tag. YOU MUST USE THE SAME TAG IN ALL LANDING PAGES. DO NOT generate a different logo URL.` : `- **LOGO IS MANDATORY:** Use \`{CUSTOMMAINLOGO}\` tag in all landing pages. The tag will be automatically replaced with the appropriate logo URL during post-processing.`}
-${isQuishing ? `- 🚫 **QUISHING:** Landing page must NOT contain QR codes. Email has QR codes, landing page is standard form.` : `- 🚫 **NO QR CODES:** Do NOT add QR codes to landing pages. Landing pages are standard web forms only.`}
-- Add natural design variations (don't make all pages identical)
+**KEY REMINDERS:**
+${isQuishing ? `- Landing pages are standard forms (no QR codes)\n` : ''}- Add natural design variations (don't make all pages identical)
 - Ensure login page is properly centered with inline styles: \`min-height: 100vh; display: flex; align-items: center; justify-content: center;\`
-- Card MUST have generous internal padding (32px+)
-- Button MUST contrast with card background (NOT same color!)`;
+- Card must have generous internal padding (32px+)
+- Button must contrast with card background`;
 
   // Build optional context messages
   const userContextMessage = additionalContext
@@ -949,11 +924,7 @@ ${additionalContext}
 **Email Subject:** ${subject || 'N/A'}
 **From:** ${fromName} <${fromAddress}>
 
-**CRITICAL:** The landing pages MUST match the branding and style used in the phishing email above. Use the SAME logo, colors, and design language to maintain consistency. Users clicking from the email should see a seamless transition to the landing page.
-
-${isQuishing ? `**🚫 QUISHING:** Landing pages must NOT contain QR codes. Email has QR codes, landing pages are standard forms.` : `**🚫 IMPORTANT:** If the email contains QR codes, DO NOT include QR codes in landing pages. Landing pages are standard web forms.`}
-
-${emailUsesLogoTag ? `\n🚨 **LOGO REQUIREMENT (MANDATORY):**\nThe phishing email uses the \`{CUSTOMMAINLOGO}\` merge tag for the logo.\n\n**YOU MUST USE THE SAME TAG IN ALL LANDING PAGES.**\n\n**DO NOT:**\n- Generate a different logo URL\n- Use any logo service or direct image URLs\n- Create any other logo\n\n**YOU MUST:**\n- Use the same \`{CUSTOMMAINLOGO}\` tag\n- Include it in ALL pages (login, success, info, etc.)\n- Match the exact same logo tag that appears in the email\n\n**Example usage:**\n<img src='{CUSTOMMAINLOGO}' alt='${fromName}' width='96' height='96' style='display: block; margin: 0 auto; object-fit: contain;' />` : ''}
+Landing pages must match the branding and style used in the phishing email. Use the same logo, colors, and design language to maintain consistency.${isQuishing ? `\nNote: Landing pages are standard forms (no QR codes).` : ''}${emailUsesLogoTag ? `\nNote: Email uses {CUSTOMMAINLOGO} tag - use the same in landing pages.` : ''}
 ${emailBrandContext ? `\n${emailBrandContext}` : ''}
 
 **Email Preview (first 500 chars):** ${template.substring(0, 500)}...`

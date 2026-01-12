@@ -10,7 +10,6 @@ import {
     getInfoPageSection,
     TemplateParams
 } from './landing-page-templates';
-import { LANDING_PAGE } from '../../constants';
 
 describe('landing-page-templates', () => {
     const mockParams: TemplateParams = {
@@ -57,7 +56,29 @@ describe('landing-page-templates', () => {
             expect(html).toContain('Test Corp');
             // Should not have form input
             expect(html).not.toContain('<input');
-            expect(html).toContain('cardStyle'); // check if internal style var is used (simplified check)
+            expect(html).toContain('background: white;'); // check if cardStyle pattern is rendered
+            expect(html).toContain('#22c55e'); // Green success color
+
+            // Layout Regression Tests (User Req: "Standard Layout Patterns")
+            // 1. Centering Check: Fixed width cards must have margin: 0 auto
+            // note: we check for the pattern, might be inline style
+            const centeringPattern = /margin:\s*0\s+auto/;
+            expect(html).toMatch(centeringPattern);
+
+            // 2. Icon Nesting Check: Checkmark (✓) must be INSIDE the green circle (div)
+            // We look for the green background div immediately followed by content containing the checkmark
+            // Correct: <div ... background:#22c55e ...> ... ✓ ... </div>
+            // This is a simplified check assuming the icon is within the same div
+            // 2. Icon Nesting Check: Checkmark (✓) must be INSIDE the green circle (div)
+            // Regex explanation:
+            // background:\s*#22c55e  -> matches background color with optional space
+            // [^>]*>                 -> matches rest of opening tag and closing bracket
+            // .*                     -> matches any content (s flag enabled)
+            // ✓                     -> matches the checkmark
+            // .*                     -> matches any content
+            // <\/div>                -> matches closing div
+            const iconContainerRegex = /background:\s*#22c55e[^>]*>.*✓.*<\/div>/s;
+            expect(html).toMatch(iconContainerRegex);
         });
     });
 

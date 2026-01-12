@@ -17,6 +17,7 @@ import { normalizeEmailCardContentPadding } from './email-card-padding-normalize
 import { repairHtml } from '../validation/json-validation-utils';
 import { normalizeLandingCentering, ensureLandingFullHtmlDocument } from '../landing-page';
 import { normalizeLandingLogoCentering } from '../landing-page/logo-centering-normalizer';
+import { fixLandingPageLayout } from './landing-page-layout-fixer';
 
 const logger = getLogger('PhishingHtmlPostprocessors');
 
@@ -63,6 +64,7 @@ export function postProcessPhishingLandingHtml(params: PostProcessLandingHtmlPar
         out = repairHtml(out);
         out = normalizeLandingLogoCentering(out);  // Center logo/icon divs
         out = normalizeLandingCentering(out);
+        out = fixLandingPageLayout(out);           // Apply prompt-independent structure fixes (centering, icons)
         out = ensureLandingFullHtmlDocument(out, title ?? 'Secure Portal');
         return out;
     } catch (error) {

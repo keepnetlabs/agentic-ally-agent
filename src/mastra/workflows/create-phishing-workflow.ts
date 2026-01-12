@@ -186,7 +186,8 @@ const analyzeRequest = createStep({
       let logoInfo = await resolveLogoAndBrand(parsedResult.fromName, parsedResult.scenario, aiModel);
 
       // Validate the resolved logo URL to ensure it's accessible
-      if (logoInfo.logoUrl && logoInfo.logoUrl !== DEFAULT_GENERIC_LOGO) {
+      // Skip validation for img.logo.dev URLs as they often fail HEAD requests in the backend
+      if (logoInfo.logoUrl && logoInfo.logoUrl !== DEFAULT_GENERIC_LOGO && !logoInfo.logoUrl.includes('img.logo.dev')) {
         try {
           // We assume empty/null is invalid
           const isLogoValid = await validateImageUrlCached(logoInfo.logoUrl);

@@ -70,7 +70,7 @@ export async function resolveLogoAndBrand(
         // Clean up domain (remove quotes, extra text)
         const cleanDomain = domain.replace(/['"]/g, '').split(/[\s\n]/)[0];
         if (cleanDomain.includes('.')) {
-          const logoUrl = getLogoUrl(cleanDomain);
+          const logoUrl = getLogoUrl(cleanDomain, 96);
           const brandColors = parsed.brandColors || null;
           logger.info('Resolved logo URL for brand', {
             brandName: brandName || fromName,
@@ -95,7 +95,7 @@ export async function resolveLogoAndBrand(
 
     // Generate placeholder domain from company name
     const placeholderDomain = generatePlaceholderDomain(fromName);
-    const placeholderLogoUrl = getLogoUrl(placeholderDomain);
+    const placeholderLogoUrl = getLogoUrl(placeholderDomain, 96);
 
     return {
       logoUrl: placeholderLogoUrl,
@@ -112,7 +112,7 @@ export async function resolveLogoAndBrand(
     // Even on error, try to generate a placeholder domain logo instead of generic corporate icon
     try {
       const placeholderDomain = generatePlaceholderDomain(fromName);
-      const placeholderLogoUrl = getLogoUrl(placeholderDomain);
+      const placeholderLogoUrl = getLogoUrl(placeholderDomain, 96);
       return {
         logoUrl: placeholderLogoUrl,
         brandName: null,
@@ -184,7 +184,7 @@ export async function generateContextualBrand(
       if (domain && domain.includes('.')) {
         const cleanDomain = domain.replace(/['"]/g, '').split(/[\s\n]/)[0];
         if (cleanDomain.includes('.')) {
-          logoUrl = getLogoUrl(cleanDomain);
+          logoUrl = getLogoUrl(cleanDomain, 96);
           logger.info('Generated contextual brand with logo from domain', {
             brandName: suggestedBrandName,
             domain: cleanDomain,
@@ -192,7 +192,7 @@ export async function generateContextualBrand(
           });
         } else {
           // Invalid domain format, use placeholder
-          logoUrl = getLogoUrl(generatePlaceholderDomain(suggestedBrandName));
+          logoUrl = getLogoUrl(generatePlaceholderDomain(suggestedBrandName), 96);
           logger.info('Generated contextual brand with placeholder logo (invalid domain)', {
             brandName: suggestedBrandName,
             logoUrl
@@ -200,7 +200,7 @@ export async function generateContextualBrand(
         }
       } else {
         // No domain provided, generate placeholder domain logo
-        logoUrl = getLogoUrl(generatePlaceholderDomain(suggestedBrandName));
+        logoUrl = getLogoUrl(generatePlaceholderDomain(suggestedBrandName), 96);
         logger.info('Generated contextual brand with placeholder logo', {
           brandName: suggestedBrandName,
           logoUrl
@@ -216,7 +216,7 @@ export async function generateContextualBrand(
 
     // Fallback if brand name generation failed - use placeholder domain logo
     logger.warn('Failed to generate contextual brand name, using placeholder logo');
-    const placeholderLogoUrl = getLogoUrl(generatePlaceholderDomain('brand'));
+    const placeholderLogoUrl = getLogoUrl(generatePlaceholderDomain('brand'), 96);
     return {
       logoUrl: placeholderLogoUrl,
       brandName: null,
@@ -231,7 +231,7 @@ export async function generateContextualBrand(
 
     // Try to use placeholder logo, fallback to DEFAULT_GENERIC_LOGO only if that fails too
     try {
-      const placeholderLogoUrl = getLogoUrl(generatePlaceholderDomain('brand'));
+      const placeholderLogoUrl = getLogoUrl(generatePlaceholderDomain('brand'), 96);
       return {
         logoUrl: placeholderLogoUrl,
         brandName: null,

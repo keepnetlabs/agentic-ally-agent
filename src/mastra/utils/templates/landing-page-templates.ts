@@ -91,7 +91,7 @@ export function getLoginTemplateExample({ fromName, industryDesign }: TemplatePa
 
     <!-- Logo + Title -->
     <div style='text-align: center; margin-bottom: 24px;'>
-      <img src='{CUSTOMMAINLOGO}' alt='${fromName}' style='display: block; margin: 0 auto 16px auto; height: 64px; object-fit: contain;' />
+      <img src='{CUSTOMMAINLOGO}' alt='${fromName}' style='display: block; margin: 0 auto 16px auto; height: 96px; object-fit: contain;' />
       <h1 style='font-size: 26px; font-weight: 700; margin: 0; letter-spacing: -0.02em;'>Sign in to ${fromName}</h1>
       <p style='margin: 8px 0 0 0; font-size: 14px; color: #4b5563;'>
         Use your work credentials to securely access your account.
@@ -211,18 +211,7 @@ export function getSuccessTemplateExample({ fromName, industryDesign }: Template
 
     <div style='${industryDesign.patterns.cardStyle}; text-align: center;'>
       <div style='margin-bottom: 16px;'>
-        <div style='
-          width: 64px;
-          height: 64px;
-          border-radius: 999px;
-          margin: 0 auto 16px auto;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: #22c55e;
-        '>
-          <span style='color: #ffffff; font-size: 32px;'>&#10003;</span>
-        </div>
+        <div style='width: 64px; height: 64px; border-radius: 999px; background: #22c55e; margin: 0 auto 16px auto; display: flex; align-items: center; justify-content: center;'><span style='color: #ffffff; font-size: 32px; line-height: 1;'>✓</span></div>
         <h1 style='font-size: 22px; font-weight: 700; margin: 0 0 8px 0;'>Account updated</h1>
         <p style='margin: 0; font-size: 14px; color: #4b5563;'>
           Your account information has been updated successfully.

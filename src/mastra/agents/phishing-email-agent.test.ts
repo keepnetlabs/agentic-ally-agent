@@ -44,7 +44,7 @@ describe('Phishing Email Agent', () => {
   describe('Instructions Structure and Rules', () => {
     it('should include language rule in instructions', () => {
       expect(phishingEmailAgent.instructions).toContain('LANGUAGE RULE');
-      expect(phishingEmailAgent.instructions).toContain('Match user\'s exact language');
+      expect(phishingEmailAgent.instructions).toContain('match the user\'s CURRENT message language');
     });
 
     it('should not include PII policy in instructions', () => {
@@ -212,6 +212,7 @@ describe('Phishing Email Agent', () => {
   describe('State Machine Rules', () => {
     it('should include STATE 2 in instructions', () => {
       expect(phishingEmailAgent.instructions).toContain('STATE 2');
+      expect(phishingEmailAgent.instructions).toContain('SKIP THIS STATE IF');
     });
 
     it('should include STATE 3 in instructions', () => {
@@ -223,7 +224,7 @@ describe('Phishing Email Agent', () => {
     });
 
     it('should define STATE 2 execution rules', () => {
-      expect(phishingEmailAgent.instructions).toContain('Direct Execution');
+      expect(phishingEmailAgent.instructions).toContain('executing directly');
       expect(phishingEmailAgent.instructions).toContain('show_reasoning');
     });
 
@@ -233,7 +234,7 @@ describe('Phishing Email Agent', () => {
     });
 
     it('should mention STATE 4 upload handling', () => {
-      expect(phishingEmailAgent.instructions).toContain('Upload (Optional)');
+      expect(phishingEmailAgent.instructions).toContain('Platform Integration (Upload & Assign)');
       expect(phishingEmailAgent.instructions).toContain('phishingId');
     });
   });

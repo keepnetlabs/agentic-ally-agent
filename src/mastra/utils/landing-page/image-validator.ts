@@ -175,8 +175,8 @@ export async function fixBrokenImages(html: string, brandName: string, fallbackL
     // Validate all unique URLs in parallel (with cached validation)
     const validationPromises = Array.from(uniqueUrls).map(async (url) => {
         // Skip data URIs (they're always valid, no need to validate)
-        if (url.startsWith('data:')) {
-            logger.info('Skipping validation for data URI (always valid)');
+        if (url.startsWith('data:') || url.includes('img.logo.dev')) {
+            logger.info('Skipping validation for data URI or img.logo.dev (always valid)');
             return { url, isValid: true };
         }
 

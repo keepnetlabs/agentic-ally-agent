@@ -95,7 +95,7 @@ export function normalizeLandingMaxWidthCentering(html: string): string {
         let changed = false;
 
         // Replace only on elements where style contains max-width + width:100% and margin uses px on the sides (no auto)
-        const out = html.replace(/<(div|section|main|form)\b([^>]*)>/gi, (full, tag, attrsRaw) => {
+        const out = html.replace(/<(div|section|main|form|a|button)\b([^>]*)>/gi, (full, tag, attrsRaw) => {
             const attrs = String(attrsRaw ?? '');
             const styleMatch = attrs.match(/\bstyle\s*=\s*(['"])(.*?)\1/i);
             if (!styleMatch) return full;
@@ -109,7 +109,17 @@ export function normalizeLandingMaxWidthCentering(html: string): string {
             // If a max-width + width:100% container has NO margin at all, add margin:0 auto for centering.
             // This is a common LLM omission on minimal layouts and causes left-aligned containers.
             if (!hasMargin(lower)) {
-                const nextStyle = `margin: 0 auto; ${ensureTrailingSemicolon(style)}`.trim();
+                let nextStyle = `margin: 0 auto; ${ensureTrailingSemicolon(style)}`.trim();
+
+                // If it's an 'a' tag or 'button', ensure it's block-level for margin:0 auto to work
+                if ((tag.toLowerCase() === 'a' || tag.toLowerCase() === 'button') && !lower.includes('display: block')) {
+                    if (lower.includes('display: inline-block')) {
+                        nextStyle = nextStyle.replace(/display:\s*inline-block/i, 'display: block');
+                    } else {
+                        nextStyle = `display: block; ${nextStyle}`;
+                    }
+                }
+
                 const nextAttrs = attrs.replace(/\bstyle\s*=\s*(['"])(.*?)\1/i, `style='${nextStyle}'`);
                 changed = true;
                 return `<${tag}${nextAttrs}>`;
@@ -120,7 +130,17 @@ export function normalizeLandingMaxWidthCentering(html: string): string {
             const marginPattern = /\bmargin\s*:\s*0\s+\d+px(?:\s+0\s+\d+px)?\s*;/i;
             if (!marginPattern.test(style)) return full;
 
-            const nextStyle = style.replace(marginPattern, 'margin: 0 auto;');
+            let nextStyle = style.replace(marginPattern, 'margin: 0 auto;');
+
+            // If it's an 'a' tag or 'button', ensure it's block-level
+            if ((tag.toLowerCase() === 'a' || tag.toLowerCase() === 'button') && !lower.includes('display: block')) {
+                if (lower.includes('display: inline-block')) {
+                    nextStyle = nextStyle.replace(/display:\s*inline-block/i, 'display: block');
+                } else {
+                    nextStyle = `display: block; ${ensureTrailingSemicolon(nextStyle)}`;
+                }
+            }
+
             const nextAttrs = attrs.replace(/\bstyle\s*=\s*(['"])(.*?)\1/i, `style='${ensureTrailingSemicolon(nextStyle)}'`);
             changed = true;
             return `<${tag}${nextAttrs}>`;

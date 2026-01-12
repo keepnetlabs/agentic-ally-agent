@@ -84,7 +84,7 @@ function replacePaddingZero(parts: string[], toPx: number): string[] {
 function isCardTable(table: HtmlNode): boolean {
     const style = (getAttr(table, 'style') ?? '').toLowerCase();
     // Heuristic: white-ish background + rounded corners
-    const hasWhiteBg = style.includes('background:#ffffff') || style.includes('background-color:#ffffff') || style.includes('background: #ffffff') || style.includes('background-color: #ffffff');
+    const hasWhiteBg = style.includes('background:#ffffff') || style.includes('background-color:#ffffff') || style.includes('#fff') || style.includes('white');
     const hasRadius = style.includes('border-radius');
     return hasWhiteBg && hasRadius;
 }
@@ -126,10 +126,49 @@ function primaryNormalize(html: string, defaultPaddingPx: number): { html: strin
                     const parts = splitStyle(style);
                     const before = joinStyle(parts);
 
-                    // If padding is missing, add it. If padding is explicitly 0, replace it.
-                    const nextParts = hasDecl(parts, 'padding')
-                        ? replacePaddingZero(parts, defaultPaddingPx)
-                        : [`padding: ${defaultPaddingPx}px`, ...parts];
+
+                    // Logic update: We want to ensure specific horizontal padding exists.
+                    // If padding: shorthand exists, we trust it (or replace if 0).
+                    // If padding-top exists but no padding-left/right/shorthand, we should inject padding-left/right.
+
+                    const hasShorthand = hasDecl(parts, 'padding');
+                    const hasLeft = hasDecl(parts, 'padding-left');
+                    const hasRight = hasDecl(parts, 'padding-right');
+
+                    let nextParts = parts;
+
+                    if (hasShorthand) {
+                        // Even if shorthand exists (e.g. "padding: 0" or "padding: 12px 0"), we want to enforce horizontal padding if it looks like 0.
+                        // Simplest safety: replace "padding: 0..." patterns AND blindly append padding-left/right if not specifically set.
+                        // But if user set "padding: 20px", we don't want to override with 24px.
+                        // However, "padding: 12px 0" is the bug.
+                        // Strategy: If shorthand exists, replace strict 0. 
+                        // THEN, if specific left/right are missing, append them as safety overrides IF the shorthand might be zero-ish?
+                        // Actually, relying on "padding-left: 24px" at the end is safe because:
+                        // 1. If shorthand was "padding: 20px" -> result "padding: 20px; padding-left: 24px" -> 24px horizontal. Close enough.
+                        // 2. If shorthand was "padding: 12px 0" -> result "padding: 12px 0; padding-left: 24px" -> Fixed!
+                        // 3. If shorthand was "padding: 0" -> result "padding: 24px" (via replacePaddingZero) -> Fixed!
+
+                        // So, simpler strategy: 
+                        // 1. Run replacePaddingZero (fixes explicit padding:0).
+                        // 2. Append padding-left/right if NOT specifically present as "padding-left" key.
+
+                        nextParts = replacePaddingZero(parts, defaultPaddingPx);
+
+                        // Append specific horizontal overrides if missing specific keys
+                        // This fixes "padding: 12px 0" case by trumping it with specific declaration
+                        if (!hasLeft) nextParts.push(`padding-left: ${defaultPaddingPx}px`);
+                        if (!hasRight) nextParts.push(`padding-right: ${defaultPaddingPx}px`);
+
+                    } else {
+                        // No shorthand. Check specific sides.
+                        const newDecls: string[] = [];
+                        if (!hasLeft) newDecls.push(`padding-left: ${defaultPaddingPx}px`);
+                        if (!hasRight) newDecls.push(`padding-right: ${defaultPaddingPx}px`);
+                        if (newDecls.length > 0) {
+                            nextParts = [...parts, ...newDecls];
+                        }
+                    }
 
                     const after = joinStyle(nextParts);
                     if (after !== before) {
@@ -137,8 +176,7 @@ function primaryNormalize(html: string, defaultPaddingPx: number): { html: strin
                         changed = true;
                     }
 
-                    // Only fix the first matching content td inside a card table.
-                    break;
+                    // REMOVED break; to process ALL rows in the card (e.g. multiple paragraphs)
                 }
             }
 

@@ -1,7 +1,7 @@
 /**
  * Logo URL resolver - Uses Apistemic Logos API as primary source
  * Falls back to letter-based placeholder logos when brand not found
- * Optimized for 64x64 pixel logos in email templates
+ * Optimized for 96x96 pixel logos in email templates
  */
 
 import { getLogger } from '../core/logger';
@@ -21,14 +21,13 @@ export function getRandomLetterLogoUrl(): string {
 }
 
 /**
- * Generate logo URL from domain using Apistemic Logos API
- * Falls back to random letter logo if domain is invalid
+ * Generate logo URL from domain using Logo.dev as primary and Apistemic as fallback
  * 
  * @param domain - Domain name (e.g., "google.com")
- * @param size - Logo size in pixels (default: 64 for email templates) - not used by Apistemic API
+ * @param size - Logo size in pixels (default: 96 for email templates)
  * @returns Logo URL string
  */
-export function getLogoUrl(domain: string, size: number = 64): string {
+export function getLogoUrl(domain: string, size: number = 96): string {
     if (!domain || !domain.includes('.')) {
         logger.warn('Invalid domain provided for logo resolution, using random letter logo', { domain });
         return getRandomLetterLogoUrl();
@@ -48,29 +47,25 @@ export function getLogoUrl(domain: string, size: number = 64): string {
         return getRandomLetterLogoUrl();
     }
 
-    // Primary: Apistemic Logos API (high-quality brand logos)
-    // Format: https://logos-api.apistemic.com/domain:{domain}
-    const apiUrl = `https://logos-api.apistemic.com/domain:${cleanDomain}`;
+    // Primary: Logo.dev
+    // Simplified: Return URL directly without pre-validation as requested
+    const logoDevToken = process.env.LOGO_DEV_TOKEN || 'LOGO_DEV_PUBLISHABLE_KEY';
+    const logoDevUrl = `https://img.logo.dev/${cleanDomain}?token=${logoDevToken}&size=${size}`;
 
-    logger.info('Generated logo URL using Apistemic Logos API', {
-        domain: cleanDomain,
-        size,
-        logoUrl: apiUrl
-    });
-
-    return apiUrl;
+    logger.info('Resolved logo via Logo.dev (direct)', { domain: cleanDomain });
+    return logoDevUrl;
 }
 
 /**
  * Get multiple logo URL options for fallback purposes
  * Returns array of URLs in order of preference (high quality first)
- * Optimized for email template usage (64x64px)
+ * Optimized for email template usage (96x96px)
  * 
  * @param domain - Domain name (e.g., "google.com")
- * @param size - Logo size in pixels (default: 64 for email templates)
+ * @param size - Logo size in pixels (default: 96 for email templates)
  * @returns Array of logo URLs (primary first, fallbacks following)
  */
-export function getLogoUrlFallbacks(domain: string, size: number = 64): string[] {
+export function getLogoUrlFallbacks(domain: string, size: number = 96): string[] {
     if (!domain || !domain.includes('.')) {
         return [getRandomLetterLogoUrl()];
     }
@@ -87,11 +82,13 @@ export function getLogoUrlFallbacks(domain: string, size: number = 64): string[]
         return [getRandomLetterLogoUrl()];
     }
 
+    const logoDevToken = process.env.LOGO_DEV_TOKEN || 'LOGO_DEV_PUBLISHABLE_KEY';
+
     return [
-        `https://logos-api.apistemic.com/domain:${cleanDomain}`,          // Primary: Apistemic Logos API
-        `https://icon.horse/icon/${cleanDomain}`,                         // Fallback 1: Icon Horse
-        `https://www.google.com/s2/favicons?domain=${cleanDomain}&sz=${size}`,  // Fallback 2: Google Favicon
-        getRandomLetterLogoUrl()                                          // Fallback 3: Random letter logo
+        `https://img.logo.dev/${cleanDomain}?token=${logoDevToken}&size=${size}`, // Primary: Logo.dev
+        `https://logos-api.apistemic.com/domain:${cleanDomain}`,          // Fallback 1: Apistemic
+        `https://icon.horse/icon/${cleanDomain}`,                         // Fallback 2: Icon Horse
+        `https://www.google.com/s2/favicons?domain=${cleanDomain}&sz=${size}`,  // Fallback 3: Google Favicon
+        getRandomLetterLogoUrl()                                          // Fallback 4: Random letter logo
     ];
 }
-

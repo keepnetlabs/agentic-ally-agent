@@ -11,6 +11,9 @@ vi.mock('./email-centering-normalizer');
 vi.mock('./email-card-padding-normalizer');
 vi.mock('../validation/json-validation-utils');
 vi.mock('../landing-page');
+vi.mock('./landing-page-layout-fixer', () => ({
+  fixLandingPageLayout: vi.fn((html) => html),
+}));
 
 describe('phishing-html-postprocessors', () => {
   beforeEach(() => {

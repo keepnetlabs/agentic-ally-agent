@@ -12,6 +12,8 @@ import { normalizeError } from '../core/error-utils';
 const logger = getLogger('IndustryDetector');
 
 // Industry name to design system mapping
+const getLogoDevToken = () => process.env.LOGO_DEV_TOKEN || 'LOGO_DEV_PUBLISHABLE_KEY';
+
 const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
     'Banking & Finance': {
         colors: {
@@ -55,7 +57,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
                 'background-color: #f9fafb'
             ].join('; ')
         },
-        logoExample: 'https://logos-api.apistemic.com/domain:jpmorganchase.com'
+        get logoExample() { return `https://img.logo.dev/jpmorganchase.com?token=${getLogoDevToken()}&size=96`; }
     },
     'Technology': {
         colors: {
@@ -99,7 +101,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
                 'background-color: #f9fafb'
             ].join('; ')
         },
-        logoExample: 'https://logos-api.apistemic.com/domain:google.com'
+        get logoExample() { return `https://img.logo.dev/google.com?token=${getLogoDevToken()}&size=96`; }
     },
     'Healthcare': {
         colors: {
@@ -143,7 +145,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
                 'background-color: #f9fafb'
             ].join('; ')
         },
-        logoExample: 'https://logos-api.apistemic.com/domain:mayoclinic.org'
+        get logoExample() { return `https://img.logo.dev/mayoclinic.org?token=${getLogoDevToken()}&size=96`; }
     },
     'E-commerce': {
         colors: {
@@ -187,7 +189,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
                 'background-color: #f9fafb'
             ].join('; ')
         },
-        logoExample: 'https://logos-api.apistemic.com/domain:amazon.com'
+        get logoExample() { return `https://img.logo.dev/amazon.com?token=${getLogoDevToken()}&size=96`; }
     },
     'Corporate': {
         colors: {
@@ -231,7 +233,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
                 'background-color: #f9fafb'
             ].join('; ')
         },
-        logoExample: 'https://logos-api.apistemic.com/domain:accenture.com'
+        get logoExample() { return `https://img.logo.dev/accenture.com?token=${getLogoDevToken()}&size=96`; }
     },
     'Education': {
         colors: {
@@ -275,7 +277,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
                 'background-color: #f9fafb'
             ].join('; ')
         },
-        logoExample: 'https://logos-api.apistemic.com/domain:coursera.org'
+        get logoExample() { return `https://img.logo.dev/coursera.org?token=${getLogoDevToken()}&size=96`; }
     },
     'Media & Entertainment': {
         colors: {
@@ -319,7 +321,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
                 'background-color: #f9fafb'
             ].join('; ')
         },
-        logoExample: 'https://logos-api.apistemic.com/domain:netflix.com'
+        get logoExample() { return `https://img.logo.dev/netflix.com?token=${getLogoDevToken()}&size=96`; }
     },
     'Government': {
         colors: {
@@ -363,7 +365,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
                 'background-color: #f9fafb'
             ].join('; ')
         },
-        logoExample: 'https://logos-api.apistemic.com/domain:usa.gov'
+        get logoExample() { return `https://img.logo.dev/usa.gov?token=${getLogoDevToken()}&size=96`; }
     },
     'Real Estate': {
         colors: {
@@ -407,7 +409,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
                 'background-color: #f9fafb'
             ].join('; ')
         },
-        logoExample: 'https://logos-api.apistemic.com/domain:zillow.com'
+        get logoExample() { return `https://img.logo.dev/zillow.com?token=${getLogoDevToken()}&size=96`; }
     },
     'Hospitality & Travel': {
         colors: {
@@ -451,7 +453,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
                 'background-color: #f9fafb'
             ].join('; ')
         },
-        logoExample: 'https://logos-api.apistemic.com/domain:booking.com'
+        get logoExample() { return `https://img.logo.dev/booking.com?token=${getLogoDevToken()}&size=96`; }
     }
 };
 
