@@ -12,7 +12,7 @@ vi.mock('ai', () => ({
  */
 const executeTool = (translateLanguageJsonTool as any).execute;
 
-describe.skip('translateLanguageJsonTool', () => {
+describe('translateLanguageJsonTool', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     (generateText as any).mockImplementation(async () => ({

@@ -8,7 +8,7 @@
 import { describe, it, expect } from 'vitest';
 import { PROMPT_ANALYSIS, MODEL_PROVIDERS } from '../../constants';
 
-describe.skip('Workflow Executor Tool', () => {
+describe('Workflow Executor Tool', () => {
   describe('Input Validation - create-microlearning', () => {
     describe('Prompt validation', () => {
       it('should require prompt for create-microlearning', () => {
@@ -649,7 +649,7 @@ describe.skip('Workflow Executor Tool', () => {
 
     describe('Boundary conditions', () => {
       it('should handle very long prompt', () => {
-        const longPrompt = 'Create training ' + 'about phishing '.repeat(300);
+        const longPrompt = 'Create training ' + 'about phishing '.repeat(700);
         expect(longPrompt.length).toBeGreaterThan(PROMPT_ANALYSIS.MAX_PROMPT_LENGTH);
       });
 

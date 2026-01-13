@@ -57,7 +57,9 @@ describe('user-search-utils', () => {
             (global.fetch as any).mockResolvedValue({
                 ok: false,
                 status: 500,
-                statusText: 'Server Error'
+                statusText: 'Server Error',
+                text: async () => 'Server Error',
+                json: async () => ({ error: 'Server Error' })
             });
 
             await expect(fetchUsersWithFilters(mockDeps, mockTemplate, []))

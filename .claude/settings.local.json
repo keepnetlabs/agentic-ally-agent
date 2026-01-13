@@ -45,10 +45,7 @@
       "Bash([ ! -f \"$testfile\" ])",
       "Bash(timeout 10 npm test)",
       "Bash(timeout 15 npm test:*)",
-      "Bash(timeout 60 npm test:*)",
-      "Bash(git add:*)",
-      "Bash(git commit -m \"$\\(cat <<''EOF''\nFix test cases - improve mocks, timeouts, and test setup\n\nCore Fixes:\n- Add proper AI SDK v2 spec mock models to all scene rewriter tests \\(id, provider, version, modelId\\)\n- Fix zero timeout edge case in resilience-utils \\(reject immediately for timeoutMs <= 0\\)\n- Fix health-service uptime tests by using real timers instead of fake timers with mismatched startTime\n- Add afterEach spy restoration hook to kv-service tests\n- Add missing afterEach import to kv-service tests\n\nTest Validation Improvements:\n- Add required parameters to translation tool tests \\(sourceLanguage, topic\\)\n- Make phishing assignment tool test flexible for dynamic URLs\n- Add generateText mock to app-texts-rewriter test\n- Fix endpoint matching in phishing tool API call test\n\nTest Results After Fixes:\n- Resilience Utils: 7/8 ✓ \\(zero timeout fixed\\)\n- KV Service: Tests pass with spy restoration ✓\n- Health Service: 34/34 ✓ \\(uptime calculation fixed\\)\n- Scene Rewriters \\(1-4\\): 100+ tests ✓ \\(mock model fixed\\)\n- Scene Generators: Most passing ✓\n- Inbox Translation Tool: 82/87 ✓ \\(5 timeouts due to model provider\\)\n\nOverall improvement: ~600 failing tests → ~100-200 remaining \\(mostly API/model timeouts\\)\n\nCo-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
-      "Bash(node -e:*)"
+      "Bash(timeout 60 npm test:*)"
     ],
     "deny": [],
     "ask": []

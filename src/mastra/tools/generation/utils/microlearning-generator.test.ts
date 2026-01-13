@@ -13,15 +13,13 @@ const mockGetWhitelabelingConfig = vi.fn();
 // that returns an object with our mocked method.
 vi.mock('../../../services/product-service', () => {
     return {
-        ProductService: vi.fn().mockImplementation(() => {
-            return {
-                getWhitelabelingConfig: mockGetWhitelabelingConfig
-            };
-        })
+        ProductService: class {
+            getWhitelabelingConfig = mockGetWhitelabelingConfig;
+        }
     };
 });
 
-describe.skip('microlearning-generator', () => {
+describe('microlearning-generator', () => {
     beforeEach(() => {
         vi.clearAllMocks();
     });

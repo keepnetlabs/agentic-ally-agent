@@ -1,12 +1,40 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { summarizePolicyTool } from './summarize-policy-tool';
+import * as policyCache from '../../utils/core/policy-cache';
+import * as ai from 'ai';
+
+vi.mock('../../utils/core/policy-cache', () => ({
+  getPolicySummary: vi.fn(),
+}));
+
+vi.mock('ai', () => ({
+  generateText: vi.fn(),
+}));
+
+vi.mock('../../model-providers', () => ({
+  getModelWithOverride: vi.fn().mockReturnValue({}),
+}));
 
 /**
  * Test suite for summarizePolicyTool
  * Tests policy summarization with multi-language support and schema validation
  */
 
-describe.skip('summarizePolicyTool', () => {
+describe('summarizePolicyTool', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    // Default mocks
+    (policyCache.getPolicySummary as any).mockResolvedValue('Default policy content');
+    (ai.generateText as any).mockResolvedValue({
+      text: JSON.stringify({
+        question: 'Test question',
+        summary: 'Test summary',
+        key_points: ['Point 1'],
+        recommendations: ['Rec 1']
+      })
+    });
+  });
   describe('Tool Configuration', () => {
     it('should have id "summarize-policy"', () => {
       expect((summarizePolicyTool as any).id).toBe('summarize-policy');
@@ -326,27 +354,25 @@ describe.skip('summarizePolicyTool', () => {
   });
 
   describe('Missing Question Parameter', () => {
-    it('should return error when question is missing', async () => {
+    it('should return error (validation failed) when question is missing', async () => {
       const execute = (summarizePolicyTool as any).execute;
       const context = { context: {} };
 
       const result = await execute(context);
 
-      if (!result.success) {
-        expect(result.success).toBe(false);
-        expect(result.error).toBeDefined();
-      }
+      // Mastra's built-in validation fails before reaching execute logic
+      expect(result.error).toBe(true);
+      expect(result.message).toContain('question');
     });
 
-    it('should return error when question is empty', async () => {
+    it('should return error (validation failed) when question is empty', async () => {
       const execute = (summarizePolicyTool as any).execute;
       const context = { context: { question: '' } };
 
       const result = await execute(context);
 
-      if (!result.success) {
-        expect(result.success).toBe(false);
-      }
+      // Mastra's built-in validation fails before reaching execute logic
+      expect(result.error).toBe(true);
     });
   });
 

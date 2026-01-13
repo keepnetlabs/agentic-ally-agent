@@ -13,6 +13,10 @@ vi.mock('../../../services/error-service', () => ({
   },
 }));
 
+vi.mock('../../../utils/language/localization-language-rules', () => ({
+  getLanguagePrompt: vi.fn(() => 'Mock language rules for localization'),
+}));
+
 describe('Scene 4 - Actionable Rewriter', () => {
   const mockModel = {
     id: 'test-model',

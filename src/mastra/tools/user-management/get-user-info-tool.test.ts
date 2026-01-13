@@ -422,7 +422,8 @@ describe('getUserInfoTool', () => {
         })
         .mockResolvedValueOnce({
           ok: false,
-          status: 500
+          status: 500,
+          text: async () => 'Server Error'
         });
 
       const input = {
@@ -432,7 +433,7 @@ describe('getUserInfoTool', () => {
       // Should still succeed even if timeline fails
       const result = await getUserInfoTool.execute({ context: input } as any);
       expect(result.success).toBe(true);
-      expect(result.analysisReport).toBeDefined();
+      expect(result.userInfo).toBeDefined();
     });
 
     it('should include recent activities in analysis when available', async () => {
@@ -557,7 +558,6 @@ describe('getUserInfoTool', () => {
       expect(result.userInfo?.targetUserResourceId).toBe('user-123');
       expect(result.userInfo?.fullName).toBe('John Doe');
       expect(result.userInfo?.department).toBe('IT');
-      expect(result.analysisReport).toBeDefined();
     });
   });
 

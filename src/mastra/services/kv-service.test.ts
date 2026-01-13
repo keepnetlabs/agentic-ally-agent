@@ -1,6 +1,21 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { KVService } from './kv-service';
+import { getLogger } from '../utils/core/logger';
 import '../../../src/__tests__/setup';
+
+vi.mock('../utils/core/logger', async () => {
+  const actual = await vi.importActual('../utils/core/logger') as any;
+  const mockLogger = {
+    info: vi.fn(),
+    debug: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+  };
+  return {
+    ...actual,
+    getLogger: vi.fn().mockReturnValue(mockLogger),
+  };
+});
 
 /**
  * Test Suite: KVService
@@ -29,20 +44,20 @@ describe('KVService', () => {
       expect(kvService).toBeDefined();
     });
 
-    it.skip('should warn when CLOUDFLARE_ACCOUNT_ID is missing', () => {
-      const warnSpy = vi.spyOn(console, 'warn');
+    it('should warn when CLOUDFLARE_ACCOUNT_ID is missing', () => {
+      const logger = getLogger('KVService');
       delete process.env.CLOUDFLARE_ACCOUNT_ID;
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const _service = new KVService();
-      expect(warnSpy).toHaveBeenCalled();
+      expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('CLOUDFLARE_ACCOUNT_ID'));
     });
 
-    it.skip('should warn when CLOUDFLARE_KV_TOKEN is missing', () => {
-      const warnSpy = vi.spyOn(console, 'warn');
+    it('should warn when CLOUDFLARE_KV_TOKEN is missing', () => {
+      const logger = getLogger('KVService');
       delete process.env.CLOUDFLARE_KV_TOKEN;
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const _service = new KVService();
-      expect(warnSpy).toHaveBeenCalled();
+      expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('CLOUDFLARE_KV_TOKEN'));
     });
   });
 
@@ -373,8 +388,14 @@ describe('KVService', () => {
   });
 
   describe('health check', () => {
-    it.skip('should return true when KV is accessible', async () => {
-      const timestamp = new Date().toISOString();
+    it('should return true when KV is accessible', async () => {
+      // Use fake timers to ensure timestamp consistency
+      const fixedDate = new Date('2024-01-01T00:00:00Z');
+      vi.useFakeTimers();
+      vi.setSystemTime(fixedDate);
+
+      const timestamp = fixedDate.toISOString();
+
       const fetchMock = vi.fn()
         .mockResolvedValueOnce(new Response('', { status: 200 })) // namespace check
         .mockResolvedValueOnce(new Response('', { status: 200 })) // PUT
@@ -390,6 +411,8 @@ describe('KVService', () => {
 
       expect(result).toBe(true);
       expect(fetchMock).toHaveBeenCalledTimes(4);
+
+      vi.useRealTimers();
     });
 
     it('should return false if namespace is inaccessible', async () => {

@@ -3,32 +3,40 @@ import { validateEnvironment, validateEnvironmentOrThrow } from './env-validatio
 import { getLogger } from './logger';
 
 // Mock logger
+const { mockLoggerInstance } = vi.hoisted(() => {
+  return {
+    mockLoggerInstance: {
+      debug: vi.fn(),
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+    },
+  };
+});
+
+// Mock logger
 vi.mock('./logger', () => ({
-  getLogger: vi.fn(() => ({
-    debug: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-  })),
+  getLogger: vi.fn(() => mockLoggerInstance),
 }));
 
-describe.skip('env-validation', () => {
-  let mockLogger: any;
+describe('env-validation', () => {
   const originalEnv = process.env;
 
   beforeEach(() => {
     // Reset environment to clean state
     process.env = { ...originalEnv };
 
-    // Setup mock logger
-    mockLogger = {
-      debug: vi.fn(),
-      info: vi.fn(),
-      warn: vi.fn(),
-      error: vi.fn(),
-    };
+    // Clear relevant env vars to ensure clean test state
+    const varsToClear = [
+      'CLOUDFLARE_ACCOUNT_ID', 'CLOUDFLARE_API_KEY', 'CLOUDFLARE_KV_TOKEN',
+      'CLOUDFLARE_D1_DATABASE_ID', 'CLOUDFLARE_AI_GATEWAY_ID',
+      'CLOUDFLARE_GATEWAY_AUTHENTICATION_KEY', 'OPENAI_API_KEY',
+      'GOOGLE_GENERATIVE_AI_API_KEY', 'MASTRA_MEMORY_URL',
+      'MASTRA_MEMORY_TOKEN', 'LOGO_DEV_TOKEN'
+    ];
+    varsToClear.forEach(key => delete process.env[key]);
 
-    vi.mocked(getLogger).mockReturnValue(mockLogger as any);
+
   });
 
   afterEach(() => {
@@ -66,7 +74,7 @@ describe.skip('env-validation', () => {
 
       validateEnvironment();
 
-      expect(mockLogger.info).toHaveBeenCalledWith(
+      expect(mockLoggerInstance.info).toHaveBeenCalledWith(
         'Environment validation passed',
         expect.objectContaining({
           requiredCount: 7,
@@ -146,7 +154,7 @@ describe.skip('env-validation', () => {
 
       validateEnvironment();
 
-      expect(mockLogger.error).toHaveBeenCalledWith(
+      expect(mockLoggerInstance.error).toHaveBeenCalledWith(
         'Missing required environment variables',
         expect.objectContaining({
           missing: expect.any(Array),
@@ -235,7 +243,7 @@ describe.skip('env-validation', () => {
 
       validateEnvironment();
 
-      expect(mockLogger.warn).toHaveBeenCalledWith(
+      expect(mockLoggerInstance.warn).toHaveBeenCalledWith(
         'Optional environment variables not set',
         expect.objectContaining({
           warnings: expect.any(Array),
@@ -257,11 +265,12 @@ describe.skip('env-validation', () => {
       process.env.GOOGLE_GENERATIVE_AI_API_KEY = 'google-key-123';
       process.env.MASTRA_MEMORY_URL = 'https://memory.example.com';
       process.env.MASTRA_MEMORY_TOKEN = 'memory-token-123';
+      process.env.LOGO_DEV_TOKEN = 'logo-token-123';
 
       const result = validateEnvironment();
 
       expect(result.warnings).toHaveLength(0);
-      expect(mockLogger.warn).not.toHaveBeenCalled();
+      expect(mockLoggerInstance.warn).not.toHaveBeenCalled();
     });
   });
 
@@ -516,14 +525,15 @@ describe.skip('env-validation', () => {
       process.env.GOOGLE_GENERATIVE_AI_API_KEY = 'google-key-123';
       process.env.MASTRA_MEMORY_URL = 'https://memory.example.com';
       process.env.MASTRA_MEMORY_TOKEN = 'memory-token-123';
+      process.env.LOGO_DEV_TOKEN = 'logo-token-123';
 
       const result = validateEnvironment();
 
       expect(result.valid).toBe(true);
       expect(result.missing).toHaveLength(0);
       expect(result.warnings).toHaveLength(0);
-      expect(mockLogger.error).not.toHaveBeenCalled();
-      expect(mockLogger.warn).not.toHaveBeenCalled();
+      expect(mockLoggerInstance.error).not.toHaveBeenCalled();
+      expect(mockLoggerInstance.warn).not.toHaveBeenCalled();
     });
   });
 
@@ -534,7 +544,7 @@ describe.skip('env-validation', () => {
 
       validateEnvironment();
 
-      expect(mockLogger.error).toHaveBeenCalledWith(
+      expect(mockLoggerInstance.error).toHaveBeenCalledWith(
         'Missing required environment variables',
         expect.objectContaining({
           count: 6,
@@ -553,7 +563,7 @@ describe.skip('env-validation', () => {
 
       validateEnvironment();
 
-      expect(mockLogger.warn).toHaveBeenCalledWith(
+      expect(mockLoggerInstance.warn).toHaveBeenCalledWith(
         'Optional environment variables not set',
         expect.objectContaining({
           count: expect.any(Number),
@@ -572,7 +582,7 @@ describe.skip('env-validation', () => {
 
       validateEnvironment();
 
-      expect(mockLogger.info).toHaveBeenCalledWith(
+      expect(mockLoggerInstance.info).toHaveBeenCalledWith(
         'Environment validation passed',
         expect.objectContaining({
           requiredCount: 7,
@@ -591,10 +601,11 @@ describe.skip('env-validation', () => {
       process.env.GOOGLE_GENERATIVE_AI_API_KEY = 'google-key-123';
       process.env.MASTRA_MEMORY_URL = 'https://memory.example.com';
       process.env.MASTRA_MEMORY_TOKEN = 'memory-token-123';
+      process.env.LOGO_DEV_TOKEN = 'logo-token-123';
 
       validateEnvironment();
 
-      expect(mockLogger.warn).not.toHaveBeenCalled();
+      expect(mockLoggerInstance.warn).not.toHaveBeenCalled();
     });
   });
 });

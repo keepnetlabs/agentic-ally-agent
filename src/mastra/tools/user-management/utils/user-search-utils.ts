@@ -51,7 +51,11 @@ export async function fetchUsersWithFilters(
         body: JSON.stringify(payload),
     });
     if (!resp.ok) {
-        const errorInfo = errorService.external(`User search API error: ${resp.status}`, { status: resp.status });
+        const errorText = await resp.text();
+        const errorInfo = errorService.external(`User search API error: ${resp.status}`, {
+            status: resp.status,
+            errorBody: errorText.substring(0, 1000)
+        });
         logErrorInfo(logger as any, 'error', 'User search API failed', errorInfo);
         throw new Error(errorInfo.message);
     }
@@ -78,7 +82,13 @@ export async function findUserByEmail(
         }
         if (users.length === 0) return null;
         const exact = users.find(u => String(u?.email || '').toLowerCase() === normalizedEmail);
-        return exact || users[0];
+        const result = exact || users[0];
+        if (result) {
+            deps.logger.info('User found by email', { email: normalizedEmail, userId: result.targetUserResourceId });
+        } else {
+            deps.logger.info('No user found by email', { email: normalizedEmail });
+        }
+        return result;
     } catch (error) {
         const err = normalizeError(error);
         const errorInfo = errorService.external('User search by email failed', { error: err.message });
@@ -121,14 +131,22 @@ export async function findUserByNameWithFallbacks(
             users = await fetchByName(firstName);
         }
 
-        if (users.length === 0) return null;
+        if (users.length === 0) {
+            deps.logger.info('No user found by name search fallbacks', { name: fullName });
+            return null;
+        }
 
         const preferredLastToken = lastName?.trim().split(/\s+/).slice(-1)[0]?.toLowerCase();
+        let result: PlatformUser;
         if (preferredLastToken) {
             const exact = users.find(u => String(u?.lastName || '').toLowerCase() === preferredLastToken);
-            return exact || users[0];
+            result = exact || users[0];
+        } else {
+            result = users[0];
         }
-        return users[0];
+
+        deps.logger.info('User found by name search', { name: fullName, userId: result.targetUserResourceId });
+        return result;
     } catch (error) {
         const err = normalizeError(error);
         const errorInfo = errorService.external('User search failed', { error: err.message });

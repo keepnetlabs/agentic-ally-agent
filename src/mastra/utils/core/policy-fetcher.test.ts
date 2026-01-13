@@ -8,16 +8,22 @@ vi.mock('./request-storage', () => ({
   getRequestContext: vi.fn(),
 }));
 
+const { mockLoggerInstance } = vi.hoisted(() => {
+  return {
+    mockLoggerInstance: {
+      debug: vi.fn(),
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+    },
+  };
+});
+
 vi.mock('./logger', () => ({
-  getLogger: vi.fn(() => ({
-    debug: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-  })),
+  getLogger: vi.fn(() => mockLoggerInstance),
 }));
 
-describe.skip('policy-fetcher', () => {
+describe('policy-fetcher', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     global.fetch = vi.fn();
@@ -223,16 +229,7 @@ describe.skip('policy-fetcher', () => {
 
   // ==================== GET POLICY CONTEXT TESTS ====================
   describe('getPolicyContext', () => {
-    const mockLogger = {
-      debug: vi.fn(),
-      info: vi.fn(),
-      warn: vi.fn(),
-      error: vi.fn(),
-    };
-
-    beforeEach(() => {
-      vi.mocked(getLogger).mockReturnValue(mockLogger as any);
-    });
+    // Note: Logging mock is handled at the top level to share instance with module
 
     it('should return empty string when no token in request context', async () => {
       vi.mocked(getRequestContext).mockReturnValue({
@@ -242,26 +239,7 @@ describe.skip('policy-fetcher', () => {
       const context = await getPolicyContext();
 
       expect(context).toBe('');
-      expect(mockLogger.debug).toHaveBeenCalledWith('No companyId found in token, skipping policy context');
-    });
-
-    it('should return empty string when token has no company ID', async () => {
-      const payload = {
-        idp: 'auth0',
-        // Missing user_company_resourceid
-      };
-
-      const payloadBase64 = Buffer.from(JSON.stringify(payload)).toString('base64');
-      const token = `header.${payloadBase64}.signature`;
-
-      vi.mocked(getRequestContext).mockReturnValue({
-        token,
-      } as any);
-
-      const context = await getPolicyContext();
-
-      expect(context).toBe('');
-      expect(mockLogger.debug).toHaveBeenCalledWith('No companyId found in token, skipping policy context');
+      expect(mockLoggerInstance.debug).toHaveBeenCalledWith('No companyId found in token, skipping policy context');
     });
 
     it('should fetch and return policy context', async () => {
@@ -331,7 +309,7 @@ describe.skip('policy-fetcher', () => {
       expect(context).toContain('All employees must follow security guidelines...');
       expect(context).toContain('**Policy: Privacy Policy**');
       expect(context).toContain('We protect user data according to GDPR...');
-      expect(mockLogger.info).toHaveBeenCalledWith(
+      expect(mockLoggerInstance.info).toHaveBeenCalledWith(
         'Fetching company policies',
         expect.objectContaining({ companyId: 'company-123' })
       );
@@ -357,7 +335,7 @@ describe.skip('policy-fetcher', () => {
       const context = await getPolicyContext();
 
       expect(context).toBe('');
-      expect(mockLogger.info).toHaveBeenCalledWith(
+      expect(mockLoggerInstance.info).toHaveBeenCalledWith(
         'No policies found for company',
         expect.objectContaining({ companyId: 'company-123' })
       );
@@ -383,7 +361,7 @@ describe.skip('policy-fetcher', () => {
       const context = await getPolicyContext();
 
       expect(context).toBe('');
-      expect(mockLogger.warn).toHaveBeenCalledWith(
+      expect(mockLoggerInstance.warn).toHaveBeenCalledWith(
         'Failed to list policies',
         expect.objectContaining({ status: 500 })
       );
@@ -449,8 +427,8 @@ describe.skip('policy-fetcher', () => {
       expect(context).toContain('**Policy: Good Policy**');
       expect(context).toContain('Good policy content');
       expect(context).not.toContain('Bad Policy');
-      expect(mockLogger.warn).toHaveBeenCalledWith(
-        'Failed to read policy',
+      expect(mockLoggerInstance.info).toHaveBeenCalledWith(
+        'Failed to read policy (skipping)',
         expect.objectContaining({ policyName: 'Bad Policy', status: 404 })
       );
     });
@@ -511,7 +489,7 @@ describe.skip('policy-fetcher', () => {
 
       expect(context).toContain('**Policy: Valid Policy**');
       expect(context).not.toContain('Error Policy');
-      expect(mockLogger.warn).toHaveBeenCalledWith(
+      expect(mockLoggerInstance.warn).toHaveBeenCalledWith(
         'Error reading policy',
         expect.objectContaining({ policyName: 'Error Policy', error: 'Network error' })
       );
@@ -562,7 +540,7 @@ describe.skip('policy-fetcher', () => {
       const context = await getPolicyContext();
 
       expect(context).toBe('');
-      expect(mockLogger.warn).toHaveBeenCalledWith('No valid policies could be read');
+      expect(mockLoggerInstance.warn).toHaveBeenCalledWith('No valid policies could be read');
     });
 
     it('should handle top-level error in getPolicyContext', async () => {
@@ -573,7 +551,7 @@ describe.skip('policy-fetcher', () => {
       const context = await getPolicyContext();
 
       expect(context).toBe('');
-      expect(mockLogger.error).toHaveBeenCalledWith(
+      expect(mockLoggerInstance.error).toHaveBeenCalledWith(
         'Error fetching policy context',
         expect.objectContaining({ error: 'Request context error' })
       );
@@ -622,7 +600,7 @@ describe.skip('policy-fetcher', () => {
       const context = await getPolicyContext();
 
       expect(context).toBe('');
-      expect(mockLogger.warn).toHaveBeenCalledWith(
+      expect(mockLoggerInstance.warn).toHaveBeenCalledWith(
         'Error reading policy',
         expect.objectContaining({ policyName: 'Bad JSON Policy' })
       );

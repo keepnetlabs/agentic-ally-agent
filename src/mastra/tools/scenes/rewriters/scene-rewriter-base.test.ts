@@ -6,6 +6,16 @@ vi.mock('ai', () => ({
   generateText: vi.fn(),
 }));
 
+vi.mock('../../../services/error-service', () => ({
+  errorService: {
+    aiModel: vi.fn(() => ({ code: 'AI_ERROR', message: 'AI Error' })),
+  },
+}));
+
+vi.mock('../../../utils/language/localization-language-rules', () => ({
+  getLanguagePrompt: vi.fn(() => 'Mock language rules for localization'),
+}));
+
 /**
  * Test suite for Scene Rewriter Base
  * Core semantic localization engine for all scene types

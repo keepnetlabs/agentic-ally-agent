@@ -16,6 +16,12 @@ vi.mock('../utils/core/logger', () => {
 
 import { getLogger } from '../utils/core/logger';
 
+// Mock fetch for token validation
+global.fetch = vi.fn((_input: RequestInfo | URL, _init?: RequestInit) => {
+  // Return success for all validation requests
+  return Promise.resolve(new Response(JSON.stringify({ valid: true }), { status: 200 }));
+});
+
 describe('authTokenMiddleware', () => {
   let mockContext: any;
   let mockNext: any;

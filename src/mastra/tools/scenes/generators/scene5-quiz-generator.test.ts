@@ -7,7 +7,7 @@ import { MicrolearningContent } from '../../../types/microlearning';
  * Test suite for Scene 5 (Quiz) Generator
  * Tests prompt generation for knowledge assessment quizzes
  */
-describe.skip('Scene 5 - Quiz Generator', () => {
+describe('Scene 5 - Quiz Generator', () => {
   // Base valid analysis
   const baseAnalysis: PromptAnalysis = {
     language: 'en',
@@ -90,7 +90,7 @@ describe.skip('Scene 5 - Quiz Generator', () => {
     it('should include QUESTION PATTERNS section', () => {
       const prompt = generateScene5Prompt(baseAnalysis, baseMicrolearning);
       expect(prompt).toContain('QUESTION PATTERNS');
-      expect(prompt).toContain('Adapt to');
+      expect(prompt).toContain('Adapt structure to');
     });
 
     it('should include topic in context data', () => {
@@ -123,50 +123,50 @@ describe.skip('Scene 5 - Quiz Generator', () => {
   describe('Question Patterns', () => {
     it('should include THREAT pattern template', () => {
       const prompt = generateScene5Prompt(baseAnalysis, baseMicrolearning);
-      expect(prompt).toContain('THREAT Pattern:');
+      expect(prompt).toContain('THREAT Pattern');
       expect(prompt).toContain('Template:');
-      expect(prompt).toContain('safest response');
+      expect(prompt).toContain('Decision?');
     });
 
     it('should include TOOL pattern template', () => {
       const prompt = generateScene5Prompt(baseAnalysis, baseMicrolearning);
-      expect(prompt).toContain('TOOL Pattern:');
+      expect(prompt).toContain('TOOL Pattern');
       expect(prompt).toContain('Template:');
-      expect(prompt).toContain('first step');
+      expect(prompt).toContain('Action?');
     });
 
     it('should include PROCESS pattern template', () => {
       const prompt = generateScene5Prompt(baseAnalysis, baseMicrolearning);
-      expect(prompt).toContain('PROCESS Pattern:');
+      expect(prompt).toContain('PROCESS Pattern');
       expect(prompt).toContain('Template:');
-      expect(prompt).toContain('procedure applies');
+      expect(prompt).toContain('Choice?');
     });
 
     it('should have pattern examples', () => {
       const prompt = generateScene5Prompt(baseAnalysis, baseMicrolearning);
-      expect(prompt).toContain('Example:');
+      expect(prompt).toContain('GOOD:');
     });
 
-    it('should include fallback rule for unknown topics', () => {
+    it('should include distractor system', () => {
       const prompt = generateScene5Prompt(baseAnalysis, baseMicrolearning);
-      expect(prompt).toContain('IMPORTANT FALLBACK RULE');
-      expect(prompt).toContain('UNKNOWN TOPIC');
-      expect(prompt).toContain('IMPULSIVE error');
-      expect(prompt).toContain('PASSIVE avoidance');
+      expect(prompt).toContain('DISTRACTOR" SYSTEM');
+      expect(prompt).toContain('IMPULSIVE MISTAKE');
+      expect(prompt).toContain('NEAR-MISS');
       expect(prompt).toContain('FALSE SECURITY');
     });
 
     it('should specify distractor types', () => {
       const prompt = generateScene5Prompt(baseAnalysis, baseMicrolearning);
-      expect(prompt).toContain('IMPULSIVE error');
-      expect(prompt).toContain('PASSIVE avoidance');
+      expect(prompt).toContain('IMPULSIVE MISTAKE');
+      expect(prompt).toContain('NEAR-MISS');
       expect(prompt).toContain('FALSE SECURITY');
     });
 
-    it('should include pattern generation guidance', () => {
+    it('should include sequence markers', () => {
       const prompt = generateScene5Prompt(baseAnalysis, baseMicrolearning);
-      expect(prompt).toContain('2-3 questions');
-      expect(prompt).toContain('matching pattern');
+      expect(prompt).toContain('1.');
+      expect(prompt).toContain('2.');
+      expect(prompt).toContain('3.');
     });
   });
 
@@ -179,14 +179,14 @@ describe.skip('Scene 5 - Quiz Generator', () => {
       expect(prompt).toContain('brain');
     });
 
-    it('should include required title field', () => {
+    it('should include required title localization instructions', () => {
       const prompt = generateScene5Prompt(baseAnalysis, baseMicrolearning);
-      expect(prompt).toContain('Test Your Knowledge');
+      expect(prompt).toContain('Localize \'Test Your Knowledge\'');
     });
 
-    it('should include subtitle field', () => {
+    it('should include subtitle localization instructions', () => {
       const prompt = generateScene5Prompt(baseAnalysis, baseMicrolearning);
-      expect(prompt).toContain('Make the right decision when it matters most');
+      expect(prompt).toContain('Localize \'Make the right decision');
     });
 
     it('should include quiz completion texts', () => {
@@ -939,7 +939,8 @@ describe.skip('Scene 5 - Quiz Generator', () => {
         regulationCompliance: ['GDPR', 'HIPAA', 'SOC2'],
       };
       const prompt = generateScene5Prompt(complianceAnalysis, baseMicrolearning);
-      expect(prompt).toContain('Compliance Requirements');
+      expect(prompt).toContain('Compliance:');
+      expect(prompt).toContain('GDPR');
     });
 
     it('should include scientific evidence context', () => {

@@ -13,6 +13,10 @@ vi.mock('../../../services/error-service', () => ({
   },
 }));
 
+vi.mock('../../../utils/language/localization-language-rules', () => ({
+  getLanguagePrompt: vi.fn(() => 'Mock language rules for localization'),
+}));
+
 /**
  * Test suite for Scene 2 (Goals) Rewriter
  * Tests semantic localization of goals scenes across languages

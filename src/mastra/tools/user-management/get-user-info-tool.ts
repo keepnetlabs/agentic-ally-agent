@@ -71,7 +71,7 @@ export const getUserInfoTool = createTool({
           const email = String(inputEmail).trim().toLowerCase();
           // Mask email for logging (show only domain)
           const maskedEmail = email.replace(/^[^@]+/, '[REDACTED]');
-          logger.debug('Searching for user by email', { email: maskedEmail });
+          logger.info('Searching for user by email', { email, maskedEmail });
           try {
             user = await findUserByEmail(searchDeps, GET_ALL_PAYLOAD, email);
           } catch (err) {
@@ -105,7 +105,7 @@ export const getUserInfoTool = createTool({
               }
               const normalizedFullName = normalizeName(inputFullName);
               parsed = parseName(normalizedFullName);
-              logger.debug('Name parsed and normalized', { original: inputFullName, normalized: normalizedFullName });
+              logger.info('Name parsed and normalized', { original: inputFullName, normalized: normalizedFullName });
             } else if (inputFirstName) {
               const normalizedFirstName = normalizeName(inputFirstName);
               const normalizedLastName = inputLastName ? normalizeName(inputLastName) : undefined;
@@ -124,7 +124,7 @@ export const getUserInfoTool = createTool({
           }
 
           ({ firstName, lastName, fullName } = parsed);
-          logger.debug('Searching for user by name', { fullName, firstName, lastName: lastName || 'N/A' });
+          logger.info('Searching for user by name', { fullName, firstName, lastName: lastName || 'N/A' });
 
           try {
             user = await findUserByNameWithFallbacks(searchDeps, GET_ALL_PAYLOAD, firstName, lastName, fullName);
@@ -166,7 +166,7 @@ export const getUserInfoTool = createTool({
       timelinePayload.targetUserResourceId = resolvedUserId;
       timelinePayload.pagination.ascending = false;
 
-      logger.debug('Fetching timeline for user', { userId: resolvedUserId });
+      logger.info('Fetching timeline for user', { userId: resolvedUserId });
       const timelineHeaders: Record<string, string> = {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
@@ -200,9 +200,13 @@ export const getUserInfoTool = createTool({
 
         // Enrich activities with semantic context
         enrichedActivities = enrichActivities(results.slice(0, 10));
-        logger.debug('Timeline activities retrieved and enriched', { count: results.length });
+        logger.info('Timeline activities retrieved and enriched', { count: results.length });
       } else {
-        logger.warn('Timeline API request failed', { status: timelineResponse.status });
+        const errorText = await timelineResponse.text();
+        logger.warn('Timeline API request failed', {
+          status: timelineResponse.status,
+          errorBody: errorText.substring(0, 1000)
+        });
       }
 
       // --- STEP 3: Generate Analysis Report (Internal LLM Call) ---
@@ -215,7 +219,7 @@ export const getUserInfoTool = createTool({
         if (recentActivities.length === 0) {
           logger.warn('No recent activities found; AI will apply Foundational defaults', { userId: resolvedUserId });
         }
-        logger.debug('Starting user analysis with LLM', { hasActivities: recentActivities.length > 0 });
+        logger.info('Starting user analysis with LLM', { hasActivities: recentActivities.length > 0 });
         const systemPrompt = `
 You are an Enterprise Security Behavior Analyst for a Human Risk Management platform.
 

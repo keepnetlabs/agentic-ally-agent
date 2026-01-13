@@ -13,6 +13,10 @@ vi.mock('../../../services/error-service', () => ({
   },
 }));
 
+vi.mock('../../../utils/language/localization-language-rules', () => ({
+  getLanguagePrompt: vi.fn(() => 'Mock language rules for localization'),
+}));
+
 import { generateText } from 'ai';
 
 describe('Scene 8 - Summary Rewriter', () => {

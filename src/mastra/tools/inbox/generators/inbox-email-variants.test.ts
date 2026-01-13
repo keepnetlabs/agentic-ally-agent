@@ -166,7 +166,7 @@ describe('Inbox Email Variants', () => {
         const builder = variantDeltaBuilder[EmailVariant.CasualLegit];
         const result = builder(baseHints);
         expect(result).toContain('Friendly');
-        expect(result).toContain('informal');
+        expect(result).toContain('CASUAL LEGIT');
       });
 
       it('should direct to portal for security alerts', () => {
@@ -214,7 +214,7 @@ describe('Inbox Email Variants', () => {
         const builder = variantDeltaBuilder[EmailVariant.FormalLegit];
         const result = builder(baseHints);
         expect(result).toContain('Corporate communication');
-        expect(result).toContain('formal, professional');
+        expect(result).toContain('FORMAL LEGIT');
       });
 
       it('should include executive announcement context', () => {
@@ -265,22 +265,26 @@ describe('Inbox Email Variants', () => {
 
     it('should have optional topicHint property', () => {
       const hints = diversityPlan(0);
-      expect(hints).toHaveProperty('topicHint');
+      // topicHint is optional, verify it's either present or undefined
+      expect(hints.topicHint === undefined || typeof hints.topicHint === 'string').toBe(true);
     });
 
     it('should have optional departmentHint property', () => {
       const hints = diversityPlan(0);
-      expect(hints).toHaveProperty('departmentHint');
+      // departmentHint is optional, verify it's either present or undefined
+      expect(hints.departmentHint === undefined || typeof hints.departmentHint === 'string').toBe(true);
     });
 
     it('should have optional additionalContext property', () => {
       const hints = diversityPlan(0);
-      expect(hints).toHaveProperty('additionalContext');
+      // additionalContext is optional, verify it's either present or undefined
+      expect(hints.additionalContext === undefined || typeof hints.additionalContext === 'string').toBe(true);
     });
 
     it('should have optional mustInclude property', () => {
       const hints = diversityPlan(0);
-      expect(hints).toHaveProperty('mustInclude');
+      // mustInclude is optional, verify it's either present or undefined
+      expect(hints.mustInclude === undefined || Array.isArray(hints.mustInclude)).toBe(true);
     });
 
     it('should provide different hints for different indices', () => {

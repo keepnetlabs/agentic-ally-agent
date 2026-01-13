@@ -16,6 +16,10 @@ vi.mock('../../../services/error-service', () => ({
   },
 }));
 
+vi.mock('../../../utils/language/localization-language-rules', () => ({
+  getLanguagePrompt: vi.fn(() => 'Mock language rules for localization'),
+}));
+
 /**
  * Test suite for Scene 1 (Intro) Rewriter
  * Tests semantic localization of intro scenes across languages

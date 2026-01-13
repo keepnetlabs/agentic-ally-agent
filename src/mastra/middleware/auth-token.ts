@@ -1,5 +1,6 @@
 import { Context, Next } from 'hono';
 import { getLogger } from '../utils/core/logger';
+import { API_ENDPOINTS } from '../constants';
 
 const logger = getLogger('AuthToken');
 
@@ -108,11 +109,58 @@ export const authTokenMiddleware = async (c: Context, next: Next): Promise<Respo
 
     // Token is valid - allow request to proceed
     // Future: Add JWT verification or KV allowlist check here
-    logger.debug('✅ Token validated', {
+    logger.debug('✅ Token validated locally', {
         path: c.req.path,
         method: c.req.method,
         ip: clientIp,
     });
+
+    // Validate with backend
+    try {
+        const baseApiUrl = c.req.header('X-BASE-API-URL') || API_ENDPOINTS.DEFAULT_BASE_API_URL;
+        const validationUrl = `${baseApiUrl}/auth/validate`;
+        logger.info('Validation URL', { url: validationUrl });
+        const response = await fetch(validationUrl, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        const responseText = await response.text();
+        logger.info('Auth Validation Response', {
+            status: response.status,
+            body: responseText
+        });
+
+        if (!response.ok) {
+            logger.warn('❌ Unauthorized: backend validation failed', {
+                path: c.req.path,
+                method: c.req.method,
+                ip: clientIp,
+                status: response.status
+            });
+            return c.json(
+                {
+                    error: 'Unauthorized',
+                    message: 'Token validation failed',
+                },
+                401
+            );
+        }
+
+    } catch (error) {
+        logger.error('Auth validation error', { error });
+        // Fail open or closed? Usually closed for security, but let's see. 
+        // For now, let's fail closed as it's an auth check.
+        return c.json(
+            {
+                error: 'Unauthorized',
+                message: 'Token validation service unavailable',
+            },
+            401
+        );
+    }
 
     await next();
 };
