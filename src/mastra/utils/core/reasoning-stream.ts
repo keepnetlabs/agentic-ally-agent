@@ -3,8 +3,8 @@ import { generateText } from 'ai';
 import { getModelWithOverride } from '../../model-providers';
 import { getLogger } from './logger';
 import { normalizeError } from './error-utils';
-import { StreamWriter } from '../../types/stream-writer';
-export { StreamWriter };
+import type { StreamWriter } from '../../types/stream-writer';
+export type { StreamWriter } from '../../types/stream-writer';
 
 const logger = getLogger('ReasoningStream');
 
