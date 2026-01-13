@@ -31,7 +31,8 @@ export async function generateVideoPrompt(analysis: PromptAnalysis, microlearnin
   );
   logger.info('Video metadata generated', { title: videoMetadata.title, subtitle: videoMetadata.subtitle });
 
-  const transcriptLanguageLabel = analysis.language.toLowerCase().startsWith('en') ? 'English' : analysis.language;
+  const language = analysis.language || 'en-gb';
+  const transcriptLanguageLabel = language.toLowerCase().startsWith('en') ? 'English' : language;
 
   const prompt = `${contextData}
 

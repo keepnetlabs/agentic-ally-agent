@@ -93,6 +93,7 @@ export const assignPhishingTool = createTool({
             ...(trainingId && { trainingId }),
             ...(sendTrainingLanguageId && { sendTrainingLanguageId })
         };
+        logger.info('Assign phishing payload prepared', { payload });
 
         // Log Payload with masked token
         const maskedPayload = maskSensitiveField(payload, 'accessToken');

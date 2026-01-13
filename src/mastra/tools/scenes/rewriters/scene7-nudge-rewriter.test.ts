@@ -7,6 +7,12 @@ vi.mock('ai', () => ({
   generateText: vi.fn(),
 }));
 
+vi.mock('../../../services/error-service', () => ({
+  errorService: {
+    aiModel: vi.fn(() => ({ code: 'AI_ERROR', message: 'AI Error' })),
+  },
+}));
+
 import { generateText } from 'ai';
 
 describe('Scene 7 - Nudge Rewriter', () => {

@@ -7,6 +7,12 @@ vi.mock('ai', () => ({
   generateText: vi.fn(),
 }));
 
+vi.mock('../../../services/error-service', () => ({
+  errorService: {
+    aiModel: vi.fn(() => ({ code: 'AI_ERROR', message: 'AI Error' })),
+  },
+}));
+
 describe('Scene 3 - Video Rewriter', () => {
   const mockModel = {
     id: 'test-model',

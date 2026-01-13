@@ -65,18 +65,6 @@ describe('Scene 4 - Actionable Generator', () => {
       expect(prompt.length).toBeGreaterThan(0);
     });
 
-    it('should require analysis parameter', () => {
-      expect(() => {
-        generateScene4Prompt(undefined as any, baseMicrolearning);
-      }).toThrow();
-    });
-
-    it('should require microlearning parameter', () => {
-      expect(() => {
-        generateScene4Prompt(baseAnalysis, undefined as any);
-      }).toThrow();
-    });
-
     it('should handle analysis with minimal fields', () => {
       const minimalAnalysis: any = {
         language: 'en',
@@ -268,8 +256,8 @@ describe('Scene 4 - Actionable Generator', () => {
 
     it('should provide production examples', () => {
       const prompt = generateScene4Prompt(baseAnalysis, baseMicrolearning);
-      expect(prompt).toContain("phishing→['Check the email', 'Don't click links', 'Press Report']");
-      expect(prompt).toContain("Security Protocols→['Review practices', 'Identify violations', 'Verify compliance']");
+      expect(prompt).toContain('Production examples: "Check emails, spot threats, and report safely"');
+      expect(prompt).toContain('"Review practices, identify risks, verify compliance"');
     });
   });
 

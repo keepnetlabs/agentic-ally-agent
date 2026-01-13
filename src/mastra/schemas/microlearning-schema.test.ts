@@ -2,9 +2,7 @@
 import { describe, it, expect } from 'vitest';
 import {
     SceneMetadataSchema,
-    SceneSchema,
     MicrolearningMetadataSchema,
-    MicrolearningContentSchema,
     LanguageContentSchema,
     InboxContentSchema
 } from './microlearning-schema';

@@ -50,11 +50,11 @@ function deepMerge<T>(target: T, source: any): T {
     if (Object.prototype.hasOwnProperty.call(source, key)) {
       if (typeof source[key] === 'object' && source[key] !== null && !Array.isArray(source[key])) {
         // Recursive merge for nested objects
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+         
         result[key] = deepMerge((result as any)[key] || {}, source[key]);
       } else {
         // Direct assignment for primitives and arrays
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+         
         (result as any)[key] = source[key];
       }
     }

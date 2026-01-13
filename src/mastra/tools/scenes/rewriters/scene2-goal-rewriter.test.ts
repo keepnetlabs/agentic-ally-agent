@@ -7,6 +7,12 @@ vi.mock('ai', () => ({
   generateText: vi.fn(),
 }));
 
+vi.mock('../../../services/error-service', () => ({
+  errorService: {
+    aiModel: vi.fn(() => ({ code: 'AI_ERROR', message: 'AI Error' })),
+  },
+}));
+
 /**
  * Test suite for Scene 2 (Goals) Rewriter
  * Tests semantic localization of goals scenes across languages

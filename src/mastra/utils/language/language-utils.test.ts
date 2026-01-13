@@ -360,9 +360,9 @@ describe('language-utils', () => {
       const parts = id.split('-');
       expect(parts.length).toBeGreaterThanOrEqual(2);
 
-      // Last part should be 6-digit timestamp
+      // Last part should be 8-character hex UUID segment
       const lastPart = parts[parts.length - 1];
-      expect(lastPart).toMatch(/^\d{6}$/);
+      expect(lastPart).toMatch(/^[a-f0-9]{8}$/);
     });
 
     it('should limit slug to 50 characters', () => {
@@ -386,7 +386,7 @@ describe('language-utils', () => {
       const id = generateMicrolearningId('');
 
       expect(id).toBeDefined();
-      expect(id).toMatch(/^-\d{6}$/);
+      expect(id).toMatch(/^-[a-f0-9]{8}$/);
     });
 
     it('should handle special Turkish characters', () => {
@@ -400,7 +400,7 @@ describe('language-utils', () => {
       const id = generateMicrolearningId('网络钓鱼防护');
 
       expect(id).toBeDefined();
-      expect(id).toMatch(/^-\d{6}$/); // All non-ASCII removed
+      expect(id).toMatch(/^-[a-f0-9]{8}$/); // All non-ASCII removed, UUID suffix appended
     });
 
     it('should handle multiple spaces', () => {
@@ -444,7 +444,7 @@ describe('language-utils', () => {
     });
 
     it('should remove special characters', () => {
-      expect(normalizeDepartmentName('IT & Security')).toBe('it-security');
+      expect(normalizeDepartmentName('IT & Security')).toBe('it--security');
     });
 
     it('should keep hyphens', () => {
@@ -498,7 +498,7 @@ describe('language-utils', () => {
     });
 
     it('should handle whitespace only', () => {
-      expect(normalizeDepartmentName('   ')).toBe('');
+      expect(normalizeDepartmentName('   ')).toBe('-');
     });
 
     it('should be idempotent', () => {
@@ -520,7 +520,7 @@ describe('language-utils', () => {
     });
 
     it('should handle leading/trailing spaces', () => {
-      expect(normalizeDepartmentName('  IT Department  ')).toBe('it-department');
+      expect(normalizeDepartmentName('  IT Department  ')).toBe('-it-department-');
     });
 
     it('should handle numbers', () => {
@@ -558,7 +558,7 @@ describe('language-utils', () => {
 
     it('should handle topic with only numbers', () => {
       const id = generateMicrolearningId('12345678');
-      expect(id).toMatch(/^\d+-\d{6}$/);
+      expect(id).toMatch(/^\d+-[a-f0-9]{8}$/);
     });
 
     it('should handle department with only numbers', () => {

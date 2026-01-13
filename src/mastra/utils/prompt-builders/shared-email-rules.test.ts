@@ -32,7 +32,7 @@ describe('shared-email-rules', () => {
       expect(LOGO_TAG_RULE).toBeDefined();
       expect(LOGO_TAG_RULE).toContain('CUSTOMMAINLOGO');
       expect(LOGO_TAG_RULE).toContain('merge tag');
-      expect(LOGO_TAG_RULE).toContain('MANDATORY');
+      expect(LOGO_TAG_RULE).toContain('Company Logo');
     });
 
     it('should define NO_DISCLAIMERS_RULE', () => {
@@ -44,15 +44,15 @@ describe('shared-email-rules', () => {
 
     it('should define EMAIL_SIGNATURE_RULES with forbidden/required patterns', () => {
       expect(EMAIL_SIGNATURE_RULES).toBeDefined();
-      expect(EMAIL_SIGNATURE_RULES).toContain('FORBIDDEN');
+      expect(EMAIL_SIGNATURE_RULES).toContain('Never use personal names');
       expect(EMAIL_SIGNATURE_RULES).toContain('Security Notifications Team');
       expect(EMAIL_SIGNATURE_RULES).toContain('department/team/system names');
     });
 
     it('should define NO_FAKE_PERSONAL_IDENTITIES_RULES to prevent invented names', () => {
       expect(NO_FAKE_PERSONAL_IDENTITIES_RULES).toBeDefined();
-      expect(NO_FAKE_PERSONAL_IDENTITIES_RULES).toContain('NO FAKE PERSONAL IDENTITIES');
-      expect(NO_FAKE_PERSONAL_IDENTITIES_RULES).toContain('Do NOT invent');
+      expect(NO_FAKE_PERSONAL_IDENTITIES_RULES).toContain('No Fake Personal Identities');
+      expect(NO_FAKE_PERSONAL_IDENTITIES_RULES).toContain('Do not invent');
       expect(NO_FAKE_PERSONAL_IDENTITIES_RULES).toContain('{FIRSTNAME}');
     });
 
@@ -74,29 +74,29 @@ describe('shared-email-rules', () => {
 
     it('should define PREHEADER_RULE with hidden div requirement', () => {
       expect(PREHEADER_RULE).toBeDefined();
-      expect(PREHEADER_RULE).toContain('PREHEADER');
+      expect(PREHEADER_RULE).toContain('Preheader');
       expect(PREHEADER_RULE).toContain('display:none');
       expect(PREHEADER_RULE).toContain('inbox preview');
     });
 
     it('should define GREETING_RULES with FIRSTNAME merge tag', () => {
       expect(GREETING_RULES).toBeDefined();
-      expect(GREETING_RULES).toContain('GREETING');
+      expect(GREETING_RULES).toContain('Greeting');
       expect(GREETING_RULES).toContain('{FIRSTNAME}');
-      expect(GREETING_RULES).toContain('FORBIDDEN');
+      expect(GREETING_RULES).toContain('Never use');
       expect(GREETING_RULES).toContain('Dear Employee');
     });
 
     it('should define MOBILE_OPTIMIZATION_RULES with tap target size', () => {
       expect(MOBILE_OPTIMIZATION_RULES).toBeDefined();
-      expect(MOBILE_OPTIMIZATION_RULES).toContain('MOBILE OPTIMIZATION');
+      expect(MOBILE_OPTIMIZATION_RULES).toContain('Mobile Optimization');
       expect(MOBILE_OPTIMIZATION_RULES).toContain('tappable');
       expect(MOBILE_OPTIMIZATION_RULES).toContain('32px');
     });
 
     it('should define BRAND_AWARENESS_RULES', () => {
       expect(BRAND_AWARENESS_RULES).toBeDefined();
-      expect(BRAND_AWARENESS_RULES).toContain('BRAND AWARENESS');
+      expect(BRAND_AWARENESS_RULES).toContain('Brand Awareness');
       expect(BRAND_AWARENESS_RULES).toContain('authentic');
       expect(BRAND_AWARENESS_RULES).toContain('Amazon');
     });
@@ -212,8 +212,8 @@ describe('shared-email-rules', () => {
     // Note: ZERO_PII_POLICY constant removed (PII policy text no longer embedded in prompts)
 
     it('EMAIL_SIGNATURE_RULES should explicitly forbid personal names', () => {
-      expect(EMAIL_SIGNATURE_RULES).toContain('FORBIDDEN');
-      expect(EMAIL_SIGNATURE_RULES).toContain('Do NOT use personal names');
+      expect(EMAIL_SIGNATURE_RULES).toContain('Never use personal names');
+      expect(EMAIL_SIGNATURE_RULES).toContain('personal names in signature');
     });
 
     it('NO_DISCLAIMERS_RULE should ensure output is raw content', () => {
@@ -537,7 +537,7 @@ describe('shared-email-rules', () => {
 
     it('FOOTER_RULES should ensure all links are safe', () => {
       expect(FOOTER_RULES).toContain('{PHISHINGURL}');
-      expect(FOOTER_RULES).toContain('links MUST use');
+      expect(FOOTER_RULES).toContain('All footer links must use');
     });
   });
 });

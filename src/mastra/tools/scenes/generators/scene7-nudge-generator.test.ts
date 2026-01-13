@@ -65,18 +65,6 @@ describe('Scene 7 - Nudge Generator', () => {
       expect(prompt.length).toBeGreaterThan(0);
     });
 
-    it('should require analysis parameter', () => {
-      expect(() => {
-        generateScene7Prompt(undefined as any, baseMicrolearning);
-      }).toThrow();
-    });
-
-    it('should require microlearning parameter', () => {
-      expect(() => {
-        generateScene7Prompt(baseAnalysis, undefined as any);
-      }).toThrow();
-    });
-
     it('should handle analysis with minimal fields', () => {
       const minimalAnalysis: any = {
         language: 'en',

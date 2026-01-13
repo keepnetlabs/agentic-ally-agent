@@ -9,6 +9,13 @@ vi.mock('ai', () => ({
   generateText: vi.fn(),
 }));
 
+// Mock the error service to prevent ERROR_CODES undefined errors
+vi.mock('../../../services/error-service', () => ({
+  errorService: {
+    aiModel: vi.fn(() => ({ code: 'AI_ERROR', message: 'AI Error' })),
+  },
+}));
+
 /**
  * Test suite for Scene 1 (Intro) Rewriter
  * Tests semantic localization of intro scenes across languages

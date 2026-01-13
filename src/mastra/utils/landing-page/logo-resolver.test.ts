@@ -1,5 +1,5 @@
 
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { getLogoUrl, getLogoUrlFallbacks, getRandomLetterLogoUrl } from './logo-resolver';
 
 // Mock logger

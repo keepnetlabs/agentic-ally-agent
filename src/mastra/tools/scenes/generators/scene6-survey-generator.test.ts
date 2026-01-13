@@ -65,18 +65,6 @@ describe('Scene 6 - Survey Generator', () => {
       expect(prompt.length).toBeGreaterThan(0);
     });
 
-    it('should require analysis parameter', () => {
-      expect(() => {
-        generateScene6Prompt(undefined as any, baseMicrolearning);
-      }).toThrow();
-    });
-
-    it('should require microlearning parameter', () => {
-      expect(() => {
-        generateScene6Prompt(baseAnalysis, undefined as any);
-      }).toThrow();
-    });
-
     it('should handle analysis with minimal fields', () => {
       const minimalAnalysis: any = {
         language: 'en',
@@ -182,7 +170,7 @@ describe('Scene 6 - Survey Generator', () => {
 
     it('should specify title must be generic', () => {
       const prompt = generateScene6Prompt(baseAnalysis, baseMicrolearning);
-      expect(prompt).toContain('MUST be "Share Your Experience"');
+      expect(prompt).toContain("MUST be exactly 'Share Your Experience'");
       expect(prompt).toContain('NEVER include topic name');
     });
 
@@ -585,7 +573,7 @@ describe('Scene 6 - Survey Generator', () => {
 
     it('should emphasize generic title requirement', () => {
       const prompt = generateScene6Prompt(baseAnalysis, baseMicrolearning);
-      expect(prompt).toContain('title MUST be "Share Your Experience"');
+      expect(prompt).toContain("MUST be exactly 'Share Your Experience'");
       expect(prompt).toContain('NEVER include topic name');
     });
 

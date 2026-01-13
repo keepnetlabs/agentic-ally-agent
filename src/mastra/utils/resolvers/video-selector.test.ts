@@ -69,6 +69,7 @@ describe('video-selector', () => {
             // "Phishing" should exist in the real JSON database utilized by the code.
 
             const url = await selectVideoForTopic(analysis);
+            expect(url).toBeDefined();
 
             // If it found matches, it calls AI. 
             // Note: Use a valid DB URL in mock if validation is strict, but the code checks:

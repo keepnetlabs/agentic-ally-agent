@@ -1,5 +1,5 @@
 
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { Context } from 'hono';
 
 // Mock data
@@ -97,7 +97,7 @@ const createMockContext = (body: any = {}, env: any = {}) => ({
 } as unknown as Context);
 
 describe('Mastra API Routes (Integration)', () => {
-    let handlers: Record<string, Function> = {};
+    const handlers: Record<string, Function> = {};
 
     beforeEach(async () => {
         vi.clearAllMocks();

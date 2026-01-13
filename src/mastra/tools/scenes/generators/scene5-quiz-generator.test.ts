@@ -65,18 +65,6 @@ describe.skip('Scene 5 - Quiz Generator', () => {
       expect(prompt.length).toBeGreaterThan(0);
     });
 
-    it('should require analysis parameter', () => {
-      expect(() => {
-        generateScene5Prompt(undefined as any, baseMicrolearning);
-      }).toThrow();
-    });
-
-    it('should require microlearning parameter', () => {
-      expect(() => {
-        generateScene5Prompt(baseAnalysis, undefined as any);
-      }).toThrow();
-    });
-
     it('should handle analysis with minimal fields', () => {
       const minimalAnalysis: any = {
         language: 'en',

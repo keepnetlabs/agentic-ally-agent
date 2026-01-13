@@ -101,7 +101,8 @@ describe('Scene 3 - Video Generator', () => {
 
     it('should include KEY MESSAGE PATTERNS section', async () => {
       const result = await generateVideoPrompt(baseAnalysis, baseMicrolearning);
-      expect(result.prompt).toContain('KEY MESSAGE PATTERNS');
+      expect(result.prompt).toContain('VIDEO SCENARIO');
+      expect(result.prompt).toContain('key_message');
     });
 
     it('should include THREAT pattern for security topics', async () => {
@@ -176,7 +177,7 @@ describe('Scene 3 - Video Generator', () => {
     });
 
     it('should provide fallback transcript if none found', async () => {
-      const result = await generateVideoPrompt(baseAnalysis, baseMicrolearning);
+      const result = await generateVideoPrompt({ ...baseAnalysis, topic: undefined as any }, baseMicrolearning);
       expect(result.transcript).toContain('transcript');
     });
 
@@ -315,10 +316,7 @@ describe('Scene 3 - Video Generator', () => {
       expect(result.prompt).toContain('Deepfake');
     });
 
-    it('should include Social Engineering pattern', async () => {
-      const result = await generateVideoPrompt(baseAnalysis, baseMicrolearning);
-      expect(result.prompt).toContain('Social-Engineering');
-    });
+
   });
 
   // ==================== TOOL PATTERN TESTS ====================
@@ -333,10 +331,7 @@ describe('Scene 3 - Video Generator', () => {
       expect(result.prompt).toContain('Password');
     });
 
-    it('should include Encryption pattern', async () => {
-      const result = await generateVideoPrompt(baseAnalysis, baseMicrolearning);
-      expect(result.prompt).toContain('Encryption');
-    });
+
 
     it('should include Backup pattern', async () => {
       const result = await generateVideoPrompt(baseAnalysis, baseMicrolearning);

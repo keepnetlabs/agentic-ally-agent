@@ -1,6 +1,6 @@
 
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { getModelWithOverride, Model } from './model-providers';
+import { getModelWithOverride } from './model-providers';
 
 // Mock logger
 vi.mock('./utils/core/logger', () => ({

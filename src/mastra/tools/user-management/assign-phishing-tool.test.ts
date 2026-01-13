@@ -10,7 +10,7 @@ import '../../../../src/__tests__/setup';
  * Covers: Input validation, auth checks, API calls, error handling, optional training assignment
  */
 
-describe.skip('assignPhishingTool', () => {
+describe('assignPhishingTool', () => {
   const mockToken = 'test-token-123';
   const mockCompanyId = 'test-company-id';
   const mockEnv = {
@@ -182,13 +182,14 @@ describe.skip('assignPhishingTool', () => {
             phishingId: 'phishing-resource-123',
             languageId: 'lang-456',
             targetUserResourceId: 'user-789',
-            apiUrl: expect.any(String),
             accessToken: mockToken,
             companyId: mockCompanyId,
-            name: expect.stringContaining('Agentic Ally')
+            name: expect.stringContaining('user-789'),
+            isQuishing: false
           }),
           token: mockToken,
-          publicUrl: expect.any(String)
+          errorPrefix: expect.any(String),
+          operationName: expect.any(String)
         })
       );
     });

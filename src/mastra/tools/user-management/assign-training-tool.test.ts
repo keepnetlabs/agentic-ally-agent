@@ -10,7 +10,7 @@ import '../../../../src/__tests__/setup';
  * Covers: Input validation, auth checks, API calls, error handling
  */
 
-describe.skip('assignTrainingTool', () => {
+describe('assignTrainingTool', () => {
   const mockToken = 'test-token-123';
   const mockCompanyId = 'test-company-id';
   const mockEnv = {
@@ -177,11 +177,12 @@ describe.skip('assignTrainingTool', () => {
             trainingId: 'resource-123',
             languageId: 'lang-456',
             targetUserResourceId: 'user-789',
-            apiUrl: expect.any(String),
             accessToken: mockToken,
             companyId: mockCompanyId
           }),
-          token: mockToken
+          token: mockToken,
+          errorPrefix: expect.any(String),
+          operationName: expect.any(String)
         })
       );
     });
