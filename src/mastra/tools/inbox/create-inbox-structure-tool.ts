@@ -1,5 +1,7 @@
 import { Tool } from '@mastra/core/tools';
+import { z } from 'zod';
 import { generateText } from 'ai';
+import { LanguageModel } from '../../types/language-model';
 import { MicrolearningContent } from '../../types/microlearning';
 import { MicrolearningService } from '../../services/microlearning-service';
 import { getModelWithOverride } from '../../model-providers';
@@ -138,7 +140,7 @@ async function createInboxStructure(
 async function generateDynamicInboxWithAI(
   microlearning: MicrolearningContent,
   languageCode: string,
-  model: any,
+  model: LanguageModel,
   department: string = 'all',  // NEW: Department context for topic-specific emails
   additionalContext?: string
 ) {
@@ -183,13 +185,13 @@ async function generateDynamicInboxWithAI(
 
   // Parse responses with graceful fallbacks
   const logger = getLogger('GenerateDynamicInboxWithAI');
-  let textsData: any = {};  // Default fallback
+  let textsData: Record<string, unknown> = {};  // Default fallback
   const emailsData = emailsArray;  // Emails already generated
 
   try {
     // Use json-cleaner for robust JSON cleaning with jsonrepair
     const cleanedTexts = cleanResponse(textsResponse.text, 'inbox-texts');
-    textsData = JSON.parse(cleanedTexts);
+    textsData = JSON.parse(cleanedTexts) as Record<string, unknown>;
     logger.debug('Inbox texts parsed successfully', {});
   } catch (parseError) {
     const err = normalizeError(parseError);

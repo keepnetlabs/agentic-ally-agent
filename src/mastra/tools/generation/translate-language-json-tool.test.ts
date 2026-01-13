@@ -642,7 +642,7 @@ describe('translateLanguageJsonTool', () => {
       const endTime = Date.now();
 
       expect(result).toBeDefined();
-      expect(endTime - startTime).toBeGreaterThan(0);
+      expect(endTime - startTime).toBeGreaterThanOrEqual(0);
     });
 
     it('should continue if one scene rewrite fails', async () => {

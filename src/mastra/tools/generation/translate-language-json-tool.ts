@@ -52,8 +52,12 @@ const TranslateJsonOutputSchema = z.object({
  * Scene Type Detection & Mapping
  * =======================================================*/
 
-function getSceneRewriter(sceneType: SceneType): any {
-    const rewriterMap: Record<SceneType, any> = {
+import { RewriteContext } from '../scenes/rewriters/scene-rewriter-base';
+
+type RewriterFunction = (scene: any, context: RewriteContext) => Promise<any>;
+
+function getSceneRewriter(sceneType: SceneType): RewriterFunction {
+    const rewriterMap: Record<SceneType, RewriterFunction> = {
         [SceneType.INTRO]: rewriteScene1Intro,
         [SceneType.GOAL]: rewriteScene2Goal,
         [SceneType.SCENARIO]: rewriteScene3Video, // scenario is the video scene

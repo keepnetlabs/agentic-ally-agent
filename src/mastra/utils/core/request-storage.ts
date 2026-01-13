@@ -4,8 +4,8 @@ export interface RequestContext {
   correlationId?: string; // Unique request ID for tracing
   token?: string;
   companyId?: string;
-  user?: any; // İleride user objesi de ekleyebiliriz
-  env?: any;  // Cloudflare bindings (KV, D1, Service Bindings, etc.)
+  user?: Record<string, unknown>; // İleride user objesi de ekleyebiliriz
+  env?: Record<string, unknown>;  // Cloudflare bindings (KV, D1, Service Bindings, etc.)
   baseApiUrl?: string; // Platform API URL for upload/assign operations
 }
 
@@ -29,7 +29,7 @@ export const requestStorage = new AsyncLocalStorage<RequestContext>();
 export function getRequestContext(): {
   token?: string;
   companyId?: string;
-  env?: any;
+  env?: Record<string, unknown>;
   correlationId?: string;
   baseApiUrl?: string;
 } {

@@ -75,14 +75,14 @@ interface ExtractedString {
     tagMap?: Map<number, string>;
 }
 
-function extractStringsWithPaths(obj: any, protectedKeys: string[], currentPath = ''): ExtractedString[] {
+function extractStringsWithPaths(obj: unknown, protectedKeys: string[], currentPath = ''): ExtractedString[] {
     const results: ExtractedString[] = [];
 
     const isProtectedKey = (key: string) =>
         protectedKeys.some(pk => key.toLowerCase().includes(pk.toLowerCase())) ||
         /^(icon(Name)?|id(s)?|url|src|scene_type|type|difficulty|headers|sender)$/i.test(key);
 
-    function traverse(current: any, path: string) {
+    function traverse(current: unknown, path: string) {
         if (typeof current === 'string') {
             const parts = path.split('.');
             const lastKey = parts[parts.length - 1];
@@ -108,7 +108,8 @@ function extractStringsWithPaths(obj: any, protectedKeys: string[], currentPath 
         } else if (Array.isArray(current)) {
             current.forEach((item, i) => traverse(item, path ? `${path}[${i}]` : `[${i}]`));
         } else if (current && typeof current === 'object') {
-            Object.keys(current).forEach((k) => traverse(current[k], path ? `${path}.${k}` : k));
+            const currentObj = current as Record<string, unknown>;
+            Object.keys(currentObj).forEach((k) => traverse(currentObj[k], path ? `${path}.${k}` : k));
         }
     }
 
@@ -119,7 +120,7 @@ function extractStringsWithPaths(obj: any, protectedKeys: string[], currentPath 
 /* =========================================================
  * Bind back
  * =======================================================*/
-function bindTranslatedStrings(original: any, extracted: ExtractedString[], translated: string[]): any {
+function bindTranslatedStrings(original: unknown, extracted: ExtractedString[], translated: string[]): unknown {
     if (extracted.length !== translated.length) {
         const logger = getLogger('BindTranslatedStrings');
         const errorInfo = errorService.validation(`Mismatch: extracted ${extracted.length} strings but got ${translated.length} translations`, { extracted: extracted.length, translated: translated.length });
@@ -135,7 +136,7 @@ function bindTranslatedStrings(original: any, extracted: ExtractedString[], tran
             val = repairHtml(val);
         }
         const parts = item.path.split(/\.|\[|\]/).filter(Boolean);
-        let cur = result;
+        let cur: any = result;
         for (let i = 0; i < parts.length - 1; i++) {
             const p = parts[i];
             cur = cur[isNaN(Number(p)) ? p : Number(p)];
@@ -190,7 +191,7 @@ function isTrivialValue(s: string) {
  * Chunking
  * =======================================================*/
 function computeChunkSize(items: ExtractedString[], maxJsonChars = TRANSLATION_CONFIG.MAX_JSON_CHARS) {
-    let size = TRANSLATION_CONFIG.INITIAL_CHUNK_SIZE;
+    let size: number = TRANSLATION_CONFIG.INITIAL_CHUNK_SIZE;
     let sample = Object.fromEntries(items.slice(0, size).map((it, i) => [String(i), it.value]));
     let test = JSON.stringify(sample).length;
     while (test > maxJsonChars && size > TRANSLATION_CONFIG.MIN_CHUNK_SIZE) {

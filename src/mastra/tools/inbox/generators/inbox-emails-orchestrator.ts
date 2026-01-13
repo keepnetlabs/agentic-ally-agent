@@ -1,4 +1,6 @@
 import { generateText } from 'ai';
+import { LanguageModel } from '../../../types/language-model';
+import { SimulatedEmail } from '../../../types/microlearning';
 import { buildInboxEmailBaseSystem } from './inbox-email-base';
 import { EmailVariant, variantDeltaBuilder, buildHintsFromInsights } from './inbox-email-variants';
 import { cleanResponse } from '../../../utils/content-processors/json-cleaner';
@@ -18,7 +20,7 @@ export type OrchestratorArgs = {
     level: string;
     department: string;  // NEW: Department context for topic-specific emails
     additionalContext?: string; // NEW: User context, vulnerabilities, or specific requirements
-    model: any;
+    model: LanguageModel;
 };
 
 // Get unique timestamp instructions for N emails (AI will generate timestamps in target language)
@@ -58,14 +60,14 @@ function getUniqueTimestampInstructions(count: number, languageCode: string): st
 async function generateOneEmail(
     index: number,
     systemPrompt: string,
-    model: any,
+    model: LanguageModel,
     topic: string,
     department: string,
     variant: EmailVariant,
     timestampInstruction: string,
     languageCode: string,
     additionalContext?: string // New parameter
-): Promise<any> {
+): Promise<SimulatedEmail> {
     // Parse timestamp instruction and create natural language instruction for AI
     // Extract the semantic key (e.g., "very_recent", "yesterday") from instruction
     const timestampMatch = timestampInstruction.match(/generate_timestamp_(\w+)_in_/);
@@ -128,7 +130,7 @@ ${additionalContext}`
         );
 
         const cleaned = cleanResponse(res.text, `inbox-email-${index + 1}`);
-        const parsed = JSON.parse(cleaned);
+        const parsed = JSON.parse(cleaned) as SimulatedEmail;
         parsed.id = String(index + 1);
         logger.debug('Email generated successfully', { variant, index: index + 1 });
         return parsed;
@@ -170,7 +172,7 @@ ${additionalContext}`
                 `[InboxEmailsOrchestrator] email-generation-retry-${variant}-${index + 1}`
             );
             const cleaned2 = cleanResponse(res2.text, `inbox-email-retry-${index + 1}`);
-            const parsed2 = JSON.parse(cleaned2);
+            const parsed2 = JSON.parse(cleaned2) as SimulatedEmail;
             parsed2.id = String(index + 1);
             logger.debug('Email generated successfully after retry', { variant, index: index + 1 });
             return parsed2;
@@ -189,7 +191,7 @@ ${additionalContext}`
     }
 }
 
-export async function generateInboxEmailsParallel(args: OrchestratorArgs): Promise<any[]> {
+export async function generateInboxEmailsParallel(args: OrchestratorArgs): Promise<SimulatedEmail[]> {
     // Base system prompt (generic) for ALL emails
     // Context is now injected purely via variant hints in generateOneEmail
     const system = buildInboxEmailBaseSystem(
@@ -244,7 +246,7 @@ export async function generateInboxEmailsParallel(args: OrchestratorArgs): Promi
             });
             return null;
         })
-        .filter((email): email is any => email !== null);
+        .filter((email): email is SimulatedEmail => email !== null);
 
     // Ensure at least one email was generated
     if (emails.length === 0) {

@@ -31,7 +31,7 @@
  * // Result: { id: '123', accessToken: '[REDACTED_ACCESSTOKEN]' }
  * ```
  */
-export function maskSensitiveField<T extends Record<string, any>>(
+export function maskSensitiveField<T extends Record<string, unknown>>(
   payload: T,
   fieldName: string,
   _value?: string  // _value parameter kept for backward compatibility but not used
@@ -109,9 +109,9 @@ export function maskUrlParams(url: string): string {
  * ```
  */
 export function deepRedact(
-  obj: any,
+  obj: unknown,
   sensitiveKeys: string[] = ['token', 'apiKey', 'accessToken', 'password', 'secret', 'email', 'phone']
-): any {
+): unknown {
   if (obj === null || obj === undefined) {
     return obj;
   }
@@ -124,9 +124,9 @@ export function deepRedact(
     return obj.map(item => deepRedact(item, sensitiveKeys));
   }
 
-  const redacted: Record<string, any> = {};
+  const redacted: Record<string, unknown> = {};
 
-  for (const [key, value] of Object.entries(obj)) {
+  for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
     const keyLower = key.toLowerCase();
     const isSensitive = sensitiveKeys.some(sk => keyLower.includes(sk.toLowerCase()));
 

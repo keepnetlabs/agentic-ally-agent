@@ -1,6 +1,6 @@
-import { generateText } from 'ai';
+import { generateText, LanguageModel, GenerateTextResult } from 'ai';
 import { cleanResponse } from '../content-processors/json-cleaner';
-import { streamDirectReasoning } from '../core/reasoning-stream';
+import { streamDirectReasoning, StreamWriter } from '../core/reasoning-stream';
 import { getLogger } from '../core/logger';
 
 const logger = getLogger('RetryGenerator');
@@ -8,15 +8,13 @@ const logger = getLogger('RetryGenerator');
 /**
  * Retry generation with stronger authorization prompt if first attempt fails
  */
-import { LanguageModel } from 'ai';
-
 export async function retryGenerationWithStrongerPrompt(
   aiModel: LanguageModel,
   systemPrompt: string,
   messages: Array<{ role: 'system' | 'user'; content: string }>,
   responseType: 'email' | 'landing-page',
-  writer?: any
-): Promise<{ response: any; parsedResult: any }> {
+  writer?: StreamWriter
+): Promise<{ response: GenerateTextResult<any, any>; parsedResult: unknown }> {
   logger.warn('First attempt failed, retrying with stronger prompt', {
     responseType
   });

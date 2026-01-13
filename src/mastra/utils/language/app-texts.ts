@@ -1,6 +1,8 @@
+import { AppContent } from '../../types/microlearning';
+
 // Generate app texts with all necessary keys
-export function getAppTexts(lang: string) {
-  const texts: any = {
+export function getAppTexts(lang: string): AppContent['texts'] {
+  const texts: Record<string, AppContent['texts']> = {
     en: {
       loading: "Loading…",
       languageNotFound: "Language not found",
@@ -151,8 +153,8 @@ export function getAppTexts(lang: string) {
 }
 
 // Generate app aria texts
-export function getAppAriaTexts(lang: string, topic: string) {
-  const texts: any = {
+export function getAppAriaTexts(lang: string, topic: string): AppContent['ariaTexts'] {
+  const texts: Record<string, AppContent['ariaTexts']> = {
     en: {
       appLabel: `${topic} awareness training`,
       appDescription: `Helps you recognize ${topic} threats and report them safely. Interactive microlearning with scenarios and quizzes.`,

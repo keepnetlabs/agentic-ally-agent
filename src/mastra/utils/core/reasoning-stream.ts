@@ -3,6 +3,8 @@ import { generateText } from 'ai';
 import { getModelWithOverride } from '../../model-providers';
 import { getLogger } from './logger';
 import { normalizeError } from './error-utils';
+import { StreamWriter } from '../../types/stream-writer';
+export { StreamWriter };
 
 const logger = getLogger('ReasoningStream');
 
@@ -16,10 +18,6 @@ const logger = getLogger('ReasoningStream');
  * - reasoning-delta: Stream reasoning content
  * - reasoning-end: Complete reasoning block
  */
-
-export interface StreamWriter {
-  write(data: any): Promise<void>;
-}
 
 export async function streamReasoning(
   reasoningText: string,

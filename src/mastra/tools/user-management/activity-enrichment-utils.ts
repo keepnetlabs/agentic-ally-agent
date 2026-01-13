@@ -16,6 +16,34 @@ const normalizeActionType = (actionType: string): string => {
     .replace(/[^\w]/g, '');
 };
 
+export interface RawActivity {
+  ActionType: string;
+  productType: string;
+  name?: string;
+  difficultyType?: string;
+  categoryDescription?: string;
+  campaignType?: string;
+  points: number;
+  ActionTime: string;
+  [key: string]: unknown;
+}
+
+export interface EnrichedActivity {
+  actionType: string;
+  productType: string;
+  campaignName: string;
+  difficulty: string;
+  category: string | undefined;
+  points: number;
+  actionTime: string;
+  actionCategory: string;
+  outcome: "PASSED" | "FAILED" | "NEUTRAL";
+  riskScore: number;
+  isSecurityPositive: boolean;
+  context: string;
+  timeAgo: string;
+}
+
 /**
  * Categorizes activity based on productType and actionType
  * Uses explicit patterns for known types, falls back to normalization for new patterns
@@ -128,7 +156,7 @@ export const formatTimeAgo = (actionTime: string): string => {
  * Generate human-readable context description
  */
 export const generateContext = (
-  activity: any,
+  activity: RawActivity,
   category: string,
   outcome: "PASSED" | "FAILED" | "NEUTRAL"
 ): string => {
@@ -170,7 +198,7 @@ export const generateContext = (
 /**
  * Enrich raw activity with semantic context
  */
-export const enrichActivity = (activity: any): any => {
+export const enrichActivity = (activity: RawActivity): EnrichedActivity => {
   const category = categorizeAction(activity.productType, activity.ActionType);
   const outcome = inferOutcome(activity.points);
   const risk = calculateRisk(activity.difficultyType || "Medium", category, activity.points);
@@ -179,7 +207,7 @@ export const enrichActivity = (activity: any): any => {
     // Original fields
     actionType: activity.ActionType,
     productType: activity.productType,
-    campaignName: activity.name,
+    campaignName: activity.name || "Unknown Campaign",
     difficulty: activity.difficultyType || "Unknown",
     category: activity.categoryDescription,
     points: activity.points,
@@ -198,14 +226,14 @@ export const enrichActivity = (activity: any): any => {
 /**
  * Enrich array of activities
  */
-export const enrichActivities = (activities: any[]): any[] => {
+export const enrichActivities = (activities: RawActivity[]): EnrichedActivity[] => {
   return activities.map(enrichActivity);
 };
 
 /**
  * Format enriched activities into user-friendly text for AI prompt
  */
-export const formatEnrichedActivitiesForPrompt = (enrichedActivities: any[]): string => {
+export const formatEnrichedActivitiesForPrompt = (enrichedActivities: EnrichedActivity[]): string => {
   if (enrichedActivities.length === 0) {
     return "NO ACTIVITY DATA AVAILABLE";
   }

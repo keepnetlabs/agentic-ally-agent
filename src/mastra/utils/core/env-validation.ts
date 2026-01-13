@@ -1,78 +1,87 @@
 /**
  * Environment Validation Utility
- * Validates required environment variables at startup
- * Fails fast if critical configuration is missing
+ * Validates required environment variables at startup using Zod schema
+ * Fails fast if critical configuration is missing or invalid
  */
 
+import { z } from 'zod';
 import { getLogger } from './logger';
 
 const logger = getLogger('EnvValidation');
 
 /**
- * Required environment variables for the application to function
- * These are absolutely necessary and will cause startup failure if missing
+ * Zod schema for environment variables
+ * Defines both required and optional variables with validation rules
  */
-const REQUIRED_ENV_VARS = [
-    'CLOUDFLARE_ACCOUNT_ID',
-    'CLOUDFLARE_API_KEY',             // MOVED: Required for KV API calls
-    'CLOUDFLARE_KV_TOKEN',
-    'CLOUDFLARE_D1_DATABASE_ID',      // MOVED: Required for embedding cache
-    'CLOUDFLARE_AI_GATEWAY_ID',       // MOVED: Required for Workers AI content generation
-    'CLOUDFLARE_GATEWAY_AUTHENTICATION_KEY', // MOVED: Required for Workers AI auth
-    'OPENAI_API_KEY',
-] as const;
+const EnvSchema = z.object({
+    // --- REQUIRED VARIABLES ---
+    CLOUDFLARE_ACCOUNT_ID: z.string().min(1, 'Cloudflare Account ID is required'),
+    CLOUDFLARE_API_KEY: z.string().min(1, 'Cloudflare API Key is required for KV operations'),
+    CLOUDFLARE_KV_TOKEN: z.string().min(1, 'Cloudflare KV Token is required'),
+    CLOUDFLARE_D1_DATABASE_ID: z.string().min(1, 'Cloudflare D1 Database ID is required'),
+    CLOUDFLARE_AI_GATEWAY_ID: z.string().min(1, 'Cloudflare AI Gateway ID is required'),
+    CLOUDFLARE_GATEWAY_AUTHENTICATION_KEY: z.string().min(1, 'Cloudflare Gateway Auth Key is required'),
+    OPENAI_API_KEY: z.string().min(1, 'OpenAI API Key is required'),
 
-/**
- * Optional environment variables that enhance functionality
- * Application will work without these but some features may be limited
- */
-const OPTIONAL_ENV_VARS = [
-    'GOOGLE_GENERATIVE_AI_API_KEY',   // Optional: Falls back to OpenAI
-    'MASTRA_MEMORY_URL',              // Optional: External memory storage
-    'MASTRA_MEMORY_TOKEN',            // Optional: External memory auth
-    'LOGO_DEV_TOKEN',                 // Optional: For logo resolution
-    // Note: RATE_LIMIT_* moved to constants.ts (RATE_LIMIT_CONFIG)
-    // Note: Platform API URL provided via X-BASE-API-URL header (not env var)
-] as const;
+    // --- OPTIONAL VARIABLES ---
+    GOOGLE_GENERATIVE_AI_API_KEY: z.string().optional(),
+    MASTRA_MEMORY_URL: z.string().url().optional(),
+    MASTRA_MEMORY_TOKEN: z.string().optional(),
+    LOGO_DEV_TOKEN: z.string().optional(),
+});
+
+// Infer type from schema
+export type EnvConfig = z.infer<typeof EnvSchema>;
 
 export interface EnvValidationResult {
     valid: boolean;
     missing: string[];
     warnings: string[];
+    config?: EnvConfig;
 }
 
 /**
  * Validates environment variables at startup
- * @returns EnvValidationResult with validation status
- * @throws Error if required environment variables are missing (in production mode)
+ * @returns EnvValidationResult with validation status and parsed config
  */
 export function validateEnvironment(): EnvValidationResult {
-    const missing: string[] = [];
-    const warnings: string[] = [];
+    const result = EnvSchema.safeParse(process.env);
 
-    // Check required variables
-    for (const envVar of REQUIRED_ENV_VARS) {
-        if (!process.env[envVar]) {
-            missing.push(envVar);
-        }
-    }
+    if (!result.success) {
+        const missing: string[] = [];
+        const formattedErrors: string[] = [];
 
-    // Check optional variables and warn if missing
-    for (const envVar of OPTIONAL_ENV_VARS) {
-        if (!process.env[envVar]) {
-            warnings.push(envVar);
-        }
-    }
-
-    const valid = missing.length === 0;
-
-    // Log results
-    if (!valid) {
-        logger.error('Missing required environment variables', {
-            missing,
-            count: missing.length,
+        result.error.issues.forEach(issue => {
+            const path = issue.path.join('.');
+            missing.push(path);
+            formattedErrors.push(`${path}: ${issue.message}`);
         });
+
+        logger.error('Environment validation failed', {
+            missing,
+            errors: formattedErrors,
+        });
+
+        return {
+            valid: false,
+            missing,
+            warnings: [],
+        };
     }
+
+    // Check for optional variables specifically to log warnings (Zod parses them as success even if undefined)
+    // We manually check if specific useful optionals are missing for visibility
+    const warnings: string[] = [];
+    const optionalToCheck = [
+        'GOOGLE_GENERATIVE_AI_API_KEY',
+        'MASTRA_MEMORY_URL'
+    ];
+
+    optionalToCheck.forEach(key => {
+        if (!process.env[key]) {
+            warnings.push(key);
+        }
+    });
 
     if (warnings.length > 0) {
         logger.warn('Optional environment variables not set', {
@@ -81,14 +90,16 @@ export function validateEnvironment(): EnvValidationResult {
         });
     }
 
-    if (valid) {
-        logger.info('Environment validation passed', {
-            requiredCount: REQUIRED_ENV_VARS.length,
-            optionalMissing: warnings.length,
-        });
-    }
+    logger.info('Environment validation passed', {
+        requiredVars: Object.keys(EnvSchema.shape).length,
+    });
 
-    return { valid, missing, warnings };
+    return {
+        valid: true,
+        missing: [],
+        warnings,
+        config: result.data as EnvConfig
+    };
 }
 
 /**
@@ -96,14 +107,17 @@ export function validateEnvironment(): EnvValidationResult {
  * Use this at application startup for fail-fast behavior
  * @throws Error if required environment variables are missing
  */
-export function validateEnvironmentOrThrow(): void {
+export function validateEnvironmentOrThrow(): EnvConfig {
     const result = validateEnvironment();
 
-    if (!result.valid) {
+    if (!result.valid || !result.config) {
         throw new Error(
-            `Missing required environment variables: ${result.missing.join(', ')}. ` +
+            `Invalid environment configuration:\n${result.missing.join('\n')}\n` +
             `Please check your .env file or environment configuration.`
         );
     }
+
+    return result.config;
 }
+
 

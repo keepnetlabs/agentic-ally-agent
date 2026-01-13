@@ -14,7 +14,7 @@ import { errorService } from '../../services/error-service';
 import { validateBCP47LanguageCode, DEFAULT_LANGUAGE } from '../../utils/language/language-utils';
 import { ANALYSIS_REFERENCES, ALLOWED_ENUMS_TEXT } from './behavior-analyst-constants';
 import { AnalysisSchema, GET_ALL_PAYLOAD, TIMELINE_PAYLOAD, getUserInfoOutputSchema, PlatformUser, ApiActivity, PartialAnalysisReport } from './user-management-types';
-import { enrichActivities, formatEnrichedActivitiesForPrompt } from './activity-enrichment-utils';
+import { enrichActivities, formatEnrichedActivitiesForPrompt, type EnrichedActivity } from './activity-enrichment-utils';
 import { findUserByEmail, findUserByNameWithFallbacks } from './utils/user-search-utils';
 export const getUserInfoTool = createTool({
   id: 'get-user-info',
@@ -185,7 +185,7 @@ export const getUserInfoTool = createTool({
       });
 
       let recentActivities = [];
-      let enrichedActivities = [];
+      let enrichedActivities: EnrichedActivity[] = [];
       if (timelineResponse.ok) {
         const timelineData = await timelineResponse.json();
         const results = timelineData?.data?.results || [];

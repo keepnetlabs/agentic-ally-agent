@@ -174,10 +174,10 @@ FINAL CHECK (MENTAL):
  * Build the user prompt for scene localization
  * Identical structure for all scene types
  */
-function buildUserPrompt(
+function buildUserPrompt<T>(
     topic: string,
     targetLanguage: string,
-    scene: any
+    scene: T
 ): string {
     return `Topic: ${topic}
 
@@ -241,7 +241,7 @@ export async function rewriteSceneWithBase<T>(
 
         const cleanKey = sceneType === 'app-texts' ? 'app-texts' : `scene${config.sceneNumber}-${sceneType}`;
         const cleaned = cleanResponse(response.text, cleanKey);
-        const rewritten = JSON.parse(cleaned);
+        const rewritten = JSON.parse(cleaned) as T;
 
         return rewritten;
     } catch (error) {

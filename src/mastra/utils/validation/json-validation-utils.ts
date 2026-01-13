@@ -14,7 +14,7 @@ const logger = getLogger('JsonValidation');
  * @param translated - The translated JSON object
  * @returns boolean indicating if structure is valid
  */
-export function validateInboxStructure(original: Record<string, any>, translated: Record<string, any>): boolean {
+export function validateInboxStructure(original: Record<string, unknown>, translated: Record<string, unknown>): boolean {
   if (!original || !translated) {
     logger.warn('Missing original or translated data for validation');
     return false;
@@ -33,24 +33,27 @@ export function validateInboxStructure(original: Record<string, any>, translated
   }
 
   // Check if 'emails' array exists and has correct structure
-  if (original.emails && Array.isArray(original.emails)) {
-    if (!translated.emails || !Array.isArray(translated.emails)) {
+  const origEmails = (original as { emails?: unknown[] }).emails;
+  const transEmails = (translated as { emails?: unknown[] }).emails;
+
+  if (origEmails && Array.isArray(origEmails)) {
+    if (!transEmails || !Array.isArray(transEmails)) {
       logger.warn('Missing or invalid emails array in translation');
       return false;
     }
 
-    if (original.emails.length !== translated.emails.length) {
+    if (origEmails.length !== transEmails.length) {
       logger.warn('Email count mismatch', {
-        originalCount: original.emails.length,
-        translatedCount: translated.emails.length
+        originalCount: origEmails.length,
+        translatedCount: transEmails.length
       });
       return false;
     }
 
     // Check each email structure
-    for (let i = 0; i < original.emails.length; i++) {
-      const origEmail = original.emails[i];
-      const transEmail = translated.emails[i];
+    for (let i = 0; i < origEmails.length; i++) {
+      const origEmail = origEmails[i] as Record<string, unknown>;
+      const transEmail = transEmails[i] as Record<string, unknown>;
 
       if (!origEmail || !transEmail) {
         logger.warn('Missing email at index', { index: i });
@@ -70,17 +73,19 @@ export function validateInboxStructure(original: Record<string, any>, translated
       }
 
       // Check nested objects like attachments
-      if (origEmail.attachments && Array.isArray(origEmail.attachments)) {
-        if (!transEmail.attachments || !Array.isArray(transEmail.attachments)) {
+      const origAttachments = (origEmail as { attachments?: unknown[] }).attachments;
+      const transAttachments = (transEmail as { attachments?: unknown[] }).attachments;
+      if (origAttachments && Array.isArray(origAttachments)) {
+        if (!transAttachments || !Array.isArray(transAttachments)) {
           logger.warn('Email missing or invalid attachments array', { emailIndex: i });
           return false;
         }
 
-        if (origEmail.attachments.length !== transEmail.attachments.length) {
+        if (origAttachments.length !== transAttachments.length) {
           logger.warn('Email attachment count mismatch', {
             emailIndex: i,
-            originalCount: origEmail.attachments.length,
-            translatedCount: transEmail.attachments.length
+            originalCount: origAttachments.length,
+            translatedCount: transAttachments.length
           });
           return false;
         }
@@ -89,21 +94,24 @@ export function validateInboxStructure(original: Record<string, any>, translated
   }
 
   // Check texts object structure
-  if (original.texts && typeof original.texts === 'object') {
-    if (!translated.texts || typeof translated.texts !== 'object') {
+  const origTexts = (original as any).texts;
+  const transTexts = (translated as any).texts;
+
+  if (origTexts && typeof origTexts === 'object') {
+    if (!transTexts || typeof transTexts !== 'object') {
       logger.warn('Missing or invalid texts object in translation');
       return false;
     }
 
     // Check nested modal structures
-    if (original.texts.phishingReportModal) {
-      if (!translated.texts.phishingReportModal) {
+    if (origTexts.phishingReportModal) {
+      if (!transTexts.phishingReportModal) {
         logger.warn('Missing phishingReportModal in translated texts');
         return false;
       }
 
-      const origModalKeys = Object.keys(original.texts.phishingReportModal).sort();
-      const transModalKeys = Object.keys(translated.texts.phishingReportModal).sort();
+      const origModalKeys = Object.keys(origTexts.phishingReportModal).sort();
+      const transModalKeys = Object.keys(transTexts.phishingReportModal).sort();
 
       if (origModalKeys.join(',') !== transModalKeys.join(',')) {
         logger.warn('phishingReportModal key mismatch', {
@@ -114,14 +122,14 @@ export function validateInboxStructure(original: Record<string, any>, translated
       }
     }
 
-    if (original.texts.phishingResultModal) {
-      if (!translated.texts.phishingResultModal) {
+    if (origTexts.phishingResultModal) {
+      if (!transTexts.phishingResultModal) {
         logger.warn('Missing phishingResultModal in translated texts');
         return false;
       }
 
-      const origResultModalKeys = Object.keys(original.texts.phishingResultModal).sort();
-      const transResultModalKeys = Object.keys(translated.texts.phishingResultModal).sort();
+      const origResultModalKeys = Object.keys(origTexts.phishingResultModal).sort();
+      const transResultModalKeys = Object.keys(transTexts.phishingResultModal).sort();
 
       if (origResultModalKeys.join(',') !== transResultModalKeys.join(',')) {
         logger.warn('phishingResultModal key mismatch', {
@@ -143,7 +151,7 @@ export function validateInboxStructure(original: Record<string, any>, translated
  * @param translated - The translated JSON object that may have structural issues
  * @returns Corrected JSON object
  */
-export function correctInboxStructure(original: Record<string, any>, translated: Record<string, any>): Record<string, any> {
+export function correctInboxStructure(original: Record<string, unknown>, translated: Record<string, unknown>): Record<string, unknown> {
   if (!original || !translated) {
     logger.warn('Cannot correct structure - missing original or translated data');
     return original;
@@ -222,35 +230,38 @@ export function correctInboxStructure(original: Record<string, any>, translated:
     }
   }
 
+  const origTexts = (original as any).texts;
+  const corrTexts = (corrected as any).texts;
+
   // Fix texts object structure
-  if (original.texts && typeof original.texts === 'object') {
-    if (!corrected.texts || typeof corrected.texts !== 'object') {
+  if (origTexts && typeof origTexts === 'object') {
+    if (!corrTexts || typeof corrTexts !== 'object') {
       logger.info('Restoring texts object from original');
-      corrected.texts = original.texts;
+      (corrected as any).texts = origTexts;
     } else {
       // Ensure all text keys exist
-      Object.keys(original.texts).forEach(textKey => {
-        if (!(textKey in corrected.texts)) {
+      Object.keys(origTexts).forEach(textKey => {
+        if (!(textKey in corrTexts)) {
           logger.info('Adding missing text key', { textKey });
-          corrected.texts[textKey] = original.texts[textKey];
+          corrTexts[textKey] = origTexts[textKey];
         }
       });
 
       // Fix modal structures
-      if (original.texts.phishingReportModal && corrected.texts.phishingReportModal) {
-        Object.keys(original.texts.phishingReportModal).forEach(modalKey => {
-          if (!(modalKey in corrected.texts.phishingReportModal)) {
+      if (origTexts.phishingReportModal && corrTexts.phishingReportModal) {
+        Object.keys(origTexts.phishingReportModal).forEach((modalKey: string) => {
+          if (!(modalKey in corrTexts.phishingReportModal)) {
             logger.info('Adding missing phishingReportModal key', { modalKey });
-            corrected.texts.phishingReportModal[modalKey] = original.texts.phishingReportModal[modalKey];
+            corrTexts.phishingReportModal[modalKey] = origTexts.phishingReportModal[modalKey];
           }
         });
       }
 
-      if (original.texts.phishingResultModal && corrected.texts.phishingResultModal) {
-        Object.keys(original.texts.phishingResultModal).forEach(modalKey => {
-          if (!(modalKey in corrected.texts.phishingResultModal)) {
+      if (origTexts.phishingResultModal && corrTexts.phishingResultModal) {
+        Object.keys(origTexts.phishingResultModal).forEach((modalKey: string) => {
+          if (!(modalKey in corrTexts.phishingResultModal)) {
             logger.info('Adding missing phishingResultModal key', { modalKey });
-            corrected.texts.phishingResultModal[modalKey] = original.texts.phishingResultModal[modalKey];
+            corrTexts.phishingResultModal[modalKey] = origTexts.phishingResultModal[modalKey];
           }
         });
       }
@@ -266,7 +277,7 @@ export function correctInboxStructure(original: Record<string, any>, translated:
  * @param jsonData - The JSON object to check
  * @returns Array of detected issues
  */
-export function detectJsonCorruption(jsonData: EmailSimulationInbox | any): string[] {
+export function detectJsonCorruption(jsonData: EmailSimulationInbox | Record<string, unknown>): string[] {
   const issues: string[] = [];
 
   if (!jsonData) {
@@ -281,8 +292,9 @@ export function detectJsonCorruption(jsonData: EmailSimulationInbox | any): stri
   }
 
   // Check for malformed HTML in content fields
-  if (jsonData.emails && Array.isArray(jsonData.emails)) {
-    jsonData.emails.forEach((email: SimulatedEmail, index: number) => {
+  const emails = (jsonData as Partial<EmailSimulationInbox>).emails;
+  if (emails && Array.isArray(emails)) {
+    emails.forEach((email: SimulatedEmail, index: number) => {
       if (email.content && typeof email.content === 'string') {
         // Check for unclosed HTML tags
         const openTags = (email.content.match(/<[^\/][^>]*>/g) || []).length;
@@ -372,12 +384,12 @@ export function repairHtml(html: string): string {
  * @param inbox - Inbox object containing emails array
  * @returns Repaired inbox object
  */
-export function repairInboxHtml(inbox: EmailSimulationInbox | any): EmailSimulationInbox | any {
+export function repairInboxHtml(inbox: EmailSimulationInbox | Record<string, unknown>): EmailSimulationInbox | Record<string, unknown> {
   if (!inbox || typeof inbox !== 'object') {
     return inbox;
   }
 
-  const repaired = { ...inbox };
+  const repaired = { ...inbox } as Partial<EmailSimulationInbox>;
 
   // Repair all emails
   if (repaired.emails && Array.isArray(repaired.emails)) {
@@ -436,8 +448,8 @@ export function repairInboxHtml(inbox: EmailSimulationInbox | any): EmailSimulat
  * @param inbox - Inbox object to check and repair
  * @returns Object with repaired inbox and metadata
  */
-export function detectAndRepairInbox(inbox: EmailSimulationInbox | any): {
-  inbox: EmailSimulationInbox | any;
+export function detectAndRepairInbox(inbox: EmailSimulationInbox | Record<string, unknown>): {
+  inbox: EmailSimulationInbox | Record<string, unknown>;
   hadCorruption: boolean;
   issuesFound: string[];
   issuesRemaining: string[];

@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { getRequestContext } from '../../utils/core/request-storage';
 import { getLogger } from '../../utils/core/logger';
 import { withRetry } from '../../utils/core/resilience-utils';
-import { callWorkerAPI } from '../../utils/core/worker-api-client';
+import { callWorkerAPI, type ServiceBinding } from '../../utils/core/worker-api-client';
 import { maskSensitiveField } from '../../utils/core/security-utils';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
 import { KVService } from '../../services/kv-service';
@@ -54,6 +54,15 @@ export const uploadTrainingTool = createTool({
         }
 
         try {
+            const safeEnv: Record<string, unknown> = env ?? {};
+            const toServiceBinding = (value: unknown): ServiceBinding | undefined => {
+                if (!value || typeof value !== 'object') return undefined;
+                if (!('fetch' in value)) return undefined;
+                return typeof (value as { fetch?: unknown }).fetch === 'function' ? (value as ServiceBinding) : undefined;
+            };
+
+            const serviceBinding = toServiceBinding(safeEnv.CRUD_WORKER);
+
             // 1. Wait for KV consistency (handles eventual consistency)
             // Build expected keys - we only need base key for upload
             const expectedKeys = buildExpectedKVKeys(microlearningId);
@@ -162,8 +171,8 @@ export const uploadTrainingTool = createTool({
             // Wrap API call with retry (exponential backoff: 1s, 2s, 4s)
             const result = await withRetry(
                 () => callWorkerAPI({
-                    env,
-                    serviceBinding: env?.CRUD_WORKER,
+                    env: safeEnv,
+                    serviceBinding,
                     publicUrl: API_ENDPOINTS.TRAINING_WORKER_URL,
                     endpoint: 'https://worker/submit',
                     payload,

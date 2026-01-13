@@ -28,6 +28,18 @@ function extractCompanyIdFromToken(token: string): string | undefined {
   }
 }
 
+interface PolicyFile {
+  name: string;
+  blobUrl: string;
+  [key: string]: unknown; // Allow other properties
+}
+
+interface PolicyContent {
+  policyId: string;
+  text: string;
+  [key: string]: unknown;
+}
+
 /**
  * Fetch and prepare company policies as context string
  * Automatically extracts companyId from JWT token
@@ -65,7 +77,7 @@ export async function getPolicyContext(): Promise<string> {
       return '';
     }
 
-    const policies = await listResponse.json();
+    const policies = (await listResponse.json()) as PolicyFile[];
 
     if (!Array.isArray(policies) || policies.length === 0) {
       logger.info('No policies found for company', { companyId });
@@ -76,11 +88,11 @@ export async function getPolicyContext(): Promise<string> {
     logger.info('Found policies', {
       companyId,
       count: policies.length,
-      policyNames: policies.map((p: any) => p?.name).filter(Boolean),
+      policyNames: policies.map((p) => p?.name).filter(Boolean),
     });
     // 2. Read each policy content in parallel
     const policyContents = await Promise.all(
-      policies.map(async (policy: any) => {
+      policies.map(async (policy) => {
         try {
           // Remove "policies/{companyId}/" prefix from blobUrl
           const cleanBlobUrl = policy.blobUrl.replace(/^policies\/[^\/]+\//, '');
@@ -104,7 +116,7 @@ export async function getPolicyContext(): Promise<string> {
             return null;
           }
 
-          const policyData = await response.json();
+          const policyData = (await response.json()) as PolicyContent;
           logger.info('Policy data received', {
             policyName: policy.name,
             policyId: policyData.policyId,

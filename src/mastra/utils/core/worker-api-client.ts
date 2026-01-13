@@ -28,15 +28,20 @@ import { logErrorInfo } from './error-utils';
 
 const logger = getLogger('WorkerAPIClient');
 
-interface ServiceBinding {
+export interface ServiceBinding {
   fetch(request: Request | string, init?: RequestInit | Request): Promise<Response>;
+}
+
+function isServiceBinding(value: unknown): value is ServiceBinding {
+  if (!value || typeof value !== 'object') return false;
+  return 'fetch' in value && typeof (value as { fetch?: unknown }).fetch === 'function';
 }
 
 export interface CallWorkerAPIOptions<TPayload = any> {
   /** Cloudflare environment bindings */
-  env: Record<string, unknown>;
+  env?: Record<string, unknown>;
   /** Service binding (e.g., env.PHISHING_CRUD_WORKER) */
-  serviceBinding?: ServiceBinding;
+  serviceBinding?: unknown;
   /** Public URL fallback (for local development) */
   publicUrl: string;
   /** Worker endpoint path (e.g., 'https://worker/submit') */
@@ -70,7 +75,12 @@ export async function callWorkerAPI<TResponse = any, TPayload = any>(options: Ca
 
   let response: Response;
 
-  if (serviceBinding) {
+  const binding = isServiceBinding(serviceBinding) ? serviceBinding : undefined;
+  if (serviceBinding && !binding) {
+    logger.warn('⚠️ Invalid service binding provided; falling back to public URL', { endpoint, operationName });
+  }
+
+  if (binding) {
     // ✅ SERVICE BINDING (Production - Internal Routing)
     logger.debug('Using Service Binding', { endpoint, operationName });
     const headers: Record<string, string> = {
@@ -80,7 +90,7 @@ export async function callWorkerAPI<TResponse = any, TPayload = any>(options: Ca
       headers['Authorization'] = `Bearer ${token}`;
     }
 
-    response = await serviceBinding.fetch(endpoint, {
+    response = await binding.fetch(endpoint, {
       method: 'POST',
       headers,
       body: JSON.stringify(payload)
