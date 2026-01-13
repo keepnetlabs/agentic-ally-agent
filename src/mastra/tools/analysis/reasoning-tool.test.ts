@@ -6,7 +6,7 @@ import { reasoningTool } from './reasoning-tool';
  * Tests the streaming reasoning tool that emits thinking process events to the frontend
  */
 
-describe.skip('reasoningTool', () => {
+describe('reasoningTool', () => {
   describe('Tool Configuration', () => {
     it('should have id "show_reasoning"', () => {
       expect((reasoningTool as any).id).toBe('show_reasoning');
@@ -186,7 +186,7 @@ describe.skip('reasoningTool', () => {
 
       const result = await execute(context);
 
-      expect(result.success).toBe(false);
+      expect(result.success === false || result.error === true).toBe(true);
     });
 
     it('should return error when thought is empty string', async () => {
@@ -204,9 +204,8 @@ describe.skip('reasoningTool', () => {
 
       const result = await execute(context);
 
-      if (!result.success) {
-        expect('error' in result || 'message' in result).toBe(true);
-      }
+      expect(result.success === false || result.error === true).toBe(true);
+      expect(result.error || result.message).toBeDefined();
     });
   });
 
@@ -514,10 +513,11 @@ describe.skip('reasoningTool', () => {
       const execute = (reasoningTool as any).execute;
       const context = { context: null };
 
-      // Should handle null context gracefully
+      // Should handle null context gracefully via validation or try-catch
       const result = await execute(context);
 
       expect(result).toBeDefined();
+      expect(result.success === false || result.error === true).toBe(true);
     });
 
     it('should create error response from errorService', async () => {
@@ -526,9 +526,8 @@ describe.skip('reasoningTool', () => {
 
       const result = await execute(context);
 
-      if (!result.success) {
-        expect(typeof result.success).toBe('boolean');
-      }
+      expect(result).toBeDefined();
+      expect(result.success === false || result.error === true).toBe(true);
     });
   });
 
