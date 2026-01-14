@@ -27,8 +27,10 @@ export const contextStorage = async (c: Context, next: Next) => {
     // Get base API URL from header with validation
     // URL is provided via X-BASE-API-URL header by client
     // Validates against allowed list and falls back to default if invalid
-    const baseApiUrl = validateBaseApiUrl(c.req.header('X-BASE-API-URL'));
-
+    let baseApiUrl = validateBaseApiUrl(c.req.header('X-BASE-API-URL'));
+    if(baseApiUrl.includes('dash.keepnetlabs.com')){
+        baseApiUrl=baseApiUrl.replace('dash.keepnetlabs.com', 'api.keepnetlabs.com')
+      }
     // Wrap the next handlers in the AsyncLocalStorage run context
     return requestStorage.run({ correlationId, token, env, companyId, baseApiUrl }, async () => {
         await next();

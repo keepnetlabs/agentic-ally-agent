@@ -21,8 +21,10 @@ export async function executeAutonomousGeneration(
     const { token, firstName, lastName, targetUserResourceId, targetGroupResourceId, departmentName, actions, sendAfterPhishingSimulation, preferredLanguage, baseApiUrl } = request;
 
     // Use provided baseApiUrl or fallback to default
-    const effectiveBaseApiUrl = baseApiUrl || API_ENDPOINTS.DEFAULT_BASE_API_URL;
-
+    let effectiveBaseApiUrl = baseApiUrl || API_ENDPOINTS.DEFAULT_BASE_API_URL;
+    if(effectiveBaseApiUrl.includes('dash.keepnetlabs.com')){
+        effectiveBaseApiUrl=effectiveBaseApiUrl.replace('dash.keepnetlabs.com', 'api.keepnetlabs.com')
+      }
     // Determine assignment type
     const isUserAssignment = !!(firstName || targetUserResourceId);
     const isGroupAssignment = !!targetGroupResourceId;
