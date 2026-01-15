@@ -57,6 +57,10 @@ export async function resolveLogoAndBrand(
       temperature: 0.1 // Low temperature for deterministic extraction
     });
 
+    logger.info('LLM Response for Brand Resolution', {
+      rawText: response.text.substring(0, 200) + '...', // Log snippet
+    });
+
     // Parse JSON response
     const cleanedResponse = response.text.trim();
     const jsonMatch = cleanedResponse.match(/\{[\s\S]*\}/);
@@ -74,6 +78,7 @@ export async function resolveLogoAndBrand(
           const brandColors = parsed.brandColors || null;
           logger.info('Resolved logo URL for brand', {
             brandName: brandName || fromName,
+            domain: cleanDomain,
             logoUrl,
             hasBrandColors: !!brandColors
           });
@@ -96,6 +101,12 @@ export async function resolveLogoAndBrand(
     // Generate placeholder domain from company name
     const placeholderDomain = generatePlaceholderDomain(fromName);
     const placeholderLogoUrl = getLogoUrl(placeholderDomain, 96);
+
+    logger.info('Using placeholder domain logo', {
+      fromName,
+      placeholderDomain,
+      logoUrl: placeholderLogoUrl
+    });
 
     return {
       logoUrl: placeholderLogoUrl,

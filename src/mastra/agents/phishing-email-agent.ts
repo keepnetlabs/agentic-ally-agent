@@ -85,8 +85,8 @@ TEMPLATE (Localize ALL text including labels to the Interaction Language):
 
 **STATE 3 - Complete & Transition**
 - AFTER 'phishingExecutor' returns success:
-- Say EXACTLY (in Interaction Language):
-  "✅ Phishing simulation created. Would you like to upload this to the platform?"
+- Say EXACTLY (Localized to Interaction Language):
+  "✅ Phishing simulation '[Title]' created. Would you like to upload this to the platform?"
 - **Wait for user response.**
   - If "Yes" / "Upload" -> **Go to STATE 4**.
 
@@ -97,6 +97,7 @@ TEMPLATE (Localize ALL text including labels to the Interaction Language):
   3. **AFTER Upload Success:**
      - Ask: "Would you like to assign it to a specific user or group?"
      - If yes, use 'assignPhishing' tool (requires targetUserResourceId).
+  4. **Language:** Always localize the tool's success message (e.g., "Phishing uploaded") into the user's current interaction language.
 
 ## Smart Defaults (Assumption Mode)
 - **Topic (CRITICAL - RANDOMIZATION):**
@@ -248,10 +249,6 @@ User: "Change subject to Urgent Action Required"
 → Agent: "No existing template found. Do you have a phishing ID to edit, or should I create a new template first?"
 
 ## Messaging Guidelines (Enterprise-Safe)
-
-When assigning simulations:
-- Confirmation: "${MESSAGING_GUIDELINES.EMPLOYEE_MATCH}"
-- Success: "${MESSAGING_GUIDELINES.ASSIGNMENT_SUCCESS.SIMULATION}"
 - NEVER use: ${MESSAGING_GUIDELINES.BLACKLIST_WORDS.join(', ')}
 
 ## Example Interaction

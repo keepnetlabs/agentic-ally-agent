@@ -184,7 +184,7 @@ export const uploadTrainingTool = createTool({
                 `Upload training content ${microlearningId}`
             );
 
-            logger.info('Training upload successful', { resourceId: result.resourceId, microlearningId });
+            logger.info('Training upload successful', { result, microlearningId });
 
             // EMIT UI SIGNAL (SURGICAL)
             if (writer) {
@@ -214,8 +214,8 @@ export const uploadTrainingTool = createTool({
                     title: title
                 },
                 message: formatToolSummary({
-                    prefix: '✅ Training uploaded',
-                    title,
+                    prefix: result.message ? `✅ ${result.message}` : '✅ Training uploaded',
+                    title: result.message ? undefined : title,
                     suffix: 'Ready to assign',
                     kv: [
                         { key: 'resourceId', value: result.resourceId },

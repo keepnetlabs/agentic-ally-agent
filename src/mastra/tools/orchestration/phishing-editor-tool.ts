@@ -16,56 +16,28 @@ import { KVService } from '../../services/kv-service';
 import { getLogger } from '../../utils/core/logger';
 import { errorService } from '../../services/error-service';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
-import { withRetry } from '../../utils/core/resilience-utils';
+import { withRetry, withTimeout } from '../../utils/core/resilience-utils';
 import { ProductService } from '../../services/product-service';
 import { fixBrokenImages } from '../../utils/landing-page/image-validator';
-import { resolveLogoAndBrand } from '../../utils/phishing/brand-resolver';
+import { detectAndResolveBrand } from './phishing-editor-utils';
 import { preserveLandingFormControlStyles } from '../../utils/content-processors/landing-form-style-preserver';
 import { postProcessPhishingLandingHtml } from '../../utils/content-processors/phishing-html-postprocessors';
 import { summarizeForLog } from '../../utils/core/log-redaction-utils';
 import { KV_NAMESPACES } from '../../constants';
+import {
+  phishingEditorSchema,
+  emailResponseSchema,
+  landingPageResponseSchema,
+  LandingPageInput
+} from './phishing-editor-schemas';
+import {
+  getPhishingEditorSystemPrompt,
+  getPhishingEmailUserPrompt,
+  getLandingPageSystemPrompt,
+  getLandingPageUserPrompt
+} from './phishing-editor-prompts';
 
-// Utility: Add timeout to AI calls
-function withTimeout<T>(promise: Promise<T>, timeoutMs: number = 30000): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<T>((_, reject) =>
-      setTimeout(() => reject(new Error(`AI request timeout after ${timeoutMs}ms`)), timeoutMs)
-    )
-  ]);
-}
 
-const phishingEditorSchema = z.object({
-  phishingId: z.string().describe('ID of the existing phishing template to edit'),
-  editInstruction: z.string().describe('Natural language instruction for editing (e.g. "Add urgency to all text", "Remove logo", "Translate to German")'),
-  mode: z.enum(['edit', 'translate']).optional().default('edit').describe('Operation mode: "translate" locks layout/CSS and only updates text/labels/placeholders; "edit" allows full content + design edits'),
-  hasBrandUpdate: z.boolean().optional().default(false).describe('True if the instruction implies changing the brand, logo, or visual identity'),
-  language: z.string().optional().default('en-gb').describe('Target language (BCP-47 code)'),
-  modelProvider: z.string().optional().describe('Override model provider'),
-  model: z.string().optional().describe('Override model name'),
-});
-
-// Response validation schemas
-const emailResponseSchema = z.object({
-  subject: z.string().min(1, 'Subject must not be empty'),
-  template: z.string().min(20, 'Template must contain valid HTML'),
-  summary: z.string().min(5, 'Summary must be at least 5 characters')
-});
-
-const landingPageResponseSchema = z.object({
-  type: z.enum(['login', 'success', 'info']).describe('Landing page type'),
-  template: z.string().min(50, 'Template must contain complete HTML'),
-  edited: z.boolean().describe('Whether page was edited'),
-  summary: z.string().min(5, 'Summary must be at least 5 characters')
-});
-
-// Input landing page schema for type inference
-type LandingPageInput = {
-  type: 'login' | 'success' | 'info';
-  template: string;
-  edited?: boolean;
-  summary?: string;
-};
 
 export const phishingEditorTool = createTool({
   id: 'phishing-editor',
@@ -128,73 +100,18 @@ export const phishingEditorTool = createTool({
 
       // Only run expensive brand resolution if Agent flagged this as a brand update
       if (context.hasBrandUpdate) {
-        try {
-          // Pass editInstruction as both name and scenario to help LLM extract brand name
-          // Previously 'Phishing Editor' was passed as name, confusing the resolver
-          const brandInfo = await resolveLogoAndBrand(editInstruction, editInstruction, aiModel);
-          if (brandInfo.isRecognizedBrand && brandInfo.logoUrl) {
-            // Log brand name but mask URL for security
-            logger.info('Brand detected in edit instruction', { brand: brandInfo.brandName, logoResolved: true });
-            brandContext = `
-CRITICAL - BRAND DETECTED:
-The user wants to use "${brandInfo.brandName}".
-You MUST use EXACTLY this logo URL: "${brandInfo.logoUrl}"
-ACTION: REPLACE the existing logo src (or {CUSTOMMAINLOGO} placeholder) with this URL.
-DO NOT use any other URL for the logo.`;
-          }
-        } catch (err) {
-          logger.warn('Brand detection in editor failed, continuing without brand context', { error: err });
-        }
+        const brandResult = await detectAndResolveBrand(editInstruction, aiModel, whitelabelConfig);
+        brandContext = brandResult.brandContext;
       }
 
-      const systemPrompt = `You are editing a phishing email template for a LEGITIMATE CYBERSECURITY TRAINING COMPANY.
-
-CRITICAL RULES:
-1. ✅ PRESERVE all merge tags: {FIRSTNAME}, {PHISHINGURL}, {CUSTOMMAINLOGO}
-2. ✅ PRESERVE HTML structure and design (colors, spacing, layout)
-3. ✅ PRESERVE all form elements and their functionality
-4. ✅ Update: Text content, tone, urgency, language, psychological triggers
-5. ✅ Validate that the result is complete HTML, not truncated
-6. ✅ All HTML attributes must use SINGLE QUOTES (e.g., style='color:red;', class='header')
-7. ✅ If instruction is to "remove logo", remove only the img tag, keep {CUSTOMMAINLOGO} tag in comments
-8. ✅ If instruction is to "change logo", REPLACE the src attribute. DO NOT add a second img tag.
-9. ✅ PRESERVE {PHISHINGURL} in all Call-to-Action buttons and links. Do NOT replace with real URLs.
-10. ✅ ONLY use image URLs provided in instructions or existing in the template. NEVER generate new image URLs from external domains (like wikipedia, example.com).
-
-OUTPUT FORMAT - CRITICAL:
-Return ONLY a valid JSON object. Do NOT include:
-- Markdown code blocks (no \`\`\`json\`\`\`)
-- Extra backticks or quotes
-- Explanatory text
-- Line breaks before/after JSON
-
-EXACT JSON FORMAT:
-{"subject":"New subject line here","template":"<html>...complete HTML...</html>","summary":"Brief 1-2 sentence summary"}
-
-VALIDATION CHECKLIST BEFORE RETURNING:
-✓ subject field: non-empty string
-✓ template field: contains complete HTML (doctype, html, head, body tags)
-✓ summary field: 1-2 sentence description of changes
-✓ All HTML attributes use SINGLE quotes (style='...', class='...', id='...')
-✓ Merge tags {FIRSTNAME}, {PHISHINGURL} are still present
-✓ JSON is valid (matching braces and quotes)
-✓ No markdown formatting or backticks
-✓ No text before or after the JSON object`;
+      const systemPrompt = getPhishingEditorSystemPrompt();
 
       // 3. Parallel LLM calls - Email and Landing Page separate
 
       // 3a. Email edit
       // Escape user input to prevent prompt injection
       const escapedInstruction = JSON.stringify(editInstruction).slice(1, -1);  // Remove outer quotes
-      const emailUserPrompt = `Edit this email template:
-
-Subject: ${existingEmail.subject}
-Body: ${existingEmail.template}
-
-Instruction: "${escapedInstruction}"
-
-${brandContext}
-`;
+      const emailUserPrompt = getPhishingEmailUserPrompt(existingEmail, escapedInstruction, brandContext);
 
       logger.info('Calling LLM for email editing');
       const emailPromise = withRetry(
@@ -216,51 +133,8 @@ ${brandContext}
       let landingPagePromises: ReturnType<typeof generateText>[] = [];
       if (existingLanding?.pages?.length > 0) {
         landingPagePromises = existingLanding.pages.map((page: LandingPageInput, idx: number) => {
-          const landingSystemPrompt = `You are editing a phishing landing page for CYBERSECURITY TRAINING.
-
-CRITICAL RULES:
-1. ✅ PRESERVE HTML structure and design (colors, spacing, layout)
-2. ✅ EDIT page content based on user instruction
-3. ✅ PRESERVE all form elements and functionality
-${mode === 'translate' ? `4. ✅ **TRANSLATE MODE - DO NOT CHANGE FORM CONTROL CSS:** For <input>, <select>, <textarea>, <button> you MUST preserve existing style/class attributes exactly. Only translate visible text, labels, and placeholders.` : `4. ✅ If instruction is translation/localization, preserve existing layout and CSS.`}
-4. ✅ Only SKIP if user explicitly said "email only" or "email template only"
-5. ✅ Return COMPLETE page HTML (never empty)
-6. ✅ All HTML attributes must use SINGLE QUOTES (style='...', class='...', etc.)
-7. ✅ If instruction is to "remove logo", remove only the img tag.
-8. ✅ If instruction is to "change logo", REPLACE the src attribute. DO NOT add a second img tag.
-9. ✅ PRESERVE {PHISHINGURL} in links. Do NOT replace with real URLs.
-10. ✅ ONLY use image URLs provided in instructions or existing in the template. NEVER generate new image URLs from external domains (like wikipedia, example.com).
-
-OUTPUT FORMAT - CRITICAL:
-Return ONLY a valid JSON object. Do NOT include:
-- Markdown code blocks (no \`\`\`json\`\`\`)
-- Extra backticks or quotes
-- Explanatory text
-- Line breaks before/after JSON
-
-EXACT JSON FORMAT:
-{"type":"login","template":"<html>...complete HTML...</html>","edited":true,"summary":"Description of changes"}
-
-VALIDATION CHECKLIST:
-✓ type field: "login", "success", or "info"
-✓ template field: complete HTML with all tags
-✓ edited field: boolean (true if modified, false if unchanged)
-✓ summary field: 1-2 sentence description
-✓ All HTML attributes use SINGLE quotes
-✓ JSON is valid and complete`;
-
-          const landingUserPrompt = `Edit landing page ${idx + 1}:
-
-${JSON.stringify(page)}
-
-Instruction: "${escapedInstruction}"
-
-${brandContext}
-${brandContext ? 'IMPORTANT: You MUST use the logo URL provided above. Do NOT use any other URL even if you think it is better.' : ''}
-
-IMPORTANT: Edit UNLESS user explicitly said "email only" or similar exclusion.
-PRESERVE {PHISHINGURL} in links.
-Return ONLY the JSON object with no extra text.`;
+          const landingSystemPrompt = getLandingPageSystemPrompt(mode);
+          const landingUserPrompt = getLandingPageUserPrompt(page, escapedInstruction, brandContext);
 
           logger.info(`Calling LLM for landing page ${idx + 1} editing`);
           return withRetry(

@@ -98,7 +98,7 @@ export const assignTrainingTool = createTool({
         `Assign training to ${assignmentType} ${targetId}`
       );
 
-      logger.info('Assignment success', { resultKeys: Object.keys(result) });
+      logger.info('Assignment success', { result });
 
       // EMIT UI SIGNAL (SURGICAL)
       if (writer) {
@@ -122,14 +122,14 @@ export const assignTrainingTool = createTool({
       const toolResult = {
         success: true,
         data: {
-          assignmentType,
+          assignmentType: assignmentType as 'USER' | 'GROUP',
           targetId: String(targetId || ''),
           targetLabel: String(targetLabel || ''),
           resourceId,
           sendTrainingLanguageId,
         },
         message: formatToolSummary({
-          prefix: `✅ Training assigned to ${assignmentType} ${targetLabel}`,
+          prefix: result.message ? `✅ ${result.message}` : `✅ Training assigned to ${assignmentType} ${targetLabel}`,
           kv: [
             { key: 'resourceId', value: resourceId },
             { key: 'sendTrainingLanguageId', value: sendTrainingLanguageId },

@@ -48,11 +48,16 @@ export function getLogoUrl(domain: string, size: number = 96): string {
     }
 
     // Primary: Logo.dev
-    // Simplified: Return URL directly without pre-validation as requested
     const logoDevToken = process.env.LOGO_DEV_TOKEN || 'LOGO_DEV_PUBLISHABLE_KEY';
     const logoDevUrl = `https://img.logo.dev/${cleanDomain}?token=${logoDevToken}&size=${size}`;
 
-    logger.info('Resolved logo via Logo.dev (direct)', { domain: cleanDomain });
+    logger.info('Encoded logo URL', {
+        success: true,
+        source: 'Logo.dev',
+        domain: cleanDomain,
+        url: logoDevUrl,
+        size
+    });
     return logoDevUrl;
 }
 

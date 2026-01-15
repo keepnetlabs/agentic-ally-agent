@@ -9,36 +9,15 @@ import { API_ENDPOINTS } from '../constants';
 import { waitForKVConsistency, buildExpectedKVKeys } from '../utils/kv-consistency';
 import { withRetry } from '../utils/core/resilience-utils';
 import { normalizeThemeBackgroundClass } from '../utils/theme/theme-color-normalizer';
+import { ProductService } from '../services/product-service';
+import { resolveLogoAndBrand } from '../utils/phishing/brand-resolver';
+import { getModelWithOverride } from '../model-providers';
+import { updatesSchema, updateInputSchema, updateOutputSchema } from './microlearning-schemas';
+import { handleLogoHallucination } from '../utils/microlearning/logo-utils';
 
 const logger = getLogger('UpdateMicrolearningWorkflow');
 
-// Input/Output Schemas
-const updateInputSchema = z.object({
-  microlearningId: z.string().describe('ID of existing microlearning to update'),
-  department: z.string().optional().default('All').describe('Department for context'),
-  updates: z.object({
-    theme: z
-      .record(z.any())
-      .describe('Theme updates (fontFamily, colors, logo)'),
-  }).describe('Updates to apply'),
-  modelProvider: z.string().optional().describe('Model provider override (OPENAI, WORKERS_AI, GOOGLE)'),
-  model: z.string().optional().describe('Model name (e.g., OPENAI_GPT_4O_MINI, WORKERS_AI_GPT_OSS_120B)'),
-});
 
-const updateOutputSchema = z.object({
-  success: z.boolean(),
-  status: z.string(),
-  metadata: z
-    .object({
-      microlearningId: z.string(),
-      version: z.number(),
-      changes: z.record(z.any()).optional(),
-      trainingUrl: z.string().optional(),
-      timestamp: z.string(),
-    })
-    .optional(),
-  error: z.string().optional(),
-});
 
 // Deep merge utility - handles nested objects properly
 function deepMerge<T>(target: T, source: any): T {
@@ -50,11 +29,11 @@ function deepMerge<T>(target: T, source: any): T {
     if (Object.prototype.hasOwnProperty.call(source, key)) {
       if (typeof source[key] === 'object' && source[key] !== null && !Array.isArray(source[key])) {
         // Recursive merge for nested objects
-         
+
         result[key] = deepMerge((result as any)[key] || {}, source[key]);
       } else {
         // Direct assignment for primitives and arrays
-         
+
         (result as any)[key] = source[key];
       }
     }
@@ -75,7 +54,7 @@ const loadMicrolearningStep = createStep({
     department: z.string(),
     currentContent: z.any(),
     currentVersion: z.number(),
-    updates: z.any(),
+    updates: updatesSchema as any,
     model: z.string().optional(),
     modelProvider: z.string().optional(),
   }),
@@ -125,7 +104,7 @@ const mergeUpdatesStep = createStep({
     department: z.string(),
     currentContent: z.any(),
     currentVersion: z.number(),
-    updates: z.any(),
+    updates: updatesSchema as any,
     model: z.string().optional(),
     modelProvider: z.string().optional(),
   }),
@@ -137,7 +116,15 @@ const mergeUpdatesStep = createStep({
     changes: z.record(z.any()),
   }),
   execute: async ({ inputData }) => {
-    const { microlearningId, department, currentContent, currentVersion, updates, model, modelProvider } = inputData;
+    const { microlearningId, department, currentContent, currentVersion, updates: rawUpdates, model, modelProvider } = inputData;
+    let updates = handleLogoHallucination(rawUpdates, microlearningId);
+
+    logger.info('Received update request', {
+      microlearningId,
+      department,
+      updatesKeys: Object.keys(updates),
+      rawUpdates: JSON.stringify(updates)
+    });
 
     const newVersion = currentVersion + 1;
     const updatedContent = JSON.parse(JSON.stringify(currentContent)); // Deep clone
@@ -147,6 +134,57 @@ const mergeUpdatesStep = createStep({
     if (updates.theme) {
       if (!updatedContent.theme) {
         updatedContent.theme = {};
+      }
+
+      // Handle Whitelabel Logo Override
+      if (updates.useWhitelabelLogo) {
+        try {
+          const productService = new ProductService();
+          const config = await productService.getWhitelabelingConfig();
+          if (config?.mainLogoUrl) {
+            updates.theme.logo = {
+              ...(updates.theme.logo || {}),
+              src: config.mainLogoUrl,
+              // Fallback to main logo as dark logo is not always available in config
+              darkSrc: config.mainLogoUrl
+            };
+            logger.info('Whitelabel logo applied via overrides', { microlearningId, logoUrl: config.mainLogoUrl });
+          } else {
+            logger.warn('useWhitelabelLogo requested but no config found', { microlearningId });
+          }
+        } catch (err) {
+          logger.warn('Failed to apply whitelabel logo', { error: err });
+        }
+      } else if (updates.brandName) {
+        logger.info('Processing external brand update', { brandName: updates.brandName });
+        // Handle External Brand Resolution
+        try {
+          // Use default model or override if provided
+          const aiModel = getModelWithOverride(modelProvider, model);
+
+          // Use resolveLogoAndBrand to find the logo URL for the brand
+          // We pass the brand name as both name and scenario since we just want logo resolution
+          const brandInfo = await resolveLogoAndBrand(updates.brandName, `Brand update to ${updates.brandName}`, aiModel);
+
+          if (brandInfo.logoUrl) {
+            updates.theme.logo = {
+              ...(updates.theme.logo || {}),
+              src: brandInfo.logoUrl,
+              darkSrc: brandInfo.logoUrl // Use same logo for dark mode if resolved externally
+            };
+            logger.info('External brand logo resolved and applied', {
+              microlearningId,
+              brand: updates.brandName,
+              logoUrl: brandInfo.logoUrl
+            });
+          } else {
+            logger.warn('Brand resolution returned no logo URL', { brand: updates.brandName });
+          }
+        } catch (err) {
+          logger.warn('Failed to resolve external brand logo', { brand: updates.brandName, error: err });
+        }
+      } else {
+        logger.info('No brand updates detected', { updatesKeys: Object.keys(updates) });
       }
 
       // Normalize color if provided
@@ -166,7 +204,7 @@ const mergeUpdatesStep = createStep({
 
       // Track theme changes
       for (const key in updates.theme) {
-        changes[`theme.${key}`] = updates.theme[key];
+        changes[`theme.${key}`] = (updates.theme as any)[key];
       }
     }
 

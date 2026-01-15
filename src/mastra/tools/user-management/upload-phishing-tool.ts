@@ -161,14 +161,7 @@ export const uploadPhishingTool = createTool({
             );
 
             logger.info('Phishing upload successful', {
-                success: result.success,
-                templateResourceId: result.templateResourceId,
-                templateId: result.templateId,
-                landingPageResourceId: result.landingPageResourceId,
-                landingPageId: result.landingPageId,
-                scenarioResourceId: result.scenarioResourceId,
-                scenarioId: result.scenarioId,
-                message: result.message
+                result
             });
 
             // Backend returns: { templateResourceId, templateId, landingPageResourceId, landingPageId, scenarioResourceId, scenarioId, message }
@@ -181,8 +174,8 @@ export const uploadPhishingTool = createTool({
             const resourceIdForAssignment = scenarioResourceId || templateResourceId;
 
             const formattedMessage = formatToolSummary({
-                prefix: `✅ ${isQuishing ? 'Quishing' : 'Phishing'} uploaded`,
-                title: name,
+                prefix: result.message ? `✅ ${result.message}` : `✅ ${isQuishing ? 'Quishing' : 'Phishing'} uploaded`,
+                title: result.message ? undefined : name,
                 suffix: 'Ready to assign',
                 kv: [
                     { key: 'scenarioName', value: name },

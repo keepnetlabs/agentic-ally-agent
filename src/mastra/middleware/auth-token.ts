@@ -1,6 +1,7 @@
 import { Context, Next } from 'hono';
 import { getLogger } from '../utils/core/logger';
 import { API_ENDPOINTS } from '../constants';
+import { tokenCache } from '../utils/core/token-cache';
 
 const logger = getLogger('AuthToken');
 
@@ -47,13 +48,14 @@ const SKIP_AUTH_PATHS = [
     '/code-review-validate',
 ] as const;
 
+
 /**
  * Token Authentication Middleware
  * 
  * Requires X-AGENTIC-ALLY-TOKEN header for all requests except internal endpoints.
  * This prevents unauthorized access to AI endpoints and protects token usage.
  * 
- * Future: Add token validation against KV/DB for more security.
+ * Includes in-memory caching to reduce latency on frequent validation calls.
  */
 export const authTokenMiddleware = async (c: Context, next: Next): Promise<Response | void> => {
     // Skip internal/system endpoints
@@ -108,15 +110,36 @@ export const authTokenMiddleware = async (c: Context, next: Next): Promise<Respo
         );
     }
 
-    // Token is valid - allow request to proceed
+    // Token is valid format - allow request to proceed
     // Future: Add JWT verification or KV allowlist check here
-    logger.debug('✅ Token validated locally', {
+    logger.debug('✅ Token validated locally (format)', {
         path: c.req.path,
         method: c.req.method,
         ip: clientIp,
     });
 
-    // Validate with backend
+    // 3. Check Cache
+    const cachedIsValid = tokenCache.get(token);
+
+    if (cachedIsValid !== null) {
+        if (cachedIsValid) {
+            // Recalculate estimated age for logging (optional, or skip logging age)
+            logger.debug('✅ Token validated via cache', {
+                path: c.req.path,
+                ip: clientIp,
+            });
+            await next();
+            return;
+        } else {
+            logger.warn('❌ Unauthorized: invalid token (cached)', {
+                path: c.req.path,
+                ip: clientIp,
+            });
+            return c.json({ error: 'Unauthorized', message: 'Token invalid (cached)' }, 401);
+        }
+    }
+
+    // 4. Validate with backend (if not cached or expired)
     try {
         const baseApiUrl = c.req.header('X-BASE-API-URL') || API_ENDPOINTS.DEFAULT_AUTH_URL;
         const validationUrl = `${baseApiUrl}/auth/validate`;
@@ -141,6 +164,10 @@ export const authTokenMiddleware = async (c: Context, next: Next): Promise<Respo
                 ip: clientIp,
                 status: response.status
             });
+
+            // Cache invalid result for a shorter time (e.g. 1 min) to prevent DoS on auth server
+            tokenCache.set(token, false, 60000);
+
             return c.json(
                 {
                     error: 'Unauthorized',
@@ -149,6 +176,11 @@ export const authTokenMiddleware = async (c: Context, next: Next): Promise<Respo
                 401
             );
         }
+
+        // Cache successful result
+        tokenCache.set(token, true);
+
+        logger.debug('Token cached', { ttl: '15m' });
 
     } catch (error) {
         logger.error('Auth validation error', { error });

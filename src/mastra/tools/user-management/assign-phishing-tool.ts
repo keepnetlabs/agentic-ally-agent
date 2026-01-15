@@ -116,7 +116,7 @@ export const assignPhishingTool = createTool({
                 `Assign phishing to ${assignmentType} ${targetId}`
             );
 
-            logger.info('Phishing assignment success', { resultKeys: Object.keys(result) });
+            logger.info('Phishing assignment success', { result });
 
             // EMIT UI SIGNAL (SURGICAL)
             if (writer) {
@@ -149,8 +149,8 @@ export const assignPhishingTool = createTool({
                     ...(trainingId ? { followUpTrainingId: trainingId } : {}),
                 },
                 message: formatToolSummary({
-                    prefix: `✅ ${isQuishing ? 'Quishing' : 'Phishing'} campaign assigned to ${assignmentType} ${targetLabel}`,
-                    title: name,
+                    prefix: result.message ? `✅ ${result.message}` : `✅ ${isQuishing ? 'Quishing' : 'Phishing'} campaign assigned to ${assignmentType} ${targetLabel}`,
+                    title: result.message ? undefined : name,
                     kv: [
                         { key: 'resourceId', value: resourceId },
                         { key: 'languageId', value: languageId },
