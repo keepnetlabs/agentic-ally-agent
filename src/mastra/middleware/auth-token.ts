@@ -44,6 +44,7 @@ const SKIP_AUTH_PATHS = [
     '/__hot-reload-status',
     '/api/telemetry',
     '/autonomous',
+    '/code-review-validate',
 ] as const;
 
 /**
@@ -117,7 +118,7 @@ export const authTokenMiddleware = async (c: Context, next: Next): Promise<Respo
 
     // Validate with backend
     try {
-        const baseApiUrl = c.req.header('X-BASE-API-URL') || API_ENDPOINTS.DEFAULT_BASE_API_URL;
+        const baseApiUrl = c.req.header('X-BASE-API-URL') || API_ENDPOINTS.DEFAULT_AUTH_URL;
         const validationUrl = `${baseApiUrl}/auth/validate`;
         logger.info('Validation URL', { url: validationUrl });
         const response = await fetch(validationUrl, {
@@ -128,7 +129,7 @@ export const authTokenMiddleware = async (c: Context, next: Next): Promise<Respo
         });
 
         const responseText = await response.text();
-        logger.info('Auth Validation Response', {
+        logger.debug('Auth Validation Response', {
             status: response.status,
             body: responseText
         });

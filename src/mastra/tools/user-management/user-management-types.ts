@@ -40,8 +40,7 @@ export const GET_ALL_PAYLOAD = {
         Condition: "AND",
         SearchInputTextValue: "",
         FilterGroups: [
-            { Condition: "AND", FilterItems: [], FilterGroups: [] },
-            { Condition: "OR", FilterItems: [], FilterGroups: [] }
+            { Condition: "AND", FilterItems: [], FilterGroups: [] }
         ]
     },
     pagination: { pageNumber: 1, pageSize: 50, orderBy: "rank", ascending: true }

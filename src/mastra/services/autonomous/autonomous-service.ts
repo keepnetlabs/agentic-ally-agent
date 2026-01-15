@@ -22,9 +22,12 @@ export async function executeAutonomousGeneration(
 
     // Use provided baseApiUrl or fallback to default
     let effectiveBaseApiUrl = baseApiUrl || API_ENDPOINTS.DEFAULT_BASE_API_URL;
-    if(effectiveBaseApiUrl.includes('dash.keepnetlabs.com')){
-        effectiveBaseApiUrl=effectiveBaseApiUrl.replace('dash.keepnetlabs.com', 'api.keepnetlabs.com')
-      }
+    if (effectiveBaseApiUrl.includes('dash.keepnetlabs.com')) {
+        effectiveBaseApiUrl = effectiveBaseApiUrl.replace('dash.keepnetlabs.com', 'api.keepnetlabs.com')
+    }
+    if (effectiveBaseApiUrl.includes('test-ui.devkeepnet.com')) {
+        effectiveBaseApiUrl = effectiveBaseApiUrl.replace('test-ui.devkeepnet.com', 'test-api.devkeepnet.com')
+    }
     // Determine assignment type
     const isUserAssignment = !!(firstName || targetUserResourceId);
     const isGroupAssignment = !!targetGroupResourceId;

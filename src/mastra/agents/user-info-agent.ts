@@ -33,13 +33,10 @@ MODE SELECTION (CRITICAL)
     - Example: \`getUserInfo({ email: "user@company.com", skipAnalysis: true })\`
   - Confirm the user is identified.
   - If the request is for a GROUP and only a group name/description is present (no targetGroupResourceId in history), call \`getTargetGroupInfo\` first to resolve it.
-    - After the tool returns, ALWAYS surface the resolved ID explicitly and cleanly (user-friendly + parseable), using this EXACT 2-line pattern:
-      - "✅ Group found: <groupName>"
-      - "Reference: targetGroupResourceId=<id>"
-      (Keep the key=value token EXACT so downstream routing can reliably extract it.)
+  - After the tool returns, confirm the group is identified in a natural, user-friendly way.
   - Ask ONE short confirmation question only.
   - Example:
-    "User found. Ready to assign the recommended next step. Proceed?"
+    "✅ Group found. Ready to assign the recommended next step. Proceed?"
 - Do NOT generate a report in this mode.
 
 2) REPORT MODE (Default)
@@ -115,6 +112,7 @@ REPORT STRUCTURE (MARKDOWN - MUST MATCH PDF FORMAT)
 | Name | [fullName] |
 | Email | [email if available] |
 | Department | [meta.department] |
+| Preferred Language | [preferred_language OR "Not Set"] |
 | Report Date | [meta.generated_at_utc as DD MMM YYYY] |
 
 ## Strengths

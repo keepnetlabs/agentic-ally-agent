@@ -8,7 +8,7 @@ import { z } from 'zod';
  * BCP-47 language code pattern (e.g., en, en-US, zh-CN, pt-BR)
  * Supports:
  * - Primary language: 2-3 lowercase letters (en, pt, chi)
- * - Optional region: 2 uppercase letters or 3 digits (US, BR, 001)
+ * - Optional region: 2 uppercase letters or 3 digits (GB, BR, 001)
  */
 const BCP47_PATTERN = /^[a-z]{2,3}(-[A-Z]{2}|-[0-9]{3})?$/;
 
@@ -22,7 +22,7 @@ const BCP47_RELAXED_PATTERN = /^[a-z]{2,3}(-[a-z0-9]{2,3})?$/i;
  * Common language codes for better error messages
  */
 const COMMON_LANGUAGE_CODES = [
-  'en-US', 'en-GB', 'tr-TR', 'de-DE', 'fr-FR', 'es-ES', 'it-IT',
+  'en-GB', 'en-US', 'tr-TR', 'de-DE', 'fr-FR', 'es-ES', 'it-IT',
   'pt-BR', 'pt-PT', 'zh-CN', 'zh-TW', 'ja-JP', 'ko-KR', 'ar-SA',
   'ru-RU', 'hi-IN', 'vi-VN', 'th-TH', 'pl-PL', 'nl-NL', 'sv-SE'
 ];

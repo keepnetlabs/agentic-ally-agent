@@ -73,6 +73,11 @@ export async function getPolicyContext(): Promise<string> {
     );
 
     if (!listResponse.ok) {
+      // 404 is expected if no policies exist yet
+      if (listResponse.status === 404) {
+        logger.info('No policies found for company (404)', { companyId });
+        return '';
+      }
       logger.warn('Failed to list policies', { status: listResponse.status });
       return '';
     }
@@ -137,7 +142,7 @@ export async function getPolicyContext(): Promise<string> {
     const validPolicies = policyContents.filter((p) => p !== null);
 
     if (validPolicies.length === 0) {
-      logger.warn('No valid policies could be read');
+      logger.info('No valid policies could be read');
       return '';
     }
 
@@ -147,7 +152,8 @@ export async function getPolicyContext(): Promise<string> {
     return context;
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error));
-    logger.error('Error fetching policy context', { error: err.message, stack: err.stack });
+    // Downgrade to WARN as this is not critical for agent function
+    logger.warn('Error fetching policy context', { error: err.message });
     return ''; // Graceful fallback
   }
 }

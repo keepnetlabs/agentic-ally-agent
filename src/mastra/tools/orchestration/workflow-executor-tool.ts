@@ -192,6 +192,11 @@ const workflowExecutorSchema = z.object({
     .enum(PROMPT_ANALYSIS.PRIORITY_LEVELS)
     .optional()
     .default('medium'),
+  language: z
+    .string()
+    .regex(PROMPT_ANALYSIS.LANGUAGE_CODE_REGEX, PROMPT_ANALYSIS.LANGUAGE_CODE_REGEX.toString())
+    .optional()
+    .describe('Language for new microlearning content (e.g., tr-tr, en-gb)'),
 
   // Add language parameters
   existingMicrolearningId: z
@@ -285,6 +290,7 @@ export const workflowExecutorTool = createTool({
             department: params.department || 'All',
             level: params.level || 'Intermediate',
             priority: params.priority || 'medium',
+            language: params.language,
             modelProvider: params.modelProvider,
             model: params.model,
             writer: writer,

@@ -21,6 +21,7 @@ const AnalyzeUserPromptSchema = z.object({
   customRequirements: z.string()
     .max(PROMPT_ANALYSIS.MAX_CUSTOM_REQUIREMENTS_LENGTH, `Custom requirements must not exceed ${PROMPT_ANALYSIS.MAX_CUSTOM_REQUIREMENTS_LENGTH} characters`)
     .optional(),
+  suggestedLanguage: z.string().optional().describe('Suggested target language (BCP-47)'),
   modelProvider: z.enum(MODEL_PROVIDERS.NAMES).optional().describe('Model provider'),
   model: z.string().optional().describe('Model name (e.g., OPENAI_GPT_4O_MINI, WORKERS_AI_GPT_OSS_120B)'),
   policyContext: z.string()
@@ -64,7 +65,7 @@ export const analyzeUserPromptTool = new Tool({
   execute: async (context: any) => {
     const logger = getLogger('AnalyzeUserPromptTool');
     const input = context?.inputData || context?.input || context;
-    const { userPrompt, additionalContext, suggestedDepartment, customRequirements, modelProvider, model: modelOverride, policyContext, suggestedLevel } = input;
+    const { userPrompt, additionalContext, suggestedDepartment, customRequirements, modelProvider, model: modelOverride, policyContext, suggestedLevel, suggestedLanguage } = input;
     const writer = input?.writer; // Get writer for streaming
 
     const model = getModelWithOverride(modelProvider, modelOverride);
@@ -78,6 +79,7 @@ export const analyzeUserPromptTool = new Tool({
         suggestedDepartment,
         suggestedLevel,
         customRequirements,
+        suggestedLanguage,
         policyContext,
         model,
         writer

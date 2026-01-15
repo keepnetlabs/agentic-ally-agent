@@ -31,7 +31,7 @@ export async function fetchUsersWithFilters(
         'Authorization': `Bearer ${token}`,
     };
     if (companyId) headers['x-ir-company-id'] = companyId;
-
+    logger.info('User search headers', { headers });
     const payload = JSON.parse(JSON.stringify(getAllPayloadTemplate));
     const filterGroup = (payload as any)?.filter?.FilterGroups?.[0];
     if (!filterGroup?.FilterItems) {
@@ -44,7 +44,6 @@ export async function fetchUsersWithFilters(
 
     // Build URL dynamically from baseApiUrl (defaults to test environment)
     const getUserAllUrl = `${baseApiUrl || 'https://test-api.devkeepnet.com'}/api/leaderboard/get-all`;
-
     const resp = await fetch(getUserAllUrl, {
         method: 'POST',
         headers,
@@ -52,12 +51,27 @@ export async function fetchUsersWithFilters(
     });
     if (!resp.ok) {
         const errorText = await resp.text();
-        const errorInfo = errorService.external(`User search API error: ${resp.status}`, {
+        logger.error('RAW BACKEND RESPONSE:', { status: resp.status, body: errorText });
+
+        let detailedMessage = `User search API error: ${resp.status}`;
+        try {
+            const errorJson = JSON.parse(errorText);
+            // "Simulated company not found" or similar from backend
+            if (errorJson?.message) {
+                detailedMessage = errorJson.message;
+            }
+        } catch (e) {
+            // If not JSON, use the raw text if short, or default
+            if (errorText.length < 100) detailedMessage += ` - ${errorText}`;
+        }
+
+        const errorInfo = errorService.external(detailedMessage, {
             status: resp.status,
             errorBody: errorText.substring(0, 1000)
         });
         logErrorInfo(logger as any, 'error', 'User search API failed', errorInfo);
-        throw new Error(errorInfo.message);
+        // Throwing the extracted message so it propagates up
+        throw new Error(detailedMessage);
     }
 
     const data = await resp.json();

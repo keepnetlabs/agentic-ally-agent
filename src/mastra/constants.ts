@@ -114,9 +114,9 @@ export const CLOUDFLARE_KV = {
   // Consistency check configuration
   CONSISTENCY_CHECK: {
     ENABLED: true,
-    MAX_WAIT_MS: 10000, // 10 seconds
+    MAX_WAIT_MS: 15000, // 15 seconds
     INITIAL_DELAY_MS: 500, // First retry after 500ms
-    MAX_DELAY_MS: 2000, // Max delay 2 seconds
+    MAX_DELAY_MS: 3000, // Max delay 3 seconds
   },
 } as const;
 
@@ -401,7 +401,7 @@ export const VALIDATION = {
 export const ERROR_MESSAGES = {
   // System errors
   ENV_VARS_MISSING: 'Missing required environment variables:',
-  INVALID_LANGUAGE_CODE: 'Invalid language code format (e.g., en, en-US, en-gb)',
+  INVALID_LANGUAGE_CODE: 'Invalid language code format (e.g., en-gb, tr-tr, de-de)',
   PROMPT_TOO_SHORT: `Prompt must be at least ${PROMPT_ANALYSIS.MIN_PROMPT_LENGTH} characters`,
   PROMPT_TOO_LONG: `Prompt must not exceed ${PROMPT_ANALYSIS.MAX_PROMPT_LENGTH} characters`,
   MICROLEARNING_NOT_FOUND: 'Microlearning not found or invalid',
@@ -775,11 +775,14 @@ export const API_ENDPOINTS = {
   // Production and test environments
   ALLOWED_BASE_API_URLS: [
     'https://dash.keepnetlabs.com',          // Production
-    'https://test-api.devkeepnet.com',       // Test/Default
+    'https://test-api.devkeepnet.com',
+    'https://test-ui.devkeepnet.com',
+    // Test/Default
   ] as const,
 
   // Default base API URL (fallback when header not provided)
   DEFAULT_BASE_API_URL: 'https://test-api.devkeepnet.com',
+  DEFAULT_AUTH_URL: 'https://test-ui.devkeepnet.com',
 
   // Agentic AI Chat endpoint (Policy)
   AGENTIC_AI_CHAT_URL: 'http://agentic-ai-chat.keepnetlabs.com',

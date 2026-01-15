@@ -103,6 +103,7 @@ export class KVService {
 
           if (!response.ok) {
             if (response.status === 404) {
+              await response.text(); // Drain body to free up connection
               return null; // Key not found - don't retry
             }
             const errorText = await response.text();

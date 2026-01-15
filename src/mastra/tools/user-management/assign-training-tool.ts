@@ -1,5 +1,6 @@
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
+import { v4 as uuidv4 } from 'uuid';
 import { getRequestContext } from '../../utils/core/request-storage';
 import { getLogger } from '../../utils/core/logger';
 import { withRetry } from '../../utils/core/resilience-utils';
@@ -42,7 +43,7 @@ export const assignTrainingTool = createTool({
     { message: 'Provide EXACTLY ONE: targetUserResourceId (user assignment) OR targetGroupResourceId (group assignment).' }
   ),
   outputSchema: assignTrainingOutputSchema,
-  execute: async ({ context }) => {
+  execute: async ({ context, writer }) => {
     const logger = getLogger('AssignTrainingTool');
     const { resourceId, sendTrainingLanguageId, targetUserResourceId, targetUserEmail, targetUserFullName, targetGroupResourceId } = context;
 
@@ -98,6 +99,25 @@ export const assignTrainingTool = createTool({
       );
 
       logger.info('Assignment success', { resultKeys: Object.keys(result) });
+
+      // EMIT UI SIGNAL (SURGICAL)
+      if (writer) {
+        try {
+          const messageId = uuidv4();
+          const meta = { resourceId, targetId, assignmentType };
+          const encoded = Buffer.from(JSON.stringify(meta)).toString('base64');
+
+          await writer.write({ type: 'text-start', id: messageId });
+          await writer.write({
+            type: 'text-delta',
+            id: messageId,
+            delta: `::ui:training_assigned::${encoded}::/ui:training_assigned::\n`
+          });
+          await writer.write({ type: 'text-end', id: messageId });
+        } catch (emitErr) {
+          logger.warn('Failed to emit UI signal for training assignment', { error: normalizeError(emitErr).message });
+        }
+      }
 
       const toolResult = {
         success: true,

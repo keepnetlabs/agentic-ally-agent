@@ -21,7 +21,7 @@ const logger = getLogger('AddLanguageWorkflow');
 const addLanguageInputSchema = z.object({
   existingMicrolearningId: z.string().min(1, 'Microlearning ID is required').describe('ID of existing microlearning'),
   targetLanguage: LanguageCodeSchema.describe('Target language code in BCP-47 format (e.g., tr-TR, de-DE, fr-FR, ja-JP, ko-KR, zh-CN, fr-CA)'),
-  sourceLanguage: LanguageCodeSchema.optional().describe('Source language code in BCP-47 format (e.g., en-US, tr-TR). If not provided, auto-detected from microlearning metadata'),
+  sourceLanguage: LanguageCodeSchema.optional().describe('Source language code in BCP-47 format (e.g., en-GB, tr-TR). If not provided, auto-detected from microlearning metadata'),
   department: z.string().optional().default(LANGUAGE.DEFAULT_DEPARTMENT),
   modelProvider: z.enum(MODEL_PROVIDERS.NAMES).optional().describe('Model provider (OPENAI, WORKERS_AI, GOOGLE)'),
   model: z.string().optional().describe('Model name (e.g., OPENAI_GPT_4O_MINI, WORKERS_AI_GPT_OSS_120B)'),
@@ -94,7 +94,9 @@ const loadExistingStep = createStep({
 
     if (!existing) {
       logger.error('Microlearning not found in KVService', { existingMicrolearningId });
-      throw new Error(`Microlearning not found with ID: "${existingMicrolearningId}". Please ensure the microlearning exists and provide the correct ID.`);
+      // Sanitize ID in error message to prevent log injection confusion
+      const sanitizedId = existingMicrolearningId.length > 50 ? existingMicrolearningId.substring(0, 50) + '...' : existingMicrolearningId;
+      throw new Error(`Microlearning not found with ID: "${sanitizedId}". Please ensure the microlearning exists and provide the correct ID.`);
     }
 
     const existingTyped = existing as unknown as MicrolearningContent;
@@ -114,7 +116,7 @@ const loadExistingStep = createStep({
     const actualSourceLanguage = meta.language || (meta as any).primary_language || sourceLanguage || LANGUAGE.DEFAULT_SOURCE;
 
     if (!meta.language && !(meta as any).primary_language && !sourceLanguage) {
-      logger.info('Source language not specified, defaulting to en');
+      logger.info('Source language not specified, defaulting to en-gb');
     }
 
     // Validate that target language is different from source
@@ -189,13 +191,18 @@ const translateLanguageStep = createStep({
       }
     } catch (kvError) {
       const err = kvError instanceof Error ? kvError : new Error(String(kvError));
-      logger.warn('KVService failed to load language content', { error: err.message, stack: err.stack });
+      logger.warn('KVService failed to load language content', {
+        error: err.message,
+        stack: err.stack,
+        microlearningId,
+        sourceLanguage
+      });
     }
 
     // Validate base content exists and has data
     if (!baseContent || Object.keys(baseContent).length === 0) {
       logger.error('Base content not found or empty in KVService', { microlearningId, sourceLanguage });
-      throw new Error(`Base language content (${sourceLanguage}) not found or empty for translation. Make sure the base language content exists.`);
+      throw new Error(`Base language content (${sourceLanguage}) not found or empty for translation. Microlearning ID: ${microlearningId}. Please ensure content exists in KV.`);
     }
 
     logger.info('Found base content, translating', { microlearningId, sourceLanguage, targetLanguage });
@@ -223,7 +230,12 @@ const translateLanguageStep = createStep({
     );
 
     if (!translated?.success) {
-      logger.error('Translation tool failed', { response: translated });
+      logger.error('Translation tool execution failed', {
+        error: translated?.error,
+        sourceLanguage,
+        targetLanguage,
+        microlearningId
+      });
       throw new Error(`Language translation failed: ${translated?.error || 'Unknown error'}`);
     }
 
@@ -287,7 +299,7 @@ const updateInboxStep = createStep({
   execute: async ({ inputData }) => {
     const { analysis, microlearningId, data: microlearningStructure } = inputData;
     const targetLanguage = analysis.language;
-    const sourceLanguage = microlearningStructure.microlearning_metadata?.language || 'en';
+    const sourceLanguage = microlearningStructure.microlearning_metadata?.language || LANGUAGE.DEFAULT_SOURCE;
     const modelProvider = (inputData as any).modelProvider;
     const model = (inputData as any).model;
     const hasInbox = (inputData as any).hasInbox;
@@ -365,7 +377,12 @@ const updateInboxStep = createStep({
           logger.info('Inbox corrected and stored', { normalizedDept, targetLanguage });
         }
       } else {
-        logger.error('No base inbox found to translate');
+        logger.warn('No base inbox found to translate', {
+          microlearningId,
+          sourceLanguage,
+          department: normalizedDept,
+          suggestion: 'Check if an inbox exists for the source language in KV.'
+        });
         return {
           success: false,
           microlearningId,
@@ -374,7 +391,13 @@ const updateInboxStep = createStep({
       }
     } catch (error) {
       const err = normalizeError(error);
-      logger.error('Inbox translation failed', { error: err.message, stack: err.stack });
+      logger.error('Inbox translation process failed', {
+        error: err.message,
+        stack: err.stack,
+        microlearningId,
+        targetLanguage,
+        department: normalizedDept
+      });
       return {
         success: false,
         microlearningId,
@@ -419,7 +442,18 @@ const combineResultsStep = createStep({
     }
 
     // Verify KV consistency before returning URL to UI
-    const expectedKeys = buildExpectedKVKeys(microlearningId, targetLanguage, normalizedDept);
+    // Only expect inbox key if inbox update was successful
+    const shouldExpectInbox = hasInbox && updateInbox.success;
+    const keysNamespaceDept = shouldExpectInbox ? normalizedDept : undefined;
+
+    // Log what we are waiting for to aid debugging
+    logger.info('Waiting for KV consistency', {
+      microlearningId,
+      targetLanguage,
+      expectingInbox: shouldExpectInbox
+    });
+
+    const expectedKeys = buildExpectedKVKeys(microlearningId, targetLanguage, keysNamespaceDept);
     await waitForKVConsistency(microlearningId, expectedKeys);
 
     // Generate training URL

@@ -38,19 +38,27 @@ export function detectLanguageFallback(text: string): string {
 /**
  * Ask AI to detect target language (returns BCP-47 code directly)
  */
-export async function detectTargetLanguageWithAI(text: string, model: any): Promise<string | null> {
+export async function detectTargetLanguageWithAI(text: string, model: any, additionalContext: string = ''): Promise<string | null> {
     try {
+        const combinedText = `Prompt: "${text}"\n\nContext: "${additionalContext}"`;
+        // Increased limit to capture context
+        const truncatedText = combinedText.substring(0, 2000);
+
         const response = await withRetry(
             () => generateText({
                 model,
-                prompt: `What language should the training/content be created in? Look for "in {language}" patterns.
-If no explicit target language is mentioned, identify the language of the text itself.
+                prompt: `What language should the training/content be created in?
+1. Look for explicit "in {language}" requests in the Prompt.
+2. Look for "Preferred Language: {language}" or similar indicators in the Context.
+3. If neither is found, identify the language of the Prompt itself.
+
 Return ONLY the BCP-47 code (e.g., ar-sa, tr-tr, en-gb, zh-cn, vi-vn, hi-in).
 
-Text: "${text.substring(0, 300)}"
+Text to Analyze:
+${truncatedText}
 
 Target language code:`,
-                temperature: 0.3,
+                temperature: 0.1, // Lower temperature for more deterministic code extraction
             }),
             `[AnalyzeUserPromptTool] language-detection`
         );
@@ -59,7 +67,8 @@ Target language code:`,
         if (!code) return null;
 
         const validated = validateBCP47LanguageCode(code);
-        return validated !== DEFAULT_LANGUAGE ? validated : null;
+        // Allow returning the detected language even if it matches default, ensuring we respect explicit choices
+        return validated;
     } catch {
         return null;
     }
@@ -71,6 +80,7 @@ interface AnalyzeUserPromptParams {
     suggestedDepartment?: string;
     suggestedLevel?: string;
     customRequirements?: string;
+    suggestedLanguage?: string;
     policyContext?: string;
     model: any;
     writer?: any;
@@ -80,7 +90,7 @@ interface AnalyzeUserPromptParams {
  * Core logic for user prompt analysis
  */
 export async function analyzeUserPromptWithAI(params: AnalyzeUserPromptParams) {
-    const { userPrompt, additionalContext, suggestedDepartment, suggestedLevel, customRequirements, policyContext, model, writer } = params;
+    const { userPrompt, additionalContext, suggestedDepartment, suggestedLevel, customRequirements, suggestedLanguage, policyContext, model, writer } = params;
     const logger = getLogger('AnalyzeUserPromptTool');
 
     try {
@@ -108,15 +118,20 @@ export async function analyzeUserPromptWithAI(params: AnalyzeUserPromptParams) {
 
         const policyBlock = buildPolicySystemPrompt(policyContext);
 
-        let languageHint = 'en-gb';
-        try {
-            const aiLang = await detectTargetLanguageWithAI(userPrompt, model);
-            if (aiLang) {
-                languageHint = aiLang.toLowerCase();
+        // PRIORITIZE SUGGESTED LANGUAGE (FIX)
+        let languageHint = suggestedLanguage ? suggestedLanguage.toLowerCase() : 'en-gb';
+
+        // ONLY detect with AI if we don't have a suggested language
+        if (!suggestedLanguage) {
+            try {
+                const aiLang = await detectTargetLanguageWithAI(userPrompt, model, additionalContext);
+                if (aiLang) {
+                    languageHint = aiLang.toLowerCase();
+                }
+            } catch {
+                const charBasedLang = validateBCP47LanguageCode(detectLanguageFallback(userPrompt));
+                languageHint = charBasedLang.toLowerCase();
             }
-        } catch {
-            const charBasedLang = validateBCP47LanguageCode(detectLanguageFallback(userPrompt));
-            languageHint = charBasedLang.toLowerCase();
         }
 
         const analysisPrompt = `Create microlearning metadata from this request:
@@ -295,7 +310,7 @@ export async function getFallbackAnalysis(params: AnalyzeUserPromptParams) {
 
     let detectedLang: string | null = null;
     try {
-        detectedLang = await detectTargetLanguageWithAI(userPrompt, model);
+        detectedLang = await detectTargetLanguageWithAI(userPrompt, model, additionalContext);
     } catch {
         // Ignore AI failure in fallback
     }

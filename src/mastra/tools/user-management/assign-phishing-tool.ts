@@ -1,5 +1,6 @@
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
+import { v4 as uuidv4 } from 'uuid';
 import { getRequestContext } from '../../utils/core/request-storage';
 import { getLogger } from '../../utils/core/logger';
 import { withRetry } from '../../utils/core/resilience-utils';
@@ -47,7 +48,7 @@ export const assignPhishingTool = createTool({
         { message: 'Provide EXACTLY ONE: targetUserResourceId (user assignment) OR targetGroupResourceId (group assignment).' }
     ),
     outputSchema: assignPhishingOutputSchema,
-    execute: async ({ context }) => {
+    execute: async ({ context, writer }) => {
         const logger = getLogger('AssignPhishingTool');
         const { resourceId, languageId, isQuishing, targetUserResourceId, targetUserEmail, targetUserFullName, targetGroupResourceId, trainingId, sendTrainingLanguageId } = context;
 
@@ -116,6 +117,25 @@ export const assignPhishingTool = createTool({
             );
 
             logger.info('Phishing assignment success', { resultKeys: Object.keys(result) });
+
+            // EMIT UI SIGNAL (SURGICAL)
+            if (writer) {
+                try {
+                    const messageId = uuidv4();
+                    const meta = { resourceId, targetId, assignmentType };
+                    const encoded = Buffer.from(JSON.stringify(meta)).toString('base64');
+
+                    await writer.write({ type: 'text-start', id: messageId });
+                    await writer.write({
+                        type: 'text-delta',
+                        id: messageId,
+                        delta: `::ui:phishing_assigned::${encoded}::/ui:phishing_assigned::\n`
+                    });
+                    await writer.write({ type: 'text-end', id: messageId });
+                } catch (emitErr) {
+                    logger.warn('Failed to emit UI signal for phishing assignment', { error: normalizeError(emitErr).message });
+                }
+            }
 
             const toolResult = {
                 success: true,

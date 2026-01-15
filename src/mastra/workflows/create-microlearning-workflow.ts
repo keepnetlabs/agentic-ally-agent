@@ -26,6 +26,7 @@ const createInputSchema = z.object({
   department: z.string().optional().default('All'),
   level: z.enum(TRAINING_LEVELS).optional().default(DEFAULT_TRAINING_LEVEL),
   priority: z.enum(PRIORITY_LEVELS).default(DEFAULT_PRIORITY),
+  language: z.string().optional().describe('Target language code (BCP-47)'),
   modelProvider: z.enum(MODEL_PROVIDERS.NAMES).optional().describe('Model provider (OPENAI, WORKERS_AI, GOOGLE)'),
   model: z.string().optional().describe('Model name (e.g., OPENAI_GPT_4O_MINI, WORKERS_AI_GPT_OSS_120B)'),
   writer: StreamWriterSchema.optional(),
@@ -116,6 +117,7 @@ const analyzePromptStep = createStep({
       suggestedDepartment: inputData.department,
       suggestedLevel: inputData.level,
       customRequirements: inputData.customRequirements,
+      suggestedLanguage: inputData.language,
       modelProvider: inputData.modelProvider,
       model: inputData.model,
       writer: inputData.writer,
@@ -165,7 +167,11 @@ const generateMicrolearningStep = createStep({
 
     if (!genRes?.success) {
       const errorInfo = errorService.external(`Microlearning generation failed: ${genRes?.error}`, { step: 'generate-microlearning-json' });
-      logErrorInfo(logger, 'error', 'Microlearning generation failed', errorInfo);
+      // Cast to any to allow extra context properties
+      logErrorInfo(logger, 'error', 'Microlearning generation failed', {
+        ...errorInfo,
+        topic: analysis.topic
+      } as any);
       throw new Error(errorInfo.message);
     }
 
@@ -212,7 +218,11 @@ const generateLanguageStep = createStep({
 
     if (!result?.success) {
       const errorInfo = errorService.external(`Language content generation failed: ${result?.error}`, { step: 'generate-language-json' });
-      logErrorInfo(logger, 'error', 'Language content generation failed', errorInfo);
+      logErrorInfo(logger, 'error', 'Language content generation failed', {
+        ...errorInfo,
+        microlearningId,
+        language: analysis.language
+      } as any);
       throw new Error(errorInfo.message);
     }
 

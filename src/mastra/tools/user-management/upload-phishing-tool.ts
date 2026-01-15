@@ -1,5 +1,6 @@
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
+import { v4 as uuidv4 } from 'uuid';
 import { getRequestContext } from '../../utils/core/request-storage';
 import { getLogger } from '../../utils/core/logger';
 import { withRetry } from '../../utils/core/resilience-utils';
@@ -54,7 +55,7 @@ export const uploadPhishingTool = createTool({
         phishingId: z.string().describe('The ID of the phishing content to upload'),
     }),
     outputSchema: uploadPhishingOutputSchema,
-    execute: async ({ context }) => {
+    execute: async ({ context, writer }) => {
         const logger = getLogger('UploadPhishingTool');
         const { phishingId } = context;
 
@@ -191,6 +192,25 @@ export const uploadPhishingTool = createTool({
                     { key: 'phishingId', value: phishingId },
                 ],
             });
+
+            // EMIT UI SIGNAL (SURGICAL)
+            if (writer) {
+                try {
+                    const messageId = uuidv4();
+                    const meta = { phishingId, resourceId: resourceIdForAssignment || templateResourceId, title: name };
+                    const encoded = Buffer.from(JSON.stringify(meta)).toString('base64');
+
+                    await writer.write({ type: 'text-start', id: messageId });
+                    await writer.write({
+                        type: 'text-delta',
+                        id: messageId,
+                        delta: `::ui:phishing_uploaded::${encoded}::/ui:phishing_uploaded::\n`
+                    });
+                    await writer.write({ type: 'text-end', id: messageId });
+                } catch (emitErr) {
+                    logger.warn('Failed to emit UI signal for phishing upload', { error: normalizeError(emitErr).message });
+                }
+            }
 
             const toolResult = {
                 success: true,

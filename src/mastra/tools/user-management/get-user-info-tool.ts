@@ -16,6 +16,7 @@ import { ANALYSIS_REFERENCES, ALLOWED_ENUMS_TEXT } from './behavior-analyst-cons
 import { AnalysisSchema, GET_ALL_PAYLOAD, TIMELINE_PAYLOAD, getUserInfoOutputSchema, PlatformUser, ApiActivity, PartialAnalysisReport } from './user-management-types';
 import { enrichActivities, formatEnrichedActivitiesForPrompt, type EnrichedActivity } from './activity-enrichment-utils';
 import { findUserByEmail, findUserByNameWithFallbacks } from './utils/user-search-utils';
+import { v4 as uuidv4 } from 'uuid';
 export const getUserInfoTool = createTool({
   id: 'get-user-info',
   description: 'Retrieves user info AND their recent activity timeline. Accepts either targetUserResourceId (direct ID) OR fullName/firstName/lastName (search). Returns a structured AI analysis report.',
@@ -32,7 +33,7 @@ export const getUserInfoTool = createTool({
     { message: 'Either targetUserResourceId OR email OR fullName/firstName must be provided' }
   ),
   outputSchema: getUserInfoOutputSchema,
-  execute: async ({ context }) => {
+  execute: async ({ context, writer }) => {
     const logger = getLogger('GetUserInfoTool');
     const { targetUserResourceId: inputTargetUserResourceId, departmentName: inputDepartmentName, email: inputEmail, fullName: inputFullName, firstName: inputFirstName, lastName: inputLastName } = context;
 
@@ -129,7 +130,9 @@ export const getUserInfoTool = createTool({
           try {
             user = await findUserByNameWithFallbacks(searchDeps, GET_ALL_PAYLOAD, firstName, lastName, fullName);
           } catch (err) {
-            const errorInfo = errorService.external('User search failed', { error: normalizeError(err).message });
+            const errorMsg = normalizeError(err).message;
+            // If the error message is specific (like "Simulated company not found"), start with that.
+            const errorInfo = errorService.external(errorMsg, { error: errorMsg });
             logErrorInfo(logger, 'error', 'User search error', errorInfo);
             return createToolErrorResponse(errorInfo);
           }
@@ -548,6 +551,26 @@ If a value is unknown, use "" or null.
       // Normalize preferred language to BCP-47 (default en-gb)
       const preferredLanguageCode = validateBCP47LanguageCode(user?.preferredLanguage || DEFAULT_LANGUAGE);
 
+      // EMIT UI SIGNAL (Surgical)
+      if (userId && writer) {
+        try {
+          const messageId = uuidv4();
+          // Use non-null assertion or fallback for user object properties since userId is present
+          const meta = { targetUserResourceId: userId, fullName: userFullName, email: user?.email };
+          const encoded = Buffer.from(JSON.stringify(meta)).toString('base64');
+
+          await writer.write({ type: 'text-start', id: messageId });
+          await writer.write({
+            type: 'text-delta',
+            id: messageId,
+            delta: `::ui:target_user::${encoded}::/ui:target_user::\n`
+          });
+          await writer.write({ type: 'text-end', id: messageId });
+        } catch (emitErr) {
+          logger.warn('Failed to emit UI signal for user', { error: normalizeError(emitErr).message });
+        }
+      }
+
       const toolResult = {
         success: true,
         userInfo: {
@@ -567,6 +590,7 @@ If a value is unknown, use "" or null.
 
     } catch (error) {
       const err = normalizeError(error);
+      // Pass the actual error message (e.g. "Simulated company not found") instead of a generic one
       const errorInfo = errorService.external(err.message, {
         step: 'tool-execution',
         stack: err.stack

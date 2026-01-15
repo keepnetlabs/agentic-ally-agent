@@ -1,5 +1,6 @@
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
+import { v4 as uuidv4 } from 'uuid';
 import { getRequestContext } from '../../utils/core/request-storage';
 import { getLogger } from '../../utils/core/logger';
 import { withRetry } from '../../utils/core/resilience-utils';
@@ -37,7 +38,7 @@ export const uploadTrainingTool = createTool({
         microlearningId: z.string().describe('The ID of the microlearning content to upload'),
     }),
     outputSchema: uploadTrainingOutputSchema,
-    execute: async ({ context }) => {
+    execute: async ({ context, writer }) => {
         const logger = getLogger('UploadTrainingTool');
         const { microlearningId } = context;
 
@@ -131,11 +132,11 @@ export const uploadTrainingTool = createTool({
             const description = meta.description?.trim() || 'Microlearning training module';
             const title = meta.title?.trim() || 'Security Awareness Training';
 
-            // Extract language from availability list (default to 'en-us' if empty)
+            // Extract language from availability list (default to 'en-gb' if empty)
             const availableLangs = meta.language_availability || [];
             const language = Array.isArray(availableLangs) && availableLangs.length > 0
                 ? availableLangs[0]
-                : 'en-us';
+                : 'en-gb';
 
             // Extract department for inbox URL (from department_relevance array, default to 'all')
             const departmentArray = meta.department_relevance || [];
@@ -184,6 +185,25 @@ export const uploadTrainingTool = createTool({
             );
 
             logger.info('Training upload successful', { resourceId: result.resourceId, microlearningId });
+
+            // EMIT UI SIGNAL (SURGICAL)
+            if (writer) {
+                try {
+                    const messageId = uuidv4();
+                    const meta = { microlearningId, resourceId: result.resourceId, title };
+                    const encoded = Buffer.from(JSON.stringify(meta)).toString('base64');
+
+                    await writer.write({ type: 'text-start', id: messageId });
+                    await writer.write({
+                        type: 'text-delta',
+                        id: messageId,
+                        delta: `::ui:training_uploaded::${encoded}::/ui:training_uploaded::\n`
+                    });
+                    await writer.write({ type: 'text-end', id: messageId });
+                } catch (emitErr) {
+                    logger.warn('Failed to emit UI signal for upload', { error: normalizeError(emitErr).message });
+                }
+            }
 
             const toolResult = {
                 success: true,

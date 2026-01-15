@@ -185,16 +185,94 @@ const cleanMessageContent = (content: string): string => {
     return '[Phishing Simulation Landing Page Created]';
   }
   if (content.match(/::ui:training_uploaded::/)) {
+    const payload = extractUiPayload(content, 'training_uploaded');
+    if (payload) {
+      try {
+        const decoded = decodeBase64Json(payload);
+        if (decoded && typeof decoded === 'object') {
+          const { microlearningId, resourceId } = decoded as any;
+          if (microlearningId && resourceId) return `[Training Uploaded: microlearningId=${microlearningId}, resourceId=${resourceId}]`;
+        }
+      } catch { /* ignore */ }
+    }
     return '[Training Uploaded]';
   }
   if (content.match(/::ui:phishing_uploaded::/)) {
+    const payload = extractUiPayload(content, 'phishing_uploaded');
+    if (payload) {
+      try {
+        const decoded = decodeBase64Json(payload);
+        if (decoded && typeof decoded === 'object') {
+          const { phishingId, resourceId } = decoded as any;
+          if (phishingId && resourceId) return `[Phishing Simulation Uploaded: phishingId=${phishingId}, resourceId=${resourceId}]`;
+        }
+      } catch { /* ignore */ }
+    }
     return '[Phishing Simulation Uploaded]';
   }
   if (content.match(/::ui:training_assigned::/)) {
+    const payload = extractUiPayload(content, 'training_assigned');
+    if (payload) {
+      try {
+        const decoded = decodeBase64Json(payload);
+        if (decoded && typeof decoded === 'object') {
+          const { resourceId, targetId, assignmentType } = decoded as any;
+          if (resourceId && targetId) {
+            const key = assignmentType === 'GROUP' ? 'targetGroupResourceId' : 'targetUserResourceId';
+            return `[Training Assigned to ${assignmentType === 'GROUP' ? 'Group' : 'User'}: resourceId=${resourceId}, ${key}=${targetId}]`;
+          }
+        }
+      } catch { /* ignore */ }
+    }
     return '[Training Assigned to User]';
   }
   if (content.match(/::ui:phishing_assigned::/)) {
+    const payload = extractUiPayload(content, 'phishing_assigned');
+    if (payload) {
+      try {
+        const decoded = decodeBase64Json(payload);
+        if (decoded && typeof decoded === 'object') {
+          const { resourceId, targetId, assignmentType } = decoded as any;
+          if (resourceId && targetId) {
+            const key = assignmentType === 'GROUP' ? 'targetGroupResourceId' : 'targetUserResourceId';
+            return `[Phishing Simulation Assigned to ${assignmentType === 'GROUP' ? 'Group' : 'User'}: resourceId=${resourceId}, ${key}=${targetId}]`;
+          }
+        }
+      } catch { /* ignore */ }
+    }
     return '[Phishing Simulation Assigned to User]';
+  }
+  if (content.match(/::ui:target_user::/)) {
+    const payload = extractUiPayload(content, 'target_user');
+    if (payload) {
+      try {
+        const decoded = decodeBase64Json(payload);
+        if (decoded && typeof decoded === 'object' && 'targetUserResourceId' in decoded) {
+          const value = (decoded as Record<string, unknown>).targetUserResourceId;
+          const targetUserResourceId = typeof value === 'string' && value.trim() ? value.trim() : undefined;
+          if (targetUserResourceId) return `[User Selected: targetUserResourceId=${targetUserResourceId}]`;
+        }
+      } catch {
+        // ignore
+      }
+    }
+    return '[User Selected]';
+  }
+  if (content.match(/::ui:target_group::/)) {
+    const payload = extractUiPayload(content, 'target_group');
+    if (payload) {
+      try {
+        const decoded = decodeBase64Json(payload);
+        if (decoded && typeof decoded === 'object' && 'targetGroupResourceId' in decoded) {
+          const value = (decoded as Record<string, unknown>).targetGroupResourceId;
+          const targetGroupResourceId = typeof value === 'string' && value.trim() ? value.trim() : undefined;
+          if (targetGroupResourceId) return `[Group Selected: targetGroupResourceId=${targetGroupResourceId}]`;
+        }
+      } catch {
+        // ignore
+      }
+    }
+    return '[Group Selected]';
   }
 
   // Remove remaining UI signals (includes both formats with/without closing tags)

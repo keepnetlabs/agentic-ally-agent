@@ -9,6 +9,7 @@ import { validateToolResult } from '../../utils/tool-result-validation';
 import { withRetry, withTimeout } from '../../utils/core/resilience-utils';
 import { isSafeId } from '../../utils/core/id-utils';
 import { formatToolSummary } from '../../utils/core/tool-summary-formatter';
+import { v4 as uuidv4 } from 'uuid';
 const MIN_GROUP_NAME_LENGTH = 3;
 const GROUP_LOOKUP_TIMEOUT_MS = 15000;
 
@@ -208,7 +209,7 @@ export const getTargetGroupInfoTool = createTool({
             { message: 'Provide targetGroupResourceId OR a valid groupName.' }
         ),
     outputSchema: getTargetGroupInfoOutputSchema,
-    execute: async ({ context }) => {
+    execute: async ({ context, writer }) => {
         const logger = getLogger('GetTargetGroupInfoTool');
         const { targetGroupResourceId: providedId, groupName: rawGroupName, departmentName: providedDepartment } = context;
         const { token, companyId, baseApiUrl } = getRequestContext();
@@ -219,7 +220,7 @@ export const getTargetGroupInfoTool = createTool({
             return createToolErrorResponse(errorInfo);
         }
 
-        const emitResult = (groupInfo: {
+        const emitResult = async (groupInfo: {
             targetGroupResourceId: string;
             groupName?: string;
             departmentName?: string;
@@ -238,6 +239,25 @@ export const getTargetGroupInfoTool = createTool({
                     ],
                 }),
             };
+
+            // EMIT UI SIGNAL FOR GROUP (SURGICAL)
+            if (writer) {
+                try {
+                    const messageId = uuidv4();
+                    const meta = { targetGroupResourceId: groupInfo.targetGroupResourceId, groupName: groupInfo.groupName, memberCount: groupInfo.memberCount };
+                    const encoded = Buffer.from(JSON.stringify(meta)).toString('base64');
+
+                    await writer.write({ type: 'text-start', id: messageId });
+                    await writer.write({
+                        type: 'text-delta',
+                        id: messageId,
+                        delta: `::ui:target_group::${encoded}::/ui:target_group::\n`
+                    });
+                    await writer.write({ type: 'text-end', id: messageId });
+                } catch (emitErr) {
+                    logger.warn('Failed to emit UI signal for group', { error: normalizeError(emitErr).message });
+                }
+            }
 
             const validationResult = validateToolResult(toolResult, getTargetGroupInfoOutputSchema, 'get-target-group-info');
             if (!validationResult.success) {

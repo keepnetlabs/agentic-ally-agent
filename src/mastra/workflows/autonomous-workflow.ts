@@ -36,6 +36,9 @@ export class AutonomousWorkflow extends WorkflowEntrypoint {
             const err = normalizeError(error);
             logger.error('autonomous_workflow_failed', {
                 error: err.message,
+                token_preview: event?.payload?.token ? '***' : undefined,
+                targetUserResourceId: event?.payload?.targetUserResourceId,
+                actions: event?.payload?.actions?.length
             });
 
             return {
