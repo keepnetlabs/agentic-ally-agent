@@ -31,6 +31,8 @@ export function handleLogoHallucination(updates: any, microlearningId: string): 
             if (possibleBrandName && possibleBrandName.length > 2) {
                 logger.info('Auto-corrected hallucination from filename to brandName', { extractedBrand: possibleBrandName });
                 processedUpdates.brandName = possibleBrandName;
+            } else {
+                logger.warn('Intercepted hallucinated logo filename but could not extract valid brand', { invalidSrc: src, extracted: possibleBrandName });
             }
 
             // Remove the invalid logo update
@@ -56,6 +58,8 @@ export function handleLogoHallucination(updates: any, microlearningId: string): 
 
                 // Cleanup the useless logo object
                 delete processedUpdates.theme.logo;
+            } else {
+                logger.warn('Intercepted logo alt-text but could not extract valid brand', { alt, extracted: possibleBrandName });
             }
         }
     }

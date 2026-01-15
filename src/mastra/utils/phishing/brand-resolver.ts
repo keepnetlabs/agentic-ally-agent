@@ -57,7 +57,7 @@ export async function resolveLogoAndBrand(
       temperature: 0.1 // Low temperature for deterministic extraction
     });
 
-    logger.info('LLM Response for Brand Resolution', {
+    logger.debug('LLM Response for Brand Resolution', {
       rawText: response.text.substring(0, 200) + '...', // Log snippet
     });
 

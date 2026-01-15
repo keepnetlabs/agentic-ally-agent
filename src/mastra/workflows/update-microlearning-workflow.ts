@@ -184,7 +184,7 @@ const mergeUpdatesStep = createStep({
           logger.warn('Failed to resolve external brand logo', { brand: updates.brandName, error: err });
         }
       } else {
-        logger.info('No brand updates detected', { updatesKeys: Object.keys(updates) });
+        logger.debug('No brand updates detected', { updatesKeys: Object.keys(updates) });
       }
 
       // Normalize color if provided
@@ -192,7 +192,7 @@ const mergeUpdatesStep = createStep({
         const inputColor = updates.theme.colors.background;
         const normalizedColor = await normalizeThemeBackgroundClass(inputColor, modelProvider, model);
         updates.theme.colors.background = normalizedColor;
-        logger.info('Color normalized in merge', {
+        logger.debug('Color normalized in merge', {
           microlearningId,
           input: inputColor,
           normalized: normalizedColor,
@@ -212,7 +212,7 @@ const mergeUpdatesStep = createStep({
     updatedContent.version = newVersion;
     updatedContent.updated_at = new Date().toISOString();
 
-    logger.info('Theme merged', {
+    logger.debug('Theme merged', {
       microlearningId,
       department,
       newVersion,
@@ -290,6 +290,9 @@ const saveUpdatesStep = createStep({
       // Verify KV consistency before returning URL to UI
       const expectedKeys = buildExpectedKVKeys(microlearningId, language, normalizedDepartment);
       await waitForKVConsistency(microlearningId, expectedKeys);
+
+      // Add a small safety buffer for edge propagation so UI sees changes immediately
+      await new Promise(resolve => setTimeout(resolve, 1500));
 
       return {
         success: true,
