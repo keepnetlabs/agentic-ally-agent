@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { updatesSchema } from '../../workflows/microlearning-schemas';
+import { updatesSchema } from '../../schemas/update-microlearning-schemas';
 import { getLogger } from '../core/logger';
 
 type Updates = z.infer<typeof updatesSchema>;

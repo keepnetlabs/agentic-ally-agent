@@ -14,11 +14,11 @@ import {
 import { streamDirectReasoning } from '../utils/core/reasoning-stream';
 import { extractReasoning } from '../utils/core/ai-utils';
 import {
-  InputSchema,
-  AnalysisSchema,
-  EmailOutputSchema,
-  OutputSchema
-} from '../schemas';
+  createPhishingInputSchema,
+  createPhishingAnalysisSchema,
+  createPhishingEmailOutputSchema,
+  createPhishingOutputSchema
+} from '../schemas/create-phishing-schemas';
 import {
   buildAnalysisPrompts,
   buildEmailPrompts,
@@ -41,8 +41,8 @@ import { postProcessPhishingEmailHtml, postProcessPhishingLandingHtml } from '..
 const analyzeRequest = createStep({
   id: 'analyze-phishing-request',
   description: 'Analyze phishing request, design scenario, detect brand/logo, and determine industry design',
-  inputSchema: InputSchema,
-  outputSchema: AnalysisSchema,
+  inputSchema: createPhishingInputSchema,
+  outputSchema: createPhishingAnalysisSchema,
   execute: async ({ inputData }) => {
     const logger = getLogger('AnalyzePhishingRequest');
     const { topic, isQuishing, targetProfile, difficulty, language, method, includeLandingPage, includeEmail, additionalContext, modelProvider, model, policyContext } = inputData;
@@ -304,8 +304,8 @@ const analyzeRequest = createStep({
 const generateEmail = createStep({
   id: 'generate-phishing-email',
   description: 'Generate phishing email content including subject, body, and sender details',
-  inputSchema: AnalysisSchema,
-  outputSchema: EmailOutputSchema,
+  inputSchema: createPhishingAnalysisSchema,
+  outputSchema: createPhishingEmailOutputSchema,
   execute: async ({ inputData }) => {
     const logger = getLogger('GeneratePhishingEmail');
     const analysis = inputData;
@@ -462,8 +462,8 @@ const generateEmail = createStep({
 const generateLandingPage = createStep({
   id: 'generate-landing-page',
   description: 'Generate phishing landing page content including logic and layout',
-  inputSchema: EmailOutputSchema,
-  outputSchema: OutputSchema,
+  inputSchema: createPhishingEmailOutputSchema,
+  outputSchema: createPhishingOutputSchema,
   execute: async ({ inputData }) => {
     const logger = getLogger('GenerateLandingPage');
     const { analysis, fromAddress, fromName, subject, template, includeLandingPage, additionalContext, policyContext } = inputData;
@@ -669,8 +669,8 @@ const generateLandingPage = createStep({
 const savePhishingContent = createStep({
   id: 'save-phishing-content',
   description: 'Save generated phishing simulation content to KV store',
-  inputSchema: OutputSchema, // Use OutputSchema directly as input
-  outputSchema: OutputSchema,
+  inputSchema: createPhishingOutputSchema, // Use OutputSchema directly as input
+  outputSchema: createPhishingOutputSchema,
   execute: async ({ inputData }) => {
     const logger = getLogger('SavePhishingContent');
     const phishingId = generateUniqueId();
@@ -716,8 +716,8 @@ const savePhishingContent = createStep({
 const createPhishingWorkflow = createWorkflow({
   id: 'create-phishing-workflow',
   description: 'Generate realistic phishing email simulations',
-  inputSchema: InputSchema,
-  outputSchema: OutputSchema,
+  inputSchema: createPhishingInputSchema,
+  outputSchema: createPhishingOutputSchema,
 })
   .then(analyzeRequest)
   .then(generateEmail)

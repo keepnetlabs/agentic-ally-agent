@@ -9,7 +9,7 @@ import { validateToolResult } from '../../utils/tool-result-validation';
 import { withRetry, withTimeout } from '../../utils/core/resilience-utils';
 import { isSafeId } from '../../utils/core/id-utils';
 import { formatToolSummary } from '../../utils/core/tool-summary-formatter';
-import { v4 as uuidv4 } from 'uuid';
+import { uuidv4 } from '../../utils/core/id-utils';
 const MIN_GROUP_NAME_LENGTH = 3;
 const GROUP_LOOKUP_TIMEOUT_MS = 15000;
 

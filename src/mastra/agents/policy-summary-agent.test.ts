@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest';
 import { policySummaryAgent } from './policy-summary-agent';
 import { AGENT_NAMES } from '../constants';
 
-
 describe('Policy Summary Agent', () => {
   describe('Agent Configuration', () => {
     it('should be properly instantiated', () => {
@@ -79,5 +78,4 @@ describe('Policy Summary Agent', () => {
       expect(instructions).toContain('Security Team');
     });
   });
-
 });

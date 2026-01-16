@@ -8,6 +8,23 @@ import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../uti
  * Reasoning Tool - Allows agent to show its thinking process
  * Agent calls this tool to emit reasoning events to the frontend
  */
+interface ReasoningToolContext {
+  context: {
+    thought?: string;
+  };
+  inputData?: {
+    thought?: string;
+  };
+  input?: {
+    thought?: string;
+  };
+  // Fallback for direct input object
+  thought?: string;
+  writer?: {
+    write: (event: any) => Promise<void>;
+  };
+}
+
 export const reasoningTool = new Tool({
   id: 'show_reasoning',
   description: 'Show your thinking process to the user. Call this before making any important decision or analysis.',
@@ -19,7 +36,7 @@ export const reasoningTool = new Tool({
   outputSchema: z.object({
     success: z.boolean()
   }),
-  execute: async (context: any) => {
+  execute: async (context: ReasoningToolContext | any) => {
     const logger = getLogger('ReasoningTool');
     // Mastra wraps input in context.context
     const toolInput = context?.context || context?.inputData || context?.input || context;

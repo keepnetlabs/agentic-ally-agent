@@ -45,3 +45,39 @@ export const updateOutputSchema = z.object({
         .optional(),
     error: z.string().optional(),
 });
+
+export const loadMicrolearningOutputSchema = z.object({
+    microlearningId: z.string(),
+    department: z.string(),
+    currentContent: z.any(),
+    currentVersion: z.number(),
+    updates: updatesSchema as any,
+    model: z.string().optional(),
+    modelProvider: z.string().optional(),
+});
+
+export const mergeUpdatesInputSchema = z.object({
+    microlearningId: z.string(),
+    department: z.string(),
+    currentContent: z.any(),
+    currentVersion: z.number(),
+    updates: updatesSchema as any,
+    model: z.string().optional(),
+    modelProvider: z.string().optional(),
+});
+
+export const mergeUpdatesOutputSchema = z.object({
+    microlearningId: z.string(),
+    department: z.string(),
+    updatedContent: z.any(),
+    newVersion: z.number(),
+    changes: z.record(z.any()),
+});
+
+export const saveUpdatesInputSchema = z.object({
+    microlearningId: z.string(),
+    department: z.string(),
+    updatedContent: z.any(),
+    newVersion: z.number(),
+    changes: z.record(z.any()),
+});

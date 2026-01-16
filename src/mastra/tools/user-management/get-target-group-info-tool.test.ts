@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { getTargetGroupInfoTool } from './get-target-group-info-tool';
 import { requestStorage } from '../../utils/core/request-storage';
+import { errorService } from '../../services/error-service';
 import '../../../../src/__tests__/setup';
 
 const mockToken = 'group-token-123';

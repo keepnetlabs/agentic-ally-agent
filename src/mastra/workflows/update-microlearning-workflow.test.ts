@@ -8,28 +8,7 @@ import { API_ENDPOINTS } from '../constants';
  * Covers: Deep merge, department normalization, URL building
  */
 
-// Standalone deepMerge function for testing (extracted from workflow)
-function deepMerge(target: any, source: any): any {
-  if (!source) return target;
-
-  const result = JSON.parse(JSON.stringify(target));
-
-  for (const key in source) {
-    if (source.hasOwnProperty(key)) {
-      if (
-        typeof source[key] === 'object' &&
-        source[key] !== null &&
-        !Array.isArray(source[key])
-      ) {
-        result[key] = deepMerge(result[key] || {}, source[key]);
-      } else {
-        result[key] = source[key];
-      }
-    }
-  }
-
-  return result;
-}
+import { deepMerge } from '../utils/object-utils';
 
 describe('UpdateMicrolearningWorkflow', () => {
   describe('deepMerge utility', () => {
@@ -86,7 +65,7 @@ describe('UpdateMicrolearningWorkflow', () => {
         },
       };
 
-      const result = deepMerge(target, source);
+      const result = deepMerge(target, source) as any;
 
       expect(result.fontFamily.primary).toBe('Arial');
       expect(result.fontFamily.secondary).toBe('Verdana');

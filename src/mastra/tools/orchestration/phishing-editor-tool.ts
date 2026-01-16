@@ -7,7 +7,7 @@
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { generateText } from 'ai';
-import { v4 as uuidv4 } from 'uuid';
+import { uuidv4 } from '../../utils/core/id-utils';
 import { getModelWithOverride } from '../../model-providers';
 import { cleanResponse } from '../../utils/content-processors/json-cleaner';
 import { sanitizeHtml } from '../../utils/content-processors/html-sanitizer';

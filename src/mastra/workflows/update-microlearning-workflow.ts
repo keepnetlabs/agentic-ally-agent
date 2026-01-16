@@ -1,5 +1,4 @@
 import { createStep, createWorkflow } from '@mastra/core/workflows';
-import { z } from 'zod';
 import { KVService } from '../services/kv-service';
 import { getLogger } from '../utils/core/logger';
 import { normalizeDepartmentName } from '../utils/language/language-utils';
@@ -12,35 +11,18 @@ import { normalizeThemeBackgroundClass } from '../utils/theme/theme-color-normal
 import { ProductService } from '../services/product-service';
 import { resolveLogoAndBrand } from '../utils/phishing/brand-resolver';
 import { getModelWithOverride } from '../model-providers';
-import { updatesSchema, updateInputSchema, updateOutputSchema } from './microlearning-schemas';
+import {
+  updateInputSchema,
+  updateOutputSchema,
+  loadMicrolearningOutputSchema,
+  mergeUpdatesInputSchema,
+  mergeUpdatesOutputSchema,
+  saveUpdatesInputSchema
+} from '../schemas/update-microlearning-schemas';
 import { handleLogoHallucination } from '../utils/microlearning/logo-utils';
+import { deepMerge } from '../utils/object-utils';
 
 const logger = getLogger('UpdateMicrolearningWorkflow');
-
-
-
-// Deep merge utility - handles nested objects properly
-function deepMerge<T>(target: T, source: any): T {
-  if (!source) return target;
-
-  const result = JSON.parse(JSON.stringify(target)); // Deep clone
-
-  for (const key in source) {
-    if (Object.prototype.hasOwnProperty.call(source, key)) {
-      if (typeof source[key] === 'object' && source[key] !== null && !Array.isArray(source[key])) {
-        // Recursive merge for nested objects
-
-        result[key] = deepMerge((result as any)[key] || {}, source[key]);
-      } else {
-        // Direct assignment for primitives and arrays
-
-        (result as any)[key] = source[key];
-      }
-    }
-  }
-
-  return result;
-}
 
 // Color normalization moved to utils/theme/theme-color-normalizer.ts (preset → AI fallback → default)
 
@@ -49,15 +31,7 @@ const loadMicrolearningStep = createStep({
   id: 'load-microlearning',
   description: 'Load existing microlearning from KV',
   inputSchema: updateInputSchema,
-  outputSchema: z.object({
-    microlearningId: z.string(),
-    department: z.string(),
-    currentContent: z.any(),
-    currentVersion: z.number(),
-    updates: updatesSchema as any,
-    model: z.string().optional(),
-    modelProvider: z.string().optional(),
-  }),
+  outputSchema: loadMicrolearningOutputSchema,
   execute: async ({ inputData }) => {
     const kvService = new KVService();
     const { microlearningId, department, updates, model, modelProvider } = inputData;
@@ -99,22 +73,8 @@ const loadMicrolearningStep = createStep({
 const mergeUpdatesStep = createStep({
   id: 'merge-updates',
   description: 'Merge theme updates with current content',
-  inputSchema: z.object({
-    microlearningId: z.string(),
-    department: z.string(),
-    currentContent: z.any(),
-    currentVersion: z.number(),
-    updates: updatesSchema as any,
-    model: z.string().optional(),
-    modelProvider: z.string().optional(),
-  }),
-  outputSchema: z.object({
-    microlearningId: z.string(),
-    department: z.string(),
-    updatedContent: z.any(),
-    newVersion: z.number(),
-    changes: z.record(z.any()),
-  }),
+  inputSchema: mergeUpdatesInputSchema,
+  outputSchema: mergeUpdatesOutputSchema,
   execute: async ({ inputData }) => {
     const { microlearningId, department, currentContent, currentVersion, updates: rawUpdates, model, modelProvider } = inputData;
     const updates = handleLogoHallucination(rawUpdates, microlearningId);
@@ -253,13 +213,7 @@ const mergeUpdatesStep = createStep({
 const saveUpdatesStep = createStep({
   id: 'save-updates',
   description: 'Save updated microlearning to KV and track history',
-  inputSchema: z.object({
-    microlearningId: z.string(),
-    department: z.string(),
-    updatedContent: z.any(),
-    newVersion: z.number(),
-    changes: z.record(z.any()),
-  }),
+  inputSchema: saveUpdatesInputSchema,
   outputSchema: updateOutputSchema,
   execute: async ({ inputData }) => {
     const { microlearningId, department, updatedContent, newVersion, changes } = inputData;

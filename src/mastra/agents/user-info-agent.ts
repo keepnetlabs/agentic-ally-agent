@@ -31,12 +31,13 @@ MODE SELECTION (CRITICAL)
   - **CRITICAL:** Use \`skipAnalysis: true\` when calling \`getUserInfo\`.
     - Purpose: We only need the ID to proceed with assignment. We do NOT need a behavioral report.
     - Example: \`getUserInfo({ email: "user@company.com", skipAnalysis: true })\`
-  - Confirm the user is identified.
+  - Confirm the user is identified using Name, Department AND Email (if available).
   - If the request is for a GROUP and only a group name/description is present (no targetGroupResourceId in history), call \`getTargetGroupInfo\` first to resolve it.
   - After the tool returns, confirm the group is identified in a natural, user-friendly way.
   - Ask ONE short confirmation question only.
   - Example:
-    "✅ Group found. Ready to assign the recommended next step. Proceed?"
+    "✅ Kobe Bryant (Marketing) - kobe@lakers.com assignment ready. Proceed?"
+    "✅ Group found. Ready to assign. Proceed?"
 - Do NOT generate a report in this mode.
 
 2) REPORT MODE (Default)
@@ -177,10 +178,6 @@ Ask a simple choice question in user's language (SAME as user's current message 
 NEVER ask only about one option. Always offer both choices.
 
 ## Messaging Guidelines (Enterprise-Safe)
-
-When assigning training/simulations:
-- Confirmation: "${MESSAGING_GUIDELINES.EMPLOYEE_MATCH}"
-- Success: "${MESSAGING_GUIDELINES.ASSIGNMENT_SUCCESS.TRAINING}"
 - NEVER use: ${MESSAGING_GUIDELINES.BLACKLIST_WORDS.join(', ')}
 `;
 

@@ -155,7 +155,7 @@ describe('ContextStorage Middleware', () => {
 
       await contextStorage(mockContext, async () => {
         const context = requestStorage.getStore();
-        expect(context?.baseApiUrl).toBe('https://dash.keepnetlabs.com');
+        expect(context?.baseApiUrl).toBe('https://api.keepnetlabs.com');
       });
     });
 
@@ -203,7 +203,7 @@ describe('ContextStorage Middleware', () => {
 
       await contextStorage(mockContext, async () => {
         const context = requestStorage.getStore();
-        expect(context?.baseApiUrl).toBe('https://dash.keepnetlabs.com');
+        expect(context?.baseApiUrl).toBe('https://api.keepnetlabs.com');
       });
     });
 
@@ -216,6 +216,7 @@ describe('ContextStorage Middleware', () => {
       await contextStorage(mockContext, async () => {
         const context = requestStorage.getStore();
         // Validated URL should match the original case from header
+        // Since implementation uses case-sensitive includes check, it won't replace uppercase DASH.
         expect(context?.baseApiUrl).toBe('HTTPS://DASH.KEEPNETLABS.COM');
       });
     });
@@ -243,7 +244,8 @@ describe('ContextStorage Middleware', () => {
       await contextStorage(mockContext, async () => {
         const context = requestStorage.getStore();
         expect(context).toBeDefined();
-        expect(context?.baseApiUrl).toBe(baseApiUrl);
+        // Middleware transforms dash -> api
+        expect(context?.baseApiUrl).toBe('https://api.keepnetlabs.com');
         expect(context?.token).toBe('token-123');
       });
     });

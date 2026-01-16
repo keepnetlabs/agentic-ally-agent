@@ -355,8 +355,9 @@ describe('uploadPhishingTool', () => {
       expect(result.data?.scenarioId).toBe(2);
       expect(result.data?.phishingId).toBe('phishing-123');
       expect(result.data?.title).toBe('Test Phishing Campaign');
-      expect(result.message).toContain('✅ Phishing uploaded');
-      expect(result.message).toContain('Ready to assign');
+      expect(result.message).toContain('Upload successful. Ready to assign');
+      expect(result.message).toContain('phishingId=phishing-123');
+      expect(result.message).toContain('resourceId=scenario-123');
       expect(result.message).toContain('scenarioName=Test Phishing Campaign');
       expect(result.message).toContain('resourceId=scenario-123');
     });

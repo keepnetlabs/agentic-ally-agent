@@ -41,11 +41,8 @@ export type {
     CreateInboxStructureOutput,
 } from './create-inbox-structure-schema';
 
-// Phishing workflow schemas (original names for backward compatibility)
-export {
-    InputSchema,
-    AnalysisSchema,
-    EmailOutputSchema,
-    OutputSchema,
-} from './phishing-workflow-schemas';
-
+export * from './create-phishing-schemas';
+// Add Language Workflow Schemas
+export * from './add-language-schemas';
+export * from './create-microlearning-schemas';
+export * from './update-microlearning-schemas';

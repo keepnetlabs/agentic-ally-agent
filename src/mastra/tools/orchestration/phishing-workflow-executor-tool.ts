@@ -1,7 +1,7 @@
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { createPhishingWorkflow } from '../../workflows/create-phishing-workflow';
-import { v4 as uuidv4 } from 'uuid';
+import { uuidv4 } from '../../utils/core/id-utils';
 import { PHISHING, MODEL_PROVIDERS, ERROR_MESSAGES, TIMEOUT_VALUES } from '../../constants';
 import { getLogger } from '../../utils/core/logger';
 import { getPolicySummary } from '../../utils/core/policy-cache';

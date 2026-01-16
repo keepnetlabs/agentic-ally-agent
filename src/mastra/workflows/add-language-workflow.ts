@@ -1,65 +1,30 @@
 import { createStep, createWorkflow } from '@mastra/core/workflows';
-import { z } from 'zod';
+
 import { translateLanguageJsonTool } from '../tools/generation';
 import { inboxTranslateJsonTool } from '../tools/inbox';
 import { KVService } from '../services/kv-service';
 import { normalizeDepartmentName } from '../utils/language/language-utils';
 import { validateInboxStructure, correctInboxStructure } from '../utils/validation/json-validation-utils';
-import { MODEL_PROVIDERS, TIMEOUT_VALUES, STRING_TRUNCATION, API_ENDPOINTS, LANGUAGE, CLOUDFLARE_KV } from '../constants';
+import { TIMEOUT_VALUES, STRING_TRUNCATION, API_ENDPOINTS, LANGUAGE, CLOUDFLARE_KV } from '../constants';
 import { getLogger } from '../utils/core/logger';
 import { loadInboxWithFallback } from '../utils/kv-helpers';
 import { waitForKVConsistency, buildExpectedKVKeys } from '../utils/kv-consistency';
 import { normalizeError, logErrorInfo } from '../utils/core/error-utils';
 import { errorService } from '../services/error-service';
 import { withRetry } from '../utils/core/resilience-utils';
-import { LanguageCodeSchema } from '../utils/validation/language-validation';
+
 import { MicrolearningContent } from '../types/microlearning';
 
 const logger = getLogger('AddLanguageWorkflow');
 
-// Input/Output Schemas
-const addLanguageInputSchema = z.object({
-  existingMicrolearningId: z.string().min(1, 'Microlearning ID is required').describe('ID of existing microlearning'),
-  targetLanguage: LanguageCodeSchema.describe('Target language code in BCP-47 format (e.g., tr-TR, de-DE, fr-FR, ja-JP, ko-KR, zh-CN, fr-CA)'),
-  sourceLanguage: LanguageCodeSchema.optional().describe('Source language code in BCP-47 format (e.g., en-GB, tr-TR). If not provided, auto-detected from microlearning metadata'),
-  department: z.string().optional().default(LANGUAGE.DEFAULT_DEPARTMENT),
-  modelProvider: z.enum(MODEL_PROVIDERS.NAMES).optional().describe('Model provider (OPENAI, WORKERS_AI, GOOGLE)'),
-  model: z.string().optional().describe('Model name (e.g., OPENAI_GPT_4O_MINI, WORKERS_AI_GPT_OSS_120B)'),
-});
-
-const existingContentSchema = z.object({
-  success: z.boolean(),
-  data: z.any(), // existing microlearning
-  microlearningId: z.string(),
-  analysis: z.any(), // minimal analysis for target language
-  sourceLanguage: z.string(), // source language to translate from
-  targetLanguage: z.string(), // target language for parallel steps
-  department: z.string(), // department for parallel steps
-  modelProvider: z.enum(MODEL_PROVIDERS.NAMES).optional(), // model provider override
-  model: z.string().optional(), // model override
-  hasInbox: z.boolean(), // whether inbox is needed (false for code_review type)
-});
-
-const languageContentSchema = z.object({
-  success: z.boolean(),
-  data: z.any(), // translated language content
-  microlearningId: z.string(),
-  analysis: z.any(),
-  microlearningStructure: z.any(),
-  hasInbox: z.boolean(), // pass through from previous step
-});
-
-const finalResultSchema = z.object({
-  success: z.boolean(),
-  message: z.string(),
-  data: z.object({
-    microlearningId: z.string(),
-    title: z.string(),
-    targetLanguage: z.string(),
-    trainingUrl: z.string(),
-    filesGenerated: z.array(z.string()),
-  })
-});
+import {
+  addLanguageInputSchema,
+  existingContentSchema,
+  languageContentSchema,
+  updateInboxSchema,
+  combineInputSchema,
+  finalResultSchema
+} from '../schemas/add-language-schemas';
 
 // Step 1: Load Existing Microlearning
 const loadExistingStep = createStep({
@@ -285,11 +250,7 @@ const translateLanguageStep = createStep({
 
 // Step 3: Update Inbox (runs in parallel with translation)
 // Note: success can be false if inbox translation fails - workflow continues with language content only
-const updateInboxSchema = z.object({
-  success: z.boolean(),
-  microlearningId: z.string(),
-  filesGenerated: z.array(z.string()).optional(),
-});
+
 
 const updateInboxStep = createStep({
   id: 'update-inbox',
@@ -416,10 +377,7 @@ const updateInboxStep = createStep({
 });
 
 // Step 4: Combine Results (after parallel steps)
-const combineInputSchema = z.object({
-  'translate-language-content': languageContentSchema,
-  'update-inbox': updateInboxSchema,
-});
+
 
 const combineResultsStep = createStep({
   id: 'combine-results',

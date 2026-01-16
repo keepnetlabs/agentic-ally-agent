@@ -1,4 +1,4 @@
-import { v4 as uuidv4 } from 'uuid';
+import { uuidv4 } from './id-utils';
 import { generateText } from 'ai';
 import { getModelWithOverride } from '../../model-providers';
 import { getLogger } from './logger';

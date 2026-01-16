@@ -33,8 +33,9 @@ export function validateInboxStructure(original: Record<string, unknown>, transl
   }
 
   // Check if 'emails' array exists and has correct structure
-  const origEmails = (original as { emails?: unknown[] }).emails;
-  const transEmails = (translated as { emails?: unknown[] }).emails;
+  // Use explicit typing based on known structure
+  const origEmails = (original as unknown as Partial<EmailSimulationInbox>).emails;
+  const transEmails = (translated as unknown as Partial<EmailSimulationInbox>).emails;
 
   if (origEmails && Array.isArray(origEmails)) {
     if (!transEmails || !Array.isArray(transEmails)) {
@@ -52,8 +53,8 @@ export function validateInboxStructure(original: Record<string, unknown>, transl
 
     // Check each email structure
     for (let i = 0; i < origEmails.length; i++) {
-      const origEmail = origEmails[i] as Record<string, unknown>;
-      const transEmail = transEmails[i] as Record<string, unknown>;
+      const origEmail = origEmails[i] as unknown as Record<string, unknown>;
+      const transEmail = transEmails[i] as unknown as Record<string, unknown>;
 
       if (!origEmail || !transEmail) {
         logger.warn('Missing email at index', { index: i });
@@ -73,8 +74,9 @@ export function validateInboxStructure(original: Record<string, unknown>, transl
       }
 
       // Check nested objects like attachments
-      const origAttachments = (origEmail as { attachments?: unknown[] }).attachments;
-      const transAttachments = (transEmail as { attachments?: unknown[] }).attachments;
+      const origAttachments = (origEmail as unknown as SimulatedEmail).attachments;
+      const transAttachments = (transEmail as unknown as SimulatedEmail).attachments;
+
       if (origAttachments && Array.isArray(origAttachments)) {
         if (!transAttachments || !Array.isArray(transAttachments)) {
           logger.warn('Email missing or invalid attachments array', { emailIndex: i });
@@ -94,8 +96,8 @@ export function validateInboxStructure(original: Record<string, unknown>, transl
   }
 
   // Check texts object structure
-  const origTexts = (original as any).texts;
-  const transTexts = (translated as any).texts;
+  const origTexts = (original as unknown as Partial<EmailSimulationInbox>).texts;
+  const transTexts = (translated as unknown as Partial<EmailSimulationInbox>).texts;
 
   if (origTexts && typeof origTexts === 'object') {
     if (!transTexts || typeof transTexts !== 'object') {

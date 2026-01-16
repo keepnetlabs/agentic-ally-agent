@@ -16,7 +16,7 @@ import { ANALYSIS_REFERENCES, ALLOWED_ENUMS_TEXT } from './behavior-analyst-cons
 import { AnalysisSchema, GET_ALL_PAYLOAD, TIMELINE_PAYLOAD, getUserInfoOutputSchema, PlatformUser, ApiActivity, PartialAnalysisReport } from './user-management-types';
 import { enrichActivities, formatEnrichedActivitiesForPrompt, type EnrichedActivity } from './activity-enrichment-utils';
 import { findUserByEmail, findUserByNameWithFallbacks } from './utils/user-search-utils';
-import { v4 as uuidv4 } from 'uuid';
+import { uuidv4 } from '../../utils/core/id-utils';
 export const getUserInfoTool = createTool({
   id: 'get-user-info',
   description: 'Retrieves user info AND their recent activity timeline. Accepts either targetUserResourceId (direct ID) OR fullName/firstName/lastName (search). Returns a structured AI analysis report.',
@@ -551,12 +551,15 @@ If a value is unknown, use "" or null.
       // Normalize preferred language to BCP-47 (default en-gb)
       const preferredLanguageCode = validateBCP47LanguageCode(user?.preferredLanguage || DEFAULT_LANGUAGE);
 
+      // Define department once for use in both UI signal and tool output
+      const dept = inputDepartmentName || user?.departmentName || user?.department || 'All';
+
       // EMIT UI SIGNAL (Surgical)
       if (userId && writer) {
         try {
           const messageId = uuidv4();
           // Use non-null assertion or fallback for user object properties since userId is present
-          const meta = { targetUserResourceId: userId, fullName: userFullName, email: user?.email };
+          const meta = { targetUserResourceId: userId, fullName: userFullName, email: user?.email, department: dept };
           const encoded = Buffer.from(JSON.stringify(meta)).toString('base64');
 
           await writer.write({ type: 'text-start', id: messageId });
@@ -576,8 +579,8 @@ If a value is unknown, use "" or null.
         userInfo: {
           targetUserResourceId: userId,
           fullName: userFullName,
-          // Use provided departmentName if available (fast path), otherwise extract from user object
-          department: inputDepartmentName || user?.departmentName || user?.department || 'All',
+          // Use pre-calculated department value
+          department: dept,
           email: user?.email,
           preferredLanguage: preferredLanguageCode
         },

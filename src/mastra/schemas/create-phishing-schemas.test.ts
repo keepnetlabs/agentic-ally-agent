@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { InputSchema, AnalysisSchema, OutputSchema } from './phishing-workflow-schemas';
+import { createPhishingInputSchema, createPhishingAnalysisSchema, createPhishingOutputSchema } from './create-phishing-schemas';
 
 describe('Phishing Workflow Schemas', () => {
-    describe('InputSchema', () => {
+    describe('createPhishingInputSchema', () => {
         it('should validate a complete valid input', () => {
             const validInput = {
                 topic: 'Password Reset',
@@ -12,7 +12,7 @@ describe('Phishing Workflow Schemas', () => {
                 includeEmail: true,
             };
 
-            const result = InputSchema.safeParse(validInput);
+            const result = createPhishingInputSchema.safeParse(validInput);
             if (!result.success) {
                 console.error(result.error);
             }
@@ -24,7 +24,7 @@ describe('Phishing Workflow Schemas', () => {
                 // topic is missing
                 language: 'en-gb',
             };
-            const result = InputSchema.safeParse(invalidInput);
+            const result = createPhishingInputSchema.safeParse(invalidInput);
             expect(result.success).toBe(false);
         });
 
@@ -32,7 +32,7 @@ describe('Phishing Workflow Schemas', () => {
             const minimalInput = {
                 topic: 'Urgent Action',
             };
-            const result = InputSchema.safeParse(minimalInput);
+            const result = createPhishingInputSchema.safeParse(minimalInput);
             expect(result.success).toBe(true);
             if (result.success) {
                 expect(result.data.language).toBe('en-gb');
@@ -41,7 +41,7 @@ describe('Phishing Workflow Schemas', () => {
         });
     });
 
-    describe('AnalysisSchema', () => {
+    describe('createPhishingAnalysisSchema', () => {
         const validAnalysis = {
             scenario: 'CEO Fraud',
             name: 'CEO Fraud - Urgent Wire',
@@ -59,7 +59,7 @@ describe('Phishing Workflow Schemas', () => {
         };
 
         it('should validate a valid analysis object', () => {
-            const result = AnalysisSchema.safeParse(validAnalysis);
+            const result = createPhishingAnalysisSchema.safeParse(validAnalysis);
             if (!result.success) {
                 console.error(result.error);
             }
@@ -89,7 +89,7 @@ describe('Phishing Workflow Schemas', () => {
                     logoExample: 'https://example.com/logo.png',
                 },
             };
-            const result = AnalysisSchema.safeParse(analysisWithDesign);
+            const result = createPhishingAnalysisSchema.safeParse(analysisWithDesign);
             expect(result.success).toBe(true);
         });
 
@@ -101,18 +101,18 @@ describe('Phishing Workflow Schemas', () => {
                     colors: 'Not an object', // Invalid type
                 },
             };
-            const result = AnalysisSchema.safeParse(invalidDesign);
+            const result = createPhishingAnalysisSchema.safeParse(invalidDesign);
             expect(result.success).toBe(false);
         });
     });
 
-    describe('OutputSchema', () => {
+    describe('createPhishingOutputSchema', () => {
         it('should validate a minimal output', () => {
             const validOutput = {
                 fromAddress: 'test@example.com',
                 fromName: 'Test Sender',
             };
-            const result = OutputSchema.safeParse(validOutput);
+            const result = createPhishingOutputSchema.safeParse(validOutput);
             expect(result.success).toBe(true);
         });
 
@@ -133,7 +133,7 @@ describe('Phishing Workflow Schemas', () => {
                     ]
                 }
             };
-            const result = OutputSchema.safeParse(completeOutput);
+            const result = createPhishingOutputSchema.safeParse(completeOutput);
             if (!result.success) {
                 console.error(result.error);
             }

@@ -1,5 +1,5 @@
 import { createStep, createWorkflow } from '@mastra/core/workflows';
-import { z } from 'zod';
+
 import { analyzeUserPromptTool } from '../tools/analysis';
 import { generateMicrolearningJsonTool, generateLanguageJsonTool } from '../tools/generation';
 import { createInboxStructureTool } from '../tools/inbox';
@@ -7,8 +7,15 @@ import { getModelWithOverride } from '../model-providers';
 import { MicrolearningService } from '../services/microlearning-service';
 import { KVService } from '../services/kv-service';
 import { generateMicrolearningId, normalizeDepartmentName } from '../utils/language/language-utils';
-import { MODEL_PROVIDERS, TRAINING_LEVELS, DEFAULT_TRAINING_LEVEL, PRIORITY_LEVELS, DEFAULT_PRIORITY, API_ENDPOINTS } from '../constants';
-import { StreamWriterSchema } from '../types/stream-writer';
+import { MODEL_PROVIDERS, API_ENDPOINTS } from '../constants';
+import {
+  createInputSchema,
+  promptAnalysisSchema,
+  microlearningSchema,
+  microlearningLanguageContentSchema,
+  microlearningFinalResultSchema,
+  saveToKVInputSchema
+} from '../schemas/create-microlearning-schemas';
 import { getLogger } from '../utils/core/logger';
 import { waitForKVConsistency, buildExpectedKVKeys } from '../utils/kv-consistency';
 import { normalizeError, logErrorInfo } from '../utils/core/error-utils';
@@ -19,81 +26,7 @@ import { summarizeForLog } from '../utils/core/log-redaction-utils';
 const logger = getLogger('CreateMicrolearningWorkflow');
 
 // Input/Output Schemas
-const createInputSchema = z.object({
-  prompt: z.string().describe('User prompt in any language'),
-  additionalContext: z.string().optional(),
-  customRequirements: z.string().optional(),
-  department: z.string().optional().default('All'),
-  level: z.enum(TRAINING_LEVELS).optional().default(DEFAULT_TRAINING_LEVEL),
-  priority: z.enum(PRIORITY_LEVELS).default(DEFAULT_PRIORITY),
-  language: z.string().optional().describe('Target language code (BCP-47)'),
-  modelProvider: z.enum(MODEL_PROVIDERS.NAMES).optional().describe('Model provider (OPENAI, WORKERS_AI, GOOGLE)'),
-  model: z.string().optional().describe('Model name (e.g., OPENAI_GPT_4O_MINI, WORKERS_AI_GPT_OSS_120B)'),
-  writer: StreamWriterSchema.optional(),
-  policyContext: z.string().optional().describe('Company policy context (prepared at workflow start)'),
-});
 
-const promptAnalysisSchema = z.object({
-  success: z.boolean(),
-  data: z.object({
-    topic: z.string(),
-    title: z.string(),
-    language: z.string(),
-    department: z.string(),
-    level: z.string(),
-    category: z.string(),
-    subcategory: z.string().optional(),
-    learningObjectives: z.array(z.string()),
-    keyTopics: z.array(z.string()).optional(),
-    practicalApplications: z.array(z.string()).optional(),
-    industries: z.array(z.string()).optional(),
-    roles: z.array(z.string()).optional(),
-    themeColor: z.string().optional(),
-    additionalContext: z.string().optional(), // Added to carry context to next steps
-  }),
-  modelProvider: z.enum(MODEL_PROVIDERS.NAMES).optional(),
-  model: z.string().optional(),
-  writer: StreamWriterSchema.optional(),
-  policyContext: z.string().optional(),
-});
-
-const microlearningSchema = z.object({
-  success: z.boolean(),
-  data: z.any(), // Microlearning structure
-  microlearningId: z.string(),
-  analysis: z.any(),
-  microlearningStructure: z.any(),
-  modelProvider: z.enum(MODEL_PROVIDERS.NAMES).optional(),
-  model: z.string().optional(),
-  writer: StreamWriterSchema.optional(),
-  policyContext: z.string().optional(),
-});
-
-const languageContentSchema = z.object({
-  success: z.boolean(),
-  data: z.any(), // Language content
-  microlearningId: z.string(),
-  analysis: z.any(),
-  microlearningStructure: z.any(),
-  modelProvider: z.enum(MODEL_PROVIDERS.NAMES).optional(),
-  model: z.string().optional(),
-  writer: StreamWriterSchema.optional(),
-  policyContext: z.string().optional(),
-});
-
-const finalResultSchema = z.object({
-  success: z.boolean(),
-  message: z.string(),
-  data: z.any(), // Inbox content (emails, texts)
-  metadata: z.object({
-    microlearningId: z.string(),
-    title: z.string(),
-    language: z.string(),
-    department: z.string(),
-    trainingUrl: z.string(),
-    filesGenerated: z.array(z.string()),
-  }).optional()
-});
 
 // Step 1: Analyze Prompt
 const analyzePromptStep = createStep({
@@ -197,7 +130,7 @@ const generateLanguageStep = createStep({
   id: 'generate-language-content',
   description: 'Generate language-specific training content',
   inputSchema: microlearningSchema,
-  outputSchema: languageContentSchema,
+  outputSchema: microlearningLanguageContentSchema, // Updated schema name
   execute: async ({ inputData }) => {
     const microlearningStructure = inputData.data;
     const analysis = inputData.analysis;
@@ -250,18 +183,8 @@ const generateLanguageStep = createStep({
 const createInboxStep = createStep({
   id: 'create-inbox-assignment',
   description: 'Create inbox structure and finalize training',
-  inputSchema: z.object({
-    success: z.boolean(),
-    data: z.any(), // language content
-    microlearningId: z.string(),
-    analysis: z.any(),
-    microlearningStructure: z.any(),
-    modelProvider: z.enum(MODEL_PROVIDERS.NAMES).optional(),
-    model: z.string().optional(),
-    writer: StreamWriterSchema.optional(),
-    policyContext: z.string().optional(),
-  }),
-  outputSchema: finalResultSchema,
+  inputSchema: microlearningLanguageContentSchema, // Updated input schema to match previous step output
+  outputSchema: microlearningFinalResultSchema, // Updated output schema name
   execute: async ({ inputData }) => {
     const { analysis, microlearningStructure, microlearningId } = inputData;
 
@@ -317,11 +240,8 @@ const createInboxStep = createStep({
 const saveToKVStep = createStep({
   id: 'save-to-kv',
   description: 'Extract inbox result from parallel execution',
-  inputSchema: z.object({
-    'create-inbox-assignment': finalResultSchema,
-    'generate-language-content': languageContentSchema
-  }),
-  outputSchema: finalResultSchema,
+  inputSchema: saveToKVInputSchema,
+  outputSchema: microlearningFinalResultSchema, // Updated schema name
   execute: async ({ inputData }) => {
     const inboxResult = inputData['create-inbox-assignment'];
     const languageResult = inputData['generate-language-content'];
@@ -370,7 +290,7 @@ const createMicrolearningWorkflow = createWorkflow({
   id: 'create-microlearning-workflow',
   description: 'Create new microlearning with parallel language and inbox processing',
   inputSchema: createInputSchema,
-  outputSchema: finalResultSchema,
+  outputSchema: microlearningFinalResultSchema,
 })
   .then(analyzePromptStep)
   .then(generateMicrolearningStep)

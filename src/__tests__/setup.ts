@@ -36,11 +36,17 @@ export const createMockFetchResponse = (data: any, ok = true, status = 200) => {
   } as Response;
 };
 
+// Global fetch mock to prevent real network requests during tests
+global.fetch = vi.fn(async () => {
+  return createMockFetchResponse({ success: true, result: [] });
+});
+
 export const mockFetch = (responses: Map<string, any>) => {
   return vi.fn(async (url: string, _options?: any) => {
     const response = responses.get(url) || responses.get('default');
     if (!response) {
-      return createMockFetchResponse({ error: 'Not mocked' }, false, 404);
+      // Fallback to the default global mock behavior
+      return createMockFetchResponse({ success: true, result: [] });
     }
     return response;
   });

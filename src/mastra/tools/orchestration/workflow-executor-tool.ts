@@ -35,7 +35,7 @@ import { createMicrolearningWorkflow } from '../../workflows/create-microlearnin
 import { addLanguageWorkflow } from '../../workflows/add-language-workflow';
 import { addMultipleLanguagesWorkflow } from '../../workflows/add-multiple-languages-workflow';
 import { updateMicrolearningWorkflow } from '../../workflows/update-microlearning-workflow';
-import { v4 as uuidv4 } from 'uuid';
+import { uuidv4 } from '../../utils/core/id-utils';
 import { PROMPT_ANALYSIS, MODEL_PROVIDERS } from '../../constants';
 import { getLogger } from '../../utils/core/logger';
 import { getPolicySummary } from '../../utils/core/policy-cache';
@@ -48,114 +48,17 @@ const logger = getLogger('WorkflowExecutor');
 /**
  * Type definitions for workflow results
  */
-interface WorkflowMetadata {
-  trainingUrl?: string;
-  title?: string;
-  department?: string;
-  microlearningId?: string;
-  filesGenerated?: string[];
-  [key: string]: unknown;
-}
-
-/**
- * Validates workflow result structure
- */
-function validateCreateMicrolearningResult(result: CreateMicrolearningResult): boolean {
-  if (result.status !== 'success') {
-    return false;
-  }
-  if (!result.result?.metadata) {
-    logger.warn('Workflow result missing metadata structure');
-    return false;
-  }
-  const metadata = result.result.metadata;
-  if (!metadata.trainingUrl) {
-    logger.warn('Workflow metadata missing trainingUrl');
-    return false;
-  }
-  return true;
-}
-
-/**
- * Validates add-language result structure
- */
-function validateAddLanguageResult(result: AddLanguageResult): boolean {
-  if (result.status !== 'success') {
-    return false;
-  }
-  if (!result.result?.data) {
-    logger.warn('Workflow result missing data structure');
-    return false;
-  }
-  const data = result.result.data;
-  if (!data.trainingUrl) {
-    logger.warn('Workflow data missing trainingUrl');
-    return false;
-  }
-  return true;
-}
-
-interface CreateMicrolearningResult {
-  status: 'success' | 'error' | 'failed' | 'suspended';
-  result?: {
-    metadata?: WorkflowMetadata;
-    [key: string]: unknown;
-  };
-  error?: Error | string;
-  [key: string]: unknown;
-}
-
-interface AddLanguageResult {
-  status: 'success' | 'error' | 'failed' | 'suspended';
-  result?: {
-    data?: {
-      trainingUrl?: string;
-      title?: string;
-      [key: string]: unknown;
-    };
-    [key: string]: unknown;
-  };
-  error?: Error | string;
-  [key: string]: unknown;
-}
-
-interface LanguageResultItem {
-  success?: boolean;
-  trainingUrl?: string;
-  language?: string;
-  [key: string]: unknown;
-}
-
-interface AddMultipleLanguagesResult {
-  status: 'success' | 'error' | 'failed' | 'suspended';
-  result?: {
-    results?: LanguageResultItem[];
-    successCount?: number;
-    failureCount?: number;
-    languages?: string[];
-    status?: string;
-    [key: string]: unknown;
-  };
-  error?: Error | string;
-  [key: string]: unknown;
-}
-
-interface UpdateMicrolearningResult {
-  status: 'success' | 'error' | 'failed' | 'suspended';
-  result?: {
-    success: boolean;
-    status: string;
-    metadata?: {
-      microlearningId: string;
-      version: number;
-      changes?: Record<string, unknown>;
-      trainingUrl?: string;
-      timestamp: string;
-    };
-    error?: string;
-  };
-  [key: string]: unknown;
-}
+import {
+  CreateMicrolearningResult,
+  AddLanguageResult,
+  AddMultipleLanguagesResult,
+  UpdateMicrolearningResult,
+  LanguageResultItem
+} from './types';
+import {
+  validateCreateMicrolearningResult,
+  validateAddLanguageResult
+} from './validators';
 
 // Workflow executor schema
 const workflowExecutorSchema = z.object({

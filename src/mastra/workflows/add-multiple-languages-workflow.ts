@@ -1,38 +1,16 @@
 import { createStep, createWorkflow } from '@mastra/core/workflows';
-import { z } from 'zod';
+
 import { addLanguageWorkflow } from './add-language-workflow';
 import { KVService } from '../services/kv-service';
-import { MODEL_PROVIDERS } from '../constants';
+
 import { getLogger } from '../utils/core/logger';
 import { normalizeError, logErrorInfo } from '../utils/core/error-utils';
 import { errorService } from '../services/error-service';
 
-// Input/Output Schemas
-const addMultipleLanguagesInputSchema = z.object({
-  existingMicrolearningId: z.string().describe('ID of existing microlearning'),
-  targetLanguages: z.array(z.string()).min(1).describe('Array of target languages'),
-  sourceLanguage: z.string().optional().describe('Source language code (optional)'),
-  department: z.string().optional().default('All').describe('Target department'),
-  modelProvider: z.enum(MODEL_PROVIDERS.NAMES).optional().describe('Model provider override'),
-  model: z.string().optional().describe('Model name override'),
-});
-
-const finalMultiLanguageResultSchema = z.object({
-  success: z.boolean(),
-  successCount: z.number(),
-  failureCount: z.number(),
-  totalDuration: z.string(),
-  languages: z.array(z.string()),
-  results: z.array(z.object({
-    language: z.string(),
-    success: z.boolean(),
-    trainingUrl: z.string().optional(),
-    title: z.string().optional(),
-    error: z.string().optional(),
-    duration: z.number().optional(),
-  })),
-  status: z.enum(['success', 'partial', 'failed']),
-});
+import {
+  addMultipleLanguagesInputSchema,
+  finalMultiLanguageResultSchema
+} from '../schemas/add-language-schemas';
 
 // Step: Process Multiple Languages in Parallel
 const processMultipleLanguagesStep = createStep({

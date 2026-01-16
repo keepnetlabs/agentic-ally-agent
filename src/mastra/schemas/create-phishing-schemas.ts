@@ -11,7 +11,7 @@ import { StreamWriterSchema } from '../types/stream-writer';
  * Input Schema - Workflow entry point
  * Defines the input parameters for creating a phishing simulation
  */
-export const InputSchema = z.object({
+export const createPhishingInputSchema = z.object({
     topic: z.string().describe('The main theme or topic of the phishing simulation'),
     isQuishing: z.boolean().optional().default(false).describe('Whether this is a quishing (QR code phishing) simulation. Set by agent based on user request.'),
     targetProfile: z.object({
@@ -37,7 +37,7 @@ export const InputSchema = z.object({
  * Output from Step 1 (analyzeRequest), input to Step 2 (generateEmail)
  * Contains the complete scenario design and analysis
  */
-export const AnalysisSchema = z.object({
+export const createPhishingAnalysisSchema = z.object({
     scenario: z.string().describe('The specific scenario chosen (e.g. CEO Fraud, IT Update, HR Policy)'),
     name: z.string().describe('Short display name for the template (e.g. "Password Reset - Easy")'),
     description: z.string().max(PHISHING_EMAIL.MAX_DESCRIPTION_LENGTH).describe('Brief description of the phishing scenario'),
@@ -100,12 +100,12 @@ export const AnalysisSchema = z.object({
  * Output from Step 2 (generateEmail), input to Step 3 (generateLandingPage)
  * Contains the generated email content and analysis context
  */
-export const EmailOutputSchema = z.object({
+export const createPhishingEmailOutputSchema = z.object({
     subject: z.string().optional(),
     template: z.string().optional(),
     fromAddress: z.string(),
     fromName: z.string(),
-    analysis: AnalysisSchema, // Full analysis context
+    analysis: createPhishingAnalysisSchema, // Full analysis context
     additionalContext: z.string().optional().describe('User behavior context (also available in analysis.additionalContext)'),
     includeLandingPage: z.boolean().default(true).optional(), // Pass explicit flag
     policyContext: z.string().optional(),
@@ -116,7 +116,7 @@ export const EmailOutputSchema = z.object({
  * Output from Step 3 (generateLandingPage), input to Step 4 (savePhishingContent)
  * Final workflow output containing email and landing page content
  */
-export const OutputSchema = z.object({
+export const createPhishingOutputSchema = z.object({
     phishingId: z.string().optional(), // ID of the saved content in KV
     subject: z.string().optional(),
     template: z.string().optional(), // Renamed from bodyHtml for backend compatibility
@@ -132,7 +132,7 @@ export const OutputSchema = z.object({
             template: z.string()
         }))
     }).optional(),
-    analysis: AnalysisSchema.omit({ language: true, modelProvider: true, model: true }).optional(), // Include analysis in output for reasoning display
+    analysis: createPhishingAnalysisSchema.omit({ language: true, modelProvider: true, model: true }).optional(), // Include analysis in output for reasoning display
     policyContext: z.string().optional(),
 });
 

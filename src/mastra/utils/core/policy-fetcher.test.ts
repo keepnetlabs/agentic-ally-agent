@@ -540,7 +540,7 @@ describe('policy-fetcher', () => {
       const context = await getPolicyContext();
 
       expect(context).toBe('');
-      expect(mockLoggerInstance.warn).toHaveBeenCalledWith('No valid policies could be read');
+      expect(mockLoggerInstance.info).toHaveBeenCalledWith('No valid policies could be read');
     });
 
     it('should handle top-level error in getPolicyContext', async () => {
@@ -551,7 +551,7 @@ describe('policy-fetcher', () => {
       const context = await getPolicyContext();
 
       expect(context).toBe('');
-      expect(mockLoggerInstance.error).toHaveBeenCalledWith(
+      expect(mockLoggerInstance.warn).toHaveBeenCalledWith(
         'Error fetching policy context',
         expect.objectContaining({ error: 'Request context error' })
       );
