@@ -1,296 +1,225 @@
-import { describe, it, expect } from 'vitest';
 
-/**
- * Test suite for Inbox Emails Orchestrator
- * Tests parallel email generation coordination
- *
- * Note: These tests validate orchestrator behavior patterns
- * Actual implementation tested at integration level
- */
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { generateInboxEmailsParallel } from './inbox-emails-orchestrator';
+import { generateText } from 'ai';
+import { getLogger } from '../../../utils/core/logger';
+import { withRetry } from '../../../utils/core/resilience-utils';
+
+// Mock dependencies
+vi.mock('ai', () => ({
+  generateText: vi.fn(),
+}));
+
+vi.mock('../../../utils/core/logger', () => ({
+  getLogger: vi.fn(() => ({
+    info: vi.fn(),
+    debug: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
+  })),
+}));
+
+vi.mock('../../../utils/core/resilience-utils', () => ({
+  withRetry: vi.fn((fn) => fn()),
+}));
+
+vi.mock('../../../services/error-service', () => ({
+  errorService: {
+    aiModel: vi.fn((msg) => ({ message: msg })),
+  },
+}));
+
+vi.mock('../../../utils/core/error-utils', () => ({
+  logErrorInfo: vi.fn(),
+}));
+
 describe('Inbox Emails Orchestrator', () => {
-  describe('Parallel Email Generation', () => {
-    it('should support generating multiple emails', () => {
-      // Pattern test - orchestrator should handle multiple concurrent generations
-      const emailCount = 5;
-      expect(emailCount).toBeGreaterThan(0);
-    });
+  const mockModel = { modelId: 'test-model' } as any;
 
-    it('should generate varied email types', () => {
-      // Pattern test - should generate mix of phishing and legitimate emails
-      const emailTypes = ['ObviousPhishing', 'SophisticatedPhishing', 'CasualLegit', 'FormalLegit'];
-      expect(emailTypes.length).toBe(4);
-    });
-
-    it('should maintain email diversity across generation', () => {
-      // Pattern test - no two emails should be identical
-      const emails = new Set<string>();
-      expect(emails.size).toBeGreaterThanOrEqual(0);
-    });
-
-    it('should handle concurrent generation without conflicts', () => {
-      // Pattern test - parallel generation should not cause issues
-      const concurrentLimit = 5;
-      expect(concurrentLimit).toBeGreaterThan(0);
-    });
-
-    it('should produce consistent structure across emails', () => {
-      // Pattern test - all emails should have same required fields
-      const requiredFields = [
-        'id',
-        'sender',
-        'subject',
-        'preview',
-        'timestamp',
-        'isPhishing',
-        'content',
-        'headers',
-        'difficulty'
-      ];
-      expect(requiredFields.length).toBe(9);
-    });
-
-    it('should generate emails in target language', () => {
-      // Pattern test - all emails must be in requested language
-      const language = 'en';
-      expect(language).toBeTruthy();
-    });
-
-    it('should apply diversity hints to all emails', () => {
-      // Pattern test - each email should follow diversity plan
-      const diversityAspects = [
-        'sender',
-        'domain',
-        'attachment',
-        'greeting',
-        'header_authentication'
-      ];
-      expect(diversityAspects.length).toBe(5);
-    });
-
-    it('should balance phishing and legitimate emails', () => {
-      // Pattern test - roughly 50/50 split of phishing vs legitimate
-      const phishingCount = 3;
-      const legitimateCount = 2;
-      expect(phishingCount).toBeGreaterThan(0);
-      expect(legitimateCount).toBeGreaterThan(0);
-    });
-
-    it('should handle topic context across all emails', () => {
-      // Pattern test - emails should relate to training topic
-      const topic = 'Phishing Prevention';
-      expect(topic).toBeTruthy();
-    });
-
-    it('should generate unique sender addresses', () => {
-      // Pattern test - senders should be diverse, not duplicated
-      const senders = ['finance@example.com', 'hr@example.com', 'it@example.com'];
-      const uniqueSenders = new Set(senders);
-      expect(uniqueSenders.size).toBe(senders.length);
-    });
-
-    it('should include varied difficulty levels', () => {
-      // Pattern test - mix of EASY, MEDIUM, HARD emails
-      const difficulties = ['EASY', 'MEDIUM', 'MEDIUM-HARD', 'HARD'];
-      expect(difficulties.length).toBeGreaterThan(0);
-    });
+  beforeEach(() => {
+    vi.clearAllMocks();
   });
 
-  describe('Email Generation Strategy', () => {
-    it('should prioritize varied domains', () => {
-      // Orchestrator should ensure domain diversity
-      const domainDiversity = true;
-      expect(domainDiversity).toBe(true);
-    });
-
-    it('should vary attachment types', () => {
-      // Should include PDF, XLSX, DOC, JPG, etc.
-      const attachmentTypes = ['PDF', 'XLSX', 'DOC', 'JPG'];
-      expect(attachmentTypes.length).toBeGreaterThan(1);
-    });
-
-    it('should avoid sender repetition', () => {
-      // No duplicate senders across emails in batch
-      const senderSet = new Set<string>();
-      expect(senderSet.size).toBeGreaterThanOrEqual(0);
-    });
-
-    it('should vary timestamps naturally', () => {
-      // Each email timestamp should be different and natural
-      const timestamps = ['15 minutes ago', '2 hours ago', 'yesterday', 'this morning'];
-      expect(timestamps.length).toBeGreaterThan(1);
-    });
-
-    it('should apply topic context consistently', () => {
-      // All emails should be relevant to training topic
-      const topicConsistency = true;
-      expect(topicConsistency).toBe(true);
-    });
-
-    it('should generate authentic-looking phishing emails', () => {
-      // Phishing emails should use realistic business tactics
-      const tactics = ['urgency', 'authority', 'legitimacy', 'social engineering'];
-      expect(tactics.length).toBeGreaterThan(0);
-    });
-
-    it('should generate realistic legitimate emails', () => {
-      // Legitimate emails should be indistinguishable from real workplace emails
-      const legitimacyFactors = ['real tone', 'authentic context', 'proper formatting'];
-      expect(legitimacyFactors.length).toBeGreaterThan(0);
-    });
+  const createMockEmailResponse = (id: string, subject: string) => ({
+    text: JSON.stringify({
+      id,
+      sender: { name: 'Test Sender', email: 'test@example.com' },
+      subject,
+      preview: 'Preview text',
+      content: '<p>Content</p>',
+      timestamp: '1 hour ago',
+      isPhishing: false,
+      headers: { 'X-Test': 'true' },
+      difficulty: 'EASY',
+    }),
   });
 
-  describe('Language Support', () => {
-    it('should support English email generation', () => {
-      const language = 'en';
-      expect(language).toBe('en');
+  it('should successfully generate emails in parallel', async () => {
+    // Mock successful 4 email generations (one for each variant)
+    (generateText as any)
+      .mockResolvedValueOnce(createMockEmailResponse('1', 'Obvious Phishing'))
+      .mockResolvedValueOnce(createMockEmailResponse('2', 'Sophisticated Phishing'))
+      .mockResolvedValueOnce(createMockEmailResponse('3', 'Casual Legit'))
+      .mockResolvedValueOnce(createMockEmailResponse('4', 'Formal Legit'));
+
+    const result = await generateInboxEmailsParallel({
+      topic: 'Test Topic',
+      languageCode: 'en-US',
+      category: 'Security',
+      riskArea: 'Phishing',
+      level: 'Beginner',
+      department: 'IT',
+      model: mockModel,
     });
 
-    it('should support Turkish email generation', () => {
-      const language = 'tr';
-      expect(language).toBe('tr');
-    });
-
-    it('should support German email generation', () => {
-      const language = 'de';
-      expect(language).toBe('de');
-    });
-
-    it('should support French email generation', () => {
-      const language = 'fr';
-      expect(language).toBe('fr');
-    });
-
-    it('should support Spanish email generation', () => {
-      const language = 'es';
-      expect(language).toBe('es');
-    });
-
-    it('should generate emails in native language style', () => {
-      // Emails should sound native, not translated
-      const nativeLanguage = true;
-      expect(nativeLanguage).toBe(true);
-    });
-
-    it('should preserve topic meaning across languages', () => {
-      // Topic context should translate meaning, not word-for-word
-      const meaningPreserved = true;
-      expect(meaningPreserved).toBe(true);
-    });
+    expect(result).toHaveLength(4);
+    expect(result[0].subject).toBe('Obvious Phishing');
+    expect(result[1].subject).toBe('Sophisticated Phishing');
+    expect(generateText).toHaveBeenCalledTimes(4);
   });
 
-  describe('Error Handling', () => {
-    it('should handle missing topic gracefully', () => {
-      // Should use default topic if missing
-      const topic = undefined || 'General Security';
-      expect(topic).toBeTruthy();
+  it('should handle partial failures gracefully', async () => {
+    // Mock 2 successes and 2 failures
+    (generateText as any)
+      .mockResolvedValueOnce(createMockEmailResponse('1', 'Email 1'))
+      .mockRejectedValueOnce(new Error('Generation failed')) // Will trigger retry logic
+      .mockResolvedValueOnce(createMockEmailResponse('3', 'Email 3'))
+      .mockRejectedValueOnce(new Error('Generation failed')); // Will trigger retry logic
+
+    // Retry logic also fails for the failures
+    (withRetry as any).mockImplementation(async (fn: any, opName: string) => {
+      if (opName.includes('retry')) {
+        throw new Error('Retry failed');
+      }
+      try {
+        return await fn();
+      } catch (e) {
+        throw e;
+      }
     });
 
-    it('should handle invalid language code', () => {
-      // Should default to English if language invalid
-      const language = 'invalid' || 'en';
-      expect(language).toBeTruthy();
+    const result = await generateInboxEmailsParallel({
+      topic: 'Test Topic',
+      languageCode: 'en-US',
+      category: 'Security',
+      riskArea: 'Phishing',
+      level: 'Beginner',
+      department: 'IT',
+      model: mockModel,
     });
 
-    it('should handle empty additional context', () => {
-      // Should work without additional context
-      const context = undefined || '';
-      expect(context).toBeDefined();
-    });
-
-    it('should handle missing department', () => {
-      // Should use default department if missing
-      const department = undefined || 'all';
-      expect(department).toBeTruthy();
-    });
-
-    it('should timeout gracefully for long operations', () => {
-      // Should have timeout protection for parallel generation
-      const timeoutMs = 300000; // 5 minutes
-      expect(timeoutMs).toBeGreaterThan(0);
-    });
+    // Should return the successful ones
+    expect(result).toHaveLength(2);
+    expect(result[0].subject).toBe('Email 1');
+    expect(result[1].subject).toBe('Email 3');
   });
 
-  describe('Email Quality Assurance', () => {
-    it('should validate HTML structure', () => {
-      // All HTML in emails should be properly closed
-      const htmlValid = true;
-      expect(htmlValid).toBe(true);
+  it('should retry failed generations with fixed prompt', async () => {
+    // robust mock implementation that checks if it's a retry attempt
+    let callCount = 0;
+    (generateText as any).mockImplementation(async (args: any) => {
+      callCount++;
+      const messages = args.messages;
+      const lastMessage = messages[messages.length - 1].content;
+
+      // Check if this is a retry attempt (retry logic adds specific instruction)
+      if (lastMessage.includes('If previous output was not valid JSON')) {
+        return createMockEmailResponse('retry-id', 'Retry Success');
+      }
+
+      // Simulate failure for the first call only (Obvious Phishing variant)
+      // We need to be careful with parallel execution order, but typically first call is first variant
+      // Let's force fail based on internal state or just fail the first call that ISN'T a retry
+      if (callCount === 1) {
+        throw new Error('Simulated Generation Failure');
+      }
+
+      return createMockEmailResponse(`id-${callCount}`, `Subject ${callCount}`);
     });
 
-    it('should verify attachment matching', () => {
-      // Attachment should match email content
-      const contentMatch = true;
-      expect(contentMatch).toBe(true);
+    // Reset withRetry to default pass-through
+    (withRetry as any).mockImplementation((fn: any) => fn());
+
+    const result = await generateInboxEmailsParallel({
+      topic: 'Test Topic',
+      languageCode: 'en-US',
+      category: 'Security',
+      riskArea: 'Phishing',
+      level: 'Beginner',
+      department: 'IT',
+      model: mockModel,
     });
 
-    it('should ensure header authenticity', () => {
-      // Email headers should be realistic
-      const headersValid = true;
-      expect(headersValid).toBe(true);
-    });
+    expect(result).toHaveLength(4);
 
-    it('should validate difficulty rating', () => {
-      // Difficulty should be EASY, MEDIUM, MEDIUM-HARD, or HARD
-      const difficulties = ['EASY', 'MEDIUM', 'MEDIUM-HARD', 'HARD'];
-      expect(difficulties.length).toBeGreaterThan(0);
-    });
+    // Verify that one of the emails has the retry subject
+    const retryEmail = result.find(e => e.subject === 'Retry Success');
+    expect(retryEmail).toBeDefined();
+    expect(retryEmail?.subject).toBe('Retry Success');
 
-    it('should check for security term avoidance', () => {
-      // Should not mention "security", "phishing", "training" in email content
-      const avoidTerms = ['security', 'phishing', 'training'];
-      expect(avoidTerms.length).toBeGreaterThan(0);
-    });
+    // generateText called 5 times: 4 variants + 1 retry
+    expect(generateText).toHaveBeenCalledTimes(5);
   });
 
-  describe('Performance Characteristics', () => {
-    it('should support batch generation', () => {
-      // Should generate multiple emails efficiently
-      const batchSize = 5;
-      expect(batchSize).toBeGreaterThan(1);
+  it('should inject additional context for phishing variants', async () => {
+    (generateText as any).mockResolvedValue(createMockEmailResponse('1', 'Test'));
+
+    await generateInboxEmailsParallel({
+      topic: 'Test Topic',
+      languageCode: 'en-US',
+      category: 'Security',
+      riskArea: 'Phishing',
+      level: 'Beginner',
+      department: 'IT',
+      additionalContext: 'User is vulnerable to CEO fraud',
+      model: mockModel,
     });
 
-    it('should optimize for parallel processing', () => {
-      // Should leverage concurrent API calls
-      const parallel = true;
-      expect(parallel).toBe(true);
-    });
+    // Check arguments of the first call (Obvious Phishing variant)
+    const callArgs = (generateText as any).mock.calls[0][0];
+    const userMessages = callArgs.messages.filter((m: any) => m.role === 'user');
 
-    it('should handle rate limiting', () => {
-      // Should respect API rate limits
-      const rateLimit = 100; // requests per minute
-      expect(rateLimit).toBeGreaterThan(0);
-    });
-
-    it('should provide progress feedback', () => {
-      // Should indicate generation progress
-      const progressTracking = true;
-      expect(progressTracking).toBe(true);
-    });
+    // Should find the context injection message
+    const contextMessage = userMessages.find((m: any) => m.content.includes('CRITICAL USER VULNERABILITY'));
+    expect(contextMessage).toBeDefined();
+    expect(contextMessage.content).toContain('CEO fraud');
   });
 
-  describe('Integration Points', () => {
-    it('should work with diversity plan generator', () => {
-      // Should integrate with diversityPlan function
-      const integrationPoint = 'diversityPlan';
-      expect(integrationPoint).toBeTruthy();
+  it('should NOT inject additional context for legit variants', async () => {
+    (generateText as any).mockResolvedValue(createMockEmailResponse('1', 'Test'));
+
+    await generateInboxEmailsParallel({
+      topic: 'Test Topic',
+      languageCode: 'en-US',
+      category: 'Security',
+      riskArea: 'Phishing',
+      level: 'Beginner',
+      department: 'IT',
+      additionalContext: 'User is vulnerable to CEO fraud',
+      model: mockModel,
     });
 
-    it('should work with email base builder', () => {
-      // Should use buildInboxEmailBaseSystem for prompts
-      const integrationPoint = 'buildInboxEmailBaseSystem';
-      expect(integrationPoint).toBeTruthy();
-    });
+    // Check arguments of the third call (Casual Legit variant - index 2)
+    const callArgs = (generateText as any).mock.calls[2][0];
+    const userMessages = callArgs.messages.filter((m: any) => m.role === 'user');
 
-    it('should work with variant delta builder', () => {
-      // Should use variantDeltaBuilder for variations
-      const integrationPoint = 'variantDeltaBuilder';
-      expect(integrationPoint).toBeTruthy();
-    });
+    // Should NOT find the context injection message
+    const contextMessage = userMessages.find((m: any) => m.content.includes('CRITICAL USER VULNERABILITY'));
+    expect(contextMessage).toBeUndefined();
+  });
 
-    it('should produce output compatible with inbox structure', () => {
-      // Generated emails should fit inbox content schema
-      const schemaCompatible = true;
-      expect(schemaCompatible).toBe(true);
-    });
+  it('should throw error if ALL generations fail', async () => {
+    // Mock all failures even after retries
+    (generateText as any).mockRejectedValue(new Error('Everything failed'));
+
+    await expect(generateInboxEmailsParallel({
+      topic: 'Test Topic',
+      languageCode: 'en-US',
+      category: 'Security',
+      riskArea: 'Phishing',
+      level: 'Beginner',
+      department: 'IT',
+      model: mockModel,
+    })).rejects.toThrow();
   });
 });

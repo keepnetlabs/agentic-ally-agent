@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { normalizeBCP47, validateLanguagesDifferent, LanguageCodeSchema } from './language-validation';
+import { normalizeBCP47, validateLanguagesDifferent, LanguageCodeSchema, createDifferentLanguageSchema } from './language-validation';
 
 describe('language-validation', () => {
     describe('normalizeBCP47', () => {
@@ -39,6 +39,23 @@ describe('language-validation', () => {
             expect(() => LanguageCodeSchema.parse('a')).toThrow(); // Too short
             expect(() => LanguageCodeSchema.parse('very-long-invalid-code')).toThrow(); // Too long
             expect(() => LanguageCodeSchema.parse('123')).toThrow(); // Invalid format pattern
+        });
+    });
+
+    describe('createDifferentLanguageSchema', () => {
+        // Since the schema itself is just a Zod schema, we test it by using it in a schema
+        // effectively similar to how LanguageCodeSchema works but verifying it returns a schema
+        it('should create a valid schema', () => {
+            const schema = createDifferentLanguageSchema('source');
+            expect(schema).toBeDefined();
+        });
+
+        // Note: The actual "difference" logic is usually enforced by superRefine in the using zod object,
+        // but the factory returns a refined string schema.
+        it('should validate and normalize codes like the base schema', () => {
+            const schema = createDifferentLanguageSchema('source');
+            const result = schema.parse('en-us');
+            expect(result).toBe('en-US');
         });
     });
 });

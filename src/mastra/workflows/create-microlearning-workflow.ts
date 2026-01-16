@@ -7,7 +7,7 @@ import { getModelWithOverride } from '../model-providers';
 import { MicrolearningService } from '../services/microlearning-service';
 import { KVService } from '../services/kv-service';
 import { generateMicrolearningId, normalizeDepartmentName } from '../utils/language/language-utils';
-import { MODEL_PROVIDERS, API_ENDPOINTS } from '../constants';
+import { API_ENDPOINTS } from '../constants';
 import {
   createInputSchema,
   promptAnalysisSchema,

@@ -35,7 +35,7 @@ const loadExistingStep = createStep({
   execute: async ({ inputData }) => {
     const { existingMicrolearningId, targetLanguage, sourceLanguage, department, modelProvider, model } = inputData;
 
-    logger.info('Step 1: Loading existing microlearning', { existingMicrolearningId, targetLanguage });
+    logger.info('Step 1: Loading existing microlearning', { existingMicrolearningId, targetLanguage, sourceLanguage, department, });
 
     // Try KVService first, fallback to MicrolearningService
     let existing = null;
@@ -70,7 +70,7 @@ const loadExistingStep = createStep({
       language: targetLanguage.toLowerCase(),  // Normalize to lowercase for KV key consistency
       topic: meta.title || 'Training',
       title: meta.title || 'Training',
-      department: (department && department !== LANGUAGE.DEFAULT_DEPARTMENT) ? department : (meta.department_relevance?.[0] || LANGUAGE.DEFAULT_DEPARTMENT),
+      department: (meta.department_relevance?.[0] || LANGUAGE.DEFAULT_DEPARTMENT || department),
       level: meta.level || 'beginner',
       category: meta.category || 'General',
       subcategory: meta.subcategory,
@@ -275,20 +275,36 @@ const updateInboxStep = createStep({
       };
     }
 
-    logger.info('Step 3: Creating inbox', { targetLanguage, sourceLanguage });
+    const meta = microlearningStructure.microlearning_metadata || {};
+    const potentialDepartments = Array.isArray(meta.department_relevance)
+      ? [...meta.department_relevance, analysis.department]
+      : [analysis.department];
+    logger.info('Step 3: Creating inbox', { targetLanguage, sourceLanguage, potentialDepartments });
 
-    const normalizedDept = analysis.department ? normalizeDepartmentName(analysis.department) : normalizeDepartmentName(LANGUAGE.DEFAULT_DEPARTMENT);
     const kvService = new KVService();
+    let normalizedDept = '';
 
     // Try to translate existing inbox using KVService
     try {
-      // Load inbox with automatic fallback to en-gb
-      const baseInbox = await loadInboxWithFallback(
-        kvService,
-        microlearningId,
-        normalizedDept,
-        sourceLanguage
-      );
+      // Load inbox with automatic fallback to en-gb from potential departments (stop at first found)
+      let baseInbox = null;
+
+      for (const dept of potentialDepartments) {
+        normalizedDept = dept ? normalizeDepartmentName(dept) : normalizeDepartmentName(LANGUAGE.DEFAULT_DEPARTMENT);
+        logger.info('Checking department', { dept, normalizedDept });
+
+        baseInbox = await loadInboxWithFallback(
+          kvService,
+          microlearningId,
+          normalizedDept,
+          sourceLanguage
+        );
+
+        if (baseInbox) {
+          logger.info('Found inbox in department, stopping search', { normalizedDept });
+          break;
+        }
+      }
 
       if (baseInbox) {
         logger.debug('Found base inbox', { sample: JSON.stringify(baseInbox).substring(0, STRING_TRUNCATION.JSON_SAMPLE_LENGTH) });
@@ -338,10 +354,10 @@ const updateInboxStep = createStep({
           logger.info('Inbox corrected and stored', { normalizedDept, targetLanguage });
         }
       } else {
-        logger.warn('No base inbox found to translate', {
+        logger.warn('No base inbox found to translate in any department', {
           microlearningId,
           sourceLanguage,
-          department: normalizedDept,
+          potentialDepartments,
           suggestion: 'Check if an inbox exists for the source language in KV.'
         });
         return {

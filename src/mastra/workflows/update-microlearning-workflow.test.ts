@@ -1,420 +1,175 @@
-import { describe, it, expect } from 'vitest';
-import '../../../src/__tests__/setup';
-import { API_ENDPOINTS } from '../constants';
 
-/**
- * Test Suite: Update Microlearning Workflow
- * Tests for theme updates with version control and history tracking
- * Covers: Deep merge, department normalization, URL building
- */
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { updateMicrolearningWorkflow } from './update-microlearning-workflow';
+import { KVService } from '../services/kv-service';
+import { ProductService } from '../services/product-service';
 
-import { deepMerge } from '../utils/object-utils';
+// Mock Services and Utils
+vi.mock('../services/kv-service');
+vi.mock('../services/product-service');
+
+vi.mock('../utils/phishing/brand-resolver', () => ({
+  resolveLogoAndBrand: vi.fn().mockResolvedValue({ logoUrl: 'https://logo.com/logo.png' })
+}));
+
+vi.mock('../utils/theme/theme-color-normalizer', () => ({
+  normalizeThemeBackgroundClass: vi.fn().mockResolvedValue('bg-white')
+}));
+
+vi.mock('../utils/microlearning/logo-utils', () => ({
+  handleLogoHallucination: vi.fn().mockImplementation((updates) => updates)
+}));
+
+vi.mock('../utils/kv-consistency', () => ({
+  waitForKVConsistency: vi.fn().mockResolvedValue(true),
+  buildExpectedKVKeys: vi.fn().mockReturnValue([])
+}));
+
+vi.mock('../utils/core/resilience-utils', () => ({
+  withRetry: vi.fn().mockImplementation((fn) => fn())
+}));
+
+vi.mock('../utils/core/logger', () => ({
+  getLogger: () => ({
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn()
+  })
+}));
 
 describe('UpdateMicrolearningWorkflow', () => {
-  describe('deepMerge utility', () => {
-    it('should merge nested objects without losing properties', () => {
-      const target = {
-        fontFamily: {
-          primary: 'Arial',
-          secondary: 'Helvetica',
-          monospace: 'Courier',
-        },
-      };
+  beforeEach(() => {
+    vi.clearAllMocks();
 
-      const source = {
-        fontFamily: {
-          primary: 'Times New Roman',
-        },
-      };
-
-      const result = deepMerge(target, source);
-
-      expect(result.fontFamily.primary).toBe('Times New Roman');
-      expect(result.fontFamily.secondary).toBe('Helvetica');
-      expect(result.fontFamily.monospace).toBe('Courier');
+    // Mock KVService
+    (KVService.prototype.get as any).mockResolvedValue({
+      version: 1,
+      theme: { colors: { background: 'bg-black' } },
+      microlearning_metadata: { language: 'en' }
     });
+    (KVService.prototype.put as any).mockResolvedValue(true);
 
-    it('should handle deeply nested updates', () => {
-      const target = {
-        colors: {
-          background: '#FFFFFF',
-        },
-      };
-
-      const source = {
-        colors: {
-          background: '#000000',
-        },
-      };
-
-      const result = deepMerge(target, source);
-
-      expect(result.colors.background).toBe('#000000');
-    });
-
-    it('should add new properties during merge', () => {
-      const target = {
-        fontFamily: {
-          primary: 'Arial',
-        },
-      };
-
-      const source = {
-        fontFamily: {
-          secondary: 'Verdana',
-        },
-      };
-
-      const result = deepMerge(target, source) as any;
-
-      expect(result.fontFamily.primary).toBe('Arial');
-      expect(result.fontFamily.secondary).toBe('Verdana');
-    });
-
-    it('should not merge array values as objects', () => {
-      const target = {
-        items: ['a', 'b'],
-      };
-
-      const source = {
-        items: ['c', 'd'],
-      };
-
-      const result = deepMerge(target, source);
-
-      expect(Array.isArray(result.items)).toBe(true);
-      expect(result.items).toEqual(['c', 'd']);
-    });
-
-    it('should handle primitive value overrides', () => {
-      const target = {
-        value: 'old',
-      };
-
-      const source = {
-        value: 'new',
-      };
-
-      const result = deepMerge(target, source);
-
-      expect(result.value).toBe('new');
-    });
-
-    it('should handle null source gracefully', () => {
-      const target = { a: 1 };
-      const result = deepMerge(target, null);
-
-      expect(result).toEqual(target);
-    });
-
-    it('should not mutate original target', () => {
-      const target = {
-        fontFamily: {
-          primary: 'Arial',
-        },
-      };
-
-      const originalTarget = JSON.parse(JSON.stringify(target));
-
-      const source = {
-        fontFamily: {
-          primary: 'Verdana',
-        },
-      };
-
-      deepMerge(target, source);
-
-      expect(target).toEqual(originalTarget);
-    });
-
-    it('should handle complex nested structure', () => {
-      const target = {
-        theme: {
-          fontFamily: {
-            primary: 'Arial',
-            secondary: 'Helvetica',
-          },
-          colors: {
-            background: '#FFF',
-          },
-          logo: {
-            src: '/logo.png',
-            darkSrc: '/logo-dark.png',
-          },
-        },
-      };
-
-      const source = {
-        theme: {
-          fontFamily: {
-            primary: 'Georgia',
-          },
-          colors: {
-            background: '#000',
-          },
-        },
-      };
-
-      const result = deepMerge(target, source);
-
-      // Verify updates
-      expect(result.theme.fontFamily.primary).toBe('Georgia');
-      expect(result.theme.colors.background).toBe('#000');
-      // Verify preservation
-      expect(result.theme.fontFamily.secondary).toBe('Helvetica');
-      expect(result.theme.logo.src).toBe('/logo.png');
+    // Mock ProductService
+    (ProductService.prototype.getWhitelabelingConfig as any).mockResolvedValue({
+      mainLogoUrl: 'https://whitelabel.com/logo.png'
     });
   });
 
-  describe('Version Management', () => {
-    it('should increment version correctly', () => {
-      const currentVersion = 1;
-      const newVersion = currentVersion + 1;
+  it('should execute successfully with valid updates', async () => {
+    const run = await updateMicrolearningWorkflow.createRunAsync();
 
-      expect(newVersion).toBe(2);
-    });
-
-    it('should increment version from any starting point', () => {
-      const versions = [1, 2, 5, 10, 99];
-
-      versions.forEach((v) => {
-        const newVersion = v + 1;
-        expect(newVersion).toBe(v + 1);
-      });
-    });
-
-    it('should handle default version 1 if missing', () => {
-      const data: { version?: number } = {};
-      const currentVersion = data.version || 1;
-      const newVersion = currentVersion + 1;
-
-      expect(newVersion).toBe(2);
-    });
-  });
-
-  describe('URL Building', () => {
-    it('should build valid training URL with all components', () => {
-      const microlearningId = 'test-ml-001';
-      const language = 'en';
-      const department = 'it';
-
-      const baseUrl = encodeURIComponent(
-        `https://microlearning-api.keepnet-labs-ltd-business-profile4086.workers.dev/microlearning/${microlearningId}`
-      );
-      const langUrl = encodeURIComponent(`lang/${language}`);
-      const inboxUrl = encodeURIComponent(`inbox/${department}`);
-      const trainingUrl = `${API_ENDPOINTS.FRONTEND_MICROLEARNING_URL}/?baseUrl=${baseUrl}&langUrl=${langUrl}&inboxUrl=${inboxUrl}&isEditMode=true`;
-
-      expect(trainingUrl).toContain(API_ENDPOINTS.FRONTEND_MICROLEARNING_URL);
-      expect(trainingUrl).toContain('baseUrl=');
-      expect(trainingUrl).toContain('langUrl=');
-      expect(trainingUrl).toContain('inboxUrl=');
-      expect(trainingUrl).toContain('isEditMode=true');
-    });
-
-    it('should properly URL encode components', () => {
-      const baseUrl = encodeURIComponent(
-        'https://api.example.com/microlearning/id'
-      );
-      const langUrl = encodeURIComponent('lang/en');
-      const inboxUrl = encodeURIComponent('inbox/it');
-
-      // Forward slashes should be encoded
-      expect(baseUrl).toContain('%2F');
-      expect(langUrl).toContain('%2F');
-      expect(inboxUrl).toContain('%2F');
-    });
-
-    it('should handle different languages in URL', () => {
-      const languages = ['en', 'tr', 'de', 'fr'];
-
-      languages.forEach((lang) => {
-        const langUrl = encodeURIComponent(`lang/${lang}`);
-        const trainingUrl = `${API_ENDPOINTS.FRONTEND_MICROLEARNING_URL}/?langUrl=${langUrl}`;
-
-        expect(trainingUrl).toContain(`lang%2F${lang}`);
-      });
-    });
-
-    it('should handle different departments in URL', () => {
-      const departments = ['it', 'finance', 'hr', 'sales', 'operations'];
-
-      departments.forEach((dept) => {
-        const inboxUrl = encodeURIComponent(`inbox/${dept}`);
-        const trainingUrl = `${API_ENDPOINTS.FRONTEND_MICROLEARNING_URL}/?inboxUrl=${inboxUrl}`;
-
-        expect(trainingUrl).toContain(`inbox%2F${dept}`);
-      });
-    });
-  });
-
-  describe('Department Normalization Patterns', () => {
-    const normalizationCases = [
-      ['All', 'all'],
-      ['IT', 'it'],
-      ['Finance', 'finance'],
-      ['HR', 'hr'],
-      ['Sales', 'sales'],
-      ['Operations', 'operations'],
-      ['Management', 'management'],
-    ];
-
-    normalizationCases.forEach(([input, expected]) => {
-      it(`should normalize "${input}" to "${expected}"`, () => {
-        const result = input.toLowerCase();
-        expect(result).toBe(expected);
-      });
-    });
-  });
-
-  describe('Theme Update Tracking', () => {
-    it('should track theme color updates', () => {
-      const updates = {
-        theme: {
-          colors: { background: '#000000' },
-        } as Record<string, any>,
-      };
-
-      const changes: Record<string, any> = {};
-
-      for (const key in updates.theme) {
-        changes[`theme.${key}`] = updates.theme[key];
+    const input = {
+      microlearningId: 'ml-123',
+      department: 'IT',
+      updates: {
+        theme: { colors: { background: 'bg-blue-500' } }
       }
+    };
 
-      expect(changes['theme.colors']).toEqual({ background: '#000000' });
-    });
+    const workflowResult = await run.start({ inputData: input });
 
-    it('should track multiple theme updates', () => {
-      const updates = {
-        theme: {
-          colors: { background: '#000' },
-          fontFamily: { primary: 'Arial' },
-          logo: { src: '/new-logo.png' },
-        } as Record<string, any>,
-      };
+    expect(KVService.prototype.get).toHaveBeenCalledWith('ml:ml-123:base');
+    expect(KVService.prototype.put).toHaveBeenCalledTimes(2); // Base + History
 
-      const changes: Record<string, any> = {};
+    expect(workflowResult.status).toBe('success');
 
-      for (const key in updates.theme) {
-        changes[`theme.${key}`] = updates.theme[key];
+    // Cast to any to access 'result' property which only exists on success status
+    const result = (workflowResult as any).result;
+    expect(result.success).toBe(true);
+    expect(result.status).toContain('updated');
+    expect(result.metadata.version).toBe(2);
+  });
+
+  it('should fail if microlearning not found', async () => {
+    (KVService.prototype.get as any).mockResolvedValue(null);
+
+    const run = await updateMicrolearningWorkflow.createRunAsync();
+
+    const input = {
+      microlearningId: 'missing-ml',
+      updates: {}
+    };
+
+    try {
+      await run.start({ inputData: input });
+    } catch (e: any) {
+      expect(e.message).toContain('Microlearning missing-ml not found');
+    }
+  });
+
+  it('should handle whitelabel logo override', async () => {
+    const run = await updateMicrolearningWorkflow.createRunAsync();
+
+    const input = {
+      microlearningId: 'ml-123',
+      updates: {
+        useWhitelabelLogo: true,
+        theme: {}
       }
+    };
 
-      expect(Object.keys(changes)).toHaveLength(3);
-      expect(changes['theme.colors']).toBeDefined();
-      expect(changes['theme.fontFamily']).toBeDefined();
-      expect(changes['theme.logo']).toBeDefined();
-    });
+    await run.start({ inputData: input });
 
-    it('should handle empty theme updates', () => {
-      const updates = {
-        theme: {} as Record<string, any>,
-      };
+    expect(ProductService.prototype.getWhitelabelingConfig).toHaveBeenCalled();
+  });
 
-      const changes: Record<string, any> = {};
+  it('should resolve and apply external brand logo', async () => {
+    const run = await updateMicrolearningWorkflow.createRunAsync();
 
-      for (const key in updates.theme) {
-        changes[`theme.${key}`] = updates.theme[key];
+    const input = {
+      microlearningId: 'ml-brand-test',
+      updates: {
+        brandName: 'NewBrand',
+        theme: {}
       }
+    };
 
-      expect(Object.keys(changes)).toHaveLength(0);
-    });
+    const workflowResult = await run.start({ inputData: input });
+    const result = (workflowResult as any).result;
+
+    expect(result.success).toBe(true);
+    // Based on the mock for resolveLogoAndBrand at top of file
+    expect(result.metadata.changes['theme.logo'].src).toBe('https://logo.com/logo.png');
   });
 
-  describe('Timestamp Management', () => {
-    it('should set valid ISO timestamp', () => {
-      const timestamp = new Date().toISOString();
+  it('should handle KV save failure gracefully', async () => {
+    // Mock save failure for this specific test
+    (KVService.prototype.put as any).mockResolvedValue(false);
 
-      expect(typeof timestamp).toBe('string');
-      expect(/^\d{4}-\d{2}-\d{2}T/.test(timestamp)).toBe(true);
-    });
+    const run = await updateMicrolearningWorkflow.createRunAsync();
 
-    it('should create timestamps within acceptable range', () => {
-      const beforeTime = new Date();
-      const timestamp = new Date().toISOString();
-      const afterTime = new Date();
+    const input = {
+      microlearningId: 'ml-save-fail',
+      updates: { theme: {} }
+    };
 
-      const timestampTime = new Date(timestamp).getTime();
+    const workflowResult = await run.start({ inputData: input });
 
-      expect(timestampTime).toBeGreaterThanOrEqual(beforeTime.getTime());
-      expect(timestampTime).toBeLessThanOrEqual(afterTime.getTime());
-    });
+    // The workflow itself might not throw but return specific error structure depending on implementation
+    // Reading source: it returns { success: false, status: 'Update failed', error: ... }
+    const result = (workflowResult as any).result;
+    expect(result.success).toBe(false);
+    expect(result.status).toBe('Update failed');
   });
 
-  describe('Workflow Output Schema', () => {
-    it('should have required fields in success response', () => {
-      const successResponse = {
-        success: true,
-        status: 'Microlearning updated to version 2',
-        metadata: {
-          microlearningId: 'test-ml-001',
-          version: 2,
-          changes: { 'theme.colors': { background: '#000' } },
-          trainingUrl:
-            `${API_ENDPOINTS.FRONTEND_MICROLEARNING_URL}/?baseUrl=...&isEditMode=true`,
-          timestamp: new Date().toISOString(),
-        },
-      };
+  it('should normalize theme background color', async () => {
+    const run = await updateMicrolearningWorkflow.createRunAsync();
 
-      expect(successResponse.success).toBe(true);
-      expect(successResponse.status).toBeDefined();
-      expect(successResponse.metadata).toBeDefined();
-      expect(successResponse.metadata.microlearningId).toBeDefined();
-      expect(successResponse.metadata.version).toBeDefined();
-      expect(successResponse.metadata.trainingUrl).toBeDefined();
-      expect(successResponse.metadata.timestamp).toBeDefined();
-    });
-
-    it('should have required fields in error response', () => {
-      const errorResponse = {
-        success: false,
-        status: 'Update failed',
-        error: 'Microlearning not found',
-      };
-
-      expect(errorResponse.success).toBe(false);
-      expect(errorResponse.error).toBeDefined();
-    });
-  });
-
-  describe('Input Validation', () => {
-    it('should accept valid microlearning ID', () => {
-      const validId = 'test-ml-001';
-      expect(typeof validId).toBe('string');
-      expect(validId.length).toBeGreaterThan(0);
-    });
-
-    it('should accept valid department values', () => {
-      const validDepartments = [
-        'All',
-        'IT',
-        'Finance',
-        'HR',
-        'Sales',
-        'Operations',
-        'Management',
-      ];
-
-      validDepartments.forEach((dept) => {
-        expect(typeof dept).toBe('string');
-        expect(dept.length).toBeGreaterThan(0);
-      });
-    });
-
-    it('should accept theme updates object', () => {
-      const validUpdates = {
+    const input = {
+      microlearningId: 'ml-color-test',
+      updates: {
         theme: {
-          colors: { background: '#FFF' },
-          fontFamily: { primary: 'Arial' },
-        },
-      };
+          colors: { background: 'raw-red' }
+        }
+      }
+    };
 
-      expect(typeof validUpdates.theme).toBe('object');
-      expect(validUpdates.theme).toBeDefined();
-    });
+    const workflowResult = await run.start({ inputData: input });
+    const result = (workflowResult as any).result;
 
-    it('should handle empty theme updates', () => {
-      const updates = { theme: {} };
-      expect(Object.keys(updates.theme).length).toBe(0);
-    });
+    expect(result.success).toBe(true);
+    // Mock returns 'bg-white'
+    expect(result.metadata.changes['theme.colors'].background).toBe('bg-white');
   });
 });

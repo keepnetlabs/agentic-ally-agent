@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { assignPhishingTool } from './assign-phishing-tool';
 import { requestStorage } from '../../utils/core/request-storage';
-import * as workerApiClient from '../../utils/core/worker-api-client';
+import { callWorkerAPI } from '../../utils/core/worker-api-client';
 import '../../../../src/__tests__/setup';
 
 // Mock security-utils
@@ -17,6 +17,11 @@ vi.mock('../../services/error-service', () => ({
     internal: vi.fn(() => ({ code: 'INTERNAL_ERROR', message: 'Internal error', category: 'INTERNAL' })),
     external: vi.fn(() => ({ code: 'EXTERNAL_ERROR', message: 'External error', category: 'EXTERNAL' }))
   }
+}));
+
+// Mock worker-api-client
+vi.mock('../../utils/core/worker-api-client', () => ({
+  callWorkerAPI: vi.fn()
 }));
 
 /**
@@ -47,7 +52,7 @@ describe('assignPhishingTool', () => {
 
   describe('Input Validation', () => {
     it('should accept valid input with required fields', async () => {
-      vi.spyOn(workerApiClient, 'callWorkerAPI').mockResolvedValue({});
+      (callWorkerAPI as any).mockResolvedValue({});
 
       const input = {
         resourceId: 'phishing-resource-123',
@@ -60,7 +65,7 @@ describe('assignPhishingTool', () => {
     });
 
     it('should accept optional languageId', async () => {
-      vi.spyOn(workerApiClient, 'callWorkerAPI').mockResolvedValue({});
+      (callWorkerAPI as any).mockResolvedValue({});
 
       const input = {
         resourceId: 'phishing-resource-123',
@@ -73,7 +78,7 @@ describe('assignPhishingTool', () => {
     });
 
     it('should accept optional training assignment fields', async () => {
-      vi.spyOn(workerApiClient, 'callWorkerAPI').mockResolvedValue({});
+      (callWorkerAPI as any).mockResolvedValue({});
 
       const input = {
         resourceId: 'phishing-resource-123',
@@ -149,7 +154,7 @@ describe('assignPhishingTool', () => {
     });
 
     it('should proceed when token is present', async () => {
-      const mockCallWorkerAPI = vi.spyOn(workerApiClient, 'callWorkerAPI').mockResolvedValue({});
+      (callWorkerAPI as any).mockResolvedValue({});
 
       const input = {
         resourceId: 'phishing-resource-123',
@@ -158,13 +163,13 @@ describe('assignPhishingTool', () => {
 
       const result = await assignPhishingTool.execute({ context: input } as any);
       expect(result.success).toBe(true);
-      expect(mockCallWorkerAPI).toHaveBeenCalled();
+      expect(callWorkerAPI).toHaveBeenCalled();
     });
   });
 
   describe('Successful Assignment', () => {
     it('should successfully assign phishing and return success response', async () => {
-      vi.spyOn(workerApiClient, 'callWorkerAPI').mockResolvedValue({});
+      (callWorkerAPI as any).mockResolvedValue({});
 
       const input = {
         resourceId: 'phishing-resource-123',
@@ -178,7 +183,7 @@ describe('assignPhishingTool', () => {
     });
 
     it('should call worker API with correct payload for basic assignment', async () => {
-      const mockCallWorkerAPI = vi.spyOn(workerApiClient, 'callWorkerAPI').mockResolvedValue({});
+      (callWorkerAPI as any).mockResolvedValue({});
 
       const input = {
         resourceId: 'phishing-resource-123',
@@ -188,7 +193,7 @@ describe('assignPhishingTool', () => {
 
       await assignPhishingTool.execute({ context: input } as any);
 
-      expect(mockCallWorkerAPI).toHaveBeenCalledWith(
+      expect(callWorkerAPI).toHaveBeenCalledWith(
         expect.objectContaining({
           env: mockEnv,
           serviceBinding: mockEnv.PHISHING_CRUD_WORKER,
@@ -210,7 +215,7 @@ describe('assignPhishingTool', () => {
     });
 
     it('should include training assignment in payload when provided', async () => {
-      const mockCallWorkerAPI = vi.spyOn(workerApiClient, 'callWorkerAPI').mockResolvedValue({});
+      (callWorkerAPI as any).mockResolvedValue({});
 
       const input = {
         resourceId: 'phishing-resource-123',
@@ -221,7 +226,7 @@ describe('assignPhishingTool', () => {
 
       await assignPhishingTool.execute({ context: input } as any);
 
-      expect(mockCallWorkerAPI).toHaveBeenCalledWith(
+      expect(callWorkerAPI).toHaveBeenCalledWith(
         expect.objectContaining({
           payload: expect.objectContaining({
             trainingId: 'training-123',
@@ -232,7 +237,7 @@ describe('assignPhishingTool', () => {
     });
 
     it('should assign phishing to a group and include targetGroupResourceId in payload', async () => {
-      const mockCallWorkerAPI = vi.spyOn(workerApiClient, 'callWorkerAPI').mockResolvedValue({});
+      (callWorkerAPI as any).mockResolvedValue({});
 
       const input = {
         resourceId: 'phishing-resource-123',
@@ -243,7 +248,7 @@ describe('assignPhishingTool', () => {
 
       expect(result.success).toBe(true);
       expect(result.message).toContain('GROUP');
-      expect(mockCallWorkerAPI).toHaveBeenCalledWith(
+      expect(callWorkerAPI).toHaveBeenCalledWith(
         expect.objectContaining({
           payload: expect.objectContaining({
             targetGroupResourceId: 'group-123',
@@ -256,7 +261,7 @@ describe('assignPhishingTool', () => {
   describe('Error Handling', () => {
     it('should handle API errors gracefully', async () => {
       const apiError = new Error('Assign API failed: 500 Internal Server Error');
-      vi.spyOn(workerApiClient, 'callWorkerAPI').mockRejectedValue(apiError);
+      (callWorkerAPI as any).mockRejectedValue(apiError);
 
       const input = {
         resourceId: 'phishing-resource-123',
@@ -270,7 +275,7 @@ describe('assignPhishingTool', () => {
 
     it('should handle network errors', async () => {
       const networkError = new Error('Network error: Connection timeout');
-      vi.spyOn(workerApiClient, 'callWorkerAPI').mockRejectedValue(networkError);
+      (callWorkerAPI as any).mockRejectedValue(networkError);
 
       const input = {
         resourceId: 'phishing-resource-123',
@@ -284,7 +289,7 @@ describe('assignPhishingTool', () => {
 
     it('should include context in error response', async () => {
       const apiError = new Error('Assign API failed');
-      vi.spyOn(workerApiClient, 'callWorkerAPI').mockRejectedValue(apiError);
+      (callWorkerAPI as any).mockRejectedValue(apiError);
 
       const input = {
         resourceId: 'phishing-resource-123',
@@ -300,7 +305,7 @@ describe('assignPhishingTool', () => {
 
   describe('Output Schema Validation', () => {
     it('should return valid output schema structure', async () => {
-      vi.spyOn(workerApiClient, 'callWorkerAPI').mockResolvedValue({});
+      (callWorkerAPI as any).mockResolvedValue({});
 
       const input = {
         resourceId: 'phishing-resource-123',
