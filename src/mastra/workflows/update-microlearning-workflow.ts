@@ -117,7 +117,7 @@ const mergeUpdatesStep = createStep({
   }),
   execute: async ({ inputData }) => {
     const { microlearningId, department, currentContent, currentVersion, updates: rawUpdates, model, modelProvider } = inputData;
-    let updates = handleLogoHallucination(rawUpdates, microlearningId);
+    const updates = handleLogoHallucination(rawUpdates, microlearningId);
 
     logger.info('Received update request', {
       microlearningId,
@@ -137,6 +137,9 @@ const mergeUpdatesStep = createStep({
       }
 
       // Handle Whitelabel Logo Override
+      // Check for brandName in both root and theme (agent sometimes nests it)
+      const targetBrandName = updates.brandName || updates.theme?.brandName;
+
       if (updates.useWhitelabelLogo) {
         try {
           const productService = new ProductService();
@@ -155,8 +158,8 @@ const mergeUpdatesStep = createStep({
         } catch (err) {
           logger.warn('Failed to apply whitelabel logo', { error: err });
         }
-      } else if (updates.brandName) {
-        logger.info('Processing external brand update', { brandName: updates.brandName });
+      } else if (targetBrandName) {
+        logger.info('Processing external brand update', { brandName: targetBrandName });
         // Handle External Brand Resolution
         try {
           // Use default model or override if provided
@@ -164,7 +167,12 @@ const mergeUpdatesStep = createStep({
 
           // Use resolveLogoAndBrand to find the logo URL for the brand
           // We pass the brand name as both name and scenario since we just want logo resolution
-          const brandInfo = await resolveLogoAndBrand(updates.brandName, `Brand update to ${updates.brandName}`, aiModel);
+          const brandInfo = await resolveLogoAndBrand(targetBrandName, `Brand update to ${targetBrandName}`, aiModel);
+
+          logger.info('Brand resolution result', {
+            brand: targetBrandName,
+            resolvedLogo: brandInfo.logoUrl
+          });
 
           if (brandInfo.logoUrl) {
             updates.theme.logo = {
@@ -172,19 +180,23 @@ const mergeUpdatesStep = createStep({
               src: brandInfo.logoUrl,
               darkSrc: brandInfo.logoUrl // Use same logo for dark mode if resolved externally
             };
-            logger.info('External brand logo resolved and applied', {
+            logger.info('External brand logo applied to updates object', {
               microlearningId,
-              brand: updates.brandName,
-              logoUrl: brandInfo.logoUrl
+              brand: targetBrandName,
+              finalLogoConfig: updates.theme.logo
             });
           } else {
-            logger.warn('Brand resolution returned no logo URL', { brand: updates.brandName });
+            logger.warn('Brand resolution returned no logo URL', { brand: targetBrandName });
           }
         } catch (err) {
-          logger.warn('Failed to resolve external brand logo', { brand: updates.brandName, error: err });
+          logger.warn('Failed to resolve external brand logo', { brand: targetBrandName, error: err });
         }
       } else {
-        logger.debug('No brand updates detected', { updatesKeys: Object.keys(updates) });
+        logger.debug('No brand updates detected', {
+          updatesKeys: Object.keys(updates),
+          themeKeys: updates.theme ? Object.keys(updates.theme) : [],
+          hasLogo: !!updates.theme?.logo
+        });
       }
 
       // Normalize color if provided
@@ -201,6 +213,14 @@ const mergeUpdatesStep = createStep({
 
       // Use deep merge to handle nested theme properties
       updatedContent.theme = deepMerge(updatedContent.theme, updates.theme);
+
+      // DEBUG: Verify merge result for logo
+      if (updates.theme?.logo) {
+        logger.info('Theme merge complete. Verifying logo state:', {
+          inputUpdateLogo: updates.theme.logo,
+          mergedOutputLogo: updatedContent.theme?.logo
+        });
+      }
 
       // Track theme changes
       for (const key in updates.theme) {

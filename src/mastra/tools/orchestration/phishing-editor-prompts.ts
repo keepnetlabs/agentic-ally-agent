@@ -1,3 +1,4 @@
+import { SimulatedEmail } from '../../types/microlearning';
 
 export function getIntentClassificationPrompt(editInstruction: string): string {
     return `Analyze the following instruction: "${editInstruction}".
@@ -44,7 +45,9 @@ VALIDATION CHECKLIST BEFORE RETURNING:
 ✓ No text before or after the JSON object`;
 }
 
-export function getPhishingEmailUserPrompt(existingEmail: any, escapedInstruction: string, brandContext: string): string {
+
+
+export function getPhishingEmailUserPrompt(existingEmail: SimulatedEmail & { template: string }, escapedInstruction: string, brandContext: string): string {
     return `Edit this email template:
 
 Subject: ${existingEmail.subject}

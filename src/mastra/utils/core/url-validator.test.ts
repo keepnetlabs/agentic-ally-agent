@@ -188,7 +188,7 @@ describe('URL Validator', () => {
     });
 
     it('should return readonly array', () => {
-      const urls = getAllowedBaseApiUrls();
+      getAllowedBaseApiUrls();
 
       // Readonly arrays check (TypeScript only, skipped runtime check)
       // expect((urls as any).push).toBeUndefined();

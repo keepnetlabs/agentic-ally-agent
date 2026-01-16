@@ -1,11 +1,12 @@
 
-import { z } from 'zod';
+
 import { generateText } from 'ai';
 import { getLogger } from '../../utils/core/logger';
 import { cleanResponse } from '../../utils/content-processors/json-cleaner';
 import { withTimeout } from '../../utils/core/resilience-utils';
 import { resolveLogoAndBrand } from '../../utils/phishing/brand-resolver';
 import { getIntentClassificationPrompt } from './phishing-editor-prompts';
+import { LanguageModel } from '../../types/language-model';
 
 /**
  * Detects if the user wants to use their internal brand logo or an external brand.
@@ -14,7 +15,7 @@ import { getIntentClassificationPrompt } from './phishing-editor-prompts';
  */
 export async function detectAndResolveBrand(
     editInstruction: string,
-    aiModel: any,
+    aiModel: LanguageModel,
     whitelabelConfig: { mainLogoUrl?: string } | null
 ): Promise<{ brandContext: string; resolvedBrandInfo: any }> {
     const logger = getLogger('PhishingEditorUtils');

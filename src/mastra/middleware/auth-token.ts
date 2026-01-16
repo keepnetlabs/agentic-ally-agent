@@ -124,7 +124,7 @@ export const authTokenMiddleware = async (c: Context, next: Next): Promise<Respo
     if (cachedIsValid !== null) {
         if (cachedIsValid) {
             // Recalculate estimated age for logging (optional, or skip logging age)
-            logger.debug('✅ Token validated via cache', {
+            logger.info('✅ Token validated via cache', {
                 path: c.req.path,
                 ip: clientIp,
             });

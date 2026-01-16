@@ -60,7 +60,7 @@ export async function fetchUsersWithFilters(
             if (errorJson?.message) {
                 detailedMessage = errorJson.message;
             }
-        } catch (e) {
+        } catch {
             // If not JSON, use the raw text if short, or default
             if (errorText.length < 100) detailedMessage += ` - ${errorText}`;
         }

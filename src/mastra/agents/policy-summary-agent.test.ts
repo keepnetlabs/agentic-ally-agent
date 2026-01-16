@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { policySummaryAgent } from './policy-summary-agent';
 import { AGENT_NAMES } from '../constants';
-import * as fs from 'fs';
+
 
 describe('Policy Summary Agent', () => {
   describe('Agent Configuration', () => {

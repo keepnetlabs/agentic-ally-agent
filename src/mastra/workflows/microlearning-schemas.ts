@@ -16,7 +16,8 @@ export const updatesSchema = z.object({
             minimizedSrc: z.string().optional(),
             minimizedDarkSrc: z.string().optional(),
             alt: z.string().optional()
-        }).optional()
+        }).optional(),
+        brandName: z.string().optional().describe('Brand name if applicable (e.g. Apple) - Fallback location')
     }).optional(),
     useWhitelabelLogo: z.boolean().optional(),
     brandName: z.string().optional()

@@ -1,5 +1,5 @@
 import { Tool } from '@mastra/core/tools';
-import { z } from 'zod';
+
 import { generateText } from 'ai';
 import { LanguageModel } from '../../types/language-model';
 import { MicrolearningContent } from '../../types/microlearning';

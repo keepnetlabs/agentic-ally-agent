@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { validateEnvironment, validateEnvironmentOrThrow } from './env-validation';
-import { getLogger } from './logger';
+
 
 // Mock logger
 const { mockLoggerInstance } = vi.hoisted(() => {
