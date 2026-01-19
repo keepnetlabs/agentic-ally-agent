@@ -87,7 +87,7 @@ export const getUserInfoTool = createTool({
             userFullName = `${user.firstName} ${user.lastName}`;
             logger.debug('User found by email', { userId, userFullName });
             fullName = userFullName;
-          } else if (!inputFullName && !inputFirstName) {
+          } else {
             const errorInfo = errorService.notFound(`User "${email}" not found.`, { email });
             logErrorInfo(logger, 'warn', 'User not found', errorInfo);
             return createToolErrorResponse(errorInfo);

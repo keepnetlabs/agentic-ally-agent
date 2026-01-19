@@ -144,6 +144,26 @@ describe('UpdateMicrolearningWorkflow', () => {
     expect(mocks.getWhitelabelingConfig).toHaveBeenCalled();
   });
 
+  it('should handle whitelabel config failure gracefully', async () => {
+    mocks.getWhitelabelingConfig.mockRejectedValue(new Error('Config service down'));
+    const run = await updateMicrolearningWorkflow.createRunAsync();
+
+    const input = {
+      microlearningId: 'ml-123',
+      updates: {
+        useWhitelabelLogo: true,
+        theme: {}
+      }
+    };
+
+    const workflowResult = await run.start({ inputData: input });
+    expect(workflowResult.status).toBe('success');
+    expect(mocks.loggerWarn).toHaveBeenCalledWith(
+      'Failed to apply whitelabel logo',
+      expect.objectContaining({ error: expect.anything() })
+    );
+  });
+
   it('should resolve and apply external brand logo', async () => {
     const run = await updateMicrolearningWorkflow.createRunAsync();
 
@@ -159,12 +179,30 @@ describe('UpdateMicrolearningWorkflow', () => {
     const result = (workflowResult as any).result;
 
     expect(result.success).toBe(true);
-    // Based on the mock for resolveLogoAndBrand at top of file
     expect(result.metadata.changes['theme.logo'].src).toBe('https://logo.com/logo.png');
   });
 
+  it('should resolve brand from nested theme property', async () => {
+    const run = await updateMicrolearningWorkflow.createRunAsync();
+
+    const input = {
+      microlearningId: 'ml-nested-brand',
+      updates: {
+        theme: {
+          brandName: 'NestedBrand'
+        }
+      }
+    } as any;
+
+    await run.start({ inputData: input });
+    expect(mocks.resolveLogoAndBrand).toHaveBeenCalledWith(
+      'NestedBrand',
+      expect.stringContaining('NestedBrand'),
+      expect.anything()
+    );
+  });
+
   it('should handle KV save failure gracefully', async () => {
-    // Mock save failure for this specific test
     mocks.kvPut.mockResolvedValue(false);
 
     const run = await updateMicrolearningWorkflow.createRunAsync();
@@ -176,8 +214,6 @@ describe('UpdateMicrolearningWorkflow', () => {
 
     const workflowResult = await run.start({ inputData: input });
 
-    // The workflow itself might not throw but return specific error structure depending on implementation
-    // Reading source: it returns { success: false, status: 'Update failed', error: ... }
     const result = (workflowResult as any).result;
     expect(result.success).toBe(false);
     expect(result.status).toBe('Update failed');
@@ -199,7 +235,51 @@ describe('UpdateMicrolearningWorkflow', () => {
     const result = (workflowResult as any).result;
 
     expect(result.success).toBe(true);
-    // Mock returns 'bg-white'
     expect(result.metadata.changes['theme.colors'].background).toBe('bg-white');
+  });
+
+  it('should perform deep merge of nested theme updates', async () => {
+    mocks.kvGet.mockResolvedValue({
+      version: 1,
+      theme: {
+        colors: { background: 'bg-black', text: 'text-white' },
+        logo: { src: 'old.png' }
+      },
+      microlearning_metadata: { language: 'en' }
+    });
+
+    const run = await updateMicrolearningWorkflow.createRunAsync();
+    const input = {
+      microlearningId: 'ml-deep-merge',
+      updates: {
+        theme: {
+          colors: { background: 'bg-red-500' }
+        }
+      }
+    };
+
+    const workflowResult = await run.start({ inputData: input });
+    const result = (workflowResult as any).result;
+
+    expect(result.metadata.changes['theme.colors']).toEqual({ background: 'bg-white' });
+    const basePutCall = mocks.kvPut.mock.calls.find(c => c?.[0]?.endsWith(':base'));
+    expect(basePutCall?.[1]?.theme?.colors?.text).toBe('text-white');
+  });
+
+  it('should track version history entry with changes', async () => {
+    const run = await updateMicrolearningWorkflow.createRunAsync();
+    const input = {
+      microlearningId: 'ml-history-test',
+      updates: { theme: { colors: { background: 'blue' } } }
+    } as any;
+
+    await run.start({ inputData: input });
+
+    const historyPutCall = mocks.kvPut.mock.calls.find(c => c?.[0]?.includes(':history:'));
+    expect(historyPutCall).toBeDefined();
+    expect(historyPutCall?.[1]).toMatchObject({
+      action: 'updated',
+      version: 2
+    });
   });
 });

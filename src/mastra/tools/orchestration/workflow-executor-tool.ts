@@ -178,7 +178,7 @@ export const workflowExecutorTool = createTool({
         // Get cached policy summary ONCE at workflow start
         logger.info('Getting policy summary for workflow');
         const policyContext = await getPolicySummary();
-        logger.info('Policy summary ready', { hasContent: !!policyContext, length: policyContext.length });
+        logger.info('Policy summary ready', { hasContent: !!policyContext, length: policyContext?.length || 0 });
 
         // Start workflow with writer parameter
         const workflow = createMicrolearningWorkflow;

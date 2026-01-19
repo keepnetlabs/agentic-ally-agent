@@ -213,4 +213,30 @@ describe('translateLanguageJsonTool', () => {
     // So result.data['1'] should be undefined.
     expect(result.data['1']).toBeUndefined();
   });
+  it('should use default topic when topic is missing', async () => {
+    const inputNoTopic = {
+      ...baseInput,
+      topic: undefined
+    };
+
+    const result = await (translateLanguageJsonTool as any).execute(inputNoTopic);
+    expect(result.success).toBe(true);
+    expect(rewriteScene1Intro).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ topic: 'Cybersecurity training' })
+    );
+  });
+
+  it('should pass custom topic to rewriters', async () => {
+    const inputCustomTopic = {
+      ...baseInput,
+      topic: 'Phishing Awareness for Executives'
+    };
+
+    await (translateLanguageJsonTool as any).execute(inputCustomTopic);
+    expect(rewriteScene1Intro).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ topic: 'Phishing Awareness for Executives' })
+    );
+  });
 });

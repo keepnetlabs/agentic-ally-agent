@@ -23,6 +23,8 @@ const mocks = vi.hoisted(() => ({
   postProcessPhishingLandingHtml: vi.fn(),
   waitForKVConsistency: vi.fn(),
   withRetry: vi.fn(),
+  retryGenerationWithStrongerPrompt: vi.fn(),
+  streamDirectReasoning: vi.fn(),
   loggerInfo: vi.fn(),
   loggerWarn: vi.fn(),
   loggerError: vi.fn(),
@@ -163,6 +165,14 @@ vi.mock('../utils/prompt-builders/phishing-prompts', () => ({
   buildLandingPagePrompts: vi.fn().mockReturnValue({ systemPrompt: 'sys', userPrompt: 'usr' })
 }));
 
+vi.mock('../utils/phishing/retry-generator', () => ({
+  retryGenerationWithStrongerPrompt: mocks.retryGenerationWithStrongerPrompt || vi.fn()
+}));
+
+vi.mock('../utils/core/reasoning-stream', () => ({
+  streamDirectReasoning: mocks.streamDirectReasoning || vi.fn()
+}));
+
 describe('CreatePhishingWorkflow', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -212,6 +222,12 @@ describe('CreatePhishingWorkflow', () => {
         pages: [{ type: 'login', template: '<html>Login Page</html>' }]
       })
     });
+
+    mocks.retryGenerationWithStrongerPrompt.mockResolvedValue({
+      response: { text: JSON.stringify({ subject: 'Retry Success', template: '<html>Retry</html>' }) },
+      parsedResult: { subject: 'Retry Success', template: '<html>Retry</html>' }
+    });
+    mocks.streamDirectReasoning.mockResolvedValue(true);
   });
 
   describe('Workflow Execution', () => {
@@ -551,6 +567,54 @@ describe('CreatePhishingWorkflow', () => {
       expect(result.status).toBe('success');
       const output = (result as any).result;
       expect(output.landingPage.pages.length).toBe(2);
+    });
+    it('should prioritize agent-provided isQuishing over AI output', async () => {
+      mocks.generateText.mockResolvedValueOnce({
+        text: JSON.stringify({ scenario: 'Test', category: 'Test', fromAddress: 'a@a.com', fromName: 'A', method: 'Click-Only', isQuishing: false })
+      });
+
+      const run = await createPhishingWorkflow.createRunAsync();
+      const input = { topic: 'Test', language: 'en', isQuishing: true };
+
+      const result = await run.start({ inputData: input });
+      expect((result as any).result.analysis.isQuishing).toBe(true);
+    });
+  });
+
+  describe('Reasoning & Streaming', () => {
+    it('should stream reasoning if present in AI response', async () => {
+      mocks.generateText.mockResolvedValueOnce({
+        text: JSON.stringify({ scenario: 'Test', category: 'Test', fromAddress: 'a@a.com', fromName: 'A', method: 'Click-Only' }),
+        response: {
+          body: {
+            reasoning: 'AI reasoning text'
+          }
+        }
+      } as any);
+
+      const writer = { write: vi.fn() };
+      const run = await createPhishingWorkflow.createRunAsync();
+      await run.start({ inputData: { topic: 'Reasoning Test', language: 'en', writer } });
+
+      expect(mocks.streamDirectReasoning).toHaveBeenCalledWith('AI reasoning text', expect.anything());
+    });
+  });
+
+  describe('Advanced Retry Logic', () => {
+    it('should use retryGenerationWithStrongerPrompt if primary email generation fails', async () => {
+      // Analysis succeeds
+      mocks.generateText.mockResolvedValueOnce({
+        text: JSON.stringify({ scenario: 'Test', category: 'Test', fromAddress: 'a@a.com', fromName: 'A', method: 'Click-Only' })
+      });
+      // Email Gen fails primary attempt
+      mocks.generateText.mockRejectedValueOnce(new Error('Primary Fail'));
+
+      const run = await createPhishingWorkflow.createRunAsync();
+      const result = await run.start({ inputData: { topic: 'Retry Test', language: 'en' } });
+
+      expect(result.status).toBe('success');
+      expect(mocks.retryGenerationWithStrongerPrompt).toHaveBeenCalled();
+      expect((result as any).result.subject).toBe('Retry Success');
     });
   });
 });

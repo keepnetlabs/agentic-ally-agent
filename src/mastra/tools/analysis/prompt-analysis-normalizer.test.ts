@@ -315,5 +315,37 @@ describe('prompt-analysis-normalizer', () => {
             const result = autoRepairPromptAnalysis(analysis);
             expect(result.industries).toEqual(['Tech', 'Finance']);
         });
+
+        it('should fallback to suggestedDepartment if candidate is invalid', () => {
+            // Assuming 'IT Department' is valid and 'Invalid' is not
+            const analysis = { topic: 'test', department: 'Invalid' } as any;
+            const result = autoRepairPromptAnalysis(analysis, { suggestedDepartment: 'All' });
+            expect(result.department).toBe('All');
+        });
+
+        it('should take the first role if roles is an array', () => {
+            const analysis = { topic: 'test', roles: ['Executives', 'Manager'] } as any;
+            const result = autoRepairPromptAnalysis(analysis);
+            expect(result.roles).toEqual(['Executives']);
+        });
+
+        it('should use default role if roles array is empty', () => {
+            const analysis = { topic: 'test', roles: [] } as any;
+            const result = autoRepairPromptAnalysis(analysis);
+            expect(result.roles).toEqual([ROLES.DEFAULT]);
+        });
+
+        it('should format subcategory for non-default category', () => {
+            // Assuming 'Malware' is a valid category
+            const analysis = { topic: 'test', category: 'Malware' } as any;
+            const result = autoRepairPromptAnalysis(analysis);
+            expect(result.subcategory).toBe('Malware Basics');
+        });
+
+        it('should use default subcategory for default category', () => {
+            const analysis = { topic: 'test', category: CATEGORIES.DEFAULT } as any;
+            const result = autoRepairPromptAnalysis(analysis);
+            expect(result.subcategory).toBe('General Security Awareness');
+        });
     });
 });

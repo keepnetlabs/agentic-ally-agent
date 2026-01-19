@@ -57,7 +57,8 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
                 'background-color: #f9fafb'
             ].join('; ')
         },
-        get logoExample() { return `https://img.logo.dev/jpmorganchase.com?token=${getLogoDevToken()}&size=96`; }
+        get logoExample() { return `https://img.logo.dev/jpmorganchase.com?token=${getLogoDevToken()}&size=96`; },
+        keywords: /\b(bank|finance|payment|credit|investment|paypal|stripe|visa|mastercard|wallet|transaction|account)\b/i
     },
     'Technology': {
         colors: {
@@ -101,7 +102,8 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
                 'background-color: #f9fafb'
             ].join('; ')
         },
-        get logoExample() { return `https://img.logo.dev/google.com?token=${getLogoDevToken()}&size=96`; }
+        get logoExample() { return `https://img.logo.dev/google.com?token=${getLogoDevToken()}&size=96`; },
+        keywords: /\b(tech|software|cloud|digital|app|platform|google|microsoft|apple|amazon|meta|developer|api|code|saas)\b/i
     },
     'Healthcare': {
         colors: {
@@ -145,7 +147,8 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
                 'background-color: #f9fafb'
             ].join('; ')
         },
-        get logoExample() { return `https://img.logo.dev/mayoclinic.org?token=${getLogoDevToken()}&size=96`; }
+        get logoExample() { return `https://img.logo.dev/mayoclinic.org?token=${getLogoDevToken()}&size=96`; },
+        keywords: /\b(health|medical|hospital|clinic|doctor|patient|pharmacy|medicine|care|wellness|insurance)\b/i
     },
     'E-commerce': {
         colors: {
@@ -189,7 +192,8 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
                 'background-color: #f9fafb'
             ].join('; ')
         },
-        get logoExample() { return `https://img.logo.dev/amazon.com?token=${getLogoDevToken()}&size=96`; }
+        get logoExample() { return `https://img.logo.dev/amazon.com?token=${getLogoDevToken()}&size=96`; },
+        keywords: /\b(shop|store|retail|ecommerce|cart|order|product|delivery|shipping|discount|sale|marketplace)\b/i
     },
     'Corporate': {
         colors: {
@@ -233,7 +237,8 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
                 'background-color: #f9fafb'
             ].join('; ')
         },
-        get logoExample() { return `https://img.logo.dev/accenture.com?token=${getLogoDevToken()}&size=96`; }
+        get logoExample() { return `https://img.logo.dev/accenture.com?token=${getLogoDevToken()}&size=96`; },
+        keywords: null // Default fallback, no specific keywords
     },
     'Education': {
         colors: {
@@ -277,7 +282,8 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
                 'background-color: #f9fafb'
             ].join('; ')
         },
-        get logoExample() { return `https://img.logo.dev/coursera.org?token=${getLogoDevToken()}&size=96`; }
+        get logoExample() { return `https://img.logo.dev/coursera.org?token=${getLogoDevToken()}&size=96`; },
+        keywords: /\b(education|school|university|college|course|learning|student|teacher|academy|training|edtech)\b/i
     },
     'Media & Entertainment': {
         colors: {
@@ -321,7 +327,8 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
                 'background-color: #f9fafb'
             ].join('; ')
         },
-        get logoExample() { return `https://img.logo.dev/netflix.com?token=${getLogoDevToken()}&size=96`; }
+        get logoExample() { return `https://img.logo.dev/netflix.com?token=${getLogoDevToken()}&size=96`; },
+        keywords: /\b(media|entertainment|movie|film|tv|streaming|music|video|news|publisher|broadcast|channel)\b/i
     },
     'Government': {
         colors: {
@@ -365,7 +372,8 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
                 'background-color: #f9fafb'
             ].join('; ')
         },
-        get logoExample() { return `https://img.logo.dev/usa.gov?token=${getLogoDevToken()}&size=96`; }
+        get logoExample() { return `https://img.logo.dev/usa.gov?token=${getLogoDevToken()}&size=96`; },
+        keywords: /\b(government|federal|state|irs|dmv|social security|tax|voting|citizen|public service|municipal)\b/i
     },
     'Real Estate': {
         colors: {
@@ -409,7 +417,8 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
                 'background-color: #f9fafb'
             ].join('; ')
         },
-        get logoExample() { return `https://img.logo.dev/zillow.com?token=${getLogoDevToken()}&size=96`; }
+        get logoExample() { return `https://img.logo.dev/zillow.com?token=${getLogoDevToken()}&size=96`; },
+        keywords: /\b(real estate|realty|property|housing|home|apartment|rental|mortgage|realtor|zillow|redfin)\b/i
     },
     'Hospitality & Travel': {
         colors: {
@@ -453,7 +462,233 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
                 'background-color: #f9fafb'
             ].join('; ')
         },
-        get logoExample() { return `https://img.logo.dev/booking.com?token=${getLogoDevToken()}&size=96`; }
+        get logoExample() { return `https://img.logo.dev/booking.com?token=${getLogoDevToken()}&size=96`; },
+        keywords: /\b(hotel|travel|tourism|vacation|booking|reservation|airline|airport|hospitality|restaurant|dining)\b/i
+    },
+    'Logistics & Delivery': {
+        colors: {
+            primary: '#92400e',          // Amber-800
+            secondary: '#78350f',        // Amber-900
+            accent: '#fbbf24',           // Amber-400
+            gradient: 'linear-gradient(135deg, #92400e, #fbbf24)'
+        },
+        typography: {
+            headingClass: 'lp-heading-logistics',
+            bodyClass: 'lp-body-logistics'
+        },
+        patterns: {
+            cardStyle: [
+                'background-color: #ffffff',
+                'border-radius: 18px',
+                'box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1)',
+                'border: 1px solid rgba(146, 64, 14, 0.12)',
+                'padding: 32px',
+                'max-width: 420px',
+                'margin: 0 auto'
+            ].join('; '),
+            buttonStyle: [
+                'background: #92400e',
+                'color: #ffffff',
+                'border-radius: 8px',
+                'padding: 12px 24px',
+                'font-weight: 600',
+                'font-size: 14px',
+                'border: none',
+                'cursor: pointer',
+                'transition: all 0.2s ease',
+                'box-shadow: 0 4px 12px rgba(146, 64, 14, 0.3)'
+            ].join('; '),
+            inputStyle: [
+                'width: 100%',
+                'border-radius: 10px',
+                'border: 1px solid #e5e7eb',
+                'padding: 11px 12px',
+                'font-size: 14px',
+                'background-color: #f9fafb'
+            ].join('; ')
+        },
+        get logoExample() { return `https://img.logo.dev/dhl.com?token=${getLogoDevToken()}&size=96`; },
+        keywords: /\b(dhl|ups|fedex|shipping|package|parcel|tracking|courier|delivery|post|logistics)\b/i
+    },
+    'Social Media': {
+        colors: {
+            primary: '#0284c7',          // Sky-600
+            secondary: '#0369a1',        // Sky-700
+            accent: '#38bdf8',           // Sky-400
+            gradient: 'linear-gradient(135deg, #0284c7, #38bdf8)'
+        },
+        typography: {
+            headingClass: 'lp-heading-social',
+            bodyClass: 'lp-body-social'
+        },
+        patterns: {
+            cardStyle: [
+                'background-color: #ffffff',
+                'border-radius: 18px',
+                'box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1)',
+                'border: 1px solid rgba(2, 132, 199, 0.12)',
+                'padding: 32px',
+                'max-width: 420px',
+                'margin: 0 auto'
+            ].join('; '),
+            buttonStyle: [
+                'background: #0284c7',
+                'color: #ffffff',
+                'border-radius: 8px',
+                'padding: 12px 24px',
+                'font-weight: 600',
+                'font-size: 14px',
+                'border: none',
+                'cursor: pointer',
+                'transition: all 0.2s ease',
+                'box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3)'
+            ].join('; '),
+            inputStyle: [
+                'width: 100%',
+                'border-radius: 10px',
+                'border: 1px solid #e5e7eb',
+                'padding: 11px 12px',
+                'font-size: 14px',
+                'background-color: #f9fafb'
+            ].join('; ')
+        },
+        get logoExample() { return `https://img.logo.dev/linkedin.com?token=${getLogoDevToken()}&size=96`; },
+        keywords: /\b(facebook|instagram|linkedin|twitter|tiktok|social|profile|connection|follower|post|snapchat)\b/i
+    },
+    'HR & Recruiting': {
+        colors: {
+            primary: '#4b5563',          // Gray-600
+            secondary: '#374151',        // Gray-700
+            accent: '#06b6d4',           // Cyan-500
+            gradient: 'linear-gradient(135deg, #4b5563, #06b6d4)'
+        },
+        typography: {
+            headingClass: 'lp-heading-hr',
+            bodyClass: 'lp-body-hr'
+        },
+        patterns: {
+            cardStyle: [
+                'background-color: #ffffff',
+                'border-radius: 18px',
+                'box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1)',
+                'border: 1px solid rgba(75, 85, 99, 0.12)',
+                'padding: 32px',
+                'max-width: 420px',
+                'margin: 0 auto'
+            ].join('; '),
+            buttonStyle: [
+                'background: #4b5563',
+                'color: #ffffff',
+                'border-radius: 8px',
+                'padding: 12px 24px',
+                'font-weight: 600',
+                'font-size: 14px',
+                'border: none',
+                'cursor: pointer',
+                'transition: all 0.2s ease',
+                'box-shadow: 0 4px 12px rgba(75, 85, 99, 0.3)'
+            ].join('; '),
+            inputStyle: [
+                'width: 100%',
+                'border-radius: 10px',
+                'border: 1px solid #e5e7eb',
+                'padding: 11px 12px',
+                'font-size: 14px',
+                'background-color: #f9fafb'
+            ].join('; ')
+        },
+        get logoExample() { return `https://img.logo.dev/workday.com?token=${getLogoDevToken()}&size=96`; },
+        keywords: /\b(hr|human resources|recruiting|hiring|job|payroll|salary|interview|career|workday|onboarding)\b/i
+    },
+    'Utilities & Energy': {
+        colors: {
+            primary: '#d97706',          // Amber-600
+            secondary: '#b45309',        // Amber-700
+            accent: '#f59e0b',           // Amber-500
+            gradient: 'linear-gradient(135deg, #d97706, #f59e0b)'
+        },
+        typography: {
+            headingClass: 'lp-heading-util',
+            bodyClass: 'lp-body-util'
+        },
+        patterns: {
+            cardStyle: [
+                'background-color: #ffffff',
+                'border-radius: 18px',
+                'box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1)',
+                'border: 1px solid rgba(217, 119, 6, 0.12)',
+                'padding: 32px',
+                'max-width: 420px',
+                'margin: 0 auto'
+            ].join('; '),
+            buttonStyle: [
+                'background: #d97706',
+                'color: #ffffff',
+                'border-radius: 8px',
+                'padding: 12px 24px',
+                'font-weight: 600',
+                'font-size: 14px',
+                'border: none',
+                'cursor: pointer',
+                'transition: all 0.2s ease',
+                'box-shadow: 0 4px 12px rgba(217, 119, 6, 0.3)'
+            ].join('; '),
+            inputStyle: [
+                'width: 100%',
+                'border-radius: 10px',
+                'border: 1px solid #e5e7eb',
+                'padding: 11px 12px',
+                'font-size: 14px',
+                'background-color: #f9fafb'
+            ].join('; ')
+        },
+        get logoExample() { return `https://img.logo.dev/britishgas.co.uk?token=${getLogoDevToken()}&size=96`; },
+        keywords: /\b(electricity|water|gas|energy|utility|bill|invoice|power|heating|electric|infrastructure)\b/i
+    },
+    'Telecommunications': {
+        colors: {
+            primary: '#db2777',          // Pink-600
+            secondary: '#be185d',        // Pink-700
+            accent: '#f472b6',           // Pink-400
+            gradient: 'linear-gradient(135deg, #db2777, #8b5cf6)'
+        },
+        typography: {
+            headingClass: 'lp-heading-telecom',
+            bodyClass: 'lp-body-telecom'
+        },
+        patterns: {
+            cardStyle: [
+                'background-color: #ffffff',
+                'border-radius: 18px',
+                'box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1)',
+                'border: 1px solid rgba(219, 39, 119, 0.12)',
+                'padding: 32px',
+                'max-width: 420px',
+                'margin: 0 auto'
+            ].join('; '),
+            buttonStyle: [
+                'background: #db2777',
+                'color: #ffffff',
+                'border-radius: 8px',
+                'padding: 12px 24px',
+                'font-weight: 600',
+                'font-size: 14px',
+                'border: none',
+                'cursor: pointer',
+                'transition: all 0.2s ease',
+                'box-shadow: 0 4px 12px rgba(219, 39, 119, 0.3)'
+            ].join('; '),
+            inputStyle: [
+                'width: 100%',
+                'border-radius: 10px',
+                'border: 1px solid #e5e7eb',
+                'padding: 11px 12px',
+                'font-size: 14px',
+                'background-color: #f9fafb'
+            ].join('; ')
+        },
+        get logoExample() { return `https://img.logo.dev/t-mobile.com?token=${getLogoDevToken()}&size=96`; },
+        keywords: /\b(telecom|internet|mobile|phone|cellular|data plan|fiber|broadband|wifi|5g|4g|sim card|carrier|roaming)\b/i
     }
 };
 
@@ -497,6 +732,10 @@ export interface IndustryDesign {
      * This is just for reference; systemPrompt will still compute its own logo src.
      */
     logoExample: string;
+    /**
+     * Regex keywords for industry detection fallback
+     */
+    keywords?: RegExp | null;
 }
 
 /**
@@ -528,6 +767,11 @@ Your task is to classify the industry into one of these categories:
 - Government
 - Real Estate
 - Hospitality & Travel
+- Logistics & Delivery
+- Social Media
+- HR & Recruiting
+- Utilities & Energy
+- Telecommunications
 - Corporate (default for generic companies)
 
 Return ONLY a valid JSON object with this structure:
@@ -546,7 +790,13 @@ Media & Entertainment: "Netflix", "Spotify", "YouTube" → Media & Entertainment
 Government: "IRS", "Social Security", "DMV" → Government
 Real Estate: "Zillow", "Redfin", "Realtor.com" → Real Estate
 Hospitality & Travel: "Booking.com", "Airbnb", "Expedia" → Hospitality & Travel
-Generic: "Acme Corp", "ABC Industries" → Corporate`;
+Logistics & Delivery: "DHL", "FedEx", "UPS", "Post" → Logistics & Delivery
+Social Media: "Facebook", "LinkedIn", "Instagram", "Twitter" → Social Media
+HR & Recruiting: "Workday", "ADP", "Indeed" → HR & Recruiting
+Utilities & Energy: "British Gas", "PG&E", "Electrical" → Utilities & Energy
+Telecommunications: "AT&T", "Verizon", "T-Mobile", "Vodafone" → Telecommunications
+Generic: "Acme Corp", "ABC Industries" → Corporate
+`;
 
         const userPrompt = `Company/Brand Name: ${fromName}
 Scenario: ${scenario}
@@ -609,82 +859,44 @@ Based on the company name and scenario description, determine the most appropria
 function detectIndustryWithRegex(fromName: string, scenario: string): IndustryDesign {
     const text = `${fromName} ${scenario}`.toLowerCase();
 
-    // Banking & Finance
-    if (text.match(/bank|finance|payment|credit|investment|paypal|stripe|visa|mastercard|wallet|transaction|account/i)) {
-        return {
-            industry: 'Banking & Finance',
-            ...INDUSTRY_DESIGN_MAP['Banking & Finance']
-        };
+    let bestMatch: string = 'Corporate';
+    let maxMatches = 0;
+
+    // Iterate through all industries and count keyword matches
+    for (const [industry, design] of Object.entries(INDUSTRY_DESIGN_MAP)) {
+        if (!design.keywords) continue;
+
+        // Use match with global flag to count all occurrences, but since we store regex without global flag in map,
+        // we essentially check availability now. For better scoring, we re-create regex with 'g'
+        const source = design.keywords.source;
+        // The original regex has \b wrappers, so we can use match directly
+        // However, a simple match returns null or array. 
+        // To score, we can count how many unique keywords from the group matched
+
+        const match = text.match(design.keywords);
+        if (match) {
+            // Basic scoring: Length of the match or just 1 for presence
+            // Let's improve scoring: Count total number of keyword hits
+            // We'll create a global regex from the source to count all hits
+            const globalRegex = new RegExp(source, 'gi');
+            const allMatches = text.match(globalRegex);
+            const score = allMatches ? allMatches.length : 0;
+
+            // Tie-breaker: If scores are equal, prefer the one with longer matched string (more specific)
+            // But simple count is usually enough. 
+            // Priority override: Utilities > Finance for "bill payment"
+            // Since we scan all, if Utilities has 2 matches (electricity, bill) and finance has 1 (payment), Utilities wins.
+
+            if (score > maxMatches) {
+                maxMatches = score;
+                bestMatch = industry;
+            }
+        }
     }
 
-    // Technology & Software
-    if (text.match(/tech|software|cloud|digital|app|platform|google|microsoft|apple|amazon|meta|developer|api|code|saas/i)) {
-        return {
-            industry: 'Technology',
-            ...INDUSTRY_DESIGN_MAP['Technology']
-        };
-    }
-
-    // Healthcare & Medical
-    if (text.match(/health|medical|hospital|clinic|doctor|patient|pharmacy|medicine|care|wellness|insurance/i)) {
-        return {
-            industry: 'Healthcare',
-            ...INDUSTRY_DESIGN_MAP['Healthcare']
-        };
-    }
-
-    // E-commerce & Retail
-    if (text.match(/shop|store|retail|ecommerce|cart|order|product|delivery|shipping|discount|sale|marketplace/i)) {
-        return {
-            industry: 'E-commerce',
-            ...INDUSTRY_DESIGN_MAP['E-commerce']
-        };
-    }
-
-    // Education
-    if (text.match(/education|school|university|college|course|learning|student|teacher|academy|training|edtech/i)) {
-        return {
-            industry: 'Education',
-            ...INDUSTRY_DESIGN_MAP['Education']
-        };
-    }
-
-    // Media & Entertainment
-    if (text.match(/media|entertainment|movie|film|tv|streaming|music|video|news|publisher|broadcast|channel/i)) {
-        return {
-            industry: 'Media & Entertainment',
-            ...INDUSTRY_DESIGN_MAP['Media & Entertainment']
-        };
-    }
-
-    // Government
-    if (text.match(/government|federal|state|irs|dmv|social security|tax|voting|citizen|public service|municipal/i)) {
-        return {
-            industry: 'Government',
-            ...INDUSTRY_DESIGN_MAP['Government']
-        };
-    }
-
-    // Real Estate
-    if (text.match(/real estate|realty|property|housing|home|apartment|rental|mortgage|realtor|zillow|redfin/i)) {
-        return {
-            industry: 'Real Estate',
-            ...INDUSTRY_DESIGN_MAP['Real Estate']
-        };
-    }
-
-    // Hospitality & Travel
-    if (text.match(/hotel|travel|tourism|vacation|booking|reservation|airline|airport|hospitality|restaurant|dining/i)) {
-        return {
-            industry: 'Hospitality & Travel',
-            ...INDUSTRY_DESIGN_MAP['Hospitality & Travel']
-        };
-    }
-
-    // Default: Corporate/General
     return {
-        industry: 'Corporate',
-        ...INDUSTRY_DESIGN_MAP['Corporate']
+        industry: bestMatch,
+        ...INDUSTRY_DESIGN_MAP[bestMatch]
     };
 }
 

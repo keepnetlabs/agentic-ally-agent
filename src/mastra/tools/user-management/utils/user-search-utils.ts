@@ -86,23 +86,17 @@ export async function findUserByEmail(
     const normalizedEmail = String(email).trim().toLowerCase();
 
     try {
-        let users = await fetchUsersWithFilters(deps, getAllPayloadTemplate, [
+        const users = await fetchUsersWithFilters(deps, getAllPayloadTemplate, [
             { Value: normalizedEmail, FieldName: 'email', Operator: 'Equals' },
         ]);
-        if (users.length === 0) {
-            users = await fetchUsersWithFilters(deps, getAllPayloadTemplate, [
-                { Value: normalizedEmail, FieldName: 'email', Operator: 'Contains' },
-            ]);
-        }
         if (users.length === 0) return null;
         const exact = users.find(u => String(u?.email || '').toLowerCase() === normalizedEmail);
-        const result = exact || users[0];
-        if (result) {
-            deps.logger.info('User found by email', { email: normalizedEmail, userId: result.targetUserResourceId });
-        } else {
-            deps.logger.info('No user found by email', { email: normalizedEmail });
+        if (!exact) {
+            deps.logger.info('No exact user found by email', { email: normalizedEmail, candidateCount: users.length });
+            return null;
         }
-        return result;
+        deps.logger.info('User found by email', { email: normalizedEmail, userId: exact.targetUserResourceId });
+        return exact;
     } catch (error) {
         const err = normalizeError(error);
         const errorInfo = errorService.external('User search by email failed', { error: err.message });

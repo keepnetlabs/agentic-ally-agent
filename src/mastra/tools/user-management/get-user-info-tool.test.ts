@@ -223,7 +223,7 @@ describe('getUserInfoTool', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should require either fullName or firstName', async () => {
+    it('should require either targetUserResourceId, email, fullName, or firstName', async () => {
       const input: any = {};
 
       // Tool framework validates input schema (has refine validation) and returns error response
@@ -232,6 +232,45 @@ describe('getUserInfoTool', () => {
       if (result && typeof result === 'object' && 'error' in result) {
         expect(result.error).toBeTruthy();
       }
+    });
+
+    it('should validate name format when fullName is provided', async () => {
+      const input = {
+        fullName: 'John123' // Invalid characters
+      };
+
+      const result = await getUserInfoTool.execute({ context: input } as any);
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Invalid name format');
+    });
+  });
+
+  describe('Direct ID Lookup (Fast Path)', () => {
+    it('should skip user search when targetUserResourceId is provided', async () => {
+      const fetchSpy = (global.fetch as any)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => mockTimelineResponse
+        });
+
+      const input = {
+        targetUserResourceId: 'user-direct-123'
+      };
+
+      const result = await getUserInfoTool.execute({ context: input } as any);
+
+      expect(result.success).toBe(true);
+      expect(result.userInfo?.targetUserResourceId).toBe('user-direct-123');
+      expect(result.userInfo?.fullName).toBe('User-user-direct-123');
+
+      // Should NOT call search API (leaderboardEndpoints.getAll)
+      const calls = fetchSpy.mock.calls;
+      const searchCalls = calls.filter((c: any) => c[0] === leaderboardEndpoints.getAll);
+      expect(searchCalls.length).toBe(0);
+
+      // Should call timeline API
+      const timelineCalls = calls.filter((c: any) => c[0] === leaderboardEndpoints.timeline);
+      expect(timelineCalls.length).toBe(1);
     });
   });
 
@@ -457,6 +496,53 @@ describe('getUserInfoTool', () => {
       const generateTextCall = (generateText as any).mock.calls[0][0];
       expect(generateTextCall.messages[1].content).toContain('Recent Activities');
     });
+
+    it('should use Foundational defaults when no activities are found', async () => {
+      (global.fetch as any)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => mockUserSearchResponse
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ data: { results: [] } }) // No activities
+        });
+
+      const input = {
+        fullName: 'John Doe'
+      };
+
+      await getUserInfoTool.execute({ context: input } as any);
+
+      expect(generateText).toHaveBeenCalled();
+      const generateTextCall = (generateText as any).mock.calls[0][0];
+      expect(generateTextCall.messages[1].content).toContain('NO ACTIVITY DATA AVAILABLE');
+    });
+  });
+
+  describe('Optimization: skipAnalysis', () => {
+    it('should skip AI generation when skipAnalysis is true', async () => {
+      (global.fetch as any)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => mockUserSearchResponse
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => mockTimelineResponse
+        });
+
+      const input = {
+        fullName: 'John Doe',
+        skipAnalysis: true
+      };
+
+      const result = await getUserInfoTool.execute({ context: input } as any);
+
+      expect(result.success).toBe(true);
+      expect(generateText).not.toHaveBeenCalled();
+      expect(result.analysisReport).toBeUndefined();
+    });
   });
 
   describe('AI Analysis Generation', () => {
@@ -510,6 +596,31 @@ describe('getUserInfoTool', () => {
       const result = await getUserInfoTool.execute({ context: input } as any);
       expect(result.success).toBe(true);
       // Analysis report might be undefined if AI fails
+    });
+
+    it('should continue without analysisReport when AI output fails schema validation', async () => {
+      (global.fetch as any)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => mockUserSearchResponse
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => mockTimelineResponse
+        });
+
+      (generateText as any).mockResolvedValueOnce({
+        text: JSON.stringify({ invalid: 'schema' }) // Fails AnalysisSchema.safeParse
+      });
+
+      const input = {
+        fullName: 'John Doe'
+      };
+
+      const result = await getUserInfoTool.execute({ context: input } as any);
+
+      expect(result.success).toBe(true);
+      expect(result.analysisReport).toBeUndefined();
     });
 
     it('should include masked user ID in analysis report', async () => {
@@ -584,6 +695,47 @@ describe('getUserInfoTool', () => {
       const result = await getUserInfoTool.execute({ context: input } as any);
       expect(result.success).toBe(false);
       expect(result.error).toContain('Network error');
+    });
+
+    it('should catch and log errors during user search', async () => {
+      (global.fetch as any).mockRejectedValueOnce(new Error('API failure'));
+
+      const input = { email: 'test@example.com' };
+      const result = await getUserInfoTool.execute({ context: input } as any);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('API failure');
+    });
+  });
+
+  describe('UI Signal Emission', () => {
+    it('should emit target_user UI signal when writer is provided', async () => {
+      (global.fetch as any)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => mockUserSearchResponse
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => mockTimelineResponse
+        });
+
+      const mockWriter = {
+        write: vi.fn()
+      };
+
+      const input = {
+        fullName: 'John Doe'
+      };
+
+      await getUserInfoTool.execute({ context: input, writer: mockWriter } as any);
+
+      expect(mockWriter.write).toHaveBeenCalledWith(expect.objectContaining({ type: 'text-start' }));
+      expect(mockWriter.write).toHaveBeenCalledWith(expect.objectContaining({
+        type: 'text-delta',
+        delta: expect.stringContaining('::ui:target_user::')
+      }));
+      expect(mockWriter.write).toHaveBeenCalledWith(expect.objectContaining({ type: 'text-end' }));
     });
   });
 

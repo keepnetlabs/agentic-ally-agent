@@ -1,5 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createMicrolearningWorkflow, analyzePromptStep, generateMicrolearningStep, generateLanguageStep, createInboxStep, saveToKVStep } from './create-microlearning-workflow';
+import { analyzeUserPromptTool } from '../tools/analysis';
+import { generateMicrolearningJsonTool } from '../tools/generation';
+import { createInboxStructureTool } from '../tools/inbox';
 
 // Mocks using flattened hoisted object for reliability
 const mocks = vi.hoisted(() => ({
@@ -247,6 +250,13 @@ describe('Step Execution Logic', () => {
       }));
       expect(result.success).toBe(true);
     });
+
+    it('should throw error if analyze tool is not executable', async () => {
+      vi.mocked(analyzeUserPromptTool).execute = undefined as any;
+      const input = { prompt: 'test' };
+      await expect((analyzePromptStep as any).execute({ inputData: input }))
+        .rejects.toThrow('Analyze user prompt tool is not executable');
+    });
   });
 
   describe('generateMicrolearningStep', () => {
@@ -269,8 +279,41 @@ describe('Step Execution Logic', () => {
 
       expect(mocks.genMicrolearningExecute).toHaveBeenCalled();
       expect(mocks.storeMicrolearning).toHaveBeenCalled();
-      // Enriched to include IT
+      // Enriched to include IT (normalized)
       expect(result.data.microlearning_metadata.department_relevance).toContain('it');
+    });
+
+    it('should handle "all" department normalization', async () => {
+      mocks.genMicrolearningExecute.mockResolvedValue({
+        success: true,
+        data: { microlearning_metadata: {} }
+      });
+      const input = {
+        data: { topic: 'test', department: 'ALL' },
+        modelProvider: 'OPENAI'
+      };
+      const result = await (generateMicrolearningStep as any).execute({ inputData: input });
+      expect(result.data.microlearning_metadata.department_relevance).toContain('all');
+    });
+
+    it('should default to "all" if department is missing', async () => {
+      mocks.genMicrolearningExecute.mockResolvedValue({
+        success: true,
+        data: { microlearning_metadata: {} }
+      });
+      const input = {
+        data: { topic: 'test' },
+        modelProvider: 'OPENAI'
+      };
+      const result = await (generateMicrolearningStep as any).execute({ inputData: input });
+      expect(result.data.microlearning_metadata.department_relevance).toContain('all');
+    });
+
+    it('should throw error if generation tool is not executable', async () => {
+      vi.mocked(generateMicrolearningJsonTool).execute = undefined as any;
+      const input = { data: { topic: 'test' } };
+      await expect((generateMicrolearningStep as any).execute({ inputData: input }))
+        .rejects.toThrow('Generate microlearning JSON tool is not executable');
     });
   });
 
@@ -292,6 +335,66 @@ describe('Step Execution Logic', () => {
       expect(result.success).toBe(true);
       expect(result.metadata.trainingUrl).toContain('courseId=123');
       expect(result.metadata.trainingUrl).toContain('langUrl=lang%2Fen-us');
+    });
+
+    it('should throw error if inbox tool is not executable', async () => {
+      vi.mocked(createInboxStructureTool).execute = undefined as any;
+      const input = {
+        analysis: { language: 'en-us', department: 'IT', title: 'Test' },
+        microlearningStructure: {},
+        microlearningId: '123'
+      };
+      await expect((createInboxStep as any).execute({ inputData: input }))
+        .rejects.toThrow('Create inbox structure tool is not executable');
+    });
+  });
+
+  describe('saveToKVStep', () => {
+    const languageResult = {
+      microlearningId: 'ml-123',
+      analysis: { language: 'en', department: 'IT' },
+      microlearningStructure: { id: 'ml-123' },
+      data: { scenes: [] }
+    };
+    const inboxResult = {
+      data: { inboxes: [] }
+    };
+
+    it('should save to KV and verify consistency', async () => {
+      const input = {
+        'generate-language-content': languageResult,
+        'create-inbox-assignment': inboxResult
+      };
+
+      const result = await (saveToKVStep as any).execute({ inputData: input });
+
+      expect(mocks.saveMicrolearning).toHaveBeenCalledWith(
+        'ml-123',
+        expect.objectContaining({
+          microlearning: languageResult.microlearningStructure,
+          languageContent: languageResult.data,
+          inboxContent: inboxResult.data
+        }),
+        'en',
+        'it'
+      );
+      expect(result).toEqual(inboxResult);
+    });
+
+    it('should swallow KV save errors and continue', async () => {
+      mocks.saveMicrolearning.mockRejectedValue(new Error('KV connection lost'));
+      const input = {
+        'generate-language-content': languageResult,
+        'create-inbox-assignment': inboxResult
+      };
+
+      const result = await (saveToKVStep as any).execute({ inputData: input });
+
+      expect(mocks.loggerWarn).toHaveBeenCalledWith(
+        'KV save failed but continuing',
+        expect.objectContaining({ error: 'KV connection lost' })
+      );
+      expect(result).toEqual(inboxResult);
     });
   });
 });

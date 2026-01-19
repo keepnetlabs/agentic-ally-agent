@@ -71,6 +71,7 @@ export const assignPhishingTool = createTool({
             sendTrainingLanguageId
         });
 
+
         // Get Auth Token & Cloudflare bindings from AsyncLocalStorage
         const { token, companyId, env, baseApiUrl } = getRequestContext();
         const effectiveCompanyId = companyId || (token ? extractCompanyIdFromTokenExport(token) : undefined);
