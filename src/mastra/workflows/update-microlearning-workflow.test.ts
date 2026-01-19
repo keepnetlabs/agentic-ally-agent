@@ -4,20 +4,49 @@ import { updateMicrolearningWorkflow } from './update-microlearning-workflow';
 import { KVService } from '../services/kv-service';
 import { ProductService } from '../services/product-service';
 
+// Mocks using flattened hoisted object for reliability
+const mocks = vi.hoisted(() => ({
+  kvGet: vi.fn(),
+  kvPut: vi.fn(),
+  getWhitelabelingConfig: vi.fn(),
+  resolveLogoAndBrand: vi.fn(),
+  normalizeThemeBackgroundClass: vi.fn(),
+  handleLogoHallucination: vi.fn(),
+  waitForKVConsistency: vi.fn(),
+  loggerInfo: vi.fn(),
+  loggerWarn: vi.fn(),
+  loggerError: vi.fn(),
+  loggerDebug: vi.fn()
+}));
+
 // Mock Services and Utils
-vi.mock('../services/kv-service');
-vi.mock('../services/product-service');
+vi.mock('../services/kv-service', () => ({
+  KVService: vi.fn().mockImplementation(function () {
+    return {
+      get: mocks.kvGet,
+      put: mocks.kvPut
+    };
+  })
+}));
+
+vi.mock('../services/product-service', () => ({
+  ProductService: vi.fn().mockImplementation(function () {
+    return {
+      getWhitelabelingConfig: mocks.getWhitelabelingConfig
+    };
+  })
+}));
 
 vi.mock('../utils/phishing/brand-resolver', () => ({
-  resolveLogoAndBrand: vi.fn().mockResolvedValue({ logoUrl: 'https://logo.com/logo.png' })
+  resolveLogoAndBrand: mocks.resolveLogoAndBrand
 }));
 
 vi.mock('../utils/theme/theme-color-normalizer', () => ({
-  normalizeThemeBackgroundClass: vi.fn().mockResolvedValue('bg-white')
+  normalizeThemeBackgroundClass: mocks.normalizeThemeBackgroundClass
 }));
 
 vi.mock('../utils/microlearning/logo-utils', () => ({
-  handleLogoHallucination: vi.fn().mockImplementation((updates) => updates)
+  handleLogoHallucination: mocks.handleLogoHallucination
 }));
 
 vi.mock('../utils/kv-consistency', () => ({
@@ -31,10 +60,10 @@ vi.mock('../utils/core/resilience-utils', () => ({
 
 vi.mock('../utils/core/logger', () => ({
   getLogger: () => ({
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    debug: vi.fn()
+    info: mocks.loggerInfo,
+    warn: mocks.loggerWarn,
+    error: mocks.loggerError,
+    debug: mocks.loggerDebug
   })
 }));
 
@@ -42,18 +71,19 @@ describe('UpdateMicrolearningWorkflow', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    // Mock KVService
-    (KVService.prototype.get as any).mockResolvedValue({
+    // Default mocks
+    mocks.kvGet.mockResolvedValue({
       version: 1,
       theme: { colors: { background: 'bg-black' } },
       microlearning_metadata: { language: 'en' }
     });
-    (KVService.prototype.put as any).mockResolvedValue(true);
-
-    // Mock ProductService
-    (ProductService.prototype.getWhitelabelingConfig as any).mockResolvedValue({
+    mocks.kvPut.mockResolvedValue(true);
+    mocks.getWhitelabelingConfig.mockResolvedValue({
       mainLogoUrl: 'https://whitelabel.com/logo.png'
     });
+    mocks.resolveLogoAndBrand.mockResolvedValue({ logoUrl: 'https://logo.com/logo.png' });
+    mocks.normalizeThemeBackgroundClass.mockResolvedValue('bg-white');
+    mocks.handleLogoHallucination.mockImplementation((updates) => updates);
   });
 
   it('should execute successfully with valid updates', async () => {
@@ -69,8 +99,8 @@ describe('UpdateMicrolearningWorkflow', () => {
 
     const workflowResult = await run.start({ inputData: input });
 
-    expect(KVService.prototype.get).toHaveBeenCalledWith('ml:ml-123:base');
-    expect(KVService.prototype.put).toHaveBeenCalledTimes(2); // Base + History
+    expect(mocks.kvGet).toHaveBeenCalledWith('ml:ml-123:base');
+    expect(mocks.kvPut).toHaveBeenCalledTimes(2); // Base + History
 
     expect(workflowResult.status).toBe('success');
 
@@ -82,7 +112,7 @@ describe('UpdateMicrolearningWorkflow', () => {
   });
 
   it('should fail if microlearning not found', async () => {
-    (KVService.prototype.get as any).mockResolvedValue(null);
+    mocks.kvGet.mockResolvedValue(null);
 
     const run = await updateMicrolearningWorkflow.createRunAsync();
 
@@ -111,7 +141,7 @@ describe('UpdateMicrolearningWorkflow', () => {
 
     await run.start({ inputData: input });
 
-    expect(ProductService.prototype.getWhitelabelingConfig).toHaveBeenCalled();
+    expect(mocks.getWhitelabelingConfig).toHaveBeenCalled();
   });
 
   it('should resolve and apply external brand logo', async () => {
@@ -135,7 +165,7 @@ describe('UpdateMicrolearningWorkflow', () => {
 
   it('should handle KV save failure gracefully', async () => {
     // Mock save failure for this specific test
-    (KVService.prototype.put as any).mockResolvedValue(false);
+    mocks.kvPut.mockResolvedValue(false);
 
     const run = await updateMicrolearningWorkflow.createRunAsync();
 

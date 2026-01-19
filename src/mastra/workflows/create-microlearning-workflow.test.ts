@@ -1,11 +1,20 @@
-
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createMicrolearningWorkflow } from './create-microlearning-workflow';
-import { analyzeUserPromptTool } from '../tools/analysis';
-import { generateMicrolearningJsonTool, generateLanguageJsonTool } from '../tools/generation';
-import { createInboxStructureTool } from '../tools/inbox';
-import { KVService } from '../services/kv-service';
-import { MicrolearningService } from '../services/microlearning-service';
+import { createMicrolearningWorkflow, analyzePromptStep, generateMicrolearningStep, generateLanguageStep, createInboxStep, saveToKVStep } from './create-microlearning-workflow';
+
+// Mocks using flattened hoisted object for reliability
+const mocks = vi.hoisted(() => ({
+  analyzeExecute: vi.fn(),
+  genMicrolearningExecute: vi.fn(),
+  genLanguageExecute: vi.fn(),
+  createInboxExecute: vi.fn(),
+  saveMicrolearning: vi.fn(),
+  storeMicrolearning: vi.fn(),
+  storeLanguageContent: vi.fn(),
+  loggerInfo: vi.fn(),
+  loggerWarn: vi.fn(),
+  loggerError: vi.fn(),
+  loggerDebug: vi.fn()
+}));
 
 // Mock Tools
 vi.mock('../constants', async (importOriginal) => {
@@ -19,40 +28,56 @@ vi.mock('../constants', async (importOriginal) => {
         WORKERS_AI: 'WORKERS_AI_GPT_OSS_120B',
         GOOGLE: 'GOOGLE_GENERATIVE_AI_GEMINI_15',
       },
+      getProvider: (name: string) => name
     }
   };
 });
 
 vi.mock('../tools/analysis', () => ({
   analyzeUserPromptTool: {
-    execute: vi.fn()
+    execute: mocks.analyzeExecute
   }
 }));
 
 vi.mock('../tools/generation', () => ({
   generateMicrolearningJsonTool: {
-    execute: vi.fn()
+    execute: mocks.genMicrolearningExecute
   },
   generateLanguageJsonTool: {
-    execute: vi.fn()
+    execute: mocks.genLanguageExecute
   }
 }));
 
 vi.mock('../tools/inbox', () => ({
   createInboxStructureTool: {
-    execute: vi.fn()
+    execute: mocks.createInboxExecute
   }
 }));
 
 // Mock Services
-vi.mock('../services/kv-service');
-vi.mock('../services/microlearning-service'); // Keeps prototype mocking available if needed
+vi.mock('../services/kv-service', () => ({
+  KVService: vi.fn().mockImplementation(function () {
+    return {
+      saveMicrolearning: mocks.saveMicrolearning
+    };
+  })
+}));
+
+vi.mock('../services/microlearning-service', () => ({
+  MicrolearningService: vi.fn().mockImplementation(function () {
+    return {
+      storeMicrolearning: mocks.storeMicrolearning,
+      storeLanguageContent: mocks.storeLanguageContent
+    };
+  })
+}));
+
 vi.mock('../utils/core/logger', () => ({
   getLogger: () => ({
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    debug: vi.fn()
+    info: mocks.loggerInfo,
+    warn: mocks.loggerWarn,
+    error: mocks.loggerError,
+    debug: mocks.loggerDebug
   })
 }));
 
@@ -62,16 +87,20 @@ vi.mock('../utils/kv-consistency', () => ({
   buildExpectedKVKeys: vi.fn().mockReturnValue([])
 }));
 
+vi.mock('../utils/core/resilience-utils', () => ({
+  withRetry: vi.fn((fn) => fn())
+}));
+
 describe('CreateMicrolearningWorkflow', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
     // Setup success mocks
-    (analyzeUserPromptTool.execute as any).mockResolvedValue({
+    mocks.analyzeExecute.mockResolvedValue({
       success: true,
       data: {
         topic: 'Phishing Awareness',
-        title: 'Phishing Awareness', // Corrected: Added title
+        title: 'Phishing Awareness',
         learningObjectives: ['Objective 1'],
         keyTopics: ['Topic 1'],
         category: 'Security',
@@ -80,7 +109,7 @@ describe('CreateMicrolearningWorkflow', () => {
       }
     });
 
-    (generateMicrolearningJsonTool.execute as any).mockResolvedValue({
+    mocks.genMicrolearningExecute.mockResolvedValue({
       success: true,
       data: {
         scenes: [
@@ -90,11 +119,14 @@ describe('CreateMicrolearningWorkflow', () => {
         metadata: {
           title: 'Phishing Awareness',
           learningObjectives: ['Objective 1']
+        },
+        microlearning_metadata: {
+          department_relevance: ['IT']
         }
       }
     });
 
-    (generateLanguageJsonTool.execute as any).mockResolvedValue({
+    mocks.genLanguageExecute.mockResolvedValue({
       success: true,
       data: {
         scenes: [
@@ -103,8 +135,7 @@ describe('CreateMicrolearningWorkflow', () => {
       }
     });
 
-    // Mock createInboxStructureTool to return array of inboxes
-    (createInboxStructureTool.execute as any).mockResolvedValue({
+    mocks.createInboxExecute.mockResolvedValue({
       success: true,
       data: {
         inboxes: [
@@ -113,10 +144,9 @@ describe('CreateMicrolearningWorkflow', () => {
       }
     });
 
-    // Mock Service calls
-    (KVService.prototype.saveMicrolearning as any).mockResolvedValue(true);
-    (MicrolearningService.prototype.storeMicrolearning as any).mockResolvedValue(true);
-    (MicrolearningService.prototype.storeLanguageContent as any).mockResolvedValue(true);
+    mocks.saveMicrolearning.mockResolvedValue(true);
+    mocks.storeMicrolearning.mockResolvedValue(true);
+    mocks.storeLanguageContent.mockResolvedValue(true);
   });
 
   it('should execute successfully with valid input', async () => {
@@ -134,14 +164,14 @@ describe('CreateMicrolearningWorkflow', () => {
       console.log('Workflow failed:', JSON.stringify(result, null, 2));
     }
 
-    expect(analyzeUserPromptTool.execute).toHaveBeenCalledWith(expect.objectContaining({
+    expect(mocks.analyzeExecute).toHaveBeenCalledWith(expect.objectContaining({
       userPrompt: 'Create phishing training',
       suggestedDepartment: 'IT'
     }));
 
-    expect(generateMicrolearningJsonTool.execute).toHaveBeenCalled();
-    expect(generateLanguageJsonTool.execute).toHaveBeenCalled();
-    expect(createInboxStructureTool.execute).toHaveBeenCalled();
+    expect(mocks.genMicrolearningExecute).toHaveBeenCalled();
+    expect(mocks.genLanguageExecute).toHaveBeenCalled();
+    expect(mocks.createInboxExecute).toHaveBeenCalled();
 
     expect(result.status).toBe('success');
 
@@ -152,26 +182,23 @@ describe('CreateMicrolearningWorkflow', () => {
 
   it('should fail if prompt is missing', async () => {
     const run = await createMicrolearningWorkflow.createRunAsync();
-
-    // Pass empty prompt
     const result = await run.start({ inputData: { prompt: '' } });
     expect(result.status).toBe('failed');
   });
 
   it('should handle analysis failure', async () => {
-    (analyzeUserPromptTool.execute as any).mockResolvedValue({
+    mocks.analyzeExecute.mockResolvedValue({
       success: false,
       error: 'Analysis failed'
     });
 
     const run = await createMicrolearningWorkflow.createRunAsync();
-
     const result = await run.start({ inputData: { prompt: 'fail me' } });
     expect(result.status).toBe('failed');
   });
 
   it('should handle microlearning generation failure', async () => {
-    (generateMicrolearningJsonTool.execute as any).mockResolvedValue({
+    mocks.genMicrolearningExecute.mockResolvedValue({
       success: false,
       error: 'Generation failed'
     });
@@ -182,7 +209,7 @@ describe('CreateMicrolearningWorkflow', () => {
   });
 
   it('should handle language content generation failure', async () => {
-    (generateLanguageJsonTool.execute as any).mockResolvedValue({
+    mocks.genLanguageExecute.mockResolvedValue({
       success: false,
       error: 'Language gen failed'
     });
@@ -193,7 +220,7 @@ describe('CreateMicrolearningWorkflow', () => {
   });
 
   it('should handle inbox creation failure', async () => {
-    (createInboxStructureTool.execute as any).mockResolvedValue({
+    mocks.createInboxExecute.mockResolvedValue({
       success: false,
       error: 'Inbox failed'
     });
@@ -201,5 +228,70 @@ describe('CreateMicrolearningWorkflow', () => {
     const run = await createMicrolearningWorkflow.createRunAsync();
     const result = await run.start({ inputData: { prompt: 'fail inbox' } });
     expect(result.status).toBe('failed');
+  });
+});
+
+describe('Step Execution Logic', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('analyzePromptStep', () => {
+    it('should pass correct arguments to analysis tool', async () => {
+      mocks.analyzeExecute.mockResolvedValue({ success: true, data: { topic: 'test' } });
+      const input = { prompt: 'training', department: 'HR' };
+      const result = await (analyzePromptStep as any).execute({ inputData: input });
+      expect(mocks.analyzeExecute).toHaveBeenCalledWith(expect.objectContaining({
+        userPrompt: 'training',
+        suggestedDepartment: 'HR'
+      }));
+      expect(result.success).toBe(true);
+    });
+  });
+
+  describe('generateMicrolearningStep', () => {
+    it('should generate and enrich microlearning metadata', async () => {
+      mocks.genMicrolearningExecute.mockResolvedValue({
+        success: true,
+        data: {
+          microlearning_metadata: { department_relevance: ['Sales'] }
+        }
+      });
+      mocks.storeMicrolearning.mockResolvedValue(true);
+
+      const input = {
+        data: { topic: 'test', department: 'IT' },
+        modelProvider: 'OPENAI',
+        model: 'GPT4'
+      };
+
+      const result = await (generateMicrolearningStep as any).execute({ inputData: input });
+
+      expect(mocks.genMicrolearningExecute).toHaveBeenCalled();
+      expect(mocks.storeMicrolearning).toHaveBeenCalled();
+      // Enriched to include IT
+      expect(result.data.microlearning_metadata.department_relevance).toContain('it');
+    });
+  });
+
+  describe('createInboxStep', () => {
+    it('should generate training URL correctly', async () => {
+      mocks.createInboxExecute.mockResolvedValue({
+        success: true,
+        data: { inboxes: [] }
+      });
+
+      const input = {
+        analysis: { language: 'en-us', department: 'IT', title: 'Test' },
+        microlearningStructure: {},
+        microlearningId: '123'
+      };
+
+      const result = await (createInboxStep as any).execute({ inputData: input });
+
+      expect(result.success).toBe(true);
+      expect(result.metadata.trainingUrl).toContain('courseId=123');
+      expect(result.metadata.trainingUrl).toContain('langUrl=lang%2Fen-us');
+    });
   });
 });

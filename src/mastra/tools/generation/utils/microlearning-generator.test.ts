@@ -1,9 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { generateTheme, generateSceneStructure, enhanceMicrolearningContent } from './microlearning-generator';
+import { generateTheme, generateSceneStructure, enhanceMicrolearningContent, generateMicrolearningJsonWithAI } from './microlearning-generator';
 import * as ai from 'ai';
 
 vi.mock('ai', () => ({
     generateText: vi.fn(),
+}));
+
+vi.mock('../../../utils/content-processors/json-cleaner', () => ({
+    cleanResponse: vi.fn((text) => text)
 }));
 
 // Define mock function outside to allow hoisting references
@@ -88,6 +92,95 @@ describe('microlearning-generator', () => {
 
             const result = await enhanceMicrolearningContent(input, {} as any);
             expect(result).toBe(input);
+        });
+    });
+
+    describe('generateMicrolearningJsonWithAI', () => {
+        const mockModel = { provider: 'OPENAI', modelId: 'gpt-4' };
+        const baseAnalysis = {
+            title: 'Test Title',
+            category: 'Security',
+            subcategory: 'Phishing',
+            industries: ['Tech'],
+            department: 'IT',
+            roles: ['Dev'],
+            topic: 'Code Safety',
+            level: 'intermediate',
+            language: 'en',
+            learningObjectives: ['Obj1'],
+            duration: 5,
+            isCodeTopic: false,
+            regulationCompliance: ['ISO27001']
+        };
+
+        it('should construct correct metadata from analysis', async () => {
+            (ai.generateText as any).mockResolvedValue({ text: JSON.stringify({ microlearning_id: 'test-id-1' }) });
+
+            await generateMicrolearningJsonWithAI(baseAnalysis as any, 'test-id-1', mockModel as any);
+
+            const callArgs = (ai.generateText as any).mock.calls[0][0];
+            const prompt = callArgs.messages[1].content;
+
+            expect(prompt).toContain('"microlearning_id": "test-id-1"');
+            expect(prompt).toContain('"title": "Test Title"');
+            // Check level casing transformation (intermediate -> Intermediate)
+            expect(prompt).toContain('"level": "Intermediate"');
+            expect(prompt).toContain('ISO27001');
+            expect(prompt).toContain('"gamification_enabled": true');
+        });
+
+        it('should use code_review scene type for scene 4 when isCodeTopic is true', async () => {
+            (ai.generateText as any).mockResolvedValue({ text: JSON.stringify({}) });
+
+            const analysis = { ...baseAnalysis, isCodeTopic: true };
+            await generateMicrolearningJsonWithAI(analysis as any, 'id', mockModel as any);
+
+            const callArgs = (ai.generateText as any).mock.calls[0][0];
+            const prompt = callArgs.messages[1].content;
+            expect(prompt).toContain('"scene_type": "code_review"');
+        });
+
+        it('should use actionable_content scene type for scene 4 when isCodeTopic is false', async () => {
+            (ai.generateText as any).mockResolvedValue({ text: JSON.stringify({}) });
+
+            const analysis = { ...baseAnalysis, isCodeTopic: false };
+            await generateMicrolearningJsonWithAI(analysis as any, 'id', mockModel as any);
+
+            const callArgs = (ai.generateText as any).mock.calls[0][0];
+            const prompt = callArgs.messages[1].content;
+            expect(prompt).toContain('"scene_type": "actionable_content"');
+        });
+
+        it('should parse and merge enhanced content from AI', async () => {
+            const enhancedData = {
+                microlearning_metadata: {
+                    title: 'Enhanced Title'
+                }
+            };
+            (ai.generateText as any).mockResolvedValue({ text: JSON.stringify(enhancedData) });
+
+            const result = await generateMicrolearningJsonWithAI(baseAnalysis as any, 'id', mockModel as any);
+            expect(result).toEqual(enhancedData);
+        });
+
+        it('should pass correct context to AI enhancement', async () => {
+            (ai.generateText as any).mockResolvedValue({ text: '{}' });
+
+            const analysis = { ...baseAnalysis, additionalContext: 'Must focus on OWASP top 10' };
+            await generateMicrolearningJsonWithAI(analysis as any, 'id', mockModel as any);
+
+            const callArgs = (ai.generateText as any).mock.calls[0][0];
+            expect(callArgs.messages[1].content).toContain('Must focus on OWASP top 10');
+        });
+
+        it('should handle theme color correctly', async () => {
+            (ai.generateText as any).mockResolvedValue({ text: JSON.stringify({ theme: { colors: { background: 'red' } } }) });
+
+            await generateMicrolearningJsonWithAI({ ...baseAnalysis, themeColor: 'custom-bg' } as any, 'id', mockModel as any);
+
+            const callArgs = (ai.generateText as any).mock.calls[0][0];
+            const promptContent = callArgs.messages[1].content;
+            expect(promptContent).toContain('custom-bg');
         });
     });
 });

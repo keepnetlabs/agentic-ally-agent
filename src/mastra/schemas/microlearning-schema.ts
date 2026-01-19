@@ -208,9 +208,6 @@ const SurveySceneSchema = BaseSceneContentSchema.extend({
         // Privacy & Success
         dataSecurityNotice: z.string(),
         successTitle: z.string(),
-        successMessage1: z.string(),
-        successMessage2: z.string(),
-        successMessage3: z.string(),
         thankYouMessage: z.string(),
     }).partial(), // Some texts may be optional
     ariaTexts: z.record(z.string()),

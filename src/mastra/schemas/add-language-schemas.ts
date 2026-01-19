@@ -39,6 +39,7 @@ export const languageContentSchema = z.object({
 export const updateInboxSchema = z.object({
     success: z.boolean(),
     microlearningId: z.string(),
+    usedDepartment: z.string().optional(),
     filesGenerated: z.array(z.string()).optional(),
 });
 

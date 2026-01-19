@@ -269,26 +269,6 @@ describe('Scene 6 - Survey Generator', () => {
       expect(prompt).toContain('Thank you');
     });
 
-    it('should include successMessage1 field', () => {
-      const prompt = generateScene6Prompt(baseAnalysis, baseMicrolearning);
-      expect(prompt).toContain('successMessage1');
-      expect(prompt).toContain('Thanks for your feedback');
-    });
-
-    it('should include successMessage2 with outcome', () => {
-      const prompt = generateScene6Prompt(baseAnalysis, baseMicrolearning);
-      expect(prompt).toContain('successMessage2');
-      expect(prompt).toContain('Outcome message');
-      expect(prompt).toContain('max 8 words');
-    });
-
-    it('should include successMessage3 with team focus', () => {
-      const prompt = generateScene6Prompt(baseAnalysis, baseMicrolearning);
-      expect(prompt).toContain('successMessage3');
-      expect(prompt).toContain('Team-focused message');
-      expect(prompt).toContain('max 8 words');
-    });
-
     it('should include thankYouMessage field', () => {
       const prompt = generateScene6Prompt(baseAnalysis, baseMicrolearning);
       expect(prompt).toContain('thankYouMessage');
@@ -834,13 +814,6 @@ describe('Scene 6 - Survey Generator', () => {
     it('should specify feedbackQuestion max 8 words', () => {
       const prompt = generateScene6Prompt(baseAnalysis, baseMicrolearning);
       expect(prompt).toContain('max 8 words');
-    });
-
-    it('should specify success message word limits', () => {
-      const prompt = generateScene6Prompt(baseAnalysis, baseMicrolearning);
-      expect(prompt).toContain('Outcome message');
-      expect(prompt).toContain('max 8 words');
-      expect(prompt).toContain('Team-focused message');
     });
 
     it('should specify aria text word limits', () => {

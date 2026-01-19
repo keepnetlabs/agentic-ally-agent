@@ -63,7 +63,8 @@ CRITICAL: This scene is ALWAYS an email inbox simulation, regardless of topic.
     "tipConfig": {
       "iconName": "info"
     },
-    "texts": {
+    "texts": {  
+      "attachmentsLabel":"Localize 'Attachments' into ${analysis.language}",
       "mobileHint": "Action hint (max 12 words with 💡): 'Open each email. If it looks suspicious, press Report.' Shows learner what to do.",
       "feedbackCorrect": "Success message (max 12 words with ✅): 'Good job — reporting helps protect everyone' or 'Correct — that email was suspicious.' Emphasize team impact.",
       "feedbackWrong": "Error message (max 15 words with ⚠️): 'Not quite right — this email looks safe. Try again' or 'Think again — check the sender carefully.' Guide to retry."

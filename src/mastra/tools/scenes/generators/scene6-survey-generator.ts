@@ -24,9 +24,6 @@ Generate scene 6 (survey):
       "ratingRequiredText": "Localize 'Please select a rating before you submit.' into ${analysis.language}",
       "dataSecurityNotice": "Localize 'Your responses are anonymous and protected.' into ${analysis.language}",
       "successTitle": "Localize 'Thank you' into ${analysis.language}",
-      "successMessage1": "Localize 'Thanks for your feedback.' into ${analysis.language}",
-      "successMessage2": "Outcome message for ${analysis.topic}, max 8 words in ${analysis.language}",
-      "successMessage3": "Team-focused message for ${analysis.topic}, max 8 words in ${analysis.language}",
       "thankYouMessage": "Localize 'Stay safe.' into ${analysis.language}"
     },
     "ariaTexts": {

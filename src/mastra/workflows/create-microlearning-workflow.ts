@@ -29,7 +29,7 @@ const logger = getLogger('CreateMicrolearningWorkflow');
 
 
 // Step 1: Analyze Prompt
-const analyzePromptStep = createStep({
+export const analyzePromptStep = createStep({
   id: 'analyze-prompt',
   description: 'Analyze user prompt and extract learning requirements',
   inputSchema: createInputSchema,
@@ -80,7 +80,7 @@ const analyzePromptStep = createStep({
 });
 
 // Step 2: Generate Microlearning Structure
-const generateMicrolearningStep = createStep({
+export const generateMicrolearningStep = createStep({
   id: 'generate-microlearning',
   description: 'Generate microlearning JSON structure',
   inputSchema: promptAnalysisSchema,
@@ -108,15 +108,31 @@ const generateMicrolearningStep = createStep({
       throw new Error(errorInfo.message);
     }
 
+    const normalizedDepartment = analysis.department
+      ? normalizeDepartmentName(analysis.department)
+      : normalizeDepartmentName('all');
+    const enrichedMicrolearning = {
+      ...genRes.data,
+      microlearning_metadata: {
+        ...(genRes.data?.microlearning_metadata || {}),
+        department_relevance: Array.isArray(genRes.data?.microlearning_metadata?.department_relevance)
+          ? genRes.data.microlearning_metadata.department_relevance
+          : [analysis.department || 'all'],
+      },
+    };
+    if (!enrichedMicrolearning.microlearning_metadata.department_relevance.includes(normalizedDepartment)) {
+      enrichedMicrolearning.microlearning_metadata.department_relevance.push(normalizedDepartment);
+    }
+
     const microlearningService = new MicrolearningService();
-    await microlearningService.storeMicrolearning(genRes.data);
+    await microlearningService.storeMicrolearning(enrichedMicrolearning);
 
     return {
       success: true,
-      data: genRes.data,
+      data: enrichedMicrolearning,
       microlearningId,
       analysis,
-      microlearningStructure: genRes.data,
+      microlearningStructure: enrichedMicrolearning,
       modelProvider: inputData.modelProvider,
       model: inputData.model,
       writer: inputData.writer,
@@ -126,7 +142,7 @@ const generateMicrolearningStep = createStep({
 });
 
 // Step 3: Generate Language Content
-const generateLanguageStep = createStep({
+export const generateLanguageStep = createStep({
   id: 'generate-language-content',
   description: 'Generate language-specific training content',
   inputSchema: microlearningSchema,
@@ -180,7 +196,7 @@ const generateLanguageStep = createStep({
 });
 
 // Step 4: Create Inbox Assignment
-const createInboxStep = createStep({
+export const createInboxStep = createStep({
   id: 'create-inbox-assignment',
   description: 'Create inbox structure and finalize training',
   inputSchema: microlearningLanguageContentSchema, // Updated input schema to match previous step output
@@ -237,7 +253,7 @@ const createInboxStep = createStep({
 
 // Create Microlearning Workflow - With parallel language generation and inbox creation
 // Step to extract inbox result from parallel results
-const saveToKVStep = createStep({
+export const saveToKVStep = createStep({
   id: 'save-to-kv',
   description: 'Extract inbox result from parallel execution',
   inputSchema: saveToKVInputSchema,

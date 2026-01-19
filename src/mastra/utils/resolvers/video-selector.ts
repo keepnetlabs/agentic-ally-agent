@@ -5,6 +5,7 @@ import videoDatabase from '../../data/video-database.json';
 import { getLogger } from '../core/logger';
 import { normalizeError, logErrorInfo } from '../core/error-utils';
 import { errorService } from '../../services/error-service';
+import { generateVideoMetadataFromPrompt, VideoMetadata } from './video-metadata-utils';
 
 const logger = getLogger('VideoSelector');
 
@@ -252,15 +253,17 @@ export async function generateVideoMetadata(
   language: string,
   department: string | undefined,
   transcript: string
-): Promise<{ title: string; subtitle: string }> {
+): Promise<VideoMetadata> {
   try {
     const model = getModel(ModelProvider.WORKERS_AI, Model.WORKERS_AI_GPT_OSS_120B);
+    const normalizedLanguage = (language || '').toLowerCase();
+    const isEnglishTarget = normalizedLanguage.startsWith('en');
 
     const departmentContext = department
       ? `\nDepartment context: ${department}. Tailor title/subtitle to this department's typical security concerns.`
       : '';
 
-    const generationPrompt = `Generate a compelling video title and subtitle for security awareness training.
+    const buildGenerationPrompt = () => `Generate a compelling video title and subtitle for security awareness training.
 
 Topic: "${topic}"
 Language: ${language}${departmentContext}
@@ -288,47 +291,19 @@ REQUIREMENTS:
   - For deepfake: "Verify media authenticity and report deepfakes"
   - For MFA: "Secure accounts with multi-factor authentication"
 
-- Generate in ${language} language
+- Output language: ${language}${isEnglishTarget ? '' : ' (no English words, native tone, avoid literal translations)'} for both title and subtitle
 - NO instructions, NO patterns, NO "Write..." directives - just the final text
 
 Return ONLY valid JSON, no markdown:
-{
-  "title": "...",
-  "subtitle": "..."
-}`;
+{"title":"...","subtitle":"..."}`;
 
-    const result = await generateText({
+    logger.info('🤖 Generating video metadata', { topic, language });
+    const metadata = await generateVideoMetadataFromPrompt(
       model,
-      messages: [
-        {
-          role: 'system',
-          content: `You are a video metadata expert. Generate engaging, contextual titles and subtitles for security awareness videos. Return ONLY valid JSON with no markdown or backticks.`
-        },
-        {
-          role: 'user',
-          content: generationPrompt
-        }
-      ]
-    });
-
-    // Parse the JSON response
-    const cleanedResponse = result.text.trim();
-    let metadata: { title?: string; subtitle?: string };
-    try {
-      metadata = JSON.parse(cleanedResponse);
-    } catch (parseError) {
-      const parseErr = normalizeError(parseError);
-      const errorInfo = errorService.validation(`Video metadata JSON parsing failed: ${parseErr.message}`, {
-        topic,
-        language,
-        responsePreview: cleanedResponse.substring(0, 200)
-      });
-      logErrorInfo(logger, 'warn', 'Video metadata JSON parsing failed, using fallback', errorInfo);
-      return {
-        title: `Real ${topic} Scenario`,
-        subtitle: 'Learn to recognize and respond to threats'
-      };
-    }
+      buildGenerationPrompt(),
+      topic,
+      language
+    );
 
     logger.info('Generated video metadata', {
       topic,

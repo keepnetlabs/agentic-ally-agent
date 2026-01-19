@@ -1,6 +1,42 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { z } from 'zod';
-import { addMultipleLanguagesWorkflow } from './add-multiple-languages-workflow';
+import { addMultipleLanguagesWorkflow, processMultipleLanguagesStep } from './add-multiple-languages-workflow';
+import { addLanguageWorkflow } from './add-language-workflow';
+
+// Mocks
+const mocks = vi.hoisted(() => ({
+  createRunAsync: vi.fn(),
+  runStart: vi.fn(),
+  updateLengthAvailabilityAtomic: vi.fn(),
+  loggerInfo: vi.fn(),
+  loggerError: vi.fn()
+}));
+
+vi.mock('./add-language-workflow', () => ({
+  addLanguageWorkflow: {
+    createRunAsync: mocks.createRunAsync,
+    id: 'add-language-workflow',
+    description: 'Add language workflow mock',
+    inputSchema: z.object({}),
+    outputSchema: z.object({})
+  }
+}));
+
+vi.mock('../services/kv-service', () => ({
+  KVService: vi.fn().mockImplementation(function () {
+    return {
+      updateLanguageAvailabilityAtomic: mocks.updateLengthAvailabilityAtomic
+    };
+  })
+}));
+
+vi.mock('../utils/core/logger', () => ({
+  getLogger: () => ({
+    info: mocks.loggerInfo,
+    error: mocks.loggerError,
+    warn: vi.fn()
+  })
+}));
 
 describe('add-multiple-languages-workflow', () => {
   // Tests for workflow definition and structure
@@ -1175,3 +1211,99 @@ describe('add-multiple-languages-workflow', () => {
     });
   });
 });
+
+// Step Execution Tests
+describe('Step Execution (ProcessMultipleLanguages)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    // Default successful run
+    mocks.createRunAsync.mockResolvedValue({
+      start: mocks.runStart
+    });
+
+    mocks.runStart.mockImplementation(async ({ inputData }) => {
+      return {
+        status: 'success',
+        result: {
+          data: {
+            trainingUrl: `url-${inputData.targetLanguage}`,
+            title: `Title (${inputData.targetLanguage})`
+          }
+        }
+      };
+    });
+  });
+
+  it('should process multiple languages in parallel', async () => {
+    const input = {
+      existingMicrolearningId: 'ml-123',
+      targetLanguages: ['tr', 'de', 'fr'],
+      department: 'IT'
+    };
+
+    const result = await (processMultipleLanguagesStep as any).execute({ inputData: input });
+
+    expect(mocks.createRunAsync).toHaveBeenCalledTimes(3);
+    expect(result.success).toBe(true);
+    expect(result.successCount).toBe(3);
+    expect(result.results).toHaveLength(3);
+    expect(mocks.updateLengthAvailabilityAtomic).toHaveBeenCalledWith('ml-123', ['tr', 'de', 'fr']);
+  });
+
+  it('should handle partial failures', async () => {
+    mocks.runStart.mockImplementation(async ({ inputData }) => {
+      if (inputData.targetLanguage === 'de') {
+        return { status: 'failed', error: { message: 'Failed' } };
+      }
+      return {
+        status: 'success',
+        result: { data: { trainingUrl: 'url', title: 'Title' } }
+      };
+    });
+
+    const input = {
+      existingMicrolearningId: 'ml-123',
+      targetLanguages: ['tr', 'de'],
+      department: 'IT'
+    };
+
+    const result = await (processMultipleLanguagesStep as any).execute({ inputData: input });
+
+    expect(result.status).toBe('partial');
+    expect(result.successCount).toBe(1);
+    expect(result.failureCount).toBe(1);
+    expect(mocks.updateLengthAvailabilityAtomic).toHaveBeenCalledWith('ml-123', ['tr']);
+  });
+
+  it('should handle complete failure', async () => {
+    mocks.runStart.mockResolvedValue({
+      status: 'failed',
+      error: { message: 'Failed completely' }
+    });
+
+    const input = {
+      existingMicrolearningId: 'ml-123',
+      targetLanguages: ['tr'],
+      department: 'IT'
+    };
+
+    const result = await (processMultipleLanguagesStep as any).execute({ inputData: input });
+
+    expect(result.status).toBe('failed');
+    expect(result.successCount).toBe(0);
+    expect(mocks.updateLengthAvailabilityAtomic).not.toHaveBeenCalled();
+  });
+
+  it('should validation fail if too many languages', async () => {
+    const manyLangs = Array(13).fill('en');
+    const input = {
+      existingMicrolearningId: 'ml-123',
+      targetLanguages: manyLangs
+    };
+
+    await expect((processMultipleLanguagesStep as any).execute({ inputData: input }))
+      .rejects.toThrow('Too many languages requested');
+  });
+});
+

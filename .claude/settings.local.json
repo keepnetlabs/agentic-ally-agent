@@ -45,7 +45,10 @@
       "Bash([ ! -f \"$testfile\" ])",
       "Bash(timeout 10 npm test)",
       "Bash(timeout 15 npm test:*)",
-      "Bash(timeout 60 npm test:*)"
+      "Bash(timeout 60 npm test:*)",
+      "Bash(npx vitest:*)",
+      "Bash(findstr:*)",
+      "Bash(tee:*)"
     ],
     "deny": [],
     "ask": []

@@ -117,13 +117,19 @@ describe('generateLanguageJsonTool', () => {
     ]
   };
 
+  // Mock a proper LanguageModel instance
+  const mockModel: any = {
+    provider: 'openai',
+    modelId: 'gpt-4',
+    // Add additional properties to pass LanguageModelSchema validation
+    specificationVersion: 'v1',
+    defaultObjectGenerationMode: 'json',
+  };
+
   const baseInput = {
     analysis: baseAnalysis,
     microlearning: baseMicrolearning,
-    model: {
-      provider: 'openai',
-      modelId: 'gpt-4'
-    }
+    model: mockModel
   };
 
   beforeEach(() => {
@@ -205,5 +211,265 @@ describe('generateLanguageJsonTool', () => {
     });
 
     expect(generateScene4CodeReviewPrompt).toHaveBeenCalled();
+  });
+
+  it('should include policy context when provided', async () => {
+    const { buildPolicyScenePrompt } = await import('../../utils/prompt-builders/policy-context-builder');
+
+    const inputWithPolicy = {
+      ...baseInput,
+      policyContext: 'Company security policy: Always verify sender before clicking links'
+    };
+
+    await executeTool(inputWithPolicy);
+
+    expect(buildPolicyScenePrompt).toHaveBeenCalledWith('Company security policy: Always verify sender before clicking links');
+  });
+
+  it('should handle additionalContext in analysis', async () => {
+    const inputWithContext = {
+      ...baseInput,
+      analysis: {
+        ...baseInput.analysis,
+        hasRichContext: true,
+        additionalContext: 'User has failed 3 previous phishing tests'
+      }
+    };
+
+    const result = await executeTool(inputWithContext);
+
+    expect(result.success).toBe(true);
+    // Additional context should be included in the generation
+    expect(generateText).toHaveBeenCalled();
+  });
+
+  it('should support different languages', async () => {
+    const turkishInput = {
+      ...baseInput,
+      analysis: { ...baseInput.analysis, language: 'tr' }
+    };
+
+    const result = await executeTool(turkishInput);
+
+    expect(result.success).toBe(true);
+    expect(generateText).toHaveBeenCalled();
+  });
+
+  it('should generate app texts along with scenes', async () => {
+    const { getAppTexts, getAppAriaTexts } = await import('../../utils/language/app-texts');
+
+    const result = await executeTool(baseInput);
+
+    expect(result.success).toBe(true);
+    expect(result.data.app).toBeDefined();
+    expect(getAppTexts).toHaveBeenCalledWith('en');
+    // getAppAriaTexts is called with language and topic
+    expect(getAppAriaTexts).toHaveBeenCalled();
+  });
+
+  it('should track cost for all scene generations', async () => {
+    const { trackCost } = await import('../../utils/core/cost-tracker');
+
+    (generateText as any)
+      .mockResolvedValue({
+        text: JSON.stringify({ "1": {} }),
+        usage: { promptTokens: 100, completionTokens: 200 }
+      });
+
+    await executeTool(baseInput);
+
+    // Should track cost for each of the 8 scenes
+    expect(trackCost).toHaveBeenCalled();
+  });
+
+  it('should handle writer/streaming for progress updates', async () => {
+    const mockWriter = {
+      write: vi.fn()
+    };
+
+    const inputWithWriter = {
+      ...baseInput,
+      writer: mockWriter
+    };
+
+    const result = await executeTool(inputWithWriter);
+
+    expect(result.success).toBe(true);
+    // Writer is optional, tool should still succeed even if writer is provided
+    expect(result.data).toBeDefined();
+  });
+
+  it('should handle all scenes failing gracefully', async () => {
+    (generateText as any).mockRejectedValue(new Error('AI Service Down'));
+
+    const result = await executeTool(baseInput);
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBeDefined();
+  });
+
+  it('should handle mixed success and failure in parallel generation', async () => {
+    (generateText as any)
+      .mockResolvedValueOnce({ text: JSON.stringify({ "1": {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ "2": {} }), usage: {} })
+      .mockRejectedValueOnce(new Error('Scene 3 failed'))
+      .mockResolvedValueOnce({ text: JSON.stringify({ "4": {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ "5": {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ "6": {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ "7": {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ "8": {} }), usage: {} });
+
+    const result = await executeTool(baseInput);
+
+    // Should fail if any critical scene fails
+    expect(result.success).toBe(false);
+  });
+
+  it('should handle empty scenes array', async () => {
+    const inputWithNoScenes = {
+      ...baseInput,
+      microlearning: {
+        ...baseMicrolearning,
+        scenes: []
+      }
+    };
+
+    const result = await executeTool(inputWithNoScenes);
+
+    // Should still generate app texts
+    expect(result.data.app).toBeDefined();
+  });
+
+  it('should handle customRequirements in analysis', async () => {
+    const inputWithCustomRequirements = {
+      ...baseInput,
+      analysis: {
+        ...baseInput.analysis,
+        customRequirements: 'Focus on mobile security scenarios'
+      }
+    };
+
+    const result = await executeTool(inputWithCustomRequirements);
+
+    expect(result.success).toBe(true);
+    expect(generateText).toHaveBeenCalled();
+  });
+
+  it('should handle regulation compliance requirements', async () => {
+    const inputWithCompliance = {
+      ...baseInput,
+      analysis: {
+        ...baseInput.analysis,
+        regulationCompliance: ['GDPR', 'HIPAA']
+      }
+    };
+
+    const result = await executeTool(inputWithCompliance);
+
+    expect(result.success).toBe(true);
+  });
+  it('should correctly override video URL and transcript details in the final output', async () => {
+    (generateText as any)
+      .mockResolvedValueOnce({ text: JSON.stringify({ "1": {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ "2": {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ "3": { video: { src: 'old', transcript: 'old' } } }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ "4": {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ "5": {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ "6": {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ "7": {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ "8": {} }), usage: {} });
+
+    const result = await executeTool(baseInput);
+
+    expect(result.success).toBe(true);
+    expect(result.data['3'].video.src).toBe('https://video.url'); // From mocked generateVideoPrompt
+    expect(result.data['3'].video.transcript).toBe('Translated transcript'); // From mocked translateTranscript
+  });
+
+  it('should set transcript language to "English" when language is "en"', async () => {
+    (generateText as any)
+      .mockResolvedValueOnce({ text: JSON.stringify({ "1": {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ "2": {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ "3": { video: { src: 'old' } } }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ "4": {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ "5": {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ "6": {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ "7": {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ "8": {} }), usage: {} });
+
+    const result = await executeTool({ ...baseInput, analysis: { ...baseAnalysis, language: 'en' } });
+    expect(result.data['3'].video.transcriptLanguage).toBe('English');
+  });
+
+  it('should use raw language code for transcript language when not "en"', async () => {
+    (generateText as any)
+      .mockResolvedValueOnce({ text: JSON.stringify({ "1": {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ "2": {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ "3": { video: { src: 'old' } } }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ "4": {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ "5": {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ "6": {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ "7": {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ "8": {} }), usage: {} });
+
+    const result = await executeTool({ ...baseInput, analysis: { ...baseAnalysis, language: 'tr' } });
+    expect(result.data['3'].video.transcriptLanguage).toBe('tr');
+  });
+
+  it('should fail if video generation fails even after retry', async () => {
+    (generateText as any)
+      .mockResolvedValueOnce({ text: JSON.stringify({ "1": {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ "2": {} }), usage: {} })
+      .mockResolvedValueOnce({ text: "INVALID VIDEO", usage: {} }) // 3 Fail
+      .mockResolvedValueOnce({ text: JSON.stringify({ "4": {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ "5": {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ "6": {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ "7": {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ "8": {} }), usage: {} })
+      .mockResolvedValueOnce({ text: "INVALID VIDEO RETRY", usage: {} }); // 3 Retry Fail
+
+    const result = await executeTool(baseInput);
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('Video content generation failed after retry');
+  });
+
+  it('should handle parsing errors in other scenes (e.g. Scene 5)', async () => {
+    (generateText as any)
+      .mockResolvedValueOnce({ text: JSON.stringify({ "1": {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ "2": {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ "3": {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ "4": {} }), usage: {} })
+      .mockResolvedValueOnce({ text: "INVALID JSON", usage: {} }) // 5 Fail
+      .mockResolvedValueOnce({ text: JSON.stringify({ "6": {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ "7": {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ "8": {} }), usage: {} });
+
+    const result = await executeTool(baseInput);
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('Scene 5 JSON parsing failed');
+  });
+
+  it('should include additional context as a separate user message with CRITICAL label', async () => {
+    const inputWithContext = {
+      ...baseInput,
+      analysis: {
+        ...baseInput.analysis,
+        additionalContext: 'User has failed 3 previous phishing tests'
+      }
+    };
+
+    await executeTool(inputWithContext);
+
+    // Check arguments of the first call (Scene 1)
+    const callArgs = (generateText as any).mock.calls[0][0];
+    const messages = callArgs.messages;
+
+    // Should have: System, User (Critical Context), User (Prompt)
+    expect(messages.length).toBeGreaterThanOrEqual(3);
+    expect(messages[1].role).toBe('user');
+    expect(messages[1].content).toContain('CRITICAL USER CONTEXT');
+    expect(messages[1].content).toContain('User has failed 3 previous phishing tests');
   });
 });

@@ -13,7 +13,7 @@ import {
 } from '../schemas/add-language-schemas';
 
 // Step: Process Multiple Languages in Parallel
-const processMultipleLanguagesStep = createStep({
+export const processMultipleLanguagesStep = createStep({
   id: 'process-multiple-languages',
   description: 'Process multiple languages in parallel using add-language-workflow',
   inputSchema: addMultipleLanguagesInputSchema,

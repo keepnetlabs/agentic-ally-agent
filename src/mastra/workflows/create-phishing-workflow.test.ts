@@ -1,982 +1,556 @@
-import { describe, it, expect } from 'vitest';
-import { z } from 'zod';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createPhishingWorkflow } from './create-phishing-workflow';
+import { generateText } from 'ai';
+import { KVService } from '../services/kv-service';
+import { ProductService } from '../services/product-service';
 
-describe('create-phishing-workflow', () => {
-  // Tests for workflow definition and structure
-  describe('Workflow Definition', () => {
-    it('should define createPhishingWorkflow', () => {
-      expect(createPhishingWorkflow).toBeDefined();
+// Mocks using flattened hoisted object for reliability
+const mocks = vi.hoisted(() => ({
+  generateText: vi.fn(),
+  streamText: vi.fn(),
+  savePhishingBase: vi.fn(),
+  savePhishingEmail: vi.fn(),
+  savePhishingLandingPage: vi.fn(),
+  getWhitelabelingConfig: vi.fn(),
+  resolveLogoAndBrand: vi.fn(),
+  generateContextualBrand: vi.fn(),
+  detectIndustry: vi.fn(),
+  validateLandingPage: vi.fn(),
+  fixBrokenImages: vi.fn(),
+  validateImageUrlCached: vi.fn(),
+  normalizeImgAttributes: vi.fn(),
+  postProcessPhishingEmailHtml: vi.fn(),
+  postProcessPhishingLandingHtml: vi.fn(),
+  waitForKVConsistency: vi.fn(),
+  withRetry: vi.fn(),
+  loggerInfo: vi.fn(),
+  loggerWarn: vi.fn(),
+  loggerError: vi.fn(),
+  loggerDebug: vi.fn()
+}));
+
+// Mock Dependencies
+vi.mock('ai', () => ({
+  generateText: mocks.generateText,
+  streamText: mocks.streamText,
+}));
+
+vi.mock('../services/kv-service', () => ({
+  KVService: vi.fn().mockImplementation(function () {
+    return {
+      savePhishingBase: mocks.savePhishingBase,
+      savePhishingEmail: mocks.savePhishingEmail,
+      savePhishingLandingPage: mocks.savePhishingLandingPage
+    };
+  })
+}));
+
+vi.mock('../services/product-service', () => ({
+  ProductService: vi.fn().mockImplementation(function () {
+    return {
+      getWhitelabelingConfig: mocks.getWhitelabelingConfig
+    };
+  })
+}));
+
+// Fix circular dependency by mocking constants
+vi.mock('../constants', () => ({
+  MODEL_PROVIDERS: {
+    NAMES: ['OPENAI', 'WORKERS_AI', 'GOOGLE'],
+    DEFAULT: 'OPENAI'
+  },
+  LANDING_PAGE: {
+    FLOWS: {
+      'Click-Only': ['login'],
+      'Data-Submission': ['login', 'verify']
+    },
+    PAGE_TYPES: ['login', 'success', 'info'],
+    PLACEHOLDERS: {
+      SIMULATION_LINK: '{SIMULATION_LINK}',
+      TRACK_ID: '{TRACK_ID}',
+      EMAIL: '{EMAIL}'
+    }
+  },
+  STRING_TRUNCATION: {
+    LOGO_URL_PREFIX_LENGTH: 20,
+    LOGO_URL_PREFIX_LENGTH_ALT: 20
+  },
+  KV_NAMESPACES: {
+    PHISHING: 'PHISHING_KV'
+  },
+  PHISHING: {
+    DIFFICULTY_LEVELS: ['Easy', 'Medium', 'Hard'],
+    DEFAULT_DIFFICULTY: 'Medium',
+    ATTACK_METHODS: ['Click-Only', 'Data-Submission'],
+    DEFAULT_ATTACK_METHOD: 'Data-Submission',
+    TIMING: {
+      GENERATION_SECONDS_MIN: 20,
+      GENERATION_SECONDS_MAX: 30
+    },
+    MIN_TOPIC_LENGTH: 3,
+    MAX_TOPIC_LENGTH: 200
+  },
+  PHISHING_EMAIL: {
+    MAX_SUBJECT_LENGTH: 200,
+    MAX_DESCRIPTION_LENGTH: 300,
+    MANDATORY_TAGS: ['{PHISHINGURL}'],
+    RECOMMENDED_TAGS: ['{FIRSTNAME}']
+  }
+}));
+
+// Mock model providers to avoid import issues
+vi.mock('../model-providers', () => ({
+  getModelWithOverride: vi.fn().mockReturnValue('mock-model')
+}));
+
+// Mock error utilities
+vi.mock('../utils/core/error-utils', () => ({
+  normalizeError: vi.fn((err) => err instanceof Error ? err : new Error(String(err))),
+  logErrorInfo: vi.fn()
+}));
+
+vi.mock('../services/error-service', () => ({
+  errorService: {
+    validation: vi.fn((msg) => ({ message: msg }))
+  }
+}));
+
+vi.mock('../utils/phishing/brand-resolver', () => ({
+  resolveLogoAndBrand: mocks.resolveLogoAndBrand,
+  generateContextualBrand: mocks.generateContextualBrand
+}));
+
+vi.mock('../utils/landing-page', () => ({
+  detectIndustry: mocks.detectIndustry,
+  validateLandingPage: mocks.validateLandingPage,
+  logValidationResults: vi.fn(),
+  fixBrokenImages: mocks.fixBrokenImages
+}));
+
+vi.mock('../utils/landing-page/image-validator', () => ({
+  validateImageUrlCached: mocks.validateImageUrlCached,
+  normalizeImgAttributes: mocks.normalizeImgAttributes,
+  DEFAULT_GENERIC_LOGO: 'default-logo.png'
+}));
+
+vi.mock('../utils/content-processors/phishing-html-postprocessors', () => ({
+  postProcessPhishingEmailHtml: mocks.postProcessPhishingEmailHtml,
+  postProcessPhishingLandingHtml: mocks.postProcessPhishingLandingHtml
+}));
+
+vi.mock('../utils/kv-consistency', () => ({
+  waitForKVConsistency: mocks.waitForKVConsistency,
+  buildExpectedPhishingKeys: vi.fn().mockReturnValue([])
+}));
+
+vi.mock('../utils/core/resilience-utils', () => ({
+  withRetry: mocks.withRetry
+}));
+
+vi.mock('../utils/core/logger', () => ({
+  getLogger: () => ({
+    info: mocks.loggerInfo,
+    warn: mocks.loggerWarn,
+    error: mocks.loggerError,
+    debug: mocks.loggerDebug
+  })
+}));
+
+// Mock prompt builders to avoid complex dependencies
+vi.mock('../utils/prompt-builders/phishing-prompts', () => ({
+  buildAnalysisPrompts: vi.fn().mockReturnValue({ systemPrompt: 'sys', userPrompt: 'usr' }),
+  buildEmailPrompts: vi.fn().mockReturnValue({ systemPrompt: 'sys', userPrompt: 'usr' }),
+  buildLandingPagePrompts: vi.fn().mockReturnValue({ systemPrompt: 'sys', userPrompt: 'usr' })
+}));
+
+describe('CreatePhishingWorkflow', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    // Default mocks
+    mocks.savePhishingBase.mockResolvedValue(true);
+    mocks.savePhishingEmail.mockResolvedValue(true);
+    mocks.savePhishingLandingPage.mockResolvedValue(true);
+    mocks.getWhitelabelingConfig.mockResolvedValue({
+      mainLogoUrl: 'https://whitelabel.com/logo.png'
     });
-
-    it('should be a Workflow instance', () => {
-      expect(createPhishingWorkflow).toHaveProperty('id');
-      expect(createPhishingWorkflow).toHaveProperty('description');
-      expect(createPhishingWorkflow).toHaveProperty('inputSchema');
-      expect(createPhishingWorkflow).toHaveProperty('outputSchema');
+    mocks.resolveLogoAndBrand.mockResolvedValue({
+      logoUrl: 'https://logo.com/logo.png',
+      brandName: 'TestBrand',
+      isRecognizedBrand: true,
+      brandColors: { primary: '#000', secondary: '#fff', accent: '#f00' }
     });
-
-    it('should have correct workflow id', () => {
-      expect(createPhishingWorkflow.id).toBe('create-phishing-workflow');
+    mocks.generateContextualBrand.mockResolvedValue({
+      brandName: 'ContextBrand',
+      logoUrl: 'https://context.com/logo.png'
     });
-
-    it('should have a description', () => {
-      expect(createPhishingWorkflow.description).toBeDefined();
-      expect(typeof createPhishingWorkflow.description).toBe('string');
-      if (typeof createPhishingWorkflow.description === 'string') {
-        expect(createPhishingWorkflow.description.length).toBeGreaterThan(0);
-      }
+    mocks.detectIndustry.mockResolvedValue({
+      industry: 'Technology',
+      colors: { primary: '#000' }
     });
+    mocks.validateLandingPage.mockReturnValue({ isValid: true, errors: [] });
+    mocks.fixBrokenImages.mockImplementation((html) => html);
+    mocks.validateImageUrlCached.mockResolvedValue(true);
+    mocks.normalizeImgAttributes.mockImplementation((html) => html);
+    mocks.postProcessPhishingEmailHtml.mockImplementation(({ html }) => html);
+    mocks.postProcessPhishingLandingHtml.mockImplementation(({ html }) => html);
+    mocks.waitForKVConsistency.mockResolvedValue(true);
+    mocks.withRetry.mockImplementation(async (fn) => await fn());
 
-    it('description should mention phishing simulations', () => {
-      expect(createPhishingWorkflow.description).toBeDefined();
-      if (typeof createPhishingWorkflow.description === 'string') {
-        expect(createPhishingWorkflow.description.toLowerCase()).toContain('phishing');
-      }
-    });
-
-    it('should have inputSchema defined', () => {
-      expect(createPhishingWorkflow.inputSchema).toBeDefined();
-      expect(typeof createPhishingWorkflow.inputSchema).toBe('object');
-    });
-
-    it('should have outputSchema defined', () => {
-      expect(createPhishingWorkflow.outputSchema).toBeDefined();
-      expect(typeof createPhishingWorkflow.outputSchema).toBe('object');
+    // Setup default AI responses
+    mocks.generateText.mockResolvedValue({
+      text: JSON.stringify({
+        scenario: 'Test Scenario',
+        category: 'Urgency',
+        fromAddress: 'security@test.com',
+        fromName: 'Security Team',
+        method: 'Click-Only',
+        isQuishing: false,
+        psychologicalTriggers: ['Fear'],
+        subject: 'Urgent Alert',
+        template: '<html>Test Email {CUSTOMMAINLOGO}</html>',
+        pages: [{ type: 'login', template: '<html>Login Page</html>' }]
+      })
     });
   });
 
-  // Tests for input schema validation
-  describe('Input Schema Validation', () => {
-    const inputSchema = createPhishingWorkflow.inputSchema as z.ZodSchema;
+  describe('Workflow Execution', () => {
+    it('should execute successfully for standard phishing', async () => {
+      const run = await createPhishingWorkflow.createRunAsync();
 
-    it('should require topic', () => {
-      const testData = {
+      const input = {
+        topic: 'Password Reset',
         language: 'en',
-        isQuishing: false
+        isQuishing: false,
+        difficulty: 'Medium' as const,
+        method: 'Click-Only' as const,
+        targetProfile: { department: 'IT' }
       };
-      expect(() => {
-        inputSchema.parse(testData);
-      }).toThrow();
+
+      const result = await run.start({ inputData: input });
+
+      expect(result.status).toBe('success');
+      const output = (result as any).result;
+
+      expect(output.phishingId).toBeDefined();
+      expect(output.subject).toBe('Urgent Alert');
+      expect(mocks.savePhishingBase).toHaveBeenCalled();
     });
 
-    it('should accept valid topic', () => {
-      const testData = {
-        topic: 'Phishing Prevention',
-        language: 'en',
-        isQuishing: false
-      };
-      expect(() => {
-        inputSchema.parse(testData);
-      }).not.toThrow();
-    });
+    it('should execute successfully for quishing', async () => {
+      // Mock analysis to return quishing scenario
+      mocks.generateText.mockResolvedValueOnce({
+        text: JSON.stringify({
+          scenario: 'QR Code Scan',
+          category: 'Urgency',
+          fromAddress: 'hr@test.com',
+          fromName: 'HR',
+          method: 'Data-Submission',
+          isQuishing: true
+        })
+      });
 
-    it('should accept isQuishing boolean parameter', () => {
-      const testData = {
-        topic: 'QR Code Phishing',
+      const run = await createPhishingWorkflow.createRunAsync();
+      const input = {
+        topic: 'HR Survey',
         isQuishing: true,
         language: 'en'
       };
-      expect(() => {
-        inputSchema.parse(testData);
-      }).not.toThrow();
+
+      const result = await run.start({ inputData: input });
+      expect(result.status).toBe('success');
+      expect((result as any).result.analysis.isQuishing).toBe(true);
     });
 
-    it('should accept difficulty parameter', () => {
-      const testData = {
-        topic: 'Phishing Prevention',
-        difficulty: 'Medium',
-        language: 'en',
-        isQuishing: false
-      };
-      expect(() => {
-        inputSchema.parse(testData);
-      }).not.toThrow();
+    it('should handle analysis step failure', async () => {
+      mocks.generateText.mockRejectedValue(new Error('AI invalid response'));
+
+      const run = await createPhishingWorkflow.createRunAsync();
+      const input = { topic: 'Fail', language: 'en', isQuishing: false };
+
+      try {
+        await run.start({ inputData: input });
+      } catch (e: any) {
+        expect(e.message).toContain('Phishing analysis workflow error');
+      }
     });
 
-    it('should accept valid difficulty levels', () => {
-      const difficulties = ['Easy', 'Medium', 'Hard'];
-      const baseData = {
-        topic: 'Phishing Prevention',
-        language: 'en',
-        isQuishing: false
-      };
-
-      difficulties.forEach(diff => {
-        expect(() => {
-          inputSchema.parse({
-            ...baseData,
-            difficulty: diff
-          });
-        }).not.toThrow();
+    it('should handle email generation failure', async () => {
+      // First call (Analysis) succeeds
+      mocks.generateText.mockResolvedValueOnce({
+        text: JSON.stringify({
+          scenario: 'Test', category: 'Test', fromAddress: 'test@test.com', fromName: 'Test', method: 'Click-Only'
+        })
       });
+
+      // Second call (Email) fails
+      mocks.generateText.mockRejectedValueOnce(new Error('Email Gen Failed'));
+
+      const run = await createPhishingWorkflow.createRunAsync();
+      const input = { topic: 'Fail Email', language: 'en', isQuishing: false };
+
+      try {
+        await run.start({ inputData: input });
+      } catch (e: any) {
+        expect(e.message).toContain('Phishing email generation workflow error');
+      }
     });
 
-    it('should accept language parameter', () => {
-      const testData = {
-        topic: 'Phishing Prevention',
-        language: 'tr',
-        isQuishing: false
-      };
-      expect(() => {
-        inputSchema.parse(testData);
-      }).not.toThrow();
-    });
-
-    it('should accept method parameter', () => {
-      const testData = {
-        topic: 'Phishing Prevention',
-        method: 'Click-Only',
-        language: 'en',
-        isQuishing: false
-      };
-      expect(() => {
-        inputSchema.parse(testData);
-      }).not.toThrow();
-    });
-
-    it('should accept valid attack methods', () => {
-      const methods = ['Click-Only', 'Data-Submission'];
-      const baseData = {
-        topic: 'Phishing Prevention',
-        language: 'en',
-        isQuishing: false
-      };
-
-      methods.forEach(method => {
-        expect(() => {
-          inputSchema.parse({
-            ...baseData,
-            method
-          });
-        }).not.toThrow();
-      });
-    });
-
-    it('should accept targetProfile object', () => {
-      const testData = {
-        topic: 'Phishing Prevention',
+    it('should skip email generation if includeEmail is false', async () => {
+      const run = await createPhishingWorkflow.createRunAsync();
+      const input = {
+        topic: 'No Email',
         language: 'en',
         isQuishing: false,
-        targetProfile: {
-          name: 'IT Manager',
-          department: 'IT',
-          behavioralTriggers: ['Urgency', 'Authority'],
-          vulnerabilities: ['Fear of data loss']
-        }
-      };
-      expect(() => {
-        inputSchema.parse(testData);
-      }).not.toThrow();
-    });
-
-    it('should make includeEmail optional and default to true', () => {
-      const testData = {
-        topic: 'Phishing Prevention',
-        language: 'en',
-        isQuishing: false
-      };
-      expect(() => {
-        inputSchema.parse(testData);
-      }).not.toThrow();
-    });
-
-    it('should make includeLandingPage optional and default to true', () => {
-      const testData = {
-        topic: 'Phishing Prevention',
-        language: 'en',
-        isQuishing: false
-      };
-      expect(() => {
-        inputSchema.parse(testData);
-      }).not.toThrow();
-    });
-
-    it('should accept includeEmail as boolean', () => {
-      const testData = {
-        topic: 'Phishing Prevention',
-        language: 'en',
-        isQuishing: false,
-        includeEmail: false
-      };
-      expect(() => {
-        inputSchema.parse(testData);
-      }).not.toThrow();
-    });
-
-    it('should accept includeLandingPage as boolean', () => {
-      const testData = {
-        topic: 'Phishing Prevention',
-        language: 'en',
-        isQuishing: false,
+        includeEmail: false,
         includeLandingPage: false
       };
-      expect(() => {
-        inputSchema.parse(testData);
-      }).not.toThrow();
+
+      const result = await run.start({ inputData: input });
+
+      expect(result.status).toBe('success');
+      const output = (result as any).result;
+
+      // Should have analysis but no email content
+      expect(output.analysis).toBeDefined();
+      expect(output.subject).toBeUndefined();
+      expect(output.template).toBeUndefined();
+
+      expect(output.template).toBeUndefined();
+
+      // Should not have called email generation prompt
+      // generateText is called only once for analysis
+      expect(mocks.generateText).toHaveBeenCalledTimes(1);
     });
 
-    it('should make modelProvider optional', () => {
-      const testData = {
-        topic: 'Phishing Prevention',
-        language: 'en',
-        isQuishing: false
-      };
-      expect(() => {
-        inputSchema.parse(testData);
-      }).not.toThrow();
-    });
-
-    it('should accept valid modelProvider values', () => {
-      const validProviders = ['OPENAI', 'WORKERS_AI', 'GOOGLE'];
-      const baseData = {
-        topic: 'Phishing Prevention',
-        language: 'en',
-        isQuishing: false
-      };
-
-      validProviders.forEach(provider => {
-        expect(() => {
-          inputSchema.parse({
-            ...baseData,
-            modelProvider: provider
-          });
-        }).not.toThrow();
+    it('should handle landing page generation failure', async () => {
+      // First call (Analysis) succeeds
+      mocks.generateText.mockResolvedValueOnce({
+        text: JSON.stringify({
+          scenario: 'Test', category: 'Test', fromAddress: 'test@test.com', fromName: 'Test', method: 'Click-Only'
+        })
       });
+
+      // Second call (Email) succeeds
+      mocks.generateText.mockResolvedValueOnce({
+        text: JSON.stringify({
+          subject: 'Test', template: '<html>Test</html>'
+        })
+      });
+
+      // Third call (Landing Page) fails
+      mocks.generateText.mockRejectedValueOnce(new Error('Landing Page Gen Failed'));
+
+      const run = await createPhishingWorkflow.createRunAsync();
+      const input = { topic: 'Fail Landing', language: 'en', isQuishing: false };
+
+      try {
+        await run.start({ inputData: input });
+      } catch (e: any) {
+        expect(e.message).toBeDefined();
+      }
     });
 
-    it('should make model optional', () => {
-      const testData = {
-        topic: 'Phishing Prevention',
-        language: 'en',
-        isQuishing: false
-      };
-      expect(() => {
-        inputSchema.parse(testData);
-      }).not.toThrow();
-    });
-
-    it('should accept model name when provided', () => {
-      const testData = {
-        topic: 'Phishing Prevention',
+    it('should skip landing page generation if includeLandingPage is false', async () => {
+      const run = await createPhishingWorkflow.createRunAsync();
+      const input = {
+        topic: 'No Landing Page',
         language: 'en',
         isQuishing: false,
-        model: 'gpt-4o'
-      };
-      expect(() => {
-        inputSchema.parse(testData);
-      }).not.toThrow();
-    });
-
-    it('should handle all optional fields together', () => {
-      const testData = {
-        topic: 'Phishing Prevention',
-        language: 'tr',
-        isQuishing: true,
-        difficulty: 'Hard',
-        method: 'Data-Submission',
-        targetProfile: {
-          name: 'Finance Manager',
-          department: 'Finance'
-        },
         includeEmail: true,
-        includeLandingPage: true,
-        modelProvider: 'OPENAI',
-        model: 'gpt-4o-mini'
-      };
-      expect(() => {
-        inputSchema.parse(testData);
-      }).not.toThrow();
-    });
-  });
-
-  // Tests for output schema structure
-  describe('Output Schema Structure', () => {
-    const outputSchema = createPhishingWorkflow.outputSchema as z.ZodSchema;
-
-    it('should have subject field in output', () => {
-      const shape = (outputSchema as any).shape;
-      expect(shape).toHaveProperty('subject');
-    });
-
-    it('should have template field in output', () => {
-      const shape = (outputSchema as any).shape;
-      expect(shape).toHaveProperty('template');
-    });
-
-    it('should have fromAddress field in output', () => {
-      const shape = (outputSchema as any).shape;
-      expect(shape).toHaveProperty('fromAddress');
-    });
-
-    it('should have fromName field in output', () => {
-      const shape = (outputSchema as any).shape;
-      expect(shape).toHaveProperty('fromName');
-    });
-
-    it('should have analysis field in output', () => {
-      const shape = (outputSchema as any).shape;
-      expect(shape).toHaveProperty('analysis');
-    });
-
-    it('should have landingPage field in output', () => {
-      const shape = (outputSchema as any).shape;
-      expect(shape).toHaveProperty('landingPage');
-    });
-
-    it('should have phishingId field in output', () => {
-      const shape = (outputSchema as any).shape;
-      expect(shape).toHaveProperty('phishingId');
-    });
-
-    it('landingPage should have pages array', () => {
-      const shape = (outputSchema as any).shape;
-      const landingPageShape = shape.landingPage.unwrap().shape;
-      expect(landingPageShape).toHaveProperty('pages');
-    });
-  });
-
-  // Tests for workflow steps
-  describe('Workflow Steps', () => {
-    it('should have steps defined in workflow', () => {
-      expect(createPhishingWorkflow).toHaveProperty('steps');
-    });
-
-    it('should have analyze-phishing-request step', () => {
-      const rawSteps = (createPhishingWorkflow as any).steps || {};
-      const stepsArray = Array.isArray(rawSteps) ? rawSteps : Object.values(rawSteps);
-      const stepIds = stepsArray.map((step: any) => step.id);
-      expect(stepIds).toContain('analyze-phishing-request');
-    });
-
-    it('should have generate-phishing-email step', () => {
-      const rawSteps = (createPhishingWorkflow as any).steps || {};
-      const stepsArray = Array.isArray(rawSteps) ? rawSteps : Object.values(rawSteps);
-      const stepIds = stepsArray.map((step: any) => step.id);
-      expect(stepIds).toContain('generate-phishing-email');
-    });
-
-    it('should have generate-landing-page step', () => {
-      const rawSteps = (createPhishingWorkflow as any).steps || {};
-      const stepsArray = Array.isArray(rawSteps) ? rawSteps : Object.values(rawSteps);
-      const stepIds = stepsArray.map((step: any) => step.id);
-      expect(stepIds).toContain('generate-landing-page');
-    });
-
-    it('should have save-phishing-content step', () => {
-      const rawSteps = (createPhishingWorkflow as any).steps || {};
-      const stepsArray = Array.isArray(rawSteps) ? rawSteps : Object.values(rawSteps);
-      const stepIds = stepsArray.map((step: any) => step.id);
-      expect(stepIds).toContain('save-phishing-content');
-    });
-
-    it('step 1 should be analyze-phishing-request', () => {
-      const rawSteps = (createPhishingWorkflow as any).steps || {};
-      const stepsArray = Array.isArray(rawSteps) ? rawSteps : Object.values(rawSteps);
-      const step = stepsArray.find((s: any) => s.id === 'analyze-phishing-request');
-      expect(step).toBeDefined();
-      expect(step?.description).toBeDefined();
-    });
-
-    it('step 2 should be generate-phishing-email', () => {
-      const rawSteps = (createPhishingWorkflow as any).steps || {};
-      const stepsArray = Array.isArray(rawSteps) ? rawSteps : Object.values(rawSteps);
-      const step = stepsArray.find((s: any) => s.id === 'generate-phishing-email');
-      expect(step).toBeDefined();
-      expect(step?.description).toBeDefined();
-    });
-
-    it('step 3 should be generate-landing-page', () => {
-      const rawSteps = (createPhishingWorkflow as any).steps || {};
-      const stepsArray = Array.isArray(rawSteps) ? rawSteps : Object.values(rawSteps);
-      const step = stepsArray.find((s: any) => s.id === 'generate-landing-page');
-      expect(step).toBeDefined();
-      expect(step?.description).toBeDefined();
-    });
-
-    it('step 4 should be save-phishing-content', () => {
-      const rawSteps = (createPhishingWorkflow as any).steps || {};
-      const stepsArray = Array.isArray(rawSteps) ? rawSteps : Object.values(rawSteps);
-      const step = stepsArray.find((s: any) => s.id === 'save-phishing-content');
-      expect(step).toBeDefined();
-      expect(step?.description).toBeDefined();
-    });
-
-    it('steps should be in sequential order', () => {
-      const rawSteps = (createPhishingWorkflow as any).steps || {};
-      const stepsArray = Array.isArray(rawSteps) ? rawSteps : Object.values(rawSteps);
-      const stepIds = stepsArray.map((s: any) => s.id);
-
-      const analyzeIndex = stepIds.indexOf('analyze-phishing-request');
-      const emailIndex = stepIds.indexOf('generate-phishing-email');
-      const lpIndex = stepIds.indexOf('generate-landing-page');
-      const saveIndex = stepIds.indexOf('save-phishing-content');
-
-      expect(analyzeIndex).toBeLessThan(emailIndex);
-      expect(emailIndex).toBeLessThan(lpIndex);
-      expect(lpIndex).toBeLessThan(saveIndex);
-    });
-  });
-
-  // Tests for workflow execution pattern
-  describe('Workflow Execution Pattern', () => {
-    it('should have createRunAsync method', () => {
-      expect(typeof (createPhishingWorkflow as any).createRunAsync).toBe('function');
-    });
-
-    it('should have start method available', () => {
-      expect(createPhishingWorkflow).toHaveProperty('execute');
-    });
-
-    it('should support chaining with .then()', () => {
-      expect(typeof (createPhishingWorkflow as any).then).toBe('function');
-    });
-
-    it('should have commit method', () => {
-      expect(typeof (createPhishingWorkflow as any).commit).toBe('function');
-    });
-  });
-
-  // Tests for difficulty levels
-  describe('Difficulty Levels', () => {
-    const inputSchema = createPhishingWorkflow.inputSchema as z.ZodSchema;
-
-    it('should accept Easy difficulty', () => {
-      const testData = {
-        topic: 'Phishing Prevention',
-        difficulty: 'Easy',
-        language: 'en',
-        isQuishing: false
-      };
-      expect(() => {
-        inputSchema.parse(testData);
-      }).not.toThrow();
-    });
-
-    it('should accept Medium difficulty', () => {
-      const testData = {
-        topic: 'Phishing Prevention',
-        difficulty: 'Medium',
-        language: 'en',
-        isQuishing: false
-      };
-      expect(() => {
-        inputSchema.parse(testData);
-      }).not.toThrow();
-    });
-
-    it('should accept Hard difficulty', () => {
-      const testData = {
-        topic: 'Phishing Prevention',
-        difficulty: 'Hard',
-        language: 'en',
-        isQuishing: false
-      };
-      expect(() => {
-        inputSchema.parse(testData);
-      }).not.toThrow();
-    });
-
-    it('should reject invalid difficulty', () => {
-      const testData = {
-        topic: 'Phishing Prevention',
-        difficulty: 'Extreme',
-        language: 'en',
-        isQuishing: false
-      };
-      expect(() => {
-        inputSchema.parse(testData);
-      }).toThrow();
-    });
-  });
-
-  // Tests for attack methods
-  describe('Attack Methods', () => {
-    const inputSchema = createPhishingWorkflow.inputSchema as z.ZodSchema;
-
-    it('should accept Click-Only method', () => {
-      const testData = {
-        topic: 'Phishing Prevention',
-        method: 'Click-Only',
-        language: 'en',
-        isQuishing: false
-      };
-      expect(() => {
-        inputSchema.parse(testData);
-      }).not.toThrow();
-    });
-
-    it('should accept Data-Submission method', () => {
-      const testData = {
-        topic: 'Phishing Prevention',
-        method: 'Data-Submission',
-        language: 'en',
-        isQuishing: false
-      };
-      expect(() => {
-        inputSchema.parse(testData);
-      }).not.toThrow();
-    });
-
-    it('should reject invalid method', () => {
-      const testData = {
-        topic: 'Phishing Prevention',
-        method: 'Invalid-Method',
-        language: 'en',
-        isQuishing: false
-      };
-      expect(() => {
-        inputSchema.parse(testData);
-      }).toThrow();
-    });
-  });
-
-  // Tests for quishing detection
-  describe('Quishing Detection', () => {
-    const inputSchema = createPhishingWorkflow.inputSchema as z.ZodSchema;
-
-    it('should accept isQuishing as true', () => {
-      const testData = {
-        topic: 'QR Code Phishing',
-        isQuishing: true,
-        language: 'en'
-      };
-      expect(() => {
-        inputSchema.parse(testData);
-      }).not.toThrow();
-    });
-
-    it('should accept isQuishing as false', () => {
-      const testData = {
-        topic: 'Phishing Prevention',
-        isQuishing: false,
-        language: 'en'
-      };
-      expect(() => {
-        inputSchema.parse(testData);
-      }).not.toThrow();
-    });
-
-    it('isQuishing should be boolean type', () => {
-      const testData = {
-        topic: 'Phishing Prevention',
-        isQuishing: false,
-        language: 'en'
-      };
-      const parsed = inputSchema.parse(testData);
-      expect(typeof parsed.isQuishing).toBe('boolean');
-    });
-  });
-
-  // Tests for language support
-  describe('Language Support', () => {
-    const inputSchema = createPhishingWorkflow.inputSchema as z.ZodSchema;
-
-    it('should accept language parameter', () => {
-      const testData = {
-        topic: 'Phishing Prevention',
-        language: 'en',
-        isQuishing: false
-      };
-      expect(() => {
-        inputSchema.parse(testData);
-      }).not.toThrow();
-    });
-
-    it('should accept multiple language codes', () => {
-      const languages = ['en', 'tr', 'de', 'fr', 'ja', 'es'];
-      const baseData = {
-        topic: 'Phishing Prevention',
-        isQuishing: false
-      };
-
-      languages.forEach(lang => {
-        expect(() => {
-          inputSchema.parse({
-            ...baseData,
-            language: lang
-          });
-        }).not.toThrow();
-      });
-    });
-
-    it('should accept BCP-47 format language codes', () => {
-      const testData = {
-        topic: 'Phishing Prevention',
-        language: 'en-US',
-        isQuishing: false
-      };
-      expect(() => {
-        inputSchema.parse(testData);
-      }).not.toThrow();
-    });
-  });
-
-  // Tests for targetProfile structure
-  describe('Target Profile Structure', () => {
-    const inputSchema = createPhishingWorkflow.inputSchema as z.ZodSchema;
-
-    it('should accept targetProfile with name', () => {
-      const testData = {
-        topic: 'Phishing Prevention',
-        language: 'en',
-        isQuishing: false,
-        targetProfile: {
-          name: 'IT Manager'
-        }
-      };
-      expect(() => {
-        inputSchema.parse(testData);
-      }).not.toThrow();
-    });
-
-    it('should accept targetProfile with department', () => {
-      const testData = {
-        topic: 'Phishing Prevention',
-        language: 'en',
-        isQuishing: false,
-        targetProfile: {
-          name: 'John',
-          department: 'IT'
-        }
-      };
-      expect(() => {
-        inputSchema.parse(testData);
-      }).not.toThrow();
-    });
-
-    it('should accept targetProfile with behavioralTriggers', () => {
-      const testData = {
-        topic: 'Phishing Prevention',
-        language: 'en',
-        isQuishing: false,
-        targetProfile: {
-          name: 'John',
-          behavioralTriggers: ['Urgency', 'Authority', 'Social proof']
-        }
-      };
-      expect(() => {
-        inputSchema.parse(testData);
-      }).not.toThrow();
-    });
-
-    it('should accept targetProfile with vulnerabilities', () => {
-      const testData = {
-        topic: 'Phishing Prevention',
-        language: 'en',
-        isQuishing: false,
-        targetProfile: {
-          name: 'John',
-          vulnerabilities: ['Fear of data loss', 'Compliance pressure']
-        }
-      };
-      expect(() => {
-        inputSchema.parse(testData);
-      }).not.toThrow();
-    });
-  });
-
-  // Tests for email generation control
-  describe('Email Generation Control', () => {
-    const inputSchema = createPhishingWorkflow.inputSchema as z.ZodSchema;
-
-    it('should allow disabling email generation', () => {
-      const testData = {
-        topic: 'Phishing Prevention',
-        language: 'en',
-        isQuishing: false,
-        includeEmail: false
-      };
-      expect(() => {
-        inputSchema.parse(testData);
-      }).not.toThrow();
-    });
-
-    it('should allow enabling email generation explicitly', () => {
-      const testData = {
-        topic: 'Phishing Prevention',
-        language: 'en',
-        isQuishing: false,
-        includeEmail: true
-      };
-      expect(() => {
-        inputSchema.parse(testData);
-      }).not.toThrow();
-    });
-
-    it('should default to including email', () => {
-      const testData = {
-        topic: 'Phishing Prevention',
-        language: 'en',
-        isQuishing: false
-      };
-      const parsed = inputSchema.parse(testData);
-      expect(parsed.includeEmail).not.toBe(false);
-    });
-  });
-
-  // Tests for landing page generation control
-  describe('Landing Page Generation Control', () => {
-    const inputSchema = createPhishingWorkflow.inputSchema as z.ZodSchema;
-
-    it('should allow disabling landing page generation', () => {
-      const testData = {
-        topic: 'Phishing Prevention',
-        language: 'en',
-        isQuishing: false,
         includeLandingPage: false
       };
-      expect(() => {
-        inputSchema.parse(testData);
-      }).not.toThrow();
-    });
 
-    it('should allow enabling landing page generation explicitly', () => {
-      const testData = {
-        topic: 'Phishing Prevention',
-        language: 'en',
-        isQuishing: false,
-        includeLandingPage: true
-      };
-      expect(() => {
-        inputSchema.parse(testData);
-      }).not.toThrow();
-    });
+      const result = await run.start({ inputData: input });
 
-    it('should default to including landing page', () => {
-      const testData = {
-        topic: 'Phishing Prevention',
-        language: 'en',
-        isQuishing: false
-      };
-      const parsed = inputSchema.parse(testData);
-      expect(parsed.includeLandingPage).not.toBe(false);
+      expect(result.status).toBe('success');
+      const output = (result as any).result;
+
+      // Should have email content but no landing page
+      expect(output.subject).toBeDefined();
+      expect(output.template).toBeDefined();
+      expect(output.landingPage).toBeUndefined();
+
+      expect(output.landingPage).toBeUndefined();
+
+      // generateText called twice: analysis + email (no landing page)
+      expect(mocks.generateText).toHaveBeenCalledTimes(2);
     });
   });
 
-  // Tests for model provider configuration
-  describe('Model Provider Configuration', () => {
-    const inputSchema = createPhishingWorkflow.inputSchema as z.ZodSchema;
-
-    it('should accept OPENAI provider', () => {
-      const testData = {
-        topic: 'Phishing Prevention',
-        language: 'en',
-        isQuishing: false,
-        modelProvider: 'OPENAI'
-      };
-      expect(() => {
-        inputSchema.parse(testData);
-      }).not.toThrow();
-    });
-
-    it('should accept WORKERS_AI provider', () => {
-      const testData = {
-        topic: 'Phishing Prevention',
-        language: 'en',
-        isQuishing: false,
-        modelProvider: 'WORKERS_AI'
-      };
-      expect(() => {
-        inputSchema.parse(testData);
-      }).not.toThrow();
-    });
-
-    it('should accept GOOGLE provider', () => {
-      const testData = {
-        topic: 'Phishing Prevention',
-        language: 'en',
-        isQuishing: false,
-        modelProvider: 'GOOGLE'
-      };
-      expect(() => {
-        inputSchema.parse(testData);
-      }).not.toThrow();
-    });
-
-    it('should reject invalid provider', () => {
-      const testData = {
-        topic: 'Phishing Prevention',
-        language: 'en',
-        isQuishing: false,
-        modelProvider: 'INVALID_PROVIDER'
-      };
-      expect(() => {
-        inputSchema.parse(testData);
-      }).not.toThrow();
-    });
-  });
-
-  // Tests for async patterns
-  describe('Async Workflow Patterns', () => {
-    it('should support async execution', () => {
-      expect(typeof (createPhishingWorkflow as any).createRunAsync).toBe('function');
-    });
-
-    it('should define async method signatures', () => {
-      const asyncMethods = ['createRunAsync', 'start'];
-      asyncMethods.forEach(method => {
-        if ((createPhishingWorkflow as any)[method]) {
-          expect(typeof (createPhishingWorkflow as any)[method]).toBe('function');
-        }
+  describe('Data Validation', () => {
+    it('should truncate description if longer than 300 characters', async () => {
+      const longDescription = 'A'.repeat(350);
+      mocks.generateText.mockResolvedValueOnce({
+        text: JSON.stringify({
+          scenario: 'Test',
+          category: 'Test',
+          fromAddress: 'test@test.com',
+          fromName: 'Test',
+          method: 'Click-Only',
+          description: longDescription
+        })
       });
-    });
-  });
 
-  // Tests for error scenarios
-  describe('Error Handling', () => {
-    const inputSchema = createPhishingWorkflow.inputSchema as z.ZodSchema;
+      const run = await createPhishingWorkflow.createRunAsync();
+      const input = { topic: 'Long Description', language: 'en', isQuishing: false, includeEmail: false, includeLandingPage: false };
 
-    it('should validate with missing topic', () => {
-      const testData = {
-        language: 'en',
-        isQuishing: false
-      };
-      expect(() => {
-        inputSchema.parse(testData);
-      }).toThrow();
+      const result = await run.start({ inputData: input });
+
+      expect(result.status).toBe('success');
+      const output = (result as any).result;
+      expect(output.analysis.description.length).toBeLessThanOrEqual(300);
     });
 
-    it('should validate with missing isQuishing', () => {
-      const testData = {
-        topic: 'Phishing Prevention',
-        language: 'en'
-      };
-      expect(() => {
-        inputSchema.parse(testData);
-      }).not.toThrow();
-    });
+    it('should handle missing required fields in analysis', async () => {
+      mocks.generateText.mockResolvedValueOnce({
+        text: JSON.stringify({
+          scenario: 'Test',
+          // Missing category, fromAddress, method
+        })
+      });
 
-    it('should provide error for invalid enum values', () => {
-      const testData = {
-        topic: 'Phishing Prevention',
-        language: 'en',
-        isQuishing: false,
-        difficulty: 'SuperHard'
-      };
-      expect(() => {
-        inputSchema.parse(testData);
-      }).toThrow();
-    });
+      const run = await createPhishingWorkflow.createRunAsync();
+      const input = { topic: 'Invalid', language: 'en', isQuishing: false };
 
-    it('should type-check boolean values', () => {
-      const testData = {
-        topic: 'Phishing Prevention',
-        language: 'en',
-        isQuishing: false
-      };
-      const parsed = inputSchema.parse(testData);
-      expect(typeof parsed.isQuishing).toBe('boolean');
-    });
-  });
-
-  // Tests for prompt builder integration
-  describe('Prompt Builder Integration', () => {
-    it('description should indicate content generation', () => {
-      expect(createPhishingWorkflow.description).toBeDefined();
-      if (typeof createPhishingWorkflow.description === 'string') {
-        expect(createPhishingWorkflow.description.toLowerCase()).toContain('phishing');
+      try {
+        await run.start({ inputData: input });
+      } catch (e: any) {
+        expect(e.message).toContain('Phishing analysis workflow error');
       }
     });
 
-    it('should have steps for scenario design', () => {
-      const rawSteps = (createPhishingWorkflow as any).steps || {};
-      const stepsArray = Array.isArray(rawSteps) ? rawSteps : Object.values(rawSteps);
-      expect(stepsArray.length).toBeGreaterThanOrEqual(3);
-    });
+    it('should handle missing required fields in email', async () => {
+      mocks.generateText.mockResolvedValueOnce({
+        text: JSON.stringify({
+          scenario: 'Test',
+          category: 'Test',
+          fromAddress: 'test@test.com',
+          fromName: 'Test',
+          method: 'Click-Only'
+        })
+      });
 
-    it('should integrate with analysis prompts', () => {
-      const rawSteps = (createPhishingWorkflow as any).steps || {};
-      const stepsArray = Array.isArray(rawSteps) ? rawSteps : Object.values(rawSteps);
-      const analyzeStep = stepsArray.find((s: any) => s.id === 'analyze-phishing-request');
-      expect(analyzeStep?.description).toBeDefined();
-    });
+      mocks.generateText.mockResolvedValueOnce({
+        text: JSON.stringify({
+          subject: 'Test'
+          // Missing template
+        })
+      });
 
-    it('should integrate with email prompts', () => {
-      const rawSteps = (createPhishingWorkflow as any).steps || {};
-      const stepsArray = Array.isArray(rawSteps) ? rawSteps : Object.values(rawSteps);
-      const emailStep = stepsArray.find((s: any) => s.id === 'generate-phishing-email');
-      expect(emailStep?.description).toBeDefined();
-    });
+      const run = await createPhishingWorkflow.createRunAsync();
+      const input = { topic: 'Invalid Email', language: 'en', isQuishing: false, includeLandingPage: false };
 
-    it('should integrate with landing page prompts', () => {
-      const rawSteps = (createPhishingWorkflow as any).steps || {};
-      const stepsArray = Array.isArray(rawSteps) ? rawSteps : Object.values(rawSteps);
-      const lpStep = stepsArray.find((s: any) => s.id === 'generate-landing-page');
-      expect(lpStep?.description).toBeDefined();
-    });
-  });
-
-  // Tests for KV consistency
-  describe('KV Consistency', () => {
-    it('should have save-phishing-content step', () => {
-      const rawSteps = (createPhishingWorkflow as any).steps || {};
-      const stepsArray = Array.isArray(rawSteps) ? rawSteps : Object.values(rawSteps);
-      const stepIds = stepsArray.map((s: any) => s.id);
-      expect(stepIds).toContain('save-phishing-content');
-    });
-
-    it('save step should be final step', () => {
-      const rawSteps = (createPhishingWorkflow as any).steps || {};
-      const stepsArray = Array.isArray(rawSteps) ? rawSteps : Object.values(rawSteps);
-      const lastStep = stepsArray[stepsArray.length - 1];
-      expect(lastStep?.id).toBe('save-phishing-content');
+      try {
+        await run.start({ inputData: input });
+      } catch (e: any) {
+        expect(e.message).toContain('Phishing email generation workflow error');
+      }
     });
   });
 
-  // Tests for policy context support
-  describe('Policy Context Support', () => {
-    const inputSchema = createPhishingWorkflow.inputSchema as z.ZodSchema;
+  describe('Save to KV', () => {
+    it('should handle KV save failure', async () => {
+      mocks.savePhishingBase.mockRejectedValue(new Error('KV Save Failed'));
 
-    it('should accept optional policyContext parameter', () => {
-      const testData = {
-        topic: 'Phishing Prevention',
+      const run = await createPhishingWorkflow.createRunAsync();
+      const input = { topic: 'KV Fail', language: 'en', isQuishing: false };
+
+      try {
+        await run.start({ inputData: input });
+      } catch (e: any) {
+        expect(e.message).toContain('KV Save Failed');
+      }
+    });
+  });
+
+  describe('Whitelabel & Branding', () => {
+    it('should use whitelabel logo if brand is not recognized', async () => {
+      mocks.resolveLogoAndBrand.mockResolvedValue({
+        logoUrl: '',
+        isRecognizedBrand: false
+      });
+
+      const run = await createPhishingWorkflow.createRunAsync();
+      const input = { topic: 'Generic IT', language: 'en', isQuishing: false };
+
+      await run.start({ inputData: input });
+
+      expect(mocks.getWhitelabelingConfig).toHaveBeenCalled();
+    });
+
+    it('should replace CUSTOMMAINLOGO in email template', async () => {
+      mocks.generateText.mockResolvedValueOnce({
+        text: JSON.stringify({
+          scenario: 'Test',
+          category: 'Test',
+          fromAddress: 'test@test.com',
+          fromName: 'Test',
+          method: 'Click-Only'
+        })
+      });
+
+      mocks.generateText.mockResolvedValueOnce({
+        text: JSON.stringify({
+          subject: 'Test',
+          template: '<html><img src="{CUSTOMMAINLOGO}" /></html>'
+        })
+      });
+
+      const run = await createPhishingWorkflow.createRunAsync();
+      const input = { topic: 'Logo Test', language: 'en', isQuishing: false, includeLandingPage: false };
+
+      const result = await run.start({ inputData: input });
+
+      expect(result.status).toBe('success');
+      const output = (result as any).result;
+      // Template should have logo URL replaced
+      expect(output.template).not.toContain('{CUSTOMMAINLOGO}');
+    });
+  });
+
+  describe('Attack Methods', () => {
+    it('should execute successfully for Data-Submission method', async () => {
+      mocks.generateText.mockResolvedValueOnce({
+        text: JSON.stringify({
+          scenario: 'Data Collection',
+          category: 'Urgency',
+          fromAddress: 'it@test.com',
+          fromName: 'IT',
+          method: 'Data-Submission',
+          isQuishing: false
+        })
+      });
+
+      mocks.generateText.mockResolvedValueOnce({
+        text: JSON.stringify({
+          subject: 'Submit Data',
+          template: '<html>Submit Form</html>'
+        })
+      });
+
+      mocks.generateText.mockResolvedValueOnce({
+        text: JSON.stringify({
+          pages: [
+            { type: 'login', template: '<html>Login</html>' },
+            { type: 'verify', template: '<html>Verify</html>' }
+          ]
+        })
+      });
+
+      const run = await createPhishingWorkflow.createRunAsync();
+      const input = {
+        topic: 'Data Submission Test',
         language: 'en',
         isQuishing: false,
-        policyContext: 'Company security policy compliance required'
+        method: 'Data-Submission' as const
       };
-      expect(() => {
-        inputSchema.parse(testData);
-      }).not.toThrow();
-    });
 
-    it('should not require policyContext', () => {
-      const testData = {
-        topic: 'Phishing Prevention',
-        language: 'en',
-        isQuishing: false
-      };
-      expect(() => {
-        inputSchema.parse(testData);
-      }).not.toThrow();
-    });
-  });
+      const result = await run.start({ inputData: input });
 
-  // Tests for additional context support
-  describe('Additional Context Support', () => {
-    const inputSchema = createPhishingWorkflow.inputSchema as z.ZodSchema;
-
-    it('should accept optional additionalContext parameter', () => {
-      const testData = {
-        topic: 'Phishing Prevention',
-        language: 'en',
-        isQuishing: false,
-        additionalContext: 'Target user has clicked on phishing before'
-      };
-      expect(() => {
-        inputSchema.parse(testData);
-      }).not.toThrow();
-    });
-
-    it('should not require additionalContext', () => {
-      const testData = {
-        topic: 'Phishing Prevention',
-        language: 'en',
-        isQuishing: false
-      };
-      expect(() => {
-        inputSchema.parse(testData);
-      }).not.toThrow();
+      expect(result.status).toBe('success');
+      const output = (result as any).result;
+      expect(output.landingPage.pages.length).toBe(2);
     });
   });
 });

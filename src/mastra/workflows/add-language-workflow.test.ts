@@ -1,6 +1,56 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { z } from 'zod';
-import { addLanguageWorkflow } from './add-language-workflow';
+import { addLanguageWorkflow, loadExistingStep, translateLanguageStep, updateInboxStep, combineResultsStep } from './add-language-workflow';
+import { loadInboxWithFallback } from '../utils/kv-helpers';
+import { waitForKVConsistency } from '../utils/kv-consistency';
+
+// Mocks using flattened flattened object for reliability
+const mocks = vi.hoisted(() => ({
+  getMicrolearning: vi.fn(),
+  get: vi.fn(),
+  storeLanguageContent: vi.fn(),
+  updateLanguageAvailabilityAtomic: vi.fn(),
+  storeInboxContent: vi.fn(),
+  translateExecute: vi.fn(),
+  inboxExecute: vi.fn()
+}));
+
+vi.mock('../services/kv-service', () => ({
+  KVService: vi.fn().mockImplementation(function () {
+    return {
+      getMicrolearning: mocks.getMicrolearning,
+      get: mocks.get,
+      storeLanguageContent: mocks.storeLanguageContent,
+      updateLanguageAvailabilityAtomic: mocks.updateLanguageAvailabilityAtomic,
+      storeInboxContent: mocks.storeInboxContent
+    };
+  })
+}));
+
+vi.mock('../tools/generation', () => ({
+  translateLanguageJsonTool: {
+    execute: mocks.translateExecute
+  }
+}));
+
+vi.mock('../tools/inbox', () => ({
+  inboxTranslateJsonTool: {
+    execute: mocks.inboxExecute
+  }
+}));
+
+vi.mock('../utils/core/resilience-utils', () => ({
+  withRetry: vi.fn((fn) => fn())
+}));
+
+vi.mock('../utils/kv-helpers', () => ({
+  loadInboxWithFallback: vi.fn()
+}));
+
+vi.mock('../utils/kv-consistency', () => ({
+  waitForKVConsistency: vi.fn(),
+  buildExpectedKVKeys: vi.fn().mockReturnValue([])
+}));
 
 describe('add-language-workflow', () => {
   // Tests for workflow definition and structure
@@ -609,6 +659,202 @@ describe('add-language-workflow', () => {
       if (typeof addLanguageWorkflow.description === 'string') {
         expect(addLanguageWorkflow.description.toLowerCase()).toContain('parallel');
       }
+    });
+  });
+  // Tests for Step Logic
+  describe('Step Execution Logic', () => {
+    beforeEach(() => {
+      vi.clearAllMocks();
+    });
+
+    describe('loadExistingStep', () => {
+      it('should load microlearning from KV and fallback to defaults', async () => {
+        const mockExisting = {
+          microlearning_id: 'test-id',
+          microlearning_metadata: {
+            title: 'Test Title',
+            language: 'en-gb'
+          }
+        };
+        mocks.getMicrolearning.mockResolvedValue({ base: mockExisting });
+
+        const input = {
+          existingMicrolearningId: 'test-id',
+          targetLanguage: 'tr-TR',
+          department: 'IT'
+        };
+
+        const result = await (loadExistingStep as any).execute({ inputData: input });
+
+        expect(mocks.getMicrolearning).toHaveBeenCalledWith('test-id');
+        expect(result.sourceLanguage).toBe('en-gb');
+        expect(result.targetLanguage).toBe('tr-TR');
+        expect(result.analysis.title).toBe('Test Title');
+      });
+
+      it('should throw if microlearning not found', async () => {
+        mocks.getMicrolearning.mockResolvedValue({ base: null });
+
+        const input = {
+          existingMicrolearningId: 'missing-id',
+          targetLanguage: 'tr-TR'
+        };
+
+        await expect((loadExistingStep as any).execute({ inputData: input }))
+          .rejects.toThrow('Microlearning not found');
+      });
+
+      it('should detect code review training and disable inbox', async () => {
+        const mockCodeReview = {
+          microlearning_id: 'code-review-id',
+          microlearning_metadata: { language: 'en' },
+          scenes: [{ metadata: { scene_type: 'code_review' } }]
+        };
+        mocks.getMicrolearning.mockResolvedValue({ base: mockCodeReview });
+
+        const result = await (loadExistingStep as any).execute({
+          inputData: { existingMicrolearningId: 'id', targetLanguage: 'tr' }
+        });
+
+        expect(result.hasInbox).toBe(false);
+      });
+    });
+
+    describe('translateLanguageStep', () => {
+      const mockMeta = {
+        data: {},
+        microlearningId: 'test-id',
+        analysis: {
+          language: 'tr-tr',
+          topic: 'Phishing'
+        },
+        sourceLanguage: 'en-gb',
+        targetLanguage: 'tr-TR'
+      };
+
+      it('should translate successfully', async () => {
+        mocks.get.mockResolvedValue({ '1': 'content' }); // base content
+        mocks.translateExecute.mockResolvedValue({
+          success: true,
+          data: { '1': 'translated' }
+        });
+        mocks.storeLanguageContent.mockResolvedValue(true);
+
+        const result = await (translateLanguageStep as any).execute({ inputData: mockMeta });
+
+        expect(mocks.get).toHaveBeenCalled();
+        expect(mocks.translateExecute).toHaveBeenCalled();
+        expect(mocks.storeLanguageContent).toHaveBeenCalled();
+        expect(result.success).toBe(true);
+      });
+
+      it('should throw if base content is missing in KV', async () => {
+        mocks.get.mockResolvedValue(null);
+
+        await expect((translateLanguageStep as any).execute({ inputData: mockMeta }))
+          .rejects.toThrow('Base language content (en-gb) not found');
+      });
+
+      it('should throw if translation tool returns error', async () => {
+        mocks.get.mockResolvedValue({ '1': 'content' });
+        mocks.translateExecute.mockResolvedValue({
+          success: false,
+          error: 'AI Error'
+        });
+
+        await expect((translateLanguageStep as any).execute({ inputData: mockMeta }))
+          .rejects.toThrow('Language translation failed: AI Error');
+      });
+    });
+
+    describe('updateInboxStep', () => {
+      const baseInput = {
+        data: {
+          microlearning_metadata: { language: 'en', department_relevance: ['IT'] }
+        },
+        microlearningId: 'test-id',
+        analysis: { language: 'tr', department: 'HR', topic: 'Topic' },
+        hasInbox: true
+      };
+
+      it('should skip if hasInbox is false', async () => {
+        const result = await (updateInboxStep as any).execute({
+          inputData: { ...baseInput, hasInbox: false }
+        });
+        expect(result.success).toBe(true);
+        expect(result.filesGenerated).toEqual([]);
+      });
+
+      it('should return failure if inbox not found', async () => {
+        (loadInboxWithFallback as any).mockResolvedValue(null);
+
+        const result = await (updateInboxStep as any).execute({ inputData: baseInput });
+
+        expect(result.success).toBe(false);
+      });
+
+      it('should translate and store inbox successfully', async () => {
+        (loadInboxWithFallback as any).mockResolvedValue({ subject: 'Test' });
+        mocks.inboxExecute.mockResolvedValue({
+          success: true,
+          data: { subject: 'Test Translated' }
+        });
+        mocks.storeInboxContent.mockResolvedValue(true);
+
+        const result = await (updateInboxStep as any).execute({ inputData: baseInput });
+
+        expect(result.success).toBe(true);
+        expect(mocks.storeInboxContent).toHaveBeenCalled();
+        expect(result.filesGenerated[0]).toContain('inbox');
+      });
+    });
+
+    describe('combineResultsStep', () => {
+      const translateResult = {
+        success: true,
+        microlearningId: 'id',
+        analysis: { language: 'tr', title: 'Title' }
+      };
+
+      it('should combine successful results', async () => {
+        const inboxResult = { success: true, usedDepartment: 'IT', filesGenerated: ['inbox.json'] };
+        const input = {
+          'translate-language-content': { ...translateResult, hasInbox: true },
+          'update-inbox': inboxResult
+        };
+
+        const result = await (combineResultsStep as any).execute({ inputData: input });
+
+        expect(result.success).toBe(true);
+        expect(result.data.trainingUrl).toContain('inboxUrl');
+        expect(result.data.filesGenerated).toHaveLength(2); // lang + inbox
+      });
+
+      it('should handle inbox failure gracefully', async () => {
+        const inboxResult = { success: false, filesGenerated: [] };
+        const input = {
+          'translate-language-content': { ...translateResult, hasInbox: true },
+          'update-inbox': inboxResult
+        };
+
+        const result = await (combineResultsStep as any).execute({ inputData: input });
+
+        expect(result.success).toBe(true);
+        expect(result.message).toContain('Inbox translation failed');
+        // valid URL but maybe no inbox param or handled? Implementation:
+        // trainingUrl = `${API_ENDPOINTS.FRONTEND_MICROLEARNING_URL}/?courseId=${microlearningId}&langUrl=${langUrl}&isEditMode=true`;
+        expect(result.data.trainingUrl).not.toContain('inboxUrl');
+      });
+
+      it('should throw if translation failed', async () => {
+        const input = {
+          'translate-language-content': { success: false },
+          'update-inbox': {}
+        };
+
+        await expect((combineResultsStep as any).execute({ inputData: input }))
+          .rejects.toThrow('Language translation failed');
+      });
     });
   });
 });
