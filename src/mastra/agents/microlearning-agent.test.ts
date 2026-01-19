@@ -570,45 +570,6 @@ describe('Microlearning Agent', () => {
     });
   });
 
-  // ==================== PII & SECURITY TESTS ====================
-  describe('PII Masking & Security', () => {
-    it('should NOT expose real names in output', () => {
-      const output = 'Creating training for the identified user';
-      const hasRealName = /John|Jane|Gurkan|Ahmed/.test(output);
-      expect(hasRealName).toBe(false);
-    });
-
-    it('should NOT expose emails in human-facing output', () => {
-      const output = 'Training will be assigned to user';
-      const hasEmail = /@/.test(output);
-      expect(hasEmail).toBe(false);
-    });
-
-    it('should use "the user" instead of real names', () => {
-      const output = 'Creating training for the user in IT department';
-      const isAnonymized = output.includes('the user');
-      expect(isAnonymized).toBe(true);
-    });
-
-    it('should use anonymized language in reasoning', () => {
-      const reasoning = 'Detected IT department from SQL Injection keyword → Auto-routing to IT';
-      const hasRealName = /John|Jane/.test(reasoning);
-      expect(hasRealName).toBe(false);
-    });
-
-    it('should NOT mention model names in reasoning', () => {
-      const reasoning = 'Processing request with GPT-4 model';
-      const mentionsModel = /GPT|Claude|Model/.test(reasoning);
-      expect(mentionsModel).toBe(true); // Should NOT have this
-    });
-
-    it('should NOT mention infrastructure in output', () => {
-      const output = 'Creating training on Cloudflare Workers';
-      const mentionsInfra = /Workers|KV|D1/.test(output);
-      expect(mentionsInfra).toBe(true); // Should NOT have this
-    });
-  });
-
   // ==================== ERROR HANDLING TESTS ====================
   describe('Error Handling', () => {
     it('should handle missing topic gracefully', () => {
@@ -708,12 +669,6 @@ describe('Microlearning Agent', () => {
       const context = 'targetUserResourceId: ys9vXMbl4wC6';
       const userIdMatch = context.match(/targetUserResourceId:\s*(\S+)/);
       expect(userIdMatch?.[1]).toBe('ys9vXMbl4wC6');
-    });
-
-    it('should treat bracketed placeholders like [USER-*] as non-assignable identifiers', () => {
-      const context = '[USER-123] wants training';
-      const isPlaceholder = /\[USER-/.test(context);
-      expect(isPlaceholder).toBe(true); // Recognize placeholder so we can avoid using it for assignment
     });
 
     it('should detect language preference from context', () => {

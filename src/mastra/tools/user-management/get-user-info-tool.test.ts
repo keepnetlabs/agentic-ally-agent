@@ -62,7 +62,7 @@ describe('getUserInfoTool', () => {
   const mockAnalysisReport = {
     version: '1.1',
     meta: {
-      user_id: '[USER-abc123]',
+      user_id: 'user-abc123',
       role: '',
       department: 'IT',
       location: '',

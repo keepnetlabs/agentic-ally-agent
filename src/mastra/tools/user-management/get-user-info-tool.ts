@@ -61,7 +61,7 @@ export const getUserInfoTool = createTool({
         // Fast path: Direct ID provided - skip user search
         logger.info('Using provided targetUserResourceId, skipping user search', { targetUserResourceId: inputTargetUserResourceId });
         userId = inputTargetUserResourceId;
-        // userFullName will be set to a non-PII placeholder (avoid leaking names)
+        // userFullName will be set to a non-identifying placeholder (avoid leaking names)
         userFullName = `User-${userId}`;
         fullName = userFullName;
       } else {
@@ -247,7 +247,7 @@ EVIDENCE LINKING (MANDATORY)
 - Populate internal.evidence_summary.key_signals_used with 3-8 short bullets describing the strongest signals you used.
 - Populate internal.evidence_summary.data_gaps with 1-4 short bullets describing missing evidence (e.g., "No reporting events observed", "No QR simulations observed").
 
-PRIVACY / PII
+PRIVACY
 - Do NOT output real names, emails, phone numbers.
 - In narrative fields, refer to "the user", "this person", "they".
 - meta.user_id is an internal identifier. Do NOT expose personal data in outputs.

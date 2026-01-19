@@ -123,8 +123,8 @@ describe('Orchestrator Agent - Request Routing', () => {
     });
 
     describe('User ID validation for assignments', () => {
-      it('should treat bracketed placeholders like [USER-*] as NOT valid for assignment', () => {
-        const userId = '[USER-abc123]';
+      it('should treat non-resource identifiers as NOT valid for assignment', () => {
+        const userId = 'USER_ABC123';
         const resourcePattern = /^[a-zA-Z0-9]{8,}$/;
         expect(resourcePattern.test(userId)).toBe(false);
       });

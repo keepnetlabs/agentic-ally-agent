@@ -4,43 +4,18 @@
  * Utilities for orchestrating chat request execution with focus on security
  * and clean separation of concerns.
  *
- * OVERALL STRATEGY:
- * =================
- *
- * This module implements the "Masked Routing, Unmasked Execution" pattern:
- *
- * 1. MASKED ROUTING (preparePIIMaskedInput, routeToAgent)
- *    - Orchestrator sees masked data like [PERSON1], [EMAIL1], [PHONE1]
- *    - Routes based on intent, not personal identifiers
- *    - Result: Unbiased routing decisions
- *
- * 2. UNMASKED EXECUTION (injectOrchestratorContext, createAgentStream)
- *    - Agent receives original names, emails, phone numbers
- *    - Can execute tools that require real PII (CRM, email, etc.)
- *    - Result: Agents can integrate with external systems
- *
  * FUNCTIONS:
  * ==========
- * - preparePIIMaskedInput()           → Step 1: Create masked data for orchestrator
- * - extractAndPrepareThreadId()       → Step 2: Session continuity (UUID-based)
- * - buildFinalPromptWithModelOverride() → Step 3: Add model instructions
- * - routeToAgent()                    → Step 4: Route to agent (using masked data)
- * - injectOrchestratorContext()       → Step 5: Unmask and inject context
- * - createAgentStream()               → Step 6: Stream response from agent
- *
- * SECURITY BENEFITS:
- * ==================
- * ✅ PII doesn't influence routing logic (no bias)
- * ✅ Agents still get real data for tool execution (functionality)
- * ✅ Clear audit trail of what data goes where
- * ✅ Easily extensible for additional security measures
+ * - extractAndPrepareThreadId()       → Step 1: Session continuity (UUID-based)
+ * - buildFinalPromptWithModelOverride() → Step 2: Add model instructions
+ * - routeToAgent()                    → Step 3: Route to agent
+ * - createAgentStream()               → Step 4: Stream response from agent
  */
 
 import { randomUUID } from 'crypto';
 import { PinoLogger } from '@mastra/loggers';
 import { Mastra } from '@mastra/core/mastra';
 import { AgentRouter } from '../services/agent-router';
-import { maskPII, unmaskPII } from './parsers/pii-masking-utils';
 import { Agent } from '@mastra/core/agent';
 import { ChatRequestBody } from '../types/api-types';
 
@@ -49,62 +24,6 @@ const logger = new PinoLogger({
   name: 'ChatOrchestration',
   level: 'info',
 });
-
-/**
- * Prepares PII-masked orchestrator input for routing decision
- *
- * SECURITY RULE: Orchestrator ONLY gets masked data (no PII exposure to routing)
- *
- * Masks personal information in prompt and routing context to prevent PII from
- * influencing the routing decision. The orchestrator decides which agent to use
- * based on intent, not personal identifiers.
- *
- * @param prompt - Original user prompt (will be masked)
- * @param routingContext - Conversation history (will be masked)
- *
- * @returns {
- *   orchestratorInput: Formatted prompt with masked conversation for routing,
- *   maskedPrompt: Individual masked version of user's prompt,
- *   piiMapping: Map of [PERSON1]→"John", [EMAIL1]→"john@example.com" for later unmasking
- * }
- *
- * @example
- * Input:  { prompt: "Send email to john@example.com", context: "John asked..." }
- * Output: {
- *   orchestratorInput: "User: John asked...\nUser: Send email to [EMAIL1]...",
- *   piiMapping: { "[PERSON1]": "John", "[EMAIL1]": "john@example.com" }
- * }
- */
-export const preparePIIMaskedInput = (
-  prompt: string,
-  routingContext: string
-) => {
-  // Optimization: Mask both texts together for single maskPII call + consistent mapping
-  // This ensures "John" gets same [PERSON1] ID in both routingContext and prompt
-  const separator = '\n---CONTENT_SEPARATOR---\n';
-  const combinedText = `${routingContext}${separator}${prompt}`;
-  const { maskedText: combinedMasked, mapping: piiMapping } = maskPII(combinedText);
-
-  // Extract masked versions from combined result
-  const [maskedRoutingContext, maskedPrompt] = combinedMasked
-    .split(separator)
-    .map(t => t.trim());
-
-  logger.info('pii_masking_applied', { identifiersCount: Object.keys(piiMapping).length });
-
-  const orchestratorInput = maskedRoutingContext ?
-    `Here is the recent conversation history:\n---\n${maskedRoutingContext}\n---\n\nCurrent user message: "${maskedPrompt}"\n\nBased on this history and the current message, decide which agent should handle the request.` :
-    maskedPrompt;
-
-  // Debug: Exactly what is sent to orchestrator
-  logger.info('🎯 ORCHESTRATOR_INPUT Data sent to orchestrator', {
-    maskedRoutingContext: maskedRoutingContext,
-    maskedPrompt: maskedPrompt,
-    orchestratorInput: orchestratorInput
-  });
-
-  return { orchestratorInput, maskedPrompt, piiMapping };
-};
 
 /**
  * Extracts or generates thread ID for session continuity
@@ -168,10 +87,10 @@ export const buildFinalPromptWithModelOverride = (
  * Routes user request to appropriate agent
  *
  * Uses AgentRouter to determine which agent should handle the request
- * based on masked conversation context
+ * based on conversation context
  *
  * @param mastra - Mastra instance
- * @param orchestratorInput - Masked prompt + context for routing
+ * @param orchestratorInput - Prompt + context for routing
  * @returns Route result with selected agent name and optional task context
  * @throws Error if routing fails
  */
@@ -226,38 +145,3 @@ export const createAgentStream = async (
   return stream;
 };
 
-/**
- * Injects unmasked orchestrator context into final prompt
- *
- * SECURITY RULE: Agent ALWAYS gets unmasked data (for tool execution)
- *
- * Takes task context from orchestrator (which is masked), unmasks it using the
- * PII mapping, and injects it into the prompt so agent can access real names/emails
- * for tool execution (CRM lookups, email sending, etc.)
- *
- * This is the critical step that enables:
- * - Orchestrator routing = intention-based (using masked data)
- * - Agent execution = capability-based (using real data)
- *
- * @param finalPrompt - Current final prompt (with model overrides)
- * @param taskContext - Masked task context from orchestrator
- *                      (e.g., "[CONTEXT: User is in [PERSON1]'s dept]")
- * @param piiMapping - Mapping from [PERSON1] → "John" to reverse the masking
- *
- * @returns Updated final prompt with injected unmasked context
- */
-export const injectOrchestratorContext = (
-  finalPrompt: string,
-  taskContext: string | undefined,
-  piiMapping: Record<string, string>
-): string => {
-  if (!taskContext) {
-    return finalPrompt;
-  }
-
-  const unmaskedTaskContext = unmaskPII(taskContext, piiMapping);
-  const updatedPrompt = `[CONTEXT FROM ORCHESTRATOR: ${unmaskedTaskContext}]\n\n${finalPrompt}`;
-  logger.debug('orchestrator_context_injected');
-
-  return updatedPrompt;
-};

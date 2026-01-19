@@ -10,12 +10,10 @@ const SAFE_ID_REGEX = /^[a-zA-Z0-9_-]{3,}$/;
 
 /**
  * Returns true if the value looks like a safe platform/artifact identifier.
- * Intentionally rejects common placeholder patterns like "[USER-...]" to avoid assignment failures.
  */
 export function isSafeId(value: string): boolean {
     const v = String(value ?? '').trim();
     if (v === '') return false;
-    if (v.includes('[USER-')) return false;
     return SAFE_ID_REGEX.test(v);
 }
 

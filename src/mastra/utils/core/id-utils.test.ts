@@ -15,10 +15,6 @@ describe('id-utils', () => {
             expect(isSafeId('   ')).toBe(false); // Empty/Whitespace
         });
 
-        it('should return false for unsafe patterns', () => {
-            expect(isSafeId('[USER-123]')).toBe(false);
-            expect(isSafeId('prefix-[USER-XX]')).toBe(false);
-        });
     });
 
     describe('normalizeSafeId', () => {

@@ -142,6 +142,6 @@ Internal tool endpoint used by agents to validate generated code snippets (e.g.,
     *   `/chat`: 100 req/min
     *   `/health`: 300 req/min
     *   Others: 100 req/min
-2.  **PII Handling:**
-    *   All inputs to `/chat` are masked before reaching the Orchestrator.
-    *   Agents receive unmasked data only for tool execution.
+2.  **Sensitive Data Handling:**
+    *   Avoid including personal identifiers in prompts.
+    *   Agents should not expose personal identifiers in responses.

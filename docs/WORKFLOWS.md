@@ -86,7 +86,7 @@ graph TD
     T1 & T2 & T3 --> GenEmail[Generate Email Body]
     GenEmail --> GenLanding[Generate Landing Page]
     
-    GenLanding --> Sanitize[Sanitize PII]
+    GenLanding --> Sanitize[Sanitize Output]
     Sanitize --> Save[Save to KV]
 ```
 

@@ -39,12 +39,10 @@ vi.mock('./utils/chat-request-helpers', () => ({
 }));
 
 vi.mock('./utils/chat-orchestration-helpers', () => ({
-    preparePIIMaskedInput: vi.fn(),
     extractAndPrepareThreadId: vi.fn(),
     buildFinalPromptWithModelOverride: vi.fn(),
     routeToAgent: vi.fn(),
-    createAgentStream: vi.fn(),
-    injectOrchestratorContext: vi.fn()
+    createAgentStream: vi.fn()
 }));
 
 vi.mock('./services', () => ({
@@ -126,18 +124,12 @@ describe('Mastra API Routes (Integration)', () => {
 
             // Setup mocks for success flow
             const { parseAndValidateRequest } = await import('./utils/chat-request-helpers');
-            const { preparePIIMaskedInput, routeToAgent, createAgentStream } = await import('./utils/chat-orchestration-helpers');
+            const { routeToAgent, createAgentStream } = await import('./utils/chat-orchestration-helpers');
 
             vi.mocked(parseAndValidateRequest).mockReturnValue({
                 prompt: 'Hello',
-                routingContext: { context: 'test' }
+                routingContext: 'User: test'
             } as any);
-
-            vi.mocked(preparePIIMaskedInput).mockReturnValue({
-                orchestratorInput: 'masked input',
-                maskedPrompt: 'masked prompt',
-                piiMapping: [] as any
-            });
 
             vi.mocked(routeToAgent).mockResolvedValue({
                 agentName: 'mockAgent' as any,
@@ -173,11 +165,10 @@ describe('Mastra API Routes (Integration)', () => {
 
         it('should return 500 if routing fails', async () => {
             const chatHandler = handlers['/chat'];
-            const { preparePIIMaskedInput, routeToAgent } = await import('./utils/chat-orchestration-helpers') as any;
+            const { routeToAgent } = await import('./utils/chat-orchestration-helpers') as any;
             const helpers = await import('./utils/chat-request-helpers');
 
-            vi.mocked(helpers.parseAndValidateRequest).mockReturnValue({ prompt: 'Hi', routingContext: {} } as any);
-            vi.mocked(preparePIIMaskedInput).mockReturnValue({ orchestratorInput: '', piiMapping: [] });
+            vi.mocked(helpers.parseAndValidateRequest).mockReturnValue({ prompt: 'Hi', routingContext: '' } as any);
 
             vi.mocked(routeToAgent).mockRejectedValue(new Error('Routing died'));
 

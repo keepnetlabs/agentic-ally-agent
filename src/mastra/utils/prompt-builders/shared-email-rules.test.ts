@@ -26,7 +26,7 @@ describe('shared-email-rules', () => {
       expect(AUTH_CONTEXT).toContain('defensive security');
     });
 
-    // Note: ZERO_PII_POLICY constant removed (PII policy text no longer embedded in prompts)
+    // Note: ZERO_PRIVACY_POLICY constant removed (policy text no longer embedded in prompts)
 
     it('should define LOGO_TAG_RULE with CUSTOMMAINLOGO requirement', () => {
       expect(LOGO_TAG_RULE).toBeDefined();
@@ -209,7 +209,7 @@ describe('shared-email-rules', () => {
       expect(AUTH_CONTEXT).toMatch(/AUTHORIZED|LEGAL|EDUCATIONAL/);
     });
 
-    // Note: ZERO_PII_POLICY constant removed (PII policy text no longer embedded in prompts)
+    // Note: ZERO_PRIVACY_POLICY constant removed (policy text no longer embedded in prompts)
 
     it('EMAIL_SIGNATURE_RULES should explicitly forbid personal names', () => {
       expect(EMAIL_SIGNATURE_RULES).toContain('Never use personal names');
@@ -388,7 +388,7 @@ describe('shared-email-rules', () => {
 
   // ==================== CONTENT VALIDATION ====================
   describe('Content Validation', () => {
-    // Note: ZERO_PII_POLICY constant removed (PII policy text no longer embedded in prompts)
+    // Note: ZERO_PRIVACY_POLICY constant removed (policy text no longer embedded in prompts)
 
     it('EMAIL_SIGNATURE_RULES should list examples of correct teams', () => {
       expect(EMAIL_SIGNATURE_RULES).toContain('Security Notifications Team');
@@ -500,7 +500,7 @@ describe('shared-email-rules', () => {
       expect(AUTH_CONTEXT).toContain('LEGAL');
     });
 
-    // Note: ZERO_PII_POLICY constant removed (PII policy text no longer embedded in prompts)
+    // Note: ZERO_PRIVACY_POLICY constant removed (policy text no longer embedded in prompts)
 
     it('NO_DISCLAIMERS_RULE ensures emails look authentic', () => {
       expect(NO_DISCLAIMERS_RULE).toContain('RAW email content');

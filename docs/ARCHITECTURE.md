@@ -108,7 +108,7 @@ Located in `src/mastra/services/`, these services power the entire application.
 - **Features:**
     - uses **Cialdini's 6 Principles** (Reciprocity, Urgency, etc.).
     - Generates **person-specific** attacks based on user info.
-    - **Safe-Guards:** Never uses real PII in final output.
+    - **Safe-Guards:** Never uses real personal identifiers in final output.
 
 ### 3. User Info Agent (The Profiler)
 - **Role:** Analyzes user risk profile.

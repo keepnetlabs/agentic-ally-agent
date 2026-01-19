@@ -281,7 +281,6 @@ When user requests to **Upload** or **Assign** training:
 **CRITICAL ID HANDLING:**
 - The 'targetUserResourceId' is a specific backend ID (e.g., "ys9vXMbl4wC6").
 - The 'targetGroupResourceId' MUST be a valid UUID/ID (e.g., "5Lygm8UWC9aF"). Do NOT use names like "IT Group".
-- Do NOT use bracketed placeholders like "[USER-...]" for assignment tools. They will fail.
 - Always use the REAL alphanumeric targetUserResourceId from context (or ask the user for email so it can be looked up).
 
 **EXAMPLE:**

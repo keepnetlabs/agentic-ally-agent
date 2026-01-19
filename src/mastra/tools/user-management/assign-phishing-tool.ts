@@ -1,13 +1,14 @@
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { uuidv4 } from '../../utils/core/id-utils';
+import { KVService } from '../../services/kv-service';
 import { getRequestContext } from '../../utils/core/request-storage';
 import { getLogger } from '../../utils/core/logger';
 import { withRetry } from '../../utils/core/resilience-utils';
 import { callWorkerAPI } from '../../utils/core/worker-api-client';
 import { maskSensitiveField } from '../../utils/core/security-utils';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
-import { ERROR_MESSAGES, API_ENDPOINTS } from '../../constants';
+import { ERROR_MESSAGES, API_ENDPOINTS, KV_NAMESPACES } from '../../constants';
 import { errorService } from '../../services/error-service';
 import { validateToolResult } from '../../utils/tool-result-validation';
 import { extractCompanyIdFromTokenExport } from '../../utils/core/policy-fetcher';
@@ -51,6 +52,24 @@ export const assignPhishingTool = createTool({
     execute: async ({ context, writer }) => {
         const logger = getLogger('AssignPhishingTool');
         const { resourceId, languageId, isQuishing, targetUserResourceId, targetUserEmail, targetUserFullName, targetGroupResourceId, trainingId, sendTrainingLanguageId } = context;
+
+        // Guard: prevent assigning with raw phishingId (must upload first)
+        try {
+            const kvService = new KVService(KV_NAMESPACES.PHISHING);
+            const phishingContent = await kvService.getPhishing(resourceId);
+            if (phishingContent?.base) {
+                const errorInfo = errorService.validation(
+                    'Phishing content must be uploaded before assignment. Use uploadPhishing first.',
+                    { field: 'resourceId', reason: 'phishingId_not_uploaded', resourceId }
+                );
+                logErrorInfo(logger, 'warn', 'Assign phishing blocked: upload required', errorInfo);
+                return createToolErrorResponse(errorInfo);
+            }
+        } catch (guardError) {
+            logger.warn('Assign phishing upload guard failed, continuing', {
+                error: normalizeError(guardError).message
+            });
+        }
 
         // Determine assignment type
         const isUserAssignment = !!targetUserResourceId;

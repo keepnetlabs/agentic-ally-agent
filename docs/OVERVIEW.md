@@ -95,7 +95,7 @@ We adhere to a stric **3-Level Fallback Protocol**. If the smartest method (e.g.
 
 *   **Unlimited Languages:** Auto-detects and generates content in any language (BCP-47).
 *   **Self-Healing:** Generated JSON is validated by Zod; failures are auto-repaired.
-*   **Secure by Design:** No PII in LLM outputs. Strict output sanitization.
+*   **Secure by Design:** No personal identifiers in LLM outputs. Strict output sanitization.
 *   **Visual:** "Canvas" UI signals allow the frontend to open editors instantly.
 
 ---

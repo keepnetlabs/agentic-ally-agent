@@ -29,7 +29,7 @@
 **A:** Generating an 8-scene module involves ~10 parallel LLM calls, video semantic search, and JSON validation. It takes time. Reducing this timeout causes "Double-Generation" bugs.
 
 ### Q: Is my data safe?
-**A:** Yes. We use PII Masking. The Orchestrator never sees real names/emails. Agents only see them when absolutely necessary for tool execution.
+**A:** Yes. We avoid exposing personal identifiers in outputs and use only what is required for tool execution.
 
 ### Q: How do I add a new Language?
 **A:** The system supports **Unlimited Languages** via BCP-47 codes. Just ask: "Translate to Turkish (tr-TR)".

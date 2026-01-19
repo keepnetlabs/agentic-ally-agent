@@ -796,12 +796,12 @@ export const API_KEYS = {
 
 // ============================================
 // SAFE COMMUNICATION GUIDELINES
-// (PII Protection + Enterprise-Safe Messaging)
+// (Privacy + Enterprise-Safe Messaging)
 // ============================================
 
 export const SAFE_COMMUNICATION = {
-  // --- PII PROTECTION ---
-  PII: {
+  // --- PRIVACY ---
+  PRIVACY: {
     CORE_RULE: 'NEVER expose real names, emails, or phone numbers in ANY output (responses, reasoning, etc)',
     GUIDELINES: [
       'Context may contain real names for internal tool calls, but YOU must sanitize all outputs',
@@ -831,7 +831,6 @@ export const SAFE_COMMUNICATION = {
       'reference',
       'hash',
       'token',
-      'PII',
       'personal data',
       'internal ID',
     ] as const,
@@ -842,7 +841,7 @@ export const SAFE_COMMUNICATION = {
 } as const;
 
 // Backwards compatibility aliases (for existing code)
-export const PII_POLICY = SAFE_COMMUNICATION.PII;
+export const PRIVACY_POLICY = SAFE_COMMUNICATION.PRIVACY;
 export const MESSAGING_GUIDELINES = SAFE_COMMUNICATION.MESSAGING;
 
 // ============================================

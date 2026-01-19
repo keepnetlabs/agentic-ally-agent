@@ -14,10 +14,9 @@
  *
  * Request Flow:
  * 1. Request arrives at /chat
- * 2. PII masking applied
- * 3. Orchestrator agent determines target agent
- * 4. Specific agent executes (microlearning, phishing, etc.)
- * 5. Response streamed to client
+ * 2. Orchestrator agent determines target agent
+ * 3. Specific agent executes (microlearning, phishing, etc.)
+ * 4. Response streamed to client
  *
  * Configuration:
  * - Environment variables in .env file
@@ -43,12 +42,10 @@ import { codeReviewCheckTool } from './tools';
 import { parseAndValidateRequest } from './utils/chat-request-helpers';
 import { extractArtifactIdsFromRoutingContext } from './utils/chat-request-helpers';
 import {
-  preparePIIMaskedInput,
   extractAndPrepareThreadId,
   buildFinalPromptWithModelOverride,
   routeToAgent,
   createAgentStream,
-  injectOrchestratorContext,
 } from './utils/chat-orchestration-helpers';
 import { normalizeSafeId } from './utils/core/id-utils';
 
@@ -216,35 +213,15 @@ export const mastra = new Mastra({
       registerApiRoute('/chat', {
         method: 'POST',
         /**
-         * POST /chat - Main chat endpoint with PII-aware orchestrator routing
-         *
-         * SECURITY STRATEGY - PII Handling:
-         * ====================================
-         *
-         * RULE 1: Orchestrator ALWAYS receives MASKED data (no PII exposure)
-         * - Purpose: Routing decision should be intent-based, not PII-based
-         * - Implementation: maskPII() replaces names, emails, phone numbers
-         * - Example: "John's email is john@company.com" → "[PERSON1]'s email is [EMAIL1]"
-         *
-         * RULE 2: Agent ALWAYS receives UNMASKED data (for tool execution)
-         * - Purpose: Tools need real names/emails to work with external APIs (CRM, email, etc.)
-         * - Implementation: Original prompt + unmasked taskContext from orchestrator
-         * - Example: Agent gets "[CONTEXT: User is in IT dept]\n\nJohn's email is john@company.com"
+         * POST /chat - Main chat endpoint
          *
          * FLOW:
          * -----
          * 1. Parse user input (keep original prompt)
-         * 2. Mask prompt + routingContext for orchestrator routing
-         * 3. Pass masked data to orchestrator → get taskContext (which is also masked)
-         * 4. Unmask taskContext using piiMapping (reverse the masking)
-         * 5. Inject unmasked taskContext into original prompt for agent
-         * 6. Agent receives: [Original prompt] + [Unmasked orchestrator context]
-         *
-         * RESULT:
-         * -------
-         * ✅ Routing is intent-based (not influenced by PII)
-         * ✅ Tools get real data they need for external integrations
-         * ✅ No PII leaks to orchestrator routing logic
+         * 2. Build routing context for orchestrator
+         * 3. Pass data to orchestrator → get taskContext
+         * 4. Inject taskContext into the prompt for the agent
+         * 5. Agent receives: [Original prompt] + [Orchestrator context]
          */
         handler: async (c: Context) => {
           const mastra = c.get('mastra');
@@ -273,8 +250,10 @@ export const mastra = new Mastra({
             routingContext: routingContext
           });
 
-          // Step 2: Prepare PII-masked orchestrator input
-          const { orchestratorInput, piiMapping } = preparePIIMaskedInput(prompt, routingContext);
+          // Step 2: Prepare orchestrator input (no masking)
+          const orchestratorInput = routingContext
+            ? `Here is the recent conversation history:\n---\n${routingContext}\n---\n\nCurrent user message: "${prompt}"\n\nBased on this history and the current message, decide which agent should handle the request.`
+            : prompt;
 
           // Step 3: Extract or generate thread ID
           const threadId = extractAndPrepareThreadId(body);
@@ -369,12 +348,10 @@ export const mastra = new Mastra({
             }
           }
 
-          // Step 6: Inject orchestrator context (unmasked)
-          finalPrompt = injectOrchestratorContext(
-            finalPrompt,
-            routeResult.taskContext,
-            piiMapping
-          );
+          // Step 6: Inject orchestrator context
+          if (routeResult.taskContext) {
+            finalPrompt = `[CONTEXT FROM ORCHESTRATOR: ${routeResult.taskContext}]\n\n${finalPrompt}`;
+          }
 
           // Step 7: Create agent stream
           let stream;
