@@ -184,7 +184,6 @@ HARD RULES:
   "Summary:",
   "Assumptions:" (outside {assumptions_block})
 
-## Tool Use Hard Gate (DO NOT SKIP)
 ## Tool Use Hard Gate (Creation Only)
 - **EXCEPTION:** Utility workflows (add-language, update, upload, assign) MUST execute immediately.
 
@@ -262,19 +261,22 @@ When user requests to update theme (e.g., "Change background color", "Change fon
 When user requests to **Upload** or **Assign** training:
 1. Look for the most recent 'microlearningId' in conversation history (or in the [ARTIFACT_IDS] block if present).
    - If not found: ask the user for the microlearningId (DO NOT guess, DO NOT use URLs)
-2. If 'Assign' is requested, also look for a 'targetUserResourceId' (from UserInfo context).
-   - **CRITICAL:** Scan conversation history for ANY recent User Profile search results (e.g. "User found: John Doe (ID: ...)").
-   - Use that ID automatically. Do NOT ask "Who?" if a user was just discussed.
-3. **MANDATORY:** Call 'uploadTraining' tool FIRST (Input: microlearningId). This step CANNOT be skipped.
-4. **Upload returns:** {resourceId, sendTrainingLanguageId, microlearningId, title}
-5. **ONLY AFTER upload completes:** If upload successful AND assignment requested, call 'assignTraining' with EXACT fields from upload:
+2. If 'Assign' is requested, ALWAYS ensure you have a **resourceId from uploadTraining**.
+   - **NEVER** use microlearningId as resourceId.
+   - If you only have microlearningId, call **uploadTraining** first and use its result.
+3. If 'Assign' is requested, look for **targetUserResourceId OR targetGroupResourceId** in context/history.
+   - **CRITICAL:** Scan conversation history for ANY recent User Profile or Group lookup results.
+   - Use the ID automatically. Do NOT ask "Who?" if a user/group was just discussed.
+4. **MANDATORY:** Call 'uploadTraining' tool FIRST (Input: microlearningId). This step CANNOT be skipped.
+5. **Upload returns:** {resourceId, sendTrainingLanguageId, microlearningId, title}
+6. **ONLY AFTER upload completes:** If upload successful AND assignment requested, call 'assignTraining' with EXACT fields from upload:
    - resourceId: FROM upload.data.resourceId
    - sendTrainingLanguageId: FROM upload.data.sendTrainingLanguageId (NOT sendTrainingResourceId!)
-   - targetUserResourceId: FROM user context
+   - targetUserResourceId OR targetGroupResourceId: FROM context (exactly one)
    - targetUserEmail: FROM user context if available (optional; improves user-facing summaries)
    - targetUserFullName: FROM user context if available (optional; improves user-facing summaries)
-6. If IDs are missing, ASK the user.
-7. **Language:** Always localize the tool's success message (e.g., "Assignment successful") into the user's current interaction language.
+7. If IDs are missing, ASK the user.
+8. **Language:** Always localize the tool's success message (e.g., "Assignment successful") into the user's current interaction language.
 
 **CRITICAL:** After creating training (workflow-executor completes), NEVER call assignTraining directly. You MUST call uploadTraining first, then wait for upload result before calling assignTraining.
 

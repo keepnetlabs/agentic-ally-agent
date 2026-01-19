@@ -7,12 +7,13 @@ import { withRetry } from '../../utils/core/resilience-utils';
 import { callWorkerAPI } from '../../utils/core/worker-api-client';
 import { maskSensitiveField } from '../../utils/core/security-utils';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
-import { ERROR_MESSAGES, API_ENDPOINTS } from '../../constants';
+import { ERROR_MESSAGES, API_ENDPOINTS, KV_NAMESPACES } from '../../constants';
 import { errorService } from '../../services/error-service';
 import { validateToolResult } from '../../utils/tool-result-validation';
 import { extractCompanyIdFromTokenExport } from '../../utils/core/policy-fetcher';
 import { isSafeId } from '../../utils/core/id-utils';
 import { formatToolSummary } from '../../utils/core/tool-summary-formatter';
+import { KVService } from '../../services/kv-service';
 
 // Output schema defined separately to avoid circular reference
 const assignTrainingOutputSchema = z.object({
@@ -46,6 +47,24 @@ export const assignTrainingTool = createTool({
   execute: async ({ context, writer }) => {
     const logger = getLogger('AssignTrainingTool');
     const { resourceId, sendTrainingLanguageId, targetUserResourceId, targetUserEmail, targetUserFullName, targetGroupResourceId } = context;
+
+    // Guard: prevent assigning with raw microlearningId (must upload first)
+    try {
+      const kvService = new KVService(KV_NAMESPACES.MICROLEARNING);
+      const microlearningContent = await kvService.getMicrolearning(resourceId);
+      if (microlearningContent?.base) {
+        const errorInfo = errorService.validation(
+          'Training must be uploaded before assignment. Use uploadTraining first.',
+          { field: 'resourceId', reason: 'microlearningId_not_uploaded', resourceId }
+        );
+        logErrorInfo(logger, 'warn', 'Assign training blocked: upload required', errorInfo);
+        return createToolErrorResponse(errorInfo);
+      }
+    } catch (guardError) {
+      logger.warn('Assign training upload guard failed, continuing', {
+        error: normalizeError(guardError).message
+      });
+    }
 
     // Determine assignment type
     const isUserAssignment = !!targetUserResourceId;
