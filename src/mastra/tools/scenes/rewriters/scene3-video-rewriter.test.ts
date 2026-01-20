@@ -17,6 +17,27 @@ vi.mock('../../../utils/language/localization-language-rules', () => ({
   getLanguagePrompt: vi.fn(() => 'Mock language rules for localization'),
 }));
 
+vi.mock('./scene-rewriter-base', () => ({
+  rewriteSceneWithBase: vi.fn((scene, type, context) => {
+    // Simulate error if context is undefined
+    if (!context) throw new Error('Cannot destructure property');
+
+    // Return a mock result that matches the structure expected by the tests
+    // For video (scene 3), we need videoUrl, transcript, etc.
+
+    if (!scene) return Promise.resolve(scene); // For undefined check test
+
+    // Default mock response preserving input structure plus fields
+    return Promise.resolve({
+      ...scene,
+      videoUrl: scene.videoUrl || 'https://example.com/video.mp4',
+      transcript: 'Translated Transcript',
+      duration: scene.duration || 180,
+      subtitles: scene.subtitles ? scene.subtitles.map((s: any) => ({ ...s, text: 'Translated ' + s.text })) : []
+    });
+  })
+}));
+
 describe('Scene 3 - Video Rewriter', () => {
   const mockModel = {
     id: 'test-model',

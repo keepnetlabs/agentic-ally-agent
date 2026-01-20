@@ -123,5 +123,21 @@ describe('user-search-utils', () => {
             expect(result).toEqual(mockUser);
             expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining('retrying with firstName only'), expect.any(Object));
         });
+
+        it('should fallback to last name last token if last name has spaces', async () => {
+            const mockUser = { firstName: 'John', lastName: 'De Luca' };
+
+            // Expected calls:
+            // 1. fetchByName('John', 'De Luca') -> returns []
+            // 2. fetchByName('John', 'Luca') -> returns [mockUser]
+
+            (global.fetch as any)
+                .mockResolvedValueOnce({ ok: true, json: async () => ({ items: [] }) })
+                .mockResolvedValueOnce({ ok: true, json: async () => ({ items: [mockUser] }) });
+
+            const result = await findUserByNameWithFallbacks(mockDeps, mockTemplate, 'John', 'De Luca');
+            expect(result).toEqual(mockUser);
+            expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining('retrying with last token'), expect.any(Object));
+        });
     });
 });

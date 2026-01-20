@@ -15,14 +15,13 @@ export function getPhishingEditorSystemPrompt(): string {
 CRITICAL RULES:
 1. ✅ PRESERVE all merge tags: {FIRSTNAME}, {PHISHINGURL}, {CUSTOMMAINLOGO}
 2. ✅ PRESERVE HTML structure and design (colors, spacing, layout)
-3. ✅ PRESERVE all form elements and their functionality
-4. ✅ Update: Text content, tone, urgency, language, psychological triggers
-5. ✅ Validate that the result is complete HTML, not truncated
-6. ✅ All HTML attributes must use SINGLE QUOTES (e.g., style='color:red;', class='header')
-7. ✅ If instruction is to "remove logo", remove only the img tag, keep {CUSTOMMAINLOGO} tag in comments
-8. ✅ If instruction is to "change logo", REPLACE the src attribute. DO NOT add a second img tag.
-9. ✅ PRESERVE {PHISHINGURL} in all Call-to-Action buttons and links. Do NOT replace with real URLs.
-10. ✅ ONLY use image URLs provided in instructions or existing in the template. NEVER generate new image URLs from external domains (like wikipedia, example.com).
+3. ✅ Update: Text content, tone, urgency, language, psychological triggers
+4. ✅ Validate that the result is complete HTML, not truncated
+5. ✅ All HTML attributes must use SINGLE QUOTES (e.g., style='color:red;', class='header')
+6. ✅ If instruction is to "remove logo", remove only the img tag, keep {CUSTOMMAINLOGO} tag in comments
+7. ✅ If instruction is to "change logo", REPLACE the src attribute. DO NOT add a second img tag.
+8. ✅ PRESERVE {PHISHINGURL} in all Call-to-Action buttons and links. Do NOT replace with real URLs.
+9. ✅ ONLY use image URLs provided in instructions or existing in the template. NEVER generate new image URLs from external domains (like wikipedia, example.com).
 
 OUTPUT FORMAT - CRITICAL:
 Return ONLY a valid JSON object. Do NOT include:
@@ -45,18 +44,24 @@ VALIDATION CHECKLIST BEFORE RETURNING:
 ✓ No text before or after the JSON object`;
 }
 
-
-
-export function getPhishingEmailUserPrompt(existingEmail: SimulatedEmail & { template: string }, escapedInstruction: string, brandContext: string): string {
-    return `Edit this email template:
-
+export function getPhishingEmailUserPrompt(
+    existingEmail: SimulatedEmail & { template: string },
+    escapedInstruction: string,
+    brandContext: string
+): string {
+    return `CURRENT EMAIL:
 Subject: ${existingEmail.subject}
-Body: ${existingEmail.template}
+From: ${existingEmail.sender || 'Unknown Sender'}
 
-Instruction: "${escapedInstruction}"
+TEMPLATE:
+${existingEmail.template}
 
-${brandContext}
-`;
+---
+USER INSTRUCTION: "${escapedInstruction}"
+${brandContext ? `\n${brandContext}` : ''}
+---
+
+Apply the instruction above and return the JSON response.`;
 }
 
 export function getLandingPageSystemPrompt(mode: string): string {
@@ -66,14 +71,14 @@ CRITICAL RULES:
 1. ✅ PRESERVE HTML structure and design (colors, spacing, layout)
 2. ✅ EDIT page content based on user instruction
 3. ✅ PRESERVE all form elements and functionality
-${mode === 'translate' ? `4. ✅ **TRANSLATE MODE - DO NOT CHANGE FORM CONTROL CSS:** For <input>, <select>, <textarea>, <button> you MUST preserve existing style/class attributes exactly. Only translate visible text, labels, and placeholders.` : `4. ✅ If instruction is translation/localization, preserve existing layout and CSS.`}
-4. ✅ Only SKIP if user explicitly said "email only" or "email template only"
-5. ✅ Return COMPLETE page HTML (never empty)
-6. ✅ All HTML attributes must use SINGLE QUOTES (style='...', class='...', etc.)
-7. ✅ If instruction is to "remove logo", remove only the img tag.
-8. ✅ If instruction is to "change logo", REPLACE the src attribute. DO NOT add a second img tag.
-9. ✅ PRESERVE {PHISHINGURL} in links. Do NOT replace with real URLs.
-10. ✅ ONLY use image URLs provided in instructions or existing in the template. NEVER generate new image URLs from external domains (like wikipedia, example.com).
+${mode === 'translate' ? `4. ✅ **TRANSLATE MODE:** For <input>, <select>, <textarea>, <button> preserve existing style/class attributes exactly. Only translate visible text, labels, and placeholders.` : `4. ✅ If instruction is translation/localization, preserve existing layout and CSS.`}
+5. ✅ Only SKIP editing if user explicitly said "email only" or "email template only"
+6. ✅ Return COMPLETE page HTML (never empty or truncated)
+7. ✅ All HTML attributes must use SINGLE QUOTES (style='...', class='...', etc.)
+8. ✅ If instruction is to "remove logo", remove only the img tag
+9. ✅ If instruction is to "change logo", REPLACE the src attribute. DO NOT add a second img tag
+10. ✅ PRESERVE {PHISHINGURL} in links. Do NOT replace with real URLs
+11. ✅ ONLY use image URLs provided in instructions or existing in the template. NEVER generate new URLs
 
 OUTPUT FORMAT - CRITICAL:
 Return ONLY a valid JSON object. Do NOT include:
@@ -94,17 +99,22 @@ VALIDATION CHECKLIST:
 ✓ JSON is valid and complete`;
 }
 
-export function getLandingPageUserPrompt(page: any, escapedInstruction: string, brandContext: string): string {
-    return `Edit landing page:
+export function getLandingPageUserPrompt(
+    page: { type?: string; template?: string },
+    escapedInstruction: string,
+    brandContext: string
+): string {
+    return `CURRENT LANDING PAGE:
+Type: ${page.type || 'unknown'}
 
-${JSON.stringify(page)}
+TEMPLATE:
+${page.template || ''}
 
-Instruction: "${escapedInstruction}"
+---
+USER INSTRUCTION: "${escapedInstruction}"
+${brandContext ? `\n${brandContext}\nIMPORTANT: You MUST use the logo URL provided above.` : ''}
+---
 
-${brandContext}
-${brandContext ? 'IMPORTANT: You MUST use the logo URL provided above. Do NOT use any other URL even if you think it is better.' : ''}
-
-IMPORTANT: Edit UNLESS user explicitly said "email only" or similar exclusion.
-PRESERVE {PHISHINGURL} in links.
-Return ONLY the JSON object with no extra text.`;
+Apply the instruction and return the JSON response.
+PRESERVE {PHISHINGURL} in all links.`;
 }

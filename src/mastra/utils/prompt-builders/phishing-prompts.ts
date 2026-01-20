@@ -3,11 +3,11 @@
  * Centralized prompt generation functions for phishing email workflow steps
  */
 
-import { PHISHING, PHISHING_EMAIL } from '../../constants';
+import { LANDING_PAGE, PHISHING, PHISHING_EMAIL } from '../../constants';
 import { DIFFICULTY_CONFIG } from '../config/phishing-difficulty-config';
 import { LAYOUT_OPTIONS, STYLE_OPTIONS } from '../config/landing-page-design-config';
 import { getLoginPageSection, getSuccessPageSection, getInfoPageSection } from '../templates/landing-page-templates';
-import { AnalysisSchema } from '../../schemas';
+import { createPhishingAnalysisSchema } from '../../schemas';
 import { getLogger } from '../core/logger';
 import { buildPolicyScenePrompt } from './policy-context-builder';
 import {
@@ -62,7 +62,7 @@ type AnalysisPromptParams = {
 };
 
 type EmailPromptParams = {
-  analysis: z.infer<typeof AnalysisSchema>;
+  analysis: z.infer<typeof createPhishingAnalysisSchema>;
   language: string;
   difficulty: string;
   industryDesign?: {
@@ -649,7 +649,7 @@ export function buildLandingPagePrompts(params: LandingPagePromptParams): {
     layout: randomLayout.id,
     style: randomStyle.id,
     layoutName: randomLayout.name,
-    styleName: randomStyle.name
+    styleName: randomStyle.name,
   });
 
   // Check if email uses {CUSTOMMAINLOGO} tag
@@ -691,7 +691,7 @@ ${isQuishing ? QUISHING_LANDING_PAGE_RULE : NO_QR_CODE_LANDING_PAGE_RULE}
    - Do NOT include external CSS or JS files.
    - Styling must be done with inline \`style='...'\` attributes.
 
-5. **INLINE CSS IS THE SOURCE OF TRUTH:**
+5. **CRITICAL: INLINE CSS IS THE SOURCE OF TRUTH:**
    - You MAY use the design hints from \`industryDesign\`, but the final visual result must come from inline styles.
    - For the main card, primary button and inputs, use the provided design patterns:
      - Card: \`style='${industryDesign.patterns.cardStyle}'\`
@@ -716,16 +716,14 @@ ${isQuishing ? QUISHING_LANDING_PAGE_RULE : NO_QR_CODE_LANDING_PAGE_RULE}
      
      **Specific Implementation Rules for ${randomLayout.id}:**
      ${randomLayout.id === 'SPLIT' ? '- Use `display: flex; flex-wrap: wrap;` on body.\n     - Left side: Brand color background, centered logo/text.\n     - Right side: White background, form content.' : ''}
-     ${randomLayout.id === 'MINIMAL' ? '- NO CARD CONTAINER. Content sits directly on background.\n     - CRITICAL: body max-width: 480px, form max-width: 400px (never full-width).\n     - Centered logo and form with generous spacing (24px gaps).\n     - Clean, minimalist, alert-like layout with breathing room.' : ''}
+    ${randomLayout.id === 'MINIMAL' ? `- NO CARD CONTAINER. Content sits directly on background.\n     - CRITICAL: body max-width: ${LANDING_PAGE.MINIMAL_BODY_MAX_WIDTH_PX}px, form max-width: ${LANDING_PAGE.FORM_MAX_WIDTH_PX}px (never full-width).\n     - Centered logo and form with generous spacing (24px gaps).\n     - Clean, minimalist, alert-like layout with breathing room.` : ''}
      ${randomLayout.id === 'CENTERED' ? '- Classic centered card with shadow.\n     - Background color surrounds the card.' : ''}
-     ${randomLayout.id === 'HERO' ? '- Top full-width hero bar (brand color, ~200px height).\n     - Hero section: `display: flex; flex-direction: column;` (logo and title must stack vertically).\n     - Content card overlaps the hero bar (negative margin-top).' : ''}
-
-  7. **INLINE CSS IS THE SOURCE OF TRUTH:**
+    ${randomLayout.id === 'HERO' ? `- Top full-width hero bar (brand color, ~200px height).\n     - Hero section: \`display: flex; flex-direction: column;\` (logo and title must stack vertically).\n     - Content card overlaps the hero bar with a subtle negative margin-top.\n     - Recommended: main container \`style='width: 100%; max-width: ${LANDING_PAGE.HERO_MAIN_CONTAINER_MAX_WIDTH_PX}px; margin: ${LANDING_PAGE.HERO_MAIN_CONTAINER_MARGIN_TOP_PX}px auto 0; padding: 0 20px; display: flex; flex-direction: column; align-items: center; justify-content: center;'\`.` : ''}
 
 ---
 
 **DESIGN STYLE:**
-Create MODERN, PROFESSIONAL landing pages that look POLISHED, TRUSTWORTHY, and LEGITIMATE – similar in quality to Microsoft / Google / Apple / Stripe auth / account pages (2024–2025 aesthetic).
+Create MODERN, PROFESSIONAL landing pages that look POLISHED, TRUSTWORTHY, and LEGITIMATE – similar in quality to Microsoft / Google / Apple / Stripe auth / account pages (2026 aesthetic).
 
 ---
 
@@ -749,7 +747,7 @@ Pages for the same brand must feel related (same color palette, logo, general mo
 
 For each new page/template, change at least **3** of the following visual aspects in a natural way:
 
-1. Card max-width (e.g. 380–460px) via \`style='max-width: 380px;'\` vs \`420px\`.
+1. Card max-width (e.g. 420–520px) via \`style='max-width: 420px;'\` vs \`480px\`.
 2. Card border-radius (e.g. 14px, 18px, 22px).
 3. Card shadow strength (softer or stronger \`box-shadow\`).
 4. Logo size or alignment (center vs left).
@@ -826,7 +824,7 @@ For each new page/template, change at least **3** of the following visual aspect
        font-size: 12px;
        color: #9ca3af;
      '>
-       <p style='margin: 0;'>© 2025 ${fromName}. All rights reserved.</p>
+      <p style='margin: 0;'>© 2026 ${fromName}. All rights reserved.</p>
        <div style='
          margin-top: 10px;
          display: flex;
@@ -937,4 +935,3 @@ ${emailBrandContext ? `\n${emailBrandContext}` : ''}
     emailContextMessage,
   };
 }
-

@@ -5,39 +5,28 @@
  */
 
 import { createTool } from '@mastra/core/tools';
-import { z } from 'zod';
-import { generateText } from 'ai';
-import { uuidv4 } from '../../utils/core/id-utils';
 import { getModelWithOverride } from '../../model-providers';
-import { cleanResponse } from '../../utils/content-processors/json-cleaner';
 import { sanitizeHtml } from '../../utils/content-processors/html-sanitizer';
 import { normalizeEmailNestedTablePadding } from '../../utils/content-processors/email-table-padding-normalizer';
-import { KVService } from '../../services/kv-service';
 import { getLogger } from '../../utils/core/logger';
 import { errorService } from '../../services/error-service';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
-import { withRetry, withTimeout } from '../../utils/core/resilience-utils';
 import { ProductService } from '../../services/product-service';
 import { fixBrokenImages } from '../../utils/landing-page/image-validator';
 import { detectAndResolveBrand } from './phishing-editor-utils';
-import { preserveLandingFormControlStyles } from '../../utils/content-processors/landing-form-style-preserver';
-import { postProcessPhishingLandingHtml } from '../../utils/content-processors/phishing-html-postprocessors';
 import { summarizeForLog } from '../../utils/core/log-redaction-utils';
-import { KV_NAMESPACES } from '../../constants';
+import { phishingEditorSchema } from './phishing-editor-schemas';
 import {
-  phishingEditorSchema,
-  emailResponseSchema,
-  landingPageResponseSchema,
-  LandingPageInput
-} from './phishing-editor-schemas';
-import {
-  getPhishingEditorSystemPrompt,
-  getPhishingEmailUserPrompt,
-  getLandingPageSystemPrompt,
-  getLandingPageUserPrompt
-} from './phishing-editor-prompts';
-
-
+  loadPhishingContent,
+  ExistingEmail,
+  EditedEmail,
+  parseAndValidateEmailResponse,
+  processLandingPageResults,
+  streamEditResultsToUI,
+  savePhishingContent,
+  StreamWriter,
+} from './phishing-editor-helpers';
+import { createEmailEditPromise, createLandingEditPromises, GenerateTextResult } from './phishing-editor-llm';
 
 export const phishingEditorTool = createTool({
   id: 'phishing-editor',
@@ -48,301 +37,167 @@ export const phishingEditorTool = createTool({
     const { phishingId, editInstruction, mode, language: inputLanguage, modelProvider, model } = context;
     const logger = getLogger('PhishingEditor');
 
-    // Fetch whitelabeling config for potential logo fallback
-    const productService = new ProductService();
-    let whitelabelConfig: { mainLogoUrl?: string } | null = null;
-    try {
-      whitelabelConfig = await productService.getWhitelabelingConfig();
-    } catch (err) {
-      logger.warn('Failed to fetch whitelabeling config', { error: err });
-    }
-
     try {
       logger.info('Starting phishing template edit', {
         phishingId,
         editInstruction: summarizeForLog(editInstruction),
       });
 
-      // 1. Load existing phishing email from KV
-      const kvServicePhishing = new KVService(KV_NAMESPACES.PHISHING);
-      const language = inputLanguage || 'en-gb';
-      const emailKey = `phishing:${phishingId}:email:${language}`;
-      const existingEmail = await kvServicePhishing.get(emailKey);
+      // 1. Load whitelabel config + phishing content (parallel)
+      const language = (inputLanguage || 'en-gb').toLowerCase();
+      const productService = new ProductService();
 
-      if (!existingEmail || !existingEmail.template) {
-        logger.error('Phishing email not found', { phishingId, emailKey });
+      const [whitelabelConfig, loadResult] = await Promise.all([
+        productService.getWhitelabelingConfig().catch(err => {
+          logger.warn('Failed to fetch whitelabeling config', { error: err });
+          return null;
+        }),
+        loadPhishingContent(phishingId, language),
+      ]);
+
+      if (!loadResult.success) {
         return {
           success: false,
-          error: `Phishing template with ID ${phishingId} not found`,
-          message: `❌ Template not found. Please provide a valid phishing ID.`
+          error: loadResult.error,
+          message: `❌ Template not found. Please provide a valid phishing ID.`,
         };
       }
 
-      logger.info('Loaded existing phishing email', { phishingId, templateLength: existingEmail.template.length });
+      const { base, email: existingEmail, landing: existingLanding, emailKey, landingKey } = loadResult.content;
+      const hasEmail = !!existingEmail?.template;
 
-      // 2. Try to load landing page (optional)
-      let existingLanding = null;
-      const landingKey = `phishing:${phishingId}:landing:${language}`;
-      try {
-        existingLanding = await kvServicePhishing.get(landingKey);
-        logger.debug('Landing page loaded', { landingKey, hasPagesLength: existingLanding?.pages?.length });
-      } catch {
-        logger.debug('Landing page not found or error loading', { landingKey });
-      }
-
-      // 3. Prepare LLM prompts
+      // 2. Prepare LLM (model, brand context, prompts)
       const aiModel = getModelWithOverride(modelProvider, model);
 
-      // ENHANCEMENT: Analyze instruction for brand/logo requests
-      // If user asks for "Amazon logo", we resolve the real logo URL and force LLM to use it
-      // This prevents hallucinated URLs like "example.com/amazon.png"
       let brandContext = '';
-
-      // Only run expensive brand resolution if Agent flagged this as a brand update
       if (context.hasBrandUpdate) {
         const brandResult = await detectAndResolveBrand(editInstruction, aiModel, whitelabelConfig);
         brandContext = brandResult.brandContext;
       }
 
-      const systemPrompt = getPhishingEditorSystemPrompt();
+      const escapedInstruction = JSON.stringify(editInstruction).slice(1, -1);
 
-      // 3. Parallel LLM calls - Email and Landing Page separate
-
-      // 3a. Email edit
-      // Escape user input to prevent prompt injection
-      const escapedInstruction = JSON.stringify(editInstruction).slice(1, -1);  // Remove outer quotes
-      const emailUserPrompt = getPhishingEmailUserPrompt(existingEmail, escapedInstruction, brandContext);
-
-      logger.info('Calling LLM for email editing');
-      const emailPromise = withRetry(
-        () => withTimeout(
-          generateText({
-            model: aiModel,
-            messages: [
-              { role: 'system', content: systemPrompt },
-              { role: 'user', content: emailUserPrompt }
-            ],
-            temperature: 0.3,  // Lower temperature for more consistent JSON output
-          }),
-          30000  // 30 second timeout
-        ),
-        'Phishing email editing'
-      );
-
-      // 3b. Landing page edit (if exists) - each page separate
-      let landingPagePromises: ReturnType<typeof generateText>[] = [];
-      if (existingLanding?.pages?.length > 0) {
-        landingPagePromises = existingLanding.pages.map((page: LandingPageInput, idx: number) => {
-          const landingSystemPrompt = getLandingPageSystemPrompt(mode);
-          const landingUserPrompt = getLandingPageUserPrompt(page, escapedInstruction, brandContext);
-
-          logger.info(`Calling LLM for landing page ${idx + 1} editing`);
-          return withRetry(
-            () => withTimeout(
-              generateText({
-                model: aiModel,
-                messages: [
-                  { role: 'system', content: landingSystemPrompt },
-                  { role: 'user', content: landingUserPrompt }
-                ],
-                temperature: 0.3,  // Lower temperature for more consistent JSON output
-              }),
-              30000  // 30 second timeout
-            ),
-            `Phishing landing page ${idx + 1} editing`
-          );
+      // 3. Execute LLM calls (parallel)
+      let emailPromise: Promise<GenerateTextResult> | null = null;
+      if (hasEmail && existingEmail) {
+        emailPromise = createEmailEditPromise({
+          aiModel,
+          email: existingEmail,
+          escapedInstruction,
+          brandContext,
+          logger,
         });
       }
 
-      // 3c. Parallel execution - email + all landing pages
-      const allResults = await Promise.allSettled([
-        emailPromise,
-        ...landingPagePromises
-      ]);
+      const landingPagePromises = createLandingEditPromises({
+        aiModel,
+        pages: existingLanding?.pages ?? [],
+        mode: mode || 'edit',
+        escapedInstruction,
+        brandContext,
+        logger,
+      });
 
-      // Extract email result
-      const emailResult = allResults[0];
-      if (emailResult.status !== 'fulfilled') {
-        logger.error('Email editing failed', { reason: emailResult.reason });
-        return {
-          success: false,
-          error: 'Email editing failed after retries',
-          message: '❌ Failed to edit email template. Please try again.'
+      const allPromises: Array<Promise<GenerateTextResult>> = [
+        ...(emailPromise ? [emailPromise] : []),
+        ...landingPagePromises,
+      ];
+      const allResults = await Promise.allSettled(allPromises);
+
+      // 4. Process LLM responses
+      const emailResult: PromiseSettledResult<GenerateTextResult> | null = hasEmail ? allResults[0] : null;
+
+      let editedEmail: EditedEmail | null = null;
+      let updatedEmail: (ExistingEmail & { lastModified: number }) | null = null;
+      let updatedEmailTemplate: string | null = null;
+
+      if (hasEmail) {
+        if (!emailResult || emailResult.status !== 'fulfilled') {
+          logger.error('Email editing failed', { reason: emailResult ? emailResult.reason : 'missing-result' });
+          return {
+            success: false,
+            error: 'Email editing failed after retries',
+            message: '❌ Failed to edit email template. Please try again.',
+          };
+        }
+
+        logger.info('Email response received, parsing and validating...');
+        const emailText = emailResult.value.text;
+        const emailParseResult = parseAndValidateEmailResponse(emailText);
+
+        if (!emailParseResult.success) {
+          return {
+            success: false,
+            error: 'Email response validation failed',
+            message: `❌ Email validation error: ${emailParseResult.error}`,
+          };
+        }
+
+        editedEmail = emailParseResult.email;
+        const sanitizedTemplate = normalizeEmailNestedTablePadding(sanitizeHtml(editedEmail.template));
+
+        updatedEmail = {
+          ...(existingEmail as ExistingEmail),
+          subject: editedEmail.subject || (existingEmail as ExistingEmail).subject,
+          template: sanitizedTemplate,
+          lastModified: Date.now(),
         };
+
+        const finalFixedTemplate = await fixBrokenImages(
+          sanitizedTemplate,
+          updatedEmail.fromName || 'Security Team',
+          whitelabelConfig?.mainLogoUrl
+        );
+        updatedEmail.template = finalFixedTemplate;
+        updatedEmailTemplate = finalFixedTemplate;
       }
 
-      const emailResponse = emailResult.value;
+      const landingResults = allResults.slice(hasEmail ? 1 : 0);
 
-      // 3d. Parse and validate email response
-      logger.info('Email response received, parsing and validating...');
-      let editedEmail: z.infer<typeof emailResponseSchema>;
-      try {
-        const emailCleanedJson = cleanResponse(emailResponse.text, 'phishing-edit-email');
-        const parsed = JSON.parse(emailCleanedJson);
-        editedEmail = emailResponseSchema.parse(parsed);  // Validate against schema
+      const fromNameForLanding = updatedEmail?.fromName ?? existingEmail?.fromName ?? 'Security Team';
 
-        // Log image sources for debugging hallucinated URLs
-        const imgSources = (editedEmail.template.match(/src=['"]([^'"]*)['"]/g) || []).map(s => s.replace(/src=['"]|['"]/g, ''));
-        logger.info('Email edited template images', { imgCount: imgSources.length, sources: imgSources });
-
-        logger.debug('Email response validated successfully', { subject: editedEmail.subject });
-      } catch (parseErr) {
-        const errMsg = parseErr instanceof Error ? parseErr.message : String(parseErr);
-        logger.error('Email response parsing or validation failed', {
-          error: errMsg,
-          responsePreview: emailResponse.text.substring(0, 200)
-        });
-        return {
-          success: false,
-          error: 'Email response validation failed',
-          message: `❌ Email validation error: ${errMsg}`
-        };
-      }
-
-      // 3e. Create updated email object structure FIRST (needed for landing page processing)
-      const finalTemplate = editedEmail.template;
-      const sanitizedTemplate = normalizeEmailNestedTablePadding(sanitizeHtml(finalTemplate));
-
-      const updatedEmail = {
-        ...existingEmail,
-        subject: editedEmail.subject || existingEmail.subject,
-        template: sanitizedTemplate, // Will update this after fixing images
-        lastModified: Date.now()
-      };
-
-      // 3f. Fix Broken Images & Enforce Single Logo in Email
-      const finalFixedTemplate = await fixBrokenImages(
-        sanitizedTemplate,
-        updatedEmail.fromName || 'Security Team',
+      const editedLanding = await processLandingPageResults(
+        landingResults,
+        existingLanding,
+        mode,
+        editInstruction,
+        fromNameForLanding,
         whitelabelConfig?.mainLogoUrl
       );
-      updatedEmail.template = finalFixedTemplate;
 
-      // 3g. Parse and validate landing page responses (now that updatedEmail is ready)
-      const editedLandingPages: z.infer<typeof landingPageResponseSchema>[] = [];
-      const landingResults = allResults.slice(1);
+      // 5. Save to KV
+      await savePhishingContent(emailKey, landingKey, updatedEmail, existingLanding, editedLanding);
 
-      if (landingResults.length > 0) {
-        logger.info(`Landing page responses received, parsing and validating ${landingResults.length} pages...`);
-        const landingPageResults = await Promise.all(landingResults
-          .map(async (result, idx) => {
-            if (result.status !== 'fulfilled') {
-              logger.warn(`Landing page ${idx + 1} editing failed, skipping`, { reason: result.reason });
-              return null;
-            }
-            try {
-              const response = result.value;
-              const pageCleanedJson = cleanResponse(response.text, `phishing-edit-landing-${idx}`);
-              const parsed = JSON.parse(pageCleanedJson);
-
-              const validated = landingPageResponseSchema.parse(parsed);
-
-              let repaired = postProcessPhishingLandingHtml({ html: validated.template, title: 'Secure Portal' });
-
-              // Use updatedEmail context for landing page image fixing
-              repaired = await fixBrokenImages(
-                repaired,
-                updatedEmail.fromName || 'Security Team',
-                whitelabelConfig?.mainLogoUrl
-              );
-
-              // Translate mode: enforce original form-control styles (LLM localization can rewrite input CSS)
-              if (mode === 'translate') {
-                const originalTemplate = existingLanding?.pages?.[idx]?.template;
-                validated.template = originalTemplate
-                  ? preserveLandingFormControlStyles(originalTemplate, repaired)
-                  : repaired;
-              } else {
-                validated.template = repaired;
-              }
-              logger.debug(`Landing page ${idx + 1} validated successfully`, { type: validated.type });
-              return validated;
-            } catch (parseErr) {
-              const errMsg = parseErr instanceof Error ? parseErr.message : String(parseErr);
-              logger.warn(`Landing page ${idx + 1} parsing or validation error, skipping`, { error: errMsg });
-              return null;
-            }
-          }));
-
-        const validLandingPages = landingPageResults
-          .filter((page): page is z.infer<typeof landingPageResponseSchema> => page !== null);
-
-        editedLandingPages.push(...validLandingPages);
-      }
-
-      // 3h. Combine landing pages
-      let editedLanding = null;
-      if (editedLandingPages.length > 0) {
-        editedLanding = {
-          pages: editedLandingPages,
-          summary: editedLandingPages.map(p => p.summary).filter(Boolean).join('; ')
-        };
-      }
-
-      // Rename for compatibility (legacy code usage)
-      const editedContent = editedEmail;
-
-      // 4a. Save email
-      await kvServicePhishing.put(emailKey, updatedEmail);
-      logger.info('Phishing email updated successfully', { phishingId, emailKey });
-
-      // 4b. Save landing page if edited
-      if (editedLanding && editedLanding.pages) {
-        const updatedLanding = {
-          ...existingLanding,
-          pages: editedLanding.pages,
-          lastModified: Date.now()
-        };
-        await kvServicePhishing.put(landingKey, updatedLanding);
-        logger.info('Phishing landing page updated successfully', { phishingId, landingKey });
-      }
-
-      // 5. Stream updated components to UI
+      // 6. Stream to UI
       if (writer) {
-        try {
-          const messageId = uuidv4();
-          await writer.write({ type: 'text-start', id: messageId });
-
-          // Stream email
-          if (editedContent.template) {
-            const emailObject = {
-              phishingId,
-              subject: editedContent.subject,
-              template: sanitizedTemplate,
-              fromAddress: updatedEmail.fromAddress,
-              fromName: updatedEmail.fromName,
-            };
-            const emailJson = JSON.stringify(emailObject);
-            const encodedEmail = Buffer.from(emailJson).toString('base64');
-
-            await writer.write({
-              type: 'text-delta',
-              id: messageId,
-              delta: `::ui:phishing_email::${encodedEmail}::/ui:phishing_email::\n`
-            });
+        const method = base?.method ?? existingLanding?.method;
+        const isQuishing = base?.isQuishing ?? false;
+        const landingMeta = existingLanding
+          ? {
+            name: existingLanding.name,
+            description: existingLanding.description,
+            method: existingLanding.method,
+            difficulty: existingLanding.difficulty,
           }
+          : null;
 
-          // Stream landing pages
-          if (editedLanding && editedLanding.pages && editedLanding.pages.length > 0) {
-            const landingObject = { phishingId, pages: editedLanding.pages };
-            const landingJson = JSON.stringify(landingObject);
-            const encodedLanding = Buffer.from(landingJson).toString('base64');
-
-            await writer.write({
-              type: 'text-delta',
-              id: messageId,
-              delta: `::ui:landing_page::${encodedLanding}::/ui:landing_page::\n`
-            });
-          }
-
-          await writer.write({ type: 'text-end', id: messageId });
-        } catch (err) {
-          logger.warn('Failed to stream updated components to UI', { error: err instanceof Error ? err.message : String(err) });
-        }
+        await streamEditResultsToUI(
+          writer as StreamWriter,
+          phishingId,
+          hasEmail ? editedEmail : null,
+          updatedEmailTemplate,
+          updatedEmail?.fromAddress || existingEmail?.fromAddress,
+          updatedEmail?.fromName || existingEmail?.fromName,
+          editedLanding,
+          landingMeta,
+          method,
+          isQuishing
+        );
       }
 
-      // 6. Return success response
-      const updates = ['Email'];
+      // 7. Return success response
+      const updates: string[] = [];
+      if (hasEmail) updates.push('Email');
       if (editedLanding?.pages) updates.push('Landing Page');
 
       return {
@@ -350,27 +205,26 @@ export const phishingEditorTool = createTool({
         status: 'success',
         data: {
           phishingId,
-          subject: editedContent.subject,
-          summary: editedContent.summary || editedLanding?.summary,
-          message: `✅ Updated: ${updates.join(' + ')}\n${editedContent.summary || ''}${editedLanding?.summary ? '\n' + editedLanding.summary : ''}`
-        }
+          subject: hasEmail ? editedEmail?.subject : undefined,
+          summary: (hasEmail ? editedEmail?.summary || '' : '') || editedLanding?.summary,
+          message: `✅ Updated: ${updates.join(' + ')}\n${hasEmail ? editedEmail?.summary || '' : ''}${editedLanding?.summary ? '\n' + editedLanding.summary : ''}`,
+        },
       };
-
     } catch (error) {
       const err = normalizeError(error);
       const errorInfo = errorService.external(err.message, {
         phishingId,
         editInstruction,
         step: 'phishing-template-edit',
-        stack: err.stack
+        stack: err.stack,
       });
 
       logErrorInfo(logger, 'error', 'Phishing editor error', errorInfo);
 
       return {
         ...createToolErrorResponse(errorInfo),
-        message: '❌ Failed to edit phishing template. Please try again or provide a different instruction.'
+        message: '❌ Failed to edit phishing template. Please try again or provide a different instruction.',
       };
     }
-  }
+  },
 });

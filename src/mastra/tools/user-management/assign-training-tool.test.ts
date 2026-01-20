@@ -2,7 +2,11 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { assignTrainingTool } from './assign-training-tool';
 import { requestStorage } from '../../utils/core/request-storage';
 import * as workerApiClient from '../../utils/core/worker-api-client';
+import { KVService } from '../../services/kv-service';
 import '../../../../src/__tests__/setup';
+
+// Mock KVService
+vi.mock('../../services/kv-service');
 
 /**
  * Test Suite: assignTrainingTool
@@ -27,6 +31,26 @@ describe('assignTrainingTool', () => {
       token: mockToken,
       companyId: mockCompanyId,
       env: mockEnv
+    });
+
+    // Explicitly mock KVService.getMicrolearning to return null (pass guard by default)
+    vi.spyOn(KVService.prototype, 'getMicrolearning').mockResolvedValue(null);
+  });
+
+  describe('Guard Protection', () => {
+    it('should block assignment if resource looks like a raw microlearning ID (already uploaded)', async () => {
+      // Simulate that the resource exists in KV (which triggers the guard)
+      vi.spyOn(KVService.prototype, 'getMicrolearning').mockResolvedValue({ base: { id: 'existing' } });
+
+      const input = {
+        resourceId: 'resource-123',
+        sendTrainingLanguageId: 'lang-456',
+        targetUserResourceId: 'user-789'
+      };
+
+      const result = await assignTrainingTool.execute({ context: input } as any);
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Training must be uploaded');
     });
   });
 

@@ -49,6 +49,15 @@ describe('microlearning-generator', () => {
             expect(theme.logo.src).toBe('custom-logo.png');
             expect(theme.logo.alt).toBe('Brand');
         });
+
+        it('should fall back to defaults if whitelabel config fetch fails', async () => {
+            mockGetWhitelabelingConfig.mockRejectedValue(new Error('DB Error'));
+
+            const theme = await generateTheme();
+            // Just verifying it doesn't throw and returns defaults
+            expect(theme.colors.background).toContain('gray');
+            expect(theme.logo.src).toBeDefined();
+        });
     });
 
     describe('generateSceneStructure', () => {

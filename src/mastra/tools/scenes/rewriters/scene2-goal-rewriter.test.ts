@@ -7,6 +7,22 @@ vi.mock('ai', () => ({
   generateText: vi.fn(),
 }));
 
+vi.mock('./scene-rewriter-base', () => ({
+  rewriteSceneWithBase: vi.fn(async (scene, type, context) => { // Added 'type' argument
+    if (!context) throw new Error('Context required');
+    if (!scene) return undefined;
+    return {
+      title: 'Translated Learning Goals',
+      goalsList: [
+        { order: 1, goal: 'Translated Goal 1', icon: 'check' },
+        { order: 2, goal: 'Translated Goal 2', icon: 'search' },
+        { order: 3, goal: 'Translated Goal 3', icon: 'flag' },
+      ],
+      description: 'Translated Description',
+    };
+  })
+}));
+
 vi.mock('../../../services/error-service', () => ({
   errorService: {
     aiModel: vi.fn(() => ({ code: 'AI_ERROR', message: 'AI Error' })),

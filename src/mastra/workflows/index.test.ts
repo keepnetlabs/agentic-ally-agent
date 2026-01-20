@@ -1,8 +1,47 @@
 import { describe, it, expect, vi } from 'vitest';
 
+// Mock D1Store to prevent network calls
+vi.mock('@mastra/cloudflare-d1', () => ({
+  D1Store: class {
+    constructor() { }
+    __setTelemetry = vi.fn();
+    __setLogger = vi.fn();
+    init = vi.fn();
+  }
+}));
+
 // Mock cloudflare:workers module
 vi.mock('cloudflare:workers', () => ({
-  WorkflowEntrypoint: class {},
+  WorkflowEntrypoint: class { },
+}));
+
+// Mock services to prevent import crashes
+vi.mock('../services/kv-service', () => ({
+  KVService: class {
+    savePhishingBase = vi.fn();
+    savePhishingEmail = vi.fn();
+    savePhishingLandingPage = vi.fn();
+  }
+}));
+
+vi.mock('../services/product-service', () => ({
+  ProductService: class {
+    getWhitelabelingConfig = vi.fn();
+  }
+}));
+
+vi.mock('../utils/core/logger', () => ({
+  getLogger: vi.fn(() => ({
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn()
+  }))
+}));
+
+// Mock main index to prevent circular dependency with AutonomousWorkflow
+vi.mock('../index', () => ({
+  mastra: {}
 }));
 
 import {

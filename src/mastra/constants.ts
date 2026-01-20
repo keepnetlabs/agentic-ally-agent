@@ -14,16 +14,7 @@ export const MICROLEARNING = {
 
   // Scene configuration
   SCENE_COUNT: 8,
-  SCENE_TYPES: [
-    'intro',
-    'goals',
-    'video',
-    'actionable',
-    'quiz',
-    'survey',
-    'nudge',
-    'summary',
-  ] as const,
+  SCENE_TYPES: ['intro', 'goals', 'video', 'actionable', 'quiz', 'survey', 'nudge', 'summary'] as const,
 
   // Scene timing (in seconds)
   SCENE_DURATIONS_SECONDS: {
@@ -69,10 +60,10 @@ export const DEFAULT_PRIORITY = 'medium' as const;
 export const PROMPT_ANALYSIS = {
   // Input constraints
   MIN_PROMPT_LENGTH: 5,
-  MAX_PROMPT_LENGTH: 10000,        // ~2000 words - Detailed scenarios/requirements
-  MAX_ADDITIONAL_CONTEXT_LENGTH: 15000,  // Policy context, examples, references
-  MAX_CUSTOM_REQUIREMENTS_LENGTH: 5000,  // Specific custom requirements
-  MAX_DEPARTMENT_NAME_LENGTH: 200,       // Company/department names can be long
+  MAX_PROMPT_LENGTH: 10000, // ~2000 words - Detailed scenarios/requirements
+  MAX_ADDITIONAL_CONTEXT_LENGTH: 15000, // Policy context, examples, references
+  MAX_CUSTOM_REQUIREMENTS_LENGTH: 5000, // Specific custom requirements
+  MAX_DEPARTMENT_NAME_LENGTH: 200, // Company/department names can be long
 
   // Language code validation
   LANGUAGE_CODE_REGEX: /^[a-z]{2}(-[a-z]{2})?$/i,
@@ -102,8 +93,7 @@ export const CLOUDFLARE_KV = {
   KEY_TEMPLATES: {
     base: (id: string) => `ml:${id}:base`,
     language: (id: string, lang: string) => `ml:${id}:lang:${lang}`,
-    inbox: (id: string, dept: string, lang: string) =>
-      `ml:${id}:inbox:${dept}:${lang}`,
+    inbox: (id: string, dept: string, lang: string) => `ml:${id}:inbox:${dept}:${lang}`,
     healthCheck: () => `health_check_${Date.now()}`,
   },
 
@@ -187,12 +177,12 @@ export const RETRY = {
   /**
    * Calculate delay with Full Jitter (AWS recommended)
    * Formula: random(0, min(cap, base * 2^attempt))
-   * 
+   *
    * Benefits:
    * - Prevents thundering herd problem
    * - Spreads retry load across time
    * - More efficient than fixed delays
-   * 
+   *
    * @param attempt - Current attempt number (0-indexed)
    * @returns Jittered delay in milliseconds
    */
@@ -260,6 +250,9 @@ export const TIMEOUT_VALUES = {
   // Workflow delays (milliseconds)
   PHISHING_WORKFLOW_STREAM_DELAY_MS: 3000,
   LANGUAGE_WORKFLOW_BACKOFF_MS: 1000,
+  // Phishing editor LLM call timeouts (milliseconds)
+  PHISHING_EDITOR_EMAIL_TIMEOUT_MS: 120000,
+  PHISHING_EDITOR_LANDING_TIMEOUT_MS: 120000,
 } as const;
 
 // ============================================
@@ -317,12 +310,7 @@ export const EXAMPLE_REPO = {
   },
 
   // Query complexity detection
-  COMPLEX_QUERY_KEYWORDS: [
-    'advanced',
-    'specific',
-    'detailed',
-    'custom',
-  ] as const,
+  COMPLEX_QUERY_KEYWORDS: ['advanced', 'specific', 'detailed', 'custom'] as const,
   COMPLEX_QUERY_MIN_LENGTH: 50,
 } as const;
 
@@ -380,8 +368,8 @@ export const VALIDATION = {
   // Password patterns
   WEAK_PASSWORD_PATTERNS: [
     /^[a-z]{4,}$/i, // Only lowercase
-    /^[A-Z]{4,}$/,  // Only uppercase
-    /^\d{4,}$/,     // Only digits
+    /^[A-Z]{4,}$/, // Only uppercase
+    /^\d{4,}$/, // Only digits
   ] as RegExp[],
 
   // Email patterns
@@ -415,19 +403,19 @@ export const ERROR_MESSAGES = {
     NO_OUTPUT: 'Unable to generate phishing email. Please try again or simplify your request.',
     ANALYSIS_FAILED: 'Failed to analyze your request. Please provide more details about the phishing scenario.',
     GENERATION_FAILED: 'Failed to generate email content. Please try again with a simpler scenario.',
-    GENERIC: 'Unable to generate phishing email. Please try again or contact support if the issue persists.'
+    GENERIC: 'Unable to generate phishing email. Please try again or contact support if the issue persists.',
   },
 
   // Workflow execution errors
   WORKFLOW: {
     EXECUTION_FAILED: 'Workflow execution failed. Please try again.',
-    UNKNOWN_ERROR: 'Unknown error occurred during workflow execution.'
+    UNKNOWN_ERROR: 'Unknown error occurred during workflow execution.',
   },
 
   // Authentication errors
   AUTH: {
     TOKEN_MISSING: 'Authentication token missing.',
-    UNAUTHORIZED: 'Unauthorized access.'
+    UNAUTHORIZED: 'Unauthorized access.',
   },
 
   // Platform integration errors
@@ -437,14 +425,14 @@ export const ERROR_MESSAGES = {
     UPLOAD_TOKEN_MISSING: 'Authentication token missing. Cannot upload training.',
     ASSIGN_TOKEN_MISSING: 'Authentication token missing. Cannot assign training.',
     UNKNOWN_UPLOAD_ERROR: 'Unknown upload error occurred.',
-    UNKNOWN_ASSIGN_ERROR: 'Unknown assignment error occurred.'
+    UNKNOWN_ASSIGN_ERROR: 'Unknown assignment error occurred.',
   },
 
   // User info errors
   USER_INFO: {
     TOKEN_MISSING: 'Authentication token missing.',
     FETCH_FAILED: 'Failed to fetch user information.',
-    UNKNOWN_ERROR: 'Unknown error occurred while fetching user info.'
+    UNKNOWN_ERROR: 'Unknown error occurred while fetching user info.',
   },
 
   // Group info errors
@@ -452,12 +440,12 @@ export const ERROR_MESSAGES = {
     TOKEN_MISSING: 'Authentication token missing.',
     FETCH_FAILED: 'Failed to fetch group information.',
     NOT_FOUND: 'Group not found.',
-    UNKNOWN_ERROR: 'Unknown error occurred while fetching group info.'
+    UNKNOWN_ERROR: 'Unknown error occurred while fetching group info.',
   },
   // Search errors
   SEARCH: {
-    FAILED: 'Search failed. Please try again.'
-  }
+    FAILED: 'Search failed. Please try again.',
+  },
 } as const;
 
 // ============================================
@@ -465,15 +453,7 @@ export const ERROR_MESSAGES = {
 // ============================================
 
 export const DEPARTMENTS = {
-  VALUES: [
-    'IT',
-    'HR',
-    'Sales',
-    'Finance',
-    'Operations',
-    'Management',
-    'All',
-  ] as const,
+  VALUES: ['IT', 'HR', 'Sales', 'Finance', 'Operations', 'Management', 'All'] as const,
   DEFAULT: 'All',
 } as const;
 
@@ -605,7 +585,7 @@ export const AGENT_NAMES = {
   MICROLEARNING: 'microlearningAgent',
   USER_INFO: 'userInfoAssistant',
   POLICY_SUMMARY: 'policySummaryAssistant',
-  ORCHESTRATOR: 'orchestrator'
+  ORCHESTRATOR: 'orchestrator',
 } as const;
 
 // ============================================
@@ -627,12 +607,12 @@ export const PHISHING = {
   // Timing estimates (includes 3s delay + AI generation + reasoning stream)
   TIMING: {
     GENERATION_SECONDS_MIN: 20,
-    GENERATION_SECONDS_MAX: 30
+    GENERATION_SECONDS_MAX: 30,
   },
 
   // Input validation
   MIN_TOPIC_LENGTH: 3,
-  MAX_TOPIC_LENGTH: 200
+  MAX_TOPIC_LENGTH: 200,
 } as const;
 
 // ============================================
@@ -660,7 +640,7 @@ export const PHISHING_EMAIL = {
     '{CURRENT_DATE_MINUS_10_DAYS}',
     '{RANDOM_NUMBER_1_DIGIT}',
     '{RANDOM_NUMBER_2_DIGITS}',
-    '{RANDOM_NUMBER_3_DIGITS}'
+    '{RANDOM_NUMBER_3_DIGITS}',
   ] as const,
 
   // Content constraints
@@ -671,7 +651,7 @@ export const PHISHING_EMAIL = {
   MANDATORY_TAGS: ['{PHISHINGURL}'] as const,
 
   // Recommended tags for better realism
-  RECOMMENDED_TAGS: ['{FIRSTNAME}', '{COMPANYNAME}', '{CURRENT_DATE}'] as const
+  RECOMMENDED_TAGS: ['{FIRSTNAME}', '{COMPANYNAME}', '{CURRENT_DATE}'] as const,
 } as const;
 
 // ============================================
@@ -685,15 +665,22 @@ export const LANDING_PAGE = {
   // Flow definitions based on attack method
   FLOWS: {
     'Data-Submission': ['login', 'success'],
-    'Click-Only': ['info']
+    'Click-Only': ['info'],
   },
 
   // Dynamic placeholders for landing pages
   PLACEHOLDERS: {
     SIMULATION_LINK: '{SIMULATION_LINK}',
     TRACK_ID: '{TRACK_ID}',
-    EMAIL: '{EMAIL}'
-  }
+    EMAIL: '{EMAIL}',
+  },
+
+  // UI sizing defaults (px)
+  // 600px is a more realistic max-width for modern login forms
+  FORM_MAX_WIDTH_PX: 600,
+  MINIMAL_BODY_MAX_WIDTH_PX: 800,
+  HERO_MAIN_CONTAINER_MAX_WIDTH_PX: 600,
+  HERO_MAIN_CONTAINER_MARGIN_TOP_PX: -24,
 } as const;
 
 // ============================================
@@ -753,16 +740,28 @@ export const ROUTING = {
 
 export const API_ENDPOINTS = {
   // Phishing worker endpoints
-  PHISHING_WORKER_URL: process.env.PHISHING_WORKER_URL || 'https://crud-phishing-worker.keepnet-labs-ltd-business-profile4086.workers.dev/submit',
-  PHISHING_WORKER_SUBMIT: process.env.PHISHING_WORKER_URL || 'https://crud-phishing-worker.keepnet-labs-ltd-business-profile4086.workers.dev/submit',
-  PHISHING_WORKER_SEND: process.env.PHISHING_WORKER_SEND || 'https://crud-phishing-worker.keepnet-labs-ltd-business-profile4086.workers.dev/send',
+  PHISHING_WORKER_URL:
+    process.env.PHISHING_WORKER_URL ||
+    'https://crud-phishing-worker.keepnet-labs-ltd-business-profile4086.workers.dev/submit',
+  PHISHING_WORKER_SUBMIT:
+    process.env.PHISHING_WORKER_URL ||
+    'https://crud-phishing-worker.keepnet-labs-ltd-business-profile4086.workers.dev/submit',
+  PHISHING_WORKER_SEND:
+    process.env.PHISHING_WORKER_SEND ||
+    'https://crud-phishing-worker.keepnet-labs-ltd-business-profile4086.workers.dev/send',
 
   // Training worker endpoints
-  TRAINING_WORKER_URL: process.env.TRAINING_WORKER_URL || 'https://crud-training-worker.keepnet-labs-ltd-business-profile4086.workers.dev/submit',
-  TRAINING_WORKER_SEND: process.env.TRAINING_WORKER_SEND || 'https://crud-training-worker.keepnet-labs-ltd-business-profile4086.workers.dev/send',
+  TRAINING_WORKER_URL:
+    process.env.TRAINING_WORKER_URL ||
+    'https://crud-training-worker.keepnet-labs-ltd-business-profile4086.workers.dev/submit',
+  TRAINING_WORKER_SEND:
+    process.env.TRAINING_WORKER_SEND ||
+    'https://crud-training-worker.keepnet-labs-ltd-business-profile4086.workers.dev/send',
 
   // Microlearning API endpoints
-  MICROLEARNING_API_URL: process.env.MICROLEARNING_API_URL || 'https://microlearning-api.keepnet-labs-ltd-business-profile4086.workers.dev/microlearning/',
+  MICROLEARNING_API_URL:
+    process.env.MICROLEARNING_API_URL ||
+    'https://microlearning-api.keepnet-labs-ltd-business-profile4086.workers.dev/microlearning/',
 
   // Product backend endpoints
   PRODUCT_API_URL: process.env.PRODUCT_API_URL || '',
@@ -774,7 +773,7 @@ export const API_ENDPOINTS = {
   // Allowed base API URLs for X-BASE-API-URL header validation
   // Production and test environments
   ALLOWED_BASE_API_URLS: [
-    'https://dash.keepnetlabs.com',          // Production
+    'https://dash.keepnetlabs.com', // Production
     'https://test-api.devkeepnet.com',
     'https://test-ui.devkeepnet.com',
     // Test/Default
@@ -814,7 +813,8 @@ export const SAFE_COMMUNICATION = {
   // --- ENTERPRISE-SAFE MESSAGING ---
   MESSAGING: {
     // Employee matching confirmation message
-    EMPLOYEE_MATCH: 'The employee was matched automatically.\nNo personal information was used.\nWould you like to proceed?',
+    EMPLOYEE_MATCH:
+      'The employee was matched automatically.\nNo personal information was used.\nWould you like to proceed?',
 
     // Assignment success messages
     ASSIGNMENT_SUCCESS: {
@@ -851,7 +851,7 @@ export const MESSAGING_GUIDELINES = SAFE_COMMUNICATION.MESSAGING;
 /**
  * Standardized error codes for debugging and tracking.
  * Format: ERR_{CATEGORY}_{NUMBER}
- * 
+ *
  * Usage:
  * - Logs: Easy to grep/search
  * - Monitoring: Track error frequency by code
@@ -903,4 +903,4 @@ export const ERROR_CODES = {
   INTERNAL_CONFIG: 'ERR_INT_002',
 } as const;
 
-export type ErrorCode = typeof ERROR_CODES[keyof typeof ERROR_CODES];
+export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];

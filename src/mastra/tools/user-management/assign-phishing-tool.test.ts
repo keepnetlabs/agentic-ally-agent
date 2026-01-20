@@ -2,7 +2,11 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { assignPhishingTool } from './assign-phishing-tool';
 import { requestStorage } from '../../utils/core/request-storage';
 import { callWorkerAPI } from '../../utils/core/worker-api-client';
+import { KVService } from '../../services/kv-service';
 import '../../../../src/__tests__/setup';
+
+// Mock KVService
+vi.mock('../../services/kv-service');
 
 // Mock security-utils
 vi.mock('../../utils/core/security-utils', () => ({

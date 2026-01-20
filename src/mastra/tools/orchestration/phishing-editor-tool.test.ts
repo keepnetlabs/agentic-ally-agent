@@ -10,12 +10,22 @@ const executeTool = (phishingEditorTool as any).execute;
 
 // Mock AI SDK
 vi.mock('ai', () => ({
-  generateText: vi.fn()
+  generateText: vi.fn(),
+}));
+
+// Mock D1Store to prevent network calls
+vi.mock('@mastra/cloudflare-d1', () => ({
+  D1Store: class {
+    constructor() {}
+    __setTelemetry = vi.fn();
+    __setLogger = vi.fn();
+    init = vi.fn();
+  },
 }));
 
 // Mock model providers
 vi.mock('../../model-providers', () => ({
-  getModelWithOverride: vi.fn(() => ({ modelId: 'test-model' }))
+  getModelWithOverride: vi.fn(() => ({ modelId: 'test-model' })),
 }));
 
 /**
@@ -29,24 +39,24 @@ describe('phishingEditorTool', () => {
     subject: 'Original Subject',
     template: '<html><body>Original Email Template</body></html>',
     fromAddress: 'original@example.com',
-    fromName: 'Original Sender'
+    fromName: 'Original Sender',
   };
 
   const mockExistingLanding = {
     pages: [
       {
         type: 'login',
-        template: '<html><head><title>Login</title></head><body>Landing Page 1</body></html>'
-      }
-    ]
+        template: '<html><head><title>Login</title></head><body>Landing Page 1</body></html>',
+      },
+    ],
   };
 
   const mockEditedEmailResponse = {
     text: JSON.stringify({
       subject: 'Edited Subject',
       template: '<html><head><title>Email</title></head><body>Edited Email Template</body></html>',
-      summary: 'Updated subject and body text'
-    })
+      summary: 'Updated subject and body text',
+    }),
   };
 
   const mockEditedLandingResponse = {
@@ -54,28 +64,27 @@ describe('phishingEditorTool', () => {
       type: 'login',
       template: '<html><head><title>Login</title></head><body>Edited Landing Page Content Here</body></html>',
       edited: true,
-      summary: 'Updated landing page content'
-    })
+      summary: 'Updated landing page content',
+    }),
   };
 
   const mockWriter = {
-    write: vi.fn().mockResolvedValue(undefined)
+    write: vi.fn().mockResolvedValue(undefined),
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
 
     // Setup default KV mocks
-    vi.spyOn(KVService.prototype, 'get')
-      .mockImplementation(async (key: string) => {
-        if (key.includes('email:')) {
-          return mockExistingEmail;
-        }
-        if (key.includes('landing:')) {
-          return mockExistingLanding;
-        }
-        return null;
-      });
+    vi.spyOn(KVService.prototype, 'get').mockImplementation(async (key: string) => {
+      if (key.includes('email:')) {
+        return mockExistingEmail;
+      }
+      if (key.includes('landing:')) {
+        return mockExistingLanding;
+      }
+      return null;
+    });
 
     vi.spyOn(KVService.prototype, 'put').mockResolvedValue(true);
 
@@ -87,10 +96,10 @@ describe('phishingEditorTool', () => {
     it('should accept valid input with required fields', async () => {
       const input = {
         phishingId: 'phishing-123',
-        editInstruction: 'Make it more urgent'
+        editInstruction: 'Make it more urgent',
       };
 
-      const result = await executeTool({ context: input } as any) as any;
+      const result = (await executeTool({ context: input } as any)) as any;
       expect(result).toBeDefined();
       expect(result.success).toBe(true);
     });
@@ -99,10 +108,10 @@ describe('phishingEditorTool', () => {
       const input = {
         phishingId: 'phishing-123',
         editInstruction: 'Translate to Turkish',
-        language: 'tr-tr'
+        language: 'tr-tr',
       };
 
-      const result = await executeTool({ context: input } as any) as any;
+      const result = (await executeTool({ context: input } as any)) as any;
       expect(result.success).toBe(true);
     });
 
@@ -111,20 +120,20 @@ describe('phishingEditorTool', () => {
         phishingId: 'phishing-123',
         editInstruction: 'Update subject',
         modelProvider: 'OPENAI',
-        model: 'gpt-4'
+        model: 'gpt-4',
       };
 
-      const result = await executeTool({ context: input } as any) as any;
+      const result = (await executeTool({ context: input } as any)) as any;
       expect(result.success).toBe(true);
     });
 
     it('should require phishingId', async () => {
       const input: any = {
-        editInstruction: 'Make it urgent'
+        editInstruction: 'Make it urgent',
       };
 
       // Tool framework validates input schema
-      const result = await executeTool({ context: input } as any) as any;
+      const result = (await executeTool({ context: input } as any)) as any;
       expect(result).toBeDefined();
       if (result && typeof result === 'object' && 'error' in result) {
         expect(result.error).toBeTruthy();
@@ -133,11 +142,11 @@ describe('phishingEditorTool', () => {
 
     it('should require editInstruction', async () => {
       const input: any = {
-        phishingId: 'phishing-123'
+        phishingId: 'phishing-123',
       };
 
       // Tool framework validates input schema
-      const result = await executeTool({ context: input } as any) as any;
+      const result = (await executeTool({ context: input } as any)) as any;
       expect(result).toBeDefined();
       if (result && typeof result === 'object' && 'error' in result) {
         expect(result.error).toBeTruthy();
@@ -150,7 +159,7 @@ describe('phishingEditorTool', () => {
       const getSpy = vi.spyOn(KVService.prototype, 'get');
       const input = {
         phishingId: 'phishing-123',
-        editInstruction: 'Update subject'
+        editInstruction: 'Update subject',
       };
 
       await executeTool({ context: input } as any);
@@ -163,7 +172,7 @@ describe('phishingEditorTool', () => {
       const input = {
         phishingId: 'phishing-123',
         editInstruction: 'Update subject',
-        language: 'tr-tr'
+        language: 'tr-tr',
       };
 
       await executeTool({ context: input } as any);
@@ -176,7 +185,7 @@ describe('phishingEditorTool', () => {
 
       const input = {
         phishingId: 'nonexistent-123',
-        editInstruction: 'Update subject'
+        editInstruction: 'Update subject',
       };
 
       const result = await executeTool({ context: input } as any);
@@ -189,7 +198,7 @@ describe('phishingEditorTool', () => {
 
       const input = {
         phishingId: 'phishing-123',
-        editInstruction: 'Update subject'
+        editInstruction: 'Update subject',
       };
 
       const result = await executeTool({ context: input } as any);
@@ -201,7 +210,7 @@ describe('phishingEditorTool', () => {
       const getSpy = vi.spyOn(KVService.prototype, 'get');
       const input = {
         phishingId: 'phishing-123',
-        editInstruction: 'Update content'
+        editInstruction: 'Update content',
       };
 
       await executeTool({ context: input } as any);
@@ -219,11 +228,82 @@ describe('phishingEditorTool', () => {
 
       const input = {
         phishingId: 'phishing-123',
-        editInstruction: 'Update content'
+        editInstruction: 'Update content',
       };
 
-      const result = await executeTool({ context: input } as any) as any;
+      const result = (await executeTool({ context: input } as any)) as any;
       expect(result.success).toBe(true);
+    });
+
+    it('should succeed for landing-only templates (no email) and edit landing page only', async () => {
+      vi.spyOn(KVService.prototype, 'get').mockImplementation(async (key: string) => {
+        if (key.includes('email:')) {
+          return null; // No email saved
+        }
+        if (key.includes('landing:')) {
+          return mockExistingLanding; // Landing exists
+        }
+        return null;
+      });
+
+      const putSpy = vi.spyOn(KVService.prototype, 'put').mockResolvedValue(true);
+
+      (generateText as any).mockResolvedValueOnce(mockEditedLandingResponse);
+
+      const input = {
+        phishingId: 'phishing-landing-only',
+        editInstruction: 'Make the landing page English',
+      };
+
+      const result = (await executeTool({ context: input } as any)) as any;
+      expect(result.success).toBe(true);
+
+      // Should only call LLM for landing page (not email)
+      expect(generateText).toHaveBeenCalledTimes(1);
+
+      // Should NOT save email, should save landing
+      expect(putSpy).not.toHaveBeenCalledWith(expect.stringContaining(':email:'), expect.anything());
+      expect(putSpy).toHaveBeenCalledWith(expect.stringContaining(':landing:'), expect.anything());
+    });
+
+    it('should succeed for landing-only templates in translate mode', async () => {
+      vi.spyOn(KVService.prototype, 'get').mockImplementation(async (key: string) => {
+        if (key.includes('email:')) {
+          return null; // No email saved
+        }
+        if (key.includes('landing:')) {
+          return mockExistingLanding; // Landing exists
+        }
+        return null;
+      });
+
+      const putSpy = vi.spyOn(KVService.prototype, 'put').mockResolvedValue(true);
+
+      (generateText as any).mockResolvedValueOnce(mockEditedLandingResponse);
+
+      const input = {
+        phishingId: 'phishing-landing-only',
+        editInstruction: 'Make it English',
+        mode: 'translate',
+      };
+
+      const result = (await executeTool({ context: input } as any)) as any;
+      expect(result.success).toBe(true);
+      expect(generateText).toHaveBeenCalledTimes(1);
+      expect(putSpy).toHaveBeenCalledWith(expect.stringContaining(':landing:'), expect.anything());
+    });
+
+    it('should return template not found when both email and landing are missing', async () => {
+      vi.spyOn(KVService.prototype, 'get').mockResolvedValue(null);
+
+      const input = {
+        phishingId: 'missing-all',
+        editInstruction: 'Update subject',
+      };
+
+      const result = (await executeTool({ context: input } as any)) as any;
+      expect(result.success).toBe(false);
+      expect(result.message).toContain('Template not found');
     });
   });
 
@@ -231,14 +311,14 @@ describe('phishingEditorTool', () => {
     it('should call generateText for email editing', async () => {
       const input = {
         phishingId: 'phishing-123',
-        editInstruction: 'Make it more urgent'
+        editInstruction: 'Make it more urgent',
       };
 
       await executeTool({ context: input } as any);
 
       expect(generateText).toHaveBeenCalled();
       const call = (generateText as any).mock.calls.find((c: any[]) =>
-        c[0].messages.some((m: any) => m.content.includes('Edit this email template'))
+        c[0].messages.some((m: any) => m.content.includes('CURRENT EMAIL:'))
       );
       expect(call).toBeDefined();
     });
@@ -250,7 +330,7 @@ describe('phishingEditorTool', () => {
 
       const input = {
         phishingId: 'phishing-123',
-        editInstruction: 'Update all content'
+        editInstruction: 'Update all content',
       };
 
       await executeTool({ context: input } as any);
@@ -263,7 +343,7 @@ describe('phishingEditorTool', () => {
         phishingId: 'phishing-123',
         editInstruction: 'Update subject',
         modelProvider: 'OPENAI',
-        model: 'gpt-4'
+        model: 'gpt-4',
       };
 
       await executeTool({ context: input } as any);
@@ -273,12 +353,12 @@ describe('phishingEditorTool', () => {
 
     it('should handle LLM response parsing errors', async () => {
       (generateText as any).mockResolvedValue({
-        text: 'Invalid JSON response'
+        text: 'Invalid JSON response',
       });
 
       const input = {
         phishingId: 'phishing-123',
-        editInstruction: 'Update subject'
+        editInstruction: 'Update subject',
       };
 
       const result = await executeTool({ context: input } as any);
@@ -289,14 +369,14 @@ describe('phishingEditorTool', () => {
     it('should handle missing template in LLM response', async () => {
       (generateText as any).mockResolvedValue({
         text: JSON.stringify({
-          subject: 'New Subject'
+          subject: 'New Subject',
           // template missing
-        })
+        }),
       });
 
       const input = {
         phishingId: 'phishing-123',
-        editInstruction: 'Update subject'
+        editInstruction: 'Update subject',
       };
 
       const result = await executeTool({ context: input } as any);
@@ -309,13 +389,13 @@ describe('phishingEditorTool', () => {
         text: JSON.stringify({
           subject: 'New Subject',
           template: '',
-          summary: 'No changes'
-        })
+          summary: 'No changes',
+        }),
       });
 
       const input = {
         phishingId: 'phishing-123',
-        editInstruction: 'Update subject'
+        editInstruction: 'Update subject',
       };
 
       const result = await executeTool({ context: input } as any);
@@ -329,7 +409,7 @@ describe('phishingEditorTool', () => {
       const putSpy = vi.spyOn(KVService.prototype, 'put');
       const input = {
         phishingId: 'phishing-123',
-        editInstruction: 'Update subject'
+        editInstruction: 'Update subject',
       };
 
       await executeTool({ context: input } as any);
@@ -339,7 +419,7 @@ describe('phishingEditorTool', () => {
         expect.objectContaining({
           subject: 'Edited Subject',
           template: expect.stringContaining('Edited Email Template'),
-          lastModified: expect.any(Number)
+          lastModified: expect.any(Number),
         })
       );
     });
@@ -352,7 +432,7 @@ describe('phishingEditorTool', () => {
       const putSpy = vi.spyOn(KVService.prototype, 'put');
       const input = {
         phishingId: 'phishing-123',
-        editInstruction: 'Update all content'
+        editInstruction: 'Update all content',
       };
 
       await executeTool({ context: input } as any);
@@ -363,10 +443,10 @@ describe('phishingEditorTool', () => {
           pages: expect.arrayContaining([
             expect.objectContaining({
               type: 'login',
-              template: expect.stringContaining('Edited Landing Page')
-            })
+              template: expect.stringContaining('Edited Landing Page'),
+            }),
           ]),
-          lastModified: expect.any(Number)
+          lastModified: expect.any(Number),
         })
       );
     });
@@ -376,7 +456,7 @@ describe('phishingEditorTool', () => {
     it('should stream edited email when writer is provided', async () => {
       const input = {
         phishingId: 'phishing-123',
-        editInstruction: 'Update subject'
+        editInstruction: 'Update subject',
       };
 
       await executeTool({ context: input, writer: mockWriter } as any);
@@ -388,8 +468,8 @@ describe('phishingEditorTool', () => {
       expect(writeCalls.length).toBeGreaterThanOrEqual(2);
 
       // Check for email streaming
-      const emailCall = writeCalls.find(call =>
-        call[0].type === 'text-delta' && call[0].delta?.includes('phishing_email')
+      const emailCall = writeCalls.find(
+        call => call[0].type === 'text-delta' && call[0].delta?.includes('phishing_email')
       );
       expect(emailCall).toBeDefined();
     });
@@ -401,7 +481,7 @@ describe('phishingEditorTool', () => {
 
       const input = {
         phishingId: 'phishing-123',
-        editInstruction: 'Update all content'
+        editInstruction: 'Update all content',
       };
 
       await executeTool({ context: input, writer: mockWriter } as any);
@@ -409,20 +489,20 @@ describe('phishingEditorTool', () => {
       const writeCalls = mockWriter.write.mock.calls;
 
       // Check for landing page streaming
-      const landingCall = writeCalls.find(call =>
-        call[0].type === 'text-delta' && call[0].delta?.includes('landing_page')
+      const landingCall = writeCalls.find(
+        call => call[0].type === 'text-delta' && call[0].delta?.includes('landing_page')
       );
       expect(landingCall).toBeDefined();
     });
 
     it('should handle streaming errors gracefully', async () => {
       const errorWriter = {
-        write: vi.fn().mockRejectedValue(new Error('Stream error'))
+        write: vi.fn().mockRejectedValue(new Error('Stream error')),
       };
 
       const input = {
         phishingId: 'phishing-123',
-        editInstruction: 'Update subject'
+        editInstruction: 'Update subject',
       };
 
       // Should still succeed even if streaming fails
@@ -433,7 +513,7 @@ describe('phishingEditorTool', () => {
     it('should not stream when writer is not provided', async () => {
       const input = {
         phishingId: 'phishing-123',
-        editInstruction: 'Update subject'
+        editInstruction: 'Update subject',
       };
 
       await executeTool({ context: input } as any);
@@ -446,7 +526,7 @@ describe('phishingEditorTool', () => {
     it('should return success response with edited content data', async () => {
       const input = {
         phishingId: 'phishing-123',
-        editInstruction: 'Update subject'
+        editInstruction: 'Update subject',
       };
 
       const result = await executeTool({ context: input } as any);
@@ -467,7 +547,7 @@ describe('phishingEditorTool', () => {
 
       const input = {
         phishingId: 'phishing-123',
-        editInstruction: 'Update all content'
+        editInstruction: 'Update all content',
       };
 
       const result = await executeTool({ context: input } as any);
@@ -484,7 +564,7 @@ describe('phishingEditorTool', () => {
 
       const input = {
         phishingId: 'phishing-123',
-        editInstruction: 'Update subject'
+        editInstruction: 'Update subject',
       };
 
       const result = await executeTool({ context: input } as any);
@@ -497,7 +577,7 @@ describe('phishingEditorTool', () => {
 
       const input = {
         phishingId: 'phishing-123',
-        editInstruction: 'Update subject'
+        editInstruction: 'Update subject',
       };
 
       const result = await executeTool({ context: input } as any);
@@ -510,7 +590,7 @@ describe('phishingEditorTool', () => {
 
       const input = {
         phishingId: 'phishing-123',
-        editInstruction: 'Update subject'
+        editInstruction: 'Update subject',
       };
 
       const result = await executeTool({ context: input } as any);
@@ -523,7 +603,7 @@ describe('phishingEditorTool', () => {
 
       const input = {
         phishingId: 'phishing-123',
-        editInstruction: 'Update subject'
+        editInstruction: 'Update subject',
       };
 
       const result = await executeTool({ context: input } as any);
@@ -539,14 +619,14 @@ describe('phishingEditorTool', () => {
         text: JSON.stringify({
           subject: 'Valid Subject',
           template: '<html><body>Valid template with complete HTML structure</body></html>',
-          summary: 'Valid summary text'
-        })
+          summary: 'Valid summary text',
+        }),
       };
       (generateText as any).mockResolvedValue(validResponse);
 
       const input = {
         phishingId: 'phishing-123',
-        editInstruction: 'Update subject'
+        editInstruction: 'Update subject',
       };
 
       const result = await executeTool({ context: input } as any);
@@ -558,14 +638,14 @@ describe('phishingEditorTool', () => {
         text: JSON.stringify({
           subject: 'Valid',
           // template missing
-          summary: 'Summary'
-        })
+          summary: 'Summary',
+        }),
       };
       (generateText as any).mockResolvedValue(invalidResponse);
 
       const input = {
         phishingId: 'phishing-123',
-        editInstruction: 'Update subject'
+        editInstruction: 'Update subject',
       };
 
       const result = await executeTool({ context: input } as any);
@@ -577,20 +657,18 @@ describe('phishingEditorTool', () => {
       const validTypes = ['login', 'success', 'info'];
 
       for (const typeValue of validTypes) {
-        (generateText as any)
-          .mockResolvedValueOnce(mockEditedEmailResponse)
-          .mockResolvedValueOnce({
-            text: JSON.stringify({
-              type: typeValue,
-              template: '<html><body>Valid landing page template with enough content</body></html>',
-              edited: true,
-              summary: 'Changed content'
-            })
-          });
+        (generateText as any).mockResolvedValueOnce(mockEditedEmailResponse).mockResolvedValueOnce({
+          text: JSON.stringify({
+            type: typeValue,
+            template: '<html><body>Valid landing page template with enough content</body></html>',
+            edited: true,
+            summary: 'Changed content',
+          }),
+        });
 
         const input = {
           phishingId: 'phishing-123',
-          editInstruction: 'Update'
+          editInstruction: 'Update',
         };
 
         const result = await executeTool({ context: input } as any);
@@ -599,20 +677,18 @@ describe('phishingEditorTool', () => {
     });
 
     it('should skip invalid landing page and still succeed with email', async () => {
-      (generateText as any)
-        .mockResolvedValueOnce(mockEditedEmailResponse)
-        .mockResolvedValueOnce({
-          text: JSON.stringify({
-            type: 'invalid-type',  // Invalid enum value
-            template: '<html><body>Valid template content here</body></html>',
-            edited: true,
-            summary: 'Changed'
-          })
-        });
+      (generateText as any).mockResolvedValueOnce(mockEditedEmailResponse).mockResolvedValueOnce({
+        text: JSON.stringify({
+          type: 'invalid-type', // Invalid enum value
+          template: '<html><body>Valid template content here</body></html>',
+          edited: true,
+          summary: 'Changed',
+        }),
+      });
 
       const input = {
         phishingId: 'phishing-123',
-        editInstruction: 'Update'
+        editInstruction: 'Update',
       };
 
       const result = await executeTool({ context: input } as any);
@@ -630,7 +706,7 @@ describe('phishingEditorTool', () => {
 
       const input = {
         phishingId: 'phishing-123',
-        editInstruction: injectionAttempt
+        editInstruction: injectionAttempt,
       };
 
       await executeTool({ context: input } as any);
@@ -638,7 +714,7 @@ describe('phishingEditorTool', () => {
       // Verify generateText was called with escaped instruction
       expect(generateText).toHaveBeenCalled();
       const call = (generateText as any).mock.calls.find((c: any[]) =>
-        c[0].messages.some((m: any) => m.content.includes('Edit this email template'))
+        c[0].messages.some((m: any) => m.content.includes('CURRENT EMAIL:'))
       );
 
       // The injection attempt should be in quotes (escaped)
@@ -646,7 +722,7 @@ describe('phishingEditorTool', () => {
       if (call) {
         const messageContent = call[0].messages[1].content;
         // Should contain the escaped instruction as a literal string
-        expect(messageContent).toContain('Instruction: "');
+        expect(messageContent).toContain('USER INSTRUCTION: "');
       }
     });
 
@@ -655,7 +731,7 @@ describe('phishingEditorTool', () => {
 
       const input = {
         phishingId: 'phishing-123',
-        editInstruction: specialChars
+        editInstruction: specialChars,
       };
 
       const result = await executeTool({ context: input } as any);
@@ -670,7 +746,7 @@ describe('phishingEditorTool', () => {
       // In real scenario, timeout would trigger after 30s
       const input = {
         phishingId: 'phishing-123',
-        editInstruction: 'Update subject'
+        editInstruction: 'Update subject',
       };
 
       // Mock normal response
@@ -685,13 +761,11 @@ describe('phishingEditorTool', () => {
 
     it('should handle timeout errors gracefully', async () => {
       // Simulate timeout error
-      (generateText as any).mockRejectedValue(
-        new Error('AI request timeout after 30000ms')
-      );
+      (generateText as any).mockRejectedValue(new Error('AI request timeout after 30000ms'));
 
       const input = {
         phishingId: 'phishing-123',
-        editInstruction: 'Update subject'
+        editInstruction: 'Update subject',
       };
 
       const result = await executeTool({ context: input } as any);
@@ -705,7 +779,7 @@ describe('phishingEditorTool', () => {
       const input = {
         phishingId: 'phishing-123',
         editInstruction: 'Update subject',
-        language: 'en-gb'
+        language: 'en-gb',
       };
 
       const result = await executeTool({ context: input } as any);
@@ -727,10 +801,10 @@ describe('phishingEditorTool', () => {
 
       const input = {
         phishingId: 'phishing-123',
-        editInstruction: 'Update all'
+        editInstruction: 'Update all',
       };
 
-      const result = await executeTool({ context: input } as any) as any;
+      const result = (await executeTool({ context: input } as any)) as any;
 
       if (result.success && result.data) {
         // Type system ensures message exists
