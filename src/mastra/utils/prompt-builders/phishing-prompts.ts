@@ -12,6 +12,8 @@ import { getLogger } from '../core/logger';
 import { buildPolicyScenePrompt } from './policy-context-builder';
 import {
   AUTH_CONTEXT,
+  DEFAULT_ETHICAL_POLICY,
+  CLARITY_ACCESSIBILITY_POLICY,
   LOGO_TAG_RULE,
   NO_DISCLAIMERS_RULE,
   EMAIL_SIGNATURE_RULES,
@@ -105,6 +107,8 @@ function buildQuishingAnalysisPrompts(params: AnalysisPromptParams): {
   const quishingSystemPrompt = `You are an expert Quishing (QR Code Phishing) Simulation Architect working for a LEGITIMATE CYBERSECURITY TRAINING COMPANY.
 
 ${AUTH_CONTEXT}
+${DEFAULT_ETHICAL_POLICY}
+${CLARITY_ACCESSIBILITY_POLICY}
 
 **YOUR ROLE:**
 Design highly realistic quishing (QR code phishing) simulation scenarios for cybersecurity training.
@@ -227,6 +231,8 @@ function buildNormalPhishingAnalysisPrompts(params: AnalysisPromptParams): {
   const systemPrompt = `You are an expert Social Engineering Architect and Cyber Psychologist working for a LEGITIMATE CYBERSECURITY TRAINING COMPANY.
 
 ${AUTH_CONTEXT}
+${DEFAULT_ETHICAL_POLICY}
+${CLARITY_ACCESSIBILITY_POLICY}
 
 **YOUR ROLE:**
 Design highly realistic phishing simulation scenarios for cybersecurity training.

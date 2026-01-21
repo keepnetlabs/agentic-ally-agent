@@ -54,6 +54,15 @@ export const PRIORITY_LEVELS = ['low', 'medium', 'high'] as const;
 export const DEFAULT_PRIORITY = 'medium' as const;
 
 // ============================================
+// AUTONOMOUS DEFAULTS
+// ============================================
+
+export const AUTONOMOUS_DEFAULTS = {
+  PHISHING_TOPIC: 'Phishing & Email Security',
+  TRAINING_TOPIC: 'Security Awareness',
+} as const;
+
+// ============================================
 // PROMPT ANALYSIS CONFIGURATION
 // ============================================
 

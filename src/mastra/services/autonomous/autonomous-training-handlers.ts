@@ -4,11 +4,14 @@
  */
 
 import { microlearningAgent } from '../../agents/microlearning-agent';
-import { AGENT_CALL_TIMEOUT_MS, LONG_RUNNING_AGENT_TIMEOUT_MS } from '../../constants';
+import { AGENT_CALL_TIMEOUT_MS, AUTONOMOUS_DEFAULTS, DEFAULT_PRIORITY, DEFAULT_TRAINING_LEVEL, LONG_RUNNING_AGENT_TIMEOUT_MS, TRAINING_LEVELS } from '../../constants';
+import { workflowExecutorTool } from '../../tools/orchestration';
+import { assignTrainingTool, uploadTrainingTool } from '../../tools/user-management';
 import { withTimeout, withRetry } from '../../utils/core/resilience-utils';
 import { getLogger } from '../../utils/core/logger';
 import { normalizeError } from '../../utils/core/error-utils';
 import { summarizeForLog } from '../../utils/core/log-redaction-utils';
+import { isSafeId } from '../../utils/core/id-utils';
 import { validateBCP47LanguageCode, DEFAULT_LANGUAGE } from '../../utils/language/language-utils';
 import {
     buildTrainingGenerationPrompt,
@@ -32,6 +35,195 @@ interface AutonomousToolResult {
         department?: string;
         preferredLanguage?: string;
     };
+}
+
+function pickRandomTrainingLevel(): (typeof TRAINING_LEVELS)[number] {
+    return TRAINING_LEVELS[Math.floor(Math.random() * TRAINING_LEVELS.length)];
+}
+
+function resolveTrainingLevel(level?: string): (typeof TRAINING_LEVELS)[number] {
+    if (!level) {
+        return pickRandomTrainingLevel();
+    }
+
+    const matched = TRAINING_LEVELS.find((item) => item.toLowerCase() === level.toLowerCase());
+    return matched ?? DEFAULT_TRAINING_LEVEL;
+}
+
+function buildTrainingPrompt(params: {
+    microlearning: MicrolearningRecommendation;
+    department: string;
+    level: string;
+    language: string;
+}): string {
+    const { microlearning, department, level, language } = params;
+    const topic = microlearning.title || AUTONOMOUS_DEFAULTS.TRAINING_TOPIC;
+    const objective = microlearning.objective ? `Objective: ${microlearning.objective}.` : '';
+    return `Create a ${level} microlearning module about "${topic}". ${objective}Target department: ${department}. Language: ${language}.`;
+}
+
+function resolveToolFirstPromptAndContext(params: {
+    isCustomPrompt: boolean;
+    contextOrPrompt?: string;
+    microlearning: MicrolearningRecommendation;
+    department: string;
+    level: string;
+    language: string;
+}): { prompt: string; additionalContext?: string } {
+    const { isCustomPrompt, contextOrPrompt, microlearning, department, level, language } = params;
+    const rationaleContext = microlearning.rationale ? `Rationale: ${microlearning.rationale}` : undefined;
+
+    if (isCustomPrompt && contextOrPrompt) {
+        return {
+            prompt: contextOrPrompt,
+            additionalContext: rationaleContext
+        };
+    }
+
+    const prompt = buildTrainingPrompt({ microlearning, department, level, language });
+    return {
+        prompt,
+        additionalContext: contextOrPrompt && contextOrPrompt.length > 0 ? contextOrPrompt : rationaleContext
+    };
+}
+
+async function executeTrainingToolFirst(params: {
+    microlearning: MicrolearningRecommendation;
+    contextOrPrompt: string | undefined;
+    toolResult: AutonomousToolResult;
+    uploadOnly: boolean;
+    isCustomPrompt: boolean;
+    targetUserResourceId?: string;
+    targetGroupResourceId?: string | number;
+    trainingLevel?: string;
+}): Promise<any> {
+    const logger = getLogger('ExecuteTrainingToolFirst');
+    const {
+        microlearning,
+        contextOrPrompt,
+        toolResult,
+        uploadOnly,
+        isCustomPrompt,
+        targetUserResourceId,
+        targetGroupResourceId,
+        trainingLevel
+    } = params;
+
+    try {
+        const department = toolResult.userInfo?.department || 'All';
+        const level = resolveTrainingLevel(trainingLevel);
+        const preferredLanguageRaw = toolResult.userInfo?.preferredLanguage || microlearning.language || '';
+        const language = preferredLanguageRaw ? validateBCP47LanguageCode(preferredLanguageRaw) : DEFAULT_LANGUAGE;
+
+        const { prompt, additionalContext } = resolveToolFirstPromptAndContext({
+            isCustomPrompt,
+            contextOrPrompt,
+            microlearning,
+            department,
+            level,
+            language
+        });
+
+        logger.info('Tool-first training parameters', {
+            topic: microlearning.title,
+            department,
+            level,
+            language,
+            uploadOnly,
+            isCustomPrompt
+        });
+
+        const toolGeneration = await workflowExecutorTool.execute({
+            context: {
+                workflowType: 'create-microlearning',
+                prompt,
+                additionalContext,
+                department,
+                level,
+                language,
+                priority: DEFAULT_PRIORITY
+            }
+        } as any);
+
+        if (!toolGeneration?.success || !toolGeneration.microlearningId || !isSafeId(toolGeneration.microlearningId)) {
+            return {
+                success: false,
+                error: toolGeneration?.error || 'Training tool generation failed',
+                toolGeneration
+            };
+        }
+
+        const uploadResult = await uploadTrainingTool.execute({
+            context: {
+                microlearningId: toolGeneration.microlearningId
+            }
+        } as any);
+
+        if (!uploadResult?.success || !uploadResult.data?.resourceId || !uploadResult.data?.sendTrainingLanguageId) {
+            return {
+                success: false,
+                error: uploadResult?.error || 'Training upload failed',
+                uploadResult
+            };
+        }
+
+        if (uploadOnly) {
+            return {
+                success: true,
+                message: 'Training module generated and uploaded (tool-first)',
+                toolGeneration,
+                uploadResult,
+                data: uploadResult.data
+            };
+        }
+
+        if (!targetUserResourceId && !targetGroupResourceId) {
+            return {
+                success: false,
+                error: 'Missing target user or group for training assignment'
+            };
+        }
+
+        const assignmentContext = targetUserResourceId
+            ? { targetUserResourceId }
+            : { targetGroupResourceId: String(targetGroupResourceId) };
+
+        const assignResult = await assignTrainingTool.execute({
+            context: {
+                resourceId: uploadResult.data.resourceId,
+                sendTrainingLanguageId: uploadResult.data.sendTrainingLanguageId,
+                ...assignmentContext
+            }
+        } as any);
+
+        if (!assignResult?.success) {
+            return {
+                success: false,
+                error: assignResult?.error || 'Training assign failed',
+                uploadResult,
+                assignResult
+            };
+        }
+
+        return {
+            success: true,
+            message: 'Training module generated, uploaded and assigned (tool-first)',
+            toolGeneration,
+            uploadResult,
+            uploadAssignResult: assignResult
+        };
+    } catch (error) {
+        const err = normalizeError(error);
+        logger.warn('Tool-first training flow failed', {
+            error: err.message,
+            customPrompt: isCustomPrompt,
+            uploadOnly
+        });
+        return {
+            success: false,
+            error: err.message
+        };
+    }
 }
 
 /**
@@ -218,10 +410,34 @@ export async function generateTrainingModule(
     toolResult: AutonomousToolResult,
     trainingThreadId: string,
     uploadOnly: boolean = false,
-    isCustomPrompt: boolean = false
+    isCustomPrompt: boolean = false,
+    trainingLevel?: string
 ): Promise<any> {
     const logger = getLogger('GenerateTrainingModule');
     logger.info('Using microlearningAgent to generate training module', { isCustomPrompt });
+
+    const toolFirstResult = await executeTrainingToolFirst({
+        microlearning,
+        contextOrPrompt,
+        toolResult,
+        uploadOnly,
+        isCustomPrompt,
+        targetUserResourceId: toolResult.userInfo?.targetUserResourceId,
+        trainingLevel
+    });
+    if (toolFirstResult?.success) {
+        return {
+            success: true,
+            message: toolFirstResult.message,
+            agentResponse: toolFirstResult.toolGeneration?.status,
+            data: toolFirstResult.data,
+            uploadResult: toolFirstResult.uploadResult,
+            uploadAssignResult: toolFirstResult.uploadAssignResult
+        };
+    }
+    if (toolFirstResult?.error) {
+        logger.warn('Tool-first training failed, falling back to agent', { error: toolFirstResult.error });
+    }
 
     // First, add context to agent's memory
     if (contextOrPrompt && !isCustomPrompt) {
@@ -247,11 +463,10 @@ export async function generateTrainingModule(
 
     // Extract training parameters from microlearning recommendation
     // Schema: { title, objective, duration_min, language, rationale }
-    const topic = microlearning.title || 'Security Awareness';
+    const topic = microlearning.title || AUTONOMOUS_DEFAULTS.TRAINING_TOPIC;
     const objective = microlearning.objective || '';
     const department = toolResult.userInfo?.department || 'All';
-    // Level not in microlearning object, default to Intermediate (can be refined from analysisReport if needed)
-    const level = 'Intermediate';
+    const level = resolveTrainingLevel(trainingLevel);
     const rationale = microlearning.rationale || 'Based on user behavior analysis';
 
     // Use user's preferredLanguage if available, otherwise fall back to microlearning.language or default
@@ -485,10 +700,35 @@ export async function generateTrainingModuleForGroup(
     customPrompt: string,
     preferredLanguage: string | undefined,
     trainingThreadId: string,
-    targetGroupResourceId: string | number
+    targetGroupResourceId: string | number,
+    trainingLevel?: string
 ): Promise<any> {
     const logger = getLogger('GenerateTrainingModuleForGroup');
     logger.info('🎯 GROUP: Generating training module with custom topic-based prompt', { groupId: targetGroupResourceId });
+
+    const toolFirstResult = await executeTrainingToolFirst({
+        microlearning,
+        contextOrPrompt: customPrompt,
+        toolResult: {
+            userInfo: { preferredLanguage }
+        },
+        uploadOnly: false,
+        isCustomPrompt: true,
+        targetGroupResourceId,
+        trainingLevel
+    });
+    if (toolFirstResult?.success) {
+        return {
+            success: true,
+            message: toolFirstResult.message,
+            agentResponse: toolFirstResult.toolGeneration?.status,
+            uploadResult: toolFirstResult.uploadResult,
+            uploadAssignResult: toolFirstResult.uploadAssignResult
+        };
+    }
+    if (toolFirstResult?.error) {
+        logger.warn('Tool-first training (group) failed, falling back to agent', { error: toolFirstResult.error });
+    }
 
     const memoryConfig = {
         memory: {

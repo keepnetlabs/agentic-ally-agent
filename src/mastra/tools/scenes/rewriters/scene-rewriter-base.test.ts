@@ -9,7 +9,13 @@ vi.mock('ai', () => ({
 vi.mock('../../../services/error-service', () => ({
   errorService: {
     aiModel: vi.fn(() => ({ code: 'AI_ERROR', message: 'AI Error' })),
+    recoveryAttempt: vi.fn(), // Used by withRetry
+    external: vi.fn(() => ({ code: 'EXT_ERROR', message: 'Ext Error' })),
   },
+}));
+
+vi.mock('../../../utils/content-processors/json-cleaner', () => ({
+  cleanResponse: vi.fn((text) => text), // Pass through by default
 }));
 
 vi.mock('../../../utils/language/localization-language-rules', () => ({
@@ -354,17 +360,35 @@ describe('Scene Rewriter Base', () => {
   });
 
   describe('Error Handling', () => {
-    it('should handle invalid scene gracefully', async () => {
-      await expect(
-        rewriteSceneWithBase(null as any, 'intro' as any, baseContext)
-      ).resolves.toBeDefined();
-    });
+    describe('Optimization & Resilience', () => {
+      it('should bypass AI for empty scene', async () => {
+        const emptyScene = {};
+        const result = await rewriteSceneWithBase(emptyScene, 'intro' as any, baseContext);
+        expect(result).toBe(emptyScene);
+        expect(generateText).not.toHaveBeenCalled();
+      });
 
-    it('should throw for missing required context fields', async () => {
-      const invalidContext = { sourceLanguage: 'en' } as any;
-      await expect(
-        rewriteSceneWithBase(baseScene, 'intro' as any, invalidContext)
-      ).resolves.toBeDefined();
+      it('should bypass AI for null scene', async () => {
+        const result = await rewriteSceneWithBase(null as any, 'intro' as any, baseContext);
+        expect(result).toBeNull();
+        expect(generateText).not.toHaveBeenCalled();
+      });
+
+      it('should propagate errors from AI generation', async () => {
+        (generateText as any).mockRejectedValue(new Error('AI Overload'));
+        await expect(
+          rewriteSceneWithBase(baseScene, 'intro' as any, baseContext)
+        ).rejects.toThrow('AI Overload');
+      });
+
+      it('should throw error on malformed JSON response', async () => {
+        (generateText as any).mockResolvedValue({
+          text: 'This is not JSON',
+        });
+        await expect(
+          rewriteSceneWithBase(baseScene, 'intro' as any, baseContext)
+        ).rejects.toThrow();
+      });
     });
   });
 

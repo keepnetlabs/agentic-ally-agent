@@ -71,8 +71,21 @@ export const phishingEditorTool = createTool({
 
       let brandContext = '';
       if (context.hasBrandUpdate) {
+        logger.info('🔍 Brand update requested in edit instruction', {
+          phishingId,
+          editInstruction: summarizeForLog(editInstruction),
+        });
         const brandResult = await detectAndResolveBrand(editInstruction, aiModel, whitelabelConfig);
         brandContext = brandResult.brandContext;
+        logger.info('🔍 Brand resolution result', {
+          brandName: brandResult.resolvedBrandInfo?.brandName,
+          isRecognizedBrand: !!brandResult.resolvedBrandInfo?.isRecognizedBrand,
+          hasBrandContext: brandContext.length > 0,
+        });
+      } else {
+        logger.info('🔍 Brand update not requested, skipping brand resolution', {
+          phishingId,
+        });
       }
 
       const escapedInstruction = JSON.stringify(editInstruction).slice(1, -1);

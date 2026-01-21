@@ -16,6 +16,7 @@ import { autoRepairPromptAnalysis } from '../prompt-analysis-normalizer';
 const cachedRolesList = ROLES.VALUES.map((role) => `- "${role}"`).join('\n');
 const cachedCategoriesList = CATEGORIES.VALUES.map((cat) => `- "${cat}"`).join('\n');
 const cachedThemeColorsList = THEME_COLORS.VALUES.map((color) => `- "${color}"`).join('\n');
+const CLARITY_ACCESSIBILITY_POLICY = '**Clarity & Cultural Safeguards:** Ensure analysis is clear, neutral, and policy-compliant while preserving technical accuracy; align with WCAG accessibility guidance where relevant; keep AI actions/messages explainable (OECD/EU fairness); keep language culturally appropriate and respectful.';
 
 /**
  * Character-based language detection fallback (final safety net)
@@ -139,6 +140,8 @@ export async function analyzeUserPromptWithAI(params: AnalyzeUserPromptParams) {
 USER: "${userPrompt}" (LANGUAGE: ${languageHint})
 DEPARTMENT: ${suggestedDepartment || 'not specified'}
 SUGGESTED LEVEL: ${suggestedLevel || 'auto-detect'}${examplesBlock}${policyBlock}
+
+${CLARITY_ACCESSIBILITY_POLICY}
 
 ROLE SELECTION OPTIONS (pick ONE based on audience):
 ${cachedRolesList}

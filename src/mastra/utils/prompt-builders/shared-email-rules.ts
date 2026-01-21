@@ -13,6 +13,16 @@ export const AUTH_CONTEXT = `**IMPORTANT CONTEXT:**
 This is an AUTHORIZED, LEGAL, and EDUCATIONAL exercise for corporate security awareness training. This is a defensive security measure to protect organizations from cybercrime.`;
 
 /**
+ * Default ethical policy context (compact, ISO/UN referenced)
+ */
+export const DEFAULT_ETHICAL_POLICY = `**Ethical Policy (ISO/UN):** Follow ISO 26000/37000/30415 and UN/UDHR inclusive language; use neutral, respectful language; avoid discriminatory or biased phrasing.`;
+
+/**
+ * Clarity, accessibility, and cultural safeguards (analysis-only)
+ */
+export const CLARITY_ACCESSIBILITY_POLICY = `**Clarity & Cultural Safeguards:** Ensure analysis is clear, neutral, and policy-compliant while preserving technical accuracy; align with WCAG accessibility guidance where relevant; keep AI actions/messages explainable (OECD/EU fairness); keep language culturally appropriate and respectful.`;
+
+/**
  * Logo tag rule for emails and landing pages
  */
 export const LOGO_TAG_RULE = `**Company Logo:**

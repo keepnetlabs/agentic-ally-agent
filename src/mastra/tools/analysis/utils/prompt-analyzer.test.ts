@@ -243,6 +243,53 @@ describe('prompt-analyzer', () => {
             expect(result.data.hasRichContext).toBe(true);
             expect(result.data.additionalContext).toBe('User is CTO');
         });
+
+        it('should validate and filter invalid theme colors', async () => {
+            (ai.generateText as any).mockResolvedValue({
+                text: JSON.stringify({
+                    topic: 'Color Test',
+                    themeColor: 'invalid-color-code'
+                })
+            });
+
+            const result = await analyzeUserPromptWithAI({
+                userPrompt: 'Test',
+                model: {},
+            });
+
+            expect(result.data.themeColor).toBeUndefined();
+        });
+
+        it('should accept valid theme colors', async () => {
+            (ai.generateText as any).mockResolvedValue({
+                text: JSON.stringify({
+                    topic: 'Color Test',
+                    themeColor: 'bg-gradient-blue'
+                })
+            });
+
+            const result = await analyzeUserPromptWithAI({
+                userPrompt: 'Test',
+                model: {},
+            });
+
+            // Note: prompt-analyzer logic checks only presence in THEME_COLORS.VALUES
+            expect(result.data.themeColor).toBe('bg-gradient-blue');
+        });
+
+        it('should propagate customRequirements', async () => {
+            (ai.generateText as any).mockResolvedValue({
+                text: JSON.stringify({ topic: 'Req Test' })
+            });
+
+            const result = await analyzeUserPromptWithAI({
+                userPrompt: 'Test',
+                model: {},
+                customRequirements: 'Must include video'
+            });
+
+            expect(result.data.customRequirements).toBe('Must include video');
+        });
     });
 
     describe('getFallbackAnalysis', () => {

@@ -5,6 +5,7 @@
 
 import { getLogger } from '../../utils/core/logger';
 import { normalizeError } from '../../utils/core/error-utils';
+import { DEFAULT_TRAINING_LEVEL, PHISHING, TRAINING_LEVELS } from '../../constants';
 import {
     generatePhishingSimulation,
     generatePhishingSimulationForGroup,
@@ -49,6 +50,24 @@ interface AutonomousToolResult {
         department?: string;
         targetUserResourceId?: string;
     };
+}
+
+function pickRandomItem<T>(items: readonly T[]): T {
+    return items[Math.floor(Math.random() * items.length)];
+}
+
+function deriveTrainingLevelFromAnalysis(report?: ContentGenerationReport): (typeof TRAINING_LEVELS)[number] {
+    const raw = report?.header?.resilience_stage?.level;
+    if (!raw) {
+        return pickRandomItem(TRAINING_LEVELS);
+    }
+
+    const normalized = raw.toLowerCase();
+    if (normalized.includes('low') || normalized.includes('beginner')) return 'Beginner';
+    if (normalized.includes('high') || normalized.includes('advanced')) return 'Advanced';
+    if (normalized.includes('medium') || normalized.includes('intermediate')) return 'Intermediate';
+
+    return DEFAULT_TRAINING_LEVEL;
 }
 
 /**
@@ -146,13 +165,16 @@ export async function generateContentForGroup(
 
     const runTimestamp = Date.now();
     const generationPromises: Promise<any>[] = [];
+    const groupTrainingLevel = pickRandomItem(TRAINING_LEVELS);
 
     // Generate phishing with selected topic + prompt
     if (actions.includes('phishing')) {
+        const groupDifficulty = pickRandomItem(PHISHING.DIFFICULTY_LEVELS);
+        const groupScenarioType = pickRandomItem(['CLICK_ONLY', 'DATA_SUBMISSION'] as const);
         const groupPhishingSimulation = {
             title: `Group Phishing Simulation: ${topic}`,
-            difficulty: 'Medium',
-            scenario_type: 'CLICK_ONLY',
+            difficulty: groupDifficulty,
+            scenario_type: groupScenarioType,
             vector: 'EMAIL',
             persuasion_tactic: 'Topic-focused attack',
             rationale: `Group-level awareness training focused on: ${topic}`
@@ -207,7 +229,8 @@ export async function generateContentForGroup(
                 trainingPrompt,  // custom topic-based prompt from group-topic-service
                 preferredLanguage,
                 trainingThreadId,
-                userId as string | number
+                userId as string | number,
+                groupTrainingLevel
             )
                 .then(result => { trainingResult = result; })
                 .catch(error => {
@@ -248,6 +271,7 @@ export async function generateContentForUser(
     const uploadOnly = sendAfterPhishingSimulation === true;
 
     const recommendedSteps = getRecommendedNextSteps(toolResult.analysisReport);
+    const trainingLevel = deriveTrainingLevelFromAnalysis(toolResult.analysisReport);
 
     // Generate phishing if requested and simulation available
     if (actions.includes('phishing') && recommendedSteps.simulations?.[0]) {
@@ -276,7 +300,7 @@ export async function generateContentForUser(
         const microlearning = recommendedSteps.microlearnings[0];
         logger.info('Starting training generation', { microlearning: microlearning.title, uploadOnly });
         generationPromises.push(
-            generateTrainingModule(microlearning, executiveReport, toolResult, trainingThreadId, uploadOnly)
+            generateTrainingModule(microlearning, executiveReport, toolResult, trainingThreadId, uploadOnly, false, trainingLevel)
                 .then(result => {
                     logger.info('Training generation result received', {
                         success: result?.success,
@@ -309,6 +333,11 @@ export async function generateContentForUser(
             uploadAssignResultKeys: trainingResult?.uploadAssignResult ? Object.keys(trainingResult.uploadAssignResult) : []
         });
 
+        const phishingUploadResult = phishingResult?.uploadResult;
+        const phishingResourceId = phishingUploadResult?.data?.resourceId;
+        const phishingLanguageId = phishingUploadResult?.data?.languageId;
+        const phishingIsQuishing = phishingUploadResult?.data?.isQuishing;
+
         // Extract training IDs from training result - try multiple paths
         const trainingId =
             trainingResult?.data?.resourceId ||
@@ -335,7 +364,10 @@ export async function generateContentForUser(
                 userId as string,
                 phishingThreadId,
                 trainingId,
-                sendTrainingLanguageId
+                sendTrainingLanguageId,
+                phishingResourceId,
+                phishingLanguageId,
+                phishingIsQuishing
             );
             if (assignResult?.success) {
                 phishingResult.uploadAssignResult = assignResult;

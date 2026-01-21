@@ -331,7 +331,11 @@ describe('WorkflowExecutorTool', () => {
     });
   });
 
-  describe('Error Handling', () => {
+  describe('Error Handling & Validation', () => {
+
+    // Zod schema prevents execution with invalid workflowType
+    // it('should return error if workflowType is invalid', ...);
+
     it('should handle catastrophic failure and write to writer', async () => {
       (createMicrolearningWorkflow.createRunAsync as any).mockRejectedValue(new Error('Internal Crash'));
 
@@ -355,6 +359,50 @@ describe('WorkflowExecutorTool', () => {
       expect(mockWriter.write).toHaveBeenCalledWith(expect.objectContaining({
         delta: expect.stringContaining('❌ Workflow failed: Internal Crash')
       }));
+    });
+
+    describe('add-multiple-languages validation', () => {
+      it('should fail if existingMicrolearningId is missing', async () => {
+        const params = {
+          workflowType: 'add-multiple-languages',
+          targetLanguages: ['es']
+        };
+        const result: any = await workflowExecutorTool.execute({
+          context: params as any,
+          writer: mockWriter as any,
+        } as any);
+        expect(result.success).toBe(false);
+        expect(result.error).toContain('required');
+      });
+
+      it('should fail if targetLanguages is empty', async () => {
+        const params = {
+          workflowType: 'add-multiple-languages',
+          existingMicrolearningId: '123',
+          targetLanguages: []
+        };
+        const result: any = await workflowExecutorTool.execute({
+          context: params as any,
+          writer: mockWriter as any,
+        } as any);
+        expect(result.success).toBe(false);
+        expect(result.error).toContain('required');
+      });
+    });
+
+    describe('update-microlearning validation', () => {
+      it('should fail if updates object is missing', async () => {
+        const params = {
+          workflowType: 'update-microlearning',
+          existingMicrolearningId: '123'
+        };
+        const result: any = await workflowExecutorTool.execute({
+          context: params as any,
+          writer: mockWriter as any,
+        } as any);
+        expect(result.success).toBe(false);
+        expect(result.error).toContain('required');
+      });
     });
 
   });

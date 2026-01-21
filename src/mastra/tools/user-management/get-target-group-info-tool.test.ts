@@ -78,18 +78,100 @@ describe('getTargetGroupInfoTool', () => {
     expect(result.error).toBeTruthy();
   });
 
-  it('fails gracefully when group search returns empty', async () => {
+  it('rejects short group names', async () => {
+    const result = await getTargetGroupInfoTool.execute({
+      context: { groupName: 'IT' }, // < 3 chars
+    } as any);
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('at least 3 characters');
+  });
+
+  it('retries with simplified name on empty result', async () => {
+    // First call returns empty
     (global.fetch as any).mockResolvedValueOnce({
       ok: true,
       json: async () => ({ items: [] }),
     });
+    // Second call returns result
+    (global.fetch as any).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ items: [{ targetGroupResourceId: 'g-retry', groupName: 'Finance' }] }),
+    });
 
     const result = await getTargetGroupInfoTool.execute({
-      context: { groupName: 'Unknown Group' },
+      context: { groupName: 'Finance Group' },
     } as any);
 
-    expect(result.success).toBe(false);
-    expect(result.error).toBeTruthy();
+    expect(result.success).toBe(true);
+    expect(result.groupInfo?.targetGroupResourceId).toBe('g-retry');
+
+    // Check second call used simplified name
+    const calls = (global.fetch as any).mock.calls;
+    expect(calls.length).toBe(2);
+
+    // First call with "Finance Group"
+    const firstPayload = JSON.parse(calls[0][1].body);
+    expect(firstPayload.filter.FilterGroups[1].FilterItems[0].Value).toBe('Finance Group');
+
+    // Second call with "Finance" (stripped "Group")
+    const secondPayload = JSON.parse(calls[1][1].body);
+    expect(secondPayload.filter.FilterGroups[1].FilterItems[0].Value).toBe('Finance');
+  });
+
+  it('emits UI signal via writer', async () => {
+    const mockWriter = { write: vi.fn() };
+    (global.fetch as any).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ items: [{ targetGroupResourceId: 'g-signal', groupName: 'Signal' }] }),
+    });
+
+    await getTargetGroupInfoTool.execute({
+      context: { groupName: 'Signal Group' },
+      writer: mockWriter,
+    } as any);
+
+    expect(mockWriter.write).toHaveBeenCalled();
+    const callArgs = mockWriter.write.mock.calls.map((c) => c[0]);
+    expect(callArgs.some((arg) => arg.type === 'text-delta' && arg.delta.includes('::ui:target_group::'))).toBe(true);
+  });
+
+  it('prioritizes exact name match', async () => {
+    (global.fetch as any).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        items: [
+          { targetGroupResourceId: 'g-1', groupName: 'Sales Support' },
+          { targetGroupResourceId: 'g-2', groupName: 'Sales' }, // Exact match
+          { targetGroupResourceId: 'g-3', groupName: 'Sales Admin' },
+        ],
+      }),
+    });
+
+    const result = await getTargetGroupInfoTool.execute({
+      context: { groupName: 'Sales' },
+    } as any);
+
+    expect(result.groupInfo?.targetGroupResourceId).toBe('g-2');
+  });
+
+  it('handles result structure variation', async () => {
+    // API might return { results: [...] } instead of { items: [...] } or wrapper { data: { results: ... } }
+    (global.fetch as any).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        data: {
+          results: [{ targetGroupResourceId: 'g-nested', groupName: 'Nested' }]
+        }
+      }),
+    });
+
+    const result = await getTargetGroupInfoTool.execute({
+      context: { groupName: 'Nested' },
+    } as any);
+
+    expect(result.success).toBe(true);
+    expect(result.groupInfo?.targetGroupResourceId).toBe('g-nested');
   });
 });
 

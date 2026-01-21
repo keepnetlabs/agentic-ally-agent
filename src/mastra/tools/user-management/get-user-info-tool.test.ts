@@ -405,6 +405,31 @@ describe('getUserInfoTool', () => {
       expect(result.error).toBeDefined();
     });
 
+    it('should prioritize user with matching last name when multiple results found', async () => {
+      const multipleUsersMock = {
+        items: [
+          { targetUserResourceId: 'u1', firstName: 'John', lastName: 'Smithy', email: 'j1@e.com' },
+          { targetUserResourceId: 'u2', firstName: 'John', lastName: 'Smith', email: 'j2@e.com' } // Perfect match for "John Smith"
+        ]
+      };
+
+      (global.fetch as any)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => multipleUsersMock
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => mockTimelineResponse
+        });
+
+      const input = { fullName: 'John Smith' };
+      const result = await getUserInfoTool.execute({ context: input } as any);
+
+      // Should pick u2 because lastName "Smith" matches input last name "Smith" exactly
+      expect(result.userInfo?.targetUserResourceId).toBe('u2');
+    });
+
     it('should handle user search API errors', async () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: false,
@@ -517,6 +542,46 @@ describe('getUserInfoTool', () => {
       expect(generateText).toHaveBeenCalled();
       const generateTextCall = (generateText as any).mock.calls[0][0];
       expect(generateTextCall.messages[1].content).toContain('NO ACTIVITY DATA AVAILABLE');
+    });
+
+    it('should generate deterministic default recommendations based on user ID when no activities found', async () => {
+      // Mock timeline empty
+      (global.fetch as any)
+        .mockResolvedValueOnce({ ok: true, json: async () => mockUserSearchResponse })
+        .mockResolvedValueOnce({ ok: true, json: async () => ({ data: { results: [] } }) });
+
+
+      // Mock AI returning a basic structure where simulation array exists but empty/default
+      const basicAIResponse = {
+        ...mockAnalysisReport,
+        ai_recommended_next_steps: {
+          simulations: [{
+            vector: 'DEFAULT',
+            persuasion_tactic: 'DEFAULT',
+            scenario_type: 'CLICK_ONLY',
+            difficulty: 'EASY',
+            title: 'Test Sim',
+            why_this: 'Testing',
+            designed_to_progress: 'Test',
+            nist_phish_scale: {
+              cue_difficulty: 'LOW',
+              premise_alignment: 'LOW'
+            }
+          }],
+          microlearnings: [],
+          nudges: []
+        }
+      };
+      (generateText as any).mockResolvedValue({ text: JSON.stringify(basicAIResponse) });
+
+      const input = { targetUserResourceId: 'user-1' };
+      // 'u' + 's' + 'e' + 'r' + '-' + '1' = 541 (Odd) -> Parity 1 -> QR / AUTHORITY
+
+      const result = await getUserInfoTool.execute({ context: input } as any);
+      const sim = result.analysisReport?.ai_recommended_next_steps?.simulations?.[0];
+
+      expect(sim?.vector).toBe('QR');
+      expect(sim?.persuasion_tactic).toBe('AUTHORITY');
     });
   });
 
