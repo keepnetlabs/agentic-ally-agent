@@ -110,11 +110,17 @@ export const phishingWorkflowExecutorTool = createTool({
                         const messageId = uuidv4();
                         await writer.write({ type: 'text-start', id: messageId });
 
+                        const normalizedLanguage = (params.language || 'en-gb').toLowerCase();
+                        const emailKey = `phishing:${output.phishingId}:email:${normalizedLanguage}`;
+                        const landingKey = `phishing:${output.phishingId}:landing:${normalizedLanguage}`;
+
                         // 1. Email Preview (if exists) - Single object encoding
                         if (output.template) {
                             // Encode entire email object as JSON string
                             const emailObject = {
                                 phishingId: output.phishingId,
+                                emailKey,
+                                language: normalizedLanguage,
                                 subject: output.subject,
                                 template: output.template,
                                 fromAddress: output.fromAddress,
@@ -137,6 +143,8 @@ export const phishingWorkflowExecutorTool = createTool({
                             // Encode entire landingPage object as JSON string
                             const landingPageObject = {
                                 phishingId: output.phishingId,
+                                landingKey,
+                                language: normalizedLanguage,
                                 ...output.landingPage,
                                 isQuishing: params.isQuishing || false,
                             };

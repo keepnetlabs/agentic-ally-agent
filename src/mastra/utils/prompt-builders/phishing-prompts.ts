@@ -10,9 +10,9 @@ import { getLoginPageSection, getSuccessPageSection, getInfoPageSection } from '
 import { createPhishingAnalysisSchema } from '../../schemas';
 import { getLogger } from '../core/logger';
 import { buildPolicyScenePrompt } from './policy-context-builder';
+import { DEFAULT_PHISHING_ETHICAL_POLICY } from './prompt-analysis-policies';
 import {
   AUTH_CONTEXT,
-  DEFAULT_ETHICAL_POLICY,
   CLARITY_ACCESSIBILITY_POLICY,
   LOGO_TAG_RULE,
   NO_DISCLAIMERS_RULE,
@@ -107,7 +107,7 @@ function buildQuishingAnalysisPrompts(params: AnalysisPromptParams): {
   const quishingSystemPrompt = `You are an expert Quishing (QR Code Phishing) Simulation Architect working for a LEGITIMATE CYBERSECURITY TRAINING COMPANY.
 
 ${AUTH_CONTEXT}
-${DEFAULT_ETHICAL_POLICY}
+${DEFAULT_PHISHING_ETHICAL_POLICY}
 ${CLARITY_ACCESSIBILITY_POLICY}
 
 **YOUR ROLE:**
@@ -231,7 +231,7 @@ function buildNormalPhishingAnalysisPrompts(params: AnalysisPromptParams): {
   const systemPrompt = `You are an expert Social Engineering Architect and Cyber Psychologist working for a LEGITIMATE CYBERSECURITY TRAINING COMPANY.
 
 ${AUTH_CONTEXT}
-${DEFAULT_ETHICAL_POLICY}
+${DEFAULT_PHISHING_ETHICAL_POLICY}
 ${CLARITY_ACCESSIBILITY_POLICY}
 
 **YOUR ROLE:**

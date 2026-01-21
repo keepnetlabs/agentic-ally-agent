@@ -33,7 +33,7 @@ import { PinoLogger } from '@mastra/loggers';
 import { registerApiRoute } from '@mastra/core/server';
 import { Context, Next } from 'hono';
 import { D1Store } from '@mastra/cloudflare-d1';
-import { RATE_LIMIT_CONFIG } from './constants';
+import { KV_NAMESPACES, RATE_LIMIT_CONFIG } from './constants';
 
 // Silence AI SDK warnings (e.g., unsupported presencePenalty/frequencyPenalty for some models)
 (globalThis as any).AI_SDK_LOG_WARNINGS = false;
@@ -48,6 +48,8 @@ import {
   createAgentStream,
 } from './utils/chat-orchestration-helpers';
 import { normalizeSafeId } from './utils/core/id-utils';
+import { validateBCP47LanguageCode, DEFAULT_LANGUAGE } from './utils/language/language-utils';
+import { postProcessPhishingEmailHtml, postProcessPhishingLandingHtml } from './utils/content-processors/phishing-html-postprocessors';
 
 // Barrel imports - clean organization
 import {
@@ -74,7 +76,7 @@ import {
   addMultipleLanguagesWorkflow,
   updateMicrolearningWorkflow,
 } from './workflows';
-import { ExampleRepo, executeAutonomousGeneration, performHealthCheck } from './services';
+import { ExampleRepo, executeAutonomousGeneration, performHealthCheck, KVService } from './services';
 import { validateEnvironmentOrThrow } from './utils/core';
 import type {
   ChatRequestBody,
@@ -433,6 +435,138 @@ export const mastra = new Mastra({
                 points: 0,
                 hint: '',
               },
+              error: error instanceof Error ? error.message : 'Unknown error',
+            }, 500);
+          }
+        },
+      }),
+
+      registerApiRoute('/phishing/editor/save', {
+        method: 'POST',
+        handler: async (c: Context) => {
+          const requestStart = Date.now();
+          try {
+            const body = await c.req.json<Record<string, any>>();
+            const {
+              phishingId,
+              language,
+              emailKey,
+              landingKey,
+              email,
+              landing,
+            } = body || {};
+
+            if (!phishingId || typeof phishingId !== 'string') {
+              logger.warn('phishing_editor_save_missing_id');
+              return c.json({ success: false, error: 'Missing phishingId' }, 400);
+            }
+
+            const normalizedLanguage = validateBCP47LanguageCode(language || DEFAULT_LANGUAGE);
+            const baseKeyPrefix = `phishing:${phishingId}`;
+            const defaultEmailKey = `${baseKeyPrefix}:email:${normalizedLanguage}`;
+            const defaultLandingKey = `${baseKeyPrefix}:landing:${normalizedLanguage}`;
+
+            const effectiveEmailKey =
+              typeof emailKey === 'string' && emailKey.startsWith(`${baseKeyPrefix}:email:`)
+                ? emailKey
+                : defaultEmailKey;
+
+            const effectiveLandingKey =
+              typeof landingKey === 'string' && landingKey.startsWith(`${baseKeyPrefix}:landing:`)
+                ? landingKey
+                : defaultLandingKey;
+
+            const kvService = new KVService(KV_NAMESPACES.PHISHING);
+            const saved: string[] = [];
+            logger.info('phishing_editor_save_started', {
+              phishingId,
+              language: normalizedLanguage,
+              hasEmail: !!email?.template,
+              hasLanding: !!landing?.pages?.length,
+            });
+
+            if (email?.template && typeof email.template === 'string') {
+              const existingEmail = await kvService.get(effectiveEmailKey);
+              if (!existingEmail) {
+                logger.warn('phishing_editor_save_email_not_found', { emailKey: effectiveEmailKey });
+                return c.json({ success: false, error: 'Email template not found for update' }, 404);
+              }
+              const processedTemplate = postProcessPhishingEmailHtml({ html: email.template });
+              const updatedEmail = {
+                ...(existingEmail || {}),
+                template: processedTemplate,
+                lastModified: Date.now(),
+              };
+              await kvService.put(effectiveEmailKey, updatedEmail);
+              saved.push('email');
+              logger.info('phishing_editor_save_email_updated', { emailKey: effectiveEmailKey });
+            }
+
+            if (landing?.pages && Array.isArray(landing.pages) && landing.pages.length > 0) {
+              const existingLanding = await kvService.get(effectiveLandingKey);
+              if (!existingLanding) {
+                logger.warn('phishing_editor_save_landing_not_found', { landingKey: effectiveLandingKey });
+                return c.json({ success: false, error: 'Landing template not found for update' }, 404);
+              }
+
+              const updatedPages = landing.pages
+                .filter((page: any) => page?.template && page?.type)
+                .map((page: any) => ({
+                  ...page,
+                  template: postProcessPhishingLandingHtml({
+                    html: page.template,
+                    title: landing?.name || existingLanding?.name || 'Secure Portal',
+                  }),
+                  edited: page.edited ?? true,
+                  summary: page.summary || 'Updated in UI',
+                }));
+
+              if (updatedPages.length > 0) {
+                const existingPages = Array.isArray(existingLanding.pages) ? existingLanding.pages : [];
+                const mergedPages = existingPages.map((page: any) => {
+                  const replacement = updatedPages.find((updated: any) => updated.type === page.type);
+                  return replacement || page;
+                });
+                const appendedPages = updatedPages.filter((updated: any) =>
+                  !existingPages.some((page: any) => page.type === updated.type)
+                );
+
+                const updatedLanding = {
+                  ...(existingLanding || {}),
+                  pages: [...mergedPages, ...appendedPages],
+                  lastModified: Date.now(),
+                };
+                await kvService.put(effectiveLandingKey, updatedLanding);
+                saved.push('landing');
+                logger.info('phishing_editor_save_landing_updated', {
+                  landingKey: effectiveLandingKey,
+                  pageCount: updatedLanding.pages?.length,
+                });
+              }
+            }
+
+            if (saved.length === 0) {
+              logger.warn('phishing_editor_save_no_content', { phishingId });
+              return c.json({ success: false, error: 'No email or landing content provided' }, 400);
+            }
+
+            logger.info('phishing_editor_save_completed', {
+              phishingId,
+              saved,
+              durationMs: Date.now() - requestStart,
+            });
+            return c.json({
+              success: true,
+              phishingId,
+              language: normalizedLanguage,
+              saved,
+            }, 200);
+          } catch (error) {
+            logger.error('phishing_editor_save_error', {
+              error: error instanceof Error ? error.message : String(error),
+            });
+            return c.json({
+              success: false,
               error: error instanceof Error ? error.message : 'Unknown error',
             }, 500);
           }

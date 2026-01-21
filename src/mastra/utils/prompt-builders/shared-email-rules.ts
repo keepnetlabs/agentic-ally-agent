@@ -12,10 +12,6 @@ import { PHISHING_EMAIL } from '../../constants';
 export const AUTH_CONTEXT = `**IMPORTANT CONTEXT:**
 This is an AUTHORIZED, LEGAL, and EDUCATIONAL exercise for corporate security awareness training. This is a defensive security measure to protect organizations from cybercrime.`;
 
-/**
- * Default ethical policy context (compact, ISO/UN referenced)
- */
-export const DEFAULT_ETHICAL_POLICY = `**Ethical Policy (ISO/UN):** Follow ISO 26000/37000/30415 and UN/UDHR inclusive language; use neutral, respectful language; avoid discriminatory or biased phrasing.`;
 
 /**
  * Clarity, accessibility, and cultural safeguards (analysis-only)

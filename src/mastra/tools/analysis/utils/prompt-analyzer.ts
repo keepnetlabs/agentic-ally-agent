@@ -4,6 +4,7 @@ import { ExampleRepo } from '../../../services/example-repo';
 import { validateBCP47LanguageCode, DEFAULT_LANGUAGE } from '../../../utils/language/language-utils';
 import { cleanResponse } from '../../../utils/content-processors/json-cleaner';
 import { buildPolicySystemPrompt } from '../../../utils/prompt-builders/policy-context-builder';
+import { CLARITY_ACCESSIBILITY_POLICY, DEFAULT_MICROLEARNING_ETHICAL_POLICY } from '../../../utils/prompt-builders/prompt-analysis-policies';
 import { PROMPT_ANALYSIS_PARAMS } from '../../../utils/config/llm-generation-params';
 import { MICROLEARNING, ROLES, CATEGORIES, THEME_COLORS } from '../../../constants';
 import { streamReasoning } from '../../../utils/core/reasoning-stream';
@@ -16,8 +17,6 @@ import { autoRepairPromptAnalysis } from '../prompt-analysis-normalizer';
 const cachedRolesList = ROLES.VALUES.map((role) => `- "${role}"`).join('\n');
 const cachedCategoriesList = CATEGORIES.VALUES.map((cat) => `- "${cat}"`).join('\n');
 const cachedThemeColorsList = THEME_COLORS.VALUES.map((color) => `- "${color}"`).join('\n');
-const CLARITY_ACCESSIBILITY_POLICY = '**Clarity & Cultural Safeguards:** Ensure analysis is clear, neutral, and policy-compliant while preserving technical accuracy; align with WCAG accessibility guidance where relevant; keep AI actions/messages explainable (OECD/EU fairness); keep language culturally appropriate and respectful.';
-
 /**
  * Character-based language detection fallback (final safety net)
  */
@@ -142,6 +141,8 @@ DEPARTMENT: ${suggestedDepartment || 'not specified'}
 SUGGESTED LEVEL: ${suggestedLevel || 'auto-detect'}${examplesBlock}${policyBlock}
 
 ${CLARITY_ACCESSIBILITY_POLICY}
+
+${DEFAULT_MICROLEARNING_ETHICAL_POLICY}
 
 ROLE SELECTION OPTIONS (pick ONE based on audience):
 ${cachedRolesList}

@@ -281,6 +281,9 @@ export async function processLandingPageResults<T extends { text: string }>(
 export async function streamEditResultsToUI(
   writer: StreamWriter,
   phishingId: string,
+  emailKey: string | null,
+  landingKey: string | null,
+  language: string,
   editedEmail: EditedEmail | null,
   updatedEmailTemplate: string | null,
   fromAddress: string | undefined,
@@ -298,6 +301,8 @@ export async function streamEditResultsToUI(
     if (editedEmail?.template && updatedEmailTemplate) {
       const emailObject = {
         phishingId,
+        emailKey,
+        language,
         subject: editedEmail.subject,
         template: updatedEmailTemplate,
         fromAddress,
@@ -319,6 +324,8 @@ export async function streamEditResultsToUI(
     if (editedLanding && editedLanding.pages.length > 0) {
       const landingObject = {
         phishingId,
+        landingKey,
+        language,
         ...(landingMeta || {}),
         pages: editedLanding.pages,
         isQuishing,

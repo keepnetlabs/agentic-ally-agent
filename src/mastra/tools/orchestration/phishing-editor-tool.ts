@@ -197,6 +197,9 @@ export const phishingEditorTool = createTool({
         await streamEditResultsToUI(
           writer as StreamWriter,
           phishingId,
+          emailKey,
+          landingKey,
+          language,
           hasEmail ? editedEmail : null,
           updatedEmailTemplate,
           updatedEmail?.fromAddress || existingEmail?.fromAddress,
