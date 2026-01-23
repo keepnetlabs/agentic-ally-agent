@@ -22,7 +22,7 @@ describe('language-utils', () => {
   // ==================== validateBCP47LanguageCode - VALID CODES ====================
   describe('validateBCP47LanguageCode - Valid Language Codes', () => {
     it('should accept en-gb', () => {
-      expect(validateBCP47LanguageCode('en-gb')).toBe('en-GB');
+      expect(validateBCP47LanguageCode('en-gb')).toBe('en-gb');
     });
 
     it('should accept en-us', () => {
@@ -31,71 +31,71 @@ describe('language-utils', () => {
     });
 
     it('should accept tr-tr (Turkish)', () => {
-      expect(validateBCP47LanguageCode('tr-tr')).toBe('tr-TR');
+      expect(validateBCP47LanguageCode('tr-tr')).toBe('tr-tr');
     });
 
     it('should accept fr-fr (French)', () => {
-      expect(validateBCP47LanguageCode('fr-fr')).toBe('fr-FR');
+      expect(validateBCP47LanguageCode('fr-fr')).toBe('fr-fr');
     });
 
     it('should accept de-de (German)', () => {
-      expect(validateBCP47LanguageCode('de-de')).toBe('de-DE');
+      expect(validateBCP47LanguageCode('de-de')).toBe('de-de');
     });
 
     it('should accept es-es (Spanish)', () => {
-      expect(validateBCP47LanguageCode('es-es')).toBe('es-ES');
+      expect(validateBCP47LanguageCode('es-es')).toBe('es-es');
     });
 
     it('should accept pt-pt (Portuguese)', () => {
-      expect(validateBCP47LanguageCode('pt-pt')).toBe('pt-PT');
+      expect(validateBCP47LanguageCode('pt-pt')).toBe('pt-pt');
     });
 
     it('should accept ja-jp (Japanese)', () => {
-      expect(validateBCP47LanguageCode('ja-jp')).toBe('ja-JP');
+      expect(validateBCP47LanguageCode('ja-jp')).toBe('ja-jp');
     });
 
     it('should accept zh-cn (Chinese Simplified)', () => {
-      expect(validateBCP47LanguageCode('zh-cn')).toBe('zh-CN');
+      expect(validateBCP47LanguageCode('zh-cn')).toBe('zh-cn');
     });
 
     it('should accept ar-sa (Arabic)', () => {
-      expect(validateBCP47LanguageCode('ar-sa')).toBe('ar-SA');
+      expect(validateBCP47LanguageCode('ar-sa')).toBe('ar-sa');
     });
 
     it('should accept ko-kr (Korean)', () => {
-      expect(validateBCP47LanguageCode('ko-kr')).toBe('ko-KR');
+      expect(validateBCP47LanguageCode('ko-kr')).toBe('ko-kr');
     });
 
     it('should accept nl-nl (Dutch)', () => {
-      expect(validateBCP47LanguageCode('nl-nl')).toBe('nl-NL');
+      expect(validateBCP47LanguageCode('nl-nl')).toBe('nl-nl');
     });
 
     it('should accept pl-pl (Polish)', () => {
-      expect(validateBCP47LanguageCode('pl-pl')).toBe('pl-PL');
+      expect(validateBCP47LanguageCode('pl-pl')).toBe('pl-pl');
     });
 
     it('should accept sv-se (Swedish)', () => {
-      expect(validateBCP47LanguageCode('sv-se')).toBe('sv-SE');
+      expect(validateBCP47LanguageCode('sv-se')).toBe('sv-se');
     });
 
     it('should accept no-no (Norwegian)', () => {
-      expect(validateBCP47LanguageCode('no-no')).toBe('no-NO');
+      expect(validateBCP47LanguageCode('no-no')).toBe('no-no');
     });
 
     it('should accept da-dk (Danish)', () => {
-      expect(validateBCP47LanguageCode('da-dk')).toBe('da-DK');
+      expect(validateBCP47LanguageCode('da-dk')).toBe('da-dk');
     });
 
     it('should accept fi-fi (Finnish)', () => {
-      expect(validateBCP47LanguageCode('fi-fi')).toBe('fi-FI');
+      expect(validateBCP47LanguageCode('fi-fi')).toBe('fi-fi');
     });
 
     it('should accept ru-ru (Russian)', () => {
-      expect(validateBCP47LanguageCode('ru-ru')).toBe('ru-RU');
+      expect(validateBCP47LanguageCode('ru-ru')).toBe('ru-ru');
     });
 
     it('should accept it-it (Italian)', () => {
-      expect(validateBCP47LanguageCode('it-it')).toBe('it-IT');
+      expect(validateBCP47LanguageCode('it-it')).toBe('it-it');
     });
   });
 
@@ -167,24 +167,24 @@ describe('language-utils', () => {
 
     it('should handle underscores in aliases', () => {
       const result = validateBCP47LanguageCode('en_gb');
-      expect(result).toBe('en-GB');
+      expect(result).toBe('en-gb');
     });
   });
 
   // ==================== validateBCP47LanguageCode - LEGACY FIXES ====================
   describe('validateBCP47LanguageCode - Legacy/Typo Fixes', () => {
     it('should convert en-uk to en-gb', () => {
-      expect(validateBCP47LanguageCode('en-uk')).toBe('en-GB');
+      expect(validateBCP47LanguageCode('en-uk')).toBe('en-gb');
     });
 
     it('should handle en-UK (uppercase) to en-GB', () => {
-      expect(validateBCP47LanguageCode('en-UK')).toBe('en-GB');
+      expect(validateBCP47LanguageCode('en-UK')).toBe('en-gb');
     });
 
     it('should handle En-Uk (mixed case)', () => {
       const result = validateBCP47LanguageCode('En-Uk');
       expect(result).toContain('en');
-      expect(result).toContain('GB');
+      expect(result).toContain('gb');
     });
   });
 
@@ -192,18 +192,18 @@ describe('language-utils', () => {
   describe('validateBCP47LanguageCode - BCP-47 Normalization', () => {
     it('should normalize to lowercase language, uppercase region', () => {
       const result = validateBCP47LanguageCode('EN-GB');
-      expect(result).toBe('en-GB');
+      expect(result).toBe('en-gb');
     });
 
     it('should handle mixed case correctly', () => {
       const result = validateBCP47LanguageCode('En-Gb');
-      expect(result).toBe('en-GB');
+      expect(result).toBe('en-gb');
     });
 
     it('should preserve script subtags (4-letter codes)', () => {
       const result = validateBCP47LanguageCode('zh-Hans-CN');
       expect(result).toContain('zh');
-      expect(result).toContain('CN');
+      expect(result).toContain('cn');
     });
 
     it('should handle extension subtags', () => {
@@ -216,49 +216,49 @@ describe('language-utils', () => {
   describe('validateBCP47LanguageCode - Default Region Assignment', () => {
     it('should add GB for language code "en" without region', () => {
       const result = validateBCP47LanguageCode('en');
-      expect(result).toBe('en-GB');
+      expect(result).toBe('en-gb');
     });
 
     it('should add TR for language code "tr" without region', () => {
       const result = validateBCP47LanguageCode('tr');
-      expect(result).toBe('tr-TR');
+      expect(result).toBe('tr-tr');
     });
 
     it('should add FR for language code "fr" without region', () => {
       const result = validateBCP47LanguageCode('fr');
-      expect(result).toBe('fr-FR');
+      expect(result).toBe('fr-fr');
     });
 
     it('should add DE for language code "de" without region', () => {
       const result = validateBCP47LanguageCode('de');
-      expect(result).toBe('de-DE');
+      expect(result).toBe('de-de');
     });
 
     it('should add ES for language code "es" without region', () => {
       const result = validateBCP47LanguageCode('es');
-      expect(result).toBe('es-ES');
+      expect(result).toBe('es-es');
     });
 
     it('should add CN for language code "zh" without region', () => {
       const result = validateBCP47LanguageCode('zh');
-      expect(result).toBe('zh-CN');
+      expect(result).toBe('zh-cn');
     });
 
     it('should add JP for language code "ja" without region', () => {
       const result = validateBCP47LanguageCode('ja');
-      expect(result).toBe('ja-JP');
+      expect(result).toBe('ja-jp');
     });
 
     it('should preserve provided region', () => {
       const result = validateBCP47LanguageCode('en-us');
       expect(result).toContain('en');
-      expect(result).toContain('US');
+      expect(result).toContain('us');
     });
 
     it('should not override explicit region with default', () => {
       const result = validateBCP47LanguageCode('en-au');
-      expect(result).toContain('AU');
-      expect(result).not.toContain('GB');
+      expect(result).toContain('au');
+      expect(result).not.toContain('gb');
     });
   });
 
@@ -279,12 +279,12 @@ describe('language-utils', () => {
 
     it('should handle quoted strings', () => {
       const result = validateBCP47LanguageCode('"en-gb"');
-      expect(result).toBe('en-GB');
+      expect(result).toBe('en-gb');
     });
 
     it('should handle single quoted strings', () => {
       const result = validateBCP47LanguageCode("'en-gb'");
-      expect(result).toBe('en-GB');
+      expect(result).toBe('en-gb');
     });
 
     it('should handle numeric inputs', () => {

@@ -6,6 +6,17 @@ import {
 } from './autonomous-content-generators';
 import '../../../../src/__tests__/setup';
 
+vi.mock('./autonomous-phishing-handlers', () => ({
+  generatePhishingSimulation: vi.fn().mockResolvedValue({ success: true }),
+  generatePhishingSimulationForGroup: vi.fn().mockResolvedValue({ success: true }),
+  assignPhishingWithTraining: vi.fn().mockResolvedValue({ success: true }),
+}));
+
+vi.mock('./autonomous-training-handlers', () => ({
+  generateTrainingModule: vi.fn().mockResolvedValue({ success: true }),
+  generateTrainingModuleForGroup: vi.fn().mockResolvedValue({ success: true }),
+}));
+
 /**
  * Test Suite: AutonomousContentGenerators
  * Tests for content generation coordination and orchestration
@@ -23,7 +34,7 @@ describe('AutonomousContentGenerators', () => {
         someOtherField: 'value',
       };
 
-      const report = buildExecutiveReport(toolResult);
+      const report = buildExecutiveReport(toolResult as any);
 
       expect(report).toBeUndefined();
     });
@@ -227,15 +238,7 @@ describe('AutonomousContentGenerators', () => {
 
   describe('generateContentForUser', () => {
     it('should accept training and phishing actions', async () => {
-      // Mock the handlers
-      vi.mock('./autonomous-phishing-handlers', () => ({
-        generatePhishingSimulation: vi.fn().mockResolvedValue({ success: true }),
-      }));
-
-      vi.mock('./autonomous-training-handlers', () => ({
-        generateTrainingModule: vi.fn().mockResolvedValue({ success: true }),
-      }));
-
+      // Handlers are mocked globally
       expect(typeof generateContentForUser).toBe('function');
     });
 

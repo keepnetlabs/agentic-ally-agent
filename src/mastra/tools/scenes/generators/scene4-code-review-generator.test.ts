@@ -1,7 +1,12 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { generateScene4CodeReviewPrompt } from './scene4-code-review-generator';
 import { PromptAnalysis } from '../../../types/prompt-analysis';
 import { MicrolearningContent } from '../../../types/microlearning';
+
+// Mock the context builder
+vi.mock('../../../utils/prompt-builders/base-context-builder', () => ({
+  buildContextData: vi.fn(() => 'MOCK_CONTEXT_DATA'),
+}));
 
 /**
  * Test suite for Scene 4 (Code Review) Generator

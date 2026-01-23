@@ -46,7 +46,7 @@ describe('uploadPhishingTool', () => {
     vi.clearAllMocks();
 
     // Mock requestStorage context
-    requestStorage.enterWith({
+    vi.spyOn(requestStorage, 'getStore').mockReturnValue({
       token: mockToken,
       companyId: mockCompanyId,
       env: mockEnv
@@ -88,7 +88,7 @@ describe('uploadPhishingTool', () => {
 
   describe('Authentication', () => {
     it('should return error when token is missing', async () => {
-      requestStorage.enterWith({
+      vi.spyOn(requestStorage, 'getStore').mockReturnValue({
         companyId: mockCompanyId,
         env: mockEnv
         // token is missing

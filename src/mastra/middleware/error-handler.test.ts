@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { errorHandlerMiddleware } from './error-handler';
 
 // Use vi.hoisted to create mock logger before vi.mock
@@ -12,17 +12,40 @@ const { mockLoggerInstance } = vi.hoisted(() => {
   return { mockLoggerInstance: mockLogger };
 });
 
+const { sentryMocks } = vi.hoisted(() => {
+  const mockScope = {
+    setTag: vi.fn(),
+    setLevel: vi.fn(),
+  };
+
+  return {
+    sentryMocks: {
+      wrapRequestHandler: vi.fn(async (_options, handler) => handler()),
+      withScope: vi.fn((callback: (scope: typeof mockScope) => void) => callback(mockScope)),
+      captureException: vi.fn(),
+    },
+  };
+});
+
 // Mock logger - returns the same instance
 vi.mock('../utils/core/logger', () => ({
   getLogger: () => mockLoggerInstance,
+}));
+
+vi.mock('@sentry/cloudflare', () => ({
+  wrapRequestHandler: sentryMocks.wrapRequestHandler,
+  withScope: sentryMocks.withScope,
+  captureException: sentryMocks.captureException,
 }));
 
 describe('errorHandlerMiddleware', () => {
   let mockContext: any;
   let mockNext: any;
   let nextCalled: boolean;
+  const originalEnv = process.env;
 
   beforeEach(() => {
+    process.env = { ...originalEnv };
     nextCalled = false;
 
     // Clear logger mocks
@@ -30,6 +53,9 @@ describe('errorHandlerMiddleware', () => {
     mockLoggerInstance.warn.mockClear();
     mockLoggerInstance.info.mockClear();
     mockLoggerInstance.debug.mockClear();
+    sentryMocks.wrapRequestHandler.mockClear();
+    sentryMocks.withScope.mockClear();
+    sentryMocks.captureException.mockClear();
 
     mockNext = vi.fn(async () => {
       nextCalled = true;
@@ -49,6 +75,10 @@ describe('errorHandlerMiddleware', () => {
         headers: new Headers(),
       },
     };
+  });
+
+  afterEach(() => {
+    process.env = originalEnv;
   });
 
   describe('middleware function', () => {
@@ -261,6 +291,39 @@ describe('errorHandlerMiddleware', () => {
 
       const callArgs = mockLoggerInstance.error.mock.calls[0];
       expect(callArgs[1].error).toBe('String error');
+    });
+  });
+
+  describe('sentry integration', () => {
+    it('should skip Sentry when DSN is not set', async () => {
+      delete process.env.SENTRY_DSN;
+      mockNext.mockRejectedValueOnce(new Error('Test error'));
+
+      await errorHandlerMiddleware(mockContext, mockNext);
+
+      expect(sentryMocks.wrapRequestHandler).not.toHaveBeenCalled();
+      expect(sentryMocks.captureException).not.toHaveBeenCalled();
+    });
+
+    it('should call Sentry when DSN is set', async () => {
+      process.env.SENTRY_DSN = 'https://examplePublicKey@o0.ingest.sentry.io/0';
+      mockNext.mockRejectedValueOnce(new Error('Test error'));
+
+      await errorHandlerMiddleware(mockContext, mockNext);
+
+      expect(sentryMocks.wrapRequestHandler).toHaveBeenCalledTimes(1);
+      expect(sentryMocks.captureException).toHaveBeenCalledTimes(1);
+    });
+
+    it('should default environment to production', async () => {
+      process.env.SENTRY_DSN = 'https://examplePublicKey@o0.ingest.sentry.io/0';
+      delete process.env.SENTRY_ENVIRONMENT;
+      mockNext.mockRejectedValueOnce(new Error('Test error'));
+
+      await errorHandlerMiddleware(mockContext, mockNext);
+
+      const sentryArgs = sentryMocks.wrapRequestHandler.mock.calls[0]?.[0];
+      expect(sentryArgs.options.environment).toBe('production');
     });
   });
 

@@ -389,21 +389,43 @@ describe('KVService', () => {
 
   describe('health check', () => {
     it('should return true when KV is accessible', async () => {
-      // Use fake timers to ensure timestamp consistency
-      const fixedDate = new Date('2024-01-01T00:00:00Z');
-      vi.useFakeTimers();
-      vi.setSystemTime(fixedDate);
+      let storedValue: any = null;
 
-      const timestamp = fixedDate.toISOString();
+      const fetchMock = vi.fn().mockImplementation(async (url, options) => {
+        const method = options?.method || 'GET';
 
-      const fetchMock = vi.fn()
-        .mockResolvedValueOnce(new Response('', { status: 200 })) // namespace check
-        .mockResolvedValueOnce(new Response('', { status: 200 })) // PUT
-        .mockResolvedValueOnce(new Response(
-          JSON.stringify({ timestamp }),
-          { status: 200 }
-        )) // GET
-        .mockResolvedValueOnce(new Response('', { status: 200 })); // DELETE
+        if (method === 'PUT') {
+          storedValue = JSON.parse(options.body);
+          return new Response('', { status: 200 });
+        }
+
+        if (method === 'GET') {
+          // Check if it's a value retrieval or namespace check
+          // list() uses /keys
+          // checkNamespace() uses .../namespaces/ID (no trailing slash usually, or no further path)
+          // get() uses .../values/KEY
+
+          if (url.includes('/values/')) {
+            if (storedValue) {
+              return new Response(JSON.stringify(storedValue), { status: 200 });
+            }
+            return new Response('', { status: 404 }); // Correctly return 404 if not found? 
+            // But for healthCheck first run, put hasn't happened? No, put happens first.
+            // healthCheck sequence: checkNamespace -> put -> get -> delete.
+            // So get should succeed.
+          }
+
+          // Default for namespace check or list
+          return new Response(JSON.stringify({ success: true }), { status: 200 });
+        }
+
+        if (method === 'DELETE') {
+          storedValue = null;
+          return new Response('', { status: 200 });
+        }
+
+        return new Response('', { status: 200 });
+      });
 
       global.fetch = fetchMock;
 
@@ -411,8 +433,6 @@ describe('KVService', () => {
 
       expect(result).toBe(true);
       expect(fetchMock).toHaveBeenCalledTimes(4);
-
-      vi.useRealTimers();
     });
 
     it('should return false if namespace is inaccessible', async () => {

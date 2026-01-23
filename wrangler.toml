@@ -1,6 +1,7 @@
 name = "agentic-ally-agent"
 main = "dist/index.js"
-compatibility_date = "2024-01-01"
+compatibility_date = "2025-04-01"
+compatibility_flags = ["nodejs_compat", "nodejs_compat_populate_process_env"]
 
 [[d1_databases]]
 binding = "agentic_ally_embeddings_cache"

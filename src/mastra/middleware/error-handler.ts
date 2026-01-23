@@ -1,7 +1,30 @@
-import { Context, Next } from 'hono';
+import { Context, Next, type ExecutionContext } from 'hono';
+import * as Sentry from '@sentry/cloudflare';
 import { getLogger } from '../utils/core/logger';
 
 const logger = getLogger('ErrorHandler');
+
+const getSentryOptions = () => {
+    const dsn = process.env.SENTRY_DSN;
+    if (!dsn) {
+        return undefined;
+    }
+
+    return {
+        dsn,
+        environment: process.env.SENTRY_ENVIRONMENT ?? 'production',
+        release: process.env.SENTRY_RELEASE,
+        tracesSampleRate: 0,
+    };
+};
+
+const getExecutionContext = (c: Context): ExecutionContext | undefined => {
+    try {
+        return c.executionCtx;
+    } catch {
+        return undefined;
+    }
+};
 
 /**
  * Global Error Handler Middleware
@@ -11,27 +34,59 @@ const logger = getLogger('ErrorHandler');
  * Should be the FIRST middleware in the chain.
  */
 export const errorHandlerMiddleware = async (c: Context, next: Next): Promise<Response | void> => {
+    const sentryOptions = getSentryOptions();
     try {
         await next();
         return;
     } catch (error) {
-        // Log full error details for debugging
-        logger.error('❌ Unhandled error', {
-            path: c.req.path,
-            method: c.req.method,
-            error: error instanceof Error ? error.message : String(error),
-            stack: error instanceof Error ? error.stack : undefined,
-        });
+        const respond = () =>
+            c.json(
+                {
+                    error: 'Internal Server Error',
+                    message: 'An unexpected error occurred. Please try again later.',
+                    // Include request path for debugging (safe to expose)
+                    path: c.req.path,
+                },
+                500
+            );
 
-        // Return safe error response - no stack trace leaked
-        return c.json(
-            {
-                error: 'Internal Server Error',
-                message: 'An unexpected error occurred. Please try again later.',
-                // Include request path for debugging (safe to expose)
+        if (!sentryOptions) {
+            // Log full error details for debugging
+            logger.error('❌ Unhandled error', {
                 path: c.req.path,
+                method: c.req.method,
+                error: error instanceof Error ? error.message : String(error),
+                stack: error instanceof Error ? error.stack : undefined,
+            });
+            return respond();
+        }
+
+        const executionCtx = getExecutionContext(c);
+        return Sentry.wrapRequestHandler(
+            {
+                options: sentryOptions,
+                request: c.req.raw,
+                context: executionCtx as ExecutionContext,
+                captureErrors: false,
             },
-            500
+            async () => {
+                Sentry.withScope(scope => {
+                    scope.setTag('path', c.req.path);
+                    scope.setTag('method', c.req.method);
+                    scope.setLevel('error');
+                    Sentry.captureException(error);
+                });
+
+                // Log full error details for debugging
+                logger.error('❌ Unhandled error', {
+                    path: c.req.path,
+                    method: c.req.method,
+                    error: error instanceof Error ? error.message : String(error),
+                    stack: error instanceof Error ? error.stack : undefined,
+                });
+
+                return respond();
+            }
         );
     }
 };

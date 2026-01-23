@@ -2430,6 +2430,19 @@
   resolved "https://registry.npmjs.org/@sec-ant/readable-stream/-/readable-stream-0.4.1.tgz"
   integrity sha512-831qok9r2t8AlxLko40y2ebgSDhenenCatLVeW/uBtnHPyhHOvG0C7TvfgecV+wHzIm5KUICgzmVpWS+IMEAeg==
 
+"@sentry/cloudflare@^10.36.0":
+  version "10.36.0"
+  resolved "https://registry.yarnpkg.com/@sentry/cloudflare/-/cloudflare-10.36.0.tgz#36cff7864babef44ef653bb894564857d7315fb3"
+  integrity sha512-OKEsiLFc1HmoLDRgOVNw8DkaAd45gRcB0wW9jL3q8Z2LQUrKtj+1IAsPyuh684R+NhgGFXgsBWUYZ/6raGg7BA==
+  dependencies:
+    "@opentelemetry/api" "^1.9.0"
+    "@sentry/core" "10.36.0"
+
+"@sentry/core@10.36.0":
+  version "10.36.0"
+  resolved "https://registry.yarnpkg.com/@sentry/core/-/core-10.36.0.tgz#fc7bcff3edc9f21059abbbaafbaa5a6ad1d9185d"
+  integrity sha512-EYJjZvofI+D93eUsPLDIUV0zQocYqiBRyXS6CCV6dHz64P/Hob5NJQOwPa8/v6nD+UvJXvwsFfvXOHhYZhZJOQ==
+
 "@sindresorhus/is@^7.0.2":
   version "7.1.0"
   resolved "https://registry.npmjs.org/@sindresorhus/is/-/is-7.1.0.tgz"

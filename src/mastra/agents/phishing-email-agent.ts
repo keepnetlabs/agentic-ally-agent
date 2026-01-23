@@ -71,12 +71,13 @@ Before gathering info, determine the WORKFLOW TYPE:
 - **Wait for user confirmation.**
 
 TEMPLATE (Localize ALL text including labels to the Interaction Language):
-<strong>{Localized Header}</strong>
+- Each <li> MUST be on its own line and include a trailing <br> (no single-line output).
+<strong>{Localized Header}</strong><br>
 <ul>
-  <li>{Localized Label: Topic}: {Topic}</li>
-  <li>{Localized Label: Target}: {Target Profile} ({Difficulty})</li>
-  <li>{Localized Label: Method}: {Attack Method}</li>
-  <li>{Localized Label: Language}: {Content Language}</li>
+  <li>{Localized Label: Topic}: {Topic}</li><br>
+  <li>{Localized Label: Target}: {Target Profile} ({Difficulty})</li><br>
+  <li>{Localized Label: Method}: {Attack Method}</li><br>
+  <li>{Localized Label: Language}: {Content Language}</li><br>
 </ul>
 {Localized Confirmation Question: "This will take about 30 seconds. Should I generate the simulation?"}
 

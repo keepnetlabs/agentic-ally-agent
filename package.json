@@ -39,6 +39,7 @@
     "@mastra/libsql": "^0.15.2",
     "@mastra/loggers": "^0.10.16",
     "@mastra/memory": "^0.15.7",
+    "@sentry/cloudflare": "^10.36.0",
     "ai": "^5.0.76",
     "jsonrepair": "^3.13.0",
     "parse5": "^8.0.0",

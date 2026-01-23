@@ -1,5 +1,6 @@
 
 import { describe, expect, it } from 'vitest';
+import * as Rules from './localization-language-rules';
 import {
     normLang,
     getLanguagePrompt,
@@ -8,6 +9,11 @@ import {
 } from './localization-language-rules';
 
 describe('localization-language-rules', () => {
+    console.log('Imported Rules:', Object.keys(Rules));
+    // console.log('Imported Rules:', Object.keys(Rules));
+
+    // ... existing tests ...
+
     describe('normLang', () => {
         it('defaults to generic if code is undefined/empty', () => {
             expect(normLang(undefined)).toBe('generic');
@@ -292,7 +298,7 @@ describe('localization-language-rules', () => {
                 { 'phishing': 'oltalama' },
                 { 'malware': 'kötü amaçlı yazılım' },
                 { 'ransomware': 'fidye yazılımı' }
-            ];
+            ] as Record<string, string>[];
             const prompt = buildGlossaryPrompt(glossary);
             expect(prompt).toContain('Terminology Glossary');
             expect(prompt).toContain('phishing');
@@ -304,7 +310,7 @@ describe('localization-language-rules', () => {
             const glossary = [
                 { 'term1': 'translation1' },
                 { 'term2': 'translation2' }
-            ];
+            ] as Record<string, string>[];
             const prompt = buildGlossaryPrompt(glossary);
             expect(prompt).toContain('1.');
             expect(prompt).toContain('2.');

@@ -125,48 +125,13 @@ function getModelProvider(provider: ModelProvider) {
             });
 
             // Custom fetch to transform Cloudflare response format to OpenAI format
-            const customFetch = async (url: string, options: any) => {
-                const response = await fetch(url, options);
-                const data = await response.json();
-
-                // Store raw Cloudflare response for reasoning extraction
-                if (data.output) {
-                    const reasoningItem = data.output.find((item: any) => item.type === 'reasoning');
-                    if (reasoningItem?.content?.[0]?.text) {
-                        data.reasoning = reasoningItem.content[0].text;
-                    }
-                }
-
-                // Transform Cloudflare format to AI SDK v5 format
-                // Cloudflare: prompt_tokens, completion_tokens (snake_case)
-                // AI SDK v5: inputTokens, outputTokens (camelCase)
-                if (data.usage) {
-                    if (data.usage.prompt_tokens !== undefined) {
-                        data.usage.inputTokens = data.usage.prompt_tokens;  // AI SDK v5 format
-                        data.usage.input_tokens = data.usage.prompt_tokens;  // Backward compat
-                    }
-                    if (data.usage.completion_tokens !== undefined) {
-                        data.usage.outputTokens = data.usage.completion_tokens;  // AI SDK v5 format
-                        data.usage.output_tokens = data.usage.completion_tokens;  // Backward compat
-                    }
-                    if (data.usage.prompt_tokens !== undefined && data.usage.completion_tokens !== undefined) {
-                        data.usage.totalTokens = data.usage.prompt_tokens + data.usage.completion_tokens;
-                    }
-                }
-
-                return new Response(JSON.stringify(data), {
-                    status: response.status,
-                    headers: response.headers,
-                });
-            };
-
             return createOpenAI({
                 baseURL: baseURL,
                 apiKey: workerApiToken,
                 headers: {
                     'cf-aig-authorization': 'Bearer ' + cloudflareGatewayAuthKey,
                 },
-                fetch: customFetch as any,
+                fetch: workersAICustomFetch as any,
             });
 
         case 'google':
@@ -318,4 +283,44 @@ export function getModelWithOverride(
         });
         return defaultFunc();
     }
+}
+
+/**
+ * Custom fetch for Workers AI to handle response transformation
+ * @param url Request URL
+ * @param options Fetch options
+ */
+export async function workersAICustomFetch(url: string, options: any) {
+    const response = await fetch(url, options);
+    const data = await response.json();
+
+    // Store raw Cloudflare response for reasoning extraction
+    if (data.output) {
+        const reasoningItem = data.output.find((item: any) => item.type === 'reasoning');
+        if (reasoningItem?.content?.[0]?.text) {
+            data.reasoning = reasoningItem.content[0].text;
+        }
+    }
+
+    // Transform Cloudflare format to AI SDK v5 format
+    // Cloudflare: prompt_tokens, completion_tokens (snake_case)
+    // AI SDK v5: inputTokens, outputTokens (camelCase)
+    if (data.usage) {
+        if (data.usage.prompt_tokens !== undefined) {
+            data.usage.inputTokens = data.usage.prompt_tokens;  // AI SDK v5 format
+            data.usage.input_tokens = data.usage.prompt_tokens;  // Backward compat
+        }
+        if (data.usage.completion_tokens !== undefined) {
+            data.usage.outputTokens = data.usage.completion_tokens;  // AI SDK v5 format
+            data.usage.output_tokens = data.usage.completion_tokens;  // Backward compat
+        }
+        if (data.usage.prompt_tokens !== undefined && data.usage.completion_tokens !== undefined) {
+            data.usage.totalTokens = data.usage.prompt_tokens + data.usage.completion_tokens;
+        }
+    }
+
+    return new Response(JSON.stringify(data), {
+        status: response.status,
+        headers: response.headers,
+    });
 }

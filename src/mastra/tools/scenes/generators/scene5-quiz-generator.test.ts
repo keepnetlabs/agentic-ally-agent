@@ -1,5 +1,34 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { generateScene5Prompt } from './scene5-quiz-generator';
+
+vi.mock('../../../utils/prompt-builders/base-context-builder', () => ({
+  buildContextData: (analysis: any, microlearning: any) => {
+    const theories = microlearning?.scientific_evidence?.learning_theories
+      ? Object.keys(microlearning.scientific_evidence.learning_theories).join(', ')
+      : 'Active Recall';
+
+    return `
+Generate ${analysis.language} training content for "${analysis.topic}" in STRICT JSON only.
+=== CONTEXT ===
+Level: ${analysis.level} | Department: ${analysis.department}
+Category: ${analysis.category}
+Objectives: ${analysis.learningObjectives?.join(', ') || 'General'}
+Roles: ${analysis.roles?.join(', ')}
+Industries: ${analysis.industries?.join(', ')}
+Key Topics: ${analysis.keyTopics?.join(', ')}
+Practical Applications: ${analysis.practicalApplications?.join(', ') || ''}
+Assessment Areas: ${analysis.assessmentAreas?.join(', ') || ''}
+Custom Requirements: ${analysis.customRequirements || 'None'}
+Compliance: ${analysis.regulationCompliance?.join(', ') || 'General'}
+
+SCIENTIFIC CONTEXT:
+Risk Area: ${microlearning?.microlearning_metadata?.risk_area || 'General'}
+Learning Theories: ${theories}
+
+SCIENTIFIC_EVIDENCE
+`;
+  },
+}));
 import { PromptAnalysis } from '../../../types/prompt-analysis';
 import { MicrolearningContent } from '../../../types/microlearning';
 
