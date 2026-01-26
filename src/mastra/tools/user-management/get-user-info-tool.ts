@@ -12,6 +12,7 @@ import { cleanResponse } from '../../utils/content-processors/json-cleaner';
 import { getLogger } from '../../utils/core/logger';
 import { errorService } from '../../services/error-service';
 import { validateBCP47LanguageCode, DEFAULT_LANGUAGE } from '../../utils/language/language-utils';
+import { getDepartmentFallbackForLanguage } from '../../utils/language/department-fallback';
 import { ANALYSIS_REFERENCES, ALLOWED_ENUMS_TEXT } from './behavior-analyst-constants';
 import { AnalysisSchema, GET_ALL_PAYLOAD, TIMELINE_PAYLOAD, getUserInfoOutputSchema, PlatformUser, ApiActivity, PartialAnalysisReport } from './user-management-types';
 import { enrichActivities, formatEnrichedActivitiesForPrompt, type EnrichedActivity } from './activity-enrichment-utils';
@@ -27,6 +28,7 @@ export const getUserInfoTool = createTool({
     fullName: z.string().optional().describe('Full name of the user (e.g., "John Doe", "Peter Parker"). Will be automatically parsed into firstName/lastName.'),
     firstName: z.string().optional().describe('First name of the user (used if fullName is not provided)'),
     lastName: z.string().optional().describe('Last name of the user (optional, used with firstName)'),
+    reportLanguage: z.string().optional().describe('Current user message language (BCP-47 or name). Used for report-facing fallbacks.'),
     skipAnalysis: z.boolean().optional().describe('If true, skips the expensive AI behavioral report generation. Use when you ONLY need the user ID for assignment.'),
   }).refine(
     data => data.targetUserResourceId || data.email || data.fullName || data.firstName,
@@ -226,6 +228,12 @@ export const getUserInfoTool = createTool({
         });
       }
 
+      // Normalize preferred language to BCP-47 (default en-gb)
+      const preferredLanguageCode = validateBCP47LanguageCode(user?.preferredLanguage || DEFAULT_LANGUAGE);
+      const reportLanguageCode = validateBCP47LanguageCode(context.reportLanguage || preferredLanguageCode);
+      const departmentFallback = getDepartmentFallbackForLanguage(reportLanguageCode);
+      const resolvedDepartment = inputDepartmentName || user?.departmentName || user?.department || departmentFallback;
+
       // --- STEP 3: Generate Analysis Report (Internal LLM Call) ---
       let analysisReport: PartialAnalysisReport | undefined;
 
@@ -248,7 +256,9 @@ STRICT OUTPUT
 - Output MUST match the JSON contract provided by the user EXACTLY (same keys, same nesting, no extra keys, no missing keys).
 - Do NOT wrap in markdown. Do NOT add any text before/after JSON.
 - If unknown, use "" (string) or null where appropriate. Never fabricate.
-- If there is insufficient evidence for a section, keep it brief and use empty arrays [] where applicable.
+- If there is insufficient evidence for a section, keep it brief.
+- If NO ACTIVITY DATA AVAILABLE: do NOT use placeholders like "unspecified", "not specified", "N/A".
+- If NO ACTIVITY DATA AVAILABLE: provide 1 short, meaningful sentence in strengths[], growth_opportunities[], business_value_zone.operational[], business_value_zone.strategic[] that avoids claiming evidence.
 - meta.generated_at_utc MUST be a UTC timestamp string (ISO 8601 preferred).
 
 PRIMARY EVIDENCE
@@ -348,7 +358,7 @@ USER CONTEXT (SOURCE OF TRUTH)
 
 User id: ${resolvedUserId}
 Role: ${user?.role || ""}
-Department: ${user?.departmentName || user?.department || "All"}
+Department: ${resolvedDepartment}
 Location: ${user?.location || ""}
 Language: ${user?.preferredLanguage || ""}
 Access level: ${user?.accessLevel || ""}
@@ -562,11 +572,8 @@ If a value is unknown, use "" or null.
         }
       } // End of skipAnalysis block
 
-      // Normalize preferred language to BCP-47 (default en-gb)
-      const preferredLanguageCode = validateBCP47LanguageCode(user?.preferredLanguage || DEFAULT_LANGUAGE);
-
       // Define department once for use in both UI signal and tool output
-      const dept = inputDepartmentName || user?.departmentName || user?.department || 'All';
+      const dept = resolvedDepartment;
 
       // EMIT UI SIGNAL (Surgical)
       if (userId && writer) {

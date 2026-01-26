@@ -152,32 +152,46 @@ describe('user-search-utils', () => {
             const mockUser = { firstName: 'John', lastName: 'Doe' };
 
             // Expected calls:
-            // 1. fetchByName('John', 'Doe') -> returns []
-            // 2. fetchByName('John') -> returns [mockUser]
+            // 1. fetchByName('John', 'Doe') -> primary fetch returns []
+            // 2. fetchByName('John', 'Doe') -> fallback fetch returns []
+            // 3. fetchByName('John') -> primary fetch returns [mockUser]
 
             (global.fetch as any)
-                .mockResolvedValueOnce({ ok: true, json: async () => ({ items: [] }) })
-                .mockResolvedValueOnce({ ok: true, json: async () => ({ items: [mockUser] }) });
+                .mockResolvedValueOnce({ ok: true, json: async () => ({ items: [] }) })         // Primary for ('John', 'Doe')
+                .mockResolvedValueOnce({ ok: true, json: async () => ({ items: [] }) })         // Fallback for ('John', 'Doe')
+                .mockResolvedValueOnce({ ok: true, json: async () => ({ items: [mockUser] }) }); // Primary for ('John')
 
             const result = await findUserByNameWithFallbacks(mockDeps, mockTemplate, 'John', 'Doe');
             expect(result).toEqual(mockUser);
-            expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining('retrying with firstName only'), expect.any(Object));
+
+            // Check that the firstName-only fallback log was called (appears after the primary search empty log)
+            const infoCallsWithFallback = mockLogger.info.mock.calls.filter((call: any) =>
+                call[0]?.includes('retrying with firstName only')
+            );
+            expect(infoCallsWithFallback.length).toBeGreaterThan(0);
         });
 
         it('should fallback to last name last token if last name has spaces', async () => {
             const mockUser = { firstName: 'John', lastName: 'De Luca' };
 
             // Expected calls:
-            // 1. fetchByName('John', 'De Luca') -> returns []
-            // 2. fetchByName('John', 'Luca') -> returns [mockUser]
+            // 1. fetchByName('John', 'De Luca') -> primary fetch returns []
+            // 2. fetchByName('John', 'De Luca') -> fallback fetch returns []
+            // 3. fetchByName('John', 'Luca') -> primary fetch returns [mockUser]
 
             (global.fetch as any)
-                .mockResolvedValueOnce({ ok: true, json: async () => ({ items: [] }) })
-                .mockResolvedValueOnce({ ok: true, json: async () => ({ items: [mockUser] }) });
+                .mockResolvedValueOnce({ ok: true, json: async () => ({ items: [] }) })         // Primary for ('John', 'De Luca')
+                .mockResolvedValueOnce({ ok: true, json: async () => ({ items: [] }) })         // Fallback for ('John', 'De Luca')
+                .mockResolvedValueOnce({ ok: true, json: async () => ({ items: [mockUser] }) }); // Primary for ('John', 'Luca')
 
             const result = await findUserByNameWithFallbacks(mockDeps, mockTemplate, 'John', 'De Luca');
             expect(result).toEqual(mockUser);
-            expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining('retrying with last token'), expect.any(Object));
+
+            // Check that the last token fallback log was called (appears after the primary search empty log)
+            const infoCallsWithLastToken = mockLogger.info.mock.calls.filter((call: any) =>
+                call[0]?.includes('retrying with last token')
+            );
+            expect(infoCallsWithLastToken.length).toBeGreaterThan(0);
         });
     });
 });

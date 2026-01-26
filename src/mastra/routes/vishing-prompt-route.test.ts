@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { vishingPromptHandler } from './vishing-prompt-route';
 
 // Create mock context factory
 function createMockContext(requestBody: any) {
@@ -47,9 +46,14 @@ describe('Vishing Prompt Route Handler', () => {
 
   let mockKVService: any;
   let originalFetch: any;
+  let vishingPromptHandler: any;
 
   beforeEach(async () => {
     vi.clearAllMocks();
+
+    // Setup env vars BEFORE importing the module
+    process.env.ELEVENLABS_API_KEY = 'test-key';
+    process.env.ELEVENLABS_AGENT_ID = 'test-agent';
 
     // Setup KVService mock
     mockKVService = {
@@ -57,15 +61,19 @@ describe('Vishing Prompt Route Handler', () => {
     };
 
     const { KVService } = await import('../services/kv-service');
-    vi.mocked(KVService).mockImplementation(() => mockKVService);
+    // Mock the constructor to return the mockKVService instance
+    vi.mocked(KVService).mockImplementation(function(this: any) {
+      return mockKVService;
+    } as any);
 
     // Mock fetch
     originalFetch = global.fetch;
     global.fetch = vi.fn();
 
-    // Setup env vars
-    process.env.ELEVENLABS_API_KEY = 'test-key';
-    process.env.ELEVENLABS_AGENT_ID = 'test-agent';
+    // Dynamically import handler after env vars are set
+    vi.resetModules(); // Clear module cache
+    const handler = await import('./vishing-prompt-route');
+    vishingPromptHandler = handler.vishingPromptHandler;
   });
 
   afterEach(() => {
@@ -281,10 +289,16 @@ describe('Vishing Prompt Route Handler', () => {
 
     it('should not fetch signed URL when API key is missing', async () => {
       delete process.env.ELEVENLABS_API_KEY;
+
+      // Re-import handler without API key
+      vi.resetModules();
+      const handler = await import('./vishing-prompt-route');
+      const handlerWithoutKey = handler.vishingPromptHandler;
+
       const ctx = createMockContext({ microlearningId: 'ml-123', language: 'en' });
       mockKVService.getMicrolearning.mockResolvedValue(validMicrolearning);
 
-      await vishingPromptHandler(ctx);
+      await handlerWithoutKey(ctx);
 
       expect(global.fetch).not.toHaveBeenCalled();
     });

@@ -248,6 +248,20 @@ describe('getUserInfoTool', () => {
   describe('Direct ID Lookup (Fast Path)', () => {
     it('should skip user search when targetUserResourceId is provided', async () => {
       const fetchSpy = (global.fetch as any)
+        // First call: findUserById (fetches user profile)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            items: [{
+              targetUserResourceId: 'user-direct-123',
+              firstName: 'User',
+              lastName: 'Direct-123',
+              email: 'user@example.com',
+              department: 'IT'
+            }]
+          })
+        })
+        // Second call: timeline
         .mockResolvedValueOnce({
           ok: true,
           json: async () => mockTimelineResponse
@@ -261,16 +275,17 @@ describe('getUserInfoTool', () => {
 
       expect(result.success).toBe(true);
       expect(result.userInfo?.targetUserResourceId).toBe('user-direct-123');
-      expect(result.userInfo?.fullName).toBe('User-user-direct-123');
+      expect(result.userInfo?.fullName).toBe('User Direct-123');
 
-      // Should NOT call search API (leaderboardEndpoints.getAll)
+      // Should call getAll API once (for findUserById), then timeline API
       const calls = fetchSpy.mock.calls;
-      const searchCalls = calls.filter((c: any) => c[0] === leaderboardEndpoints.getAll);
-      expect(searchCalls.length).toBe(0);
+      expect(calls.length).toBe(2);
 
-      // Should call timeline API
-      const timelineCalls = calls.filter((c: any) => c[0] === leaderboardEndpoints.timeline);
-      expect(timelineCalls.length).toBe(1);
+      // First call should be to getAll for user profile lookup
+      expect(calls[0][0]).toBe(leaderboardEndpoints.getAll);
+
+      // Second call should be to timeline
+      expect(calls[1][0]).toBe(leaderboardEndpoints.timeline);
     });
   });
 
@@ -545,9 +560,22 @@ describe('getUserInfoTool', () => {
     });
 
     it('should generate deterministic default recommendations based on user ID when no activities found', async () => {
-      // Mock timeline empty
+      // Mock user lookup and empty timeline
       (global.fetch as any)
-        .mockResolvedValueOnce({ ok: true, json: async () => mockUserSearchResponse })
+        // First call: findUserById (fetches user profile)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            items: [{
+              targetUserResourceId: 'user-1',
+              firstName: 'Test',
+              lastName: 'User',
+              email: 'test@example.com',
+              department: 'IT'
+            }]
+          })
+        })
+        // Second call: empty timeline
         .mockResolvedValueOnce({ ok: true, json: async () => ({ data: { results: [] } }) });
 
 
@@ -638,6 +666,33 @@ describe('getUserInfoTool', () => {
           ])
         })
       );
+    });
+
+    it('should include no-data guardrails in system prompt', async () => {
+      (global.fetch as any)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => mockUserSearchResponse
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ data: { results: [] } })
+        });
+
+      const input = {
+        fullName: 'John Doe'
+      };
+
+      await getUserInfoTool.execute({ context: input } as any);
+
+      const callArg = (generateText as any).mock.calls[0][0];
+      const systemMessage = callArg.messages.find((msg: any) => msg.role === 'system')?.content || '';
+      expect(systemMessage).toContain('NO ACTIVITY DATA AVAILABLE');
+      expect(systemMessage).toContain('do NOT use placeholders');
+      expect(systemMessage).toContain('strengths[]');
+      expect(systemMessage).toContain('growth_opportunities[]');
+      expect(systemMessage).toContain('business_value_zone.operational[]');
+      expect(systemMessage).toContain('business_value_zone.strategic[]');
     });
 
     it('should handle AI generation errors gracefully', async () => {
