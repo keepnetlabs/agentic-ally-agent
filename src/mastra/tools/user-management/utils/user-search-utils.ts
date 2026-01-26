@@ -31,7 +31,6 @@ export async function fetchUsersWithFilters(
         'Authorization': `Bearer ${token}`,
     };
     if (companyId) headers['x-ir-company-id'] = companyId;
-    logger.info('User search headers', { headers });
     const payload = JSON.parse(JSON.stringify(getAllPayloadTemplate));
     const filterGroup = (payload as any)?.filter?.FilterGroups?.[0];
     if (!filterGroup?.FilterItems) {
@@ -102,6 +101,33 @@ export async function findUserByEmail(
         const errorInfo = errorService.external('User search by email failed', { error: err.message });
         logErrorInfo(deps.logger as any, 'error', 'User search error', errorInfo);
         // Preserve original error message for higher-level handlers/tests (e.g., "Network error")
+        throw new Error(err.message);
+    }
+}
+
+export async function findUserById(
+    deps: UserSearchDeps,
+    getAllPayloadTemplate: unknown,
+    targetUserResourceId: string
+): Promise<PlatformUser | null> {
+    const normalizedId = String(targetUserResourceId).trim();
+
+    try {
+        const users = await fetchUsersWithFilters(deps, getAllPayloadTemplate, [
+            { Value: normalizedId, FieldName: 'targetUserResourceId', Operator: 'Equals' },
+        ]);
+        if (users.length === 0) return null;
+        const exact = users.find(u => String(u?.targetUserResourceId || '') === normalizedId);
+        if (!exact) {
+            deps.logger.info('No exact user found by ID', { targetUserResourceId: normalizedId, candidateCount: users.length });
+            return null;
+        }
+        deps.logger.info('User found by ID', { targetUserResourceId: normalizedId });
+        return exact;
+    } catch (error) {
+        const err = normalizeError(error);
+        const errorInfo = errorService.external('User search by ID failed', { error: err.message });
+        logErrorInfo(deps.logger as any, 'error', 'User search error', errorInfo);
         throw new Error(err.message);
     }
 }

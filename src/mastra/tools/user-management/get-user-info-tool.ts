@@ -15,7 +15,7 @@ import { validateBCP47LanguageCode, DEFAULT_LANGUAGE } from '../../utils/languag
 import { ANALYSIS_REFERENCES, ALLOWED_ENUMS_TEXT } from './behavior-analyst-constants';
 import { AnalysisSchema, GET_ALL_PAYLOAD, TIMELINE_PAYLOAD, getUserInfoOutputSchema, PlatformUser, ApiActivity, PartialAnalysisReport } from './user-management-types';
 import { enrichActivities, formatEnrichedActivitiesForPrompt, type EnrichedActivity } from './activity-enrichment-utils';
-import { findUserByEmail, findUserByNameWithFallbacks } from './utils/user-search-utils';
+import { findUserByEmail, findUserById, findUserByNameWithFallbacks } from './utils/user-search-utils';
 import { uuidv4 } from '../../utils/core/id-utils';
 export const getUserInfoTool = createTool({
   id: 'get-user-info',
@@ -56,18 +56,32 @@ export const getUserInfoTool = createTool({
       let lastName: string | undefined = undefined;
       let fullName: string = '';
 
+      const searchDeps = { token, companyId, baseApiUrl, logger };
+
       // STEP 0: Determine user lookup path
       if (inputTargetUserResourceId) {
-        // Fast path: Direct ID provided - skip user search
-        logger.info('Using provided targetUserResourceId, skipping user search', { targetUserResourceId: inputTargetUserResourceId });
+        // Fast path: Direct ID provided - fetch profile for name/department/language
+        logger.info('Using provided targetUserResourceId, fetching profile', { targetUserResourceId: inputTargetUserResourceId });
         userId = inputTargetUserResourceId;
-        // userFullName will be set to a non-identifying placeholder (avoid leaking names)
-        userFullName = `User-${userId}`;
-        fullName = userFullName;
+        try {
+          user = await findUserById(searchDeps, GET_ALL_PAYLOAD, inputTargetUserResourceId);
+        } catch (err) {
+          const errorInfo = errorService.external('User fetch by targetUserResourceId failed', { error: normalizeError(err).message });
+          logErrorInfo(logger, 'error', 'User search error', errorInfo);
+          return createToolErrorResponse(errorInfo);
+        }
+
+        if (user) {
+          userId = user.targetUserResourceId;
+          userFullName = `${user.firstName} ${user.lastName}`;
+          fullName = userFullName;
+        } else {
+          const errorInfo = errorService.notFound(`User "${inputTargetUserResourceId}" not found.`, { targetUserResourceId: inputTargetUserResourceId });
+          logErrorInfo(logger, 'warn', 'User not found', errorInfo);
+          return createToolErrorResponse(errorInfo);
+        }
       } else {
         // Slow path: Search for user (prefer email, then name with fallbacks)
-        const searchDeps = { token, companyId, baseApiUrl, logger };
-
         if (inputEmail) {
           const email = String(inputEmail).trim().toLowerCase();
           // Mask email for logging (show only domain)
@@ -336,7 +350,7 @@ User id: ${resolvedUserId}
 Role: ${user?.role || ""}
 Department: ${user?.departmentName || user?.department || "All"}
 Location: ${user?.location || ""}
-        Language: ${validateBCP47LanguageCode(user?.preferredLanguage || DEFAULT_LANGUAGE)}
+Language: ${user?.preferredLanguage || ""}
 Access level: ${user?.accessLevel || ""}
 
 Recent Activities (primary behavioral evidence):
