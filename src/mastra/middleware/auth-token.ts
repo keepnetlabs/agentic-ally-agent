@@ -46,6 +46,7 @@ const SKIP_AUTH_PATHS = [
     '/api/telemetry',
     '/autonomous',
     '/code-review-validate',
+    '/vishing/prompt',
 ] as const;
 
 

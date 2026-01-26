@@ -134,6 +134,7 @@ export function autoRepairPromptAnalysis(
         additionalContext: analysis.additionalContext,
         customRequirements: analysis.customRequirements,
         isCodeTopic: normalizeBoolean(analysis.isCodeTopic, false),
+        isVishing: normalizeBoolean(analysis.isVishing, false),
     };
 }
 

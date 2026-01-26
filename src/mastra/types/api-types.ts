@@ -75,6 +75,18 @@ export interface AutonomousRequestBody {
 }
 
 /**
+ * Vishing prompt lookup request body
+ */
+export interface VishingPromptRequestBody {
+  microlearningId: string;
+  language: string;
+}
+
+/**
+ * Vishing session start request body
+ */
+
+/**
  * Cloudflare environment bindings
  * Using Record<string, unknown> for flexibility with Cloudflare Workers types
  */

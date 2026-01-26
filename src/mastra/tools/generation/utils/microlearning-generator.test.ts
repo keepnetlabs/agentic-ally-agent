@@ -72,6 +72,9 @@ describe('microlearning-generator', () => {
 
             const scenesAction = generateSceneStructure(5, 'actionable_content');
             expect(scenesAction[3].metadata.scene_type).toBe('actionable_content');
+
+            const scenesVishing = generateSceneStructure(5, 'vishing_simulation');
+            expect(scenesVishing[3].metadata.scene_type).toBe('vishing_simulation');
         });
     });
 
@@ -147,6 +150,17 @@ describe('microlearning-generator', () => {
             const callArgs = (ai.generateText as any).mock.calls[0][0];
             const prompt = callArgs.messages[1].content;
             expect(prompt).toContain('"scene_type": "code_review"');
+        });
+
+        it('should use vishing_simulation scene type for scene 4 when isVishing is true', async () => {
+            (ai.generateText as any).mockResolvedValue({ text: JSON.stringify({}) });
+
+            const analysis = { ...baseAnalysis, isVishing: true };
+            await generateMicrolearningJsonWithAI(analysis as any, 'id', mockModel as any);
+
+            const callArgs = (ai.generateText as any).mock.calls[0][0];
+            const prompt = callArgs.messages[1].content;
+            expect(prompt).toContain('"scene_type": "vishing_simulation"');
         });
 
         it('should use actionable_content scene type for scene 4 when isCodeTopic is false', async () => {

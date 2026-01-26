@@ -146,6 +146,22 @@ describe('translateLanguageJsonTool', () => {
     expect(rewriteScene4Actionable).toHaveBeenCalled();
   });
 
+  it('should route VISHING_SIMULATION scene type to actionable rewriter', async () => {
+    const vishingInput = {
+      ...baseInput,
+      json: { '4': { id: '4' } },
+      microlearningStructure: {
+        scenes: [
+          { scene_id: '4', metadata: { scene_type: 'vishing_simulation' } }
+        ]
+      }
+    };
+
+    await (translateLanguageJsonTool as any).execute(vishingInput);
+
+    expect(rewriteScene4Actionable).toHaveBeenCalled();
+  });
+
   it('should handle app texts failure gracefully', async () => {
     (rewriteAppTexts as any).mockRejectedValue(new Error('App texts failed'));
 

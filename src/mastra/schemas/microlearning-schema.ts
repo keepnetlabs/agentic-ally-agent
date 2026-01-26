@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { TRAINING_LEVELS } from '../constants';
 
 export const SceneMetadataSchema = z.object({
-    scene_type: z.enum(['intro', 'goal', 'scenario', 'actionable_content', 'quiz', 'survey', 'nudge', 'summary']),
+    scene_type: z.enum(['intro', 'goal', 'scenario', 'actionable_content', 'code_review', 'vishing_simulation', 'quiz', 'survey', 'nudge', 'summary']),
     points: z.number().int().nonnegative(),
     duration_seconds: z.number().int().positive(),
     hasAchievementNotification: z.boolean(),
@@ -135,6 +135,17 @@ const ActionableContentSceneSchema = BaseSceneContentSchema.extend({
     successCallToActionText: z.string(),
 });
 
+const VishingSimulationSceneSchema = BaseSceneContentSchema.extend({
+    title: z.string(),
+    subtitle: z.string(),
+    callerName: z.string(),
+    callerNumber: z.string(),
+    prompt: z.string(),
+    firstMessage: z.string(),
+    callToActionText: z.string(),
+    successCallToActionText: z.string(),
+});
+
 // Base quiz question schema
 const BaseQuizQuestionSchema = z.object({
     id: z.string(),
@@ -264,9 +275,9 @@ const SummarySceneSchema = BaseSceneContentSchema.extend({
 
 export const LanguageContentSchema = z.object({
     '1': IntroSceneSchema,
-    '2': GoalSceneSchema,  
+    '2': GoalSceneSchema,
     '3': ScenarioSceneSchema,
-    '4': ActionableContentSceneSchema,
+    '4': z.union([ActionableContentSceneSchema, VishingSimulationSceneSchema]),
     '5': QuizSceneSchema,
     '6': SurveySceneSchema,
     '7': NudgeSceneSchema,

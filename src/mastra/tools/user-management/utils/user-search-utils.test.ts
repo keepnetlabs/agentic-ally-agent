@@ -53,6 +53,26 @@ describe('user-search-utils', () => {
             );
         });
 
+        it('should fallback to target-users search when primary is empty', async () => {
+            const fallbackUsers = [{ id: 2, email: 'fallback@example.com' }];
+            (global.fetch as any)
+                .mockResolvedValueOnce({ ok: true, json: async () => ({ items: [] }) })
+                .mockResolvedValueOnce({ ok: true, json: async () => ({ items: fallbackUsers }) });
+
+            const result = await fetchUsersWithFilters(mockDeps, mockTemplate, []);
+            expect(result).toEqual(fallbackUsers);
+            expect(global.fetch).toHaveBeenNthCalledWith(
+                1,
+                expect.stringContaining('/api/leaderboard/get-all'),
+                expect.any(Object)
+            );
+            expect(global.fetch).toHaveBeenNthCalledWith(
+                2,
+                expect.stringContaining('/api/target-users/search'),
+                expect.any(Object)
+            );
+        });
+
         it('should throw error on failed fetch', async () => {
             (global.fetch as any).mockResolvedValue({
                 ok: false,
@@ -82,6 +102,26 @@ describe('user-search-utils', () => {
 
             const result = await findUserByEmail(mockDeps, mockTemplate, 'found@example.com');
             expect(result).toEqual(mockUser);
+        });
+
+        it('should fallback to target-users search when exact match not found', async () => {
+            const fallbackUser = { email: 'fallback@example.com' };
+            (global.fetch as any)
+                .mockResolvedValueOnce({ ok: true, json: async () => ({ items: [{ email: 'other@example.com' }] }) })
+                .mockResolvedValueOnce({ ok: true, json: async () => ({ items: [fallbackUser] }) });
+
+            const result = await findUserByEmail(mockDeps, mockTemplate, 'fallback@example.com');
+            expect(result).toEqual(fallbackUser);
+            expect(global.fetch).toHaveBeenNthCalledWith(
+                1,
+                expect.stringContaining('/api/leaderboard/get-all'),
+                expect.any(Object)
+            );
+            expect(global.fetch).toHaveBeenNthCalledWith(
+                2,
+                expect.stringContaining('/api/target-users/search'),
+                expect.any(Object)
+            );
         });
 
         it('should return null if not found', async () => {

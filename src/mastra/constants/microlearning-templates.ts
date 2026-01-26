@@ -217,7 +217,7 @@ export const DEFAULT_LOGO_CONFIG = {
     alt: "Keepnet Labs"
 };
 
-export const getScene4Metadata = (duration: number, scene4Type: "code_review" | "actionable_content") => {
+export const getScene4Metadata = (duration: number, scene4Type: "code_review" | "actionable_content" | "vishing_simulation") => {
     if (scene4Type === "code_review") {
         return {
             scene_type: "code_review" as const,
@@ -228,6 +228,20 @@ export const getScene4Metadata = (duration: number, scene4Type: "code_review" | 
             icon: {
                 sparkleIconName: "code",
                 sceneIconName: "code"
+            }
+        };
+    }
+
+    if (scene4Type === "vishing_simulation") {
+        return {
+            scene_type: "vishing_simulation" as const,
+            points: 25,
+            duration_seconds: Math.round(duration * 60 * 0.25),
+            hasAchievementNotification: true,
+            scientific_basis: "Behavioral Rehearsal: Simulated calls build response confidence under pressure.",
+            icon: {
+                sparkleIconName: "phone",
+                sceneIconName: "phone"
             }
         };
     }

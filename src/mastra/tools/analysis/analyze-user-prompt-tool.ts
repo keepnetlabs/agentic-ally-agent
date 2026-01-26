@@ -52,6 +52,7 @@ const AnalyzeUserPromptOutputSchema = z.object({
     additionalContext: z.string().optional(),
     customRequirements: z.string().optional(),
     isCodeTopic: z.boolean().optional(),
+    isVishing: z.boolean().optional(),
   }),
   policyContext: z.string().optional(),
   error: z.string().optional(),

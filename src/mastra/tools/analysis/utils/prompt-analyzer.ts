@@ -172,7 +172,8 @@ Return JSON:
   "practicalApplications": ["3-4 workplace situations"],
   "assessmentAreas": ["testable skills - focus on 'can they do X'"],
   "regulationCompliance": ["relevant regulations by topic/industry"],
-  "isCodeTopic": false
+  "isCodeTopic": false,
+  "isVishing": false
 }
 
 RULES:
@@ -206,6 +207,7 @@ RULES:
   - Otherwise leave as null/empty string
   - User must explicitly state the color - do not infer or choose colors automatically
 - isCodeTopic: Set to true if topic mentions programming languages OR code-focused topics. Otherwise false.
+- isVishing: Set to true only if the topic is about voice phishing/vishing or phone-call based social engineering. Otherwise false.
 - PEDAGOGICAL RULE: learningObjectives & assessmentAreas MUST be actionable. NO "Understand", "Know", "Learn".
 - DON'T copy user instructions as title/topic
 - CREATE professional titles from user intent
@@ -216,7 +218,11 @@ RULES:
   1. Topic mentions a PROGRAMMING LANGUAGE: JavaScript, Python, Java, C++, C#, Go, Rust, TypeScript, Kotlin, PHP, Ruby, Swift, etc.
   2. Topic mentions CODE-FOCUSED CONCEPTS: code review, secure coding, vulnerabilities, injection, XSS, SQL injection, API security, encryption, authentication, authorization, buffer overflow, memory management, testing, refactoring, debugging, legacy code, etc.
   3. Topic mentions SECURITY CODING: OWASP, CWE, CVE, secure coding, secure design, security testing, etc.
-  Set to FALSE ONLY for: threat awareness, phishing, ransomware, social engineering, compliance, policy, incident response, password management, MFA, data protection (non-code).`;
+  Set to FALSE ONLY for: threat awareness, phishing, ransomware, social engineering, compliance, policy, incident response, password management, MFA, data protection (non-code).
+- isVishing: **CRITICAL** - Return as boolean (true/false). Set to true IF ANY of these conditions are met:
+  1. Topic explicitly mentions "vishing" or "voice phishing".
+  2. Topic mentions phone-call scams, caller impersonation, or voice-based social engineering.
+  Set to FALSE for: email phishing, SMS phishing (smishing), general phishing, and non-voice social engineering.`;
 
         const messages: any[] = [
             {
@@ -306,11 +312,23 @@ export async function getFallbackAnalysis(params: AnalyzeUserPromptParams) {
     ];
 
     const programmingLanguages = ['javascript', 'python', 'java', 'c++', 'c#', 'php', 'go', 'rust', 'typescript', 'kotlin', 'ruby', 'swift', 'scala', 'r language'];
+    const vishingKeywords = [
+        'vishing',
+        'voice phishing',
+        'phone phishing',
+        'phone scam',
+        'call scam',
+        'voice scam',
+        'caller impersonation',
+        'phone-based social engineering',
+        'voice-based social engineering'
+    ];
 
     const promptLower = userPrompt.toLowerCase();
     const hasSpecificCodeSecurityKeyword = specificCodeSecurityKeywords.some(kw => promptLower.includes(kw));
     const hasProgrammingLanguage = programmingLanguages.some(lang => promptLower.includes(lang));
     const isCodeSecurityFallback = hasProgrammingLanguage || hasSpecificCodeSecurityKeyword;
+    const isVishingFallback = vishingKeywords.some(kw => promptLower.includes(kw));
 
     let detectedLang: string | null = null;
     try {
@@ -349,5 +367,6 @@ export async function getFallbackAnalysis(params: AnalyzeUserPromptParams) {
         additionalContext: additionalContext || undefined,
         customRequirements: customRequirements,
         isCodeTopic: isCodeSecurityFallback,
+        isVishing: isVishingFallback,
     };
 }

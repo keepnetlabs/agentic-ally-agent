@@ -131,7 +131,7 @@ If NO → rewrite before output.
 • Replace ALL placeholders with real, topic-specific content
 • Use short sentences, plain language, memory-friendly phrasing
 • Never leave template placeholders (e.g., "clear benefit statement")
-• Keep scene_type values unchanged: intro, goal, scenario, actionable_content, quiz, survey, nudge, summary
+• Keep scene_type values unchanged: intro, goal, scenario, actionable_content, code_review, vishing_simulation, quiz, survey, nudge, summary
 
 === LEARNING SCIENCE ===
 • Memory-friendly patterns: repeat key points, chunk info (3-5 items max)

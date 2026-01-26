@@ -10,6 +10,7 @@ export type {
     ChatMessage,
     ChatRequestBody,
     CodeReviewRequestBody,
+    VishingPromptRequestBody,
     AutonomousRequestBody,
     CloudflareEnv,
     WorkflowBinding,

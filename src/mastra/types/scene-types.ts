@@ -8,6 +8,7 @@ export enum SceneType {
   SCENARIO = 'scenario',
   ACTIONABLE_CONTENT = 'actionable_content',
   CODE_REVIEW = 'code_review',
+  VISHING_SIMULATION = 'vishing_simulation',
   QUIZ = 'quiz',
   SURVEY = 'survey',
   NUDGE = 'nudge',

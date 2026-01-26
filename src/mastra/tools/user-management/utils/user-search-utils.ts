@@ -20,6 +20,14 @@ export interface UserSearchDeps {
     };
 }
 
+function getTargetUsersSearchUrl(baseApiUrl?: string): string {
+    return `${baseApiUrl || 'https://test-api.devkeepnet.com'}/api/target-users/search`;
+}
+
+function getUserAllUrl(baseApiUrl?: string): string {
+    return `${baseApiUrl || 'https://test-api.devkeepnet.com'}/api/leaderboard/get-all`;
+}
+
 export async function fetchUsersWithFilters(
     deps: UserSearchDeps,
     getAllPayloadTemplate: unknown,
@@ -42,8 +50,8 @@ export async function fetchUsersWithFilters(
     }
 
     // Build URL dynamically from baseApiUrl (defaults to test environment)
-    const getUserAllUrl = `${baseApiUrl || 'https://test-api.devkeepnet.com'}/api/leaderboard/get-all`;
-    const resp = await fetch(getUserAllUrl, {
+    const userAllUrl = getUserAllUrl(baseApiUrl);
+    const resp = await fetch(userAllUrl, {
         method: 'POST',
         headers,
         body: JSON.stringify(payload),
@@ -74,7 +82,95 @@ export async function fetchUsersWithFilters(
     }
 
     const data = await resp.json();
-    return data?.items || data?.data?.results || [];
+    const primaryItems = data?.items || data?.data?.results || [];
+    if (primaryItems.length > 0) {
+        return primaryItems;
+    }
+
+    // Fallback search endpoint if primary returns empty
+    logger.info('Primary user search returned empty; attempting fallback search', {
+        filterItemCount: filterItems.length
+    });
+    return fetchUsersFromFallback(deps, filterItems);
+}
+
+async function fetchUsersFromFallback(
+    deps: UserSearchDeps,
+    filterItems: UserSearchFilterItem[]
+): Promise<PlatformUser[]> {
+    const { token, companyId, baseApiUrl, logger } = deps;
+    const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+    };
+    if (companyId) headers['x-ir-company-id'] = companyId;
+
+    const payload = {
+        pageNumber: 1,
+        pageSize: 10,
+        orderBy: '',
+        ascending: false,
+        filter: {
+            Condition: 'AND',
+            SearchInputTextValue: '',
+            FilterGroups: [
+                {
+                    Condition: 'AND',
+                    FilterItems: [
+                        ...filterItems.map(item => ({
+                            Value: item.Value,
+                            FieldName: item.FieldName,
+                            Operator: 'Equal'
+                        })),
+                        {
+                            FieldName: 'Status',
+                            Value: '1',
+                            Operator: 'Include'
+                        },
+                        {
+                            FieldName: 'IsDeleted',
+                            Value: false,
+                            Operator: 'Contains'
+                        }
+                    ],
+                    FilterGroups: []
+                },
+                {
+                    Condition: 'OR',
+                    FilterItems: [],
+                    FilterGroups: []
+                }
+            ]
+        }
+    };
+
+    const fallbackUrl = getTargetUsersSearchUrl(baseApiUrl);
+    logger.info('Attempting fallback user search', {
+        fallbackUrl,
+        payload
+    });
+    try {
+        const fallbackResp = await fetch(fallbackUrl, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(payload),
+        });
+        if (!fallbackResp.ok) {
+            const errorText = await fallbackResp.text();
+            logger.warn('Fallback user search failed', {
+                status: fallbackResp.status,
+                error: errorText.substring(0, 200)
+            });
+            return [];
+        }
+        const fallbackData = await fallbackResp.json();
+        logger.info('Fallback user search response', { fallbackData });
+        return fallbackData?.items || fallbackData?.data?.results || [];
+    } catch (error) {
+        const err = normalizeError(error);
+        logger.warn('Fallback user search error', { error: err.message });
+        return [];
+    }
 }
 
 export async function findUserByEmail(
@@ -90,12 +186,31 @@ export async function findUserByEmail(
         ]);
         if (users.length === 0) return null;
         const exact = users.find(u => String(u?.email || '').toLowerCase() === normalizedEmail);
-        if (!exact) {
-            deps.logger.info('No exact user found by email', { email: normalizedEmail, candidateCount: users.length });
+        if (exact) {
+            deps.logger.info('User found by email', { email: normalizedEmail, userId: exact.targetUserResourceId });
+            return exact;
+        }
+
+        deps.logger.info('No exact user found by email in primary search, trying fallback', {
+            email: normalizedEmail,
+            candidateCount: users.length
+        });
+        const fallbackUsers = await fetchUsersFromFallback(deps, [
+            { Value: normalizedEmail, FieldName: 'email', Operator: 'Equals' },
+        ]);
+        const fallbackExact = fallbackUsers.find(u => String(u?.email || '').toLowerCase() === normalizedEmail);
+        if (!fallbackExact) {
+            deps.logger.info('No exact user found by email in fallback search', {
+                email: normalizedEmail,
+                candidateCount: fallbackUsers.length
+            });
             return null;
         }
-        deps.logger.info('User found by email', { email: normalizedEmail, userId: exact.targetUserResourceId });
-        return exact;
+        deps.logger.info('User found by email via fallback search', {
+            email: normalizedEmail,
+            userId: fallbackExact.targetUserResourceId
+        });
+        return fallbackExact;
     } catch (error) {
         const err = normalizeError(error);
         const errorInfo = errorService.external('User search by email failed', { error: err.message });
@@ -118,12 +233,28 @@ export async function findUserById(
         ]);
         if (users.length === 0) return null;
         const exact = users.find(u => String(u?.targetUserResourceId || '') === normalizedId);
-        if (!exact) {
-            deps.logger.info('No exact user found by ID', { targetUserResourceId: normalizedId, candidateCount: users.length });
+        if (exact) {
+            deps.logger.info('User found by ID', { targetUserResourceId: normalizedId });
+            return exact;
+        }
+
+        deps.logger.info('No exact user found by ID in primary search, trying fallback', {
+            targetUserResourceId: normalizedId,
+            candidateCount: users.length
+        });
+        const fallbackUsers = await fetchUsersFromFallback(deps, [
+            { Value: normalizedId, FieldName: 'targetUserResourceId', Operator: 'Equals' },
+        ]);
+        const fallbackExact = fallbackUsers.find(u => String(u?.targetUserResourceId || '') === normalizedId);
+        if (!fallbackExact) {
+            deps.logger.info('No exact user found by ID in fallback search', {
+                targetUserResourceId: normalizedId,
+                candidateCount: fallbackUsers.length
+            });
             return null;
         }
-        deps.logger.info('User found by ID', { targetUserResourceId: normalizedId });
-        return exact;
+        deps.logger.info('User found by ID via fallback search', { targetUserResourceId: normalizedId });
+        return fallbackExact;
     } catch (error) {
         const err = normalizeError(error);
         const errorInfo = errorService.external('User search by ID failed', { error: err.message });

@@ -30,6 +30,7 @@ vi.mock('../scenes/generators/scene3-video-generator', () => ({
 }));
 vi.mock('../scenes/generators/scene4-actionable-generator', () => ({ generateScene4Prompt: vi.fn().mockReturnValue('Scene 4 Prompt') }));
 vi.mock('../scenes/generators/scene4-code-review-generator', () => ({ generateScene4CodeReviewPrompt: vi.fn().mockReturnValue('Scene 4 Code Prompt') }));
+vi.mock('../scenes/generators/scene4-vishing-generator', () => ({ generateScene4VishingPrompt: vi.fn().mockReturnValue('Scene 4 Vishing Prompt') }));
 vi.mock('../scenes/generators/scene5-quiz-generator', () => ({ generateScene5Prompt: vi.fn().mockReturnValue('Scene 5 Prompt') }));
 vi.mock('../scenes/generators/scene6-survey-generator', () => ({ generateScene6Prompt: vi.fn().mockReturnValue('Scene 6 Prompt') }));
 vi.mock('../scenes/generators/scene7-nudge-generator', () => ({ generateScene7Prompt: vi.fn().mockReturnValue('Scene 7 Prompt') }));
@@ -211,6 +212,17 @@ describe('generateLanguageJsonTool', () => {
     });
 
     expect(generateScene4CodeReviewPrompt).toHaveBeenCalled();
+  });
+
+  it('should use vishing prompt for vishing topics', async () => {
+    const { generateScene4VishingPrompt } = await import('../scenes/generators/scene4-vishing-generator');
+
+    await executeTool({
+      ...baseInput,
+      analysis: { ...baseInput.analysis, isVishing: true }
+    });
+
+    expect(generateScene4VishingPrompt).toHaveBeenCalled();
   });
 
   it('should include policy context when provided', async () => {

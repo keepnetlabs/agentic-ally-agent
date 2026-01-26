@@ -11,6 +11,7 @@ import { generateScene2Prompt } from '../scenes/generators/scene2-goal-generator
 import { generateVideoPrompt } from '../scenes/generators/scene3-video-generator';
 import { generateScene4Prompt } from '../scenes/generators/scene4-actionable-generator';
 import { generateScene4CodeReviewPrompt } from '../scenes/generators/scene4-code-review-generator';
+import { generateScene4VishingPrompt } from '../scenes/generators/scene4-vishing-generator';
 import { generateScene5Prompt } from '../scenes/generators/scene5-quiz-generator';
 import { generateScene6Prompt } from '../scenes/generators/scene6-survey-generator';
 import { generateScene7Prompt } from '../scenes/generators/scene7-nudge-generator';
@@ -23,6 +24,7 @@ import { getLogger } from '../../utils/core/logger';
 import { errorService } from '../../services/error-service';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
 import { withRetry } from '../../utils/core/resilience-utils';
+import { buildVishingAgentPrompt } from './utils/vishing-prompt-builder';
 
 export const generateLanguageJsonTool = new Tool({
   id: 'generate_language_json',
@@ -97,6 +99,7 @@ ${analysis.additionalContext}`
   return messages;
 }
 
+
 // Generate language-specific training content from microlearning.json metadata with rich context
 async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearning: MicrolearningContent, model: any, writer?: any, policyContext?: string): Promise<LanguageContent> {
   const logger = getLogger('GenerateLanguageJsonWithAI');
@@ -116,10 +119,13 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
   const selectedTranscript = await translateTranscript(baseTranscript, analysis.language, model);
 
   // Determine Scene 4 type and generate appropriate prompt based on analysis
+  const isVishing = analysis.isVishing || false;
   const isCodeTopic = analysis.isCodeTopic || false;
-  const scene4Prompt = isCodeTopic
-    ? generateScene4CodeReviewPrompt(analysis, microlearning)
-    : generateScene4Prompt(analysis, microlearning);
+  const scene4Prompt = isVishing
+    ? generateScene4VishingPrompt(analysis, microlearning)
+    : isCodeTopic
+      ? generateScene4CodeReviewPrompt(analysis, microlearning)
+      : generateScene4Prompt(analysis, microlearning);
 
   const scene5Prompt = generateScene5Prompt(analysis, microlearning);
   const scene6Prompt = generateScene6Prompt(analysis, microlearning);
@@ -325,6 +331,11 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
       const errorInfo = errorService.aiModel(`Scene 4 JSON parsing failed: ${normalizedErr.message}`, { scene: 4, step: 'parsing' });
       logErrorInfo(logger, 'error', 'Failed to parse scene 4', errorInfo);
       throw new Error(errorInfo.message);
+    }
+
+    if (isVishing && scene4Scenes?.['4']?.prompt) {
+      const scenarioPrompt = String(scene4Scenes['4'].prompt);
+      scene4Scenes['4'].prompt = await buildVishingAgentPrompt(scenarioPrompt, analysis, model);
     }
 
     try {

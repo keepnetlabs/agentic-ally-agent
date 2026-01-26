@@ -63,6 +63,7 @@ function getSceneRewriter(sceneType: SceneType): RewriterFunction {
         [SceneType.SCENARIO]: rewriteScene3Video, // scenario is the video scene
         [SceneType.ACTIONABLE_CONTENT]: rewriteScene4Actionable,
         [SceneType.CODE_REVIEW]: rewriteScene4Actionable, // Use same rewriter as actionable
+        [SceneType.VISHING_SIMULATION]: rewriteScene4Actionable, // Use actionable rewriter for vishing
         [SceneType.QUIZ]: rewriteScene5Quiz,
         [SceneType.SURVEY]: rewriteScene6Survey,
         [SceneType.NUDGE]: rewriteScene7Nudge,

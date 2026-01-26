@@ -108,7 +108,7 @@ export interface Theme {
 }
 
 export interface SceneMetadata {
-  scene_type: "intro" | "goal" | "scenario" | "actionable_content" | "code_review" | "quiz" | "survey" | "nudge" | "summary";
+  scene_type: "intro" | "goal" | "scenario" | "actionable_content" | "code_review" | "vishing_simulation" | "quiz" | "survey" | "nudge" | "summary";
   points: number;
   duration_seconds: number;
   hasAchievementNotification: boolean;
@@ -136,7 +136,7 @@ export interface MicrolearningContent {
 export type Scene1Metadata = IntroScene;
 export type Scene2Metadata = GoalScene;
 export type Scene3Metadata = ScenarioScene;
-export type Scene4Metadata = ActionableScene | CodeReviewScene;
+export type Scene4Metadata = ActionableScene | CodeReviewScene | VishingSimulationScene;
 export type Scene5Metadata = QuizScene;
 export type Scene6Metadata = SurveyScene;
 export type Scene7Metadata = ActionPlanScene;
@@ -242,6 +242,18 @@ interface CodeReviewScene extends BaseScene {
   hints: string[];
 }
 
+// Scene 4 Alternative: Vishing Simulation
+interface VishingSimulationScene extends BaseScene {
+  title: string;
+  subtitle: string;
+  callerName: string;
+  callerNumber: string;
+  prompt: string;
+  firstMessage: string;
+  callToActionText: string;
+  successCallToActionText: string;
+}
+
 // Scene 5: Quiz
 interface QuizQuestion {
   id: string;
@@ -344,7 +356,7 @@ export interface LanguageContent {
   "1": IntroScene;
   "2": GoalScene;
   "3": ScenarioScene;
-  "4": ActionableScene | CodeReviewScene;
+  "4": ActionableScene | CodeReviewScene | VishingSimulationScene;
   "5": QuizScene;
   "6": SurveyScene;
   "7": ActionPlanScene;
