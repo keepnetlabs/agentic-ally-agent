@@ -48,7 +48,7 @@ export function validateBCP47LanguageCode(input: string): string {
     malay: "ms", "bahasa melayu": "ms",
     thai: "th",
     vietnamese: "vi", tiengviet: "vi", "tiếng việt": "vi",
-    filipino: "fil", tagalog: "tl", tagalog_ph: "tl",
+    filipino: "tl", fil: "tl", tagalog: "tl", tagalog_ph: "tl",
     lao: "lo",
     khmer: "km",
     burmese: "my", myanmar: "my",

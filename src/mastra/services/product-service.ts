@@ -1,5 +1,5 @@
 import { getLogger } from '../utils/core/logger';
-import { requestStorage } from '../utils/core/request-storage';
+import { getRequestContext, requestStorage } from '../utils/core/request-storage';
 import { API_KEYS } from '../constants';
 import { normalizeError } from '../utils/core/error-utils';
 
@@ -16,6 +16,8 @@ export class ProductService {
 
   constructor(jwtToken?: string) {
 
+    const { baseApiUrl } = getRequestContext();
+
     // Get JWT token from parameter or requestStorage
     const token = jwtToken || this.getTokenFromRequestStorage();
 
@@ -28,7 +30,9 @@ export class ProductService {
       this.jwtToken = token;
       const tokenData = this.parseToken(token);
 
-      if (!tokenData.idp) {
+      if (baseApiUrl) {
+        this.baseUrl = `${baseApiUrl}/api`;
+      } else if (!tokenData.idp) {
         this.logger.warn('Failed to extract IDP from JWT');
         this.baseUrl = '';
       } else {
@@ -127,7 +131,7 @@ export class ProductService {
   async request(endpoint: string, method: string = 'GET', body?: any): Promise<any | null> {
     try {
       const url = `${this.baseUrl}${endpoint}`;
-
+      this.logger.info('Requesting URL', { url });
       const options: RequestInit = {
         method,
         headers: this.getHeaders()
