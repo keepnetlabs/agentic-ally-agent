@@ -1,8 +1,6 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { updateMicrolearningWorkflow } from './update-microlearning-workflow';
-import { KVService } from '../services/kv-service';
-import { ProductService } from '../services/product-service';
 
 // Mocks using flattened hoisted object for reliability
 const mocks = vi.hoisted(() => ({

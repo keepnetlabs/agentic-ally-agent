@@ -37,7 +37,8 @@ CRITICAL RULES:
       "mobileHint": "Action hint (max 12 words with 💡): role-play, verify, refuse, end safely.",
       "feedbackCorrect": "Success message (max 12 words with ✅): safe handling; brief debrief will follow.",
       "feedbackWrong": "Error message (max 15 words with ⚠️): verify the caller, refuse, retry."
-      "shortCallWarning": "Stay on the call for 30 seconds before ending."
+      "shortCallWarning": "Stay on the call for 30 seconds before ending.",
+      "privacyNotice": "Privacy-safe simulation. Your voice is not recorded, scripted, or stored."
     },
     "statusTexts": {
       "requesting-mic": "Waiting for microphone access…",

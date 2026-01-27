@@ -48,7 +48,11 @@
       "Bash(timeout 60 npm test:*)",
       "Bash(npx vitest:*)",
       "Bash(findstr:*)",
-      "Bash(tee:*)"
+      "Bash(tee:*)",
+      "Bash(npm run test:coverage:*)",
+      "Bash(xargs:*)",
+      "Bash(npm run type-check:*)",
+      "Bash(npx eslint:*)"
     ],
     "deny": [],
     "ask": []

@@ -34,7 +34,7 @@ import { reasoningTool } from '../tools/analysis';
 import { uploadTrainingTool, assignTrainingTool } from '../tools/user-management';
 import { getDefaultAgentModel } from '../model-providers';
 import { Memory } from '@mastra/memory';
-import { AGENT_NAMES, MESSAGING_GUIDELINES } from '../constants';
+import { AGENT_NAMES, AGENT_IDS, MESSAGING_GUIDELINES } from '../constants';
 
 const buildInstructions = () => `
 You are an AI assistant specialized in creating microlearning content. Your role is to quickly gather the right information, apply smart defaults,
@@ -336,6 +336,7 @@ If the user's message starts with [Use this model: ...] or [Use this model provi
 `;
 
 export const microlearningAgent = new Agent({
+  id: AGENT_IDS.MICROLEARNING,
   name: AGENT_NAMES.MICROLEARNING,
   description: `Creates and manages microlearning training modules for compliance and security education.
     Handles training content generation, multi-language translations, and platform integration (upload/assign).

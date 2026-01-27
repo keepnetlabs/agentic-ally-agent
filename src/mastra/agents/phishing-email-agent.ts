@@ -4,7 +4,7 @@ import { phishingWorkflowExecutorTool, phishingEditorTool } from '../tools/orche
 import { uploadPhishingTool, assignPhishingTool } from '../tools/user-management';
 import { getDefaultAgentModel } from '../model-providers';
 import { Memory } from '@mastra/memory';
-import { PHISHING, AGENT_NAMES, MESSAGING_GUIDELINES } from '../constants';
+import { PHISHING, AGENT_NAMES, AGENT_IDS, MESSAGING_GUIDELINES } from '../constants';
 
 const buildPhishingInstructions = () => `
 You are the **Phishing Simulation Specialist**.
@@ -271,6 +271,7 @@ This will take about ${PHISHING.TIMING.GENERATION_SECONDS_MIN}-${PHISHING.TIMING
 `;
 
 export const phishingEmailAgent = new Agent({
+  id: AGENT_IDS.PHISHING,
   name: AGENT_NAMES.PHISHING,
   description: `Generates realistic phishing email simulations for security awareness training.
     Creates deceptive email content and landing pages based on user behavioral profiles and psychological triggers.

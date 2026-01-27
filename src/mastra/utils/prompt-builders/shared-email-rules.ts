@@ -60,7 +60,7 @@ export const NO_FAKE_PERSONAL_IDENTITIES_RULES = `**No Fake Personal Identities:
  */
 export const TABLE_LAYOUT_RULES = `**Body (HTML) - Outlook/Gmail Compatible:**
 - Use TABLE-BASED layout (no divs for main structure)
-- Main table: width='100%' with style='max-width: 600px; margin: 0 auto; border-collapse: separate;'
+- Main table: width='100%' with style='max-width: ${PHISHING_EMAIL.EMAIL_TABLE_MAX_WIDTH_PX}px; margin: 0 auto; border-collapse: separate;'
 - **PADDING RULE:** NEVER put padding on <table>. ALWAYS put padding on <td> elements. Content <td> must have horizontal padding (min 20px left/right).
   ❌ Wrong: <table style='padding:32px'> OR <td style='padding-top:12px;'> (no left/right)
   ✅ Correct: <td style='padding:32px'> OR <td style='padding: 12px 24px;'>
@@ -85,7 +85,7 @@ export const LAYOUT_STRATEGY_RULES = `**LAYOUT STRATEGY:**
  * Preheader rule for inbox preview
  */
 export const PREHEADER_RULE = `**Preheader:**
-- Add a hidden <div> at the very top of the body containing a short summary (10-15 words) that appears in the inbox preview. Style: display:none;`;
+- Add a hidden <div> at the very top of the body containing a short summary (${PHISHING_EMAIL.PREHEADER_WORD_COUNT.min}-${PHISHING_EMAIL.PREHEADER_WORD_COUNT.max} words) that appears in the inbox preview. Style: display:none;`;
 
 /**
  * Greeting and personalization rules
@@ -101,7 +101,7 @@ export const GREETING_RULES = `**Greeting:**
  * Mobile optimization rules
  */
 export const MOBILE_OPTIMIZATION_RULES = `**Mobile Optimization:**
-- Main table width: 100% (max-width: 600px).
+- Main table width: 100% (max-width: ${PHISHING_EMAIL.EMAIL_TABLE_MAX_WIDTH_PX}px).
 - Buttons: **MUST be easily tappable on mobile** (min-height 32px) for optimal user experience.`;
 
 /**

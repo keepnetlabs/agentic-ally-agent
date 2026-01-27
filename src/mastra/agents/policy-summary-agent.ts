@@ -2,7 +2,7 @@ import { Agent } from '@mastra/core/agent';
 import { summarizePolicyTool } from '../tools';
 import { getLightAgentModel } from '../model-providers';
 import { Memory } from '@mastra/memory';
-import { AGENT_NAMES } from '../constants';
+import { AGENT_NAMES, AGENT_IDS } from '../constants';
 
 const buildPolicySummaryInstructions = () => `
 You are the **Policy Intelligence Specialist**.
@@ -61,6 +61,7 @@ TEMPLATE (Localize labels to Interaction Language):
 `;
 
 export const policySummaryAgent = new Agent({
+  id: AGENT_IDS.POLICY_SUMMARY,
   name: AGENT_NAMES.POLICY_SUMMARY,
   description: `Provides expert guidance on company security policies. Summarizes relevant policy sections, explains requirements, and provides actionable recommendations. Supports all languages.`,
   instructions: buildPolicySummaryInstructions(),

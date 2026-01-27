@@ -3,7 +3,7 @@ import { Agent } from '@mastra/core/agent';
 import { getTargetGroupInfoTool, getUserInfoTool } from '../tools/user-management';
 import { getDefaultAgentModel } from '../model-providers';
 import { Memory } from '@mastra/memory';
-import { AGENT_NAMES, MESSAGING_GUIDELINES } from '../constants';
+import { AGENT_NAMES, AGENT_IDS, MESSAGING_GUIDELINES } from '../constants';
 
 const buildUserInfoInstructions = () => `
 You are the Executive Security Communications Expert for an enterprise Human Risk Management platform.
@@ -198,6 +198,7 @@ NEVER ask only about one option. Always offer both choices.
 `;
 
 export const userInfoAgent = new Agent({
+  id: AGENT_IDS.USER_INFO,
   name: AGENT_NAMES.USER_INFO,
   description: `Searches for users and analyzes their security behavior timeline for risk assessment.
     Provides structured analysis reports with behavioral resilience scoring, risk levels, and training recommendations.

@@ -17,7 +17,7 @@
 
 import { Agent } from '@mastra/core/agent';
 import { getDefaultAgentModel } from '../model-providers';
-import { AGENT_NAMES } from '../constants';
+import { AGENT_NAMES, AGENT_IDS } from '../constants';
 
 /**
  * Builds the system instructions for the orchestrator agent.
@@ -224,6 +224,7 @@ You must always respond with a JSON object:
  * The routing decision is returned as JSON with agent name and task context.
  */
 export const orchestratorAgent = new Agent({
+  id: AGENT_IDS.ORCHESTRATOR,
   name: AGENT_NAMES.ORCHESTRATOR,
   instructions: buildOrchestratorInstructions(),
   model: getDefaultAgentModel(),

@@ -598,6 +598,18 @@ export const AGENT_NAMES = {
 } as const;
 
 // ============================================
+// AGENT IDS
+// ============================================
+
+export const AGENT_IDS = {
+  PHISHING: 'phishing-email-agent',
+  MICROLEARNING: 'microlearning-agent',
+  USER_INFO: 'user-info-agent',
+  POLICY_SUMMARY: 'policy-summary-agent',
+  ORCHESTRATOR: 'orchestrator-agent',
+} as const;
+
+// ============================================
 // PHISHING SIMULATION CONFIGURATION
 // ============================================
 
@@ -655,6 +667,10 @@ export const PHISHING_EMAIL = {
   // Content constraints
   MAX_SUBJECT_LENGTH: 200,
   MAX_DESCRIPTION_LENGTH: 300,
+  PREHEADER_WORD_COUNT: { min: 10, max: 15 },
+  QR_CODE_IMAGE_WIDTH_PX: 200,
+  EMAIL_TABLE_MAX_WIDTH_PX: 600,
+  QR_CODE_TIMEOUT_HOURS: 24,
 
   // Mandatory tags for valid phishing emails
   MANDATORY_TAGS: ['{PHISHINGURL}'] as const,
@@ -690,6 +706,7 @@ export const LANDING_PAGE = {
   MINIMAL_BODY_MAX_WIDTH_PX: 800,
   HERO_MAIN_CONTAINER_MAX_WIDTH_PX: 600,
   HERO_MAIN_CONTAINER_MARGIN_TOP_PX: -24,
+  QR_CODE_IMAGE_WIDTH_PX: 200,
 } as const;
 
 // ============================================
