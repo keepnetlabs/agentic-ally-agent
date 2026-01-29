@@ -183,6 +183,32 @@ describe('CreateMicrolearningWorkflow', () => {
     expect(output.metadata.title).toBe('Phishing Awareness');
   });
 
+  it('should skip inbox creation for vishing training', async () => {
+    mocks.genMicrolearningExecute.mockResolvedValueOnce({
+      success: true,
+      data: {
+        scenes: [
+          { scene_id: '4', metadata: { scene_type: 'vishing_simulation' } }
+        ],
+        microlearning_metadata: {
+          department_relevance: ['IT']
+        }
+      }
+    });
+
+    const run = await createMicrolearningWorkflow.createRunAsync();
+    const result = await run.start({ inputData: { prompt: 'Create vishing training', department: 'IT' } });
+
+    expect(mocks.createInboxExecute).not.toHaveBeenCalled();
+    expect(mocks.saveMicrolearning).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ inboxContent: undefined }),
+      expect.any(String),
+      expect.any(String)
+    );
+    expect(result.status).toBe('success');
+  });
+
   it('should fail if prompt is missing', async () => {
     const run = await createMicrolearningWorkflow.createRunAsync();
     const result = await run.start({ inputData: { prompt: '' } });

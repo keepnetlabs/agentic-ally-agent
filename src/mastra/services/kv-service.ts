@@ -213,9 +213,11 @@ export class KVService {
         department,
       });
 
+      const shouldSaveInbox = data.inboxContent !== undefined && data.inboxContent !== null;
+
       // Repair inbox HTML before saving (ensures clean HTML from creation)
       let inboxToSave = data.inboxContent;
-      if (data.inboxContent) {
+      if (shouldSaveInbox) {
         const repairResult = detectAndRepairInbox(data.inboxContent);
         if (repairResult.hadCorruption) {
           this.logger.info(`Repaired HTML corruption in inbox before saving`, {
@@ -226,20 +228,26 @@ export class KVService {
         }
       }
 
-      // Save all three components in parallel with Promise.allSettled
-      const [baseResult, langResult, inboxResult] = await Promise.allSettled([
+      const saveOperations = [
         this.put(baseKey, {
           ...data.microlearning,
           microlearning_id: microlearningId
         }),
         this.put(langKey, data.languageContent),
-        this.put(inboxKey, inboxToSave),
-      ]);
+        ...(shouldSaveInbox ? [this.put(inboxKey, inboxToSave)] : []),
+      ];
+
+      // Save components in parallel with Promise.allSettled
+      const results = await Promise.allSettled(saveOperations);
+      const baseResult = results[0];
+      const langResult = results[1];
+      const inboxResult = shouldSaveInbox ? results[2] : undefined;
 
       // Check results
       const baseSuccess = baseResult.status === 'fulfilled' && baseResult.value === true;
       const langSuccess = langResult.status === 'fulfilled' && langResult.value === true;
-      const inboxSuccess = inboxResult.status === 'fulfilled' && inboxResult.value === true;
+      const inboxSuccess = !shouldSaveInbox
+        || (inboxResult?.status === 'fulfilled' && inboxResult.value === true);
 
       const allSuccess = baseSuccess && langSuccess && inboxSuccess;
       const duration = timer.end();
@@ -254,7 +262,7 @@ export class KVService {
         const failures = [
           !baseSuccess && 'base',
           !langSuccess && 'language',
-          !inboxSuccess && 'inbox'
+          shouldSaveInbox && !inboxSuccess && 'inbox'
         ].filter(Boolean);
 
         this.logger.warn(`Partial microlearning save to KV`, {
@@ -263,7 +271,7 @@ export class KVService {
           failedComponents: failures,
           baseStatus: baseResult.status,
           langStatus: langResult.status,
-          inboxStatus: inboxResult.status,
+          inboxStatus: inboxResult?.status,
         });
 
         // Log rejection errors with details
@@ -275,7 +283,7 @@ export class KVService {
           const langErr = langResult.reason instanceof Error ? langResult.reason : new Error(String(langResult.reason));
           this.logger.error(`Language content save failed`, { microlearningId, error: langErr.message, stack: langErr.stack });
         }
-        if (inboxResult.status === 'rejected') {
+        if (shouldSaveInbox && inboxResult?.status === 'rejected') {
           const inboxErr = inboxResult.reason instanceof Error ? inboxResult.reason : new Error(String(inboxResult.reason));
           this.logger.error(`Inbox content save failed`, { microlearningId, error: inboxErr.message, stack: inboxErr.stack });
         }

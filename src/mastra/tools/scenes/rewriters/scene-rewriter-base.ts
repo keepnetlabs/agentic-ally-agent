@@ -30,6 +30,7 @@ type SceneType =
     | 'goal'
     | 'video'
     | 'actionable'
+    | 'vishing'
     | 'quiz'
     | 'survey'
     | 'nudge'
@@ -65,6 +66,11 @@ const SCENE_CONFIGS: Record<SceneType, SceneConfig> = {
     actionable: {
         displayName: 'Actionable Items',
         typeInstruction: 'Keep action steps concrete and achievable.',
+        sceneNumber: 4,
+    },
+    vishing: {
+        displayName: 'Vishing Simulation',
+        typeInstruction: 'Actively replace any source-language names/titles/orgs/phone formats with culturally appropriate equivalents in the target locale (no transliteration). If a name appears, it must change to a local name; phone numbers must follow local patterns and stay clearly fictional; avoid any real entities.',
         sceneNumber: 4,
     },
     quiz: {

@@ -28,6 +28,10 @@ function getUserAllUrl(baseApiUrl?: string): string {
     return `${baseApiUrl || 'https://test-api.devkeepnet.com'}/api/leaderboard/get-all`;
 }
 
+function getTargetUserByIdUrl(baseApiUrl: string | undefined, resourceId: string): string {
+    return `${baseApiUrl || 'https://test-api.devkeepnet.com'}/api/target-users/${encodeURIComponent(resourceId)}`;
+}
+
 export async function fetchUsersWithFilters(
     deps: UserSearchDeps,
     getAllPayloadTemplate: unknown,
@@ -173,6 +177,60 @@ async function fetchUsersFromFallback(
     }
 }
 
+async function fetchUserByIdDirect(
+    deps: UserSearchDeps,
+    targetUserResourceId: string
+): Promise<PlatformUser | null> {
+    const { token, companyId, baseApiUrl, logger } = deps;
+    const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+    };
+    if (companyId) headers['x-ir-company-id'] = companyId;
+
+    const url = getTargetUserByIdUrl(baseApiUrl, targetUserResourceId);
+    const resp = await fetch(url, { method: 'GET', headers });
+    if (resp.status === 404) {
+        return null;
+    }
+    if (!resp.ok) {
+        const errorText = await resp.text();
+        logger.error('RAW BACKEND RESPONSE:', { status: resp.status, body: errorText });
+
+        let detailedMessage = `User lookup API error: ${resp.status}`;
+        try {
+            const errorJson = JSON.parse(errorText);
+            if (errorJson?.message) {
+                detailedMessage = errorJson.message;
+            }
+        } catch {
+            if (errorText.length < 100) detailedMessage += ` - ${errorText}`;
+        }
+
+        const errorInfo = errorService.external(detailedMessage, {
+            status: resp.status,
+            errorBody: errorText.substring(0, 1000)
+        });
+        logErrorInfo(logger as any, 'error', 'User lookup API failed', errorInfo);
+        throw new Error(detailedMessage);
+    }
+
+    const payload = await resp.json();
+    const data = payload?.data;
+    if (!data) return null;
+
+    return {
+        targetUserResourceId: String(data.resourceId || targetUserResourceId),
+        firstName: String(data.firstName || ''),
+        lastName: String(data.lastName || ''),
+        email: String(data.email || ''),
+        department: data.department,
+        departmentName: data.department,
+        preferredLanguage: data.preferredLanguageId,
+        role: data.priority,
+    };
+}
+
 export async function findUserByEmail(
     deps: UserSearchDeps,
     getAllPayloadTemplate: unknown,
@@ -251,7 +309,16 @@ export async function findUserById(
                 targetUserResourceId: normalizedId,
                 candidateCount: fallbackUsers.length
             });
-            return null;
+            deps.logger.info('Fallback search failed; trying direct user lookup endpoint', {
+                targetUserResourceId: normalizedId
+            });
+            const directUser = await fetchUserByIdDirect(deps, normalizedId);
+            if (!directUser) {
+                deps.logger.info('No user found by ID via direct lookup', { targetUserResourceId: normalizedId });
+                return null;
+            }
+            deps.logger.info('User found by ID via direct lookup', { targetUserResourceId: normalizedId });
+            return directUser;
         }
         deps.logger.info('User found by ID via fallback search', { targetUserResourceId: normalizedId });
         return fallbackExact;

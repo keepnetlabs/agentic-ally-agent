@@ -127,12 +127,24 @@ export const generateMicrolearningStep = createStep({
     const microlearningService = new MicrolearningService();
     await microlearningService.storeMicrolearning(enrichedMicrolearning);
 
+    const scenes = enrichedMicrolearning.scenes || [];
+    const hasCodeReview = scenes.some((scene: { metadata?: { scene_type?: string } }) => scene?.metadata?.scene_type === 'code_review');
+    const hasVishing = scenes.some((scene: { metadata?: { scene_type?: string } }) => scene?.metadata?.scene_type === 'vishing_simulation');
+    const hasInbox = !(hasCodeReview || hasVishing);
+    if (!hasInbox) {
+      logger.info('Inbox will be skipped for this training type', {
+        hasCodeReview,
+        hasVishing
+      });
+    }
+
     return {
       success: true,
       data: enrichedMicrolearning,
       microlearningId,
       analysis,
       microlearningStructure: enrichedMicrolearning,
+      hasInbox,
       modelProvider: inputData.modelProvider,
       model: inputData.model,
       writer: inputData.writer,
@@ -187,6 +199,7 @@ export const generateLanguageStep = createStep({
       microlearningId,
       analysis,
       microlearningStructure,
+      hasInbox: (inputData as any).hasInbox,
       modelProvider: inputData.modelProvider,
       model: inputData.model,
       writer: inputData.writer,
@@ -203,8 +216,30 @@ export const createInboxStep = createStep({
   outputSchema: microlearningFinalResultSchema, // Updated output schema name
   execute: async ({ inputData }) => {
     const { analysis, microlearningStructure, microlearningId } = inputData;
+    const hasInbox = (inputData as any).hasInbox !== false;
 
     const normalizedDept = analysis.department ? normalizeDepartmentName(analysis.department) : 'all';
+
+    if (!hasInbox) {
+      const langUrl = encodeURIComponent(`lang/${analysis.language}`);
+      const trainingUrl = `${API_ENDPOINTS.FRONTEND_MICROLEARNING_URL}/?courseId=${microlearningId}&langUrl=${langUrl}&isEditMode=true`;
+      return {
+        success: true,
+        message: `🎉 New microlearning created successfully! Training URL: ${trainingUrl}`,
+        data: null,
+        metadata: {
+          microlearningId,
+          title: analysis.title,
+          language: analysis.language,
+          department: normalizedDept,
+          trainingUrl,
+          filesGenerated: [
+            `${microlearningId}.json`,
+            `${microlearningId}/${analysis.language}.json`,
+          ]
+        }
+      };
+    }
 
     if (!createInboxStructureTool.execute) {
       throw new Error('Create inbox structure tool is not executable');
@@ -261,6 +296,7 @@ export const saveToKVStep = createStep({
   execute: async ({ inputData }) => {
     const inboxResult = inputData['create-inbox-assignment'];
     const languageResult = inputData['generate-language-content'];
+    const hasInbox = (languageResult as any).hasInbox !== false;
 
     // Now save to KV with both results available
     try {
@@ -276,7 +312,7 @@ export const saveToKVStep = createStep({
               {
                 microlearning: microlearningStructure,
                 languageContent: languageResult.data,
-                inboxContent: inboxResult.data
+                inboxContent: hasInbox ? inboxResult.data : undefined
               },
               analysis.language,
               normalizedDept
@@ -286,7 +322,11 @@ export const saveToKVStep = createStep({
         logger.info('Microlearning saved to KV successfully', { microlearningId });
 
         // Verify KV consistency after save
-        const expectedKeys = buildExpectedKVKeys(microlearningId, analysis.language, normalizedDept);
+        const expectedKeys = buildExpectedKVKeys(
+          microlearningId,
+          analysis.language,
+          hasInbox ? normalizedDept : undefined
+        );
         await waitForKVConsistency(microlearningId, expectedKeys);
       } catch (saveError) {
         const err = normalizeError(saveError);

@@ -99,16 +99,20 @@ export const loadExistingStep = createStep({
       throw new Error(errorInfo.message);
     }
 
-    // Check if training has code_review scene type (no inbox needed)
+    // Check if training has scene types that do not require inbox
     let hasInbox = true; // Default: inbox is required for most trainings
     const scenes = existingTyped.scenes || [];
     const hasCodeReview = scenes.some((scene) => scene?.metadata?.scene_type === 'code_review');
-    if (hasCodeReview) {
-      hasInbox = false; // Only disable inbox for code_review trainings
+    const hasVishing = scenes.some((scene) => scene?.metadata?.scene_type === 'vishing_simulation');
+    if (hasCodeReview || hasVishing) {
+      hasInbox = false; // Disable inbox for code_review and vishing trainings
     }
 
     if (!hasInbox) {
-      logger.info('Code review training detected - inbox will be skipped');
+      logger.info('Inbox will be skipped for this training type', {
+        hasCodeReview,
+        hasVishing
+      });
     }
 
     logger.info('Step 1 completed: Found microlearning', {
