@@ -11,6 +11,8 @@ export type {
     ChatRequestBody,
     CodeReviewRequestBody,
     VishingPromptRequestBody,
+    SmishingChatRequestBody,
+    SmishingChatMessage,
     AutonomousRequestBody,
     CloudflareEnv,
     WorkflowBinding,

@@ -104,14 +104,16 @@ export const loadExistingStep = createStep({
     const scenes = existingTyped.scenes || [];
     const hasCodeReview = scenes.some((scene) => scene?.metadata?.scene_type === 'code_review');
     const hasVishing = scenes.some((scene) => scene?.metadata?.scene_type === 'vishing_simulation');
-    if (hasCodeReview || hasVishing) {
+    const hasSmishing = scenes.some((scene) => scene?.metadata?.scene_type === 'smishing_simulation');
+    if (hasCodeReview || hasVishing || hasSmishing) {
       hasInbox = false; // Disable inbox for code_review and vishing trainings
     }
 
     if (!hasInbox) {
       logger.info('Inbox will be skipped for this training type', {
         hasCodeReview,
-        hasVishing
+        hasVishing,
+        hasSmishing
       });
     }
 

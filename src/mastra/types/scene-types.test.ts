@@ -32,6 +32,10 @@ describe('Scene Types', () => {
       expect(SceneType.VISHING_SIMULATION).toBe('vishing_simulation');
     });
 
+    it('should have SMISHING_SIMULATION scene type', () => {
+      expect(SceneType.SMISHING_SIMULATION).toBe('smishing_simulation');
+    });
+
     it('should have QUIZ scene type', () => {
       expect(SceneType.QUIZ).toBe('quiz');
     });
@@ -48,9 +52,9 @@ describe('Scene Types', () => {
       expect(SceneType.SUMMARY).toBe('summary');
     });
 
-    it('should have exactly 10 scene types', () => {
+    it('should have exactly 11 scene types', () => {
       const sceneTypes = Object.values(SceneType);
-      expect(sceneTypes.length).toBe(10);
+      expect(sceneTypes.length).toBe(11);
     });
 
     it('should have all unique values', () => {
@@ -63,6 +67,7 @@ describe('Scene Types', () => {
       expect(SceneType.ACTIONABLE_CONTENT).toContain('_');
       expect(SceneType.CODE_REVIEW).toContain('_');
       expect(SceneType.VISHING_SIMULATION).toContain('_');
+      expect(SceneType.SMISHING_SIMULATION).toContain('_');
     });
 
     it('should use lowercase values', () => {
@@ -97,6 +102,10 @@ describe('Scene Types', () => {
 
       it('should return true for vishing_simulation', () => {
         expect(isValidSceneType('vishing_simulation')).toBe(true);
+      });
+
+      it('should return true for smishing_simulation', () => {
+        expect(isValidSceneType('smishing_simulation')).toBe(true);
       });
 
       it('should return true for quiz', () => {
@@ -204,6 +213,11 @@ describe('Scene Types', () => {
         expect(result).toBe(SceneType.VISHING_SIMULATION);
       });
 
+      it('should return smishing_simulation for valid smishing string', () => {
+        const result = getSceneTypeOrDefault('smishing_simulation');
+        expect(result).toBe(SceneType.SMISHING_SIMULATION);
+      });
+
       it('should return code_review for valid code_review string', () => {
         const result = getSceneTypeOrDefault('code_review');
         expect(result).toBe(SceneType.CODE_REVIEW);
@@ -258,6 +272,11 @@ describe('Scene Types', () => {
       it('should accept vishing_simulation as custom default', () => {
         const result = getSceneTypeOrDefault('invalid', SceneType.VISHING_SIMULATION);
         expect(result).toBe(SceneType.VISHING_SIMULATION);
+      });
+
+      it('should accept smishing_simulation as custom default', () => {
+        const result = getSceneTypeOrDefault('invalid', SceneType.SMISHING_SIMULATION);
+        expect(result).toBe(SceneType.SMISHING_SIMULATION);
       });
 
       it('should accept code_review as custom default', () => {

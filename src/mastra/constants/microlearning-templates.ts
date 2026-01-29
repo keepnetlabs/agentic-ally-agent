@@ -217,7 +217,7 @@ export const DEFAULT_LOGO_CONFIG = {
     alt: "Keepnet Labs"
 };
 
-export const getScene4Metadata = (duration: number, scene4Type: "code_review" | "actionable_content" | "vishing_simulation") => {
+export const getScene4Metadata = (duration: number, scene4Type: "code_review" | "actionable_content" | "vishing_simulation" | "smishing_simulation") => {
     if (scene4Type === "code_review") {
         return {
             scene_type: "code_review" as const,
@@ -242,6 +242,20 @@ export const getScene4Metadata = (duration: number, scene4Type: "code_review" | 
             icon: {
                 sparkleIconName: "phone",
                 sceneIconName: "phone"
+            }
+        };
+    }
+
+    if (scene4Type === "smishing_simulation") {
+        return {
+            scene_type: "smishing_simulation" as const,
+            points: 25,
+            duration_seconds: Math.round(duration * 60 * 0.25),
+            hasAchievementNotification: true,
+            scientific_basis: "Behavioral Rehearsal: Simulated chats build response confidence under pressure.",
+            icon: {
+                sparkleIconName: "message-square",
+                sceneIconName: "message-square"
             }
         };
     }

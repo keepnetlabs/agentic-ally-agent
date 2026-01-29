@@ -9,6 +9,7 @@ export enum SceneType {
   ACTIONABLE_CONTENT = 'actionable_content',
   CODE_REVIEW = 'code_review',
   VISHING_SIMULATION = 'vishing_simulation',
+  SMISHING_SIMULATION = 'smishing_simulation',
   QUIZ = 'quiz',
   SURVEY = 'survey',
   NUDGE = 'nudge',

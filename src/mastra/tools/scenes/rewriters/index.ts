@@ -8,6 +8,7 @@ export { rewriteScene2Goal } from './scene2-goal-rewriter';
 export { rewriteScene3Video } from './scene3-video-rewriter';
 export { rewriteScene4Actionable } from './scene4-actionable-rewriter';
 export { rewriteScene4Vishing } from './scene4-vishing-rewriter';
+export { rewriteScene4Smishing } from './scene4-smishing-rewriter';
 export { rewriteScene5Quiz } from './scene5-quiz-rewriter';
 export { rewriteScene6Survey } from './scene6-survey-rewriter';
 export { rewriteScene7Nudge } from './scene7-nudge-rewriter';

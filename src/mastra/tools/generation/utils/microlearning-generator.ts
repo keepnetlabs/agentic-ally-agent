@@ -24,9 +24,11 @@ export async function generateMicrolearningJsonWithAI(
 ) {
     const scene4Type = analysis.isVishing
         ? "vishing_simulation"
-        : analysis.isCodeTopic
-            ? "code_review"
-            : "actionable_content";
+        : analysis.isSmishing
+            ? "smishing_simulation"
+            : analysis.isCodeTopic
+                ? "code_review"
+                : "actionable_content";
 
     const microlearning: MicrolearningContent = {
         microlearning_id: microlearningId,
@@ -180,7 +182,7 @@ CRITICAL JSON RULES:
     }
 }
 
-export function generateSceneStructure(duration: number, scene4Type: "code_review" | "actionable_content" | "vishing_simulation" = "actionable_content"): Scene[] {
+export function generateSceneStructure(duration: number, scene4Type: "code_review" | "actionable_content" | "vishing_simulation" | "smishing_simulation" = "actionable_content"): Scene[] {
     return [
         {
             scene_id: "1",

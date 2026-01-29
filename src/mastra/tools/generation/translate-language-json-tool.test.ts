@@ -23,6 +23,7 @@ vi.mock('../scenes/rewriters/scene1-intro-rewriter', () => ({ rewriteScene1Intro
 vi.mock('../scenes/rewriters/scene2-goal-rewriter', () => ({ rewriteScene2Goal: vi.fn().mockResolvedValue({ id: '2', content: 'Goal' }) }));
 vi.mock('../scenes/rewriters/scene3-video-rewriter', () => ({ rewriteScene3Video: vi.fn().mockResolvedValue({ id: '3', content: 'Video' }) }));
 vi.mock('../scenes/rewriters/scene4-actionable-rewriter', () => ({ rewriteScene4Actionable: vi.fn().mockResolvedValue({ id: '4', content: 'Actions' }) }));
+vi.mock('../scenes/rewriters/scene4-smishing-rewriter', () => ({ rewriteScene4Smishing: vi.fn().mockResolvedValue({ id: '4', content: 'Smishing' }) }));
 vi.mock('../scenes/rewriters/scene5-quiz-rewriter', () => ({ rewriteScene5Quiz: vi.fn().mockResolvedValue({ id: '5', content: 'Quiz' }) }));
 vi.mock('../scenes/rewriters/scene6-survey-rewriter', () => ({ rewriteScene6Survey: vi.fn().mockResolvedValue({ id: '6', content: 'Survey' }) }));
 vi.mock('../scenes/rewriters/scene7-nudge-rewriter', () => ({ rewriteScene7Nudge: vi.fn().mockResolvedValue({ id: '7', content: 'Nudge' }) }));
@@ -34,6 +35,8 @@ import { rewriteScene1Intro } from '../scenes/rewriters/scene1-intro-rewriter';
 import { rewriteScene2Goal } from '../scenes/rewriters/scene2-goal-rewriter';
 import { rewriteScene3Video } from '../scenes/rewriters/scene3-video-rewriter';
 import { rewriteScene4Actionable } from '../scenes/rewriters/scene4-actionable-rewriter';
+import { rewriteScene4Smishing } from '../scenes/rewriters/scene4-smishing-rewriter';
+import { rewriteScene4Vishing } from '../scenes/rewriters/scene4-vishing-rewriter';
 import { rewriteScene5Quiz } from '../scenes/rewriters/scene5-quiz-rewriter';
 import { rewriteScene6Survey } from '../scenes/rewriters/scene6-survey-rewriter';
 import { rewriteScene7Nudge } from '../scenes/rewriters/scene7-nudge-rewriter';
@@ -146,7 +149,7 @@ describe('translateLanguageJsonTool', () => {
     expect(rewriteScene4Actionable).toHaveBeenCalled();
   });
 
-  it('should route VISHING_SIMULATION scene type to actionable rewriter', async () => {
+  it('should route VISHING_SIMULATION scene type to vishing rewriter', async () => {
     const vishingInput = {
       ...baseInput,
       json: { '4': { id: '4' } },
@@ -159,7 +162,23 @@ describe('translateLanguageJsonTool', () => {
 
     await (translateLanguageJsonTool as any).execute(vishingInput);
 
-    expect(rewriteScene4Actionable).toHaveBeenCalled();
+    expect(rewriteScene4Vishing).toHaveBeenCalled();
+  });
+
+  it('should route SMISHING_SIMULATION scene type to smishing rewriter', async () => {
+    const smishingInput = {
+      ...baseInput,
+      json: { '4': { id: '4' } },
+      microlearningStructure: {
+        scenes: [
+          { scene_id: '4', metadata: { scene_type: 'smishing_simulation' } }
+        ]
+      }
+    };
+
+    await (translateLanguageJsonTool as any).execute(smishingInput);
+
+    expect(rewriteScene4Smishing).toHaveBeenCalled();
   });
 
   it('should handle app texts failure gracefully', async () => {

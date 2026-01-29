@@ -240,6 +240,19 @@ describe('Microlearning Schemas', () => {
             expect(result.success).toBe(true);
         });
 
+        it('should accept smishing_simulation as scene type', () => {
+            const valid = {
+                scene_type: 'smishing_simulation',
+                points: 25,
+                duration_seconds: 75,
+                hasAchievementNotification: true,
+                scientific_basis: 'Behavioral Rehearsal',
+                icon: { sceneIconName: 'message-square' }
+            };
+            const result = SceneMetadataSchema.safeParse(valid);
+            expect(result.success).toBe(true);
+        });
+
         it('should accept code_review as scene type', () => {
             const valid = {
                 scene_type: 'code_review',
@@ -418,6 +431,78 @@ describe('Microlearning Schemas', () => {
                 icon: { sceneIconName: 'phone' }
             };
             const result = LanguageContentSchema.shape['4'].safeParse(valid);
+            expect(result.success).toBe(true);
+        });
+    });
+
+    describe('Smishing Simulation Schema - Validation', () => {
+        it('should require all mandatory fields', () => {
+            const missing = {
+                iconName: 'message-square',
+                title: 'Smishing Test',
+                // Missing subtitle, prompt, firstMessage
+                callToActionText: 'Start',
+                successCallToActionText: 'Continue',
+                key_message: ['msg'],
+                scene_type: 'smishing_simulation',
+                points: 25,
+                duration_seconds: 75,
+                hasAchievementNotification: true,
+                scientific_basis: 'Test',
+                icon: { sceneIconName: 'message-square' }
+            };
+            const result = LanguageContentSchema.shape['4'].safeParse(missing);
+            expect(result.success).toBe(false);
+        });
+
+        it('should validate with minimal required fields', () => {
+            const minimal = {
+                iconName: 'message-square',
+                title: 'Test',
+                subtitle: 'Sub',
+                senderName: 'Alex',
+                senderNumber: '+1-555-0100',
+                prompt: 'Test prompt',
+                firstMessage: 'Hello',
+                callToActionText: 'Start',
+                successCallToActionText: 'Continue',
+                key_message: ['msg'],
+                scene_type: 'smishing_simulation',
+                points: 25,
+                duration_seconds: 75,
+                hasAchievementNotification: true,
+                scientific_basis: 'Test',
+                icon: { sceneIconName: 'message-square' }
+            };
+            const result = LanguageContentSchema.shape['4'].safeParse(minimal);
+            expect(result.success).toBe(true);
+        });
+
+        it('should validate with optional texts field', () => {
+            const withTexts = {
+                iconName: 'message-square',
+                title: 'Test',
+                subtitle: 'Sub',
+                senderName: 'Alex',
+                senderNumber: '+1-555-0100',
+                prompt: 'Test prompt',
+                firstMessage: 'Hello',
+                callToActionText: 'Start',
+                successCallToActionText: 'Continue',
+                texts: {
+                    mobileHint: 'Hint',
+                    feedbackCorrect: 'Correct',
+                    feedbackWrong: 'Wrong'
+                },
+                key_message: ['msg'],
+                scene_type: 'smishing_simulation',
+                points: 25,
+                duration_seconds: 75,
+                hasAchievementNotification: true,
+                scientific_basis: 'Test',
+                icon: { sceneIconName: 'message-square' }
+            };
+            const result = LanguageContentSchema.shape['4'].safeParse(withTexts);
             expect(result.success).toBe(true);
         });
     });

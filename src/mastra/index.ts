@@ -51,6 +51,7 @@ import { normalizeSafeId } from './utils/core/id-utils';
 import { validateBCP47LanguageCode, DEFAULT_LANGUAGE } from './utils/language/language-utils';
 import { postProcessPhishingEmailHtml, postProcessPhishingLandingHtml } from './utils/content-processors/phishing-html-postprocessors';
 import { vishingPromptHandler } from './routes/vishing-prompt-route';
+import { smishingChatHandler } from './routes/smishing-chat-route';
 
 // Barrel imports - clean organization
 import {
@@ -577,6 +578,11 @@ export const mastra = new Mastra({
       registerApiRoute('/vishing/prompt', {
         method: 'POST',
         handler: vishingPromptHandler,
+      }),
+
+      registerApiRoute('/smishing/chat', {
+        method: 'POST',
+        handler: smishingChatHandler,
       }),
 
       registerApiRoute('/autonomous', {

@@ -163,6 +163,17 @@ describe('microlearning-generator', () => {
             expect(prompt).toContain('"scene_type": "vishing_simulation"');
         });
 
+        it('should use smishing_simulation scene type for scene 4 when isSmishing is true', async () => {
+            (ai.generateText as any).mockResolvedValue({ text: JSON.stringify({}) });
+
+            const analysis = { ...baseAnalysis, isSmishing: true };
+            await generateMicrolearningJsonWithAI(analysis as any, 'id', mockModel as any);
+
+            const callArgs = (ai.generateText as any).mock.calls[0][0];
+            const prompt = callArgs.messages[1].content;
+            expect(prompt).toContain('"scene_type": "smishing_simulation"');
+        });
+
         it('should use actionable_content scene type for scene 4 when isCodeTopic is false', async () => {
             (ai.generateText as any).mockResolvedValue({ text: JSON.stringify({}) });
 

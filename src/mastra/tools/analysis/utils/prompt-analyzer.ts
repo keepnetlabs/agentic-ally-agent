@@ -173,7 +173,8 @@ Return JSON:
   "assessmentAreas": ["testable skills - focus on 'can they do X'"],
   "regulationCompliance": ["relevant regulations by topic/industry"],
   "isCodeTopic": false,
-  "isVishing": false
+  "isVishing": false,
+  "isSmishing": false
 }
 
 RULES:
@@ -208,6 +209,7 @@ RULES:
   - User must explicitly state the color - do not infer or choose colors automatically
 - isCodeTopic: Set to true if topic mentions programming languages OR code-focused topics. Otherwise false.
 - isVishing: Set to true only if the topic is about voice phishing/vishing or phone-call based social engineering. Otherwise false.
+- isSmishing: Set to true only if the topic is about SMS phishing/smishing or text-message based social engineering. Otherwise false.
 - PEDAGOGICAL RULE: learningObjectives & assessmentAreas MUST be actionable. NO "Understand", "Know", "Learn".
 - DON'T copy user instructions as title/topic
 - CREATE professional titles from user intent
@@ -222,7 +224,11 @@ RULES:
 - isVishing: **CRITICAL** - Return as boolean (true/false). Set to true IF ANY of these conditions are met:
   1. Topic explicitly mentions "vishing" or "voice phishing".
   2. Topic mentions phone-call scams, caller impersonation, or voice-based social engineering.
-  Set to FALSE for: email phishing, SMS phishing (smishing), general phishing, and non-voice social engineering.`;
+  Set to FALSE for: email phishing, SMS phishing (smishing), general phishing, and non-voice social engineering.
+- isSmishing: **CRITICAL** - Return as boolean (true/false). Set to true IF ANY of these conditions are met:
+  1. Topic explicitly mentions "smishing" or "SMS phishing".
+  2. Topic mentions text-message scams, SMS links, or text-based social engineering.
+  Set to FALSE for: email phishing, voice phishing (vishing), general phishing, and non-text social engineering.`;
 
         const messages: any[] = [
             {
@@ -323,12 +329,23 @@ export async function getFallbackAnalysis(params: AnalyzeUserPromptParams) {
         'phone-based social engineering',
         'voice-based social engineering'
     ];
+    const smishingKeywords = [
+        'smishing',
+        'sms phishing',
+        'text phishing',
+        'text scam',
+        'sms scam',
+        'text message scam',
+        'sms-based social engineering',
+        'text-based social engineering'
+    ];
 
     const promptLower = userPrompt.toLowerCase();
     const hasSpecificCodeSecurityKeyword = specificCodeSecurityKeywords.some(kw => promptLower.includes(kw));
     const hasProgrammingLanguage = programmingLanguages.some(lang => promptLower.includes(lang));
     const isCodeSecurityFallback = hasProgrammingLanguage || hasSpecificCodeSecurityKeyword;
     const isVishingFallback = vishingKeywords.some(kw => promptLower.includes(kw));
+    const isSmishingFallback = smishingKeywords.some(kw => promptLower.includes(kw));
 
     let detectedLang: string | null = null;
     try {
@@ -368,5 +385,6 @@ export async function getFallbackAnalysis(params: AnalyzeUserPromptParams) {
         customRequirements: customRequirements,
         isCodeTopic: isCodeSecurityFallback,
         isVishing: isVishingFallback,
+        isSmishing: isSmishingFallback,
     };
 }

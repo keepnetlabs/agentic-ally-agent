@@ -130,11 +130,13 @@ export const generateMicrolearningStep = createStep({
     const scenes = enrichedMicrolearning.scenes || [];
     const hasCodeReview = scenes.some((scene: { metadata?: { scene_type?: string } }) => scene?.metadata?.scene_type === 'code_review');
     const hasVishing = scenes.some((scene: { metadata?: { scene_type?: string } }) => scene?.metadata?.scene_type === 'vishing_simulation');
-    const hasInbox = !(hasCodeReview || hasVishing);
+    const hasSmishing = scenes.some((scene: { metadata?: { scene_type?: string } }) => scene?.metadata?.scene_type === 'smishing_simulation');
+    const hasInbox = !(hasCodeReview || hasVishing || hasSmishing);
     if (!hasInbox) {
       logger.info('Inbox will be skipped for this training type', {
         hasCodeReview,
-        hasVishing
+        hasVishing,
+        hasSmishing
       });
     }
 

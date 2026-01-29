@@ -8,6 +8,7 @@ import { rewriteScene2Goal } from '../scenes/rewriters/scene2-goal-rewriter';
 import { rewriteScene3Video } from '../scenes/rewriters/scene3-video-rewriter';
 import { rewriteScene4Actionable } from '../scenes/rewriters/scene4-actionable-rewriter';
 import { rewriteScene4Vishing } from '../scenes/rewriters/scene4-vishing-rewriter';
+import { rewriteScene4Smishing } from '../scenes/rewriters/scene4-smishing-rewriter';
 import { rewriteScene5Quiz } from '../scenes/rewriters/scene5-quiz-rewriter';
 import { rewriteScene6Survey } from '../scenes/rewriters/scene6-survey-rewriter';
 import { rewriteScene7Nudge } from '../scenes/rewriters/scene7-nudge-rewriter';
@@ -65,6 +66,7 @@ function getSceneRewriter(sceneType: SceneType): RewriterFunction {
         [SceneType.ACTIONABLE_CONTENT]: rewriteScene4Actionable,
         [SceneType.CODE_REVIEW]: rewriteScene4Actionable, // Use same rewriter as actionable
         [SceneType.VISHING_SIMULATION]: rewriteScene4Vishing, // Use vishing-specific rewriter
+        [SceneType.SMISHING_SIMULATION]: rewriteScene4Smishing, // Use smishing-specific rewriter
         [SceneType.QUIZ]: rewriteScene5Quiz,
         [SceneType.SURVEY]: rewriteScene6Survey,
         [SceneType.NUDGE]: rewriteScene7Nudge,

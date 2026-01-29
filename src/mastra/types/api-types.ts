@@ -83,6 +83,22 @@ export interface VishingPromptRequestBody {
 }
 
 /**
+ * Smishing chat request body
+ */
+export interface SmishingChatMessage {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+}
+
+export interface SmishingChatRequestBody {
+  microlearningId: string;
+  language: string;
+  messages?: SmishingChatMessage[];
+  modelProvider?: string;
+  model?: string;
+}
+
+/**
  * Vishing session start request body
  */
 

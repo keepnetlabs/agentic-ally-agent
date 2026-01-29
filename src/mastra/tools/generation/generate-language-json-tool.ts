@@ -12,6 +12,7 @@ import { generateVideoPrompt } from '../scenes/generators/scene3-video-generator
 import { generateScene4Prompt } from '../scenes/generators/scene4-actionable-generator';
 import { generateScene4CodeReviewPrompt } from '../scenes/generators/scene4-code-review-generator';
 import { generateScene4VishingPrompt } from '../scenes/generators/scene4-vishing-generator';
+import { generateScene4SmishingPrompt } from '../scenes/generators/scene4-smishing-generator';
 import { generateScene5Prompt } from '../scenes/generators/scene5-quiz-generator';
 import { generateScene6Prompt } from '../scenes/generators/scene6-survey-generator';
 import { generateScene7Prompt } from '../scenes/generators/scene7-nudge-generator';
@@ -25,6 +26,7 @@ import { errorService } from '../../services/error-service';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
 import { withRetry } from '../../utils/core/resilience-utils';
 import { buildVishingAgentPrompt } from './utils/vishing-prompt-builder';
+import { buildSmishingAgentPrompt } from './utils/smishing-prompt-builder';
 
 export const generateLanguageJsonTool = new Tool({
   id: 'generate_language_json',
@@ -120,12 +122,15 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
 
   // Determine Scene 4 type and generate appropriate prompt based on analysis
   const isVishing = analysis.isVishing || false;
+  const isSmishing = analysis.isSmishing || false;
   const isCodeTopic = analysis.isCodeTopic || false;
   const scene4Prompt = isVishing
     ? generateScene4VishingPrompt(analysis, microlearning)
-    : isCodeTopic
-      ? generateScene4CodeReviewPrompt(analysis, microlearning)
-      : generateScene4Prompt(analysis, microlearning);
+    : isSmishing
+      ? generateScene4SmishingPrompt(analysis, microlearning)
+      : isCodeTopic
+        ? generateScene4CodeReviewPrompt(analysis, microlearning)
+        : generateScene4Prompt(analysis, microlearning);
 
   const scene5Prompt = generateScene5Prompt(analysis, microlearning);
   const scene6Prompt = generateScene6Prompt(analysis, microlearning);
@@ -336,6 +341,10 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
     if (isVishing && scene4Scenes?.['4']?.prompt) {
       const scenarioPrompt = String(scene4Scenes['4'].prompt);
       scene4Scenes['4'].prompt = await buildVishingAgentPrompt(scenarioPrompt, analysis, model);
+    }
+    if (isSmishing && scene4Scenes?.['4']?.prompt) {
+      const scenarioPrompt = String(scene4Scenes['4'].prompt);
+      scene4Scenes['4'].prompt = await buildSmishingAgentPrompt(scenarioPrompt, analysis, model);
     }
 
     try {

@@ -21,4 +21,5 @@ export interface PromptAnalysis {
   customRequirements?: string;
   isCodeTopic?: boolean;
   isVishing?: boolean;
+  isSmishing?: boolean;
 }

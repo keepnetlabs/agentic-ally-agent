@@ -135,6 +135,7 @@ export function autoRepairPromptAnalysis(
         customRequirements: analysis.customRequirements,
         isCodeTopic: normalizeBoolean(analysis.isCodeTopic, false),
         isVishing: normalizeBoolean(analysis.isVishing, false),
+        isSmishing: normalizeBoolean(analysis.isSmishing, false),
     };
 }
 

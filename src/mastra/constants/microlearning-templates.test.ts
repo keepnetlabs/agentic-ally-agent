@@ -258,6 +258,37 @@ describe('Microlearning Templates', () => {
       });
     });
 
+    describe('Smishing Simulation Type', () => {
+      it('should return correct metadata for smishing_simulation', () => {
+        const result = getScene4Metadata(5, 'smishing_simulation');
+
+        expect(result.scene_type).toBe('smishing_simulation');
+        expect(result.points).toBe(25);
+        expect(result.hasAchievementNotification).toBe(true);
+        expect(result.scientific_basis).toContain('Behavioral Rehearsal');
+        expect(result.icon.sparkleIconName).toBe('message-square');
+        expect(result.icon.sceneIconName).toBe('message-square');
+      });
+
+      it('should calculate duration correctly for smishing_simulation', () => {
+        const duration = 5;
+        const result = getScene4Metadata(duration, 'smishing_simulation');
+        const expectedDuration = Math.round(duration * 60 * 0.25);
+
+        expect(result.duration_seconds).toBe(expectedDuration);
+        expect(result.duration_seconds).toBe(75); // 5 * 60 * 0.25 = 75
+      });
+
+      it('should handle different durations for smishing_simulation', () => {
+        const durations = [3, 5, 10, 15];
+        durations.forEach((duration) => {
+          const result = getScene4Metadata(duration, 'smishing_simulation');
+          const expected = Math.round(duration * 60 * 0.25);
+          expect(result.duration_seconds).toBe(expected);
+        });
+      });
+    });
+
     describe('Actionable Content Type', () => {
       it('should return correct metadata for actionable_content', () => {
         const result = getScene4Metadata(5, 'actionable_content');
@@ -293,10 +324,12 @@ describe('Microlearning Templates', () => {
       it('should have different points for code_review vs others', () => {
         const codeReview = getScene4Metadata(5, 'code_review');
         const vishing = getScene4Metadata(5, 'vishing_simulation');
+        const smishing = getScene4Metadata(5, 'smishing_simulation');
         const actionable = getScene4Metadata(5, 'actionable_content');
 
         expect(codeReview.points).toBe(15);
         expect(vishing.points).toBe(25);
+        expect(smishing.points).toBe(25);
         expect(actionable.points).toBe(25);
       });
 
@@ -304,20 +337,24 @@ describe('Microlearning Templates', () => {
         const duration = 10;
         const codeReview = getScene4Metadata(duration, 'code_review');
         const vishing = getScene4Metadata(duration, 'vishing_simulation');
+        const smishing = getScene4Metadata(duration, 'smishing_simulation');
         const actionable = getScene4Metadata(duration, 'actionable_content');
 
         expect(codeReview.duration_seconds).toBe(120); // 10 * 60 * 0.2
         expect(vishing.duration_seconds).toBe(150); // 10 * 60 * 0.25
+        expect(smishing.duration_seconds).toBe(150); // 10 * 60 * 0.25
         expect(actionable.duration_seconds).toBe(150); // 10 * 60 * 0.25
       });
 
       it('should have different achievement flags', () => {
         const codeReview = getScene4Metadata(5, 'code_review');
         const vishing = getScene4Metadata(5, 'vishing_simulation');
+        const smishing = getScene4Metadata(5, 'smishing_simulation');
         const actionable = getScene4Metadata(5, 'actionable_content');
 
         expect(codeReview.hasAchievementNotification).toBe(true);
         expect(vishing.hasAchievementNotification).toBe(true);
+        expect(smishing.hasAchievementNotification).toBe(true);
         expect(actionable.hasAchievementNotification).toBe(false);
       });
 
