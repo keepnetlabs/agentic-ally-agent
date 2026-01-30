@@ -4,7 +4,6 @@
  */
 
 import { z } from 'zod';
-import { uuidv4 } from '../../utils/core/id-utils';
 import { cleanResponse } from '../../utils/content-processors/json-cleaner';
 import { KVService } from '../../services/kv-service';
 import { getLogger } from '../../utils/core/logger';
@@ -294,10 +293,7 @@ export async function streamEditResultsToUI(
   isQuishing: boolean
 ): Promise<void> {
   try {
-    const messageId = uuidv4();
-    await writer.write({ type: 'text-start', id: messageId });
-
-    // Stream email
+    // Stream email (v1: data- prefix for toAISdkStream compatibility)
     if (editedEmail?.template && updatedEmailTemplate) {
       const emailObject = {
         phishingId,
@@ -314,9 +310,11 @@ export async function streamEditResultsToUI(
       const encodedEmail = Buffer.from(emailJson).toString('base64');
 
       await writer.write({
-        type: 'text-delta',
-        id: messageId,
-        delta: `::ui:phishing_email::${encodedEmail}::/ui:phishing_email::\n`,
+        type: 'data-ui-signal',
+        data: {
+          signal: 'phishing_email',
+          message: `::ui:phishing_email::${encodedEmail}::/ui:phishing_email::\n`,
+        }
       });
     }
 
@@ -334,13 +332,13 @@ export async function streamEditResultsToUI(
       const encodedLanding = Buffer.from(landingJson).toString('base64');
 
       await writer.write({
-        type: 'text-delta',
-        id: messageId,
-        delta: `::ui:landing_page::${encodedLanding}::/ui:landing_page::\n`,
+        type: 'data-ui-signal',
+        data: {
+          signal: 'landing_page',
+          message: `::ui:landing_page::${encodedLanding}::/ui:landing_page::\n`,
+        }
       });
     }
-
-    await writer.write({ type: 'text-end', id: messageId });
   } catch (err) {
     logger.warn('Failed to stream updated components to UI', {
       error: err instanceof Error ? err.message : String(err),

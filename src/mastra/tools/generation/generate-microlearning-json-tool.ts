@@ -1,28 +1,41 @@
-import { Tool } from '@mastra/core/tools';
+import { createTool, ToolExecutionContext } from '@mastra/core/tools';
 import { z } from 'zod';
 import { LanguageModelSchema } from '../../types/language-model';
+import { PromptAnalysis } from '../../types/prompt-analysis';
 import { getLogger } from '../../utils/core/logger';
 import { errorService } from '../../services/error-service';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
 import { generateMicrolearningJsonWithAI } from './utils/microlearning-generator';
 
+const logger = getLogger('GenerateMicrolearningJsonTool');
+
 const GenerateMicrolearningJsonSchema = z.object({
   analysis: z.object({
     title: z.string().max(500, 'Title must not exceed 500 characters'),
+    description: z.string().max(2000).optional(), // Optional - may come from prompt analysis
     category: z.string().max(200, 'Category must not exceed 200 characters'),
-    subcategory: z.string().max(200, 'Subcategory must not exceed 200 characters'),
-    industries: z.array(z.string().max(200)),
+    subcategory: z.string().max(200).optional(),
+    industries: z.array(z.string().max(200)).optional(),
     department: z.string().max(200, 'Department must not exceed 200 characters'),
-    roles: z.array(z.string().max(200)),
+    roles: z.array(z.string().max(200)).optional(),
     regulationCompliance: z.array(z.string().max(200)).optional(),
     topic: z.string().max(500, 'Topic must not exceed 500 characters'),
     level: z.string().max(50, 'Level must not exceed 50 characters'),
     language: z.string().max(10, 'Language code must not exceed 10 characters'),
     learningObjectives: z.array(z.string().max(1000)),
-    duration: z.number(),
+    keyTopics: z.array(z.string().max(200)).optional(),
+    practicalApplications: z.array(z.string().max(500)).optional(),
+    assessmentAreas: z.array(z.string().max(200)).optional(),
+    duration: z.number().optional(),
+    themeColor: z.string().optional(),
+    hasRichContext: z.boolean().optional(),
     additionalContext: z.string()
       .max(5000, 'Additional context must not exceed 5000 characters')
       .optional().describe('User context, vulnerabilities, or specific requirements'),
+    customRequirements: z.string().max(2000).optional(),
+    isCodeTopic: z.boolean().optional(),
+    isVishing: z.boolean().optional(),
+    isSmishing: z.boolean().optional(),
   }),
   microlearningId: z.string().max(256, 'Microlearning ID must not exceed 256 characters'),
   model: LanguageModelSchema,
@@ -37,18 +50,19 @@ const GenerateMicrolearningJsonOutputSchema = z.object({
   error: z.string().optional(),
 });
 
-export const generateMicrolearningJsonTool = new Tool({
+export const generateMicrolearningJsonTool = createTool({
   id: 'generate_microlearning_json',
   description: 'Generate complete microlearning JSON structure with AI-enhanced metadata and content',
   inputSchema: GenerateMicrolearningJsonSchema,
   outputSchema: GenerateMicrolearningJsonOutputSchema,
-  execute: async (context: any) => {
-    const input = context?.inputData || context?.input || context;
-    const { analysis, microlearningId, model, policyContext } = input;
-    const logger = getLogger('GenerateMicrolearningJsonTool');
+  // v1: (inputData, ctx) signature
+  execute: async (inputData, _ctx?: ToolExecutionContext) => {
+    const { analysis, microlearningId, model, policyContext } = inputData;
 
     try {
-      const result = await generateMicrolearningJsonWithAI(analysis, microlearningId, model, policyContext);
+      // Type assertion: schema allows optional fields, but internal function expects PromptAnalysis
+      // Runtime: optional fields will have default values from prompt analysis step
+      const result = await generateMicrolearningJsonWithAI(analysis as PromptAnalysis, microlearningId, model, policyContext);
       return {
         success: true,
         data: result

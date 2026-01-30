@@ -17,7 +17,7 @@ import { ANALYSIS_REFERENCES, ALLOWED_ENUMS_TEXT } from './behavior-analyst-cons
 import { AnalysisSchema, GET_ALL_PAYLOAD, TIMELINE_PAYLOAD, getUserInfoOutputSchema, PlatformUser, ApiActivity, PartialAnalysisReport } from './user-management-types';
 import { enrichActivities, formatEnrichedActivitiesForPrompt, type EnrichedActivity } from './activity-enrichment-utils';
 import { findUserByEmail, findUserById, findUserByNameWithFallbacks } from './utils/user-search-utils';
-import { uuidv4 } from '../../utils/core/id-utils';
+
 export const getUserInfoTool = createTool({
   id: 'get-user-info',
   description: 'Retrieves user info AND their recent activity timeline. Accepts either targetUserResourceId (direct ID) OR fullName/firstName/lastName (search). Returns a structured AI analysis report.',
@@ -577,21 +577,19 @@ If a value is unknown, use "" or null.
       // Define department once for use in both UI signal and tool output
       const dept = resolvedDepartment;
 
-      // EMIT UI SIGNAL (Surgical)
+      // EMIT UI SIGNAL (v1: data- prefix for toAISdkStream compatibility)
       if (userId && writer) {
         try {
-          const messageId = uuidv4();
-          // Use non-null assertion or fallback for user object properties since userId is present
           const meta = { targetUserResourceId: userId, fullName: userFullName, email: user?.email, department: dept };
           const encoded = Buffer.from(JSON.stringify(meta)).toString('base64');
 
-          await writer.write({ type: 'text-start', id: messageId });
           await writer.write({
-            type: 'text-delta',
-            id: messageId,
-            delta: `::ui:target_user::${encoded}::/ui:target_user::\n`
+            type: 'data-ui-signal',
+            data: {
+              signal: 'target_user',
+              message: `::ui:target_user::${encoded}::/ui:target_user::\n`
+            }
           });
-          await writer.write({ type: 'text-end', id: messageId });
         } catch (emitErr) {
           logger.warn('Failed to emit UI signal for user', { error: normalizeError(emitErr).message });
         }

@@ -1,4 +1,4 @@
-import { Tool } from '@mastra/core/tools';
+import { createTool, ToolExecutionContext } from '@mastra/core/tools';
 import { getModelWithOverride } from '../../model-providers';
 import { SceneType, getSceneTypeOrDefault } from '../../types/scene-types';
 import { rewriteScene1Intro } from '../scenes/rewriters/scene1-intro-rewriter';
@@ -17,6 +17,8 @@ import { errorService } from '../../services/error-service';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
 import { withRetry } from '../../utils/core/resilience-utils';
 import { TranslateJsonInputSchema, TranslateJsonOutputSchema, type TranslateJsonInput } from './translate-language-json-schemas';
+
+const logger = getLogger('TranslateLanguageJsonTool');
 
 /* =========================================================
  * Scene Type Detection & Mapping
@@ -47,24 +49,24 @@ function getSceneRewriter(sceneType: SceneType): RewriterFunction {
 /* =========================================================
  * Scene-by-Scene Rewrite Tool
  * =======================================================*/
-export const translateLanguageJsonTool = new Tool({
+export const translateLanguageJsonTool = createTool({
     id: 'translate_language_json',
     description: 'Rewrite language content scene-by-scene using specialized rewriters for native quality. Each scene is rewritten by a domain-specific expert.',
     inputSchema: TranslateJsonInputSchema,
     outputSchema: TranslateJsonOutputSchema,
-    execute: async (context: any) => {
-        const logger = getLogger('TranslateLanguageJsonTool');
-
+    // v1: (inputData, ctx) signature
+    execute: async (inputData: TranslateJsonInput, _ctx?: ToolExecutionContext) => {
         try {
             const {
                 json,
                 microlearningStructure,
-                sourceLanguage = 'en-gb',
+                sourceLanguage, // Default from schema: 'en-gb'
                 targetLanguage,
                 topic,
                 modelProvider,
                 model: modelOverride
-            } = context as TranslateJsonInput;
+            } = inputData;
+            // Note: Language validation (.refine) is handled by schema
 
             const model = getModelWithOverride(modelProvider, modelOverride);
 
@@ -170,7 +172,7 @@ export const translateLanguageJsonTool = new Tool({
         } catch (error) {
             const err = normalizeError(error);
             const errorInfo = errorService.aiModel(err.message, {
-                targetLanguage: context?.targetLanguage,
+                targetLanguage: inputData?.targetLanguage,
                 step: 'language-translation',
                 stack: err.stack
             });

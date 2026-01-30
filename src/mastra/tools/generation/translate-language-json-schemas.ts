@@ -9,7 +9,8 @@ import { z } from 'zod';
 import { MODEL_PROVIDERS } from '../../constants';
 import { LanguageCodeSchema, validateLanguagesDifferent } from '../../utils/validation/language-validation';
 
-export const TranslateJsonInputSchema = z
+// Internal schema with full validation
+const TranslateJsonInputSchemaInternal = z
     .object({
         json: z.any(),
         microlearningStructure: z.any().describe('Base microlearning structure with scenes metadata'),
@@ -35,7 +36,10 @@ export const TranslateJsonInputSchema = z
         }
     );
 
-export type TranslateJsonInput = z.infer<typeof TranslateJsonInputSchema>;
+// Export with type assertion for Mastra v1 compatibility
+// The .refine() and .default() cause ZodEffects which needs casting
+export type TranslateJsonInput = z.output<typeof TranslateJsonInputSchemaInternal>;
+export const TranslateJsonInputSchema = TranslateJsonInputSchemaInternal as z.ZodType<TranslateJsonInput>;
 
 export const TranslateJsonOutputSchema = z.object({
     success: z.boolean(),

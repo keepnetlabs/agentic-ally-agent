@@ -9,7 +9,8 @@ import { z } from 'zod';
 import { MODEL_PROVIDERS } from '../../constants';
 import { LanguageCodeSchema, validateLanguagesDifferent } from '../../utils/validation/language-validation';
 
-export const InboxTranslateInputSchema = z
+// Internal schema with full validation
+const InboxTranslateInputSchemaInternal = z
     .object({
         json: z.any(),
         sourceLanguage: LanguageCodeSchema.optional().default('en-gb'),
@@ -27,7 +28,10 @@ export const InboxTranslateInputSchema = z
         }
     );
 
-export type InboxTranslateInput = z.infer<typeof InboxTranslateInputSchema>;
+// Export with type assertion for Mastra v1 compatibility
+// The .refine() and .default() cause ZodEffects which needs casting
+export type InboxTranslateInput = z.output<typeof InboxTranslateInputSchemaInternal>;
+export const InboxTranslateInputSchema = InboxTranslateInputSchemaInternal as z.ZodType<InboxTranslateInput>;
 
 export const InboxTranslateOutputSchema = z.object({
     success: z.boolean(),

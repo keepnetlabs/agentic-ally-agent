@@ -1,4 +1,4 @@
-import { Tool } from '@mastra/core/tools';
+import { createTool, ToolExecutionContext } from '@mastra/core/tools';
 
 import { generateText } from 'ai';
 import { LanguageModel } from '../../types/language-model';
@@ -20,16 +20,16 @@ import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../uti
 import { withRetry } from '../../utils/core/resilience-utils';
 
 const microlearningService = new MicrolearningService();
+const logger = getLogger('CreateInboxStructureTool');
 
-export const createInboxStructureTool = new Tool({
+export const createInboxStructureTool = createTool({
   id: 'create_inbox_structure',
   description: 'Create inbox structure and persist examples/all/inbox/{language}.json',
   inputSchema: CreateInboxStructureSchema,
   outputSchema: CreateInboxStructureOutputSchema,
-  execute: async (context: any) => {
-    const logger = getLogger('CreateInboxStructureTool');
-    const input = context?.inputData || context?.input || context;
-    const { department, languageCode, microlearningId, microlearning, additionalContext, modelProvider, model: modelOverride } = input;
+  // v1: (inputData, ctx) signature
+  execute: async (inputData, _ctx?: ToolExecutionContext) => {
+    const { department, languageCode, microlearningId, microlearning, additionalContext, modelProvider, model: modelOverride } = inputData;
 
     try {
       const inboxContent = await createInboxStructure(department, languageCode, microlearningId, microlearning, additionalContext, modelProvider, modelOverride);

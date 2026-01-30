@@ -1,6 +1,5 @@
 import { createTool, ToolExecutionContext } from '@mastra/core/tools';
 import { z } from 'zod';
-import { uuidv4 } from '../../utils/core/id-utils';
 import { KVService } from '../../services/kv-service';
 import { getRequestContext } from '../../utils/core/request-storage';
 import { getLogger } from '../../utils/core/logger';
@@ -140,20 +139,19 @@ export const assignPhishingTool = createTool({
 
             logger.info('Phishing assignment success', { result });
 
-            // EMIT UI SIGNAL (SURGICAL)
+            // EMIT UI SIGNAL (v1: data- prefix for toAISdkStream, keep original message format)
             if (writer) {
                 try {
-                    const messageId = uuidv4();
                     const meta = { resourceId, targetId, assignmentType };
                     const encoded = Buffer.from(JSON.stringify(meta)).toString('base64');
 
-                    await writer.write({ type: 'text-start', id: messageId });
                     await writer.write({
-                        type: 'text-delta',
-                        id: messageId,
-                        delta: `::ui:phishing_assigned::${encoded}::/ui:phishing_assigned::\n`
+                        type: 'data-ui-signal',
+                        data: {
+                            signal: 'phishing_assigned',
+                            message: `::ui:phishing_assigned::${encoded}::/ui:phishing_assigned::\n`
+                        }
                     });
-                    await writer.write({ type: 'text-end', id: messageId });
                 } catch (emitErr) {
                     logger.warn('Failed to emit UI signal for phishing assignment', { error: normalizeError(emitErr).message });
                 }

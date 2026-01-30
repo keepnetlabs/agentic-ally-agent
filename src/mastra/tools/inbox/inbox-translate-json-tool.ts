@@ -1,4 +1,4 @@
-import { Tool } from '@mastra/core/tools';
+import { createTool, ToolExecutionContext } from '@mastra/core/tools';
 import { generateText } from 'ai';
 import { getModelWithOverride } from '../../model-providers';
 import { cleanResponse } from '../../utils/content-processors/json-cleaner';
@@ -11,6 +11,8 @@ import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../uti
 import { withRetry } from '../../utils/core/resilience-utils';
 import { repairHtml } from '../../utils/validation/json-validation-utils';
 import { InboxTranslateInputSchema, InboxTranslateOutputSchema, type InboxTranslateInput } from './inbox-translate-json-schemas';
+
+const toolLogger = getLogger('InboxTranslateJsonTool');
 
 /* =========================================================
  * HTML: protect/restore
@@ -179,33 +181,34 @@ function computeChunkSize(items: ExtractedString[], maxJsonChars = TRANSLATION_C
 /* =========================================================
  * Tool - Inbox Translation (Simple, chunk-based)
  * =======================================================*/
-export const inboxTranslateJsonTool = new Tool({
+export const inboxTranslateJsonTool = createTool({
     id: 'inbox_translate_json',
     description: 'Translate inbox content (emails, texts) using simple chunk-based translation. Cost-effective approach for non-critical content.',
     inputSchema: InboxTranslateInputSchema,
     outputSchema: InboxTranslateOutputSchema,
-    execute: async (context: any) => {
-        const logger = getLogger('InboxTranslateJsonTool');
+    // v1: (inputData, ctx) signature
+    execute: async (inputData: InboxTranslateInput, _ctx?: ToolExecutionContext) => {
         try {
             const {
                 json,
-                sourceLanguage,
+                sourceLanguage, // Default from schema: 'en-gb'
                 targetLanguage,
                 topic,
                 doNotTranslateKeys = [],
                 modelProvider,
                 model: modelOverride
-            } = context as InboxTranslateInput;
+            } = inputData;
+            // Note: Language validation (.refine) is handled by schema
 
             const model = getModelWithOverride(modelProvider, modelOverride);
 
             const protectedKeys = [...doNotTranslateKeys, 'scene_type'];
-            logger.debug('Translation configuration', { protectedKeys, sourceLanguage, topic: topic || 'General', targetLanguage });
+            toolLogger.debug('Translation configuration', { protectedKeys, sourceLanguage, topic: topic || 'General', targetLanguage });
 
             // 1) Extract
             const extracted = extractStringsWithPaths(json, protectedKeys);
             const htmlCount = extracted.filter(e => e.tagMap && e.tagMap.size > 0).length;
-            logger.debug('Extracted strings from inbox', { count: extracted.length, htmlCount });
+            toolLogger.debug('Extracted strings from inbox', { count: extracted.length, htmlCount });
 
             if (extracted.length === 0) {
                 return { success: true, data: json };
@@ -217,7 +220,7 @@ export const inboxTranslateJsonTool = new Tool({
             for (let i = 0; i < extracted.length; i += CHUNK_SIZE) {
                 chunks.push(extracted.slice(i, i + CHUNK_SIZE));
             }
-            logger.debug('Split inbox strings into chunks', { chunkCount: chunks.length, chunkSize: CHUNK_SIZE });
+            toolLogger.debug('Split inbox strings into chunks', { chunkCount: chunks.length, chunkSize: CHUNK_SIZE });
 
             // 3) Prompt
             const topicContext = topic
@@ -303,7 +306,7 @@ export const inboxTranslateJsonTool = new Tool({
 
                 } catch (e) {
                     const err = normalizeError(e);
-                    logger.warn(`Chunk translation failed, using originals`, { chunkNumber, error: err.message, stack: err.stack });
+                    toolLogger.warn(`Chunk translation failed, using originals`, { chunkNumber, error: err.message, stack: err.stack });
                     return chunk.map(c => c.value);
                 }
             }
@@ -316,7 +319,7 @@ export const inboxTranslateJsonTool = new Tool({
                     if (result.status === 'fulfilled') {
                         allTranslated.push(...result.value);
                     } else {
-                        logger.warn('Chunk translation promise rejected', { batchStart: start, chunkIndex: idx, error: result.reason });
+                        toolLogger.warn('Chunk translation promise rejected', { batchStart: start, chunkIndex: idx, error: result.reason });
                         // Fallback: add original strings
                         const chunkIdx = start + idx;
                         const chunk = chunks[chunkIdx];
@@ -327,7 +330,7 @@ export const inboxTranslateJsonTool = new Tool({
 
             if (allTranslated.length !== extracted.length) {
                 const errorInfo = errorService.validation(`Total mismatch: expected ${extracted.length}, got ${allTranslated.length}`, { expected: extracted.length, got: allTranslated.length });
-                logErrorInfo(logger, 'error', 'Translation length mismatch', errorInfo);
+                logErrorInfo(toolLogger, 'error', 'Translation length mismatch', errorInfo);
                 throw new Error(errorInfo.message);
             }
 
@@ -336,12 +339,12 @@ export const inboxTranslateJsonTool = new Tool({
         } catch (error) {
             const err = normalizeError(error);
             const errorInfo = errorService.aiModel(err.message, {
-                sourceLanguage: context?.sourceLanguage,
-                targetLanguage: context?.targetLanguage,
+                sourceLanguage: inputData?.sourceLanguage,
+                targetLanguage: inputData?.targetLanguage,
                 step: 'inbox-translation',
                 stack: err.stack
             });
-            logErrorInfo(logger, 'error', 'Inbox translation failed', errorInfo);
+            logErrorInfo(toolLogger, 'error', 'Inbox translation failed', errorInfo);
             return createToolErrorResponse(errorInfo);
         }
     }

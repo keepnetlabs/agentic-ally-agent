@@ -9,7 +9,6 @@ import {
     EditedLanding
 } from './phishing-editor-helpers';
 import { KVService } from '../../services/kv-service';
-import { KV_NAMESPACES } from '../../constants';
 
 // Mock dependencies
 vi.mock('../../services/kv-service');

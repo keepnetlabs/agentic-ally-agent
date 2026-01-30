@@ -1,6 +1,5 @@
 import { createTool, ToolExecutionContext } from '@mastra/core/tools';
 import { z } from 'zod';
-import { uuidv4 } from '../../utils/core/id-utils';
 import { getRequestContext } from '../../utils/core/request-storage';
 import { getLogger } from '../../utils/core/logger';
 import { withRetry } from '../../utils/core/resilience-utils';
@@ -188,20 +187,19 @@ export const uploadPhishingTool = createTool({
                 ],
             });
 
-            // EMIT UI SIGNAL (SURGICAL)
+            // EMIT UI SIGNAL (v1: data- prefix for toAISdkStream compatibility)
             if (writer) {
                 try {
-                    const messageId = uuidv4();
                     const meta = { phishingId, resourceId: resourceIdForAssignment || templateResourceId, title: name };
                     const encoded = Buffer.from(JSON.stringify(meta)).toString('base64');
 
-                    await writer.write({ type: 'text-start', id: messageId });
                     await writer.write({
-                        type: 'text-delta',
-                        id: messageId,
-                        delta: `::ui:phishing_uploaded::${encoded}::/ui:phishing_uploaded::\n`
+                        type: 'data-ui-signal',
+                        data: {
+                            signal: 'phishing_uploaded',
+                            message: `::ui:phishing_uploaded::${encoded}::/ui:phishing_uploaded::\n`
+                        }
                     });
-                    await writer.write({ type: 'text-end', id: messageId });
                 } catch (emitErr) {
                     logger.warn('Failed to emit UI signal for phishing upload', { error: normalizeError(emitErr).message });
                 }

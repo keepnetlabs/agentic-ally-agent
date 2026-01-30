@@ -1,6 +1,5 @@
 import { createTool, ToolExecutionContext } from '@mastra/core/tools';
 import { createPhishingWorkflow } from '../../workflows/create-phishing-workflow';
-import { uuidv4 } from '../../utils/core/id-utils';
 import { PHISHING, ERROR_MESSAGES, TIMEOUT_VALUES } from '../../constants';
 import { getLogger } from '../../utils/core/logger';
 import { getPolicySummary } from '../../utils/core/policy-cache';
@@ -62,22 +61,18 @@ export const phishingWorkflowExecutorTool = createTool({
                 const output = result.result;
 
                 // Stream result to frontend
+                // EMIT UI SIGNALS (v1: data- prefix for toAISdkStream compatibility)
                 if (writer) {
                     try {
                         // Wait to let reasoning streams finish and build anticipation
-                        // This ensures the UI component appears AT THE END, after all reasoning logs
                         await new Promise(resolve => setTimeout(resolve, TIMEOUT_VALUES.PHISHING_WORKFLOW_STREAM_DELAY_MS));
-
-                        const messageId = uuidv4();
-                        await writer.write({ type: 'text-start', id: messageId });
 
                         const normalizedLanguage = (params.language || 'en-gb').toLowerCase();
                         const emailKey = `phishing:${output.phishingId}:email:${normalizedLanguage}`;
                         const landingKey = `phishing:${output.phishingId}:landing:${normalizedLanguage}`;
 
-                        // 1. Email Preview (if exists) - Single object encoding
+                        // 1. Email Preview (if exists)
                         if (output.template) {
-                            // Encode entire email object as JSON string
                             const emailObject = {
                                 phishingId: output.phishingId,
                                 emailKey,
@@ -93,15 +88,16 @@ export const phishingWorkflowExecutorTool = createTool({
                             const encodedEmail = Buffer.from(emailJson).toString('base64');
 
                             await writer.write({
-                                type: 'text-delta',
-                                id: messageId,
-                                delta: `::ui:phishing_email::${encodedEmail}::/ui:phishing_email::\n`
+                                type: 'data-ui-signal',
+                                data: {
+                                    signal: 'phishing_email',
+                                    message: `::ui:phishing_email::${encodedEmail}::/ui:phishing_email::\n`
+                                }
                             });
                         }
 
-                        // 2. Landing Page (if exists) - Single object encoding
+                        // 2. Landing Page (if exists)
                         if (output.landingPage && output.landingPage.pages.length > 0) {
-                            // Encode entire landingPage object as JSON string
                             const landingPageObject = {
                                 phishingId: output.phishingId,
                                 landingKey,
@@ -113,13 +109,13 @@ export const phishingWorkflowExecutorTool = createTool({
                             const encodedLandingPage = Buffer.from(landingPageJson).toString('base64');
 
                             await writer.write({
-                                type: 'text-delta',
-                                id: messageId,
-                                delta: `::ui:landing_page::${encodedLandingPage}::/ui:landing_page::\n`
+                                type: 'data-ui-signal',
+                                data: {
+                                    signal: 'landing_page',
+                                    message: `::ui:landing_page::${encodedLandingPage}::/ui:landing_page::\n`
+                                }
                             });
                         }
-
-                        await writer.write({ type: 'text-end', id: messageId });
                     } catch (err) {
                         const error = err instanceof Error ? err : new Error(String(err));
                         logger.error('Failed to stream phishing email', { error: error.message, stack: error.stack });

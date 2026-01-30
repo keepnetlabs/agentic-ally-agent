@@ -49,7 +49,7 @@ import {
   createAgentStream,
 } from './utils/chat-orchestration-helpers';
 import { toAISdkStream } from '@mastra/ai-sdk';
-import { createUIMessageStreamResponse } from 'ai';
+import { createUIMessageStream, createUIMessageStreamResponse } from 'ai';
 import { normalizeSafeId } from './utils/core/id-utils';
 import { validateBCP47LanguageCode, DEFAULT_LANGUAGE } from './utils/language/language-utils';
 import { postProcessPhishingEmailHtml, postProcessPhishingLandingHtml } from './utils/content-processors/phishing-html-postprocessors';
@@ -381,8 +381,17 @@ export const mastra = new Mastra({
             }, 500);
           }
 
+          // v1: Use createUIMessageStream pattern from docs
+          const uiMessageStream = createUIMessageStream({
+            execute: async ({ writer }) => {
+              for await (const part of toAISdkStream(stream, { from: 'agent' }) as AsyncIterable<any>) {
+                await writer.write(part);
+              }
+            },
+          });
+
           return createUIMessageStreamResponse({
-            stream: toAISdkStream(stream, { from: 'agent' }) as ReadableStream<any>,
+            stream: uiMessageStream,
           });
         },
       }),

@@ -1,4 +1,4 @@
-import { Tool } from '@mastra/core/tools';
+import { createTool, ToolExecutionContext } from '@mastra/core/tools';
 import { generateText } from 'ai';
 import { PromptAnalysis } from '../../types/prompt-analysis';
 import { MicrolearningContent, LanguageContent } from '../../types/microlearning';
@@ -28,18 +28,22 @@ import { withRetry } from '../../utils/core/resilience-utils';
 import { buildVishingAgentPrompt } from './utils/vishing-prompt-builder';
 import { buildSmishingAgentPrompt } from './utils/smishing-prompt-builder';
 
-export const generateLanguageJsonTool = new Tool({
+const logger = getLogger('GenerateLanguageJsonTool');
+
+export const generateLanguageJsonTool = createTool({
   id: 'generate_language_json',
   description: 'Generate language-specific training content from microlearning.json metadata with rich context',
   inputSchema: GenerateLanguageJsonSchema,
   outputSchema: GenerateLanguageJsonOutputSchema,
-  execute: async (context: any) => {
-    const logger = getLogger('GenerateLanguageJsonTool');
-    const input = context?.inputData || context?.input || context;
-    const { analysis, microlearning, model, writer, policyContext } = input;
+  // v1: (inputData, ctx) signature
+  execute: async (inputData, ctx?: ToolExecutionContext) => {
+    const { analysis, microlearning, model, policyContext } = inputData;
+    const writer = ctx?.writer;
 
     try {
-      const languageContent = await generateLanguageJsonWithAI(analysis, microlearning, model, writer, policyContext);
+      // Type assertion: schema allows optional fields, but internal function expects PromptAnalysis
+      // Runtime: optional fields will have default values from prompt analysis step
+      const languageContent = await generateLanguageJsonWithAI(analysis as PromptAnalysis, microlearning, model, writer, policyContext);
 
       return {
         success: true,

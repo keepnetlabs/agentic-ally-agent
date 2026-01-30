@@ -28,11 +28,11 @@ export async function streamReasoning(
   const messageId = uuidv4();
 
   try {
-    // Start reasoning block immediately (don't wait for conversion)
+    // Start reasoning block immediately (v1: data- prefix for toAISdkStream compatibility)
     await writer.write({
-      type: 'reasoning-start',
-      id: messageId
-    });
+      type: 'data-reasoning',
+      data: { event: 'start', id: messageId }
+    } as any);
 
     // Convert technical reasoning to user-friendly summary in background
     // Fire-and-forget (Silent Mode): Don't await, just let it try.
@@ -58,16 +58,15 @@ export async function streamReasoning(
       try {
         // Send user-friendly reasoning content
         await writer.write({
-          type: 'reasoning-delta',
-          id: messageId,
-          delta: userFriendlyReasoning
-        });
+          type: 'data-reasoning',
+          data: { event: 'delta', id: messageId, text: userFriendlyReasoning }
+        } as any);
 
         // End reasoning block
         await writer.write({
-          type: 'reasoning-end',
-          id: messageId
-        });
+          type: 'data-reasoning',
+          data: { event: 'end', id: messageId }
+        } as any);
 
         logger.info('User-friendly reasoning streamed');
       } catch {
@@ -78,9 +77,9 @@ export async function streamReasoning(
       try {
         // v1: await required for writer.write to prevent stream lock
         await writer.write({
-          type: 'reasoning-end',
-          id: messageId
-        });
+          type: 'data-reasoning',
+          data: { event: 'end', id: messageId }
+        } as any);
       } catch { }
     });
 
@@ -116,9 +115,10 @@ export async function streamDirectReasoning(
   if (!reasoning || !writer) return;
   const messageId = uuidv4();
   try {
-    await writer.write({ type: 'reasoning-start', id: messageId });
-    await writer.write({ type: 'reasoning-delta', id: messageId, delta: reasoning });
-    await writer.write({ type: 'reasoning-end', id: messageId });
+    // v1: data- prefix for toAISdkStream compatibility
+    await writer.write({ type: 'data-reasoning', data: { event: 'start', id: messageId } } as any);
+    await writer.write({ type: 'data-reasoning', data: { event: 'delta', id: messageId, text: reasoning } } as any);
+    await writer.write({ type: 'data-reasoning', data: { event: 'end', id: messageId } } as any);
   } catch {
     // Ignore write errors silently (e.g. if stream closed)
   }

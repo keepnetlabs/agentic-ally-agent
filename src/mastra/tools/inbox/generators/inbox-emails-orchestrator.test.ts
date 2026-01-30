@@ -2,7 +2,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { generateInboxEmailsParallel } from './inbox-emails-orchestrator';
 import { generateText } from 'ai';
-import { getLogger } from '../../../utils/core/logger';
 import { withRetry } from '../../../utils/core/resilience-utils';
 
 // Mock dependencies

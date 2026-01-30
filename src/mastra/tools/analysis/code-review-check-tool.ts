@@ -1,4 +1,4 @@
-import { Tool } from '@mastra/core/tools';
+import { createTool, ToolExecutionContext } from '@mastra/core/tools';
 import { generateText } from 'ai';
 import { getModelWithOverride } from '../../model-providers';
 import { cleanResponse } from '../../utils/content-processors/json-cleaner';
@@ -10,14 +10,15 @@ import { CodeReviewCheckSchema, CodeReviewCheckOutputSchema } from './code-revie
 
 export type { CodeReviewCheckInput, CodeReviewCheckOutput } from './code-review-check-schemas';
 
-export const codeReviewCheckTool = new Tool({
+const logger = getLogger('CodeReviewCheckTool');
+
+export const codeReviewCheckTool = createTool({
   id: 'code_review_check',
   description: 'Validate if developer correctly fixed the vulnerable code by having AI review the fix',
   inputSchema: CodeReviewCheckSchema,
   outputSchema: CodeReviewCheckOutputSchema,
-  execute: async (context: any) => {
-    // Support both direct root-level fields (from API endpoint) and nested formats (from agent calls)
-    const input = context?.inputData || context?.input || context;
+  // v1: (inputData, ctx) signature
+  execute: async (inputData, _ctx?: ToolExecutionContext) => {
     const {
       issueType,
       originalCode,
@@ -26,11 +27,10 @@ export const codeReviewCheckTool = new Tool({
       outputLanguage = 'en',
       modelProvider,
       model: modelOverride,
-    } = input;
+    } = inputData;
 
     // Use model override if provided, otherwise use default
     const model = getModelWithOverride(modelProvider, modelOverride);
-    const logger = getLogger('CodeReviewCheckTool');
 
     logger.info('Code Review Check', { issueType, language });
 

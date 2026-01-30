@@ -11,7 +11,7 @@ vi.mock('ai', () => ({
 
 // Mock Content Processors
 vi.mock('../../utils/content-processors/json-cleaner', () => ({
-  cleanResponse: vi.fn((text, type) => text)
+  cleanResponse: vi.fn((text, _type) => text)
 }));
 
 vi.mock('../../utils/content-processors/transcript-translator', () => ({
@@ -192,7 +192,7 @@ describe('generateLanguageJsonTool', () => {
       .mockResolvedValueOnce({ text: JSON.stringify({ "3": { video: {} } }), usage: {} }); // 3 (video retry)
 
     (cleanResponse as any)
-      .mockImplementation((text: string, type: string) => {
+      .mockImplementation((text: string, _type: string) => {
         if (text === "INVALID VIDEO") return "INVALID VIDEO";
         return text;
       });

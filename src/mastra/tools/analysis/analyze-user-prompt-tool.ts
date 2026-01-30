@@ -1,4 +1,4 @@
-import { Tool } from '@mastra/core/tools';
+import { createTool, ToolExecutionContext } from '@mastra/core/tools';
 import { getModelWithOverride } from '../../model-providers';
 import { getLogger } from '../../utils/core/logger';
 import { errorService } from '../../services/error-service';
@@ -8,20 +8,21 @@ import { AnalyzeUserPromptSchema, AnalyzeUserPromptOutputSchema } from './analyz
 
 export type { AnalyzeUserPromptInput, AnalyzeUserPromptOutput } from './analyze-user-prompt-schemas';
 
-export const analyzeUserPromptTool = new Tool({
+const logger = getLogger('AnalyzeUserPromptTool');
+
+export const analyzeUserPromptTool = createTool({
   id: 'analyze_user_prompt',
   description: 'AI-powered analysis of user prompt with rich context processing and semantic hints',
   inputSchema: AnalyzeUserPromptSchema,
   outputSchema: AnalyzeUserPromptOutputSchema,
-  execute: async (context: any) => {
-    const logger = getLogger('AnalyzeUserPromptTool');
-    const input = context?.inputData || context?.input || context;
-    const { userPrompt, additionalContext, suggestedDepartment, customRequirements, modelProvider, model: modelOverride, policyContext, suggestedLevel, suggestedLanguage } = input;
-    const writer = input?.writer; // Get writer for streaming
+  // v1: (inputData, ctx) signature
+  execute: async (inputData, ctx?: ToolExecutionContext) => {
+    const { userPrompt, additionalContext, suggestedDepartment, customRequirements, modelProvider, model: modelOverride, policyContext, suggestedLevel, suggestedLanguage } = inputData;
+    const writer = ctx?.writer;
 
     const model = getModelWithOverride(modelProvider, modelOverride);
 
-    logger.debug('Starting user prompt analysis', { promptLength: userPrompt.length, hasContext: !!additionalContext });
+    logger.debug('Starting user prompt analysis', { promptLength: userPrompt?.length, hasContext: !!additionalContext });
 
     try {
       return await analyzeUserPromptWithAI({

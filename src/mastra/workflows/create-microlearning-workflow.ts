@@ -44,8 +44,8 @@ export const analyzePromptStep = createStep({
       throw new Error('Analyze user prompt tool is not executable');
     }
 
-    // Pass model provider, model, writer, and policy context to analyze step
-    // v1: execute now takes (inputData, context)
+    // Pass model provider, model, and policy context to analyze step
+    // v1: execute(inputData, ctx) - writer goes in ctx
     const analysisRes = await analyzeUserPromptTool.execute({
       userPrompt: inputData.prompt,
       additionalContext: inputData.additionalContext,
@@ -55,9 +55,8 @@ export const analyzePromptStep = createStep({
       suggestedLanguage: inputData.language,
       modelProvider: inputData.modelProvider,
       model: inputData.model,
-      writer: inputData.writer,
       policyContext: inputData.policyContext,
-    }, {});
+    }, { writer: inputData.writer } as any);
 
     // v1: Check for ValidationError or failure
     if (('error' in analysisRes && analysisRes.error) || !analysisRes.success) {
@@ -177,14 +176,13 @@ export const generateLanguageStep = createStep({
       throw new Error('Generate language JSON tool is not executable');
     }
 
-    // v1: execute now takes (inputData, context)
+    // v1: execute(inputData, ctx) - writer goes in ctx
     const result = await generateLanguageJsonTool.execute({
       analysis,
       microlearning: microlearningStructure,
       model,
-      writer: inputData.writer,
       policyContext: inputData.policyContext
-    }, {});
+    }, { writer: inputData.writer } as any);
 
     // v1: Check for ValidationError or failure
     if (('error' in result && result.error) || !result.success) {

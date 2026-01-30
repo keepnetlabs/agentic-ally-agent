@@ -1,8 +1,10 @@
-import { Tool, ToolExecutionContext } from '@mastra/core/tools';
+import { createTool, ToolExecutionContext } from '@mastra/core/tools';
 import { z } from 'zod';
 import { getLogger } from '../../utils/core/logger';
 import { errorService } from '../../services/error-service';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
+
+const logger = getLogger('ReasoningTool');
 
 /**
  * Reasoning Tool - Allows agent to show its thinking process
@@ -11,7 +13,7 @@ import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../uti
  * v1 Migration: Updated to (inputData, context) signature
  */
 
-export const reasoningTool = new Tool({
+export const reasoningTool = createTool({
   id: 'show_reasoning',
   description: 'Show your thinking process to the user. Call this before making any important decision or analysis.',
   inputSchema: z.object({
@@ -24,7 +26,6 @@ export const reasoningTool = new Tool({
   }),
   // v1: (inputData, context) signature
   execute: async (inputData: { thought?: string }, ctx?: ToolExecutionContext) => {
-    const logger = getLogger('ReasoningTool');
     // v1: inputData is the direct input from inputSchema
     const thought = inputData?.thought || '';
 
@@ -43,21 +44,20 @@ export const reasoningTool = new Tool({
       if (writer) {
         const id = crypto.randomUUID();
 
-        // Emit reasoning events using AI SDK protocol
+        // Emit reasoning events (v1: data- prefix for toAISdkStream compatibility)
         await writer.write({
-          type: 'reasoning-start',
-          id
+          type: 'data-reasoning',
+          data: { event: 'start', id }
         });
 
         await writer.write({
-          type: 'reasoning-delta',
-          id,
-          delta: thought
+          type: 'data-reasoning',
+          data: { event: 'delta', id, text: thought }
         });
 
         await writer.write({
-          type: 'reasoning-end',
-          id
+          type: 'data-reasoning',
+          data: { event: 'end', id }
         });
 
         logger.info('Reasoning emitted', { thought: thought.substring(0, 100) + (thought.length > 100 ? '...' : '') });

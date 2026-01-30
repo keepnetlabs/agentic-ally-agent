@@ -9,7 +9,7 @@ import { validateToolResult } from '../../utils/tool-result-validation';
 import { withRetry, withTimeout } from '../../utils/core/resilience-utils';
 import { isSafeId } from '../../utils/core/id-utils';
 import { formatToolSummary } from '../../utils/core/tool-summary-formatter';
-import { uuidv4 } from '../../utils/core/id-utils';
+
 const MIN_GROUP_NAME_LENGTH = 3;
 const GROUP_LOOKUP_TIMEOUT_MS = 15000;
 
@@ -242,20 +242,19 @@ export const getTargetGroupInfoTool = createTool({
                 }),
             };
 
-            // EMIT UI SIGNAL FOR GROUP (SURGICAL)
+            // EMIT UI SIGNAL FOR GROUP (v1: data- prefix for toAISdkStream compatibility)
             if (writer) {
                 try {
-                    const messageId = uuidv4();
                     const meta = { targetGroupResourceId: groupInfo.targetGroupResourceId, groupName: groupInfo.groupName, memberCount: groupInfo.memberCount };
                     const encoded = Buffer.from(JSON.stringify(meta)).toString('base64');
 
-                    await writer.write({ type: 'text-start', id: messageId });
                     await writer.write({
-                        type: 'text-delta',
-                        id: messageId,
-                        delta: `::ui:target_group::${encoded}::/ui:target_group::\n`
+                        type: 'data-ui-signal',
+                        data: {
+                            signal: 'target_group',
+                            message: `::ui:target_group::${encoded}::/ui:target_group::\n`
+                        }
                     });
-                    await writer.write({ type: 'text-end', id: messageId });
                 } catch (emitErr) {
                     logger.warn('Failed to emit UI signal for group', { error: normalizeError(emitErr).message });
                 }
