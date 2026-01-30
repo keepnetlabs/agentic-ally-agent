@@ -1,5 +1,8 @@
 // @ts-nocheck
-import { WorkflowEntrypoint } from 'cloudflare:workers';
+// NOTE: WorkflowEntrypoint import is added by post-build script (fix-cloudflare-shims.js)
+// to avoid Mastra bundler trying to npm install 'cloudflare:workers' which fails
+// Original: import { WorkflowEntrypoint } from 'cloudflare:workers';
+declare const WorkflowEntrypoint: any;
 import { executeAutonomousGeneration } from '../services/autonomous';
 import { getLogger } from '../utils/core/logger';
 import type { AutonomousRequestBody, CloudflareEnv } from '../types/api-types';

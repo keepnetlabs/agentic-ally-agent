@@ -1,4 +1,5 @@
 import { createStep, createWorkflow } from '@mastra/core/workflows';
+import { ToolExecutionContext } from '@mastra/core/tools';
 
 import { analyzeUserPromptTool } from '../tools/analysis';
 import { generateMicrolearningJsonTool, generateLanguageJsonTool } from '../tools/generation';
@@ -8,6 +9,7 @@ import { MicrolearningService } from '../services/microlearning-service';
 import { KVService } from '../services/kv-service';
 import { generateMicrolearningId, normalizeDepartmentName } from '../utils/language/language-utils';
 import { API_ENDPOINTS } from '../constants';
+import { z } from 'zod';
 import {
   createStepInputSchema,
   promptAnalysisSchema,
@@ -16,6 +18,10 @@ import {
   microlearningFinalResultSchema,
   saveToKVInputSchema
 } from '../schemas/create-microlearning-schemas';
+
+// Type definitions from schemas
+type MicrolearningOutput = z.infer<typeof microlearningSchema>;
+type MicrolearningLanguageOutput = z.infer<typeof microlearningLanguageContentSchema>;
 import { getLogger } from '../utils/core/logger';
 import { waitForKVConsistency, buildExpectedKVKeys } from '../utils/kv-consistency';
 import { normalizeError, logErrorInfo } from '../utils/core/error-utils';
@@ -35,7 +41,7 @@ export const analyzePromptStep = createStep({
   // v1: Use step schema with resolved types (defaults applied)
   inputSchema: createStepInputSchema,
   outputSchema: promptAnalysisSchema,
-  execute: async ({ inputData }) => {
+  execute: async ({ inputData, requestContext }) => {
     if (!inputData.prompt || inputData.prompt.trim() === '') {
       throw new Error('Missing prompt for new microlearning generation');
     }
@@ -43,6 +49,9 @@ export const analyzePromptStep = createStep({
     if (!analyzeUserPromptTool.execute) {
       throw new Error('Analyze user prompt tool is not executable');
     }
+
+    // Get writer from requestContext (bypasses Zod validation)
+    const writer = requestContext?.get('writer');
 
     // Pass model provider, model, and policy context to analyze step
     // v1: execute(inputData, ctx) - writer goes in ctx
@@ -56,28 +65,46 @@ export const analyzePromptStep = createStep({
       modelProvider: inputData.modelProvider,
       model: inputData.model,
       policyContext: inputData.policyContext,
-    }, { writer: inputData.writer } as any);
+    }, { writer } as ToolExecutionContext);
 
     // v1: Check for ValidationError or failure
-    if (('error' in analysisRes && analysisRes.error) || !analysisRes.success) {
-      const errorMsg = ('error' in analysisRes && analysisRes.error) ? String(analysisRes.error) : 'Unknown error';
-      const errorInfo = errorService.external(`Prompt analysis failed: ${errorMsg}`, { step: 'analyze-user-prompt' });
+    // ValidationError has { error: true, message: string, validationErrors: ... }
+    if ('error' in analysisRes && analysisRes.error === true) {
+      const validationError = analysisRes as { error: true; message: string; validationErrors?: unknown };
+      const errorInfo = errorService.external(`Prompt analysis validation failed: ${validationError.message}`, {
+        step: 'analyze-user-prompt',
+        validationErrors: validationError.validationErrors
+      });
+      logErrorInfo(logger, 'error', 'Prompt analysis validation failed', errorInfo);
+      throw new Error(errorInfo.message);
+    }
+
+    if (!analysisRes.success) {
+      const errorInfo = errorService.external('Prompt analysis failed: Unknown error', { step: 'analyze-user-prompt' });
       logErrorInfo(logger, 'error', 'Prompt analysis failed', errorInfo);
       throw new Error(errorInfo.message);
     }
     logger.debug('Additional context received', {
       additionalContext: summarizeForLog(inputData.additionalContext),
     });
+    // Clean null values to undefined for type safety
+    const cleanData = {
+      ...analysisRes.data,
+      additionalContext: inputData.additionalContext ?? undefined,
+      themeColor: analysisRes.data.themeColor ?? undefined,
+      subcategory: analysisRes.data.subcategory ?? undefined,
+      keyTopics: analysisRes.data.keyTopics ?? undefined,
+      practicalApplications: analysisRes.data.practicalApplications ?? undefined,
+      industries: analysisRes.data.industries ?? undefined,
+      roles: analysisRes.data.roles ?? undefined,
+    };
+
     return {
       success: analysisRes.success,
-      data: {
-        ...analysisRes.data,
-        additionalContext: inputData.additionalContext // Explicitly pass context to next steps
-      },
-      modelProvider: inputData.modelProvider,
-      model: inputData.model,
-      writer: inputData.writer,
-      policyContext: inputData.policyContext,
+      data: cleanData,
+      modelProvider: inputData.modelProvider ?? undefined,
+      model: inputData.model ?? undefined,
+      policyContext: inputData.policyContext ?? undefined,
     };
   }
 });
@@ -89,6 +116,7 @@ export const generateMicrolearningStep = createStep({
   inputSchema: promptAnalysisSchema,
   outputSchema: microlearningSchema,
   execute: async ({ inputData }) => {
+    // Note: This step doesn't need writer - no streaming here
     const analysis = inputData.data;
     const microlearningId = generateMicrolearningId(analysis.topic);
     const model = getModelWithOverride(inputData.modelProvider, inputData.model);
@@ -106,10 +134,8 @@ export const generateMicrolearningStep = createStep({
     if (('error' in genRes && genRes.error) || !genRes.success) {
       const errorMsg = ('error' in genRes && genRes.error) ? String(genRes.error) : 'Unknown error';
       const errorInfo = errorService.external(`Microlearning generation failed: ${errorMsg}`, { step: 'generate-microlearning-json' });
-      logErrorInfo(logger, 'error', 'Microlearning generation failed', {
-        ...errorInfo,
-        topic: analysis.topic
-      } as any);
+      logErrorInfo(logger, 'error', 'Microlearning generation failed', errorInfo);
+      logger.debug('Additional error context', { topic: analysis.topic });
       throw new Error(errorInfo.message);
     }
 
@@ -145,18 +171,18 @@ export const generateMicrolearningStep = createStep({
       });
     }
 
-    return {
+    const output: MicrolearningOutput = {
       success: true,
       data: enrichedMicrolearning,
       microlearningId,
       analysis,
       microlearningStructure: enrichedMicrolearning,
       hasInbox,
-      modelProvider: inputData.modelProvider,
-      model: inputData.model,
-      writer: inputData.writer,
-      policyContext: inputData.policyContext,
-    } as any;
+      modelProvider: inputData.modelProvider ?? undefined,
+      model: inputData.model ?? undefined,
+      policyContext: inputData.policyContext ?? undefined,
+    };
+    return output;
   }
 });
 
@@ -166,7 +192,10 @@ export const generateLanguageStep = createStep({
   description: 'Generate language-specific training content',
   inputSchema: microlearningSchema,
   outputSchema: microlearningLanguageContentSchema, // Updated schema name
-  execute: async ({ inputData }) => {
+  execute: async ({ inputData, requestContext }) => {
+    // Get writer from requestContext (bypasses Zod validation)
+    const writer = requestContext?.get('writer');
+
     const microlearningStructure = inputData.data;
     const analysis = inputData.analysis;
     const microlearningId = inputData.microlearningId;
@@ -182,17 +211,14 @@ export const generateLanguageStep = createStep({
       microlearning: microlearningStructure,
       model,
       policyContext: inputData.policyContext
-    }, { writer: inputData.writer } as any);
+    }, { writer } as ToolExecutionContext);
 
     // v1: Check for ValidationError or failure
     if (('error' in result && result.error) || !result.success) {
       const errorMsg = ('error' in result && result.error) ? String(result.error) : 'Unknown error';
       const errorInfo = errorService.external(`Language content generation failed: ${errorMsg}`, { step: 'generate-language-json' });
-      logErrorInfo(logger, 'error', 'Language content generation failed', {
-        ...errorInfo,
-        microlearningId,
-        language: analysis.language
-      } as any);
+      logErrorInfo(logger, 'error', 'Language content generation failed', errorInfo);
+      logger.debug('Additional error context', { microlearningId, language: analysis.language });
       throw new Error(errorInfo.message);
     }
 
@@ -203,17 +229,17 @@ export const generateLanguageStep = createStep({
       result.data
     );
 
-    return {
+    const output: MicrolearningLanguageOutput = {
       ...result,
       microlearningId,
       analysis,
       microlearningStructure,
-      hasInbox: (inputData as any).hasInbox,
-      modelProvider: inputData.modelProvider,
-      model: inputData.model,
-      writer: inputData.writer,
-      policyContext: inputData.policyContext,
-    } as any;
+      hasInbox: inputData.hasInbox,
+      modelProvider: inputData.modelProvider ?? undefined,
+      model: inputData.model ?? undefined,
+      policyContext: inputData.policyContext ?? undefined,
+    };
+    return output;
   }
 });
 
@@ -225,7 +251,7 @@ export const createInboxStep = createStep({
   outputSchema: microlearningFinalResultSchema, // Updated output schema name
   execute: async ({ inputData }) => {
     const { analysis, microlearningStructure, microlearningId } = inputData;
-    const hasInbox = (inputData as any).hasInbox !== false;
+    const hasInbox = inputData.hasInbox !== false;
 
     const normalizedDept = analysis.department ? normalizeDepartmentName(analysis.department) : 'all';
 
@@ -308,7 +334,7 @@ export const saveToKVStep = createStep({
   execute: async ({ inputData }) => {
     const inboxResult = inputData['create-inbox-assignment'];
     const languageResult = inputData['generate-language-content'];
-    const hasInbox = (languageResult as any).hasInbox !== false;
+    const hasInbox = languageResult.hasInbox !== false;
 
     // Now save to KV with both results available
     try {

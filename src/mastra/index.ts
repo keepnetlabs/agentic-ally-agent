@@ -143,10 +143,13 @@ export const mastra = new Mastra({
   },
   logger,
   deployer: getDeployer(),
-  // Note: These env vars are validated at startup by validateEnvironmentOrThrow()
+  bundler: {
+    externals: ['pnpapi', 'cloudflare:workers', 'cloudflare:sockets', 'typescript'],
+  },
+  // D1 REST API mode
   /* eslint-disable @typescript-eslint/no-non-null-assertion */
   storage: new D1Store({
-    id: process.env.CLOUDFLARE_D1_DATABASE_ID!,
+    id: 'agentic-ally-d1-store',
     accountId: process.env.CLOUDFLARE_ACCOUNT_ID!,
     databaseId: process.env.CLOUDFLARE_D1_DATABASE_ID!,
     apiToken: process.env.CLOUDFLARE_KV_TOKEN!,

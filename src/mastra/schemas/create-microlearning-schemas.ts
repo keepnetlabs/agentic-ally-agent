@@ -1,6 +1,5 @@
 import { z } from 'zod';
 import { MODEL_PROVIDERS, TRAINING_LEVELS, DEFAULT_TRAINING_LEVEL, PRIORITY_LEVELS, DEFAULT_PRIORITY } from '../constants';
-import { StreamWriterSchema } from '../types/stream-writer';
 
 export const createInputSchema = z.object({
     prompt: z.string().describe('User prompt in any language'),
@@ -12,7 +11,7 @@ export const createInputSchema = z.object({
     language: z.string().optional().describe('Target language code (BCP-47)'),
     modelProvider: z.enum(MODEL_PROVIDERS.NAMES).optional().describe('Model provider (OPENAI, WORKERS_AI, GOOGLE)'),
     model: z.string().optional().describe('Model name (e.g., OPENAI_GPT_4O_MINI, WORKERS_AI_GPT_OSS_120B)'),
-    writer: StreamWriterSchema.optional(),
+    // Note: writer is passed via requestContext to bypass Zod validation
     policyContext: z.string().optional().describe('Company policy context (prepared at workflow start)'),
 });
 
@@ -23,6 +22,10 @@ export const createInputSchema = z.object({
 export type CreateMicrolearningInput = z.output<typeof createInputSchema>;
 export const createStepInputSchema = createInputSchema as z.ZodType<CreateMicrolearningInput>;
 
+// Helper to convert null to undefined (LLM returns null but TypeScript expects undefined)
+const nullToUndefined = <T>(schema: z.ZodType<T | null>) =>
+    schema.transform(v => v ?? undefined);
+
 export const promptAnalysisSchema = z.object({
     success: z.boolean(),
     data: z.object({
@@ -32,19 +35,19 @@ export const promptAnalysisSchema = z.object({
         department: z.string(),
         level: z.string(),
         category: z.string(),
-        subcategory: z.string().optional(),
+        subcategory: nullToUndefined(z.string().nullable()).optional(),
         learningObjectives: z.array(z.string()),
-        keyTopics: z.array(z.string()).optional(),
-        practicalApplications: z.array(z.string()).optional(),
-        industries: z.array(z.string()).optional(),
-        roles: z.array(z.string()).optional(),
-        themeColor: z.string().optional(),
-        additionalContext: z.string().optional(), // Added to carry context to next steps
+        keyTopics: nullToUndefined(z.array(z.string()).nullable()).optional(),
+        practicalApplications: nullToUndefined(z.array(z.string()).nullable()).optional(),
+        industries: nullToUndefined(z.array(z.string()).nullable()).optional(),
+        roles: nullToUndefined(z.array(z.string()).nullable()).optional(),
+        themeColor: nullToUndefined(z.string().nullable()).optional(),
+        additionalContext: nullToUndefined(z.string().nullable()).optional(),
     }),
-    modelProvider: z.enum(MODEL_PROVIDERS.NAMES).optional(),
-    model: z.string().optional(),
-    writer: StreamWriterSchema.optional(),
-    policyContext: z.string().optional(),
+    modelProvider: nullToUndefined(z.enum(MODEL_PROVIDERS.NAMES).nullable()).optional(),
+    model: nullToUndefined(z.string().nullable()).optional(),
+    // Note: writer removed from output - use getInitData() to get original writer
+    policyContext: nullToUndefined(z.string().nullable()).optional(),
 });
 
 export const microlearningSchema = z.object({
@@ -53,11 +56,11 @@ export const microlearningSchema = z.object({
     microlearningId: z.string(),
     analysis: z.any(),
     microlearningStructure: z.any(),
-    hasInbox: z.boolean().optional(),
-    modelProvider: z.enum(MODEL_PROVIDERS.NAMES).optional(),
-    model: z.string().optional(),
-    writer: StreamWriterSchema.optional(),
-    policyContext: z.string().optional(),
+    hasInbox: nullToUndefined(z.boolean().nullable()).optional(),
+    modelProvider: nullToUndefined(z.enum(MODEL_PROVIDERS.NAMES).nullable()).optional(),
+    model: nullToUndefined(z.string().nullable()).optional(),
+    // Note: writer removed from output - use getInitData() to get original writer
+    policyContext: nullToUndefined(z.string().nullable()).optional(),
 });
 
 export const microlearningLanguageContentSchema = z.object({
@@ -66,11 +69,11 @@ export const microlearningLanguageContentSchema = z.object({
     microlearningId: z.string(),
     analysis: z.any(),
     microlearningStructure: z.any(),
-    hasInbox: z.boolean().optional(),
-    modelProvider: z.enum(MODEL_PROVIDERS.NAMES).optional(),
-    model: z.string().optional(),
-    writer: StreamWriterSchema.optional(),
-    policyContext: z.string().optional(),
+    hasInbox: nullToUndefined(z.boolean().nullable()).optional(),
+    modelProvider: nullToUndefined(z.enum(MODEL_PROVIDERS.NAMES).nullable()).optional(),
+    model: nullToUndefined(z.string().nullable()).optional(),
+    // Note: writer removed from output - use getInitData() to get original writer
+    policyContext: nullToUndefined(z.string().nullable()).optional(),
 });
 
 export const microlearningFinalResultSchema = z.object({

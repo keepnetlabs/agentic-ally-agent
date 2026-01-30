@@ -13,6 +13,10 @@ import {
   MODEL_PROVIDERS,
 } from '../../constants';
 
+// Helper to convert null to undefined (LLM returns null but TypeScript expects undefined)
+const nullToUndefined = <T>(schema: z.ZodType<T | null>) =>
+  schema.transform(v => v ?? undefined);
+
 export const AnalyzeUserPromptSchema = z.object({
   userPrompt: z
     .string()
@@ -60,14 +64,14 @@ export const AnalyzeUserPromptOutputSchema = z.object({
     keyTopics: z.array(z.string()),
     practicalApplications: z.array(z.string()),
     assessmentAreas: z.array(z.string()),
-    regulationCompliance: z.array(z.string()).optional(),
-    themeColor: z.string().optional(),
-    hasRichContext: z.boolean().optional(),
-    additionalContext: z.string().optional(),
-    customRequirements: z.string().optional(),
-    isCodeTopic: z.boolean().optional(),
-    isVishing: z.boolean().optional(),
-    isSmishing: z.boolean().optional(),
+    regulationCompliance: nullToUndefined(z.array(z.string()).nullable()).optional(),
+    themeColor: nullToUndefined(z.string().nullable()).optional(),
+    hasRichContext: nullToUndefined(z.boolean().nullable()).optional(),
+    additionalContext: nullToUndefined(z.string().nullable()).optional(),
+    customRequirements: nullToUndefined(z.string().nullable()).optional(),
+    isCodeTopic: nullToUndefined(z.boolean().nullable()).optional(),
+    isVishing: nullToUndefined(z.boolean().nullable()).optional(),
+    isSmishing: nullToUndefined(z.boolean().nullable()).optional(),
   }),
   policyContext: z.string().optional(),
   error: z.string().optional(),

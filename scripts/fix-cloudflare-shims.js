@@ -8,7 +8,7 @@
  * 3. Reorders AutonomousWorkflow class to appear after executeAutonomousGeneration function
  */
 
-import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, readdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -19,6 +19,95 @@ const PROJECT_ROOT = join(__dirname, '..');
 const MASTRA_OUTPUT_DIR = '.mastra/output';
 const FILES_TO_FIX = ['index.mjs', 'mastra.mjs'];
 const WRANGLER_CONFIG_PATH = join(MASTRA_OUTPUT_DIR, 'wrangler.json');
+
+// TypeScript stub - returns empty object for dynamic imports
+const TYPESCRIPT_STUB = `// TypeScript stub for Cloudflare Workers (not needed at runtime)
+export default {};
+export const transpileModule = () => ({ outputText: '' });
+export const createSourceFile = () => ({});
+export const ScriptTarget = { Latest: 99 };
+export const ModuleKind = { ESNext: 99 };
+`;
+
+/**
+ * Create typescript-stub.mjs file for wrangler alias
+ */
+function createTypescriptStub() {
+  const stubPath = join(MASTRA_OUTPUT_DIR, 'typescript-stub.mjs');
+  try {
+    writeFileSync(stubPath, TYPESCRIPT_STUB, 'utf8');
+    console.log(`  ✅ Created typescript-stub.mjs`);
+    return true;
+  } catch (error) {
+    console.error(`❌ Error creating typescript-stub.mjs:`, error.message);
+    return false;
+  }
+}
+
+/**
+ * Fix dist-*.mjs files that contain typescript imports
+ * Wrangler tries to bundle these and fails because typescript-stub.mjs doesn't exist
+ */
+function fixTypescriptImports() {
+  try {
+    if (!existsSync(MASTRA_OUTPUT_DIR)) {
+      return false;
+    }
+
+    const files = readdirSync(MASTRA_OUTPUT_DIR);
+    const distFiles = files.filter(f => f.startsWith('dist-') && f.endsWith('.mjs'));
+    
+    let fixed = false;
+    
+    for (const distFile of distFiles) {
+      const filePath = join(MASTRA_OUTPUT_DIR, distFile);
+      let content = readFileSync(filePath, 'utf8');
+      
+      // Replace dynamic typescript imports with inline stub
+      if (content.includes("import('typescript')") || content.includes('import("typescript")')) {
+        // Replace the dynamic import with a resolved promise returning stub
+        content = content.replace(
+          /await\s+import\s*\(\s*['"]typescript['"]\s*\)/g,
+          'Promise.resolve({ default: {}, transpileModule: () => ({ outputText: "" }), createSourceFile: () => ({}), ScriptTarget: { Latest: 99 }, ModuleKind: { ESNext: 99 } })'
+        );
+        
+        // Also handle non-awaited imports
+        content = content.replace(
+          /import\s*\(\s*['"]typescript['"]\s*\)/g,
+          'Promise.resolve({ default: {}, transpileModule: () => ({ outputText: "" }), createSourceFile: () => ({}), ScriptTarget: { Latest: 99 }, ModuleKind: { ESNext: 99 } })'
+        );
+        
+        writeFileSync(filePath, content, 'utf8');
+        console.log(`  ✅ Fixed typescript imports in ${distFile}`);
+        fixed = true;
+      }
+    }
+    
+    // Also fix mastra.mjs if it has typescript imports
+    const mastraPath = join(MASTRA_OUTPUT_DIR, 'mastra.mjs');
+    if (existsSync(mastraPath)) {
+      let content = readFileSync(mastraPath, 'utf8');
+      if (content.includes("import('typescript')") || content.includes('import("typescript")')) {
+        content = content.replace(
+          /await\s+import\s*\(\s*['"]typescript['"]\s*\)/g,
+          'Promise.resolve({ default: {}, transpileModule: () => ({ outputText: "" }), createSourceFile: () => ({}), ScriptTarget: { Latest: 99 }, ModuleKind: { ESNext: 99 } })'
+        );
+        content = content.replace(
+          /import\s*\(\s*['"]typescript['"]\s*\)/g,
+          'Promise.resolve({ default: {}, transpileModule: () => ({ outputText: "" }), createSourceFile: () => ({}), ScriptTarget: { Latest: 99 }, ModuleKind: { ESNext: 99 } })'
+        );
+        writeFileSync(mastraPath, content, 'utf8');
+        console.log(`  ✅ Fixed typescript imports in mastra.mjs`);
+        fixed = true;
+      }
+    }
+    
+    return fixed;
+  } catch (error) {
+    console.error(`❌ Error fixing typescript imports:`, error.message);
+    return false;
+  }
+}
 
 const ORIGINAL_SHIM = `// -- Shims --
 import cjsUrl from 'node:url';
@@ -434,6 +523,18 @@ function main() {
     if (fixFile(filePath)) {
       fixedCount++;
     }
+  }
+
+  // Create typescript stub file
+  console.log('\n🔧 Creating typescript stub...');
+  if (createTypescriptStub()) {
+    fixedCount++;
+  }
+
+  // Fix typescript imports in dist-*.mjs files
+  console.log('\n🔧 Fixing typescript imports in dist files...');
+  if (fixTypescriptImports()) {
+    fixedCount++;
   }
 
   // Patch wrangler.json to add service bindings

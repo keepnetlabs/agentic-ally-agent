@@ -3,6 +3,9 @@ import { CloudflareDeployer } from "@mastra/deployer-cloudflare";
 export function getDeployer() {
     return new CloudflareDeployer({
         projectName: "agentic-ally",
+        buildOptions: {
+            externals: ['pnpapi', 'cloudflare:workers', 'cloudflare:sockets', 'typescript'],
+        },
         env: {
             NODE_ENV: "production",
             BUILD_MODE: "production"

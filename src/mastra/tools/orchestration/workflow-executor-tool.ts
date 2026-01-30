@@ -30,11 +30,11 @@
  */
 
 import { createTool, ToolExecutionContext } from '@mastra/core/tools';
+import { RequestContext } from '@mastra/core/request-context';
 import { createMicrolearningWorkflow } from '../../workflows/create-microlearning-workflow';
 import { addLanguageWorkflow } from '../../workflows/add-language-workflow';
 import { addMultipleLanguagesWorkflow } from '../../workflows/add-multiple-languages-workflow';
 import { updateMicrolearningWorkflow } from '../../workflows/update-microlearning-workflow';
-import { uuidv4 } from '../../utils/core/id-utils';
 import { getLogger } from '../../utils/core/logger';
 import { workflowExecutorSchema, workflowExecutorOutputSchema } from './workflow-executor-schemas';
 import { getPolicySummary } from '../../utils/core/policy-cache';
@@ -83,9 +83,15 @@ export const workflowExecutorTool = createTool({
         const policyContext = await getPolicySummary();
         logger.info('Policy summary ready', { hasContent: !!policyContext, length: policyContext?.length || 0 });
 
-        // Start workflow with writer parameter
+        // Start workflow with writer in requestContext (bypasses Zod validation)
         const workflow = createMicrolearningWorkflow;
         const run = await workflow.createRun();
+
+        // Create requestContext with writer (Zod won't touch this)
+        const requestContext = new RequestContext();
+        if (writer) {
+          requestContext.set('writer', writer);
+        }
 
         // Start workflow - let it fail if it fails
         const workflowResult: CreateMicrolearningResult = await run.start({
@@ -99,9 +105,9 @@ export const workflowExecutorTool = createTool({
             language: params.language,
             modelProvider: params.modelProvider,
             model: params.model,
-            writer: writer,
             policyContext: policyContext || undefined // Pass if available
-          }
+          },
+          requestContext
         });
 
         // Extract info from result - simple fallback approach
@@ -111,6 +117,20 @@ export const workflowExecutorTool = createTool({
         let microlearningId = 'ID not available';
 
         logger.debug('Workflow result received', { status: workflowResult.status });
+
+        // Check workflow status first - if failed, return error immediately
+        if (workflowResult.status === 'failed') {
+          const workflowError = workflowResult.error;
+          const errorMessage = typeof workflowError === 'string'
+            ? workflowError
+            : (workflowError?.message || 'Workflow execution failed');
+          const errorInfo = errorService.external(`Microlearning creation failed: ${errorMessage}`, {
+            step: 'workflow-executor',
+            workflowStatus: workflowResult.status
+          });
+          logErrorInfo(logger, 'error', 'Workflow execution failed', errorInfo);
+          return createToolErrorResponse(errorInfo);
+        }
 
         // Validate and extract data from workflow result
         if (validateCreateMicrolearningResult(workflowResult)) {
@@ -125,48 +145,42 @@ export const workflowExecutorTool = createTool({
             logger.error('Failed to extract validated workflow result data', { error: err.message });
           }
         } else {
-          logger.error('Workflow result validation failed', { status: workflowResult.status });
+          // Workflow completed but result validation failed
+          const errorInfo = errorService.external('Workflow completed but result validation failed', {
+            step: 'workflow-executor',
+            workflowStatus: workflowResult.status
+          });
+          logErrorInfo(logger, 'error', 'Workflow result validation failed', errorInfo);
+          return createToolErrorResponse(errorInfo);
         }
 
-        // Emit a custom UI signal for FE to open a canvas
-        // Frontend can listen for lines starting with "::ui:canvas_open::" and use the raw URL payload
-        try {
-          const messageId = uuidv4();
-          await writer?.write({ type: 'text-start', id: messageId });
-          await writer?.write({
-            type: 'text-delta',
-            id: messageId,
-            delta: `::ui:canvas_open::${trainingUrl}\n`
+        // Emit UI signal for FE to open canvas (same pattern as phishing)
+        if (writer) {
+          const meta = {
+            microlearningId,
+            trainingUrl,
+            title,
+            department,
+          };
+          const encodedMeta = Buffer.from(JSON.stringify(meta)).toString('base64');
+
+          await writer.write({
+            type: 'data-ui-signal',
+            data: {
+              signal: 'canvas_open',
+              message: `::ui:canvas_open::${trainingUrl}::/ui:canvas_open::\n`
+            }
           });
-          // Emit structured training metadata for routing/agent context (FE can ignore if unsupported)
-          try {
-            const meta = {
-              microlearningId,
-              trainingUrl,
-              title,
-              department,
-            };
-            const encoded = Buffer.from(JSON.stringify(meta)).toString('base64');
-            await writer?.write({
-              type: 'text-delta',
-              id: messageId,
-              delta: `::ui:training_meta::${encoded}::/ui:training_meta::\n`
-            });
-          } catch (metaErr) {
-            const err = normalizeError(metaErr);
-            logger.warn('Failed to send training meta to frontend', { error: err.message });
-          }
-          await writer?.write({ type: 'text-end', id: messageId });
+
+          await writer.write({
+            type: 'data-ui-signal',
+            data: {
+              signal: 'training_meta',
+              message: `::ui:training_meta::${encodedMeta}::/ui:training_meta::\n`
+            }
+          });
+
           logger.debug('Training URL sent to frontend', { urlLength: trainingUrl?.length });
-        } catch (error) {
-          const err = normalizeError(error);
-          logger.error('Failed to send training URL to frontend', {
-            error: err.message,
-            stack: err.stack,
-            trainingUrl: trainingUrl?.substring(0, 100),
-            timestamp: new Date().toISOString(),
-          });
-          // NOTE: Continue - don't block response, but log for monitoring
         }
 
         const result = {
@@ -222,21 +236,15 @@ export const workflowExecutorTool = createTool({
         }
 
         logger.debug('Language translation completed', { hasTrainingUrl: !!trainingUrl });
-        if (trainingUrl) {
-          try {
-            const messageId = uuidv4();
-            await writer?.write({ type: 'text-start', id: messageId });
-            await writer?.write({
-              type: 'text-delta',
-              id: messageId,
-              delta: `::ui:canvas_open::${trainingUrl}\n`
-            });
-            await writer?.write({ type: 'text-end', id: messageId });
-            logger.debug('Training URL sent to frontend', { urlLength: trainingUrl?.length });
-          } catch (error) {
-            const err = normalizeError(error);
-            logger.error('Failed to send translated URL to frontend', { error: err.message, stack: err.stack });
-          }
+        if (trainingUrl && writer) {
+          await writer.write({
+            type: 'data-ui-signal',
+            data: {
+              signal: 'canvas_open',
+              message: `::ui:canvas_open::${trainingUrl}::/ui:canvas_open::\n`
+            }
+          });
+          logger.debug('Training URL sent to frontend', { urlLength: trainingUrl?.length });
         }
 
         const toolResult = {
@@ -284,21 +292,15 @@ export const workflowExecutorTool = createTool({
           const firstSuccess = workflowResults.find(
             (r) => r.success && r.trainingUrl
           );
-          if (firstSuccess) {
-            try {
-              const messageId = uuidv4();
-              await writer?.write({ type: 'text-start', id: messageId });
-              await writer?.write({
-                type: 'text-delta',
-                id: messageId,
-                delta: `::ui:canvas_open::${firstSuccess.trainingUrl}\n`
-              });
-              await writer?.write({ type: 'text-end', id: messageId });
-              logger.debug('Training URL sent to frontend', { urlLength: firstSuccess.trainingUrl?.length });
-            } catch (error) {
-              const err = normalizeError(error);
-              logger.error('Failed to send translated URL to frontend', { error: err.message, stack: err.stack });
-            }
+          if (firstSuccess && writer) {
+            await writer.write({
+              type: 'data-ui-signal',
+              data: {
+                signal: 'canvas_open',
+                message: `::ui:canvas_open::${firstSuccess.trainingUrl}::/ui:canvas_open::\n`
+              }
+            });
+            logger.debug('Training URL sent to frontend', { urlLength: firstSuccess.trainingUrl?.length });
           }
 
           const resultData = {
@@ -348,22 +350,15 @@ export const workflowExecutorTool = createTool({
 
         // Send updated training URL to frontend via UI signal
         const trainingUrl = result?.result?.metadata?.trainingUrl;
-        if (trainingUrl) {
-          try {
-            const messageId = uuidv4();
-            await writer?.write({ type: 'text-start', id: messageId });
-            await writer?.write({
-              type: 'text-delta',
-              id: messageId,
-              delta: `::ui:canvas_open::${trainingUrl}\n`
-            });
-            await writer?.write({ type: 'text-end', id: messageId });
-            logger.debug('Updated training URL sent to frontend', { microlearningId: params.existingMicrolearningId });
-          } catch (error) {
-            const err = normalizeError(error);
-            logger.error('Failed to send updated training URL to frontend', { error: err.message, stack: err.stack });
-            // Continue - don't block response
-          }
+        if (trainingUrl && writer) {
+          await writer.write({
+            type: 'data-ui-signal',
+            data: {
+              signal: 'canvas_open',
+              message: `::ui:canvas_open::${trainingUrl}::/ui:canvas_open::\n`
+            }
+          });
+          logger.debug('Updated training URL sent to frontend', { microlearningId: params.existingMicrolearningId });
         }
 
         const resultData = {
@@ -398,18 +393,14 @@ export const workflowExecutorTool = createTool({
       logErrorInfo(logger, 'error', 'Workflow execution failed', errorInfo);
 
       // Send error message to frontend
-      try {
-        const messageId = uuidv4();
-        await writer?.write({ type: 'text-start', id: messageId });
-        await writer?.write({
-          type: 'text-delta',
-          id: messageId,
-          delta: `❌ Workflow failed: ${err.message}\n`
+      if (writer) {
+        await writer.write({
+          type: 'data-ui-signal',
+          data: {
+            signal: 'workflow_error',
+            message: `::ui:workflow_error::${err.message}::/ui:workflow_error::\n`
+          }
         });
-        await writer?.write({ type: 'text-end', id: messageId });
-      } catch (writeError) {
-        const writeErr = normalizeError(writeError);
-        logger.error('Failed to send error message to frontend', { error: writeErr.message, stack: writeErr.stack });
       }
 
       return createToolErrorResponse(errorInfo);
