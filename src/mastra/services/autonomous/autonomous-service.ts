@@ -52,10 +52,14 @@ export async function executeAutonomousGeneration(
                     ? { targetUserResourceId, departmentName }
                     : { firstName, lastName };
 
-                const toolResult = await getUserInfoTool.execute({ context: toolContext } as any);
+                // v1: execute now takes (inputData, context)
+                const toolResult = await getUserInfoTool.execute(toolContext, {});
                 logger.debug('Tool result retrieved', { toolResult });
-                if (!toolResult.success) {
-                    return { success: false, error: toolResult.error || 'User info retrieval failed', actions };
+
+                // v1: Check for ValidationError or failure
+                if (('error' in toolResult && toolResult.error) || !toolResult.success) {
+                    const errorMsg = ('error' in toolResult && toolResult.error) ? String(toolResult.error) : 'User info retrieval failed';
+                    return { success: false, error: errorMsg, actions };
                 }
 
                 // Override preferredLanguage if provided

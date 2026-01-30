@@ -1,7 +1,5 @@
 import { Tool } from '@mastra/core/tools';
-import { z } from 'zod';
 import { getModelWithOverride } from '../../model-providers';
-import { MODEL_PROVIDERS } from '../../constants';
 import { SceneType, getSceneTypeOrDefault } from '../../types/scene-types';
 import { rewriteScene1Intro } from '../scenes/rewriters/scene1-intro-rewriter';
 import { rewriteScene2Goal } from '../scenes/rewriters/scene2-goal-rewriter';
@@ -18,37 +16,7 @@ import { getLogger } from '../../utils/core/logger';
 import { errorService } from '../../services/error-service';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
 import { withRetry } from '../../utils/core/resilience-utils';
-import { LanguageCodeSchema, validateLanguagesDifferent } from '../../utils/validation/language-validation';
-
-/* =========================================================
- * Schemas
- * =======================================================*/
-const TranslateJsonInputSchema = z.object({
-    json: z.any(),
-    microlearningStructure: z.any().describe('Base microlearning structure with scenes metadata'),
-    sourceLanguage: LanguageCodeSchema.optional().default('en-gb'),
-    targetLanguage: LanguageCodeSchema,
-    topic: z.string()
-        .max(500, 'Topic must not exceed 500 characters')
-        .optional(),
-    doNotTranslateKeys: z.array(z.string()).optional(),
-    modelProvider: z.enum(MODEL_PROVIDERS.NAMES).optional().describe('Model provider'),
-    model: z.string()
-        .max(100, 'Model name must not exceed 100 characters')
-        .optional().describe('Model name (e.g., OPENAI_GPT_4O_MINI, WORKERS_AI_GPT_OSS_120B)'),
-}).refine(
-    (data) => validateLanguagesDifferent(data.sourceLanguage, data.targetLanguage),
-    {
-        message: 'Source and target languages must be different',
-        path: ['targetLanguage']
-    }
-);
-
-const TranslateJsonOutputSchema = z.object({
-    success: z.boolean(),
-    data: z.any(),
-    error: z.string().optional()
-});
+import { TranslateJsonInputSchema, TranslateJsonOutputSchema, type TranslateJsonInput } from './translate-language-json-schemas';
 
 /* =========================================================
  * Scene Type Detection & Mapping
@@ -96,7 +64,7 @@ export const translateLanguageJsonTool = new Tool({
                 topic,
                 modelProvider,
                 model: modelOverride
-            } = context as z.infer<typeof TranslateJsonInputSchema>;
+            } = context as TranslateJsonInput;
 
             const model = getModelWithOverride(modelProvider, modelOverride);
 

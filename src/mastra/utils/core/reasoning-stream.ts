@@ -73,13 +73,14 @@ export async function streamReasoning(
       } catch {
         // Stream likely closed, ignore silently
       }
-    }).catch(() => {
+    }).catch(async () => {
       // Silent catch for generation errors or stream errors
       try {
-        writer.write({
+        // v1: await required for writer.write to prevent stream lock
+        await writer.write({
           type: 'reasoning-end',
           id: messageId
-        }).catch(() => { });
+        });
       } catch { }
     });
 

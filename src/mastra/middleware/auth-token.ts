@@ -38,11 +38,16 @@ const isValidJwtToken = (token: string): boolean => {
  * - /health: Health check endpoint for monitoring
  * - /__refresh: Mastra hot reload (development)
  * - /api/telemetry: Mastra internal telemetry
+ * 
+ * NOTE: /__restart-active-workflow-runs is intentionally NOT skipped.
+ * This prevents Mastra from restarting old workflow runs that may have
+ * incompatible data structures after package upgrades.
  */
 const SKIP_AUTH_PATHS = [
     '/health',
     '/__refresh',
     '/__hot-reload-status',
+    // '/__restart-active-workflow-runs', // DISABLED: Prevents stale workflow restart errors
     '/api/telemetry',
     '/autonomous',
     '/code-review-validate',

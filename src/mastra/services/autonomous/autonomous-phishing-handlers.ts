@@ -79,40 +79,52 @@ async function executePhishingToolFirst(params: {
 
         const resolvedMethod = resolveAttackMethod(simulation.scenario_type);
 
-        const toolGeneration = await phishingWorkflowExecutorTool.execute({
-            context: {
-                workflowType: PHISHING.WORKFLOW_TYPE,
-                topic,
-                difficulty: normalizedDifficulty,
-                language,
-                method: resolvedMethod,
-                includeEmail: true,
-                includeLandingPage: true,
-                additionalContext: additionalContextParts.length > 0 ? additionalContextParts.join('\n') : undefined,
-                targetProfile: {
-                    department: toolResult.userInfo?.department
-                }
-            }
-        } as any);
+        // v1: Check tool availability
+        if (!phishingWorkflowExecutorTool.execute) {
+            return { success: false, error: 'phishingWorkflowExecutorTool not executable' };
+        }
 
-        if (!toolGeneration?.success || !toolGeneration.data?.phishingId || !isSafeId(toolGeneration.data.phishingId)) {
+        // v1: execute now takes (inputData, context)
+        const toolGeneration = await phishingWorkflowExecutorTool.execute({
+            workflowType: PHISHING.WORKFLOW_TYPE,
+            topic,
+            difficulty: normalizedDifficulty,
+            language,
+            method: resolvedMethod, // undefined allowed by schema
+            includeEmail: true,
+            includeLandingPage: true,
+            additionalContext: additionalContextParts.length > 0 ? additionalContextParts.join('\n') : '', // empty string instead of undefined
+            targetProfile: {
+                department: toolResult.userInfo?.department
+            }
+        }, {});
+
+        // v1: Check for ValidationError or failure
+        if (('error' in toolGeneration && toolGeneration.error) || !toolGeneration.success || !toolGeneration.data?.phishingId || !isSafeId(toolGeneration.data.phishingId)) {
+            const errorMsg = ('error' in toolGeneration && toolGeneration.error) ? String(toolGeneration.error) : 'Phishing tool generation failed';
             return {
                 success: false,
-                error: toolGeneration?.error || 'Phishing tool generation failed',
+                error: errorMsg,
                 toolGeneration
             };
         }
 
-        const uploadResult = await uploadPhishingTool.execute({
-            context: {
-                phishingId: toolGeneration.data.phishingId
-            }
-        } as any);
+        // v1: Check tool availability
+        if (!uploadPhishingTool.execute) {
+            return { success: false, error: 'uploadPhishingTool not executable', toolGeneration };
+        }
 
-        if (!uploadResult?.success || !uploadResult.data?.resourceId) {
+        // v1: execute now takes (inputData, context)
+        const uploadResult = await uploadPhishingTool.execute({
+            phishingId: toolGeneration.data.phishingId
+        }, {});
+
+        // v1: Check for ValidationError or failure
+        if (('error' in uploadResult && uploadResult.error) || !uploadResult.success || !uploadResult.data?.resourceId) {
+            const errorMsg = ('error' in uploadResult && uploadResult.error) ? String(uploadResult.error) : 'Phishing upload failed';
             return {
                 success: false,
-                error: uploadResult?.error || 'Phishing upload failed',
+                error: errorMsg,
                 uploadResult
             };
         }
@@ -137,19 +149,25 @@ async function executePhishingToolFirst(params: {
             ? { targetUserResourceId }
             : { targetGroupResourceId: String(targetGroupResourceId) };
 
-        const assignResult = await assignPhishingTool.execute({
-            context: {
-                resourceId: uploadResult.data.resourceId,
-                languageId: uploadResult.data.languageId,
-                isQuishing: uploadResult.data.isQuishing,
-                ...assignmentContext
-            }
-        } as any);
+        // v1: Check tool availability
+        if (!assignPhishingTool.execute) {
+            return { success: false, error: 'assignPhishingTool not executable', uploadResult };
+        }
 
-        if (!assignResult?.success) {
+        // v1: execute now takes (inputData, context)
+        const assignResult = await assignPhishingTool.execute({
+            resourceId: uploadResult.data.resourceId,
+            languageId: uploadResult.data.languageId,
+            isQuishing: uploadResult.data.isQuishing,
+            ...assignmentContext
+        }, {});
+
+        // v1: Check for ValidationError or failure
+        if (('error' in assignResult && assignResult.error) || !assignResult.success) {
+            const errorMsg = ('error' in assignResult && assignResult.error) ? String(assignResult.error) : 'Phishing assign failed';
             return {
                 success: false,
-                error: assignResult?.error || 'Phishing assign failed',
+                error: errorMsg,
                 uploadResult,
                 assignResult
             };
@@ -763,29 +781,36 @@ export async function assignPhishingWithTraining(
                 sendTrainingLanguageId
             });
 
-            const assignResult = await assignPhishingTool.execute({
-                context: {
-                    resourceId: phishingResourceId,
-                    languageId: phishingLanguageId,
-                    isQuishing,
-                    targetUserResourceId,
-                    trainingId,
-                    sendTrainingLanguageId
-                }
-            } as any);
-
-            if (!assignResult?.success) {
-            logger.warn('Tool-first assign phishing with training failed, falling back to agent', {
-                error: assignResult?.error || 'Assign phishing with training failed'
-            });
+            // v1: Check tool availability
+            if (!assignPhishingTool.execute) {
+                throw new Error('assignPhishingTool not executable');
             }
 
-        if (assignResult?.success) {
-            return {
-                success: true,
-                agentResponse: assignResult.message
-            };
-        }
+            // v1: execute now takes (inputData, context)
+            const assignResult = await assignPhishingTool.execute({
+                resourceId: phishingResourceId,
+                languageId: phishingLanguageId,
+                isQuishing,
+                targetUserResourceId,
+                trainingId,
+                sendTrainingLanguageId
+            }, {});
+
+            // v1: Check for ValidationError or failure
+            const hasAssignError = ('error' in assignResult && assignResult.error) || !assignResult.success;
+            if (hasAssignError) {
+                const errorMsg = ('error' in assignResult && assignResult.error) ? String(assignResult.error) : 'Assign phishing with training failed';
+                logger.warn('Tool-first assign phishing with training failed, falling back to agent', {
+                    error: errorMsg
+                });
+            }
+
+            if (!hasAssignError) {
+                return {
+                    success: true,
+                    agentResponse: assignResult.message
+                };
+            }
         } catch (toolError) {
             const err = normalizeError(toolError);
             logger.warn('Tool-first assign phishing with training failed, falling back to agent', { error: err.message });

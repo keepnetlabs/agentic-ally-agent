@@ -29,15 +29,14 @@
  * See CLAUDE.md for detailed workflow documentation and patterns.
  */
 
-import { createTool } from '@mastra/core/tools';
-import { z } from 'zod';
+import { createTool, ToolExecutionContext } from '@mastra/core/tools';
 import { createMicrolearningWorkflow } from '../../workflows/create-microlearning-workflow';
 import { addLanguageWorkflow } from '../../workflows/add-language-workflow';
 import { addMultipleLanguagesWorkflow } from '../../workflows/add-multiple-languages-workflow';
 import { updateMicrolearningWorkflow } from '../../workflows/update-microlearning-workflow';
 import { uuidv4 } from '../../utils/core/id-utils';
-import { PROMPT_ANALYSIS, MODEL_PROVIDERS } from '../../constants';
 import { getLogger } from '../../utils/core/logger';
+import { workflowExecutorSchema, workflowExecutorOutputSchema } from './workflow-executor-schemas';
 import { getPolicySummary } from '../../utils/core/policy-cache';
 import { errorService } from '../../services/error-service';
 import { validateToolResult } from '../../utils/tool-result-validation';
@@ -60,112 +59,16 @@ import {
   validateAddLanguageResult
 } from './validators';
 
-// Workflow executor schema
-const workflowExecutorSchema = z.object({
-  workflowType: z.enum(['create-microlearning', 'add-language', 'add-multiple-languages', 'update-microlearning']).describe('Which workflow to execute'),
-
-  // Create microlearning parameters
-  prompt: z
-    .string()
-    .min(PROMPT_ANALYSIS.MIN_PROMPT_LENGTH, `Prompt must be at least ${PROMPT_ANALYSIS.MIN_PROMPT_LENGTH} characters`)
-    .max(PROMPT_ANALYSIS.MAX_PROMPT_LENGTH, `Prompt must not exceed ${PROMPT_ANALYSIS.MAX_PROMPT_LENGTH} characters`)
-    .optional()
-    .describe('User prompt for microlearning creation'),
-  additionalContext: z
-    .string()
-    .max(PROMPT_ANALYSIS.MAX_ADDITIONAL_CONTEXT_LENGTH, `Additional context must not exceed ${PROMPT_ANALYSIS.MAX_ADDITIONAL_CONTEXT_LENGTH} characters`)
-    .optional()
-    .describe('Additional context for the microlearning'),
-  customRequirements: z
-    .string()
-    .max(PROMPT_ANALYSIS.MAX_CUSTOM_REQUIREMENTS_LENGTH, `Custom requirements must not exceed ${PROMPT_ANALYSIS.MAX_CUSTOM_REQUIREMENTS_LENGTH} characters`)
-    .optional()
-    .describe('Custom requirements or special requests'),
-  department: z
-    .string()
-    .max(PROMPT_ANALYSIS.MAX_DEPARTMENT_NAME_LENGTH, `Department name must not exceed ${PROMPT_ANALYSIS.MAX_DEPARTMENT_NAME_LENGTH} characters`)
-    .optional()
-    .describe('Target department'),
-  level: z
-    .enum(PROMPT_ANALYSIS.DIFFICULTY_LEVELS)
-    .optional()
-    .default('Intermediate')
-    .describe('Content difficulty level'),
-  priority: z
-    .enum(PROMPT_ANALYSIS.PRIORITY_LEVELS)
-    .optional()
-    .default('medium'),
-  language: z
-    .string()
-    .regex(PROMPT_ANALYSIS.LANGUAGE_CODE_REGEX, PROMPT_ANALYSIS.LANGUAGE_CODE_REGEX.toString())
-    .optional()
-    .describe('Language for new microlearning content (e.g., tr-tr, en-gb)'),
-
-  // Add language parameters
-  existingMicrolearningId: z
-    .string()
-    .min(1, 'Microlearning ID cannot be empty')
-    .max(256, 'Microlearning ID must not exceed 256 characters')
-    .optional()
-    .describe('ID of existing microlearning to translate'),
-  targetLanguage: z
-    .string()
-    .regex(PROMPT_ANALYSIS.LANGUAGE_CODE_REGEX, PROMPT_ANALYSIS.LANGUAGE_CODE_REGEX.toString())
-    .optional()
-    .nullable()
-    .describe('Target language for translation (single language)'),
-  targetLanguages: z
-    .array(
-      z
-        .string()
-        .regex(PROMPT_ANALYSIS.LANGUAGE_CODE_REGEX, PROMPT_ANALYSIS.LANGUAGE_CODE_REGEX.toString())
-    )
-    .max(12, 'Maximum 12 languages allowed at once')
-    .optional()
-    .describe('Target languages for parallel translation (multiple languages)'),
-  sourceLanguage: z
-    .string()
-    .regex(PROMPT_ANALYSIS.LANGUAGE_CODE_REGEX, PROMPT_ANALYSIS.LANGUAGE_CODE_REGEX.toString())
-    .optional()
-    .nullable()
-    .describe('Source language (optional)'),
-
-  // Update microlearning parameters
-  updates: z
-    .object({
-      theme: z.record(z.any()).describe('Theme updates (fontFamily, colors, logo)'),
-    })
-    .optional()
-    .describe('Updates for update-microlearning workflow'),
-
-  // Model override parameters (optional)
-  modelProvider: z.enum(MODEL_PROVIDERS.NAMES).optional().describe('Model provider override'),
-  model: z.string().optional().describe('Model name override (e.g., OPENAI_GPT_4O_MINI)'),
-});
-
-// Output schema for workflow executor tool
-const workflowExecutorOutputSchema = z.object({
-  success: z.boolean(),
-  title: z.string().optional(),
-  department: z.string().optional(),
-  microlearningId: z.string().optional(),
-  status: z.string().optional(),
-  successCount: z.number().optional(),
-  failureCount: z.number().optional(),
-  languages: z.array(z.string()).optional(),
-  results: z.array(z.any()).optional(),
-  error: z.string().optional(),
-});
-
 export const workflowExecutorTool = createTool({
   id: 'workflow-executor',
   description: 'Execute microlearning workflows with streaming progress updates',
   inputSchema: workflowExecutorSchema,
   outputSchema: workflowExecutorOutputSchema,
 
-  execute: async ({ context, writer }) => {
-    const { workflowType, ...params } = context;
-
+  // v1: (inputData, context) signature
+  execute: async (inputData, ctx?: ToolExecutionContext) => {
+    const { workflowType, ...params } = inputData;
+    const writer = ctx?.writer;
     try {
       if (workflowType === 'create-microlearning') {
         if (!params.prompt) {
@@ -182,7 +85,7 @@ export const workflowExecutorTool = createTool({
 
         // Start workflow with writer parameter
         const workflow = createMicrolearningWorkflow;
-        const run = await workflow.createRunAsync();
+        const run = await workflow.createRun();
 
         // Start workflow - let it fail if it fails
         const workflowResult: CreateMicrolearningResult = await run.start({
@@ -293,7 +196,7 @@ export const workflowExecutorTool = createTool({
         const targetLanguage = params.targetLanguage;
 
         const workflow = addLanguageWorkflow;
-        const run = await workflow.createRunAsync();
+        const run = await workflow.createRun();
 
         const workflowResult: AddLanguageResult = await run.start({
           inputData: {
@@ -360,7 +263,7 @@ export const workflowExecutorTool = createTool({
         }
 
         const workflow = addMultipleLanguagesWorkflow;
-        const run = await workflow.createRunAsync();
+        const run = await workflow.createRun();
 
         const result: AddMultipleLanguagesResult = await run.start({
           inputData: {
@@ -429,7 +332,7 @@ export const workflowExecutorTool = createTool({
         }
 
         const workflow = updateMicrolearningWorkflow;
-        const run = await workflow.createRunAsync();
+        const run = await workflow.createRun();
 
         const result: UpdateMicrolearningResult = await run.start({
           inputData: {
@@ -487,7 +390,7 @@ export const workflowExecutorTool = createTool({
     } catch (error) {
       const err = normalizeError(error);
       const errorInfo = errorService.external(err.message, {
-        workflowType: context?.workflowType,
+        workflowType: inputData?.workflowType,
         step: 'workflow-execution',
         stack: err.stack
       });

@@ -133,36 +133,48 @@ async function executeTrainingToolFirst(params: {
             isCustomPrompt
         });
 
-        const toolGeneration = await workflowExecutorTool.execute({
-            context: {
-                workflowType: 'create-microlearning',
-                prompt,
-                additionalContext,
-                department,
-                level,
-                language,
-                priority: DEFAULT_PRIORITY
-            }
-        } as any);
+        // v1: Check tool availability
+        if (!workflowExecutorTool.execute) {
+            return { success: false, error: 'workflowExecutorTool not executable' };
+        }
 
-        if (!toolGeneration?.success || !toolGeneration.microlearningId || !isSafeId(toolGeneration.microlearningId)) {
+        // v1: execute now takes (inputData, context)
+        const toolGeneration = await workflowExecutorTool.execute({
+            workflowType: 'create-microlearning',
+            prompt,
+            additionalContext,
+            department,
+            level,
+            language,
+            priority: DEFAULT_PRIORITY
+        }, {});
+
+        // v1: Check for ValidationError or failure
+        if (('error' in toolGeneration && toolGeneration.error) || !toolGeneration.success || !toolGeneration.microlearningId || !isSafeId(toolGeneration.microlearningId)) {
+            const errorMsg = ('error' in toolGeneration && toolGeneration.error) ? String(toolGeneration.error) : 'Training tool generation failed';
             return {
                 success: false,
-                error: toolGeneration?.error || 'Training tool generation failed',
+                error: errorMsg,
                 toolGeneration
             };
         }
 
-        const uploadResult = await uploadTrainingTool.execute({
-            context: {
-                microlearningId: toolGeneration.microlearningId
-            }
-        } as any);
+        // v1: Check tool availability
+        if (!uploadTrainingTool.execute) {
+            return { success: false, error: 'uploadTrainingTool not executable', toolGeneration };
+        }
 
-        if (!uploadResult?.success || !uploadResult.data?.resourceId || !uploadResult.data?.sendTrainingLanguageId) {
+        // v1: execute now takes (inputData, context)
+        const uploadResult = await uploadTrainingTool.execute({
+            microlearningId: toolGeneration.microlearningId
+        }, {});
+
+        // v1: Check for ValidationError or failure
+        if (('error' in uploadResult && uploadResult.error) || !uploadResult.success || !uploadResult.data?.resourceId || !uploadResult.data?.sendTrainingLanguageId) {
+            const errorMsg = ('error' in uploadResult && uploadResult.error) ? String(uploadResult.error) : 'Training upload failed';
             return {
                 success: false,
-                error: uploadResult?.error || 'Training upload failed',
+                error: errorMsg,
                 uploadResult
             };
         }
@@ -188,18 +200,24 @@ async function executeTrainingToolFirst(params: {
             ? { targetUserResourceId }
             : { targetGroupResourceId: String(targetGroupResourceId) };
 
-        const assignResult = await assignTrainingTool.execute({
-            context: {
-                resourceId: uploadResult.data.resourceId,
-                sendTrainingLanguageId: uploadResult.data.sendTrainingLanguageId,
-                ...assignmentContext
-            }
-        } as any);
+        // v1: Check tool availability
+        if (!assignTrainingTool.execute) {
+            return { success: false, error: 'assignTrainingTool not executable', uploadResult };
+        }
 
-        if (!assignResult?.success) {
+        // v1: execute now takes (inputData, context)
+        const assignResult = await assignTrainingTool.execute({
+            resourceId: uploadResult.data.resourceId,
+            sendTrainingLanguageId: uploadResult.data.sendTrainingLanguageId,
+            ...assignmentContext
+        }, {});
+
+        // v1: Check for ValidationError or failure
+        if (('error' in assignResult && assignResult.error) || !assignResult.success) {
+            const errorMsg = ('error' in assignResult && assignResult.error) ? String(assignResult.error) : 'Training assign failed';
             return {
                 success: false,
-                error: assignResult?.error || 'Training assign failed',
+                error: errorMsg,
                 uploadResult,
                 assignResult
             };

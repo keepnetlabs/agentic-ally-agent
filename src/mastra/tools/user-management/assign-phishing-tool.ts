@@ -1,4 +1,4 @@
-import { createTool } from '@mastra/core/tools';
+import { createTool, ToolExecutionContext } from '@mastra/core/tools';
 import { z } from 'zod';
 import { uuidv4 } from '../../utils/core/id-utils';
 import { KVService } from '../../services/kv-service';
@@ -49,9 +49,11 @@ export const assignPhishingTool = createTool({
         { message: 'Provide EXACTLY ONE: targetUserResourceId (user assignment) OR targetGroupResourceId (group assignment).' }
     ),
     outputSchema: assignPhishingOutputSchema,
-    execute: async ({ context, writer }) => {
+    // v1: execute now takes (inputData, context)
+    execute: async (inputData, ctx?: ToolExecutionContext) => {
         const logger = getLogger('AssignPhishingTool');
-        const { resourceId, languageId, isQuishing, targetUserResourceId, targetUserEmail, targetUserFullName, targetGroupResourceId, trainingId, sendTrainingLanguageId } = context;
+        const { resourceId, languageId, isQuishing, targetUserResourceId, targetUserEmail, targetUserFullName, targetGroupResourceId, trainingId, sendTrainingLanguageId } = inputData;
+        const writer = ctx?.writer;
 
         // Guard: prevent assigning with raw phishingId (must upload first)
         try {

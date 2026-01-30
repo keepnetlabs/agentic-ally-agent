@@ -14,7 +14,7 @@ import {
 import { streamDirectReasoning } from '../utils/core/reasoning-stream';
 import { extractReasoning } from '../utils/core/ai-utils';
 import {
-  createPhishingInputSchema,
+  createPhishingStepInputSchema,
   createPhishingAnalysisSchema,
   createPhishingEmailOutputSchema,
   createPhishingOutputSchema
@@ -41,7 +41,8 @@ import { postProcessPhishingEmailHtml, postProcessPhishingLandingHtml } from '..
 const analyzeRequest = createStep({
   id: 'analyze-phishing-request',
   description: 'Analyze phishing request, design scenario, detect brand/logo, and determine industry design',
-  inputSchema: createPhishingInputSchema,
+  // v1: Use step schema with resolved types (defaults applied)
+  inputSchema: createPhishingStepInputSchema,
   outputSchema: createPhishingAnalysisSchema,
   execute: async ({ inputData }) => {
     const logger = getLogger('AnalyzePhishingRequest');
@@ -716,7 +717,8 @@ const savePhishingContent = createStep({
 const createPhishingWorkflow = createWorkflow({
   id: 'create-phishing-workflow',
   description: 'Generate realistic phishing email simulations',
-  inputSchema: createPhishingInputSchema,
+  // v1: Use step schema with resolved types for consistent type flow
+  inputSchema: createPhishingStepInputSchema,
   outputSchema: createPhishingOutputSchema,
 })
   .then(analyzeRequest)

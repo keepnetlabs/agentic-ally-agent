@@ -1,4 +1,4 @@
-import { createTool } from '@mastra/core/tools';
+import { createTool, ToolExecutionContext } from '@mastra/core/tools';
 import { z } from 'zod';
 import { errorService } from '../../services/error-service';
 import { ERROR_MESSAGES } from '../../constants';
@@ -209,9 +209,11 @@ export const getTargetGroupInfoTool = createTool({
             { message: 'Provide targetGroupResourceId OR a valid groupName.' }
         ),
     outputSchema: getTargetGroupInfoOutputSchema,
-    execute: async ({ context, writer }) => {
+    // v1: execute now takes (inputData, context)
+    execute: async (inputData, ctx?: ToolExecutionContext) => {
         const logger = getLogger('GetTargetGroupInfoTool');
-        const { targetGroupResourceId: providedId, groupName: rawGroupName, departmentName: providedDepartment } = context;
+        const { targetGroupResourceId: providedId, groupName: rawGroupName, departmentName: providedDepartment } = inputData;
+        const writer = ctx?.writer;
         const { token, companyId, baseApiUrl } = getRequestContext();
 
         if (!token) {

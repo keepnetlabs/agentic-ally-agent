@@ -11,7 +11,8 @@ export interface WorkflowMetadata {
 }
 
 export interface CreateMicrolearningResult {
-    status: 'success' | 'error' | 'failed' | 'suspended';
+    // v1: 'error' removed, 'tripwire' and 'paused' added
+    status: 'success' | 'failed' | 'suspended' | 'tripwire' | 'paused';
     result?: {
         metadata?: WorkflowMetadata;
         [key: string]: unknown;
@@ -21,7 +22,8 @@ export interface CreateMicrolearningResult {
 }
 
 export interface AddLanguageResult {
-    status: 'success' | 'error' | 'failed' | 'suspended';
+    // v1: 'error' removed, 'tripwire' and 'paused' added
+    status: 'success' | 'failed' | 'suspended' | 'tripwire' | 'paused';
     result?: {
         data?: {
             trainingUrl?: string;
@@ -42,7 +44,8 @@ export interface LanguageResultItem {
 }
 
 export interface AddMultipleLanguagesResult {
-    status: 'success' | 'error' | 'failed' | 'suspended';
+    // v1: 'error' removed, 'tripwire' and 'paused' added
+    status: 'success' | 'failed' | 'suspended' | 'tripwire' | 'paused';
     result?: {
         results?: LanguageResultItem[];
         successCount?: number;
@@ -56,7 +59,8 @@ export interface AddMultipleLanguagesResult {
 }
 
 export interface UpdateMicrolearningResult {
-    status: 'success' | 'error' | 'failed' | 'suspended';
+    // v1: 'error' removed, 'tripwire' and 'paused' added
+    status: 'success' | 'failed' | 'suspended' | 'tripwire' | 'paused';
     result?: {
         success: boolean;
         status: string;

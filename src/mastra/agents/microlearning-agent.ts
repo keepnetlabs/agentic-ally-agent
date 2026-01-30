@@ -353,7 +353,7 @@ export const microlearningAgent = new Agent({
   memory: new Memory({
     options: {
       lastMessages: 15, // Increased for orchestrator context preservation
-      workingMemory: { enabled: false }, // Disabled - lastMessages provides sufficient context
+      workingMemory: { enabled: false, scope: 'thread' }, // Disabled - lastMessages provides sufficient context; scope explicit for v0.22+ default change
     },
   }),
 });

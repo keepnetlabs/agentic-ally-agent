@@ -45,6 +45,11 @@ vi.mock('./utils/chat-orchestration-helpers', () => ({
     createAgentStream: vi.fn()
 }));
 
+vi.mock('@mastra/ai-sdk', () => ({
+    // v1: toAISdkFormat renamed to toAISdkStream
+    toAISdkStream: vi.fn().mockReturnValue((async function* () { /* empty */ })())
+}));
+
 vi.mock('./services', () => ({
     ExampleRepo: { getInstance: vi.fn() },
     executeAutonomousGeneration: vi.fn(),
@@ -138,14 +143,14 @@ describe('Mastra API Routes (Integration)', () => {
 
             mockAgents.getAgent.mockReturnValue({ name: 'mockAgent' });
 
-            const mockStream = { toUIMessageStreamResponse: vi.fn().mockReturnValue('STREAM_RESPONSE') };
+            const mockStream = {};
             vi.mocked(createAgentStream).mockResolvedValue(mockStream as any);
 
             const ctx = createMockContext({ prompt: 'Hello' });
 
             const response = await chatHandler(ctx);
 
-            expect(response).toBe('STREAM_RESPONSE');
+            expect(response).toBeInstanceOf(Response);
             expect(routeToAgent).toHaveBeenCalled();
             expect(createAgentStream).toHaveBeenCalled();
         });

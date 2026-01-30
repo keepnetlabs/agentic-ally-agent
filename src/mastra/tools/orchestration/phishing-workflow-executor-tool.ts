@@ -1,69 +1,29 @@
-import { createTool } from '@mastra/core/tools';
-import { z } from 'zod';
+import { createTool, ToolExecutionContext } from '@mastra/core/tools';
 import { createPhishingWorkflow } from '../../workflows/create-phishing-workflow';
 import { uuidv4 } from '../../utils/core/id-utils';
-import { PHISHING, MODEL_PROVIDERS, ERROR_MESSAGES, TIMEOUT_VALUES } from '../../constants';
+import { PHISHING, ERROR_MESSAGES, TIMEOUT_VALUES } from '../../constants';
 import { getLogger } from '../../utils/core/logger';
 import { getPolicySummary } from '../../utils/core/policy-cache';
 import { errorService } from '../../services/error-service';
 import { validateToolResult } from '../../utils/tool-result-validation';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
-import { normalizeDifficultyValue } from '../../utils/difficulty-level-mapper';
+import { phishingWorkflowSchema, phishingWorkflowOutputSchema } from './phishing-workflow-executor-schemas';
+import { z } from 'zod';
 
-const phishingWorkflowSchema = z.object({
-    workflowType: z.literal(PHISHING.WORKFLOW_TYPE).describe('Workflow to execute'),
-    topic: z.string().describe('Topic for phishing simulation (e.g. "Reset Password")'),
-    isQuishing: z.boolean().optional().describe('Whether this is a quishing (QR code phishing) simulation. Set to true if user explicitly requests quishing/QR code phishing.'),
-    targetProfile: z.object({
-        name: z.string().optional(),
-        department: z.string().optional(),
-        behavioralTriggers: z.array(z.string()).optional(),
-        vulnerabilities: z.array(z.string()).optional(),
-    }).optional().describe('Target user profile for personalization'),
-    difficulty: z
-        .preprocess((value) => normalizeDifficultyValue(value) ?? value, z.enum(PHISHING.DIFFICULTY_LEVELS))
-        .optional()
-        .default(PHISHING.DEFAULT_DIFFICULTY),
-    language: z.string().optional().default('en-gb').describe('Target language (BCP-47 code, e.g. en-gb, tr-tr)'),
-    method: z.enum(PHISHING.ATTACK_METHODS).optional().describe('Type of phishing attack'),
-    includeEmail: z.boolean().optional().default(true).describe('Whether to generate an email'),
-    includeLandingPage: z.boolean().optional().default(true).describe('Whether to generate a landing page'),
-    additionalContext: z.string().optional().describe('Strategic context from Agent reasoning (e.g. "Use Authority trigger", "Focus on Fear", "Simulate CEO"). Also used for vulnerability analysis details.'),
-    modelProvider: z.enum(MODEL_PROVIDERS.NAMES).optional(),
-    model: z.string().optional(),
-});
-
-// Output schema for phishing workflow executor tool
-const phishingWorkflowOutputSchema = z.object({
-    success: z.boolean(),
-    status: z.string().optional(),
-    message: z.string().optional(),
-    data: z.object({
-        phishingId: z.string(),
-        topic: z.string().optional(),
-        language: z.string().optional(),
-        difficulty: z.string().optional(),
-        method: z.string().optional(),
-        subject: z.string().optional(),
-        fromAddress: z.string().optional(),
-        fromName: z.string().optional(),
-        scenario: z.string().optional(),
-        category: z.string().optional(),
-        psychologicalTriggers: z.array(z.string()).optional(),
-        keyRedFlags: z.array(z.string()).optional(),
-        targetAudience: z.any().optional(),
-    }).optional(),
-    error: z.string().optional(),
-});
+// v1: Infer input type from schema
+type PhishingWorkflowInput = z.infer<typeof phishingWorkflowSchema>;
 
 export const phishingWorkflowExecutorTool = createTool({
     id: 'phishing-workflow-executor',
     description: 'Execute phishing simulation generation workflows',
-    inputSchema: phishingWorkflowSchema,
+    // v1: Cast to satisfy SchemaWithValidation (preprocess schemas have complex input types)
+    inputSchema: phishingWorkflowSchema as z.ZodType<PhishingWorkflowInput>,
     outputSchema: phishingWorkflowOutputSchema,
 
-    execute: async ({ context, writer }) => {
-        const params = context;
+    // v1: (inputData, context) signature
+    execute: async (inputData: PhishingWorkflowInput, ctx?: ToolExecutionContext) => {
+        const params = inputData;
+        const writer = ctx?.writer;
         const logger = getLogger('PhishingWorkflowExecutor');
 
         try {
@@ -75,7 +35,8 @@ export const phishingWorkflowExecutorTool = createTool({
             logger.info('Policy summary ready', { hasContent: !!policyContext, length: policyContext.length });
 
             const workflow = createPhishingWorkflow;
-            const run = await workflow.createRunAsync();
+            // v1: createRunAsync → createRun
+            const run = await workflow.createRun();
 
             const result = await run.start({
                 inputData: {
@@ -213,8 +174,8 @@ export const phishingWorkflowExecutorTool = createTool({
         } catch (error) {
             const err = normalizeError(error);
             const errorInfo = errorService.external(err.message, {
-                topic: context?.topic,
-                difficulty: context?.difficulty,
+                topic: inputData?.topic,
+                difficulty: inputData?.difficulty,
                 step: 'phishing-workflow-execution',
                 stack: err.stack
             });

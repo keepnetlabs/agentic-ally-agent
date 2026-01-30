@@ -18,7 +18,7 @@ import { MicrolearningContent } from '../types/microlearning';
 const logger = getLogger('AddLanguageWorkflow');
 
 import {
-  addLanguageInputSchema,
+  addLanguageStepInputSchema,
   existingContentSchema,
   languageContentSchema,
   updateInboxSchema,
@@ -30,7 +30,8 @@ import {
 export const loadExistingStep = createStep({
   id: 'load-existing-microlearning',
   description: 'Load existing microlearning and prepare analysis for target language',
-  inputSchema: addLanguageInputSchema,
+  // v1: Use step schema with resolved types (defaults applied)
+  inputSchema: addLanguageStepInputSchema,
   outputSchema: existingContentSchema,
   execute: async ({ inputData }) => {
     const { existingMicrolearningId, targetLanguage, sourceLanguage, department, modelProvider, model } = inputData;
@@ -194,24 +195,27 @@ export const translateLanguageStep = createStep({
     };
 
     // Execute with retry for resilience against transient AI failures
+    // v1: execute now takes (inputData, context)
     const translated = await withRetry(
       async () => {
         if (!translateLanguageJsonTool.execute) {
           throw new Error('translateLanguageJsonTool.execute is not available');
         }
-        return await translateLanguageJsonTool.execute(translationParams);
+        return await translateLanguageJsonTool.execute(translationParams, {});
       },
       `Language translation (${sourceLanguage} → ${targetLanguage})`
     );
 
-    if (!translated?.success) {
+    // v1: Check for ValidationError or failure
+    if (('error' in translated && translated.error) || !translated.success) {
+      const errorMsg = ('error' in translated && translated.error) ? String(translated.error) : 'Unknown error';
       logger.error('Translation tool execution failed', {
-        error: translated?.error,
+        error: errorMsg,
         sourceLanguage,
         targetLanguage,
         microlearningId
       });
-      throw new Error(`Language translation failed: ${translated?.error || 'Unknown error'}`);
+      throw new Error(`Language translation failed: ${errorMsg}`);
     }
 
     // Validate translation data is not empty
@@ -346,8 +350,11 @@ export const updateInboxStep = createStep({
           model
         };
         logger.debug('Inbox translation parameters', inboxTranslationParams);
-        let translatedInbox = await inboxTranslateJsonTool.execute(inboxTranslationParams);
-        let isValid = translatedInbox?.success && validateInboxStructure(baseInbox, translatedInbox.data);
+        // v1: execute now takes (inputData, context)
+        let translatedInbox = await inboxTranslateJsonTool.execute(inboxTranslationParams, {}) as { success: boolean; data?: any; error?: string };
+        // v1: Check for ValidationError before accessing properties
+        let hasError = 'error' in translatedInbox && translatedInbox.error;
+        let isValid = !hasError && translatedInbox.success && validateInboxStructure(baseInbox, translatedInbox.data);
 
         // Retry once with enhanced protection if first attempt failed
         if (!isValid) {
@@ -360,8 +367,10 @@ export const updateInboxStep = createStep({
           };
 
           await new Promise(resolve => setTimeout(resolve, TIMEOUT_VALUES.LANGUAGE_WORKFLOW_BACKOFF_MS));
-          translatedInbox = await inboxTranslateJsonTool.execute(enhancedParams);
-          isValid = translatedInbox?.success && validateInboxStructure(baseInbox, translatedInbox.data);
+          // v1: execute now takes (inputData, context)
+          translatedInbox = await inboxTranslateJsonTool.execute(enhancedParams, {}) as { success: boolean; data?: any; error?: string };
+          hasError = 'error' in translatedInbox && translatedInbox.error;
+          isValid = !hasError && translatedInbox.success && validateInboxStructure(baseInbox, translatedInbox.data);
         }
 
         // Store result or use correction fallback
@@ -506,7 +515,8 @@ export const combineResultsStep = createStep({
 const addLanguageWorkflow = createWorkflow({
   id: 'add-language-workflow',
   description: 'Add new language to existing microlearning with parallel processing for translation and inbox',
-  inputSchema: addLanguageInputSchema,
+  // v1: Use step schema with resolved types for consistent type flow
+  inputSchema: addLanguageStepInputSchema,
   outputSchema: finalResultSchema,
 })
   .then(loadExistingStep)

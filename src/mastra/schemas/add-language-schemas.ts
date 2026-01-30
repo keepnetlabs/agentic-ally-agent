@@ -14,6 +14,13 @@ export const addLanguageInputSchema = z.object({
     model: z.string().optional().describe('Model name (e.g., OPENAI_GPT_4O_MINI, WORKERS_AI_GPT_OSS_120B)'),
 });
 
+/**
+ * v1 Migration: Step input schema with resolved types (defaults applied)
+ * Use this for step inputSchema to match workflow's output type
+ */
+export type AddLanguageInput = z.output<typeof addLanguageInputSchema>;
+export const addLanguageStepInputSchema = addLanguageInputSchema as z.ZodType<AddLanguageInput>;
+
 export const existingContentSchema = z.object({
     success: z.boolean(),
     data: z.any(), // existing microlearning

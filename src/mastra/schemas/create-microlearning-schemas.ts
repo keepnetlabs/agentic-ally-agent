@@ -16,6 +16,13 @@ export const createInputSchema = z.object({
     policyContext: z.string().optional().describe('Company policy context (prepared at workflow start)'),
 });
 
+/**
+ * v1 Migration: Step input schema with resolved types (defaults applied)
+ * Use this for step inputSchema to match workflow's output type
+ */
+export type CreateMicrolearningInput = z.output<typeof createInputSchema>;
+export const createStepInputSchema = createInputSchema as z.ZodType<CreateMicrolearningInput>;
+
 export const promptAnalysisSchema = z.object({
     success: z.boolean(),
     data: z.object({

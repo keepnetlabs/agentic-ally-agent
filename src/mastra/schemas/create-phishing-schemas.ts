@@ -33,6 +33,13 @@ export const createPhishingInputSchema = z.object({
 });
 
 /**
+ * v1 Migration: Step input schema with resolved types (defaults applied)
+ * Use this for step inputSchema to match workflow's output type
+ */
+export type CreatePhishingInput = z.output<typeof createPhishingInputSchema>;
+export const createPhishingStepInputSchema = createPhishingInputSchema as z.ZodType<CreatePhishingInput>;
+
+/**
  * Analysis Schema (The Blueprint)
  * Output from Step 1 (analyzeRequest), input to Step 2 (generateEmail)
  * Contains the complete scenario design and analysis

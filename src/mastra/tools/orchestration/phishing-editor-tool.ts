@@ -4,7 +4,7 @@
  * Supports: text updates, tone changes, language translation, element removal, etc.
  */
 
-import { createTool } from '@mastra/core/tools';
+import { createTool, ToolExecutionContext } from '@mastra/core/tools';
 import { getModelWithOverride } from '../../model-providers';
 import { sanitizeHtml } from '../../utils/content-processors/html-sanitizer';
 import { normalizeEmailNestedTablePadding } from '../../utils/content-processors/email-table-padding-normalizer';
@@ -33,8 +33,10 @@ export const phishingEditorTool = createTool({
   description: 'Edit and customize existing phishing templates using natural language instructions',
   inputSchema: phishingEditorSchema,
 
-  execute: async ({ context, writer }) => {
-    const { phishingId, editInstruction, mode, language: inputLanguage, modelProvider, model } = context;
+  // v1: execute now takes (inputData, context)
+  execute: async (inputData, ctx?: ToolExecutionContext) => {
+    const { phishingId, editInstruction, mode, language: inputLanguage, modelProvider, model } = inputData;
+    const writer = ctx?.writer;
     const logger = getLogger('PhishingEditor');
 
     try {

@@ -72,7 +72,7 @@ export const policySummaryAgent = new Agent({
   memory: new Memory({
     options: {
       lastMessages: 15, // Increased for better context preservation
-      workingMemory: { enabled: false }, // Disabled - stateless operation
+      workingMemory: { enabled: false, scope: 'thread' }, // Disabled - stateless operation; scope explicit for v0.22+ default change
     },
   }),
 });

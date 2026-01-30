@@ -1,4 +1,4 @@
-import { createTool } from '@mastra/core/tools';
+import { createTool, ToolExecutionContext } from '@mastra/core/tools';
 import { z } from 'zod';
 import { uuidv4 } from '../../utils/core/id-utils';
 import { getRequestContext } from '../../utils/core/request-storage';
@@ -44,9 +44,11 @@ export const assignTrainingTool = createTool({
     { message: 'Provide EXACTLY ONE: targetUserResourceId (user assignment) OR targetGroupResourceId (group assignment).' }
   ),
   outputSchema: assignTrainingOutputSchema,
-  execute: async ({ context, writer }) => {
+  // v1: execute now takes (inputData, context)
+  execute: async (inputData, ctx?: ToolExecutionContext) => {
     const logger = getLogger('AssignTrainingTool');
-    const { resourceId, sendTrainingLanguageId, targetUserResourceId, targetUserEmail, targetUserFullName, targetGroupResourceId } = context;
+    const { resourceId, sendTrainingLanguageId, targetUserResourceId, targetUserEmail, targetUserFullName, targetGroupResourceId } = inputData;
+    const writer = ctx?.writer;
 
     // Guard: prevent assigning with raw microlearningId (must upload first)
     try {

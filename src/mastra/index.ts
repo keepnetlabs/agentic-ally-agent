@@ -39,6 +39,7 @@ import { KV_NAMESPACES, RATE_LIMIT_CONFIG } from './constants';
 (globalThis as any).AI_SDK_LOG_WARNINGS = false;
 import { getDeployer } from './deployer';
 import { codeReviewCheckTool } from './tools';
+import type { CodeReviewCheckInput } from './tools/analysis/code-review-check-schemas';
 import { parseAndValidateRequest } from './utils/chat-request-helpers';
 import { extractArtifactIdsFromRoutingContext } from './utils/chat-request-helpers';
 import {
@@ -47,6 +48,8 @@ import {
   routeToAgent,
   createAgentStream,
 } from './utils/chat-orchestration-helpers';
+import { toAISdkStream } from '@mastra/ai-sdk';
+import { createUIMessageStreamResponse } from 'ai';
 import { normalizeSafeId } from './utils/core/id-utils';
 import { validateBCP47LanguageCode, DEFAULT_LANGUAGE } from './utils/language/language-utils';
 import { postProcessPhishingEmailHtml, postProcessPhishingLandingHtml } from './utils/content-processors/phishing-html-postprocessors';
@@ -143,6 +146,7 @@ export const mastra = new Mastra({
   // Note: These env vars are validated at startup by validateEnvironmentOrThrow()
   /* eslint-disable @typescript-eslint/no-non-null-assertion */
   storage: new D1Store({
+    id: process.env.CLOUDFLARE_D1_DATABASE_ID!,
     accountId: process.env.CLOUDFLARE_ACCOUNT_ID!,
     databaseId: process.env.CLOUDFLARE_D1_DATABASE_ID!,
     apiToken: process.env.CLOUDFLARE_KV_TOKEN!,
@@ -377,8 +381,8 @@ export const mastra = new Mastra({
             }, 500);
           }
 
-          return stream.toUIMessageStreamResponse({
-            sendReasoning: true
+          return createUIMessageStreamResponse({
+            stream: toAISdkStream(stream, { from: 'agent' }) as ReadableStream<any>,
           });
         },
       }),
@@ -387,8 +391,8 @@ export const mastra = new Mastra({
         method: 'GET',
         handler: async (c) => {
           const mastra = c.get('mastra');
-          const agents = mastra.getAgents();
-          const workflows = mastra.getWorkflows();
+          const agents = mastra.listAgents();
+          const workflows = mastra.listWorkflows();
 
           // Perform deep health check with 5s timeout
           const healthResponse = await performHealthCheck(agents, workflows, 5000);
@@ -416,7 +420,13 @@ export const mastra = new Mastra({
             if (!codeReviewCheckTool.execute) {
               throw new Error('Code review tool execute method not available');
             }
-            const result = await codeReviewCheckTool.execute(body as Parameters<typeof codeReviewCheckTool.execute>[0]);
+            // v1 Migration: execute now takes (inputData, context)
+            const result = await codeReviewCheckTool.execute(body as CodeReviewCheckInput, {});
+
+            // v1: Check for ValidationError first
+            if ('error' in result && result.error) {
+              return c.json(result, 400);
+            }
 
             if (result.success) {
               return c.json(result, 200);

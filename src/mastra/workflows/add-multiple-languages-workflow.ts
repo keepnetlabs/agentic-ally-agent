@@ -63,7 +63,7 @@ export const processMultipleLanguagesStep = createStep({
           logger.info('Starting translation workflow', { language: targetLanguage });
 
           const workflow = addLanguageWorkflow;
-          const run = await workflow.createRunAsync();
+          const run = await workflow.createRun();
 
           const result = await run.start({
             inputData: {

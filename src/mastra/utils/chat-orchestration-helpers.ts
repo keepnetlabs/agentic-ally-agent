@@ -117,14 +117,15 @@ export const routeToAgent = async (
 /**
  * Creates agent stream for user response
  *
- * Initiates streaming response from selected agent
- * with memory context and AI SDK formatting
+ * Initiates streaming response from selected agent with memory context.
+ * Uses default Mastra stream; the route converts to UI format via
+ * @mastra/ai-sdk toAISdkStream + ai createUIMessageStreamResponse.
  *
  * @param agent - Agent instance to stream from
  * @param finalPrompt - Complete prompt (with context and model overrides)
  * @param threadId - Thread ID for session memory
  * @param agentName - Agent name for logging
- * @returns Stream object for UI response
+ * @returns Raw Mastra stream (route uses toAISdkStream + createUIMessageStreamResponse)
  * @throws Error if stream creation fails
  */
 export const createAgentStream = async (
@@ -134,7 +135,6 @@ export const createAgentStream = async (
   agentName: string
 ) => {
   const stream = await agent.stream(finalPrompt, {
-    format: 'aisdk',
     memory: {
       thread: threadId,
       resource: 'agentic-ally-user'

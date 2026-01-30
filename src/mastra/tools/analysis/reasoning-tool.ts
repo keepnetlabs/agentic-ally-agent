@@ -1,4 +1,4 @@
-import { Tool } from '@mastra/core/tools';
+import { Tool, ToolExecutionContext } from '@mastra/core/tools';
 import { z } from 'zod';
 import { getLogger } from '../../utils/core/logger';
 import { errorService } from '../../services/error-service';
@@ -7,23 +7,9 @@ import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../uti
 /**
  * Reasoning Tool - Allows agent to show its thinking process
  * Agent calls this tool to emit reasoning events to the frontend
+ * 
+ * v1 Migration: Updated to (inputData, context) signature
  */
-interface ReasoningToolContext {
-  context: {
-    thought?: string;
-  };
-  inputData?: {
-    thought?: string;
-  };
-  input?: {
-    thought?: string;
-  };
-  // Fallback for direct input object
-  thought?: string;
-  writer?: {
-    write: (event: any) => Promise<void>;
-  };
-}
 
 export const reasoningTool = new Tool({
   id: 'show_reasoning',
@@ -36,13 +22,13 @@ export const reasoningTool = new Tool({
   outputSchema: z.object({
     success: z.boolean()
   }),
-  execute: async (context: ReasoningToolContext | any) => {
+  // v1: (inputData, context) signature
+  execute: async (inputData: { thought?: string }, ctx?: ToolExecutionContext) => {
     const logger = getLogger('ReasoningTool');
-    // Mastra wraps input in context.context
-    const toolInput = context?.context || context?.inputData || context?.input || context;
-    const thought = toolInput?.thought || '';
+    // v1: inputData is the direct input from inputSchema
+    const thought = inputData?.thought || '';
 
-    logger.info('Reasoning tool called', { thought: thought.substring(0, 100), hasWriter: !!context?.writer });
+    logger.info('Reasoning tool called', { thought: thought.substring(0, 100), hasWriter: !!ctx?.writer });
 
     try {
       if (!thought) {
@@ -51,8 +37,8 @@ export const reasoningTool = new Tool({
         return createToolErrorResponse(errorInfo);
       }
 
-      // Get writer from context (Mastra stream writer)
-      const writer = context?.writer;
+      // v1: writer is now ctx.writer
+      const writer = ctx?.writer;
 
       if (writer) {
         const id = crypto.randomUUID();

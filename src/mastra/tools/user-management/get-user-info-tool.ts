@@ -1,5 +1,5 @@
 // src/mastra/tools/get-user-info-tool.ts
-import { createTool } from '@mastra/core/tools';
+import { createTool, ToolExecutionContext } from '@mastra/core/tools';
 import { z } from 'zod';
 import { getRequestContext } from '../../utils/core/request-storage';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
@@ -35,9 +35,11 @@ export const getUserInfoTool = createTool({
     { message: 'Either targetUserResourceId OR email OR fullName/firstName must be provided' }
   ),
   outputSchema: getUserInfoOutputSchema,
-  execute: async ({ context, writer }) => {
+  // v1: execute now takes (inputData, context)
+  execute: async (inputData, ctx?: ToolExecutionContext) => {
     const logger = getLogger('GetUserInfoTool');
-    const { targetUserResourceId: inputTargetUserResourceId, departmentName: inputDepartmentName, email: inputEmail, fullName: inputFullName, firstName: inputFirstName, lastName: inputLastName } = context;
+    const { targetUserResourceId: inputTargetUserResourceId, departmentName: inputDepartmentName, email: inputEmail, fullName: inputFullName, firstName: inputFirstName, lastName: inputLastName } = inputData;
+    const writer = ctx?.writer;
 
     // Get Auth Token, CompanyId & baseApiUrl (needed for both paths)
     const { token, companyId, baseApiUrl } = getRequestContext();
@@ -230,7 +232,7 @@ export const getUserInfoTool = createTool({
 
       // Normalize preferred language to BCP-47 (default en-gb)
       const preferredLanguageCode = validateBCP47LanguageCode(user?.preferredLanguage || DEFAULT_LANGUAGE);
-      const reportLanguageCode = validateBCP47LanguageCode(context.reportLanguage || preferredLanguageCode);
+      const reportLanguageCode = validateBCP47LanguageCode(inputData.reportLanguage || preferredLanguageCode);
       const departmentFallback = getDepartmentFallbackForLanguage(reportLanguageCode);
       const resolvedDepartment = inputDepartmentName || user?.departmentName || user?.department || departmentFallback;
 
@@ -238,7 +240,7 @@ export const getUserInfoTool = createTool({
       let analysisReport: PartialAnalysisReport | undefined;
 
       // OPTIMIZATION: Check skipAnalysis flag
-      if (context.skipAnalysis) {
+      if (inputData.skipAnalysis) {
         logger.info('Skipping AI analysis report generation (requested via skipAnalysis)', { userId: resolvedUserId });
       } else {
         if (recentActivities.length === 0) {
