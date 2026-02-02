@@ -84,7 +84,7 @@ Generate for ${analysis.topic}: Max 5 words in ${analysis.language}
 
 {
   "7": {
-    "iconName": "[topic-specific icon: phishing→'mail-warning', vishing→'phone', quishing→'qr-code', ransomware→'alert-circle', deepfake→'video', malware→'shield-alert', social-engineering→'alert-triangle']",
+    "iconName": "Generate topic-appropriate icon from lucide-react library. Map '${analysis.topic}' to icon: phishing→'mail-warning', vishing→'phone', quishing→'qr-code', ransomware→'alert-circle', deepfake→'video', malware→'shield-alert', social-engineering→'alert-triangle'. If topic doesn't match, use most relevant icon from list. Output ONLY the icon name (e.g., 'phone'), no other text.",
     "subtitle": "Your action plan to stay safe from ${analysis.topic}",
     "callToActionText": "Localize 'Continue' into ${analysis.language}",
     "texts": {
