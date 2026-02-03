@@ -1,8 +1,8 @@
 # Quick Start Guide
 
-**Last Updated:** January 10, 2026
+**Last Updated:** February 3, 2026
 
-Get **Agentic Ally** (The 5-Agent Security Platform) running locally in 5 minutes.
+Get **Agentic Ally** (The 6-Agent Security Platform) running locally in 5 minutes.
 
 ## Prerequisites
 
@@ -49,11 +49,12 @@ You should see:
 ✓ Microlearning Agent loaded
 ✓ Phishing Agent loaded
 ✓ Orchestrator loaded
+✓ Email IR Analyst loaded
 ```
 
 ---
 
-## Step 4: Test the 5 Agents
+## Step 4: Test the 6 Agents
 
 The platform is **multi-modal**. Test different capabilities:
 
@@ -83,6 +84,13 @@ curl -X POST http://localhost:8000/chat \
 curl -X POST http://localhost:8000/chat \
   -H "Content-Type: application/json" \
   -d '{"prompt": "Who is john.doe@example.com? Analyze risk."}'
+```
+
+### E. Analyze Suspicious Email (Email IR Analyst)
+```bash
+curl -X POST http://localhost:8000/email-ir/analyze \
+  -H "Content-Type: application/json" \
+  -d '{"id":"email-12345","accessToken":"api-token-xyz","apiBaseUrl":"https://api.example.com"}'
 ```
 
 ---

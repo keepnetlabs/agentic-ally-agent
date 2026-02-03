@@ -8,14 +8,15 @@ This document serves as the **Master Entry Point** for developers taking over th
 
 ## 🏗️ System at a Glance
 
-Agentic Ally is an **Autonomous Security Awareness Platform** powered by **5 Specialized AI Agents**.
+Agentic Ally is an **Autonomous Security Awareness Platform** powered by **6 Specialized AI Agents**.
 
-### The "S.H.I.E.L.D." Squad (5 Agents)
+### The "S.H.I.E.L.D." Squad (6 Agents)
 1.  **Orchestrator:** The router. Decides who handles the request.
 2.  **Microlearning Agent:** Creates 5-min training courses (JSON + Content).
 3.  **Phishing Agent:** Psychological profiler. Creates phishing simulations.
 4.  **User Info Agent:** Risk analyst. Scores user vulnerability.
 5.  **Policy Agent:** RAG-based expert. Answers policy questions.
+6.  **Email IR Analyst:** Automated incident responder. Analyzes suspicious emails and generates IR reports.
 
 ### The Modes of Operation
 *   **Reactive:** Standard Chat API (`/chat`).

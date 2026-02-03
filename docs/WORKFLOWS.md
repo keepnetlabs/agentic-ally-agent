@@ -1,6 +1,6 @@
 # Workflow Documentation
 
-**Last Updated:** January 10, 2026
+**Last Updated:** February 3, 2026
 
 This document visualizes the core logic flows of the Agentic Ally system.
 
@@ -133,7 +133,44 @@ graph TD
 
 ---
 
-## 6. Localization Workflow (3-Level Fallback)
+## 6. Email IR Analysis Workflow
+
+How the system analyzes a suspicious email and produces an IR report.
+
+```mermaid
+graph TD
+    Start[API Call: /email-ir/analyze] --> Fetch[Stage 1: Fetch Email]
+    Fetch --> Parallel{Stage 2: Parallel Multi-Analysis}
+
+    Parallel --> Header[2a: Header Analysis]
+    Parallel --> Behavioral[2b: Body-Behavioral Analysis]
+    Parallel --> Intent[2c: Body-Intent Analysis]
+
+    Header & Behavioral & Intent --> Triage[Stage 3: Triage]
+    Triage --> Features[Stage 4: Feature Extraction]
+    Features --> Risk[Stage 5: Risk Assessment]
+    Risk --> Report[Stage 6: Reporting]
+    Report --> Response[Return JSON Report]
+```
+
+**Risk Scoring (Summary)**
+- High (75-100): Phishing/CEO fraud/sextortion category or multiple convergent signals.
+- Medium (40-74): Mixed signals (some suspicious, some mitigating).
+- Low (0-39): Benign/internal/marketing category or clean technical + behavioral signals.
+
+**Stage-to-Tool Mapping (Reference)**
+- Stage 1: Fetch Email -> `fetch-email`
+- Stage 2a: Header Analysis -> `header-analysis`
+- Stage 2b: Body-Behavioral Analysis -> `body-behavioral-analysis`
+- Stage 2c: Body-Intent Analysis -> `body-intent-analysis`
+- Stage 3: Triage -> `triage`
+- Stage 4: Feature Extraction -> `feature-extraction`
+- Stage 5: Risk Assessment -> `risk-assessment`
+- Stage 6: Reporting -> `reporting`
+
+---
+
+## 7. Localization Workflow (3-Level Fallback)
 
 How we translate content without breaking it.
 

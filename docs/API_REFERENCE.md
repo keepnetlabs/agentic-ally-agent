@@ -1,6 +1,6 @@
 # API Reference
 
-**Last Updated:** January 10, 2026
+**Last Updated:** February 3, 2026
 
 This document details the REST API endpoints available in Agentic Ally.
 
@@ -131,6 +131,125 @@ Internal tool endpoint used by agents to validate generated code snippets (e.g.,
     "feedback": "Code is valid.",
     "severity": "info"
   }
+}
+```
+
+---
+
+## 5. Email IR Analysis (`POST /email-ir/analyze`)
+
+Analyze a suspicious email and generate an incident response report.
+
+### Headers
+| Header | Value | Required | Description |
+|--------|-------|----------|-------------|
+| `Content-Type` | `application/json` | Yes | - |
+| `X-AGENTIC-ALLY-TOKEN` | `<your-token>` | Yes | Auth token (set in `.env`) |
+
+### Request Body
+```json
+{
+  "id": "email-12345",
+  "accessToken": "api-token-xyz",
+  "apiBaseUrl": "https://api.example.com"
+}
+```
+
+### Response
+```json
+{
+  "success": true,
+  "report": {
+    "executive_summary": {
+      "verdict": "SUSPICIOUS",
+      "risk_level": "MEDIUM",
+      "confidence": 62,
+      "recommended_action": "Review"
+    }
+  },
+  "runId": "run_abc123"
+}
+```
+
+---
+
+### Full Report Schema (Example)
+```json
+{
+  "success": true,
+  "report": {
+    "executive_summary": {
+      "verdict": "CRITICAL THREAT",
+      "risk_level": "HIGH",
+      "confidence": 95,
+      "recommended_action": "Quarantine"
+    },
+    "agent_determination": "This email is a sophisticated phishing attempt impersonating a trusted vendor.",
+    "risk_indicators": {
+      "observed": [
+        "Authority impersonation",
+        "Domain typosquatting",
+        "Credential request",
+        "High urgency framing"
+      ],
+      "not_observed": [
+        "Malware attachment"
+      ]
+    },
+    "evidence_flow": [
+      { "step": 1, "action": "Header analysis", "finding": "SPF/DKIM/DMARC failures" },
+      { "step": 2, "action": "Behavioral analysis", "finding": "High urgency and verification avoidance" },
+      { "step": 3, "action": "Intent analysis", "finding": "Credential harvesting detected" },
+      { "step": 4, "action": "Triage", "finding": "Classified as Phishing with high confidence" }
+    ],
+    "blast_radius": {
+      "affected_users": 12,
+      "exposure_scope": "Finance and HR mailboxes",
+      "potential_impact": "Credential theft and unauthorized transfers"
+    },
+    "actions_taken": [
+      "Flagged email as suspicious"
+    ],
+    "actions_recommended": [
+      "Quarantine email",
+      "Alert recipients",
+      "Reset credentials if clicked"
+    ],
+    "technical_details": {
+      "sender_ip": "203.0.113.45",
+      "sender_domain": "amaozn-secure.com",
+      "phishing_url": "http://malicious.example.com/login",
+      "authentication_status": { "spf": "fail", "dkim": "fail", "dmarc": "fail" },
+      "geolocation": "Unexpected region for claimed sender",
+      "email_routing": "Suspicious relay pattern"
+    },
+    "confidence_limitations": "Limited visibility into sender infrastructure.",
+    "transparency_notice": "This report is AI-generated and requires human review."
+  },
+  "runId": "run_abc123"
+}
+```
+
+---
+
+### Error Responses
+
+**400 - Invalid input**
+```json
+{
+  "success": false,
+  "error": "Invalid input",
+  "details": {
+    "id": { "_errors": ["Required"] }
+  }
+}
+```
+
+**500 - Workflow failure**
+```json
+{
+  "success": false,
+  "error": "Workflow execution failed"
 }
 ```
 
