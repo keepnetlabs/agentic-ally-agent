@@ -258,8 +258,8 @@ interface VishingSimulationScene extends BaseScene {
 interface SmishingSimulationScene extends BaseScene {
   title: string;
   subtitle: string;
-  senderName: string;
-  senderNumber: string;
+  senderName?: string;
+  senderNumber?: string;
   prompt: string;
   firstMessage: string;
   callToActionText: string;

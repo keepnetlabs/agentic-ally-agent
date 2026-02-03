@@ -92,7 +92,34 @@ graph TD
 
 ---
 
-## 4. Policy Expert Workflow
+## 4. Smishing Simulation Workflow
+
+Generating a realistic SMS-based attack scenario.
+
+```mermaid
+graph TD
+    Start[Agent Request] --> Persona[Analyze User Persona]
+    
+    Persona --> Tactics{Select Tactics}
+    Tactics -->|Urgency| T1[Template: Account Alert]
+    Tactics -->|Curiosity| T2[Template: Delivery Update]
+    Tactics -->|Authority| T3[Template: HR Policy Notice]
+    
+    T1 & T2 & T3 --> GenSMS[Generate SMS Messages]
+    GenSMS --> GenLanding[Generate Landing Page]
+    
+    GenLanding --> Sanitize[Sanitize Output]
+    Sanitize --> Save[Save to KV]
+```
+
+**Edit/Translate (Smishing Editor)**
+- Uses existing SMS + landing page content from KV.
+- "translate" mode preserves layout/CSS and only updates visible text.
+- "edit" mode allows tone/wording changes while keeping placeholders intact.
+
+---
+
+## 5. Policy Expert Workflow
 
 How the system answers policy questions (RAG).
 
@@ -112,7 +139,7 @@ graph TD
 
 ---
 
-## 5. User Risk Analysis Workflow
+## 6. User Risk Analysis Workflow
 
 How we determine if a user needs training.
 
@@ -133,7 +160,7 @@ graph TD
 
 ---
 
-## 6. Email IR Analysis Workflow
+## 7. Email IR Analysis Workflow
 
 How the system analyzes a suspicious email and produces an IR report.
 
@@ -170,7 +197,7 @@ graph TD
 
 ---
 
-## 7. Localization Workflow (3-Level Fallback)
+## 8. Localization Workflow (3-Level Fallback)
 
 How we translate content without breaking it.
 

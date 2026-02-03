@@ -2,7 +2,7 @@
 
 Welcome to the **Agentic Ally** documentation.
 
-Agentic Ally is an **Autonomous Security Awareness Platform** powered by **6 Specialized AI Agents**.
+Agentic Ally is an **Autonomous Security Awareness Platform** powered by **7 Specialized AI Agents**.
 
 ## 🏁 Getting Started
 
@@ -17,7 +17,7 @@ Agentic Ally is an **Autonomous Security Awareness Platform** powered by **6 Spe
 
 | File | Purpose |
 |------|---------|
-| [**ARCHITECTURE.md**](./ARCHITECTURE.md) | Deep dive into the **6-Agent System**, State Machines & Resilience. |
+| [**ARCHITECTURE.md**](./ARCHITECTURE.md) | Deep dive into the **7-Agent System**, State Machines & Resilience. |
 | [**WORKFLOWS.md**](./WORKFLOWS.md) | Visual flowcharts (Mermaid) of all logic paths. |
 | [**DATA_MODEL.md**](./DATA_MODEL.md) | KV Schemas, Type Definitions, and Database Structures. |
 

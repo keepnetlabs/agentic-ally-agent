@@ -76,7 +76,7 @@ const SCENE_CONFIGS: Record<SceneType, SceneConfig> = {
     },
     smishing: {
         displayName: 'Smishing Simulation',
-        typeInstruction: 'Actively replace any source-language names/titles/orgs/phone formats with culturally appropriate equivalents in the target locale (no transliteration). If a name appears, it must change to a local name; phone numbers must follow local patterns and stay clearly fictional; avoid any real entities. CRITICAL: If a sender name appears in firstMessage, it must match the senderName field exactly (consistency rule).',
+        typeInstruction: 'Actively replace any source-language names/titles/orgs/phone formats with culturally appropriate equivalents in the target locale (no transliteration). If a name appears, it must change to a local name; phone numbers must follow local patterns and stay clearly fictional; avoid any real entities.',
         sceneNumber: 4,
     },
     quiz: {

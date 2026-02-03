@@ -123,6 +123,9 @@ export const KV_NAMESPACES = {
   // Phishing KV Namespace (Hardcoded fallback for now, ideally env var)
   PHISHING: process.env.PHISHING_KV_NAMESPACE_ID || 'f6609d79aa2642a99584b05c64ecaa9f',
 
+  // Smishing KV Namespace
+  SMISHING: process.env.SMISHING_KV_NAMESPACE_ID || 'd761e2df84b6499487a8ac02fb9e673c',
+
   // Microlearning KV Namespace (Usually handled by default env binding, but good to have explicit)
   MICROLEARNING: process.env.MICROLEARNING_KV_NAMESPACE_ID || '',
 } as const;
@@ -591,6 +594,7 @@ export const THEME_COLORS = {
 
 export const AGENT_NAMES = {
   PHISHING: 'phishingEmailAssistant',
+  SMISHING: 'smishingSmsAssistant',
   MICROLEARNING: 'microlearningAgent',
   USER_INFO: 'userInfoAssistant',
   POLICY_SUMMARY: 'policySummaryAssistant',
@@ -603,6 +607,7 @@ export const AGENT_NAMES = {
 
 export const AGENT_IDS = {
   PHISHING: 'phishing-email-agent',
+  SMISHING: 'smishing-sms-agent',
   MICROLEARNING: 'microlearning-agent',
   USER_INFO: 'user-info-agent',
   POLICY_SUMMARY: 'policy-summary-agent',
@@ -629,6 +634,33 @@ export const PHISHING = {
   TIMING: {
     GENERATION_SECONDS_MIN: 20,
     GENERATION_SECONDS_MAX: 30,
+  },
+
+  // Input validation
+  MIN_TOPIC_LENGTH: 3,
+  MAX_TOPIC_LENGTH: 200,
+} as const;
+
+// ============================================
+// SMISHING SIMULATION CONFIGURATION
+// ============================================
+
+export const SMISHING = {
+  // Difficulty levels
+  DIFFICULTY_LEVELS: ['Easy', 'Medium', 'Hard'] as const,
+  DEFAULT_DIFFICULTY: 'Medium',
+
+  // Attack methods
+  ATTACK_METHODS: ['Click-Only', 'Data-Submission'] as const,
+  DEFAULT_ATTACK_METHOD: 'Data-Submission',
+
+  // Workflow configuration
+  WORKFLOW_TYPE: 'create-smishing',
+
+  // Timing estimates
+  TIMING: {
+    GENERATION_SECONDS_MIN: 15,
+    GENERATION_SECONDS_MAX: 25,
   },
 
   // Input validation
@@ -747,6 +779,16 @@ export const ROUTING = {
     'Upload simulation',
   ] as const,
 
+  // Smishing triggers
+  SMISHING_TRIGGERS: [
+    'Smishing',
+    'SMS phishing',
+    'Text phishing',
+    'SMS template',
+    'Text message template',
+    'Smishing simulation',
+  ] as const,
+
   // Platform actions
   PLATFORM_ACTIONS: ['Upload', 'Assign', 'Send', 'Deploy', 'Yükle', 'Gönder'] as const,
 
@@ -755,6 +797,9 @@ export const ROUTING = {
 
   // Phishing keywords
   PHISHING_KEYWORDS: ['Simulation', 'Attack', 'Template', 'Fake Email', 'Test'] as const,
+
+  // Smishing keywords
+  SMISHING_KEYWORDS: ['SMS', 'Text', 'Smishing', 'Text Message', 'Mobile'] as const,
 
   // User analysis triggers
   USER_ANALYSIS_TRIGGERS: ['Who is', 'Find', 'Analyze'] as const,
@@ -783,6 +828,17 @@ export const API_ENDPOINTS = {
   TRAINING_WORKER_SEND:
     process.env.TRAINING_WORKER_SEND ||
     'https://crud-training-worker.keepnet-labs-ltd-business-profile4086.workers.dev/send',
+
+  // Smishing worker endpoints
+  SMISHING_WORKER_URL:
+    process.env.SMISHING_WORKER_URL ||
+    'https://crud-phishing-worker.keepnet-labs-ltd-business-profile4086.workers.dev/submit',
+  SMISHING_WORKER_SUBMIT:
+    process.env.SMISHING_WORKER_URL ||
+    'https://crud-phishing-worker.keepnet-labs-ltd-business-profile4086.workers.dev/submit',
+  SMISHING_WORKER_SEND:
+    process.env.SMISHING_WORKER_SEND ||
+    'https://crud-phishing-worker.keepnet-labs-ltd-business-profile4086.workers.dev/send',
 
   // Microlearning API endpoints
   MICROLEARNING_API_URL:

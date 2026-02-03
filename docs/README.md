@@ -1,10 +1,10 @@
-# 📚 Documentation Index
+# Documentation Index
 
 Welcome to the **Agentic Ally** documentation.
 
-Agentic Ally is an **Autonomous Security Awareness Platform** powered by **6 Specialized AI Agents**.
+Agentic Ally is an **Autonomous Security Awareness Platform** powered by **7 Specialized AI Agents**.
 
-## 🏁 Getting Started
+## Getting Started
 
 | File | Purpose |
 |------|---------|
@@ -13,15 +13,15 @@ Agentic Ally is an **Autonomous Security Awareness Platform** powered by **6 Spe
 | [**QUICKSTART.md**](./QUICKSTART.md) | How to run the app in 5 minutes. |
 | [**DEVELOPMENT.md**](./DEVELOPMENT.md) | Local debugging, testing, and contribution guide. |
 
-## 🏗️ Architecture & Logic
+## Architecture & Logic
 
 | File | Purpose |
 |------|---------|
-| [**ARCHITECTURE.md**](./ARCHITECTURE.md) | Deep dive into the **6-Agent System**, State Machines & Resilience. |
+| [**ARCHITECTURE.md**](./ARCHITECTURE.md) | Deep dive into the **7-Agent System**, State Machines & Resilience. |
 | [**WORKFLOWS.md**](./WORKFLOWS.md) | Visual flowcharts (Mermaid) of all logic paths. |
 | [**DATA_MODEL.md**](./DATA_MODEL.md) | KV Schemas, Type Definitions, and Database Structures. |
 
-## 🚀 Operations & Deployment
+## Operations & Deployment
 
 | File | Purpose |
 |------|---------|

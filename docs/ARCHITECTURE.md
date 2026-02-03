@@ -2,7 +2,7 @@
 
 ## System Overview
 
-Agentic Ally is built on the **Mastra** framework and deployed on **Cloudflare Workers**. The system uses a **multi-agent orchestration layer** paired with **parallel workflow execution** to generate microlearning modules, phishing simulations, and email incident response reports.
+Agentic Ally is built on the **Mastra** framework and deployed on **Cloudflare Workers**. The system uses a **multi-agent orchestration layer** paired with **parallel workflow execution** to generate microlearning modules, phishing and smishing simulations, and email incident response reports.
 
 **Core Philosophy:** "Resilience through layered fallbacks. Every step must have an escape route."
 
@@ -111,16 +111,23 @@ Located in `src/mastra/services/`, these services power the entire application.
     - Generates **person-specific** attacks based on user info.
     - **Safe-Guards:** Never uses real personal identifiers in final output.
 
-### 3. User Info Agent (The Profiler)
+### 3. Smishing SMS Agent (The SMS Simulator)
+- **Role:** Designs realistic smishing simulations (SMS & Landing Pages).
+- **Features:**
+    - Generates short SMS templates with link placeholders.
+    - Uses department-aware scenarios (delivery, HR, IT access, payments).
+    - **Safe-Guards:** Never uses real personal identifiers in final output.
+
+### 4. User Info Agent (The Profiler)
 - **Role:** Analyzes user risk profile.
 - **Input:** User activity timeline, department, past incidents.
 - **Output:** Risk Score (Low/Med/High) & Recommended Training Level.
 
-### 4. Policy Summary Agent (The Librarian)
+### 5. Policy Summary Agent (The Librarian)
 - **Role:** Summarizes complex security policies.
 - **Usage:** RAG-based lookup. Fetches relevant policy docs and condenses them for other agents to use as context.
 
-### 5. Email IR Analyst (The Incident Responder)
+### 6. Email IR Analyst (The Incident Responder)
 - **Role:** Automated incident response for suspicious emails.
 - **Usage:** Performs header/body/intent analysis, triages the email, and generates a SOC-ready report.
 
@@ -156,6 +163,15 @@ Workflows handle the heavy lifting. They are **long-running, resilient, and para
     3. **Generate Landing:** Login page or Success page.
     4. **Save:** Atomic write to KV (`phishing:{id}:*`).
 
+### D. Create Smishing Workflow
+**Purpose:** Generate a full SMS-based simulation.
+- **Steps:**
+    1. **Analyze:** Determine scenario, sender style, and method.
+    2. **Generate SMS:** 2-4 short messages with link placeholders.
+    3. **Generate Landing:** Login/Info page if enabled.
+    4. **Save:** Atomic write to KV (`smishing:{id}:*`).
+
+### E. Email IR Analysis Workflow
 **Purpose:** Produce a full incident response report for a suspicious email.
 - **Steps:**
     1. **Fetch:** Retrieve email from API by ID.
@@ -163,7 +179,7 @@ Workflows handle the heavy lifting. They are **long-running, resilient, and para
     3. **Triage:** Categorize (Phishing, CEO Fraud, Benign, etc.).
     4. **Report:** Risk level, confidence, and recommended actions.
 
-### E. Add Language / Multiple Languages
+### F. Add Language / Multiple Languages
 **Purpose:** Localization.
 - **Logic:** Parallel translation of existing content.
 - **Resilience:** Uses 3-level translation fallback (Direct -> Integrity Check -> Auto-Repair).
@@ -184,6 +200,13 @@ ml:{id}:inbox:{dept}   -> Department-specific inbox simulation
 phishing:{id}:base     -> Simulation metadata
 phishing:{id}:email    -> Email template content
 phishing:{id}:landing  -> Landing page content
+```
+
+### Smishing
+```
+smishing:{id}:base     -> Simulation metadata
+smishing:{id}:sms      -> SMS template content
+smishing:{id}:landing  -> Landing page content
 ```
 
 ### Autonomous Memory

@@ -208,3 +208,32 @@ export function buildExpectedPhishingKeys(
     return keys;
 }
 
+/**
+ * Helper to build expected keys for a smishing operation
+ *
+ * @param smishingId - The smishing ID
+ * @param language - Language code
+ * @param hasSms - Whether SMS content exists (optional, default: true)
+ * @param hasLandingPage - Whether landing page content exists (optional, default: true)
+ * @returns Array of expected KV keys
+ */
+export function buildExpectedSmishingKeys(
+    smishingId: string,
+    language: string,
+    hasSms: boolean = true,
+    hasLandingPage: boolean = true
+): string[] {
+    const normalizedLang = language.toLowerCase();
+    const keys: string[] = [`smishing:${smishingId}:base`];
+
+    if (hasSms) {
+        keys.push(`smishing:${smishingId}:sms:${normalizedLang}`);
+    }
+
+    if (hasLandingPage) {
+        keys.push(`smishing:${smishingId}:landing:${normalizedLang}`);
+    }
+
+    return keys;
+}
+

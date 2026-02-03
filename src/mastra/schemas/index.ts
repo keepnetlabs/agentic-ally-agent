@@ -42,6 +42,7 @@ export type {
 } from './create-inbox-structure-schema';
 
 export * from './create-phishing-schemas';
+export * from './create-smishing-schemas';
 // Add Language Workflow Schemas
 export * from './add-language-schemas';
 export * from './create-microlearning-schemas';

@@ -2,11 +2,11 @@
 
 **Last Updated:** February 3, 2026
 
-## 🛡️ What is Agentic Ally?
+## What is Agentic Ally?
 
 **Agentic Ally** is an Autonomous Security Awareness Platform powered by a **Multi-Agent System**.
 
-Unlike traditional tools that just send emails, Ally employs a team of **6 Specialized AI Agents** to analyze user behavior, detect knowledge gaps, and proactively generate personalized training and simulations.
+Unlike traditional tools that just send emails, Ally employs a team of **7 Specialized AI Agents** to analyze user behavior, detect knowledge gaps, and proactively generate personalized training and simulations.
 
 It operates in two modes:
 1.  **Reactive:** Developers/Admins chat with the Orchestrator to generate content on demand.
@@ -14,7 +14,7 @@ It operates in two modes:
 
 ---
 
-## 🤖 The 6 Specialist Agents
+## The 7 Specialist Agents
 
 ### 1. Orchestrator Agent (The Router)
 *   **Role:** The intelligent front-desk.
@@ -34,21 +34,28 @@ It operates in two modes:
     *   Generates deceptive Emails and Landing Pages.
     *   Personalizes attacks based on target department (e.g., "Invoice" for Finance).
 
-### 4. User Info Agent (The Analyst)
+### 4. Smishing Agent (The SMS Simulator)
+*   **Role:** Runs SMS-based phishing simulations.
+*   **Capabilities:**
+    *   Generates short text-message templates plus landing pages.
+    *   Enforces link placeholders for landing page flows.
+    *   Uses department-aware scenarios (delivery, HR, IT access, payments).
+
+### 5. User Info Agent (The Analyst)
 *   **Role:** Understands the human element.
 *   **Capabilities:**
     *   Analyzes user activity timelines.
     *   Calculates a **Risk Score** (Low/Med/High).
     *   Suggests appropriate training levels (Beginner vs Advanced).
 
-### 5. Policy Agent (The Expert)
+### 6. Policy Agent (The Expert)
 *   **Role:** RAG-based policy answering.
 *   **Capabilities:**
     *   Retrieves company policy documents.
     *   Summarizes complex legalese into actionable HTML bullet points.
     *   Answers "What is our policy on X?" questions instantly.
 
-### 6. Email IR Analyst (The Incident Responder)
+### 7. Email IR Analyst (The Incident Responder)
 *   **Role:** Automated email incident response.
 *   **Capabilities:**
     *   Analyzes headers, body intent, and behavioral signals.
@@ -57,7 +64,7 @@ It operates in two modes:
 
 ---
 
-## 🔄 How It Works
+## How It Works
 
 ### The Autonomous Loop (Proactive)
 ```mermaid
@@ -76,17 +83,17 @@ graph LR
 ### The Chat Interface (Reactive)
 ```
 User: "Create a phishing test for the IT team."
-  ↓
+  ->
 Orchestrator: "Intent detected: Create Simulation. Target: IT."
-  ↓
+  ->
 Phishing Agent: "Generating 'VPN Update' scenario for IT..."
-  ↓
+  ->
 Result: Ready-to-deploy Simulation URL.
 ```
 
 ---
 
-## 🏗️ Technical Architecture
+## Technical Architecture
 
 *   **Framework:** Mastra 0.21.x (The Brain)
 *   **Runtime:** Cloudflare Workers (The Muscle)
@@ -94,11 +101,11 @@ Result: Ready-to-deploy Simulation URL.
 *   **AI Models:** OpenAI `gpt-4o` + Workers AI
 
 ### Resilience First
-We adhere to a stric **3-Level Fallback Protocol**. If the smartest method (e.g., Tensor Search) fails, we degrade to Heuristics, then to Hardcoded Defaults. The system **never crashes**.
+We adhere to a strict **3-Level Fallback Protocol**. If the smartest method (e.g., Tensor Search) fails, we degrade to Heuristics, then to Hardcoded Defaults. The system **never crashes**.
 
 ---
 
-## 🚀 Key Features
+## Key Features
 
 *   **Unlimited Languages:** Auto-detects and generates content in any language (BCP-47).
 *   **Self-Healing:** Generated JSON is validated by Zod; failures are auto-repaired.
@@ -107,7 +114,7 @@ We adhere to a stric **3-Level Fallback Protocol**. If the smartest method (e.g.
 
 ---
 
-## 📚 Documentation Map
+## Documentation Map
 
 | File | Purpose |
 |------|---------|

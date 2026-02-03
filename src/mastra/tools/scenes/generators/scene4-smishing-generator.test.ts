@@ -67,8 +67,6 @@ describe('Scene 4 - Smishing Simulation Generator', () => {
 
     it('should include smishing-specific fields', () => {
       const prompt = generateScene4SmishingPrompt(baseAnalysis, baseMicrolearning);
-      expect(prompt).toContain('senderName');
-      expect(prompt).toContain('senderNumber');
       expect(prompt).toContain('firstMessage');
       expect(prompt).toContain('prompt');
     });
@@ -90,43 +88,6 @@ describe('Scene 4 - Smishing Simulation Generator', () => {
       expect(prompt).toContain('verify');
       expect(prompt).toContain('refuse');
       expect(prompt).toContain('safely');
-    });
-  });
-
-  // ==================== CRITICAL CONSISTENCY TESTS ====================
-  describe('Sender Name Consistency (NEW FIX)', () => {
-    it('should enforce senderName consistency in firstMessage', () => {
-      const prompt = generateScene4SmishingPrompt(baseAnalysis, baseMicrolearning);
-      expect(prompt).toContain('CRITICAL: Sender must introduce themselves by the exact name from the senderName field above');
-    });
-
-    it('should require senderName field to be used in firstMessage', () => {
-      const prompt = generateScene4SmishingPrompt(baseAnalysis, baseMicrolearning);
-      expect(prompt).toContain('senderName');
-      expect(prompt).toContain('firstMessage');
-      // Both should be present for consistency checking
-      expect(prompt.indexOf('senderName') < prompt.indexOf('firstMessage')).toBe(true);
-    });
-  });
-
-  // ==================== PHONE NUMBER FORMAT TESTS ====================
-  describe('Phone Number Formatting (NEW FIX)', () => {
-    it('should include phone number format examples', () => {
-      const prompt = generateScene4SmishingPrompt(baseAnalysis, baseMicrolearning);
-      expect(prompt).toContain('Examples');
-      expect(prompt).toContain('+90 555');
-      expect(prompt).toContain('+44 844');
-    });
-
-    it('should specify obviously fake prefixes', () => {
-      const prompt = generateScene4SmishingPrompt(baseAnalysis, baseMicrolearning);
-      expect(prompt).toContain('fake prefixes');
-      expect(prompt).toContain('non-realistic');
-    });
-
-    it('should require locale-specific phone format', () => {
-      const prompt = generateScene4SmishingPrompt(baseAnalysis, baseMicrolearning);
-      expect(prompt).toContain('locale format');
     });
   });
 
@@ -197,7 +158,7 @@ describe('Scene 4 - Smishing Simulation Generator', () => {
   describe('Safety and Ethics', () => {
     it('should prohibit real credential requests', () => {
       const prompt = generateScene4SmishingPrompt(baseAnalysis, baseMicrolearning);
-      expect(prompt).toContain('NOT ask for real passwords');
+      expect(prompt).toContain('never request real passwords');
       expect(prompt).toContain('OTPs');
     });
 
@@ -208,7 +169,7 @@ describe('Scene 4 - Smishing Simulation Generator', () => {
 
     it('should prohibit personal data requests', () => {
       const prompt = generateScene4SmishingPrompt(baseAnalysis, baseMicrolearning);
-      expect(prompt).toContain('personal data');
+      expect(prompt).toContain('personal/company secrets');
     });
 
     it('should require polite conclusion', () => {

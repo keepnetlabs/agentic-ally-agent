@@ -10,7 +10,9 @@ export { getTargetGroupInfoTool } from './get-target-group-info-tool';
 export { assignTrainingTool } from './assign-training-tool';
 
 export { assignPhishingTool } from './assign-phishing-tool';
+export { assignSmishingTool } from './assign-smishing-tool';
 
 export { uploadTrainingTool } from './upload-training-tool';
 
 export { uploadPhishingTool } from './upload-phishing-tool';
+export { uploadSmishingTool } from './upload-smishing-tool';

@@ -45,7 +45,54 @@ Returns a Server-Sent Events (SSE) stream or JSON stream depending on client.
 
 ---
 
-## 2. Autonomous Trigger (`POST /autonomous`)
+## 2. Smishing Chat (`POST /smishing/chat`)
+
+Chat endpoint for the smishing role-play scene used in microlearning.
+
+### Headers
+| Header | Value | Required | Description |
+|--------|-------|----------|-------------|
+| `Content-Type` | `application/json` | Yes | - |
+| `X-AGENTIC-ALLY-TOKEN` | `<your-token>` | Yes | Auth token (set in `.env`) |
+
+### Request Body
+```json
+{
+  "microlearningId": "ml-123",
+  "language": "en-gb",
+  "messages": [
+    { "role": "user", "content": "Hello?" }
+  ],
+  "modelProvider": "openai",
+  "model": "gpt-4o-mini"
+}
+```
+
+### Response (Initial Prompt)
+If `messages` is omitted or empty, returns the prompt and first message.
+```json
+{
+  "success": true,
+  "microlearningId": "ml-123",
+  "language": "en-gb",
+  "prompt": "You are the SMS simulation agent...",
+  "firstMessage": "Hi, your delivery is pending verification."
+}
+```
+
+### Response (Chat Reply)
+```json
+{
+  "success": true,
+  "microlearningId": "ml-123",
+  "language": "en-gb",
+  "reply": "Can you confirm your address?"
+}
+```
+
+---
+
+## 3. Autonomous Trigger (`POST /autonomous`)
 
 Manually trigger the proactive generation loop. Useful for testing or on-demand batch runs.
 
@@ -86,7 +133,7 @@ Manually trigger the proactive generation loop. Useful for testing or on-demand 
 
 ---
 
-## 3. System Health (`GET /health`)
+## 4. System Health (`GET /health`)
 
 Diagnostic endpoint for uptime checks and dependency validation.
 
@@ -109,7 +156,7 @@ Diagnostic endpoint for uptime checks and dependency validation.
 
 ---
 
-## 4. Code Review (`POST /code-review-validate`)
+## 5. Code Review (`POST /code-review-validate`)
 
 Internal tool endpoint used by agents to validate generated code snippets (e.g., HTML landing pages or JSON structures).
 
@@ -136,7 +183,7 @@ Internal tool endpoint used by agents to validate generated code snippets (e.g.,
 
 ---
 
-## 5. Email IR Analysis (`POST /email-ir/analyze`)
+## 6. Email IR Analysis (`POST /email-ir/analyze`)
 
 Analyze a suspicious email and generate an incident response report.
 
@@ -255,7 +302,7 @@ Analyze a suspicious email and generate an incident response report.
 
 ---
 
-## 🔒 Security Notes
+## Security Notes
 
 1.  **Rate Limit:** 100 requests per minute per IP.
     *   `/chat`: 100 req/min
