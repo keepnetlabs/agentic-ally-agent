@@ -36,6 +36,7 @@ export enum Model {
     OPENAI_GPT_4_1_NANO = 'gpt-4.1-nano',
     OPENAI_GPT_5_NANO = 'gpt-5-nano',
     OPENAI_GPT_5_MINI = 'gpt-5-mini',
+    OPENAI_GPT_5_1 = 'gpt-5.1',
     WORKERS_AI_GPT_OSS_120B = '@cf/openai/gpt-oss-120b',
     GOOGLE_GEMINI_2_5_PRO = 'gemini-2.5-pro',
     GOOGLE_GEMINI_2_5_FLASH = 'gemini-2.5-flash',
