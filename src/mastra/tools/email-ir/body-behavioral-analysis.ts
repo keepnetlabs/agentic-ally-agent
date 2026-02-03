@@ -2,6 +2,8 @@ import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { emailIRAnalyst } from '../../agents/email-ir-analyst';
 import { EmailIREmailDataSchema } from '../../types/email-ir';
+import { createLogContext, loggerBehavioral, logStepStart, logStepComplete, logStepError } from './logger-setup';
+import { withRetry } from '../../utils/core/resilience-utils';
 
 export const bodyBehavioralAnalysisOutputSchema = z.object({
     urgency_level: z.enum(['none', 'low', 'medium', 'high']).describe('Degree of time pressure/urgency framing in body'),
@@ -24,77 +26,51 @@ export const bodyBehavioralAnalysisTool = createTool({
     outputSchema: bodyBehavioralAnalysisOutputSchema,
     execute: async ({ context }) => {
         const email = context;
-        const emailBody = email.htmlBody || email.subject || 'No body content';
-        const senderDisplay = email.senderName || email.from;
+        const emailId = email.from?.split('@')[0] || 'unknown-sender';
+        const ctx = createLogContext(emailId, 'behavioral-analysis');
 
-        const prompt = `
-# Task: Body Behavioral Analysis
+        try {
+            logStepStart(loggerBehavioral, ctx, { subject: email.subject });
 
-Analyze the email body for manipulation tactics, urgency framing, emotional pressure, and social engineering patterns.
-Focus purely on HOW the email tries to manipulate the reader, NOT what it's asking for (that's Intent Analysis).
+            const emailBody = email.htmlBody || email.subject || 'No body content';
+            const senderDisplay = email.senderName || email.from;
 
-## BEHAVIORAL MANIPULATION SIGNALS
+            const prompt = `
+# Task: Psychological & Behavioral Analysis (Social Engineering)
 
-### Urgency Framing (Time Pressure)
-Detect phrases that create artificial deadline pressure:
-- "Immediate action required"
-- "Act now"
-- "Limited time offer"
-- "Your account will be closed if..."
-- "Deadline: TODAY"
-- "Expires in 24 hours"
-- "Urgent: respond within 1 hour"
+Analyze the email body to decode the sender's manipulation tactics.
+Your goal is to identify HOW the sender is trying to influence the recipient (Urgency, Fear, Trust, etc.).
 
-**Urgency Levels:**
-- **high**: Multiple urgent phrases, emphasis on immediate action (caps, exclamation marks)
-- **medium**: Clear deadline or time pressure mentioned
-- **low**: Mild time reference without strong pressure
-- **none**: No time pressure
+## BEHAVIORAL ANALYSIS DIRECTIVES
 
-### Emotional Pressure - FEAR
-Threat-based manipulation:
-- "Your account has been compromised"
-- "We detected unusual activity"
-- "Legal action will be taken"
-- "Your data will be deleted"
-- "Account suspended"
-- "Verify immediately or lose access"
+### 1. Urgency Framing
+Detect artificial time pressure designed to bypass critical thinking.
+- **High**: "Immediate action required", "Account closing in 1 hour", "ACT NOW".
+- **Medium**: "Please respond by EOD", "Offer expires soon".
+- **Low/None**: Informational or standard business timelines.
 
-### Emotional Pressure - URGENCY
-Time-sensitive incentive:
-- "Limited slots available"
-- "Offer expires soon"
-- "Bonus available this week only"
-- "Last chance to claim"
+### 2. Emotional Manipulation Patterns
+- **Fear**: Threats of negative consequences ("Legal action", "Account suspended", "Security breach").
+- **Reward/Greed**: Too-good-to-be-true offers ("Lottery winner", "Inheritance", "Free gift").
+- **Curiosity/Baiting**: Vague but intriguing links ("Look at this photo", "Your document is ready").
 
-### Emotional Pressure - REWARD
-Too-good-to-be-true incentives:
-- "You've won a prize!"
-- "Claim your bonus"
-- "Free money transfer"
-- "Unexpected inheritance"
-- "You're specially selected"
+### 3. Social Engineering Tactics
+- **Pretexting**: Creating a fake scenario/identity ("I'm from IT Support", "I'm the CEO").
+- **Extortion**: Explicit blackmail or sextortion threats.
+- **Verification Avoidance**: Attempts to isolate the victim ("Don't call the bank", "Keep this confidential", "Reply to this email only").
 
-### Social Engineering Patterns
+## KEY PHRASES TO WATCH (Indicators)
 
-#### Pretexting (False Scenario)
-- Inventing a fake scenario to build trust
-- Example: "I'm your IT team doing a security audit"
-- Creates false authority/legitimacy
+### Urgency Indicators
+- "Immediate action required", "Act now", "Limited time offer"
+- "Your account will be closed if...", "Deadline: TODAY"
+- "Expires in 24 hours", "Urgent: respond within 1 hour"
 
-#### Extortion
-- Explicit threat with demand
-- Example: "Pay \$500 or I'll send your data to everyone"
-- Blackmail, sextortion, threat-based
+### Emotional Trigger Indicators
+- **Fear**: "Your account has been compromised", "Legal action will be taken", "Your data will be deleted"
+- **Reward**: "You've won a prize!", "Claim your bonus", "Free money transfer"
 
-#### Baiting
-- Suspicious offer that's too good to be true
-- "Click here for free gift cards"
-- "Download your refund"
-- Designed to trigger curiosity/greed
-
-### Verification Avoidance
-Phrases that discourage independent verification:
+### Verification Avoidance Phrases (CRITICAL)
 - "Don't call the bank, they're in on it"
 - "Keep this confidential"
 - "Don't forward this to anyone"
@@ -104,47 +80,49 @@ Phrases that discourage independent verification:
 
 ---
 
-## EMAIL DATA
+## INPUT DATA
 
 **From**: ${senderDisplay}
 **Subject**: ${email.subject}
 
-**Body** (full content):
+**Body Content**:
 \`\`\`
 ${emailBody}
 \`\`\`
 
 ---
 
-## OUTPUT
+## OUTPUT INSTRUCTIONS
 
-Analyze purely for BEHAVIORAL signals (manipulation tactics, not intent):
+Populate the output schema based on the behavioral signals identified:
+1.  **urgency_level**: Calibrate based on the intensity of time pressure phrases.
+2.  **emotional_pressure**: Identify the dominant emotional trigger (Fear/Reward/Urgency/None).
+3.  **social_engineering_pattern**: Classify the tactic (Pretexting/Extortion/Baiting/None).
+4.  **verification_avoidance**: Set to TRUE if the sender explicitly discourages outside checks.
+5.  **behavioral_summary**: concise 1-2 sentence forensic summary of the manipulation technique.
 
-1. **urgency_level**: Degree of time pressure (none/low/medium/high)
-2. **emotional_pressure**: Type detected (none/fear/urgency/reward)
-3. **social_engineering_pattern**: Tactic detected (none/pretexting/extortion/baiting)
-4. **verification_avoidance**: true if email discourages verification, false otherwise
-5. **verification_avoidance_tactics**: Quote specific phrases if present, or "none"
-6. **urgency_indicators**: List phrases creating time pressure, or "none"
-7. **emotional_pressure_indicators**: List phrases using fear/urgency/reward, or "none"
-8. **behavioral_summary**: 1-2 sentence summary of manipulation tactics
-
-**Note**: You are analyzing HOW the email manipulates, not WHAT it's asking for.
-Example: If email says "Verify your password immediately or lose access" - that's:
-- urgency_level: high (time pressure)
-- emotional_pressure: fear (threat of loss)
-- social_engineering_pattern: pretexting (false IT scenario)
-
-Even if the body is empty or short, provide honest assessment: "No behavioral manipulation detected" or describe what IS present.
+**CRITICAL NOTES:**
+- **Logic Separation**: You are analyzing **HOW** the email manipulates (Psychology), not **WHAT** it is asking for (Intent).
+    - *Example*: "Verify password immediately or lose access" is High Urgency + Fear (Behavior), regardless of whether it's for Netflix or a Bank.
+- **Edge Cases**: If the body is empty or too short to analyze, state "No behavioral manipulation detected" rather than hallucinating signals.
 `;
 
-        const result = await emailIRAnalyst.generate(prompt, {
-            output: bodyBehavioralAnalysisOutputSchema.omit({ original_email: true }),
-        });
+            const result = await withRetry(
+                () => emailIRAnalyst.generate(prompt, {
+                    output: bodyBehavioralAnalysisOutputSchema.omit({ original_email: true }),
+                }),
+                'body-behavioral-analysis-llm'
+            );
 
-        return {
-            ...result.object,
-            original_email: email,
-        };
+            logStepComplete(loggerBehavioral, ctx, { result: result.object });
+
+            return {
+                ...result.object,
+                original_email: email,
+            };
+        } catch (error) {
+            logStepError(loggerBehavioral, ctx, error as Error);
+            throw error;
+        }
     },
 });

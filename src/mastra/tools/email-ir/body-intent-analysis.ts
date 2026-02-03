@@ -2,6 +2,8 @@ import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { emailIRAnalyst } from '../../agents/email-ir-analyst';
 import { EmailIREmailDataSchema } from '../../types/email-ir';
+import { createLogContext, loggerIntent, logStepStart, logStepComplete, logStepError } from './logger-setup';
+import { withRetry } from '../../utils/core/resilience-utils';
 
 export const bodyIntentAnalysisOutputSchema = z.object({
     intent: z.enum(['benign', 'phishing', 'sextortion', 'impersonation', 'fraud']).describe('Overall intent classification'),
@@ -24,10 +26,16 @@ export const bodyIntentAnalysisTool = createTool({
     outputSchema: bodyIntentAnalysisOutputSchema,
     execute: async ({ context }) => {
         const email = context;
-        const emailBody = email.htmlBody || email.subject || 'No body content';
-        const senderDisplay = email.senderName || email.from;
+        const emailId = email.from?.split('@')[0] || 'unknown-sender';
+        const ctx = createLogContext(emailId, 'intent-analysis');
 
-        const prompt = `
+        try {
+            logStepStart(loggerIntent, ctx, { subject: email.subject });
+
+            const emailBody = email.htmlBody || email.subject || 'No body content';
+            const senderDisplay = email.senderName || email.from;
+
+            const prompt = `
 # Task: Body Intent Analysis
 
 Analyze the email body for its fundamental intent - WHAT is it asking the recipient to do?
@@ -136,41 +144,36 @@ ${emailBody}
 
 ---
 
-## OUTPUT
+## OUTPUT INSTRUCTIONS
 
-Analyze purely for INTENT (what is being requested/what's the purpose):
+Populate the output schema based on the forensic evidence identified above:
 
-1. **intent**: Overall classification (benign/phishing/sextortion/impersonation/fraud)
-2. **financial_request**: true if any payment/transfer requested
-3. **credential_request**: true if any authentication/password requested
-4. **authority_impersonation**: true if sender claims authority role
-5. **financial_request_details**: Specific amount/account if present, or "none"
-6. **credential_request_details**: Specific system/platform if present, or "none"
-7. **authority_claimed**: Specific role if claimed, or "none"
-8. **intent_summary**: 1-2 sentence summary of what's being asked
+1.  **intent**: Select the category that best fits the *primary objective* (benign/phishing/sextortion/impersonation/fraud).
+2.  **Request Flags**: Set \`financial_request\`, \`credential_request\`, \`authority_impersonation\` to TRUE only if explicit evidence exists.
+3.  **Details**: Extract specific artifacts (e.g., "\$50k wire", "portal login link") into detail fields.
+4.  **intent_summary**: Synthesize the "Ask" in 1-2 professional sentences.
 
-**Example Analysis:**
-Email: "Hi, I'm CEO John Smith. Wire \$50k to account 123-456 immediately for acquisition."
-- intent: impersonation (or fraud, depending on context)
-- financial_request: true
-- credential_request: false
-- authority_impersonation: true
-- financial_request_details: "Wire \$50k to account 123-456"
-- credential_request_details: "none"
-- authority_claimed: "CEO John Smith"
-- intent_summary: "Sender impersonates CEO and requests wire transfer of \$50k"
-
-**Note**: You are analyzing PURPOSE/REQUESTS, not manipulation tactics.
-If email is legitimate business communication with no requests, classify as benign with false for all request booleans.
+**CRITICAL NOTES:**
+- **Zero Trust**: Even if the email looks polite ("Kindly..."), if it asks for money/creds without context, flag it.
+- **Evidence-Based**: Do not hallucinate requests. If no financial request is present, set \`financial_request\` to false.
 `;
 
-        const result = await emailIRAnalyst.generate(prompt, {
-            output: bodyIntentAnalysisOutputSchema.omit({ original_email: true }),
-        });
+            const result = await withRetry(
+                () => emailIRAnalyst.generate(prompt, {
+                    output: bodyIntentAnalysisOutputSchema.omit({ original_email: true }),
+                }),
+                'body-intent-analysis-llm'
+            );
 
-        return {
-            ...result.object,
-            original_email: email,
-        };
+            logStepComplete(loggerIntent, ctx, { result: result.object });
+
+            return {
+                ...result.object,
+                original_email: email,
+            };
+        } catch (error) {
+            logStepError(loggerIntent, ctx, error as Error);
+            throw error;
+        }
     },
 });

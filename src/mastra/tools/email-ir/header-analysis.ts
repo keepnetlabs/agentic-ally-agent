@@ -2,6 +2,8 @@ import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { emailIRAnalyst } from '../../agents/email-ir-analyst';
 import { EmailIREmailDataSchema } from '../../types/email-ir';
+import { TimingTracker, createLogContext, loggerHeader, logPerformance, logStepComplete, logStepStart, logStepError, logSignalDetected, logAuthResults } from './logger-setup';
+import { withRetry } from '../../utils/core/resilience-utils';
 
 export const headerAnalysisOutputSchema = z.object({
     spf_pass: z.boolean().describe('True if SPF authentication passed'),
@@ -26,10 +28,6 @@ export const headerAnalysisTool = createTool({
     execute: async ({ context }) => {
         const email = context;
         const emailId = email.from?.split('@')[0] || 'unknown-sender';
-
-        // Import logging utilities
-        const { loggerHeader } = await import('./logger-setup');
-        const { createLogContext, TimingTracker, logStepStart, logStepComplete, logStepError, logSignalDetected, logAuthResults, logPerformance } = await import('./logger-setup');
 
         const ctx = createLogContext(emailId, 'header-analysis');
         const timing = new TimingTracker(emailId);
@@ -176,9 +174,12 @@ Based on headers provided:
 Note: If header data is incomplete or missing, state "Insufficient data" for fields you cannot assess.
 `;
 
-            const result = await emailIRAnalyst.generate(prompt, {
-                output: headerAnalysisOutputSchema.omit({ original_email: true }),
-            });
+            const result = await withRetry(
+                () => emailIRAnalyst.generate(prompt, {
+                    output: headerAnalysisOutputSchema.omit({ original_email: true }),
+                }),
+                'header-analysis-llm'
+            );
 
             timing.mark('llm-analysis-complete');
 

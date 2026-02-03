@@ -4,26 +4,34 @@ import { emailIRAnalyst } from '../../agents/email-ir-analyst';
 import { EmailIREmailDataSchema } from '../../types/email-ir';
 import { triageOutputSchema } from './triage';
 import { featureExtractionOutputSchema } from './feature-extraction';
+import { createLogContext, loggerRiskAssessment, logStepStart, logStepComplete, logStepError } from './logger-setup';
+import { withRetry } from '../../utils/core/resilience-utils';
 
 export const riskAssessmentOutputSchema = z.object({
-    risk_level: z.enum(['low', 'medium', 'high']),
-    confidence: z.number().min(0).max(100),
-    justification: z.string().describe('clear explanation suitable for SOC reporting'),
+  risk_level: z.enum(['low', 'medium', 'high']),
+  confidence: z.number().min(0).max(100),
+  justification: z.string().describe('clear explanation suitable for SOC reporting'),
 
-    // Pass-through context
-    original_email: EmailIREmailDataSchema,
-    triage_result: triageOutputSchema.omit({ original_email: true }),
-    feature_result: featureExtractionOutputSchema.omit({ original_email: true, triage_result: true }),
+  // Pass-through context
+  original_email: EmailIREmailDataSchema,
+  triage_result: triageOutputSchema.omit({ original_email: true }),
+  feature_result: featureExtractionOutputSchema.omit({ original_email: true, triage_result: true }),
 });
 
 export const riskAssessmentTool = createTool({
-    id: 'email-ir-risk-assessment-tool',
-    description: 'Assesses risk using Engine-Blind logic',
-    inputSchema: featureExtractionOutputSchema,
-    outputSchema: riskAssessmentOutputSchema,
-    execute: async ({ context }) => {
-        const inputData = context;
-        const prompt = `
+  id: 'email-ir-risk-assessment-tool',
+  description: 'Assesses risk using Engine-Blind logic',
+  inputSchema: featureExtractionOutputSchema,
+  outputSchema: riskAssessmentOutputSchema,
+  execute: async ({ context }) => {
+    const inputData = context;
+    const emailId = inputData.original_email.from?.split('@')[0] || 'unknown-sender';
+    const ctx = createLogContext(emailId, 'risk-assessment');
+
+    try {
+      logStepStart(loggerRiskAssessment, ctx, { triage_category: inputData.triage_result.category });
+
+      const prompt = `
 You are the **Risk Assessment Agent**.
 
 Your task is to assign a risk_level (low/medium/high) and confidence score (0-100) based on extracted email features.
@@ -44,6 +52,7 @@ Risk scoring must account for:
 
 ### HIGH RISK (75-100 confidence)
 Email exhibits one or more of:
+- **Malware**: Known malicious attachment or link detected.
 - **Clear malicious intent**: Phishing, Sextortion, CEO Fraud, Credential Harvest
 - **Authority impersonation + financial request**: Executive pretending to be C-level + wire transfer/payment demand
 - **Extortion/Blackmail**: Sextortion with explicit threat + payment demand
@@ -62,6 +71,7 @@ Email exhibits:
 
 ### LOW RISK (0-39 confidence)
 Email exhibits:
+- **Security Awareness / Simulation**: Validated phishing test.
 - **Triage verdict is Benign, Internal, or Marketing**
 - **No behavioral manipulation signals detected**
 - **SPF/DKIM/DMARC pass** + **legitimate sender context** (known vendor, internal domain)
@@ -94,6 +104,9 @@ Email exhibits:
 
 Use this logic to assign risk_level:
 
+**IF** triage_category == 'Malware'
+  **THEN** risk_level = HIGH (confidence 95-100)
+
 **IF** triage_category == 'Phishing' OR triage_category == 'CEO Fraud' OR triage_category == 'Sextortion'
   **THEN** risk_level = HIGH (confidence 80-95)
 
@@ -102,6 +115,9 @@ Use this logic to assign risk_level:
 
 **IF** triage_category == 'Other Suspicious' AND (engine_indicators_present OR unverified_sender)
   **THEN** risk_level = MEDIUM (confidence 60-75)
+
+**IF** triage_category == 'Security Awareness' (Simulation)
+  **THEN** risk_level = LOW (confidence 95-100) - Note "Training Exercise" in justification.
 
 **IF** triage_category == 'Spam' OR triage_category == 'Marketing'
   **THEN** risk_level = LOW (confidence 85-95)
@@ -124,6 +140,7 @@ Provide 2-3 sentences explaining the risk_level decision. Include:
 Example:
 - HIGH: "Email impersonates CEO with urgent financial request and fails DKIM verification. Confidence 92% - clear BEC pattern."
 - MEDIUM: "Email requests unusual urgency but lacks clear malicious intent. Confidence 62% - recommend human review given mixed signals."
+- LOW: "Identified as Security Awareness training exercise. Confidence 100% - authorized simulation."
 - LOW: "Email is internal marketing notification with no behavioral manipulation. Confidence 94% - fully confident in benign verdict."
 
 ---
@@ -144,15 +161,24 @@ Assign risk_level (low/medium/high) and confidence (0-100) based on the framewor
 Provide clear SOC-ready justification.
 `;
 
-        const result = await emailIRAnalyst.generate(prompt, {
-            output: riskAssessmentOutputSchema.omit({ original_email: true, triage_result: true, feature_result: true }),
-        });
+      const result = await withRetry(
+        () => emailIRAnalyst.generate(prompt, {
+          output: riskAssessmentOutputSchema.omit({ original_email: true, triage_result: true, feature_result: true }),
+        }),
+        'risk-assessment-llm'
+      );
 
-        return {
-            ...result.object,
-            original_email: inputData.original_email,
-            triage_result: inputData.triage_result,
-            feature_result: inputData,
-        };
-    },
+      logStepComplete(loggerRiskAssessment, ctx, { result: result.object });
+
+      return {
+        ...result.object,
+        original_email: inputData.original_email,
+        triage_result: inputData.triage_result,
+        feature_result: inputData,
+      };
+    } catch (error) {
+      logStepError(loggerRiskAssessment, ctx, error as Error);
+      throw error;
+    }
+  },
 });
