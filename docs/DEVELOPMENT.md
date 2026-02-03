@@ -30,7 +30,7 @@ npm run dev
 
 ---
 
-## 🛠️ Testing the 5 Specialist Agents
+## 🛠️ Testing the 6 Specialist Agents
 
 Use these payloads to verify each specialist is working correctly.
 
@@ -75,7 +75,15 @@ curl -X POST http://localhost:8000/chat \
   -d '{"prompt": "What is our company policy on remote work passwords?"}'
 ```
 
-### 5. Debug Autonomous Service (Proactive Loop)
+### 5. Test Email IR Analyst (The Incident Responder)
+**Scenario:** Analyze a suspicious email (IR report).
+```bash
+curl -X POST http://localhost:8000/email-ir/analyze \
+  -H "Content-Type: application/json" \
+  -d '{"id":"email-12345","accessToken":"api-token-xyz","apiBaseUrl":"https://api.example.com"}'
+```
+
+### 6. Debug Autonomous Service (Proactive Loop)
 Don't wait for Cron. Run the manual trigger script:
 ```bash
 npx tsx src/debug-workflow.ts

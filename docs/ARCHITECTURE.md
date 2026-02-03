@@ -2,7 +2,7 @@
 
 ## System Overview
 
-Agentic Ally is built on the **Mastra** framework and deployed on **Cloudflare Workers**. The system uses a **multi-agent orchestration layer** paired with **parallel workflow execution** to generate microlearning modules and phishing simulations.
+Agentic Ally is built on the **Mastra** framework and deployed on **Cloudflare Workers**. The system uses a **multi-agent orchestration layer** paired with **parallel workflow execution** to generate microlearning modules, phishing simulations, and email incident response reports.
 
 **Core Philosophy:** "Resilience through layered fallbacks. Every step must have an escape route."
 
@@ -19,8 +19,8 @@ Agentic Ally is built on the **Mastra** framework and deployed on **Cloudflare W
                      │
           ┌──────────┼──────────┐
           ▼          ▼          ▼
-    MICROLEARNING  PHISHING   USER INFO
-       AGENT        AGENT      AGENT
+    MICROLEARNING  PHISHING   USER INFO   EMAIL IR
+       AGENT        AGENT      AGENT       AGENT
           │          │          │
           └─────┬────┴──────────┘
                 │
@@ -28,7 +28,8 @@ Agentic Ally is built on the **Mastra** framework and deployed on **Cloudflare W
 ┌──────────────────────────────────────────────────────┐
 │       Workflow Engine (Parallel Execution)           │
 │  • Create Microlearning (8 scenes parallel)          │
-│  • Create Phishing (Email + Landing Page)            │
+│  • Create Phishing (Email + Landing Page)            │
+│  • Email IR Analysis (Headers + Behavior + Intent)            │
 │  • Autonomous Loop (Scheduled generation)            │
 └────────────────────┬─────────────────────────────────┘
                      │
@@ -119,6 +120,10 @@ Located in `src/mastra/services/`, these services power the entire application.
 - **Role:** Summarizes complex security policies.
 - **Usage:** RAG-based lookup. Fetches relevant policy docs and condenses them for other agents to use as context.
 
+### 5. Email IR Analyst (The Incident Responder)
+- **Role:** Automated incident response for suspicious emails.
+- **Usage:** Performs header/body/intent analysis, triages the email, and generates a SOC-ready report.
+
 ---
 
 ## 4. Workflow Execution Layer
@@ -151,7 +156,14 @@ Workflows handle the heavy lifting. They are **long-running, resilient, and para
     3. **Generate Landing:** Login page or Success page.
     4. **Save:** Atomic write to KV (`phishing:{id}:*`).
 
-### D. Add Language / Multiple Languages
+**Purpose:** Produce a full incident response report for a suspicious email.
+- **Steps:**
+    1. **Fetch:** Retrieve email from API by ID.
+    2. **Analyze:** Parallel header + behavioral + intent analysis.
+    3. **Triage:** Categorize (Phishing, CEO Fraud, Benign, etc.).
+    4. **Report:** Risk level, confidence, and recommended actions.
+
+### E. Add Language / Multiple Languages
 **Purpose:** Localization.
 - **Logic:** Parallel translation of existing content.
 - **Resilience:** Uses 3-level translation fallback (Direct -> Integrity Check -> Auto-Repair).

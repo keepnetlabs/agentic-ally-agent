@@ -1,6 +1,6 @@
 # Agentic Ally - Project Guide
 
-**Last Updated:** January 10, 2026
+**Last Updated:** February 3, 2026
 
 > ⚠️ **IMPORTANT:** The documentation has been moved to the `docs/` directory for better organization.
 
@@ -11,7 +11,7 @@
 | Document | Purpose |
 |----------|---------|
 | **[HANDOVER.md](./docs/HANDOVER.md)** | **START HERE.** Critical configs, "Gotchas", and Roadmap. |
-| **[ARCHITECTURE.md](./docs/ARCHITECTURE.md)** | 5-Agent System, State Machines, and Resilience Strategy. |
+| **[ARCHITECTURE.md](./docs/ARCHITECTURE.md)** | 6-Agent System, State Machines, and Resilience Strategy. |
 | **[DEVELOPMENT.md](./docs/DEVELOPMENT.md)** | How to run, debug (`debug-workflow.ts`), and test. |
 | **[DATA_MODEL.md](./docs/DATA_MODEL.md)** | KV Schemas, Types, and Validators. |
 | **[WORKFLOWS.md](./docs/WORKFLOWS.md)** | Mermaid diagrams of all logic flows. |
@@ -57,7 +57,7 @@ curl -X POST http://localhost:8000/chat \
 
 ```
 src/mastra/
-├── agents/             # Microlearning, Phishing, UserInfo, Policy, Orchestrator
+├── agents/             # Microlearning, Phishing, UserInfo, Policy, Email IR, Orchestrator
 ├── services/           # Core Logic (Autonomous, KV, Health, Error)
 ├── tools/              # 20+ Tools (Generation, Analysis, Inbox)
 ├── workflows/          # Parallel Execution Flows

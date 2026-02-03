@@ -1,16 +1,17 @@
 # Frequently Asked Questions
 
-**Last Updated:** January 10, 2026
+**Last Updated:** February 3, 2026
 
 ## 🤖 The Agents
 
 ### Q: How many agents are there?
-**A:** There are **5 Specialized Agents**:
+**A:** There are **6 Specialized Agents**:
 1.  **Orchestrator:** Routes traffic.
 2.  **Microlearning:** Creates training.
 3.  **Phishing:** Creates simulations.
 4.  **User Info:** Analyzes risk.
 5.  **Policy:** Answers policy questions.
+6.  **Email IR Analyst:** Analyzes suspicious emails and produces IR reports.
 
 ### Q: Can I talk to them individually?
 **A:** No, you always talk to the **Orchestrator** (`/chat`). It decides which specialist handles your request based on your intent.

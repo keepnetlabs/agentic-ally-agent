@@ -1,12 +1,12 @@
 # Agentic Ally - Platform Overview
 
-**Last Updated:** January 10, 2026
+**Last Updated:** February 3, 2026
 
 ## 🛡️ What is Agentic Ally?
 
 **Agentic Ally** is an Autonomous Security Awareness Platform powered by a **Multi-Agent System**.
 
-Unlike traditional tools that just send emails, Ally employs a team of **5 Specialized AI Agents** to analyze user behavior, detect knowledge gaps, and proactively generate personalized training and simulations.
+Unlike traditional tools that just send emails, Ally employs a team of **6 Specialized AI Agents** to analyze user behavior, detect knowledge gaps, and proactively generate personalized training and simulations.
 
 It operates in two modes:
 1.  **Reactive:** Developers/Admins chat with the Orchestrator to generate content on demand.
@@ -14,7 +14,7 @@ It operates in two modes:
 
 ---
 
-## 🤖 The 5 Specialist Agents
+## 🤖 The 6 Specialist Agents
 
 ### 1. Orchestrator Agent (The Router)
 *   **Role:** The intelligent front-desk.
@@ -47,6 +47,13 @@ It operates in two modes:
     *   Retrieves company policy documents.
     *   Summarizes complex legalese into actionable HTML bullet points.
     *   Answers "What is our policy on X?" questions instantly.
+
+### 6. Email IR Analyst (The Incident Responder)
+*   **Role:** Automated email incident response.
+*   **Capabilities:**
+    *   Analyzes headers, body intent, and behavioral signals.
+    *   Triages suspicious emails into SOC-friendly categories.
+    *   Produces a full IR report with risk level, confidence, and recommended actions.
 
 ---
 
