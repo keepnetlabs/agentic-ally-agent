@@ -53,6 +53,7 @@ const SKIP_AUTH_PATHS = [
     '/code-review-validate',
     '/vishing/prompt',
     '/smishing/chat',
+    '/email-ir/analyze',
 ] as const;
 
 

@@ -11,7 +11,7 @@ Generate scene 6 (survey):
 {
   "6": {
     "iconName": "list-checks",
-    "title": "CRITICAL: MUST be exactly 'Share Your Experience' localized to ${analysis.language} - NEVER include topic name (${analysis.topic}) or any other text. Output only the localized translation of 'Share Your Experience'.",
+    "title": "Localize into ${analysis.language}. Title format: 'Share Your Experience' (generic) OR 'Share Your [Topic] Experience' (topic-aware, e.g., 'Share Your Phishing Awareness Experience'). Output only the localized text, not instructions.",
     "subtitle": "Localize 'Help us improve your training experience' into ${analysis.language}. Output localized text directly, not instructions.",
     "texts": {
       "ratingQuestion": "Confidence question for ${analysis.topic} (${analysis.department}), max 12 words in ${analysis.language}",

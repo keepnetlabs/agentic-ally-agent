@@ -1,0 +1,59 @@
+import { createTool } from '@mastra/core/tools';
+import { z } from 'zod';
+import { EmailIREmailDataSchema } from '../../types/email-ir';
+import { createLogContext, loggerFetch, logStepStart, logStepComplete, logStepError } from './logger-setup';
+import { withRetry } from '../../utils/core/resilience-utils';
+
+export const fetchEmailInputSchema = z.object({
+    id: z.string(),
+    accessToken: z.string(),
+    apiBaseUrl: z.string().optional().default('https://test-api.devkeepnet.com'),
+});
+
+export const fetchEmailTool = createTool({
+    id: 'email-ir-fetch-email-tool',
+    description: 'Fetches email data from the Keepnet API using an ID',
+    inputSchema: fetchEmailInputSchema,
+    outputSchema: EmailIREmailDataSchema,
+    execute: async ({ context }) => {
+        const { id, accessToken, apiBaseUrl } = context;
+        const ctx = createLogContext(id, 'fetch-email');
+
+        return await withRetry(async () => {
+            try {
+                logStepStart(loggerFetch, ctx, { api_endpoint: apiBaseUrl });
+
+                const url = `${apiBaseUrl}/notified-emails/${id}`;
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                    },
+                });
+
+                if (!response.ok) {
+                    const errorBody = await response.text();
+                    throw new Error(`Failed to fetch email [${response.status}]: ${errorBody}`);
+                }
+
+                const data = await response.json();
+
+                // The API returns { data: { ...emailFields } } structure
+                // We need to extract the 'data' property
+                const emailData = data.data || data;
+
+                logStepComplete(loggerFetch, ctx, {
+                    status: 'success',
+                    data_size: JSON.stringify(emailData).length
+                });
+
+                return emailData;
+            } catch (error) {
+                logStepError(loggerFetch, ctx, error as Error);
+                throw error;
+            }
+        }, 'fetch-email-api');
+    },
+});
