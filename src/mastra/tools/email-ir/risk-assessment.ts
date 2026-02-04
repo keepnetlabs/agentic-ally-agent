@@ -65,7 +65,7 @@ Email exhibits:
 - **Behavioral red flags without clear malicious intent**: Urgency framing + financial request (but not from trusted authority)
 - **Suspicious sender domain** but legitimate-looking content
 - **Social engineering pattern detected**: Pretexting, baiting, or unusual urgency without financial/credential request
-- **Unverified sender** (fails SPF/DKIM) + unusual request
+- **Unverified sender** (fails SPF/DKIM/DMARC) + unusual request
 - **Mixed signals**: Some indicators suggest risk, but mitigating factors exist (e.g., internal domain but unusual request)
 - **Generic phishing attempt**: Low-sophistication but clear credential/financial angle
 
@@ -74,7 +74,7 @@ Email exhibits:
 - **Security Awareness / Simulation**: Validated phishing test.
 - **Triage verdict is Benign, Internal, or Marketing**
 - **No behavioral manipulation signals detected**
-- **SPF/DKIM/DMARC pass** + **legitimate sender context** (known vendor, internal domain)
+- **spf_pass/dkim_pass/dmarc_pass are true** + **legitimate sender context** (known vendor, internal domain)
 - **Informational content** with no financial, credential, or action requests
 - **No authority impersonation**, **no urgency framing**, **no emotional pressure**
 
@@ -84,7 +84,7 @@ Email exhibits:
 
 **Increase confidence when:**
 - Multiple risk signals converge (e.g., authority impersonation + urgency + financial request = HIGH)
-- Technical indicators align with behavioral signals (e.g., malicious intent + engine flagged)
+- Authentication anomalies align with behavioral/intent signals (e.g., spoofed domain + credential request)
 - High-risk triage category (Phishing, CEO Fraud, Sextortion, Other Suspicious)
 - Clear decision rules apply (see below)
 
@@ -92,7 +92,7 @@ Email exhibits:
 - Mixed signals (e.g., financial request but from seemingly legitimate source)
 - SPF/DKIM/DMARC pass (harder to impersonate, reduces suspicion)
 - Internal domain sender (more likely legitimate)
-- Low technical indicator count despite suspicious intent
+- threat_intel_findings == "none" despite suspicious intent
 
 **Critical Rule:**
 - If **confidence < 50%** and **risk_level is HIGH**, flag for human review in justification
@@ -110,10 +110,10 @@ Use this logic to assign risk_level:
 **IF** triage_category == 'Phishing' OR triage_category == 'CEO Fraud' OR triage_category == 'Sextortion'
   **THEN** risk_level = HIGH (confidence 80-95)
 
-**IF** triage_category == 'Other Suspicious' AND (authority_impersonation OR emotional_pressure != 'none' OR social_engineering_pattern != 'none')
+**IF** triage_category == 'Other Suspicious' AND (authority_impersonation OR (emotional_pressure != 'none' AND emotional_pressure != 'insufficient_data') OR (social_engineering_pattern != 'none' AND social_engineering_pattern != 'insufficient_data'))
   **THEN** risk_level = MEDIUM or HIGH (confidence 60-85)
 
-**IF** triage_category == 'Other Suspicious' AND (engine_indicators_present OR unverified_sender)
+**IF** triage_category == 'Other Suspicious' AND (domain_similarity != 'none' OR spf_pass == false OR dkim_pass == false OR dmarc_pass == false)
   **THEN** risk_level = MEDIUM (confidence 60-75)
 
 **IF** triage_category == 'Security Awareness' (Simulation)
@@ -122,7 +122,7 @@ Use this logic to assign risk_level:
 **IF** triage_category == 'Spam' OR triage_category == 'Marketing'
   **THEN** risk_level = LOW (confidence 85-95)
 
-**IF** triage_category == 'Internal' AND no_red_flags
+**IF** triage_category == 'Internal' AND urgency_level IN ['none','insufficient_data'] AND emotional_pressure IN ['none','insufficient_data'] AND social_engineering_pattern IN ['none','insufficient_data'] AND financial_request == false AND credential_request == false
   **THEN** risk_level = LOW (confidence 90-98)
 
 **IF** triage_category == 'Benign'
@@ -147,11 +147,17 @@ Example:
 
 ## INPUT DATA
 
-**Triage Result:**
+**Triage Result (verbatim):**
 ${JSON.stringify(inputData.triage_result, null, 2)}
 
-**Extracted Features:**
-${JSON.stringify(inputData, null, 2)}
+**Key Risk Signals (summarized):**
+- header_auth: spf_pass=${inputData.header_analysis?.spf_pass}, dkim_pass=${inputData.header_analysis?.dkim_pass}, dmarc_pass=${inputData.header_analysis?.dmarc_pass}, domain_similarity=${inputData.header_analysis?.domain_similarity}
+- intent: ${inputData.intent_analysis?.intent}
+- credential_request: ${inputData.intent_analysis?.credential_request}
+- financial_request: ${inputData.intent_analysis?.financial_request}
+- authority_impersonation: ${inputData.intent_analysis?.authority_impersonation}
+- behavioral: urgency=${inputData.behavioral_analysis?.urgency_level}, emotional_pressure=${inputData.behavioral_analysis?.emotional_pressure}, social_engineering=${inputData.behavioral_analysis?.social_engineering_pattern}, verification_avoidance=${inputData.behavioral_analysis?.verification_avoidance}
+- threat_intel_findings: ${inputData.header_analysis?.threat_intel_findings || 'none'}
 
 ---
 

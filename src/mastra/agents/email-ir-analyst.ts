@@ -1,8 +1,11 @@
 import { Agent } from '@mastra/core/agent';
 import { getModel, ModelProvider, Model } from '../model-providers';
+import { AGENT_IDS, AGENT_NAMES } from '../constants';
 
 export const emailIRAnalyst = new Agent({
-    name: 'email-ir-analyst',
+    id: AGENT_IDS.EMAIL_IR_ANALYST,
+    name: AGENT_NAMES.EMAIL_IR_ANALYST,
+    description: 'Analyzes suspicious emails for incident response, focusing on headers, content, and triage.',
     instructions: `
 # Identity
 You are an expert **Automated Incident Responder** specializing in email security.

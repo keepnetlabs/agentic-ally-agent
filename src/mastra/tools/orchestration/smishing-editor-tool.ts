@@ -173,7 +173,7 @@ export const smishingEditorTool = createTool({
       }
 
       const landingResults = allResults.slice(smsPromise ? 1 : 0);
-      const fromNameForLanding = 'Security Team';
+      const fromNameForLanding = whitelabelConfig?.brandName || 'Security Team';
 
       const editedLanding = shouldEditLanding
         ? await processLandingPageResults(

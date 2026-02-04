@@ -69,7 +69,7 @@ If multiple categories apply, prioritize the highest severity:
 
 ### 2. Conflict Resolution Logic (How to decide)
 - **Technical vs Intent**: If SPF/DKIM pass but Intent is "Phishing", classify as **Phishing** (Compromised Account scenario).
-- **Simulation**: If "Security Awareness" headers/footers are found, it overrides ALL other signals -> Classify as **Security Awareness**.
+- **Simulation**: If \`security_awareness_detected\` is true, it overrides ALL other signals -> Classify as **Security Awareness**.
 - **Ambiguity**: If suspicious signals exist but don't fit a pattern, use **Other Suspicious**.
 
 ### 3. Category Definitions (Detailed Reference)
@@ -98,6 +98,7 @@ If multiple categories apply, prioritize the highest severity:
 - **DMARC Pass**: ${header_analysis.dmarc_pass}
 - **Domain Similarity**: ${header_analysis.domain_similarity}
 - **Header Summary**: ${header_analysis.header_summary}
+- **Security Awareness Detected**: ${header_analysis.security_awareness_detected}
 
 ### 2. Behavioral Analysis
 - **Urgency Level**: ${behavioral_analysis.urgency_level}
@@ -150,4 +151,3 @@ Classify strictly into ONE category based on the logic above.
         }
     },
 });
-

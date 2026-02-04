@@ -6,13 +6,13 @@ import { createLogContext, loggerBehavioral, logStepStart, logStepComplete, logS
 import { withRetry } from '../../utils/core/resilience-utils';
 
 export const bodyBehavioralAnalysisOutputSchema = z.object({
-    urgency_level: z.enum(['none', 'low', 'medium', 'high']).describe('Degree of time pressure/urgency framing in body'),
-    emotional_pressure: z.enum(['none', 'fear', 'urgency', 'reward']).describe('Type of emotional manipulation detected'),
-    social_engineering_pattern: z.enum(['none', 'pretexting', 'extortion', 'baiting']).describe('Social engineering tactic used'),
+    urgency_level: z.enum(['insufficient_data', 'none', 'low', 'medium', 'high']).describe('Degree of time pressure/urgency framing in body'),
+    emotional_pressure: z.enum(['insufficient_data', 'none', 'fear', 'urgency', 'reward']).describe('Type of emotional manipulation detected'),
+    social_engineering_pattern: z.enum(['insufficient_data', 'none', 'pretexting', 'extortion', 'baiting']).describe('Social engineering tactic used'),
     verification_avoidance: z.boolean().describe('True if email discourages verification/validation'),
-    verification_avoidance_tactics: z.string().describe('Examples: "Don\'t call the number", "keep confidential", etc. or "none"'),
-    urgency_indicators: z.string().describe('List of urgency framing phrases found in body (e.g., "immediate action", "act now") or "none"'),
-    emotional_pressure_indicators: z.string().describe('Examples of emotional manipulation phrases or "none"'),
+    verification_avoidance_tactics: z.string().describe('Examples: "Don\'t call the number", "keep confidential", etc. or "insufficient_data"'),
+    urgency_indicators: z.string().describe('List of urgency framing phrases found in body (e.g., "immediate action", "act now") or "insufficient_data"'),
+    emotional_pressure_indicators: z.string().describe('Examples of emotional manipulation phrases or "insufficient_data"'),
     behavioral_summary: z.string().describe('1-2 sentence summary of behavioral manipulation tactics detected'),
 
     // Pass-through context
@@ -96,15 +96,15 @@ ${emailBody}
 
 Populate the output schema based on the behavioral signals identified:
 1.  **urgency_level**: Calibrate based on the intensity of time pressure phrases.
-2.  **emotional_pressure**: Identify the dominant emotional trigger (Fear/Reward/Urgency/None).
-3.  **social_engineering_pattern**: Classify the tactic (Pretexting/Extortion/Baiting/None).
+2.  **emotional_pressure**: Identify the dominant emotional trigger (Fear/Reward/Urgency/None/Insufficient).
+3.  **social_engineering_pattern**: Classify the tactic (Pretexting/Extortion/Baiting/None/Insufficient).
 4.  **verification_avoidance**: Set to TRUE if the sender explicitly discourages outside checks.
 5.  **behavioral_summary**: concise 1-2 sentence forensic summary of the manipulation technique.
 
 **CRITICAL NOTES:**
 - **Logic Separation**: You are analyzing **HOW** the email manipulates (Psychology), not **WHAT** it is asking for (Intent).
     - *Example*: "Verify password immediately or lose access" is High Urgency + Fear (Behavior), regardless of whether it's for Netflix or a Bank.
-- **Edge Cases**: If the body is empty or too short to analyze, state "No behavioral manipulation detected" rather than hallucinating signals.
+- **Edge Cases**: If the body is empty or too short to analyze, use "insufficient_data" for fields you cannot assess.
 `;
 
             const result = await withRetry(

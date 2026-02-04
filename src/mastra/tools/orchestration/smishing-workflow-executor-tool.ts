@@ -23,7 +23,7 @@ const smishingWorkflowSchema = z.object({
         .optional()
         .default(SMISHING.DEFAULT_DIFFICULTY),
     language: z.string().optional().default('en-gb').describe('Target language (BCP-47 code, e.g. en-gb, tr-tr)'),
-    method: z.enum(SMISHING.ATTACK_METHODS).optional().describe('Type of smishing attack'),
+    method: z.enum(SMISHING.ATTACK_METHODS).optional().default(SMISHING.DEFAULT_ATTACK_METHOD).describe('Type of smishing attack'),
     includeSms: z.boolean().optional().default(true).describe('Whether to generate SMS templates'),
     includeLandingPage: z.boolean().optional().default(true).describe('Whether to generate a landing page'),
     additionalContext: z.string().optional().describe('Strategic context from Agent reasoning for targeted smishing'),
@@ -75,7 +75,7 @@ export const smishingWorkflowExecutorTool = createTool({
                     topic: params.topic,
                     targetProfile: params.targetProfile,
                     difficulty: params.difficulty || SMISHING.DEFAULT_DIFFICULTY,
-                    language: params.language || 'en',
+                    language: params.language || 'en-gb',
                     method: params.method,
                     includeSms: params.includeSms,
                     includeLandingPage: params.includeLandingPage,

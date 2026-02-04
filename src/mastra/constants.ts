@@ -599,6 +599,7 @@ export const AGENT_NAMES = {
   USER_INFO: 'userInfoAssistant',
   POLICY_SUMMARY: 'policySummaryAssistant',
   ORCHESTRATOR: 'orchestrator',
+  EMAIL_IR_ANALYST: 'emailIrAnalyst',
 } as const;
 
 // ============================================
@@ -612,6 +613,7 @@ export const AGENT_IDS = {
   USER_INFO: 'user-info-agent',
   POLICY_SUMMARY: 'policy-summary-agent',
   ORCHESTRATOR: 'orchestrator-agent',
+  EMAIL_IR_ANALYST: 'email-ir-analyst',
 } as const;
 
 // ============================================

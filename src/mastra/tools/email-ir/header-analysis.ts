@@ -9,12 +9,13 @@ export const headerAnalysisOutputSchema = z.object({
     spf_pass: z.boolean().describe('True if SPF authentication passed'),
     dkim_pass: z.boolean().describe('True if DKIM signature verified'),
     dmarc_pass: z.boolean().describe('True if DMARC alignment verified'),
-    domain_similarity: z.string().describe('Detected domain spoofing or similarity (e.g., "keepnetlabs.co vs keepnetlabs.com" or "none"'),
+    domain_similarity: z.string().describe('Detected domain spoofing or similarity (e.g., "keepnetlabs.co vs keepnetlabs.com" or "insufficient_data"'),
     sender_ip_reputation: z.string().describe('Sender IP reputation status (clean/suspicious/blocklisted)'),
-    geolocation_anomaly: z.string().describe('Geographic anomaly if detected (e.g., "Sender IP from China but email claims to be from USA" or "none")'),
-    routing_anomaly: z.string().describe('Suspicious routing or relay patterns detected (e.g., "unusual hop count" or "none")'),
+    geolocation_anomaly: z.string().describe('Geographic anomaly if detected (e.g., "Sender IP from China but email claims to be from USA" or "insufficient_data")'),
+    routing_anomaly: z.string().describe('Suspicious routing or relay patterns detected (e.g., "unusual hop count" or "insufficient_data")'),
     threat_intel_findings: z.string().describe('Summary of external threat intelligence findings (VirusTotal, etc.) from input data'),
     header_summary: z.string().describe('1-2 sentence summary of authentication and routing assessment'),
+    security_awareness_detected: z.boolean().describe('True if headers indicate a phishing simulation/training email'),
 
     // Pass-through context
     original_email: EmailIREmailDataSchema,
@@ -52,6 +53,24 @@ export const headerAnalysisTool = createTool({
             const senderIP = email.senderIp || 'Unknown';
             const geoLocation = email.geoLocation || 'Unknown';
             const headerList = email.headers ? email.headers.map(h => `${h.key}: ${h.value}`).join('\n') : 'No headers available';
+
+            const hasSecurityAwarenessHeader = Array.from(headerMap.entries()).some(([key, value]) => {
+                if (!key) return false;
+                const k = key.toLowerCase();
+                const v = (value || '').toLowerCase();
+                return (
+                    k.includes('x-phish-test') ||
+                    k.includes('x-phishing-test') ||
+                    k.includes('x-security-awareness') ||
+                    k.includes('x-simulated-phish') ||
+                    k.includes('x-simulation') ||
+                    v.includes('phish-test') ||
+                    v.includes('phishing-test') ||
+                    v.includes('security awareness') ||
+                    v.includes('simulated phish') ||
+                    v.includes('simulation')
+                );
+            });
 
             // Helper to summarize scans and reduce token count
             const summarizeScans = (items: any[], type: 'url' | 'ip' | 'name') => {
@@ -94,18 +113,21 @@ Your goal is to validate authentication (SPF/DKIM/DMARC), check for routing anom
 ### SPF (Sender Policy Framework)
 - Check if sender IP is authorized in sender domain's SPF record
 - Look for "spf=pass", "spf=fail", "spf=neutral", "spf=softfail" in Authentication-Results
+- **Rule**: Only set spf_pass=true if Authentication-Results explicitly contains "spf=pass".
 - SPF pass = legitimate sender domain (harder to spoof)
 - SPF fail = sender not authorized by domain owner
 
 ### DKIM (DomainKeys Identified Mail)
 - Check if email signature is cryptographically verified
 - Look for "dkim=pass", "dkim=fail", "dkim=none" in Authentication-Results
+- **Rule**: Only set dkim_pass=true if Authentication-Results explicitly contains "dkim=pass".
 - DKIM pass = email not tampered with, comes from domain
 - DKIM fail = signature invalid or missing
 
 ### DMARC (Domain-based Message Authentication, Reporting & Conformance)
 - Check domain alignment (does From domain match SPF/DKIM domain?)
 - Look for "dmarc=pass", "dmarc=fail", "dmarc=none" in Authentication-Results
+- **Rule**: Only set dmarc_pass=true if Authentication-Results explicitly contains "dmarc=pass".
 - DMARC pass = strong indicator of legitimate source
 - DMARC fail = likely domain spoofing attempt
 
@@ -151,6 +173,9 @@ ${attachmentSection}
 **Authentication-Results Header**:
 ${authResults}
 
+**Security Awareness Header Detected (heuristic)**:
+${hasSecurityAwarenessHeader}
+
 ### Raw Header Dump
 \`\`\`
 ${headerList}
@@ -164,14 +189,15 @@ Based on headers provided:
 1. **spf_pass**: true/false (true only if explicitly SPF=PASS)
 2. **dkim_pass**: true/false (true only if explicitly DKIM=PASS)
 3. **dmarc_pass**: true/false (true only if explicitly DMARC=PASS)
-4. **domain_similarity**: Describe any domain spoofing detected, or "none"
-5. **sender_ip_reputation**: Status of sender IP (clean/suspicious/blocklisted) or "Unknown"
-6. **geolocation_anomaly**: Geographic mismatch if detected, or "none"
-7. **routing_anomaly**: Suspicious routing patterns if detected, or "none"
-8. **threat_intel_findings**: Summary of Malicious URLs, IPs, or Attachments found, or "No external threats detected"
+4. **domain_similarity**: Describe any domain spoofing detected, or "insufficient_data"
+5. **sender_ip_reputation**: Status of sender IP (clean/suspicious/blocklisted) or "insufficient_data"
+6. **geolocation_anomaly**: Geographic mismatch if detected, or "insufficient_data"
+7. **routing_anomaly**: Suspicious routing patterns if detected, or "insufficient_data"
+8. **threat_intel_findings**: Summary of Malicious URLs, IPs, or Attachments found, or "insufficient_data"
 9. **header_summary**: 1-2 sentence assessment of authentication trust level
+10. **security_awareness_detected**: true if headers indicate a simulation/training email, else false
 
-Note: If header data is incomplete or missing, state "Insufficient data" for fields you cannot assess.
+Note: If header data is incomplete or missing, use the exact string "insufficient_data" for fields you cannot assess.
 `;
 
             const result = await withRetry(
@@ -203,10 +229,10 @@ Note: If header data is incomplete or missing, state "Insufficient data" for fie
             if (!result.object.dmarc_pass) {
                 logSignalDetected(loggerHeader, emailId, 'authentication', 'DMARC_FAILED', 'high');
             }
-            if (result.object.domain_similarity !== 'none') {
+            if (result.object.domain_similarity !== 'insufficient_data') {
                 logSignalDetected(loggerHeader, emailId, 'domain', 'TYPOSQUATTING_DETECTED', 'high');
             }
-            if (result.object.geolocation_anomaly !== 'none') {
+            if (result.object.geolocation_anomaly !== 'insufficient_data') {
                 logSignalDetected(loggerHeader, emailId, 'geolocation', result.object.geolocation_anomaly, 'medium');
             }
 
@@ -223,6 +249,7 @@ Note: If header data is incomplete or missing, state "Insufficient data" for fie
             return {
                 ...result.object,
                 original_email: email,
+                security_awareness_detected: result.object.security_awareness_detected || hasSecurityAwarenessHeader,
             };
         } catch (error) {
             logStepError(loggerHeader, ctx, error as Error, {
