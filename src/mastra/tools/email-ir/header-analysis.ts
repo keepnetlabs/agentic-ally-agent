@@ -16,6 +16,7 @@ export const headerAnalysisOutputSchema = z.object({
     threat_intel_findings: z.string().describe('Summary of external threat intelligence findings (VirusTotal, etc.) from input data'),
     header_summary: z.string().describe('1-2 sentence summary of authentication and routing assessment'),
     security_awareness_detected: z.boolean().describe('True if headers indicate a phishing simulation/training email'),
+    list_unsubscribe_present: z.boolean().describe('True if List-Unsubscribe header exists (RFC 2369) - indicates legitimate marketing email'),
 
     // Pass-through context
     original_email: EmailIREmailDataSchema,
@@ -71,6 +72,9 @@ export const headerAnalysisTool = createTool({
                     v.includes('simulation')
                 );
             });
+
+            // RFC 2369: List-Unsubscribe header indicates legitimate mailing list/marketing email
+            const hasListUnsubscribe = headerMap.has('list-unsubscribe') || headerMap.has('list-unsubscribe-post');
 
             // Helper to summarize scans and reduce token count
             const summarizeScans = (items: any[], type: 'url' | 'ip' | 'name') => {
@@ -176,6 +180,9 @@ ${authResults}
 **Security Awareness Header Detected (heuristic)**:
 ${hasSecurityAwarenessHeader}
 
+**List-Unsubscribe Header Present (RFC 2369)**:
+${hasListUnsubscribe}
+
 ### Raw Header Dump
 \`\`\`
 ${headerList}
@@ -196,6 +203,7 @@ Based on headers provided:
 8. **threat_intel_findings**: Summary of Malicious URLs, IPs, or Attachments found, or "insufficient_data"
 9. **header_summary**: 1-2 sentence assessment of authentication trust level
 10. **security_awareness_detected**: true if headers indicate a simulation/training email, else false
+11. **list_unsubscribe_present**: true if List-Unsubscribe or List-Unsubscribe-Post header exists (RFC 2369 - indicates legitimate marketing/newsletter)
 
 Note: If header data is incomplete or missing, use the exact string "insufficient_data" for fields you cannot assess.
 `;
@@ -250,6 +258,7 @@ Note: If header data is incomplete or missing, use the exact string "insufficien
                 ...result.object,
                 original_email: email,
                 security_awareness_detected: result.object.security_awareness_detected || hasSecurityAwarenessHeader,
+                list_unsubscribe_present: result.object.list_unsubscribe_present || hasListUnsubscribe,
             };
         } catch (error) {
             logStepError(loggerHeader, ctx, error as Error, {

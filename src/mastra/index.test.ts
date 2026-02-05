@@ -75,8 +75,9 @@ vi.mock('./agents', () => ({
     microlearningAgent: {},
     orchestratorAgent: {},
     phishingEmailAgent: {},
-    userInfoAgent: {},
-    policySummaryAgent: {}
+    smishingSmsAgent: {},
+    policySummaryAgent: {},
+    userInfoAgent: {}
 }));
 
 

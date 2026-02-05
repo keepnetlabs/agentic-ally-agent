@@ -1,4 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { INBOX_TEXT_PARAMS } from '../utils/config/llm-generation-params';
+import { getModelWithOverride } from '../model-providers';
+import { validateBCP47LanguageCode } from '../utils/language/language-utils';
 
 // Create mock context factory
 function createMockContext(requestBody: any) {
@@ -57,6 +60,7 @@ describe('Smishing Chat Route Handler', () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
+    vi.mocked(validateBCP47LanguageCode).mockImplementation((lang) => lang);
 
     mockKVService = {
       getMicrolearning: vi.fn(),
@@ -85,8 +89,26 @@ describe('Smishing Chat Route Handler', () => {
       expect(calls[0][1]).toBe(400);
     });
 
+    it('should reject request when microlearningId is not a string', async () => {
+      const ctx = createMockContext({ microlearningId: 123, language: 'en', messages: [{ role: 'user', content: 'Hi' }] });
+      await smishingChatHandler(ctx);
+
+      const calls = ctx._getJsonCalls();
+      expect(calls[0][0]).toMatchObject({ success: false, error: 'Missing microlearningId' });
+      expect(calls[0][1]).toBe(400);
+    });
+
     it('should reject request without language', async () => {
       const ctx = createMockContext({ microlearningId: 'ml-123', messages: [{ role: 'user', content: 'Hi' }] });
+      await smishingChatHandler(ctx);
+
+      const calls = ctx._getJsonCalls();
+      expect(calls[0][0]).toMatchObject({ success: false, error: 'Missing language' });
+      expect(calls[0][1]).toBe(400);
+    });
+
+    it('should reject request when language is not a string', async () => {
+      const ctx = createMockContext({ microlearningId: 'ml-123', language: 123, messages: [{ role: 'user', content: 'Hi' }] });
       await smishingChatHandler(ctx);
 
       const calls = ctx._getJsonCalls();
@@ -99,6 +121,45 @@ describe('Smishing Chat Route Handler', () => {
         microlearningId: 'ml-123',
         language: 'en',
         messages: [{ role: 'user', content: '' }],
+      });
+      await smishingChatHandler(ctx);
+
+      const calls = ctx._getJsonCalls();
+      expect(calls[0][0]).toMatchObject({ success: false, error: 'Invalid message format' });
+      expect(calls[0][1]).toBe(400);
+    });
+
+    it('should reject messages with invalid role', async () => {
+      const ctx = createMockContext({
+        microlearningId: 'ml-123',
+        language: 'en',
+        messages: [{ role: 'tool', content: 'Hi' }],
+      });
+      await smishingChatHandler(ctx);
+
+      const calls = ctx._getJsonCalls();
+      expect(calls[0][0]).toMatchObject({ success: false, error: 'Invalid message format' });
+      expect(calls[0][1]).toBe(400);
+    });
+
+    it('should reject non-object messages in array', async () => {
+      const ctx = createMockContext({
+        microlearningId: 'ml-123',
+        language: 'en',
+        messages: ['not-an-object'],
+      });
+      await smishingChatHandler(ctx);
+
+      const calls = ctx._getJsonCalls();
+      expect(calls[0][0]).toMatchObject({ success: false, error: 'Invalid message format' });
+      expect(calls[0][1]).toBe(400);
+    });
+
+    it('should reject messages with whitespace content only', async () => {
+      const ctx = createMockContext({
+        microlearningId: 'ml-123',
+        language: 'en',
+        messages: [{ role: 'user', content: '   ' }],
       });
       await smishingChatHandler(ctx);
 
@@ -133,6 +194,20 @@ describe('Smishing Chat Route Handler', () => {
       expect(calls[0][0]).toMatchObject({ success: false, error: 'Smishing prompt not available' });
       expect(calls[0][1]).toBe(404);
     });
+
+    it('should return 404 if firstMessage is missing when no messages provided', async () => {
+      const ctx = createMockContext({ microlearningId: 'ml-123', language: 'en' });
+      mockKVService.getMicrolearning.mockResolvedValue({
+        microlearning_id: 'ml-123',
+        language: { '4': { prompt: 'Prompt only' } },
+      });
+
+      await smishingChatHandler(ctx);
+
+      const calls = ctx._getJsonCalls();
+      expect(calls[0][0]).toMatchObject({ success: false, error: 'Smishing prompt not available' });
+      expect(calls[0][1]).toBe(404);
+    });
   });
 
   describe('Successful Response', () => {
@@ -140,6 +215,44 @@ describe('Smishing Chat Route Handler', () => {
       const ctx = createMockContext({
         microlearningId: 'ml-123',
         language: 'en',
+      });
+      mockKVService.getMicrolearning.mockResolvedValue(validMicrolearning);
+
+      await smishingChatHandler(ctx);
+
+      const calls = ctx._getJsonCalls();
+      expect(calls[0][0]).toMatchObject({
+        success: true,
+        prompt: validMicrolearning.language['4'].prompt,
+        firstMessage: validMicrolearning.language['4'].firstMessage,
+      });
+      expect(calls[0][1]).toBe(200);
+    });
+
+    it('should treat non-array messages as missing and return prompt/firstMessage', async () => {
+      const ctx = createMockContext({
+        microlearningId: 'ml-123',
+        language: 'en',
+        messages: 'not-an-array' as any,
+      });
+      mockKVService.getMicrolearning.mockResolvedValue(validMicrolearning);
+
+      await smishingChatHandler(ctx);
+
+      const calls = ctx._getJsonCalls();
+      expect(calls[0][0]).toMatchObject({
+        success: true,
+        prompt: validMicrolearning.language['4'].prompt,
+        firstMessage: validMicrolearning.language['4'].firstMessage,
+      });
+      expect(calls[0][1]).toBe(200);
+    });
+
+    it('should return prompt and firstMessage when messages are an empty array', async () => {
+      const ctx = createMockContext({
+        microlearningId: 'ml-123',
+        language: 'en',
+        messages: [],
       });
       mockKVService.getMicrolearning.mockResolvedValue(validMicrolearning);
 
@@ -191,6 +304,23 @@ describe('Smishing Chat Route Handler', () => {
       expect(callArgs.messages[0]).toMatchObject({ role: 'system', content: validMicrolearning.language['4'].prompt });
     });
 
+    it('should include INBOX_TEXT_PARAMS in LLM call', async () => {
+      const { generateText } = await import('ai');
+      (generateText as any).mockResolvedValue({ text: 'Test reply' });
+
+      const ctx = createMockContext({
+        microlearningId: 'ml-123',
+        language: 'en',
+        messages: [{ role: 'user', content: 'Hi' }],
+      });
+      mockKVService.getMicrolearning.mockResolvedValue(validMicrolearning);
+
+      await smishingChatHandler(ctx);
+
+      const callArgs = (generateText as any).mock.calls[0][0];
+      expect(callArgs).toMatchObject(INBOX_TEXT_PARAMS);
+    });
+
     it('should ignore assistant messages from client', async () => {
       const { generateText } = await import('ai');
       (generateText as any).mockResolvedValue({ text: 'Test reply' });
@@ -230,6 +360,45 @@ describe('Smishing Chat Route Handler', () => {
       expect(calls[0][0]).toMatchObject({ success: false, error: 'Missing user messages' });
       expect(calls[0][1]).toBe(400);
     });
+
+    it('should normalize language to lowercase in response', async () => {
+      const { generateText } = await import('ai');
+      (generateText as any).mockResolvedValue({ text: 'Test reply' });
+      vi.mocked(validateBCP47LanguageCode).mockReturnValue('EN-GB' as any);
+
+      const ctx = createMockContext({
+        microlearningId: 'ml-123',
+        language: 'EN-GB',
+        messages: [{ role: 'user', content: 'Hi' }],
+      });
+      mockKVService.getMicrolearning.mockResolvedValue(validMicrolearning);
+
+      await smishingChatHandler(ctx);
+
+      const calls = ctx._getJsonCalls();
+      expect(calls[0][0]).toMatchObject({
+        success: true,
+        language: 'en-gb',
+      });
+    });
+
+    it('should pass model overrides to getModelWithOverride', async () => {
+      const { generateText } = await import('ai');
+      (generateText as any).mockResolvedValue({ text: 'Test reply' });
+
+      const ctx = createMockContext({
+        microlearningId: 'ml-123',
+        language: 'en',
+        modelProvider: 'openai',
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: 'Hi' }],
+      });
+      mockKVService.getMicrolearning.mockResolvedValue(validMicrolearning);
+
+      await smishingChatHandler(ctx);
+
+      expect(vi.mocked(getModelWithOverride)).toHaveBeenCalledWith('openai', 'gpt-4o-mini');
+    });
   });
 
   describe('Error Handling', () => {
@@ -241,6 +410,39 @@ describe('Smishing Chat Route Handler', () => {
 
       const calls = ctx._getJsonCalls();
       expect(calls[0][0]).toMatchObject({ success: false, error: 'Invalid JSON' });
+      expect(calls[0][1]).toBe(500);
+    });
+
+    it('should handle invalid language validation error', async () => {
+      vi.mocked(validateBCP47LanguageCode).mockImplementation(() => {
+        throw new Error('Invalid language');
+      });
+
+      const ctx = createMockContext({
+        microlearningId: 'ml-123',
+        language: 'xx-yy',
+        messages: [{ role: 'user', content: 'Hi' }],
+      });
+
+      await smishingChatHandler(ctx);
+
+      const calls = ctx._getJsonCalls();
+      expect(calls[0][0]).toMatchObject({ success: false, error: 'Invalid language' });
+      expect(calls[0][1]).toBe(500);
+    });
+
+    it('should handle KV retrieval errors', async () => {
+      const ctx = createMockContext({
+        microlearningId: 'ml-123',
+        language: 'en',
+        messages: [{ role: 'user', content: 'Hi' }],
+      });
+      mockKVService.getMicrolearning.mockRejectedValue(new Error('KV down'));
+
+      await smishingChatHandler(ctx);
+
+      const calls = ctx._getJsonCalls();
+      expect(calls[0][0]).toMatchObject({ success: false, error: 'KV down' });
       expect(calls[0][1]).toBe(500);
     });
   });

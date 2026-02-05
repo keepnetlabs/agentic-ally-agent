@@ -4,6 +4,7 @@ import { emailIRAnalyst } from '../../agents/email-ir-analyst';
 import { EmailIREmailDataSchema } from '../../types/email-ir';
 import { createLogContext, loggerBehavioral, logStepStart, logStepComplete, logStepError } from './logger-setup';
 import { withRetry } from '../../utils/core/resilience-utils';
+import { sanitizeEmailBody } from './email-body-sanitizer';
 
 export const bodyBehavioralAnalysisOutputSchema = z.object({
     urgency_level: z.enum(['insufficient_data', 'none', 'low', 'medium', 'high']).describe('Degree of time pressure/urgency framing in body'),
@@ -32,7 +33,7 @@ export const bodyBehavioralAnalysisTool = createTool({
         try {
             logStepStart(loggerBehavioral, ctx, { subject: email.subject });
 
-            const emailBody = email.htmlBody || email.subject || 'No body content';
+            const emailBody = sanitizeEmailBody(email.htmlBody || '') || email.subject || 'No body content';
             const senderDisplay = email.senderName || email.from;
 
             const prompt = `

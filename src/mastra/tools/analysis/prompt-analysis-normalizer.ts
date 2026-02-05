@@ -1,4 +1,5 @@
 import type { PromptAnalysis } from '../../types/prompt-analysis';
+import { normalizeSmishingChannel } from '../../utils/smishing-channel';
 import {
     CATEGORIES,
     DEFAULT_TRAINING_LEVEL,
@@ -107,6 +108,13 @@ export function autoRepairPromptAnalysis(
         ]
     );
 
+    const isCodeTopic = normalizeBoolean(analysis.isCodeTopic, false);
+    const isVishing = normalizeBoolean(analysis.isVishing, false);
+    const isSmishing = normalizeBoolean(analysis.isSmishing, false);
+    const deliveryChannel = isSmishing
+        ? (normalizeSmishingChannel(analysis.deliveryChannel) ?? 'sms')
+        : undefined;
+
     return {
         language: normalizedLanguage,
         topic,
@@ -133,9 +141,10 @@ export function autoRepairPromptAnalysis(
         hasRichContext: analysis.hasRichContext,
         additionalContext: analysis.additionalContext,
         customRequirements: analysis.customRequirements,
-        isCodeTopic: normalizeBoolean(analysis.isCodeTopic, false),
-        isVishing: normalizeBoolean(analysis.isVishing, false),
-        isSmishing: normalizeBoolean(analysis.isSmishing, false),
+        isCodeTopic,
+        isVishing,
+        isSmishing,
+        deliveryChannel,
     };
 }
 

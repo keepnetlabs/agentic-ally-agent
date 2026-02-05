@@ -81,6 +81,11 @@ describe('Scene 4 - Smishing Simulation Generator', () => {
       expect(prompt).toContain('\"iconName\": \"message-square\"');
     });
 
+    it('should include channel in scene output', () => {
+      const prompt = generateScene4SmishingPrompt(baseAnalysis, baseMicrolearning);
+      expect(prompt).toContain('\"channel\": \"sms\"');
+    });
+
     it('should include key_message array', () => {
       const prompt = generateScene4SmishingPrompt(baseAnalysis, baseMicrolearning);
       expect(prompt).toContain('key_message');
@@ -88,6 +93,28 @@ describe('Scene 4 - Smishing Simulation Generator', () => {
       expect(prompt).toContain('verify');
       expect(prompt).toContain('refuse');
       expect(prompt).toContain('safely');
+    });
+
+    it('should include statusTexts with expected keys', () => {
+      const prompt = generateScene4SmishingPrompt(baseAnalysis, baseMicrolearning);
+      expect(prompt).toContain('statusTexts');
+      expect(prompt).toContain('sending');
+      expect(prompt).toContain('receiving');
+      expect(prompt).toContain('ending');
+      expect(prompt).toContain('error');
+      expect(prompt).toContain('idle');
+    });
+
+    it('should include privacy notice text', () => {
+      const prompt = generateScene4SmishingPrompt(baseAnalysis, baseMicrolearning);
+      expect(prompt).toContain('privacyNotice');
+      expect(prompt).toContain('Privacy-safe simulation');
+    });
+
+    it('should include scientific_basis text', () => {
+      const prompt = generateScene4SmishingPrompt(baseAnalysis, baseMicrolearning);
+      expect(prompt).toContain('scientific_basis');
+      expect(prompt).toContain('Behavioral Rehearsal');
     });
   });
 

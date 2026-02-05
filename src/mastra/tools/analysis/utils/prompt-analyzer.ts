@@ -12,6 +12,7 @@ import { getLogger } from '../../../utils/core/logger';
 import { normalizeError } from '../../../utils/core/error-utils';
 import { withRetry } from '../../../utils/core/resilience-utils';
 import { autoRepairPromptAnalysis } from '../prompt-analysis-normalizer';
+import { detectSmishingChannelFromText } from '../../../utils/smishing-channel';
 
 // Cache formatted lists for performance
 const cachedRolesList = ROLES.VALUES.map((role) => `- "${role}"`).join('\n');
@@ -174,7 +175,8 @@ Return JSON:
   "regulationCompliance": ["relevant regulations by topic/industry"],
   "isCodeTopic": false,
   "isVishing": false,
-  "isSmishing": false
+  "isSmishing": false,
+  "deliveryChannel": null
 }
 
 RULES:
@@ -228,7 +230,13 @@ RULES:
 - isSmishing: **CRITICAL** - Return as boolean (true/false). Set to true IF ANY of these conditions are met:
   1. Topic explicitly mentions "smishing" or "SMS phishing".
   2. Topic mentions text-message scams, SMS links, or text-based social engineering.
-  Set to FALSE for: email phishing, voice phishing (vishing), general phishing, and non-text social engineering.`;
+  Set to FALSE for: email phishing, voice phishing (vishing), general phishing, and non-text social engineering.
+- deliveryChannel: **ONLY if isSmishing is true**. Set to one of:
+  - "slack" if the prompt mentions Slack, workspace chat, or Slack DM.
+  - "teams" if the prompt mentions Microsoft Teams or Teams chat.
+  - "whatsapp" if the prompt mentions WhatsApp.
+  - "sms" if the prompt mentions SMS, text message, or if no channel is specified.
+  - If isSmishing is false, return null.`;
 
         const messages: any[] = [
             {
@@ -386,5 +394,8 @@ export async function getFallbackAnalysis(params: AnalyzeUserPromptParams) {
         isCodeTopic: isCodeSecurityFallback,
         isVishing: isVishingFallback,
         isSmishing: isSmishingFallback,
+        deliveryChannel: isSmishingFallback
+            ? (detectSmishingChannelFromText(userPrompt) ?? 'sms')
+            : undefined,
     };
 }

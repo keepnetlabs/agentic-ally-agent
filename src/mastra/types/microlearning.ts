@@ -258,6 +258,7 @@ interface VishingSimulationScene extends BaseScene {
 interface SmishingSimulationScene extends BaseScene {
   title: string;
   subtitle: string;
+  channel?: "sms" | "slack" | "whatsapp" | "teams";
   senderName?: string;
   senderNumber?: string;
   prompt: string;

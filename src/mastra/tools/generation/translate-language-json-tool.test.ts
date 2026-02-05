@@ -24,6 +24,7 @@ vi.mock('../scenes/rewriters/scene2-goal-rewriter', () => ({ rewriteScene2Goal: 
 vi.mock('../scenes/rewriters/scene3-video-rewriter', () => ({ rewriteScene3Video: vi.fn().mockResolvedValue({ id: '3', content: 'Video' }) }));
 vi.mock('../scenes/rewriters/scene4-actionable-rewriter', () => ({ rewriteScene4Actionable: vi.fn().mockResolvedValue({ id: '4', content: 'Actions' }) }));
 vi.mock('../scenes/rewriters/scene4-smishing-rewriter', () => ({ rewriteScene4Smishing: vi.fn().mockResolvedValue({ id: '4', content: 'Smishing' }) }));
+vi.mock('../scenes/rewriters/scene4-vishing-rewriter', () => ({ rewriteScene4Vishing: vi.fn().mockResolvedValue({ id: '4', content: 'Vishing' }) }));
 vi.mock('../scenes/rewriters/scene5-quiz-rewriter', () => ({ rewriteScene5Quiz: vi.fn().mockResolvedValue({ id: '5', content: 'Quiz' }) }));
 vi.mock('../scenes/rewriters/scene6-survey-rewriter', () => ({ rewriteScene6Survey: vi.fn().mockResolvedValue({ id: '6', content: 'Survey' }) }));
 vi.mock('../scenes/rewriters/scene7-nudge-rewriter', () => ({ rewriteScene7Nudge: vi.fn().mockResolvedValue({ id: '7', content: 'Nudge' }) }));

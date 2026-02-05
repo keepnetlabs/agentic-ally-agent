@@ -13,7 +13,7 @@ export function generateScene7Prompt(analysis: PromptAnalysis, microlearning: Mi
 SCENE 7 - NUDGE (Implementation Intention Reminder):
 Topic: ${analysis.topic} | Key Topics: ${keyTopicsHint} | Category: ${analysis.category} | Language: ${analysis.language}
 
-⚠️ JSON OUTPUT RULES (CRITICAL):
+WARNING JSON OUTPUT RULES (CRITICAL):
 - Return ONLY key "7" (NEVER "1", "2", etc.)
 - scene_type MUST be "nudge" (NEVER other types)
 - Do NOT add extra fields or change field names
@@ -84,7 +84,7 @@ Generate for ${analysis.topic}: Max 5 words in ${analysis.language}
 
 {
   "7": {
-    "iconName": "Generate topic-appropriate icon from lucide-react library. Map '${analysis.topic}' to icon: phishing→'mail-warning', vishing→'phone', quishing→'qr-code', ransomware→'alert-circle', deepfake→'video', malware→'shield-alert', social-engineering→'alert-triangle'. If topic doesn't match, use most relevant icon from list. Output ONLY the icon name (e.g., 'phone'), no other text.",
+    "iconName": "Generate topic-appropriate icon from lucide-react library. Map '${analysis.topic}' to icon: phishing->'mail-warning', vishing->'phone', quishing->'qr-code', ransomware->'alert-circle', deepfake->'video', malware->'shield-alert', social-engineering->'alert-triangle'. If topic doesn't match, use most relevant icon from list. Output ONLY the icon name (e.g., 'phone'), no other text.",
     "subtitle": "Your action plan to stay safe from ${analysis.topic}",
     "callToActionText": "Localize 'Continue' into ${analysis.language}",
     "texts": {

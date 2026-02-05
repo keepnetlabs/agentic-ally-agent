@@ -170,8 +170,7 @@ describe('Scene 6 - Survey Generator', () => {
 
     it('should specify title must be generic', () => {
       const prompt = generateScene6Prompt(baseAnalysis, baseMicrolearning);
-      expect(prompt).toContain("MUST be exactly 'Share Your Experience'");
-      expect(prompt).toContain('NEVER include topic name');
+      expect(prompt).toContain("Title format: 'Share Your Experience' (generic) OR 'Share Your [Topic] Experience'");
     });
 
     it('should request localization for subtitle', () => {
@@ -227,7 +226,7 @@ describe('Scene 6 - Survey Generator', () => {
     it('should localize feedback placeholder', () => {
       const prompt = generateScene6Prompt(baseAnalysis, baseMicrolearning);
       expect(prompt).toContain('feedbackPlaceholder');
-      expect(prompt).toContain('Type your thoughts here…');
+      expect(prompt).toContain('Type your thoughts here...');
     });
 
     it('should localize submit button', () => {
@@ -239,7 +238,7 @@ describe('Scene 6 - Survey Generator', () => {
     it('should localize submitting text', () => {
       const prompt = generateScene6Prompt(baseAnalysis, baseMicrolearning);
       expect(prompt).toContain('submittingText');
-      expect(prompt).toContain('Submitting…');
+      expect(prompt).toContain('Submitting...');
     });
 
     it('should localize submitted text', () => {
@@ -553,8 +552,7 @@ describe('Scene 6 - Survey Generator', () => {
 
     it('should emphasize generic title requirement', () => {
       const prompt = generateScene6Prompt(baseAnalysis, baseMicrolearning);
-      expect(prompt).toContain("MUST be exactly 'Share Your Experience'");
-      expect(prompt).toContain('NEVER include topic name');
+      expect(prompt).toContain("Title format: 'Share Your Experience' (generic) OR 'Share Your [Topic] Experience'");
     });
 
     it('should specify generic questions requirement', () => {
@@ -691,24 +689,24 @@ describe('Scene 6 - Survey Generator', () => {
       const deAnalysis: any = {
         ...baseAnalysis,
         language: 'de',
-        topic: 'Phishing-Prävention',
+        topic: 'Phishing-Prevention',
       };
 
       const prompt = generateScene6Prompt(deAnalysis, baseMicrolearning);
       expect(prompt).toContain('de');
-      expect(prompt).toContain('Phishing-Prävention');
+      expect(prompt).toContain('Phishing-Prevention');
     });
 
     it('should handle Turkish language survey', () => {
       const trAnalysis: any = {
         ...baseAnalysis,
         language: 'tr',
-        topic: 'Kimlik Avı Engelleme',
+        topic: 'Kimlik Avi Engelleme',
       };
 
       const prompt = generateScene6Prompt(trAnalysis, baseMicrolearning);
       expect(prompt).toContain('tr');
-      expect(prompt).toContain('Kimlik Avı Engelleme');
+      expect(prompt).toContain('Kimlik Avi Engelleme');
     });
 
     it('should handle Finance fraud survey', () => {

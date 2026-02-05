@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { smishingEditorTool } from './smishing-editor-tool';
 import '../../../../src/__tests__/setup';
+import { detectAndResolveBrand } from './phishing-editor-utils';
 
 const executeTool = (smishingEditorTool as any).execute;
 
@@ -163,5 +164,37 @@ describe('smishingEditorTool', () => {
     const result = await executeTool({ context: input } as any);
     expect(result.success).toBe(true);
     expect(result.data?.message).toContain('Updated');
+  });
+
+  it('should pass translate mode to sms and landing editors', async () => {
+    const llm = await import('./smishing-editor-llm');
+
+    const input = {
+      smishingId: 'smishing-123',
+      editInstruction: 'Translate to Turkish',
+      mode: 'translate' as const,
+      language: 'tr-tr',
+    };
+
+    const result = await executeTool({ context: input } as any);
+    expect(result.success).toBe(true);
+    expect(llm.createSmsEditPromise).toHaveBeenCalledWith(
+      expect.objectContaining({ mode: 'translate' })
+    );
+    expect(llm.createLandingEditPromises).toHaveBeenCalledWith(
+      expect.objectContaining({ mode: 'translate' })
+    );
+  });
+
+  it('should resolve brand when hasBrandUpdate is true', async () => {
+    const input = {
+      smishingId: 'smishing-123',
+      editInstruction: 'Update logo to Acme',
+      hasBrandUpdate: true,
+    };
+
+    const result = await executeTool({ context: input } as any);
+    expect(result.success).toBe(true);
+    expect(vi.mocked(detectAndResolveBrand)).toHaveBeenCalled();
   });
 });

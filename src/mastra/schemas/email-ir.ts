@@ -9,6 +9,8 @@ export const EmailIRCanvasSchema = z.object({
             'CEO Fraud',
             'Phishing',
             'Sextortion',
+            'Malware',
+            'Security Awareness',
             'Other Suspicious',
             'Benign',
         ]),

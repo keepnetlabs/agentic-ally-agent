@@ -7,6 +7,7 @@ import { bodyBehavioralAnalysisOutputSchema } from './body-behavioral-analysis';
 import { bodyIntentAnalysisOutputSchema } from './body-intent-analysis';
 import { createLogContext, loggerTriage, logStepStart, logStepComplete, logStepError } from './logger-setup';
 import { withRetry } from '../../utils/core/resilience-utils';
+import { sanitizeEmailBody } from './email-body-sanitizer';
 
 // Input is the combined analysis from the previous step
 export const triageInputSchema = z.object({
@@ -49,44 +50,108 @@ export const triageTool = createTool({
 
             // Fallbacks for display name and body
             const senderDisplay = original_email.senderName || original_email.from;
-            const emailBody = original_email.htmlBody || JSON.stringify(original_email.urls || []);
+            const emailBody = sanitizeEmailBody(original_email.htmlBody || '') || JSON.stringify(original_email.urls || []);
 
             const prompt = `
-# Task: Incident Triage & Classification
+# Task: Enterprise Email Incident Triage & Classification
 
-Your role is to **classify the email into ONE category** using the provided multi-stage analysis data.
-You are the **Final Decision Maker**.
+You are the **Triage Decision Engine** in an Enterprise Security Operations Center (SOC).
+Your role is to **classify the email into exactly ONE category** using multi-stage analysis data.
 
-## TRIAGE DIRECTIVES
+## CLASSIFICATION HIERARCHY (Severity-Based Priority)
 
-### 1. Classification Hierarchy (Severity-Based)
-If multiple categories apply, prioritize the highest severity:
-1.  **Malware** (Highest): Attachment/Link to payload.
-2.  **CEO Fraud / BEC**: Executive impersonation + Financial/Urgency.
-3.  **Extortion**: Blackmail/Sextortion threats.
-4.  **Phishing**: Credential harvesting (Fake Login).
-5.  **Spam/Marketing**: Unwanted but non-malicious.
+When multiple categories could apply, select the **highest severity** match:
 
-### 2. Conflict Resolution Logic (How to decide)
-- **Technical vs Intent**: If SPF/DKIM pass but Intent is "Phishing", classify as **Phishing** (Compromised Account scenario).
-- **Simulation**: If \`security_awareness_detected\` is true, it overrides ALL other signals -> Classify as **Security Awareness**.
-- **Ambiguity**: If suspicious signals exist but don't fit a pattern, use **Other Suspicious**.
+| Priority | Category | Severity | Escalation |
+|----------|----------|----------|------------|
+| 1 | Malware | CRITICAL | Immediate quarantine |
+| 2 | CEO Fraud | HIGH | Executive notification |
+| 3 | Sextortion | HIGH | Legal/HR notification |
+| 4 | Phishing | HIGH | User notification |
+| 5 | Other Suspicious | MEDIUM | SOC review |
+| 6 | Spam | LOW | Auto-filter |
+| 7 | Marketing | LOW | User preference |
+| 8 | Internal | INFO | No action |
+| 9 | Security Awareness | INFO | Training tracking |
+| 10 | Benign | INFO | No action |
 
-### 3. Category Definitions (Detailed Reference)
+## CONFLICT RESOLUTION RULES
 
-#### High-Risk Categories
-- **Malware**: Presence of malicious file attachments or links leading to malware payload downloads.
-- **CEO Fraud / BEC**: Executive impersonation, authority manipulation, urgency framing, financial/transfer requests, confidentiality claims.
-- **Sextortion**: Extortion threats using intimate/embarrassing content, blackmail, demands for payment or action.
-- **Phishing**: Credential harvesting, fake login pages, impersonation of trusted brands/services, malicious links.
-- **Other Suspicious**: Unusual behavioral patterns, social engineering, manipulation tactics, or threats that don't fit other categories.
+1. **Simulation Override**: If \`security_awareness_detected == true\`, classify as **Security Awareness** regardless of other signals.
+2. **Compromised Account**: If SPF/DKIM pass BUT intent is malicious (Phishing/Fraud), still classify by intent (account may be compromised).
+3. **Ambiguity Fallback**: If suspicious signals exist but don't fit a defined pattern, use **Other Suspicious**.
 
-#### Low-Risk Categories
-- **Spam**: Unsolicited bulk advertising, unwanted promotions, generic mass emails.
-- **Marketing**: Legitimate promotional content from known vendors/partners, newsletters, subscription notifications.
-- **Internal**: Internal company communications, employee-to-employee, legitimate internal notifications.
-- **Security Awareness**: Authorized phishing simulation tests/training exercises. Often contains "X-Phish-Test" headers.
-- **Benign**: Clearly legitimate, no risk indicators observed.
+## CATEGORY DEFINITIONS (Enterprise Standard)
+
+### CRITICAL/HIGH RISK
+
+| Category | Definition | Key Indicators |
+|----------|------------|----------------|
+| **Malware** | Malicious payload delivery via attachment or link | threat_intel = malicious, suspicious file types (.exe, .js, .scr), known malware signatures |
+| **CEO Fraud** | Business Email Compromise (BEC) targeting financial transfers | authority_impersonation + financial_request + urgency + verification_avoidance |
+| **Sextortion** | Extortion using intimate/embarrassing content | blackmail language, payment demands (Bitcoin/gift cards), threats to expose |
+| **Phishing** | Credential harvesting attempts | fake login pages, credential_request, brand impersonation, suspicious URLs |
+
+### MEDIUM RISK
+
+| Category | Definition | Key Indicators |
+|----------|------------|----------------|
+| **Other Suspicious** | Anomalous behavior not fitting defined patterns | social_engineering detected, urgency without clear intent, mixed signals |
+
+### LOW RISK / INFORMATIONAL
+
+| Category | Definition | Key Indicators |
+|----------|------------|----------------|
+| **Spam** | Unsolicited bulk email WITHOUT consent | No List-Unsubscribe, unknown sender, SPF/DKIM often fail, generic content |
+| **Marketing** | Legitimate promotional email WITH implied consent | List-Unsubscribe present, known brand, SPF/DKIM pass, professional formatting |
+| **Internal** | Legitimate internal company communication | Internal domain, employee-to-employee, no manipulation signals |
+| **Security Awareness** | Authorized phishing simulation/training | X-Phish-Test header, known simulation platform, security_awareness_detected = true |
+| **Benign** | Legitimate NON-PROMOTIONAL content | All auth pass, no behavioral flags, transactional/personal/informational (NOT promotional) |
+
+### SPAM vs MARKETING Decision Matrix
+
+Use \`list_unsubscribe_present\` from header analysis as the primary differentiator:
+
+| Signal | Spam | Marketing |
+|--------|------|-----------|
+| **list_unsubscribe_present** | **false** | **true** |
+| SPF/DKIM/DMARC | Often FAIL | Usually PASS |
+| Sender Domain | Unknown/Suspicious | Known Brand |
+| User Consent | NO (unsolicited) | IMPLIED (opt-in likely) |
+| Content Quality | Low/Generic | Professional/Branded |
+
+**Decision Rule:**
+- IF \`list_unsubscribe_present == true\` AND SPF/DKIM pass → **Marketing**
+- IF \`list_unsubscribe_present == false\` AND bulk promotional content → **Spam**
+
+### BENIGN vs MARKETING Decision Matrix
+
+**CRITICAL**: "Benign" is for transactional/informational content, NOT promotional content.
+
+| Signal | Benign | Marketing |
+|--------|--------|-----------|
+| **Content Type** | Transactional, personal, notification, reply | Promotional, event invite, newsletter, offer |
+| **Primary Intent** | Informational (notify, confirm, update) | Persuasive (sell, promote, register, join) |
+| **Urgency Framing** | Rare, action-required only | Common (limited time/seats, exclusive) |
+| **Tracking URLs** | Rare | Common (awstrack, mailchimp, hubspot) |
+| **CTA Focus** | Action-based (verify, confirm, view) | Promotion-based (register, buy, join, try) |
+| **Incentives** | None | Discounts, free trials, exclusive benefits |
+| **Sender Type** | System/personal | Brand/company marketing |
+
+**Decision Rule:**
+- IF promotional content (events, discounts, newsletters, webinars, community invites) → **Marketing**
+- IF transactional/personal/pure informational content (receipts, confirmations, replies) → **Benign**
+- **NOTE**: Forwarded emails may lose List-Unsubscribe header - use **content analysis** as primary signal
+
+**Examples:**
+| Email Type | Category | Why |
+|------------|----------|-----|
+| "Your order has shipped" | Benign | Transactional notification |
+| "Join our AI webinar - limited seats!" | Marketing | Promotional event invite |
+| "Password reset requested" | Benign | System notification |
+| "Black Friday Sale - 50% off" | Marketing | Promotional offer |
+| "Meeting notes from yesterday" | Benign | Personal/work communication |
+| "Exclusive community benefits await" | Marketing | Promotional incentive |
 
 ---
 
@@ -99,6 +164,7 @@ If multiple categories apply, prioritize the highest severity:
 - **Domain Similarity**: ${header_analysis.domain_similarity}
 - **Header Summary**: ${header_analysis.header_summary}
 - **Security Awareness Detected**: ${header_analysis.security_awareness_detected}
+- **List-Unsubscribe Present (RFC 2369)**: ${header_analysis.list_unsubscribe_present}
 
 ### 2. Behavioral Analysis
 - **Urgency Level**: ${behavioral_analysis.urgency_level}
@@ -124,12 +190,31 @@ ${emailBody.substring(0, 2000)}${emailBody.length > 2000 ? '...(truncated)' : ''
 
 ---
 
-## OUTPUT INSTRUCTIONS
+## OUTPUT REQUIREMENTS
 
-Classify strictly into ONE category based on the logic above.
-1.  **category**: Select the single most accurate category.
-2.  **reason**: Explain *why* you chose this category (e.g., "Intent is Credential Theft despite valid SPF, indicating compromised account").
-3.  **confidence**: 0.0 to 1.0 based on signal strength.
+Generate a structured triage verdict:
+
+1. **category**: Select exactly ONE category from the defined list. Apply hierarchy rules if multiple match.
+
+2. **reason**: Provide SOC-ready justification (2-3 sentences):
+   - State the primary signal(s) that determined classification
+   - Reference specific evidence from analysis data
+   - Note any conflict resolution applied (e.g., "Classified as Phishing despite SPF pass due to clear credential harvesting intent")
+
+3. **confidence**: Score between 0.0 and 1.0:
+   - **0.90-1.0**: Strong match, multiple converging signals
+   - **0.70-0.89**: Good match, primary signals clear
+   - **0.50-0.69**: Moderate confidence, some ambiguity
+   - **Below 0.50**: Low confidence, recommend human review (note in reason)
+
+### Enterprise Compliance Note
+This classification will be used for:
+- SOC ticket routing and escalation
+- Automated response actions
+- Compliance reporting (SOC2, ISO27001)
+- Executive dashboards
+
+Accuracy is critical. When uncertain, prefer **Other Suspicious** over misclassification.
 `;
 
             const result = await withRetry(
