@@ -76,6 +76,9 @@ export const headerAnalysisTool = createTool({
             // RFC 2369: List-Unsubscribe header indicates legitimate mailing list/marketing email
             const hasListUnsubscribe = headerMap.has('list-unsubscribe') || headerMap.has('list-unsubscribe-post');
 
+            // Check if top-level result from API indicates "Simulation" (phishing training)
+            const hasSimulationResult = email.result?.toLowerCase() === 'simulation';
+
             // Helper to summarize scans and reduce token count
             const summarizeScans = (items: any[], type: 'url' | 'ip' | 'name') => {
                 return items
@@ -257,7 +260,7 @@ Note: If header data is incomplete or missing, use the exact string "insufficien
             return {
                 ...result.object,
                 original_email: email,
-                security_awareness_detected: result.object.security_awareness_detected || hasSecurityAwarenessHeader,
+                security_awareness_detected: result.object.security_awareness_detected || hasSecurityAwarenessHeader || hasSimulationResult,
                 list_unsubscribe_present: result.object.list_unsubscribe_present || hasListUnsubscribe,
             };
         } catch (error) {

@@ -1,7 +1,7 @@
 import { PromptAnalysis } from '../../../types/prompt-analysis';
 import { MicrolearningContent } from '../../../types/microlearning';
 import { buildContextData } from '../../../utils/prompt-builders/base-context-builder';
-import { resolveSmishingChannel, buildSmishingChannelPromptRules, type SmishingChannel } from '../../../utils/smishing-channel';
+import { resolveSmishingChannel, buildSmishingChannelPromptRules } from '../../../utils/smishing-channel';
 
 export function generateScene4SmishingPrompt(analysis: PromptAnalysis, microlearning: MicrolearningContent): string {
   const contextData = buildContextData(analysis, microlearning);

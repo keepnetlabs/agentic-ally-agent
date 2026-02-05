@@ -1,6 +1,9 @@
 import { z } from 'zod';
 
 export const EmailIREmailDataSchema = z.object({
+    // Top-level result from API (e.g., "Simulation", "Malicious", "Clean")
+    result: z.string().optional(),
+
     // Core Identifiers
     htmlBody: z.string().optional(),
     from: z.string(),

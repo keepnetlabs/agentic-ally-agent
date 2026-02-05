@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   checkKVHealth,
   getUptime,
@@ -7,17 +7,49 @@ import {
   HealthResult,
   HealthCheckResponse,
 } from './health-service';
+import { KVService } from './kv-service';
 import '../../../src/__tests__/setup';
+
+// Mock dependencies
+vi.mock('../utils/core/logger', () => ({
+  getLogger: () => ({
+    info: vi.fn(),
+    debug: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+  }),
+}));
+
+vi.mock('../utils/core/resilience-utils', () => ({
+  withRetry: vi.fn(async (fn) => {
+    return fn();
+  }),
+}));
+
+vi.mock('./microlearning-service', () => ({
+  MicrolearningService: {
+    getCacheStats: vi.fn(() => ({
+      microlearningCount: 10,
+      estimatedSizeMB: 25.5,
+    })),
+  },
+}));
+
+vi.mock('./kv-service');
 
 /**
  * Test Suite: HealthService
  * Tests for deep health checks and system monitoring
- * Covers: KV health checking, uptime calculation, status determination
+ * Covers: KV health checking, uptime calculation, status determination, error handling
  */
 
 describe('HealthService', () => {
   beforeEach(() => {
-    vi.resetAllMocks();
+    vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
   });
 
   describe('HealthResult interface', () => {
@@ -363,6 +395,394 @@ describe('HealthService', () => {
       const result = await performHealthCheck({}, {});
 
       expect(result.checks.workflows).toBe(false);
+    });
+
+    it('should handle KV health check timeout gracefully', async () => {
+      const result = await performHealthCheck({}, {}, 100); // Very short timeout
+
+      // Should still return a valid response even if timeout occurs
+      expect(result).toBeDefined();
+      expect(result.status).toBeDefined();
+      expect(['healthy', 'degraded', 'unhealthy']).toContain(result.status);
+    });
+
+    it('should handle KV health check errors gracefully', async () => {
+      const result = await performHealthCheck({}, {}, 5000);
+
+      expect(result).toBeDefined();
+      expect(result.checks.kv.status).toBeDefined();
+      expect(['healthy', 'degraded', 'unhealthy']).toContain(result.checks.kv.status);
+    });
+
+    it('should measure uptime correctly in response', async () => {
+      const result = await performHealthCheck({}, {});
+
+      expect(result.uptimeMs).toBeTypeOf('number');
+      expect(result.uptimeMs).toBeGreaterThanOrEqual(0);
+      expect(result.uptime).toMatch(/[smhd]/); // Should have time unit
+    });
+
+    it('should include ISO 8601 formatted timestamp', async () => {
+      const result = await performHealthCheck({}, {});
+
+      const timestamp = new Date(result.timestamp);
+      expect(timestamp.getTime()).toBeGreaterThan(0);
+      expect(result.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
+    });
+
+    it('should handle large number of agents and workflows', async () => {
+      const agents: Record<string, unknown> = {};
+      const workflows: Record<string, unknown> = {};
+
+      // Create 100 agents
+      for (let i = 0; i < 100; i++) {
+        agents[`agent-${i}`] = {};
+      }
+
+      // Create 50 workflows
+      for (let i = 0; i < 50; i++) {
+        workflows[`workflow-${i}`] = {};
+      }
+
+      const result = await performHealthCheck(agents, workflows);
+
+      expect(result.details?.agentCount).toBe(100);
+      expect(result.details?.workflowCount).toBe(50);
+      expect(result.details?.agents).toHaveLength(100);
+      expect(result.details?.workflows).toHaveLength(50);
+    });
+
+    it('should include cache statistics in response', async () => {
+      const result = await performHealthCheck({}, {});
+
+      expect(result.cache).toBeDefined();
+      expect(result.cache?.microlearningCount).toBeGreaterThanOrEqual(0);
+      expect(result.cache?.estimatedSizeMB).toBeGreaterThanOrEqual(0);
+    });
+
+    it('should handle missing cache stats gracefully', async () => {
+      vi.mocked(KVService).mockImplementationOnce(() => ({
+        healthCheck: vi.fn().mockResolvedValueOnce(true),
+      }));
+
+      const result = await performHealthCheck({}, {});
+
+      expect(result.cache).toBeDefined();
+    });
+  });
+
+  describe('checkKVHealth - Advanced Scenarios', () => {
+    it('should always return a HealthResult with defined status', async () => {
+      const result = await checkKVHealth();
+
+      expect(result).toBeDefined();
+      expect(result.status).toBeDefined();
+      expect(['healthy', 'degraded', 'unhealthy']).toContain(result.status);
+    });
+
+    it('should include latency measurement in result', async () => {
+      const result = await checkKVHealth();
+
+      expect(result.latencyMs).toBeDefined();
+      expect(typeof result.latencyMs).toBe('number');
+      expect(result.latencyMs).toBeGreaterThanOrEqual(0);
+    });
+
+    it('should include error when status is not healthy', async () => {
+      const result = await checkKVHealth();
+
+      if (result.status !== 'healthy') {
+        expect(result.error).toBeDefined();
+        expect(typeof result.error).toBe('string');
+      }
+    });
+
+    it('should not include error when status is healthy', async () => {
+      const result = await checkKVHealth();
+
+      if (result.status === 'healthy') {
+        expect(result.error).toBeUndefined();
+      }
+    });
+
+    it('should measure latency as a non-negative number', async () => {
+      const result = await checkKVHealth();
+
+      expect(result.latencyMs).toBeGreaterThanOrEqual(0);
+      expect(result.latencyMs).toBeLessThan(10000); // Should complete within 10 seconds
+    });
+
+    it('should handle the health check gracefully', async () => {
+      // Multiple calls should not throw
+      await expect(checkKVHealth()).resolves.toBeDefined();
+      await expect(checkKVHealth()).resolves.toBeDefined();
+      await expect(checkKVHealth()).resolves.toBeDefined();
+    });
+
+    it('should provide consistent response structure', async () => {
+      const result1 = await checkKVHealth();
+      const result2 = await checkKVHealth();
+
+      expect(Object.keys(result1).sort()).toEqual(Object.keys(result2).sort());
+    });
+  });
+
+  describe('getUptime - Advanced Scenarios', () => {
+    it('should format seconds without minutes', () => {
+      const uptime = getUptime();
+
+      expect(uptime.formatted).toBeDefined();
+      expect(typeof uptime.formatted).toBe('string');
+      expect(uptime.ms).toBeGreaterThanOrEqual(0);
+    });
+
+    it('should include time unit in formatted string', () => {
+      const uptime = getUptime();
+
+      expect(uptime.formatted).toMatch(/[smhd]/);
+    });
+
+    it('should have consistent ms and formatted values', () => {
+      const uptime = getUptime();
+
+      const ms = uptime.ms;
+      const seconds = Math.floor(ms / 1000);
+
+      // Validate that the formatted string contains reasonable values
+      if (seconds > 60) {
+        expect(uptime.formatted).toMatch(/\d+[mhd]/);
+      } else {
+        expect(uptime.formatted).toMatch(/\d+s/);
+      }
+    });
+
+    it('should return increasing uptime on subsequent calls', async () => {
+      const uptime1 = getUptime();
+
+      // Wait a bit
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      const uptime2 = getUptime();
+
+      expect(uptime2.ms).toBeGreaterThanOrEqual(uptime1.ms);
+    });
+
+    it('should format with proper spacing and separators', () => {
+      const uptime = getUptime();
+
+      // Check format: "Xd Xh Xm", "Xh Xm", "Xm Xs", or "Xs"
+      expect(uptime.formatted).toMatch(/^\d+[smhd](\s\d+[smhd])?(\s\d+[smhd])?$/);
+    });
+
+    it('should never have negative uptime', () => {
+      const uptime = getUptime();
+
+      expect(uptime.ms).toBeGreaterThanOrEqual(0);
+    });
+  });
+
+  describe('determineOverallStatus - Edge Cases', () => {
+    it('should handle kv status variations', () => {
+      const healthyCheck = { kv: { status: 'healthy' as const } };
+      const degradedCheck = { kv: { status: 'degraded' as const } };
+      const unhealthyCheck = { kv: { status: 'unhealthy' as const } };
+
+      expect(determineOverallStatus(healthyCheck)).toBe('healthy');
+      expect(determineOverallStatus(degradedCheck)).toBe('degraded');
+      expect(determineOverallStatus(unhealthyCheck)).toBe('unhealthy');
+    });
+
+    it('should propagate kv health directly to overall status', () => {
+      const kvStates = [
+        { kv: { status: 'healthy' as const }, expected: 'healthy' as const },
+        { kv: { status: 'degraded' as const }, expected: 'degraded' as const },
+        { kv: { status: 'unhealthy' as const }, expected: 'unhealthy' as const },
+      ];
+
+      kvStates.forEach(({ kv, expected }) => {
+        expect(determineOverallStatus({ kv })).toBe(expected);
+      });
+    });
+
+    it('should always return a valid status', () => {
+      const kvHealth: HealthResult = { status: 'healthy' };
+      const result = determineOverallStatus({ kv: kvHealth });
+
+      expect(['healthy', 'degraded', 'unhealthy']).toContain(result);
+    });
+
+    it('should handle kv with error messages', () => {
+      const checks = {
+        kv: { status: 'unhealthy' as const, error: 'Database connection lost' },
+      };
+
+      expect(determineOverallStatus(checks)).toBe('unhealthy');
+    });
+
+    it('should handle kv with latency information', () => {
+      const checks = {
+        kv: { status: 'degraded' as const, latencyMs: 5000 },
+      };
+
+      expect(determineOverallStatus(checks)).toBe('degraded');
+    });
+  });
+
+  describe('HealthService - Integration Tests', () => {
+    it('should correlate KV status with overall status in full health check', async () => {
+      const result = await performHealthCheck({}, {});
+
+      expect(result.checks.kv.status).toBeDefined();
+      expect(result.status).toBeDefined();
+      expect(['healthy', 'degraded', 'unhealthy']).toContain(result.checks.kv.status);
+      expect(['healthy', 'degraded', 'unhealthy']).toContain(result.status);
+    });
+
+    it('should apply proper status logic based on KV health', async () => {
+      const result = await performHealthCheck({}, {});
+
+      // Overall status should match KV status according to determineOverallStatus logic
+      const expectedStatus = result.checks.kv.status;
+      expect(determineOverallStatus({ kv: result.checks.kv })).toBe(expectedStatus === 'unhealthy' ? 'unhealthy' : expectedStatus === 'degraded' ? 'degraded' : 'healthy');
+    });
+
+    it('should determine overall status based on KV status', async () => {
+      const result = await performHealthCheck({}, {});
+
+      // Verify the overall status determination logic
+      if (result.checks.kv.status === 'unhealthy') {
+        expect(result.status).toBe('unhealthy');
+      } else if (result.checks.kv.status === 'degraded') {
+        expect(result.status).toBe('degraded');
+      } else {
+        expect(result.status).toBe('healthy');
+      }
+    });
+
+    it('should handle rapid successive health checks', async () => {
+      vi.mocked(KVService).mockImplementation(() => ({
+        healthCheck: vi.fn().mockResolvedValueOnce(true),
+      }));
+
+      const results = await Promise.all([
+        performHealthCheck({}, {}),
+        performHealthCheck({}, {}),
+        performHealthCheck({}, {}),
+      ]);
+
+      results.forEach(result => {
+        expect(result).toBeDefined();
+        expect(result.status).toBeDefined();
+      });
+    });
+
+    it('should provide detailed status in all conditions', async () => {
+      const agents = { agent1: {}, agent2: {} };
+      const workflows = { workflow1: {} };
+
+      const result = await performHealthCheck(agents, workflows);
+
+      expect(result.status).toBeDefined();
+      expect(result.timestamp).toBeDefined();
+      expect(result.uptime).toBeDefined();
+      expect(result.uptimeMs).toBeGreaterThanOrEqual(0);
+      expect(result.checks).toBeDefined();
+      expect(result.checks.kv).toBeDefined();
+      expect(result.details).toBeDefined();
+    });
+
+    it('should handle health check with different timeout values', async () => {
+      const timeouts = [100, 500, 1000, 5000];
+
+      for (const timeout of timeouts) {
+        const result = await performHealthCheck({}, {}, timeout);
+        expect(result).toBeDefined();
+        expect(['healthy', 'degraded', 'unhealthy']).toContain(result.status);
+      }
+    });
+
+    it('should provide consistent structure across multiple calls', async () => {
+      vi.mocked(KVService).mockImplementation(() => ({
+        healthCheck: vi.fn().mockResolvedValue(true),
+      }));
+
+      const result1 = await performHealthCheck({}, {});
+      const result2 = await performHealthCheck({}, {});
+
+      // Structure should be consistent
+      expect(Object.keys(result1).sort()).toEqual(Object.keys(result2).sort());
+      expect(Object.keys(result1.checks).sort()).toEqual(
+        Object.keys(result2.checks).sort()
+      );
+    });
+  });
+
+  describe('HealthService - Error Handling and Resilience', () => {
+    it('should never throw from performHealthCheck', async () => {
+      await expect(performHealthCheck({}, {})).resolves.toBeDefined();
+    });
+
+    it('should never throw from checkKVHealth', async () => {
+      await expect(checkKVHealth()).resolves.toBeDefined();
+    });
+
+    it('should always return a valid HealthCheckResponse', async () => {
+      const result = await performHealthCheck({}, {});
+
+      expect(result).toBeDefined();
+      expect(result.status).toBeDefined();
+      expect(result.timestamp).toBeDefined();
+      expect(result.uptime).toBeDefined();
+      expect(result.uptimeMs).toBeDefined();
+      expect(result.checks).toBeDefined();
+    });
+
+    it('should provide error message when KV status indicates failure', async () => {
+      const result = await checkKVHealth();
+
+      if (result.status !== 'healthy') {
+        expect(result.error).toBeDefined();
+        expect(typeof result.error).toBe('string');
+      }
+    });
+
+    it('should calculate latency in all health check outcomes', async () => {
+      const result1 = await checkKVHealth();
+      const result2 = await performHealthCheck({}, {});
+
+      expect(result1.latencyMs).toBeGreaterThanOrEqual(0);
+      expect(result1.latencyMs).toBeLessThan(30000);
+      expect(result2.checks.kv.latencyMs).toBeLessThan(30000);
+    });
+
+    it('should handle multiple sequential health checks', async () => {
+      const results = [];
+
+      for (let i = 0; i < 5; i++) {
+        const result = await checkKVHealth();
+        results.push(result);
+      }
+
+      results.forEach(result => {
+        expect(result.status).toBeDefined();
+        expect(['healthy', 'degraded', 'unhealthy']).toContain(result.status);
+      });
+    });
+
+    it('should maintain consistent response structure on failures', async () => {
+      const result = await checkKVHealth();
+
+      expect(result).toHaveProperty('status');
+      expect(result).toHaveProperty('latencyMs');
+      // error property is optional based on status
+    });
+
+    it('should include latency for all health checks', async () => {
+      const kvResult = await checkKVHealth();
+      const fullResult = await performHealthCheck({}, {});
+
+      expect(kvResult.latencyMs).toBeDefined();
+      expect(fullResult.checks.kv.latencyMs).toBeDefined();
     });
   });
 });
