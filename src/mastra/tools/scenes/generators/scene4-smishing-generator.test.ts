@@ -69,6 +69,8 @@ describe('Scene 4 - Smishing Simulation Generator', () => {
       const prompt = generateScene4SmishingPrompt(baseAnalysis, baseMicrolearning);
       expect(prompt).toContain('firstMessage');
       expect(prompt).toContain('prompt');
+      expect(prompt).toContain('senderName');
+      expect(prompt).toContain('senderNumber');
     });
 
     it('should specify smishing_simulation scene type', () => {
@@ -179,6 +181,17 @@ describe('Scene 4 - Smishing Simulation Generator', () => {
       expect(prompt).toContain('short');
       expect(prompt).toContain('SMS');
     });
+
+    it('should include channel interaction style rule', () => {
+      const prompt = generateScene4SmishingPrompt(baseAnalysis, baseMicrolearning);
+      expect(prompt).toContain('Use very short bursts');
+    });
+
+    it('should enforce artifact-reference consistency', () => {
+      const prompt = generateScene4SmishingPrompt(baseAnalysis, baseMicrolearning);
+      expect(prompt).toContain('never reference a missing artifact');
+      expect(prompt).toContain('link/file/code/attachment');
+    });
   });
 
   // ==================== SAFETY AND ETHICS TESTS ====================
@@ -209,6 +222,25 @@ describe('Scene 4 - Smishing Simulation Generator', () => {
       expect(prompt).toContain('fictional');
       expect(prompt).toContain('safe');
     });
+
+    it('should include code and click branch debrief rules', () => {
+      const prompt = generateScene4SmishingPrompt(baseAnalysis, baseMicrolearning);
+      expect(prompt).toContain('if the user says a code arrived');
+      expect(prompt).toContain('simulation-only safety debrief');
+      expect(prompt).toContain('this is a simulation');
+    });
+
+    it('should enforce topic-first behavior over channel style', () => {
+      const prompt = generateScene4SmishingPrompt(baseAnalysis, baseMicrolearning);
+      expect(prompt).toContain('keep scenario semantics anchored to Smishing Awareness');
+      expect(prompt).toContain('channel rules only for delivery style');
+    });
+
+    it('should define deterministic rule priority order', () => {
+      const prompt = generateScene4SmishingPrompt(baseAnalysis, baseMicrolearning);
+      expect(prompt).toContain('Priority order if rules conflict');
+      expect(prompt).toContain('prioritize safety and simulation integrity first');
+    });
   });
 
   // ==================== FIELD CONSTRAINTS TESTS ====================
@@ -226,6 +258,12 @@ describe('Scene 4 - Smishing Simulation Generator', () => {
     it('should specify firstMessage as 1-2 sentences', () => {
       const prompt = generateScene4SmishingPrompt(baseAnalysis, baseMicrolearning);
       expect(prompt).toContain('1-2 sentences');
+    });
+
+    it('should prevent implicit missing-link wording in firstMessage', () => {
+      const prompt = generateScene4SmishingPrompt(baseAnalysis, baseMicrolearning);
+      expect(prompt).toContain("do not imply 'below/attached'");
+      expect(prompt).toContain('ask permission to send details in the next message');
     });
   });
 
@@ -279,6 +317,40 @@ describe('Scene 4 - Smishing Simulation Generator', () => {
       };
       const prompt = generateScene4SmishingPrompt(itAnalysis, baseMicrolearning);
       expect(prompt).toContain('IT Support');
+    });
+  });
+
+  // ==================== PROMPT QUALITY LOCKS ====================
+  describe('Prompt Quality Locks', () => {
+    it('should keep golden rule set for WhatsApp + HR topic', () => {
+      const analysis: any = {
+        ...baseAnalysis,
+        topic: 'HR Policy Confirmation',
+        deliveryChannel: 'whatsapp',
+      };
+      const prompt = generateScene4SmishingPrompt(analysis, baseMicrolearning);
+
+      expect(prompt).toContain('\"channel\": \"whatsapp\"');
+      expect(prompt).toContain('follow this channel style exactly');
+      expect(prompt).toContain('keep scenario semantics anchored to HR Policy Confirmation');
+      expect(prompt).toContain('if the user says a code arrived');
+      expect(prompt).toContain('simulation-only safety debrief');
+      expect(prompt).toContain('this is a simulation');
+    });
+
+    it('should keep golden rule set for Telegram + Delivery topic', () => {
+      const analysis: any = {
+        ...baseAnalysis,
+        topic: 'Delivery Reschedule Notice',
+        deliveryChannel: 'telegram',
+      };
+      const prompt = generateScene4SmishingPrompt(analysis, baseMicrolearning);
+
+      expect(prompt).toContain('\"channel\": \"telegram\"');
+      expect(prompt).toContain('follow this channel style exactly');
+      expect(prompt).toContain('keep scenario semantics anchored to Delivery Reschedule Notice');
+      expect(prompt).toContain('never request real passwords');
+      expect(prompt).toContain('never reference a missing artifact');
     });
   });
 });

@@ -149,7 +149,7 @@ const VishingSimulationSceneSchema = BaseSceneContentSchema.extend({
 const SmishingSimulationSceneSchema = BaseSceneContentSchema.extend({
     title: z.string(),
     subtitle: z.string(),
-    channel: z.enum(['sms', 'slack', 'whatsapp', 'teams']).optional(),
+    channel: z.enum(['sms', 'slack', 'whatsapp', 'teams', 'telegram', 'instagram', 'linkedin']).optional(),
     senderName: z.string().optional(),
     senderNumber: z.string().optional(),
     prompt: z.string(),

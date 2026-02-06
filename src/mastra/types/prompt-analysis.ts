@@ -22,5 +22,5 @@ export interface PromptAnalysis {
   isCodeTopic?: boolean;
   isVishing?: boolean;
   isSmishing?: boolean;
-  deliveryChannel?: 'sms' | 'slack' | 'whatsapp' | 'teams';
+  deliveryChannel?: 'sms' | 'slack' | 'whatsapp' | 'teams' | 'telegram' | 'instagram' | 'linkedin';
 }

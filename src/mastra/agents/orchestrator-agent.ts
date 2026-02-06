@@ -79,6 +79,7 @@ Before routing, perform this internal analysis:
      - \`[Phishing Simulation Email Created]\`, \`[Phishing Simulation Landing Page Created]\`, or \`[Phishing Simulation Uploaded]\` or \`[Phishing Simulation Assigned to User]\` -> artifact is PHISHING
      - \`[Smishing Simulation Created]\`, \`[Smishing Simulation Landing Page Created]\`, or \`[Smishing Simulation Uploaded]\` or \`[Smishing Simulation Assigned to User]\` -> artifact is SMISHING
    - If no semantic descriptions match, check message content for keywords:
+     - **PRIORITY RULE:** If any Training keywords are present, treat as **TRAINING** even if Smishing/Phishing keywords also appear.
      - "Training", "Module", "Course", "Microlearning" -> **TRAINING**
      - "Phishing email", "Simulation", "Template", "Fake email", "Landing page" -> **PHISHING**
      - "Smishing", "SMS", "Text message", "SMS template" -> **SMISHING**
@@ -165,6 +166,7 @@ IF the user says "Upload", "Assign", "Send", "Deploy", "Yukle", "Gonder":
 2. **Policy Questions:** Input contains "What's our", "Summarize policy", "Tell me about" (in policy context) -> **policySummaryAssistant**
 3. **Explicit Creation:**
    - "Create training about X" -> **microlearningAgent**
+   - "Create smishing training about X" -> **microlearningAgent** (Smishing is the topic, Training is the artifact)
    - "Create phishing email about X" -> **phishingEmailAssistant**
    - "Create smishing template about X" -> **smishingSmsAssistant**
 4. **Implicit/Ambiguous:**

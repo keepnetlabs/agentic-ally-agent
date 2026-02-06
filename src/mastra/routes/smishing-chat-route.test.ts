@@ -225,6 +225,7 @@ describe('Smishing Chat Route Handler', () => {
         success: true,
         prompt: validMicrolearning.language['4'].prompt,
         firstMessage: validMicrolearning.language['4'].firstMessage,
+        isFinished: false,
       });
       expect(calls[0][1]).toBe(200);
     });
@@ -244,6 +245,7 @@ describe('Smishing Chat Route Handler', () => {
         success: true,
         prompt: validMicrolearning.language['4'].prompt,
         firstMessage: validMicrolearning.language['4'].firstMessage,
+        isFinished: false,
       });
       expect(calls[0][1]).toBe(200);
     });
@@ -263,6 +265,7 @@ describe('Smishing Chat Route Handler', () => {
         success: true,
         prompt: validMicrolearning.language['4'].prompt,
         firstMessage: validMicrolearning.language['4'].firstMessage,
+        isFinished: false,
       });
       expect(calls[0][1]).toBe(200);
     });
@@ -321,7 +324,7 @@ describe('Smishing Chat Route Handler', () => {
       expect(callArgs).toMatchObject(INBOX_TEXT_PARAMS);
     });
 
-    it('should ignore assistant messages from client', async () => {
+    it('should include assistant history as mapped user context in LLM call for default provider', async () => {
       const { generateText } = await import('ai');
       (generateText as any).mockResolvedValue({ text: 'Test reply' });
 
@@ -338,10 +341,125 @@ describe('Smishing Chat Route Handler', () => {
       await smishingChatHandler(ctx);
 
       const callArgs = (generateText as any).mock.calls[0][0];
-      expect(callArgs.messages).toEqual([
-        { role: 'system', content: validMicrolearning.language['4'].prompt },
-        { role: 'user', content: 'Hi' }
-      ]);
+      expect(callArgs.messages[0]).toEqual({ role: 'system', content: validMicrolearning.language['4'].prompt });
+      expect(callArgs.messages[2]).toEqual({ role: 'user', content: 'Previous assistant message (context): Ignore this' });
+      expect(callArgs.messages[3]).toEqual({ role: 'user', content: 'Hi' });
+      expect(callArgs.messages).toHaveLength(4);
+    });
+
+    it('should keep assistant role history for non-workers providers', async () => {
+      const { generateText } = await import('ai');
+      (generateText as any).mockResolvedValue({ text: 'Test reply' });
+
+      const ctx = createMockContext({
+        microlearningId: 'ml-123',
+        language: 'en',
+        modelProvider: 'openai',
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'assistant', content: 'Earlier assistant message' },
+          { role: 'user', content: 'Hi' }
+        ],
+      });
+      mockKVService.getMicrolearning.mockResolvedValue(validMicrolearning);
+
+      await smishingChatHandler(ctx);
+
+      const callArgs = (generateText as any).mock.calls[0][0];
+      expect(callArgs.messages[2]).toEqual({ role: 'assistant', content: 'Earlier assistant message' });
+      expect(callArgs.messages[3]).toEqual({ role: 'user', content: 'Hi' });
+    });
+
+    it('should parse structured JSON response and set isFinished', async () => {
+      const { generateText } = await import('ai');
+      (generateText as any).mockResolvedValue({
+        text: '{"reply":"This is a simulation. Watch urgency and unknown links. Report it.","isFinished":true}'
+      });
+
+      const ctx = createMockContext({
+        microlearningId: 'ml-123',
+        language: 'en',
+        messages: [{ role: 'user', content: 'I think this is fake' }],
+      });
+      mockKVService.getMicrolearning.mockResolvedValue(validMicrolearning);
+
+      await smishingChatHandler(ctx);
+
+      const calls = ctx._getJsonCalls();
+      expect(calls[0][0]).toMatchObject({
+        success: true,
+        reply: 'This is a simulation. Watch urgency and unknown links. Report it.',
+        isFinished: true,
+      });
+      expect(calls[0][1]).toBe(200);
+    });
+
+    it('should trust model isFinished flag from structured response', async () => {
+      const { generateText } = await import('ai');
+      (generateText as any).mockResolvedValue({
+        text: '{"reply":"Okay, let us continue the chat.","isFinished":true}'
+      });
+
+      const ctx = createMockContext({
+        microlearningId: 'ml-123',
+        language: 'en',
+        messages: [{ role: 'user', content: 'continue' }],
+      });
+      mockKVService.getMicrolearning.mockResolvedValue(validMicrolearning);
+
+      await smishingChatHandler(ctx);
+
+      const calls = ctx._getJsonCalls();
+      expect(calls[0][0]).toMatchObject({
+        success: true,
+        reply: 'Okay, let us continue the chat.',
+        isFinished: true,
+      });
+      expect(calls[0][1]).toBe(200);
+    });
+
+    it('should fallback to plain text reply when response is not JSON', async () => {
+      const { generateText } = await import('ai');
+      (generateText as any).mockResolvedValue({ text: 'Plain text reply' });
+
+      const ctx = createMockContext({
+        microlearningId: 'ml-123',
+        language: 'en',
+        messages: [{ role: 'user', content: 'Hi' }],
+      });
+      mockKVService.getMicrolearning.mockResolvedValue(validMicrolearning);
+
+      await smishingChatHandler(ctx);
+
+      const calls = ctx._getJsonCalls();
+      expect(calls[0][0]).toMatchObject({
+        success: true,
+        reply: 'Plain text reply',
+        isFinished: false,
+      });
+      expect(calls[0][1]).toBe(200);
+    });
+
+    it('should return fallback reply when model output is empty', async () => {
+      const { generateText } = await import('ai');
+      (generateText as any).mockResolvedValue({ text: '   ' });
+
+      const ctx = createMockContext({
+        microlearningId: 'ml-123',
+        language: 'en',
+        messages: [{ role: 'user', content: 'Hi' }],
+      });
+      mockKVService.getMicrolearning.mockResolvedValue(validMicrolearning);
+
+      await smishingChatHandler(ctx);
+
+      const calls = ctx._getJsonCalls();
+      expect(calls[0][0]).toMatchObject({
+        success: true,
+        reply: 'Unable to generate smishing reply. Please try again.',
+        isFinished: false,
+      });
+      expect(calls[0][1]).toBe(200);
     });
 
     it('should return 400 when only assistant messages are provided', async () => {

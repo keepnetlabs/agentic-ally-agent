@@ -229,12 +229,15 @@ RULES:
   Set to FALSE for: email phishing, SMS phishing (smishing), general phishing, and non-voice social engineering.
 - isSmishing: **CRITICAL** - Return as boolean (true/false). Set to true IF ANY of these conditions are met:
   1. Topic explicitly mentions "smishing" or "SMS phishing".
-  2. Topic mentions text-message scams, SMS links, or text-based social engineering.
+  2. Topic mentions text-message or messaging-app scams, suspicious links in chat apps, or text/chat-based social engineering.
   Set to FALSE for: email phishing, voice phishing (vishing), general phishing, and non-text social engineering.
 - deliveryChannel: **ONLY if isSmishing is true**. Set to one of:
   - "slack" if the prompt mentions Slack, workspace chat, or Slack DM.
   - "teams" if the prompt mentions Microsoft Teams or Teams chat.
   - "whatsapp" if the prompt mentions WhatsApp.
+  - "telegram" if the prompt mentions Telegram.
+  - "instagram" if the prompt mentions Instagram DMs/messages.
+  - "linkedin" if the prompt mentions LinkedIn messages/InMail.
   - "sms" if the prompt mentions SMS, text message, or if no channel is specified.
   - If isSmishing is false, return null.`;
 
@@ -344,6 +347,12 @@ export async function getFallbackAnalysis(params: AnalyzeUserPromptParams) {
         'text scam',
         'sms scam',
         'text message scam',
+        'telegram scam',
+        'telegram phishing',
+        'instagram dm scam',
+        'instagram phishing',
+        'linkedin message scam',
+        'linkedin phishing',
         'sms-based social engineering',
         'text-based social engineering'
     ];

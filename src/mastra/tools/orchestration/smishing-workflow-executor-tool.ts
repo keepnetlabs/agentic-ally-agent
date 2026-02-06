@@ -1,6 +1,7 @@
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { createSmishingWorkflow } from '../../workflows/create-smishing-workflow';
+import { uuidv4 } from '../../utils/core/id-utils';
 import { SMISHING, MODEL_PROVIDERS, ERROR_MESSAGES } from '../../constants';
 import { getLogger } from '../../utils/core/logger';
 import { getPolicySummary } from '../../utils/core/policy-cache';
@@ -92,6 +93,57 @@ export const smishingWorkflowExecutorTool = createTool({
             if (result.status === 'success' && result.result) {
                 const output = result.result;
 
+                // Stream result to frontend
+                if (writer) {
+                    try {
+                        const messageId = uuidv4();
+                        await writer.write({ type: 'text-start', id: messageId });
+
+                        const normalizedLanguage = (params.language || 'en-gb').toLowerCase();
+                        const smsKey = `smishing:${output.smishingId}:sms:${normalizedLanguage}`;
+                        const landingKey = `smishing:${output.smishingId}:landing:${normalizedLanguage}`;
+
+                        if (output.messages && Array.isArray(output.messages) && output.messages.length > 0) {
+                            const smsObject = {
+                                smishingId: output.smishingId,
+                                smsKey,
+                                language: normalizedLanguage,
+                                messages: output.messages,
+                            };
+                            const smsJson = JSON.stringify(smsObject);
+                            const encodedSms = Buffer.from(smsJson).toString('base64');
+
+                            await writer.write({
+                                type: 'text-delta',
+                                id: messageId,
+                                delta: `::ui:smishing_sms::${encodedSms}::/ui:smishing_sms::\n`
+                            });
+                        }
+
+                        if (output.landingPage && output.landingPage.pages && output.landingPage.pages.length > 0) {
+                            const landingPageObject = {
+                                smishingId: output.smishingId,
+                                landingKey,
+                                language: normalizedLanguage,
+                                ...output.landingPage,
+                            };
+                            const landingPageJson = JSON.stringify(landingPageObject);
+                            const encodedLandingPage = Buffer.from(landingPageJson).toString('base64');
+
+                            await writer.write({
+                                type: 'text-delta',
+                                id: messageId,
+                                delta: `::ui:smishing_landing_page::${encodedLandingPage}::/ui:smishing_landing_page::\n`
+                            });
+                        }
+
+                        await writer.write({ type: 'text-end', id: messageId });
+                    } catch (err) {
+                        const error = err instanceof Error ? err : new Error(String(err));
+                        logger.error('Failed to stream smishing simulation', { error: error.message, stack: error.stack });
+                    }
+                }
+
                 const toolResult = {
                     success: true,
                     status: 'success',
@@ -126,7 +178,7 @@ export const smishingWorkflowExecutorTool = createTool({
             logger.error('Smishing workflow produced no output', {});
             return {
                 success: false,
-                error: ERROR_MESSAGES.WORKFLOW.EXECUTION_FAILED,
+                error: ERROR_MESSAGES.SMISHING.NO_OUTPUT,
                 message: '❌ Smishing workflow completed but produced no output. Do NOT retry - check logs for details.'
             };
         } catch (error) {
@@ -141,10 +193,10 @@ export const smishingWorkflowExecutorTool = createTool({
             logErrorInfo(logger, 'error', 'Smishing workflow error', errorInfo);
 
             const userMessage = err.message.includes('analysis')
-                ? ERROR_MESSAGES.PHISHING.ANALYSIS_FAILED
+                ? ERROR_MESSAGES.SMISHING.ANALYSIS_FAILED
                 : err.message.includes('sms')
-                    ? ERROR_MESSAGES.PHISHING.GENERATION_FAILED
-                    : ERROR_MESSAGES.PHISHING.GENERIC;
+                    ? ERROR_MESSAGES.SMISHING.GENERATION_FAILED
+                    : ERROR_MESSAGES.SMISHING.GENERIC;
 
             return {
                 ...createToolErrorResponse(errorInfo),
@@ -153,3 +205,4 @@ export const smishingWorkflowExecutorTool = createTool({
         }
     }
 });
+

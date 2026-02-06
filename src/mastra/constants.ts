@@ -418,6 +418,14 @@ export const ERROR_MESSAGES = {
     GENERIC: 'Unable to generate phishing email. Please try again or contact support if the issue persists.',
   },
 
+  // Smishing workflow errors
+  SMISHING: {
+    NO_OUTPUT: 'Unable to generate smishing simulation. Please try again or simplify your request.',
+    ANALYSIS_FAILED: 'Failed to analyze your request. Please provide more details about the smishing scenario.',
+    GENERATION_FAILED: 'Failed to generate smishing content. Please try again with a simpler scenario.',
+    GENERIC: 'Unable to generate smishing simulation. Please try again or contact support if the issue persists.',
+  },
+
   // Workflow execution errors
   WORKFLOW: {
     EXECUTION_FAILED: 'Workflow execution failed. Please try again.',
