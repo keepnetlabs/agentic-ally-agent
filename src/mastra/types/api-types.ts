@@ -98,6 +98,51 @@ export interface SmishingChatRequestBody {
   model?: string;
 }
 
+export interface SmishingChatInitResponse {
+  success: true;
+  microlearningId: string;
+  language: string;
+  prompt: string;
+  firstMessage: string;
+  isFinished: false;
+}
+
+export interface SmishingChatReplyResponse {
+  success: true;
+  microlearningId: string;
+  language: string;
+  reply: string;
+  isFinished: boolean;
+}
+
+export interface SmishingChatErrorResponse {
+  success: false;
+  error: string;
+}
+
+export type SmishingChatResponse =
+  | SmishingChatInitResponse
+  | SmishingChatReplyResponse
+  | SmishingChatErrorResponse;
+
+export interface VishingPromptSuccessResponse {
+  success: true;
+  microlearningId: string;
+  language: string;
+  prompt: string;
+  firstMessage: string;
+  agentId: string;
+  wsUrl: string;
+  signedUrl?: string;
+}
+
+export interface VishingPromptErrorResponse {
+  success: false;
+  error: string;
+}
+
+export type VishingPromptResponse = VishingPromptSuccessResponse | VishingPromptErrorResponse;
+
 /**
  * Vishing session start request body
  */

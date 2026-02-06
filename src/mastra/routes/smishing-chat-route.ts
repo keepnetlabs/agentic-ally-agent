@@ -1,12 +1,11 @@
 import { Context } from 'hono';
 import { generateText } from 'ai';
-import { KVService } from '../services/kv-service';
 import { getModelWithOverride } from '../model-providers';
 import { getLogger } from '../utils/core/logger';
-import { validateBCP47LanguageCode } from '../utils/language/language-utils';
 import { withRetry } from '../utils/core/resilience-utils';
 import { INBOX_TEXT_PARAMS } from '../utils/config/llm-generation-params';
 import { cleanResponse } from '../utils/content-processors/json-cleaner';
+import { loadScene4RouteData } from './scene4-route-helpers';
 import type { SmishingChatRequestBody, SmishingChatMessage } from '../types';
 
 const logger = getLogger('SmishingChatRoute');
@@ -72,23 +71,20 @@ export async function smishingChatHandler(c: Context) {
       }
     }
 
-    const normalizedLanguage = validateBCP47LanguageCode(language).toLowerCase();
-    const kvService = new KVService();
-    const microlearning = await kvService.getMicrolearning(microlearningId, normalizedLanguage);
+    const { hasLanguageContent, normalizedLanguage, prompt, firstMessage } = await loadScene4RouteData({
+      microlearningId,
+      language,
+    });
 
-    if (!microlearning?.language) {
+    if (!hasLanguageContent) {
       return c.json({ success: false, error: 'Language content not found' }, 404);
     }
-
-    const scene4 = microlearning.language?.['4'];
-    const prompt = scene4?.prompt;
 
     if (!prompt) {
       return c.json({ success: false, error: 'Smishing prompt not available' }, 404);
     }
 
     if (!hasMessages) {
-      const firstMessage = scene4?.firstMessage;
       if (!firstMessage) {
         return c.json({ success: false, error: 'Smishing prompt not available' }, 404);
       }
@@ -130,6 +126,15 @@ export async function smishingChatHandler(c: Context) {
       return c.json({ success: false, error: 'Missing user messages' }, 400);
     }
 
+    logger.info('smishing_chat_request', {
+      microlearningId,
+      language: normalizedLanguage,
+      modelProvider: normalizedProvider || 'default',
+      messageCount: conversationMessages.length,
+      userMessageCount: conversationMessages.filter((message) => message.role === 'user').length,
+      assistantMessageCount: messages.filter((message) => message.role === 'assistant').length,
+    });
+
     const model = getModelWithOverride(modelProvider, modelOverride);
     const chatMessages = [
       { role: 'system' as const, content: prompt },
@@ -146,6 +151,14 @@ export async function smishingChatHandler(c: Context) {
       'Smishing chat completion'
     );
     const parsedResponse = parseSmishingChatResponse(response.text);
+
+    logger.info('smishing_chat_response', {
+      microlearningId,
+      language: normalizedLanguage,
+      modelProvider: normalizedProvider || 'default',
+      isFinished: parsedResponse.isFinished,
+      replyLength: parsedResponse.reply.length,
+    });
 
     return c.json({
       success: true,
