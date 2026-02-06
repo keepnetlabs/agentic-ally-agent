@@ -24,6 +24,15 @@ vi.mock('../services/kv-service', () => ({
 }));
 
 vi.mock('../model-providers', () => ({
+  ModelProvider: {
+    OPENAI: 'openai',
+    WORKERS_AI: 'workers-ai',
+    GOOGLE: 'google',
+  },
+  Model: {
+    OPENAI_GPT_4O_MINI: 'gpt-4o-mini',
+    WORKERS_AI_GPT_OSS_120B: '@cf/openai/gpt-oss-120b',
+  },
   getModelWithOverride: vi.fn().mockReturnValue({ provider: 'OPENAI', modelId: 'gpt-4' }),
 }));
 

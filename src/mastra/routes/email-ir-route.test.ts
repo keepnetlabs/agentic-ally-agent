@@ -15,7 +15,8 @@ vi.mock('../utils/core/error-utils', () => ({
   normalizeError: vi.fn((err: any) => ({
     message: err?.message || 'Unknown error',
     code: 'UNKNOWN'
-  }))
+  })),
+  logErrorInfo: vi.fn(),
 }));
 
 vi.mock('../workflows/email-ir-workflow', () => ({

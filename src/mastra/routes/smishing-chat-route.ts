@@ -1,12 +1,19 @@
 import { Context } from 'hono';
 import { generateText } from 'ai';
 import { getModelWithOverride } from '../model-providers';
+import { errorService } from '../services/error-service';
 import { getLogger } from '../utils/core/logger';
+import { logErrorInfo, normalizeError } from '../utils/core/error-utils';
 import { withRetry } from '../utils/core/resilience-utils';
 import { INBOX_TEXT_PARAMS } from '../utils/config/llm-generation-params';
 import { cleanResponse } from '../utils/content-processors/json-cleaner';
 import { loadScene4RouteData } from './scene4-route-helpers';
-import type { SmishingChatRequestBody, SmishingChatMessage } from '../types';
+import { resolveEffectiveProvider, shouldMapAssistantHistoryAsUser } from './chat-provider-compat';
+import {
+  parsedSmishingChatResponseSchema,
+  smishingChatRequestSchema,
+} from './smishing-chat-route.schemas';
+import type { SmishingChatRequestBody, SmishingChatResponse } from '../types';
 
 const logger = getLogger('SmishingChatRoute');
 const SMISHING_CHAT_JSON_OUTPUT_INSTRUCTION = 'Return ONLY valid JSON with exactly these keys: {"reply":"string","isFinished":boolean}. Set isFinished=true ONLY when your reply is the final security/debrief guidance message (simulation reminder + red flags + correct next step). Otherwise set isFinished=false. Do not include markdown or extra text.';
@@ -17,26 +24,18 @@ interface ParsedSmishingChatResponse {
 }
 
 const SMISHING_CHAT_FALLBACK_REPLY = 'Unable to generate smishing reply. Please try again.';
-const WORKERS_AI_PROVIDER = 'workers-ai';
 const ASSISTANT_HISTORY_PREFIX = 'Previous assistant message (context): ';
-
-function isValidChatMessage(message: unknown): message is SmishingChatMessage {
-  if (!message || typeof message !== 'object') return false;
-  const candidate = message as SmishingChatMessage;
-  const validRole = candidate.role === 'user' || candidate.role === 'assistant' || candidate.role === 'system';
-  return validRole && typeof candidate.content === 'string' && candidate.content.trim().length > 0;
-}
 
 function parseSmishingChatResponse(rawText: string): ParsedSmishingChatResponse {
   const normalizedRawText = typeof rawText === 'string' ? rawText.trim() : '';
 
   try {
     const cleaned = cleanResponse(normalizedRawText, 'smishing-chat');
-    const parsed = JSON.parse(cleaned) as Partial<ParsedSmishingChatResponse>;
-    if (typeof parsed.reply === 'string' && parsed.reply.trim().length > 0) {
+    const parsed = parsedSmishingChatResponseSchema.safeParse(JSON.parse(cleaned));
+    if (parsed.success) {
       return {
-        reply: parsed.reply.trim(),
-        isFinished: parsed.isFinished === true,
+        reply: parsed.data.reply.trim(),
+        isFinished: parsed.data.isFinished === true,
       };
     }
   } catch (error) {
@@ -53,23 +52,33 @@ function parseSmishingChatResponse(rawText: string): ParsedSmishingChatResponse 
 }
 
 export async function smishingChatHandler(c: Context) {
+  const requestStart = Date.now();
   try {
-    const body = await c.req.json<SmishingChatRequestBody>();
-    const { microlearningId, language, messages, modelProvider, model: modelOverride } = body || {};
+    const rawBody = await c.req.json<SmishingChatRequestBody>();
+    const body = rawBody || {};
+    const { microlearningId, language } = body;
 
     if (!microlearningId || typeof microlearningId !== 'string') {
-      return c.json({ success: false, error: 'Missing microlearningId' }, 400);
+      const response: SmishingChatResponse = { success: false, error: 'Missing microlearningId' };
+      return c.json(response, 400);
     }
     if (!language || typeof language !== 'string') {
-      return c.json({ success: false, error: 'Missing language' }, 400);
+      const response: SmishingChatResponse = { success: false, error: 'Missing language' };
+      return c.json(response, 400);
     }
+
+    const parsedRequest = smishingChatRequestSchema.safeParse(body);
+    if (!parsedRequest.success) {
+      const hasInvalidMessages = parsedRequest.error.issues.some((issue) => issue.path[0] === 'messages');
+      const response: SmishingChatResponse = {
+        success: false,
+        error: hasInvalidMessages ? 'Invalid message format' : 'Invalid request format',
+      };
+      return c.json(response, 400);
+    }
+
+    const { messages, modelProvider, model: modelOverride } = parsedRequest.data;
     const hasMessages = Array.isArray(messages) && messages.length > 0;
-    if (hasMessages) {
-      const invalidMessage = messages.find((message) => !isValidChatMessage(message));
-      if (invalidMessage) {
-        return c.json({ success: false, error: 'Invalid message format' }, 400);
-      }
-    }
 
     const { hasLanguageContent, normalizedLanguage, prompt, firstMessage } = await loadScene4RouteData({
       microlearningId,
@@ -77,32 +86,34 @@ export async function smishingChatHandler(c: Context) {
     });
 
     if (!hasLanguageContent) {
-      return c.json({ success: false, error: 'Language content not found' }, 404);
+      const response: SmishingChatResponse = { success: false, error: 'Language content not found' };
+      return c.json(response, 404);
     }
 
     if (!prompt) {
-      return c.json({ success: false, error: 'Smishing prompt not available' }, 404);
+      const response: SmishingChatResponse = { success: false, error: 'Smishing prompt not available' };
+      return c.json(response, 404);
     }
 
     if (!hasMessages) {
       if (!firstMessage) {
-        return c.json({ success: false, error: 'Smishing prompt not available' }, 404);
+        const response: SmishingChatResponse = { success: false, error: 'Smishing prompt not available' };
+        return c.json(response, 404);
       }
 
-      return c.json({
+      const response: SmishingChatResponse = {
         success: true,
         microlearningId,
         language: normalizedLanguage,
         prompt,
         firstMessage,
         isFinished: false,
-      }, 200);
+      };
+      return c.json(response, 200);
     }
 
-    const normalizedProvider = typeof modelProvider === 'string'
-      ? modelProvider.toLowerCase().replace(/_/g, '-').trim()
-      : undefined;
-    const shouldMapAssistantToUser = !normalizedProvider || normalizedProvider === WORKERS_AI_PROVIDER;
+    const effectiveProvider = resolveEffectiveProvider(modelProvider, modelOverride);
+    const shouldMapAssistantToUser = shouldMapAssistantHistoryAsUser(modelProvider, modelOverride);
 
     const hasExplicitUserMessage = messages.some((message) => message.role === 'user');
 
@@ -123,13 +134,17 @@ export async function smishingChatHandler(c: Context) {
       });
 
     if (!hasExplicitUserMessage) {
-      return c.json({ success: false, error: 'Missing user messages' }, 400);
+      const response: SmishingChatResponse = { success: false, error: 'Missing user messages' };
+      return c.json(response, 400);
     }
 
     logger.info('smishing_chat_request', {
+      route: '/smishing/chat',
+      event: 'request',
       microlearningId,
       language: normalizedLanguage,
-      modelProvider: normalizedProvider || 'default',
+      requestedProvider: typeof modelProvider === 'string' ? modelProvider : 'default',
+      effectiveProvider,
       messageCount: conversationMessages.length,
       userMessageCount: conversationMessages.filter((message) => message.role === 'user').length,
       assistantMessageCount: messages.filter((message) => message.role === 'assistant').length,
@@ -142,7 +157,7 @@ export async function smishingChatHandler(c: Context) {
       ...conversationMessages,
     ];
 
-    const response = await withRetry(
+    const aiResponse = await withRetry(
       () => generateText({
         model,
         messages: chatMessages,
@@ -150,30 +165,39 @@ export async function smishingChatHandler(c: Context) {
       }),
       'Smishing chat completion'
     );
-    const parsedResponse = parseSmishingChatResponse(response.text);
+    const parsedResponse = parseSmishingChatResponse(aiResponse.text);
 
     logger.info('smishing_chat_response', {
+      route: '/smishing/chat',
+      event: 'response',
       microlearningId,
       language: normalizedLanguage,
-      modelProvider: normalizedProvider || 'default',
+      effectiveProvider,
       isFinished: parsedResponse.isFinished,
       replyLength: parsedResponse.reply.length,
+      durationMs: Date.now() - requestStart,
     });
 
-    return c.json({
+    const response: SmishingChatResponse = {
       success: true,
       microlearningId,
       language: normalizedLanguage,
       reply: parsedResponse.reply,
       isFinished: parsedResponse.isFinished,
-    }, 200);
+    };
+    return c.json(response, 200);
   } catch (error) {
-    logger.error('smishing_chat_error', {
-      error: error instanceof Error ? error.message : String(error),
+    const err = normalizeError(error);
+    const errorInfo = errorService.internal(err.message, {
+      route: '/smishing/chat',
+      event: 'error',
+      durationMs: Date.now() - requestStart,
     });
-    return c.json({
+    logErrorInfo(logger, 'error', 'smishing_chat_error', errorInfo);
+    const response: SmishingChatResponse = {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
-    }, 500);
+    };
+    return c.json(response, 500);
   }
 }
