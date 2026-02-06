@@ -30,7 +30,7 @@ npm run dev
 
 ---
 
-## 🛠️ Testing the 6 Specialist Agents
+## 🛠️ Testing the 7 Specialist Agents
 
 Use these payloads to verify each specialist is working correctly.
 
@@ -50,7 +50,15 @@ curl -X POST http://localhost:8000/chat \
   -d '{"prompt": "Create a fake invoice email for HR dept"}'
 ```
 
-### 3. Test User Info Agent (The Analyst)
+### 3. Test Smishing Agent (The SMS Simulator)
+**Scenario:** Create an SMS simulation.
+```bash
+curl -X POST http://localhost:8000/chat \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "Create a smishing SMS for delivery update"}'
+```
+
+### 4. Test User Info Agent (The Analyst)
 **Scenario 1: Risk Report (Report Mode)**
 *Returns a detailed markdown analysis.*
 ```bash
@@ -67,7 +75,7 @@ curl -X POST http://localhost:8000/chat \
   -d '{"prompt": "Assign training to group developers"}'
 ```
 
-### 4. Test Policy Agent (The Expert)
+### 5. Test Policy Agent (The Expert)
 **Scenario:** Ask a policy questions (RAG).
 ```bash
 curl -X POST http://localhost:8000/chat \
@@ -75,7 +83,7 @@ curl -X POST http://localhost:8000/chat \
   -d '{"prompt": "What is our company policy on remote work passwords?"}'
 ```
 
-### 5. Test Email IR Analyst (The Incident Responder)
+### 6. Test Email IR Analyst (The Incident Responder)
 **Scenario:** Analyze a suspicious email (IR report).
 ```bash
 curl -X POST http://localhost:8000/email-ir/analyze \
@@ -83,7 +91,7 @@ curl -X POST http://localhost:8000/email-ir/analyze \
   -d '{"id":"email-12345","accessToken":"api-token-xyz","apiBaseUrl":"https://api.example.com"}'
 ```
 
-### 6. Debug Autonomous Service (Proactive Loop)
+### 7. Debug Autonomous Service (Proactive Loop)
 Don't wait for Cron. Run the manual trigger script:
 ```bash
 npx tsx src/debug-workflow.ts

@@ -51,6 +51,19 @@ function safeExtractPhishingIdFromUiPayload(payload: string): string | undefined
   }
 }
 
+function safeExtractSmishingIdFromUiPayload(payload: string): string | undefined {
+  try {
+    const decoded = decodeBase64Json(payload);
+    if (decoded && typeof decoded === 'object' && 'smishingId' in decoded) {
+      const value = (decoded as Record<string, unknown>).smishingId;
+      return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+    }
+    return undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 function safeExtractMicrolearningIdFromUrl(url: string): string | undefined {
   try {
     // Best-effort: take the last non-empty path segment if it looks like an ID.
@@ -178,11 +191,23 @@ const cleanMessageContent = (content: string): string => {
     if (phishingId) return `[Phishing Simulation Email Created: phishingId=${phishingId}]`;
     return '[Phishing Simulation Email Created]';
   }
+  if (content.match(/::ui:smishing_sms::/)) {
+    const payload = extractUiPayload(content, 'smishing_sms');
+    const smishingId = payload ? safeExtractSmishingIdFromUiPayload(payload) : undefined;
+    if (smishingId) return `[Smishing Simulation Created: smishingId=${smishingId}]`;
+    return '[Smishing Simulation Created]';
+  }
   if (content.match(/::ui:landing_page::/)) {
     const payload = extractUiPayload(content, 'landing_page');
     const phishingId = payload ? safeExtractPhishingIdFromUiPayload(payload) : undefined;
     if (phishingId) return `[Phishing Simulation Landing Page Created: phishingId=${phishingId}]`;
     return '[Phishing Simulation Landing Page Created]';
+  }
+  if (content.match(/::ui:smishing_landing_page::/)) {
+    const payload = extractUiPayload(content, 'smishing_landing_page');
+    const smishingId = payload ? safeExtractSmishingIdFromUiPayload(payload) : undefined;
+    if (smishingId) return `[Smishing Simulation Landing Page Created: smishingId=${smishingId}]`;
+    return '[Smishing Simulation Landing Page Created]';
   }
   if (content.match(/::ui:training_uploaded::/)) {
     const payload = extractUiPayload(content, 'training_uploaded');
@@ -209,6 +234,19 @@ const cleanMessageContent = (content: string): string => {
       } catch { /* ignore */ }
     }
     return '[Phishing Simulation Uploaded]';
+  }
+  if (content.match(/::ui:smishing_uploaded::/)) {
+    const payload = extractUiPayload(content, 'smishing_uploaded');
+    if (payload) {
+      try {
+        const decoded = decodeBase64Json(payload);
+        if (decoded && typeof decoded === 'object') {
+          const { smishingId, resourceId } = decoded as any;
+          if (smishingId && resourceId) return `[Smishing Simulation Uploaded: smishingId=${smishingId}, resourceId=${resourceId}]`;
+        }
+      } catch { /* ignore */ }
+    }
+    return '[Smishing Simulation Uploaded]';
   }
   if (content.match(/::ui:training_assigned::/)) {
     const payload = extractUiPayload(content, 'training_assigned');
@@ -241,6 +279,22 @@ const cleanMessageContent = (content: string): string => {
       } catch { /* ignore */ }
     }
     return '[Phishing Simulation Assigned to User]';
+  }
+  if (content.match(/::ui:smishing_assigned::/)) {
+    const payload = extractUiPayload(content, 'smishing_assigned');
+    if (payload) {
+      try {
+        const decoded = decodeBase64Json(payload);
+        if (decoded && typeof decoded === 'object') {
+          const { resourceId, targetId, assignmentType } = decoded as any;
+          if (resourceId && targetId) {
+            const key = assignmentType === 'GROUP' ? 'targetGroupResourceId' : 'targetUserResourceId';
+            return `[Smishing Simulation Assigned to ${assignmentType === 'GROUP' ? 'Group' : 'User'}: resourceId=${resourceId}, ${key}=${targetId}]`;
+          }
+        }
+      } catch { /* ignore */ }
+    }
+    return '[Smishing Simulation Assigned to User]';
   }
   if (content.match(/::ui:target_user::/)) {
     const payload = extractUiPayload(content, 'target_user');
@@ -327,6 +381,7 @@ export const buildRoutingContext = (messages: ChatMessage[]): string => {
 export function extractArtifactIdsFromRoutingContext(routingContext: string): {
   microlearningId?: string;
   phishingId?: string;
+  smishingId?: string;
   resourceId?: string;
   scenarioResourceId?: string;
   landingPageResourceId?: string;
@@ -342,9 +397,11 @@ export function extractArtifactIdsFromRoutingContext(routingContext: string): {
   // - phishingId=...
   const microMatches = [...routingContext.matchAll(/microlearningId=([a-zA-Z0-9_-]{6,})/g)];
   const phishingMatches = [...routingContext.matchAll(/phishingId=([a-zA-Z0-9_-]{6,})/g)];
+  const smishingMatches = [...routingContext.matchAll(/smishingId=([a-zA-Z0-9_-]{6,})/g)];
 
   const microlearningId = microMatches.length ? microMatches[microMatches.length - 1]?.[1] : undefined;
   const phishingId = phishingMatches.length ? phishingMatches[phishingMatches.length - 1]?.[1] : undefined;
+  const smishingId = smishingMatches.length ? smishingMatches[smishingMatches.length - 1]?.[1] : undefined;
 
   // Also extract operational IDs from tool summary lines and other assistant messages.
   // Keep these regexes conservative: safe IDs only (alnum/underscore/hyphen, min 3 chars).
@@ -367,6 +424,7 @@ export function extractArtifactIdsFromRoutingContext(routingContext: string): {
   return {
     microlearningId,
     phishingId,
+    smishingId,
     resourceId,
     scenarioResourceId,
     landingPageResourceId,

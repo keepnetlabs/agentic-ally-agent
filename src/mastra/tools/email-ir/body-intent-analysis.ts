@@ -4,15 +4,16 @@ import { emailIRAnalyst } from '../../agents/email-ir-analyst';
 import { EmailIREmailDataSchema } from '../../types/email-ir';
 import { createLogContext, loggerIntent, logStepStart, logStepComplete, logStepError } from './logger-setup';
 import { withRetry } from '../../utils/core/resilience-utils';
+import { sanitizeEmailBody } from './email-body-sanitizer';
 
 export const bodyIntentAnalysisOutputSchema = z.object({
     intent: z.enum(['benign', 'phishing', 'sextortion', 'impersonation', 'fraud']).describe('Overall intent classification'),
     financial_request: z.boolean().describe('True if email requests money, payment, wire transfer, gift cards, etc.'),
     credential_request: z.boolean().describe('True if email requests passwords, OTPs, login links, MFA codes, etc.'),
     authority_impersonation: z.boolean().describe('True if sender claims to be CEO, executive, HR, IT, authority figure, etc.'),
-    financial_request_details: z.string().describe('Specific financial requests if present (e.g., "wire $50k to account XYZ") or "none"'),
-    credential_request_details: z.string().describe('Specific credential requests if present (e.g., "password reset link") or "none"'),
-    authority_claimed: z.string().describe('Authority figure claimed if present (e.g., "CEO John Smith") or "none"'),
+    financial_request_details: z.string().describe('Specific financial requests if present (e.g., "wire $50k to account XYZ") or "insufficient_data"'),
+    credential_request_details: z.string().describe('Specific credential requests if present (e.g., "password reset link") or "insufficient_data"'),
+    authority_claimed: z.string().describe('Authority figure claimed if present (e.g., "CEO John Smith") or "insufficient_data"'),
     intent_summary: z.string().describe('1-2 sentence summary of what the email is asking/attempting'),
 
     // Pass-through context
@@ -32,7 +33,7 @@ export const bodyIntentAnalysisTool = createTool({
         try {
             logStepStart(loggerIntent, ctx, { subject: email.subject });
 
-            const emailBody = email.htmlBody || email.subject || 'No body content';
+            const emailBody = sanitizeEmailBody(email.htmlBody || '') || email.subject || 'No body content';
             const senderDisplay = email.senderName || email.from;
 
             const prompt = `
@@ -150,7 +151,7 @@ Populate the output schema based on the forensic evidence identified above:
 
 1.  **intent**: Select the category that best fits the *primary objective* (benign/phishing/sextortion/impersonation/fraud).
 2.  **Request Flags**: Set \`financial_request\`, \`credential_request\`, \`authority_impersonation\` to TRUE only if explicit evidence exists.
-3.  **Details**: Extract specific artifacts (e.g., "\$50k wire", "portal login link") into detail fields.
+3.  **Details**: Extract specific artifacts (e.g., "\$50k wire", "portal login link") into detail fields. If none, use "insufficient_data".
 4.  **intent_summary**: Synthesize the "Ask" in 1-2 professional sentences.
 
 **CRITICAL NOTES:**

@@ -8,12 +8,12 @@ import { bodyIntentAnalysisOutputSchema } from './body-intent-analysis';
 
 export const featureExtractionOutputSchema = z.object({
     intent: z.enum(['benign', 'phishing', 'sextortion', 'impersonation', 'fraud']),
-    urgency: z.enum(['none', 'low', 'medium', 'high']),
+    urgency: z.enum(['insufficient_data', 'none', 'low', 'medium', 'high']),
     authority_impersonation: z.boolean(),
     financial_request: z.boolean(),
     credential_request: z.boolean(),
-    emotional_pressure: z.enum(['none', 'fear', 'urgency', 'reward']),
-    social_engineering_pattern: z.enum(['none', 'pretexting', 'extortion', 'baiting']),
+    emotional_pressure: z.enum(['insufficient_data', 'none', 'fear', 'urgency', 'reward']),
+    social_engineering_pattern: z.enum(['insufficient_data', 'none', 'pretexting', 'extortion', 'baiting']),
     engine_indicators_present: z.boolean(),
     analysis_summary: z.string().describe('plain language, max 3 sentences'),
 

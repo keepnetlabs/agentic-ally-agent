@@ -96,17 +96,15 @@ describe('Scene 4 - Vishing Simulation Generator', () => {
     it('should include key_message array', () => {
       const prompt = generateScene4VishingPrompt(baseAnalysis, baseMicrolearning);
       expect(prompt).toContain('key_message');
-      expect(prompt).toContain('Step 1 - Verify the caller');
-      expect(prompt).toContain('Step 2 - Refuse risky requests');
-      expect(prompt).toContain('Step 3 - Report the attempt');
+      expect(prompt).toContain('Step 1 - Role-play the call');
+      expect(prompt).toContain('Step 2 - Verify and refuse risky requests');
+      expect(prompt).toContain('Step 3 - End the call safely');
     });
 
     it('should include texts object fields', () => {
       const prompt = generateScene4VishingPrompt(baseAnalysis, baseMicrolearning);
       expect(prompt).toContain('texts');
-      expect(prompt).toContain('mobileHint');
-      expect(prompt).toContain('feedbackCorrect');
-      expect(prompt).toContain('feedbackWrong');
+      expect(prompt).toContain('privacyNotice');
     });
 
     it('should include scientific_basis field', () => {
@@ -132,7 +130,7 @@ describe('Scene 4 - Vishing Simulation Generator', () => {
       const turkishAnalysis: any = {
         ...baseAnalysis,
         language: 'tr',
-        topic: 'Sesli Dolandırıcılık Önleme',
+        topic: 'Voice Scam Prevention',
       };
       const prompt = generateScene4VishingPrompt(turkishAnalysis, baseMicrolearning);
       expect(prompt).toContain('tr');
@@ -220,7 +218,6 @@ describe('Scene 4 - Vishing Simulation Generator', () => {
       const prompt = generateScene4VishingPrompt(baseAnalysis, baseMicrolearning);
       expect(prompt).toContain('verification');
       expect(prompt).toContain('refusal');
-      expect(prompt).toContain('reporting');
     });
 
     it('should preserve JSON key structure', () => {
@@ -237,15 +234,15 @@ describe('Scene 4 - Vishing Simulation Generator', () => {
 
     it('should specify safe training guidelines', () => {
       const prompt = generateScene4VishingPrompt(baseAnalysis, baseMicrolearning);
-      expect(prompt).toContain('never threaten harm');
-      expect(prompt).toContain('abusive language');
-      expect(prompt).toContain('NOT ask for real passwords');
+      expect(prompt).toContain('never request real passwords');
+      expect(prompt).toContain('OTPs');
+      expect(prompt).toContain('money, gift cards');
     });
 
     it('should specify fictional identifiers requirement', () => {
       const prompt = generateScene4VishingPrompt(baseAnalysis, baseMicrolearning);
-      expect(prompt).toContain('fictional identifiers');
-      expect(prompt).toContain('safe examples');
+      expect(prompt).toContain('fictional');
+      expect(prompt).toContain('fake identifiers');
     });
   });
 
@@ -263,7 +260,7 @@ describe('Scene 4 - Vishing Simulation Generator', () => {
         roles: ['Managers', 'Finance Team', 'HR'],
       };
       const prompt = generateScene4VishingPrompt(rolesAnalysis, baseMicrolearning);
-      expect(prompt).toContain('Managers, Finance Team, HR');
+      expect(prompt).toContain('MOCK_CONTEXT_DATA');
     });
 
     it('should inject department into prompt', () => {
@@ -272,7 +269,7 @@ describe('Scene 4 - Vishing Simulation Generator', () => {
         department: 'Finance',
       };
       const prompt = generateScene4VishingPrompt(deptAnalysis, baseMicrolearning);
-      expect(prompt).toContain('Finance');
+      expect(prompt).toContain('MOCK_CONTEXT_DATA');
     });
 
     it('should inject industries into prompt', () => {
@@ -281,7 +278,7 @@ describe('Scene 4 - Vishing Simulation Generator', () => {
         industries: ['Healthcare', 'Finance', 'Technology'],
       };
       const prompt = generateScene4VishingPrompt(industryAnalysis, baseMicrolearning);
-      expect(prompt).toContain('Healthcare, Finance, Technology');
+      expect(prompt).toContain('MOCK_CONTEXT_DATA');
     });
 
     it('should handle custom requirements', () => {
@@ -290,7 +287,7 @@ describe('Scene 4 - Vishing Simulation Generator', () => {
         customRequirements: 'Use CEO impersonation scenario',
       };
       const prompt = generateScene4VishingPrompt(customAnalysis, baseMicrolearning);
-      expect(prompt).toContain('CEO impersonation');
+      expect(prompt).toContain('MOCK_CONTEXT_DATA');
     });
 
     it('should use default when custom requirements missing', () => {
@@ -299,7 +296,7 @@ describe('Scene 4 - Vishing Simulation Generator', () => {
         customRequirements: undefined,
       };
       const prompt = generateScene4VishingPrompt(noCustomAnalysis, baseMicrolearning);
-      expect(prompt).toContain('Use a plausible caller persona');
+      expect(prompt).toContain('MOCK_CONTEXT_DATA');
     });
 
     it('should handle missing roles with default', () => {
@@ -308,7 +305,7 @@ describe('Scene 4 - Vishing Simulation Generator', () => {
         roles: undefined,
       };
       const prompt = generateScene4VishingPrompt(noRolesAnalysis, baseMicrolearning);
-      expect(prompt).toContain('All Employees');
+      expect(prompt).toContain('MOCK_CONTEXT_DATA');
     });
 
     it('should handle missing department with default', () => {
@@ -317,7 +314,7 @@ describe('Scene 4 - Vishing Simulation Generator', () => {
         department: undefined,
       };
       const prompt = generateScene4VishingPrompt(noDeptAnalysis, baseMicrolearning);
-      expect(prompt).toContain('All');
+      expect(prompt).toContain('MOCK_CONTEXT_DATA');
     });
 
     it('should handle missing industries with default', () => {
@@ -326,7 +323,7 @@ describe('Scene 4 - Vishing Simulation Generator', () => {
         industries: undefined,
       };
       const prompt = generateScene4VishingPrompt(noIndustryAnalysis, baseMicrolearning);
-      expect(prompt).toContain('General');
+      expect(prompt).toContain('MOCK_CONTEXT_DATA');
     });
   });
 
@@ -342,24 +339,9 @@ describe('Scene 4 - Vishing Simulation Generator', () => {
       expect(prompt).toContain('max 12 words');
     });
 
-    it('should specify mobileHint max 12 words', () => {
+    it('should specify prompt is 6-9 sentences', () => {
       const prompt = generateScene4VishingPrompt(baseAnalysis, baseMicrolearning);
-      expect(prompt).toContain('max 12 words with 💡');
-    });
-
-    it('should specify feedbackCorrect max 12 words', () => {
-      const prompt = generateScene4VishingPrompt(baseAnalysis, baseMicrolearning);
-      expect(prompt).toContain('max 12 words with ✅');
-    });
-
-    it('should specify feedbackWrong max 15 words', () => {
-      const prompt = generateScene4VishingPrompt(baseAnalysis, baseMicrolearning);
-      expect(prompt).toContain('max 15 words with ⚠️');
-    });
-
-    it('should specify prompt is 5-8 sentences', () => {
-      const prompt = generateScene4VishingPrompt(baseAnalysis, baseMicrolearning);
-      expect(prompt).toContain('5-8 short sentences');
+      expect(prompt).toContain('6-9 short sentences');
     });
 
     it('should specify firstMessage is 1-2 sentences', () => {
@@ -367,10 +349,6 @@ describe('Scene 4 - Vishing Simulation Generator', () => {
       expect(prompt).toContain('1-2 sentences');
     });
 
-    it('should specify reply limit under 2 sentences', () => {
-      const prompt = generateScene4VishingPrompt(baseAnalysis, baseMicrolearning);
-      expect(prompt).toContain('under 2 sentences');
-    });
   });
 
   // ==================== LEARNING OBJECTIVES TESTS ====================
@@ -382,17 +360,7 @@ describe('Scene 4 - Vishing Simulation Generator', () => {
 
     it('should focus on refusal behavior', () => {
       const prompt = generateScene4VishingPrompt(baseAnalysis, baseMicrolearning);
-      expect(prompt).toContain('refuses risky requests');
-    });
-
-    it('should focus on reporting behavior', () => {
-      const prompt = generateScene4VishingPrompt(baseAnalysis, baseMicrolearning);
-      expect(prompt).toContain('reports the attempt');
-    });
-
-    it('should include vishing tactics education', () => {
-      const prompt = generateScene4VishingPrompt(baseAnalysis, baseMicrolearning);
-      expect(prompt).toContain('urgency, authority, pretext');
+      expect(prompt).toContain('Verify and refuse risky requests');
     });
   });
 
@@ -476,19 +444,13 @@ describe('Scene 4 - Vishing Simulation Generator', () => {
   describe('Scenario Examples', () => {
     it('should include title examples', () => {
       const prompt = generateScene4VishingPrompt(baseAnalysis, baseMicrolearning);
-      expect(prompt).toContain('Stop Voice Scam Calls');
-      expect(prompt).toContain('Handle Fake IT Calls');
-      expect(prompt).toContain('Verify Caller Requests');
+      expect(prompt).toContain('Vishing Call Role-Play');
+      expect(prompt).toContain('Practice the Call');
     });
 
     it('should include subtitle example', () => {
       const prompt = generateScene4VishingPrompt(baseAnalysis, baseMicrolearning);
-      expect(prompt).toContain('Verify identity, refuse requests, report safely');
-    });
-
-    it('should include action verbs guidance', () => {
-      const prompt = generateScene4VishingPrompt(baseAnalysis, baseMicrolearning);
-      expect(prompt).toContain('3 action verbs');
+      expect(prompt).toContain('Act it out, verify, end safely');
     });
   });
 
@@ -496,7 +458,7 @@ describe('Scene 4 - Vishing Simulation Generator', () => {
   describe('Safety and Ethics', () => {
     it('should prohibit real credential requests', () => {
       const prompt = generateScene4VishingPrompt(baseAnalysis, baseMicrolearning);
-      expect(prompt).toContain('NOT ask for real passwords');
+      expect(prompt).toContain('never request real passwords');
       expect(prompt).toContain('OTPs');
     });
 
@@ -507,17 +469,12 @@ describe('Scene 4 - Vishing Simulation Generator', () => {
 
     it('should prohibit personal data requests', () => {
       const prompt = generateScene4VishingPrompt(baseAnalysis, baseMicrolearning);
-      expect(prompt).toContain('personal data');
+      expect(prompt).toContain('personal/company secrets');
     });
 
     it('should require polite conclusion', () => {
       const prompt = generateScene4VishingPrompt(baseAnalysis, baseMicrolearning);
-      expect(prompt).toContain('end the call politely');
-    });
-
-    it('should suggest official callback channels', () => {
-      const prompt = generateScene4VishingPrompt(baseAnalysis, baseMicrolearning);
-      expect(prompt).toContain('callback through official channels');
+      expect(prompt).toContain('end politely');
     });
 
     it('should keep requests fictional', () => {

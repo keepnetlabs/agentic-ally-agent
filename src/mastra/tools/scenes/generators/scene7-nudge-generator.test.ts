@@ -349,17 +349,17 @@ describe('Scene 7 - Nudge Generator', () => {
     it('should include iconName field', () => {
       const prompt = generateScene7Prompt(baseAnalysis, baseMicrolearning);
       expect(prompt).toContain('iconName');
-      expect(prompt).toContain('topic-specific icon');
+      expect(prompt).toContain('topic-appropriate icon');
     });
 
     it('should specify icon examples', () => {
       const prompt = generateScene7Prompt(baseAnalysis, baseMicrolearning);
-      expect(prompt).toContain("phishing→'mail-warning'");
-      expect(prompt).toContain("vishing→'phone'");
-      expect(prompt).toContain("quishing→'qr-code'");
-      expect(prompt).toContain("ransomware→'alert-circle'");
-      expect(prompt).toContain("deepfake→'video'");
-      expect(prompt).toContain("malware→'shield-alert'");
+      expect(prompt).toContain("phishing->'mail-warning'");
+      expect(prompt).toContain("vishing->'phone'");
+      expect(prompt).toContain("quishing->'qr-code'");
+      expect(prompt).toContain("ransomware->'alert-circle'");
+      expect(prompt).toContain("deepfake->'video'");
+      expect(prompt).toContain("malware->'shield-alert'");
     });
 
     it('should include subtitle field', () => {
@@ -740,24 +740,24 @@ describe('Scene 7 - Nudge Generator', () => {
       const deAnalysis: any = {
         ...baseAnalysis,
         language: 'de',
-        topic: 'Phishing-Prävention',
+        topic: 'Phishing-Prevention',
       };
 
       const prompt = generateScene7Prompt(deAnalysis, baseMicrolearning);
       expect(prompt).toContain('de');
-      expect(prompt).toContain('Phishing-Prävention');
+      expect(prompt).toContain('Phishing-Prevention');
     });
 
     it('should handle Turkish language nudge', () => {
       const trAnalysis: any = {
         ...baseAnalysis,
         language: 'tr',
-        topic: 'Kimlik Avı Engelleme',
+        topic: 'Kimlik Avi Engelleme',
       };
 
       const prompt = generateScene7Prompt(trAnalysis, baseMicrolearning);
       expect(prompt).toContain('tr');
-      expect(prompt).toContain('Kimlik Avı Engelleme');
+      expect(prompt).toContain('Kimlik Avi Engelleme');
     });
   });
 

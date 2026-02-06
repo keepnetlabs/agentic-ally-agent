@@ -3,6 +3,7 @@ import { phishingWorkflowExecutorTool } from './phishing-workflow-executor-tool'
 import { PHISHING } from '../../constants';
 import '../../../../src/__tests__/setup';
 import * as workflowModule from '../../workflows/create-phishing-workflow';
+import { buildRoutingContext, extractArtifactIdsFromRoutingContext } from '../../utils/chat-request-helpers';
 
 // Mock the workflow module
 vi.mock('../../workflows/create-phishing-workflow', () => {
@@ -312,6 +313,33 @@ describe('phishingWorkflowExecutorTool', () => {
       await phishingWorkflowExecutorTool.execute({ context: input } as any);
 
       expect(mockWriter.write).not.toHaveBeenCalled();
+    });
+
+    it('should preserve ui-signal contract with chat-request-helpers', async () => {
+      const input = {
+        workflowType: PHISHING.WORKFLOW_TYPE,
+        topic: 'Reset Password',
+        language: 'en-gb',
+      };
+
+      await phishingWorkflowExecutorTool.execute({ context: input, writer: mockWriter } as any);
+
+      const uiDeltas = mockWriter.write.mock.calls
+        .map((call) => call[0])
+        .filter((event) => event?.type === 'text-delta' && typeof event?.delta === 'string')
+        .map((event) => event.delta as string);
+
+      expect(uiDeltas.length).toBeGreaterThan(0);
+
+      const routingContext = buildRoutingContext([
+        {
+          role: 'assistant',
+          content: uiDeltas.join('\n'),
+        } as any,
+      ]);
+
+      const ids = extractArtifactIdsFromRoutingContext(routingContext);
+      expect(ids.phishingId).toBe('phishing-123');
     });
   });
 

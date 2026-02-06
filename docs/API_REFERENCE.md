@@ -1,6 +1,6 @@
 # API Reference
 
-**Last Updated:** February 3, 2026
+**Last Updated:** February 6, 2026
 
 This document details the REST API endpoints available in Agentic Ally.
 
@@ -45,7 +45,131 @@ Returns a Server-Sent Events (SSE) stream or JSON stream depending on client.
 
 ---
 
-## 2. Autonomous Trigger (`POST /autonomous`)
+## 2. Smishing Chat (`POST /smishing/chat`)
+
+Chat endpoint for the smishing role-play scene used in microlearning.
+
+### Headers
+| Header | Value | Required | Description |
+|--------|-------|----------|-------------|
+| `Content-Type` | `application/json` | Yes | - |
+| `X-AGENTIC-ALLY-TOKEN` | `<your-token>` | Yes | Auth token (set in `.env`) |
+
+### Request Body
+```json
+{
+  "microlearningId": "ml-123",
+  "language": "en-gb",
+  "messages": [
+    { "role": "user", "content": "Hello?" }
+  ],
+  "modelProvider": "openai",
+  "model": "gpt-4o-mini"
+}
+```
+
+### Response (Initial Prompt)
+If `messages` is omitted or empty, returns the prompt and first message.
+```json
+{
+  "success": true,
+  "microlearningId": "ml-123",
+  "language": "en-gb",
+  "prompt": "You are the SMS simulation agent...",
+  "firstMessage": "Hi, your delivery is pending verification.",
+  "isFinished": false
+}
+```
+
+### Response (Chat Reply)
+```json
+{
+  "success": true,
+  "microlearningId": "ml-123",
+  "language": "en-gb",
+  "reply": "Can you confirm your address?",
+  "isFinished": false
+}
+```
+
+### `isFinished` Behavior
+- `isFinished: false` -> role-play continues.
+- `isFinished: true` -> final debrief/security guidance message; frontend can close chat flow and move user to completion UI.
+
+### Frontend State Machine
+- `idle` -> no API call yet.
+- `initializing` -> call `POST /smishing/chat` without `messages`.
+- `chatting` -> append user/assistant messages and call `POST /smishing/chat` with `messages`.
+- `completed` -> switch when response includes `isFinished: true`.
+- `error` -> switch when API returns non-2xx or `success: false`.
+
+### Frontend Example (TypeScript)
+```ts
+type SmishingMessage = { role: 'user' | 'assistant' | 'system'; content: string };
+
+type SmishingChatResponse = {
+  success: boolean;
+  microlearningId: string;
+  language: string;
+  prompt?: string;
+  firstMessage?: string;
+  reply?: string;
+  isFinished?: boolean;
+  error?: string;
+};
+
+async function callSmishingChat(params: {
+  apiBaseUrl: string;
+  token: string;
+  microlearningId: string;
+  language: string;
+  messages?: SmishingMessage[];
+}) {
+  const res = await fetch(`${params.apiBaseUrl}/smishing/chat`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-AGENTIC-ALLY-TOKEN': params.token,
+    },
+    body: JSON.stringify({
+      microlearningId: params.microlearningId,
+      language: params.language,
+      messages: params.messages,
+    }),
+  });
+
+  const data = (await res.json()) as SmishingChatResponse;
+  if (!res.ok || !data.success) throw new Error(data.error || 'Smishing chat failed');
+  return data;
+}
+
+// 1) Init call (no messages) -> prompt + firstMessage + isFinished:false
+const init = await callSmishingChat({
+  apiBaseUrl: 'http://localhost:8000',
+  token: '<your-token>',
+  microlearningId: 'ml-123',
+  language: 'en-gb',
+});
+
+// 2) Continue chat
+const next = await callSmishingChat({
+  apiBaseUrl: 'http://localhost:8000',
+  token: '<your-token>',
+  microlearningId: 'ml-123',
+  language: 'en-gb',
+  messages: [{ role: 'user', content: 'Is this legit?' }],
+});
+
+if (next.isFinished) {
+  // show completion/debrief state
+} else {
+  // append next.reply and continue
+}
+```
+
+---
+
+## 3. Autonomous Trigger (`POST /autonomous`)
 
 Manually trigger the proactive generation loop. Useful for testing or on-demand batch runs.
 
@@ -86,7 +210,7 @@ Manually trigger the proactive generation loop. Useful for testing or on-demand 
 
 ---
 
-## 3. System Health (`GET /health`)
+## 4. System Health (`GET /health`)
 
 Diagnostic endpoint for uptime checks and dependency validation.
 
@@ -109,7 +233,7 @@ Diagnostic endpoint for uptime checks and dependency validation.
 
 ---
 
-## 4. Code Review (`POST /code-review-validate`)
+## 5. Code Review (`POST /code-review-validate`)
 
 Internal tool endpoint used by agents to validate generated code snippets (e.g., HTML landing pages or JSON structures).
 
@@ -136,7 +260,7 @@ Internal tool endpoint used by agents to validate generated code snippets (e.g.,
 
 ---
 
-## 5. Email IR Analysis (`POST /email-ir/analyze`)
+## 6. Email IR Analysis (`POST /email-ir/analyze`)
 
 Analyze a suspicious email and generate an incident response report.
 
@@ -255,7 +379,7 @@ Analyze a suspicious email and generate an incident response report.
 
 ---
 
-## 🔒 Security Notes
+## Security Notes
 
 1.  **Rate Limit:** 100 requests per minute per IP.
     *   `/chat`: 100 req/min

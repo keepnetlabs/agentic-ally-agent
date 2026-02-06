@@ -1,7 +1,6 @@
 import { Context } from 'hono';
-import { KVService } from '../services/kv-service';
 import { getLogger } from '../utils/core/logger';
-import { validateBCP47LanguageCode } from '../utils/language/language-utils';
+import { loadScene4RouteData } from './scene4-route-helpers';
 import type { VishingPromptRequestBody } from '../types';
 
 const logger = getLogger('VishingPromptRoute');
@@ -20,17 +19,14 @@ export async function vishingPromptHandler(c: Context) {
       return c.json({ success: false, error: 'Missing language' }, 400);
     }
 
-    const normalizedLanguage = validateBCP47LanguageCode(language).toLowerCase();
-    const kvService = new KVService();
-    const microlearning = await kvService.getMicrolearning(microlearningId, normalizedLanguage);
+    const { hasLanguageContent, normalizedLanguage, prompt, firstMessage } = await loadScene4RouteData({
+      microlearningId,
+      language,
+    });
 
-    if (!microlearning?.language) {
+    if (!hasLanguageContent) {
       return c.json({ success: false, error: 'Language content not found' }, 404);
     }
-
-    const scene4 = microlearning.language?.['4'];
-    const prompt = scene4?.prompt;
-    const firstMessage = scene4?.firstMessage;
 
     if (!prompt || !firstMessage) {
       return c.json({ success: false, error: 'Vishing prompt not available' }, 404);

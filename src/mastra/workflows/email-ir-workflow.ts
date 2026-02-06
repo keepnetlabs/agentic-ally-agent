@@ -57,6 +57,8 @@ export const multiAnalysisStep = createStep({
                 routing_anomaly: headerResult.routing_anomaly,
                 threat_intel_findings: headerResult.threat_intel_findings,
                 header_summary: headerResult.header_summary,
+                security_awareness_detected: headerResult.security_awareness_detected,
+                list_unsubscribe_present: headerResult.list_unsubscribe_present,
             },
             behavioral_analysis: {
                 urgency_level: behavioralResult.urgency_level,

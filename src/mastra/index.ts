@@ -63,6 +63,7 @@ import {
   microlearningAgent,
   orchestratorAgent,
   phishingEmailAgent,
+  smishingSmsAgent,
   userInfoAgent,
   policySummaryAgent,
 } from './agents';
@@ -139,6 +140,7 @@ export const mastra = new Mastra({
   agents: {
     microlearningAgent,
     phishingEmailAssistant: phishingEmailAgent,
+    smishingSmsAssistant: smishingSmsAgent,
     userInfoAssistant: userInfoAgent,
     policySummaryAssistant: policySummaryAgent,
     orchestrator: orchestratorAgent

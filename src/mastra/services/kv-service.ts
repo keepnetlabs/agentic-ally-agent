@@ -423,6 +423,121 @@ export class KVService {
     }
   }
 
+  // Smishing specific methods
+
+  // 1. Save Smishing Base (Metadata)
+  async saveSmishingBase(id: string, data: any, language: string): Promise<boolean> {
+    const baseKey = `smishing:${id}:base`;
+    const normalizedLang = language.toLowerCase();
+
+    try {
+      const baseData = {
+        id,
+        name: data.analysis?.name,
+        description: data.analysis?.description,
+        topic: data.analysis?.scenario || 'Unknown Topic',
+        difficulty: data.analysis?.difficulty || 'Medium',
+        method: data.analysis?.method || 'Click-Only',
+        targetProfile: data.analysis?.targetAudienceAnalysis || {},
+        createdAt: new Date().toISOString(),
+        language_availability: [normalizedLang]
+      };
+
+      return await this.put(baseKey, baseData);
+    } catch (error) {
+      const err = normalizeError(error);
+      this.logger.error(`Failed to save smishing base`, { id, error: err.message, stack: err.stack });
+      return false;
+    }
+  }
+
+  // 2. Save Smishing SMS (Content)
+  async saveSmishingSms(id: string, data: any, language: string): Promise<boolean> {
+    const normalizedLang = language.toLowerCase();
+    const smsKey = `smishing:${id}:sms:${normalizedLang}`;
+
+    try {
+      const smsData = {
+        id,
+        language: normalizedLang,
+        messages: data.messages,
+        redFlags: data.analysis?.keyRedFlags || []
+      };
+
+      return await this.put(smsKey, smsData);
+    } catch (error) {
+      const err = normalizeError(error);
+      this.logger.error(`Failed to save smishing sms`, { id, error: err.message, stack: err.stack });
+      return false;
+    }
+  }
+
+  // 3. Save Smishing Landing Page (Content)
+  async saveSmishingLandingPage(id: string, data: any, language: string): Promise<boolean> {
+    if (!data.landingPage) return true; // Skip if no landing page data
+
+    const normalizedLang = language.toLowerCase();
+    const landingKey = `smishing:${id}:landing:${normalizedLang}`;
+
+    try {
+      const landingData = {
+        id,
+        language: normalizedLang,
+        ...data.landingPage
+      };
+
+      return await this.put(landingKey, landingData);
+    } catch (error) {
+      const err = normalizeError(error);
+      this.logger.error(`Failed to save smishing landing page`, { id, error: err.message, stack: err.stack });
+      return false;
+    }
+  }
+
+  // Wrapper for saving all components at once
+  async saveSmishing(id: string, data: any, language: string): Promise<boolean> {
+    const results = await Promise.allSettled([
+      this.saveSmishingBase(id, data, language),
+      this.saveSmishingSms(id, data, language),
+      this.saveSmishingLandingPage(id, data, language)
+    ]);
+
+    return results.every(r => r.status === 'fulfilled' && r.value === true);
+  }
+
+  // Get Smishing Content from KV
+  // Note: KVService must be initialized with smishing namespace ID to use this method
+  async getSmishing(smishingId: string, language?: string): Promise<any> {
+    try {
+      const baseKey = `smishing:${smishingId}:base`;
+      const base = await this.get(baseKey);
+
+      if (!base) {
+        return null;
+      }
+
+      const result: any = { base };
+
+      // Use provided language or fallback to first available language from base
+      const availableLangs = base.language_availability || [];
+      const langToUse = language || (availableLangs.length > 0 ? availableLangs[0] : null);
+
+      if (langToUse) {
+        const normalizedLang = langToUse.toLowerCase();
+        const smsKey = `smishing:${smishingId}:sms:${normalizedLang}`;
+        const landingKey = `smishing:${smishingId}:landing:${normalizedLang}`;
+        result.sms = await this.get(smsKey);
+        result.landing = await this.get(landingKey);
+      }
+
+      return result;
+    } catch (error) {
+      const err = normalizeError(error);
+      this.logger.error(`Failed to get smishing`, { smishingId, error: err.message, stack: err.stack });
+      return null;
+    }
+  }
+
 
   async getMicrolearning(microlearningId: string, language?: string): Promise<any> {
     try {

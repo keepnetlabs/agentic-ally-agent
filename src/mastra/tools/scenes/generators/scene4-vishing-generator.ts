@@ -37,10 +37,10 @@ CRITICAL RULES:
       "privacyNotice": "Privacy-safe simulation. Your voice is not recorded, scripted, or stored."
     },
     "statusTexts": {
-      "requesting-mic": "Waiting for microphone access…",
-      "connecting": "Connecting the dialer…",
+      "requesting-mic": "Waiting for microphone access...",
+      "connecting": "Connecting the dialer...",
       "live": "Live call in progress",
-      "ending": "Wrapping up safely…",
+      "ending": "Wrapping up safely...",
       "error": "Something went wrong, please try again",
       "idle": "Tap to start"
     },
