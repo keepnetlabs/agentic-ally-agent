@@ -1,6 +1,6 @@
 # API Reference
 
-**Last Updated:** February 3, 2026
+**Last Updated:** February 6, 2026
 
 This document details the REST API endpoints available in Agentic Ally.
 
@@ -76,7 +76,8 @@ If `messages` is omitted or empty, returns the prompt and first message.
   "microlearningId": "ml-123",
   "language": "en-gb",
   "prompt": "You are the SMS simulation agent...",
-  "firstMessage": "Hi, your delivery is pending verification."
+  "firstMessage": "Hi, your delivery is pending verification.",
+  "isFinished": false
 }
 ```
 
@@ -86,7 +87,83 @@ If `messages` is omitted or empty, returns the prompt and first message.
   "success": true,
   "microlearningId": "ml-123",
   "language": "en-gb",
-  "reply": "Can you confirm your address?"
+  "reply": "Can you confirm your address?",
+  "isFinished": false
+}
+```
+
+### `isFinished` Behavior
+- `isFinished: false` -> role-play continues.
+- `isFinished: true` -> final debrief/security guidance message; frontend can close chat flow and move user to completion UI.
+
+### Frontend State Machine
+- `idle` -> no API call yet.
+- `initializing` -> call `POST /smishing/chat` without `messages`.
+- `chatting` -> append user/assistant messages and call `POST /smishing/chat` with `messages`.
+- `completed` -> switch when response includes `isFinished: true`.
+- `error` -> switch when API returns non-2xx or `success: false`.
+
+### Frontend Example (TypeScript)
+```ts
+type SmishingMessage = { role: 'user' | 'assistant' | 'system'; content: string };
+
+type SmishingChatResponse = {
+  success: boolean;
+  microlearningId: string;
+  language: string;
+  prompt?: string;
+  firstMessage?: string;
+  reply?: string;
+  isFinished?: boolean;
+  error?: string;
+};
+
+async function callSmishingChat(params: {
+  apiBaseUrl: string;
+  token: string;
+  microlearningId: string;
+  language: string;
+  messages?: SmishingMessage[];
+}) {
+  const res = await fetch(`${params.apiBaseUrl}/smishing/chat`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-AGENTIC-ALLY-TOKEN': params.token,
+    },
+    body: JSON.stringify({
+      microlearningId: params.microlearningId,
+      language: params.language,
+      messages: params.messages,
+    }),
+  });
+
+  const data = (await res.json()) as SmishingChatResponse;
+  if (!res.ok || !data.success) throw new Error(data.error || 'Smishing chat failed');
+  return data;
+}
+
+// 1) Init call (no messages) -> prompt + firstMessage + isFinished:false
+const init = await callSmishingChat({
+  apiBaseUrl: 'http://localhost:8000',
+  token: '<your-token>',
+  microlearningId: 'ml-123',
+  language: 'en-gb',
+});
+
+// 2) Continue chat
+const next = await callSmishingChat({
+  apiBaseUrl: 'http://localhost:8000',
+  token: '<your-token>',
+  microlearningId: 'ml-123',
+  language: 'en-gb',
+  messages: [{ role: 'user', content: 'Is this legit?' }],
+});
+
+if (next.isFinished) {
+  // show completion/debrief state
+} else {
+  // append next.reply and continue
 }
 ```
 
