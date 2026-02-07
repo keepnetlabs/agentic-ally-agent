@@ -2,6 +2,7 @@ import { Context, Next } from 'hono';
 import { getLogger } from '../utils/core/logger';
 import { API_ENDPOINTS } from '../constants';
 import { tokenCache } from '../utils/core/token-cache';
+import { SKIP_AUTH_PATHS, isPublicUnauthenticatedPath } from './public-endpoint-policy';
 
 const logger = getLogger('AuthToken');
 
@@ -34,25 +35,6 @@ const isValidJwtToken = (token: string): boolean => {
 };
 
 /**
- * Paths that don't require authentication token
- * - /health: Health check endpoint for monitoring
- * - /__refresh: Mastra hot reload (development)
- * - /api/telemetry: Mastra internal telemetry
- */
-const SKIP_AUTH_PATHS = [
-    '/health',
-    '/__refresh',
-    '/__hot-reload-status',
-    '/api/telemetry',
-    '/autonomous',
-    '/code-review-validate',
-    '/vishing/prompt',
-    '/smishing/chat',
-    '/email-ir/analyze',
-] as const;
-
-
-/**
  * Token Authentication Middleware
  * 
  * Requires X-AGENTIC-ALLY-TOKEN header for all requests except internal endpoints.
@@ -63,6 +45,12 @@ const SKIP_AUTH_PATHS = [
 export const authTokenMiddleware = async (c: Context, next: Next): Promise<Response | void> => {
     // Skip internal/system endpoints
     if (SKIP_AUTH_PATHS.includes(c.req.path as typeof SKIP_AUTH_PATHS[number])) {
+        if (isPublicUnauthenticatedPath(c.req.path)) {
+            logger.info('Public unauthenticated endpoint access', {
+                path: c.req.path,
+                method: c.req.method,
+            });
+        }
         await next();
         return;
     }

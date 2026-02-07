@@ -117,6 +117,34 @@ describe('ContextStorage Middleware', () => {
     });
   });
 
+  it('should set X-Correlation-ID response header when generated', async () => {
+    (mockContext as any).res = { headers: new Headers() };
+    (mockContext.req.header as any).mockImplementation((header: string) => {
+      if (header === 'X-Correlation-ID') return undefined;
+      return undefined;
+    });
+
+    await contextStorage(mockContext, mockNext);
+
+    const headerValue = (mockContext as any).res.headers.get('X-Correlation-ID');
+    expect(headerValue).toBeDefined();
+    expect(typeof headerValue).toBe('string');
+    expect((headerValue || '').length).toBeGreaterThan(0);
+  });
+
+  it('should set X-Correlation-ID response header from request header when provided', async () => {
+    const providedCorrelationId = 'custom-correlation-id-123';
+    (mockContext as any).res = { headers: new Headers() };
+    (mockContext.req.header as any).mockImplementation((header: string) => {
+      if (header === 'X-Correlation-ID') return providedCorrelationId;
+      return undefined;
+    });
+
+    await contextStorage(mockContext, mockNext);
+
+    expect((mockContext as any).res.headers.get('X-Correlation-ID')).toBe(providedCorrelationId);
+  });
+
   it('should isolate context between requests', async () => {
     const token1 = 'token-1';
     const token2 = 'token-2';

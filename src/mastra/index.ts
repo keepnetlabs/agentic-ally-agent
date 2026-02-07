@@ -53,6 +53,7 @@ import { postProcessPhishingEmailHtml, postProcessPhishingLandingHtml } from './
 import { vishingPromptHandler } from './routes/vishing-prompt-route';
 import { smishingChatHandler } from './routes/smishing-chat-route';
 import { emailIRAnalyzeHandler } from './routes/email-ir-route';
+import { isPublicUnauthenticatedPath } from './middleware/public-endpoint-policy';
 
 
 // Barrel imports - clean organization
@@ -72,6 +73,7 @@ import {
   securityHeadersMiddleware,
   bodySizeLimitMiddleware,
   rateLimitMiddleware,
+  RATE_LIMIT_TIERS,
   disablePlayground,
   disableSwagger,
 } from './middleware';
@@ -208,6 +210,12 @@ export const mastra = new Mastra({
       requestLoggingMiddleware,
       securityHeadersMiddleware,
       bodySizeLimitMiddleware,
+      rateLimitMiddleware({
+        maxRequests: RATE_LIMIT_TIERS.PUBLIC_UNAUTH.maxRequests,
+        windowMs: RATE_LIMIT_TIERS.PUBLIC_UNAUTH.windowMs,
+        keyPrefix: 'ratelimit:public:',
+        skip: (c) => !isPublicUnauthenticatedPath(c.req.path),
+      }),
       rateLimitMiddleware({
         maxRequests: RATE_LIMIT_CONFIG.MAX_REQUESTS,
         windowMs: RATE_LIMIT_CONFIG.WINDOW_MS,

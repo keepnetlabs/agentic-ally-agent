@@ -53,7 +53,7 @@ Chat endpoint for the smishing role-play scene used in microlearning.
 | Header | Value | Required | Description |
 |--------|-------|----------|-------------|
 | `Content-Type` | `application/json` | Yes | - |
-| `X-AGENTIC-ALLY-TOKEN` | `<your-token>` | Yes | Auth token (set in `.env`) |
+| `X-AGENTIC-ALLY-TOKEN` | `<your-token>` | No | Public unauthenticated endpoint (optional) |
 
 ### Request Body
 ```json
@@ -175,7 +175,7 @@ Manually trigger the proactive generation loop. Useful for testing or on-demand 
 
 ### Headers
 *   `Content-Type`: `application/json`
-*   `X-AGENTIC-ALLY-TOKEN`: Required
+*   `X-AGENTIC-ALLY-TOKEN`: Not required (public unauthenticated endpoint)
 
 ### Request Body
 | Field | Type | Required | Description |
@@ -237,6 +237,12 @@ Diagnostic endpoint for uptime checks and dependency validation.
 
 Internal tool endpoint used by agents to validate generated code snippets (e.g., HTML landing pages or JSON structures).
 
+### Headers
+| Header | Value | Required | Description |
+|--------|-------|----------|-------------|
+| `Content-Type` | `application/json` | Yes | - |
+| `X-AGENTIC-ALLY-TOKEN` | `<your-token>` | No | Public unauthenticated endpoint (optional) |
+
 ### Request
 ```json
 {
@@ -268,7 +274,7 @@ Analyze a suspicious email and generate an incident response report.
 | Header | Value | Required | Description |
 |--------|-------|----------|-------------|
 | `Content-Type` | `application/json` | Yes | - |
-| `X-AGENTIC-ALLY-TOKEN` | `<your-token>` | Yes | Auth token (set in `.env`) |
+| `X-AGENTIC-ALLY-TOKEN` | `<your-token>` | No | Public unauthenticated endpoint (optional) |
 
 ### Request Body
 ```json
@@ -381,10 +387,15 @@ Analyze a suspicious email and generate an incident response report.
 
 ## Security Notes
 
-1.  **Rate Limit:** 100 requests per minute per IP.
-    *   `/chat`: 100 req/min
-    *   `/health`: 300 req/min
-    *   Others: 100 req/min
-2.  **Sensitive Data Handling:**
+1.  **Correlation Header:** every response includes `X-Correlation-ID`. If caller sends one, it is propagated; otherwise service generates one.
+2.  **Auth Model:**
+    *   Requires `X-AGENTIC-ALLY-TOKEN` by default.
+    *   Public unauthenticated endpoints: `/autonomous`, `/code-review-validate`, `/vishing/prompt`, `/smishing/chat`, `/email-ir/analyze`.
+    *   Internal auth-skip endpoints: `/health`, `/__refresh`, `/__hot-reload-status`, `/api/telemetry`.
+3.  **Rate Limit Tiers (per IP):**
+    *   Public unauthenticated endpoints: `180 req/min`
+    *   General default: `100 req/min`
+    *   Health endpoint: skipped from global limiter in `index.ts`
+4.  **Sensitive Data Handling:**
     *   Avoid including personal identifiers in prompts.
     *   Agents should not expose personal identifiers in responses.
