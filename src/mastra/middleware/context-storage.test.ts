@@ -145,6 +145,20 @@ describe('ContextStorage Middleware', () => {
     expect((mockContext as any).res.headers.get('X-Correlation-ID')).toBe(providedCorrelationId);
   });
 
+  it('should still set X-Correlation-ID response header when next throws', async () => {
+    const providedCorrelationId = 'throwing-correlation-id-123';
+    (mockContext as any).res = { headers: new Headers() };
+    (mockContext.req.header as any).mockImplementation((header: string) => {
+      if (header === 'X-Correlation-ID') return providedCorrelationId;
+      return undefined;
+    });
+
+    const failingNext = vi.fn().mockRejectedValue(new Error('next failed'));
+
+    await expect(contextStorage(mockContext, failingNext)).rejects.toThrow('next failed');
+    expect((mockContext as any).res.headers.get('X-Correlation-ID')).toBe(providedCorrelationId);
+  });
+
   it('should isolate context between requests', async () => {
     const token1 = 'token-1';
     const token2 = 'token-2';

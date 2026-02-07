@@ -223,6 +223,9 @@ export const workflowExecutorTool = createTool({
           }
         } else {
           logger.error('Workflow result validation failed', { status: workflowResult.status });
+          const errorInfo = errorService.external('Create microlearning workflow result validation failed');
+          logErrorInfo(logger, 'error', 'Workflow result validation failed', errorInfo);
+          return createToolErrorResponse(errorInfo);
         }
 
         // Emit a custom UI signal for FE to open a canvas
@@ -316,6 +319,9 @@ export const workflowExecutorTool = createTool({
 
         if (!isValid) {
           logger.error('Language workflow result validation failed', { status: workflowResult.status });
+          const errorInfo = errorService.external('Add language workflow result validation failed');
+          logErrorInfo(logger, 'error', 'Language workflow result validation failed', errorInfo);
+          return createToolErrorResponse(errorInfo);
         }
 
         logger.debug('Language translation completed', { hasTrainingUrl: !!trainingUrl });

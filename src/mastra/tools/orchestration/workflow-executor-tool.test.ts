@@ -193,6 +193,29 @@ describe('WorkflowExecutorTool', () => {
       expect(result.error).toContain('Prompt is required');
       expect(createMicrolearningWorkflow.createRunAsync).not.toHaveBeenCalled();
     });
+
+    it('should return failure when create workflow result validation fails', async () => {
+      mockRun.start.mockResolvedValue({
+        status: 'failed',
+        result: null
+      });
+
+      const params = {
+        workflowType: 'create-microlearning',
+        prompt: 'Create a course about safety',
+      };
+
+      const result: any = await workflowExecutorTool.execute({
+        context: params as any,
+        writer: mockWriter as any,
+        runId: 'test-run-id',
+        runtimeContext: {} as any,
+        suspend: async () => { }
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Create microlearning workflow result validation failed');
+    });
   });
 
   describe('add-language workflow', () => {
@@ -253,6 +276,30 @@ describe('WorkflowExecutorTool', () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('required');
+    });
+
+    it('should return failure when add-language workflow result validation fails', async () => {
+      mockRun.start.mockResolvedValue({
+        status: 'failed',
+        result: null
+      });
+
+      const params = {
+        workflowType: 'add-language',
+        existingMicrolearningId: '123',
+        targetLanguage: 'es'
+      };
+
+      const result: any = await workflowExecutorTool.execute({
+        context: params as any,
+        writer: mockWriter as any,
+        runId: 'test-run-id',
+        runtimeContext: {} as any,
+        suspend: async () => { }
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Add language workflow result validation failed');
     });
   });
 

@@ -230,6 +230,61 @@ describe('prompt-analysis-normalizer', () => {
             expect(result.practicalApplications).toEqual([]);
         });
 
+        it('should derive keyTopics and practicalApplications from additionalContext when missing', () => {
+            const analysis = {
+                topic: 'Phishing Awareness',
+                additionalContext: 'Focus on CEO spoofing emails. Include invoice fraud examples. Cover urgent payment language.',
+            } as any;
+
+            const result = autoRepairPromptAnalysis(analysis);
+
+            expect(result.keyTopics.length).toBeGreaterThan(0);
+            expect(result.practicalApplications.length).toBeGreaterThan(0);
+            expect(result.keyTopics.join(' ')).toContain('CEO spoofing');
+            expect(result.practicalApplications[0]).toContain('Apply in workplace scenario:');
+        });
+
+        it('should preserve explicit keyTopics and practicalApplications over derived context hints', () => {
+            const analysis = {
+                topic: 'Phishing Awareness',
+                additionalContext: 'Focus on suspicious links and spoofed domains.',
+                keyTopics: ['Manual Topic 1', 'Manual Topic 2'],
+                practicalApplications: ['Manual application 1'],
+            } as any;
+
+            const result = autoRepairPromptAnalysis(analysis);
+
+            expect(result.keyTopics).toEqual(['Manual Topic 1', 'Manual Topic 2']);
+            expect(result.practicalApplications).toEqual(['Manual application 1']);
+        });
+
+        it('should derive mustKeepDetails from context when missing', () => {
+            const analysis = {
+                topic: 'Phishing Awareness',
+                additionalContext: 'Must include invoice fraud. Must include spoofed CEO identity. Prioritize urgent payment pressure examples.',
+            } as any;
+
+            const result = autoRepairPromptAnalysis(analysis);
+
+            expect(result.mustKeepDetails?.length).toBeGreaterThan(0);
+            expect(result.mustKeepDetails?.join(' ')).toContain('invoice fraud');
+        });
+
+        it('should preserve explicit mustKeepDetails over context-derived values', () => {
+            const analysis = {
+                topic: 'Phishing Awareness',
+                additionalContext: 'Focus on suspicious links and spoofed domains.',
+                mustKeepDetails: ['Keep CFO invoice fraud scenario', 'Keep escalation path mention'],
+            } as any;
+
+            const result = autoRepairPromptAnalysis(analysis);
+
+            expect(result.mustKeepDetails).toEqual([
+                'Keep CFO invoice fraud scenario',
+                'Keep escalation path mention',
+            ]);
+        });
+
         it('should handle assessmentAreas array', () => {
             const analysis = { topic: 'test', assessmentAreas: ['Area 1', 'Area 2'] } as any;
             const result = autoRepairPromptAnalysis(analysis);

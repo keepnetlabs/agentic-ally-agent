@@ -13,6 +13,7 @@ export interface PromptAnalysis {
   roles: string[];
   keyTopics: string[];
   practicalApplications: string[];
+  mustKeepDetails?: string[];
   assessmentAreas: string[];
   regulationCompliance?: string[];
   themeColor?: string;

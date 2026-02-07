@@ -29,6 +29,7 @@ export const promptAnalysisSchema = z.object({
         learningObjectives: z.array(z.string()),
         keyTopics: z.array(z.string()).optional(),
         practicalApplications: z.array(z.string()).optional(),
+        mustKeepDetails: z.array(z.string()).optional(),
         industries: z.array(z.string()).optional(),
         roles: z.array(z.string()).optional(),
         themeColor: z.string().optional(),

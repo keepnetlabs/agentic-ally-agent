@@ -45,6 +45,7 @@ const AnalyzeUserPromptOutputSchema = z.object({
     roles: z.array(z.string()),
     keyTopics: z.array(z.string()),
     practicalApplications: z.array(z.string()),
+    mustKeepDetails: z.array(z.string()).optional(),
     assessmentAreas: z.array(z.string()),
     regulationCompliance: z.array(z.string()).optional(),
     themeColor: z.string().optional(),
