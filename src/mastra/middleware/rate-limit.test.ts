@@ -214,5 +214,10 @@ describe('Rate Limiting Middleware', () => {
       expect(RATE_LIMIT_TIERS.HEALTH.maxRequests).toBe(300);
       expect(RATE_LIMIT_TIERS.HEALTH.windowMs).toBe(60 * 1000);
     });
+
+    it('should have public unauthenticated endpoint config', () => {
+      expect(RATE_LIMIT_TIERS.PUBLIC_UNAUTH.maxRequests).toBe(180);
+      expect(RATE_LIMIT_TIERS.PUBLIC_UNAUTH.windowMs).toBe(60 * 1000);
+    });
   });
 });

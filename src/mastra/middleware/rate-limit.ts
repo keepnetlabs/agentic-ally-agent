@@ -49,6 +49,11 @@ export const RATE_LIMIT_TIERS = {
     maxRequests: 50,
     windowMs: TIME_UNITS.MILLISECONDS_PER_MINUTE, // 50 requests per minute
   },
+  // Public unauthenticated endpoints: stricter than generic public APIs but high enough for training bursts
+  PUBLIC_UNAUTH: {
+    maxRequests: 180,
+    windowMs: TIME_UNITS.MILLISECONDS_PER_MINUTE, // 180 requests per minute
+  },
   // Health check: Very generous
   HEALTH: {
     maxRequests: 300,

@@ -1,6 +1,7 @@
 import { Context } from 'hono';
+import { errorService } from '../services/error-service';
 import { getLogger } from '../utils/core/logger';
-import { normalizeError } from '../utils/core/error-utils';
+import { logErrorInfo, normalizeError } from '../utils/core/error-utils';
 import { emailIRWorkflow } from '../workflows/email-ir-workflow';
 import { fetchEmailInputSchema } from '../tools/email-ir/fetch-email';
 
@@ -23,6 +24,11 @@ export const emailIRAnalyzeHandler = async (c: Context) => {
         // Validate Input
         const validation = fetchEmailInputSchema.safeParse(body);
         if (!validation.success) {
+            const errorInfo = errorService.validation('Invalid input', {
+                route: '/email-ir/analyze',
+                details: validation.error.format(),
+            });
+            logErrorInfo(logger, 'warn', 'email_ir_invalid_input', errorInfo);
             return c.json({
                 success: false,
                 error: 'Invalid input',
@@ -54,7 +60,11 @@ export const emailIRAnalyzeHandler = async (c: Context) => {
 
     } catch (error) {
         const err = normalizeError(error);
-        logger.error('Email IR Analysis Failed', { error: err.message });
+        const errorInfo = errorService.internal(err.message, {
+            route: '/email-ir/analyze',
+            event: 'error',
+        });
+        logErrorInfo(logger, 'error', 'email_ir_analysis_failed', errorInfo);
         return c.json({
             success: false,
             error: err.message

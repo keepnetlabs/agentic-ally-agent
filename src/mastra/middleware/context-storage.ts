@@ -36,6 +36,10 @@ export const contextStorage = async (c: Context, next: Next) => {
     }
     // Wrap the next handlers in the AsyncLocalStorage run context
     return requestStorage.run({ correlationId, token, env, companyId, baseApiUrl }, async () => {
-        await next();
+        try {
+            await next();
+        } finally {
+            c.res?.headers?.set('X-Correlation-ID', correlationId);
+        }
     });
 };

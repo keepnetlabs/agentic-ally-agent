@@ -1,42 +1,56 @@
 import { Context } from 'hono';
+import { errorService } from '../services/error-service';
 import { getLogger } from '../utils/core/logger';
+import { logErrorInfo, normalizeError } from '../utils/core/error-utils';
 import { loadScene4RouteData } from './scene4-route-helpers';
-import type { VishingPromptRequestBody } from '../types';
+import { vishingPromptRequestSchema } from './vishing-prompt-route.schemas';
+import type { VishingPromptRequestBody, VishingPromptResponse } from '../types';
 
 const logger = getLogger('VishingPromptRoute');
 const DEFAULT_AGENT_ID = 'agent_0901kfr9djtqfg988bypdyah40mm';
-const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
 
 export async function vishingPromptHandler(c: Context) {
   try {
-    const body = await c.req.json<VishingPromptRequestBody>();
+    const rawBody = await c.req.json<VishingPromptRequestBody>();
+    const body = rawBody || {};
     const { microlearningId, language } = body || {};
 
     if (!microlearningId || typeof microlearningId !== 'string') {
-      return c.json({ success: false, error: 'Missing microlearningId' }, 400);
+      const response: VishingPromptResponse = { success: false, error: 'Missing microlearningId' };
+      return c.json(response, 400);
     }
     if (!language || typeof language !== 'string') {
-      return c.json({ success: false, error: 'Missing language' }, 400);
+      const response: VishingPromptResponse = { success: false, error: 'Missing language' };
+      return c.json(response, 400);
+    }
+
+    const parsedRequest = vishingPromptRequestSchema.safeParse(body);
+    if (!parsedRequest.success) {
+      const response: VishingPromptResponse = { success: false, error: 'Invalid request format' };
+      return c.json(response, 400);
     }
 
     const { hasLanguageContent, normalizedLanguage, prompt, firstMessage } = await loadScene4RouteData({
-      microlearningId,
-      language,
+      microlearningId: parsedRequest.data.microlearningId,
+      language: parsedRequest.data.language,
     });
 
     if (!hasLanguageContent) {
-      return c.json({ success: false, error: 'Language content not found' }, 404);
+      const response: VishingPromptResponse = { success: false, error: 'Language content not found' };
+      return c.json(response, 404);
     }
 
     if (!prompt || !firstMessage) {
-      return c.json({ success: false, error: 'Vishing prompt not available' }, 404);
+      const response: VishingPromptResponse = { success: false, error: 'Vishing prompt not available' };
+      return c.json(response, 404);
     }
 
     const agentId = process.env.ELEVENLABS_AGENT_ID || DEFAULT_AGENT_ID;
+    const elevenLabsApiKey = process.env.ELEVENLABS_API_KEY;
     const wsUrl = `wss://api.elevenlabs.io/v1/convai/conversation?agent_id=${agentId}`;
     let signedUrl: string | undefined;
 
-    if (ELEVENLABS_API_KEY) {
+    if (elevenLabsApiKey) {
       try {
         const signedUrlResp = await fetch(
           `https://api.elevenlabs.io/v1/convai/conversation/get-signed-url?agent_id=${agentId}`,
@@ -44,7 +58,7 @@ export async function vishingPromptHandler(c: Context) {
             method: 'GET',
             headers: {
               'Content-Type': 'application/json',
-              'xi-api-key': ELEVENLABS_API_KEY,
+              'xi-api-key': elevenLabsApiKey,
             },
           }
         );
@@ -66,7 +80,7 @@ export async function vishingPromptHandler(c: Context) {
       }
     }
 
-    return c.json({
+    const response: VishingPromptResponse = {
       success: true,
       microlearningId,
       language: normalizedLanguage,
@@ -75,14 +89,19 @@ export async function vishingPromptHandler(c: Context) {
       agentId,
       wsUrl,
       signedUrl,
-    }, 200);
+    };
+    return c.json(response, 200);
   } catch (error) {
-    logger.error('vishing_prompt_error', {
-      error: error instanceof Error ? error.message : String(error),
+    const err = normalizeError(error);
+    const errorInfo = errorService.internal(err.message, {
+      route: '/vishing/prompt',
+      event: 'error',
     });
-    return c.json({
+    logErrorInfo(logger, 'error', 'vishing_prompt_error', errorInfo);
+    const response: VishingPromptResponse = {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
-    }, 500);
+    };
+    return c.json(response, 500);
   }
 }

@@ -5,9 +5,9 @@ import { createLogContext, loggerFetch, logStepStart, logStepComplete, logStepEr
 import { withRetry } from '../../utils/core/resilience-utils';
 
 export const fetchEmailInputSchema = z.object({
-    id: z.string(),
-    accessToken: z.string(),
-    apiBaseUrl: z.string().optional().default('https://test-api.devkeepnet.com'),
+    id: z.string().trim().min(1).max(128),
+    accessToken: z.string().trim().min(1).max(4096),
+    apiBaseUrl: z.string().trim().url().max(2048).optional().default('https://test-api.devkeepnet.com'),
 });
 
 export const fetchEmailTool = createTool({
