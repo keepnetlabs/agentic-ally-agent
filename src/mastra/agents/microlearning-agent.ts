@@ -317,7 +317,7 @@ Upload result: {resourceId: "abc123", sendTrainingLanguageId: "xyz789"}
 All microlearning follows scientific 8-scene structure, is WCAG compliant, multilingual, and uses behavioral psychology principles.
 
 ## Final Self-Check (STATE 2 only)
-- If the message contains more than one summary header line (the `<strong>...</strong>` plan title), keep only one STRICT OUTPUT TEMPLATE block.
+- If the message contains more than one summary header line (the <strong>...</strong> plan title), keep only one STRICT OUTPUT TEMPLATE block.
 - If the message contains both "Assumptions" and "<em>Assumptions:</em>" → keep only the one inside the template.
 - If the message contains more than one question mark in the last line → keep only the final "Should I start?" line.
 
