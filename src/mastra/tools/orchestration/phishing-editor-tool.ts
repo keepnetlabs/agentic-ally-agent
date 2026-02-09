@@ -61,7 +61,7 @@ export const phishingEditorTool = createTool({
         return {
           success: false,
           error: loadResult.error,
-          message: `❌ Template not found. Please provide a valid phishing ID.`,
+          message: `[ERROR] Template not found. Please provide a valid phishing ID.`,
         };
       }
 
@@ -132,7 +132,7 @@ export const phishingEditorTool = createTool({
           return {
             success: false,
             error: 'Email editing failed after retries',
-            message: '❌ Failed to edit email template. Please try again.',
+            message: '[ERROR] Failed to edit email template. Please try again.',
           };
         }
 
@@ -144,7 +144,7 @@ export const phishingEditorTool = createTool({
           return {
             success: false,
             error: 'Email response validation failed',
-            message: `❌ Email validation error: ${emailParseResult.error}`,
+            message: `[ERROR] Email validation error: ${emailParseResult.error}`,
           };
         }
 
@@ -225,7 +225,7 @@ export const phishingEditorTool = createTool({
           phishingId,
           subject: hasEmail ? editedEmail?.subject : undefined,
           summary: (hasEmail ? editedEmail?.summary || '' : '') || editedLanding?.summary,
-          message: `✅ Updated: ${updates.join(' + ')}\n${hasEmail ? editedEmail?.summary || '' : ''}${editedLanding?.summary ? '\n' + editedLanding.summary : ''}`,
+          message: `[SUCCESS] Updated: ${updates.join(' + ')}\n${hasEmail ? editedEmail?.summary || '' : ''}${editedLanding?.summary ? '\n' + editedLanding.summary : ''}`,
         },
       };
     } catch (error) {
@@ -241,7 +241,7 @@ export const phishingEditorTool = createTool({
 
       return {
         ...createToolErrorResponse(errorInfo),
-        message: '❌ Failed to edit phishing template. Please try again or provide a different instruction.',
+        message: '[ERROR] Failed to edit phishing template. Please try again or provide a different instruction.',
       };
     }
   },

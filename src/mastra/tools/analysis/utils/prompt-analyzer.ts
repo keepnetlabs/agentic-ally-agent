@@ -259,10 +259,6 @@ RULES:
     * "pink" // "social" → "bg-gradient-pink"
   - User must explicitly state the color - do not infer or choose colors automatically
   - Otherwise leave as null/empty string
-  - User must explicitly state the color - do not infer or choose colors automatically
-- isCodeTopic: Set to true if topic mentions programming languages OR code-focused topics. Otherwise false.
-- isVishing: Set to true only if the topic is about voice phishing/vishing or phone-call based social engineering. Otherwise false.
-- isSmishing: Set to true only if the topic is about SMS phishing/smishing or text-message based social engineering. Otherwise false.
 - PEDAGOGICAL RULE: learningObjectives & assessmentAreas MUST be actionable. NO "Understand", "Know", "Learn".
 - DON'T copy user instructions as title/topic
 - CREATE professional titles from user intent
@@ -298,14 +294,14 @@ RULES:
         const messages: any[] = [
             {
                 role: 'system',
-                content: 'You are an expert instructional designer and Pedagogical Advisor. CRITICAL: Analyze user requests intelligently and create professional microlearning metadata. Do NOT copy user instructions as titles/topics. Extract the core learning subject. Learning objectives MUST use Bloom\'s Taxonomy Action Verbs (e.g. "Analyze", "Evaluate", "Create", "Demonstrate") and be realistic for 5-minute training. Focus on specific, immediately actionable skills. For roles field: select exactly ONE role. For category field: select exactly ONE category. For themeColor field: ONLY fill if user explicitly mentioned a color. Return ONLY VALID JSON - NO markdown. Use BCP-47 language codes.'
+                content: 'You are an expert instructional designer and Pedagogical Advisor. Analyze user requests and create professional microlearning metadata. Return ONLY valid JSON - no markdown, no extra text. Follow all RULES in the user prompt exactly.'
             }
         ];
 
         if (additionalContext) {
             messages.push({
                 role: 'user',
-                content: `🔴 CRITICAL USER CONTEXT - Behavior & Risk Analysis:
+                content: `[CRITICAL] USER CONTEXT - Behavior & Risk Analysis:
 
 ${additionalContext}`
             });
