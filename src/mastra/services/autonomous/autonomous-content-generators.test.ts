@@ -5,6 +5,10 @@ import {
   generateContentForGroup,
 } from './autonomous-content-generators';
 import '../../../../src/__tests__/setup';
+import * as phishingHandlers from './autonomous-phishing-handlers';
+import * as smishingHandlers from './autonomous-smishing-handlers';
+import * as trainingHandlers from './autonomous-training-handlers';
+import * as groupTopicService from './group-topic-service';
 
 vi.mock('./autonomous-phishing-handlers', () => ({
   generatePhishingSimulation: vi.fn().mockResolvedValue({ success: true }),
@@ -17,6 +21,20 @@ vi.mock('./autonomous-training-handlers', () => ({
   generateTrainingModuleForGroup: vi.fn().mockResolvedValue({ success: true }),
 }));
 
+vi.mock('./autonomous-smishing-handlers', () => ({
+  generateSmishingSimulation: vi.fn().mockResolvedValue({ success: true }),
+}));
+
+vi.mock('./group-topic-service', () => ({
+  selectGroupTrainingTopic: vi.fn().mockResolvedValue({
+    topic: 'Credential Theft Awareness',
+    phishingPrompt: 'Phishing prompt',
+    smishingPrompt: 'Smishing prompt',
+    trainingPrompt: 'Training prompt',
+    objectives: ['Detect social engineering'],
+  }),
+}));
+
 /**
  * Test Suite: AutonomousContentGenerators
  * Tests for content generation coordination and orchestration
@@ -25,7 +43,7 @@ vi.mock('./autonomous-training-handlers', () => ({
 
 describe('AutonomousContentGenerators', () => {
   beforeEach(() => {
-    vi.resetAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('buildExecutiveReport', () => {
@@ -238,54 +256,350 @@ describe('AutonomousContentGenerators', () => {
 
   describe('generateContentForUser', () => {
     it('should accept training and phishing actions', async () => {
-      // Handlers are mocked globally
-      expect(typeof generateContentForUser).toBe('function');
+      const phishingSpy = vi.mocked(phishingHandlers.generatePhishingSimulation);
+      const trainingSpy = vi.mocked(trainingHandlers.generateTrainingModule);
+      phishingSpy.mockResolvedValue({ success: true, message: 'phishing-ok' } as any);
+      trainingSpy.mockResolvedValue({ success: true, message: 'training-ok' } as any);
+
+      const result = await generateContentForUser(
+        {
+          analysisReport: {
+            recommended_next_steps: {
+              simulations: [{ title: 'Test Phishing', scenario_type: 'CLICK_ONLY' }],
+              microlearnings: [{ title: 'Test Training', objective: 'Awareness' }],
+              nudges: [],
+            },
+          },
+          userInfo: { targetUserResourceId: 'user-123', preferredLanguage: 'en-gb' },
+        } as any,
+        'Executive report',
+        ['phishing', 'training'],
+        false,
+        'user-123',
+        'phishing-thread',
+        'training-thread'
+      );
+
+      expect(phishingSpy).toHaveBeenCalledTimes(1);
+      expect(trainingSpy).toHaveBeenCalledTimes(1);
+      expect(result.phishingResult?.success).toBe(true);
+      expect(result.trainingResult?.success).toBe(true);
     });
 
     it('should handle missing training result gracefully', async () => {
-      expect(typeof generateContentForUser).toBe('function');
+      const phishingSpy = vi.mocked(phishingHandlers.generatePhishingSimulation);
+      const trainingSpy = vi.mocked(trainingHandlers.generateTrainingModule);
+      phishingSpy.mockResolvedValue({ success: true, message: 'phishing-ok' } as any);
+      trainingSpy.mockRejectedValue(new Error('training failed'));
+
+      const result = await generateContentForUser(
+        {
+          analysisReport: {
+            recommended_next_steps: {
+              simulations: [{ title: 'Test Phishing', scenario_type: 'CLICK_ONLY' }],
+              microlearnings: [{ title: 'Test Training', objective: 'Awareness' }],
+              nudges: [],
+            },
+          },
+          userInfo: { targetUserResourceId: 'user-123', preferredLanguage: 'en-gb' },
+        } as any,
+        'Executive report',
+        ['phishing', 'training'],
+        false,
+        'user-123',
+        'phishing-thread',
+        'training-thread'
+      );
+
+      expect(phishingSpy).toHaveBeenCalledTimes(1);
+      expect(trainingSpy).toHaveBeenCalledTimes(1);
+      expect(result.phishingResult?.success).toBe(true);
+      expect(result.trainingResult?.success).toBe(false);
+      expect(result.trainingResult?.error).toContain('training failed');
     });
 
     it('should return object with phishingResult and trainingResult', async () => {
-      expect(typeof generateContentForUser).toBe('function');
+      const result = await generateContentForUser(
+        {
+          analysisReport: {
+            recommended_next_steps: {
+              simulations: [{ title: 'Test Phishing', scenario_type: 'CLICK_ONLY' }],
+              microlearnings: [{ title: 'Test Training', objective: 'Awareness' }],
+              nudges: [],
+            },
+          },
+          userInfo: { targetUserResourceId: 'user-123', preferredLanguage: 'en-gb' },
+        } as any,
+        'Executive report',
+        ['phishing', 'training'],
+        false,
+        'user-123',
+        'phishing-thread',
+        'training-thread'
+      );
+
+      expect(result).toHaveProperty('phishingResult');
+      expect(result).toHaveProperty('trainingResult');
     });
 
     it('should support sendAfterPhishingSimulation flag', async () => {
-      expect(typeof generateContentForUser).toBe('function');
+      const phishingSpy = vi.mocked(phishingHandlers.generatePhishingSimulation);
+      const trainingSpy = vi.mocked(trainingHandlers.generateTrainingModule);
+      const assignSpy = vi.mocked(phishingHandlers.assignPhishingWithTraining);
+      phishingSpy.mockResolvedValue({
+        success: true,
+        message: 'uploaded',
+        uploadResult: {
+          data: {
+            resourceId: 'ph-resource',
+            languageId: 'en-gb',
+            isQuishing: false,
+          },
+        },
+      } as any);
+      trainingSpy.mockResolvedValue({
+        success: true,
+        data: {
+          resourceId: 'tr-resource',
+          sendTrainingLanguageId: 'en-gb',
+        },
+      } as any);
+      assignSpy.mockResolvedValue({ success: true } as any);
+
+      const result = await generateContentForUser(
+        {
+          analysisReport: {
+            recommended_next_steps: {
+              simulations: [{ title: 'Test Phishing', scenario_type: 'CLICK_ONLY' }],
+              microlearnings: [{ title: 'Test Training', objective: 'Awareness' }],
+              nudges: [],
+            },
+          },
+          userInfo: { targetUserResourceId: 'user-123', preferredLanguage: 'en-gb' },
+        } as any,
+        'Executive report',
+        ['phishing', 'training'],
+        true,
+        'user-123',
+        'phishing-thread',
+        'training-thread'
+      );
+
+      expect(phishingSpy.mock.calls[0][4]).toBe(true);
+      expect(trainingSpy.mock.calls[0][4]).toBe(true);
+      expect(assignSpy).toHaveBeenCalledTimes(1);
+      expect(result.phishingResult?.uploadAssignResult?.success).toBe(true);
+    });
+
+    it('should generate smishing content for user when actions include smishing', async () => {
+      const smishingSpy = vi.mocked(smishingHandlers.generateSmishingSimulation);
+      smishingSpy.mockResolvedValue({ success: true, message: 'ok' } as any);
+
+      const result = await generateContentForUser(
+        {
+          analysisReport: {
+            recommended_next_steps: {
+              simulations: [{ title: 'Test Smishing', scenario_type: 'CLICK_ONLY' }],
+              microlearnings: [],
+              nudges: [],
+            },
+          },
+          userInfo: { targetUserResourceId: 'user-123', preferredLanguage: 'en-gb' },
+        } as any,
+        'Executive report',
+        ['smishing'],
+        false,
+        'user-123',
+        'phishing-thread',
+        'training-thread'
+      );
+
+      expect(smishingSpy).toHaveBeenCalledTimes(1);
+      expect(result.smishingResult?.success).toBe(true);
+      expect(result.phishingResult).toBeUndefined();
+      expect(result.trainingResult).toBeUndefined();
+    });
+
+    it('should return explicit failure for smishing when simulation recommendation is missing', async () => {
+      const smishingSpy = vi.mocked(smishingHandlers.generateSmishingSimulation);
+
+      const result = await generateContentForUser(
+        {
+          analysisReport: {
+            recommended_next_steps: {
+              simulations: [],
+              microlearnings: [],
+              nudges: [],
+            },
+          },
+          userInfo: { targetUserResourceId: 'user-123', preferredLanguage: 'en-gb' },
+        } as any,
+        'Executive report',
+        ['smishing'],
+        false,
+        'user-123',
+        'phishing-thread',
+        'training-thread'
+      );
+
+      expect(smishingSpy).not.toHaveBeenCalled();
+      expect(result.smishingResult?.success).toBe(false);
+      expect(result.smishingResult?.error).toContain('No recommended smishing content found');
+    });
+
+    it('should return explicit failure for phishing when simulation recommendation is missing', async () => {
+      const phishingSpy = vi.mocked(phishingHandlers.generatePhishingSimulation);
+
+      const result = await generateContentForUser(
+        {
+          analysisReport: {
+            recommended_next_steps: {
+              simulations: [],
+              microlearnings: [],
+              nudges: [],
+            },
+          },
+          userInfo: { targetUserResourceId: 'user-123', preferredLanguage: 'en-gb' },
+        } as any,
+        'Executive report',
+        ['phishing'],
+        false,
+        'user-123',
+        'phishing-thread',
+        'training-thread'
+      );
+
+      expect(phishingSpy).not.toHaveBeenCalled();
+      expect(result.phishingResult?.success).toBe(false);
+      expect(result.phishingResult?.error).toContain('No recommended phishing content found');
+    });
+
+    it('should return explicit failure for training when microlearning recommendation is missing', async () => {
+      const trainingSpy = vi.mocked(trainingHandlers.generateTrainingModule);
+
+      const result = await generateContentForUser(
+        {
+          analysisReport: {
+            recommended_next_steps: {
+              simulations: [],
+              microlearnings: [],
+              nudges: [],
+            },
+          },
+          userInfo: { targetUserResourceId: 'user-123', preferredLanguage: 'en-gb' },
+        } as any,
+        'Executive report',
+        ['training'],
+        false,
+        'user-123',
+        'phishing-thread',
+        'training-thread'
+      );
+
+      expect(trainingSpy).not.toHaveBeenCalled();
+      expect(result.trainingResult?.success).toBe(false);
+      expect(result.trainingResult?.error).toContain('No recommended training content found');
     });
   });
 
   describe('generateContentForGroup', () => {
     it('should accept training and phishing actions', async () => {
-      expect(typeof generateContentForGroup).toBe('function');
+      const phishingSpy = vi.mocked(phishingHandlers.generatePhishingSimulationForGroup);
+      const trainingSpy = vi.mocked(trainingHandlers.generateTrainingModuleForGroup);
+
+      const result = await generateContentForGroup(['phishing', 'training'], 'en-gb', 'group-123');
+
+      expect(phishingSpy).toHaveBeenCalledTimes(1);
+      expect(trainingSpy).toHaveBeenCalledTimes(1);
+      expect(result.phishingResult?.success).toBe(true);
+      expect(result.trainingResult?.success).toBe(true);
     });
 
     it('should select unified topic for both phishing and training', async () => {
-      expect(typeof generateContentForGroup).toBe('function');
+      const topicSpy = vi.mocked(groupTopicService.selectGroupTrainingTopic);
+      const phishingSpy = vi.mocked(phishingHandlers.generatePhishingSimulationForGroup);
+      const trainingSpy = vi.mocked(trainingHandlers.generateTrainingModuleForGroup);
+
+      await generateContentForGroup(['phishing', 'training'], 'en-gb', 'group-123');
+
+      expect(topicSpy).toHaveBeenCalledTimes(1);
+      expect(phishingSpy.mock.calls[0][1]).toBe('Phishing prompt');
+      expect(trainingSpy.mock.calls[0][1]).toBe('Training prompt');
     });
 
     it('should generate content in parallel for efficiency', async () => {
-      expect(typeof generateContentForGroup).toBe('function');
+      const phishingSpy = vi.mocked(phishingHandlers.generatePhishingSimulationForGroup);
+      const trainingSpy = vi.mocked(trainingHandlers.generateTrainingModuleForGroup);
+
+      await generateContentForGroup(['phishing', 'training'], 'en-gb', 'group-123');
+
+      expect(phishingSpy).toHaveBeenCalledTimes(1);
+      expect(trainingSpy).toHaveBeenCalledTimes(1);
     });
 
     it('should handle missing phishing action', async () => {
-      expect(typeof generateContentForGroup).toBe('function');
+      const phishingSpy = vi.mocked(phishingHandlers.generatePhishingSimulationForGroup);
+      const trainingSpy = vi.mocked(trainingHandlers.generateTrainingModuleForGroup);
+
+      const result = await generateContentForGroup(['training'], 'en-gb', 'group-123');
+
+      expect(phishingSpy).not.toHaveBeenCalled();
+      expect(trainingSpy).toHaveBeenCalledTimes(1);
+      expect(result.phishingResult).toBeUndefined();
+      expect(result.trainingResult?.success).toBe(true);
     });
 
     it('should handle missing training action', async () => {
-      expect(typeof generateContentForGroup).toBe('function');
+      const phishingSpy = vi.mocked(phishingHandlers.generatePhishingSimulationForGroup);
+      const trainingSpy = vi.mocked(trainingHandlers.generateTrainingModuleForGroup);
+
+      const result = await generateContentForGroup(['phishing'], 'en-gb', 'group-123');
+
+      expect(phishingSpy).toHaveBeenCalledTimes(1);
+      expect(trainingSpy).not.toHaveBeenCalled();
+      expect(result.phishingResult?.success).toBe(true);
+      expect(result.trainingResult).toBeUndefined();
     });
 
     it('should return object with phishingResult and trainingResult', async () => {
-      expect(typeof generateContentForGroup).toBe('function');
+      const result = await generateContentForGroup(['phishing', 'training'], 'en-gb', 'group-123');
+      expect(result).toHaveProperty('phishingResult');
+      expect(result).toHaveProperty('trainingResult');
     });
 
     it('should support preferred language configuration', async () => {
-      expect(typeof generateContentForGroup).toBe('function');
+      const phishingSpy = vi.mocked(phishingHandlers.generatePhishingSimulationForGroup);
+      const trainingSpy = vi.mocked(trainingHandlers.generateTrainingModuleForGroup);
+
+      await generateContentForGroup(['phishing', 'training'], 'tr-tr', 'group-123');
+
+      expect(phishingSpy.mock.calls[0][2]).toBe('tr-tr');
+      expect(trainingSpy.mock.calls[0][2]).toBe('tr-tr');
     });
 
     it('should support target group resource ID', async () => {
-      expect(typeof generateContentForGroup).toBe('function');
+      const phishingSpy = vi.mocked(phishingHandlers.generatePhishingSimulationForGroup);
+      const trainingSpy = vi.mocked(trainingHandlers.generateTrainingModuleForGroup);
+
+      await generateContentForGroup(['phishing', 'training'], 'en-gb', 'group-777');
+
+      expect(phishingSpy.mock.calls[0][4]).toBe('group-777');
+      expect(trainingSpy.mock.calls[0][4]).toBe('group-777');
+    });
+
+    it('should generate smishing content for group when actions include smishing', async () => {
+      const smishingSpy = vi.mocked(smishingHandlers.generateSmishingSimulation);
+      const topicSpy = vi.mocked(groupTopicService.selectGroupTrainingTopic);
+      smishingSpy.mockResolvedValue({ success: true, message: 'group-smishing-ok' } as any);
+
+      const result = await generateContentForGroup(['smishing'], 'en-gb', 'group-123');
+
+      expect(topicSpy).toHaveBeenCalledTimes(1);
+      expect(smishingSpy).toHaveBeenCalledTimes(1);
+      expect(smishingSpy.mock.calls[0][0].executiveReport).toBe('Smishing prompt');
+      expect(result.smishingResult?.success).toBe(true);
+      expect(result.phishingResult).toBeUndefined();
+      expect(result.trainingResult).toBeUndefined();
     });
   });
 

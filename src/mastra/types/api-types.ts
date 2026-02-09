@@ -69,7 +69,7 @@ export interface AutonomousRequestBody {
   // Group assignment (bulk)
   targetGroupResourceId?: string;
   // Common
-  actions: ('training' | 'phishing')[];
+  actions: ('training' | 'phishing' | 'smishing')[];
   sendAfterPhishingSimulation?: boolean;
   preferredLanguage?: string;
 }

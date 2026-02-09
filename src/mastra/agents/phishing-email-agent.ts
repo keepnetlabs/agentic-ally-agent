@@ -179,12 +179,13 @@ Call 'phishingExecutor' (ONLY in STATE 3) with:
     - **method**: [${PHISHING.ATTACK_METHODS[0]}/${PHISHING.ATTACK_METHODS[1]}] (If user didn't specify, DEFAULT to '${PHISHING.DEFAULT_ATTACK_METHOD}')
     - **includeLandingPage**: [true/false] (Detect intent: If user says "only email" or "just template", set false. Default: true)
     - **includeEmail**: [true/false] (Detect intent: If user says "only landing page", set false. Default: true)
-    - **targetProfile**: {
+    - **targetProfile** (optional): {
         name: [User Name from Context],
     department: [Dept from Context],
     behavioralTriggers: [Triggers from UserInfo Context],
     vulnerabilities: [Vulnerabilities from UserInfo Context]
   }
+    - **additionalContext**: [ALWAYS include a string. If no context, pass "" (empty string)]
     - **modelProvider**: [Optional Override]
     - **model**: [Optional Override]
 

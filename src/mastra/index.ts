@@ -85,6 +85,7 @@ import {
 } from './workflows';
 import { ExampleRepo, executeAutonomousGeneration, performHealthCheck, KVService } from './services';
 import { validateEnvironmentOrThrow } from './utils/core';
+import { resolveLogLevel } from './utils/core/logger';
 import type {
   ChatRequestBody,
   CodeReviewRequestBody,
@@ -100,7 +101,7 @@ validateEnvironmentOrThrow();
 
 const logger = new PinoLogger({
   name: 'Mastra',
-  level: 'info',
+  level: resolveLogLevel(),
 });
 // Middleware to inject D1 database into ExampleRepo
 const injectD1Database = async (c: Context, next: Next) => {
@@ -631,8 +632,8 @@ export const mastra = new Mastra({
             if (!actions || !Array.isArray(actions) || actions.length === 0) {
               return c.json({ success: false, error: 'Missing or invalid actions array' }, 400);
             }
-            if (!actions.every((a: string) => a === 'training' || a === 'phishing')) {
-              return c.json({ success: false, error: 'Actions must be "training" and/or "phishing"' }, 400);
+            if (!actions.every((a: string) => a === 'training' || a === 'phishing' || a === 'smishing')) {
+              return c.json({ success: false, error: 'Actions must be one or more of: "training", "phishing", "smishing"' }, 400);
             }
 
             logger.info('autonomous_request_received', {
@@ -690,7 +691,7 @@ export const mastra = new Mastra({
               targetUserResourceId,
               targetGroupResourceId,
               departmentName,
-              actions: actions as ('training' | 'phishing')[],
+              actions: actions as ('training' | 'phishing' | 'smishing')[],
               sendAfterPhishingSimulation,
               preferredLanguage,
               baseApiUrl

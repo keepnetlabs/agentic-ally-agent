@@ -72,7 +72,7 @@ export async function executeAutonomousGeneration(
                 const phishingThreadId = `phishing-${userId}-${runTimestamp}`;
                 const trainingThreadId = `training-${userId}-${runTimestamp}`;
 
-                const { phishingResult, trainingResult } = await generateContentForUser(
+                const { phishingResult, trainingResult, smishingResult } = await generateContentForUser(
                     toolResult, executiveReport, actions, sendAfterPhishingSimulation, userId,
                     phishingThreadId, trainingThreadId
                 );
@@ -81,7 +81,8 @@ export async function executeAutonomousGeneration(
                     assignmentType: 'user',
                     userId,
                     phishingSuccess: phishingResult?.success,
-                    trainingSuccess: trainingResult?.success
+                    trainingSuccess: trainingResult?.success,
+                    smishingSuccess: smishingResult?.success
                 });
 
                 const resolvedTargetUserResourceId =
@@ -98,6 +99,7 @@ export async function executeAutonomousGeneration(
                     executiveReport,
                     phishingResult,
                     trainingResult,
+                    smishingResult,
                     actions,
                     message: `User analysis and content generation completed`
                 };
@@ -105,7 +107,7 @@ export async function executeAutonomousGeneration(
                 // GROUP ASSIGNMENT: Generate generic content for bulk assignment
                 logger.info('GROUP ASSIGNMENT: Generating generic content for group', { targetGroupResourceId });
 
-                const { phishingResult, trainingResult } = await generateContentForGroup(
+                const { phishingResult, trainingResult, smishingResult } = await generateContentForGroup(
                     actions, preferredLanguage, targetGroupResourceId
                 );
 
@@ -113,13 +115,15 @@ export async function executeAutonomousGeneration(
                     assignmentType: 'group',
                     targetGroupResourceId,
                     phishingSuccess: phishingResult?.success,
-                    trainingSuccess: trainingResult?.success
+                    trainingSuccess: trainingResult?.success,
+                    smishingSuccess: smishingResult?.success
                 });
 
                 return {
                     success: true,
                     phishingResult,
                     trainingResult,
+                    smishingResult,
                     actions,
                     message: `Generic content generated for group ${targetGroupResourceId}`
                 };

@@ -11,10 +11,16 @@
  */
 
 import { PinoLogger } from '@mastra/loggers';
+import type { LogLevel } from '@mastra/loggers';
 import { requestStorage } from './request-storage';
 
 const loggers = new Map<string, PinoLogger>();
-const DEFAULT_LOG_LEVEL = 'info';
+export function resolveLogLevel(): LogLevel {
+  const nodeEnv = typeof process !== 'undefined' ? process.env?.NODE_ENV : undefined;
+  return nodeEnv === 'development' ? 'debug' : 'info';
+}
+
+const DEFAULT_LOG_LEVEL = resolveLogLevel();
 
 /**
  * Logger wrapper that automatically injects correlation ID from request context

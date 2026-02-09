@@ -15,11 +15,44 @@ export interface AutonomousRequest {
     // Group assignment (bulk)
     targetGroupResourceId?: string;
     // Common
-    actions: ('training' | 'phishing')[];
+    actions: ('training' | 'phishing' | 'smishing')[];
     sendAfterPhishingSimulation?: boolean;
     preferredLanguage?: string;
     env?: CloudflareEnv;
     mastra?: Mastra; // Mastra instance for agent access
+}
+
+export interface AutonomousActionResult {
+    success?: boolean;
+    message?: string;
+    agentResponse?: string;
+    error?: string;
+    data?: {
+        resourceId?: string;
+        languageId?: string;
+        sendTrainingLanguageId?: string;
+        [key: string]: unknown;
+    };
+    uploadResult?: {
+        data?: {
+            resourceId?: string;
+            languageId?: string;
+            isQuishing?: boolean;
+            [key: string]: unknown;
+        };
+        [key: string]: unknown;
+    };
+    uploadAssignResult?: {
+        success?: boolean;
+        agentResponse?: string;
+        error?: string;
+        trainingId?: string;
+        resourceId?: string;
+        languageId?: string;
+        sendTrainingLanguageId?: string;
+        [key: string]: unknown;
+    };
+    [key: string]: unknown;
 }
 
 export interface AutonomousResponse {
@@ -42,24 +75,10 @@ export interface AutonomousResponse {
     // NOTE: This is the GetUserInfoTool behavioral resilience report (NOT microlearning PromptAnalysis)
     analysisReport?: AnalysisReport;
     executiveReport?: string; // Human-readable report from agent
-    phishingResult?: {
-        success: boolean;
-        message?: string;
-        agentResponse?: string;
-        error?: string;
-    };
-    trainingResult?: {
-        success: boolean;
-        message?: string;
-        agentResponse?: string;
-        uploadAssignResult?: {
-            success: boolean;
-            agentResponse?: string;
-            error?: string;
-        };
-        error?: string;
-    };
-    actions: ('training' | 'phishing')[];
+    phishingResult?: AutonomousActionResult;
+    smishingResult?: AutonomousActionResult;
+    trainingResult?: AutonomousActionResult;
+    actions: ('training' | 'phishing' | 'smishing')[];
     message?: string;
     error?: string;
 }

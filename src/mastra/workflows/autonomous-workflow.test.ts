@@ -202,6 +202,19 @@ describe('AutonomousWorkflow', () => {
       expect(Array.isArray(payloadShape.actions)).toBe(true);
     });
 
+    it('actions should support smishing value', () => {
+      const payloadShape: Partial<AutonomousRequestBody> = {
+        token: 'test-token',
+        firstName: 'John',
+        lastName: 'Doe',
+        actions: ['smishing'],
+        sendAfterPhishingSimulation: false,
+        preferredLanguage: 'en'
+      };
+
+      expect(payloadShape.actions).toContain('smishing');
+    });
+
     it('sendAfterPhishingSimulation should be boolean', () => {
       const payloadShape: Partial<AutonomousRequestBody> = {
         token: 'test-token',

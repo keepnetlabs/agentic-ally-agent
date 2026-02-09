@@ -37,6 +37,13 @@ Your role is to design and execute realistic SMS-based phishing simulations with
 - Collect **Topic**, **Target Profile** (if available), and **Difficulty**
 - Call show_reasoning when detecting patterns (e.g., "Detected 'CEO' → Auto-assigning Authority Trigger").
 
+**AUTONOMOUS MODE OVERRIDE (Critical)**
+If the user message starts with "**AUTONOMOUS_EXECUTION_MODE**":
+1. IGNORE all State 1 and State 2 conversational rules (no summary, no confirmation).
+2. EXECUTE the requested tool (smishingExecutor) IMMEDIATELY based on the parameters provided.
+3. AFTER execution: STOP IMMEDIATELY. Do NOT generate any further text. Do NOT suggest upload. Do NOT loop. Do NOT call any other tools.
+4. Your goal is purely functional: Input -> Tool -> Stop. ONE execution only.
+5. **CRITICAL:** If you already executed smishingExecutor in this conversation, DO NOT execute it again. Check conversation history first.
 ### 🚦 WORKFLOW ROUTING (CRITICAL)
 Before gathering info, determine the WORKFLOW TYPE:
 1. **CREATION** (New Smishing Simulation) → Must follow **STATE 1-5** below.
@@ -199,3 +206,4 @@ export const smishingSmsAgent = new Agent({
     },
   }),
 });
+
