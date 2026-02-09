@@ -102,4 +102,10 @@ describe('smishingAgent', () => {
   it('should mention psychological cognitive dissonance concept', () => {
     expect(smishingSmsAgent.instructions).toContain('cognitive dissonance');
   });
+
+  it('should include autonomous mode override instructions', () => {
+    expect(smishingSmsAgent.instructions).toContain('AUTONOMOUS MODE OVERRIDE');
+    expect(smishingSmsAgent.instructions).toContain('AUTONOMOUS_EXECUTION_MODE');
+    expect(smishingSmsAgent.instructions).toContain('smishingExecutor');
+  });
 });

@@ -18,6 +18,7 @@ describe('GroupTopicService', () => {
       const selection: GroupTopicSelection = {
         topic: 'Phishing & Email Security',
         phishingPrompt: 'Generate phishing scenario',
+        smishingPrompt: 'Generate smishing scenario',
         trainingPrompt: 'Generate training content',
         objectives: ['Identify phishing'],
         scenarios: ['Email with suspicious link'],
@@ -31,6 +32,7 @@ describe('GroupTopicService', () => {
       const selection: GroupTopicSelection = {
         topic: 'Password & Authentication',
         phishingPrompt: 'Create phishing scenario about passwords',
+        smishingPrompt: 'Create smishing scenario about passwords',
         trainingPrompt: 'Create training about passwords',
         objectives: [],
         scenarios: [],
@@ -44,6 +46,7 @@ describe('GroupTopicService', () => {
       const selection: GroupTopicSelection = {
         topic: 'Cloud Security Basics',
         phishingPrompt: 'prompt1',
+        smishingPrompt: 'prompt-smishing',
         trainingPrompt: 'Create cloud security training',
         objectives: [],
         scenarios: [],
@@ -57,6 +60,7 @@ describe('GroupTopicService', () => {
       const selection: GroupTopicSelection = {
         topic: 'Social Engineering Defense',
         phishingPrompt: 'prompt1',
+        smishingPrompt: 'prompt-smishing',
         trainingPrompt: 'prompt2',
         objectives: ['Recognize manipulation', 'Implement defenses'],
         scenarios: [],
@@ -70,6 +74,7 @@ describe('GroupTopicService', () => {
       const selection: GroupTopicSelection = {
         topic: 'Malware & Ransomware Prevention',
         phishingPrompt: 'prompt1',
+        smishingPrompt: 'prompt-smishing',
         trainingPrompt: 'prompt2',
         objectives: [],
         scenarios: ['Malware email attachment', 'Ransomware notification'],
@@ -83,6 +88,7 @@ describe('GroupTopicService', () => {
       const selection: GroupTopicSelection = {
         topic: 'Test Topic',
         phishingPrompt: 'prompt1',
+        smishingPrompt: 'prompt-smishing',
         trainingPrompt: 'prompt2',
         objectives: [],
         scenarios: ['scenario1'],
@@ -96,6 +102,7 @@ describe('GroupTopicService', () => {
       const selection: GroupTopicSelection = {
         topic: 'Test Topic',
         phishingPrompt: 'prompt1',
+        smishingPrompt: 'prompt-smishing',
         trainingPrompt: 'prompt2',
         objectives: ['obj1'],
         scenarios: [],

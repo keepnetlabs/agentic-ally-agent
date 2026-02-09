@@ -14,6 +14,11 @@ export const reportingTool = createTool({
         const inputData = context;
         const emailId = inputData.original_email.from?.split('@')[0] || 'unknown-sender';
         const ctx = createLogContext(emailId, 'reporting');
+        const confidenceLevel =
+            inputData.confidence >= 0.9 ? 'High' :
+            inputData.confidence >= 0.7 ? 'Good' :
+            inputData.confidence >= 0.5 ? 'Moderate' : 'Low';
+        const confidenceBasis = 'Based on behavioral and contextual indicators.';
 
         try {
             logStepStart(loggerReporting, ctx, { risk_level: inputData.risk_level });
@@ -34,7 +39,8 @@ This report will be used for executive briefings, compliance audits, and inciden
 | **Sender** | ${inputData.original_email.from} |
 | **Category** | ${inputData.triage_result.category} |
 | **Risk Level** | ${inputData.risk_level} |
-| **Confidence** | ${(inputData.confidence * 100).toFixed(0)}% |
+| **Confidence Level** | ${confidenceLevel} |
+| **Confidence Basis** | ${confidenceBasis} |
 
 ---
 
@@ -60,7 +66,9 @@ These values are already computed and MUST be used exactly as provided in the ou
 | executive_summary.email_category | "${inputData.triage_result.category}" |
 | executive_summary.risk_level | "${inputData.risk_level}" |
 | executive_summary.confidence | ${inputData.confidence} |
-| executive_summary.status | "Investigation Complete" |
+| executive_summary.confidence_level | "${confidenceLevel}" |
+| executive_summary.confidence_basis | "${confidenceBasis}" |
+| executive_summary.status | "Analysis Complete" |
 
 ---
 
@@ -68,17 +76,19 @@ These values are already computed and MUST be used exactly as provided in the ou
 
 ### 1. Executive Summary
 - **verdict**: Decisive, professional verdict statement
-  - Critical/High: "Confirmed [Threat Type] Attack - Immediate Action Required"
+  - Critical/High: "High-Risk [Threat Type] - Immediate Action Required"
   - Medium: "Suspicious Activity Detected - Review Recommended"  
   - Low: "No Threat Detected - [Category] Email"
-  - Examples: "Confirmed BEC Attack Targeting Finance Department", "Legitimate Marketing Newsletter", "Authorized Security Training Exercise"
+- **why_this_matters**: One concise line explaining business impact for executive decision-making.
+  - Example: "This pattern indicates elevated account-compromise and payment-diversion risk, requiring immediate containment."
+  - Examples: "High-Risk BEC Pattern Targeting Finance Department", "Legitimate Marketing Newsletter", "Authorized Security Training Exercise"
 
 ### 2. Agent Determination
 Write a 3-5 sentence executive narrative:
 - State the final verdict clearly
 - Summarize key evidence that led to the determination
 - Highlight any notable findings (e.g., "Despite passing SPF/DKIM, behavioral analysis revealed clear social engineering patterns")
-- Note confidence level and any caveats
+- Note confidence level (High/Good/Moderate/Low) and any caveats
 
 ### 3. Risk Indicators
 Based on feature_result, categorize indicators:
@@ -102,11 +112,11 @@ Provide risk-appropriate remediation:
 - **Low**: "No action required", "Update spam filters if needed"
 
 ### 6. Confidence Limitations
-Based on confidence score:
-- **0.90+**: "High confidence in determination. Multiple independent signals converge on this verdict."
-- **0.70-0.89**: "Good confidence. Primary indicators are clear, minor ambiguity in secondary signals."
-- **0.50-0.69**: "Moderate confidence. Human review recommended before taking action."
-- **Below 0.50**: "Low confidence. Insufficient data or conflicting signals. Manual investigation required."
+Use confidence level wording, not percentages:
+- **High**: "High confidence in determination. Multiple independent signals converge on this verdict."
+- **Good**: "Good confidence. Primary indicators are clear, minor ambiguity in secondary signals."
+- **Moderate**: "Moderate confidence. Human review recommended before taking action."
+- **Low**: "Low confidence. Insufficient data or conflicting signals. Manual investigation required."
 
 ---
 

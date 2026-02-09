@@ -11,6 +11,7 @@ import { getLogger } from '../../utils/core/logger';
 export interface GroupTopicSelection {
     topic: string;
     phishingPrompt: string;
+    smishingPrompt: string;
     trainingPrompt: string;
     objectives: string[];
     scenarios: string[];
@@ -32,6 +33,7 @@ export async function selectGroupTrainingTopic(
 
     // STEP 2: Build prompts for phishing & training
     const phishingPrompt = buildPhishingPrompt(selectedTopic);
+    const smishingPrompt = buildSmishingPrompt(selectedTopic);
     const trainingPrompt = buildTrainingPrompt(selectedTopic);
 
     // STEP 3: Build objectives & scenarios for this topic
@@ -40,6 +42,7 @@ export async function selectGroupTrainingTopic(
     return {
         topic: selectedTopic,
         phishingPrompt,
+        smishingPrompt,
         trainingPrompt,
         objectives,
         scenarios
@@ -124,6 +127,25 @@ function buildPhishingPrompt(selectedTopic: string): string {
 3. The training module will cover the same topic for awareness building
 
 📝 Remember: This phishing scenario should align with the training content on "${selectedTopic}" so learners understand both the attack vector AND the defense strategies.
+
+🎲 IMPORTANT: Generate a DIFFERENT scenario each time. Make it diverse and realistic.
+
+🏢 Generate the scenario as if targeting a GENERIC ORGANIZATION GROUP - no specific person names.`;
+}
+
+/**
+ * Build smishing prompt for selected topic
+ */
+function buildSmishingPrompt(selectedTopic: string): string {
+    return `You are a Cybersecurity Awareness Training Specialist creating a smishing simulation for GROUP-LEVEL training.
+
+🎯 YOUR TASK:
+1. CREATE realistic SMS-based phishing messages FOCUSED ON THIS TOPIC: "${selectedTopic}"
+2. Keep messages concise and believable for mobile context
+3. Include a landing-page-style follow-up context when relevant
+4. Make it educational and appropriate for group-wide training (not personalized)
+
+📝 Remember: This smishing scenario should align with the training content on "${selectedTopic}" so learners understand both the attack vector AND the defense strategies.
 
 🎲 IMPORTANT: Generate a DIFFERENT scenario each time. Make it diverse and realistic.
 

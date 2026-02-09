@@ -129,6 +129,53 @@ describe('authTokenMiddleware', () => {
       expect(nextCalled).toBe(true);
       expect(mockContext.json).not.toHaveBeenCalled();
     });
+
+    it('should skip all public unauthenticated endpoints without token', async () => {
+      const publicPaths = ['/code-review-validate', '/vishing/prompt', '/smishing/chat', '/email-ir/analyze'];
+
+      for (const path of publicPaths) {
+        mockContext.req.path = path;
+        mockContext.req.header.mockImplementation(() => undefined);
+        nextCalled = false;
+        mockContext.json.mockClear();
+
+        await authTokenMiddleware(mockContext, mockNext);
+
+        expect(nextCalled).toBe(true);
+        expect(mockContext.json).not.toHaveBeenCalled();
+      }
+    });
+
+    it('should log public unauthenticated endpoint access', async () => {
+      mockContext.req.path = '/smishing/chat';
+      mockContext.req.method = 'POST';
+      mockContext.req.header.mockImplementation(() => undefined);
+
+      await authTokenMiddleware(mockContext, mockNext);
+
+      const mockLogger = vi.mocked(getLogger)('AuthToken');
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Public unauthenticated endpoint access',
+        expect.objectContaining({
+          path: '/smishing/chat',
+          method: 'POST',
+        })
+      );
+    });
+
+    it('should not log public unauthenticated access for internal skip endpoints', async () => {
+      mockContext.req.path = '/health';
+      mockContext.req.method = 'GET';
+      mockContext.req.header.mockImplementation(() => undefined);
+
+      await authTokenMiddleware(mockContext, mockNext);
+
+      const mockLogger = vi.mocked(getLogger)('AuthToken');
+      expect(mockLogger.info).not.toHaveBeenCalledWith(
+        'Public unauthenticated endpoint access',
+        expect.any(Object)
+      );
+    });
   });
 
   describe('token validation', () => {
@@ -181,6 +228,32 @@ describe('authTokenMiddleware', () => {
 
       expect(nextCalled).toBe(true);
       expect(mockContext.json).not.toHaveBeenCalled();
+    });
+
+    it('should return 401 when backend validation service throws', async () => {
+      const previousFetch = global.fetch;
+      global.fetch = vi.fn().mockRejectedValueOnce(new Error('network down')) as any;
+
+      try {
+        mockContext.req.path = '/chat';
+        mockContext.req.header.mockImplementation((headerName: string) => {
+          if (headerName === 'X-AGENTIC-ALLY-TOKEN') return 'fresh-unique-token-abcdefghijklmnopqrstuvwxyz9999';
+          return undefined;
+        });
+
+        await authTokenMiddleware(mockContext, mockNext);
+
+        expect(mockContext.json).toHaveBeenCalledWith(
+          {
+            error: 'Unauthorized',
+            message: 'Token validation service unavailable',
+          },
+          401
+        );
+        expect(mockNext).not.toHaveBeenCalled();
+      } finally {
+        global.fetch = previousFetch;
+      }
     });
 
     describe('JWT support', () => {
@@ -489,13 +562,12 @@ describe('authTokenMiddleware', () => {
     it('should handle whitespace-padded valid token', async () => {
       mockContext.req.path = '/chat';
       // Token with surrounding spaces should be trimmed
-      setToken('  token-1234567890-abcdefghij-xxx  ');
+      setToken('  validtokenabcdefghijklmnopqrstuvwxyz1234567890  ');
 
       await authTokenMiddleware(mockContext, mockNext);
 
-      // Should either accept or reject based on trimming behavior
-      // (depends on middleware implementation)
-      expect(nextCalled || mockContext.json.mock.calls.length > 0).toBe(true);
+      expect(nextCalled).toBe(true);
+      expect(mockContext.json).not.toHaveBeenCalled();
     });
   });
 

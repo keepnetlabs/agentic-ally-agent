@@ -57,6 +57,12 @@ const genericErrorResponseSchema = z.object({
   error: z.string().min(1),
 });
 
+const validationErrorResponseSchema = z.object({
+  success: z.literal(false),
+  error: z.string().min(1),
+  details: z.record(z.any()).optional(),
+});
+
 vi.mock('ai', () => ({
   generateText: vi.fn(),
 }));
@@ -279,6 +285,32 @@ describe('Public Endpoint Contracts', () => {
 
       expect(status).toBe(400);
       expect(genericErrorResponseSchema.safeParse(payload).success).toBe(true);
+    });
+
+    it('vishing invalid request returns error contract', async () => {
+      const ctx = createMockContext({
+        microlearningId: 'ml-456',
+      });
+
+      await vishingPromptHandler(ctx);
+      const [payload, status] = ctx._getJsonCall();
+
+      expect(status).toBe(400);
+      expect(genericErrorResponseSchema.safeParse(payload).success).toBe(true);
+    });
+
+    it('email IR invalid input returns validation error contract', async () => {
+      const ctx = createMockContext({
+        id: '',
+        accessToken: '',
+        apiBaseUrl: 'https://api.example.com',
+      });
+
+      await emailIRAnalyzeHandler(ctx);
+      const [payload, status] = ctx._getJsonCall();
+
+      expect(status).toBe(400);
+      expect(validationErrorResponseSchema.safeParse(payload).success).toBe(true);
     });
   });
 });

@@ -716,6 +716,22 @@ describe('prompt-analyzer - Additional Functions', () => {
             // expect(result).toBeNull(); // Old behavior
             expect(result).toBe('en-gb');
         });
+
+        it('should include both head and tail text for long prompt/context sampling', async () => {
+            (ai.generateText as any).mockResolvedValue({
+                text: 'tr-tr',
+            });
+
+            const longPrompt = `Start section ${'A'.repeat(2500)} End section`;
+            const longContext = `${'B'.repeat(2500)} Preferred Language: Turkish`;
+
+            await detectTargetLanguageWithAI(longPrompt, {}, longContext);
+
+            const callArgs = (ai.generateText as any).mock.calls[0][0];
+            expect(callArgs.prompt).toContain('Start section');
+            expect(callArgs.prompt).toContain('Preferred Language: Turkish');
+            expect(callArgs.prompt).toContain('...[omitted');
+        });
     });
 
     describe('analyzeUserPromptWithAI', () => {
@@ -936,6 +952,25 @@ describe('prompt-analyzer - Additional Functions', () => {
             });
 
             expect(result.data.customRequirements).toBe('Must include video');
+        });
+
+        it('should preserve mustKeepDetails from analysis response', async () => {
+            (ai.generateText as any).mockResolvedValue({
+                text: JSON.stringify({
+                    topic: 'Detail Test',
+                    mustKeepDetails: ['Keep real-world invoice fraud case', 'Keep urgent payment language']
+                })
+            });
+
+            const result = await analyzeUserPromptWithAI({
+                userPrompt: 'Test',
+                model: {},
+            });
+
+            expect(result.data.mustKeepDetails).toEqual([
+                'Keep real-world invoice fraud case',
+                'Keep urgent payment language',
+            ]);
         });
     });
 

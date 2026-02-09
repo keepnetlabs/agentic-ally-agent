@@ -181,7 +181,7 @@ Manually trigger the proactive generation loop. Useful for testing or on-demand 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `token` | string | Yes | Auth token (verification) |
-| `actions` | array | Yes | `["training"]` or `["phishing"]` or both |
+| `actions` | array | Yes | Any combination of `["training"]`, `["phishing"]`, `["smishing"]` |
 | `firstName` | string | No* | Target specific User by Name |
 | `targetUserResourceId` | string | No* | Target specific User by ID (Preferred) |
 | `targetGroupResourceId` | string | No* | Target a specific Group |
@@ -193,7 +193,7 @@ Manually trigger the proactive generation loop. Useful for testing or on-demand 
 ```json
 {
   "token": "secret-123",
-  "actions": ["phishing"],
+  "actions": ["phishing", "smishing"],
   "targetGroupResourceId": "ALL_VULNERABLE_USERS",
   "sendAfterPhishingSimulation": false
 }
@@ -207,6 +207,44 @@ Manually trigger the proactive generation loop. Useful for testing or on-demand 
   "message": "Autonomous generation started in background."
 }
 ```
+
+### Response (Completed / Inline Fallback)
+When workflow binding is unavailable (for example in local development), the endpoint may execute inline and return a completed payload.
+
+```json
+{
+  "success": true,
+  "status": "completed",
+  "actions": ["training", "smishing"],
+  "message": "User analysis and content generation completed",
+  "userInfo": {
+    "targetUserResourceId": "12345",
+    "fullName": "Alex Morgan",
+    "department": "IT",
+    "email": "alex@example.com",
+    "preferredLanguage": "en-gb"
+  },
+  "phishingResult": {
+    "success": true,
+    "message": "Phishing simulation generated"
+  },
+  "trainingResult": {
+    "success": true,
+    "message": "Training module generated"
+  },
+  "smishingResult": {
+    "success": false,
+    "error": "No recommended smishing content found in analysis report"
+  }
+}
+```
+
+### Result Object Semantics
+- `phishingResult`, `trainingResult`, `smishingResult` appear only for requested actions.
+- Each action result follows:
+  - `success: true` with `message` when generation succeeded.
+  - `success: false` with `error` when generation failed or no recommendation was available.
+- If `status` is `processing`, action results are not returned yet (background execution).
 
 ---
 

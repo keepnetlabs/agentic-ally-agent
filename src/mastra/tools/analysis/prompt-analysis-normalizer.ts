@@ -68,6 +68,45 @@ function normalizeBoolean(input: unknown, fallback: boolean): boolean {
     return typeof input === 'boolean' ? input : fallback;
 }
 
+function extractContextHints(additionalContext?: string, customRequirements?: string): {
+    keyTopics: string[];
+    practicalApplications: string[];
+    mustKeepDetails: string[];
+} {
+    const raw = [additionalContext, customRequirements]
+        .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+        .join('\n');
+
+    if (!raw) {
+        return { keyTopics: [], practicalApplications: [], mustKeepDetails: [] };
+    }
+
+    const segments = raw
+        .split(/\r?\n|[.;]/g)
+        .map((segment) => segment.replace(/^[-*]\s*/, '').trim())
+        .filter((segment) => segment.length >= 6);
+
+    const uniqueSegments = Array.from(new Set(segments));
+
+    const keyTopics = uniqueSegments
+        .slice(0, 5)
+        .map((segment) => segment.length > 90 ? `${segment.slice(0, 87)}...` : segment);
+
+    const practicalApplications = uniqueSegments
+        .slice(0, 4)
+        .map((segment) =>
+            segment.length > 120
+                ? `Apply in workplace scenario: ${segment.slice(0, 90)}...`
+                : `Apply in workplace scenario: ${segment}`
+        );
+
+    const mustKeepDetails = uniqueSegments
+        .slice(0, 8)
+        .map((segment) => (segment.length > 120 ? `${segment.slice(0, 117)}...` : segment));
+
+    return { keyTopics, practicalApplications, mustKeepDetails };
+}
+
 export interface AutoRepairPromptAnalysisOptions {
     suggestedDepartment?: string;
 }
@@ -107,6 +146,13 @@ export function autoRepairPromptAnalysis(
             `Report suspicious activity related to ${topic}`,
         ]
     );
+    const contextHints = extractContextHints(analysis.additionalContext, analysis.customRequirements);
+    const keyTopics = normalizeStringArray(analysis.keyTopics, contextHints.keyTopics);
+    const practicalApplications = normalizeStringArray(
+        analysis.practicalApplications,
+        contextHints.practicalApplications
+    );
+    const mustKeepDetails = normalizeStringArray(analysis.mustKeepDetails, contextHints.mustKeepDetails);
 
     const isCodeTopic = normalizeBoolean(analysis.isCodeTopic, false);
     const isVishing = normalizeBoolean(analysis.isVishing, false);
@@ -131,8 +177,9 @@ export function autoRepairPromptAnalysis(
         duration,
         industries,
         roles,
-        keyTopics: normalizeStringArray(analysis.keyTopics, []),
-        practicalApplications: normalizeStringArray(analysis.practicalApplications, []),
+        keyTopics,
+        practicalApplications,
+        mustKeepDetails,
         assessmentAreas: normalizeStringArray(analysis.assessmentAreas, []),
         regulationCompliance: Array.isArray(analysis.regulationCompliance)
             ? normalizeStringArray(analysis.regulationCompliance, [])

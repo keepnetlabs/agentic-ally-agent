@@ -233,6 +233,9 @@ export const workflowExecutorTool = createTool({
 
         if (!isValid) {
           logger.error('Language workflow result validation failed', { status: workflowResult.status });
+          const errorInfo = errorService.external('Add language workflow result validation failed');
+          logErrorInfo(logger, 'error', 'Language workflow result validation failed', errorInfo);
+          return createToolErrorResponse(errorInfo);
         }
 
         logger.debug('Language translation completed', { hasTrainingUrl: !!trainingUrl });

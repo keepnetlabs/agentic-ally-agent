@@ -18,6 +18,57 @@ import { detectSmishingChannelFromText } from '../../../utils/smishing-channel';
 const cachedRolesList = ROLES.VALUES.map((role) => `- "${role}"`).join('\n');
 const cachedCategoriesList = CATEGORIES.VALUES.map((cat) => `- "${cat}"`).join('\n');
 const cachedThemeColorsList = THEME_COLORS.VALUES.map((color) => `- "${color}"`).join('\n');
+const LANGUAGE_DETECTION_SEGMENT_LENGTH = 1200;
+
+function computeDetailCoverage(details: string[], outputs: Array<string | undefined>): number {
+    if (!details.length) return 1;
+    const searchableOutput = outputs
+        .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+        .join(' ')
+        .toLowerCase();
+
+    if (!searchableOutput) return 0;
+
+    const outputTokens = new Set(
+        searchableOutput
+            .split(/[^\p{L}\p{N}]+/u)
+            .map((token) => token.trim())
+            .filter((token) => token.length >= 3)
+    );
+
+    const coveredCount = details.filter((detail) => {
+        const normalized = detail.trim().toLowerCase();
+        if (normalized.length < 5) return false;
+        if (searchableOutput.includes(normalized)) return true;
+
+        const detailTokens = normalized
+            .split(/[^\p{L}\p{N}]+/u)
+            .map((token) => token.trim())
+            .filter((token) => token.length >= 3);
+
+        if (!detailTokens.length) return false;
+
+        const matchedTokens = detailTokens.filter((token) => outputTokens.has(token));
+        const ratio = matchedTokens.length / detailTokens.length;
+        return ratio >= 0.6;
+    }).length;
+
+    return coveredCount / details.length;
+}
+
+function buildLanguageDetectionSample(promptText: string, contextText: string): string {
+    const combinedText = `Prompt: "${promptText}"\n\nContext: "${contextText}"`;
+    const maxVisibleLength = LANGUAGE_DETECTION_SEGMENT_LENGTH * 2;
+
+    if (combinedText.length <= maxVisibleLength) {
+        return combinedText;
+    }
+
+    const head = combinedText.slice(0, LANGUAGE_DETECTION_SEGMENT_LENGTH);
+    const tail = combinedText.slice(-LANGUAGE_DETECTION_SEGMENT_LENGTH);
+    const omittedChars = combinedText.length - maxVisibleLength;
+    return `${head}\n\n...[omitted ${omittedChars} chars]...\n\n${tail}`;
+}
 /**
  * Character-based language detection fallback (final safety net)
  */
@@ -41,9 +92,8 @@ export function detectLanguageFallback(text: string): string {
  */
 export async function detectTargetLanguageWithAI(text: string, model: any, additionalContext: string = ''): Promise<string | null> {
     try {
-        const combinedText = `Prompt: "${text}"\n\nContext: "${additionalContext}"`;
-        // Increased limit to capture context
-        const truncatedText = combinedText.substring(0, 2000);
+        // Keep both beginning and end of text/context to reduce signal loss in long prompts.
+        const sampledText = buildLanguageDetectionSample(text, additionalContext);
 
         const response = await withRetry(
             () => generateText({
@@ -56,7 +106,7 @@ export async function detectTargetLanguageWithAI(text: string, model: any, addit
 Return ONLY the BCP-47 code (e.g., ar-sa, tr-tr, en-gb, zh-cn, vi-vn, hi-in).
 
 Text to Analyze:
-${truncatedText}
+${sampledText}
 
 Target language code:`,
                 temperature: 0.1, // Lower temperature for more deterministic code extraction
@@ -171,6 +221,7 @@ Return JSON:
   "themeColor": "Standard code from THEME COLOR OPTIONS list if user explicitly mentioned a color. Otherwise null.",
   "keyTopics": ["3-5 main learning areas"],
   "practicalApplications": ["3-4 workplace situations"],
+  "mustKeepDetails": ["5-8 critical user constraints/details that must not be lost in downstream generation"],
   "assessmentAreas": ["testable skills - focus on 'can they do X'"],
   "regulationCompliance": ["relevant regulations by topic/industry"],
   "isCodeTopic": false,
@@ -218,6 +269,9 @@ RULES:
 - EXTRACT core subject, not full request
 - USE BCP-47 language codes only
 - RESPOND in user's language for content
+- If request/context includes specific constraints, examples, scenarios, audiences, or risks, preserve them in keyTopics and practicalApplications.
+- Capture the same constraints/examples/risks in mustKeepDetails as explicit non-negotiable details.
+- Never drop critical user intent details when generating metadata.
 - isCodeTopic: **CRITICAL** - Return as boolean (true/false). Set to true IF ANY of these conditions are met:
   1. Topic mentions a PROGRAMMING LANGUAGE: JavaScript, Python, Java, C++, C#, Go, Rust, TypeScript, Kotlin, PHP, Ruby, Swift, etc.
   2. Topic mentions CODE-FOCUSED CONCEPTS: code review, secure coding, vulnerabilities, injection, XSS, SQL injection, API security, encryption, authentication, authorization, buffer overflow, memory management, testing, refactoring, debugging, legacy code, etc.
@@ -302,6 +356,30 @@ ${additionalContext}`
         repaired.additionalContext = analysis.additionalContext;
         repaired.customRequirements = analysis.customRequirements;
         repaired.themeColor = analysis.themeColor;
+
+        const mustKeepDetails = repaired.mustKeepDetails || [];
+        if (mustKeepDetails.length > 0) {
+            const coverage = computeDetailCoverage(mustKeepDetails, [
+                repaired.title,
+                repaired.description,
+                ...(repaired.keyTopics || []),
+                ...(repaired.practicalApplications || []),
+                ...(repaired.learningObjectives || []),
+            ]);
+
+            if (coverage < 0.5) {
+                logger.warn('Low mustKeepDetails coverage after analysis normalization', {
+                    coverage,
+                    detailsCount: mustKeepDetails.length,
+                    topic: repaired.topic,
+                });
+            } else {
+                logger.debug('mustKeepDetails coverage validated', {
+                    coverage,
+                    detailsCount: mustKeepDetails.length,
+                });
+            }
+        }
 
         return {
             success: true,
@@ -395,6 +473,7 @@ export async function getFallbackAnalysis(params: AnalyzeUserPromptParams) {
         themeColor: undefined,
         keyTopics: [userPrompt.substring(0, 30)],
         practicalApplications: [`Safe handling of ${userPrompt.substring(0, 20)} related tasks`],
+        mustKeepDetails: [userPrompt.substring(0, 60)],
         assessmentAreas: [`Identify key risks`, `Apply correct procedures`],
         regulationCompliance: [],
         hasRichContext: !!additionalContext,
