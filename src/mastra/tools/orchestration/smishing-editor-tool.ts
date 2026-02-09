@@ -72,9 +72,14 @@ export const smishingEditorTool = createTool({
       ]);
 
       if (!loadResult.success) {
+        const errorInfo = errorService.notFound(loadResult.error, {
+          resourceType: 'smishing-template',
+          resourceId: smishingId,
+          language,
+        });
+        logErrorInfo(logger, 'warn', 'Smishing template not found', errorInfo);
         return {
-          success: false,
-          error: loadResult.error,
+          ...createToolErrorResponse(errorInfo),
           message: 'ERROR Template not found. Please provide a valid smishing ID.',
         };
       }
@@ -145,9 +150,13 @@ export const smishingEditorTool = createTool({
       if (smsPromise && smsResult) {
         if (smsResult.status !== 'fulfilled') {
           logger.error('SMS editing failed', { reason: smsResult.reason });
+          const errorInfo = errorService.external('SMS editing failed after retries', {
+            smishingId,
+            step: 'sms-edit',
+          });
+          logErrorInfo(logger, 'error', 'SMS editing failed after retries', errorInfo);
           return {
-            success: false,
-            error: 'SMS editing failed after retries',
+            ...createToolErrorResponse(errorInfo),
             message: 'ERROR Failed to edit SMS template. Please try again.',
           };
         }
@@ -157,9 +166,13 @@ export const smishingEditorTool = createTool({
         const smsParseResult = parseAndValidateSmsResponse(smsText);
 
         if (!smsParseResult.success) {
+          const errorInfo = errorService.validation('SMS response validation failed', {
+            smishingId,
+            reason: smsParseResult.error,
+          });
+          logErrorInfo(logger, 'warn', 'SMS response validation failed', errorInfo);
           return {
-            success: false,
-            error: 'SMS response validation failed',
+            ...createToolErrorResponse(errorInfo),
             message: `ERROR SMS validation error: ${smsParseResult.error}`,
           };
         }

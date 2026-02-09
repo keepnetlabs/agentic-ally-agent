@@ -42,12 +42,12 @@ describe('smishingAgent', () => {
     expect(smishingSmsAgent.instructions).toContain('STATE 2');
     expect(smishingSmsAgent.instructions).toContain('STATE 3');
     expect(smishingSmsAgent.instructions).toContain('STATE 4');
-    expect(smishingSmsAgent.instructions).toContain('STATE 5');
   });
 
   it('should emphasize safety rules', () => {
-    expect(smishingSmsAgent.instructions).toContain('SAFETY RULES');
-    expect(smishingSmsAgent.instructions).toContain('cyberattacks');
+    expect(smishingSmsAgent.instructions).toContain('Global Rules');
+    expect(smishingSmsAgent.instructions).toContain('Safety');
+    expect(smishingSmsAgent.instructions).toContain('cyberattack');
   });
 
   it('should include psychological profiling via Cialdini principles', () => {
@@ -57,7 +57,7 @@ describe('smishingAgent', () => {
   });
 
   it('should specify language handling rules', () => {
-    expect(smishingSmsAgent.instructions).toContain('LANGUAGE RULES');
+    expect(smishingSmsAgent.instructions).toContain('Language Rules');
     expect(smishingSmsAgent.instructions).toContain('INTERACTION LANGUAGE');
     expect(smishingSmsAgent.instructions).toContain('CONTENT LANGUAGE');
   });
@@ -67,11 +67,11 @@ describe('smishingAgent', () => {
   });
 
   it('should prohibit tech jargon in reasoning', () => {
-    expect(smishingSmsAgent.instructions).toContain('NO TECH JARGON');
+    expect(smishingSmsAgent.instructions).toContain('No Tech Jargon');
   });
 
   it('should specify workflow routing', () => {
-    expect(smishingSmsAgent.instructions).toContain('WORKFLOW ROUTING');
+    expect(smishingSmsAgent.instructions).toContain('Workflow Routing');
     expect(smishingSmsAgent.instructions).toContain('CREATION');
     expect(smishingSmsAgent.instructions).toContain('UTILITY');
   });

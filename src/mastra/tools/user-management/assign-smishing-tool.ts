@@ -100,7 +100,7 @@ export const assignSmishingTool = createTool({
       ...(targetGroupResourceId && { targetGroupResourceId }),
       name,
     };
-    logger.info('Assign smishing payload prepared', { payload });
+    logger.info('Assign smishing payload prepared (redacted)');
 
     const maskedPayload = maskSensitiveField(payload, 'accessToken');
     logger.debug('Assign smishing payload prepared', { payload: maskedPayload });
@@ -151,7 +151,7 @@ export const assignSmishingTool = createTool({
           ...(languageId ? { languageId } : {}),
         },
         message: formatToolSummary({
-          prefix: result.message ? `OK ${result.message}` : `OK Smishing campaign assigned to ${assignmentType} ${targetLabel}`,
+          prefix: result.message ? `✅ ${result.message}` : `✅ Smishing campaign assigned to ${assignmentType} ${targetLabel}`,
           title: result.message ? undefined : name,
           kv: [
             { key: 'resourceId', value: resourceId },

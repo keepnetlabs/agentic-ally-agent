@@ -45,15 +45,16 @@ describe('Phishing Email Agent', () => {
     });
 
     it('should have the language rules', () => {
-      expect(phishingEmailAgent.instructions).toContain('LANGUAGE RULES');
+      expect(phishingEmailAgent.instructions).toContain('Language Rules');
     });
 
     it('should have safety rules', () => {
-      expect(phishingEmailAgent.instructions).toContain('SAFETY RULES');
+      expect(phishingEmailAgent.instructions).toContain('Global Rules');
+      expect(phishingEmailAgent.instructions).toContain('Safety');
     });
 
     it('should have the tool/tech jargon restriction', () => {
-      expect(phishingEmailAgent.instructions).toContain('NO TECH JARGON');
+      expect(phishingEmailAgent.instructions).toContain('No Tech Jargon');
     });
 
     it('should mention Cialdini Principles', () => {
@@ -139,7 +140,7 @@ describe('Phishing Email Agent', () => {
     const instructions = phishingEmailAgent.instructions;
 
     it('should define LANGUAGE RULES section', () => {
-      expect(instructions).toContain('LANGUAGE RULES');
+      expect(instructions).toContain('Language Rules');
     });
 
     it('should define INTERACTION LANGUAGE', () => {
@@ -181,19 +182,20 @@ describe('Phishing Email Agent', () => {
     const instructions = phishingEmailAgent.instructions;
 
     it('should have SAFETY RULES section', () => {
-      expect(instructions).toContain('SAFETY RULES');
+      expect(instructions).toContain('Global Rules');
+      expect(instructions).toContain('Safety');
     });
 
     it('should refuse cyberattacks', () => {
-      expect(instructions).toContain('Refuse requests for cyberattacks');
+      expect(instructions).toContain('Refuse real cyberattack');
     });
 
     it('should refuse real-world hacking', () => {
-      expect(instructions).toContain('real-world hacking');
+      expect(instructions).toContain('malicious hacking');
     });
 
     it('should refuse malicious intent', () => {
-      expect(instructions).toContain('malicious intent');
+      expect(instructions).toContain('real cyberattack');
     });
 
     it('should accept educational requests', () => {
@@ -201,8 +203,7 @@ describe('Phishing Email Agent', () => {
     });
 
     it('should reframe borderline requests', () => {
-      expect(instructions).toContain('Reframe borderline requests');
-      expect(instructions).toContain('Executive Impersonation Simulation');
+      expect(instructions).toContain('Accept ONLY educational/simulation requests');
     });
   });
 
@@ -211,7 +212,7 @@ describe('Phishing Email Agent', () => {
     const instructions = phishingEmailAgent.instructions;
 
     it('should have PSYCHOLOGICAL PROFILER MODE section', () => {
-      expect(instructions).toContain('PSYCHOLOGICAL PROFILER MODE');
+      expect(instructions).toContain('Psychological Profiler');
     });
 
     it('should mention Cialdini Principles', () => {
@@ -277,7 +278,7 @@ describe('Phishing Email Agent', () => {
     const instructions = phishingEmailAgent.instructions;
 
     it('should have WORKFLOW ROUTING section', () => {
-      expect(instructions).toContain('WORKFLOW ROUTING');
+      expect(instructions).toContain('Workflow Routing');
     });
 
     it('should define CREATION workflow', () => {
@@ -618,12 +619,11 @@ describe('Phishing Email Agent', () => {
     const instructions = phishingEmailAgent.instructions;
 
     it('should have NO TECH JARGON rule', () => {
-      expect(instructions).toContain('NO TECH JARGON');
+      expect(instructions).toContain('No Tech Jargon');
     });
 
     it('should prohibit model names', () => {
-      expect(instructions).toContain('GPT-4');
-      expect(instructions).toContain('Workers AI');
+      expect(instructions).toContain('Hide model names');
     });
 
     it('should prohibit provider mentions', () => {
@@ -720,16 +720,16 @@ describe('Phishing Email Agent', () => {
   describe('Instruction Structure', () => {
     const instructions = phishingEmailAgent.instructions;
 
-    it('should have emoji markers', () => {
-      expect(instructions).toContain('🚫');
-      expect(instructions).toContain('🌍');
-      expect(instructions).toContain('🛡️');
-      expect(instructions).toContain('🧠');
+    it('should have markdown section markers', () => {
+      expect(instructions).toContain('## Global Rules');
+      expect(instructions).toContain('## Language Rules');
+      expect(instructions).toContain('## Psychological Profiler');
+      expect(instructions).toContain('### Workflow Routing');
     });
 
     it('should use bold formatting for sections', () => {
-      expect(instructions).toContain('**NO TECH JARGON:**');
-      expect(instructions).toContain('**SAFETY RULES:**');
+      expect(instructions).toContain('**No Tech Jargon:**');
+      expect(instructions).toContain('**Safety:**');
     });
 
     it('should have numbered lists', () => {
@@ -745,3 +745,4 @@ describe('Phishing Email Agent', () => {
     });
   });
 });
+

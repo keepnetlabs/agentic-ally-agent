@@ -236,6 +236,92 @@ describe('UpdateMicrolearningWorkflow', () => {
     expect(result.metadata.changes['theme.colors'].background).toBe('bg-white');
   });
 
+  it('should warn when whitelabel logo is requested but config has no mainLogoUrl', async () => {
+    mocks.getWhitelabelingConfig.mockResolvedValueOnce({});
+
+    const run = await updateMicrolearningWorkflow.createRunAsync();
+    const input = {
+      microlearningId: 'ml-whitelabel-empty',
+      updates: {
+        useWhitelabelLogo: true,
+        theme: {}
+      }
+    };
+
+    const workflowResult = await run.start({ inputData: input });
+    const result = (workflowResult as any).result;
+
+    expect(result.success).toBe(true);
+    expect(mocks.loggerWarn).toHaveBeenCalledWith(
+      'useWhitelabelLogo requested but no config found',
+      expect.objectContaining({ microlearningId: 'ml-whitelabel-empty' })
+    );
+  });
+
+  it('should warn when external brand resolution returns no logo URL', async () => {
+    mocks.resolveLogoAndBrand.mockResolvedValueOnce({ logoUrl: '' });
+
+    const run = await updateMicrolearningWorkflow.createRunAsync();
+    const input = {
+      microlearningId: 'ml-brand-no-logo',
+      updates: {
+        brandName: 'NoLogoBrand',
+        theme: {}
+      }
+    };
+
+    const workflowResult = await run.start({ inputData: input });
+    const result = (workflowResult as any).result;
+
+    expect(result.success).toBe(true);
+    expect(mocks.loggerWarn).toHaveBeenCalledWith(
+      'Brand resolution returned no logo URL',
+      expect.objectContaining({ brand: 'NoLogoBrand' })
+    );
+  });
+
+  it('should enter no-brand branch and emit debug log when no brand update is provided', async () => {
+    const run = await updateMicrolearningWorkflow.createRunAsync();
+    const input = {
+      microlearningId: 'ml-no-brand-update',
+      updates: {
+        theme: {
+          colors: { background: 'bg-green-500' }
+        }
+      }
+    };
+
+    const workflowResult = await run.start({ inputData: input });
+    const result = (workflowResult as any).result;
+
+    expect(result.success).toBe(true);
+    expect(mocks.loggerDebug).toHaveBeenCalledWith(
+      'No brand updates detected',
+      expect.any(Object)
+    );
+  });
+
+  it('should fallback language and department when missing from content and input', async () => {
+    mocks.kvGet.mockResolvedValueOnce({
+      version: 3,
+      theme: { colors: { background: 'bg-black' } },
+      microlearning_metadata: {}
+    });
+
+    const run = await updateMicrolearningWorkflow.createRunAsync();
+    const input = {
+      microlearningId: 'ml-lang-dept-fallback',
+      updates: { theme: {} }
+    } as any;
+
+    const workflowResult = await run.start({ inputData: input });
+    const result = (workflowResult as any).result;
+
+    expect(result.success).toBe(true);
+    expect(result.metadata.trainingUrl).toContain('lang%2Fen');
+    expect(result.metadata.trainingUrl).toContain('inbox%2Fall');
+  });
+
   it('should perform deep merge of nested theme updates', async () => {
     mocks.kvGet.mockResolvedValue({
       version: 1,

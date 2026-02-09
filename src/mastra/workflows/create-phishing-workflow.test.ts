@@ -463,6 +463,31 @@ describe('CreatePhishingWorkflow', () => {
         expect(e.message).toContain('Phishing email generation workflow error');
       }
     });
+
+    it('should default isQuishing to false when missing from both agent input and AI response', async () => {
+      mocks.generateText.mockResolvedValueOnce({
+        text: JSON.stringify({
+          scenario: 'Test',
+          category: 'Test',
+          fromAddress: 'test@test.com',
+          fromName: 'Test',
+          method: 'Click-Only'
+        })
+      });
+
+      const run = await createPhishingWorkflow.createRunAsync();
+      const result = await run.start({
+        inputData: {
+          topic: 'No Quishing Field',
+          language: 'en',
+          includeEmail: false,
+          includeLandingPage: false
+        }
+      });
+
+      expect(result.status).toBe('success');
+      expect((result as any).result.analysis.isQuishing).toBe(false);
+    });
   });
 
   describe('Save to KV', () => {
@@ -522,6 +547,33 @@ describe('CreatePhishingWorkflow', () => {
       const output = (result as any).result;
       // Template should have logo URL replaced
       expect(output.template).not.toContain('{CUSTOMMAINLOGO}');
+    });
+
+    it('should use contextual brand generation when brand is unrecognized and no whitelabel logo', async () => {
+      mocks.getWhitelabelingConfig.mockResolvedValueOnce(null);
+      mocks.resolveLogoAndBrand.mockResolvedValueOnce({
+        logoUrl: '',
+        brandName: '',
+        isRecognizedBrand: false
+      });
+
+      const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.1);
+
+      const run = await createPhishingWorkflow.createRunAsync();
+      const result = await run.start({
+        inputData: {
+          topic: 'Generic Internal Notice',
+          language: 'en',
+          includeEmail: false,
+          includeLandingPage: false
+        }
+      });
+
+      expect(result.status).toBe('success');
+      expect(mocks.generateContextualBrand).toHaveBeenCalled();
+      expect((result as any).result.analysis.brandName).toBe('ContextBrand');
+
+      randomSpy.mockRestore();
     });
   });
 
@@ -615,6 +667,62 @@ describe('CreatePhishingWorkflow', () => {
       expect(result.status).toBe('success');
       expect(mocks.retryGenerationWithStrongerPrompt).toHaveBeenCalled();
       expect((result as any).result.subject).toBe('Retry Success');
+    });
+
+    it('should fail email generation when industry design is missing from analysis', async () => {
+      mocks.detectIndustry.mockResolvedValueOnce(undefined as any);
+      mocks.resolveLogoAndBrand.mockResolvedValueOnce({
+        logoUrl: '',
+        brandName: '',
+        isRecognizedBrand: false
+      });
+
+      const run = await createPhishingWorkflow.createRunAsync();
+      const input = { topic: 'Missing Industry Design', language: 'en', includeLandingPage: false };
+
+      const result = await run.start({ inputData: input });
+      expect(result.status).toBe('failed');
+      expect((result as any).error).toContain('Cannot read properties of undefined');
+    });
+
+    it('should fail landing page generation when industry design is missing and email is skipped', async () => {
+      mocks.detectIndustry.mockResolvedValueOnce(undefined as any);
+      mocks.resolveLogoAndBrand.mockResolvedValueOnce({
+        logoUrl: '',
+        brandName: '',
+        isRecognizedBrand: false
+      });
+
+      const run = await createPhishingWorkflow.createRunAsync();
+      const input = {
+        topic: 'Landing Without Industry',
+        language: 'en',
+        includeEmail: false,
+        includeLandingPage: true
+      };
+
+      const result = await run.start({ inputData: input });
+      expect(result.status).toBe('failed');
+      expect((result as any).error).toContain('Cannot read properties of undefined');
+    });
+  });
+
+  describe('KV Save Behavior', () => {
+    it('should save only base content when email and landing page are disabled', async () => {
+      const run = await createPhishingWorkflow.createRunAsync();
+      const result = await run.start({
+        inputData: {
+          topic: 'Base Only',
+          language: 'en',
+          includeEmail: false,
+          includeLandingPage: false
+        }
+      });
+
+      expect(result.status).toBe('success');
+      expect(mocks.savePhishingBase).toHaveBeenCalledTimes(1);
+      expect(mocks.savePhishingEmail).not.toHaveBeenCalled();
+      expect(mocks.savePhishingLandingPage).not.toHaveBeenCalled();
     });
   });
 });
