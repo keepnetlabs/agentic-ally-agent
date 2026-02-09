@@ -404,7 +404,7 @@ describe('WorkflowExecutorTool', () => {
 
       // Should write error emoji to writer
       expect(mockWriter.write).toHaveBeenCalledWith(expect.objectContaining({
-        delta: expect.stringContaining('❌ Workflow failed: Internal Crash')
+        delta: expect.stringContaining('[ERROR] Workflow failed: Internal Crash')
       }));
     });
 

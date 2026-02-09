@@ -147,7 +147,7 @@ export const smishingWorkflowExecutorTool = createTool({
                 const toolResult = {
                     success: true,
                     status: 'success',
-                    message: '✅ Smishing simulation generated successfully. Smishing ID: ' + output.smishingId + '. **STOP - Do NOT call this tool again. The simulation is complete.**',
+                    message: '[SUCCESS] Smishing simulation generated successfully. Smishing ID: ' + output.smishingId + '. **STOP - Do NOT call this tool again. The simulation is complete.**',
                     data: {
                         smishingId: output.smishingId,
                         topic: params.topic,
@@ -168,7 +168,7 @@ export const smishingWorkflowExecutorTool = createTool({
                     return {
                         success: false,
                         error: JSON.stringify(validation.error),
-                        message: '❌ Smishing workflow result validation failed.'
+                        message: '[ERROR] Smishing workflow result validation failed.'
                     };
                 }
 
@@ -179,7 +179,7 @@ export const smishingWorkflowExecutorTool = createTool({
             return {
                 success: false,
                 error: ERROR_MESSAGES.SMISHING.NO_OUTPUT,
-                message: '❌ Smishing workflow completed but produced no output. Do NOT retry - check logs for details.'
+                message: '[ERROR] Smishing workflow completed but produced no output. Do NOT retry - check logs for details.'
             };
         } catch (error) {
             const err = normalizeError(error);

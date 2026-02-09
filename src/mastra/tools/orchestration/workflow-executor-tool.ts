@@ -507,7 +507,7 @@ export const workflowExecutorTool = createTool({
         await writer?.write({
           type: 'text-delta',
           id: messageId,
-          delta: `❌ Workflow failed: ${err.message}\n`
+          delta: `[ERROR] Workflow failed: ${err.message}\n`
         });
         await writer?.write({ type: 'text-end', id: messageId });
       } catch (writeError) {

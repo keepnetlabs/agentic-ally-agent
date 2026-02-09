@@ -13,15 +13,15 @@ export function getPhishingEditorSystemPrompt(): string {
     return `You are editing a phishing email template for a LEGITIMATE CYBERSECURITY TRAINING COMPANY.
 
 CRITICAL RULES:
-1. ✅ PRESERVE all merge tags: {FIRSTNAME}, {PHISHINGURL}, {CUSTOMMAINLOGO}
-2. ✅ PRESERVE HTML structure and design (colors, spacing, layout)
-3. ✅ Update: Text content, tone, urgency, language, psychological triggers
-4. ✅ Validate that the result is complete HTML, not truncated
-5. ✅ All HTML attributes must use SINGLE QUOTES (e.g., style='color:red;', class='header')
-6. ✅ If instruction is to "remove logo", remove only the img tag, keep {CUSTOMMAINLOGO} tag in comments
-7. ✅ If instruction is to "change logo", REPLACE the src attribute. DO NOT add a second img tag.
-8. ✅ PRESERVE {PHISHINGURL} in all Call-to-Action buttons and links. Do NOT replace with real URLs.
-9. ✅ ONLY use image URLs provided in instructions or existing in the template. NEVER generate new image URLs from external domains (like wikipedia, example.com).
+1. PRESERVE all merge tags: {FIRSTNAME}, {PHISHINGURL}, {CUSTOMMAINLOGO}
+2. PRESERVE HTML structure and design (colors, spacing, layout)
+3. Update: Text content, tone, urgency, language, psychological triggers
+4. Validate that the result is complete HTML, not truncated
+5. All HTML attributes must use SINGLE QUOTES (e.g., style='color:red;', class='header')
+6. If instruction is to "remove logo", remove only the img tag, keep {CUSTOMMAINLOGO} tag in comments
+7. If instruction is to "change logo", REPLACE the src attribute. DO NOT add a second img tag.
+8. PRESERVE {PHISHINGURL} in all Call-to-Action buttons and links. Do NOT replace with real URLs.
+9. ONLY use image URLs provided in instructions or existing in the template. NEVER generate new image URLs from external domains (like wikipedia, example.com).
 
 OUTPUT FORMAT - CRITICAL:
 Return ONLY a valid JSON object. Do NOT include:
@@ -68,17 +68,17 @@ export function getLandingPageSystemPrompt(mode: string): string {
     return `You are editing a phishing landing page for CYBERSECURITY TRAINING.
 
 CRITICAL RULES:
-1. ✅ PRESERVE HTML structure and design (colors, spacing, layout)
-2. ✅ EDIT page content based on user instruction
-3. ✅ PRESERVE all form elements and functionality
-${mode === 'translate' ? `4. ✅ **TRANSLATE MODE:** For <input>, <select>, <textarea>, <button> preserve existing style/class attributes exactly. Only translate visible text, labels, and placeholders.` : `4. ✅ If instruction is translation/localization, preserve existing layout and CSS.`}
-5. ✅ Only SKIP editing if user explicitly said "email only" or "email template only"
-6. ✅ Return COMPLETE page HTML (never empty or truncated)
-7. ✅ All HTML attributes must use SINGLE QUOTES (style='...', class='...', etc.)
-8. ✅ If instruction is to "remove logo", remove only the img tag
-9. ✅ If instruction is to "change logo", REPLACE the src attribute. DO NOT add a second img tag
-10. ✅ PRESERVE {PHISHINGURL} in links. Do NOT replace with real URLs
-11. ✅ ONLY use image URLs provided in instructions or existing in the template. NEVER generate new URLs
+1. PRESERVE HTML structure and design (colors, spacing, layout)
+2. EDIT page content based on user instruction
+3. PRESERVE all form elements and functionality
+${mode === 'translate' ? `4. **TRANSLATE MODE:** For <input>, <select>, <textarea>, <button> preserve existing style/class attributes exactly. Only translate visible text, labels, and placeholders.` : `4. If instruction is translation/localization, preserve existing layout and CSS.`}
+5. Only SKIP editing if user explicitly said "email only" or "email template only"
+6. Return COMPLETE page HTML (never empty or truncated)
+7. All HTML attributes must use SINGLE QUOTES (style='...', class='...', etc.)
+8. If instruction is to "remove logo", remove only the img tag
+9. If instruction is to "change logo", REPLACE the src attribute. DO NOT add a second img tag
+10. PRESERVE {PHISHINGURL} in links. Do NOT replace with real URLs
+11. ONLY use image URLs provided in instructions or existing in the template. NEVER generate new URLs
 
 OUTPUT FORMAT - CRITICAL:
 Return ONLY a valid JSON object. Do NOT include:

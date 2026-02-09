@@ -168,7 +168,7 @@ export const phishingWorkflowExecutorTool = createTool({
                 const toolResult = {
                     success: true,
                     status: 'success',
-                    message: '✅ Phishing simulation generated successfully. Phishing ID: ' + output.phishingId + '. **STOP - Do NOT call this tool again. The simulation is complete.**',
+                    message: '[SUCCESS] Phishing simulation generated successfully. Phishing ID: ' + output.phishingId + '. **STOP - Do NOT call this tool again. The simulation is complete.**',
                     // Return rich metadata for Agent Memory (context handover)
                     data: {
                         phishingId: output.phishingId,
@@ -194,7 +194,7 @@ export const phishingWorkflowExecutorTool = createTool({
                     return {
                         success: false,
                         error: JSON.stringify(validation.error),
-                        message: '❌ Phishing workflow result validation failed.'
+                        message: '[ERROR] Phishing workflow result validation failed.'
                     };
                 }
 
@@ -207,7 +207,7 @@ export const phishingWorkflowExecutorTool = createTool({
             return {
                 success: false,
                 error: ERROR_MESSAGES.PHISHING.NO_OUTPUT,
-                message: '❌ Phishing workflow completed but produced no output. Do NOT retry - check logs for details.'
+                message: '[ERROR] Phishing workflow completed but produced no output. Do NOT retry - check logs for details.'
             };
 
         } catch (error) {
