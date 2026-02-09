@@ -8,8 +8,6 @@ describe('EmailIRCanvasSchema', () => {
       verdict: 'Confirmed Social Engineering Attack',
       risk_level: 'High' as const,
       confidence: 0.95,
-      reported_by: 5,
-      similar_emails_detected: 10,
       status: 'Active investigation',
     },
     agent_determination: 'This email exhibits clear phishing characteristics including spoofed sender and malicious link.',
@@ -24,45 +22,12 @@ describe('EmailIRCanvasSchema', () => {
         description: 'Email headers reveal spoofed domain',
       },
     ],
-    blast_radius: {
-      total_similar_emails: 100,
-      opened_by_users: 25,
-      action_taken_before_response: 'None',
-      confirmed_compromise: false,
-    },
-    actions_taken: ['Quarantine email'],
     actions_recommended: ['Reset user passwords', 'Monitor account activity'],
-    technical_details: {
-      sender_analysis: {
-        domain_similarity_detected: true,
-        trusted_internal_alignment: false,
-      },
-      delivery_pattern: {
-        targeted_delivery: true,
-        volume: 'Low',
-        intent: 'Credential theft',
-      },
-      content_characteristics: {
-        urgency_framing: true,
-        authority_misuse: true,
-        verification_avoidance: true,
-      },
-    },
-    transparency_notice: 'This analysis was performed by an AI system.',
     confidence_limitations: 'Human review is recommended for critical decisions.',
   };
 
   it('should validate a complete email IR canvas', () => {
     const result = EmailIRCanvasSchema.safeParse(validMinimalData);
-    expect(result.success).toBe(true);
-  });
-
-  it('should accept email with optional technical details omitted', () => {
-    const data = {
-      ...validMinimalData,
-      technical_details: {},
-    };
-    const result = EmailIRCanvasSchema.safeParse(data);
     expect(result.success).toBe(true);
   });
 
@@ -178,8 +143,6 @@ describe('EmailIRCanvasSchema', () => {
         'verdict',
         'risk_level',
         'confidence',
-        'reported_by',
-        'similar_emails_detected',
         'status',
       ];
 
@@ -194,6 +157,45 @@ describe('EmailIRCanvasSchema', () => {
         const result = EmailIRCanvasSchema.safeParse(data);
         expect(result.success).toBe(false);
       });
+    });
+
+    it('should accept optional executive summary fields when provided', () => {
+      const data = {
+        ...validMinimalData,
+        executive_summary: {
+          ...validMinimalData.executive_summary,
+          confidence_level: 'Good' as const,
+          confidence_basis: 'Signals converge across intent and behavior.',
+          why_this_matters: 'Potential account compromise risk.',
+        },
+      };
+      const result = EmailIRCanvasSchema.safeParse(data);
+      expect(result.success).toBe(true);
+    });
+
+    it('should reject invalid confidence_level enum value', () => {
+      const data = {
+        ...validMinimalData,
+        executive_summary: {
+          ...validMinimalData.executive_summary,
+          confidence_level: 'Very High' as any,
+        },
+      };
+      const result = EmailIRCanvasSchema.safeParse(data);
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject non-string optional summary fields', () => {
+      const data = {
+        ...validMinimalData,
+        executive_summary: {
+          ...validMinimalData.executive_summary,
+          confidence_basis: 42 as any,
+          why_this_matters: false as any,
+        },
+      };
+      const result = EmailIRCanvasSchema.safeParse(data);
+      expect(result.success).toBe(false);
     });
   });
 
@@ -263,122 +265,19 @@ describe('EmailIRCanvasSchema', () => {
     });
   });
 
-  describe('blast_radius validation', () => {
-    it('should accept zero blast radius values', () => {
-      const data = {
-        ...validMinimalData,
-        blast_radius: {
-          total_similar_emails: 0,
-          opened_by_users: 0,
-          action_taken_before_response: 'None',
-          confirmed_compromise: false,
-        },
-      };
-      const result = EmailIRCanvasSchema.safeParse(data);
-      expect(result.success).toBe(true);
-    });
-
-    it('should accept high blast radius values', () => {
-      const data = {
-        ...validMinimalData,
-        blast_radius: {
-          total_similar_emails: 10000,
-          opened_by_users: 5000,
-          action_taken_before_response: 'Immediate isolation',
-          confirmed_compromise: true,
-        },
-      };
-      const result = EmailIRCanvasSchema.safeParse(data);
-      expect(result.success).toBe(true);
-    });
-
-    it('should require blast_radius fields', () => {
-      const data = {
-        ...validMinimalData,
-        blast_radius: {
-          total_similar_emails: 0,
-        } as any,
-      };
-      const result = EmailIRCanvasSchema.safeParse(data);
-      expect(result.success).toBe(false);
-    });
-  });
-
-  describe('technical_details optional fields', () => {
-    it('should accept with only sender_analysis', () => {
-      const data = {
-        ...validMinimalData,
-        technical_details: {
-          sender_analysis: {
-            domain_similarity_detected: true,
-            trusted_internal_alignment: false,
-          },
-        },
-      };
-      const result = EmailIRCanvasSchema.safeParse(data);
-      expect(result.success).toBe(true);
-    });
-
-    it('should accept with only delivery_pattern', () => {
-      const data = {
-        ...validMinimalData,
-        technical_details: {
-          delivery_pattern: {
-            targeted_delivery: true,
-            volume: 'High',
-            intent: 'Account takeover',
-          },
-        },
-      };
-      const result = EmailIRCanvasSchema.safeParse(data);
-      expect(result.success).toBe(true);
-    });
-
-    it('should accept with only content_characteristics', () => {
-      const data = {
-        ...validMinimalData,
-        technical_details: {
-          content_characteristics: {
-            urgency_framing: true,
-            authority_misuse: false,
-            verification_avoidance: true,
-          },
-        },
-      };
-      const result = EmailIRCanvasSchema.safeParse(data);
-      expect(result.success).toBe(true);
-    });
-
-    it('should accept completely empty technical_details', () => {
-      const data = {
-        ...validMinimalData,
-        technical_details: {},
-      };
-      const result = EmailIRCanvasSchema.safeParse(data);
-      expect(result.success).toBe(true);
-    });
-  });
-
   describe('actions validation', () => {
-    it('should accept empty actions arrays', () => {
+    it('should accept empty actions_recommended array', () => {
       const data = {
         ...validMinimalData,
-        actions_taken: [],
         actions_recommended: [],
       };
       const result = EmailIRCanvasSchema.safeParse(data);
       expect(result.success).toBe(true);
     });
 
-    it('should accept multiple actions', () => {
+    it('should accept multiple actions_recommended', () => {
       const data = {
         ...validMinimalData,
-        actions_taken: [
-          'Quarantine email',
-          'Block sender',
-          'Alert users',
-          'Log incident',
-        ],
         actions_recommended: [
           'Reset passwords',
           'Monitor accounts',
@@ -395,12 +294,6 @@ describe('EmailIRCanvasSchema', () => {
     it('should reject missing agent_determination', () => {
       const data = { ...validMinimalData };
       delete (data as any).agent_determination;
-      expect(EmailIRCanvasSchema.safeParse(data).success).toBe(false);
-    });
-
-    it('should reject missing transparency_notice', () => {
-      const data = { ...validMinimalData };
-      delete (data as any).transparency_notice;
       expect(EmailIRCanvasSchema.safeParse(data).success).toBe(false);
     });
 
@@ -423,24 +316,18 @@ describe('EmailIRCanvasSchema', () => {
       expect(EmailIRCanvasSchema.safeParse(data).success).toBe(false);
     });
 
-    it('should reject non-numeric reported_by', () => {
+    it('should reject non-numeric evidence_flow step', () => {
       const data = {
         ...validMinimalData,
-        executive_summary: {
-          ...validMinimalData.executive_summary,
-          reported_by: '5' as any,
-        },
+        evidence_flow: [{ step: '1' as any, title: 'x', description: 'y' }],
       };
       expect(EmailIRCanvasSchema.safeParse(data).success).toBe(false);
     });
 
-    it('should reject non-boolean confirmed_compromise', () => {
+    it('should reject non-string action item', () => {
       const data = {
         ...validMinimalData,
-        blast_radius: {
-          ...validMinimalData.blast_radius,
-          confirmed_compromise: 'false' as any,
-        },
+        actions_recommended: ['Reset passwords', 123 as any],
       };
       expect(EmailIRCanvasSchema.safeParse(data).success).toBe(false);
     });

@@ -8,6 +8,7 @@ import {
   HealthCheckResponse,
 } from './health-service';
 import { KVService } from './kv-service';
+import { MicrolearningService } from './microlearning-service';
 import '../../../src/__tests__/setup';
 
 // Mock dependencies
@@ -461,9 +462,11 @@ describe('HealthService', () => {
     });
 
     it('should handle missing cache stats gracefully', async () => {
-      vi.mocked(KVService).mockImplementationOnce(() => ({
+      vi.mocked(KVService).mockImplementationOnce(function () {
+        return {
         healthCheck: vi.fn().mockResolvedValueOnce(true),
-      }));
+        };
+      } as any);
 
       const result = await performHealthCheck({}, {});
 
@@ -472,6 +475,34 @@ describe('HealthService', () => {
   });
 
   describe('checkKVHealth - Advanced Scenarios', () => {
+    it('should return degraded when KV health check returns false', async () => {
+      vi.mocked(KVService).mockImplementationOnce(function () {
+        return {
+        healthCheck: vi.fn().mockResolvedValue(false),
+        };
+      } as any);
+
+      const result = await checkKVHealth();
+
+      expect(result.status).toBe('degraded');
+      expect(result.error).toContain('returned false');
+      expect(result.latencyMs).toBeGreaterThanOrEqual(0);
+    });
+
+    it('should return unhealthy when KV health check throws', async () => {
+      vi.mocked(KVService).mockImplementationOnce(function () {
+        return {
+        healthCheck: vi.fn().mockRejectedValue(new Error('KV unavailable')),
+        };
+      } as any);
+
+      const result = await checkKVHealth();
+
+      expect(result.status).toBe('unhealthy');
+      expect(result.error).toContain('KV unavailable');
+      expect(result.latencyMs).toBeGreaterThanOrEqual(0);
+    });
+
     it('should always return a HealthResult with defined status', async () => {
       const result = await checkKVHealth();
 
@@ -629,6 +660,31 @@ describe('HealthService', () => {
   });
 
   describe('HealthService - Integration Tests', () => {
+    it('should mark overall status as degraded when KV check returns false', async () => {
+      vi.mocked(KVService).mockImplementationOnce(function () {
+        return {
+        healthCheck: vi.fn().mockResolvedValue(false),
+        };
+      } as any);
+
+      const result = await performHealthCheck({}, {});
+      expect(result.checks.kv.status).toBe('degraded');
+      expect(result.status).toBe('degraded');
+    });
+
+    it('should mark overall status as unhealthy when KV check times out', async () => {
+      vi.mocked(KVService).mockImplementationOnce(function () {
+        return {
+        healthCheck: vi.fn().mockImplementation(() => new Promise(() => {})),
+        };
+      } as any);
+
+      const result = await performHealthCheck({}, {}, 20);
+      expect(result.checks.kv.status).toBe('unhealthy');
+      expect(result.checks.kv.error).toContain('Health check timeout');
+      expect(result.status).toBe('unhealthy');
+    });
+
     it('should correlate KV status with overall status in full health check', async () => {
       const result = await performHealthCheck({}, {});
 
@@ -660,9 +716,11 @@ describe('HealthService', () => {
     });
 
     it('should handle rapid successive health checks', async () => {
-      vi.mocked(KVService).mockImplementation(() => ({
-        healthCheck: vi.fn().mockResolvedValueOnce(true),
-      }));
+      vi.mocked(KVService).mockImplementation(function () {
+        return {
+          healthCheck: vi.fn().mockResolvedValueOnce(true),
+        };
+      } as any);
 
       const results = await Promise.all([
         performHealthCheck({}, {}),
@@ -702,9 +760,11 @@ describe('HealthService', () => {
     });
 
     it('should provide consistent structure across multiple calls', async () => {
-      vi.mocked(KVService).mockImplementation(() => ({
-        healthCheck: vi.fn().mockResolvedValue(true),
-      }));
+      vi.mocked(KVService).mockImplementation(function () {
+        return {
+          healthCheck: vi.fn().mockResolvedValue(true),
+        };
+      } as any);
 
       const result1 = await performHealthCheck({}, {});
       const result2 = await performHealthCheck({}, {});
@@ -718,6 +778,16 @@ describe('HealthService', () => {
   });
 
   describe('HealthService - Error Handling and Resilience', () => {
+    it('should handle undefined cache stats without failing response shape', async () => {
+      vi.mocked(MicrolearningService.getCacheStats).mockReturnValueOnce(undefined as any);
+
+      const result = await performHealthCheck({}, {});
+
+      expect(result.status).toBeDefined();
+      expect(result.checks).toBeDefined();
+      expect(result.cache).toBeUndefined();
+    });
+
     it('should never throw from performHealthCheck', async () => {
       await expect(performHealthCheck({}, {})).resolves.toBeDefined();
     });

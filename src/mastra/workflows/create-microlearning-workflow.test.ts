@@ -373,6 +373,23 @@ describe('Step Execution Logic', () => {
       await expect((createInboxStep as any).execute({ inputData: input }))
         .rejects.toThrow('Create inbox structure tool is not executable');
     });
+
+    it('should skip inbox generation when hasInbox is false', async () => {
+      const input = {
+        analysis: { language: 'en-us', department: 'IT', title: 'No Inbox' },
+        microlearningStructure: {},
+        microlearningId: 'ml-no-inbox',
+        hasInbox: false
+      };
+
+      const result = await (createInboxStep as any).execute({ inputData: input });
+
+      expect(mocks.createInboxExecute).not.toHaveBeenCalled();
+      expect(result.success).toBe(true);
+      expect(result.data).toBeNull();
+      expect(result.metadata.trainingUrl).toContain('courseId=ml-no-inbox');
+      expect(result.metadata.trainingUrl).not.toContain('inboxUrl=');
+    });
   });
 
   describe('saveToKVStep', () => {
@@ -419,6 +436,48 @@ describe('Step Execution Logic', () => {
       expect(mocks.loggerWarn).toHaveBeenCalledWith(
         'KV save failed but continuing',
         expect.objectContaining({ error: 'KV connection lost' })
+      );
+      expect(result).toEqual(inboxResult);
+    });
+
+    it('should save without inbox content when hasInbox is false', async () => {
+      const input = {
+        'generate-language-content': {
+          ...languageResult,
+          hasInbox: false
+        },
+        'create-inbox-assignment': { success: true, data: null }
+      };
+
+      const result = await (saveToKVStep as any).execute({ inputData: input });
+
+      expect(mocks.saveMicrolearning).toHaveBeenCalledWith(
+        'ml-123',
+        expect.objectContaining({
+          inboxContent: undefined
+        }),
+        'en',
+        'it'
+      );
+      expect(result).toEqual({ success: true, data: null });
+    });
+
+    it('should swallow KV initialization errors and continue', async () => {
+      const kvModule = await import('../services/kv-service');
+      vi.mocked(kvModule.KVService).mockImplementationOnce(function () {
+        throw new Error('KV init failed');
+      } as any);
+
+      const input = {
+        'generate-language-content': languageResult,
+        'create-inbox-assignment': inboxResult
+      };
+
+      const result = await (saveToKVStep as any).execute({ inputData: input });
+
+      expect(mocks.loggerWarn).toHaveBeenCalledWith(
+        'KV initialization error',
+        expect.objectContaining({ error: 'KV init failed' })
       );
       expect(result).toEqual(inboxResult);
     });

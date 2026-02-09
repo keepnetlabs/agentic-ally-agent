@@ -2,7 +2,7 @@ import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { createSmishingWorkflow } from '../../workflows/create-smishing-workflow';
 import { uuidv4 } from '../../utils/core/id-utils';
-import { SMISHING, MODEL_PROVIDERS, ERROR_MESSAGES } from '../../constants';
+import { SMISHING, MODEL_PROVIDERS, ERROR_MESSAGES, PROMPT_ANALYSIS } from '../../constants';
 import { getLogger } from '../../utils/core/logger';
 import { getPolicySummary } from '../../utils/core/policy-cache';
 import { errorService } from '../../services/error-service';
@@ -23,7 +23,12 @@ const smishingWorkflowSchema = z.object({
         .preprocess((value) => normalizeDifficultyValue(value) ?? value, z.enum(SMISHING.DIFFICULTY_LEVELS))
         .optional()
         .default(SMISHING.DEFAULT_DIFFICULTY),
-    language: z.string().optional().default('en-gb').describe('Target language (BCP-47 code, e.g. en-gb, tr-tr)'),
+    language: z
+        .string()
+        .regex(PROMPT_ANALYSIS.LANGUAGE_CODE_REGEX, PROMPT_ANALYSIS.LANGUAGE_CODE_REGEX.toString())
+        .optional()
+        .default('en-gb')
+        .describe('Target language (BCP-47 code, e.g. en-gb, tr-tr)'),
     method: z.enum(SMISHING.ATTACK_METHODS).optional().default(SMISHING.DEFAULT_ATTACK_METHOD).describe('Type of smishing attack'),
     includeSms: z.boolean().optional().default(true).describe('Whether to generate SMS templates'),
     includeLandingPage: z.boolean().optional().default(true).describe('Whether to generate a landing page'),
@@ -166,9 +171,8 @@ export const smishingWorkflowExecutorTool = createTool({
                 if (!validation.success) {
                     logger.error('Smishing workflow result validation failed', { code: validation.error.code, message: validation.error.message });
                     return {
-                        success: false,
-                        error: JSON.stringify(validation.error),
-                        message: '[ERROR] Smishing workflow result validation failed.'
+                        ...createToolErrorResponse(validation.error),
+                        message: ERROR_MESSAGES.SMISHING.GENERIC
                     };
                 }
 
@@ -176,10 +180,12 @@ export const smishingWorkflowExecutorTool = createTool({
             }
 
             logger.error('Smishing workflow produced no output', {});
+            const errorInfo = errorService.external(ERROR_MESSAGES.SMISHING.NO_OUTPUT, {
+                step: 'smishing-workflow-output-validation',
+            });
             return {
-                success: false,
-                error: ERROR_MESSAGES.SMISHING.NO_OUTPUT,
-                message: '[ERROR] Smishing workflow completed but produced no output. Do NOT retry - check logs for details.'
+                ...createToolErrorResponse(errorInfo),
+                message: ERROR_MESSAGES.SMISHING.NO_OUTPUT
             };
         } catch (error) {
             const err = normalizeError(error);

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { smishingWorkflowExecutorTool } from './smishing-workflow-executor-tool';
-import { SMISHING } from '../../constants';
+import { ERROR_MESSAGES, SMISHING } from '../../constants';
 import '../../../../src/__tests__/setup';
 import * as workflowModule from '../../workflows/create-smishing-workflow';
 import { buildRoutingContext, extractArtifactIdsFromRoutingContext } from '../../utils/chat-request-helpers';
@@ -158,5 +158,45 @@ describe('smishingWorkflowExecutorTool', () => {
 
     const ids = extractArtifactIdsFromRoutingContext(routingContext);
     expect(ids.smishingId).toBe('smishing-123');
+  });
+
+  it('should return standardized error response when workflow has no output', async () => {
+    mockWorkflowRun.start.mockResolvedValue({
+      status: 'success',
+      result: null,
+    });
+
+    const result = await smishingWorkflowExecutorTool.execute({
+      context: {
+        workflowType: SMISHING.WORKFLOW_TYPE,
+        topic: 'IT verification',
+      },
+    } as any);
+
+    expect(result.success).toBe(false);
+    expect(typeof result.error).toBe('string');
+    expect(result.message).toBe(ERROR_MESSAGES.SMISHING.NO_OUTPUT);
+  });
+
+  it('should return standardized error response when output schema validation fails', async () => {
+    mockWorkflowRun.start.mockResolvedValue({
+      status: 'success',
+      result: {
+        // missing smishingId -> should fail output schema validation
+        messages: ['test'],
+        analysis: {},
+      },
+    });
+
+    const result = await smishingWorkflowExecutorTool.execute({
+      context: {
+        workflowType: SMISHING.WORKFLOW_TYPE,
+        topic: 'IT verification',
+      },
+    } as any);
+
+    expect(result.success).toBe(false);
+    expect(typeof result.error).toBe('string');
+    expect(result.message).toBe(ERROR_MESSAGES.SMISHING.GENERIC);
   });
 });

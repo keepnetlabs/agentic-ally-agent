@@ -310,4 +310,114 @@ describe('CreateSmishingWorkflow', () => {
       expect(e.message).toContain('Smishing analysis workflow error');
     }
   });
+
+  it('should truncate long analysis description to max length', async () => {
+    mocks.generateText.mockResolvedValueOnce({
+      text: JSON.stringify({
+        scenario: 'Long Description Scenario',
+        name: 'Long Description',
+        description: 'A'.repeat(500),
+        category: 'Urgency',
+        method: 'Click-Only'
+      })
+    });
+
+    const run = await createSmishingWorkflow.createRunAsync();
+    const result = await run.start({
+      inputData: {
+        topic: 'Long Description',
+        language: 'en-gb',
+        includeSms: false,
+        includeLandingPage: false
+      }
+    });
+
+    expect(result.status).toBe('success');
+    expect((result as any).result.analysis.description.length).toBeLessThanOrEqual(300);
+  });
+
+  it('should use contextual brand generation when brand is unrecognized and whitelabel is unavailable', async () => {
+    mocks.getWhitelabelingConfig.mockResolvedValueOnce(null);
+    mocks.resolveLogoAndBrand.mockResolvedValueOnce({
+      logoUrl: '',
+      brandName: '',
+      isRecognizedBrand: false
+    });
+    const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.1);
+
+    const run = await createSmishingWorkflow.createRunAsync();
+    const result = await run.start({
+      inputData: {
+        topic: 'Generic Internal Notice',
+        language: 'en-gb',
+        includeSms: false,
+        includeLandingPage: false
+      }
+    });
+
+    expect(result.status).toBe('success');
+    expect(mocks.generateContextualBrand).toHaveBeenCalled();
+    expect((result as any).result.analysis.brandName).toBe('ContextBrand');
+
+    randomSpy.mockRestore();
+  });
+
+  it('should fail workflow when sms messages still miss {PHISHINGURL} after retry', async () => {
+    mocks.generateText
+      .mockResolvedValueOnce({
+        text: JSON.stringify({
+          scenario: 'Retry Fail Scenario',
+          name: 'Retry Fail',
+          description: 'Test',
+          category: 'Urgency',
+          method: 'Click-Only'
+        })
+      })
+      .mockResolvedValueOnce({
+        text: JSON.stringify({ messages: ['Message without link'] })
+      })
+      .mockResolvedValueOnce({
+        text: JSON.stringify({ messages: ['Still no link'] })
+      });
+
+    const run = await createSmishingWorkflow.createRunAsync();
+    const result = await run.start({
+      inputData: {
+        topic: 'Retry Link Missing',
+        language: 'en-gb',
+        includeLandingPage: false
+      }
+    });
+
+    expect(result.status).toBe('failed');
+    expect((result as any).error).toContain('SMS messages must include {PHISHINGURL}');
+  });
+
+  it('should fallback to en-gb when analysis language is missing', async () => {
+    mocks.generateText.mockResolvedValueOnce({
+      text: JSON.stringify({
+        scenario: 'No Language',
+        name: 'No Language',
+        description: 'Test',
+        category: 'Urgency',
+        method: 'Click-Only'
+      })
+    });
+
+    const run = await createSmishingWorkflow.createRunAsync();
+    const result = await run.start({
+      inputData: {
+        topic: 'Missing Language',
+        includeSms: false,
+        includeLandingPage: false
+      } as any
+    });
+
+    expect(result.status).toBe('success');
+    expect(mocks.saveSmishingBase).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(Object),
+      'en-gb'
+    );
+  });
 });

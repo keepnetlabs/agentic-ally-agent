@@ -192,8 +192,7 @@ export const phishingWorkflowExecutorTool = createTool({
                 if (!validation.success) {
                     logger.error('Phishing workflow result validation failed', { code: validation.error.code, message: validation.error.message });
                     return {
-                        success: false,
-                        error: JSON.stringify(validation.error),
+                        ...createToolErrorResponse(validation.error),
                         message: '[ERROR] Phishing workflow result validation failed.'
                     };
                 }
@@ -204,9 +203,11 @@ export const phishingWorkflowExecutorTool = createTool({
 
             // Workflow succeeded but no result
             logger.error('Phishing workflow produced no output', {});
+            const errorInfo = errorService.external(ERROR_MESSAGES.PHISHING.NO_OUTPUT, {
+                step: 'phishing-workflow-output-validation',
+            });
             return {
-                success: false,
-                error: ERROR_MESSAGES.PHISHING.NO_OUTPUT,
+                ...createToolErrorResponse(errorInfo),
                 message: '[ERROR] Phishing workflow completed but produced no output. Do NOT retry - check logs for details.'
             };
 

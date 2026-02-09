@@ -56,9 +56,14 @@ export const phishingEditorTool = createTool({
       ]);
 
       if (!loadResult.success) {
+        const errorInfo = errorService.notFound(loadResult.error, {
+          resourceType: 'phishing-template',
+          resourceId: phishingId,
+          language,
+        });
+        logErrorInfo(logger, 'warn', 'Phishing template not found', errorInfo);
         return {
-          success: false,
-          error: loadResult.error,
+          ...createToolErrorResponse(errorInfo),
           message: `[ERROR] Template not found. Please provide a valid phishing ID.`,
         };
       }
@@ -127,9 +132,13 @@ export const phishingEditorTool = createTool({
       if (hasEmail) {
         if (!emailResult || emailResult.status !== 'fulfilled') {
           logger.error('Email editing failed', { reason: emailResult ? emailResult.reason : 'missing-result' });
+          const errorInfo = errorService.external('Email editing failed after retries', {
+            phishingId,
+            step: 'email-edit',
+          });
+          logErrorInfo(logger, 'error', 'Email editing failed after retries', errorInfo);
           return {
-            success: false,
-            error: 'Email editing failed after retries',
+            ...createToolErrorResponse(errorInfo),
             message: '[ERROR] Failed to edit email template. Please try again.',
           };
         }
@@ -139,9 +148,13 @@ export const phishingEditorTool = createTool({
         const emailParseResult = parseAndValidateEmailResponse(emailText);
 
         if (!emailParseResult.success) {
+          const errorInfo = errorService.validation('Email response validation failed', {
+            phishingId,
+            reason: emailParseResult.error,
+          });
+          logErrorInfo(logger, 'warn', 'Email response validation failed', errorInfo);
           return {
-            success: false,
-            error: 'Email response validation failed',
+            ...createToolErrorResponse(errorInfo),
             message: `[ERROR] Email validation error: ${emailParseResult.error}`,
           };
         }
