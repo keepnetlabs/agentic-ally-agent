@@ -224,6 +224,7 @@ async function fetchUserByIdDirect(
         firstName: String(data.firstName || ''),
         lastName: String(data.lastName || ''),
         email: String(data.email || ''),
+        phoneNumber: String(data.phoneNumber || data.mobilePhone || data.phone || ''),
         department: data.department,
         departmentName: data.department,
         preferredLanguage: data.preferredLanguageId,
@@ -245,6 +246,15 @@ export async function findUserByEmail(
         if (users.length === 0) return null;
         const exact = users.find(u => String(u?.email || '').toLowerCase() === normalizedEmail);
         if (exact) {
+            // If phone is missing, enrich via direct lookup (has phone normalization)
+            if (!exact.phoneNumber && exact.targetUserResourceId) {
+                deps.logger.info('User found by email but phoneNumber missing, enriching via direct lookup', {
+                    email: normalizedEmail,
+                    targetUserResourceId: exact.targetUserResourceId,
+                });
+                const enriched = await fetchUserByIdDirect(deps, String(exact.targetUserResourceId));
+                if (enriched?.phoneNumber) return { ...exact, phoneNumber: enriched.phoneNumber };
+            }
             deps.logger.info('User found by email', { email: normalizedEmail, userId: exact.targetUserResourceId });
             return exact;
         }
@@ -263,6 +273,15 @@ export async function findUserByEmail(
                 candidateCount: fallbackUsers.length
             });
             return null;
+        }
+        // If phone is missing from fallback result, enrich via direct lookup
+        if (!fallbackExact.phoneNumber && fallbackExact.targetUserResourceId) {
+            deps.logger.info('User found by email via fallback but phoneNumber missing, enriching via direct lookup', {
+                email: normalizedEmail,
+                targetUserResourceId: fallbackExact.targetUserResourceId,
+            });
+            const enriched = await fetchUserByIdDirect(deps, String(fallbackExact.targetUserResourceId));
+            if (enriched?.phoneNumber) return { ...fallbackExact, phoneNumber: enriched.phoneNumber };
         }
         deps.logger.info('User found by email via fallback search', {
             email: normalizedEmail,
@@ -292,6 +311,14 @@ export async function findUserById(
         if (users.length === 0) return null;
         const exact = users.find(u => String(u?.targetUserResourceId || '') === normalizedId);
         if (exact) {
+            // If phone is missing, enrich via direct lookup (has phone normalization)
+            if (!exact.phoneNumber) {
+                deps.logger.info('User found by ID but phoneNumber missing, enriching via direct lookup', {
+                    targetUserResourceId: normalizedId,
+                });
+                const enriched = await fetchUserByIdDirect(deps, normalizedId);
+                if (enriched?.phoneNumber) return { ...exact, phoneNumber: enriched.phoneNumber };
+            }
             deps.logger.info('User found by ID', { targetUserResourceId: normalizedId });
             return exact;
         }
@@ -319,6 +346,14 @@ export async function findUserById(
             }
             deps.logger.info('User found by ID via direct lookup', { targetUserResourceId: normalizedId });
             return directUser;
+        }
+        // If phone is missing from fallback result, enrich via direct lookup
+        if (!fallbackExact.phoneNumber) {
+            deps.logger.info('User found by ID via fallback but phoneNumber missing, enriching via direct lookup', {
+                targetUserResourceId: normalizedId,
+            });
+            const enriched = await fetchUserByIdDirect(deps, normalizedId);
+            if (enriched?.phoneNumber) return { ...fallbackExact, phoneNumber: enriched.phoneNumber };
         }
         deps.logger.info('User found by ID via fallback search', { targetUserResourceId: normalizedId });
         return fallbackExact;

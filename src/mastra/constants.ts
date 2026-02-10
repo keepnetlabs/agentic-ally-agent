@@ -606,6 +606,7 @@ export const AGENT_NAMES = {
   MICROLEARNING: 'microlearningAgent',
   USER_INFO: 'userInfoAssistant',
   POLICY_SUMMARY: 'policySummaryAssistant',
+  VISHING_CALL: 'vishingCallAssistant',
   ORCHESTRATOR: 'orchestrator',
   EMAIL_IR_ANALYST: 'emailIrAnalyst',
 } as const;
@@ -620,6 +621,7 @@ export const AGENT_IDS = {
   MICROLEARNING: 'microlearning-agent',
   USER_INFO: 'user-info-agent',
   POLICY_SUMMARY: 'policy-summary-agent',
+  VISHING_CALL: 'vishing-call-agent',
   ORCHESTRATOR: 'orchestrator-agent',
   EMAIL_IR_ANALYST: 'email-ir-analyst',
 } as const;
@@ -813,6 +815,39 @@ export const ROUTING = {
 
   // User analysis triggers
   USER_ANALYSIS_TRIGGERS: ['Who is', 'Find', 'Analyze'] as const,
+
+  // Vishing call triggers
+  VISHING_CALL_TRIGGERS: [
+    'Call',
+    'Phone call',
+    'Vishing call',
+    'Make a call',
+    'Outbound call',
+    'Ara',
+    'Telefon',
+    'Telefon et',
+  ] as const,
+} as const;
+
+// ============================================
+// ELEVENLABS CONFIGURATION
+// ============================================
+
+export const ELEVENLABS = {
+  /** Base URL for all ElevenLabs Conversational AI API calls */
+  API_BASE_URL: 'https://api.elevenlabs.io/v1/convai',
+
+  /** Default ElevenLabs agent ID (from environment or fallback) */
+  DEFAULT_AGENT_ID: process.env.ELEVENLABS_AGENT_ID || 'agent_0901kfr9djtqfg988bypdyah40mm',
+
+  /** Endpoint paths (appended to API_BASE_URL) */
+  ENDPOINTS: {
+    LIST_PHONE_NUMBERS: '/phone-numbers',
+    OUTBOUND_CALL: '/twilio/outbound-call',
+  },
+
+  /** Timeout for ElevenLabs API calls (ms) */
+  API_TIMEOUT_MS: 15000,
 } as const;
 
 // ============================================

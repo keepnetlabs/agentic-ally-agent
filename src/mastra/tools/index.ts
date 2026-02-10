@@ -9,6 +9,7 @@
  * - orchestration: Workflow routing and execution
  * - scenes: 8-scene generators and rewriters
  * - user-management: User operations, assignments, uploads
+ * - vishing-call: Outbound vishing call tools (ElevenLabs)
  */
 
 // Analysis tools
@@ -28,4 +29,7 @@ export * from './scenes';
 
 // User management tools
 export * from './user-management';
+
+// Vishing call tools (ElevenLabs outbound calls)
+export * from './vishing-call';
 

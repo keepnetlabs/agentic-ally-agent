@@ -12,6 +12,7 @@ export interface PlatformUser {
     firstName: string;
     lastName: string;
     email: string;
+    phoneNumber?: string;
     department?: string;
     departmentName?: string;
     role?: string;
@@ -164,6 +165,7 @@ export const getUserInfoOutputSchema = z.object({
         targetUserResourceId: z.string().optional().describe('Direct user ID (skips search step, faster). Use if ID is already known.'),
         fullName: z.string().optional(),
         department: z.string().optional(),
+        phoneNumber: z.string().optional(),
         email: z.string().optional(),
         preferredLanguage: z.string().optional().describe('User preferred language (e.g., "English (United Kingdom)", "Arabic (Saudi Arabia)", "Turkish (Turkey)")'),
     }).optional(),

@@ -3,7 +3,7 @@
  *
  * The Orchestrator Agent acts as the intelligent router of the Agentic Ally system.
  * It analyzes user requests and conversation context to determine which specialist agent
- * should handle the task (userInfoAssistant, microlearningAgent, phishingEmailAssistant, or smishingSmsAssistant).
+ * should handle the task (userInfoAssistant, microlearningAgent, phishingEmailAssistant, smishingSmsAssistant, or vishingCallAssistant).
  *
  * Key Responsibilities:
  * - Extract active user from conversation history (emails or real identifiers)
@@ -32,6 +32,7 @@ import { AGENT_NAMES, AGENT_IDS } from '../constants';
  * - microlearningAgent: Training creation & management
  * - phishingEmailAssistant: Simulation creation & testing
  * - smishingSmsAssistant: SMS simulation creation & testing
+ * - vishingCallAssistant: Outbound vishing call initiation
  *
  * @returns {string} LLM prompt with routing rules and decision logic
  */
@@ -59,6 +60,7 @@ The history is provided in STRUCTURED FORMAT:
   - \`[Training Assigned to User]\` = Training assigned to target user
   - \`[Phishing Simulation Assigned to User]\` = Phishing simulation assigned to target user
   - \`[Smishing Simulation Assigned to User]\` = Smishing simulation assigned to target user
+  - \`[Vishing Call Initiated]\` = Outbound vishing call started via AI voice agent
   - \`[User Selected]\` = Target user identified/resolved
   - \`[Group Selected]\` = Target group identified/resolved
 - Use these descriptions to quickly identify what artifact exists and what actions are possible
@@ -88,7 +90,7 @@ Before routing, perform this internal analysis:
 If the request targets a specific person (e.g., "for Alice") or GROUP (e.g., "for IT Group"):
 1. **CHECK HISTORY:** Do you see their 'targetUserResourceId' (person) or 'targetGroupResourceId' (group)?
    - **NO (ID Unknown):** -> **STOP.** Route to **userInfoAssistant**. (Context: "Resolve user/group [Name]")
-   - **YES (ID Known):** -> **PROCEED.** Route to the relevant creation agent (**microlearningAgent**, **phishingEmailAssistant**, or **smishingSmsAssistant**).
+   - **YES (ID Known):** -> **PROCEED.** Route to the relevant creation agent (**microlearningAgent**, **phishingEmailAssistant**, **smishingSmsAssistant**, or **vishingCallAssistant**).
      - *Context:* Include the found ID (e.g. "targetGroupResourceId=5Lyg...").
 
 ### SPECIALIST AGENTS
@@ -116,12 +118,33 @@ If the request targets a specific person (e.g., "for Alice") or GROUP (e.g., "fo
    - **Triggers:** "What's our", "Summarize policy", "Tell me about" (policy context), "Policy question".
    - **Role:** Answers company policy questions, provides guidance on security policies.
 
+6. **vishingCallAssistant** (The Voice Caller)
+   - **Triggers:** "Call", "Phone call", "Vishing call", "Make a call", "Outbound call", "Ara", "Telefon", "Telefon et".
+   - **Pattern:** "Call [Person] as [Role/Persona]", "Call +905551234567 as a CEO", "Ara [kisi] [rol] olarak".
+   - **Role:** Initiates outbound voice phishing simulation calls via AI voice agent. Handles scenario design, phone number resolution, caller number selection, and call initiation.
+   - **CRITICAL:** Route here whenever the user explicitly asks to CALL someone or make a phone call, regardless of whether a phone number or user name is provided. The vishingCallAssistant handles phone number resolution internally.
+   - **Context Extraction:** Extract and pass in taskContext:
+     - **targetPerson:** Name or identifier of who to call (e.g., "John", "alice@company.com")
+     - **phoneNumber:** If a phone number is directly provided (e.g., "+905551234567")
+     - **persona:** The role the AI caller should play (e.g., "CEO", "Bank Officer", "IT Support")
+     - **pretext:** The reason for the call (e.g., "urgent wire transfer", "suspicious activity")
+     - **language:** Call language if specified
+
 ### INTELLIGENT ROUTING LOGIC
 
 **SCENARIO A: CONTINUATION & CONFIRMATION**
-IF the user says "Yes", "Proceed", "Do it", "Olustur", "Tamam" AND creates no new topic:
+IF the user says "Yes", "Proceed", "Do it", "Olustur", "Tamam", a number like "1" or "2" (selection), or any short confirmation AND creates no new topic:
 -> Route to the **SAME AGENT** that spoke last.
 -> *Context:* "User confirmed previous action. Proceed with the next step."
+
+**How to determine "SAME AGENT that spoke last":**
+- Look at the MOST RECENT assistant message in conversation history.
+- If it mentions caller numbers, phone numbers, or vishing call setup → **vishingCallAssistant**
+- If it mentions training plan, module, or creation → **microlearningAgent**
+- If it mentions phishing email, simulation template → **phishingEmailAssistant**
+- If it mentions smishing SMS, SMS template → **smishingSmsAssistant**
+- If it mentions user analysis, risk report → **userInfoAssistant**
+- **CRITICAL:** A short numeric response like "1", "2", "3" is ALWAYS a selection/confirmation of the previous agent's question. NEVER treat it as a new request. NEVER fall through to SCENARIO D.
 
 **SCENARIO B: PLATFORM ACTIONS (UPLOAD / ASSIGN / SEND)**
 IF the user says "Upload", "Assign", "Send", "Deploy", "Yukle", "Gonder":
@@ -162,14 +185,19 @@ IF the user says "Upload", "Assign", "Send", "Deploy", "Yukle", "Gonder":
    - *Example:* "for Peter Parker" (No ID) -> Route to UserInfo.
 
 **SCENARIO C: NEW REQUESTS (INTENT MATCHING)**
-1. **User Analysis:** Input contains "Who is", "Find", "Analyze" -> **userInfoAssistant**
-2. **Policy Questions:** Input contains "What's our", "Summarize policy", "Tell me about" (in policy context) -> **policySummaryAssistant**
-3. **Explicit Creation:**
+1. **Vishing Call (HIGHEST PRIORITY for call intent):** Input contains "Call", "Phone call", "Vishing call", "Make a call", "Ara", "Telefon" with intent to initiate an actual phone call -> **vishingCallAssistant**
+   - "Call John as a CEO" -> **vishingCallAssistant** (Context: "targetPerson: John, persona: CEO")
+   - "Call +905551234567 as a bank officer about suspicious transactions" -> **vishingCallAssistant** (Context: "phoneNumber: +905551234567, persona: Bank Officer, pretext: suspicious transactions")
+   - "Ara Mehmet'i IT destek olarak" -> **vishingCallAssistant** (Context: "targetPerson: Mehmet, persona: IT Support")
+   - **NOTE:** Do NOT confuse "Call" intent with "Create vishing training" intent. If the user says "Create vishing training", route to **microlearningAgent**. Only route to vishingCallAssistant when the user wants to actually PLACE A PHONE CALL.
+2. **User Analysis:** Input contains "Who is", "Find", "Analyze" -> **userInfoAssistant**
+3. **Policy Questions:** Input contains "What's our", "Summarize policy", "Tell me about" (in policy context) -> **policySummaryAssistant**
+4. **Explicit Creation:**
    - "Create training about X" -> **microlearningAgent**
    - "Create smishing training about X" -> **microlearningAgent** (Smishing is the topic, Training is the artifact)
    - "Create phishing email about X" -> **phishingEmailAssistant**
    - "Create smishing template about X" -> **smishingSmsAssistant**
-4. **Implicit/Ambiguous:**
+5. **Implicit/Ambiguous:**
    - "Create for alice@company.com":
      - IF ID unknown -> **userInfoAssistant** (Resolution first).
      - IF ID known:
@@ -187,15 +215,24 @@ IF you cannot determine the intent or the request is ambiguous:
    - Users typically want to create educational content
 2. **In taskContext, explain:** "Request is unclear. Assuming training creation intent. Please clarify if you meant something else."
 3. **Examples of unclear requests:**
-   - Generic confirmations without context: "Yes", "OK", "Do it" (when no previous artifact exists)
-   - Vague requests: "Help", "What can you do", "Continue"
+   - Vague requests with NO conversation history: "Help", "What can you do"
    - Mixed signals: Contains both "training" and "phishing" without clear intent
+   - **NOT unclear:** "Yes", "OK", "1", "2", "Tamam" — these are confirmations/selections, route via SCENARIO A.
 
 ### OUTPUT FORMAT & GUIDELINES
 
 **taskContext Guidelines:**
 - **For userInfoAssistant:**
   - Clearly state which user to find (email or name) and for what purpose.
+
+- **For vishingCallAssistant:**
+  - Include ALL extracted call parameters as labeled fields:
+    - "targetPerson: [Name]" (if a person is referenced)
+    - "phoneNumber: [+E.164 number]" (if a phone number is provided)
+    - "persona: [Role]" (e.g., CEO, Bank Officer, IT Support)
+    - "pretext: [Reason for call]" (e.g., urgent wire transfer, suspicious activity)
+    - "language: [BCP-47 code]" (if specified)
+  - Frame as directive: "Initiate vishing call to [Person] as [Persona]. Pretext: [Reason]."
 
 - **For microlearningAgent or phishingEmailAssistant or smishingSmsAssistant:**
    - **CRITICAL: DATA PRESERVATION (EXECUTIVE ORDER STYLE)**
@@ -234,7 +271,7 @@ You must always respond with a JSON object:
  * Responsible for:
  * - Analyzing incoming user requests and conversation context
  * - Extracting user identity and artifact information
- * - Routing to the appropriate specialist agent (userInfoAssistant, microlearningAgent, phishingEmailAssistant, smishingSmsAssistant)
+ * - Routing to the appropriate specialist agent (userInfoAssistant, microlearningAgent, phishingEmailAssistant, smishingSmsAssistant, vishingCallAssistant)
  *
  * Uses the LLM model specified in model-providers to perform intelligent routing.
  * The routing decision is returned as JSON with agent name and task context.

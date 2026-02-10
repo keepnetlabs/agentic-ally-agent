@@ -1,12 +1,13 @@
 /**
  * Agentic Ally - Main Agent Framework Entry Point
  *
- * Sets up and configures 5 specialized agents:
+ * Sets up and configures 6 specialized agents:
  * 1. Microlearning Agent - 4-state orchestrator for training generation
  * 2. Orchestrator Agent - Routes requests to appropriate agents
  * 3. User Info Agent - Gathers user profile and context
  * 4. Policy Summary Agent - Generates legal compliance content
  * 5. Phishing Email Agent - Creates realistic phishing simulations
+ * 6. Vishing Call Agent - Initiates outbound vishing calls via ElevenLabs
  *
  * API Endpoints:
  * - POST /chat - Main chat endpoint (routes through orchestrator)
@@ -64,6 +65,7 @@ import {
   smishingSmsAgent,
   userInfoAgent,
   policySummaryAgent,
+  vishingCallAgent,
 } from './agents';
 import {
   errorHandlerMiddleware,
@@ -143,6 +145,7 @@ export const mastra = new Mastra({
     smishingSmsAssistant: smishingSmsAgent,
     userInfoAssistant: userInfoAgent,
     policySummaryAssistant: policySummaryAgent,
+    vishingCallAssistant: vishingCallAgent,
     orchestrator: orchestratorAgent
   },
   logger,
