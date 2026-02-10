@@ -4,6 +4,7 @@ import '../../../../src/__tests__/setup';
 import { detectAndResolveBrand } from './phishing-editor-utils';
 
 const executeTool = (smishingEditorTool as any).execute;
+const mockGetWhitelabelingConfig = vi.hoisted(() => vi.fn());
 
 vi.mock('../../model-providers', () => ({
   getModelWithOverride: vi.fn(() => ({ modelId: 'test-model' })),
@@ -11,7 +12,7 @@ vi.mock('../../model-providers', () => ({
 
 vi.mock('../../services/product-service', () => ({
   ProductService: class {
-    getWhitelabelingConfig = vi.fn().mockResolvedValue({ mainLogoUrl: '' });
+    getWhitelabelingConfig = mockGetWhitelabelingConfig;
   },
 }));
 
@@ -54,6 +55,7 @@ vi.mock('./smishing-editor-helpers', () => ({
 describe('smishingEditorTool', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetWhitelabelingConfig.mockResolvedValue({ mainLogoUrl: '' });
   });
 
   it('should accept valid input and return success', async () => {
@@ -196,5 +198,86 @@ describe('smishingEditorTool', () => {
     const result = await executeTool({ context: input } as any);
     expect(result.success).toBe(true);
     expect(vi.mocked(detectAndResolveBrand)).toHaveBeenCalled();
+  });
+
+  it('should continue when whitelabel config fetch fails', async () => {
+    mockGetWhitelabelingConfig.mockRejectedValueOnce(new Error('whitelabel down'));
+
+    const input = {
+      smishingId: 'smishing-123',
+      editInstruction: 'Update text',
+    };
+
+    const result = await executeTool({ context: input } as any);
+    expect(result.success).toBe(true);
+  });
+
+  it('should return generic tool error when unexpected exception happens', async () => {
+    const helpers = await import('./smishing-editor-helpers');
+    (helpers.loadSmishingContent as any).mockRejectedValueOnce(new Error('unexpected failure'));
+
+    const input = {
+      smishingId: 'smishing-123',
+      editInstruction: 'Update',
+    };
+
+    const result = await executeTool({ context: input } as any);
+    expect(result.success).toBe(false);
+    expect(result.message).toContain('Failed to edit smishing template');
+  });
+
+  it('should fallback to existing sms messages when parsed sms messages are missing', async () => {
+    const helpers = await import('./smishing-editor-helpers');
+    (helpers.parseAndValidateSmsResponse as any).mockReturnValueOnce({
+      success: true,
+      sms: { messages: undefined, summary: 'fallback' },
+    });
+
+    const input = {
+      smishingId: 'smishing-123',
+      editInstruction: 'Update',
+    };
+
+    const result = await executeTool({ context: input } as any);
+    expect(result.success).toBe(true);
+    expect(helpers.saveSmishingContent).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(String),
+      expect.objectContaining({ messages: ['old'] }),
+      expect.anything(),
+      expect.anything()
+    );
+  });
+
+  it('should stream with null landing meta when landing content is absent', async () => {
+    const helpers = await import('./smishing-editor-helpers');
+    (helpers.loadSmishingContent as any).mockResolvedValueOnce({
+      success: true,
+      content: {
+        sms: { messages: ['sms-only'] },
+        landing: null,
+        smsKey: 'smishing:smishing-123:sms:en-gb',
+        landingKey: 'smishing:smishing-123:landing:en-gb',
+      },
+    });
+
+    const writer = { write: vi.fn().mockResolvedValue(undefined) };
+    const input = {
+      smishingId: 'smishing-123',
+      editInstruction: 'Update sms',
+    };
+
+    const result = await executeTool({ context: input, writer } as any);
+    expect(result.success).toBe(true);
+    expect(helpers.streamEditResultsToUI).toHaveBeenCalledWith(
+      expect.anything(),
+      'smishing-123',
+      'smishing:smishing-123:sms:en-gb',
+      'smishing:smishing-123:landing:en-gb',
+      'en-gb',
+      expect.anything(),
+      null,
+      null
+    );
   });
 });

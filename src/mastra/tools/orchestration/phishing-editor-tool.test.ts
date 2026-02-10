@@ -1,8 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { phishingEditorTool } from './phishing-editor-tool';
 import { KVService } from '../../services/kv-service';
+import { ProductService } from '../../services/product-service';
 import { generateText } from 'ai';
 import { getModelWithOverride } from '../../model-providers';
+import * as phishingEditorUtils from './phishing-editor-utils';
 import '../../../../src/__tests__/setup';
 
 // Type assertion helper for test - extract execute method to avoid undefined checks
@@ -453,6 +455,24 @@ describe('phishingEditorTool', () => {
   });
 
   describe('Streaming', () => {
+    it('should stream safely when landing is missing and writer is provided', async () => {
+      vi.spyOn(KVService.prototype, 'get').mockImplementation(async (key: string) => {
+        if (key.includes('email:')) {
+          return mockExistingEmail;
+        }
+        return null;
+      });
+
+      const input = {
+        phishingId: 'phishing-123',
+        editInstruction: 'Update subject only',
+      };
+
+      const result = await executeTool({ context: input, writer: mockWriter } as any);
+      expect(result.success).toBe(true);
+      expect(mockWriter.write).toHaveBeenCalled();
+    });
+
     it('should stream edited email when writer is provided', async () => {
       const input = {
         phishingId: 'phishing-123',
@@ -523,6 +543,26 @@ describe('phishingEditorTool', () => {
   });
 
   describe('Successful Execution', () => {
+    it('should use landing summary when template is landing-only', async () => {
+      vi.spyOn(KVService.prototype, 'get').mockImplementation(async (key: string) => {
+        if (key.includes('email:')) {
+          return null;
+        }
+        return mockExistingLanding;
+      });
+
+      (generateText as any).mockResolvedValueOnce(mockEditedLandingResponse);
+
+      const input = {
+        phishingId: 'phishing-landing-only',
+        editInstruction: 'Update landing',
+      };
+
+      const result = (await executeTool({ context: input } as any)) as any;
+      expect(result.success).toBe(true);
+      expect(result.data.summary).toContain('landing page');
+    });
+
     it('should return success response with edited content data', async () => {
       const input = {
         phishingId: 'phishing-123',
@@ -559,6 +599,42 @@ describe('phishingEditorTool', () => {
   });
 
   describe('Error Handling', () => {
+    it('should continue editing when whitelabel config fetch fails', async () => {
+      vi.spyOn(ProductService.prototype, 'getWhitelabelingConfig').mockRejectedValueOnce(
+        new Error('whitelabel down')
+      );
+
+      const input = {
+        phishingId: 'phishing-123',
+        editInstruction: 'Update subject',
+      };
+
+      const result = await executeTool({ context: input } as any);
+      expect(result.success).toBe(true);
+    });
+
+    it('should resolve brand context when hasBrandUpdate is true', async () => {
+      const detectSpy = vi
+        .spyOn(phishingEditorUtils, 'detectAndResolveBrand')
+        .mockResolvedValueOnce({
+          brandContext: 'Use Acme branding',
+          resolvedBrandInfo: {
+            brandName: 'Acme',
+            isRecognizedBrand: true,
+          },
+        } as any);
+
+      const input = {
+        phishingId: 'phishing-123',
+        editInstruction: 'Update brand to Acme',
+        hasBrandUpdate: true,
+      };
+
+      const result = await executeTool({ context: input } as any);
+      expect(result.success).toBe(true);
+      expect(detectSpy).toHaveBeenCalled();
+    });
+
     it('should handle KV get errors gracefully', async () => {
       vi.spyOn(KVService.prototype, 'get').mockRejectedValue(new Error('KV error'));
 

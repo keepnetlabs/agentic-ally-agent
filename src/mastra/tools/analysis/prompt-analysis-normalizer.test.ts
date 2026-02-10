@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { autoRepairPromptAnalysis } from './prompt-analysis-normalizer';
-import { CATEGORIES, ROLES, MICROLEARNING } from '../../constants';
+import { CATEGORIES, ROLES, MICROLEARNING, DEPARTMENTS } from '../../constants';
 // Mock constants if needed, but they are imported from constants file.
 // Assuming constants are available.
 
@@ -378,6 +378,13 @@ describe('prompt-analysis-normalizer', () => {
             expect(result.department).toBe('All');
         });
 
+        it('should preserve valid candidate department from allowlist', () => {
+            const validDepartment = DEPARTMENTS.VALUES[0];
+            const analysis = { topic: 'test', department: validDepartment } as any;
+            const result = autoRepairPromptAnalysis(analysis);
+            expect(result.department).toBe(validDepartment);
+        });
+
         it('should take the first role if roles is an array', () => {
             const analysis = { topic: 'test', roles: ['Executives', 'Manager'] } as any;
             const result = autoRepairPromptAnalysis(analysis);
@@ -401,6 +408,57 @@ describe('prompt-analysis-normalizer', () => {
             const analysis = { topic: 'test', category: CATEGORIES.DEFAULT } as any;
             const result = autoRepairPromptAnalysis(analysis);
             expect(result.subcategory).toBe('General Security Awareness');
+        });
+
+        it('should normalize smishing delivery channel when isSmishing is true', () => {
+            const analysis = {
+                topic: 'Smishing Simulation',
+                isSmishing: true,
+                deliveryChannel: 'whatsapp'
+            } as any;
+
+            const result = autoRepairPromptAnalysis(analysis);
+            expect(result.isSmishing).toBe(true);
+            expect(result.deliveryChannel).toBe('whatsapp');
+        });
+
+        it('should fallback smishing delivery channel to sms when invalid channel is provided', () => {
+            const analysis = {
+                topic: 'Smishing Simulation',
+                isSmishing: true,
+                deliveryChannel: 'invalid-channel'
+            } as any;
+
+            const result = autoRepairPromptAnalysis(analysis);
+            expect(result.isSmishing).toBe(true);
+            expect(result.deliveryChannel).toBe('sms');
+        });
+
+        it('should not set deliveryChannel when isSmishing is false', () => {
+            const analysis = {
+                topic: 'Phishing Simulation',
+                isSmishing: false,
+                deliveryChannel: 'slack'
+            } as any;
+
+            const result = autoRepairPromptAnalysis(analysis);
+            expect(result.isSmishing).toBe(false);
+            expect(result.deliveryChannel).toBeUndefined();
+        });
+
+        it('should truncate long context segments for derived hints', () => {
+            const longSegment = 'A'.repeat(160);
+            const analysis = {
+                topic: 'Phishing Awareness',
+                additionalContext: `${longSegment}. ${longSegment}. ${longSegment}`,
+            } as any;
+
+            const result = autoRepairPromptAnalysis(analysis);
+
+            expect(result.keyTopics[0].endsWith('...')).toBe(true);
+            expect(result.practicalApplications[0]).toContain('Apply in workplace scenario:');
+            expect(result.practicalApplications[0].endsWith('...')).toBe(true);
+            expect(result.mustKeepDetails?.[0].endsWith('...')).toBe(true);
         });
     });
 });

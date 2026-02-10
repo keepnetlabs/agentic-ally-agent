@@ -15,6 +15,12 @@ describe('id-utils', () => {
             expect(isSafeId('   ')).toBe(false); // Empty/Whitespace
         });
 
+        it('should handle non-string and nullish inputs safely', () => {
+            expect(isSafeId(undefined as any)).toBe(false);
+            expect(isSafeId(null as any)).toBe(false);
+            expect(isSafeId(123 as any)).toBe(true);
+        });
+
     });
 
     describe('normalizeSafeId', () => {
@@ -26,6 +32,10 @@ describe('id-utils', () => {
             expect(normalizeSafeId('no')).toBeUndefined();
             expect(normalizeSafeId('')).toBeUndefined();
             expect(normalizeSafeId(null)).toBeUndefined();
+        });
+
+        it('should normalize non-string values when resulting id is safe', () => {
+            expect(normalizeSafeId(123)).toBe('123');
         });
     });
 
@@ -63,6 +73,16 @@ describe('id-utils', () => {
             const slugId = generateSlugId(topic);
 
             expect(slugId).toMatch(/^whats-up-hello-world-[0-9a-f]{8}$/);
+        });
+
+        it('should collapse repeated spaces/hyphens in slug text', () => {
+            const slugId = generateSlugId('A   B---C');
+            expect(slugId).toMatch(/^a-b-c-[0-9a-f]{8}$/);
+        });
+
+        it('should still return UUID suffix even when slug becomes empty', () => {
+            const slugId = generateSlugId('!!!@@@');
+            expect(slugId).toMatch(/^-[0-9a-f]{8}$/);
         });
 
         it('should truncate long topics', () => {

@@ -276,6 +276,9 @@ describe('Language Detection - detectLanguageFallback', () => {
 
   // ==================== JAPANESE LANGUAGE TESTS ====================
   describe('Japanese Language Detection', () => {
+    it('should detect Japanese with unicode escape literal', () => {
+      expect(detectLanguageFallback('\u3042')).toBe('ja');
+    });
     it('should detect Japanese Hiragana characters', () => {
       expect(detectLanguageFallback('ひらがな')).toBe('ja');
     });
@@ -732,9 +735,36 @@ describe('prompt-analyzer - Additional Functions', () => {
             expect(callArgs.prompt).toContain('Preferred Language: Turkish');
             expect(callArgs.prompt).toContain('...[omitted');
         });
+
+        it('should return null when AI returns empty language text', async () => {
+            (ai.generateText as any).mockResolvedValue({
+                text: '   ',
+            });
+
+            const result = await detectTargetLanguageWithAI('test prompt', {});
+            expect(result).toBeNull();
+        });
     });
 
     describe('analyzeUserPromptWithAI', () => {
+        it('should prefer suggestedLanguage and skip AI language detection', async () => {
+            (ai.generateText as any).mockResolvedValue({
+                text: JSON.stringify({ topic: 'Suggested Language Test' })
+            });
+
+            await analyzeUserPromptWithAI({
+                userPrompt: 'Create training',
+                model: {},
+                suggestedLanguage: 'fr-fr',
+            });
+
+            const calls = (ai.generateText as any).mock.calls;
+            const languageDetectionCall = calls.find((c: any[]) =>
+                c[0]?.prompt && c[0].prompt.includes('What language should the training/content be created in?')
+            );
+            expect(languageDetectionCall).toBeUndefined();
+        });
+
         it('should return analyzed prompt data', async () => {
             (ai.generateText as any).mockImplementation((params: any) => {
                 if (params.prompt && params.prompt.includes('What language should')) {
@@ -972,6 +1002,47 @@ describe('prompt-analyzer - Additional Functions', () => {
                 'Keep urgent payment language',
             ]);
         });
+
+        it('should execute high-coverage branch for mustKeepDetails validation', async () => {
+            (ai.generateText as any).mockResolvedValue({
+                text: JSON.stringify({
+                    topic: 'Detail Coverage',
+                    title: 'Invoice fraud case handling',
+                    description: 'Practice urgent payment language controls.',
+                    keyTopics: ['invoice fraud case', 'urgent payment language'],
+                    practicalApplications: ['Verify payment requests against fraud indicators'],
+                    learningObjectives: ['Spot invoice fraud case indicators'],
+                    mustKeepDetails: ['invoice fraud case', 'urgent payment language']
+                })
+            });
+
+            const result = await analyzeUserPromptWithAI({
+                userPrompt: 'Create a microlearning for invoice fraud prevention',
+                model: {},
+            });
+
+            expect(result.success).toBe(true);
+            expect(result.data.mustKeepDetails).toEqual([
+                'invoice fraud case',
+                'urgent payment language',
+            ]);
+        });
+
+        it('should rethrow unexpected analysis errors from outer catch block', async () => {
+            const mockRepo = {
+                loadExamplesOnce: vi.fn().mockRejectedValue(new Error('load failed hard')),
+                getSmartSchemaHints: vi.fn(),
+                getSchemaHints: vi.fn(),
+            };
+            (ExampleRepo.getInstance as any).mockReturnValue(mockRepo);
+
+            await expect(
+                analyzeUserPromptWithAI({
+                    userPrompt: 'Test',
+                    model: {},
+                })
+            ).rejects.toThrow('load failed hard');
+        });
     });
 
     describe('getFallbackAnalysis', () => {
@@ -996,5 +1067,72 @@ describe('prompt-analyzer - Additional Functions', () => {
             expect(result.isCodeTopic).toBe(false);
             expect(result.category).toBeDefined();
         });
+
+        it('should detect vishing keywords in fallback', async () => {
+            const result = await getFallbackAnalysis({
+                userPrompt: 'Create voice phishing and phone scam awareness module',
+                model: {},
+            });
+
+            expect(result.isVishing).toBe(true);
+            expect(result.isSmishing).toBe(false);
+            expect(result.deliveryChannel).toBeUndefined();
+        });
+
+        it('should detect smishing keywords and infer telegram delivery channel', async () => {
+            const result = await getFallbackAnalysis({
+                userPrompt: 'Create smishing simulation for Telegram message scams',
+                model: {},
+            });
+
+            expect(result.isSmishing).toBe(true);
+            expect(result.isVishing).toBe(false);
+            expect(result.deliveryChannel).toBe('telegram');
+        });
+
+        it('should default smishing delivery channel to sms when channel is not explicit', async () => {
+            const result = await getFallbackAnalysis({
+                userPrompt: 'Create SMS phishing (smishing) awareness training',
+                model: {},
+            });
+
+            expect(result.isSmishing).toBe(true);
+            expect(result.deliveryChannel).toBe('sms');
+        });
+
+        it('should preserve custom requirements and additional context in fallback', async () => {
+            const result = await getFallbackAnalysis({
+                userPrompt: 'Create security awareness module',
+                model: {},
+                additionalContext: 'Target audience is finance team',
+                customRequirements: 'Include practical examples',
+            });
+
+            expect(result.hasRichContext).toBe(true);
+            expect(result.additionalContext).toBe('Target audience is finance team');
+            expect(result.customRequirements).toBe('Include practical examples');
+        });
+
+        it('should infer linkedin delivery channel for smishing fallback', async () => {
+            const result = await getFallbackAnalysis({
+                userPrompt: 'Create smishing awareness for LinkedIn message scams',
+                model: {},
+            });
+
+            expect(result.isSmishing).toBe(true);
+            expect(result.deliveryChannel).toBe('linkedin');
+        });
+
+        it('should use char-based fallback language when AI language detection fails', async () => {
+            (ai.generateText as any).mockRejectedValue(new Error('language detection unavailable'));
+
+            const result = await getFallbackAnalysis({
+                userPrompt: '\u3042',
+                model: {},
+            });
+
+            expect(result.language).toBe('ja');
+        });
     });
 });
+
