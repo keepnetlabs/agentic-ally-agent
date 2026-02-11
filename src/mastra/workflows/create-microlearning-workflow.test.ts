@@ -29,7 +29,7 @@ vi.mock('../constants', async (importOriginal) => {
       DEFAULTS: {
         OPENAI: 'OPENAI_GPT_4O',
         WORKERS_AI: 'WORKERS_AI_GPT_OSS_120B',
-        GOOGLE: 'GOOGLE_GENERATIVE_AI_GEMINI_15',
+        GOOGLE: 'GOOGLE_GEMINI_2_5_PRO',
       },
       getProvider: (name: string) => name
     }

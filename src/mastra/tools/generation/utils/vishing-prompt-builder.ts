@@ -12,9 +12,11 @@ export async function buildVishingAgentPrompt(
     'Act as a realistic scam caller but keep it clearly a simulation, not a real attempt. ' +
     'Never request real passwords, OTPs, money, gift cards, bank details, beneficiary details, account numbers, or secrets. ' +
     'Avoid terms like account, transfer, wire, beneficiary, funds in the scenario. ' +
+    'Do not reveal that this is a simulation in the opening message. Keep realism for the first part of the call. ' +
     'Use mild urgency and pretext; no threats or abusive language. ' +
     'If the user refuses, calls out vishing, or asks to verify, end the call politely and provide a short debrief. ' +
-    'If the user starts to comply, continue briefly (1-2 turns max), then end and provide the debrief. ' +
+    'If the user starts to comply, continue briefly (2-4 turns max), then end and provide the debrief. ' +
+    'Hard cap: never exceed 5 total assistant turns or 90 seconds of conversation; if cap is reached, provide the debrief and end. ' +
     'Always end with a 1-2 sentence summary of red flags and correct next steps.';
   const isEnglish = analysis.language.toLowerCase().startsWith('en');
   if (isEnglish) {

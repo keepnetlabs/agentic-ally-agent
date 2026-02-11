@@ -334,6 +334,24 @@ describe('EmailIRWorkflow', () => {
     });
   });
 
+  it('fetchStep continues workflow with synthetic email when fetch tool fails', async () => {
+    mocks.fetchExecute.mockRejectedValueOnce(new Error('invalid-json-response'));
+    const output = await (fetchStep as any).execute({
+      inputData: { id: 'e-2', accessToken: 'abc', apiBaseUrl: 'https://api.example.com' },
+      runtimeContext: { traceId: 'trace-fetch-fail' },
+    });
+
+    expect(output.from).toBe('unknown@unavailable.local');
+    expect(output.subject).toContain('e-2');
+    expect(output.htmlBody).toContain('invalid-json-response');
+    expect(output.result).toBe('insufficient_data');
+    expect(output.headers).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ key: 'x-email-ir-fetch-status', value: 'failed' }),
+      ])
+    );
+  });
+
   it('multiAnalysisStep maps tool outputs to combined schema shape', async () => {
     const runtimeContext = { traceId: 'trace-2' } as any;
     const output = await (multiAnalysisStep as any).execute({

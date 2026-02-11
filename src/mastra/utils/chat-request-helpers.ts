@@ -328,6 +328,22 @@ const cleanMessageContent = (content: string): string => {
     }
     return '[Group Selected]';
   }
+  if (content.match(/::ui:vishing_call_started::/)) {
+    const payload = extractUiPayload(content, 'vishing_call_started');
+    if (payload) {
+      try {
+        const decoded = decodeBase64Json(payload);
+        if (decoded && typeof decoded === 'object' && 'conversationId' in decoded) {
+          const value = (decoded as Record<string, unknown>).conversationId;
+          const conversationId = typeof value === 'string' && value.trim() ? value.trim() : undefined;
+          if (conversationId) return `[Vishing Call Initiated: conversationId=${conversationId}]`;
+        }
+      } catch {
+        // ignore
+      }
+    }
+    return '[Vishing Call Initiated]';
+  }
 
   // Remove remaining UI signals (includes both formats with/without closing tags)
   let cleaned = content.replace(/::ui:\w+::[^\n]*/g, '');

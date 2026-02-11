@@ -19,6 +19,7 @@ import { ELEVENLABS } from '../../constants';
 import { uuidv4 } from '../../utils/core/id-utils';
 import { getLogger } from '../../utils/core/logger';
 import { normalizeError } from '../../utils/core/error-utils';
+import { withRetry } from '../../utils/core/resilience-utils';
 
 const logger = getLogger('InitiateVishingCallTool');
 
@@ -35,11 +36,9 @@ const initiateVishingCallInputSchema = z.object({
     .describe('The recipient phone number in E.164 format (e.g., +905551234567)'),
   prompt: z
     .string()
-    .max(4000, 'System prompt must not exceed 4000 characters')
     .describe('Dynamic system prompt for the AI voice agent during the call. Describes persona, scenario, and behavioral rules.'),
   firstMessage: z
     .string()
-    .max(500, 'First message must not exceed 500 characters')
     .describe('The opening line the AI agent speaks when the call connects. Should introduce the persona and reason for calling.'),
   agentId: z
     .string()
@@ -179,23 +178,26 @@ export const initiateVishingCallTool = createTool({
         firstMessageLength: firstMessage.length,
       });
 
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), ELEVENLABS.API_TIMEOUT_MS);
+      const response = await withRetry(async () => {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), ELEVENLABS.API_TIMEOUT_MS);
 
-      let response: Response;
-      try {
-        response = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'xi-api-key': apiKey,
-          },
-          body: JSON.stringify(requestBody),
-          signal: controller.signal,
-        });
-      } finally {
-        clearTimeout(timeoutId);
-      }
+        try {
+          const res = await fetch(url, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'xi-api-key': apiKey,
+            },
+            body: JSON.stringify(requestBody),
+            signal: controller.signal,
+          });
+
+          return res;
+        } finally {
+          clearTimeout(timeoutId);
+        }
+      }, 'initiate_vishing_call_request');
 
       if (!response.ok) {
         const errorBody = await response.text().catch(() => 'Unable to read error body');
