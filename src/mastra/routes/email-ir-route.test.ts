@@ -2,6 +2,37 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { emailIRAnalyzeHandler } from './email-ir-route';
 import { Context } from 'hono';
 
+const { validReport } = vi.hoisted(() => ({
+  validReport: {
+  executive_summary: {
+    email_category: 'Benign' as const,
+    verdict: 'No Threat Detected - Benign Email',
+    risk_level: 'Low' as const,
+    confidence: 0.95,
+    status: 'Analysis Complete',
+  },
+  agent_determination: 'Message appears informational with no malicious indicators.',
+  risk_indicators: {
+    observed: [],
+    not_observed: ['No credential request', 'No financial request'],
+  },
+  evidence_flow: [
+    {
+      step: 1,
+      title: 'Final Verdict',
+      description: 'Classified as benign.',
+      finding_label: 'Benign' as const,
+    },
+  ],
+  actions_recommended: {
+    p1_immediate: [],
+    p2_follow_up: [],
+    p3_hardening: [],
+  },
+  confidence_limitations: 'High confidence in determination. Multiple independent signals converge on this verdict.',
+},
+}));
+
 vi.mock('../utils/core/logger', () => ({
   getLogger: vi.fn().mockReturnValue({
     info: vi.fn(),
@@ -28,7 +59,7 @@ vi.mock('../workflows/email-ir-workflow', () => ({
         steps: {
           'email-ir-reporting-step': {
             status: 'success',
-            output: { report: 'Email is benign' }
+            output: validReport
           }
         }
       })
@@ -115,5 +146,58 @@ describe('emailIRAnalyzeHandler', () => {
 
     const lastCall = (mockContext.json as any).mock.calls[0];
     expect(lastCall[1]).toBe(500);
+  });
+
+  it('should return 500 when reporting step output is missing', async () => {
+    const { emailIRWorkflow } = await import('../workflows/email-ir-workflow');
+    (emailIRWorkflow.createRunAsync as any).mockResolvedValue({
+      runId: 'run-missing-report',
+      start: vi.fn().mockResolvedValue({
+        status: 'completed',
+        steps: {
+          'email-ir-reporting-step': {
+            status: 'failed',
+          },
+        },
+      }),
+    });
+
+    mockContext.req.json.mockResolvedValue({
+      id: 'email-missing-report',
+      accessToken: 'token',
+    });
+
+    await emailIRAnalyzeHandler(mockContext as unknown as Context);
+
+    const lastCall = (mockContext.json as any).mock.calls[0];
+    expect(lastCall[1]).toBe(500);
+    expect(lastCall[0].success).toBe(false);
+  });
+
+  it('should return 500 when reporting step output is schema-invalid', async () => {
+    const { emailIRWorkflow } = await import('../workflows/email-ir-workflow');
+    (emailIRWorkflow.createRunAsync as any).mockResolvedValue({
+      runId: 'run-invalid-report',
+      start: vi.fn().mockResolvedValue({
+        status: 'completed',
+        steps: {
+          'email-ir-reporting-step': {
+            status: 'success',
+            output: { verdict: 'invalid-shape' },
+          },
+        },
+      }),
+    });
+
+    mockContext.req.json.mockResolvedValue({
+      id: 'email-invalid-report',
+      accessToken: 'token',
+    });
+
+    await emailIRAnalyzeHandler(mockContext as unknown as Context);
+
+    const lastCall = (mockContext.json as any).mock.calls[0];
+    expect(lastCall[1]).toBe(500);
+    expect(lastCall[0].success).toBe(false);
   });
 });

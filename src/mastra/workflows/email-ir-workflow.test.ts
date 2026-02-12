@@ -264,10 +264,10 @@ const riskResult = {
 const reportResult = {
   executive_summary: {
     email_category: 'Phishing' as const,
-    verdict: 'High-Risk Phishing - Immediate Action Required',
+    verdict: 'Phishing Confirmed - Immediate Action Required',
     risk_level: 'High' as const,
     confidence: 0.91,
-    confidence_level: 'High' as const,
+    evidence_strength: 'Strong' as const,
     confidence_basis: 'Based on behavioral and contextual indicators.',
     status: 'Analysis Complete',
     why_this_matters: 'Potential credential compromise and lateral movement risk.',
@@ -425,3 +425,4 @@ describe('EmailIRWorkflow', () => {
       .rejects.toThrow('intent crashed');
   });
 });
+

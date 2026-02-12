@@ -15,10 +15,9 @@ export const reportingTool = createTool({
         const emailId = inputData.original_email.from?.split('@')[0] || 'unknown-sender';
         const ctx = createLogContext(emailId, 'reporting');
         const emailCategoryList = EMAIL_IR_EMAIL_CATEGORIES.join(', ');
-        const confidenceLevel =
-            inputData.confidence >= 0.9 ? 'High' :
-            inputData.confidence >= 0.7 ? 'Good' :
-            inputData.confidence >= 0.5 ? 'Moderate' : 'Low';
+        const evidenceStrength =
+            inputData.confidence >= 0.8 ? 'Strong' :
+            inputData.confidence >= 0.55 ? 'Moderate' : 'Limited';
         const confidenceBasis = 'Based on behavioral and contextual indicators.';
 
         try {
@@ -40,7 +39,7 @@ This report will be used for executive briefings, compliance audits, and inciden
 | **Sender** | ${inputData.original_email.from} |
 | **Category** | ${inputData.triage_result.category} |
 | **Risk Level** | ${inputData.risk_level} |
-| **Confidence Level** | ${confidenceLevel} |
+| **Evidence Strength** | ${evidenceStrength} |
 | **Confidence Basis** | ${confidenceBasis} |
 
 ---
@@ -67,7 +66,7 @@ These values are already computed and MUST be used exactly as provided in the ou
 | executive_summary.email_category | "${inputData.triage_result.category}" |
 | executive_summary.risk_level | "${inputData.risk_level}" |
 | executive_summary.confidence | ${inputData.confidence} |
-| executive_summary.confidence_level | "${confidenceLevel}" |
+| executive_summary.evidence_strength | "${evidenceStrength}" |
 | executive_summary.confidence_basis | "${confidenceBasis}" |
 | executive_summary.status | "Analysis Complete" |
 
@@ -75,21 +74,33 @@ These values are already computed and MUST be used exactly as provided in the ou
 
 ## REPORT GENERATION INSTRUCTIONS
 
+### 0. Evidence Grounding (STRICT)
+- Use only facts explicitly present in the provided analysis inputs:
+  - triage_result
+  - feature_result
+  - risk assessment justification
+- Do NOT invent new technical artifacts (URL paths, domains, file names, hashes, IPs, sender aliases) that are not explicitly present in those inputs.
+- Prefer conclusion-level wording such as:
+  - "malicious URL indicators were observed"
+  - "threat intelligence flagged embedded links"
+  - "behavioral and intent signals converged on phishing"
+- If concrete IOC detail is not explicitly provided, state the reason at summary level instead of guessing specifics.
+
 ### 1. Executive Summary
 - **verdict**: Decisive, professional verdict statement
-  - Critical/High: "High-Risk [Threat Type] - Immediate Action Required"
+  - Critical/High: "[Threat Type] Confirmed - Immediate Action Required"
   - Medium: "Suspicious Activity Detected - Review Recommended"  
   - Low: "No Threat Detected - [Category] Email"
 - **why_this_matters**: One concise line explaining business impact for executive decision-making.
   - Example: "This pattern indicates elevated account-compromise and payment-diversion risk, requiring immediate containment."
-  - Examples: "High-Risk BEC Pattern Targeting Finance Department", "Legitimate Marketing Newsletter", "Authorized Security Training Exercise"
+  - Examples: "BEC Pattern Targeting Finance Department", "Legitimate Marketing Newsletter", "Authorized Security Training Exercise"
 
 ### 2. Agent Determination
 Write a 3-5 sentence executive narrative:
 - State the final verdict clearly
 - Summarize key evidence that led to the determination
 - Highlight any notable findings (e.g., "Despite passing SPF/DKIM, behavioral analysis revealed clear social engineering patterns")
-- Note confidence level (High/Good/Moderate/Low) and any caveats
+- Note evidence strength (Strong/Moderate/Limited) and any caveats
 
 ### 3. Risk Indicators
 Based on feature_result, categorize indicators:
@@ -121,11 +132,10 @@ Risk-to-priority guidance:
 - **Low**: Keep P1 empty unless truly needed; focus on P2/P3 hygiene actions.
 
 ### 6. Confidence Limitations
-Use confidence level wording, not percentages:
-- **High**: "High confidence in determination. Multiple independent signals converge on this verdict."
-- **Good**: "Good confidence. Primary indicators are clear, minor ambiguity in secondary signals."
-- **Moderate**: "Moderate confidence. Human review recommended before taking action."
-- **Low**: "Low confidence. Insufficient data or conflicting signals. Manual investigation required."
+Use evidence strength wording, not percentages:
+- **Strong**: "Strong evidence support. Multiple independent signals converge on this verdict."
+- **Moderate**: "Moderate evidence support. Human review recommended before taking action."
+- **Limited**: "Limited evidence support. Insufficient data or conflicting signals. Manual investigation required."
 
 ---
 

@@ -20,6 +20,7 @@ describe('EmailIRCanvasSchema', () => {
         step: 1,
         title: 'Initial Analysis',
         description: 'Email headers reveal spoofed domain',
+        finding_label: 'Phishing' as const,
       },
     ],
     actions_recommended: {
@@ -57,6 +58,14 @@ describe('EmailIRCanvasSchema', () => {
             ...validMinimalData.executive_summary,
             email_category: category as any,
           },
+          evidence_flow: [
+            {
+              step: 1,
+              title: 'Final Step',
+              description: 'Category alignment check',
+              finding_label: category as any,
+            },
+          ],
         };
         const result = EmailIRCanvasSchema.safeParse(data);
         expect(result.success).toBe(true);
@@ -168,7 +177,7 @@ describe('EmailIRCanvasSchema', () => {
         ...validMinimalData,
         executive_summary: {
           ...validMinimalData.executive_summary,
-          confidence_level: 'Good' as const,
+          evidence_strength: 'Strong' as const,
           confidence_basis: 'Signals converge across intent and behavior.',
           why_this_matters: 'Potential account compromise risk.',
         },
@@ -177,12 +186,12 @@ describe('EmailIRCanvasSchema', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should reject invalid confidence_level enum value', () => {
+    it('should reject invalid evidence_strength enum value', () => {
       const data = {
         ...validMinimalData,
         executive_summary: {
           ...validMinimalData.executive_summary,
-          confidence_level: 'Very High' as any,
+          evidence_strength: 'Very Strong' as any,
         },
       };
       const result = EmailIRCanvasSchema.safeParse(data);
@@ -283,6 +292,22 @@ describe('EmailIRCanvasSchema', () => {
             title: 'Step 1',
             description: 'Analysis starts',
             finding_label: 'PHISH' as any,
+          },
+        ],
+      };
+      const result = EmailIRCanvasSchema.safeParse(data);
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject final finding_label mismatch with executive category', () => {
+      const data = {
+        ...validMinimalData,
+        evidence_flow: [
+          {
+            step: 1,
+            title: 'Final Step',
+            description: 'Final verdict output',
+            finding_label: 'Benign' as const,
           },
         ],
       };

@@ -6,6 +6,38 @@ import { emailIRAnalyzeHandler } from './email-ir-route';
 import { smishingChatRequestSchema } from './smishing-chat-route.schemas';
 import { vishingPromptRequestSchema } from './vishing-prompt-route.schemas';
 import { fetchEmailInputSchema } from '../tools/email-ir/fetch-email';
+import { emailIrAnalyzeSuccessResponseSchema } from './email-ir-route.schemas';
+
+const { validEmailIrReport } = vi.hoisted(() => ({
+  validEmailIrReport: {
+  executive_summary: {
+    email_category: 'Benign' as const,
+    verdict: 'No Threat Detected - Benign Email',
+    risk_level: 'Low' as const,
+    confidence: 0.95,
+    status: 'Analysis Complete',
+  },
+  agent_determination: 'Message appears informational with no malicious indicators.',
+  risk_indicators: {
+    observed: [],
+    not_observed: ['No credential request', 'No financial request'],
+  },
+  evidence_flow: [
+    {
+      step: 1,
+      title: 'Final Verdict',
+      description: 'Classified as benign.',
+      finding_label: 'Benign' as const,
+    },
+  ],
+  actions_recommended: {
+    p1_immediate: [],
+    p2_follow_up: [],
+    p3_hardening: [],
+  },
+  confidence_limitations: 'High confidence in determination. Multiple independent signals converge on this verdict.',
+},
+}));
 
 function createMockContext(requestBody: unknown) {
   const jsonMock = vi.fn();
@@ -44,12 +76,6 @@ const vishingSuccessResponseSchema = z.object({
   agentId: z.string().min(1),
   wsUrl: z.string().url(),
   signedUrl: z.string().optional(),
-});
-
-const emailIrSuccessResponseSchema = z.object({
-  success: z.literal(true),
-  report: z.unknown(),
-  runId: z.string().min(1),
 });
 
 const genericErrorResponseSchema = z.object({
@@ -117,7 +143,7 @@ vi.mock('../workflows/email-ir-workflow', () => ({
         steps: {
           'email-ir-reporting-step': {
             status: 'success',
-            output: { verdict: 'suspicious' },
+            output: validEmailIrReport,
           },
         },
       }),
@@ -272,7 +298,7 @@ describe('Public Endpoint Contracts', () => {
       const [payload, status] = ctx._getJsonCall();
 
       expect(status).toBeUndefined();
-      expect(emailIrSuccessResponseSchema.safeParse(payload).success).toBe(true);
+      expect(emailIrAnalyzeSuccessResponseSchema.safeParse(payload).success).toBe(true);
     });
 
     it('returns generic error contract on required field failure', async () => {

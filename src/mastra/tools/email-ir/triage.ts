@@ -8,6 +8,7 @@ import { bodyIntentAnalysisOutputSchema } from './body-intent-analysis';
 import { createLogContext, loggerTriage, logStepStart, logStepComplete, logStepError } from './logger-setup';
 import { withRetry } from '../../utils/core/resilience-utils';
 import { sanitizeEmailBody } from './email-body-sanitizer';
+import { EMAIL_IR_EMAIL_CATEGORIES } from '../../schemas/email-ir';
 
 // Input is the combined analysis from the previous step
 export const triageInputSchema = z.object({
@@ -18,18 +19,7 @@ export const triageInputSchema = z.object({
 });
 
 export const triageOutputSchema = z.object({
-    category: z.enum([
-        'Spam',
-        'Marketing',
-        'Internal',
-        'CEO Fraud',
-        'Phishing',
-        'Sextortion',
-        'Malware',
-        'Security Awareness',
-        'Other Suspicious',
-        'Benign',
-    ]),
+    category: z.enum(EMAIL_IR_EMAIL_CATEGORIES),
     reason: z.string().describe('Clear explanation for the category decision'),
     confidence: z.number().min(0).max(1).describe('Confidence score between 0 and 1'),
     original_email: EmailIREmailDataSchema, // Pass-through
@@ -121,8 +111,8 @@ Use \`list_unsubscribe_present\` from header analysis as the primary differentia
 | Content Quality | Low/Generic | Professional/Branded |
 
 **Decision Rule:**
-- IF \`list_unsubscribe_present == true\` AND SPF/DKIM pass → **Marketing**
-- IF \`list_unsubscribe_present == false\` AND bulk promotional content → **Spam**
+- IF \`list_unsubscribe_present == true\` AND SPF/DKIM pass -> **Marketing**
+- IF \`list_unsubscribe_present == false\` AND bulk promotional content -> **Spam**
 
 ### BENIGN vs MARKETING Decision Matrix
 
@@ -139,8 +129,8 @@ Use \`list_unsubscribe_present\` from header analysis as the primary differentia
 | **Sender Type** | System/personal | Brand/company marketing |
 
 **Decision Rule:**
-- IF promotional content (events, discounts, newsletters, webinars, community invites) → **Marketing**
-- IF transactional/personal/pure informational content (receipts, confirmations, replies) → **Benign**
+- IF promotional content (events, discounts, newsletters, webinars, community invites) -> **Marketing**
+- IF transactional/personal/pure informational content (receipts, confirmations, replies) -> **Benign**
 - **NOTE**: Forwarded emails may lose List-Unsubscribe header - use **content analysis** as primary signal
 
 **Examples:**
@@ -236,3 +226,6 @@ Accuracy is critical. When uncertain, prefer **Other Suspicious** over misclassi
         }
     },
 });
+
+
+

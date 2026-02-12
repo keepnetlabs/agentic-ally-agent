@@ -27,8 +27,8 @@ export const EmailIRCanvasSchema = z.object({
         verdict: z.string().describe('Short, decisive verdict like "High-Risk Phishing - Immediate Action Required"'),
         risk_level: z.enum(['Low', 'Medium', 'High', 'Critical']),
         confidence: z.number().min(0).max(1).describe('Confidence score between 0 and 1'),
-        confidence_level: z.enum(['Low', 'Moderate', 'Good', 'High']).optional().describe('Text confidence label for UI display'),
-        confidence_basis: z.string().optional().describe('Short explanation for how confidence level was determined'),
+        evidence_strength: z.enum(['Strong', 'Moderate', 'Limited']).optional().describe('Text evidence quality label for UI display'),
+        confidence_basis: z.string().optional().describe('Short explanation for how evidence strength was determined'),
         status: z.string().describe('Current status of the analysis'),
         why_this_matters: z.string().optional().describe('Single-line business impact explanation for executives'),
     }),
@@ -51,4 +51,26 @@ export const EmailIRCanvasSchema = z.object({
         p3_hardening: z.array(z.string()).describe('Hardening actions for long-term resilience'),
     }).describe('Priority-bucketed remediation plan (P1/P2/P3)'),
     confidence_limitations: z.string().describe('Statement about confidence levels and need for human review'),
+}).superRefine((data, ctx) => {
+    if (data.evidence_flow.length === 0) {
+        return;
+    }
+
+    const lastStep = data.evidence_flow[data.evidence_flow.length - 1];
+    if (!lastStep.finding_label) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Final evidence_flow step must include finding_label.',
+            path: ['evidence_flow', data.evidence_flow.length - 1, 'finding_label'],
+        });
+        return;
+    }
+
+    if (lastStep.finding_label !== data.executive_summary.email_category) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Final evidence_flow finding_label must match executive_summary.email_category.',
+            path: ['evidence_flow', data.evidence_flow.length - 1, 'finding_label'],
+        });
+    }
 });
