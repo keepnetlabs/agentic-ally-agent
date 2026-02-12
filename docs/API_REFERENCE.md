@@ -498,7 +498,7 @@ const findingLabelToBadge: Record<string, 'neutral' | 'info' | 'warning' | 'dang
 1.  **Correlation Header:** every response includes `X-Correlation-ID`. If caller sends one, it is propagated; otherwise service generates one.
 2.  **Auth Model:**
     *   Requires `X-AGENTIC-ALLY-TOKEN` by default.
-    *   Public unauthenticated endpoints: `/autonomous`, `/code-review-validate`, `/vishing/prompt`, `/smishing/chat`, `/email-ir/analyze`.
+    *   Public unauthenticated endpoints: `/autonomous`, `/code-review-validate`, `/vishing/prompt`, `/vishing/conversations/summary`, `/smishing/chat`, `/email-ir/analyze`.
     *   Internal auth-skip endpoints: `/health`, `/__refresh`, `/__hot-reload-status`, `/api/telemetry`.
 3.  **Rate Limit Tiers (per IP):**
     *   Public unauthenticated endpoints: `180 req/min`

@@ -52,6 +52,7 @@ import { normalizeSafeId } from './utils/core/id-utils';
 import { validateBCP47LanguageCode, DEFAULT_LANGUAGE } from './utils/language/language-utils';
 import { postProcessPhishingEmailHtml, postProcessPhishingLandingHtml } from './utils/content-processors/phishing-html-postprocessors';
 import { vishingPromptHandler } from './routes/vishing-prompt-route';
+import { vishingConversationsSummaryHandler } from './routes/vishing-conversations-summary-route';
 import { smishingChatHandler } from './routes/smishing-chat-route';
 import { emailIRAnalyzeHandler } from './routes/email-ir-route';
 import { isPublicUnauthenticatedPath } from './middleware/public-endpoint-policy';
@@ -594,6 +595,11 @@ export const mastra = new Mastra({
       registerApiRoute('/vishing/prompt', {
         method: 'POST',
         handler: vishingPromptHandler,
+      }),
+
+      registerApiRoute('/vishing/conversations/summary', {
+        method: 'POST',
+        handler: vishingConversationsSummaryHandler,
       }),
 
       registerApiRoute('/smishing/chat', {

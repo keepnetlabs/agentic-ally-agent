@@ -370,6 +370,7 @@ export const MODEL_PROVIDERS = {
     WORKERS_AI: 'WORKERS_AI_GPT_OSS_120B',
     GOOGLE: 'GOOGLE_GEMINI_2_5_PRO',
   },
+
 } as const;
 
 // ============================================

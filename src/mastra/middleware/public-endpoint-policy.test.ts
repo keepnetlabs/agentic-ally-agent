@@ -11,6 +11,7 @@ describe('public-endpoint-policy', () => {
     expect(PUBLIC_UNAUTHENTICATED_ENDPOINTS).toContain('/autonomous');
     expect(PUBLIC_UNAUTHENTICATED_ENDPOINTS).toContain('/code-review-validate');
     expect(PUBLIC_UNAUTHENTICATED_ENDPOINTS).toContain('/vishing/prompt');
+    expect(PUBLIC_UNAUTHENTICATED_ENDPOINTS).toContain('/vishing/conversations/summary');
     expect(PUBLIC_UNAUTHENTICATED_ENDPOINTS).toContain('/smishing/chat');
     expect(PUBLIC_UNAUTHENTICATED_ENDPOINTS).toContain('/email-ir/analyze');
   });
