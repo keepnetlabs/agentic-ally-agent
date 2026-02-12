@@ -35,7 +35,6 @@ export const bodyIntentAnalysisTool = createTool({
 
             const emailBody = sanitizeEmailBody(email.htmlBody || '') || email.subject || 'No body content';
             const senderDisplay = email.senderName || email.from;
-
             const prompt = `
 # Task: Body Intent Analysis
 

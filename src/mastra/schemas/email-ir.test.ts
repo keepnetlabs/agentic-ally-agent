@@ -22,7 +22,11 @@ describe('EmailIRCanvasSchema', () => {
         description: 'Email headers reveal spoofed domain',
       },
     ],
-    actions_recommended: ['Reset user passwords', 'Monitor account activity'],
+    actions_recommended: {
+      p1_immediate: ['Reset user passwords'],
+      p2_follow_up: ['Monitor account activity'],
+      p3_hardening: ['Run phishing refresher training'],
+    },
     confidence_limitations: 'Human review is recommended for critical decisions.',
   };
 
@@ -246,13 +250,44 @@ describe('EmailIRCanvasSchema', () => {
       const data = {
         ...validMinimalData,
         evidence_flow: [
-          { step: 1, title: 'Step 1', description: 'Analysis starts' },
-          { step: 2, title: 'Step 2', description: 'Findings' },
-          { step: 3, title: 'Step 3', description: 'Conclusion' },
+          {
+            step: 1,
+            title: 'Step 1',
+            description: 'Analysis starts',
+            finding_label: 'PASS',
+          },
+          {
+            step: 2,
+            title: 'Step 2',
+            description: 'Findings',
+            finding_label: 'FLAG',
+          },
+          {
+            step: 3,
+            title: 'Step 3',
+            description: 'Conclusion',
+            finding_label: 'Phishing',
+          },
         ],
       };
       const result = EmailIRCanvasSchema.safeParse(data);
       expect(result.success).toBe(true);
+    });
+
+    it('should reject invalid finding_label value', () => {
+      const data = {
+        ...validMinimalData,
+        evidence_flow: [
+          {
+            step: 1,
+            title: 'Step 1',
+            description: 'Analysis starts',
+            finding_label: 'PHISH' as any,
+          },
+        ],
+      };
+      const result = EmailIRCanvasSchema.safeParse(data);
+      expect(result.success).toBe(false);
     });
 
     it('should require evidence_flow to be an array', () => {
@@ -266,24 +301,35 @@ describe('EmailIRCanvasSchema', () => {
   });
 
   describe('actions validation', () => {
-    it('should accept empty actions_recommended array', () => {
+    it('should accept empty actions_recommended buckets', () => {
       const data = {
         ...validMinimalData,
-        actions_recommended: [],
+        actions_recommended: {
+          p1_immediate: [],
+          p2_follow_up: [],
+          p3_hardening: [],
+        },
       };
       const result = EmailIRCanvasSchema.safeParse(data);
       expect(result.success).toBe(true);
     });
 
-    it('should accept multiple actions_recommended', () => {
+    it('should accept multiple actions per priority bucket', () => {
       const data = {
         ...validMinimalData,
-        actions_recommended: [
-          'Reset passwords',
-          'Monitor accounts',
-          'Review logs',
-          'Update security policies',
-        ],
+        actions_recommended: {
+          p1_immediate: [
+            'Reset passwords',
+            'Disable suspicious session tokens',
+          ],
+          p2_follow_up: [
+            'Monitor accounts',
+            'Review logs',
+          ],
+          p3_hardening: [
+            'Update security policies',
+          ],
+        },
       };
       const result = EmailIRCanvasSchema.safeParse(data);
       expect(result.success).toBe(true);
@@ -327,7 +373,11 @@ describe('EmailIRCanvasSchema', () => {
     it('should reject non-string action item', () => {
       const data = {
         ...validMinimalData,
-        actions_recommended: ['Reset passwords', 123 as any],
+        actions_recommended: {
+          p1_immediate: ['Reset passwords', 123 as any],
+          p2_follow_up: [],
+          p3_hardening: [],
+        },
       };
       expect(EmailIRCanvasSchema.safeParse(data).success).toBe(false);
     });

@@ -1,19 +1,29 @@
 import { z } from 'zod';
 
+export const EMAIL_IR_EMAIL_CATEGORIES = [
+    'Spam',
+    'Marketing',
+    'Internal',
+    'CEO Fraud',
+    'Phishing',
+    'Sextortion',
+    'Malware',
+    'Security Awareness',
+    'Other Suspicious',
+    'Benign',
+] as const;
+
+export const EMAIL_IR_EVIDENCE_FINDING_LABELS = [
+    'PASS',
+    'FLAG',
+    'ALERT',
+    'HIGH',
+    ...EMAIL_IR_EMAIL_CATEGORIES,
+] as const;
+
 export const EmailIRCanvasSchema = z.object({
     executive_summary: z.object({
-        email_category: z.enum([
-            'Spam',
-            'Marketing',
-            'Internal',
-            'CEO Fraud',
-            'Phishing',
-            'Sextortion',
-            'Malware',
-            'Security Awareness',
-            'Other Suspicious',
-            'Benign',
-        ]),
+        email_category: z.enum(EMAIL_IR_EMAIL_CATEGORIES),
         verdict: z.string().describe('Short, decisive verdict like "High-Risk Phishing - Immediate Action Required"'),
         risk_level: z.enum(['Low', 'Medium', 'High', 'Critical']),
         confidence: z.number().min(0).max(1).describe('Confidence score between 0 and 1'),
@@ -32,8 +42,13 @@ export const EmailIRCanvasSchema = z.object({
             step: z.number(),
             title: z.string(),
             description: z.string(),
+            finding_label: z.enum(EMAIL_IR_EVIDENCE_FINDING_LABELS).optional().describe('Short UI badge label for step status or final category'),
         })
     ).describe('Story-based flow of evidence/analysis'),
-    actions_recommended: z.array(z.string()).describe('List of recommended follow-up actions for the SOC/User'),
+    actions_recommended: z.object({
+        p1_immediate: z.array(z.string()).describe('Immediate containment actions to execute now'),
+        p2_follow_up: z.array(z.string()).describe('Follow-up actions to complete within 24 hours'),
+        p3_hardening: z.array(z.string()).describe('Hardening actions for long-term resilience'),
+    }).describe('Priority-bucketed remediation plan (P1/P2/P3)'),
     confidence_limitations: z.string().describe('Statement about confidence levels and need for human review'),
 });

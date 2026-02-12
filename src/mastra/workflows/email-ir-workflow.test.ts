@@ -282,7 +282,11 @@ const reportResult = {
     { step: 2, title: 'Analysis', description: 'Header, behavioral, and intent signals evaluated.' },
     { step: 3, title: 'Verdict', description: 'Classified as phishing with high risk.' },
   ],
-  actions_recommended: ['Remove from inbox', 'Notify affected user', 'Monitor for similar emails'],
+  actions_recommended: {
+    p1_immediate: ['Remove from inbox', 'Block sender domain'],
+    p2_follow_up: ['Notify affected user'],
+    p3_hardening: ['Monitor for similar emails'],
+  },
   confidence_limitations: 'High confidence in determination. Multiple independent signals converge on this verdict.',
 };
 

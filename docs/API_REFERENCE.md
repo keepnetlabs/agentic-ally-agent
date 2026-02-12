@@ -365,10 +365,30 @@ Analyze a suspicious email and generate an incident response report.
       ]
     },
     "evidence_flow": [
-      { "step": 1, "action": "Header analysis", "finding": "SPF/DKIM/DMARC failures" },
-      { "step": 2, "action": "Behavioral analysis", "finding": "High urgency and verification avoidance" },
-      { "step": 3, "action": "Intent analysis", "finding": "Credential harvesting detected" },
-      { "step": 4, "action": "Triage", "finding": "Classified as Phishing with high confidence" }
+      {
+        "step": 1,
+        "title": "Email Triage and Initial Receipt",
+        "description": "Email received and triaged as suspicious.",
+        "finding_label": "PASS"
+      },
+      {
+        "step": 2,
+        "title": "Header and Authentication Analysis",
+        "description": "Authentication checks and sender trust evaluated.",
+        "finding_label": "FLAG"
+      },
+      {
+        "step": 3,
+        "title": "Intent and Content Examination",
+        "description": "Credential-harvest pattern detected.",
+        "finding_label": "ALERT"
+      },
+      {
+        "step": 4,
+        "title": "Final Verdict and Reporting",
+        "description": "Classified as phishing with high confidence.",
+        "finding_label": "Phishing"
+      }
     ],
     "blast_radius": {
       "affected_users": 12,
@@ -378,11 +398,11 @@ Analyze a suspicious email and generate an incident response report.
     "actions_taken": [
       "Flagged email as suspicious"
     ],
-    "actions_recommended": [
-      "Quarantine email",
-      "Alert recipients",
-      "Reset credentials if clicked"
-    ],
+    "actions_recommended": {
+      "p1_immediate": ["Quarantine email", "Block sender domain"],
+      "p2_follow_up": ["Alert recipients", "Reset credentials if clicked"],
+      "p3_hardening": ["Tune anti-phishing rules"]
+    },
     "technical_details": {
       "sender_ip": "203.0.113.45",
       "sender_domain": "amaozn-secure.com",

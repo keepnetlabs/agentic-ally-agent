@@ -1,6 +1,6 @@
 import { createTool } from '@mastra/core/tools';
 import { emailIRAnalyst } from '../../agents/email-ir-analyst';
-import { EmailIRCanvasSchema } from '../../schemas/email-ir';
+import { EmailIRCanvasSchema, EMAIL_IR_EMAIL_CATEGORIES } from '../../schemas/email-ir';
 import { riskAssessmentOutputSchema } from './risk-assessment';
 import { createLogContext, loggerReporting, logStepStart, logStepComplete, logStepError } from './logger-setup';
 import { withRetry } from '../../utils/core/resilience-utils';
@@ -14,6 +14,7 @@ export const reportingTool = createTool({
         const inputData = context;
         const emailId = inputData.original_email.from?.split('@')[0] || 'unknown-sender';
         const ctx = createLogContext(emailId, 'reporting');
+        const emailCategoryList = EMAIL_IR_EMAIL_CATEGORIES.join(', ');
         const confidenceLevel =
             inputData.confidence >= 0.9 ? 'High' :
             inputData.confidence >= 0.7 ? 'Good' :
@@ -103,13 +104,21 @@ Create 4-6 investigation steps showing logical progression:
 - Step 4: Intent classification determined
 - Step 5: Risk assessment calculated
 - Step 6: Final verdict rendered
+For each step, include:
+- finding_label: short badge (PASS, FLAG, ALERT, HIGH) for non-final steps
+- Final step finding_label MUST exactly match executive_summary.email_category
+  (one of: ${emailCategoryList})
 
-### 5. Actions Recommended
-Provide risk-appropriate remediation:
-- **Critical**: "Quarantine immediately", "Block sender domain", "Notify CISO", "Check for lateral movement"
-- **High**: "Remove from inbox", "Notify affected user", "Monitor for similar emails"
-- **Medium**: "Flag for SOC review", "Add to watchlist", "Educate user"
-- **Low**: "No action required", "Update spam filters if needed"
+### 5. Actions Recommended (P1/P2/P3 Structure - REQUIRED)
+Return **actions_recommended** as an object with this exact shape:
+- p1_immediate: actions to execute now (containment / blocking / urgent response)
+- p2_follow_up: actions to complete within 24 hours (user notification, scoped validation, monitoring follow-up)
+- p3_hardening: actions for this week (awareness, policy/rule tuning, controls hardening)
+
+Risk-to-priority guidance:
+- **Critical/High**: Populate all 3 buckets. P1 should contain 2-5 concrete actions.
+- **Medium**: Populate P2 and P3, include P1 only when immediate containment is justified.
+- **Low**: Keep P1 empty unless truly needed; focus on P2/P3 hygiene actions.
 
 ### 6. Confidence Limitations
 Use confidence level wording, not percentages:
