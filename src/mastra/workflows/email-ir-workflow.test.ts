@@ -264,10 +264,10 @@ const riskResult = {
 const reportResult = {
   executive_summary: {
     email_category: 'Phishing' as const,
-    verdict: 'High-Risk Phishing - Immediate Action Required',
+    verdict: 'Phishing Confirmed - Immediate Action Required',
     risk_level: 'High' as const,
     confidence: 0.91,
-    confidence_level: 'High' as const,
+    evidence_strength: 'Strong' as const,
     confidence_basis: 'Based on behavioral and contextual indicators.',
     status: 'Analysis Complete',
     why_this_matters: 'Potential credential compromise and lateral movement risk.',
@@ -282,7 +282,11 @@ const reportResult = {
     { step: 2, title: 'Analysis', description: 'Header, behavioral, and intent signals evaluated.' },
     { step: 3, title: 'Verdict', description: 'Classified as phishing with high risk.' },
   ],
-  actions_recommended: ['Remove from inbox', 'Notify affected user', 'Monitor for similar emails'],
+  actions_recommended: {
+    p1_immediate: ['Remove from inbox', 'Block sender domain'],
+    p2_follow_up: ['Notify affected user'],
+    p3_hardening: ['Monitor for similar emails'],
+  },
   confidence_limitations: 'High confidence in determination. Multiple independent signals converge on this verdict.',
 };
 
@@ -332,6 +336,24 @@ describe('EmailIRWorkflow', () => {
       context: { id: 'e-1', accessToken: 'abc', apiBaseUrl: 'https://api.example.com' },
       runtimeContext,
     });
+  });
+
+  it('fetchStep continues workflow with synthetic email when fetch tool fails', async () => {
+    mocks.fetchExecute.mockRejectedValueOnce(new Error('invalid-json-response'));
+    const output = await (fetchStep as any).execute({
+      inputData: { id: 'e-2', accessToken: 'abc', apiBaseUrl: 'https://api.example.com' },
+      runtimeContext: { traceId: 'trace-fetch-fail' },
+    });
+
+    expect(output.from).toBe('unknown@unavailable.local');
+    expect(output.subject).toContain('e-2');
+    expect(output.htmlBody).toContain('invalid-json-response');
+    expect(output.result).toBe('insufficient_data');
+    expect(output.headers).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ key: 'x-email-ir-fetch-status', value: 'failed' }),
+      ])
+    );
   });
 
   it('multiAnalysisStep maps tool outputs to combined schema shape', async () => {
@@ -403,3 +425,4 @@ describe('EmailIRWorkflow', () => {
       .rejects.toThrow('intent crashed');
   });
 });
+

@@ -9,6 +9,7 @@ import { errorService } from '../../services/error-service';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
 import { withRetry } from '../../utils/core/resilience-utils';
 import { summarizePolicySchema, summarizePolicyOutputSchema } from './summarize-policy-schemas';
+import { DEFAULT_GENERATION_PARAMS } from '../../utils/config/llm-generation-params';
 
 const logger = getLogger('SummarizePolicyTool');
 
@@ -84,7 +85,7 @@ Return ONLY a valid JSON object with this structure (no markdown, no extra text)
           model: modelToUse,
           system: systemPrompt,
           prompt: userPrompt,
-          temperature: 0.7,
+          ...DEFAULT_GENERATION_PARAMS,
         }),
         `[SummarizePolicyTool] policy-summary-${focusArea || 'general'}`
       );

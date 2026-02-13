@@ -2,7 +2,7 @@ import { Agent } from '@mastra/core/agent';
 import { summarizePolicyTool } from '../tools';
 import { getLightAgentModel } from '../model-providers';
 import { Memory } from '@mastra/memory';
-import { AGENT_NAMES, AGENT_IDS } from '../constants';
+import { AGENT_NAMES, AGENT_IDS, MESSAGING_GUIDELINES } from '../constants';
 
 const buildPolicySummaryInstructions = () => `
 You are the **Policy Intelligence Specialist**.
@@ -58,6 +58,9 @@ TEMPLATE (Localize labels to Interaction Language):
 - **conciseness:** Limit lists to 3-5 high-impact points.
 - **clarity:** Use active voice ("You must..." instead of "It is required...").
 - **safety:** If policy is ambiguous, recommend contacting the Security Team.
+
+## Messaging Guidelines (Enterprise-Safe)
+- NEVER use: ${MESSAGING_GUIDELINES.BLACKLIST_WORDS.join(', ')}
 `;
 
 export const policySummaryAgent = new Agent({

@@ -4,6 +4,7 @@ import { getLogger } from '../utils/core/logger';
 import { logErrorInfo, normalizeError } from '../utils/core/error-utils';
 import { emailIRWorkflow } from '../workflows/email-ir-workflow';
 import { fetchEmailInputSchema } from '../tools/email-ir/fetch-email';
+import { emailIrAnalyzeSuccessResponseSchema } from './email-ir-route.schemas';
 
 /**
  * POST /email-ir/analyze
@@ -51,12 +52,22 @@ export const emailIRAnalyzeHandler = async (c: Context) => {
         // Return final report
         const stepResult = result.steps['email-ir-reporting-step'];
         const report = stepResult && stepResult.status === 'success' ? stepResult.output : null;
+        if (!report) {
+            throw new Error('Workflow completed without reporting output');
+        }
 
-        return c.json({
+        const responsePayload = {
             success: true,
             report,
             runId: run.runId
-        });
+        };
+
+        const responseValidation = emailIrAnalyzeSuccessResponseSchema.safeParse(responsePayload);
+        if (!responseValidation.success) {
+            throw new Error('Workflow produced invalid report schema');
+        }
+
+        return c.json(responsePayload);
 
     } catch (error) {
         const err = normalizeError(error);

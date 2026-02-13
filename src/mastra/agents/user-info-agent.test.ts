@@ -497,8 +497,8 @@ describe('User Info Agent', () => {
   // ==================== CONSISTENCY ACROSS MODES ====================
   describe('Mode Consistency', () => {
     it('should clearly differentiate modes', () => {
-      expect(userInfoAgent.instructions).toContain('1) ASSIGNMENT MODE');
-      expect(userInfoAgent.instructions).toContain('2) REPORT MODE');
+      expect(userInfoAgent.instructions).toContain('2) ASSIGNMENT MODE');
+      expect(userInfoAgent.instructions).toContain('3) REPORT MODE');
     });
 
     it('should explain assignment mode actions', () => {

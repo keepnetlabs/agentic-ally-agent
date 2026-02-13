@@ -30,7 +30,7 @@ npm run dev
 
 ---
 
-## 🛠️ Testing the 7 Specialist Agents
+## 🛠️ Testing the 8 Specialist Agents
 
 Use these payloads to verify each specialist is working correctly.
 
@@ -91,7 +91,16 @@ curl -X POST http://localhost:8000/email-ir/analyze \
   -d '{"id":"email-12345","accessToken":"api-token-xyz","apiBaseUrl":"https://api.example.com"}'
 ```
 
-### 7. Debug Autonomous Service (Proactive Loop)
+### 7. Test Vishing Call Agent (The Voice Simulator)
+**Scenario:** Generate debrief summary from vishing call transcript.
+```bash
+curl -X POST http://localhost:8000/vishing/conversations/summary \
+  -H "Content-Type: application/json" \
+  -d '{"accessToken":"your-product-api-token-min-32-chars","messages":[{"role":"agent","text":"Hello, IT support here."},{"role":"user","text":"I did not request support."}]}'
+```
+*Note: `/vishing/prompt` initiates the call via ElevenLabs; the summary endpoint analyzes completed transcripts.*
+
+### 8. Debug Autonomous Service (Proactive Loop)
 Don't wait for Cron. Run the manual trigger script:
 ```bash
 npx tsx src/debug-workflow.ts

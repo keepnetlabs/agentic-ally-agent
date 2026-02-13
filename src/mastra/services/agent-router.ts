@@ -18,6 +18,7 @@ export type AgentRoutingResult = {
 interface RoutingDecision {
   agent: AgentName;
   taskContext?: string;
+  reasoning?: string;
 }
 
 export class AgentRouter {
@@ -58,10 +59,20 @@ export class AgentRouter {
 
       const agent = decision?.agent;
       const taskContext = decision?.taskContext;
+      const reasoning = decision?.reasoning;
 
       // Validate agent name
       if (validAgents.includes(agent)) {
-        logger.info('Routed to agent', { agent, taskContext });
+        logger.info('✅ Routed to agent', {
+          agent,
+          taskContext,
+          reasoning,
+        });
+        // Log first 80 chars of user prompt vs taskContext for language mismatch debugging
+        logger.info('🔍 LANGUAGE_DEBUG', {
+          userPromptPreview: prompt.slice(0, 80),
+          taskContextPreview: taskContext?.slice(0, 80),
+        });
         return { agentName: agent, taskContext };
       }
 

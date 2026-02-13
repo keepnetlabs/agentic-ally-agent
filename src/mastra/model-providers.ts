@@ -154,8 +154,7 @@ function getModelProvider(provider: ModelProvider) {
  * Default models used across the application
  */
 export function getDefaultAgentModel() {
-    // Using GPT-4.1-mini for better prompt following (especially for STOP instructions)
-    // GPT-4o-mini had issues with not stopping after upload/assign operations
+    // Using GPT-4o for specialist agents — strong instruction following + multi-language support
     return getModel(ModelProvider.OPENAI, Model.OPENAI_GPT_4O);
 }
 

@@ -1,6 +1,6 @@
 import { generateText, LanguageModel } from 'ai';
 import { getLanguagePrompt } from '../language/localization-language-rules';
-import { LOCALIZER_PARAMS } from '../config/llm-generation-params';
+import { TRANSCRIPT_TRANSLATION_PARAMS } from '../config/llm-generation-params';
 import { withRetry } from '../core/resilience-utils';
 import { getLogger } from '../core/logger';
 import { normalizeError } from '../core/error-utils';
@@ -36,8 +36,7 @@ export async function translateTranscript(
             content: `Translate this transcript:\n\n${transcript}`
           }
         ],
-        ...LOCALIZER_PARAMS,
-        temperature: 0.3,
+        ...TRANSCRIPT_TRANSLATION_PARAMS,
       }),
       'Transcript translation'
     );

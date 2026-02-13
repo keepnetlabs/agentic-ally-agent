@@ -8,15 +8,17 @@ This document serves as the **Master Entry Point** for developers taking over th
 
 ## 🏗️ System at a Glance
 
-Agentic Ally is an **Autonomous Security Awareness Platform** powered by **6 Specialized AI Agents**.
+Agentic Ally is an **Autonomous Security Awareness Platform** powered by **8 Specialized AI Agents**.
 
-### The "S.H.I.E.L.D." Squad (6 Agents)
+### The "S.H.I.E.L.D." Squad (8 Agents)
 1.  **Orchestrator:** The router. Decides who handles the request.
 2.  **Microlearning Agent:** Creates 5-min training courses (JSON + Content).
 3.  **Phishing Agent:** Psychological profiler. Creates phishing simulations.
-4.  **User Info Agent:** Risk analyst. Scores user vulnerability.
-5.  **Policy Agent:** RAG-based expert. Answers policy questions.
-6.  **Email IR Analyst:** Automated incident responder. Analyzes suspicious emails and generates IR reports.
+4.  **Smishing Agent:** SMS-based phishing simulations.
+5.  **User Info Agent:** Risk analyst. Scores user vulnerability.
+6.  **Policy Agent:** RAG-based expert. Answers policy questions.
+7.  **Vishing Call Agent:** Outbound voice phishing simulations via ElevenLabs.
+8.  **Email IR Analyst:** Automated incident responder. Analyzes suspicious emails and generates IR reports.
 
 ### The Modes of Operation
 *   **Reactive:** Standard Chat API (`/chat`).
@@ -29,7 +31,7 @@ Agentic Ally is an **Autonomous Security Awareness Platform** powered by **6 Spe
 1.  **[HANDOVER.md](./HANDOVER.md)** (This file) - Critical "Gotchas" and configs.
 2.  **[OVERVIEW.md](./OVERVIEW.md)** - High-level functional description.
 3.  **[ARCHITECTURE.md](./ARCHITECTURE.md)** - Deep dive into resilience & state machines.
-4.  **[API_REFERENCE.md](./API_REFERENCE.md)** - Full list of endpoints (`/chat`, `/autonomous`).
+4.  **[API_REFERENCE.md](./API_REFERENCE.md)** - Full list of endpoints (`/chat`, `/autonomous`, `/smishing/chat`, `/vishing/*`, `/email-ir/analyze`).
 5.  **[DEVELOPMENT.md](./DEVELOPMENT.md)** - How to debug & run locally.
 6.  **[FUTURE_IMPROVEMENTS.md](./FUTURE_IMPROVEMENTS.md)** - Roadmap for Autonomous Agentic System (Active Learning, Memory).
 

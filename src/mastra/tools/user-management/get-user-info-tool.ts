@@ -602,6 +602,7 @@ If a value is unknown, use "" or null.
           fullName: userFullName,
           // Use pre-calculated department value
           department: dept,
+          phoneNumber: user?.phoneNumber || "",
           email: user?.email,
           preferredLanguage: preferredLanguageCode
         },

@@ -1,53 +1,95 @@
 import { describe, it, expect } from 'vitest';
-import { featureExtractionTool, featureExtractionInputSchema, featureExtractionOutputSchema } from './feature-extraction';
+import { featureExtractionTool } from './feature-extraction';
+
+const baseInput = {
+  original_email: {
+    from: 'sender@example.com',
+    subject: 'Action required',
+    urls: [{ url: 'https://example.com/login', result: 'clean' }],
+    attachments: [{ name: 'invoice.pdf', result: 'clean' }],
+  },
+  triage_result: {
+    category: 'Phishing' as const,
+    reason: 'Credential request with urgency signals',
+    confidence: 0.91,
+  },
+  header_analysis: {
+    spf_pass: false,
+    dkim_pass: false,
+    dmarc_pass: false,
+    domain_similarity: 'example.co vs example.com',
+    sender_ip_reputation: 'suspicious',
+    geolocation_anomaly: 'insufficient_data',
+    routing_anomaly: 'insufficient_data',
+    threat_intel_findings: 'malicious_url_detected',
+    header_summary: 'Authentication checks failed.',
+    security_awareness_detected: false,
+    list_unsubscribe_present: false,
+  },
+  behavioral_analysis: {
+    urgency_level: 'high' as const,
+    emotional_pressure: 'fear' as const,
+    social_engineering_pattern: 'pretexting' as const,
+    verification_avoidance: true,
+    verification_avoidance_tactics: 'Do not contact IT directly',
+    urgency_indicators: 'immediately, urgent',
+    emotional_pressure_indicators: 'account suspension',
+    behavioral_summary: 'Sender uses urgency and fear-based pressure.',
+  },
+  intent_analysis: {
+    intent: 'phishing' as const,
+    financial_request: false,
+    credential_request: true,
+    authority_impersonation: true,
+    financial_request_details: 'insufficient_data',
+    credential_request_details: 'asks for credentials',
+    authority_claimed: 'IT Security Team',
+    intent_summary: 'Email asks recipient to verify credentials.',
+  },
+};
 
 describe('featureExtractionTool', () => {
-  it('should be defined', () => {
-    expect(featureExtractionTool).toBeDefined();
+  it('sets engine_indicators_present=true when any URL result is not clean', async () => {
+    const input = {
+      ...baseInput,
+      original_email: {
+        ...baseInput.original_email,
+        urls: [{ url: 'https://evil.test', result: 'Malicious' }],
+      },
+    };
+
+    const result = await (featureExtractionTool as any).execute({ context: input });
+    expect(result.engine_indicators_present).toBe(true);
   });
 
-  it('should have correct ID', () => {
-    expect(featureExtractionTool.id).toBe('email-ir-feature-extraction-tool');
+  it('sets engine_indicators_present=true from attachment when urls are clean', async () => {
+    const input = {
+      ...baseInput,
+      original_email: {
+        ...baseInput.original_email,
+        urls: [{ url: 'https://example.com', result: 'clean' }],
+        attachments: [{ name: 'payload.exe', result: 'Phishing' }],
+      },
+    };
+
+    const result = await (featureExtractionTool as any).execute({ context: input });
+    expect(result.engine_indicators_present).toBe(true);
   });
 
-  it('should have correct description', () => {
-    expect(featureExtractionTool.description).toContain('feature set');
+  it('sets engine_indicators_present=false when URL and attachment results are clean', async () => {
+    const result = await (featureExtractionTool as any).execute({ context: baseInput });
+    expect(result.engine_indicators_present).toBe(false);
   });
 
-  it('should have input schema defined', () => {
-    expect(featureExtractionInputSchema).toBeDefined();
-  });
+  it('returns composed summary and preserves pass-through objects', async () => {
+    const result = await (featureExtractionTool as any).execute({ context: baseInput });
 
-  it('should have output schema defined', () => {
-    expect(featureExtractionOutputSchema).toBeDefined();
-  });
-
-  it('should output include engine_indicators_present field', () => {
-    const fields = featureExtractionOutputSchema.shape;
-    expect(fields.engine_indicators_present).toBeDefined();
-  });
-
-  it('should output include intent field', () => {
-    const fields = featureExtractionOutputSchema.shape;
-    expect(fields.intent).toBeDefined();
-  });
-
-  it('should output include analysis_summary field', () => {
-    const fields = featureExtractionOutputSchema.shape;
-    expect(fields.analysis_summary).toBeDefined();
-  });
-
-  it('should have execute function', () => {
-    expect(featureExtractionTool.execute).toBeDefined();
-    expect(typeof featureExtractionTool.execute).toBe('function');
-  });
-
-  it('should pass through original email in output', () => {
-    const fields = featureExtractionOutputSchema.shape;
-    expect(fields.original_email).toBeDefined();
-    expect(fields.triage_result).toBeDefined();
-    expect(fields.header_analysis).toBeDefined();
-    expect(fields.behavioral_analysis).toBeDefined();
-    expect(fields.intent_analysis).toBeDefined();
+    expect(result.analysis_summary).toContain('Header authentication: Authentication checks failed.');
+    expect(result.analysis_summary).toContain('Body behavioral signals: Sender uses urgency and fear-based pressure.');
+    expect(result.analysis_summary).toContain('Intent analysis: Email asks recipient to verify credentials.');
+    expect(result.triage_result).toEqual(baseInput.triage_result);
+    expect(result.header_analysis).toEqual(baseInput.header_analysis);
+    expect(result.behavioral_analysis).toEqual(baseInput.behavioral_analysis);
+    expect(result.intent_analysis).toEqual(baseInput.intent_analysis);
   });
 });

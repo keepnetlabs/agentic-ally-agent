@@ -169,6 +169,16 @@ describe('language-utils', () => {
       const result = validateBCP47LanguageCode('en_gb');
       expect(result).toBe('en-gb');
     });
+
+    it('should resolve language+region form with parentheses aliases', () => {
+      const result = validateBCP47LanguageCode('English (United States)');
+      expect(result).toBe('en-us');
+    });
+
+    it('should resolve region alias for chinese script variants', () => {
+      const result = validateBCP47LanguageCode('traditional chinese (taiwan)');
+      expect(result).toBe('zh-hant-tw');
+    });
   });
 
   // ==================== validateBCP47LanguageCode - LEGACY FIXES ====================
@@ -204,6 +214,11 @@ describe('language-utils', () => {
       const result = validateBCP47LanguageCode('zh-Hans-CN');
       expect(result).toContain('zh');
       expect(result).toContain('cn');
+    });
+
+    it('should title-case script subtags before final lowercase normalization', () => {
+      const result = validateBCP47LanguageCode('sr-cyrl-rs');
+      expect(result).toBe('sr-cyrl-rs');
     });
 
     it('should handle extension subtags', () => {

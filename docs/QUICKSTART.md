@@ -1,8 +1,8 @@
 # Quick Start Guide
 
-**Last Updated:** February 3, 2026
+**Last Updated:** February 12, 2026
 
-Get **Agentic Ally** (The 6-Agent Security Platform) running locally in 5 minutes.
+Get **Agentic Ally** (The 8-Agent Security Platform) running locally in 5 minutes.
 
 ## Prerequisites
 
@@ -54,7 +54,7 @@ You should see:
 
 ---
 
-## Step 4: Test the 6 Agents
+## Step 4: Test the 8 Agents
 
 The platform is **multi-modal**. Test different capabilities:
 

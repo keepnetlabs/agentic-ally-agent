@@ -1,6 +1,6 @@
 import { Context, Next } from 'hono';
 import { getLogger } from '../utils/core/logger';
-import { API_ENDPOINTS } from '../constants';
+import { API_ENDPOINTS, TOKEN_CACHE_INVALID_TTL_MS } from '../constants';
 import { tokenCache } from '../utils/core/token-cache';
 import { SKIP_AUTH_PATHS, isPublicUnauthenticatedPath } from './public-endpoint-policy';
 
@@ -157,7 +157,7 @@ export const authTokenMiddleware = async (c: Context, next: Next): Promise<Respo
             });
 
             // Cache invalid result for a shorter time (e.g. 1 min) to prevent DoS on auth server
-            tokenCache.set(token, false, 60000);
+            tokenCache.set(token, false, TOKEN_CACHE_INVALID_TTL_MS);
 
             return c.json(
                 {

@@ -7,6 +7,7 @@ This document defines endpoints that intentionally bypass `X-AGENTIC-ALLY-TOKEN`
 - `/autonomous`
 - `/code-review-validate`
 - `/vishing/prompt`
+- `/vishing/conversations/summary`
 - `/smishing/chat`
 - `/email-ir/analyze`
 

@@ -8,6 +8,7 @@ import {
   getSmishingLandingPageUserPrompt,
 } from './smishing-editor-prompts';
 import { LandingPageInput } from './phishing-editor-schemas';
+import { EDITOR_PARAMS } from '../../utils/config/llm-generation-params';
 
 export type GenerateTextResult = Awaited<ReturnType<typeof generateText>>;
 export type AiModel = Parameters<typeof generateText>[0]['model'];
@@ -37,7 +38,7 @@ export function createSmsEditPromise(args: {
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userPrompt },
           ],
-          temperature: 0.3,
+          ...EDITOR_PARAMS,
         }),
         TIMEOUT_VALUES.PHISHING_EDITOR_EMAIL_TIMEOUT_MS
       ),
@@ -70,7 +71,7 @@ export function createLandingEditPromises(args: {
               { role: 'system', content: landingSystemPrompt },
               { role: 'user', content: landingUserPrompt },
             ],
-            temperature: 0.3,
+            ...EDITOR_PARAMS,
           }),
           TIMEOUT_VALUES.PHISHING_EDITOR_LANDING_TIMEOUT_MS
         ),

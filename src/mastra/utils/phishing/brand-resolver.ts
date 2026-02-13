@@ -4,6 +4,7 @@ import { getLogger } from '../core/logger';
 import { cleanResponse } from '../content-processors/json-cleaner';
 import { getLogoUrl } from '../landing-page/logo-resolver';
 import { normalizeError } from '../core/error-utils';
+import { EXTRACTION_PARAMS, BRAND_CREATIVE_PARAMS } from '../config/llm-generation-params';
 
 const logger = getLogger('BrandResolver');
 
@@ -54,7 +55,7 @@ export async function resolveLogoAndBrand(
           content: `Company/Brand Name: "${fromName}"\nScenario: "${scenario}"${emailContext}\n\nAnalyze if this represents a well-known brand:\n- Examples of recognized brands: Microsoft, Google, Amazon, Apple, PayPal, Netflix, Spotify, Adobe, Salesforce, Stripe, Shopify, Meta, Facebook, Twitter, LinkedIn, Instagram, TikTok, YouTube, Hepsiburada, Trendyol, GittiGidiyor, N11, Amazon.tr, etc.\n- Examples of generic/internal: IT Support, HR Department, Finance Team, Security Team, etc.\n\nFor recognized brands, include their authentic brand colors:\n- Amazon: primary: "#FF9900", secondary: "#000000", accent: "#FF9900"\n- Microsoft: primary: "#0078D4", secondary: "#737373", accent: "#00A4EF"\n- Google: primary: "#4285F4", secondary: "#EA4335", accent: "#34A853"\n- PayPal: primary: "#003087", secondary: "#009CDE", accent: "#012169"\n- Apple: primary: "#000000", secondary: "#A8A8A8", accent: "#007AFF"\n\nReturn ONLY valid JSON: { "domain": "microsoft.com" or null, "brandName": "Microsoft" or null, "isRecognizedBrand": true/false, "brandColors": { "primary": "#0078D4", "secondary": "#737373", "accent": "#00A4EF" } or null }`
         }
       ],
-      temperature: 0.1 // Low temperature for deterministic extraction
+      ...EXTRACTION_PARAMS,
     });
 
     logger.debug('LLM Response for Brand Resolution', {
@@ -178,7 +179,7 @@ export async function generateContextualBrand(
           content: `Scenario: "${scenario}"\nCategory: "${category}"\nFrom Name: "${fromName}"\n\nSuggest a realistic brand name and optional domain that fits this phishing scenario context. Return ONLY valid JSON: { "suggestedBrandName": "Brand Name", "domain": "brandname.com" or null }`
         }
       ],
-      temperature: 0.7 // Higher temperature for creativity
+      ...BRAND_CREATIVE_PARAMS,
     });
 
     // Clean and parse JSON response

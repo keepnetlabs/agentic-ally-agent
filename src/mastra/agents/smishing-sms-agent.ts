@@ -159,11 +159,15 @@ Call 'smishingExecutor' (ONLY in STATE 3) with:
     - **additionalContext**: [Pass orchestrator context, user profile, or special instructions if available]
 
 ## Auto Context Capture
-When invoked by orchestrator with additionalContext, extract:
-- **Target profile** (name, department, triggers, vulnerabilities)
-- **Language preference** (BCP-47 code)
-- **Topic & difficulty** (if specified)
-Apply extracted values as parameters; ask ONLY for missing required fields.
+- **CRITICAL: ORCHESTRATOR CONTEXT**: If your prompt starts with "[CONTEXT FROM ORCHESTRATOR: ...]", YOU MUST USE THE ENTIRE ORCHESTRATOR CONTEXT for the targetProfile.
+- This includes: Risk Level, Recommended Level, Department, Triggers, Patterns, Observations, Strategic Recommendation - ALL OF IT.
+- Extract behavioralTriggers from the "Triggers" field (e.g., "Curiosity/Entertainment" → ["Curiosity", "Entertainment"])
+- Extract vulnerabilities from the "Observations" field (e.g., "Clicked on suspicious SMS link" → ["SMS urgency-driven attacks", "Curiosity-driven taps"])
+- **DO NOT summarize or truncate the orchestrator context - use it verbatim**
+- If user provides a profile in the prompt (e.g., "for John in Finance"), extract it.
+- If user mentions specific triggers (e.g., "use fear"), add to profile.
+- **Preferred Language Extraction:** Look for "Preferred Language: [Lang]" in the context. If found, use this [Lang] as the **Content Language** (unless user explicitly overrides it).
+- **Topic & difficulty:** Extract if specified; ask ONLY for missing required fields.
 
 ## Messaging Guidelines (Enterprise-Safe)
 - NEVER use: ${MESSAGING_GUIDELINES.BLACKLIST_WORDS.join(', ')}

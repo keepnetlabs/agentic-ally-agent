@@ -120,13 +120,13 @@ export const CLOUDFLARE_KV = {
 } as const;
 
 export const KV_NAMESPACES = {
-  // Phishing KV Namespace (Hardcoded fallback for now, ideally env var)
+  // Phishing KV Namespace (set PHISHING_KV_NAMESPACE_ID in prod)
   PHISHING: process.env.PHISHING_KV_NAMESPACE_ID || 'f6609d79aa2642a99584b05c64ecaa9f',
 
-  // Smishing KV Namespace
+  // Smishing KV Namespace (set SMISHING_KV_NAMESPACE_ID in prod)
   SMISHING: process.env.SMISHING_KV_NAMESPACE_ID || 'd761e2df84b6499487a8ac02fb9e673c',
 
-  // Microlearning KV Namespace (Usually handled by default env binding, but good to have explicit)
+  // Microlearning KV Namespace (from env binding)
   MICROLEARNING: process.env.MICROLEARNING_KV_NAMESPACE_ID || '',
 } as const;
 
@@ -252,7 +252,7 @@ export const CACHE_CONFIG = {
 } as const;
 
 // ============================================
-// TIMEOUT CONFIGURATION
+// TIMEOUT VALUES (Workflow, Image, Editor)
 // ============================================
 
 export const TIMEOUT_VALUES = {
@@ -368,8 +368,9 @@ export const MODEL_PROVIDERS = {
   DEFAULTS: {
     OPENAI: 'OPENAI_GPT_4O',
     WORKERS_AI: 'WORKERS_AI_GPT_OSS_120B',
-    GOOGLE: 'GOOGLE_GENERATIVE_AI_GEMINI_15',
+    GOOGLE: 'GOOGLE_GEMINI_2_5_PRO',
   },
+
 } as const;
 
 // ============================================
@@ -606,6 +607,7 @@ export const AGENT_NAMES = {
   MICROLEARNING: 'microlearningAgent',
   USER_INFO: 'userInfoAssistant',
   POLICY_SUMMARY: 'policySummaryAssistant',
+  VISHING_CALL: 'vishingCallAssistant',
   ORCHESTRATOR: 'orchestrator',
   EMAIL_IR_ANALYST: 'emailIrAnalyst',
 } as const;
@@ -620,6 +622,7 @@ export const AGENT_IDS = {
   MICROLEARNING: 'microlearning-agent',
   USER_INFO: 'user-info-agent',
   POLICY_SUMMARY: 'policy-summary-agent',
+  VISHING_CALL: 'vishing-call-agent',
   ORCHESTRATOR: 'orchestrator-agent',
   EMAIL_IR_ANALYST: 'email-ir-analyst',
 } as const;
@@ -813,7 +816,47 @@ export const ROUTING = {
 
   // User analysis triggers
   USER_ANALYSIS_TRIGGERS: ['Who is', 'Find', 'Analyze'] as const,
+
+  // Vishing call triggers
+  VISHING_CALL_TRIGGERS: [
+    'Call',
+    'Phone call',
+    'Vishing call',
+    'Make a call',
+    'Outbound call',
+    'Ara',
+    'Telefon',
+    'Telefon et',
+  ] as const,
 } as const;
+
+// ============================================
+// ELEVENLABS CONFIGURATION
+// ============================================
+
+export const ELEVENLABS = {
+  /** Base URL for all ElevenLabs Conversational AI API calls */
+  API_BASE_URL: 'https://api.elevenlabs.io/v1/convai',
+
+  /** Default ElevenLabs agent ID (from environment or fallback) */
+  DEFAULT_AGENT_ID: process.env.ELEVENLABS_AGENT_ID || 'agent_0901kfr9djtqfg988bypdyah40mm',
+
+  /** Endpoint paths (appended to API_BASE_URL) */
+  ENDPOINTS: {
+    LIST_PHONE_NUMBERS: '/phone-numbers',
+    OUTBOUND_CALL: '/twilio/outbound-call',
+  },
+
+  /** Timeout for ElevenLabs API calls (ms) */
+  API_TIMEOUT_MS: 15000,
+} as const;
+
+// ============================================
+// TOKEN CACHE
+// ============================================
+
+/** TTL for cached invalid tokens (1 min). Shorter than valid to avoid DoS on auth server. */
+export const TOKEN_CACHE_INVALID_TTL_MS = 60_000;
 
 // ============================================
 // API ENDPOINTS & AUTHENTICATION
@@ -839,15 +882,18 @@ export const API_ENDPOINTS = {
     process.env.TRAINING_WORKER_SEND ||
     'https://crud-training-worker.keepnet-labs-ltd-business-profile4086.workers.dev/send',
 
-  // Smishing worker endpoints
+  // Smishing worker endpoints (fallback: phishing worker when SMISHING_WORKER_* not set)
   SMISHING_WORKER_URL:
     process.env.SMISHING_WORKER_URL ||
+    process.env.PHISHING_WORKER_URL ||
     'https://crud-phishing-worker.keepnet-labs-ltd-business-profile4086.workers.dev/submit',
   SMISHING_WORKER_SUBMIT:
     process.env.SMISHING_WORKER_URL ||
+    process.env.PHISHING_WORKER_URL ||
     'https://crud-phishing-worker.keepnet-labs-ltd-business-profile4086.workers.dev/submit',
   SMISHING_WORKER_SEND:
     process.env.SMISHING_WORKER_SEND ||
+    process.env.PHISHING_WORKER_SEND ||
     'https://crud-phishing-worker.keepnet-labs-ltd-business-profile4086.workers.dev/send',
 
   // Microlearning API endpoints

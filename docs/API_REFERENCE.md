@@ -1,6 +1,6 @@
 # API Reference
 
-**Last Updated:** February 6, 2026
+**Last Updated:** February 12, 2026
 
 This document details the REST API endpoints available in Agentic Ally.
 
@@ -329,11 +329,39 @@ Analyze a suspicious email and generate an incident response report.
   "success": true,
   "report": {
     "executive_summary": {
-      "verdict": "SUSPICIOUS",
-      "risk_level": "MEDIUM",
-      "confidence": 62,
-      "recommended_action": "Review"
-    }
+      "email_category": "Other Suspicious",
+      "verdict": "Suspicious Activity Detected - Review Recommended",
+      "risk_level": "Medium",
+      "confidence": 0.62,
+      "evidence_strength": "Moderate",
+      "confidence_basis": "Based on behavioral and contextual indicators.",
+      "status": "Analysis Complete"
+    },
+    "agent_determination": "The message shows suspicious social engineering signals and needs review.",
+    "risk_indicators": {
+      "observed": ["Urgency framing present"],
+      "not_observed": ["No confirmed malware attachment"]
+    },
+    "evidence_flow": [
+      {
+        "step": 1,
+        "title": "Email Triage",
+        "description": "Classified as suspicious for analyst review.",
+        "finding_label": "FLAG"
+      },
+      {
+        "step": 2,
+        "title": "Final Verdict",
+        "description": "Final category assigned.",
+        "finding_label": "Other Suspicious"
+      }
+    ],
+    "actions_recommended": {
+      "p1_immediate": [],
+      "p2_follow_up": ["Validate sender and notify target user"],
+      "p3_hardening": ["Tune detection rules for similar patterns"]
+    },
+    "confidence_limitations": "Moderate confidence. Human review recommended before taking action."
   },
   "runId": "run_abc123"
 }
@@ -347,10 +375,14 @@ Analyze a suspicious email and generate an incident response report.
   "success": true,
   "report": {
     "executive_summary": {
-      "verdict": "CRITICAL THREAT",
-      "risk_level": "HIGH",
-      "confidence": 95,
-      "recommended_action": "Quarantine"
+      "email_category": "Phishing",
+      "verdict": "Phishing Confirmed - Immediate Action Required",
+      "risk_level": "High",
+      "confidence": 0.95,
+      "evidence_strength": "Strong",
+      "confidence_basis": "Based on behavioral and contextual indicators.",
+      "status": "Analysis Complete",
+      "why_this_matters": "Potential credential compromise and lateral movement risk."
     },
     "agent_determination": "This email is a sophisticated phishing attempt impersonating a trusted vendor.",
     "risk_indicators": {
@@ -365,40 +397,76 @@ Analyze a suspicious email and generate an incident response report.
       ]
     },
     "evidence_flow": [
-      { "step": 1, "action": "Header analysis", "finding": "SPF/DKIM/DMARC failures" },
-      { "step": 2, "action": "Behavioral analysis", "finding": "High urgency and verification avoidance" },
-      { "step": 3, "action": "Intent analysis", "finding": "Credential harvesting detected" },
-      { "step": 4, "action": "Triage", "finding": "Classified as Phishing with high confidence" }
+      {
+        "step": 1,
+        "title": "Email Triage and Initial Receipt",
+        "description": "Email received and triaged as suspicious.",
+        "finding_label": "PASS"
+      },
+      {
+        "step": 2,
+        "title": "Header and Authentication Analysis",
+        "description": "Authentication checks and sender trust evaluated.",
+        "finding_label": "FLAG"
+      },
+      {
+        "step": 3,
+        "title": "Intent and Content Examination",
+        "description": "Credential-harvest pattern detected.",
+        "finding_label": "ALERT"
+      },
+      {
+        "step": 4,
+        "title": "Final Verdict and Reporting",
+        "description": "Classified as phishing with high confidence.",
+        "finding_label": "Phishing"
+      }
     ],
-    "blast_radius": {
-      "affected_users": 12,
-      "exposure_scope": "Finance and HR mailboxes",
-      "potential_impact": "Credential theft and unauthorized transfers"
+    "actions_recommended": {
+      "p1_immediate": ["Quarantine email", "Block sender domain"],
+      "p2_follow_up": ["Alert recipients", "Reset credentials if clicked"],
+      "p3_hardening": ["Tune anti-phishing rules"]
     },
-    "actions_taken": [
-      "Flagged email as suspicious"
-    ],
-    "actions_recommended": [
-      "Quarantine email",
-      "Alert recipients",
-      "Reset credentials if clicked"
-    ],
-    "technical_details": {
-      "sender_ip": "203.0.113.45",
-      "sender_domain": "amaozn-secure.com",
-      "phishing_url": "http://malicious.example.com/login",
-      "authentication_status": { "spf": "fail", "dkim": "fail", "dmarc": "fail" },
-      "geolocation": "Unexpected region for claimed sender",
-      "email_routing": "Suspicious relay pattern"
-    },
-    "confidence_limitations": "Limited visibility into sender infrastructure.",
-    "transparency_notice": "This report is AI-generated and requires human review."
+    "confidence_limitations": "High confidence in determination. Multiple independent signals converge on this verdict."
   },
   "runId": "run_abc123"
 }
 ```
 
----
+### `finding_label` Canonical Values (Frontend)
+- Non-final `evidence_flow` steps should use: `PASS`, `FLAG`, `ALERT`, `HIGH`.
+- Final `evidence_flow` step must use the exact value of `report.executive_summary.email_category`.
+- Final-step category labels:
+  - `Spam`
+  - `Marketing`
+  - `Internal`
+  - `CEO Fraud`
+  - `Phishing`
+  - `Sextortion`
+  - `Malware`
+  - `Security Awareness`
+  - `Other Suspicious`
+  - `Benign`
+
+Example FE mapping:
+```ts
+const findingLabelToBadge: Record<string, 'neutral' | 'info' | 'warning' | 'danger' | 'success'> = {
+  PASS: 'success',
+  FLAG: 'warning',
+  ALERT: 'danger',
+  HIGH: 'danger',
+  Spam: 'info',
+  Marketing: 'info',
+  Internal: 'info',
+  'CEO Fraud': 'danger',
+  Phishing: 'danger',
+  Sextortion: 'danger',
+  Malware: 'danger',
+  'Security Awareness': 'neutral',
+  'Other Suspicious': 'warning',
+  Benign: 'success',
+};
+```
 
 ### Error Responses
 
@@ -423,12 +491,119 @@ Analyze a suspicious email and generate an incident response report.
 
 ---
 
+## 7. Vishing Conversations Summary (`POST /vishing/conversations/summary`)
+
+Analyzes a completed vishing (voice phishing) call transcript and returns a structured debrief: timeline, disclosed info, outcome, next steps, and status card.
+
+### Headers
+| Header | Value | Required | Description |
+|--------|-------|----------|-------------|
+| `Content-Type` | `application/json` | Yes | - |
+| `X-AGENTIC-ALLY-TOKEN` | `<your-token>` | No | Public unauthenticated endpoint (optional) |
+| `X-BASE-API-URL` | `https://api.example.com` | No | Base URL for token validation (default from config) |
+
+### Request Body
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `accessToken` | string | Yes | Product API token (min 32 chars). Validated via cache or `GET /auth/validate`. |
+| `messages` | array | Yes | Transcript of the vishing call. 1–500 messages. |
+
+**Message format:**
+```json
+{
+  "role": "agent" | "user",
+  "text": "spoken content",      // or "message" (platform may use either)
+  "timestamp": 12                // optional, seconds into call
+}
+```
+
+**Example Request:**
+```json
+{
+  "accessToken": "your-product-api-token-min-32-chars",
+  "messages": [
+    { "role": "agent", "text": "Hello, this is IT support calling about your account.", "timestamp": 0 },
+    { "role": "user", "text": "I didn't request any support.", "timestamp": 5 },
+    { "role": "agent", "text": "We need to verify your identity. Can you confirm your badge number?", "timestamp": 12 }
+  ]
+}
+```
+
+### Response (Success)
+```json
+{
+  "success": true,
+  "summary": {
+    "timeline": [
+      { "timestamp": "0:00", "label": "Introduction", "snippet": "Agent introduced as IT support." },
+      { "timestamp": "0:05", "label": "Data Request", "snippet": "Agent asked for badge number." }
+    ],
+    "disclosedInfo": [],
+    "outcome": "refused"
+  },
+  "disclosedInformation": [],
+  "nextSteps": [
+    { "title": "Verifying Caller Identity", "description": "Always verify through official channels before sharing any information." },
+    { "title": "Never Share OTPs or Passwords", "description": "Legitimate organizations never ask for passwords or one-time codes over the phone." }
+  ],
+  "statusCard": {
+    "variant": "success",
+    "title": "No Data Disclosed",
+    "description": "You correctly refused to share sensitive information. Well done recognizing the attempt."
+  }
+}
+```
+
+### Outcome Values
+| `outcome` | Meaning |
+|-----------|---------|
+| `data_disclosed` | Learner shared sensitive info (passwords, OTP, card numbers, etc.). |
+| `refused` | Learner refused without disclosing. |
+| `detected` | Learner identified it as a simulation. |
+| `other` | Call ended without clear outcome (dropped, incomplete). |
+
+### Status Card Variants
+| `variant` | UI style |
+|-----------|----------|
+| `warning` | Data disclosed — review recommended. |
+| `success` | No data disclosed / simulation detected. |
+| `info` | Call completed, neutral. |
+
+### Error Responses
+
+**400 - Invalid request format**
+```json
+{
+  "success": false,
+  "error": "Invalid request format",
+  "details": { "messages": { "_errors": ["Required"] } }
+}
+```
+
+**401 - Unauthorized**
+```json
+{
+  "error": "Unauthorized",
+  "message": "Invalid or expired access token"
+}
+```
+
+**500 - Internal error**
+```json
+{
+  "success": false,
+  "error": "LLM response was not valid JSON"
+}
+```
+
+---
+
 ## Security Notes
 
 1.  **Correlation Header:** every response includes `X-Correlation-ID`. If caller sends one, it is propagated; otherwise service generates one.
 2.  **Auth Model:**
     *   Requires `X-AGENTIC-ALLY-TOKEN` by default.
-    *   Public unauthenticated endpoints: `/autonomous`, `/code-review-validate`, `/vishing/prompt`, `/smishing/chat`, `/email-ir/analyze`.
+    *   Public unauthenticated endpoints: `/autonomous`, `/code-review-validate`, `/vishing/prompt`, `/vishing/conversations/summary`, `/smishing/chat`, `/email-ir/analyze`.
     *   Internal auth-skip endpoints: `/health`, `/__refresh`, `/__hot-reload-status`, `/api/telemetry`.
 3.  **Rate Limit Tiers (per IP):**
     *   Public unauthenticated endpoints: `180 req/min`
@@ -437,3 +612,4 @@ Analyze a suspicious email and generate an incident response report.
 4.  **Sensitive Data Handling:**
     *   Avoid including personal identifiers in prompts.
     *   Agents should not expose personal identifiers in responses.
+

@@ -7,6 +7,7 @@ import { withTimeout } from '../../utils/core/resilience-utils';
 import { resolveLogoAndBrand } from '../../utils/phishing/brand-resolver';
 import { getIntentClassificationPrompt } from './phishing-editor-prompts';
 import { LanguageModel } from '../../types/language-model';
+import { EXTRACTION_PARAMS } from '../../utils/config/llm-generation-params';
 
 /**
  * Detects if the user wants to use their internal brand logo or an external brand.
@@ -30,7 +31,7 @@ export async function detectAndResolveBrand(
             generateText({
                 model: aiModel,
                 messages: [{ role: 'user', content: intentPrompt }],
-                temperature: 0.1, // High determinism
+                ...EXTRACTION_PARAMS,
             }),
             20000 // 20s timeout for this lightweight check
         );
@@ -73,7 +74,7 @@ export async function detectAndResolveBrand(
                     generateText({
                         model: aiModel,
                         messages: [{ role: 'user', content: brandExtractPrompt }],
-                        temperature: 0.1
+                        ...EXTRACTION_PARAMS,
                     }),
                     10000
                 );
