@@ -1,6 +1,6 @@
 # Workflow Documentation
 
-**Last Updated:** February 3, 2026
+**Last Updated:** February 12, 2026
 
 This document visualizes the core logic flows of the Agentic Ally system.
 
@@ -197,7 +197,34 @@ graph TD
 
 ---
 
-## 8. Localization Workflow (3-Level Fallback)
+## 8. Vishing Call Workflow
+
+How the system initiates outbound voice phishing simulations via ElevenLabs.
+
+```mermaid
+graph TD
+    Start[/vishing/prompt] --> Config[Configure Scenario]
+    Config --> Persona[Select Persona]
+    Persona --> Pretext[Select Pretext]
+    Pretext --> Target[Select Target]
+    Target --> Caller[Select Caller Number]
+    
+    Caller --> Initiate[Initiate ElevenLabs Call]
+    Initiate --> Call[Real-time Voice Conversation]
+    Call --> Transcript[Transcript Captured]
+    
+    Transcript --> Summary[/vishing/conversations/summary]
+    Summary --> LLM[LLM Debrief Summary]
+    LLM --> Report[Return JSON Report]
+```
+
+**Endpoints**
+- `POST /vishing/prompt` – Start vishing call with scenario config.
+- `POST /vishing/conversations/summary` – Generate debrief summary from call transcript.
+
+---
+
+## 9. Localization Workflow (3-Level Fallback)
 
 How we translate content without breaking it.
 

@@ -120,20 +120,11 @@ LLM is prevented from inventing personal identities:
 
 ### Rate Limiting
 
-Prevents abuse and DDoS attacks:
+Prevents abuse and DDoS attacks. See `constants.ts` and `RATE_LIMIT_TIERS` for current values:
 
-```
-POST /chat: 50 requests/minute
-GET /health: 300 requests/minute
-```
-
-Configuration in `constants.ts`:
-```typescript
-RATE_LIMIT_CONFIG = {
-  CHAT: { maxRequests: 50, windowMs: 60000 },
-  HEALTH: { maxRequests: 300, windowMs: 60000 }
-}
-```
+- **Chat/default:** 100 req/min
+- **Health:** 300 req/min
+- **Public unauthenticated** (`/smishing/chat`, `/vishing/*`, `/email-ir/analyze`): 180 req/min
 
 ### Cloudflare Worker Sandbox
 
@@ -338,6 +329,6 @@ curl https://your-agent.workers.dev/health
 
 ---
 
-**Last Updated:** January 9, 2025
-**Version:** 1.0
+**Last Updated:** February 13, 2026
+**Version:** 1.1
 **Status:** Production Ready

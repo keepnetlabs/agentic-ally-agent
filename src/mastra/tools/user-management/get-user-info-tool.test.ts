@@ -39,7 +39,8 @@ describe('getUserInfoTool', () => {
         lastName: 'Doe',
         email: 'john.doe@example.com',
         departmentName: 'IT',
-        department: 'IT'
+        department: 'IT',
+        phoneNumber: '+1234567890'
       }
     ]
   };
@@ -248,7 +249,7 @@ describe('getUserInfoTool', () => {
   describe('Direct ID Lookup (Fast Path)', () => {
     it('should skip user search when targetUserResourceId is provided', async () => {
       const fetchSpy = (global.fetch as any)
-        // First call: findUserById (fetches user profile)
+        // First call: findUserById (fetches user profile via getAll)
         .mockResolvedValueOnce({
           ok: true,
           json: async () => ({
@@ -257,7 +258,8 @@ describe('getUserInfoTool', () => {
               firstName: 'User',
               lastName: 'Direct-123',
               email: 'user@example.com',
-              department: 'IT'
+              department: 'IT',
+              phoneNumber: '+1234567890'
             }]
           })
         })
@@ -560,9 +562,9 @@ describe('getUserInfoTool', () => {
     });
 
     it('should generate deterministic default recommendations based on user ID when no activities found', async () => {
-      // Mock user lookup and empty timeline
+      // Mock user lookup and empty timeline (phoneNumber avoids extra enrich fetch)
       (global.fetch as any)
-        // First call: findUserById (fetches user profile)
+        // First call: findUserById (fetches user profile via getAll)
         .mockResolvedValueOnce({
           ok: true,
           json: async () => ({
@@ -571,7 +573,8 @@ describe('getUserInfoTool', () => {
               firstName: 'Test',
               lastName: 'User',
               email: 'test@example.com',
-              department: 'IT'
+              department: 'IT',
+              phoneNumber: '+1234567890'
             }]
           })
         })

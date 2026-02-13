@@ -1,4 +1,4 @@
-<svg viewBox="0 0 2000 1450" xmlns="http://www.w3.org/2000/svg">
+<svg viewBox="0 0 2700 1400" xmlns="http://www.w3.org/2000/svg">
   <!-- Define styles (Original Palette) -->
   <defs>
     <style>
@@ -7,9 +7,12 @@
       .box-header-ml { fill: #3498db; }       /* Blue */
       .box-header-phishing { fill: #e74c3c; } /* Red */
       .box-header-userinfo { fill: #27ae60; } /* Green */
-      .box-header-policy { fill: #8e44ad; }   /* Purple (New) */
-      .box-header-auto { fill: #d35400; }     /* Orange (New) */
+      .box-header-policy { fill: #8e44ad; }   /* Purple */
+      .box-header-auto { fill: #d35400; }     /* Orange */
       .box-header-worker { fill: #f39c12; }   /* Yellow */
+      .box-header-smishing { fill: #16a085; } /* Teal */
+      .box-header-emailir { fill: #2980b9; }  /* Dark Blue */
+      .box-header-vishing { fill: #c0392b; }  /* Dark Red */
 
       .workflow-box { fill: #ffffff; stroke-width: 2; }
       .workflow-box-ml { stroke: #3498db; }
@@ -22,8 +25,9 @@
       .text-normal { fill: #2c3e50; font-size: 12px; font-family: sans-serif; }
       .text-small { fill: #7f8c8d; font-size: 10px; font-family: sans-serif; }
       
-      .arrow { stroke: #34495e; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
-      .arrow-colored { stroke-width: 2; fill: none; }
+      .arrow { stroke: #34495e; stroke-width: 2; fill: none; marker-end: url(#arrowhead); stroke-linecap: round; stroke-linejoin: round; }
+      .arrow-no-marker { stroke: #34495e; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+      .arrow-colored { stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
       .arrow-label { fill: #34495e; font-size: 11px; font-weight: bold; font-family: sans-serif; }
     </style>
     
@@ -34,64 +38,75 @@
     <marker id="arrowhead-userinfo" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><polygon points="0 0, 10 3, 0 6" fill="#27ae60" /></marker>
     <marker id="arrowhead-policy" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><polygon points="0 0, 10 3, 0 6" fill="#8e44ad" /></marker>
     <marker id="arrowhead-worker" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><polygon points="0 0, 10 3, 0 6" fill="#f39c12" /></marker>
+    <marker id="arrowhead-smishing" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><polygon points="0 0, 10 3, 0 6" fill="#16a085" /></marker>
+    <marker id="arrowhead-emailir" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><polygon points="0 0, 10 3, 0 6" fill="#2980b9" /></marker>
+    <marker id="arrowhead-vishing" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><polygon points="0 0, 10 3, 0 6" fill="#c0392b" /></marker>
   </defs>
 
   <!-- Title -->
-  <text x="1000" y="30" font-size="28" font-weight="bold" text-anchor="middle" fill="#2c3e50" font-family="sans-serif">
+  <text x="1350" y="30" font-size="28" font-weight="bold" text-anchor="middle" fill="#2c3e50" font-family="sans-serif">
     Agentic Ally - Complete Platform Architecture
   </text>
 
   <!-- ============================================== -->
-  <!-- 1. INPUT LAYER (Dual Trigger) -->
+  <!-- 1. INPUT LAYER (Triple Trigger) -->
   <!-- ============================================== -->
   
   <!-- Reactive Box -->
-  <rect class="box" x="600" y="50" width="350" height="60" rx="5"/>
-  <rect class="box-header" x="600" y="50" width="350" height="25" rx="5"/>
-  <text class="text-header" x="775" y="67" text-anchor="middle">Reactive: HTTP POST /chat</text>
-  <text class="text-normal" x="620" y="85">• User Prompt (String)</text>
-  <text class="text-normal" x="620" y="100">• Context (UserId, Dept)</text>
+  <rect class="box" x="50" y="50" width="380" height="60" rx="5"/>
+  <rect class="box-header" x="50" y="50" width="380" height="25" rx="5"/>
+  <text class="text-header" x="240" y="67" text-anchor="middle">Reactive: HTTP POST /chat</text>
+  <text class="text-normal" x="70" y="85">• User Prompt (String)</text>
+  <text class="text-normal" x="70" y="100">• Context (UserId, Dept)</text>
 
-  <!-- Proactive Box (New) -->
-  <rect class="box" x="1050" y="50" width="350" height="60" rx="5"/>
-  <rect class="box-header-auto" x="1050" y="50" width="350" height="25" rx="5"/>
-  <text class="text-header" x="1225" y="67" text-anchor="middle">Proactive: Autonomous Loop</text>
-  <text class="text-normal" x="1070" y="85">• Cron Schedule (Daily)</text>
-  <text class="text-normal" x="1070" y="100">• Risk-based Trigger</text>
+  <!-- Proactive Box -->
+  <rect class="box" x="480" y="50" width="380" height="60" rx="5"/>
+  <rect class="box-header-auto" x="480" y="50" width="380" height="25" rx="5"/>
+  <text class="text-header" x="670" y="67" text-anchor="middle">Proactive: Autonomous Loop</text>
+  <text class="text-normal" x="500" y="85">• Cron Schedule (Daily)</text>
+  <text class="text-normal" x="500" y="100">• Risk-based Trigger</text>
 
-  <!-- Converging Arrows to Middleware -->
-  <path class="arrow" d="M 775 110 L 1000 145"/> <!-- Reactive -->
-  <path class="arrow" d="M 1225 110 L 1000 145"/> <!-- Proactive -->
+  <!-- Public API Endpoints Box (Right column - separate flow) -->
+  <rect class="box" x="2050" y="50" width="550" height="60" rx="5"/>
+  <rect class="box-header" x="2050" y="50" width="550" height="25" rx="5"/>
+  <text class="text-header" x="2325" y="67" text-anchor="middle">Public API Endpoints (Direct)</text>
+  <text class="text-normal" x="2070" y="85">/smishing/chat | /vishing/prompt | /vishing/conversations/summary | /email-ir/analyze</text>
+  <text class="text-small" x="2070" y="100">• Bypass /chat → Direct to agents below</text>
+
+  <!-- Converging Arrows to Middleware (Y-shape, single arrowhead) -->
+  <path class="arrow-no-marker" d="M 240 110 L 650 110"/> <!-- Reactive branch -->
+  <path class="arrow-no-marker" d="M 670 110 L 650 110"/> <!-- Proactive branch -->
+  <path class="arrow" d="M 650 110 L 650 145"/> <!-- Down to Middleware -->
 
   <!-- ============================================== -->
   <!-- 2. MIDDLEWARE & ORCHESTRATOR -->
   <!-- ============================================== -->
   
-  <!-- Middleware Layer -->
-  <rect class="box" x="700" y="145" width="600" height="60" rx="5"/>
-  <rect class="box-header" x="700" y="145" width="600" height="25" rx="5"/>
-  <text class="text-header" x="1000" y="162" text-anchor="middle">Middleware Layer (Request Context)</text>
-  <text class="text-normal" x="720" y="185">✓ AsyncLocalStorage | ✓ Auth Token | ✓ Rate Limiting</text>
+  <!-- Middleware Layer (main flow only) -->
+  <rect class="box" x="300" y="145" width="700" height="60" rx="5"/>
+  <rect class="box-header" x="300" y="145" width="700" height="25" rx="5"/>
+  <text class="text-header" x="650" y="162" text-anchor="middle">Middleware Layer (Request Context)</text>
+  <text class="text-normal" x="320" y="185">✓ AsyncLocalStorage | ✓ Auth Token | ✓ Rate Limiting</text>
 
-  <path class="arrow" d="M 1000 205 L 1000 230"/>
+  <path class="arrow" d="M 650 205 L 650 230"/>
 
   <!-- Orchestrator -->
-  <rect class="box" x="700" y="230" width="600" height="60" rx="5"/>
-  <rect fill="#9b59b6" x="700" y="230" width="600" height="25" rx="5"/>
-  <text class="text-header" x="1000" y="247" text-anchor="middle">Orchestrator Agent (The Router)</text>
-  <text class="text-normal" x="750" y="270">Analyzes Intent &amp; History -> Routes to 4 Specialist Agents</text>
+  <rect class="box" x="300" y="230" width="700" height="60" rx="5"/>
+  <rect fill="#9b59b6" x="300" y="230" width="700" height="25" rx="5"/>
+  <text class="text-header" x="650" y="247" text-anchor="middle">Orchestrator Agent (The Router)</text>
+  <text class="text-normal" x="350" y="270">Analyzes Intent &amp; History → Routes to 7 Specialist Agents</text>
 
-  <!-- Routing Arrows -->
-  <path class="arrow-colored" stroke="#3498db" marker-end="url(#arrowhead-ml)" d="M 850 290 L 250 340"/>     <!-- ML -->
-  <path class="arrow-colored" stroke="#e74c3c" marker-end="url(#arrowhead-phishing)" d="M 950 290 L 750 340"/> <!-- Phishing -->
-  <path class="arrow-colored" stroke="#8e44ad" marker-end="url(#arrowhead-policy)" d="M 1050 290 L 1250 340"/> <!-- Policy -->
-  <path class="arrow-colored" stroke="#27ae60" marker-end="url(#arrowhead-userinfo)" d="M 1150 290 L 1750 340"/> <!-- UserInfo -->
+  <!-- Routing Arrows to Main Agents (fan out from center) -->
+  <path class="arrow-colored" stroke="#3498db" marker-end="url(#arrowhead-ml)" d="M 650 290 L 250 340"/>     <!-- ML -->
+  <path class="arrow-colored" stroke="#e74c3c" marker-end="url(#arrowhead-phishing)" d="M 650 290 L 750 340"/> <!-- Phishing -->
+  <path class="arrow-colored" stroke="#8e44ad" marker-end="url(#arrowhead-policy)" d="M 650 290 L 1250 340"/> <!-- Policy -->
+  <path class="arrow-colored" stroke="#27ae60" marker-end="url(#arrowhead-userinfo)" d="M 650 290 L 1750 340"/> <!-- UserInfo -->
 
   <!-- Labels -->
-  <text x="500" y="320" class="arrow-label" fill="#3498db">Microlearning</text>
-  <text x="800" y="320" class="arrow-label" fill="#e74c3c">Phishing</text>
-  <text x="1130" y="320" class="arrow-label" fill="#8e44ad">Policy</text>
-  <text x="1500" y="320" class="arrow-label" fill="#27ae60">User Info</text>
+  <text x="250" y="325" class="arrow-label" fill="#3498db">Microlearning</text>
+  <text x="650" y="325" class="arrow-label" fill="#e74c3c">Phishing</text>
+  <text x="1000" y="325" class="arrow-label" fill="#8e44ad">Policy</text>
+  <text x="1550" y="325" class="arrow-label" fill="#27ae60">User Info</text>
 
 
   <!-- ============================================== -->
@@ -177,7 +192,44 @@
 
 
   <!-- ============================================== -->
-  <!-- 4. WORKERS LAYER (Restored!) -->
+  <!-- 3b. DIRECT API AGENTS (Right column - no crossing) -->
+  <!-- ============================================== -->
+
+  <!-- Separator: Main flow | Direct API flow -->
+  <line x1="2000" y1="50" x2="2000" y2="720" stroke="#bdc3c7" stroke-width="1" stroke-dasharray="8,4" opacity="0.6"/>
+
+  <!-- Arrows from Public APIs to Direct Agents (parallel, no overlap) -->
+  <path class="arrow-colored" stroke="#16a085" marker-end="url(#arrowhead-smishing)" stroke-dasharray="6,4" d="M 2180 110 L 2180 340"/>
+  <path class="arrow-colored" stroke="#2980b9" marker-end="url(#arrowhead-emailir)" stroke-dasharray="6,4" d="M 2325 110 L 2325 470"/>
+  <path class="arrow-colored" stroke="#c0392b" marker-end="url(#arrowhead-vishing)" stroke-dasharray="6,4" d="M 2470 110 L 2470 600"/>
+
+  <!-- Smishing Agent (right column) -->
+  <rect class="box" x="2050" y="340" width="550" height="110" rx="5"/>
+  <rect class="box-header-smishing" x="2050" y="340" width="550" height="25" rx="5"/>
+  <text class="text-header" x="2325" y="358" text-anchor="middle">Smishing Agent (SMS Simulator)</text>
+  <text fill="#16a085" font-weight="bold" x="2070" y="380" font-size="10">(SMS Templates | Link Placeholders | Department-aware)</text>
+  <text class="text-normal" x="2070" y="400" font-size="9">/smishing/chat → Generate SMS + Landing Page</text>
+  <text fill="#9b59b6" font-size="9" x="2070" y="435">🔗 OpenAI | Twilio (optional)</text>
+
+  <!-- Email IR Analyst (right column) -->
+  <rect class="box" x="2050" y="470" width="550" height="110" rx="5"/>
+  <rect class="box-header-emailir" x="2050" y="470" width="550" height="25" rx="5"/>
+  <text class="text-header" x="2325" y="488" text-anchor="middle">Email IR Analyst</text>
+  <text fill="#2980b9" font-weight="bold" x="2070" y="510" font-size="10">(Triage | IR Report | Risk Level)</text>
+  <text class="text-normal" x="2070" y="530" font-size="9">/email-ir/analyze → Headers + Body Intent + Behavioral → Report</text>
+  <text fill="#9b59b6" font-size="9" x="2070" y="565">🔗 OpenAI | KV</text>
+
+  <!-- Vishing Call Agent (right column) -->
+  <rect class="box" x="2050" y="600" width="550" height="110" rx="5"/>
+  <rect class="box-header-vishing" x="2050" y="600" width="550" height="25" rx="5"/>
+  <text class="text-header" x="2325" y="618" text-anchor="middle">Vishing Call Agent</text>
+  <text fill="#c0392b" font-weight="bold" x="2070" y="640" font-size="10">(ElevenLabs Voice | Debrief Summary)</text>
+  <text class="text-normal" x="2070" y="660" font-size="9">/vishing/prompt | /vishing/conversations/summary</text>
+  <text fill="#9b59b6" font-size="9" x="2070" y="695">🔗 ElevenLabs Conversational AI</text>
+
+
+  <!-- ============================================== -->
+  <!-- 4. WORKERS LAYER -->
   <!-- ============================================== -->
   
   <!-- crud-training-worker -->
@@ -196,9 +248,9 @@
   <text class="text-normal" x="610" y="805">• Tracks Clicks &amp; Reports</text>
   <text class="text-normal" x="610" y="820">• Updates Vulnerability</text>
 
-  <!-- Connect Agents to Workers -->
-  <path class="arrow" stroke="#f39c12" marker-end="url(#arrowhead-worker)" d="M 250 680 L 250 750"/>
-  <path class="arrow" stroke="#f39c12" marker-end="url(#arrowhead-worker)" d="M 750 680 L 750 750"/>
+  <!-- Connect Agents to Workers (vertical, clean) -->
+  <path class="arrow-colored" stroke="#f39c12" marker-end="url(#arrowhead-worker)" d="M 250 680 L 250 750"/>
+  <path class="arrow-colored" stroke="#f39c12" marker-end="url(#arrowhead-worker)" d="M 750 680 L 750 750"/>
 
 
   <!-- ============================================== -->
@@ -218,51 +270,55 @@
   <text class="text-normal" x="820" y="945" font-family="monospace">autonomous:thread:{id}</text>
   <text class="text-normal" x="820" y="960" font-family="monospace">autonomous:policy:{id}</text>
 
-  <!-- Converge Arrows -->
-  <path class="arrow" stroke="#3498db" marker-end="url(#arrowhead-ml)" d="M 250 850 L 500 900"/>
-  <path class="arrow" stroke="#e74c3c" marker-end="url(#arrowhead-phishing)" d="M 750 850 L 800 900"/>
-  <path class="arrow" stroke="#27ae60" marker-end="url(#arrowhead-userinfo)" d="M 1750 680 L 1400 900"/> <!-- UserInfo writes to KV? Indirectly via Autonomous -->
+  <!-- Converge Arrows to Storage (route around workers) -->
+  <path class="arrow-colored" stroke="#3498db" marker-end="url(#arrowhead-ml)" d="M 250 680 L 80 680 L 80 880 L 500 900"/>
+  <path class="arrow-colored" stroke="#e74c3c" marker-end="url(#arrowhead-phishing)" d="M 750 680 L 950 680 L 950 880 L 800 900"/>
+  <path class="arrow-colored" stroke="#27ae60" marker-end="url(#arrowhead-userinfo)" d="M 1750 680 L 1750 880 L 1400 900"/>
   
   <!-- ============================================== -->
   <!-- 6. RESPONSE LAYER -->
   <!-- ============================================== -->
 
-  <rect class="box" x="450" y="1030" width="1100" height="50" rx="5"/>
-  <rect class="box-header" x="450" y="1030" width="1100" height="25" rx="5"/>
-  <text class="text-header" x="1000" y="1047" text-anchor="middle">4. Return Response (Streamed)</text>
-  <text class="text-normal" x="700" y="1070">Ready-to-deploy Learning URL | Phishing Simulation Links | Policy HTML | Risk Report</text>
+  <rect class="box" x="450" y="1020" width="1100" height="50" rx="5"/>
+  <rect class="box-header" x="450" y="1020" width="1100" height="25" rx="5"/>
+  <text class="text-header" x="1000" y="1037" text-anchor="middle">Return Response (Streamed)</text>
+  <text class="text-normal" x="500" y="1060">Learning URL | Phishing/Smishing Links | Policy HTML | Risk Report | Vishing Summary | Email IR Report</text>
   
-  <path class="arrow" d="M 1000 980 L 1000 1030"/>
+  <!-- Storage to Response -->
+  <path class="arrow" d="M 1000 980 L 1000 1020"/>
 
 
   <!-- ============================================== -->
-  <!-- LEGEND / FEATURES (Restored Detailed Version) -->
+  <!-- LEGEND / FEATURES -->
   <!-- ============================================== -->
   
-  <rect class="box" x="100" y="1120" width="1800" height="200" rx="5"/>
-  <text x="120" y="1150" font-size="16" font-weight="bold" fill="#2c3e50" font-family="sans-serif">Key Features &amp; Capabilities:</text>
+  <rect class="box" x="100" y="1110" width="2500" height="220" rx="5"/>
+  <text x="120" y="1140" font-size="16" font-weight="bold" fill="#2c3e50" font-family="sans-serif">Key Features &amp; Capabilities:</text>
 
-  <g transform="translate(120, 1180)">
-    <text y="0"  class="text-normal">✓ Orchestrator Router: NLP-based intent analysis to route between 4 Agents.</text>
-    <text y="20" class="text-normal">✓ Middleware Layer: AsyncLocalStorage for request isolation, Rate Limiting, &amp; Auth.</text>
-    <text y="40" class="text-normal">✓ 4-State Machine: Strict checks (Gather -> Summary -> Execute -> Complete) before generation.</text>
-    <text y="60" class="text-normal">✓ Unlimited Languages: Auto-detection (BCP-47) &amp; Parallel Localization.</text>
-    <text y="80" class="text-normal">✓ Brand Detection: Apistemic Logos API integration with text fallback.</text>
+  <g transform="translate(120, 1170)">
+    <text y="0"  class="text-normal">✓ Orchestrator: NLP-based intent analysis to route between 7 Specialist Agents.</text>
+    <text y="20" class="text-normal">✓ Public APIs: /smishing/chat | /vishing/prompt | /vishing/conversations/summary | /email-ir/analyze (direct).</text>
+    <text y="40" class="text-normal">✓ Middleware: AsyncLocalStorage, Rate Limiting, Auth.</text>
+    <text y="60" class="text-normal">✓ 4-State Machine: Strict checks (Gather -> Summary -> Execute -> Complete) before generation.</text>
+    <text y="80" class="text-normal">✓ Smishing: SMS templates + landing pages (department-aware).</text>
+    <text y="100" class="text-normal">✓ Vishing: ElevenLabs voice calls with debrief summary.</text>
   </g>
 
-  <g transform="translate(700, 1180)">
-    <text y="0"  class="text-normal">✓ 3-Level Retry: Corruption detection, JSON repair, and HTML tag protection.</text>
-    <text y="20" class="text-normal">✓ Phishing &amp; Quishing: Cialdini-based email generation + QR code simulated attacks.</text>
-    <text y="40" class="text-normal">✓ Policy Expert: RAG-based search over internal documents with Vector DB (D1).</text>
+  <g transform="translate(700, 1170)">
+    <text y="0"  class="text-normal">✓ Email IR: Triage + IR report (headers, body intent, behavioral signals).</text>
+    <text y="20" class="text-normal">✓ Phishing &amp; Quishing: Cialdini-based email + QR code attacks.</text>
+    <text y="40" class="text-normal">✓ Policy Expert: RAG-based search over internal documents (D1).</text>
     <text y="60" class="text-normal">✓ Risk Profiling: Behavioral analysis to auto-assign training levels.</text>
-    <text y="80" class="text-normal">✓ External Workers: Async execution for LMS assignment &amp; campaign deployment.</text>
+    <text y="80" class="text-normal">✓ External Workers: Async LMS assignment &amp; campaign deployment.</text>
+    <text y="100" class="text-normal">✓ Unlimited Languages: Auto-detection (BCP-47) &amp; Parallel Localization.</text>
   </g>
 
-  <g transform="translate(1300, 1180)">
+  <g transform="translate(1300, 1170)">
      <text y="0"  class="text-normal">✓ Cloudflare KV: Atomic writes with namespace isolation (ml:*, ps:*).</text>
-     <text y="20" class="text-normal">✓ Autonomous Loop: Proactive cron job used to 'heal' high-risk users.</text>
+     <text y="20" class="text-normal">✓ Autonomous Loop: Proactive cron job to 'heal' high-risk users.</text>
      <text y="40" class="text-normal">✓ Streamed Responses: Low TTFB architecture for instant feedback.</text>
      <text y="60" class="text-normal">✓ D1 Vector DB: Semantic search for video &amp; policy matching.</text>
+     <text y="80" class="text-normal">✓ Brand Detection: Apistemic Logos API integration with text fallback.</text>
   </g>
 
 </svg>

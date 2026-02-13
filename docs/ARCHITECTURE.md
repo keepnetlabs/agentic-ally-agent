@@ -14,22 +14,25 @@ Agentic Ally is built on the **Mastra** framework and deployed on **Cloudflare W
 ┌──────────────────────────────────────────────────────┐
 │  Orchestration Layer (Router & Decision Maker)       │
 │  • Analyzes User Intent (NLP)                        │
-│  • Routes to Specialist Agents                       │
+│  • Routes to 7 Specialist Agents                    │
 └────────────────────┬─────────────────────────────────┘
                      │
-          ┌──────────┼──────────┐
-          ▼          ▼          ▼
-    MICROLEARNING  PHISHING   USER INFO   EMAIL IR
-       AGENT        AGENT      AGENT       AGENT
-          │          │          │
-          └─────┬────┴──────────┘
+     ┌───────┬───────┼───────┬───────┬───────┐
+     ▼       ▼       ▼       ▼       ▼       ▼
+  MICRO  PHISH  SMISH  POLICY USER   EMAIL   VISHING
+ LEARNING  EMAIL  SMS   RAG    INFO    IR     CALL
+   AGENT   AGENT  AGENT AGENT  AGENT  AGENT   AGENT
+     │       │      │     │      │      │       │
+     └───────┴──────┴─────┴──────┴──────┴───────┘
                 │
                 ▼
 ┌──────────────────────────────────────────────────────┐
 │       Workflow Engine (Parallel Execution)           │
 │  • Create Microlearning (8 scenes parallel)          │
-│  • Create Phishing (Email + Landing Page)            │
-│  • Email IR Analysis (Headers + Behavior + Intent)            │
+│  • Create Phishing (Email + Landing Page)            │
+│  • Smishing (SMS + Landing Page)                     │
+│  • Email IR Analysis (Headers + Behavior + Intent)  │
+│  • Vishing (ElevenLabs Voice Calls)                  │
 │  • Autonomous Loop (Scheduled generation)            │
 └────────────────────┬─────────────────────────────────┘
                      │

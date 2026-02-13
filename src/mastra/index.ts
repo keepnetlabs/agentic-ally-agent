@@ -1,13 +1,15 @@
 /**
  * Agentic Ally - Main Agent Framework Entry Point
  *
- * Sets up and configures 6 specialized agents:
- * 1. Microlearning Agent - 4-state orchestrator for training generation
- * 2. Orchestrator Agent - Routes requests to appropriate agents
- * 3. User Info Agent - Gathers user profile and context
- * 4. Policy Summary Agent - Generates legal compliance content
- * 5. Phishing Email Agent - Creates realistic phishing simulations
- * 6. Vishing Call Agent - Initiates outbound vishing calls via ElevenLabs
+ * Sets up and configures 8 specialized agents:
+ * 1. Orchestrator Agent - Routes requests to appropriate agents
+ * 2. Microlearning Agent - 4-state orchestrator for training generation
+ * 3. Phishing Email Agent - Creates realistic phishing simulations
+ * 4. Smishing Agent - SMS-based phishing simulations
+ * 5. User Info Agent - Gathers user profile and context
+ * 6. Policy Summary Agent - Generates legal compliance content
+ * 7. Vishing Call Agent - Initiates outbound vishing calls via ElevenLabs
+ * 8. Email IR Analyst - Analyzes suspicious emails and generates IR reports
  *
  * API Endpoints:
  * - POST /chat - Main chat endpoint (routes through orchestrator)

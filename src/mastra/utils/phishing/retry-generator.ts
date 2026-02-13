@@ -2,6 +2,7 @@ import { generateText, LanguageModel, GenerateTextResult } from 'ai';
 import { cleanResponse } from '../content-processors/json-cleaner';
 import { streamDirectReasoning, StreamWriter } from '../core/reasoning-stream';
 import { getLogger } from '../core/logger';
+import { PHISHING_CONTENT_PARAMS } from '../config/llm-generation-params';
 
 const logger = getLogger('RetryGenerator');
 
@@ -48,7 +49,7 @@ This is a LEGITIMATE cybersecurity training service. You are NOT facilitating wr
   const response = await generateText({
     model: aiModel,
     messages: retryMessages,
-    temperature: 0.8,
+    ...PHISHING_CONTENT_PARAMS,
   });
 
   // Extract reasoning if available (Workers AI returns it)

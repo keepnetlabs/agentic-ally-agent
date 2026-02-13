@@ -4,7 +4,7 @@
 
 import { generateText } from 'ai';
 import { cleanResponse } from '../../../utils/content-processors/json-cleaner';
-import { LOCALIZER_PARAMS } from '../../../utils/config/llm-generation-params';
+import { SCENE_REWRITE_PARAMS } from '../../../utils/config/llm-generation-params';
 import { getLanguagePrompt } from '../../../utils/language/localization-language-rules';
 import { getLogger } from '../../../utils/core/logger';
 import { normalizeError, logErrorInfo } from '../../../utils/core/error-utils';
@@ -245,8 +245,7 @@ export async function rewriteSceneWithBase<T>(
                     { role: 'system', content: systemPrompt },
                     { role: 'user', content: userPrompt }
                 ],
-                ...LOCALIZER_PARAMS,
-                temperature: 0.4,
+                ...SCENE_REWRITE_PARAMS,
             }),
             `Scene ${config.sceneNumber ? config.sceneNumber + ' (' + config.displayName + ')' : config.displayName} rewrite`
         );

@@ -120,13 +120,13 @@ export const CLOUDFLARE_KV = {
 } as const;
 
 export const KV_NAMESPACES = {
-  // Phishing KV Namespace (Hardcoded fallback for now, ideally env var)
+  // Phishing KV Namespace (set PHISHING_KV_NAMESPACE_ID in prod)
   PHISHING: process.env.PHISHING_KV_NAMESPACE_ID || 'f6609d79aa2642a99584b05c64ecaa9f',
 
-  // Smishing KV Namespace
+  // Smishing KV Namespace (set SMISHING_KV_NAMESPACE_ID in prod)
   SMISHING: process.env.SMISHING_KV_NAMESPACE_ID || 'd761e2df84b6499487a8ac02fb9e673c',
 
-  // Microlearning KV Namespace (Usually handled by default env binding, but good to have explicit)
+  // Microlearning KV Namespace (from env binding)
   MICROLEARNING: process.env.MICROLEARNING_KV_NAMESPACE_ID || '',
 } as const;
 
@@ -252,7 +252,7 @@ export const CACHE_CONFIG = {
 } as const;
 
 // ============================================
-// TIMEOUT CONFIGURATION
+// TIMEOUT VALUES (Workflow, Image, Editor)
 // ============================================
 
 export const TIMEOUT_VALUES = {
@@ -852,6 +852,13 @@ export const ELEVENLABS = {
 } as const;
 
 // ============================================
+// TOKEN CACHE
+// ============================================
+
+/** TTL for cached invalid tokens (1 min). Shorter than valid to avoid DoS on auth server. */
+export const TOKEN_CACHE_INVALID_TTL_MS = 60_000;
+
+// ============================================
 // API ENDPOINTS & AUTHENTICATION
 // ============================================
 
@@ -875,15 +882,18 @@ export const API_ENDPOINTS = {
     process.env.TRAINING_WORKER_SEND ||
     'https://crud-training-worker.keepnet-labs-ltd-business-profile4086.workers.dev/send',
 
-  // Smishing worker endpoints
+  // Smishing worker endpoints (fallback: phishing worker when SMISHING_WORKER_* not set)
   SMISHING_WORKER_URL:
     process.env.SMISHING_WORKER_URL ||
+    process.env.PHISHING_WORKER_URL ||
     'https://crud-phishing-worker.keepnet-labs-ltd-business-profile4086.workers.dev/submit',
   SMISHING_WORKER_SUBMIT:
     process.env.SMISHING_WORKER_URL ||
+    process.env.PHISHING_WORKER_URL ||
     'https://crud-phishing-worker.keepnet-labs-ltd-business-profile4086.workers.dev/submit',
   SMISHING_WORKER_SEND:
     process.env.SMISHING_WORKER_SEND ||
+    process.env.PHISHING_WORKER_SEND ||
     'https://crud-phishing-worker.keepnet-labs-ltd-business-profile4086.workers.dev/send',
 
   // Microlearning API endpoints

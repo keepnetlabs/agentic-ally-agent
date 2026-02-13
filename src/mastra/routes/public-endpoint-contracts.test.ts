@@ -2,9 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import { smishingChatHandler } from './smishing-chat-route';
 import { vishingPromptHandler } from './vishing-prompt-route';
+import { vishingConversationsSummaryHandler } from './vishing-conversations-summary-route';
 import { emailIRAnalyzeHandler } from './email-ir-route';
 import { smishingChatRequestSchema } from './smishing-chat-route.schemas';
 import { vishingPromptRequestSchema } from './vishing-prompt-route.schemas';
+import { vishingConversationsSummaryRequestSchema } from './vishing-conversations-summary-route.schemas';
 import { fetchEmailInputSchema } from '../tools/email-ir/fetch-email';
 import { emailIrAnalyzeSuccessResponseSchema } from './email-ir-route.schemas';
 
@@ -44,6 +46,7 @@ function createMockContext(requestBody: unknown) {
   return {
     req: {
       json: vi.fn().mockResolvedValue(requestBody),
+      header: vi.fn().mockReturnValue(undefined),
     },
     json: jsonMock,
     _getJsonCall: () => jsonMock.mock.calls[0] as [unknown, number | undefined],
@@ -89,6 +92,18 @@ const validationErrorResponseSchema = z.object({
   details: z.record(z.any()).optional(),
 });
 
+const vishingConversationsSummarySuccessSchema = z.object({
+  success: z.literal(true),
+  summary: z.object({
+    timeline: z.array(z.object({ timestamp: z.string(), label: z.string(), snippet: z.string() })),
+    disclosedInfo: z.array(z.object({ item: z.string(), timestamp: z.string() })),
+    outcome: z.enum(['data_disclosed', 'refused', 'detected', 'other']),
+  }),
+  disclosedInformation: z.array(z.any()),
+  nextSteps: z.array(z.object({ title: z.string(), description: z.string() })),
+  statusCard: z.object({ variant: z.enum(['warning', 'success', 'info']), title: z.string(), description: z.string() }),
+});
+
 vi.mock('ai', () => ({
   generateText: vi.fn(),
 }));
@@ -132,6 +147,25 @@ vi.mock('../utils/core/error-utils', () => ({
     code: 'UNKNOWN',
   })),
   logErrorInfo: vi.fn(),
+}));
+
+vi.mock('../utils/core/token-cache', () => ({
+  tokenCache: {
+    get: vi.fn(),
+    set: vi.fn(),
+  },
+}));
+
+vi.mock('../tools/vishing-call/vishing-conversations-summary-tool', () => ({
+  generateVishingConversationsSummary: vi.fn().mockResolvedValue({
+    summary: {
+      timeline: [{ timestamp: '0:00', label: 'Introduction', snippet: 'Agent introduced.' }],
+      disclosedInfo: [],
+      outcome: 'refused',
+    },
+    nextSteps: [{ title: 'Verify Caller', description: 'Always verify through official channels.' }],
+    statusCard: { variant: 'success', title: 'No Data Disclosed', description: 'You correctly refused.' },
+  }),
 }));
 
 vi.mock('../workflows/email-ir-workflow', () => ({
@@ -190,6 +224,22 @@ describe('Public Endpoint Contracts', () => {
         id: '',
         accessToken: '',
         apiBaseUrl: 'ftp://invalid.example.com',
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it('vishing conversations summary request contract accepts valid payload', () => {
+      const result = vishingConversationsSummaryRequestSchema.safeParse({
+        accessToken: 'x'.repeat(32),
+        messages: [{ role: 'agent', text: 'Hello' }, { role: 'user', text: 'Hi' }],
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it('vishing conversations summary request contract rejects invalid payload', () => {
+      const result = vishingConversationsSummaryRequestSchema.safeParse({
+        accessToken: 'short',
+        messages: [],
       });
       expect(result.success).toBe(false);
     });
@@ -337,6 +387,55 @@ describe('Public Endpoint Contracts', () => {
 
       expect(status).toBe(400);
       expect(validationErrorResponseSchema.safeParse(payload).success).toBe(true);
+    });
+
+    it('vishing conversations summary success response matches contract', async () => {
+      const { tokenCache } = await import('../utils/core/token-cache');
+      vi.mocked(tokenCache.get).mockReturnValue(true);
+
+      const ctx = createMockContext({
+        accessToken: 'x'.repeat(32),
+        messages: [{ role: 'agent', text: 'Hello, this is support' }, { role: 'user', text: 'Hi' }],
+      });
+
+      await vishingConversationsSummaryHandler(ctx);
+      const [payload, status] = ctx._getJsonCall();
+
+      expect(status ?? 200).toBe(200);
+      expect(vishingConversationsSummarySuccessSchema.safeParse(payload).success).toBe(true);
+      expect(payload.success).toBe(true);
+      expect(payload.summary).toBeDefined();
+      expect(payload.nextSteps).toBeDefined();
+      expect(payload.statusCard).toBeDefined();
+    });
+
+    it('vishing conversations summary invalid request returns error contract', async () => {
+      const ctx = createMockContext({
+        accessToken: 'x'.repeat(32),
+        messages: [], // empty messages invalid
+      });
+
+      await vishingConversationsSummaryHandler(ctx);
+      const [payload, status] = ctx._getJsonCall();
+
+      expect(status).toBe(400);
+      expect(validationErrorResponseSchema.safeParse(payload).success).toBe(true);
+    });
+
+    it('vishing conversations summary unauthorized returns 401', async () => {
+      const { tokenCache } = await import('../utils/core/token-cache');
+      vi.mocked(tokenCache.get).mockReturnValue(false);
+
+      const ctx = createMockContext({
+        accessToken: 'x'.repeat(32),
+        messages: [{ role: 'agent', text: 'Hi' }, { role: 'user', text: 'Hello' }],
+      });
+
+      await vishingConversationsSummaryHandler(ctx);
+      const [payload, status] = ctx._getJsonCall();
+
+      expect(status).toBe(401);
+      expect(payload).toMatchObject({ error: 'Unauthorized', message: 'Invalid or expired access token' });
     });
   });
 });

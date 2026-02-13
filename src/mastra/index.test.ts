@@ -64,7 +64,8 @@ vi.mock('./agents', () => ({
     phishingEmailAgent: {},
     smishingSmsAgent: {},
     policySummaryAgent: {},
-    userInfoAgent: {}
+    userInfoAgent: {},
+    vishingCallAgent: {}
 }));
 
 describe('Mastra API Routes', () => {

@@ -33,6 +33,7 @@ import { errorService } from '../services/error-service';
 import { ProductService } from '../services/product-service';
 import { postProcessPhishingLandingHtml } from '../utils/content-processors/phishing-html-postprocessors';
 import { buildLandingPagePrompts } from '../utils/prompt-builders/phishing-prompts';
+import { PHISHING_SCENARIO_PARAMS, PHISHING_CONTENT_PARAMS } from '../utils/config/llm-generation-params';
 
 // --- Steps ---
 
@@ -84,7 +85,7 @@ const analyzeRequest = createStep({
         async () => generateText({
           model: aiModel,
           messages,
-          temperature: 0.7,
+          ...PHISHING_SCENARIO_PARAMS,
         }),
         'smishing-scenario-analysis'
       );
@@ -262,7 +263,7 @@ const generateSms = createStep({
         async () => generateText({
           model: aiModel,
           messages,
-          temperature: 0.8,
+          ...PHISHING_CONTENT_PARAMS,
         }),
         'smishing-sms-generation'
       );
@@ -287,7 +288,7 @@ const generateSms = createStep({
             { role: 'system', content: systemPrompt + '\n\nCRITICAL: You MUST include {PHISHINGURL} in one message.' },
             { role: 'user', content: userPrompt + '\n\nIMPORTANT: Include {PHISHINGURL} in one message.' }
           ],
-          temperature: 0.8,
+          ...PHISHING_CONTENT_PARAMS,
         });
         const retryJson = cleanResponse(retryResponse.text, 'smishing-sms-retry');
         parsedResult = JSON.parse(retryJson);
@@ -397,7 +398,7 @@ const generateLandingPage = createStep({
         async () => generateText({
           model: aiModel,
           messages: messagesToSend,
-          temperature: 0.8,
+          ...PHISHING_CONTENT_PARAMS,
         }),
         'smishing-landing-page-generation'
       );

@@ -5,7 +5,7 @@ import { validateBCP47LanguageCode, DEFAULT_LANGUAGE } from '../../../utils/lang
 import { cleanResponse } from '../../../utils/content-processors/json-cleaner';
 import { buildPolicySystemPrompt } from '../../../utils/prompt-builders/policy-context-builder';
 import { CLARITY_ACCESSIBILITY_POLICY, DEFAULT_MICROLEARNING_ETHICAL_POLICY } from '../../../utils/prompt-builders/prompt-analysis-policies';
-import { PROMPT_ANALYSIS_PARAMS } from '../../../utils/config/llm-generation-params';
+import { PROMPT_ANALYSIS_PARAMS, EXTRACTION_PARAMS } from '../../../utils/config/llm-generation-params';
 import { MICROLEARNING, ROLES, CATEGORIES, THEME_COLORS } from '../../../constants';
 import { streamReasoning } from '../../../utils/core/reasoning-stream';
 import { getLogger } from '../../../utils/core/logger';
@@ -109,7 +109,7 @@ Text to Analyze:
 ${sampledText}
 
 Target language code:`,
-                temperature: 0.1, // Lower temperature for more deterministic code extraction
+                ...EXTRACTION_PARAMS,
             }),
             `[AnalyzeUserPromptTool] language-detection`
         );

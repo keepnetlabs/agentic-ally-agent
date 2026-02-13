@@ -12,6 +12,7 @@ import {
   MAX_POLICY_INPUT_CHARS,
   buildHeuristicPolicySummary,
 } from './policy-summary-utils';
+import { LOW_DETERMINISM_PARAMS } from '../config/llm-generation-params';
 
 const logger = getLogger('PolicyCache');
 
@@ -117,7 +118,7 @@ CRITICAL:
               model,
               system: systemPrompt,
               prompt: userPrompt,
-              temperature: 0.2,
+              ...LOW_DETERMINISM_PARAMS,
             }),
             POLICY_SUMMARY_TIMEOUT_MS
           ),

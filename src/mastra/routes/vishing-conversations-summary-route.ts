@@ -6,7 +6,7 @@
  */
 
 import { Context } from 'hono';
-import { API_ENDPOINTS } from '../constants';
+import { API_ENDPOINTS, TOKEN_CACHE_INVALID_TTL_MS } from '../constants';
 import { errorService } from '../services/error-service';
 import { getLogger } from '../utils/core/logger';
 import { logErrorInfo, normalizeError } from '../utils/core/error-utils';
@@ -53,7 +53,7 @@ export async function vishingConversationsSummaryHandler(c: Context) {
         });
         tokenValid = res.ok;
         if (tokenValid) tokenCache.set(accessToken, true);
-        else tokenCache.set(accessToken, false, 60000);
+        else tokenCache.set(accessToken, false, TOKEN_CACHE_INVALID_TTL_MS);
       } catch {
         tokenValid = false;
       }

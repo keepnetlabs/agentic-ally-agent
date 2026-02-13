@@ -34,6 +34,7 @@ import { normalizeError, logErrorInfo } from '../utils/core/error-utils';
 import { errorService } from '../services/error-service';
 import { ProductService } from '../services/product-service';
 import { postProcessPhishingEmailHtml, postProcessPhishingLandingHtml } from '../utils/content-processors/phishing-html-postprocessors';
+import { PHISHING_SCENARIO_PARAMS, PHISHING_CONTENT_PARAMS } from '../utils/config/llm-generation-params';
 
 // --- Steps ---
 
@@ -110,7 +111,7 @@ const analyzeRequest = createStep({
           return await generateText({
             model: aiModel,
             messages,
-            temperature: 0.7,
+            ...PHISHING_SCENARIO_PARAMS,
           });
         },
         'phishing-scenario-analysis'
@@ -358,7 +359,7 @@ const generateEmail = createStep({
                 { role: 'system', content: systemPrompt },
                 { role: 'user', content: userPrompt }
               ],
-              temperature: 0.8
+              ...PHISHING_CONTENT_PARAMS,
             });
           },
           'phishing-email-generation'
@@ -564,7 +565,7 @@ const generateLandingPage = createStep({
             return await generateText({
               model: aiModel,
               messages: messages,
-              temperature: 0.8,
+              ...PHISHING_CONTENT_PARAMS,
             });
           },
           'phishing-landing-page-generation'

@@ -13,7 +13,7 @@
 
 export interface GenerationParams {
   temperature: number;  // 0-2: Creativity level (0=deterministic, 1=balanced, 2=chaotic)
-  topP: number;        // 0-1: Nucleus sampling (0=greedy, 1=full distribution)
+  topP?: number;       // 0-1: Nucleus sampling (optional - when omitted, model uses default)
 }
 
 /**
@@ -151,6 +151,116 @@ export const DEFAULT_GENERATION_PARAMS: GenerationParams = {
 };
 
 /**
+ * PHISHING SCENARIO ANALYSIS PARAMETERS (Balanced)
+ *
+ * Purpose: Analyze user topic and generate phishing scenario structure
+ * Use: create-phishing-workflow.ts (scenario analysis step)
+ */
+export const PHISHING_SCENARIO_PARAMS: GenerationParams = {
+  temperature: 0.7
+};
+
+/**
+ * PHISHING CONTENT PARAMETERS (High Creativity)
+ *
+ * Purpose: Generate phishing email and landing page content
+ * Use: create-phishing-workflow.ts, create-smishing-workflow.ts, retry-generator.ts
+ */
+export const PHISHING_CONTENT_PARAMS: GenerationParams = {
+  temperature: 0.8
+};
+
+/**
+ * EDITOR PARAMETERS (Low - Consistency)
+ *
+ * Purpose: Phishing/smishing editor LLM calls - structured output, minimal variation
+ * Use: phishing-editor-llm.ts, smishing-editor-llm.ts
+ */
+export const EDITOR_PARAMS: GenerationParams = {
+  temperature: 0.3
+};
+
+/**
+ * CODE REVIEW PARAMETERS (Low - Consistency)
+ *
+ * Purpose: Code review validation - deterministic feedback
+ * Use: code-review-check-tool.ts
+ */
+export const CODE_REVIEW_PARAMS: GenerationParams = {
+  temperature: 0.3
+};
+
+/**
+ * LOW DETERMINISM PARAMS (Summary/Cache)
+ *
+ * Purpose: Summaries, policy cache - consistent, factual output
+ * Use: policy-cache.ts, vishing-conversations-summary-tool.ts
+ */
+export const LOW_DETERMINISM_PARAMS: GenerationParams = {
+  temperature: 0.2
+};
+
+/**
+ * EXTRACTION PARAMS (High Determinism)
+ *
+ * Purpose: Structured extraction - brand, metadata, code
+ * Use: brand-resolver.ts (extraction), phishing-editor-utils.ts
+ */
+export const EXTRACTION_PARAMS: GenerationParams = {
+  temperature: 0.1
+};
+
+/**
+ * BRAND CREATIVE PARAMS (Moderate)
+ *
+ * Purpose: Brand resolution creative fallback
+ * Use: brand-resolver.ts (creative path)
+ */
+export const BRAND_CREATIVE_PARAMS: GenerationParams = {
+  temperature: 0.7
+};
+
+/**
+ * CLASSIFICATION PARAMS (Low - Consistent labels)
+ *
+ * Purpose: Industry/domain classification
+ * Use: industry-detector.ts
+ */
+export const CLASSIFICATION_PARAMS: GenerationParams = {
+  temperature: 0.3
+};
+
+/**
+ * REASONING STREAM PARAMS (Low)
+ *
+ * Purpose: Reasoning/chain-of-thought - consistent structure
+ * Use: reasoning-stream.ts
+ */
+export const REASONING_PARAMS: GenerationParams = {
+  temperature: 0.3
+};
+
+/**
+ * SCENE REWRITE PARAMS (Moderate-low)
+ *
+ * Purpose: Scene content rewriting/localization - balanced
+ * Use: scene-rewriter-base.ts
+ */
+export const SCENE_REWRITE_PARAMS: GenerationParams = {
+  temperature: 0.4
+};
+
+/**
+ * TRANSCRIPT TRANSLATION PARAMS (Moderate)
+ *
+ * Purpose: Video transcript translation - natural phrasing
+ * Use: transcript-translator.ts
+ */
+export const TRANSCRIPT_TRANSLATION_PARAMS: GenerationParams = {
+  temperature: 0.3
+};
+
+/**
  * Helper function to get parameters for any use case
  */
 export function getGenerationParams(useCase: string): GenerationParams {
@@ -161,6 +271,15 @@ export function getGenerationParams(useCase: string): GenerationParams {
     'localization': LOCALIZER_PARAMS,
     'analysis': PROMPT_ANALYSIS_PARAMS,
     'metadata': METADATA_GENERATION_PARAMS,
+    'phishing-scenario': PHISHING_SCENARIO_PARAMS,
+    'phishing-content': PHISHING_CONTENT_PARAMS,
+    'editor': EDITOR_PARAMS,
+    'code-review': CODE_REVIEW_PARAMS,
+    'low-determinism': LOW_DETERMINISM_PARAMS,
+    'extraction': EXTRACTION_PARAMS,
+    'brand-creative': BRAND_CREATIVE_PARAMS,
+    'classification': CLASSIFICATION_PARAMS,
+    'reasoning': REASONING_PARAMS,
     'default': DEFAULT_GENERATION_PARAMS
   };
 

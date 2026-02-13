@@ -1,6 +1,6 @@
 # API Reference
 
-**Last Updated:** February 6, 2026
+**Last Updated:** February 12, 2026
 
 This document details the REST API endpoints available in Agentic Ally.
 
@@ -468,8 +468,6 @@ const findingLabelToBadge: Record<string, 'neutral' | 'info' | 'warning' | 'dang
 };
 ```
 
----
-
 ### Error Responses
 
 **400 - Invalid input**
@@ -488,6 +486,113 @@ const findingLabelToBadge: Record<string, 'neutral' | 'info' | 'warning' | 'dang
 {
   "success": false,
   "error": "Workflow execution failed"
+}
+```
+
+---
+
+## 7. Vishing Conversations Summary (`POST /vishing/conversations/summary`)
+
+Analyzes a completed vishing (voice phishing) call transcript and returns a structured debrief: timeline, disclosed info, outcome, next steps, and status card.
+
+### Headers
+| Header | Value | Required | Description |
+|--------|-------|----------|-------------|
+| `Content-Type` | `application/json` | Yes | - |
+| `X-AGENTIC-ALLY-TOKEN` | `<your-token>` | No | Public unauthenticated endpoint (optional) |
+| `X-BASE-API-URL` | `https://api.example.com` | No | Base URL for token validation (default from config) |
+
+### Request Body
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `accessToken` | string | Yes | Product API token (min 32 chars). Validated via cache or `GET /auth/validate`. |
+| `messages` | array | Yes | Transcript of the vishing call. 1–500 messages. |
+
+**Message format:**
+```json
+{
+  "role": "agent" | "user",
+  "text": "spoken content",      // or "message" (platform may use either)
+  "timestamp": 12                // optional, seconds into call
+}
+```
+
+**Example Request:**
+```json
+{
+  "accessToken": "your-product-api-token-min-32-chars",
+  "messages": [
+    { "role": "agent", "text": "Hello, this is IT support calling about your account.", "timestamp": 0 },
+    { "role": "user", "text": "I didn't request any support.", "timestamp": 5 },
+    { "role": "agent", "text": "We need to verify your identity. Can you confirm your badge number?", "timestamp": 12 }
+  ]
+}
+```
+
+### Response (Success)
+```json
+{
+  "success": true,
+  "summary": {
+    "timeline": [
+      { "timestamp": "0:00", "label": "Introduction", "snippet": "Agent introduced as IT support." },
+      { "timestamp": "0:05", "label": "Data Request", "snippet": "Agent asked for badge number." }
+    ],
+    "disclosedInfo": [],
+    "outcome": "refused"
+  },
+  "disclosedInformation": [],
+  "nextSteps": [
+    { "title": "Verifying Caller Identity", "description": "Always verify through official channels before sharing any information." },
+    { "title": "Never Share OTPs or Passwords", "description": "Legitimate organizations never ask for passwords or one-time codes over the phone." }
+  ],
+  "statusCard": {
+    "variant": "success",
+    "title": "No Data Disclosed",
+    "description": "You correctly refused to share sensitive information. Well done recognizing the attempt."
+  }
+}
+```
+
+### Outcome Values
+| `outcome` | Meaning |
+|-----------|---------|
+| `data_disclosed` | Learner shared sensitive info (passwords, OTP, card numbers, etc.). |
+| `refused` | Learner refused without disclosing. |
+| `detected` | Learner identified it as a simulation. |
+| `other` | Call ended without clear outcome (dropped, incomplete). |
+
+### Status Card Variants
+| `variant` | UI style |
+|-----------|----------|
+| `warning` | Data disclosed — review recommended. |
+| `success` | No data disclosed / simulation detected. |
+| `info` | Call completed, neutral. |
+
+### Error Responses
+
+**400 - Invalid request format**
+```json
+{
+  "success": false,
+  "error": "Invalid request format",
+  "details": { "messages": { "_errors": ["Required"] } }
+}
+```
+
+**401 - Unauthorized**
+```json
+{
+  "error": "Unauthorized",
+  "message": "Invalid or expired access token"
+}
+```
+
+**500 - Internal error**
+```json
+{
+  "success": false,
+  "error": "LLM response was not valid JSON"
 }
 ```
 

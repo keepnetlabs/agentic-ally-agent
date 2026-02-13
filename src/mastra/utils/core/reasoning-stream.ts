@@ -3,6 +3,7 @@ import { generateText } from 'ai';
 import { getModelWithOverride } from '../../model-providers';
 import { getLogger } from './logger';
 import { normalizeError } from './error-utils';
+import { REASONING_PARAMS } from '../config/llm-generation-params';
 import type { StreamWriter } from '../../types/stream-writer';
 export type { StreamWriter } from '../../types/stream-writer';
 
@@ -51,7 +52,7 @@ export async function streamReasoning(
           content: `Extract the AI's thinking process from this reasoning (ignore JSON and code):\n\n${reasoningText}`
         }
       ],
-      temperature: 0.3,
+      ...REASONING_PARAMS,
     }).then(async (summaryResponse) => {
       const userFriendlyReasoning = summaryResponse.text;
 

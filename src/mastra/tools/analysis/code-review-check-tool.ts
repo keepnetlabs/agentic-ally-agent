@@ -8,6 +8,7 @@ import { getLogger } from '../../utils/core/logger';
 import { errorService } from '../../services/error-service';
 import { normalizeError, logErrorInfo } from '../../utils/core/error-utils';
 import { withRetry } from '../../utils/core/resilience-utils';
+import { CODE_REVIEW_PARAMS } from '../../utils/config/llm-generation-params';
 
 const CodeReviewCheckSchema = z.object({
   issueType: z.string()
@@ -95,7 +96,7 @@ Return ONLY valid JSON - NO markdown, NO backticks, NO formatting. Start directl
             },
             { role: 'user', content: validationPrompt },
           ],
-          temperature: 0.3, // Lower temperature for consistency
+          ...CODE_REVIEW_PARAMS,
         }),
         `[CodeReviewCheckTool] code-review-validation-${issueType}`
       );

@@ -7,7 +7,8 @@ import { generateText } from 'ai';
 import { getModelWithOverride, Model, ModelProvider } from '../../model-providers';
 import { getLogger } from '../../utils/core/logger';
 import { cleanResponse } from '../../utils/content-processors/json-cleaner';
-import { withRetry } from '../../utils/core/resilience-utils';
+import { withRetry, withTimeout } from '../../utils/core/resilience-utils';
+import { AGENT_CALL_TIMEOUT_MS } from '../../constants';
 import {
   VishingConversationsSummaryOutputSchema,
   VishingConversationsSummarySchema,
@@ -16,6 +17,7 @@ import {
   type VishingConversationsSummary,
   type VishingStatusCard,
 } from '../../schemas/vishing-conversations-summary';
+import { LOW_DETERMINISM_PARAMS } from '../../utils/config/llm-generation-params';
 
 const logger = getLogger('VishingConversationsSummaryTool');
 
@@ -119,12 +121,15 @@ Return ONLY the JSON object. No markdown, no code blocks, no extra text.`;
   const model = getModelWithOverride(ModelProvider.OPENAI, Model.OPENAI_GPT_5_1);
   const { text } = await withRetry(
     () =>
-      generateText({
-        model,
-        system: systemPrompt,
-        prompt: userPrompt,
-        temperature: 0.2,
-      }),
+      withTimeout(
+        generateText({
+          model,
+          system: systemPrompt,
+          prompt: userPrompt,
+          ...LOW_DETERMINISM_PARAMS,
+        }),
+        AGENT_CALL_TIMEOUT_MS
+      ),
     'Vishing conversations summary'
   );
 

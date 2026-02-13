@@ -8,6 +8,7 @@ import { getLogger } from '../core/logger';
 import { getDefaultGenerationModel } from '../../model-providers';
 import { cleanResponse } from '../content-processors/json-cleaner';
 import { normalizeError } from '../core/error-utils';
+import { CLASSIFICATION_PARAMS } from '../config/llm-generation-params';
 
 const logger = getLogger('IndustryDetector');
 
@@ -809,7 +810,7 @@ Based on the company name and scenario description, determine the most appropria
                 { role: 'system', content: systemPrompt },
                 { role: 'user', content: `${examples}\n\n${userPrompt}` }
             ],
-            temperature: 0.3, // Low temperature for consistent classification
+            ...CLASSIFICATION_PARAMS,
         });
 
         const cleanedJson = cleanResponse(response.text, 'industry-detection');
