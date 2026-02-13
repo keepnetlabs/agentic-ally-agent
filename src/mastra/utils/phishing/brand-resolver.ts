@@ -3,7 +3,8 @@ import { DEFAULT_GENERIC_LOGO } from '../landing-page/image-validator';
 import { getLogger } from '../core/logger';
 import { cleanResponse } from '../content-processors/json-cleaner';
 import { getLogoUrl } from '../landing-page/logo-resolver';
-import { normalizeError } from '../core/error-utils';
+import { normalizeError, logErrorInfo } from '../core/error-utils';
+import { errorService } from '../../services/error-service';
 import { EXTRACTION_PARAMS, BRAND_CREATIVE_PARAMS } from '../config/llm-generation-params';
 
 const logger = getLogger('BrandResolver');
@@ -116,10 +117,11 @@ export async function resolveLogoAndBrand(
     };
   } catch (error) {
     const err = normalizeError(error);
-    logger.warn('Logo and brand resolution failed, generating placeholder domain logo', {
-      error: err.message,
-      stack: err.stack
+    const errorInfo = errorService.aiModel(err.message, {
+      step: 'resolve-logo-and-brand',
+      stack: err.stack,
     });
+    logErrorInfo(logger, 'warn', 'Logo and brand resolution failed, generating placeholder domain logo', errorInfo);
 
     // Even on error, try to generate a placeholder domain logo instead of generic corporate icon
     try {
@@ -131,10 +133,12 @@ export async function resolveLogoAndBrand(
         isRecognizedBrand: false
       };
     } catch (fallbackError) {
-      // Ultimate fallback - only use DEFAULT_GENERIC_LOGO if everything fails
-      logger.error('Placeholder logo generation failed, using default logo as last resort', {
-        fallbackError: normalizeError(fallbackError).message
+      const fallbackErr = normalizeError(fallbackError);
+      const errorInfo = errorService.external(fallbackErr.message, {
+        step: 'placeholder-logo-fallback',
+        stack: fallbackErr.stack,
       });
+      logErrorInfo(logger, 'error', 'Placeholder logo generation failed, using default logo as last resort', errorInfo);
       return {
         logoUrl: DEFAULT_GENERIC_LOGO,
         brandName: null,
@@ -236,10 +240,11 @@ export async function generateContextualBrand(
     };
   } catch (error) {
     const err = normalizeError(error);
-    logger.warn('Contextual brand generation failed, attempting placeholder logo', {
-      error: err.message,
-      stack: err.stack
+    const errorInfo = errorService.aiModel(err.message, {
+      step: 'generate-contextual-brand',
+      stack: err.stack,
     });
+    logErrorInfo(logger, 'warn', 'Contextual brand generation failed, attempting placeholder logo', errorInfo);
 
     // Try to use placeholder logo, fallback to DEFAULT_GENERIC_LOGO only if that fails too
     try {
@@ -250,9 +255,12 @@ export async function generateContextualBrand(
         isRecognizedBrand: false
       };
     } catch (fallbackError) {
-      logger.error('Placeholder logo generation failed, using default logo as last resort', {
-        fallbackError: normalizeError(fallbackError).message
+      const fallbackErr = normalizeError(fallbackError);
+      const errorInfo = errorService.external(fallbackErr.message, {
+        step: 'contextual-brand-placeholder-fallback',
+        stack: fallbackErr.stack,
       });
+      logErrorInfo(logger, 'error', 'Placeholder logo generation failed, using default logo as last resort', errorInfo);
       return {
         logoUrl: DEFAULT_GENERIC_LOGO,
         brandName: null,

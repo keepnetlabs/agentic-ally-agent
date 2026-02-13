@@ -2,7 +2,8 @@ import { getPolicyContext } from './policy-fetcher';
 import { generateText } from 'ai';
 import { getModelWithOverride } from '../../model-providers';
 import { getLogger } from './logger';
-import { normalizeError } from './error-utils';
+import { normalizeError, logErrorInfo } from './error-utils';
+import { errorService } from '../../services/error-service';
 import { getRequestContext } from './request-storage';
 import { extractCompanyIdFromTokenExport } from './policy-fetcher';
 import { withRetry, withTimeout } from './resilience-utils';
@@ -128,7 +129,11 @@ CRITICAL:
     } catch (error) {
       // Level 2: Degraded but functional (heuristic excerpt-based summary)
       const err = normalizeError(error);
-      logger.warn('⚠️ Primary policy summarization failed, using heuristic fallback', { error: err.message });
+      const errorInfo = errorService.aiModel(err.message, {
+        step: 'policy-summarization',
+        stack: err.stack,
+      });
+      logErrorInfo(logger, 'warn', 'Primary policy summarization failed, using heuristic fallback', errorInfo);
       summary = buildHeuristicPolicySummary(fullPolicy);
     }
 
@@ -166,10 +171,11 @@ CRITICAL:
     return summary;
   } catch (error) {
     const err = normalizeError(error);
-    logger.error('Failed to fetch/summarize policy', {
-      error: err.message,
+    const errorInfo = errorService.external(err.message, {
+      step: 'fetch-summarize-policy',
       stack: err.stack,
     });
+    logErrorInfo(logger, 'error', 'Failed to fetch/summarize policy', errorInfo);
     // Final safety fallback: return truncated raw policy (never crash)
     return truncateText(await getPolicyContext().catch(() => ''), 6000, 'policy raw text');
   }

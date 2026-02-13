@@ -162,7 +162,11 @@ async function fetchGroupsWithFilters(deps: GroupSearchDeps, groupName: string):
         result = await response.json();
     } catch (error) {
         const err = normalizeError(error);
-        logger.warn('⚠️ Group search response JSON parse failed', { error: err.message });
+        const errorInfo = errorService.external(err.message, {
+            step: 'group-search-json-parse',
+            stack: err.stack,
+        });
+        logErrorInfo(logger, 'warn', 'Group search response JSON parse failed', errorInfo);
         return [];
     }
 
@@ -255,7 +259,9 @@ export const getTargetGroupInfoTool = createTool({
                     });
                     await writer.write({ type: 'text-end', id: messageId });
                 } catch (emitErr) {
-                    logger.warn('Failed to emit UI signal for group', { error: normalizeError(emitErr).message });
+                    const err = normalizeError(emitErr);
+                    const errorInfo = errorService.external(err.message, { step: 'emit-ui-signal-group', stack: err.stack });
+                    logErrorInfo(logger, 'warn', 'Failed to emit UI signal for group', errorInfo);
                 }
             }
 

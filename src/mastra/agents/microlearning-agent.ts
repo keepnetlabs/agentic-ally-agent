@@ -34,7 +34,7 @@ import { reasoningTool } from '../tools/analysis';
 import { uploadTrainingTool, assignTrainingTool } from '../tools/user-management';
 import { getDefaultAgentModel } from '../model-providers';
 import { Memory } from '@mastra/memory';
-import { AGENT_NAMES, AGENT_IDS, MESSAGING_GUIDELINES } from '../constants';
+import { AGENT_NAMES, AGENT_IDS, MESSAGING_GUIDELINES_PROMPT_FRAGMENT } from '../constants';
 
 const buildInstructions = () => `
 You are an AI assistant specialized in creating microlearning content. Your role is to quickly gather the right information, apply smart defaults,
@@ -293,7 +293,7 @@ If the user's message starts with [Use this model: ...] or [Use this model provi
 4. Completely remove any "[Use this model...]" or "[Use this model provider...]" line from all visible outputs, summaries, or prompts shown to the user.
    These details must only be passed internally to the workflow-executor.
 ## Messaging Guidelines (Enterprise-Safe)
-- NEVER use: ${MESSAGING_GUIDELINES.BLACKLIST_WORDS.join(', ')}
+${MESSAGING_GUIDELINES_PROMPT_FRAGMENT}
 `;
 
 export const microlearningAgent = new Agent({

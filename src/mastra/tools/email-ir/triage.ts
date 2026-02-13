@@ -6,6 +6,8 @@ import { headerAnalysisOutputSchema } from './header-analysis';
 import { bodyBehavioralAnalysisOutputSchema } from './body-behavioral-analysis';
 import { bodyIntentAnalysisOutputSchema } from './body-intent-analysis';
 import { createLogContext, loggerTriage, logStepStart, logStepComplete, logStepError } from './logger-setup';
+import { normalizeError, logErrorInfo } from '../../utils/core/error-utils';
+import { errorService } from '../../services/error-service';
 import { withRetry } from '../../utils/core/resilience-utils';
 import { sanitizeEmailBody } from './email-body-sanitizer';
 import { EMAIL_IR_EMAIL_CATEGORIES } from '../../schemas/email-ir';
@@ -221,8 +223,13 @@ Accuracy is critical. When uncertain, prefer **Other Suspicious** over misclassi
                 original_email: original_email,
             };
         } catch (error) {
-            logStepError(loggerTriage, ctx, error as Error);
-            throw error;
+            const err = normalizeError(error);
+            logStepError(loggerTriage, ctx, err);
+            const errorInfo = errorService.aiModel(err.message, { step: 'triage', stack: err.stack });
+            logErrorInfo(loggerTriage, 'error', 'Triage failed', errorInfo);
+            const e = new Error(err.message);
+            (e as Error & { code?: string }).code = errorInfo.code;
+            throw e;
         }
     },
 });

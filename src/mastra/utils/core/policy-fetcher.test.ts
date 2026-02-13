@@ -491,7 +491,7 @@ describe('policy-fetcher', () => {
       expect(context).not.toContain('Error Policy');
       expect(mockLoggerInstance.warn).toHaveBeenCalledWith(
         'Error reading policy',
-        expect.objectContaining({ policyName: 'Error Policy', error: 'Network error' })
+        expect.objectContaining({ code: 'ERR_API_001', message: 'Network error', category: 'EXTERNAL' })
       );
     });
 
@@ -553,7 +553,7 @@ describe('policy-fetcher', () => {
       expect(context).toBe('');
       expect(mockLoggerInstance.warn).toHaveBeenCalledWith(
         'Error fetching policy context',
-        expect.objectContaining({ error: 'Request context error' })
+        expect.objectContaining({ code: 'ERR_API_001', message: 'Request context error', category: 'EXTERNAL' })
       );
     });
 
@@ -600,9 +600,11 @@ describe('policy-fetcher', () => {
       const context = await getPolicyContext();
 
       expect(context).toBe('');
-      expect(mockLoggerInstance.warn).toHaveBeenCalledWith(
+      // logErrorInfo is 2nd call (1st is errorService internal); match our logErrorInfo call
+      expect(mockLoggerInstance.warn).toHaveBeenNthCalledWith(
+        2,
         'Error reading policy',
-        expect.objectContaining({ policyName: 'Bad JSON Policy' })
+        expect.objectContaining({ code: 'ERR_API_001', message: 'Invalid JSON', category: 'EXTERNAL' })
       );
     });
 

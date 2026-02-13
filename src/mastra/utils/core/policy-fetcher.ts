@@ -1,6 +1,8 @@
 import { getRequestContext } from './request-storage';
 import { getLogger } from './logger';
 import { withRetry } from './resilience-utils';
+import { normalizeError, logErrorInfo } from './error-utils';
+import { errorService } from '../../services/error-service';
 import { API_ENDPOINTS } from '../../constants';
 
 const logger = getLogger('PolicyFetcher');
@@ -131,8 +133,9 @@ export async function getPolicyContext(): Promise<string> {
           const content = policyData.text;
           return `**Policy: ${policy.name}**\n${content}`;
         } catch (error) {
-          const err = error instanceof Error ? error : new Error(String(error));
-          logger.warn('Error reading policy', { policyName: policy.name, error: err.message });
+          const err = normalizeError(error);
+          const errorInfo = errorService.external(err.message, { step: 'read-policy', policyName: policy.name, stack: err.stack });
+          logErrorInfo(logger, 'warn', 'Error reading policy', errorInfo);
           return null;
         }
       })
@@ -151,9 +154,9 @@ export async function getPolicyContext(): Promise<string> {
 
     return context;
   } catch (error) {
-    const err = error instanceof Error ? error : new Error(String(error));
-    // Downgrade to WARN as this is not critical for agent function
-    logger.warn('Error fetching policy context', { error: err.message });
+    const err = normalizeError(error);
+    const errorInfo = errorService.external(err.message, { step: 'fetch-policy-context', stack: err.stack });
+    logErrorInfo(logger, 'warn', 'Error fetching policy context', errorInfo);
     return ''; // Graceful fallback
   }
 }

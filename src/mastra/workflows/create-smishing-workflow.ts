@@ -55,7 +55,12 @@ const analyzeRequest = createStep({
     try {
       whitelabelConfig = await productService.getWhitelabelingConfig();
     } catch (err) {
-      logger.warn('Failed to fetch whitelabeling config', { error: err });
+      const normalized = normalizeError(err);
+      const errorInfo = errorService.external(normalized.message, {
+        step: 'fetch-whitelabel-config',
+        stack: normalized.stack,
+      });
+      logErrorInfo(logger, 'warn', 'Failed to fetch whitelabeling config', errorInfo);
     }
 
     const aiModel = getModelWithOverride(modelProvider, model);
@@ -128,7 +133,9 @@ const analyzeRequest = createStep({
             logoInfo.logoUrl = '';
           }
         } catch (e) {
-          logger.warn('Error validating logo URL - resetting to empty', { error: e });
+          const err = normalizeError(e);
+          const errorInfo = errorService.external(err.message, { step: 'validate-logo-url', stack: err.stack });
+          logErrorInfo(logger, 'warn', 'Error validating logo URL - resetting to empty', errorInfo);
           logoInfo.logoUrl = '';
         }
       }
@@ -216,8 +223,14 @@ const analyzeRequest = createStep({
       };
     } catch (error) {
       const err = normalizeError(error);
-      logger.error('Smishing analysis step failed', { error: err.message, stack: err.stack });
-      throw new Error(`Smishing analysis workflow error: ${err.message}`);
+      const errorInfo = errorService.aiModel(err.message, {
+        step: 'smishing-analysis',
+        stack: err.stack,
+      });
+      logErrorInfo(logger, 'error', 'Smishing analysis step failed', errorInfo);
+      const e = new Error(`Smishing analysis workflow error: ${err.message}`);
+      (e as Error & { code?: string }).code = errorInfo.code;
+      throw e;
     }
   },
 });
@@ -316,8 +329,14 @@ const generateSms = createStep({
       };
     } catch (error) {
       const err = normalizeError(error);
-      logger.error('Smishing SMS generation step failed', { error: err.message, stack: err.stack });
-      throw new Error(`Smishing SMS generation workflow error: ${err.message}`);
+      const errorInfo = errorService.aiModel(err.message, {
+        step: 'smishing-sms-generation',
+        stack: err.stack,
+      });
+      logErrorInfo(logger, 'error', 'Smishing SMS generation step failed', errorInfo);
+      const e = new Error(`Smishing SMS generation workflow error: ${err.message}`);
+      (e as Error & { code?: string }).code = errorInfo.code;
+      throw e;
     }
   },
 });
@@ -458,8 +477,14 @@ const generateLandingPage = createStep({
       };
     } catch (error) {
       const err = normalizeError(error);
-      logger.error('Smishing landing page generation failed', { error: err.message, stack: err.stack });
-      throw error;
+      const errorInfo = errorService.aiModel(err.message, {
+        step: 'smishing-landing-page-generation',
+        stack: err.stack,
+      });
+      logErrorInfo(logger, 'error', 'Smishing landing page generation failed', errorInfo);
+      const e = new Error(`Smishing landing page generation workflow error: ${err.message}`);
+      (e as Error & { code?: string }).code = errorInfo.code;
+      throw e;
     }
   }
 });

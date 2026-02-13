@@ -1,5 +1,7 @@
 import { Context, Next } from 'hono';
 import { getLogger } from '../utils/core/logger';
+import { normalizeError, logErrorInfo } from '../utils/core/error-utils';
+import { errorService } from '../services/error-service';
 import { API_ENDPOINTS, TOKEN_CACHE_INVALID_TTL_MS } from '../constants';
 import { tokenCache } from '../utils/core/token-cache';
 import { SKIP_AUTH_PATHS, isPublicUnauthenticatedPath } from './public-endpoint-policy';
@@ -174,8 +176,13 @@ export const authTokenMiddleware = async (c: Context, next: Next): Promise<Respo
         logger.debug('Token cached', { ttl: '15m' });
 
     } catch (error) {
-        logger.error('Auth validation error', { error });
-        // Fail open or closed? Usually closed for security, but let's see. 
+        const err = normalizeError(error);
+        const errorInfo = errorService.auth(err.message, {
+            step: 'token-validation',
+            stack: err.stack,
+        });
+        logErrorInfo(logger, 'error', 'Auth validation error', errorInfo);
+        // Fail open or closed? Usually closed for security, but let's see.
         // For now, let's fail closed as it's an auth check.
         return c.json(
             {

@@ -435,11 +435,8 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
 
   } catch (err) {
     const error = normalizeError(err);
-    logger.error('Critical error in language generation', { error: error.message, stack: error.stack });
-
-    // Re-throw the error instead of returning it as LanguageContent
-    const errorInfo = errorService.aiModel(`Language generation failed: ${error.message}`, { step: 'language-generation' });
-    logErrorInfo(logger, 'error', 'Language generation failed', errorInfo);
+    const errorInfo = errorService.aiModel(`Language generation failed: ${error.message}`, { step: 'language-generation', stack: error.stack });
+    logErrorInfo(logger, 'error', 'Critical error in language generation', errorInfo);
     throw new Error(errorInfo.message);
   }
 }

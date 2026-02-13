@@ -56,7 +56,12 @@ const analyzeRequest = createStep({
     try {
       whitelabelConfig = await productService.getWhitelabelingConfig();
     } catch (err) {
-      logger.warn('Failed to fetch whitelabeling config', { error: err });
+      const normalized = normalizeError(err);
+      const errorInfo = errorService.external(normalized.message, {
+        step: 'fetch-whitelabel-config',
+        stack: normalized.stack,
+      });
+      logErrorInfo(logger, 'warn', 'Failed to fetch whitelabeling config', errorInfo);
     }
 
     const aiModel = getModelWithOverride(modelProvider, model);
@@ -197,7 +202,9 @@ const analyzeRequest = createStep({
             logoInfo.logoUrl = '';
           }
         } catch (e) {
-          logger.warn('Error validating logo URL - resetting to empty', { error: e });
+          const err = normalizeError(e);
+          const errorInfo = errorService.external(err.message, { step: 'validate-logo-url', stack: err.stack });
+          logErrorInfo(logger, 'warn', 'Error validating logo URL - resetting to empty', errorInfo);
           logoInfo.logoUrl = '';
         }
       }
@@ -295,8 +302,14 @@ const analyzeRequest = createStep({
       };
     } catch (error) {
       const err = normalizeError(error);
-      logger.error('Phishing analysis step failed', { error: err.message, stack: err.stack });
-      throw new Error(`Phishing analysis workflow error: ${err.message}`);
+      const errorInfo = errorService.aiModel(err.message, {
+        step: 'phishing-analysis',
+        stack: err.stack,
+      });
+      logErrorInfo(logger, 'error', 'Phishing analysis step failed', errorInfo);
+      const e = new Error(`Phishing analysis workflow error: ${err.message}`);
+      (e as Error & { code?: string }).code = errorInfo.code;
+      throw e;
     }
   },
 });
@@ -377,11 +390,12 @@ const generateEmail = createStep({
         const cleanedJson = cleanResponse(response.text, 'phishing-email-content');
         parsedResult = JSON.parse(cleanedJson);
       } catch (error) {
-        // Level 2 fallback: Retry with stronger prompt (for JSON parse errors, content issues)
         const err = normalizeError(error);
-        logger.warn('Primary generation failed, using stronger prompt retry', {
-          error: err.message
+        const errorInfo = errorService.aiModel(err.message, {
+          step: 'phishing-email-primary-generation',
+          stack: err.stack,
         });
+        logErrorInfo(logger, 'warn', 'Primary generation failed, using stronger prompt retry', errorInfo);
         const retryResult = await retryGenerationWithStrongerPrompt(
           aiModel,
           systemPrompt,
@@ -451,8 +465,14 @@ const generateEmail = createStep({
       };
     } catch (error) {
       const err = normalizeError(error);
-      logger.error('Phishing email generation step failed', { error: err.message, stack: err.stack });
-      throw new Error(`Phishing email generation workflow error: ${err.message}`);
+      const errorInfo = errorService.aiModel(err.message, {
+        step: 'phishing-email-generation',
+        stack: err.stack,
+      });
+      logErrorInfo(logger, 'error', 'Phishing email generation step failed', errorInfo);
+      const e = new Error(`Phishing email generation workflow error: ${err.message}`);
+      (e as Error & { code?: string }).code = errorInfo.code;
+      throw e;
     }
   },
 });
@@ -580,11 +600,12 @@ const generateLandingPage = createStep({
         const cleanedJson = cleanResponse(response.text, 'landing-page');
         parsedResult = JSON.parse(cleanedJson);
       } catch (error) {
-        // Level 2 fallback: Retry with stronger prompt (for JSON parse errors, content issues)
         const err = normalizeError(error);
-        logger.warn('Primary landing page generation failed, using stronger prompt retry', {
-          error: err.message
+        const errorInfo = errorService.aiModel(err.message, {
+          step: 'phishing-landing-page-primary-generation',
+          stack: err.stack,
         });
+        logErrorInfo(logger, 'warn', 'Primary landing page generation failed, using stronger prompt retry', errorInfo);
         const retryResult = await retryGenerationWithStrongerPrompt(
           aiModel,
           systemPrompt,
@@ -660,8 +681,14 @@ const generateLandingPage = createStep({
       };
     } catch (error) {
       const err = normalizeError(error);
-      logger.error('Landing page generation failed', { error: err.message, stack: err.stack });
-      throw error;
+      const errorInfo = errorService.aiModel(err.message, {
+        step: 'landing-page-generation',
+        stack: err.stack,
+      });
+      logErrorInfo(logger, 'error', 'Landing page generation failed', errorInfo);
+      const e = new Error(`Landing page generation workflow error: ${err.message}`);
+      (e as Error & { code?: string }).code = errorInfo.code;
+      throw e;
     }
   }
 });

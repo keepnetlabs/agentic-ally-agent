@@ -435,7 +435,7 @@ describe('Step Execution Logic', () => {
 
       expect(mocks.loggerWarn).toHaveBeenCalledWith(
         'KV save failed but continuing',
-        expect.objectContaining({ error: 'KV connection lost' })
+        expect.objectContaining({ message: 'KV connection lost' })
       );
       expect(result).toEqual(inboxResult);
     });
@@ -477,7 +477,7 @@ describe('Step Execution Logic', () => {
 
       expect(mocks.loggerWarn).toHaveBeenCalledWith(
         'KV initialization error',
-        expect.objectContaining({ error: 'KV init failed' })
+        expect.objectContaining({ message: 'KV init failed' })
       );
       expect(result).toEqual(inboxResult);
     });

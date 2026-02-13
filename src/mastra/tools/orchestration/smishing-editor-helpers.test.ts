@@ -198,7 +198,7 @@ describe('smishing-editor-helpers', () => {
 
     expect(mocks.loggerWarn).toHaveBeenCalledWith(
       'Failed to stream updated components to UI',
-      expect.objectContaining({ error: 'write failed' })
+      expect.objectContaining({ message: 'write failed' })
     );
   });
 
@@ -218,7 +218,7 @@ describe('smishing-editor-helpers', () => {
 
     expect(mocks.loggerWarn).toHaveBeenCalledWith(
       'Failed to stream updated components to UI',
-      expect.objectContaining({ error: 'write-failed-string' })
+      expect.objectContaining({ message: 'write-failed-string' })
     );
   });
 

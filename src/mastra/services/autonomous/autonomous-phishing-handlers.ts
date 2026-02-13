@@ -9,7 +9,8 @@ import { phishingWorkflowExecutorTool } from '../../tools/orchestration';
 import { assignPhishingTool, uploadPhishingTool } from '../../tools/user-management';
 import { withTimeout, withRetry } from '../../utils/core/resilience-utils';
 import { getLogger } from '../../utils/core/logger';
-import { normalizeError } from '../../utils/core/error-utils';
+import { normalizeError, logErrorInfo } from '../../utils/core/error-utils';
+import { errorService } from '../error-service';
 import { normalizeDifficultyValue } from '../../utils/difficulty-level-mapper';
 import { isSafeId } from '../../utils/core/id-utils';
 import { validateBCP47LanguageCode, DEFAULT_LANGUAGE } from '../../utils/language/language-utils';
@@ -164,7 +165,8 @@ async function executePhishingToolFirst(params: {
         };
     } catch (error) {
         const err = normalizeError(error);
-        logger.warn('Tool-first phishing flow failed', { error: err.message });
+        const errorInfo = errorService.external(err.message, { step: 'tool-first-phishing', stack: err.stack });
+        logErrorInfo(logger, 'warn', 'Tool-first phishing flow failed', errorInfo);
         return {
             success: false,
             error: err.message

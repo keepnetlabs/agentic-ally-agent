@@ -100,7 +100,8 @@ export const processMultipleLanguagesStep = createStep({
               (result as any)?.result?.message ||
               (result as any)?.message ||
               'Unknown error';
-            logger.error('Translation failed', { error: errorMsg, language: targetLanguage });
+            const errorInfo = errorService.external(errorMsg, { step: 'add-language-translation', language: targetLanguage });
+            logErrorInfo(logger, 'error', 'Translation failed', errorInfo);
 
             return {
               language: targetLanguage,
@@ -112,7 +113,12 @@ export const processMultipleLanguagesStep = createStep({
         } catch (error) {
           const duration = Date.now() - langStartTime;
           const err = normalizeError(error);
-          logger.error('Translation exception', { error: err.message, stack: err.stack, language: targetLanguage });
+          const errorInfo = errorService.external(err.message, {
+            step: 'add-language-translation',
+            stack: err.stack,
+            language: targetLanguage
+          });
+          logErrorInfo(logger, 'error', 'Translation exception', errorInfo);
 
           return {
             language: targetLanguage,
@@ -178,8 +184,14 @@ export const processMultipleLanguagesStep = createStep({
       };
     } catch (error) {
       const err = normalizeError(error);
-      logger.error('Multi-language workflow error', { error: err.message, stack: err.stack });
-      throw error;
+      const errorInfo = errorService.external(err.message, {
+        step: 'process-multiple-languages',
+        stack: err.stack
+      });
+      logErrorInfo(logger, 'error', 'Multi-language workflow error', errorInfo);
+      const e = new Error(err.message);
+      (e as Error & { code?: string }).code = errorInfo.code;
+      throw e;
     }
   }
 });

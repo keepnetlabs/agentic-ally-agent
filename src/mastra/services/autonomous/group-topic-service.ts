@@ -5,7 +5,8 @@
 
 import { generateText } from 'ai';
 import { getModelWithOverride } from '../../model-providers';
-import { normalizeError } from '../../utils/core/error-utils';
+import { normalizeError, logErrorInfo } from '../../utils/core/error-utils';
+import { errorService } from '../error-service';
 import { getLogger } from '../../utils/core/logger';
 
 export interface GroupTopicSelection {
@@ -110,7 +111,11 @@ Examples: "Phishing & Email Security" OR "AI-Powered Attack Detection" OR "Block
     } catch (error) {
         const err = normalizeError(error);
         const logger = getLogger('GroupTopicService');
-        logger.warn('Topic selection failed, using default', { error: err.message });
+        const errorInfo = errorService.aiModel(err.message, {
+            step: 'group-topic-selection',
+            stack: err.stack,
+        });
+        logErrorInfo(logger, 'warn', 'Topic selection failed, using default', errorInfo);
         return 'Phishing & Email Security';
     }
 }

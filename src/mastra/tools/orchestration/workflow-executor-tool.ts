@@ -219,11 +219,14 @@ export const workflowExecutorTool = createTool({
             if (metadata?.microlearningId) microlearningId = metadata.microlearningId;
           } catch (error) {
             const err = normalizeError(error);
-            logger.error('Failed to extract validated workflow result data', { error: err.message });
+            const errorInfo = errorService.external(err.message, {
+              step: 'extract-workflow-result',
+              stack: err.stack,
+            });
+            logErrorInfo(logger, 'error', 'Failed to extract validated workflow result data', errorInfo);
           }
         } else {
-          logger.error('Workflow result validation failed', { status: workflowResult.status });
-          const errorInfo = errorService.external('Create microlearning workflow result validation failed');
+          const errorInfo = errorService.external('Create microlearning workflow result validation failed', { status: workflowResult.status });
           logErrorInfo(logger, 'error', 'Workflow result validation failed', errorInfo);
           return createToolErrorResponse(errorInfo);
         }
@@ -254,18 +257,22 @@ export const workflowExecutorTool = createTool({
             });
           } catch (metaErr) {
             const err = normalizeError(metaErr);
-            logger.warn('Failed to send training meta to frontend', { error: err.message });
+            const errorInfo = errorService.external(err.message, {
+              step: 'send-training-meta',
+              stack: err.stack,
+            });
+            logErrorInfo(logger, 'warn', 'Failed to send training meta to frontend', errorInfo);
           }
           await writer?.write({ type: 'text-end', id: messageId });
           logger.debug('Training URL sent to frontend', { urlLength: trainingUrl?.length });
         } catch (error) {
           const err = normalizeError(error);
-          logger.error('Failed to send training URL to frontend', {
-            error: err.message,
+          const errorInfo = errorService.external(err.message, {
+            step: 'send-training-url',
             stack: err.stack,
             trainingUrl: trainingUrl?.substring(0, 100),
-            timestamp: new Date().toISOString(),
           });
+          logErrorInfo(logger, 'error', 'Failed to send training URL to frontend', errorInfo);
           // NOTE: Continue - don't block response, but log for monitoring
         }
 
@@ -280,7 +287,7 @@ export const workflowExecutorTool = createTool({
         // Validate result against output schema
         const validation = validateToolResult(result, workflowExecutorOutputSchema, 'workflow-executor');
         if (!validation.success) {
-          logger.error('Workflow executor result validation failed', { code: validation.error.code, message: validation.error.message });
+          logErrorInfo(logger, 'error', 'Workflow executor result validation failed', validation.error);
           return createToolErrorResponse(validation.error);
         }
 
@@ -318,8 +325,7 @@ export const workflowExecutorTool = createTool({
         const title = data?.title ?? null;
 
         if (!isValid) {
-          logger.error('Language workflow result validation failed', { status: workflowResult.status });
-          const errorInfo = errorService.external('Add language workflow result validation failed');
+          const errorInfo = errorService.external('Add language workflow result validation failed', { status: workflowResult.status });
           logErrorInfo(logger, 'error', 'Language workflow result validation failed', errorInfo);
           return createToolErrorResponse(errorInfo);
         }
@@ -338,7 +344,11 @@ export const workflowExecutorTool = createTool({
             logger.debug('Training URL sent to frontend', { urlLength: trainingUrl?.length });
           } catch (error) {
             const err = normalizeError(error);
-            logger.error('Failed to send translated URL to frontend', { error: err.message, stack: err.stack });
+            const errorInfo = errorService.external(err.message, {
+              step: 'send-translated-url',
+              stack: err.stack,
+            });
+            logErrorInfo(logger, 'error', 'Failed to send translated URL to frontend', errorInfo);
           }
         }
 
@@ -352,7 +362,7 @@ export const workflowExecutorTool = createTool({
         // Validate result against output schema
         const validation = validateToolResult(toolResult, workflowExecutorOutputSchema, 'workflow-executor');
         if (!validation.success) {
-          logger.error('Add language result validation failed', { code: validation.error.code, message: validation.error.message });
+          logErrorInfo(logger, 'error', 'Add language result validation failed', validation.error);
           return createToolErrorResponse(validation.error);
         }
 
@@ -400,7 +410,11 @@ export const workflowExecutorTool = createTool({
               logger.debug('Training URL sent to frontend', { urlLength: firstSuccess.trainingUrl?.length });
             } catch (error) {
               const err = normalizeError(error);
-              logger.error('Failed to send translated URL to frontend', { error: err.message, stack: err.stack });
+              const errorInfo = errorService.external(err.message, {
+                step: 'send-translated-url-multi',
+                stack: err.stack,
+              });
+              logErrorInfo(logger, 'error', 'Failed to send translated URL to frontend', errorInfo);
             }
           }
 
@@ -416,7 +430,7 @@ export const workflowExecutorTool = createTool({
           // Validate result against output schema
           const validation = validateToolResult(resultData, workflowExecutorOutputSchema, 'workflow-executor');
           if (!validation.success) {
-            logger.error('Add multiple languages result validation failed', { code: validation.error.code, message: validation.error.message });
+            logErrorInfo(logger, 'error', 'Add multiple languages result validation failed', validation.error);
             return createToolErrorResponse(validation.error);
           }
 
@@ -464,7 +478,11 @@ export const workflowExecutorTool = createTool({
             logger.debug('Updated training URL sent to frontend', { microlearningId: params.existingMicrolearningId });
           } catch (error) {
             const err = normalizeError(error);
-            logger.error('Failed to send updated training URL to frontend', { error: err.message, stack: err.stack });
+            const errorInfo = errorService.external(err.message, {
+              step: 'send-updated-url',
+              stack: err.stack,
+            });
+            logErrorInfo(logger, 'error', 'Failed to send updated training URL to frontend', errorInfo);
             // Continue - don't block response
           }
         }
@@ -478,7 +496,7 @@ export const workflowExecutorTool = createTool({
         // Validate result against output schema
         const validation = validateToolResult(resultData, workflowExecutorOutputSchema, 'workflow-executor');
         if (!validation.success) {
-          logger.error('Update microlearning result validation failed', { code: validation.error.code, message: validation.error.message });
+          logErrorInfo(logger, 'error', 'Update microlearning result validation failed', validation.error);
           return createToolErrorResponse(validation.error);
         }
 
@@ -512,7 +530,8 @@ export const workflowExecutorTool = createTool({
         await writer?.write({ type: 'text-end', id: messageId });
       } catch (writeError) {
         const writeErr = normalizeError(writeError);
-        logger.error('Failed to send error message to frontend', { error: writeErr.message, stack: writeErr.stack });
+        const errorInfo = errorService.external(writeErr.message, { step: 'send-error-to-frontend', stack: writeErr.stack });
+        logErrorInfo(logger, 'error', 'Failed to send error message to frontend', errorInfo);
       }
 
       return createToolErrorResponse(errorInfo);

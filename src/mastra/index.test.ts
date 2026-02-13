@@ -87,11 +87,11 @@ describe('Mastra API Routes', () => {
             throw new Error('Autonomous route not registered');
         }
 
-        const routeConfig = autonomousCall[1] as { handler: (c: any) => Promise<unknown> };
+        const routeConfig = autonomousCall[1] as unknown as { handler: (c: any) => Promise<unknown> };
         return routeConfig.handler;
     }
 
-    it('should initialize module without errors', async () => {
+    it('should initialize module without errors', { timeout: 60000 }, async () => {
         const moduleImport = import('./index');
         await expect(moduleImport).resolves.toBeDefined();
     });

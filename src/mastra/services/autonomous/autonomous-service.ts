@@ -2,7 +2,8 @@
 import { getUserInfoTool } from '../../tools/user-management';
 import { requestStorage } from '../../utils/core/request-storage';
 import { getLogger } from '../../utils/core/logger';
-import { normalizeError } from '../../utils/core/error-utils';
+import { normalizeError, logErrorInfo } from '../../utils/core/error-utils';
+import { errorService } from '../error-service';
 import { API_ENDPOINTS } from '../../constants';
 import { AutonomousRequest, AutonomousResponse } from '../../types/autonomous-types';
 import {
@@ -138,7 +139,11 @@ export async function executeAutonomousGeneration(
         });
     } catch (error) {
         const err = normalizeError(error);
-        logger.error('Autonomous service error', { error: err.message, stack: err.stack });
+        const errorInfo = errorService.external(err.message, {
+            step: 'execute-autonomous-generation',
+            stack: err.stack,
+        });
+        logErrorInfo(logger, 'error', 'Autonomous service error', errorInfo);
         return { success: false, error: err.message, actions };
     }
 }

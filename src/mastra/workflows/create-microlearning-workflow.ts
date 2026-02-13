@@ -332,11 +332,20 @@ export const saveToKVStep = createStep({
         await waitForKVConsistency(microlearningId, expectedKeys);
       } catch (saveError) {
         const err = normalizeError(saveError);
-        logger.warn('KV save failed but continuing', { error: err.message, stack: err.stack, microlearningId });
+        const errorInfo = errorService.external(err.message, {
+          step: 'save-to-kv',
+          stack: err.stack,
+          microlearningId,
+        });
+        logErrorInfo(logger, 'warn', 'KV save failed but continuing', errorInfo);
       }
     } catch (error) {
       const err = normalizeError(error);
-      logger.warn('KV initialization error', { error: err.message, stack: err.stack });
+      const errorInfo = errorService.external(err.message, {
+        step: 'kv-initialization',
+        stack: err.stack,
+      });
+      logErrorInfo(logger, 'warn', 'KV initialization error', errorInfo);
     }
 
     // Return only the inbox result from parallel execution

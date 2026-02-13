@@ -2,6 +2,8 @@
 
 import { generateText } from 'ai';
 import { getLogger } from '../../utils/core/logger';
+import { normalizeError, logErrorInfo } from '../../utils/core/error-utils';
+import { errorService } from '../../services/error-service';
 import { cleanResponse } from '../../utils/content-processors/json-cleaner';
 import { withTimeout } from '../../utils/core/resilience-utils';
 import { resolveLogoAndBrand } from '../../utils/phishing/brand-resolver';
@@ -85,9 +87,9 @@ export async function detectAndResolveBrand(
                     hasExtractedBrand: !!extractedBrandName
                 });
             } catch (extractError) {
-                logger.warn('⚠️ Brand extraction failed, continuing with default resolution', {
-                    error: extractError
-                });
+                const err = normalizeError(extractError);
+                const errorInfo = errorService.aiModel(err.message, { step: 'brand-extraction', stack: err.stack });
+                logErrorInfo(logger, 'warn', 'Brand extraction failed, continuing with default resolution', errorInfo);
             }
 
             const brandSeed = extractedBrandName || editInstruction;
@@ -108,7 +110,9 @@ ACTION: REPLACE the existing logo src (or {CUSTOMMAINLOGO} placeholder) with thi
 DO NOT use any other URL for the logo.`;
         }
     } catch (err) {
-        logger.warn('⚠️ Brand logic in editor failed, continuing without brand context', { error: err });
+        const normalized = normalizeError(err);
+        const errorInfo = errorService.external(normalized.message, { step: 'brand-logic-editor', stack: normalized.stack });
+        logErrorInfo(logger, 'warn', 'Brand logic in editor failed, continuing without brand context', errorInfo);
     }
 
     return { brandContext, resolvedBrandInfo };

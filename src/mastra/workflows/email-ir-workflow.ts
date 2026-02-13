@@ -11,6 +11,8 @@ import { riskAssessmentTool, riskAssessmentOutputSchema } from '../tools/email-i
 import { reportingTool } from '../tools/email-ir/reporting';
 import { EmailIRCanvasSchema } from '../schemas/email-ir';
 import { loggerWorkflow } from '../tools/email-ir/logger-setup';
+import { normalizeError, logErrorInfo } from '../utils/core/error-utils';
+import { errorService } from '../services/error-service';
 
 // Combined analysis results schema for workflow passing
 export const combinedAnalysisSchema = z.object({
@@ -30,17 +32,19 @@ export const fetchStep = createStep({
         try {
             return await fetchEmailTool.execute({ context: inputData, runtimeContext });
         } catch (error) {
-            const message = error instanceof Error ? error.message : String(error);
-            loggerWorkflow.warn('email_ir_fetch_step_degraded', {
+            const err = normalizeError(error);
+            const errorInfo = errorService.external(err.message, {
+                step: 'email-ir-fetch',
+                stack: err.stack,
                 email_id: inputData.id,
-                reason: message,
             });
+            logErrorInfo(loggerWorkflow, 'warn', 'email_ir_fetch_step_degraded', errorInfo);
 
             // Continue pipeline even when fetch fails. Downstream tools can classify as insufficient_data.
             return {
                 from: 'unknown@unavailable.local',
                 subject: `Email unavailable (${inputData.id})`,
-                htmlBody: `Email fetch failed after retries: ${message}`,
+                htmlBody: `Email fetch failed after retries: ${err.message}`,
                 result: 'insufficient_data',
                 headers: [
                     { key: 'x-email-ir-fetch-status', value: 'failed' },

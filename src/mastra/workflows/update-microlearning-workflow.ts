@@ -116,7 +116,13 @@ const mergeUpdatesStep = createStep({
             logger.warn('useWhitelabelLogo requested but no config found', { microlearningId });
           }
         } catch (err) {
-          logger.warn('Failed to apply whitelabel logo', { error: err });
+          const normalized = normalizeError(err);
+          const errorInfo = errorService.external(normalized.message, {
+            step: 'apply-whitelabel-logo',
+            stack: normalized.stack,
+            microlearningId,
+          });
+          logErrorInfo(logger, 'warn', 'Failed to apply whitelabel logo', errorInfo);
         }
       } else if (targetBrandName) {
         logger.info('Processing external brand update', { brandName: targetBrandName });
@@ -149,7 +155,13 @@ const mergeUpdatesStep = createStep({
             logger.warn('Brand resolution returned no logo URL', { brand: targetBrandName });
           }
         } catch (err) {
-          logger.warn('Failed to resolve external brand logo', { brand: targetBrandName, error: err });
+          const normalized = normalizeError(err);
+          const errorInfo = errorService.external(normalized.message, {
+            step: 'resolve-external-brand-logo',
+            stack: normalized.stack,
+            brand: targetBrandName,
+          });
+          logErrorInfo(logger, 'warn', 'Failed to resolve external brand logo', errorInfo);
         }
       } else {
         logger.debug('No brand updates detected', {
@@ -281,7 +293,12 @@ const saveUpdatesStep = createStep({
       };
     } catch (error) {
       const err = normalizeError(error);
-      logger.error('Failed to save updates', { error: err.message, stack: err.stack, microlearningId });
+      const errorInfo = errorService.external(err.message, {
+        step: 'save-updates',
+        stack: err.stack,
+        microlearningId,
+      });
+      logErrorInfo(logger, 'error', 'Failed to save updates', errorInfo);
 
       return {
         success: false,

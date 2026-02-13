@@ -83,7 +83,9 @@ vi.mock('../utils/core/error-utils', () => ({
 
 vi.mock('../services/error-service', () => ({
   errorService: {
-    validation: vi.fn((msg) => ({ message: msg }))
+    validation: vi.fn((msg) => ({ message: msg, code: 'VALIDATION_ERROR' })),
+    aiModel: vi.fn((msg, _details) => ({ message: msg, code: 'AI_GENERATION_FAILED' })),
+    external: vi.fn((msg, _details) => ({ message: msg, code: 'EXTERNAL_SERVICE_ERROR' }))
   }
 }));
 

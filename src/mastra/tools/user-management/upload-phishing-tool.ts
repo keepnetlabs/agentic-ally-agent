@@ -201,7 +201,9 @@ export const uploadPhishingTool = createTool({
                     });
                     await writer.write({ type: 'text-end', id: messageId });
                 } catch (emitErr) {
-                    logger.warn('Failed to emit UI signal for phishing upload', { error: normalizeError(emitErr).message });
+                    const err = normalizeError(emitErr);
+                    const errorInfo = errorService.external(err.message, { step: 'emit-ui-signal-phishing-upload', stack: err.stack });
+                    logErrorInfo(logger, 'warn', 'Failed to emit UI signal for phishing upload', errorInfo);
                 }
             }
 

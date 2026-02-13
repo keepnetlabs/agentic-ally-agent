@@ -3,7 +3,8 @@ import { cleanResponse } from '../utils/content-processors/json-cleaner';
 import { AGENT_NAMES } from '../constants';
 import { withRetry } from '../utils/core/resilience-utils';
 import { getLogger } from '../utils/core/logger';
-import { normalizeError } from '../utils/core/error-utils';
+import { normalizeError, logErrorInfo } from '../utils/core/error-utils';
+import { errorService } from '../services/error-service';
 
 const logger = getLogger('AgentRouter');
 
@@ -87,13 +88,12 @@ export class AgentRouter {
       return { agentName: AGENT_NAMES.MICROLEARNING };
 
     } catch (error) {
-      // withRetry exhausted all attempts - fallback to default
       const err = normalizeError(error);
-      logger.error('Orchestrator routing failed after all retries', {
-        error: err.message,
+      const errorInfo = errorService.aiModel(err.message, {
+        step: 'orchestrator-routing',
         stack: err.stack,
-        errorType: err.constructor.name
       });
+      logErrorInfo(logger, 'error', 'Orchestrator routing failed after all retries', errorInfo);
       return { agentName: AGENT_NAMES.MICROLEARNING };
     }
   }

@@ -4,6 +4,8 @@ import { emailIRAnalyst } from '../../agents/email-ir-analyst';
 import { EmailIREmailDataSchema } from '../../types/email-ir';
 import { TimingTracker, createLogContext, loggerHeader, logPerformance, logStepComplete, logStepStart, logStepError, logSignalDetected, logAuthResults } from './logger-setup';
 import { withRetry } from '../../utils/core/resilience-utils';
+import { normalizeError, logErrorInfo } from '../../utils/core/error-utils';
+import { errorService } from '../../services/error-service';
 
 export const headerAnalysisOutputSchema = z.object({
     spf_pass: z.boolean().describe('True if SPF authentication passed'),
@@ -264,11 +266,19 @@ Note: If header data is incomplete or missing, use the exact string "insufficien
                 list_unsubscribe_present: result.object.list_unsubscribe_present || hasListUnsubscribe,
             };
         } catch (error) {
-            logStepError(loggerHeader, ctx, error as Error, {
+            const err = normalizeError(error);
+            logStepError(loggerHeader, ctx, err, {
                 sender: email.from,
                 duration_ms: timing.getTotal()
             });
-            throw error;
+            const errorInfo = errorService.aiModel(err.message, {
+                step: 'header-analysis',
+                stack: err.stack,
+            });
+            logErrorInfo(loggerHeader, 'error', 'Header analysis failed', errorInfo);
+            const e = new Error(err.message);
+            (e as Error & { code?: string }).code = errorInfo.code;
+            throw e;
         }
     },
 });

@@ -10,7 +10,8 @@
 import { CLOUDFLARE_KV } from '../constants';
 import { KVService } from '../services/kv-service';
 import { getLogger } from './core/logger';
-import { normalizeError } from './core/error-utils';
+import { normalizeError, logErrorInfo } from './core/error-utils';
+import { errorService } from '../services/error-service';
 
 const logger = getLogger('KVConsistency');
 
@@ -108,11 +109,13 @@ export async function waitForKVConsistency(
             }
         } catch (error) {
             const err = normalizeError(error);
-            logger.warn('KV consistency check error', {
+            const errorInfo = errorService.external(err.message, {
+                step: 'kv-consistency-check',
+                stack: err.stack,
                 resourceId,
                 attempt: attempt + 1,
-                error: err.message,
             });
+            logErrorInfo(logger, 'warn', 'KV consistency check error', errorInfo);
 
             // Wait with exponential backoff before retry
             if (attempt < 5) {

@@ -7,7 +7,8 @@ import { generateText, LanguageModel } from 'ai';
 import { getLogger } from '../core/logger';
 import { getDefaultGenerationModel } from '../../model-providers';
 import { cleanResponse } from '../content-processors/json-cleaner';
-import { normalizeError } from '../core/error-utils';
+import { normalizeError, logErrorInfo } from '../core/error-utils';
+import { errorService } from '../../services/error-service';
 import { CLASSIFICATION_PARAMS } from '../config/llm-generation-params';
 
 const logger = getLogger('IndustryDetector');
@@ -842,9 +843,11 @@ Based on the company name and scenario description, determine the most appropria
 
     } catch (error) {
         const err = normalizeError(error);
-        logger.warn('AI industry detection failed, will use regex fallback', {
-            error: err.message
+        const errorInfo = errorService.aiModel(err.message, {
+            step: 'detect-industry-with-ai',
+            stack: err.stack,
         });
+        logErrorInfo(logger, 'warn', 'AI industry detection failed, will use regex fallback', errorInfo);
         return null;
     }
 }

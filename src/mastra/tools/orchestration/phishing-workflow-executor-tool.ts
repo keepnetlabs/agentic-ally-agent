@@ -161,7 +161,11 @@ export const phishingWorkflowExecutorTool = createTool({
                         await writer.write({ type: 'text-end', id: messageId });
                     } catch (err) {
                         const error = err instanceof Error ? err : new Error(String(err));
-                        logger.error('Failed to stream phishing email', { error: error.message, stack: error.stack });
+                        const errorInfo = errorService.external(error.message, {
+                            step: 'stream-phishing-result',
+                            stack: error.stack,
+                        });
+                        logErrorInfo(logger, 'error', 'Failed to stream phishing email', errorInfo);
                     }
                 }
 
@@ -190,7 +194,7 @@ export const phishingWorkflowExecutorTool = createTool({
                 // Validate result against output schema
                 const validation = validateToolResult(toolResult, phishingWorkflowOutputSchema, 'phishing-workflow-executor');
                 if (!validation.success) {
-                    logger.error('Phishing workflow result validation failed', { code: validation.error.code, message: validation.error.message });
+                    logErrorInfo(logger, 'error', 'Phishing workflow result validation failed', validation.error);
                     return {
                         ...createToolErrorResponse(validation.error),
                         message: '[ERROR] Phishing workflow result validation failed.'

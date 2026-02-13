@@ -53,8 +53,9 @@ export const loadExistingStep = createStep({
         logger.info('Found microlearning in KV', { microlearningId: existing.microlearning_id });
       }
     } catch (kvError) {
-      const err = kvError instanceof Error ? kvError : new Error(String(kvError));
-      logger.warn('KVService failed to load microlearning', { error: err.message, stack: err.stack });
+      const err = normalizeError(kvError);
+      const errorInfo = errorService.external(err.message, { step: 'load-microlearning', stack: err.stack });
+      logErrorInfo(logger, 'warn', 'KVService failed to load microlearning', errorInfo);
     }
 
     if (!existing) {
@@ -165,13 +166,14 @@ export const translateLanguageStep = createStep({
         logger.info('Found base content in KV', { microlearningId, sourceLanguage });
       }
     } catch (kvError) {
-      const err = kvError instanceof Error ? kvError : new Error(String(kvError));
-      logger.warn('KVService failed to load language content', {
-        error: err.message,
+      const err = normalizeError(kvError);
+      const errorInfo = errorService.external(err.message, {
+        step: 'load-language-content',
         stack: err.stack,
         microlearningId,
         sourceLanguage
       });
+      logErrorInfo(logger, 'warn', 'KVService failed to load language content', errorInfo);
     }
 
     // Validate base content exists and has data
@@ -240,9 +242,10 @@ export const translateLanguageStep = createStep({
       await kvService.updateLanguageAvailabilityAtomic(microlearningId, targetLanguage);
 
     } catch (kvError) {
-      const err = kvError instanceof Error ? kvError : new Error(String(kvError));
-      logger.error('KVService storage failed in worker environment', { error: err.message, stack: err.stack });
-      throw new Error(`Translation completed but storage failed: ${kvError}`);
+      const err = normalizeError(kvError);
+      const errorInfo = errorService.external(err.message, { step: 'store-translated-content', stack: err.stack });
+      logErrorInfo(logger, 'error', 'KVService storage failed in worker environment', errorInfo);
+      throw new Error(`Translation completed but storage failed: ${err.message}`);
     }
 
     logger.info('Step 2 completed: Translation successful', { targetLanguage, microlearningId });
@@ -389,13 +392,14 @@ export const updateInboxStep = createStep({
       }
     } catch (error) {
       const err = normalizeError(error);
-      logger.error('❌ Inbox translation process failed', {
-        error: err.message,
+      const errorInfo = errorService.external(err.message, {
+        step: 'inbox-translation',
         stack: err.stack,
         microlearningId,
         targetLanguage,
         department: normalizedDept
       });
+      logErrorInfo(logger, 'error', 'Inbox translation process failed', errorInfo);
       return {
         success: false,
         microlearningId,

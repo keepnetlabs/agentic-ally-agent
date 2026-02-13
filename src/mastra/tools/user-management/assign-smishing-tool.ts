@@ -135,9 +135,11 @@ export const assignSmishingTool = createTool({
             delta: `::ui:smishing_assigned::${encoded}::/ui:smishing_assigned::\n`
           });
           await writer.write({ type: 'text-end', id: messageId });
-        } catch (emitErr) {
-          logger.warn('Failed to emit UI signal for smishing assignment', { error: normalizeError(emitErr).message });
-        }
+          } catch (emitErr) {
+            const err = normalizeError(emitErr);
+            const errorInfo = errorService.external(err.message, { step: 'emit-ui-signal-smishing-assignment', stack: err.stack });
+            logErrorInfo(logger, 'warn', 'Failed to emit UI signal for smishing assignment', errorInfo);
+          }
       }
 
       const toolResult = {

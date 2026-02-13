@@ -1,6 +1,7 @@
 import { Context, Next, type ExecutionContext } from 'hono';
 import * as Sentry from '@sentry/cloudflare';
 import { getLogger } from '../utils/core/logger';
+import { ERROR_CODES } from '../constants';
 
 const logger = getLogger('ErrorHandler');
 
@@ -39,12 +40,13 @@ export const errorHandlerMiddleware = async (c: Context, next: Next): Promise<Re
         await next();
         return;
     } catch (error) {
+        const errorCode = (error as { code?: string })?.code ?? ERROR_CODES.INTERNAL_UNEXPECTED;
         const respond = () =>
             c.json(
                 {
                     error: 'Internal Server Error',
+                    errorCode,
                     message: 'An unexpected error occurred. Please try again later.',
-                    // Include request path for debugging (safe to expose)
                     path: c.req.path,
                 },
                 500

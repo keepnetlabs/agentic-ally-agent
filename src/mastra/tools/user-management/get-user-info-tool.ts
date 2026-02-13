@@ -591,7 +591,9 @@ If a value is unknown, use "" or null.
           });
           await writer.write({ type: 'text-end', id: messageId });
         } catch (emitErr) {
-          logger.warn('Failed to emit UI signal for user', { error: normalizeError(emitErr).message });
+          const err = normalizeError(emitErr);
+          const errorInfo = errorService.external(err.message, { step: 'emit-ui-signal-user', stack: err.stack });
+          logErrorInfo(logger, 'warn', 'Failed to emit UI signal for user', errorInfo);
         }
       }
 

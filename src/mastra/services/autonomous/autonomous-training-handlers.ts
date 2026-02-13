@@ -9,7 +9,8 @@ import { workflowExecutorTool } from '../../tools/orchestration';
 import { assignTrainingTool, uploadTrainingTool } from '../../tools/user-management';
 import { withTimeout, withRetry } from '../../utils/core/resilience-utils';
 import { getLogger } from '../../utils/core/logger';
-import { normalizeError } from '../../utils/core/error-utils';
+import { normalizeError, logErrorInfo } from '../../utils/core/error-utils';
+import { errorService } from '../error-service';
 import { summarizeForLog } from '../../utils/core/log-redaction-utils';
 import { isSafeId } from '../../utils/core/id-utils';
 import { validateBCP47LanguageCode, DEFAULT_LANGUAGE } from '../../utils/language/language-utils';
@@ -214,11 +215,13 @@ async function executeTrainingToolFirst(params: {
         };
     } catch (error) {
         const err = normalizeError(error);
-        logger.warn('Tool-first training flow failed', {
-            error: err.message,
+        const errorInfo = errorService.external(err.message, {
+            step: 'tool-first-training',
+            stack: err.stack,
             customPrompt: isCustomPrompt,
             uploadOnly
         });
+        logErrorInfo(logger, 'warn', 'Tool-first training flow failed', errorInfo);
         return {
             success: false,
             error: err.message

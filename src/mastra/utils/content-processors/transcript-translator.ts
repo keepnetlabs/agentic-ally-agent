@@ -3,7 +3,8 @@ import { getLanguagePrompt } from '../language/localization-language-rules';
 import { TRANSCRIPT_TRANSLATION_PARAMS } from '../config/llm-generation-params';
 import { withRetry } from '../core/resilience-utils';
 import { getLogger } from '../core/logger';
-import { normalizeError } from '../core/error-utils';
+import { normalizeError, logErrorInfo } from '../core/error-utils';
+import { errorService } from '../../services/error-service';
 
 const logger = getLogger('TranscriptTranslator');
 
@@ -43,7 +44,8 @@ export async function translateTranscript(
     return response.text.trim();
   } catch (error) {
     const err = normalizeError(error);
-    logger.warn('Transcript translation failed, using original', { error: err.message });
+    const errorInfo = errorService.aiModel(err.message, { step: 'transcript-translation', stack: err.stack });
+    logErrorInfo(logger, 'warn', 'Transcript translation failed, using original', errorInfo);
     return transcript;
   }
 }

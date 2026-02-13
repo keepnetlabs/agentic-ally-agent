@@ -158,7 +158,7 @@ describe('UpdateMicrolearningWorkflow', () => {
     expect(workflowResult.status).toBe('success');
     expect(mocks.loggerWarn).toHaveBeenCalledWith(
       'Failed to apply whitelabel logo',
-      expect.objectContaining({ error: expect.anything() })
+      expect.objectContaining({ message: 'Config service down' })
     );
   });
 

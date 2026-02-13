@@ -24,7 +24,7 @@ import { getUserInfoTool } from '../tools/user-management/get-user-info-tool';
 import { reasoningTool } from '../tools/analysis';
 import { getDefaultAgentModel } from '../model-providers';
 import { Memory } from '@mastra/memory';
-import { AGENT_NAMES, AGENT_IDS, MESSAGING_GUIDELINES } from '../constants';
+import { AGENT_NAMES, AGENT_IDS, MESSAGING_GUIDELINES_PROMPT_FRAGMENT } from '../constants';
 
 /**
  * Builds the system instructions for the vishing call agent.
@@ -289,7 +289,7 @@ Before initiating the call (State 4), perform a self-critique using show_reasoni
    - Is there a hard cap of 5 turns / 90 seconds with forced debrief?
 
 ## Messaging Guidelines (Enterprise-Safe)
-- NEVER use: ${MESSAGING_GUIDELINES.BLACKLIST_WORDS.join(', ')}
+${MESSAGING_GUIDELINES_PROMPT_FRAGMENT}
 - When confirming call status, use clear business language.
 - Do NOT over-explain technical details about ElevenLabs, Twilio, or API calls.
 

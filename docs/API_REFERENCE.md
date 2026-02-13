@@ -485,7 +485,8 @@ const findingLabelToBadge: Record<string, 'neutral' | 'info' | 'warning' | 'dang
 ```json
 {
   "success": false,
-  "error": "Workflow execution failed"
+  "error": "Workflow execution failed",
+  "errorCode": "ERR_AI_001"
 }
 ```
 
@@ -592,9 +593,49 @@ Analyzes a completed vishing (voice phishing) call transcript and returns a stru
 ```json
 {
   "success": false,
-  "error": "LLM response was not valid JSON"
+  "error": "LLM response was not valid JSON",
+  "errorCode": "ERR_AI_002",
+  "message": "An unexpected error occurred. Please try again later.",
+  "path": "/vishing/conversations/summary"
 }
 ```
+
+---
+
+## Error Response Format (5xx)
+
+All 5xx responses from the global error handler include:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `error` | string | Human-readable summary (e.g. "Internal Server Error") |
+| `errorCode` | string | Machine-readable code for support tracing and monitoring |
+| `message` | string | User-facing message |
+| `path` | string | Request path where the error occurred |
+
+### Error Codes Reference
+
+| Code | Category | Typical Cause |
+|------|----------|---------------|
+| `ERR_AUTH_001` | Auth | Token missing |
+| `ERR_AUTH_002` | Auth | Token invalid |
+| `ERR_AUTH_003` | Auth | Unauthorized |
+| `ERR_VAL_001` | Validation | Invalid input |
+| `ERR_VAL_002` | Validation | Schema validation failed |
+| `ERR_VAL_003` | Validation | Invalid language code |
+| `ERR_VAL_004` | Validation | Invalid JSON |
+| `ERR_KV_001` | Storage | KV read failed |
+| `ERR_KV_002` | Storage | KV write failed |
+| `ERR_API_001` | External | API request failed |
+| `ERR_AI_001` | AI | Generation failed |
+| `ERR_AI_002` | AI | Parsing failed |
+| `ERR_AI_003` | AI | AI timeout |
+| `ERR_NF_001` | Not Found | Microlearning not found |
+| `ERR_RL_001` | Rate Limit | Too many requests |
+| `ERR_TO_001` | Timeout | General timeout |
+| `ERR_INT_001` | Internal | Unexpected error |
+
+**Usage:** Clients can report `errorCode` to support for faster diagnosis. Logs and monitoring can aggregate by code.
 
 ---
 

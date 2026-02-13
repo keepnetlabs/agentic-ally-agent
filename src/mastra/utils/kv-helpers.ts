@@ -4,6 +4,8 @@
 
 import { KVService } from '../services/kv-service';
 import { getLogger } from './core/logger';
+import { normalizeError, logErrorInfo } from './core/error-utils';
+import { errorService } from '../services/error-service';
 import { LANGUAGE, CLOUDFLARE_KV } from '../constants';
 import { withRetry } from './core/resilience-utils';
 
@@ -63,13 +65,14 @@ export async function loadInboxWithFallback(
     return null;
 
   } catch (error) {
-    const err = error instanceof Error ? error : new Error(String(error));
-    logger.warn('KV load failed for inbox', {
+    const err = normalizeError(error);
+    const errorInfo = errorService.external(err.message, {
+      step: 'load-inbox-with-fallback',
+      stack: err.stack,
       primaryKey,
       fallbackKey,
-      error: err.message,
-      stack: err.stack
     });
+    logErrorInfo(logger, 'warn', 'KV load failed for inbox', errorInfo);
     return null;
   }
 }

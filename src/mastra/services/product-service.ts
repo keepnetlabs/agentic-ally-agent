@@ -1,7 +1,8 @@
 import { getLogger } from '../utils/core/logger';
 import { getRequestContext, requestStorage } from '../utils/core/request-storage';
 import { API_KEYS } from '../constants';
-import { normalizeError } from '../utils/core/error-utils';
+import { normalizeError, logErrorInfo } from '../utils/core/error-utils';
+import { errorService } from './error-service';
 
 /**
  * ProductService for communicating with our product backend
@@ -58,7 +59,8 @@ export class ProductService {
       return store?.token;
     } catch (error) {
       const err = normalizeError(error);
-      this.logger.warn('Failed to get token from requestStorage', { error: err.message });
+      const errorInfo = errorService.internal(err.message, { step: 'get-token-from-request-storage', stack: err.stack });
+      logErrorInfo(this.logger, 'warn', 'Failed to get token from requestStorage', errorInfo);
       return undefined;
     }
   }
@@ -72,7 +74,8 @@ export class ProductService {
       return store?.companyId;
     } catch (error) {
       const err = normalizeError(error);
-      this.logger.warn('Failed to get companyId from requestStorage', { error: err.message });
+      const errorInfo = errorService.internal(err.message, { step: 'get-company-id-from-request-storage', stack: err.stack });
+      logErrorInfo(this.logger, 'warn', 'Failed to get companyId from requestStorage', errorInfo);
       return undefined;
     }
   }
@@ -97,7 +100,8 @@ export class ProductService {
       };
     } catch (error) {
       const err = normalizeError(error);
-      this.logger.warn('Failed to parse JWT token', { error: err.message });
+      const errorInfo = errorService.auth(err.message, { step: 'parse-jwt-token', stack: err.stack });
+      logErrorInfo(this.logger, 'warn', 'Failed to parse JWT token', errorInfo);
       return {};
     }
   }
@@ -155,7 +159,8 @@ export class ProductService {
       return await response.json();
     } catch (error) {
       const err = normalizeError(error);
-      this.logger.error(`Request error to ${endpoint}`, { error: err.message, stack: err.stack });
+      const errorInfo = errorService.external(err.message, { step: 'product-api-request', endpoint, stack: err.stack });
+      logErrorInfo(this.logger, 'error', `Request error to ${endpoint}`, errorInfo);
       return null;
     }
   }
@@ -179,7 +184,8 @@ export class ProductService {
       };
     } catch (error) {
       const err = normalizeError(error);
-      this.logger.error('Failed to fetch whitelabeling config', { error: err.message, stack: err.stack });
+      const errorInfo = errorService.external(err.message, { step: 'fetch-whitelabeling-config', stack: err.stack });
+      logErrorInfo(this.logger, 'error', 'Failed to fetch whitelabeling config', errorInfo);
       return null;
     }
   }

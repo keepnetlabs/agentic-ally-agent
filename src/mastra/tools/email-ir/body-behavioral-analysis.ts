@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { emailIRAnalyst } from '../../agents/email-ir-analyst';
 import { EmailIREmailDataSchema } from '../../types/email-ir';
 import { createLogContext, loggerBehavioral, logStepStart, logStepComplete, logStepError } from './logger-setup';
+import { normalizeError, logErrorInfo } from '../../utils/core/error-utils';
+import { errorService } from '../../services/error-service';
 import { withRetry } from '../../utils/core/resilience-utils';
 import { sanitizeEmailBody } from './email-body-sanitizer';
 
@@ -122,8 +124,13 @@ Populate the output schema based on the behavioral signals identified:
                 original_email: email,
             };
         } catch (error) {
-            logStepError(loggerBehavioral, ctx, error as Error);
-            throw error;
+            const err = normalizeError(error);
+            logStepError(loggerBehavioral, ctx, err);
+            const errorInfo = errorService.aiModel(err.message, { step: 'body-behavioral-analysis', stack: err.stack });
+            logErrorInfo(loggerBehavioral, 'error', 'Body behavioral analysis failed', errorInfo);
+            const e = new Error(err.message);
+            (e as Error & { code?: string }).code = errorInfo.code;
+            throw e;
         }
     },
 });

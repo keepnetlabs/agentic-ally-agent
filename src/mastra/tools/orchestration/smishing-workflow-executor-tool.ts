@@ -145,7 +145,11 @@ export const smishingWorkflowExecutorTool = createTool({
                         await writer.write({ type: 'text-end', id: messageId });
                     } catch (err) {
                         const error = err instanceof Error ? err : new Error(String(err));
-                        logger.error('Failed to stream smishing simulation', { error: error.message, stack: error.stack });
+                        const errorInfo = errorService.external(error.message, {
+                            step: 'stream-smishing-result',
+                            stack: error.stack,
+                        });
+                        logErrorInfo(logger, 'error', 'Failed to stream smishing simulation', errorInfo);
                     }
                 }
 
@@ -169,7 +173,7 @@ export const smishingWorkflowExecutorTool = createTool({
 
                 const validation = validateToolResult(toolResult, smishingWorkflowOutputSchema, 'smishing-workflow-executor');
                 if (!validation.success) {
-                    logger.error('Smishing workflow result validation failed', { code: validation.error.code, message: validation.error.message });
+                    logErrorInfo(logger, 'error', 'Smishing workflow result validation failed', validation.error);
                     return {
                         ...createToolErrorResponse(validation.error),
                         message: ERROR_MESSAGES.SMISHING.GENERIC

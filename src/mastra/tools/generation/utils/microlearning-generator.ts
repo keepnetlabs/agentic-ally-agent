@@ -7,7 +7,8 @@ import { CATEGORIES } from '../../../constants';
 import { type LanguageModel } from '../../../types/language-model';
 import { ProductService } from '../../../services/product-service';
 import { getLogger } from '../../../utils/core/logger';
-import { normalizeError } from '../../../utils/core/error-utils';
+import { normalizeError, logErrorInfo } from '../../../utils/core/error-utils';
+import { errorService } from '../../../services/error-service';
 import { withRetry } from '../../../utils/core/resilience-utils';
 import {
     ETHICAL_POLICY,
@@ -87,7 +88,8 @@ export async function generateTheme(themeColor?: string) {
     } catch (error) {
         const logger = getLogger('GenerateTheme');
         const err = normalizeError(error);
-        logger.warn('Failed to fetch whitelabeling config, using defaults', { error: err.message });
+        const errorInfo = errorService.external(err.message, { step: 'fetch-whitelabel-config', stack: err.stack });
+        logErrorInfo(logger, 'warn', 'Failed to fetch whitelabeling config, using defaults', errorInfo);
     }
 
     return {
@@ -177,7 +179,8 @@ CRITICAL JSON RULES:
     } catch (error) {
         const logger = getLogger('EnhanceMicrolearning');
         const err = normalizeError(error);
-        logger.warn('Enhancement failed, returning original', { error: err.message });
+        const errorInfo = errorService.aiModel(err.message, { step: 'microlearning-enhancement', stack: err.stack });
+        logErrorInfo(logger, 'warn', 'Enhancement failed, returning original', errorInfo);
         return microlearning;
     }
 }

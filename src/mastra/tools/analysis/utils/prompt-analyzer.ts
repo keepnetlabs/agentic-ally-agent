@@ -9,7 +9,8 @@ import { PROMPT_ANALYSIS_PARAMS, EXTRACTION_PARAMS } from '../../../utils/config
 import { MICROLEARNING, ROLES, CATEGORIES, THEME_COLORS } from '../../../constants';
 import { streamReasoning } from '../../../utils/core/reasoning-stream';
 import { getLogger } from '../../../utils/core/logger';
-import { normalizeError } from '../../../utils/core/error-utils';
+import { normalizeError, logErrorInfo } from '../../../utils/core/error-utils';
+import { errorService } from '../../../services/error-service';
 import { withRetry } from '../../../utils/core/resilience-utils';
 import { autoRepairPromptAnalysis } from '../prompt-analysis-normalizer';
 import { detectSmishingChannelFromText } from '../../../utils/smishing-channel';
@@ -153,12 +154,14 @@ export async function analyzeUserPromptWithAI(params: AnalyzeUserPromptParams) {
             schemaHints = await repo.getSmartSchemaHints(userPrompt, 3);
         } catch (error) {
             const err = normalizeError(error);
-            logger.warn('Semantic search unavailable, trying smart sampling', { error: err.message });
+            const errorInfo = errorService.external(err.message, { step: 'semantic-search-hints' });
+            logErrorInfo(logger, 'warn', 'Semantic search unavailable, trying smart sampling', errorInfo);
             try {
                 schemaHints = await repo.getSmartSchemaHints(undefined, 3);
             } catch (fallbackError) {
                 const fbErr = normalizeError(fallbackError);
-                logger.warn('Smart sampling failed, using basic schema hints', { error: fbErr.message });
+                const fallbackErrorInfo = errorService.external(fbErr.message, { step: 'smart-sampling-hints' });
+                logErrorInfo(logger, 'warn', 'Smart sampling failed, using basic schema hints', fallbackErrorInfo);
                 schemaHints = repo.getSchemaHints(3);
             }
         }

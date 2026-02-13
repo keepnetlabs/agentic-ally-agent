@@ -3,7 +3,8 @@ import { WorkflowEntrypoint } from 'cloudflare:workers';
 import { executeAutonomousGeneration } from '../services/autonomous';
 import { getLogger } from '../utils/core/logger';
 import type { AutonomousRequestBody, CloudflareEnv } from '../types/api-types';
-import { normalizeError } from '../utils/core/error-utils';
+import { normalizeError, logErrorInfo } from '../utils/core/error-utils';
+import { errorService } from '../services/error-service';
 import { mastra } from '../index';
 /**
  * Cloudflare Workflow entrypoint for autonomous generation.
@@ -34,12 +35,14 @@ export class AutonomousWorkflow extends WorkflowEntrypoint {
             return result;
         } catch (error) {
             const err = normalizeError(error);
-            logger.error('autonomous_workflow_failed', {
-                error: err.message,
+            const errorInfo = errorService.external(err.message, {
+                step: 'autonomous-generation',
+                stack: err.stack,
                 token_preview: event?.payload?.token ? '***' : undefined,
                 targetUserResourceId: event?.payload?.targetUserResourceId,
                 actions: event?.payload?.actions?.length
             });
+            logErrorInfo(logger, 'error', 'autonomous_workflow_failed', errorInfo);
 
             return {
                 success: false,

@@ -3,6 +3,8 @@ import { emailIRAnalyst } from '../../agents/email-ir-analyst';
 import { EmailIRCanvasSchema, EMAIL_IR_EMAIL_CATEGORIES } from '../../schemas/email-ir';
 import { riskAssessmentOutputSchema } from './risk-assessment';
 import { createLogContext, loggerReporting, logStepStart, logStepComplete, logStepError } from './logger-setup';
+import { normalizeError, logErrorInfo } from '../../utils/core/error-utils';
+import { errorService } from '../../services/error-service';
 import { withRetry } from '../../utils/core/resilience-utils';
 
 export const reportingTool = createTool({
@@ -159,8 +161,13 @@ This report format is designed for:
 
             return result.object;
         } catch (error) {
-            logStepError(loggerReporting, ctx, error as Error);
-            throw error;
+            const err = normalizeError(error);
+            logStepError(loggerReporting, ctx, err);
+            const errorInfo = errorService.aiModel(err.message, { step: 'reporting', stack: err.stack });
+            logErrorInfo(loggerReporting, 'error', 'Reporting failed', errorInfo);
+            const e = new Error(err.message);
+            (e as Error & { code?: string }).code = errorInfo.code;
+            throw e;
         }
     }
 });

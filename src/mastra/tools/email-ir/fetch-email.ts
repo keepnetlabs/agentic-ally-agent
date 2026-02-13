@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { EmailIREmailDataSchema } from '../../types/email-ir';
 import { createLogContext, loggerFetch, logStepStart, logStepComplete, logStepError } from './logger-setup';
 import { withRetry } from '../../utils/core/resilience-utils';
+import { normalizeError, logErrorInfo } from '../../utils/core/error-utils';
+import { errorService } from '../../services/error-service';
 
 export const fetchEmailInputSchema = z.object({
     id: z.string().trim().min(1).max(128),
@@ -51,8 +53,13 @@ export const fetchEmailTool = createTool({
 
                 return emailData;
             } catch (error) {
-                logStepError(loggerFetch, ctx, error as Error);
-                throw error;
+                const err = normalizeError(error);
+                logStepError(loggerFetch, ctx, err);
+                const errorInfo = errorService.external(err.message, { step: 'fetch-email', stack: err.stack });
+                logErrorInfo(loggerFetch, 'error', 'Fetch email failed', errorInfo);
+                const e = new Error(err.message);
+                (e as Error & { code?: string }).code = errorInfo.code;
+                throw e;
             }
         }, 'fetch-email-api');
     },

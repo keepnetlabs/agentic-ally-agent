@@ -982,6 +982,9 @@ export const SAFE_COMMUNICATION = {
 export const PRIVACY_POLICY = SAFE_COMMUNICATION.PRIVACY;
 export const MESSAGING_GUIDELINES = SAFE_COMMUNICATION.MESSAGING;
 
+/** Prompt fragment for agent instructions - avoids repeating in 6 agents */
+export const MESSAGING_GUIDELINES_PROMPT_FRAGMENT = `- NEVER use: ${MESSAGING_GUIDELINES.BLACKLIST_WORDS.join(', ')}`;
+
 // ============================================
 // STRUCTURED ERROR CODES
 // ============================================

@@ -39,10 +39,12 @@ function parseSmishingChatResponse(rawText: string): ParsedSmishingChatResponse 
       };
     }
   } catch (error) {
-    // Fallback to plain text when model does not follow JSON contract.
-    logger.warn('smishing_chat_response_parse_fallback', {
-      error: error instanceof Error ? error.message : String(error),
+    const err = normalizeError(error);
+    const errorInfo = errorService.aiModel(err.message, {
+      step: 'smishing-chat-parse',
+      stack: err.stack,
     });
+    logErrorInfo(logger, 'warn', 'smishing_chat_response_parse_fallback', errorInfo);
   }
 
   return {

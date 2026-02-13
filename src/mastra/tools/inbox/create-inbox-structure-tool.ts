@@ -105,7 +105,8 @@ async function createInboxStructure(
 
   } catch (firstError) {
     const err = normalizeError(firstError);
-    logger.warn('First attempt to generate dynamic inbox failed, retrying once', { error: err.message, stack: err.stack });
+    const errorInfo = errorService.aiModel(err.message, { step: 'create-inbox-first-attempt', stack: err.stack });
+    logErrorInfo(logger, 'warn', 'First attempt to generate dynamic inbox failed, retrying once', errorInfo);
 
     try {
       const model = getModelWithOverride(modelProvider, modelOverride);
@@ -121,7 +122,8 @@ async function createInboxStructure(
 
     } catch (secondError) {
       const err = normalizeError(secondError);
-      logger.warn('Second attempt failed, using fallback structure', { error: err.message, stack: err.stack });
+      const errorInfo = errorService.aiModel(err.message, { step: 'create-inbox-second-attempt', stack: err.stack });
+      logErrorInfo(logger, 'warn', 'Second attempt failed, using fallback structure', errorInfo);
       // Fallback with user-friendly messages instead of empty structure
       const fallbackPayload = {
         texts: {
@@ -195,7 +197,8 @@ async function generateDynamicInboxWithAI(
     logger.debug('Inbox texts parsed successfully', {});
   } catch (parseError) {
     const err = normalizeError(parseError);
-    logger.warn('Texts JSON parsing failed, using empty fallback', { error: err.message, stack: err.stack });
+    const errorInfo = errorService.aiModel(err.message, { step: 'inbox-texts-parse', stack: err.stack });
+    logErrorInfo(logger, 'warn', 'Texts JSON parsing failed, using empty fallback', errorInfo);
     // textsData stays as {} - no throw, no propagation
   }
 
@@ -211,7 +214,8 @@ async function generateDynamicInboxWithAI(
     return validatedInboxContent;
   } catch (validationError) {
     const err = normalizeError(validationError);
-    logger.warn('Inbox content validation failed, using fallback', { error: err.message, stack: err.stack });
+    const errorInfo = errorService.validation(err.message, { step: 'inbox-content-validation' });
+    logErrorInfo(logger, 'warn', 'Inbox content validation failed, using fallback', errorInfo);
     // Return fallback structure instead of undefined
     return {
       texts: textsData || {},

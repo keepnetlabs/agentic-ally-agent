@@ -146,8 +146,8 @@ export const translateLanguageJsonTool = new Tool({
                     return { sceneId, content: rewrittenContent };
                 } catch (error) {
                     const err = normalizeError(error);
-                    logger.error('Scene rewrite failed after retries', { sceneNumber, sceneId, error: err.message, stack: err.stack });
-                    logger.warn('Using original content as fallback', { sceneNumber, sceneId });
+                    const errorInfo = errorService.aiModel(err.message, { step: 'scene-rewrite', sceneNumber, sceneId, stack: err.stack });
+                    logErrorInfo(logger, 'error', 'Scene rewrite failed after retries', errorInfo);
                     return { sceneId, content: sceneContent }; // Graceful fallback
                 }
             }
@@ -168,7 +168,9 @@ export const translateLanguageJsonTool = new Tool({
                         rewrittenScenesMap[sceneId] = content;
                     }
                 } else {
-                    logger.warn('Scene rewrite promise rejected', { sceneIndex: idx, error: result.reason });
+                    const err = normalizeError(result.reason);
+                    const errorInfo = errorService.aiModel(err.message, { step: 'scene-rewrite-settled', sceneIndex: idx });
+                    logErrorInfo(logger, 'warn', 'Scene rewrite promise rejected', errorInfo);
                 }
             });
 
@@ -183,7 +185,8 @@ export const translateLanguageJsonTool = new Tool({
                 logger.debug('Application texts rewrite completed', {});
             } catch (error) {
                 const err = normalizeError(error);
-                logger.error('Application texts rewrite failed after retries, using original', { error: err.message, stack: err.stack });
+                const errorInfo = errorService.aiModel(err.message, { step: 'app-texts-rewrite', stack: err.stack });
+                logErrorInfo(logger, 'error', 'Application texts rewrite failed after retries, using original', errorInfo);
             }
 
             // Combine results - preserve original structure with rewritten scenes

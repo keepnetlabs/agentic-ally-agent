@@ -4,7 +4,7 @@ import { reasoningTool } from '../tools/analysis';
 import { uploadSmishingTool, assignSmishingTool } from '../tools/user-management';
 import { getDefaultAgentModel } from '../model-providers';
 import { Memory } from '@mastra/memory';
-import { SMISHING, AGENT_NAMES, AGENT_IDS, MESSAGING_GUIDELINES } from '../constants';
+import { SMISHING, AGENT_NAMES, AGENT_IDS, MESSAGING_GUIDELINES_PROMPT_FRAGMENT } from '../constants';
 
 const buildSmishingInstructions = () => `
 You are the **Smishing Simulation Specialist**.
@@ -170,7 +170,7 @@ Call 'smishingExecutor' (ONLY in STATE 3) with:
 - **Topic & difficulty:** Extract if specified; ask ONLY for missing required fields.
 
 ## Messaging Guidelines (Enterprise-Safe)
-- NEVER use: ${MESSAGING_GUIDELINES.BLACKLIST_WORDS.join(', ')}
+${MESSAGING_GUIDELINES_PROMPT_FRAGMENT}
 
 ## Example Interaction
 **User:** "Create a smishing SMS for password reset"

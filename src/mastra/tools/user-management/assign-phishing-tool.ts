@@ -153,7 +153,9 @@ export const assignPhishingTool = createTool({
                     });
                     await writer.write({ type: 'text-end', id: messageId });
                 } catch (emitErr) {
-                    logger.warn('Failed to emit UI signal for phishing assignment', { error: normalizeError(emitErr).message });
+                    const err = normalizeError(emitErr);
+                    const errorInfo = errorService.external(err.message, { step: 'emit-ui-signal-phishing-assignment', stack: err.stack });
+                    logErrorInfo(logger, 'warn', 'Failed to emit UI signal for phishing assignment', errorInfo);
                 }
             }
 

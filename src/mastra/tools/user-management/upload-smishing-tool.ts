@@ -173,9 +173,11 @@ export const uploadSmishingTool = createTool({
             delta: `::ui:smishing_uploaded::${encoded}::/ui:smishing_uploaded::\n`
           });
           await writer.write({ type: 'text-end', id: messageId });
-        } catch (emitErr) {
-          logger.warn('Failed to emit UI signal for smishing upload', { error: normalizeError(emitErr).message });
-        }
+          } catch (emitErr) {
+            const err = normalizeError(emitErr);
+            const errorInfo = errorService.external(err.message, { step: 'emit-ui-signal-smishing-upload', stack: err.stack });
+            logErrorInfo(logger, 'warn', 'Failed to emit UI signal for smishing upload', errorInfo);
+          }
       }
 
       const toolResult = {

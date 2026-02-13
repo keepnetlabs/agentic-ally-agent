@@ -329,7 +329,8 @@ export const inboxTranslateJsonTool = new Tool({
 
                 } catch (e) {
                     const err = normalizeError(e);
-                    logger.warn(`Chunk translation failed, using originals`, { chunkNumber, error: err.message, stack: err.stack });
+                    const errorInfo = errorService.aiModel(err.message, { step: 'inbox-chunk-translation', chunkNumber, stack: err.stack });
+                    logErrorInfo(logger, 'warn', 'Chunk translation failed, using originals', errorInfo);
                     return chunk.map(c => c.value);
                 }
             }
@@ -342,7 +343,9 @@ export const inboxTranslateJsonTool = new Tool({
                     if (result.status === 'fulfilled') {
                         allTranslated.push(...result.value);
                     } else {
-                        logger.warn('Chunk translation promise rejected', { batchStart: start, chunkIndex: idx, error: result.reason });
+                        const err = normalizeError(result.reason);
+                        const errorInfo = errorService.aiModel(err.message, { step: 'inbox-chunk-translation-settled', batchStart: start, chunkIndex: idx });
+                        logErrorInfo(logger, 'warn', 'Chunk translation promise rejected', errorInfo);
                         // Fallback: add original strings
                         const chunkIdx = start + idx;
                         const chunk = chunks[chunkIdx];

@@ -177,6 +177,12 @@ async function fetchUsersFromFallback(
     }
 }
 
+/** If direct lookup returns a phone, merge it into the search result; otherwise leave base unchanged. */
+function mergePhoneFromEnriched(base: PlatformUser, enriched: PlatformUser | null): PlatformUser | null {
+    if (enriched?.phoneNumber) return { ...base, phoneNumber: enriched.phoneNumber };
+    return null;
+}
+
 async function fetchUserByIdDirect(
     deps: UserSearchDeps,
     targetUserResourceId: string
@@ -253,7 +259,8 @@ export async function findUserByEmail(
                     targetUserResourceId: exact.targetUserResourceId,
                 });
                 const enriched = await fetchUserByIdDirect(deps, String(exact.targetUserResourceId));
-                if (enriched?.phoneNumber) return { ...exact, phoneNumber: enriched.phoneNumber };
+                const merged = mergePhoneFromEnriched(exact, enriched);
+                if (merged) return merged;
             }
             deps.logger.info('User found by email', { email: normalizedEmail, userId: exact.targetUserResourceId });
             return exact;
@@ -281,7 +288,8 @@ export async function findUserByEmail(
                 targetUserResourceId: fallbackExact.targetUserResourceId,
             });
             const enriched = await fetchUserByIdDirect(deps, String(fallbackExact.targetUserResourceId));
-            if (enriched?.phoneNumber) return { ...fallbackExact, phoneNumber: enriched.phoneNumber };
+            const merged = mergePhoneFromEnriched(fallbackExact, enriched);
+            if (merged) return merged;
         }
         deps.logger.info('User found by email via fallback search', {
             email: normalizedEmail,
@@ -317,7 +325,8 @@ export async function findUserById(
                     targetUserResourceId: normalizedId,
                 });
                 const enriched = await fetchUserByIdDirect(deps, normalizedId);
-                if (enriched?.phoneNumber) return { ...exact, phoneNumber: enriched.phoneNumber };
+                const merged = mergePhoneFromEnriched(exact, enriched);
+                if (merged) return merged;
             }
             deps.logger.info('User found by ID', { targetUserResourceId: normalizedId });
             return exact;
@@ -353,7 +362,8 @@ export async function findUserById(
                 targetUserResourceId: normalizedId,
             });
             const enriched = await fetchUserByIdDirect(deps, normalizedId);
-            if (enriched?.phoneNumber) return { ...fallbackExact, phoneNumber: enriched.phoneNumber };
+            const merged = mergePhoneFromEnriched(fallbackExact, enriched);
+            if (merged) return merged;
         }
         deps.logger.info('User found by ID via fallback search', { targetUserResourceId: normalizedId });
         return fallbackExact;
@@ -410,6 +420,16 @@ export async function findUserByNameWithFallbacks(
             result = exact || users[0];
         } else {
             result = users[0];
+        }
+
+        if (!result.phoneNumber && result.targetUserResourceId) {
+            deps.logger.info('User found by name but phoneNumber missing, enriching via direct lookup', {
+                name: fullName,
+                targetUserResourceId: result.targetUserResourceId,
+            });
+            const enriched = await fetchUserByIdDirect(deps, String(result.targetUserResourceId));
+            const merged = mergePhoneFromEnriched(result, enriched);
+            if (merged) return merged;
         }
 
         deps.logger.info('User found by name search', { name: fullName, userId: result.targetUserResourceId });

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { fetchUsersWithFilters, findUserByEmail, findUserByNameWithFallbacks } from './user-search-utils';
+import { fetchUsersWithFilters, findUserByEmail, findUserById, findUserByNameWithFallbacks } from './user-search-utils';
 
 const mockLogger = {
     info: vi.fn(),
@@ -134,6 +134,92 @@ describe('user-search-utils', () => {
             const result = await findUserByEmail(mockDeps, mockTemplate, 'missing@example.com');
             expect(result).toBeNull();
         });
+
+        it('should merge phone from direct lookup when search result has no phoneNumber', async () => {
+            const searchUser = {
+                email: 'enrich@example.com',
+                targetUserResourceId: 'uid-123',
+                firstName: 'Jane',
+                department: 'Sales'
+            };
+            const directUserData = {
+                resourceId: 'uid-123',
+                phoneNumber: '+905551234567',
+                firstName: 'Jane',
+                lastName: 'Doe',
+                email: 'enrich@example.com'
+            };
+
+            (global.fetch as any)
+                .mockResolvedValueOnce({ ok: true, json: async () => ({ items: [searchUser] }) })
+                .mockResolvedValueOnce({ ok: true, json: async () => ({ data: directUserData }) });
+
+            const result = await findUserByEmail(mockDeps, mockTemplate, 'enrich@example.com');
+
+            expect(result).toEqual({ ...searchUser, phoneNumber: '+905551234567' });
+            expect(global.fetch).toHaveBeenNthCalledWith(2, expect.stringContaining('/api/target-users/uid-123'), expect.any(Object));
+        });
+
+        it('should return base user without phone when direct lookup returns 404', async () => {
+            const searchUser = {
+                email: 'no-phone@example.com',
+                targetUserResourceId: 'uid-404',
+                firstName: 'Bob'
+            };
+
+            (global.fetch as any)
+                .mockResolvedValueOnce({ ok: true, json: async () => ({ items: [searchUser] }) })
+                .mockResolvedValueOnce({ ok: false, status: 404 });
+
+            const result = await findUserByEmail(mockDeps, mockTemplate, 'no-phone@example.com');
+
+            expect(result).toEqual(searchUser);
+            expect(result?.phoneNumber).toBeUndefined();
+        });
+    });
+
+    describe('findUserById', () => {
+        it('should merge phone from direct lookup when search result has no phoneNumber', async () => {
+            const searchUser = {
+                targetUserResourceId: 'uid-456',
+                email: 'id@example.com',
+                firstName: 'John',
+                preferredLanguage: 'en'
+            };
+            const directUserData = {
+                resourceId: 'uid-456',
+                phoneNumber: '+15551234567',
+                firstName: 'John',
+                lastName: 'Smith',
+                email: 'id@example.com'
+            };
+
+            (global.fetch as any)
+                .mockResolvedValueOnce({ ok: true, json: async () => ({ items: [searchUser] }) })
+                .mockResolvedValueOnce({ ok: true, json: async () => ({ data: directUserData }) });
+
+            const result = await findUserById(mockDeps, mockTemplate, 'uid-456');
+
+            expect(result).toEqual({ ...searchUser, phoneNumber: '+15551234567' });
+            expect(result?.preferredLanguage).toBe('en');
+        });
+
+        it('should return base user without phone when direct lookup returns no phone', async () => {
+            const searchUser = {
+                targetUserResourceId: 'uid-789',
+                email: 'nophone@example.com',
+                firstName: 'Alice'
+            };
+
+            (global.fetch as any)
+                .mockResolvedValueOnce({ ok: true, json: async () => ({ items: [searchUser] }) })
+                .mockResolvedValueOnce({ ok: true, json: async () => ({ data: { resourceId: 'uid-789', email: 'nophone@example.com' } }) });
+
+            const result = await findUserById(mockDeps, mockTemplate, 'uid-789');
+
+            expect(result).toEqual(searchUser);
+            expect(result?.phoneNumber).toBeUndefined();
+        });
     });
 
     describe('findUserByNameWithFallbacks', () => {
@@ -192,6 +278,31 @@ describe('user-search-utils', () => {
                 call[0]?.includes('retrying with last token')
             );
             expect(infoCallsWithLastToken.length).toBeGreaterThan(0);
+        });
+
+        it('should merge phone from direct lookup when name search result has no phoneNumber', async () => {
+            const searchUser = {
+                firstName: 'Maria',
+                lastName: 'Garcia',
+                targetUserResourceId: 'uid-name',
+                email: 'maria@example.com'
+            };
+            const directUserData = {
+                resourceId: 'uid-name',
+                phoneNumber: '+34912345678',
+                firstName: 'Maria',
+                lastName: 'Garcia',
+                email: 'maria@example.com'
+            };
+
+            (global.fetch as any)
+                .mockResolvedValueOnce({ ok: true, json: async () => ({ items: [searchUser] }) })
+                .mockResolvedValueOnce({ ok: true, json: async () => ({ data: directUserData }) });
+
+            const result = await findUserByNameWithFallbacks(mockDeps, mockTemplate, 'Maria', 'Garcia');
+
+            expect(result).toEqual({ ...searchUser, phoneNumber: '+34912345678' });
+            expect(global.fetch).toHaveBeenNthCalledWith(2, expect.stringContaining('/api/target-users/uid-name'), expect.any(Object));
         });
     });
 });

@@ -17,6 +17,8 @@ import {
 import { postProcessPhishingLandingHtml } from '../../utils/content-processors/phishing-html-postprocessors';
 import { KV_NAMESPACES } from '../../constants';
 import { emailResponseSchema, landingPageResponseSchema, LandingPageInput } from './phishing-editor-schemas';
+import { normalizeError, logErrorInfo } from '../../utils/core/error-utils';
+import { errorService } from '../../services/error-service';
 
 // ============================================================================
 // Types
@@ -342,9 +344,12 @@ export async function streamEditResultsToUI(
 
     await writer.write({ type: 'text-end', id: messageId });
   } catch (err) {
-    logger.warn('Failed to stream updated components to UI', {
-      error: err instanceof Error ? err.message : String(err),
+    const error = normalizeError(err);
+    const errorInfo = errorService.external(error.message, {
+      step: 'stream-phishing-components',
+      stack: error.stack,
     });
+    logErrorInfo(logger, 'warn', 'Failed to stream updated components to UI', errorInfo);
   }
 }
 

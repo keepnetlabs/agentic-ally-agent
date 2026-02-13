@@ -6,6 +6,8 @@
  */
 
 import { getLogger } from '../utils/core/logger';
+import { normalizeError, logErrorInfo } from '../utils/core/error-utils';
+import { errorService } from './error-service';
 import { KVService } from './kv-service';
 import { withRetry } from '../utils/core/resilience-utils';
 import { MicrolearningService } from './microlearning-service';
@@ -71,10 +73,10 @@ export async function checkKVHealth(): Promise<HealthResult> {
         }
     } catch (error) {
         const latencyMs = Date.now() - startMs;
-        const errorMessage = error instanceof Error ? error.message : String(error);
-
-        logger.error('KV health check failed', { error: errorMessage, latencyMs });
-        return { status: 'unhealthy', latencyMs, error: errorMessage };
+        const err = normalizeError(error);
+        const errorInfo = errorService.external(err.message, { step: 'kv-health-check', stack: err.stack });
+        logErrorInfo(logger, 'error', 'KV health check failed', errorInfo);
+        return { status: 'unhealthy', latencyMs, error: err.message };
     }
 }
 

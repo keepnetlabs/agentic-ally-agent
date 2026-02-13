@@ -30,6 +30,14 @@ vi.mock('./logger', () => ({
 
 vi.mock('./error-utils', () => ({
   normalizeError: vi.fn((err) => (err instanceof Error ? err : new Error(String(err)))),
+  logErrorInfo: vi.fn(),
+}));
+
+vi.mock('../../services/error-service', () => ({
+  errorService: {
+    aiModel: vi.fn((msg, _details) => ({ message: msg, code: 'AI_GENERATION_FAILED' })),
+    external: vi.fn((msg, _details) => ({ message: msg, code: 'EXTERNAL_SERVICE_ERROR' })),
+  },
 }));
 
 vi.mock('./request-storage', () => ({
