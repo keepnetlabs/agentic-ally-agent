@@ -19,15 +19,18 @@ export interface StreamWriter {
 /**
  * Zod schema for StreamWriter validation
  */
-export const StreamWriterSchema = z.object({
-  write: z.function()
-    .args(
-      z.union([
-        z.object({ type: z.literal('reasoning-start'), id: z.string() }),
-        z.object({ type: z.literal('reasoning-delta'), id: z.string(), delta: z.string() }),
-        z.object({ type: z.literal('reasoning-end'), id: z.string() }),
-        z.object({ type: z.literal('text-delta'), id: z.string(), delta: z.string() }),
-      ])
-    )
-    .returns(z.promise(z.void()))
-}).describe('Stream writer for reasoning updates');
+export const StreamWriterSchema = z
+  .object({
+    write: z
+      .function()
+      .args(
+        z.union([
+          z.object({ type: z.literal('reasoning-start'), id: z.string() }),
+          z.object({ type: z.literal('reasoning-delta'), id: z.string(), delta: z.string() }),
+          z.object({ type: z.literal('reasoning-end'), id: z.string() }),
+          z.object({ type: z.literal('text-delta'), id: z.string(), delta: z.string() }),
+        ])
+      )
+      .returns(z.promise(z.void())),
+  })
+  .describe('Stream writer for reasoning updates');

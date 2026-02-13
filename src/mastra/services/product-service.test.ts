@@ -138,7 +138,7 @@ describe('ProductService', () => {
       const mockResponse = { data: { test: 'value' } };
       (global.fetch as any).mockResolvedValue({
         ok: true,
-        json: async () => mockResponse
+        json: async () => mockResponse,
       });
 
       const result = await service.request('/test-endpoint');
@@ -162,7 +162,7 @@ describe('ProductService', () => {
       const mockResponse = { success: true };
       (global.fetch as any).mockResolvedValue({
         ok: true,
-        json: async () => mockResponse
+        json: async () => mockResponse,
       });
 
       const result = await service.request('/test-endpoint', 'POST', requestBody);
@@ -173,8 +173,8 @@ describe('ProductService', () => {
           method: 'POST',
           body: JSON.stringify(requestBody),
           headers: expect.objectContaining({
-            'Content-Type': 'application/json'
-          })
+            'Content-Type': 'application/json',
+          }),
         })
       );
       expect(result).toEqual(mockResponse);
@@ -187,7 +187,7 @@ describe('ProductService', () => {
 
       (global.fetch as any).mockResolvedValue({
         ok: false,
-        status: 404
+        status: 404,
       });
 
       const result = await service.request('/test-endpoint');
@@ -214,7 +214,7 @@ describe('ProductService', () => {
 
       (global.fetch as any).mockResolvedValue({
         ok: true,
-        json: async () => ({})
+        json: async () => ({}),
       });
 
       await service.request('/test-endpoint');
@@ -232,7 +232,7 @@ describe('ProductService', () => {
 
       (global.fetch as any).mockResolvedValue({
         ok: true,
-        json: async () => ({})
+        json: async () => ({}),
       });
 
       await service.request('/test-endpoint');
@@ -252,13 +252,13 @@ describe('ProductService', () => {
         data: {
           mainLogoUrl: 'https://example.com/logo.png',
           minimizedMenuLogoUrl: 'https://example.com/mini-logo.png',
-          brandName: 'Test Brand'
-        }
+          brandName: 'Test Brand',
+        },
       };
 
       (global.fetch as any).mockResolvedValue({
         ok: true,
-        json: async () => mockResponse
+        json: async () => mockResponse,
       });
 
       const result = await service.getWhitelabelingConfig();
@@ -266,13 +266,13 @@ describe('ProductService', () => {
       expect(global.fetch).toHaveBeenCalledWith(
         'https://test-idp.com/api/whitelabeling',
         expect.objectContaining({
-          method: 'GET'
+          method: 'GET',
         })
       );
       expect(result).toEqual({
         mainLogoUrl: 'https://example.com/logo.png',
         minimizedMenuLogoUrl: 'https://example.com/mini-logo.png',
-        brandName: 'Test Brand'
+        brandName: 'Test Brand',
       });
     });
 
@@ -283,7 +283,7 @@ describe('ProductService', () => {
 
       (global.fetch as any).mockResolvedValue({
         ok: true,
-        json: async () => ({})
+        json: async () => ({}),
       });
 
       const result = await service.getWhitelabelingConfig();
@@ -298,7 +298,7 @@ describe('ProductService', () => {
 
       (global.fetch as any).mockResolvedValue({
         ok: false,
-        status: 500
+        status: 500,
       });
 
       const result = await service.getWhitelabelingConfig();
@@ -313,14 +313,14 @@ describe('ProductService', () => {
 
       const mockResponse = {
         data: {
-          mainLogoUrl: 'https://example.com/logo.png'
+          mainLogoUrl: 'https://example.com/logo.png',
           // Other fields missing
-        }
+        },
       };
 
       (global.fetch as any).mockResolvedValue({
         ok: true,
-        json: async () => mockResponse
+        json: async () => mockResponse,
       });
 
       const result = await service.getWhitelabelingConfig();
@@ -328,7 +328,7 @@ describe('ProductService', () => {
       expect(result).toEqual({
         mainLogoUrl: 'https://example.com/logo.png',
         minimizedMenuLogoUrl: undefined,
-        brandName: undefined
+        brandName: undefined,
       });
     });
   });

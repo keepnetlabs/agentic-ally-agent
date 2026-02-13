@@ -16,8 +16,8 @@ describe('uploadSmishingTool', () => {
   const mockCompanyId = 'test-company-id';
   const mockEnv = {
     SMISHING_CRUD_WORKER: {
-      fetch: vi.fn()
-    }
+      fetch: vi.fn(),
+    },
   };
 
   const mockSmishingContent = {
@@ -28,15 +28,15 @@ describe('uploadSmishingTool', () => {
       topic: 'Security',
       difficulty: 'medium',
       method: 'data-submission',
-      language_availability: ['en-gb']
+      language_availability: ['en-gb'],
     },
     sms: {
       messages: ['Test message 1', 'Test message 2'],
     },
     landing: {
       url: 'https://example.com',
-      content: 'Landing page content'
-    }
+      content: 'Landing page content',
+    },
   };
 
   beforeEach(() => {
@@ -45,7 +45,7 @@ describe('uploadSmishingTool', () => {
     vi.spyOn(requestStorage, 'getStore').mockReturnValue({
       token: mockToken,
       companyId: mockCompanyId,
-      env: mockEnv
+      env: mockEnv,
     });
   });
 
@@ -57,11 +57,11 @@ describe('uploadSmishingTool', () => {
         templateId: 1,
         scenarioResourceId: 'scenario-123',
         scenarioId: 2,
-        message: 'Upload successful'
+        message: 'Upload successful',
       });
 
       const input = {
-        smishingId: 'smishing-123'
+        smishingId: 'smishing-123',
       };
 
       const result = await uploadSmishingTool.execute({ context: input } as any);
@@ -84,11 +84,11 @@ describe('uploadSmishingTool', () => {
     it('should return error when token is missing', async () => {
       vi.spyOn(requestStorage, 'getStore').mockReturnValue({
         companyId: mockCompanyId,
-        env: mockEnv
+        env: mockEnv,
       });
 
       const input = {
-        smishingId: 'smishing-123'
+        smishingId: 'smishing-123',
       };
 
       const result = await uploadSmishingTool.execute({ context: input } as any);
@@ -101,11 +101,11 @@ describe('uploadSmishingTool', () => {
       vi.spyOn(workerApiClient, 'callWorkerAPI').mockResolvedValue({
         templateResourceId: 'template-123',
         scenarioResourceId: 'scenario-123',
-        message: 'Upload successful'
+        message: 'Upload successful',
       });
 
       const input = {
-        smishingId: 'smishing-123'
+        smishingId: 'smishing-123',
       };
 
       const result = await uploadSmishingTool.execute({ context: input } as any);
@@ -115,16 +115,15 @@ describe('uploadSmishingTool', () => {
 
   describe('KV Content Fetching', () => {
     it('should fetch smishing content from KV with smishing namespace', async () => {
-      const getSmishingSpy = vi.spyOn(KVService.prototype, 'getSmishing')
-        .mockResolvedValue(mockSmishingContent);
+      const getSmishingSpy = vi.spyOn(KVService.prototype, 'getSmishing').mockResolvedValue(mockSmishingContent);
       vi.spyOn(workerApiClient, 'callWorkerAPI').mockResolvedValue({
         templateResourceId: 'template-123',
         scenarioResourceId: 'scenario-123',
-        message: 'Upload successful'
+        message: 'Upload successful',
       });
 
       const input = {
-        smishingId: 'smishing-123'
+        smishingId: 'smishing-123',
       };
 
       await uploadSmishingTool.execute({ context: input } as any);
@@ -136,7 +135,7 @@ describe('uploadSmishingTool', () => {
       vi.spyOn(KVService.prototype, 'getSmishing').mockResolvedValue(null);
 
       const input = {
-        smishingId: 'smishing-123'
+        smishingId: 'smishing-123',
       };
 
       const result = await uploadSmishingTool.execute({ context: input } as any);
@@ -148,7 +147,7 @@ describe('uploadSmishingTool', () => {
       vi.spyOn(KVService.prototype, 'getSmishing').mockResolvedValue({});
 
       const input = {
-        smishingId: 'smishing-123'
+        smishingId: 'smishing-123',
       };
 
       const result = await uploadSmishingTool.execute({ context: input } as any);
@@ -163,11 +162,11 @@ describe('uploadSmishingTool', () => {
       const mockCallWorkerAPI = vi.spyOn(workerApiClient, 'callWorkerAPI').mockResolvedValue({
         templateResourceId: 'template-123',
         scenarioResourceId: 'scenario-123',
-        message: 'Upload successful'
+        message: 'Upload successful',
       });
 
       const input = {
-        smishingId: 'smishing-123'
+        smishingId: 'smishing-123',
       };
 
       await uploadSmishingTool.execute({ context: input } as any);
@@ -191,10 +190,10 @@ describe('uploadSmishingTool', () => {
                 messages: expect.any(Array),
               }),
               landingPage: expect.objectContaining({
-                url: 'https://example.com'
-              })
-            })
-          })
+                url: 'https://example.com',
+              }),
+            }),
+          }),
         })
       );
     });
@@ -204,19 +203,19 @@ describe('uploadSmishingTool', () => {
         ...mockSmishingContent,
         base: {
           ...mockSmishingContent.base,
-          language_availability: []
-        }
+          language_availability: [],
+        },
       };
 
       vi.spyOn(KVService.prototype, 'getSmishing').mockResolvedValue(contentWithoutLang);
       const mockCallWorkerAPI = vi.spyOn(workerApiClient, 'callWorkerAPI').mockResolvedValue({
         templateResourceId: 'template-123',
         scenarioResourceId: 'scenario-123',
-        message: 'Upload successful'
+        message: 'Upload successful',
       });
 
       const input = {
-        smishingId: 'smishing-123'
+        smishingId: 'smishing-123',
       };
 
       await uploadSmishingTool.execute({ context: input } as any);
@@ -228,18 +227,18 @@ describe('uploadSmishingTool', () => {
     it('should handle missing sms content gracefully', async () => {
       const contentWithoutSms = {
         ...mockSmishingContent,
-        sms: undefined
+        sms: undefined,
       };
 
       vi.spyOn(KVService.prototype, 'getSmishing').mockResolvedValue(contentWithoutSms);
       const mockCallWorkerAPI = vi.spyOn(workerApiClient, 'callWorkerAPI').mockResolvedValue({
         templateResourceId: 'template-123',
         scenarioResourceId: 'scenario-123',
-        message: 'Upload successful'
+        message: 'Upload successful',
       });
 
       const input = {
-        smishingId: 'smishing-123'
+        smishingId: 'smishing-123',
       };
 
       await uploadSmishingTool.execute({ context: input } as any);
@@ -251,18 +250,18 @@ describe('uploadSmishingTool', () => {
     it('should handle missing landing content gracefully', async () => {
       const contentWithoutLanding = {
         ...mockSmishingContent,
-        landing: undefined
+        landing: undefined,
       };
 
       vi.spyOn(KVService.prototype, 'getSmishing').mockResolvedValue(contentWithoutLanding);
       const mockCallWorkerAPI = vi.spyOn(workerApiClient, 'callWorkerAPI').mockResolvedValue({
         templateResourceId: 'template-123',
         scenarioResourceId: 'scenario-123',
-        message: 'Upload successful'
+        message: 'Upload successful',
       });
 
       const input = {
-        smishingId: 'smishing-123'
+        smishingId: 'smishing-123',
       };
 
       await uploadSmishingTool.execute({ context: input } as any);
@@ -280,11 +279,11 @@ describe('uploadSmishingTool', () => {
         templateId: 1,
         scenarioResourceId: 'scenario-123',
         scenarioId: 2,
-        message: 'Upload successful'
+        message: 'Upload successful',
       });
 
       const input = {
-        smishingId: 'smishing-123'
+        smishingId: 'smishing-123',
       };
 
       const result = await uploadSmishingTool.execute({ context: input } as any);
@@ -300,11 +299,11 @@ describe('uploadSmishingTool', () => {
       vi.spyOn(workerApiClient, 'callWorkerAPI').mockResolvedValue({
         templateResourceId: 'template-123',
         templateId: 1,
-        message: 'Upload successful'
+        message: 'Upload successful',
       });
 
       const input = {
-        smishingId: 'smishing-123'
+        smishingId: 'smishing-123',
       };
 
       const result = await uploadSmishingTool.execute({ context: input } as any);
@@ -326,11 +325,11 @@ describe('uploadSmishingTool', () => {
         landingPageId: 3,
         scenarioResourceId: 'scenario-123',
         scenarioId: 2,
-        message: 'Upload successful'
+        message: 'Upload successful',
       });
 
       const input = {
-        smishingId: 'smishing-123'
+        smishingId: 'smishing-123',
       };
 
       const result = await uploadSmishingTool.execute({ context: input } as any);
@@ -358,7 +357,7 @@ describe('uploadSmishingTool', () => {
       vi.spyOn(KVService.prototype, 'getSmishing').mockRejectedValue(new Error('KV fetch failed'));
 
       const input = {
-        smishingId: 'smishing-123'
+        smishingId: 'smishing-123',
       };
 
       const result = await uploadSmishingTool.execute({ context: input } as any);
@@ -372,7 +371,7 @@ describe('uploadSmishingTool', () => {
       vi.spyOn(workerApiClient, 'callWorkerAPI').mockRejectedValue(apiError);
 
       const input = {
-        smishingId: 'smishing-123'
+        smishingId: 'smishing-123',
       };
 
       const result = await uploadSmishingTool.execute({ context: input } as any);
@@ -386,7 +385,7 @@ describe('uploadSmishingTool', () => {
       vi.spyOn(workerApiClient, 'callWorkerAPI').mockRejectedValue(apiError);
 
       const input = {
-        smishingId: 'smishing-123'
+        smishingId: 'smishing-123',
       };
 
       const result = await uploadSmishingTool.execute({ context: input } as any);
@@ -401,11 +400,11 @@ describe('uploadSmishingTool', () => {
       vi.spyOn(workerApiClient, 'callWorkerAPI').mockResolvedValue({
         templateResourceId: 'template-123',
         scenarioResourceId: 'scenario-123',
-        message: 'Upload successful'
+        message: 'Upload successful',
       });
 
       const input = {
-        smishingId: 'smishing-123'
+        smishingId: 'smishing-123',
       };
 
       const result = await uploadSmishingTool.execute({ context: input } as any);

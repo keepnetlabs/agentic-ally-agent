@@ -1,9 +1,9 @@
 /**
  * Error Utilities
- * 
+ *
  * Utilities for error handling and normalization to ensure consistent error types
  * across the codebase.
- * 
+ *
  * Usage:
  * ```typescript
  * catch (error) {
@@ -25,10 +25,10 @@ export interface LoggerLike {
 /**
  * Normalizes an unknown error to an Error object
  * Ensures consistent error handling regardless of the error type
- * 
+ *
  * @param error - Unknown error value (could be Error, string, object, etc.)
  * @returns Normalized Error object
- * 
+ *
  * @example
  * ```typescript
  * try {
@@ -47,10 +47,10 @@ export function normalizeError(error: unknown): Error {
 /**
  * Creates a standardized tool error response
  * Ensures consistent error response format across all tools
- * 
+ *
  * @param errorInfo - ErrorInfo object from errorService
  * @returns Standardized error response with success: false and stringified error
- * 
+ *
  * @example
  * ```typescript
  * if (!token) {
@@ -72,18 +72,18 @@ export function createToolErrorResponse(errorInfo: ErrorInfo): {
 /**
  * Logs an ErrorInfo object with standardized format
  * Ensures consistent error logging across all tools
- * 
+ *
  * @param logger - Logger instance from getLogger()
  * @param level - Log level ('error', 'warn', or 'info')
  * @param message - Log message describing the context
  * @param errorInfo - ErrorInfo object from errorService
- * 
+ *
  * @example
  * ```typescript
  * const errorInfo = errorService.auth('Token missing');
  * logErrorInfo(logger, 'warn', 'Auth error: Token missing', errorInfo);
  * ```
- * 
+ *
  * @example
  * ```typescript
  * catch (error) {

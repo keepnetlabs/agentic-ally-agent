@@ -1,12 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  maskSensitiveField,
-  maskEmail,
-  maskPhone,
-  maskUrlParams,
-  deepRedact,
-  maskHeaders
-} from './security-utils';
+import { maskSensitiveField, maskEmail, maskPhone, maskUrlParams, deepRedact, maskHeaders } from './security-utils';
 
 /**
  * Test Suite: Security Utilities
@@ -65,7 +58,7 @@ describe('security-utils', () => {
         userId: '123',
         email: 'user@example.com',
         token: 'secret-token-abc123xyz',
-        role: 'admin'
+        role: 'admin',
       };
 
       const result = maskSensitiveField(payload, 'token');
@@ -230,7 +223,7 @@ describe('security-utils', () => {
     it('should recursively redact sensitive keys', () => {
       const obj = {
         user: { email: 'john@example.com', apiKey: 'secret' },
-        token: 'abc123xyz'
+        token: 'abc123xyz',
       };
 
       const result = deepRedact(obj, ['apiKey', 'token', 'email']);
@@ -244,7 +237,7 @@ describe('security-utils', () => {
       const obj = {
         userId: '123',
         userName: 'john',
-        token: 'secret'
+        token: 'secret',
       };
 
       const result = deepRedact(obj, ['token']);
@@ -258,7 +251,7 @@ describe('security-utils', () => {
       const obj = {
         token: 'secret1',
         apiKey: 'secret2',
-        password: 'secret3'
+        password: 'secret3',
       };
 
       const result = deepRedact(obj);
@@ -270,10 +263,7 @@ describe('security-utils', () => {
 
     it('should handle nested arrays', () => {
       const obj = {
-        users: [
-          { token: 'secret1' },
-          { token: 'secret2' }
-        ]
+        users: [{ token: 'secret1' }, { token: 'secret2' }],
       };
 
       const result = deepRedact(obj, ['token']);
@@ -287,10 +277,10 @@ describe('security-utils', () => {
         level1: {
           level2: {
             level3: {
-              secret: 'value'
-            }
-          }
-        }
+              secret: 'value',
+            },
+          },
+        },
       };
 
       const result = deepRedact(obj, ['secret']);
@@ -302,7 +292,7 @@ describe('security-utils', () => {
       const obj = {
         TOKEN: 'secret1',
         token: 'secret2',
-        Token: 'secret3'
+        Token: 'secret3',
       };
 
       const result = deepRedact(obj, ['token']);
@@ -316,7 +306,7 @@ describe('security-utils', () => {
       const obj = {
         token: null,
         apiKey: undefined,
-        password: 'secret'
+        password: 'secret',
       };
 
       const result = deepRedact(obj, ['token', 'apiKey', 'password']);
@@ -339,8 +329,8 @@ describe('security-utils', () => {
   describe('maskHeaders', () => {
     it('should mask Authorization header', () => {
       const headers = {
-        'authorization': 'Bearer secret-token',
-        'user-agent': 'Mozilla/5.0'
+        authorization: 'Bearer secret-token',
+        'user-agent': 'Mozilla/5.0',
       };
 
       const result = maskHeaders(headers);
@@ -352,7 +342,7 @@ describe('security-utils', () => {
     it('should mask X-API-Key header', () => {
       const headers = {
         'x-api-key': 'sk-secret-key',
-        'content-type': 'application/json'
+        'content-type': 'application/json',
       };
 
       const result = maskHeaders(headers);
@@ -364,7 +354,7 @@ describe('security-utils', () => {
     it('should mask X-AGENTIC-ALLY-TOKEN header', () => {
       const headers = {
         'x-agentic-ally-token': 'secret-token-123',
-        'accept': '*/*'
+        accept: '*/*',
       };
 
       const result = maskHeaders(headers);
@@ -375,8 +365,8 @@ describe('security-utils', () => {
 
     it('should mask cookie headers', () => {
       const headers = {
-        'cookie': 'sessionId=abc123; userId=user456',
-        'set-cookie': 'sessionId=new123'
+        cookie: 'sessionId=abc123; userId=user456',
+        'set-cookie': 'sessionId=new123',
       };
 
       const result = maskHeaders(headers);
@@ -387,9 +377,9 @@ describe('security-utils', () => {
 
     it('should be case-insensitive for header names', () => {
       const headers = {
-        'Authorization': 'Bearer token',
-        'authorization': 'Bearer token',
-        'AUTHORIZATION': 'Bearer token'
+        Authorization: 'Bearer token',
+        authorization: 'Bearer token',
+        AUTHORIZATION: 'Bearer token',
       };
 
       const result = maskHeaders(headers);
@@ -401,8 +391,8 @@ describe('security-utils', () => {
 
     it('should handle undefined header values', () => {
       const headers = {
-        'authorization': undefined,
-        'user-agent': 'Mozilla/5.0'
+        authorization: undefined,
+        'user-agent': 'Mozilla/5.0',
       };
 
       const result = maskHeaders(headers);
@@ -416,7 +406,7 @@ describe('security-utils', () => {
     it('should handle array header values', () => {
       const headers = {
         'set-cookie': ['sessionId=abc123', 'userId=user456'],
-        'accept-encoding': ['gzip', 'deflate']
+        'accept-encoding': ['gzip', 'deflate'],
       };
 
       const result = maskHeaders(headers);
@@ -428,9 +418,9 @@ describe('security-utils', () => {
     it('should preserve non-sensitive headers', () => {
       const headers = {
         'content-type': 'application/json',
-        'accept': 'application/json',
+        accept: 'application/json',
         'user-agent': 'Node.js',
-        'x-request-id': 'req-123'
+        'x-request-id': 'req-123',
       };
 
       const result = maskHeaders(headers);
@@ -443,10 +433,10 @@ describe('security-utils', () => {
 
     it('should mask all standard auth headers', () => {
       const headers = {
-        'authorization': 'Bearer token',
+        authorization: 'Bearer token',
         'x-auth-token': 'secret',
         'x-access-token': 'token123',
-        'x-api-key': 'key456'
+        'x-api-key': 'key456',
       };
 
       const result = maskHeaders(headers);
@@ -463,7 +453,7 @@ describe('security-utils', () => {
       const payload = {
         requestId: 'req-123',
         accessToken: 'secret-token-abc123xyz',
-        apiKey: 'sk-1234567890abcdefgh'
+        apiKey: 'sk-1234567890abcdefgh',
       };
 
       let result = maskSensitiveField(payload, 'accessToken');
@@ -476,10 +466,10 @@ describe('security-utils', () => {
 
     it('should safe log headers from request', () => {
       const headers = {
-        'authorization': 'Bearer secret-token',
+        authorization: 'Bearer secret-token',
         'x-api-key': 'sk-secret',
         'user-agent': 'Node.js',
-        'content-type': 'application/json'
+        'content-type': 'application/json',
       };
 
       const maskedHeaders = maskHeaders(headers);
@@ -495,12 +485,12 @@ describe('security-utils', () => {
       const payload = {
         user: {
           email: 'user@example.com',
-          password: 'secret123'
+          password: 'secret123',
         },
         credentials: {
           token: 'token-secret',
-          apiKey: 'key-secret'
-        }
+          apiKey: 'key-secret',
+        },
       };
 
       const result = deepRedact(payload, ['email', 'password', 'token', 'apiKey']);

@@ -69,7 +69,7 @@ describe('Policy Summary Agent', () => {
     });
 
     it('should include mission to align with user language', () => {
-      expect(instructions).toContain('ALWAYS align with the user\'s language');
+      expect(instructions).toContain("ALWAYS align with the user's language");
     });
 
     it('should mention summarizePolicy tool', () => {
@@ -77,7 +77,7 @@ describe('Policy Summary Agent', () => {
     });
 
     it('should mention tool usage in mission', () => {
-      expect(instructions).toContain('Use the \'summarizePolicy\' tool');
+      expect(instructions).toContain("Use the 'summarizePolicy' tool");
     });
 
     it('should have NO HALLUCINATIONS section', () => {
@@ -138,7 +138,7 @@ describe('Policy Summary Agent', () => {
     });
 
     it('should have workflow as numbered list', () => {
-      expect(instructions).toContain('1. **Listen** to the user\'s question');
+      expect(instructions).toContain("1. **Listen** to the user's question");
       expect(instructions).toContain('2. **IMMEDIATELY Call Tool**');
       expect(instructions).toContain('3. **Analyze Tool Output:**');
       expect(instructions).toContain('4. **Respond** using the STRICT HTML FORMAT');
@@ -146,7 +146,7 @@ describe('Policy Summary Agent', () => {
 
     it('should mention query parameter in workflow', () => {
       expect(instructions).toContain('query');
-      expect(instructions).toContain('User\'s exact natural language question');
+      expect(instructions).toContain("User's exact natural language question");
     });
 
     it('should mention focusArea parameter in workflow', () => {
@@ -300,7 +300,6 @@ describe('Policy Summary Agent', () => {
     });
   });
 
-
   describe('Instructions Structure', () => {
     const instructions = policySummaryAgent.instructions;
 
@@ -370,7 +369,7 @@ describe('Policy Summary Agent', () => {
     });
 
     it('should provide parameter descriptions', () => {
-      expect(instructions).toContain('User\'s exact natural language question');
+      expect(instructions).toContain("User's exact natural language question");
       expect(instructions).toContain('Extracted keyword');
     });
 
@@ -432,7 +431,7 @@ describe('Policy Summary Agent', () => {
     const instructions = policySummaryAgent.instructions;
 
     it('should define language matching behavior', () => {
-      expect(instructions).toContain('Match the user\'s CURRENT message language');
+      expect(instructions).toContain("Match the user's CURRENT message language");
     });
 
     it('should specify Turkish handling', () => {
@@ -568,7 +567,7 @@ describe('Policy Summary Agent', () => {
     });
 
     it('should require tool-based facts', () => {
-      expect(instructions).toContain('Use the \'summarizePolicy\' tool to fetch the absolute truth');
+      expect(instructions).toContain("Use the 'summarizePolicy' tool to fetch the absolute truth");
     });
   });
 

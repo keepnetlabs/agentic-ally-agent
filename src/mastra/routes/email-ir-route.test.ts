@@ -4,33 +4,33 @@ import { Context } from 'hono';
 
 const { validReport } = vi.hoisted(() => ({
   validReport: {
-  executive_summary: {
-    email_category: 'Benign' as const,
-    verdict: 'No Threat Detected - Benign Email',
-    risk_level: 'Low' as const,
-    confidence: 0.95,
-    status: 'Analysis Complete',
-  },
-  agent_determination: 'Message appears informational with no malicious indicators.',
-  risk_indicators: {
-    observed: [],
-    not_observed: ['No credential request', 'No financial request'],
-  },
-  evidence_flow: [
-    {
-      step: 1,
-      title: 'Final Verdict',
-      description: 'Classified as benign.',
-      finding_label: 'Benign' as const,
+    executive_summary: {
+      email_category: 'Benign' as const,
+      verdict: 'No Threat Detected - Benign Email',
+      risk_level: 'Low' as const,
+      confidence: 0.95,
+      status: 'Analysis Complete',
     },
-  ],
-  actions_recommended: {
-    p1_immediate: [],
-    p2_follow_up: [],
-    p3_hardening: [],
+    agent_determination: 'Message appears informational with no malicious indicators.',
+    risk_indicators: {
+      observed: [],
+      not_observed: ['No credential request', 'No financial request'],
+    },
+    evidence_flow: [
+      {
+        step: 1,
+        title: 'Final Verdict',
+        description: 'Classified as benign.',
+        finding_label: 'Benign' as const,
+      },
+    ],
+    actions_recommended: {
+      p1_immediate: [],
+      p2_follow_up: [],
+      p3_hardening: [],
+    },
+    confidence_limitations: 'High confidence in determination. Multiple independent signals converge on this verdict.',
   },
-  confidence_limitations: 'High confidence in determination. Multiple independent signals converge on this verdict.',
-},
 }));
 
 vi.mock('../utils/core/logger', () => ({
@@ -39,13 +39,13 @@ vi.mock('../utils/core/logger', () => ({
     debug: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
-  })
+  }),
 }));
 
 vi.mock('../utils/core/error-utils', () => ({
   normalizeError: vi.fn((err: any) => ({
     message: err?.message || 'Unknown error',
-    code: 'UNKNOWN'
+    code: 'UNKNOWN',
   })),
   logErrorInfo: vi.fn(),
 }));
@@ -59,12 +59,12 @@ vi.mock('../workflows/email-ir-workflow', () => ({
         steps: {
           'email-ir-reporting-step': {
             status: 'success',
-            output: validReport
-          }
-        }
-      })
-    })
-  }
+            output: validReport,
+          },
+        },
+      }),
+    }),
+  },
 }));
 
 describe('emailIRAnalyzeHandler', () => {
@@ -74,9 +74,9 @@ describe('emailIRAnalyzeHandler', () => {
     vi.clearAllMocks();
     mockContext = {
       req: {
-        json: vi.fn()
+        json: vi.fn(),
       },
-      json: vi.fn().mockReturnValue('response')
+      json: vi.fn().mockReturnValue('response'),
     };
   });
 
@@ -84,7 +84,7 @@ describe('emailIRAnalyzeHandler', () => {
     mockContext.req.json.mockResolvedValue({
       id: 'email-123',
       accessToken: 'bearer-token',
-      apiBaseUrl: 'https://api.example.com'
+      apiBaseUrl: 'https://api.example.com',
     });
 
     const response = await emailIRAnalyzeHandler(mockContext as unknown as Context);
@@ -106,7 +106,7 @@ describe('emailIRAnalyzeHandler', () => {
   it('should extract and return report from workflow', async () => {
     mockContext.req.json.mockResolvedValue({
       id: 'email-456',
-      accessToken: 'token'
+      accessToken: 'token',
     });
 
     await emailIRAnalyzeHandler(mockContext as unknown as Context);
@@ -118,7 +118,7 @@ describe('emailIRAnalyzeHandler', () => {
   it('should include run ID in response', async () => {
     mockContext.req.json.mockResolvedValue({
       id: 'email-789',
-      accessToken: 'token'
+      accessToken: 'token',
     });
 
     await emailIRAnalyzeHandler(mockContext as unknown as Context);
@@ -133,13 +133,13 @@ describe('emailIRAnalyzeHandler', () => {
       runId: 'run-fail',
       start: vi.fn().mockResolvedValue({
         status: 'failed',
-        error: 'Workflow failed'
-      })
+        error: 'Workflow failed',
+      }),
     });
 
     mockContext.req.json.mockResolvedValue({
       id: 'email-fail',
-      accessToken: 'token'
+      accessToken: 'token',
     });
 
     await emailIRAnalyzeHandler(mockContext as unknown as Context);

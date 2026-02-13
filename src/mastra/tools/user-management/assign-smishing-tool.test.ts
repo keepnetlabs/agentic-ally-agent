@@ -20,7 +20,7 @@ vi.mock('../../utils/core/logger', () => ({
 }));
 
 vi.mock('../../utils/core/security-utils', () => ({
-  maskSensitiveField: vi.fn((obj, field) => ({ ...obj, [field]: '***MASKED***' }))
+  maskSensitiveField: vi.fn((obj, field) => ({ ...obj, [field]: '***MASKED***' })),
 }));
 
 vi.mock('../../services/error-service', () => ({
@@ -28,12 +28,12 @@ vi.mock('../../services/error-service', () => ({
     auth: vi.fn(() => ({ code: 'AUTH_ERROR', message: 'Auth failed', category: 'AUTH' })),
     validation: vi.fn(() => ({ code: 'VALIDATION_ERROR', message: 'Invalid input', category: 'VALIDATION' })),
     internal: vi.fn(() => ({ code: 'INTERNAL_ERROR', message: 'Internal error', category: 'INTERNAL' })),
-    external: vi.fn(() => ({ code: 'EXTERNAL_ERROR', message: 'External error', category: 'EXTERNAL' }))
-  }
+    external: vi.fn(() => ({ code: 'EXTERNAL_ERROR', message: 'External error', category: 'EXTERNAL' })),
+  },
 }));
 
 vi.mock('../../utils/core/worker-api-client', () => ({
-  callWorkerAPI: vi.fn()
+  callWorkerAPI: vi.fn(),
 }));
 
 /**
@@ -47,8 +47,8 @@ describe('assignSmishingTool', () => {
   const mockCompanyId = 'test-company-id';
   const mockEnv = {
     SMISHING_CRUD_WORKER: {
-      fetch: vi.fn()
-    }
+      fetch: vi.fn(),
+    },
   };
 
   beforeEach(() => {
@@ -57,7 +57,7 @@ describe('assignSmishingTool', () => {
     requestStorage.enterWith({
       token: mockToken,
       companyId: mockCompanyId,
-      env: mockEnv
+      env: mockEnv,
     });
   });
 
@@ -67,7 +67,7 @@ describe('assignSmishingTool', () => {
 
       const input = {
         resourceId: 'smishing-resource-123',
-        targetUserResourceId: 'user-789'
+        targetUserResourceId: 'user-789',
       };
 
       const result = await assignSmishingTool.execute({ context: input } as any);
@@ -81,7 +81,7 @@ describe('assignSmishingTool', () => {
       const input = {
         resourceId: 'smishing-resource-123',
         languageId: 'lang-456',
-        targetUserResourceId: 'user-789'
+        targetUserResourceId: 'user-789',
       };
 
       const result = await assignSmishingTool.execute({ context: input } as any);
@@ -90,7 +90,7 @@ describe('assignSmishingTool', () => {
 
     it('should require resourceId', async () => {
       const input: any = {
-        targetUserResourceId: 'user-789'
+        targetUserResourceId: 'user-789',
       };
 
       const result = await assignSmishingTool.execute({ context: input } as any);
@@ -102,7 +102,7 @@ describe('assignSmishingTool', () => {
 
     it('should require exactly one assignment target (user OR group)', async () => {
       const input: any = {
-        resourceId: 'smishing-resource-123'
+        resourceId: 'smishing-resource-123',
       };
 
       const result = await assignSmishingTool.execute({ context: input } as any);
@@ -133,12 +133,12 @@ describe('assignSmishingTool', () => {
     it('should return error when token is missing', async () => {
       requestStorage.enterWith({
         companyId: mockCompanyId,
-        env: mockEnv
+        env: mockEnv,
       });
 
       const input = {
         resourceId: 'smishing-resource-123',
-        targetUserResourceId: 'user-789'
+        targetUserResourceId: 'user-789',
       };
 
       const result = await assignSmishingTool.execute({ context: input } as any);
@@ -151,7 +151,7 @@ describe('assignSmishingTool', () => {
 
       const input = {
         resourceId: 'smishing-resource-123',
-        targetUserResourceId: 'user-789'
+        targetUserResourceId: 'user-789',
       };
 
       const result = await assignSmishingTool.execute({ context: input } as any);
@@ -166,7 +166,7 @@ describe('assignSmishingTool', () => {
 
       const input = {
         resourceId: 'smishing-resource-123',
-        targetUserResourceId: 'user-789'
+        targetUserResourceId: 'user-789',
       };
 
       const result = await assignSmishingTool.execute({ context: input } as any);
@@ -181,7 +181,7 @@ describe('assignSmishingTool', () => {
       const input = {
         resourceId: 'smishing-resource-123',
         languageId: 'lang-456',
-        targetUserResourceId: 'user-789'
+        targetUserResourceId: 'user-789',
       };
 
       await assignSmishingTool.execute({ context: input } as any);
@@ -197,11 +197,11 @@ describe('assignSmishingTool', () => {
             targetUserResourceId: 'user-789',
             accessToken: mockToken,
             companyId: mockCompanyId,
-            name: expect.stringContaining('user-789')
+            name: expect.stringContaining('user-789'),
           }),
           token: mockToken,
           errorPrefix: expect.any(String),
-          operationName: expect.any(String)
+          operationName: expect.any(String),
         })
       );
     });
@@ -211,7 +211,7 @@ describe('assignSmishingTool', () => {
 
       const input = {
         resourceId: 'smishing-resource-123',
-        targetGroupResourceId: 'group-123'
+        targetGroupResourceId: 'group-123',
       };
 
       const result = await assignSmishingTool.execute({ context: input } as any);
@@ -235,7 +235,7 @@ describe('assignSmishingTool', () => {
 
       const input = {
         resourceId: 'smishing-resource-123',
-        targetUserResourceId: 'user-789'
+        targetUserResourceId: 'user-789',
       };
 
       const result = await assignSmishingTool.execute({ context: input } as any);
@@ -249,7 +249,7 @@ describe('assignSmishingTool', () => {
 
       const input = {
         resourceId: 'smishing-resource-123',
-        targetUserResourceId: 'user-789'
+        targetUserResourceId: 'user-789',
       };
 
       const result = await assignSmishingTool.execute({ context: input } as any);
@@ -263,7 +263,7 @@ describe('assignSmishingTool', () => {
 
       const input = {
         resourceId: 'smishing-resource-123',
-        targetUserResourceId: 'user-789'
+        targetUserResourceId: 'user-789',
       };
 
       const result = await assignSmishingTool.execute({ context: input } as any);
@@ -279,7 +279,7 @@ describe('assignSmishingTool', () => {
 
       const input = {
         resourceId: 'smishing-resource-123',
-        targetUserResourceId: 'user-789'
+        targetUserResourceId: 'user-789',
       };
 
       const result = await assignSmishingTool.execute({ context: input } as any);
@@ -301,7 +301,7 @@ describe('assignSmishingTool', () => {
 
       const input = {
         resourceId: 'smishing-resource-123',
-        targetUserResourceId: 'user-789'
+        targetUserResourceId: 'user-789',
       };
 
       await assignSmishingTool.execute({ context: input } as any);

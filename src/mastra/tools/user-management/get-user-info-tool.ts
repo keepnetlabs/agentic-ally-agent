@@ -28,30 +28,75 @@ import { errorService } from '../../services/error-service';
 import { validateBCP47LanguageCode, DEFAULT_LANGUAGE } from '../../utils/language/language-utils';
 import { getDepartmentFallbackForLanguage } from '../../utils/language/department-fallback';
 import { ANALYSIS_REFERENCES, ALLOWED_ENUMS_TEXT } from './behavior-analyst-constants';
-import { AnalysisSchema, GET_ALL_PAYLOAD, TIMELINE_PAYLOAD, getUserInfoOutputSchema, PlatformUser, ApiActivity, PartialAnalysisReport } from './user-management-types';
-import { enrichActivities, formatEnrichedActivitiesForPrompt, type EnrichedActivity } from './activity-enrichment-utils';
+import {
+  AnalysisSchema,
+  GET_ALL_PAYLOAD,
+  TIMELINE_PAYLOAD,
+  getUserInfoOutputSchema,
+  PlatformUser,
+  ApiActivity,
+  PartialAnalysisReport,
+} from './user-management-types';
+import {
+  enrichActivities,
+  formatEnrichedActivitiesForPrompt,
+  type EnrichedActivity,
+} from './activity-enrichment-utils';
 import { findUserByEmail, findUserById, findUserByNameWithFallbacks } from './utils/user-search-utils';
 import { uuidv4 } from '../../utils/core/id-utils';
 export const getUserInfoTool = createTool({
   id: 'get-user-info',
-  description: 'Retrieves user info AND their recent activity timeline. Accepts either targetUserResourceId (direct ID) OR fullName/firstName/lastName (search). Returns a structured AI analysis report.',
-  inputSchema: z.object({
-    targetUserResourceId: z.string().optional().describe('Direct user ID (skips search step, faster). Use if ID is already known.'),
-    departmentName: z.string().optional().describe('Department name to use with targetUserResourceId (avoids extra API call).'),
-    email: z.string().optional().describe('User email address (recommended; more reliable than fullName, especially when user has middle name).'),
-    fullName: z.string().optional().describe('Full name of the user (e.g., "John Doe", "Peter Parker"). Will be automatically parsed into firstName/lastName.'),
-    firstName: z.string().optional().describe('First name of the user (used if fullName is not provided)'),
-    lastName: z.string().optional().describe('Last name of the user (optional, used with firstName)'),
-    reportLanguage: z.string().optional().describe('Current user message language (BCP-47 or name). Used for report-facing fallbacks.'),
-    skipAnalysis: z.boolean().optional().describe('If true, skips the expensive AI behavioral report generation. Use when you ONLY need the user ID for assignment.'),
-  }).refine(
-    data => data.targetUserResourceId || data.email || data.fullName || data.firstName,
-    { message: 'Either targetUserResourceId OR email OR fullName/firstName must be provided' }
-  ),
+  description:
+    'Retrieves user info AND their recent activity timeline. Accepts either targetUserResourceId (direct ID) OR fullName/firstName/lastName (search). Returns a structured AI analysis report.',
+  inputSchema: z
+    .object({
+      targetUserResourceId: z
+        .string()
+        .optional()
+        .describe('Direct user ID (skips search step, faster). Use if ID is already known.'),
+      departmentName: z
+        .string()
+        .optional()
+        .describe('Department name to use with targetUserResourceId (avoids extra API call).'),
+      email: z
+        .string()
+        .optional()
+        .describe(
+          'User email address (recommended; more reliable than fullName, especially when user has middle name).'
+        ),
+      fullName: z
+        .string()
+        .optional()
+        .describe(
+          'Full name of the user (e.g., "John Doe", "Peter Parker"). Will be automatically parsed into firstName/lastName.'
+        ),
+      firstName: z.string().optional().describe('First name of the user (used if fullName is not provided)'),
+      lastName: z.string().optional().describe('Last name of the user (optional, used with firstName)'),
+      reportLanguage: z
+        .string()
+        .optional()
+        .describe('Current user message language (BCP-47 or name). Used for report-facing fallbacks.'),
+      skipAnalysis: z
+        .boolean()
+        .optional()
+        .describe(
+          'If true, skips the expensive AI behavioral report generation. Use when you ONLY need the user ID for assignment.'
+        ),
+    })
+    .refine(data => data.targetUserResourceId || data.email || data.fullName || data.firstName, {
+      message: 'Either targetUserResourceId OR email OR fullName/firstName must be provided',
+    }),
   outputSchema: getUserInfoOutputSchema,
   execute: async ({ context, writer }) => {
     const logger = getLogger('GetUserInfoTool');
-    const { targetUserResourceId: inputTargetUserResourceId, departmentName: inputDepartmentName, email: inputEmail, fullName: inputFullName, firstName: inputFirstName, lastName: inputLastName } = context;
+    const {
+      targetUserResourceId: inputTargetUserResourceId,
+      departmentName: inputDepartmentName,
+      email: inputEmail,
+      fullName: inputFullName,
+      firstName: inputFirstName,
+      lastName: inputLastName,
+    } = context;
 
     // Get Auth Token, CompanyId & baseApiUrl (needed for both paths)
     const { token, companyId, baseApiUrl } = getRequestContext();
@@ -77,12 +122,16 @@ export const getUserInfoTool = createTool({
       // STEP 0: Determine user lookup path
       if (inputTargetUserResourceId) {
         // Fast path: Direct ID provided - fetch profile for name/department/language
-        logger.info('Using provided targetUserResourceId, fetching profile', { targetUserResourceId: inputTargetUserResourceId });
+        logger.info('Using provided targetUserResourceId, fetching profile', {
+          targetUserResourceId: inputTargetUserResourceId,
+        });
         userId = inputTargetUserResourceId;
         try {
           user = await findUserById(searchDeps, GET_ALL_PAYLOAD, inputTargetUserResourceId);
         } catch (err) {
-          const errorInfo = errorService.external('User fetch by targetUserResourceId failed', { error: normalizeError(err).message });
+          const errorInfo = errorService.external('User fetch by targetUserResourceId failed', {
+            error: normalizeError(err).message,
+          });
           logErrorInfo(logger, 'error', 'User search error', errorInfo);
           return createToolErrorResponse(errorInfo);
         }
@@ -92,7 +141,9 @@ export const getUserInfoTool = createTool({
           userFullName = `${user.firstName} ${user.lastName}`;
           fullName = userFullName;
         } else {
-          const errorInfo = errorService.notFound(`User "${inputTargetUserResourceId}" not found.`, { targetUserResourceId: inputTargetUserResourceId });
+          const errorInfo = errorService.notFound(`User "${inputTargetUserResourceId}" not found.`, {
+            targetUserResourceId: inputTargetUserResourceId,
+          });
           logErrorInfo(logger, 'warn', 'User not found', errorInfo);
           return createToolErrorResponse(errorInfo);
         }
@@ -107,7 +158,9 @@ export const getUserInfoTool = createTool({
             user = await findUserByEmail(searchDeps, GET_ALL_PAYLOAD, email);
           } catch (err) {
             // Helper already logs; return structured error
-            const errorInfo = errorService.external('User search by email failed', { error: normalizeError(err).message });
+            const errorInfo = errorService.external('User search by email failed', {
+              error: normalizeError(err).message,
+            });
             logErrorInfo(logger, 'error', 'User search error', errorInfo);
             return createToolErrorResponse(errorInfo);
           }
@@ -141,9 +194,14 @@ export const getUserInfoTool = createTool({
               const normalizedFirstName = normalizeName(inputFirstName);
               const normalizedLastName = inputLastName ? normalizeName(inputLastName) : undefined;
               parsed = parseName({ firstName: normalizedFirstName, lastName: normalizedLastName });
-              logger.debug('Using explicit normalized names', { firstName: normalizedFirstName, lastName: normalizedLastName });
+              logger.debug('Using explicit normalized names', {
+                firstName: normalizedFirstName,
+                lastName: normalizedLastName,
+              });
             } else {
-              const errorInfo = errorService.validation('Either targetUserResourceId, fullName, or firstName must be provided');
+              const errorInfo = errorService.validation(
+                'Either targetUserResourceId, fullName, or firstName must be provided'
+              );
               logErrorInfo(logger, 'warn', 'Validation error: No identifier provided', errorInfo);
               return createToolErrorResponse(errorInfo);
             }
@@ -202,7 +260,7 @@ export const getUserInfoTool = createTool({
       logger.info('Fetching timeline for user', { userId: resolvedUserId });
       const timelineHeaders: Record<string, string> = {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        Authorization: `Bearer ${token}`,
       };
       if (companyId) {
         timelineHeaders['x-ir-company-id'] = companyId;
@@ -214,7 +272,7 @@ export const getUserInfoTool = createTool({
       const timelineResponse = await fetch(timelineUrl, {
         method: 'POST',
         headers: timelineHeaders,
-        body: JSON.stringify(timelinePayload)
+        body: JSON.stringify(timelinePayload),
       });
 
       let recentActivities = [];
@@ -222,14 +280,16 @@ export const getUserInfoTool = createTool({
       if (timelineResponse.ok) {
         const timelineData = await timelineResponse.json();
         const results = timelineData?.data?.results || [];
-        recentActivities = results.map((r: ApiActivity) => ({
-          actionType: r.ActionType,
-          campaignName: r.name,
-          productType: r.productType,
-          difficulty: r.difficultyType || 'N/A',
-          score: r.points || 0,
-          actionTime: r.ActionTimeWithDay || r.ActionTime
-        })).slice(0, 10);
+        recentActivities = results
+          .map((r: ApiActivity) => ({
+            actionType: r.ActionType,
+            campaignName: r.name,
+            productType: r.productType,
+            difficulty: r.difficultyType || 'N/A',
+            score: r.points || 0,
+            actionTime: r.ActionTimeWithDay || r.ActionTime,
+          }))
+          .slice(0, 10);
 
         // Enrich activities with semantic context
         enrichedActivities = enrichActivities(results.slice(0, 10));
@@ -238,7 +298,7 @@ export const getUserInfoTool = createTool({
         const errorText = await timelineResponse.text();
         logger.warn('Timeline API request failed', {
           status: timelineResponse.status,
-          errorBody: errorText.substring(0, 1000)
+          errorBody: errorText.substring(0, 1000),
         });
       }
 
@@ -366,21 +426,22 @@ REFERENCES (STATIC)
   "(Curiosity Gap – Loewenstein)", "(Authority Bias – Milgram)", "(Habit Loop – Duhigg)", "(ENISA)".
 `;
 
-
         const userPrompt = `
 USER CONTEXT (SOURCE OF TRUTH)
 
 User id: ${resolvedUserId}
-Role: ${user?.role || ""}
+Role: ${user?.role || ''}
 Department: ${resolvedDepartment}
-Location: ${user?.location || ""}
-Language: ${user?.preferredLanguage || ""}
-Access level: ${user?.accessLevel || ""}
+Location: ${user?.location || ''}
+Language: ${user?.preferredLanguage || ''}
+Access level: ${user?.accessLevel || ''}
 
 Recent Activities (primary behavioral evidence):
-${enrichedActivities.length === 0 ?
-            'NO ACTIVITY DATA AVAILABLE - Apply Foundational defaults per system instructions.' :
-            formatEnrichedActivitiesForPrompt(enrichedActivities)}
+${
+  enrichedActivities.length === 0
+    ? 'NO ACTIVITY DATA AVAILABLE - Apply Foundational defaults per system instructions.'
+    : formatEnrichedActivitiesForPrompt(enrichedActivities)
+}
 
 ---
 
@@ -517,19 +578,23 @@ If a value is unknown, use "" or null.
           const model = getModelWithOverride();
 
           const response = await withRetry(
-            () => generateText({
-              model,
-              messages: [
-                { role: 'system', content: systemPrompt },
-                { role: 'user', content: userPrompt }
-              ],
-              // No temperature param to be safe with OSS models
-            }),
+            () =>
+              generateText({
+                model,
+                messages: [
+                  { role: 'system', content: systemPrompt },
+                  { role: 'user', content: userPrompt },
+                ],
+                // No temperature param to be safe with OSS models
+              }),
             '[GetUserInfoTool] analysis-report-generation'
           );
 
           const cleanedJson = cleanResponse(response.text, 'analysis-report');
-          logger.debug('Raw cleaned AI analysis JSON retrieved', { length: cleanedJson.length, preview: cleanedJson.substring(0, 200) });
+          logger.debug('Raw cleaned AI analysis JSON retrieved', {
+            length: cleanedJson.length,
+            preview: cleanedJson.substring(0, 200),
+          });
           analysisReport = JSON.parse(cleanedJson);
           const reportTyped = analysisReport as PartialAnalysisReport;
 
@@ -579,7 +644,7 @@ If a value is unknown, use "" or null.
           const errorInfo = errorService.aiModel(err.message, {
             step: 'analysis-report-generation',
             userId: resolvedUserId,
-            stack: err.stack
+            stack: err.stack,
           });
           logErrorInfo(logger, 'error', 'AI analysis generation failed', errorInfo);
           // Don't return - analysis is optional, continue with partial data
@@ -601,7 +666,7 @@ If a value is unknown, use "" or null.
           await writer.write({
             type: 'text-delta',
             id: messageId,
-            delta: `::ui:target_user::${encoded}::/ui:target_user::\n`
+            delta: `::ui:target_user::${encoded}::/ui:target_user::\n`,
           });
           await writer.write({ type: 'text-end', id: messageId });
         } catch (emitErr) {
@@ -618,23 +683,22 @@ If a value is unknown, use "" or null.
           fullName: userFullName,
           // Use pre-calculated department value
           department: dept,
-          phoneNumber: user?.phoneNumber || "",
+          phoneNumber: user?.phoneNumber || '',
           email: user?.email,
-          preferredLanguage: preferredLanguageCode
+          preferredLanguage: preferredLanguageCode,
         },
         analysisReport: analysisReport,
-        recentActivities: recentActivities
+        recentActivities: recentActivities,
       };
 
       // Return as-is - analysisReport is complex optional object, skip validation
       return toolResult;
-
     } catch (error) {
       const err = normalizeError(error);
       // Pass the actual error message (e.g. "Simulated company not found") instead of a generic one
       const errorInfo = errorService.external(err.message, {
         step: 'tool-execution',
-        stack: err.stack
+        stack: err.stack,
       });
 
       logErrorInfo(logger, 'error', 'Tool execution failed', errorInfo);

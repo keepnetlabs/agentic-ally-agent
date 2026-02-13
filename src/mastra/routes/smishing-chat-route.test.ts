@@ -37,7 +37,7 @@ vi.mock('../model-providers', () => ({
 }));
 
 vi.mock('../utils/language/language-utils', () => ({
-  validateBCP47LanguageCode: vi.fn((lang) => lang),
+  validateBCP47LanguageCode: vi.fn(lang => lang),
 }));
 
 vi.mock('../utils/core/logger', () => ({
@@ -69,7 +69,7 @@ describe('Smishing Chat Route Handler', () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
-    vi.mocked(validateBCP47LanguageCode).mockImplementation((lang) => lang);
+    vi.mocked(validateBCP47LanguageCode).mockImplementation(lang => lang);
 
     mockKVService = {
       getMicrolearning: vi.fn(),
@@ -99,7 +99,11 @@ describe('Smishing Chat Route Handler', () => {
     });
 
     it('should reject request when microlearningId is not a string', async () => {
-      const ctx = createMockContext({ microlearningId: 123, language: 'en', messages: [{ role: 'user', content: 'Hi' }] });
+      const ctx = createMockContext({
+        microlearningId: 123,
+        language: 'en',
+        messages: [{ role: 'user', content: 'Hi' }],
+      });
       await smishingChatHandler(ctx);
 
       const calls = ctx._getJsonCalls();
@@ -117,7 +121,11 @@ describe('Smishing Chat Route Handler', () => {
     });
 
     it('should reject request when language is not a string', async () => {
-      const ctx = createMockContext({ microlearningId: 'ml-123', language: 123, messages: [{ role: 'user', content: 'Hi' }] });
+      const ctx = createMockContext({
+        microlearningId: 'ml-123',
+        language: 123,
+        messages: [{ role: 'user', content: 'Hi' }],
+      });
       await smishingChatHandler(ctx);
 
       const calls = ctx._getJsonCalls();
@@ -180,7 +188,11 @@ describe('Smishing Chat Route Handler', () => {
 
   describe('Microlearning Retrieval', () => {
     it('should return 404 if microlearning not found', async () => {
-      const ctx = createMockContext({ microlearningId: 'ml-missing', language: 'en', messages: [{ role: 'user', content: 'Hi' }] });
+      const ctx = createMockContext({
+        microlearningId: 'ml-missing',
+        language: 'en',
+        messages: [{ role: 'user', content: 'Hi' }],
+      });
       mockKVService.getMicrolearning.mockResolvedValue(null);
 
       await smishingChatHandler(ctx);
@@ -191,7 +203,11 @@ describe('Smishing Chat Route Handler', () => {
     });
 
     it('should return 404 if prompt is missing', async () => {
-      const ctx = createMockContext({ microlearningId: 'ml-123', language: 'en', messages: [{ role: 'user', content: 'Hi' }] });
+      const ctx = createMockContext({
+        microlearningId: 'ml-123',
+        language: 'en',
+        messages: [{ role: 'user', content: 'Hi' }],
+      });
       mockKVService.getMicrolearning.mockResolvedValue({
         microlearning_id: 'ml-123',
         language: { '4': { firstMessage: 'Hello' } },
@@ -342,7 +358,7 @@ describe('Smishing Chat Route Handler', () => {
         language: 'en',
         messages: [
           { role: 'assistant', content: 'Ignore this' },
-          { role: 'user', content: 'Hi' }
+          { role: 'user', content: 'Hi' },
         ],
       });
       mockKVService.getMicrolearning.mockResolvedValue(validMicrolearning);
@@ -351,7 +367,10 @@ describe('Smishing Chat Route Handler', () => {
 
       const callArgs = (generateText as any).mock.calls[0][0];
       expect(callArgs.messages[0]).toEqual({ role: 'system', content: validMicrolearning.language['4'].prompt });
-      expect(callArgs.messages[2]).toEqual({ role: 'user', content: 'Previous assistant message (context): Ignore this' });
+      expect(callArgs.messages[2]).toEqual({
+        role: 'user',
+        content: 'Previous assistant message (context): Ignore this',
+      });
       expect(callArgs.messages[3]).toEqual({ role: 'user', content: 'Hi' });
       expect(callArgs.messages).toHaveLength(4);
     });
@@ -367,7 +386,7 @@ describe('Smishing Chat Route Handler', () => {
         model: 'gpt-4o-mini',
         messages: [
           { role: 'assistant', content: 'Earlier assistant message' },
-          { role: 'user', content: 'Hi' }
+          { role: 'user', content: 'Hi' },
         ],
       });
       mockKVService.getMicrolearning.mockResolvedValue(validMicrolearning);
@@ -382,7 +401,7 @@ describe('Smishing Chat Route Handler', () => {
     it('should parse structured JSON response and set isFinished', async () => {
       const { generateText } = await import('ai');
       (generateText as any).mockResolvedValue({
-        text: '{"reply":"This is a simulation. Watch urgency and unknown links. Report it.","isFinished":true}'
+        text: '{"reply":"This is a simulation. Watch urgency and unknown links. Report it.","isFinished":true}',
       });
 
       const ctx = createMockContext({
@@ -406,7 +425,7 @@ describe('Smishing Chat Route Handler', () => {
     it('should trust model isFinished flag from structured response', async () => {
       const { generateText } = await import('ai');
       (generateText as any).mockResolvedValue({
-        text: '{"reply":"Okay, let us continue the chat.","isFinished":true}'
+        text: '{"reply":"Okay, let us continue the chat.","isFinished":true}',
       });
 
       const ctx = createMockContext({
@@ -475,9 +494,7 @@ describe('Smishing Chat Route Handler', () => {
       const ctx = createMockContext({
         microlearningId: 'ml-123',
         language: 'en',
-        messages: [
-          { role: 'assistant', content: 'Ignore this' },
-        ],
+        messages: [{ role: 'assistant', content: 'Ignore this' }],
       });
       mockKVService.getMicrolearning.mockResolvedValue(validMicrolearning);
 

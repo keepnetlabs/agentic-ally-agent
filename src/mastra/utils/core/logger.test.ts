@@ -379,24 +379,30 @@ describe('Logger with Correlation ID', () => {
     it('should work with full request context', async () => {
       const logger = getLogger('TestModule');
 
-      await requestStorage.run({
-        correlationId: 'test-id',
-        token: 'test-token',
-        companyId: 'company-123',
-        baseApiUrl: 'https://api.example.com',
-      }, () => {
-        expect(() => logger.info('Test message')).not.toThrow();
-      });
+      await requestStorage.run(
+        {
+          correlationId: 'test-id',
+          token: 'test-token',
+          companyId: 'company-123',
+          baseApiUrl: 'https://api.example.com',
+        },
+        () => {
+          expect(() => logger.info('Test message')).not.toThrow();
+        }
+      );
     });
 
     it('should work with partial request context', async () => {
       const logger = getLogger('TestModule');
 
-      await requestStorage.run({
-        correlationId: 'test-id',
-      }, () => {
-        expect(() => logger.info('Test message')).not.toThrow();
-      });
+      await requestStorage.run(
+        {
+          correlationId: 'test-id',
+        },
+        () => {
+          expect(() => logger.info('Test message')).not.toThrow();
+        }
+      );
     });
 
     it('should work with empty request context', async () => {

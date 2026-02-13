@@ -20,15 +20,19 @@ const GenerateMicrolearningJsonSchema = z.object({
     language: z.string().max(10, 'Language code must not exceed 10 characters'),
     learningObjectives: z.array(z.string().max(1000)),
     duration: z.number(),
-    additionalContext: z.string()
+    additionalContext: z
+      .string()
       .max(5000, 'Additional context must not exceed 5000 characters')
-      .optional().describe('User context, vulnerabilities, or specific requirements'),
+      .optional()
+      .describe('User context, vulnerabilities, or specific requirements'),
   }),
   microlearningId: z.string().max(256, 'Microlearning ID must not exceed 256 characters'),
   model: LanguageModelSchema,
-  policyContext: z.string()
+  policyContext: z
+    .string()
     .max(10000, 'Policy context must not exceed 10000 characters')
-    .optional().describe('Company policy context'),
+    .optional()
+    .describe('Company policy context'),
 });
 
 const GenerateMicrolearningJsonOutputSchema = z.object({
@@ -51,26 +55,25 @@ export const generateMicrolearningJsonTool = new Tool({
       const result = await generateMicrolearningJsonWithAI(analysis, microlearningId, model, policyContext);
       return {
         success: true,
-        data: result
+        data: result,
       };
     } catch (error) {
       const err = normalizeError(error);
       const errorInfo = errorService.aiModel(err.message, {
         microlearningId,
         step: 'json-generation',
-        stack: err.stack
+        stack: err.stack,
       });
 
       logErrorInfo(logger, 'error', 'JSON generation failed', errorInfo);
 
       return {
         ...createToolErrorResponse(errorInfo),
-        data: null
+        data: null,
       };
     }
   },
 });
-
 
 export type GenerateMicrolearningJsonInput = z.infer<typeof GenerateMicrolearningJsonSchema>;
 export type GenerateMicrolearningJsonOutput = z.infer<typeof GenerateMicrolearningJsonOutputSchema>;

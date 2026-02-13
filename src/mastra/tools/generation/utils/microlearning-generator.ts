@@ -11,111 +11,118 @@ import { normalizeError, logErrorInfo } from '../../../utils/core/error-utils';
 import { errorService } from '../../../services/error-service';
 import { withRetry } from '../../../utils/core/resilience-utils';
 import {
-    ETHICAL_POLICY,
-    SCIENTIFIC_EVIDENCE,
-    DEFAULT_LOGO_CONFIG,
-    getScene4Metadata
+  ETHICAL_POLICY,
+  SCIENTIFIC_EVIDENCE,
+  DEFAULT_LOGO_CONFIG,
+  getScene4Metadata,
 } from '../../../constants/microlearning-templates';
 
 export async function generateMicrolearningJsonWithAI(
-    analysis: PromptAnalysis & { additionalContext?: string },
-    microlearningId: string,
-    model: LanguageModel,
-    _policyContext?: string
+  analysis: PromptAnalysis & { additionalContext?: string },
+  microlearningId: string,
+  model: LanguageModel,
+  _policyContext?: string
 ) {
-    const scene4Type = analysis.isVishing
-        ? "vishing_simulation"
-        : analysis.isSmishing
-            ? "smishing_simulation"
-            : analysis.isCodeTopic
-                ? "code_review"
-                : "actionable_content";
+  const scene4Type = analysis.isVishing
+    ? 'vishing_simulation'
+    : analysis.isSmishing
+      ? 'smishing_simulation'
+      : analysis.isCodeTopic
+        ? 'code_review'
+        : 'actionable_content';
 
-    const microlearning: MicrolearningContent = {
-        microlearning_id: microlearningId,
-        microlearning_metadata: {
-            title: analysis.title,
-            description: analysis.description,
-            category: analysis.category,
-            subcategory: analysis.subcategory,
-            industry_relevance: analysis.industries,
-            department_relevance: [analysis.department],
-            role_relevance: analysis.roles,
-            regulation_compliance: analysis.regulationCompliance || [],
-            risk_area: analysis.topic,
-            content_provider: "AI-Generated Training",
-            level: (analysis.level?.charAt(0).toUpperCase() + analysis.level?.slice(1)) as MicrolearningContent['microlearning_metadata']['level'],
-            ethical_inclusive_language_policy: ETHICAL_POLICY,
-            language: analysis.language.toLowerCase(),
-            language_availability: [analysis.language.toLowerCase()],
-            gamification_enabled: true,
-            total_points: 100
-        },
-        scientific_evidence: SCIENTIFIC_EVIDENCE,
-        scenes: generateSceneStructure(analysis.duration, scene4Type),
-        theme: await generateTheme(analysis.themeColor)
-    };
+  const microlearning: MicrolearningContent = {
+    microlearning_id: microlearningId,
+    microlearning_metadata: {
+      title: analysis.title,
+      description: analysis.description,
+      category: analysis.category,
+      subcategory: analysis.subcategory,
+      industry_relevance: analysis.industries,
+      department_relevance: [analysis.department],
+      role_relevance: analysis.roles,
+      regulation_compliance: analysis.regulationCompliance || [],
+      risk_area: analysis.topic,
+      content_provider: 'AI-Generated Training',
+      level: (analysis.level?.charAt(0).toUpperCase() +
+        analysis.level?.slice(1)) as MicrolearningContent['microlearning_metadata']['level'],
+      ethical_inclusive_language_policy: ETHICAL_POLICY,
+      language: analysis.language.toLowerCase(),
+      language_availability: [analysis.language.toLowerCase()],
+      gamification_enabled: true,
+      total_points: 100,
+    },
+    scientific_evidence: SCIENTIFIC_EVIDENCE,
+    scenes: generateSceneStructure(analysis.duration, scene4Type),
+    theme: await generateTheme(analysis.themeColor),
+  };
 
-    const logger = getLogger('GenerateMicrolearningJson');
-    logger.info('Starting Stage 2: Enhancement');
-    const enhancedMicrolearning = await enhanceMicrolearningContent(microlearning, model, analysis.additionalContext);
-    logger.info('Stage 2 completed');
+  const logger = getLogger('GenerateMicrolearningJson');
+  logger.info('Starting Stage 2: Enhancement');
+  const enhancedMicrolearning = await enhanceMicrolearningContent(microlearning, model, analysis.additionalContext);
+  logger.info('Stage 2 completed');
 
-    return enhancedMicrolearning;
+  return enhancedMicrolearning;
 }
 
 export async function generateTheme(themeColor?: string) {
-    const backgroundColor = themeColor || "bg-gradient-gray";
+  const backgroundColor = themeColor || 'bg-gradient-gray';
 
-    let logoConfig = { ...DEFAULT_LOGO_CONFIG };
+  let logoConfig = { ...DEFAULT_LOGO_CONFIG };
 
-    try {
-        const logger = getLogger('GenerateTheme');
-        const productService = new ProductService();
-        const whitelabelingConfig = await productService.getWhitelabelingConfig();
+  try {
+    const logger = getLogger('GenerateTheme');
+    const productService = new ProductService();
+    const whitelabelingConfig = await productService.getWhitelabelingConfig();
 
-        logger.debug('Whitelabeling Config Response', { config: whitelabelingConfig });
+    logger.debug('Whitelabeling Config Response', { config: whitelabelingConfig });
 
-        if (whitelabelingConfig) {
-            logoConfig = {
-                "src": whitelabelingConfig.mainLogoUrl || logoConfig.src,
-                "darkSrc": whitelabelingConfig.mainLogoUrl || logoConfig.darkSrc,
-                "minimizedSrc": whitelabelingConfig.minimizedMenuLogoUrl || logoConfig.minimizedSrc,
-                "minimizedDarkSrc": whitelabelingConfig.minimizedMenuLogoUrl || logoConfig.minimizedDarkSrc,
-                "alt": whitelabelingConfig.brandName || logoConfig.alt
-            };
-        }
-    } catch (error) {
-        const logger = getLogger('GenerateTheme');
-        const err = normalizeError(error);
-        const errorInfo = errorService.external(err.message, { step: 'fetch-whitelabel-config', stack: err.stack });
-        logErrorInfo(logger, 'warn', 'Failed to fetch whitelabeling config, using defaults', errorInfo);
+    if (whitelabelingConfig) {
+      logoConfig = {
+        src: whitelabelingConfig.mainLogoUrl || logoConfig.src,
+        darkSrc: whitelabelingConfig.mainLogoUrl || logoConfig.darkSrc,
+        minimizedSrc: whitelabelingConfig.minimizedMenuLogoUrl || logoConfig.minimizedSrc,
+        minimizedDarkSrc: whitelabelingConfig.minimizedMenuLogoUrl || logoConfig.minimizedDarkSrc,
+        alt: whitelabelingConfig.brandName || logoConfig.alt,
+      };
     }
+  } catch (error) {
+    const logger = getLogger('GenerateTheme');
+    const err = normalizeError(error);
+    const errorInfo = errorService.external(err.message, { step: 'fetch-whitelabel-config', stack: err.stack });
+    logErrorInfo(logger, 'warn', 'Failed to fetch whitelabeling config, using defaults', errorInfo);
+  }
 
-    return {
-        fontFamily: {
-            primary: "SF Pro Display, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
-            secondary: "SF Pro Text, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
-            monospace: "SF Mono, ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace"
-        },
-        colors: {
-            background: backgroundColor
-        },
-        "logo": logoConfig
-    }
+  return {
+    fontFamily: {
+      primary:
+        "SF Pro Display, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
+      secondary:
+        "SF Pro Text, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
+      monospace: "SF Mono, ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace",
+    },
+    colors: {
+      background: backgroundColor,
+    },
+    logo: logoConfig,
+  };
 }
 
-export async function enhanceMicrolearningContent(microlearning: MicrolearningContent, model: LanguageModel, additionalContext?: string): Promise<MicrolearningContent> {
-    const categoriesList = CATEGORIES.VALUES.join(', ');
+export async function enhanceMicrolearningContent(
+  microlearning: MicrolearningContent,
+  model: LanguageModel,
+  additionalContext?: string
+): Promise<MicrolearningContent> {
+  const categoriesList = CATEGORIES.VALUES.join(', ');
 
-    const enhancementPrompt = `CRITICAL: Return ONLY valid JSON. No explanations, no markdown, no backticks.
+  const enhancementPrompt = `CRITICAL: Return ONLY valid JSON. No explanations, no markdown, no backticks.
 
 ENHANCE this microlearning metadata to industry standards:
 
 ${JSON.stringify(microlearning, null, 2)}
 
 USER CONTEXT & SPECIFIC REQUIREMENTS:
-${additionalContext ? `"${additionalContext}"` : "No specific context provided."}
+${additionalContext ? `"${additionalContext}"` : 'No specific context provided.'}
 (Use this context to refine the Title, Risk Area, and relevance.)
 
 ENHANCEMENT RULES (apply ONLY if needed):
@@ -158,115 +165,123 @@ CRITICAL JSON RULES:
 - No undefined or null values
 - Return complete enhanced JSON with same structure`;
 
-    try {
-        const response = await withRetry(
-            () => generateText({
-                model: model,
-                messages: [
-                    { role: 'system', content: 'You are enhancing microlearning content. Keep the exact same JSON structure, only improve content values. Return ONLY valid JSON, no markdown blocks or commentary.' },
-                    { role: 'user', content: enhancementPrompt }
-                ],
-                ...METADATA_GENERATION_PARAMS,
-            }),
-            `[GenerateMicrolearningJsonTool] microlearning-enhancement`
-        );
+  try {
+    const response = await withRetry(
+      () =>
+        generateText({
+          model: model,
+          messages: [
+            {
+              role: 'system',
+              content:
+                'You are enhancing microlearning content. Keep the exact same JSON structure, only improve content values. Return ONLY valid JSON, no markdown blocks or commentary.',
+            },
+            { role: 'user', content: enhancementPrompt },
+          ],
+          ...METADATA_GENERATION_PARAMS,
+        }),
+      `[GenerateMicrolearningJsonTool] microlearning-enhancement`
+    );
 
-        const cleanedResponse = cleanResponse(response.text, 'microlearning-enhancement');
-        const enhanced = JSON.parse(cleanedResponse);
-        const logger = getLogger('EnhanceMicrolearning');
-        logger.info('Microlearning content enhanced successfully');
-        return enhanced;
-    } catch (error) {
-        const logger = getLogger('EnhanceMicrolearning');
-        const err = normalizeError(error);
-        const errorInfo = errorService.aiModel(err.message, { step: 'microlearning-enhancement', stack: err.stack });
-        logErrorInfo(logger, 'warn', 'Enhancement failed, returning original', errorInfo);
-        return microlearning;
-    }
+    const cleanedResponse = cleanResponse(response.text, 'microlearning-enhancement');
+    const enhanced = JSON.parse(cleanedResponse);
+    const logger = getLogger('EnhanceMicrolearning');
+    logger.info('Microlearning content enhanced successfully');
+    return enhanced;
+  } catch (error) {
+    const logger = getLogger('EnhanceMicrolearning');
+    const err = normalizeError(error);
+    const errorInfo = errorService.aiModel(err.message, { step: 'microlearning-enhancement', stack: err.stack });
+    logErrorInfo(logger, 'warn', 'Enhancement failed, returning original', errorInfo);
+    return microlearning;
+  }
 }
 
-export function generateSceneStructure(duration: number, scene4Type: "code_review" | "actionable_content" | "vishing_simulation" | "smishing_simulation" = "actionable_content"): Scene[] {
-    return [
-        {
-            scene_id: "1",
-            metadata: {
-                scene_type: "intro" as const,
-                points: 5,
-                duration_seconds: Math.round(duration * 60 * 0.1),
-                hasAchievementNotification: false,
-                scientific_basis: "Attention Capture: Creates initial engagement and sets learning expectations.",
-                icon: { sparkleIconName: "sparkles", sceneIconName: "play-circle" }
-            }
-        },
-        {
-            scene_id: "2",
-            metadata: {
-                scene_type: "goal" as const,
-                points: 5,
-                duration_seconds: Math.round(duration * 60 * 0.15),
-                hasAchievementNotification: false,
-                scientific_basis: "Goal Activation: Clear objectives improve learning focus and retention.",
-                icon: { sparkleIconName: "target", sceneIconName: "target" }
-            }
-        },
-        {
-            scene_id: "3",
-            metadata: {
-                scene_type: "scenario" as const,
-                points: 10,
-                duration_seconds: Math.round(duration * 60 * 0.25),
-                hasAchievementNotification: false,
-                scientific_basis: "Contextual Learning: Real-world context improves knowledge transfer.",
-                icon: { sparkleIconName: "video", sceneIconName: "monitor-play" }
-            }
-        },
-        {
-            scene_id: "4",
-            metadata: getScene4Metadata(duration, scene4Type)
-        },
-        {
-            scene_id: "5",
-            metadata: {
-                scene_type: "quiz" as const,
-                points: 25,
-                duration_seconds: Math.round(duration * 60 * 0.15),
-                hasAchievementNotification: true,
-                scientific_basis: "Active Recall: Testing enhances retention and identifies knowledge gaps.",
-                icon: { sparkleIconName: "brain", sceneIconName: "brain" }
-            }
-        },
-        {
-            scene_id: "6",
-            metadata: {
-                scene_type: "survey" as const,
-                points: 5,
-                duration_seconds: Math.round(duration * 60 * 0.05),
-                hasAchievementNotification: false,
-                scientific_basis: "Metacognition: Self-assessment promotes learning awareness.",
-                icon: { sparkleIconName: "chart-bar", sceneIconName: "list-checks" }
-            }
-        },
-        {
-            scene_id: "7",
-            metadata: {
-                scene_type: "nudge" as const,
-                points: 10,
-                duration_seconds: Math.round(duration * 60 * 0.05),
-                hasAchievementNotification: false,
-                scientific_basis: "Implementation Intentions: Concrete plans improve behavior change.",
-                icon: { sparkleIconName: "zap", sceneIconName: "repeat" }
-            }
-        },
-        {
-            scene_id: "8",
-            metadata: {
-                scene_type: "summary" as const,
-                points: 15,
-                duration_seconds: Math.round(duration * 60 * 0.1),
-                hasAchievementNotification: true,
-                scientific_basis: "Consolidation: Review reinforces learning and provides closure.",
-                icon: { sparkleIconName: "trophy", sceneIconName: "trophy" }
-            }
-        }
-    ];
+export function generateSceneStructure(
+  duration: number,
+  scene4Type: 'code_review' | 'actionable_content' | 'vishing_simulation' | 'smishing_simulation' = 'actionable_content'
+): Scene[] {
+  return [
+    {
+      scene_id: '1',
+      metadata: {
+        scene_type: 'intro' as const,
+        points: 5,
+        duration_seconds: Math.round(duration * 60 * 0.1),
+        hasAchievementNotification: false,
+        scientific_basis: 'Attention Capture: Creates initial engagement and sets learning expectations.',
+        icon: { sparkleIconName: 'sparkles', sceneIconName: 'play-circle' },
+      },
+    },
+    {
+      scene_id: '2',
+      metadata: {
+        scene_type: 'goal' as const,
+        points: 5,
+        duration_seconds: Math.round(duration * 60 * 0.15),
+        hasAchievementNotification: false,
+        scientific_basis: 'Goal Activation: Clear objectives improve learning focus and retention.',
+        icon: { sparkleIconName: 'target', sceneIconName: 'target' },
+      },
+    },
+    {
+      scene_id: '3',
+      metadata: {
+        scene_type: 'scenario' as const,
+        points: 10,
+        duration_seconds: Math.round(duration * 60 * 0.25),
+        hasAchievementNotification: false,
+        scientific_basis: 'Contextual Learning: Real-world context improves knowledge transfer.',
+        icon: { sparkleIconName: 'video', sceneIconName: 'monitor-play' },
+      },
+    },
+    {
+      scene_id: '4',
+      metadata: getScene4Metadata(duration, scene4Type),
+    },
+    {
+      scene_id: '5',
+      metadata: {
+        scene_type: 'quiz' as const,
+        points: 25,
+        duration_seconds: Math.round(duration * 60 * 0.15),
+        hasAchievementNotification: true,
+        scientific_basis: 'Active Recall: Testing enhances retention and identifies knowledge gaps.',
+        icon: { sparkleIconName: 'brain', sceneIconName: 'brain' },
+      },
+    },
+    {
+      scene_id: '6',
+      metadata: {
+        scene_type: 'survey' as const,
+        points: 5,
+        duration_seconds: Math.round(duration * 60 * 0.05),
+        hasAchievementNotification: false,
+        scientific_basis: 'Metacognition: Self-assessment promotes learning awareness.',
+        icon: { sparkleIconName: 'chart-bar', sceneIconName: 'list-checks' },
+      },
+    },
+    {
+      scene_id: '7',
+      metadata: {
+        scene_type: 'nudge' as const,
+        points: 10,
+        duration_seconds: Math.round(duration * 60 * 0.05),
+        hasAchievementNotification: false,
+        scientific_basis: 'Implementation Intentions: Concrete plans improve behavior change.',
+        icon: { sparkleIconName: 'zap', sceneIconName: 'repeat' },
+      },
+    },
+    {
+      scene_id: '8',
+      metadata: {
+        scene_type: 'summary' as const,
+        points: 15,
+        duration_seconds: Math.round(duration * 60 * 0.1),
+        hasAchievementNotification: true,
+        scientific_basis: 'Consolidation: Review reinforces learning and provides closure.',
+        icon: { sparkleIconName: 'trophy', sceneIconName: 'trophy' },
+      },
+    },
+  ];
 }

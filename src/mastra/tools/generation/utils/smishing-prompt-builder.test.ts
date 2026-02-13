@@ -21,11 +21,7 @@ describe('buildSmishingAgentPrompt', () => {
   });
 
   it('returns base system prompt directly for English language', async () => {
-    const result = await buildSmishingAgentPrompt(
-      scenarioPrompt,
-      { language: 'en-US' } as any,
-      model
-    );
+    const result = await buildSmishingAgentPrompt(scenarioPrompt, { language: 'en-US' } as any, model);
 
     expect(withRetryMock).not.toHaveBeenCalled();
     expect(generateTextMock).not.toHaveBeenCalled();
@@ -37,11 +33,7 @@ describe('buildSmishingAgentPrompt', () => {
     withRetryMock.mockImplementation(async (operation: () => Promise<{ text: string }>) => operation());
     generateTextMock.mockResolvedValue({ text: '  Yerellestirilmis sistem promptu  ' });
 
-    const result = await buildSmishingAgentPrompt(
-      scenarioPrompt,
-      { language: 'tr' } as any,
-      model
-    );
+    const result = await buildSmishingAgentPrompt(scenarioPrompt, { language: 'tr' } as any, model);
 
     expect(withRetryMock).toHaveBeenCalledTimes(1);
     expect(withRetryMock).toHaveBeenCalledWith(expect.any(Function), 'Scene 4 smishing prompt localization');

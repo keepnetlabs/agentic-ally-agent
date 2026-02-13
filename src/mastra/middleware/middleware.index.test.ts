@@ -236,10 +236,7 @@ describe('middleware/index barrel exports', () => {
 
   describe('export categories', () => {
     it('should have security and auth category exports', () => {
-      const securityExports = [
-        'errorHandlerMiddleware',
-        'authTokenMiddleware',
-      ];
+      const securityExports = ['errorHandlerMiddleware', 'authTokenMiddleware'];
 
       for (const name of securityExports) {
         expect(middlewareExports).toHaveProperty(name);
@@ -260,11 +257,7 @@ describe('middleware/index barrel exports', () => {
     });
 
     it('should have rate limit exports', () => {
-      const rateLimitExports = [
-        'rateLimitMiddleware',
-        'createEndpointRateLimiter',
-        'RATE_LIMIT_TIERS',
-      ];
+      const rateLimitExports = ['rateLimitMiddleware', 'createEndpointRateLimiter', 'RATE_LIMIT_TIERS'];
 
       for (const name of rateLimitExports) {
         expect(middlewareExports).toHaveProperty(name);
@@ -272,10 +265,7 @@ describe('middleware/index barrel exports', () => {
     });
 
     it('should have OpenAPI exports', () => {
-      const openapiExports = [
-        'disablePlayground',
-        'disableSwagger',
-      ];
+      const openapiExports = ['disablePlayground', 'disableSwagger'];
 
       for (const name of openapiExports) {
         expect(middlewareExports).toHaveProperty(name);
@@ -419,10 +409,7 @@ describe('middleware/index barrel exports', () => {
     });
 
     it('configuration objects should be plain objects', () => {
-      const configs = [
-        middlewareExports.RATE_LIMIT_TIERS,
-        middlewareExports.disableSwagger,
-      ];
+      const configs = [middlewareExports.RATE_LIMIT_TIERS, middlewareExports.disableSwagger];
 
       for (const config of configs) {
         expect(typeof config).toBe('object');
@@ -442,10 +429,7 @@ describe('middleware/index barrel exports', () => {
       const keys = Object.keys(middlewareExports);
       for (const key of keys) {
         // Should be camelCase or UPPER_CASE for constants
-        expect(
-          /^[a-z][a-zA-Z0-9]*$/.test(key) ||
-          /^[A-Z][A-Z0-9_]*$/.test(key)
-        ).toBe(true);
+        expect(/^[a-z][a-zA-Z0-9]*$/.test(key) || /^[A-Z][A-Z0-9_]*$/.test(key)).toBe(true);
       }
     });
 

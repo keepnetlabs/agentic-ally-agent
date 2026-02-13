@@ -106,8 +106,8 @@ describe('tool-result-validation utils', () => {
   it('validateToolResultOrThrow throws when validation fails', () => {
     const schema = z.object({ score: z.number() });
 
-    expect(() =>
-      validateToolResultOrThrow({ score: 'bad' }, schema, 'score-tool')
-    ).toThrow('Tool result validation failed for score-tool');
+    expect(() => validateToolResultOrThrow({ score: 'bad' }, schema, 'score-tool')).toThrow(
+      'Tool result validation failed for score-tool'
+    );
   });
 });

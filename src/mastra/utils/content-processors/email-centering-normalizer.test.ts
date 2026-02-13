@@ -69,7 +69,8 @@ describe('normalizeEmailCentering', () => {
   });
 
   it('should not add duplicate align=center if already present', () => {
-    const input = '<table><tr><td align="center"><table style="max-width: 600px;"><tr><td>Content</td></tr></table></td></tr></table>';
+    const input =
+      '<table><tr><td align="center"><table style="max-width: 600px;"><tr><td>Content</td></tr></table></td></tr></table>';
     const out = normalizeEmailCentering(input);
     const matches = out.match(/align=['"]center['"]/gi);
     expect(matches?.length).toBeLessThanOrEqual(2); // One on td, one on table
@@ -105,7 +106,8 @@ describe('normalizeEmailCentering', () => {
   });
 
   it('should preserve existing styles when adding margin', () => {
-    const input = '<table><tr><td><table style="max-width: 600px; background: red;"><tr><td>Content</td></tr></table></td></tr></table>';
+    const input =
+      '<table><tr><td><table style="max-width: 600px; background: red;"><tr><td>Content</td></tr></table></td></tr></table>';
     const out = normalizeEmailCentering(input);
     expect(out).toMatch(/background:\s*red/i);
     expect(out).toMatch(/margin:\s*0\s*auto/i);
@@ -146,26 +148,30 @@ describe('normalizeEmailCentering', () => {
   });
 
   it('should handle whitespace before table tag', () => {
-    const input = '<table><tr><td>  \n  <table style="max-width: 600px;"><tr><td>Content</td></tr></table></td></tr></table>';
+    const input =
+      '<table><tr><td>  \n  <table style="max-width: 600px;"><tr><td>Content</td></tr></table></td></tr></table>';
     const out = normalizeEmailCentering(input);
     expect(out).toMatch(/<td[^>]*align=['"]center['"]/i);
   });
 
   it('should preserve case of existing attributes', () => {
-    const input = '<table><tr><td CLASS="test"><table style="max-width: 600px;"><tr><td>Content</td></tr></table></td></tr></table>';
+    const input =
+      '<table><tr><td CLASS="test"><table style="max-width: 600px;"><tr><td>Content</td></tr></table></td></tr></table>';
     const out = normalizeEmailCentering(input);
     expect(out).toContain('CLASS="test"');
   });
 
   it('should handle multiple attributes on td', () => {
-    const input = '<table><tr><td class="wrapper" id="main"><table style="max-width: 600px;"><tr><td>Content</td></tr></table></td></tr></table>';
+    const input =
+      '<table><tr><td class="wrapper" id="main"><table style="max-width: 600px;"><tr><td>Content</td></tr></table></td></tr></table>';
     const out = normalizeEmailCentering(input);
     expect(out).toMatch(/<td[^>]*class="wrapper"[^>]*align=['"]center['"]/i);
     expect(out).toContain('id="main"');
   });
 
   it('should handle multiple attributes on table', () => {
-    const input = '<table><tr><td><table class="main" style="max-width: 600px;" border="0"><tr><td>Content</td></tr></table></td></tr></table>';
+    const input =
+      '<table><tr><td><table class="main" style="max-width: 600px;" border="0"><tr><td>Content</td></tr></table></td></tr></table>';
     const out = normalizeEmailCentering(input);
     expect(out).toContain('class="main"');
     expect(out).toContain('border="0"');
@@ -185,7 +191,8 @@ describe('normalizeEmailCentering', () => {
   });
 
   it('should not add margin if already present', () => {
-    const input = '<table><tr><td><table style="max-width: 600px; margin: 0 auto;"><tr><td>Content</td></tr></table></td></tr></table>';
+    const input =
+      '<table><tr><td><table style="max-width: 600px; margin: 0 auto;"><tr><td>Content</td></tr></table></td></tr></table>';
     const out = normalizeEmailCentering(input);
     const marginMatches = out.match(/margin:\s*0\s*auto/gi);
     expect(marginMatches?.length).toBe(1);
@@ -226,7 +233,8 @@ describe('normalizeEmailCentering', () => {
   });
 
   it('should preserve email structure integrity', () => {
-    const input = '<table><tr><td><table style="max-width: 600px;"><tr><td style="text-align: left;">Content</td></tr></table></td></tr></table>';
+    const input =
+      '<table><tr><td><table style="max-width: 600px;"><tr><td style="text-align: left;">Content</td></tr></table></td></tr></table>';
     const out = normalizeEmailCentering(input);
     expect(out).toContain('text-align: left');
     expect(out).toMatch(/<td[^>]*align=['"]center['"]/i);
@@ -239,7 +247,8 @@ describe('normalizeEmailCentering', () => {
   });
 
   it('should handle mixed quotes in attributes', () => {
-    const input = '<table><tr><td class="wrapper"><table style=\'max-width: 600px;\'><tr><td>Content</td></tr></table></td></tr></table>';
+    const input =
+      '<table><tr><td class="wrapper"><table style=\'max-width: 600px;\'><tr><td>Content</td></tr></table></td></tr></table>';
     const out = normalizeEmailCentering(input);
     expect(out).toMatch(/align=['"]center['"]/i);
   });
@@ -252,7 +261,8 @@ describe('normalizeEmailCentering', () => {
   });
 
   it('should not modify table content', () => {
-    const input = '<table><tr><td><table style="max-width: 600px;"><tr><td>Important content that should not change</td></tr></table></td></tr></table>';
+    const input =
+      '<table><tr><td><table style="max-width: 600px;"><tr><td>Important content that should not change</td></tr></table></td></tr></table>';
     const out = normalizeEmailCentering(input);
     expect(out).toContain('Important content that should not change');
   });
@@ -270,7 +280,8 @@ describe('normalizeEmailCentering', () => {
   });
 
   it('should preserve HTML entities', () => {
-    const input = '<table><tr><td><table style="max-width: 600px;"><tr><td>&nbsp;&amp;&lt;&gt;</td></tr></table></td></tr></table>';
+    const input =
+      '<table><tr><td><table style="max-width: 600px;"><tr><td>&nbsp;&amp;&lt;&gt;</td></tr></table></td></tr></table>';
     const out = normalizeEmailCentering(input);
     expect(out).toContain('&nbsp;');
     expect(out).toContain('&amp;');
@@ -286,5 +297,3 @@ describe('normalizeEmailCentering', () => {
     expect(out).toContain('A'.repeat(10000));
   });
 });
-
-

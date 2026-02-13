@@ -22,8 +22,14 @@ import { LOW_DETERMINISM_PARAMS } from '../../utils/config/llm-generation-params
 const logger = getLogger('VishingConversationsSummaryTool');
 
 const DEFAULT_NEXT_STEPS: readonly { title: string; description: string }[] = [
-  { title: 'Verifying Caller Identity', description: 'Always verify the caller through official channels before sharing any information.' },
-  { title: 'Never Share OTPs or Passwords', description: 'Legitimate organizations never ask for passwords or one-time codes over the phone.' },
+  {
+    title: 'Verifying Caller Identity',
+    description: 'Always verify the caller through official channels before sharing any information.',
+  },
+  {
+    title: 'Never Share OTPs or Passwords',
+    description: 'Legitimate organizations never ask for passwords or one-time codes over the phone.',
+  },
 ] as const;
 
 const STATUS_CARD_BY_OUTCOME: Record<string, VishingStatusCard> = {
@@ -55,24 +61,26 @@ export type VishingMessage = { role: 'agent' | 'user'; text: string; timestamp?:
 function parseNextSteps(raw: unknown): { title: string; description: string }[] {
   if (!Array.isArray(raw)) return [...DEFAULT_NEXT_STEPS];
   const validated = raw
-    .map((item) => VishingNextStepCardSchema.safeParse(item))
+    .map(item => VishingNextStepCardSchema.safeParse(item))
     .filter((r): r is { success: true; data: { title: string; description: string } } => r.success)
-    .map((r) => r.data);
+    .map(r => r.data);
   return validated.length > 0 ? validated : [...DEFAULT_NEXT_STEPS];
 }
 
 function buildMessagesPrompt(messages: VishingMessage[]): string {
   return messages
-    .map((m) => {
+    .map(m => {
       const ts = m.timestamp !== undefined && m.timestamp !== null ? `[${m.timestamp}s] ` : '';
       return `${ts}${m.role === 'agent' ? 'Agent' : 'User'}: ${m.text}`;
     })
     .join('\n');
 }
 
-export async function generateVishingConversationsSummary(
-  messages: VishingMessage[]
-): Promise<{ summary: VishingConversationsSummary; nextSteps: { title: string; description: string }[]; statusCard: VishingStatusCard }> {
+export async function generateVishingConversationsSummary(messages: VishingMessage[]): Promise<{
+  summary: VishingConversationsSummary;
+  nextSteps: { title: string; description: string }[];
+  statusCard: VishingStatusCard;
+}> {
   const conversationText = buildMessagesPrompt(messages);
 
   const systemPrompt = `You are a senior security training analyst specializing in social engineering and vishing (voice phishing) assessments. Analyze this transcript from a simulated vishing call and produce a structured debrief for the learner.
@@ -152,16 +160,13 @@ Return ONLY the JSON object. No markdown, no code blocks, no extra text.`;
   } else {
     parsed = VishingConversationsSummaryOutputSchema.parse(raw);
   }
-  const statusCard =
-    STATUS_CARD_BY_OUTCOME[parsed.summary.outcome] ?? STATUS_CARD_BY_OUTCOME.other;
+  const statusCard = STATUS_CARD_BY_OUTCOME[parsed.summary.outcome] ?? STATUS_CARD_BY_OUTCOME.other;
 
   const statusCardValidated = VishingStatusCardSchema.parse(statusCard);
 
   // Enforce: refused/detected/other must have empty disclosedInfo
   const summary =
-    parsed.summary.outcome === 'data_disclosed'
-      ? parsed.summary
-      : { ...parsed.summary, disclosedInfo: [] };
+    parsed.summary.outcome === 'data_disclosed' ? parsed.summary : { ...parsed.summary, disclosedInfo: [] };
 
   return {
     summary,

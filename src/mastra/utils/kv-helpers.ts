@@ -28,17 +28,15 @@ export async function loadInboxWithFallback(
   sourceLanguage: string
 ): Promise<any | null> {
   const primaryKey = CLOUDFLARE_KV.KEY_TEMPLATES.inbox(microlearningId, department, sourceLanguage);
-  const fallbackKey = sourceLanguage !== LANGUAGE.DEFAULT_SOURCE
-    ? CLOUDFLARE_KV.KEY_TEMPLATES.inbox(microlearningId, department, LANGUAGE.DEFAULT_SOURCE)
-    : undefined;
+  const fallbackKey =
+    sourceLanguage !== LANGUAGE.DEFAULT_SOURCE
+      ? CLOUDFLARE_KV.KEY_TEMPLATES.inbox(microlearningId, department, LANGUAGE.DEFAULT_SOURCE)
+      : undefined;
 
   try {
     logger.info('Loading base inbox from KV', { microlearningId, department, sourceLanguage });
 
-    const data = await withRetry(
-      () => kvService.get(primaryKey),
-      `KV load inbox primary ${primaryKey}`
-    );
+    const data = await withRetry(() => kvService.get(primaryKey), `KV load inbox primary ${primaryKey}`);
     if (data) {
       logger.info('Found base inbox in KV', { key: primaryKey });
       return data;
@@ -48,13 +46,10 @@ export async function loadInboxWithFallback(
     if (fallbackKey) {
       logger.info(`Primary inbox not found, trying fallback to ${LANGUAGE.DEFAULT_SOURCE}`, {
         primaryKey,
-        fallbackKey
+        fallbackKey,
       });
 
-      const fallbackData = await withRetry(
-        () => kvService.get(fallbackKey),
-        `KV load inbox fallback ${fallbackKey}`
-      );
+      const fallbackData = await withRetry(() => kvService.get(fallbackKey), `KV load inbox fallback ${fallbackKey}`);
       if (fallbackData) {
         logger.info(`Found fallback inbox in ${LANGUAGE.DEFAULT_SOURCE}`, { fallbackKey });
         return fallbackData;
@@ -63,7 +58,6 @@ export async function loadInboxWithFallback(
 
     logger.warn('Base inbox not found in KV', { primaryKey, fallbackKey });
     return null;
-
   } catch (error) {
     const err = normalizeError(error);
     const errorInfo = errorService.external(err.message, {

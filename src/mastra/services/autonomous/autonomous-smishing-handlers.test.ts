@@ -31,15 +31,9 @@ vi.mock('../error-service', () => ({
 }));
 
 describe('autonomous-smishing-handlers', () => {
-  const mockSmishingExecute = vi.mocked(
-    (orchestrationModule as any).smishingWorkflowExecutorTool.execute
-  );
-  const mockUploadExecute = vi.mocked(
-    (userManagementModule as any).uploadSmishingTool.execute
-  );
-  const mockAssignExecute = vi.mocked(
-    (userManagementModule as any).assignSmishingTool.execute
-  );
+  const mockSmishingExecute = vi.mocked((orchestrationModule as any).smishingWorkflowExecutorTool.execute);
+  const mockUploadExecute = vi.mocked((userManagementModule as any).uploadSmishingTool.execute);
+  const mockAssignExecute = vi.mocked((userManagementModule as any).assignSmishingTool.execute);
 
   const baseSimulation = {
     title: 'SMS Verification Alert',

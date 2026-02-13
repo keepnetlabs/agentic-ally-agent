@@ -21,7 +21,7 @@ const mocks = vi.hoisted(() => ({
   loggerInfo: vi.fn(),
   loggerWarn: vi.fn(),
   loggerError: vi.fn(),
-  loggerDebug: vi.fn()
+  loggerDebug: vi.fn(),
 }));
 
 vi.mock('ai', () => ({
@@ -35,89 +35,89 @@ vi.mock('../services/kv-service', () => ({
       saveSmishingSms: mocks.saveSmishingSms,
       saveSmishingLandingPage: mocks.saveSmishingLandingPage,
     };
-  })
+  }),
 }));
 
 vi.mock('../services/product-service', () => ({
   ProductService: vi.fn().mockImplementation(function () {
     return {
-      getWhitelabelingConfig: mocks.getWhitelabelingConfig
+      getWhitelabelingConfig: mocks.getWhitelabelingConfig,
     };
-  })
+  }),
 }));
 
 vi.mock('../constants', () => ({
   LANDING_PAGE: {
     FLOWS: {
       'Click-Only': ['login'],
-      'Data-Submission': ['login', 'verify']
+      'Data-Submission': ['login', 'verify'],
     },
-    PAGE_TYPES: ['login', 'verify', 'success', 'info']
+    PAGE_TYPES: ['login', 'verify', 'success', 'info'],
   },
   STRING_TRUNCATION: {
     LOGO_URL_PREFIX_LENGTH: 20,
-    LOGO_URL_PREFIX_LENGTH_ALT: 20
+    LOGO_URL_PREFIX_LENGTH_ALT: 20,
   },
   KV_NAMESPACES: {
-    SMISHING: 'SMISHING_KV'
+    SMISHING: 'SMISHING_KV',
   },
   SMISHING: {
     DIFFICULTY_LEVELS: ['Easy', 'Medium', 'Hard'],
     DEFAULT_DIFFICULTY: 'Medium',
     ATTACK_METHODS: ['Click-Only', 'Data-Submission'],
-    DEFAULT_ATTACK_METHOD: 'Data-Submission'
+    DEFAULT_ATTACK_METHOD: 'Data-Submission',
   },
   PHISHING_EMAIL: {
-    MAX_DESCRIPTION_LENGTH: 300
-  }
+    MAX_DESCRIPTION_LENGTH: 300,
+  },
 }));
 
 vi.mock('../model-providers', () => ({
-  getModelWithOverride: vi.fn().mockReturnValue('mock-model')
+  getModelWithOverride: vi.fn().mockReturnValue('mock-model'),
 }));
 
 vi.mock('../utils/core/error-utils', () => ({
-  normalizeError: vi.fn((err) => err instanceof Error ? err : new Error(String(err))),
-  logErrorInfo: vi.fn()
+  normalizeError: vi.fn(err => (err instanceof Error ? err : new Error(String(err)))),
+  logErrorInfo: vi.fn(),
 }));
 
 vi.mock('../services/error-service', () => ({
   errorService: {
-    validation: vi.fn((msg) => ({ message: msg, code: 'VALIDATION_ERROR' })),
+    validation: vi.fn(msg => ({ message: msg, code: 'VALIDATION_ERROR' })),
     aiModel: vi.fn((msg, _details) => ({ message: msg, code: 'AI_GENERATION_FAILED' })),
-    external: vi.fn((msg, _details) => ({ message: msg, code: 'EXTERNAL_SERVICE_ERROR' }))
-  }
+    external: vi.fn((msg, _details) => ({ message: msg, code: 'EXTERNAL_SERVICE_ERROR' })),
+  },
 }));
 
 vi.mock('../utils/phishing/brand-resolver', () => ({
   resolveLogoAndBrand: mocks.resolveLogoAndBrand,
-  generateContextualBrand: mocks.generateContextualBrand
+  generateContextualBrand: mocks.generateContextualBrand,
 }));
 
 vi.mock('../utils/landing-page', () => ({
   detectIndustry: mocks.detectIndustry,
   validateLandingPage: mocks.validateLandingPage,
   logValidationResults: vi.fn(),
-  fixBrokenImages: mocks.fixBrokenImages
+  fixBrokenImages: mocks.fixBrokenImages,
 }));
 
 vi.mock('../utils/landing-page/image-validator', () => ({
   validateImageUrlCached: mocks.validateImageUrlCached,
   normalizeImgAttributes: mocks.normalizeImgAttributes,
-  DEFAULT_GENERIC_LOGO: 'default-logo.png'
+  DEFAULT_GENERIC_LOGO: 'default-logo.png',
 }));
 
 vi.mock('../utils/content-processors/phishing-html-postprocessors', () => ({
-  postProcessPhishingLandingHtml: mocks.postProcessPhishingLandingHtml
+  postProcessPhishingLandingHtml: mocks.postProcessPhishingLandingHtml,
 }));
 
 vi.mock('../utils/kv-consistency', () => ({
   waitForKVConsistency: mocks.waitForKVConsistency,
-  buildExpectedSmishingKeys: vi.fn().mockReturnValue([])
+  buildExpectedSmishingKeys: vi.fn().mockReturnValue([]),
 }));
 
 vi.mock('../utils/core/resilience-utils', () => ({
-  withRetry: mocks.withRetry
+  withRetry: mocks.withRetry,
 }));
 
 vi.mock('../utils/core/logger', () => ({
@@ -125,21 +125,21 @@ vi.mock('../utils/core/logger', () => ({
     info: mocks.loggerInfo,
     warn: mocks.loggerWarn,
     error: mocks.loggerError,
-    debug: mocks.loggerDebug
-  })
+    debug: mocks.loggerDebug,
+  }),
 }));
 
 vi.mock('../utils/prompt-builders/smishing-prompts', () => ({
   buildSmishingAnalysisPrompts: vi.fn().mockReturnValue({ systemPrompt: 'sys', userPrompt: 'usr' }),
-  buildSmishingSmsPrompts: vi.fn().mockReturnValue({ systemPrompt: 'sys', userPrompt: 'usr' })
+  buildSmishingSmsPrompts: vi.fn().mockReturnValue({ systemPrompt: 'sys', userPrompt: 'usr' }),
 }));
 
 vi.mock('../utils/prompt-builders/phishing-prompts', () => ({
-  buildLandingPagePrompts: vi.fn().mockReturnValue({ systemPrompt: 'sys', userPrompt: 'usr' })
+  buildLandingPagePrompts: vi.fn().mockReturnValue({ systemPrompt: 'sys', userPrompt: 'usr' }),
 }));
 
 vi.mock('../utils/core/reasoning-stream', () => ({
-  streamDirectReasoning: mocks.streamDirectReasoning
+  streamDirectReasoning: mocks.streamDirectReasoning,
 }));
 
 describe('CreateSmishingWorkflow', () => {
@@ -150,32 +150,32 @@ describe('CreateSmishingWorkflow', () => {
     mocks.saveSmishingSms.mockResolvedValue(true);
     mocks.saveSmishingLandingPage.mockResolvedValue(true);
     mocks.getWhitelabelingConfig.mockResolvedValue({
-      mainLogoUrl: 'https://whitelabel.com/logo.png'
+      mainLogoUrl: 'https://whitelabel.com/logo.png',
     });
     mocks.resolveLogoAndBrand.mockResolvedValue({
       logoUrl: 'https://logo.com/logo.png',
       brandName: 'TestBrand',
       isRecognizedBrand: true,
-      brandColors: { primary: '#000', secondary: '#fff', accent: '#f00' }
+      brandColors: { primary: '#000', secondary: '#fff', accent: '#f00' },
     });
     mocks.generateContextualBrand.mockResolvedValue({
       brandName: 'ContextBrand',
-      logoUrl: 'https://context.com/logo.png'
+      logoUrl: 'https://context.com/logo.png',
     });
     mocks.detectIndustry.mockResolvedValue({
       industry: 'Technology',
       colors: { primary: '#000', secondary: '#111', accent: '#222', gradient: 'linear-gradient(#000,#111)' },
       typography: { headingClass: 'h', bodyClass: 'b' },
       patterns: { cardStyle: 'card', buttonStyle: 'btn', inputStyle: 'input' },
-      logoExample: 'logo'
+      logoExample: 'logo',
     });
     mocks.validateLandingPage.mockReturnValue({ isValid: true, errors: [] });
-    mocks.fixBrokenImages.mockImplementation((html) => html);
+    mocks.fixBrokenImages.mockImplementation(html => html);
     mocks.validateImageUrlCached.mockResolvedValue(true);
-    mocks.normalizeImgAttributes.mockImplementation((html) => html);
+    mocks.normalizeImgAttributes.mockImplementation(html => html);
     mocks.postProcessPhishingLandingHtml.mockImplementation(({ html }) => html);
     mocks.waitForKVConsistency.mockResolvedValue(true);
-    mocks.withRetry.mockImplementation(async (fn) => await fn());
+    mocks.withRetry.mockImplementation(async fn => await fn());
 
     mocks.generateText.mockResolvedValue({
       text: JSON.stringify({
@@ -190,8 +190,8 @@ describe('CreateSmishingWorkflow', () => {
         targetAudienceAnalysis: 'Fits IT',
         messageStrategy: 'Short alert',
         messages: ['Update at {PHISHINGURL}'],
-        pages: [{ type: 'login', template: '<html>Login</html>' }]
-      })
+        pages: [{ type: 'login', template: '<html>Login</html>' }],
+      }),
     });
   });
 
@@ -202,7 +202,7 @@ describe('CreateSmishingWorkflow', () => {
       language: 'en-gb',
       difficulty: 'Medium' as const,
       method: 'Click-Only' as const,
-      targetProfile: { department: 'IT' }
+      targetProfile: { department: 'IT' },
     };
 
     const result = await run.start({ inputData: input });
@@ -223,7 +223,7 @@ describe('CreateSmishingWorkflow', () => {
       topic: 'No SMS',
       language: 'en-gb',
       includeSms: false,
-      includeLandingPage: false
+      includeLandingPage: false,
     };
 
     const result = await run.start({ inputData: input });
@@ -243,7 +243,7 @@ describe('CreateSmishingWorkflow', () => {
       topic: 'No Landing',
       language: 'en-gb',
       includeSms: true,
-      includeLandingPage: false
+      includeLandingPage: false,
     };
 
     const result = await run.start({ inputData: input });
@@ -269,21 +269,21 @@ describe('CreateSmishingWorkflow', () => {
           tone: 'Urgent',
           keyRedFlags: ['Odd link'],
           targetAudienceAnalysis: 'Fits IT',
-          messageStrategy: 'Short alert'
-        })
+          messageStrategy: 'Short alert',
+        }),
       })
       .mockResolvedValueOnce({
-        text: JSON.stringify({ messages: ['No link here'] })
+        text: JSON.stringify({ messages: ['No link here'] }),
       })
       .mockResolvedValueOnce({
-        text: JSON.stringify({ messages: ['Now with {PHISHINGURL}'] })
+        text: JSON.stringify({ messages: ['Now with {PHISHINGURL}'] }),
       });
 
     const run = await createSmishingWorkflow.createRunAsync();
     const input = {
       topic: 'Retry SMS',
       language: 'en-gb',
-      includeLandingPage: false
+      includeLandingPage: false,
     };
 
     const result = await run.start({ inputData: input });
@@ -299,8 +299,8 @@ describe('CreateSmishingWorkflow', () => {
       text: JSON.stringify({
         name: 'Missing Scenario',
         description: 'Test',
-        method: 'Click-Only'
-      })
+        method: 'Click-Only',
+      }),
     });
 
     const run = await createSmishingWorkflow.createRunAsync();
@@ -320,8 +320,8 @@ describe('CreateSmishingWorkflow', () => {
         name: 'Long Description',
         description: 'A'.repeat(500),
         category: 'Urgency',
-        method: 'Click-Only'
-      })
+        method: 'Click-Only',
+      }),
     });
 
     const run = await createSmishingWorkflow.createRunAsync();
@@ -330,8 +330,8 @@ describe('CreateSmishingWorkflow', () => {
         topic: 'Long Description',
         language: 'en-gb',
         includeSms: false,
-        includeLandingPage: false
-      }
+        includeLandingPage: false,
+      },
     });
 
     expect(result.status).toBe('success');
@@ -343,7 +343,7 @@ describe('CreateSmishingWorkflow', () => {
     mocks.resolveLogoAndBrand.mockResolvedValueOnce({
       logoUrl: '',
       brandName: '',
-      isRecognizedBrand: false
+      isRecognizedBrand: false,
     });
     const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.1);
 
@@ -353,8 +353,8 @@ describe('CreateSmishingWorkflow', () => {
         topic: 'Generic Internal Notice',
         language: 'en-gb',
         includeSms: false,
-        includeLandingPage: false
-      }
+        includeLandingPage: false,
+      },
     });
 
     expect(result.status).toBe('success');
@@ -372,14 +372,14 @@ describe('CreateSmishingWorkflow', () => {
           name: 'Retry Fail',
           description: 'Test',
           category: 'Urgency',
-          method: 'Click-Only'
-        })
+          method: 'Click-Only',
+        }),
       })
       .mockResolvedValueOnce({
-        text: JSON.stringify({ messages: ['Message without link'] })
+        text: JSON.stringify({ messages: ['Message without link'] }),
       })
       .mockResolvedValueOnce({
-        text: JSON.stringify({ messages: ['Still no link'] })
+        text: JSON.stringify({ messages: ['Still no link'] }),
       });
 
     const run = await createSmishingWorkflow.createRunAsync();
@@ -387,8 +387,8 @@ describe('CreateSmishingWorkflow', () => {
       inputData: {
         topic: 'Retry Link Missing',
         language: 'en-gb',
-        includeLandingPage: false
-      }
+        includeLandingPage: false,
+      },
     });
 
     expect(result.status).toBe('failed');
@@ -402,8 +402,8 @@ describe('CreateSmishingWorkflow', () => {
         name: 'No Language',
         description: 'Test',
         category: 'Urgency',
-        method: 'Click-Only'
-      })
+        method: 'Click-Only',
+      }),
     });
 
     const run = await createSmishingWorkflow.createRunAsync();
@@ -411,15 +411,11 @@ describe('CreateSmishingWorkflow', () => {
       inputData: {
         topic: 'Missing Language',
         includeSms: false,
-        includeLandingPage: false
-      } as any
+        includeLandingPage: false,
+      } as any,
     });
 
     expect(result.status).toBe('success');
-    expect(mocks.saveSmishingBase).toHaveBeenCalledWith(
-      expect.any(String),
-      expect.any(Object),
-      'en-gb'
-    );
+    expect(mocks.saveSmishingBase).toHaveBeenCalledWith(expect.any(String), expect.any(Object), 'en-gb');
   });
 });

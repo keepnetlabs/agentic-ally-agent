@@ -20,7 +20,6 @@ import { Agent } from '@mastra/core/agent';
 import { ChatRequestBody } from '../types/api-types';
 import { resolveLogLevel } from './core/logger';
 
-
 const logger = new PinoLogger({
   name: 'ChatOrchestration',
   level: resolveLogLevel(),
@@ -61,11 +60,7 @@ export const extractAndPrepareThreadId = (body: ChatRequestBody): string => {
  * @param model - Optional model name (e.g., 'gpt-oss-120b')
  * @returns Final prompt with model instructions prepended (if applicable)
  */
-export const buildFinalPromptWithModelOverride = (
-  prompt: string,
-  modelProvider?: string,
-  model?: string
-): string => {
+export const buildFinalPromptWithModelOverride = (prompt: string, modelProvider?: string, model?: string): string => {
   if (modelProvider || model) {
     logger.info('model_override_received', { modelProvider, model });
   }
@@ -73,11 +68,12 @@ export const buildFinalPromptWithModelOverride = (
   let finalPrompt = prompt;
 
   if (modelProvider || model) {
-    const modelInstruction = modelProvider && model
-      ? `[Use this model: ${modelProvider} - ${model}]\n\n`
-      : modelProvider
-        ? `[Use this model provider: ${modelProvider}]\n\n`
-        : '';
+    const modelInstruction =
+      modelProvider && model
+        ? `[Use this model: ${modelProvider} - ${model}]\n\n`
+        : modelProvider
+          ? `[Use this model provider: ${modelProvider}]\n\n`
+          : '';
     finalPrompt = modelInstruction + prompt;
   }
 
@@ -95,22 +91,19 @@ export const buildFinalPromptWithModelOverride = (
  * @returns Route result with selected agent name and optional task context
  * @throws Error if routing fails
  */
-export const routeToAgent = async (
-  mastra: Mastra,
-  orchestratorInput: string
-) => {
+export const routeToAgent = async (mastra: Mastra, orchestratorInput: string) => {
   const router = new AgentRouter(mastra);
   const routeResult = await router.route(orchestratorInput);
 
   // Debug: Routing response from orchestrator
   logger.info('✅ ORCHESTRATOR_RESPONSE Response from orchestrator', {
     agentName: routeResult.agentName,
-    taskContext: routeResult.taskContext
+    taskContext: routeResult.taskContext,
   });
 
   logger.info('agent_routing_successful', {
     agentName: routeResult.agentName,
-    taskContext: routeResult.taskContext
+    taskContext: routeResult.taskContext,
   });
   return routeResult;
 };
@@ -138,11 +131,10 @@ export const createAgentStream = async (
     format: 'aisdk',
     memory: {
       thread: threadId,
-      resource: 'agentic-ally-user'
+      resource: 'agentic-ally-user',
     },
   });
 
   logger.info('stream_created_successfully', { agentName });
   return stream;
 };
-

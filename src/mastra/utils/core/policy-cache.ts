@@ -8,11 +8,7 @@ import { getRequestContext } from './request-storage';
 import { extractCompanyIdFromTokenExport } from './policy-fetcher';
 import { withRetry, withTimeout } from './resilience-utils';
 import { truncateText } from './text-utils';
-import {
-  POLICY_SUMMARY_TIMEOUT_MS,
-  MAX_POLICY_INPUT_CHARS,
-  buildHeuristicPolicySummary,
-} from './policy-summary-utils';
+import { POLICY_SUMMARY_TIMEOUT_MS, MAX_POLICY_INPUT_CHARS, buildHeuristicPolicySummary } from './policy-summary-utils';
 import { LOW_DETERMINISM_PARAMS } from '../config/llm-generation-params';
 
 const logger = getLogger('PolicyCache');

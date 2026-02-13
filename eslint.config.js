@@ -11,6 +11,7 @@ export default [
       'scripts/**',
       '*.config.js',
       '*.config.ts',
+      '**/coverage/**',
     ],
   },
   {

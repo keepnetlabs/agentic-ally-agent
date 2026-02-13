@@ -1,4 +1,3 @@
-
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { updateMicrolearningWorkflow } from './update-microlearning-workflow';
 
@@ -14,7 +13,7 @@ const mocks = vi.hoisted(() => ({
   loggerInfo: vi.fn(),
   loggerWarn: vi.fn(),
   loggerError: vi.fn(),
-  loggerDebug: vi.fn()
+  loggerDebug: vi.fn(),
 }));
 
 // Mock Services and Utils
@@ -22,38 +21,38 @@ vi.mock('../services/kv-service', () => ({
   KVService: vi.fn().mockImplementation(function () {
     return {
       get: mocks.kvGet,
-      put: mocks.kvPut
+      put: mocks.kvPut,
     };
-  })
+  }),
 }));
 
 vi.mock('../services/product-service', () => ({
   ProductService: vi.fn().mockImplementation(function () {
     return {
-      getWhitelabelingConfig: mocks.getWhitelabelingConfig
+      getWhitelabelingConfig: mocks.getWhitelabelingConfig,
     };
-  })
+  }),
 }));
 
 vi.mock('../utils/phishing/brand-resolver', () => ({
-  resolveLogoAndBrand: mocks.resolveLogoAndBrand
+  resolveLogoAndBrand: mocks.resolveLogoAndBrand,
 }));
 
 vi.mock('../utils/theme/theme-color-normalizer', () => ({
-  normalizeThemeBackgroundClass: mocks.normalizeThemeBackgroundClass
+  normalizeThemeBackgroundClass: mocks.normalizeThemeBackgroundClass,
 }));
 
 vi.mock('../utils/microlearning/logo-utils', () => ({
-  handleLogoHallucination: mocks.handleLogoHallucination
+  handleLogoHallucination: mocks.handleLogoHallucination,
 }));
 
 vi.mock('../utils/kv-consistency', () => ({
   waitForKVConsistency: vi.fn().mockResolvedValue(true),
-  buildExpectedKVKeys: vi.fn().mockReturnValue([])
+  buildExpectedKVKeys: vi.fn().mockReturnValue([]),
 }));
 
 vi.mock('../utils/core/resilience-utils', () => ({
-  withRetry: vi.fn().mockImplementation((fn) => fn())
+  withRetry: vi.fn().mockImplementation(fn => fn()),
 }));
 
 vi.mock('../utils/core/logger', () => ({
@@ -61,8 +60,8 @@ vi.mock('../utils/core/logger', () => ({
     info: mocks.loggerInfo,
     warn: mocks.loggerWarn,
     error: mocks.loggerError,
-    debug: mocks.loggerDebug
-  })
+    debug: mocks.loggerDebug,
+  }),
 }));
 
 describe('UpdateMicrolearningWorkflow', () => {
@@ -73,15 +72,15 @@ describe('UpdateMicrolearningWorkflow', () => {
     mocks.kvGet.mockResolvedValue({
       version: 1,
       theme: { colors: { background: 'bg-black' } },
-      microlearning_metadata: { language: 'en' }
+      microlearning_metadata: { language: 'en' },
     });
     mocks.kvPut.mockResolvedValue(true);
     mocks.getWhitelabelingConfig.mockResolvedValue({
-      mainLogoUrl: 'https://whitelabel.com/logo.png'
+      mainLogoUrl: 'https://whitelabel.com/logo.png',
     });
     mocks.resolveLogoAndBrand.mockResolvedValue({ logoUrl: 'https://logo.com/logo.png' });
     mocks.normalizeThemeBackgroundClass.mockResolvedValue('bg-white');
-    mocks.handleLogoHallucination.mockImplementation((updates) => updates);
+    mocks.handleLogoHallucination.mockImplementation(updates => updates);
   });
 
   it('should execute successfully with valid updates', async () => {
@@ -91,8 +90,8 @@ describe('UpdateMicrolearningWorkflow', () => {
       microlearningId: 'ml-123',
       department: 'IT',
       updates: {
-        theme: { colors: { background: 'bg-blue-500' } }
-      }
+        theme: { colors: { background: 'bg-blue-500' } },
+      },
     };
 
     const workflowResult = await run.start({ inputData: input });
@@ -116,7 +115,7 @@ describe('UpdateMicrolearningWorkflow', () => {
 
     const input = {
       microlearningId: 'missing-ml',
-      updates: {}
+      updates: {},
     };
 
     try {
@@ -133,8 +132,8 @@ describe('UpdateMicrolearningWorkflow', () => {
       microlearningId: 'ml-123',
       updates: {
         useWhitelabelLogo: true,
-        theme: {}
-      }
+        theme: {},
+      },
     };
 
     await run.start({ inputData: input });
@@ -150,8 +149,8 @@ describe('UpdateMicrolearningWorkflow', () => {
       microlearningId: 'ml-123',
       updates: {
         useWhitelabelLogo: true,
-        theme: {}
-      }
+        theme: {},
+      },
     };
 
     const workflowResult = await run.start({ inputData: input });
@@ -169,8 +168,8 @@ describe('UpdateMicrolearningWorkflow', () => {
       microlearningId: 'ml-brand-test',
       updates: {
         brandName: 'NewBrand',
-        theme: {}
-      }
+        theme: {},
+      },
     };
 
     const workflowResult = await run.start({ inputData: input });
@@ -187,9 +186,9 @@ describe('UpdateMicrolearningWorkflow', () => {
       microlearningId: 'ml-nested-brand',
       updates: {
         theme: {
-          brandName: 'NestedBrand'
-        }
-      }
+          brandName: 'NestedBrand',
+        },
+      },
     } as any;
 
     await run.start({ inputData: input });
@@ -207,7 +206,7 @@ describe('UpdateMicrolearningWorkflow', () => {
 
     const input = {
       microlearningId: 'ml-save-fail',
-      updates: { theme: {} }
+      updates: { theme: {} },
     };
 
     const workflowResult = await run.start({ inputData: input });
@@ -224,9 +223,9 @@ describe('UpdateMicrolearningWorkflow', () => {
       microlearningId: 'ml-color-test',
       updates: {
         theme: {
-          colors: { background: 'raw-red' }
-        }
-      }
+          colors: { background: 'raw-red' },
+        },
+      },
     };
 
     const workflowResult = await run.start({ inputData: input });
@@ -244,8 +243,8 @@ describe('UpdateMicrolearningWorkflow', () => {
       microlearningId: 'ml-whitelabel-empty',
       updates: {
         useWhitelabelLogo: true,
-        theme: {}
-      }
+        theme: {},
+      },
     };
 
     const workflowResult = await run.start({ inputData: input });
@@ -266,8 +265,8 @@ describe('UpdateMicrolearningWorkflow', () => {
       microlearningId: 'ml-brand-no-logo',
       updates: {
         brandName: 'NoLogoBrand',
-        theme: {}
-      }
+        theme: {},
+      },
     };
 
     const workflowResult = await run.start({ inputData: input });
@@ -286,32 +285,29 @@ describe('UpdateMicrolearningWorkflow', () => {
       microlearningId: 'ml-no-brand-update',
       updates: {
         theme: {
-          colors: { background: 'bg-green-500' }
-        }
-      }
+          colors: { background: 'bg-green-500' },
+        },
+      },
     };
 
     const workflowResult = await run.start({ inputData: input });
     const result = (workflowResult as any).result;
 
     expect(result.success).toBe(true);
-    expect(mocks.loggerDebug).toHaveBeenCalledWith(
-      'No brand updates detected',
-      expect.any(Object)
-    );
+    expect(mocks.loggerDebug).toHaveBeenCalledWith('No brand updates detected', expect.any(Object));
   });
 
   it('should fallback language and department when missing from content and input', async () => {
     mocks.kvGet.mockResolvedValueOnce({
       version: 3,
       theme: { colors: { background: 'bg-black' } },
-      microlearning_metadata: {}
+      microlearning_metadata: {},
     });
 
     const run = await updateMicrolearningWorkflow.createRunAsync();
     const input = {
       microlearningId: 'ml-lang-dept-fallback',
-      updates: { theme: {} }
+      updates: { theme: {} },
     } as any;
 
     const workflowResult = await run.start({ inputData: input });
@@ -327,9 +323,9 @@ describe('UpdateMicrolearningWorkflow', () => {
       version: 1,
       theme: {
         colors: { background: 'bg-black', text: 'text-white' },
-        logo: { src: 'old.png' }
+        logo: { src: 'old.png' },
       },
-      microlearning_metadata: { language: 'en' }
+      microlearning_metadata: { language: 'en' },
     });
 
     const run = await updateMicrolearningWorkflow.createRunAsync();
@@ -337,9 +333,9 @@ describe('UpdateMicrolearningWorkflow', () => {
       microlearningId: 'ml-deep-merge',
       updates: {
         theme: {
-          colors: { background: 'bg-red-500' }
-        }
-      }
+          colors: { background: 'bg-red-500' },
+        },
+      },
     };
 
     const workflowResult = await run.start({ inputData: input });
@@ -354,7 +350,7 @@ describe('UpdateMicrolearningWorkflow', () => {
     const run = await updateMicrolearningWorkflow.createRunAsync();
     const input = {
       microlearningId: 'ml-history-test',
-      updates: { theme: { colors: { background: 'blue' } } }
+      updates: { theme: { colors: { background: 'blue' } } },
     } as any;
 
     await run.start({ inputData: input });
@@ -363,7 +359,7 @@ describe('UpdateMicrolearningWorkflow', () => {
     expect(historyPutCall).toBeDefined();
     expect(historyPutCall?.[1]).toMatchObject({
       action: 'updated',
-      version: 2
+      version: 2,
     });
   });
 });

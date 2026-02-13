@@ -20,7 +20,7 @@ const mocks = vi.hoisted(() => ({
   reportExecute: vi.fn(),
 }));
 
-vi.mock('../tools/email-ir/fetch-email', async (importOriginal) => {
+vi.mock('../tools/email-ir/fetch-email', async importOriginal => {
   const actual = await importOriginal<typeof import('../tools/email-ir/fetch-email')>();
   return {
     ...actual,
@@ -30,7 +30,7 @@ vi.mock('../tools/email-ir/fetch-email', async (importOriginal) => {
   };
 });
 
-vi.mock('../tools/email-ir/header-analysis', async (importOriginal) => {
+vi.mock('../tools/email-ir/header-analysis', async importOriginal => {
   const actual = await importOriginal<typeof import('../tools/email-ir/header-analysis')>();
   return {
     ...actual,
@@ -40,7 +40,7 @@ vi.mock('../tools/email-ir/header-analysis', async (importOriginal) => {
   };
 });
 
-vi.mock('../tools/email-ir/body-behavioral-analysis', async (importOriginal) => {
+vi.mock('../tools/email-ir/body-behavioral-analysis', async importOriginal => {
   const actual = await importOriginal<typeof import('../tools/email-ir/body-behavioral-analysis')>();
   return {
     ...actual,
@@ -50,7 +50,7 @@ vi.mock('../tools/email-ir/body-behavioral-analysis', async (importOriginal) => 
   };
 });
 
-vi.mock('../tools/email-ir/body-intent-analysis', async (importOriginal) => {
+vi.mock('../tools/email-ir/body-intent-analysis', async importOriginal => {
   const actual = await importOriginal<typeof import('../tools/email-ir/body-intent-analysis')>();
   return {
     ...actual,
@@ -60,7 +60,7 @@ vi.mock('../tools/email-ir/body-intent-analysis', async (importOriginal) => {
   };
 });
 
-vi.mock('../tools/email-ir/triage', async (importOriginal) => {
+vi.mock('../tools/email-ir/triage', async importOriginal => {
   const actual = await importOriginal<typeof import('../tools/email-ir/triage')>();
   return {
     ...actual,
@@ -70,7 +70,7 @@ vi.mock('../tools/email-ir/triage', async (importOriginal) => {
   };
 });
 
-vi.mock('../tools/email-ir/feature-extraction', async (importOriginal) => {
+vi.mock('../tools/email-ir/feature-extraction', async importOriginal => {
   const actual = await importOriginal<typeof import('../tools/email-ir/feature-extraction')>();
   return {
     ...actual,
@@ -80,7 +80,7 @@ vi.mock('../tools/email-ir/feature-extraction', async (importOriginal) => {
   };
 });
 
-vi.mock('../tools/email-ir/risk-assessment', async (importOriginal) => {
+vi.mock('../tools/email-ir/risk-assessment', async importOriginal => {
   const actual = await importOriginal<typeof import('../tools/email-ir/risk-assessment')>();
   return {
     ...actual,
@@ -90,7 +90,7 @@ vi.mock('../tools/email-ir/risk-assessment', async (importOriginal) => {
   };
 });
 
-vi.mock('../tools/email-ir/reporting', async (importOriginal) => {
+vi.mock('../tools/email-ir/reporting', async importOriginal => {
   const actual = await importOriginal<typeof import('../tools/email-ir/reporting')>();
   return {
     ...actual,
@@ -350,9 +350,7 @@ describe('EmailIRWorkflow', () => {
     expect(output.htmlBody).toContain('invalid-json-response');
     expect(output.result).toBe('insufficient_data');
     expect(output.headers).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ key: 'x-email-ir-fetch-status', value: 'failed' }),
-      ])
+      expect.arrayContaining([expect.objectContaining({ key: 'x-email-ir-fetch-status', value: 'failed' })])
     );
   });
 
@@ -421,8 +419,6 @@ describe('EmailIRWorkflow', () => {
 
   it('fails when one of multi-analysis tools rejects', async () => {
     mocks.intentExecute.mockRejectedValueOnce(new Error('intent crashed'));
-    await expect((multiAnalysisStep as any).execute({ inputData: baseEmail }))
-      .rejects.toThrow('intent crashed');
+    await expect((multiAnalysisStep as any).execute({ inputData: baseEmail })).rejects.toThrow('intent crashed');
   });
 });
-

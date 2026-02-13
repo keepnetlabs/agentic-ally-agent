@@ -5,14 +5,8 @@
  * with support for multiple message formats (OpenAI, Vercel AI SDK, custom)
  */
 
-import type {
-  ChatMessage,
-  MessageContentPart,
-  MessageParts,
-  ChatRequestBody,
-} from '../types/api-types';
+import type { ChatMessage, MessageContentPart, MessageParts, ChatRequestBody } from '../types/api-types';
 import { getLogger } from './core/logger';
-
 
 const logger = getLogger('ChatRequestHelpers');
 
@@ -109,19 +103,23 @@ export const extractMessageContent = (message: ChatMessage): string => {
 
   // Case 2: Array (e.g. multi-modal - OpenAI format)
   if (Array.isArray(message.content)) {
-    return message.content.map((part: MessageContentPart) => {
-      if (part?.type === 'text') return part.text || '';
-      if (part?.type === 'image') return '[Image]';
-      return '';
-    }).join(' ');
+    return message.content
+      .map((part: MessageContentPart) => {
+        if (part?.type === 'text') return part.text || '';
+        if (part?.type === 'image') return '[Image]';
+        return '';
+      })
+      .join(' ');
   }
 
   // Case 3: Vercel AI SDK "parts" structure
   if (Array.isArray(message.parts)) {
-    return message.parts.map((p: MessageParts) => {
-      if (p?.type === 'text') return p.text;
-      return '';
-    }).join(' ');
+    return message.parts
+      .map((p: MessageParts) => {
+        if (p?.type === 'text') return p.text;
+        return '';
+      })
+      .join(' ');
   }
 
   // Case 4: Tool Invocations (Assistant called a tool)
@@ -218,9 +216,12 @@ const cleanMessageContent = (content: string): string => {
           const d = decoded as Record<string, unknown>;
           const microlearningId = d.microlearningId;
           const resourceId = d.resourceId;
-          if (microlearningId && resourceId) return `[Training Uploaded: microlearningId=${microlearningId}, resourceId=${resourceId}]`;
+          if (microlearningId && resourceId)
+            return `[Training Uploaded: microlearningId=${microlearningId}, resourceId=${resourceId}]`;
         }
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }
     return '[Training Uploaded]';
   }
@@ -233,9 +234,12 @@ const cleanMessageContent = (content: string): string => {
           const d = decoded as Record<string, unknown>;
           const phishingId = d.phishingId;
           const resourceId = d.resourceId;
-          if (phishingId && resourceId) return `[Phishing Simulation Uploaded: phishingId=${phishingId}, resourceId=${resourceId}]`;
+          if (phishingId && resourceId)
+            return `[Phishing Simulation Uploaded: phishingId=${phishingId}, resourceId=${resourceId}]`;
         }
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }
     return '[Phishing Simulation Uploaded]';
   }
@@ -248,9 +252,12 @@ const cleanMessageContent = (content: string): string => {
           const d = decoded as Record<string, unknown>;
           const smishingId = d.smishingId;
           const resourceId = d.resourceId;
-          if (smishingId && resourceId) return `[Smishing Simulation Uploaded: smishingId=${smishingId}, resourceId=${resourceId}]`;
+          if (smishingId && resourceId)
+            return `[Smishing Simulation Uploaded: smishingId=${smishingId}, resourceId=${resourceId}]`;
         }
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }
     return '[Smishing Simulation Uploaded]';
   }
@@ -267,7 +274,9 @@ const cleanMessageContent = (content: string): string => {
             return `[Training Assigned to ${assignmentType === 'GROUP' ? 'Group' : 'User'}: resourceId=${resourceId}, ${key}=${targetId}]`;
           }
         }
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }
     return '[Training Assigned to User]';
   }
@@ -284,7 +293,9 @@ const cleanMessageContent = (content: string): string => {
             return `[Phishing Simulation Assigned to ${assignmentType === 'GROUP' ? 'Group' : 'User'}: resourceId=${resourceId}, ${key}=${targetId}]`;
           }
         }
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }
     return '[Phishing Simulation Assigned to User]';
   }
@@ -301,7 +312,9 @@ const cleanMessageContent = (content: string): string => {
             return `[Smishing Simulation Assigned to ${assignmentType === 'GROUP' ? 'Group' : 'User'}: resourceId=${resourceId}, ${key}=${targetId}]`;
           }
         }
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }
     return '[Smishing Simulation Assigned to User]';
   }
@@ -358,7 +371,7 @@ const cleanMessageContent = (content: string): string => {
   let cleaned = content.replace(/::ui:\w+::[^\n]*/g, '');
 
   // Remove extremely long URLs - keep just ID or shorten
-  cleaned = cleaned.replace(/https?:\/\/[^\s)]+/g, (url) => {
+  cleaned = cleaned.replace(/https?:\/\/[^\s)]+/g, url => {
     // Extract meaningful ID from URL
     const idMatch = url.match(/[/=]([a-zA-Z0-9_-]+)(?:[&?#]|$)/);
     if (idMatch && idMatch[1].length > 10) {
@@ -380,7 +393,7 @@ export const buildRoutingContext = (messages: ChatMessage[]): string => {
 
   logger.info('📥 ROUTING_CONTEXT_BUILD Building context from messages', {
     totalMessages: messages.length,
-    selectedMessages: CONTEXT_WINDOW_SIZE
+    selectedMessages: CONTEXT_WINDOW_SIZE,
   });
 
   const recentMessages = messages.slice(-CONTEXT_WINDOW_SIZE);
@@ -439,12 +452,22 @@ export function extractArtifactIdsFromRoutingContext(routingContext: string): {
   const targetGroupMatches = [...routingContext.matchAll(/\btargetGroupResourceId=([a-zA-Z0-9_-]{3,})\b/g)];
 
   const resourceId = resourceMatches.length ? resourceMatches[resourceMatches.length - 1]?.[1] : undefined;
-  const scenarioResourceId = scenarioResourceMatches.length ? scenarioResourceMatches[scenarioResourceMatches.length - 1]?.[1] : undefined;
-  const landingPageResourceId = landingPageResourceMatches.length ? landingPageResourceMatches[landingPageResourceMatches.length - 1]?.[1] : undefined;
+  const scenarioResourceId = scenarioResourceMatches.length
+    ? scenarioResourceMatches[scenarioResourceMatches.length - 1]?.[1]
+    : undefined;
+  const landingPageResourceId = landingPageResourceMatches.length
+    ? landingPageResourceMatches[landingPageResourceMatches.length - 1]?.[1]
+    : undefined;
   const languageId = languageMatches.length ? languageMatches[languageMatches.length - 1]?.[1] : undefined;
-  const sendTrainingLanguageId = sendTrainingLanguageMatches.length ? sendTrainingLanguageMatches[sendTrainingLanguageMatches.length - 1]?.[1] : undefined;
-  const targetUserResourceId = targetUserMatches.length ? targetUserMatches[targetUserMatches.length - 1]?.[1] : undefined;
-  const targetGroupResourceId = targetGroupMatches.length ? targetGroupMatches[targetGroupMatches.length - 1]?.[1] : undefined;
+  const sendTrainingLanguageId = sendTrainingLanguageMatches.length
+    ? sendTrainingLanguageMatches[sendTrainingLanguageMatches.length - 1]?.[1]
+    : undefined;
+  const targetUserResourceId = targetUserMatches.length
+    ? targetUserMatches[targetUserMatches.length - 1]?.[1]
+    : undefined;
+  const targetGroupResourceId = targetGroupMatches.length
+    ? targetGroupMatches[targetGroupMatches.length - 1]?.[1]
+    : undefined;
 
   return {
     microlearningId,
@@ -508,9 +531,7 @@ export const extractUserPrompt = (messages: ChatMessage[]): string | undefined =
  * @param body - The chat request body
  * @returns Object with { prompt, routingContext } or null if validation fails
  */
-export const parseAndValidateRequest = (
-  body: ChatRequestBody
-): { prompt: string; routingContext: string } | null => {
+export const parseAndValidateRequest = (body: ChatRequestBody): { prompt: string; routingContext: string } | null => {
   let prompt: string | undefined;
   let routingContext: string = '';
 

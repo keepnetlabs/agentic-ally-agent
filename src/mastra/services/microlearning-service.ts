@@ -19,7 +19,7 @@ export class MicrolearningService {
     if (cacheSize % 10 === 0 || cacheSize > 30) {
       logger.info('📊 In-memory cache size', {
         items: cacheSize,
-        estimatedMB: Math.round(cacheSize * 50 / 1024)
+        estimatedMB: Math.round((cacheSize * 50) / 1024),
       });
     }
   }
@@ -38,7 +38,7 @@ export class MicrolearningService {
     const count = MicrolearningService.contentStorage.size;
     return {
       microlearningCount: count,
-      estimatedSizeMB: Math.round((count * 50 / 1024) * 100) / 100 // Assuming ~50KB per item
+      estimatedSizeMB: Math.round(((count * 50) / 1024) * 100) / 100, // Assuming ~50KB per item
     };
   }
 
@@ -49,7 +49,6 @@ export class MicrolearningService {
     const key = `${microlearningId}_${languageCode}`;
     MicrolearningService.languageContentStorage.set(key, content);
   }
-
 
   /**
    * Add microlearning to department inbox
@@ -68,7 +67,7 @@ export class MicrolearningService {
       inbox = {
         department,
         inbox_items: [],
-        last_updated: new Date().toISOString()
+        last_updated: new Date().toISOString(),
       };
     }
 
@@ -91,12 +90,11 @@ export class MicrolearningService {
         assigned_date: new Date().toISOString(),
         due_date: dueDate,
         status: 'pending',
-        priority
+        priority,
       });
     }
 
     inbox.last_updated = new Date().toISOString();
     MicrolearningService.departmentInboxes.set(key, inbox);
   }
-
 }

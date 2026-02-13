@@ -391,7 +391,7 @@ Goals:
       expect(prompt).toContain('≤5 words');
     });
 
-    it('should allow DON\'T directives for threats', () => {
+    it("should allow DON'T directives for threats", () => {
       const prompt = generateScene2Prompt(baseAnalysis, baseMicrolearning);
       expect(prompt).toContain('key_message');
     });
@@ -844,10 +844,7 @@ Goals:
       const advAnalysis: any = {
         ...baseAnalysis,
         level: 'Advanced',
-        learningObjectives: [
-          'Design defenses',
-          'Manage responses',
-        ],
+        learningObjectives: ['Design defenses', 'Manage responses'],
       };
 
       const prompt = generateScene2Prompt(advAnalysis, baseMicrolearning);
@@ -979,9 +976,7 @@ Goals:
     it('should use microlearning metadata duration', () => {
       const customMicrolearning: any = {
         ...baseMicrolearning,
-        scenes: [
-          { sceneId: 2, type: 'goals', metadata: { duration_seconds: 30 } },
-        ],
+        scenes: [{ sceneId: 2, type: 'goals', metadata: { duration_seconds: 30 } }],
       };
       const prompt = generateScene2Prompt(baseAnalysis, customMicrolearning);
       expect(prompt).toBeDefined();

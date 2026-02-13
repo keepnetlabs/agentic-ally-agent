@@ -15,14 +15,16 @@ export const CreateInboxStructureSchema = z.object({
 export const CreateInboxStructureOutputSchema = z.object({
   success: z.boolean(),
   data: z.any(), // Inbox content (texts + emails)
-  metadata: z.object({
-    department: z.string(),
-    languageCode: z.string(),
-    microlearningId: z.string(),
-    inboxPath: z.string(),
-    itemsGenerated: z.number(),
-    estimatedDuration: z.string(),
-  }).optional(),
+  metadata: z
+    .object({
+      department: z.string(),
+      languageCode: z.string(),
+      microlearningId: z.string(),
+      inboxPath: z.string(),
+      itemsGenerated: z.number(),
+      estimatedDuration: z.string(),
+    })
+    .optional(),
   error: z.string().optional(),
 });
 

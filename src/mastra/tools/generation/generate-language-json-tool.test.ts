@@ -1,4 +1,3 @@
-
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { generateLanguageJsonTool } from './generate-language-json-tool';
 import { generateText } from 'ai';
@@ -6,39 +5,61 @@ import { cleanResponse } from '../../utils/content-processors/json-cleaner';
 
 // Mock AI module
 vi.mock('ai', () => ({
-  generateText: vi.fn()
+  generateText: vi.fn(),
 }));
 
 // Mock Content Processors
 vi.mock('../../utils/content-processors/json-cleaner', () => ({
-  cleanResponse: vi.fn((text, _type) => text)
+  cleanResponse: vi.fn((text, _type) => text),
 }));
 
 vi.mock('../../utils/content-processors/transcript-translator', () => ({
-  translateTranscript: vi.fn().mockResolvedValue('Translated transcript')
+  translateTranscript: vi.fn().mockResolvedValue('Translated transcript'),
 }));
 
 // Mock Scene Generators
-vi.mock('../scenes/generators/scene1-intro-generator', () => ({ generateScene1Prompt: vi.fn().mockReturnValue('Scene 1 Prompt') }));
-vi.mock('../scenes/generators/scene2-goal-generator', () => ({ generateScene2Prompt: vi.fn().mockReturnValue('Scene 2 Prompt') }));
+vi.mock('../scenes/generators/scene1-intro-generator', () => ({
+  generateScene1Prompt: vi.fn().mockReturnValue('Scene 1 Prompt'),
+}));
+vi.mock('../scenes/generators/scene2-goal-generator', () => ({
+  generateScene2Prompt: vi.fn().mockReturnValue('Scene 2 Prompt'),
+}));
 vi.mock('../scenes/generators/scene3-video-generator', () => ({
   generateVideoPrompt: vi.fn().mockResolvedValue({
     prompt: 'Video Prompt',
     videoUrl: 'https://video.url',
-    transcript: 'Original Transcript'
-  })
+    transcript: 'Original Transcript',
+  }),
 }));
-vi.mock('../scenes/generators/scene4-actionable-generator', () => ({ generateScene4Prompt: vi.fn().mockReturnValue('Scene 4 Prompt') }));
-vi.mock('../scenes/generators/scene4-code-review-generator', () => ({ generateScene4CodeReviewPrompt: vi.fn().mockReturnValue('Scene 4 Code Prompt') }));
-vi.mock('../scenes/generators/scene4-vishing-generator', () => ({ generateScene4VishingPrompt: vi.fn().mockReturnValue('Scene 4 Vishing Prompt') }));
-vi.mock('../scenes/generators/scene5-quiz-generator', () => ({ generateScene5Prompt: vi.fn().mockReturnValue('Scene 5 Prompt') }));
-vi.mock('../scenes/generators/scene6-survey-generator', () => ({ generateScene6Prompt: vi.fn().mockReturnValue('Scene 6 Prompt') }));
-vi.mock('../scenes/generators/scene7-nudge-generator', () => ({ generateScene7Prompt: vi.fn().mockReturnValue('Scene 7 Prompt') }));
-vi.mock('../scenes/generators/scene8-summary-generator', () => ({ generateScene8Prompt: vi.fn().mockReturnValue('Scene 8 Prompt') }));
+vi.mock('../scenes/generators/scene4-actionable-generator', () => ({
+  generateScene4Prompt: vi.fn().mockReturnValue('Scene 4 Prompt'),
+}));
+vi.mock('../scenes/generators/scene4-code-review-generator', () => ({
+  generateScene4CodeReviewPrompt: vi.fn().mockReturnValue('Scene 4 Code Prompt'),
+}));
+vi.mock('../scenes/generators/scene4-vishing-generator', () => ({
+  generateScene4VishingPrompt: vi.fn().mockReturnValue('Scene 4 Vishing Prompt'),
+}));
+vi.mock('../scenes/generators/scene5-quiz-generator', () => ({
+  generateScene5Prompt: vi.fn().mockReturnValue('Scene 5 Prompt'),
+}));
+vi.mock('../scenes/generators/scene6-survey-generator', () => ({
+  generateScene6Prompt: vi.fn().mockReturnValue('Scene 6 Prompt'),
+}));
+vi.mock('../scenes/generators/scene7-nudge-generator', () => ({
+  generateScene7Prompt: vi.fn().mockReturnValue('Scene 7 Prompt'),
+}));
+vi.mock('../scenes/generators/scene8-summary-generator', () => ({
+  generateScene8Prompt: vi.fn().mockReturnValue('Scene 8 Prompt'),
+}));
 
 // Mock Utils
-vi.mock('../../utils/prompt-builders/base-context-builder', () => ({ buildSystemPrompt: vi.fn().mockReturnValue('System Prompt') }));
-vi.mock('../../utils/prompt-builders/policy-context-builder', () => ({ buildPolicyScenePrompt: vi.fn().mockReturnValue('') }));
+vi.mock('../../utils/prompt-builders/base-context-builder', () => ({
+  buildSystemPrompt: vi.fn().mockReturnValue('System Prompt'),
+}));
+vi.mock('../../utils/prompt-builders/policy-context-builder', () => ({
+  buildPolicyScenePrompt: vi.fn().mockReturnValue(''),
+}));
 vi.mock('../../utils/core/cost-tracker', () => ({ trackCost: vi.fn() }));
 vi.mock('../../utils/config/llm-generation-params', () => ({
   SCENE_GENERATION_PARAMS: {
@@ -50,7 +71,7 @@ vi.mock('../../utils/config/llm-generation-params', () => ({
     6: { temperature: 0.7 },
     7: { temperature: 0.7 },
     8: { temperature: 0.7 },
-  }
+  },
 }));
 vi.mock('../../utils/core/logger', () => ({
   getLogger: () => ({
@@ -58,24 +79,24 @@ vi.mock('../../utils/core/logger', () => ({
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
-  })
+  }),
 }));
 vi.mock('../../utils/core/resilience-utils', () => ({
-  withRetry: vi.fn((fn) => fn())
+  withRetry: vi.fn(fn => fn()),
 }));
 vi.mock('../../services/error-service', () => ({
   errorService: {
-    aiModel: vi.fn((msg) => ({ message: msg, code: 'AI_ERROR' }))
-  }
+    aiModel: vi.fn(msg => ({ message: msg, code: 'AI_ERROR' })),
+  },
 }));
 vi.mock('../../utils/core/error-utils', () => ({
-  normalizeError: (e: any) => e instanceof Error ? e : new Error(String(e)),
+  normalizeError: (e: any) => (e instanceof Error ? e : new Error(String(e))),
   createToolErrorResponse: (info: any) => ({ success: false, error: info.message }),
-  logErrorInfo: vi.fn()
+  logErrorInfo: vi.fn(),
 }));
 vi.mock('../../utils/language/app-texts', () => ({
   getAppTexts: vi.fn().mockReturnValue({ start: 'Start' }),
-  getAppAriaTexts: vi.fn().mockReturnValue({ main: 'Main Area' })
+  getAppAriaTexts: vi.fn().mockReturnValue({ main: 'Main Area' }),
 }));
 
 describe('generateLanguageJsonTool', () => {
@@ -95,7 +116,7 @@ describe('generateLanguageJsonTool', () => {
     roles: ['All Roles'],
     keyTopics: ['Email security', 'Red flags', 'Reporting procedures'],
     practicalApplications: ['Check email headers', 'Verify sender identity'],
-    assessmentAreas: ['Email analysis', 'Decision making']
+    assessmentAreas: ['Email analysis', 'Decision making'],
   };
 
   const baseMicrolearning: any = {
@@ -114,8 +135,8 @@ describe('generateLanguageJsonTool', () => {
       { sceneId: 5, type: 'quiz' },
       { sceneId: 6, type: 'survey' },
       { sceneId: 7, type: 'nudge' },
-      { sceneId: 8, type: 'summary' }
-    ]
+      { sceneId: 8, type: 'summary' },
+    ],
   };
 
   // Mock a proper LanguageModel instance
@@ -130,7 +151,7 @@ describe('generateLanguageJsonTool', () => {
   const baseInput = {
     analysis: baseAnalysis,
     microlearning: baseMicrolearning,
-    model: mockModel
+    model: mockModel,
   };
 
   beforeEach(() => {
@@ -139,20 +160,20 @@ describe('generateLanguageJsonTool', () => {
     // Provide default success mocks for all 8 scene generation calls
     (generateText as any).mockResolvedValue({
       text: JSON.stringify({}),
-      usage: { promptTokens: 0, completionTokens: 0 }
+      usage: { promptTokens: 0, completionTokens: 0 },
     });
   });
 
   it('should generate all scenes successfully', async () => {
     (generateText as any)
-      .mockResolvedValueOnce({ text: JSON.stringify({ "1": { type: "intro" } }), usage: {} })
-      .mockResolvedValueOnce({ text: JSON.stringify({ "2": { type: "goals" } }), usage: {} })
-      .mockResolvedValueOnce({ text: JSON.stringify({ "3": { type: "video" } }), usage: {} })
-      .mockResolvedValueOnce({ text: JSON.stringify({ "4": { type: "action" } }), usage: {} })
-      .mockResolvedValueOnce({ text: JSON.stringify({ "5": { type: "quiz" } }), usage: {} })
-      .mockResolvedValueOnce({ text: JSON.stringify({ "6": { type: "survey" } }), usage: {} })
-      .mockResolvedValueOnce({ text: JSON.stringify({ "7": { type: "nudge" } }), usage: {} })
-      .mockResolvedValueOnce({ text: JSON.stringify({ "8": { type: "summary" } }), usage: {} });
+      .mockResolvedValueOnce({ text: JSON.stringify({ '1': { type: 'intro' } }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ '2': { type: 'goals' } }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ '3': { type: 'video' } }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ '4': { type: 'action' } }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ '5': { type: 'quiz' } }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ '6': { type: 'survey' } }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ '7': { type: 'nudge' } }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ '8': { type: 'summary' } }), usage: {} });
 
     const result = await executeTool(baseInput);
 
@@ -165,12 +186,14 @@ describe('generateLanguageJsonTool', () => {
 
   it('should handle JSON parse errors gracefully', async () => {
     // Mock all 8 calls, with the FIRST one failing parsing
-    (generateText as any)
-      .mockResolvedValueOnce({ text: "INVALID JSON", usage: { promptTokens: 0, completionTokens: 0 } });
+    (generateText as any).mockResolvedValueOnce({
+      text: 'INVALID JSON',
+      usage: { promptTokens: 0, completionTokens: 0 },
+    });
 
     // The other 7 will still use the default mock from beforeEach
 
-    (cleanResponse as any).mockReturnValueOnce("INVALID JSON");
+    (cleanResponse as any).mockReturnValueOnce('INVALID JSON');
 
     const result = await executeTool(baseInput);
 
@@ -181,21 +204,20 @@ describe('generateLanguageJsonTool', () => {
   it('should retry video generation on parse error', async () => {
     // The parallel calls: 1, 2, 3(video), 4, 5, 6, 7, 8
     (generateText as any)
-      .mockResolvedValueOnce({ text: JSON.stringify({ "1": {} }), usage: {} }) // 1
-      .mockResolvedValueOnce({ text: JSON.stringify({ "2": {} }), usage: {} }) // 2
-      .mockResolvedValueOnce({ text: "INVALID VIDEO", usage: { promptTokens: 0, completionTokens: 0 } }) // 3 (video fail)
-      .mockResolvedValueOnce({ text: JSON.stringify({ "4": {} }), usage: {} }) // 4
-      .mockResolvedValueOnce({ text: JSON.stringify({ "5": {} }), usage: {} }) // 5
-      .mockResolvedValueOnce({ text: JSON.stringify({ "6": {} }), usage: {} }) // 6
-      .mockResolvedValueOnce({ text: JSON.stringify({ "7": {} }), usage: {} }) // 7
-      .mockResolvedValueOnce({ text: JSON.stringify({ "8": {} }), usage: {} }) // 8
-      .mockResolvedValueOnce({ text: JSON.stringify({ "3": { video: {} } }), usage: {} }); // 3 (video retry)
+      .mockResolvedValueOnce({ text: JSON.stringify({ '1': {} }), usage: {} }) // 1
+      .mockResolvedValueOnce({ text: JSON.stringify({ '2': {} }), usage: {} }) // 2
+      .mockResolvedValueOnce({ text: 'INVALID VIDEO', usage: { promptTokens: 0, completionTokens: 0 } }) // 3 (video fail)
+      .mockResolvedValueOnce({ text: JSON.stringify({ '4': {} }), usage: {} }) // 4
+      .mockResolvedValueOnce({ text: JSON.stringify({ '5': {} }), usage: {} }) // 5
+      .mockResolvedValueOnce({ text: JSON.stringify({ '6': {} }), usage: {} }) // 6
+      .mockResolvedValueOnce({ text: JSON.stringify({ '7': {} }), usage: {} }) // 7
+      .mockResolvedValueOnce({ text: JSON.stringify({ '8': {} }), usage: {} }) // 8
+      .mockResolvedValueOnce({ text: JSON.stringify({ '3': { video: {} } }), usage: {} }); // 3 (video retry)
 
-    (cleanResponse as any)
-      .mockImplementation((text: string, _type: string) => {
-        if (text === "INVALID VIDEO") return "INVALID VIDEO";
-        return text;
-      });
+    (cleanResponse as any).mockImplementation((text: string, _type: string) => {
+      if (text === 'INVALID VIDEO') return 'INVALID VIDEO';
+      return text;
+    });
 
     const result = await executeTool(baseInput);
 
@@ -208,7 +230,7 @@ describe('generateLanguageJsonTool', () => {
 
     await executeTool({
       ...baseInput,
-      analysis: { ...baseInput.analysis, isCodeTopic: true }
+      analysis: { ...baseInput.analysis, isCodeTopic: true },
     });
 
     expect(generateScene4CodeReviewPrompt).toHaveBeenCalled();
@@ -219,7 +241,7 @@ describe('generateLanguageJsonTool', () => {
 
     await executeTool({
       ...baseInput,
-      analysis: { ...baseInput.analysis, isVishing: true }
+      analysis: { ...baseInput.analysis, isVishing: true },
     });
 
     expect(generateScene4VishingPrompt).toHaveBeenCalled();
@@ -230,12 +252,14 @@ describe('generateLanguageJsonTool', () => {
 
     const inputWithPolicy = {
       ...baseInput,
-      policyContext: 'Company security policy: Always verify sender before clicking links'
+      policyContext: 'Company security policy: Always verify sender before clicking links',
     };
 
     await executeTool(inputWithPolicy);
 
-    expect(buildPolicyScenePrompt).toHaveBeenCalledWith('Company security policy: Always verify sender before clicking links');
+    expect(buildPolicyScenePrompt).toHaveBeenCalledWith(
+      'Company security policy: Always verify sender before clicking links'
+    );
   });
 
   it('should handle additionalContext in analysis', async () => {
@@ -244,8 +268,8 @@ describe('generateLanguageJsonTool', () => {
       analysis: {
         ...baseInput.analysis,
         hasRichContext: true,
-        additionalContext: 'User has failed 3 previous phishing tests'
-      }
+        additionalContext: 'User has failed 3 previous phishing tests',
+      },
     };
 
     const result = await executeTool(inputWithContext);
@@ -258,7 +282,7 @@ describe('generateLanguageJsonTool', () => {
   it('should support different languages', async () => {
     const turkishInput = {
       ...baseInput,
-      analysis: { ...baseInput.analysis, language: 'tr' }
+      analysis: { ...baseInput.analysis, language: 'tr' },
     };
 
     const result = await executeTool(turkishInput);
@@ -282,11 +306,10 @@ describe('generateLanguageJsonTool', () => {
   it('should track cost for all scene generations', async () => {
     const { trackCost } = await import('../../utils/core/cost-tracker');
 
-    (generateText as any)
-      .mockResolvedValue({
-        text: JSON.stringify({ "1": {} }),
-        usage: { promptTokens: 100, completionTokens: 200 }
-      });
+    (generateText as any).mockResolvedValue({
+      text: JSON.stringify({ '1': {} }),
+      usage: { promptTokens: 100, completionTokens: 200 },
+    });
 
     await executeTool(baseInput);
 
@@ -296,12 +319,12 @@ describe('generateLanguageJsonTool', () => {
 
   it('should handle writer/streaming for progress updates', async () => {
     const mockWriter = {
-      write: vi.fn()
+      write: vi.fn(),
     };
 
     const inputWithWriter = {
       ...baseInput,
-      writer: mockWriter
+      writer: mockWriter,
     };
 
     const result = await executeTool(inputWithWriter);
@@ -322,14 +345,14 @@ describe('generateLanguageJsonTool', () => {
 
   it('should handle mixed success and failure in parallel generation', async () => {
     (generateText as any)
-      .mockResolvedValueOnce({ text: JSON.stringify({ "1": {} }), usage: {} })
-      .mockResolvedValueOnce({ text: JSON.stringify({ "2": {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ '1': {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ '2': {} }), usage: {} })
       .mockRejectedValueOnce(new Error('Scene 3 failed'))
-      .mockResolvedValueOnce({ text: JSON.stringify({ "4": {} }), usage: {} })
-      .mockResolvedValueOnce({ text: JSON.stringify({ "5": {} }), usage: {} })
-      .mockResolvedValueOnce({ text: JSON.stringify({ "6": {} }), usage: {} })
-      .mockResolvedValueOnce({ text: JSON.stringify({ "7": {} }), usage: {} })
-      .mockResolvedValueOnce({ text: JSON.stringify({ "8": {} }), usage: {} });
+      .mockResolvedValueOnce({ text: JSON.stringify({ '4': {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ '5': {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ '6': {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ '7': {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ '8': {} }), usage: {} });
 
     const result = await executeTool(baseInput);
 
@@ -342,8 +365,8 @@ describe('generateLanguageJsonTool', () => {
       ...baseInput,
       microlearning: {
         ...baseMicrolearning,
-        scenes: []
-      }
+        scenes: [],
+      },
     };
 
     const result = await executeTool(inputWithNoScenes);
@@ -357,8 +380,8 @@ describe('generateLanguageJsonTool', () => {
       ...baseInput,
       analysis: {
         ...baseInput.analysis,
-        customRequirements: 'Focus on mobile security scenarios'
-      }
+        customRequirements: 'Focus on mobile security scenarios',
+      },
     };
 
     const result = await executeTool(inputWithCustomRequirements);
@@ -372,8 +395,8 @@ describe('generateLanguageJsonTool', () => {
       ...baseInput,
       analysis: {
         ...baseInput.analysis,
-        regulationCompliance: ['GDPR', 'HIPAA']
-      }
+        regulationCompliance: ['GDPR', 'HIPAA'],
+      },
     };
 
     const result = await executeTool(inputWithCompliance);
@@ -382,14 +405,14 @@ describe('generateLanguageJsonTool', () => {
   });
   it('should correctly override video URL and transcript details in the final output', async () => {
     (generateText as any)
-      .mockResolvedValueOnce({ text: JSON.stringify({ "1": {} }), usage: {} })
-      .mockResolvedValueOnce({ text: JSON.stringify({ "2": {} }), usage: {} })
-      .mockResolvedValueOnce({ text: JSON.stringify({ "3": { video: { src: 'old', transcript: 'old' } } }), usage: {} })
-      .mockResolvedValueOnce({ text: JSON.stringify({ "4": {} }), usage: {} })
-      .mockResolvedValueOnce({ text: JSON.stringify({ "5": {} }), usage: {} })
-      .mockResolvedValueOnce({ text: JSON.stringify({ "6": {} }), usage: {} })
-      .mockResolvedValueOnce({ text: JSON.stringify({ "7": {} }), usage: {} })
-      .mockResolvedValueOnce({ text: JSON.stringify({ "8": {} }), usage: {} });
+      .mockResolvedValueOnce({ text: JSON.stringify({ '1': {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ '2': {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ '3': { video: { src: 'old', transcript: 'old' } } }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ '4': {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ '5': {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ '6': {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ '7': {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ '8': {} }), usage: {} });
 
     const result = await executeTool(baseInput);
 
@@ -400,14 +423,14 @@ describe('generateLanguageJsonTool', () => {
 
   it('should set transcript language to "English" when language is "en"', async () => {
     (generateText as any)
-      .mockResolvedValueOnce({ text: JSON.stringify({ "1": {} }), usage: {} })
-      .mockResolvedValueOnce({ text: JSON.stringify({ "2": {} }), usage: {} })
-      .mockResolvedValueOnce({ text: JSON.stringify({ "3": { video: { src: 'old' } } }), usage: {} })
-      .mockResolvedValueOnce({ text: JSON.stringify({ "4": {} }), usage: {} })
-      .mockResolvedValueOnce({ text: JSON.stringify({ "5": {} }), usage: {} })
-      .mockResolvedValueOnce({ text: JSON.stringify({ "6": {} }), usage: {} })
-      .mockResolvedValueOnce({ text: JSON.stringify({ "7": {} }), usage: {} })
-      .mockResolvedValueOnce({ text: JSON.stringify({ "8": {} }), usage: {} });
+      .mockResolvedValueOnce({ text: JSON.stringify({ '1': {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ '2': {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ '3': { video: { src: 'old' } } }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ '4': {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ '5': {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ '6': {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ '7': {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ '8': {} }), usage: {} });
 
     const result = await executeTool({ ...baseInput, analysis: { ...baseAnalysis, language: 'en' } });
     expect(result.data['3'].video.transcriptLanguage).toBe('English');
@@ -415,14 +438,14 @@ describe('generateLanguageJsonTool', () => {
 
   it('should use raw language code for transcript language when not "en"', async () => {
     (generateText as any)
-      .mockResolvedValueOnce({ text: JSON.stringify({ "1": {} }), usage: {} })
-      .mockResolvedValueOnce({ text: JSON.stringify({ "2": {} }), usage: {} })
-      .mockResolvedValueOnce({ text: JSON.stringify({ "3": { video: { src: 'old' } } }), usage: {} })
-      .mockResolvedValueOnce({ text: JSON.stringify({ "4": {} }), usage: {} })
-      .mockResolvedValueOnce({ text: JSON.stringify({ "5": {} }), usage: {} })
-      .mockResolvedValueOnce({ text: JSON.stringify({ "6": {} }), usage: {} })
-      .mockResolvedValueOnce({ text: JSON.stringify({ "7": {} }), usage: {} })
-      .mockResolvedValueOnce({ text: JSON.stringify({ "8": {} }), usage: {} });
+      .mockResolvedValueOnce({ text: JSON.stringify({ '1': {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ '2': {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ '3': { video: { src: 'old' } } }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ '4': {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ '5': {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ '6': {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ '7': {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ '8': {} }), usage: {} });
 
     const result = await executeTool({ ...baseInput, analysis: { ...baseAnalysis, language: 'tr' } });
     expect(result.data['3'].video.transcriptLanguage).toBe('tr');
@@ -430,15 +453,15 @@ describe('generateLanguageJsonTool', () => {
 
   it('should fail if video generation fails even after retry', async () => {
     (generateText as any)
-      .mockResolvedValueOnce({ text: JSON.stringify({ "1": {} }), usage: {} })
-      .mockResolvedValueOnce({ text: JSON.stringify({ "2": {} }), usage: {} })
-      .mockResolvedValueOnce({ text: "INVALID VIDEO", usage: {} }) // 3 Fail
-      .mockResolvedValueOnce({ text: JSON.stringify({ "4": {} }), usage: {} })
-      .mockResolvedValueOnce({ text: JSON.stringify({ "5": {} }), usage: {} })
-      .mockResolvedValueOnce({ text: JSON.stringify({ "6": {} }), usage: {} })
-      .mockResolvedValueOnce({ text: JSON.stringify({ "7": {} }), usage: {} })
-      .mockResolvedValueOnce({ text: JSON.stringify({ "8": {} }), usage: {} })
-      .mockResolvedValueOnce({ text: "INVALID VIDEO RETRY", usage: {} }); // 3 Retry Fail
+      .mockResolvedValueOnce({ text: JSON.stringify({ '1': {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ '2': {} }), usage: {} })
+      .mockResolvedValueOnce({ text: 'INVALID VIDEO', usage: {} }) // 3 Fail
+      .mockResolvedValueOnce({ text: JSON.stringify({ '4': {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ '5': {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ '6': {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ '7': {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ '8': {} }), usage: {} })
+      .mockResolvedValueOnce({ text: 'INVALID VIDEO RETRY', usage: {} }); // 3 Retry Fail
 
     const result = await executeTool(baseInput);
 
@@ -448,14 +471,14 @@ describe('generateLanguageJsonTool', () => {
 
   it('should handle parsing errors in other scenes (e.g. Scene 5)', async () => {
     (generateText as any)
-      .mockResolvedValueOnce({ text: JSON.stringify({ "1": {} }), usage: {} })
-      .mockResolvedValueOnce({ text: JSON.stringify({ "2": {} }), usage: {} })
-      .mockResolvedValueOnce({ text: JSON.stringify({ "3": {} }), usage: {} })
-      .mockResolvedValueOnce({ text: JSON.stringify({ "4": {} }), usage: {} })
-      .mockResolvedValueOnce({ text: "INVALID JSON", usage: {} }) // 5 Fail
-      .mockResolvedValueOnce({ text: JSON.stringify({ "6": {} }), usage: {} })
-      .mockResolvedValueOnce({ text: JSON.stringify({ "7": {} }), usage: {} })
-      .mockResolvedValueOnce({ text: JSON.stringify({ "8": {} }), usage: {} });
+      .mockResolvedValueOnce({ text: JSON.stringify({ '1': {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ '2': {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ '3': {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ '4': {} }), usage: {} })
+      .mockResolvedValueOnce({ text: 'INVALID JSON', usage: {} }) // 5 Fail
+      .mockResolvedValueOnce({ text: JSON.stringify({ '6': {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ '7': {} }), usage: {} })
+      .mockResolvedValueOnce({ text: JSON.stringify({ '8': {} }), usage: {} });
 
     const result = await executeTool(baseInput);
 
@@ -468,8 +491,8 @@ describe('generateLanguageJsonTool', () => {
       ...baseInput,
       analysis: {
         ...baseInput.analysis,
-        additionalContext: 'User has failed 3 previous phishing tests'
-      }
+        additionalContext: 'User has failed 3 previous phishing tests',
+      },
     };
 
     await executeTool(inputWithContext);

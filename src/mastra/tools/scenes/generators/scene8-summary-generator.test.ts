@@ -40,7 +40,7 @@ describe('Scene 8 - Summary Generator', () => {
     },
     scientific_evidence: {
       learning_theories: {
-        'Consolidation': {
+        Consolidation: {
           description: 'Review reinforces learning and provides closure',
         },
       },
@@ -65,10 +65,6 @@ describe('Scene 8 - Summary Generator', () => {
       expect(typeof prompt).toBe('string');
       expect(prompt.length).toBeGreaterThan(0);
     });
-
-
-
-
 
     it('should handle analysis with minimal fields', () => {
       const minimalAnalysis: any = {
@@ -417,8 +413,6 @@ describe('Scene 8 - Summary Generator', () => {
       const prompt = generateScene8Prompt(baseAnalysis, baseMicrolearning);
       expect(prompt).toContain('Social message');
     });
-
-
   });
 
   // ==================== LANGUAGE SUPPORT TESTS ====================

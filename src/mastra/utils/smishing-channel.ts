@@ -38,7 +38,15 @@ export function normalizeSmishingChannel(input?: string | null): SmishingChannel
   if (candidate === 'ms teams' || candidate === 'msteams') return 'teams';
   if (candidate === 'tg') return 'telegram';
   if (candidate === 'insta' || candidate === 'ig') return 'instagram';
-  if (candidate === 'sms' || candidate === 'slack' || candidate === 'whatsapp' || candidate === 'teams' || candidate === 'telegram' || candidate === 'instagram' || candidate === 'linkedin') {
+  if (
+    candidate === 'sms' ||
+    candidate === 'slack' ||
+    candidate === 'whatsapp' ||
+    candidate === 'teams' ||
+    candidate === 'telegram' ||
+    candidate === 'instagram' ||
+    candidate === 'linkedin'
+  ) {
     return candidate;
   }
   return undefined;
@@ -54,13 +62,24 @@ export function detectSmishingChannelFromText(text: string): SmishingChannel | u
   if (t.includes('slack') || t.includes('workspace chat') || t.includes('slack dm') || t.includes('slack message')) {
     return 'slack';
   }
-  if (t.includes('microsoft teams') || t.includes('teams chat') || t.includes('teams dm') || t.includes('teams message')) {
+  if (
+    t.includes('microsoft teams') ||
+    t.includes('teams chat') ||
+    t.includes('teams dm') ||
+    t.includes('teams message')
+  ) {
     return 'teams';
   }
   if (t.includes('linkedin') || t.includes('linkedin dm') || t.includes('linkedin message') || t.includes('inmail')) {
     return 'linkedin';
   }
-  if (t.includes('instagram') || t.includes('insta') || t.includes('instagram dm') || t.includes('instagram message') || hasStandaloneIg) {
+  if (
+    t.includes('instagram') ||
+    t.includes('insta') ||
+    t.includes('instagram dm') ||
+    t.includes('instagram message') ||
+    hasStandaloneIg
+  ) {
     return 'instagram';
   }
   if (t.includes('telegram') || t.includes('telegram dm') || t.includes('telegram message') || hasStandaloneTg) {
@@ -68,7 +87,14 @@ export function detectSmishingChannelFromText(text: string): SmishingChannel | u
   }
   if (t.includes('ms teams') || t.includes('msteams')) return 'teams';
   if (t.includes('whatsapp') || t.includes('whats app') || hasStandaloneWa) return 'whatsapp';
-  if (t.includes('sms') || t.includes('text message') || t.includes('text-message') || t.includes('texting') || t.includes('text msg') || hasStandaloneText) {
+  if (
+    t.includes('sms') ||
+    t.includes('text message') ||
+    t.includes('text-message') ||
+    t.includes('texting') ||
+    t.includes('text msg') ||
+    hasStandaloneText
+  ) {
     return 'sms';
   }
 
@@ -89,17 +115,17 @@ export function resolveSmishingChannel(
 
 export function buildSmishingChannelPromptRules(channel: SmishingChannel): SmishingChannelPromptRules {
   const channelLabel = CHANNEL_LABELS[channel];
-  const channelFocusRule = channel === 'sms'
-    ? 'This scene is ALWAYS SMS/chat focused (no email/inbox language)'
-    : `This scene is ALWAYS ${channelLabel} chat focused (no email/inbox or SMS language)`;
-  const channelToneRule = channel === 'sms'
-    ? 'Keep SMS tone: short, conversational, no markdown'
-    : `Keep ${channelLabel} chat tone: short, conversational, no markdown; use natural ${channelLabel} cues (DM, @mentions, channel context)`;
+  const channelFocusRule =
+    channel === 'sms'
+      ? 'This scene is ALWAYS SMS/chat focused (no email/inbox language)'
+      : `This scene is ALWAYS ${channelLabel} chat focused (no email/inbox or SMS language)`;
+  const channelToneRule =
+    channel === 'sms'
+      ? 'Keep SMS tone: short, conversational, no markdown'
+      : `Keep ${channelLabel} chat tone: short, conversational, no markdown; use natural ${channelLabel} cues (DM, @mentions, channel context)`;
   const channelInteractionRule = CHANNEL_INTERACTION_RULES[channel];
   const channelPromptLabel = channel === 'sms' ? 'SMS' : `${channelLabel} chat`;
-  const channelFirstMessageLabel = channel === 'sms'
-    ? 'First SMS line'
-    : `First ${channelLabel} chat line`;
+  const channelFirstMessageLabel = channel === 'sms' ? 'First SMS line' : `First ${channelLabel} chat line`;
 
   return {
     channelLabel,

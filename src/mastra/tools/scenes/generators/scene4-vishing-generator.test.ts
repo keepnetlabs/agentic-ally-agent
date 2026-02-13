@@ -143,7 +143,7 @@ describe('Scene 4 - Vishing Simulation Generator', () => {
 
     it('should support multiple language codes', () => {
       const languages = ['en', 'tr', 'de', 'fr', 'es'];
-      languages.forEach((lang) => {
+      languages.forEach(lang => {
         const analysis: any = {
           ...baseAnalysis,
           language: lang,
@@ -348,7 +348,6 @@ describe('Scene 4 - Vishing Simulation Generator', () => {
       const prompt = generateScene4VishingPrompt(baseAnalysis, baseMicrolearning);
       expect(prompt).toContain('1-2 sentences');
     });
-
   });
 
   // ==================== LEARNING OBJECTIVES TESTS ====================

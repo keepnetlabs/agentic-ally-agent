@@ -1,11 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  microlearningAgent,
-  orchestratorAgent,
-  phishingEmailAgent,
-  policySummaryAgent,
-  userInfoAgent,
-} from './index';
+import { microlearningAgent, orchestratorAgent, phishingEmailAgent, policySummaryAgent, userInfoAgent } from './index';
 import { AGENT_NAMES, ORCHESTRATOR_CONFIRMATION_EXAMPLES } from '../constants';
 
 /**
@@ -209,57 +203,33 @@ describe('Agents Index Exports', () => {
   // ==================== ALL EXPORTS DEFINED TESTS ====================
   describe('All Exports Validation', () => {
     it('should export exactly 5 agents', () => {
-      const agents = [
-        microlearningAgent,
-        orchestratorAgent,
-        phishingEmailAgent,
-        policySummaryAgent,
-        userInfoAgent,
-      ];
+      const agents = [microlearningAgent, orchestratorAgent, phishingEmailAgent, policySummaryAgent, userInfoAgent];
 
       expect(agents).toHaveLength(5);
     });
 
     it('should export all agents as defined and not null', () => {
-      const agents = [
-        microlearningAgent,
-        orchestratorAgent,
-        phishingEmailAgent,
-        policySummaryAgent,
-        userInfoAgent,
-      ];
+      const agents = [microlearningAgent, orchestratorAgent, phishingEmailAgent, policySummaryAgent, userInfoAgent];
 
-      agents.forEach((agent) => {
+      agents.forEach(agent => {
         expect(agent).toBeDefined();
         expect(agent).not.toBeNull();
       });
     });
 
     it('should export all agents as objects', () => {
-      const agents = [
-        microlearningAgent,
-        orchestratorAgent,
-        phishingEmailAgent,
-        policySummaryAgent,
-        userInfoAgent,
-      ];
+      const agents = [microlearningAgent, orchestratorAgent, phishingEmailAgent, policySummaryAgent, userInfoAgent];
 
-      agents.forEach((agent) => {
+      agents.forEach(agent => {
         expect(typeof agent).toBe('object');
         expect(Array.isArray(agent)).toBe(false);
       });
     });
 
     it('should have each agent with name property', () => {
-      const agents = [
-        microlearningAgent,
-        orchestratorAgent,
-        phishingEmailAgent,
-        policySummaryAgent,
-        userInfoAgent,
-      ];
+      const agents = [microlearningAgent, orchestratorAgent, phishingEmailAgent, policySummaryAgent, userInfoAgent];
 
-      agents.forEach((agent) => {
+      agents.forEach(agent => {
         expect(agent).toHaveProperty('name');
         expect(typeof agent.name).toBe('string');
         expect(agent.name.length).toBeGreaterThan(0);
@@ -267,15 +237,9 @@ describe('Agents Index Exports', () => {
     });
 
     it('should have each agent with instructions property', () => {
-      const agents = [
-        microlearningAgent,
-        orchestratorAgent,
-        phishingEmailAgent,
-        policySummaryAgent,
-        userInfoAgent,
-      ];
+      const agents = [microlearningAgent, orchestratorAgent, phishingEmailAgent, policySummaryAgent, userInfoAgent];
 
-      agents.forEach((agent) => {
+      agents.forEach(agent => {
         expect(agent).toHaveProperty('instructions');
         expect(typeof agent.instructions).toBe('string');
         expect(agent.instructions.length).toBeGreaterThan(0);
@@ -283,29 +247,18 @@ describe('Agents Index Exports', () => {
     });
 
     it('should have each agent with model property', () => {
-      const agents = [
-        microlearningAgent,
-        orchestratorAgent,
-        phishingEmailAgent,
-        policySummaryAgent,
-        userInfoAgent,
-      ];
+      const agents = [microlearningAgent, orchestratorAgent, phishingEmailAgent, policySummaryAgent, userInfoAgent];
 
-      agents.forEach((agent) => {
+      agents.forEach(agent => {
         expect(agent).toHaveProperty('model');
         expect(agent.model).not.toBeNull();
       });
     });
 
     it('should have each agent with tools property (except orchestrator)', () => {
-      const agents = [
-        microlearningAgent,
-        phishingEmailAgent,
-        policySummaryAgent,
-        userInfoAgent,
-      ];
+      const agents = [microlearningAgent, phishingEmailAgent, policySummaryAgent, userInfoAgent];
 
-      agents.forEach((agent) => {
+      agents.forEach(agent => {
         expect(agent).toHaveProperty('tools');
         expect(typeof agent.tools).toBe('object');
         expect(Object.keys(agent.tools).length).toBeGreaterThan(0);
@@ -349,7 +302,7 @@ describe('Agents Index Exports', () => {
         AGENT_NAMES.USER_INFO,
       ];
 
-      constantNames.forEach((name) => {
+      constantNames.forEach(name => {
         expect(name).toBeDefined();
         expect(typeof name).toBe('string');
         expect(name.length).toBeGreaterThan(0);
@@ -432,14 +385,9 @@ describe('Agents Index Exports', () => {
     });
 
     it('all agents should have tools as object (except orchestrator)', () => {
-      const agents = [
-        microlearningAgent,
-        phishingEmailAgent,
-        policySummaryAgent,
-        userInfoAgent,
-      ];
+      const agents = [microlearningAgent, phishingEmailAgent, policySummaryAgent, userInfoAgent];
 
-      agents.forEach((agent) => {
+      agents.forEach(agent => {
         expect(typeof agent.tools).toBe('object');
         expect(Array.isArray(agent.tools)).toBe(false);
       });
@@ -452,15 +400,9 @@ describe('Agents Index Exports', () => {
   // ==================== MODEL CONFIGURATION TESTS ====================
   describe('Model Configuration Across Agents', () => {
     it('should have models configured for all agents', () => {
-      const agents = [
-        microlearningAgent,
-        orchestratorAgent,
-        phishingEmailAgent,
-        policySummaryAgent,
-        userInfoAgent,
-      ];
+      const agents = [microlearningAgent, orchestratorAgent, phishingEmailAgent, policySummaryAgent, userInfoAgent];
 
-      agents.forEach((agent) => {
+      agents.forEach(agent => {
         expect(agent.model).toBeDefined();
         expect(agent.model).not.toBeNull();
         expect(typeof agent.model).not.toBe('string');
@@ -491,15 +433,9 @@ describe('Agents Index Exports', () => {
     });
 
     it('all agents should have non-empty trimmed instructions', () => {
-      const agents = [
-        microlearningAgent,
-        orchestratorAgent,
-        phishingEmailAgent,
-        policySummaryAgent,
-        userInfoAgent,
-      ];
+      const agents = [microlearningAgent, orchestratorAgent, phishingEmailAgent, policySummaryAgent, userInfoAgent];
 
-      agents.forEach((agent) => {
+      agents.forEach(agent => {
         expect(agent.instructions.trim().length).toBeGreaterThan(0);
       });
     });
@@ -522,15 +458,9 @@ describe('Agents Index Exports', () => {
 
     it('should maintain consistency across exports', () => {
       // Verify that each agent maintains its properties consistently
-      const agents = [
-        microlearningAgent,
-        orchestratorAgent,
-        phishingEmailAgent,
-        policySummaryAgent,
-        userInfoAgent,
-      ];
+      const agents = [microlearningAgent, orchestratorAgent, phishingEmailAgent, policySummaryAgent, userInfoAgent];
 
-      agents.forEach((agent) => {
+      agents.forEach(agent => {
         expect(agent.name).toBeDefined();
         expect(agent.instructions).toBeDefined();
         expect(agent.model).toBeDefined();

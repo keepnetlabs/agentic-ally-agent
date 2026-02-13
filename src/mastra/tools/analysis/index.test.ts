@@ -39,12 +39,7 @@ describe('Analysis Tools Barrel Export', () => {
     });
 
     it('should export exactly 4 main tools', () => {
-      const tools = [
-        analyzeUserPromptTool,
-        codeReviewCheckTool,
-        reasoningTool,
-        summarizePolicyTool
-      ];
+      const tools = [analyzeUserPromptTool, codeReviewCheckTool, reasoningTool, summarizePolicyTool];
 
       expect(tools.length).toBe(4);
       tools.forEach(tool => {
@@ -59,7 +54,7 @@ describe('Analysis Tools Barrel Export', () => {
       // Type should be available for import
       const sample = {
         userPrompt: 'test',
-        suggestedLevel: 'Beginner' as const
+        suggestedLevel: 'Beginner' as const,
       } as AnalyzeUserPromptInput;
       expect(sample.userPrompt).toBe('test');
     });
@@ -83,7 +78,7 @@ describe('Analysis Tools Barrel Export', () => {
           keyTopics: [],
           practicalApplications: [],
           assessmentAreas: [],
-        }
+        },
       };
       expect(sample.success).toBe(true);
     });
@@ -95,7 +90,7 @@ describe('Analysis Tools Barrel Export', () => {
         originalCode: 'SELECT * FROM users',
         fixedCode: 'SELECT * FROM users WHERE id = ?',
         language: 'javascript',
-        outputLanguage: 'en'
+        outputLanguage: 'en',
       } as CodeReviewCheckInput;
       expect(sample.issueType).toBe('SQL Injection');
     });
@@ -110,8 +105,8 @@ describe('Analysis Tools Barrel Export', () => {
           feedback: 'Good fix',
           explanation: 'This properly addresses the issue',
           points: 25,
-          hint: ''
-        }
+          hint: '',
+        },
       };
       expect(sample.success).toBe(true);
     });
@@ -189,7 +184,7 @@ describe('Analysis Tools Barrel Export', () => {
         (analyzeUserPromptTool as any).id,
         (codeReviewCheckTool as any).id,
         (reasoningTool as any).id,
-        (summarizePolicyTool as any).id
+        (summarizePolicyTool as any).id,
       ];
 
       const uniqueIds = new Set(ids);
@@ -305,7 +300,7 @@ describe('Analysis Tools Barrel Export', () => {
         analyzeUserPromptTool,
         codeReviewCheckTool,
         reasoningTool,
-        summarizePolicyTool
+        summarizePolicyTool,
       };
 
       Object.values(tools).forEach(tool => {
@@ -320,7 +315,7 @@ describe('Analysis Tools Barrel Export', () => {
         'AnalyzeUserPromptInput',
         'AnalyzeUserPromptOutput',
         'CodeReviewCheckInput',
-        'CodeReviewCheckOutput'
+        'CodeReviewCheckOutput',
       ];
 
       types.forEach(typeName => {
@@ -336,12 +331,7 @@ describe('Analysis Tools Barrel Export', () => {
     });
 
     it('should not duplicate tool exports', () => {
-      const tools = [
-        analyzeUserPromptTool,
-        codeReviewCheckTool,
-        reasoningTool,
-        summarizePolicyTool
-      ];
+      const tools = [analyzeUserPromptTool, codeReviewCheckTool, reasoningTool, summarizePolicyTool];
 
       const toolIds = new Set(tools.map((t: any) => t.id));
       expect(toolIds.size).toBe(tools.length);
@@ -374,7 +364,7 @@ describe('Analysis Tools Barrel Export', () => {
       // Type-only imports should not cause runtime errors
       const sample = {
         userPrompt: 'test',
-        suggestedLevel: 'Intermediate' as const
+        suggestedLevel: 'Intermediate' as const,
       } as AnalyzeUserPromptInput;
       expect(sample).toBeDefined();
     });
@@ -399,12 +389,9 @@ describe('Analysis Tools Barrel Export', () => {
     });
 
     it('all tools should be available simultaneously', () => {
-      const allAvailable = [
-        analyzeUserPromptTool,
-        codeReviewCheckTool,
-        reasoningTool,
-        summarizePolicyTool
-      ].every(tool => tool !== undefined && tool !== null);
+      const allAvailable = [analyzeUserPromptTool, codeReviewCheckTool, reasoningTool, summarizePolicyTool].every(
+        tool => tool !== undefined && tool !== null
+      );
 
       expect(allAvailable).toBe(true);
     });
@@ -445,12 +432,7 @@ describe('Analysis Tools Barrel Export', () => {
   // ==================== COLLECTION TESTS ====================
   describe('Tool Collection Properties', () => {
     it('should be able to collect all tools in array', () => {
-      const allTools = [
-        analyzeUserPromptTool,
-        codeReviewCheckTool,
-        reasoningTool,
-        summarizePolicyTool
-      ];
+      const allTools = [analyzeUserPromptTool, codeReviewCheckTool, reasoningTool, summarizePolicyTool];
 
       expect(Array.isArray(allTools)).toBe(true);
       expect(allTools.length).toBe(4);
@@ -461,7 +443,7 @@ describe('Analysis Tools Barrel Export', () => {
         analyze: analyzeUserPromptTool,
         codeReview: codeReviewCheckTool,
         reasoning: reasoningTool,
-        policy: summarizePolicyTool
+        policy: summarizePolicyTool,
       };
 
       Object.values(toolsObject).forEach(tool => {
@@ -496,7 +478,7 @@ describe('Analysis Tools Barrel Export', () => {
         userPromptAnalyzer: analyzeUserPromptTool,
         codeReviewValidator: codeReviewCheckTool,
         reasoningEmitter: reasoningTool,
-        policySummarizer: summarizePolicyTool
+        policySummarizer: summarizePolicyTool,
       };
 
       Object.values(analysisSuite).forEach(tool => {
@@ -507,10 +489,10 @@ describe('Analysis Tools Barrel Export', () => {
 
     it('should support tool discovery by id', () => {
       const toolsMap: { [key: string]: any } = {
-        'analyze_user_prompt': analyzeUserPromptTool,
-        'code_review_check': codeReviewCheckTool,
-        'show_reasoning': reasoningTool,
-        'summarize-policy': summarizePolicyTool
+        analyze_user_prompt: analyzeUserPromptTool,
+        code_review_check: codeReviewCheckTool,
+        show_reasoning: reasoningTool,
+        'summarize-policy': summarizePolicyTool,
       };
 
       const foundTool = toolsMap['code_review_check'];

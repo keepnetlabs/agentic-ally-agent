@@ -173,11 +173,7 @@ describe('GroupTopicService', () => {
   describe('Suggested topics', () => {
     it('should support Phishing & Email Security topic', () => {
       const topic = 'Phishing & Email Security';
-      const topics = [
-        'Phishing & Email Security',
-        'Password & Authentication',
-        'Social Engineering Defense',
-      ];
+      const topics = ['Phishing & Email Security', 'Password & Authentication', 'Social Engineering Defense'];
 
       expect(topics).toContain(topic);
     });
@@ -391,7 +387,8 @@ Create educational training content on THIS TOPIC: "${topic}"`;
     });
 
     it('should include alignment note in training prompt', () => {
-      const prompt = 'Align with the phishing scenario (same topic) so learners understand both attack vectors AND defenses';
+      const prompt =
+        'Align with the phishing scenario (same topic) so learners understand both attack vectors AND defenses';
 
       expect(prompt).toContain('phishing');
       expect(prompt).toContain('defenses');
@@ -438,28 +435,19 @@ Create educational training content on THIS TOPIC: "${topic}"`;
     });
 
     it('should include organizational topics', () => {
-      const orgTopics = [
-        'Insider Threat Recognition',
-        'Third-Party Risk Management',
-        'Supply Chain Attack Awareness',
-      ];
+      const orgTopics = ['Insider Threat Recognition', 'Third-Party Risk Management', 'Supply Chain Attack Awareness'];
 
       expect(orgTopics.length).toBeGreaterThan(0);
     });
 
     it('should include compliance topics', () => {
-      const complianceTopics = [
-        'Data Protection & Privacy Compliance',
-        'Access Control & Least Privilege',
-      ];
+      const complianceTopics = ['Data Protection & Privacy Compliance', 'Access Control & Least Privilege'];
 
       expect(complianceTopics.length).toBeGreaterThan(0);
     });
 
     it('should include incident handling topics', () => {
-      const incidentTopics = [
-        'Incident Response Fundamentals',
-      ];
+      const incidentTopics = ['Incident Response Fundamentals'];
 
       expect(incidentTopics.length).toBeGreaterThan(0);
     });

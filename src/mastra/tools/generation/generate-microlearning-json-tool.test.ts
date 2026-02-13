@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // 1. Mock dependency modules
 vi.mock('ai', () => ({
-  generateText: vi.fn()
+  generateText: vi.fn(),
 }));
 
 vi.mock('../../utils/core/logger', () => ({
@@ -10,15 +10,15 @@ vi.mock('../../utils/core/logger', () => ({
     info: vi.fn(),
     error: vi.fn(),
     warn: vi.fn(),
-    debug: vi.fn()
-  })
+    debug: vi.fn(),
+  }),
 }));
 
-vi.mock('./utils/microlearning-generator', async (importOriginal) => {
+vi.mock('./utils/microlearning-generator', async importOriginal => {
   const actual: any = await importOriginal();
   return {
     ...actual,
-    generateMicrolearningJsonWithAI: vi.fn()
+    generateMicrolearningJsonWithAI: vi.fn(),
   };
 });
 
@@ -44,11 +44,11 @@ describe('generateMicrolearningJsonTool', () => {
       duration: 5,
       additionalContext: 'Focus on recent trends',
       description: 'Test description',
-      themeColor: 'blue'
+      themeColor: 'blue',
     },
     microlearningId: 'ml-123',
     model: mockModel,
-    policyContext: 'Company policy on email'
+    policyContext: 'Company policy on email',
   };
 
   beforeEach(() => {
@@ -58,7 +58,7 @@ describe('generateMicrolearningJsonTool', () => {
   it('should generate microlearning JSON successfully', async () => {
     const mockOutput = {
       microlearning_id: 'ml-123',
-      microlearning_metadata: { title: 'Enhanced Title' }
+      microlearning_metadata: { title: 'Enhanced Title' },
     };
 
     (generateMicrolearningJsonWithAI as any).mockResolvedValue(mockOutput);
@@ -86,7 +86,7 @@ describe('generateMicrolearningJsonTool', () => {
 
     const inputWithPolicy = {
       ...baseInput,
-      policyContext: 'Company security policy for phishing'
+      policyContext: 'Company security policy for phishing',
     };
 
     await (generateMicrolearningJsonTool as any).execute(inputWithPolicy);
@@ -105,7 +105,7 @@ describe('generateMicrolearningJsonTool', () => {
 
     const inputWithoutPolicy = {
       ...baseInput,
-      policyContext: undefined
+      policyContext: undefined,
     };
 
     const result = await (generateMicrolearningJsonTool as any).execute(inputWithoutPolicy);
@@ -133,7 +133,7 @@ describe('generateMicrolearningJsonTool', () => {
 
     const turkishInput = {
       ...baseInput,
-      analysis: { ...baseInput.analysis, language: 'tr' }
+      analysis: { ...baseInput.analysis, language: 'tr' },
     };
 
     const result = await (generateMicrolearningJsonTool as any).execute(turkishInput);
@@ -147,7 +147,7 @@ describe('generateMicrolearningJsonTool', () => {
 
     const advancedInput = {
       ...baseInput,
-      analysis: { ...baseInput.analysis, level: 'advanced' }
+      analysis: { ...baseInput.analysis, level: 'advanced' },
     };
 
     const result = await (generateMicrolearningJsonTool as any).execute(advancedInput);
@@ -161,7 +161,7 @@ describe('generateMicrolearningJsonTool', () => {
 
     const multiIndustryInput = {
       ...baseInput,
-      analysis: { ...baseInput.analysis, industries: ['IT', 'Finance', 'Healthcare'] }
+      analysis: { ...baseInput.analysis, industries: ['IT', 'Finance', 'Healthcare'] },
     };
 
     const result = await (generateMicrolearningJsonTool as any).execute(multiIndustryInput);
@@ -175,7 +175,7 @@ describe('generateMicrolearningJsonTool', () => {
 
     const multiRoleInput = {
       ...baseInput,
-      analysis: { ...baseInput.analysis, roles: ['Employee', 'Manager', 'Admin'] }
+      analysis: { ...baseInput.analysis, roles: ['Employee', 'Manager', 'Admin'] },
     };
 
     const result = await (generateMicrolearningJsonTool as any).execute(multiRoleInput);
@@ -189,7 +189,7 @@ describe('generateMicrolearningJsonTool', () => {
 
     const complianceInput = {
       ...baseInput,
-      analysis: { ...baseInput.analysis, regulationCompliance: ['GDPR', 'HIPAA', 'SOC2'] }
+      analysis: { ...baseInput.analysis, regulationCompliance: ['GDPR', 'HIPAA', 'SOC2'] },
     };
 
     const result = await (generateMicrolearningJsonTool as any).execute(complianceInput);
@@ -203,7 +203,7 @@ describe('generateMicrolearningJsonTool', () => {
 
     const noContextInput = {
       ...baseInput,
-      analysis: { ...baseInput.analysis, additionalContext: undefined }
+      analysis: { ...baseInput.analysis, additionalContext: undefined },
     };
 
     const result = await (generateMicrolearningJsonTool as any).execute(noContextInput);
@@ -218,7 +218,7 @@ describe('generateMicrolearningJsonTool', () => {
     const longContext = 'A'.repeat(4000); // Within 5000 char limit
     const longContextInput = {
       ...baseInput,
-      analysis: { ...baseInput.analysis, additionalContext: longContext }
+      analysis: { ...baseInput.analysis, additionalContext: longContext },
     };
 
     const result = await (generateMicrolearningJsonTool as any).execute(longContextInput);
@@ -242,7 +242,7 @@ describe('generateMicrolearningJsonTool', () => {
 
     const shortDurationInput = {
       ...baseInput,
-      analysis: { ...baseInput.analysis, duration: 3 }
+      analysis: { ...baseInput.analysis, duration: 3 },
     };
 
     const result = await (generateMicrolearningJsonTool as any).execute(shortDurationInput);
@@ -256,7 +256,7 @@ describe('generateMicrolearningJsonTool', () => {
 
     const customIdInput = {
       ...baseInput,
-      microlearningId: 'custom-id-456'
+      microlearningId: 'custom-id-456',
     };
 
     await (generateMicrolearningJsonTool as any).execute(customIdInput);

@@ -8,140 +8,136 @@ import { normalizeError } from '../../utils/core/error-utils';
 import { DEFAULT_TRAINING_LEVEL, PHISHING, SMISHING, TRAINING_LEVELS } from '../../constants';
 import type { AutonomousActionResult } from '../../types/autonomous-types';
 import {
-    generatePhishingSimulation,
-    generatePhishingSimulationForGroup,
-    assignPhishingWithTraining,
+  generatePhishingSimulation,
+  generatePhishingSimulationForGroup,
+  assignPhishingWithTraining,
 } from './autonomous-phishing-handlers';
 import { generateSmishingSimulation } from './autonomous-smishing-handlers';
-import {
-    generateTrainingModule,
-    generateTrainingModuleForGroup,
-} from './autonomous-training-handlers';
+import { generateTrainingModule, generateTrainingModuleForGroup } from './autonomous-training-handlers';
 import { selectGroupTrainingTopic } from './group-topic-service';
 
 interface ContentGenerationReport {
-    header?: {
-        resilience_stage?: { level?: string };
-        progression_target?: string;
-        progression_hint?: string;
-    };
-    meta?: {
-        department?: string;
-    };
-    strengths?: string[];
-    growth_opportunities?: string[];
-    maturity_mapping?: {
-        gartner_sbcp?: { current?: string; next?: string; what_it_takes?: string };
-        enisa_security_culture?: { current?: string; next?: string; what_it_takes?: string };
-    };
-    references?: string[];
-    recommended_next_steps?: NextSteps;
-    ai_recommended_next_steps?: NextSteps;
+  header?: {
+    resilience_stage?: { level?: string };
+    progression_target?: string;
+    progression_hint?: string;
+  };
+  meta?: {
+    department?: string;
+  };
+  strengths?: string[];
+  growth_opportunities?: string[];
+  maturity_mapping?: {
+    gartner_sbcp?: { current?: string; next?: string; what_it_takes?: string };
+    enisa_security_culture?: { current?: string; next?: string; what_it_takes?: string };
+  };
+  references?: string[];
+  recommended_next_steps?: NextSteps;
+  ai_recommended_next_steps?: NextSteps;
 }
 
 interface NextSteps {
-    simulations?: RecommendedSimulation[];
-    microlearnings?: RecommendedMicrolearning[];
-    nudges?: RecommendedNudge[];
+  simulations?: RecommendedSimulation[];
+  microlearnings?: RecommendedMicrolearning[];
+  nudges?: RecommendedNudge[];
 }
 
 interface AutonomousToolResult {
-    analysisReport?: ContentGenerationReport;
-    userInfo?: {
-        preferredLanguage?: string;
-        department?: string;
-        targetUserResourceId?: string;
-    };
+  analysisReport?: ContentGenerationReport;
+  userInfo?: {
+    preferredLanguage?: string;
+    department?: string;
+    targetUserResourceId?: string;
+  };
 }
 
 interface RecommendedSimulation {
-    title?: string;
-    vector?: string;
-    scenario_type?: string;
-    difficulty?: string;
-    persuasion_tactic?: string;
-    rationale?: string;
-    designed_to_progress?: string;
-    nist_phish_scale?: {
-        cue_difficulty?: string;
-        premise_alignment?: string;
-    };
+  title?: string;
+  vector?: string;
+  scenario_type?: string;
+  difficulty?: string;
+  persuasion_tactic?: string;
+  rationale?: string;
+  designed_to_progress?: string;
+  nist_phish_scale?: {
+    cue_difficulty?: string;
+    premise_alignment?: string;
+  };
 }
 
 interface RecommendedMicrolearning {
-    title?: string;
-    objective?: string;
-    duration_min?: number;
-    language?: string;
-    rationale?: string;
+  title?: string;
+  objective?: string;
+  duration_min?: number;
+  language?: string;
+  rationale?: string;
 }
 
 interface RecommendedNudge {
-    channel?: string;
-    message?: string;
-    cadence?: string;
-    rationale?: string;
+  channel?: string;
+  message?: string;
+  cadence?: string;
+  rationale?: string;
 }
 
 interface GenerationResults {
-    phishingResult?: AutonomousActionResult;
-    trainingResult?: AutonomousActionResult;
-    smishingResult?: AutonomousActionResult;
+  phishingResult?: AutonomousActionResult;
+  trainingResult?: AutonomousActionResult;
+  smishingResult?: AutonomousActionResult;
 }
 
 function createMissingRecommendationResult(action: 'training' | 'phishing' | 'smishing'): AutonomousActionResult {
-    return {
-        success: false,
-        error: `No recommended ${action} content found in analysis report`,
-    };
+  return {
+    success: false,
+    error: `No recommended ${action} content found in analysis report`,
+  };
 }
 
 function pickRandomItem<T>(items: readonly T[]): T {
-    return items[Math.floor(Math.random() * items.length)];
+  return items[Math.floor(Math.random() * items.length)];
 }
 
 function deriveTrainingLevelFromAnalysis(report?: ContentGenerationReport): (typeof TRAINING_LEVELS)[number] {
-    const raw = report?.header?.resilience_stage?.level;
-    if (!raw) {
-        return pickRandomItem(TRAINING_LEVELS);
-    }
+  const raw = report?.header?.resilience_stage?.level;
+  if (!raw) {
+    return pickRandomItem(TRAINING_LEVELS);
+  }
 
-    const normalized = raw.toLowerCase();
-    if (normalized.includes('low') || normalized.includes('beginner')) return 'Beginner';
-    if (normalized.includes('high') || normalized.includes('advanced')) return 'Advanced';
-    if (normalized.includes('medium') || normalized.includes('intermediate')) return 'Intermediate';
+  const normalized = raw.toLowerCase();
+  if (normalized.includes('low') || normalized.includes('beginner')) return 'Beginner';
+  if (normalized.includes('high') || normalized.includes('advanced')) return 'Advanced';
+  if (normalized.includes('medium') || normalized.includes('intermediate')) return 'Intermediate';
 
-    return DEFAULT_TRAINING_LEVEL;
+  return DEFAULT_TRAINING_LEVEL;
 }
 
 /**
  * Build executive report from analysis data
  */
 function getRecommendedNextSteps(report: ContentGenerationReport | undefined) {
-    return (
-        report?.recommended_next_steps ??
-        report?.ai_recommended_next_steps ??
-        {
-            simulations: [],
-            microlearnings: [],
-            nudges: [],
-        }
-    );
+  return (
+    report?.recommended_next_steps ??
+    report?.ai_recommended_next_steps ?? {
+      simulations: [],
+      microlearnings: [],
+      nudges: [],
+    }
+  );
 }
 
 export function buildExecutiveReport(toolResult: AutonomousToolResult): string | undefined {
-    if (!toolResult.analysisReport) {
-        return undefined;
-    }
+  if (!toolResult.analysisReport) {
+    return undefined;
+  }
 
-    const report = toolResult.analysisReport;
-    const steps = getRecommendedNextSteps(report);
-    const sim = steps.simulations?.[0];
-    const ml = steps.microlearnings?.[0];
-    const nudge = steps.nudges?.[0];
-    const references = (report.references && Array.isArray(report.references)) ? report.references.join(', ') : '';
+  const report = toolResult.analysisReport;
+  const steps = getRecommendedNextSteps(report);
+  const sim = steps.simulations?.[0];
+  const ml = steps.microlearnings?.[0];
+  const nudge = steps.nudges?.[0];
+  const references = report.references && Array.isArray(report.references) ? report.references.join(', ') : '';
 
-    return `**User Behavior Analysis Report**
+  return `**User Behavior Analysis Report**
 
 **Risk Level:** ${report.header?.resilience_stage?.level || 'Unknown'}
 **Department:** ${report.meta?.department || 'Unknown'}
@@ -161,27 +157,39 @@ export function buildExecutiveReport(toolResult: AutonomousToolResult): string |
 - **What It Takes:** ${report.maturity_mapping?.enisa_security_culture?.what_it_takes || 'N/A'}
 
 **Recommended Simulation Strategy:**
-${sim ? `- **Title:** ${sim.title}
+${
+  sim
+    ? `- **Title:** ${sim.title}
 - **Vector:** ${sim.vector}
 - **Scenario Type:** ${sim.scenario_type}
 - **Difficulty:** ${sim.difficulty}
 - **Persuasion Tactic:** ${sim.persuasion_tactic}
 - **Rationale:** ${sim.rationale}
 - **NIST Phish Scale:** Cue Difficulty: ${sim.nist_phish_scale?.cue_difficulty || 'N/A'}, Premise Alignment: ${sim.nist_phish_scale?.premise_alignment || 'N/A'}
-- **Designed to Progress:** ${sim.designed_to_progress || 'N/A'}` : 'None'}
+- **Designed to Progress:** ${sim.designed_to_progress || 'N/A'}`
+    : 'None'
+}
 
 **Recommended Training Strategy:**
-${ml ? `- **Title:** ${ml.title}
+${
+  ml
+    ? `- **Title:** ${ml.title}
 - **Objective:** ${ml.objective}
 - **Duration:** ${ml.duration_min} minutes
 - **Language:** ${toolResult.userInfo?.preferredLanguage || ml.language || 'en-gb'}
-- **Rationale:** ${ml.rationale}` : 'None'}
+- **Rationale:** ${ml.rationale}`
+    : 'None'
+}
 
 **Recommended Nudge Strategy:**
-${nudge ? `- **Channel:** ${nudge.channel}
+${
+  nudge
+    ? `- **Channel:** ${nudge.channel}
 - **Message:** ${nudge.message}
 - **Cadence:** ${nudge.cadence}
-- **Rationale:** ${nudge.rationale}` : 'None'}
+- **Rationale:** ${nudge.rationale}`
+    : 'None'
+}
 
 **References (use in generation):**
 ${references || 'None provided'}`;
@@ -192,305 +200,319 @@ ${references || 'None provided'}`;
  * Uses group-topic-service to get topic + prompts
  */
 export async function generateContentForGroup(
-    actions: ('training' | 'phishing' | 'smishing')[],
-    preferredLanguage: string | undefined,
-    targetGroupResourceId: string | undefined
+  actions: ('training' | 'phishing' | 'smishing')[],
+  preferredLanguage: string | undefined,
+  targetGroupResourceId: string | undefined
 ): Promise<GenerationResults> {
-    const logger = getLogger('GenerateContentForGroup');
-    const userId = targetGroupResourceId || Date.now();
-    let phishingResult: AutonomousActionResult | undefined;
-    let trainingResult: AutonomousActionResult | undefined;
-    let smishingResult: AutonomousActionResult | undefined;
+  const logger = getLogger('GenerateContentForGroup');
+  const userId = targetGroupResourceId || Date.now();
+  let phishingResult: AutonomousActionResult | undefined;
+  let trainingResult: AutonomousActionResult | undefined;
+  let smishingResult: AutonomousActionResult | undefined;
 
-    // STEP 1: Select topic + get prompts from service
-    logger.info('Selecting unified topic for group training', { groupId: userId });
-    const topicSelection = await selectGroupTrainingTopic(preferredLanguage);
-    const { topic, phishingPrompt, smishingPrompt, trainingPrompt, objectives } = topicSelection;
-    logger.info('🎯 Using topic for both phishing & training', { topic, objectivesCount: objectives.length });
+  // STEP 1: Select topic + get prompts from service
+  logger.info('Selecting unified topic for group training', { groupId: userId });
+  const topicSelection = await selectGroupTrainingTopic(preferredLanguage);
+  const { topic, phishingPrompt, smishingPrompt, trainingPrompt, objectives } = topicSelection;
+  logger.info('🎯 Using topic for both phishing & training', { topic, objectivesCount: objectives.length });
 
-    const runTimestamp = Date.now();
-    const generationPromises: Promise<void>[] = [];
-    const groupTrainingLevel = pickRandomItem(TRAINING_LEVELS);
+  const runTimestamp = Date.now();
+  const generationPromises: Promise<void>[] = [];
+  const groupTrainingLevel = pickRandomItem(TRAINING_LEVELS);
 
-    // Generate phishing with selected topic + prompt
-    if (actions.includes('phishing')) {
-        const groupDifficulty = pickRandomItem(PHISHING.DIFFICULTY_LEVELS);
-        const groupScenarioType = pickRandomItem(['CLICK_ONLY', 'DATA_SUBMISSION'] as const);
-        const groupPhishingSimulation = {
-            title: `Group Phishing Simulation: ${topic}`,
-            difficulty: groupDifficulty,
-            scenario_type: groupScenarioType,
-            vector: 'EMAIL',
-            persuasion_tactic: 'Topic-focused attack',
-            rationale: `Group-level awareness training focused on: ${topic}`
-        };
+  // Generate phishing with selected topic + prompt
+  if (actions.includes('phishing')) {
+    const groupDifficulty = pickRandomItem(PHISHING.DIFFICULTY_LEVELS);
+    const groupScenarioType = pickRandomItem(['CLICK_ONLY', 'DATA_SUBMISSION'] as const);
+    const groupPhishingSimulation = {
+      title: `Group Phishing Simulation: ${topic}`,
+      difficulty: groupDifficulty,
+      scenario_type: groupScenarioType,
+      vector: 'EMAIL',
+      persuasion_tactic: 'Topic-focused attack',
+      rationale: `Group-level awareness training focused on: ${topic}`,
+    };
 
-        const phishingThreadId = `phishing-group-${userId}-${runTimestamp}`;
+    const phishingThreadId = `phishing-group-${userId}-${runTimestamp}`;
 
-        logger.info('Generating phishing simulation', {
-            groupId: userId,
-            topic,
-            language: preferredLanguage,
-            threadId: phishingThreadId
-        });
+    logger.info('Generating phishing simulation', {
+      groupId: userId,
+      topic,
+      language: preferredLanguage,
+      threadId: phishingThreadId,
+    });
 
-        generationPromises.push(
-            generatePhishingSimulationForGroup(
-                groupPhishingSimulation,
-                phishingPrompt,  // custom topic-based prompt from group-topic-service
-                preferredLanguage,
-                phishingThreadId,
-                userId as string | number
-            )
-                .then(result => { phishingResult = result; })
-                .catch(error => {
-                    const err = normalizeError(error);
-                    logger.error('Phishing generation failed (GROUP)', { error: err.message });
-                    phishingResult = { success: false, error: err.message };
-                })
-        );
-    }
+    generationPromises.push(
+      generatePhishingSimulationForGroup(
+        groupPhishingSimulation,
+        phishingPrompt, // custom topic-based prompt from group-topic-service
+        preferredLanguage,
+        phishingThreadId,
+        userId as string | number
+      )
+        .then(result => {
+          phishingResult = result;
+        })
+        .catch(error => {
+          const err = normalizeError(error);
+          logger.error('Phishing generation failed (GROUP)', { error: err.message });
+          phishingResult = { success: false, error: err.message };
+        })
+    );
+  }
 
-    if (actions.includes('smishing')) {
-        const groupSmishingSimulation = {
-            title: `Group Smishing Simulation: ${topic}`,
-            difficulty: pickRandomItem(SMISHING.DIFFICULTY_LEVELS),
-            scenario_type: pickRandomItem(['CLICK_ONLY', 'DATA_SUBMISSION'] as const),
-            persuasion_tactic: 'Topic-focused SMS attack',
-            rationale: `Group-level smishing awareness training focused on: ${topic}`
-        };
+  if (actions.includes('smishing')) {
+    const groupSmishingSimulation = {
+      title: `Group Smishing Simulation: ${topic}`,
+      difficulty: pickRandomItem(SMISHING.DIFFICULTY_LEVELS),
+      scenario_type: pickRandomItem(['CLICK_ONLY', 'DATA_SUBMISSION'] as const),
+      persuasion_tactic: 'Topic-focused SMS attack',
+      rationale: `Group-level smishing awareness training focused on: ${topic}`,
+    };
 
-        logger.info('Generating smishing simulation', {
-            groupId: userId,
-            topic,
-            language: preferredLanguage,
-        });
+    logger.info('Generating smishing simulation', {
+      groupId: userId,
+      topic,
+      language: preferredLanguage,
+    });
 
-        generationPromises.push(
-            generateSmishingSimulation({
-                simulation: groupSmishingSimulation,
-                executiveReport: smishingPrompt,
-                toolResult: {
-                    userInfo: { preferredLanguage },
-                },
-                targetGroupResourceId: userId as string | number,
-            })
-                .then(result => { smishingResult = result; })
-                .catch(error => {
-                    const err = normalizeError(error);
-                    logger.error('Smishing generation failed (GROUP)', { error: err.message });
-                    smishingResult = { success: false, error: err.message };
-                })
-        );
-    }
+    generationPromises.push(
+      generateSmishingSimulation({
+        simulation: groupSmishingSimulation,
+        executiveReport: smishingPrompt,
+        toolResult: {
+          userInfo: { preferredLanguage },
+        },
+        targetGroupResourceId: userId as string | number,
+      })
+        .then(result => {
+          smishingResult = result;
+        })
+        .catch(error => {
+          const err = normalizeError(error);
+          logger.error('Smishing generation failed (GROUP)', { error: err.message });
+          smishingResult = { success: false, error: err.message };
+        })
+    );
+  }
 
-    // Generate training with same topic + prompt
-    if (actions.includes('training')) {
-        const groupMicrolearning = {
-            title: `Group Security Training: ${topic}`,
-            objective: `Build comprehensive awareness on ${topic}`,
-            rationale: `Group-level training aligned with phishing simulation on: ${topic}`
-        };
+  // Generate training with same topic + prompt
+  if (actions.includes('training')) {
+    const groupMicrolearning = {
+      title: `Group Security Training: ${topic}`,
+      objective: `Build comprehensive awareness on ${topic}`,
+      rationale: `Group-level training aligned with phishing simulation on: ${topic}`,
+    };
 
-        const trainingThreadId = `training-group-${userId}-${runTimestamp}`;
+    const trainingThreadId = `training-group-${userId}-${runTimestamp}`;
 
-        logger.info('Generating training module', {
-            groupId: userId,
-            topic,
-            language: preferredLanguage,
-            threadId: trainingThreadId
-        });
+    logger.info('Generating training module', {
+      groupId: userId,
+      topic,
+      language: preferredLanguage,
+      threadId: trainingThreadId,
+    });
 
-        generationPromises.push(
-            generateTrainingModuleForGroup(
-                groupMicrolearning,
-                trainingPrompt,  // custom topic-based prompt from group-topic-service
-                preferredLanguage,
-                trainingThreadId,
-                userId as string | number,
-                groupTrainingLevel
-            )
-                .then(result => { trainingResult = result; })
-                .catch(error => {
-                    const err = normalizeError(error);
-                    logger.error('Training generation failed (GROUP)', { error: err.message });
-                    trainingResult = { success: false, error: err.message };
-                })
-        );
-    }
+    generationPromises.push(
+      generateTrainingModuleForGroup(
+        groupMicrolearning,
+        trainingPrompt, // custom topic-based prompt from group-topic-service
+        preferredLanguage,
+        trainingThreadId,
+        userId as string | number,
+        groupTrainingLevel
+      )
+        .then(result => {
+          trainingResult = result;
+        })
+        .catch(error => {
+          const err = normalizeError(error);
+          logger.error('Training generation failed (GROUP)', { error: err.message });
+          trainingResult = { success: false, error: err.message };
+        })
+    );
+  }
 
-    // STEP 2: Execute phishing & training in PARALLEL (both use same topic)
-    if (generationPromises.length > 0) {
-        logger.info('🚀 Executing phishing & training in parallel', { topic });
-        await Promise.all(generationPromises);
-    }
+  // STEP 2: Execute phishing & training in PARALLEL (both use same topic)
+  if (generationPromises.length > 0) {
+    logger.info('🚀 Executing phishing & training in parallel', { topic });
+    await Promise.all(generationPromises);
+  }
 
-    return { phishingResult, trainingResult, smishingResult };
+  return { phishingResult, trainingResult, smishingResult };
 }
 
 /**
  * Generate content (phishing + training) for user assignment
  */
 export async function generateContentForUser(
-    toolResult: AutonomousToolResult,
-    executiveReport: string | undefined,
-    actions: ('training' | 'phishing' | 'smishing')[],
-    sendAfterPhishingSimulation: boolean | undefined,
-    userId: string | number,
-    phishingThreadId: string,
-    trainingThreadId: string
+  toolResult: AutonomousToolResult,
+  executiveReport: string | undefined,
+  actions: ('training' | 'phishing' | 'smishing')[],
+  sendAfterPhishingSimulation: boolean | undefined,
+  userId: string | number,
+  phishingThreadId: string,
+  trainingThreadId: string
 ): Promise<GenerationResults> {
-    const logger = getLogger('GenerateContentForUser');
-    let phishingResult: AutonomousActionResult | undefined;
-    let trainingResult: AutonomousActionResult | undefined;
-    let smishingResult: AutonomousActionResult | undefined;
-    const generationPromises: Promise<void>[] = [];
+  const logger = getLogger('GenerateContentForUser');
+  let phishingResult: AutonomousActionResult | undefined;
+  let trainingResult: AutonomousActionResult | undefined;
+  let smishingResult: AutonomousActionResult | undefined;
+  const generationPromises: Promise<void>[] = [];
 
-    // Determine upload modes based on sendAfterPhishingSimulation
-    const uploadOnly = sendAfterPhishingSimulation === true;
+  // Determine upload modes based on sendAfterPhishingSimulation
+  const uploadOnly = sendAfterPhishingSimulation === true;
 
-    const recommendedSteps = getRecommendedNextSteps(toolResult.analysisReport);
-    const trainingLevel = deriveTrainingLevelFromAnalysis(toolResult.analysisReport);
+  const recommendedSteps = getRecommendedNextSteps(toolResult.analysisReport);
+  const trainingLevel = deriveTrainingLevelFromAnalysis(toolResult.analysisReport);
 
-    // Generate phishing if requested and simulation available
-    if (actions.includes('phishing') && recommendedSteps.simulations?.[0]) {
-        const simulation = recommendedSteps.simulations[0];
-        logger.debug('Starting phishing generation', { simulation: simulation.title, uploadOnly });
-        generationPromises.push(
-            generatePhishingSimulation(simulation, executiveReport, toolResult, phishingThreadId, uploadOnly)
-                .then(result => {
-                    logger.info('Phishing generation result received', {
-                        success: result?.success,
-                        resultKeys: Object.keys(result || {}),
-                        hasUploadAssignResult: !!result?.uploadAssignResult
-                    });
-                    phishingResult = result;
-                })
-                .catch(error => {
-                    const err = normalizeError(error);
-                    logger.error('Phishing generation failed', { error: err.message });
-                    phishingResult = { success: false, error: err.message };
-                })
-        );
-    } else if (actions.includes('phishing')) {
-        logger.warn('Skipping phishing generation: simulation recommendation is missing');
-        phishingResult = createMissingRecommendationResult('phishing');
+  // Generate phishing if requested and simulation available
+  if (actions.includes('phishing') && recommendedSteps.simulations?.[0]) {
+    const simulation = recommendedSteps.simulations[0];
+    logger.debug('Starting phishing generation', { simulation: simulation.title, uploadOnly });
+    generationPromises.push(
+      generatePhishingSimulation(simulation, executiveReport, toolResult, phishingThreadId, uploadOnly)
+        .then(result => {
+          logger.info('Phishing generation result received', {
+            success: result?.success,
+            resultKeys: Object.keys(result || {}),
+            hasUploadAssignResult: !!result?.uploadAssignResult,
+          });
+          phishingResult = result;
+        })
+        .catch(error => {
+          const err = normalizeError(error);
+          logger.error('Phishing generation failed', { error: err.message });
+          phishingResult = { success: false, error: err.message };
+        })
+    );
+  } else if (actions.includes('phishing')) {
+    logger.warn('Skipping phishing generation: simulation recommendation is missing');
+    phishingResult = createMissingRecommendationResult('phishing');
+  }
+
+  if (actions.includes('smishing') && recommendedSteps.simulations?.[0]) {
+    const simulation = recommendedSteps.simulations[0];
+    logger.debug('Starting smishing generation', { simulation: simulation.title });
+    generationPromises.push(
+      generateSmishingSimulation({
+        simulation,
+        executiveReport,
+        toolResult,
+      })
+        .then(result => {
+          logger.info('Smishing generation result received', {
+            success: result?.success,
+            resultKeys: Object.keys(result || {}),
+            hasUploadAssignResult: !!result?.uploadAssignResult,
+          });
+          smishingResult = result;
+        })
+        .catch(error => {
+          const err = normalizeError(error);
+          logger.error('Smishing generation failed', { error: err.message });
+          smishingResult = { success: false, error: err.message };
+        })
+    );
+  } else if (actions.includes('smishing')) {
+    logger.warn('Skipping smishing generation: simulation recommendation is missing');
+    smishingResult = createMissingRecommendationResult('smishing');
+  }
+
+  // Generate training if requested and training available
+  if (actions.includes('training') && recommendedSteps.microlearnings?.[0]) {
+    const microlearning = recommendedSteps.microlearnings[0];
+    logger.info('Starting training generation', { microlearning: microlearning.title, uploadOnly });
+    generationPromises.push(
+      generateTrainingModule(
+        microlearning,
+        executiveReport,
+        toolResult,
+        trainingThreadId,
+        uploadOnly,
+        false,
+        trainingLevel
+      )
+        .then(result => {
+          logger.info('Training generation result received', {
+            success: result?.success,
+            resultKeys: Object.keys(result || {}),
+            hasData: !!result?.data,
+            hasUploadAssignResult: !!result?.uploadAssignResult,
+          });
+          trainingResult = result;
+        })
+        .catch(error => {
+          const err = normalizeError(error);
+          logger.error('Training generation failed', { error: err.message });
+          trainingResult = { success: false, error: err.message };
+        })
+    );
+  } else if (actions.includes('training')) {
+    logger.warn('Skipping training generation: microlearning recommendation is missing');
+    trainingResult = createMissingRecommendationResult('training');
+  }
+
+  // Execute in parallel
+  if (generationPromises.length > 0) {
+    await Promise.all(generationPromises);
+  }
+
+  // If sendAfterPhishingSimulation, assign phishing with training IDs after both complete
+  if (sendAfterPhishingSimulation === true && phishingResult?.success && trainingResult?.success) {
+    logger.info('Preparing to assign phishing with training IDs', {
+      trainingResultKeys: Object.keys(trainingResult || {}),
+      hasData: !!trainingResult?.data,
+      dataKeys: trainingResult?.data ? Object.keys(trainingResult.data) : [],
+      hasUploadAssignResult: !!trainingResult?.uploadAssignResult,
+      uploadAssignResultKeys: trainingResult?.uploadAssignResult ? Object.keys(trainingResult.uploadAssignResult) : [],
+    });
+
+    const phishingUploadResult = phishingResult?.uploadResult;
+    const phishingResourceId = phishingUploadResult?.data?.resourceId;
+    const phishingLanguageId = phishingUploadResult?.data?.languageId;
+    const phishingIsQuishing = phishingUploadResult?.data?.isQuishing;
+
+    // Extract training IDs from training result - try multiple paths
+    const trainingId =
+      trainingResult?.data?.resourceId ||
+      trainingResult?.uploadAssignResult?.trainingId ||
+      trainingResult?.uploadAssignResult?.resourceId;
+
+    const sendTrainingLanguageId =
+      trainingResult?.data?.sendTrainingLanguageId ||
+      trainingResult?.uploadAssignResult?.languageId ||
+      trainingResult?.uploadAssignResult?.sendTrainingLanguageId;
+
+    logger.info('Extracted training IDs', {
+      trainingId,
+      sendTrainingLanguageId,
+      source: trainingId ? (trainingResult?.data?.resourceId ? 'data' : 'uploadAssignResult') : 'NOT_FOUND',
+    });
+
+    if (!trainingId) {
+      logger.warn('Cannot assign phishing with training: trainingId not found', {
+        trainingResult: JSON.stringify(trainingResult, null, 2),
+      });
+    } else {
+      const assignResult = await assignPhishingWithTraining(
+        userId as string,
+        phishingThreadId,
+        trainingId,
+        sendTrainingLanguageId,
+        phishingResourceId,
+        phishingLanguageId,
+        phishingIsQuishing
+      );
+      if (assignResult?.success) {
+        phishingResult.uploadAssignResult = assignResult;
+        phishingResult.message = phishingResult.message?.replace('uploaded', 'uploaded and assigned with training');
+        logger.info('✅ Phishing assigned with training IDs');
+      } else {
+        logger.warn('Failed to assign phishing with training IDs', { error: assignResult?.error });
+      }
     }
+  }
 
-    if (actions.includes('smishing') && recommendedSteps.simulations?.[0]) {
-        const simulation = recommendedSteps.simulations[0];
-        logger.debug('Starting smishing generation', { simulation: simulation.title });
-        generationPromises.push(
-            generateSmishingSimulation({
-                simulation,
-                executiveReport,
-                toolResult,
-            })
-                .then(result => {
-                    logger.info('Smishing generation result received', {
-                        success: result?.success,
-                        resultKeys: Object.keys(result || {}),
-                        hasUploadAssignResult: !!result?.uploadAssignResult
-                    });
-                    smishingResult = result;
-                })
-                .catch(error => {
-                    const err = normalizeError(error);
-                    logger.error('Smishing generation failed', { error: err.message });
-                    smishingResult = { success: false, error: err.message };
-                })
-        );
-    } else if (actions.includes('smishing')) {
-        logger.warn('Skipping smishing generation: simulation recommendation is missing');
-        smishingResult = createMissingRecommendationResult('smishing');
-    }
-
-    // Generate training if requested and training available
-    if (actions.includes('training') && recommendedSteps.microlearnings?.[0]) {
-        const microlearning = recommendedSteps.microlearnings[0];
-        logger.info('Starting training generation', { microlearning: microlearning.title, uploadOnly });
-        generationPromises.push(
-            generateTrainingModule(microlearning, executiveReport, toolResult, trainingThreadId, uploadOnly, false, trainingLevel)
-                .then(result => {
-                    logger.info('Training generation result received', {
-                        success: result?.success,
-                        resultKeys: Object.keys(result || {}),
-                        hasData: !!result?.data,
-                        hasUploadAssignResult: !!result?.uploadAssignResult
-                    });
-                    trainingResult = result;
-                })
-                .catch(error => {
-                    const err = normalizeError(error);
-                    logger.error('Training generation failed', { error: err.message });
-                    trainingResult = { success: false, error: err.message };
-                })
-        );
-    } else if (actions.includes('training')) {
-        logger.warn('Skipping training generation: microlearning recommendation is missing');
-        trainingResult = createMissingRecommendationResult('training');
-    }
-
-    // Execute in parallel
-    if (generationPromises.length > 0) {
-        await Promise.all(generationPromises);
-    }
-
-    // If sendAfterPhishingSimulation, assign phishing with training IDs after both complete
-    if (sendAfterPhishingSimulation === true && phishingResult?.success && trainingResult?.success) {
-        logger.info('Preparing to assign phishing with training IDs', {
-            trainingResultKeys: Object.keys(trainingResult || {}),
-            hasData: !!trainingResult?.data,
-            dataKeys: trainingResult?.data ? Object.keys(trainingResult.data) : [],
-            hasUploadAssignResult: !!trainingResult?.uploadAssignResult,
-            uploadAssignResultKeys: trainingResult?.uploadAssignResult ? Object.keys(trainingResult.uploadAssignResult) : []
-        });
-
-        const phishingUploadResult = phishingResult?.uploadResult;
-        const phishingResourceId = phishingUploadResult?.data?.resourceId;
-        const phishingLanguageId = phishingUploadResult?.data?.languageId;
-        const phishingIsQuishing = phishingUploadResult?.data?.isQuishing;
-
-        // Extract training IDs from training result - try multiple paths
-        const trainingId =
-            trainingResult?.data?.resourceId ||
-            trainingResult?.uploadAssignResult?.trainingId ||
-            trainingResult?.uploadAssignResult?.resourceId;
-
-        const sendTrainingLanguageId =
-            trainingResult?.data?.sendTrainingLanguageId ||
-            trainingResult?.uploadAssignResult?.languageId ||
-            trainingResult?.uploadAssignResult?.sendTrainingLanguageId;
-
-        logger.info('Extracted training IDs', {
-            trainingId,
-            sendTrainingLanguageId,
-            source: trainingId ? (trainingResult?.data?.resourceId ? 'data' : 'uploadAssignResult') : 'NOT_FOUND'
-        });
-
-        if (!trainingId) {
-            logger.warn('Cannot assign phishing with training: trainingId not found', {
-                trainingResult: JSON.stringify(trainingResult, null, 2)
-            });
-        } else {
-            const assignResult = await assignPhishingWithTraining(
-                userId as string,
-                phishingThreadId,
-                trainingId,
-                sendTrainingLanguageId,
-                phishingResourceId,
-                phishingLanguageId,
-                phishingIsQuishing
-            );
-            if (assignResult?.success) {
-                phishingResult.uploadAssignResult = assignResult;
-                phishingResult.message = phishingResult.message?.replace('uploaded', 'uploaded and assigned with training');
-                logger.info('✅ Phishing assigned with training IDs');
-            } else {
-                logger.warn('Failed to assign phishing with training IDs', { error: assignResult?.error });
-            }
-        }
-    }
-
-    return { phishingResult, trainingResult, smishingResult };
+  return { phishingResult, trainingResult, smishingResult };
 }

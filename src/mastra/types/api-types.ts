@@ -1,6 +1,6 @@
 /**
  * API Request/Response Type Definitions
- * 
+ *
  * Type definitions for HTTP API endpoints in the Agentic Ally system.
  * These types ensure type safety for request bodies, responses, and middleware.
  */
@@ -120,10 +120,7 @@ export interface SmishingChatErrorResponse {
   error: string;
 }
 
-export type SmishingChatResponse =
-  | SmishingChatInitResponse
-  | SmishingChatReplyResponse
-  | SmishingChatErrorResponse;
+export type SmishingChatResponse = SmishingChatInitResponse | SmishingChatReplyResponse | SmishingChatErrorResponse;
 
 export interface VishingPromptSuccessResponse {
   success: true;
@@ -162,4 +159,3 @@ export type CloudflareEnv = Record<string, unknown> & {
 export interface WorkflowBinding<TParams = unknown, TResult = unknown> {
   create: (options: { params: TParams }) => Promise<{ id: string } & TResult>;
 }
-

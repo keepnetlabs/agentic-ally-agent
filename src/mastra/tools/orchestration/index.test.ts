@@ -18,7 +18,7 @@ describe('orchestration/index exports', () => {
     ];
 
     expect(tools).toHaveLength(5);
-    tools.forEach((tool) => expect(tool).toBeDefined());
+    tools.forEach(tool => expect(tool).toBeDefined());
   });
 
   it('exposes ids on exported tools', () => {
@@ -29,4 +29,3 @@ describe('orchestration/index exports', () => {
     expect((smishingEditorTool as any).id).toBeTruthy();
   });
 });
-

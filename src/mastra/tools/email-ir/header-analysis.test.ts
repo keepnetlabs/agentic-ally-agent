@@ -28,8 +28,10 @@ vi.mock('./logger-setup', () => ({
   logAuthResults: vi.fn(),
   logPerformance: vi.fn(),
   TimingTracker: class {
-    mark() { }
-    getTotal() { return 0; }
+    mark() {}
+    getTotal() {
+      return 0;
+    }
   },
 }));
 

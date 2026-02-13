@@ -12,7 +12,7 @@ import { RequestContext } from '../../mastra/utils/core/request-storage';
 export function createMockContext(overrides?: Partial<Context>): Context {
   const mockReq = {
     header: () => undefined,
-    ...overrides?.req
+    ...overrides?.req,
   } as unknown as Context['req'];
 
   return {
@@ -20,9 +20,9 @@ export function createMockContext(overrides?: Partial<Context>): Context {
     env: {
       KV: {},
       D1: {},
-      ...overrides?.env
+      ...overrides?.env,
     },
-    ...overrides
+    ...overrides,
   } as unknown as Context;
 }
 
@@ -34,6 +34,6 @@ export function createRequestContext(overrides?: Partial<RequestContext>): Reque
     correlationId: 'test-correlation-id',
     token: 'test-token',
     env: {},
-    ...overrides
+    ...overrides,
   };
 }

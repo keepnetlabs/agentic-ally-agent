@@ -13,7 +13,7 @@ vi.mock('./core/logger', () => ({
 }));
 
 vi.mock('./core/resilience-utils', () => ({
-  withRetry: vi.fn((fn) => fn()), // Pass-through mock
+  withRetry: vi.fn(fn => fn()), // Pass-through mock
 }));
 
 describe('KV Helpers', () => {
@@ -35,12 +35,7 @@ describe('KV Helpers', () => {
       const inboxData = { items: ['email1', 'email2'] };
       mockKVService.get.mockResolvedValue(inboxData);
 
-      const result = await loadInboxWithFallback(
-        mockKVService,
-        microlearningId,
-        department,
-        sourceLanguage
-      );
+      const result = await loadInboxWithFallback(mockKVService, microlearningId, department, sourceLanguage);
 
       expect(result).toEqual(inboxData);
       expect(mockKVService.get).toHaveBeenCalledTimes(1);
@@ -48,16 +43,9 @@ describe('KV Helpers', () => {
 
     it('should fallback to default language when primary not found', async () => {
       const fallbackData = { items: ['fallback-email'] };
-      mockKVService.get
-        .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce(fallbackData);
+      mockKVService.get.mockResolvedValueOnce(null).mockResolvedValueOnce(fallbackData);
 
-      const result = await loadInboxWithFallback(
-        mockKVService,
-        microlearningId,
-        department,
-        sourceLanguage
-      );
+      const result = await loadInboxWithFallback(mockKVService, microlearningId, department, sourceLanguage);
 
       expect(result).toEqual(fallbackData);
       expect(mockKVService.get).toHaveBeenCalledTimes(2);
@@ -66,12 +54,7 @@ describe('KV Helpers', () => {
     it('should return null when both primary and fallback not found', async () => {
       mockKVService.get.mockResolvedValue(null);
 
-      const result = await loadInboxWithFallback(
-        mockKVService,
-        microlearningId,
-        department,
-        sourceLanguage
-      );
+      const result = await loadInboxWithFallback(mockKVService, microlearningId, department, sourceLanguage);
 
       expect(result).toBeNull();
       expect(mockKVService.get).toHaveBeenCalledTimes(2);
@@ -80,12 +63,7 @@ describe('KV Helpers', () => {
     it('should not try fallback if primary language is already default', async () => {
       mockKVService.get.mockResolvedValue(null);
 
-      const result = await loadInboxWithFallback(
-        mockKVService,
-        microlearningId,
-        department,
-        LANGUAGE.DEFAULT_SOURCE
-      );
+      const result = await loadInboxWithFallback(mockKVService, microlearningId, department, LANGUAGE.DEFAULT_SOURCE);
 
       expect(result).toBeNull();
       expect(mockKVService.get).toHaveBeenCalledTimes(1);
@@ -94,12 +72,7 @@ describe('KV Helpers', () => {
     it('should handle KV service errors gracefully', async () => {
       mockKVService.get.mockRejectedValue(new Error('KV service error'));
 
-      const result = await loadInboxWithFallback(
-        mockKVService,
-        microlearningId,
-        department,
-        sourceLanguage
-      );
+      const result = await loadInboxWithFallback(mockKVService, microlearningId, department, sourceLanguage);
 
       expect(result).toBeNull();
       expect(mockKVService.get).toHaveBeenCalled();
@@ -109,12 +82,7 @@ describe('KV Helpers', () => {
       const emptyData = { items: [] };
       mockKVService.get.mockResolvedValue(emptyData);
 
-      const result = await loadInboxWithFallback(
-        mockKVService,
-        microlearningId,
-        department,
-        sourceLanguage
-      );
+      const result = await loadInboxWithFallback(mockKVService, microlearningId, department, sourceLanguage);
 
       expect(result).toEqual(emptyData);
     });
@@ -123,12 +91,7 @@ describe('KV Helpers', () => {
       const data = { items: ['test'] };
       mockKVService.get.mockResolvedValue(data);
 
-      const result = await loadInboxWithFallback(
-        mockKVService,
-        'ml-different',
-        department,
-        sourceLanguage
-      );
+      const result = await loadInboxWithFallback(mockKVService, 'ml-different', department, sourceLanguage);
 
       expect(result).toEqual(data);
     });
@@ -137,12 +100,7 @@ describe('KV Helpers', () => {
       const data = { items: ['test'] };
       mockKVService.get.mockResolvedValue(data);
 
-      const result = await loadInboxWithFallback(
-        mockKVService,
-        microlearningId,
-        'Sales',
-        sourceLanguage
-      );
+      const result = await loadInboxWithFallback(mockKVService, microlearningId, 'Sales', sourceLanguage);
 
       expect(result).toEqual(data);
     });

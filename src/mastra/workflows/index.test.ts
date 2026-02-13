@@ -3,16 +3,16 @@ import { describe, it, expect, vi } from 'vitest';
 // Mock D1Store to prevent network calls
 vi.mock('@mastra/cloudflare-d1', () => ({
   D1Store: class {
-    constructor() { }
+    constructor() {}
     __setTelemetry = vi.fn();
     __setLogger = vi.fn();
     init = vi.fn();
-  }
+  },
 }));
 
 // Mock cloudflare:workers module
 vi.mock('cloudflare:workers', () => ({
-  WorkflowEntrypoint: class { },
+  WorkflowEntrypoint: class {},
 }));
 
 // Mock services to prevent import crashes
@@ -21,13 +21,13 @@ vi.mock('../services/kv-service', () => ({
     savePhishingBase = vi.fn();
     savePhishingEmail = vi.fn();
     savePhishingLandingPage = vi.fn();
-  }
+  },
 }));
 
 vi.mock('../services/product-service', () => ({
   ProductService: class {
     getWhitelabelingConfig = vi.fn();
-  }
+  },
 }));
 
 vi.mock('../utils/core/logger', () => ({
@@ -35,13 +35,13 @@ vi.mock('../utils/core/logger', () => ({
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
-    debug: vi.fn()
-  }))
+    debug: vi.fn(),
+  })),
 }));
 
 // Mock main index to prevent circular dependency with AutonomousWorkflow
 vi.mock('../index', () => ({
-  mastra: {}
+  mastra: {},
 }));
 
 import {
@@ -50,7 +50,7 @@ import {
   addMultipleLanguagesWorkflow,
   updateMicrolearningWorkflow,
   createPhishingWorkflow,
-  AutonomousWorkflow
+  AutonomousWorkflow,
 } from './index';
 
 describe('workflows/index.ts - Barrel Export', () => {
@@ -87,7 +87,7 @@ describe('workflows/index.ts - Barrel Export', () => {
         addMultipleLanguagesWorkflow,
         updateMicrolearningWorkflow,
         createPhishingWorkflow,
-        AutonomousWorkflow
+        AutonomousWorkflow,
       ];
       expect(exports.length).toBe(6);
     });
@@ -454,7 +454,7 @@ describe('workflows/index.ts - Barrel Export', () => {
         addLanguageWorkflow,
         addMultipleLanguagesWorkflow,
         updateMicrolearningWorkflow,
-        createPhishingWorkflow
+        createPhishingWorkflow,
       ];
 
       // Check that workflows are not the same object
@@ -475,14 +475,16 @@ describe('workflows/index.ts - Barrel Export', () => {
       const hasCreatePhishing = createPhishingWorkflow !== undefined;
       const hasAutonomous = AutonomousWorkflow !== undefined;
 
-      expect([
-        hasCreateMicrolearning,
-        hasAddLanguage,
-        hasAddMultipleLanguages,
-        hasUpdateMicrolearning,
-        hasCreatePhishing,
-        hasAutonomous
-      ].every(Boolean)).toBe(true);
+      expect(
+        [
+          hasCreateMicrolearning,
+          hasAddLanguage,
+          hasAddMultipleLanguages,
+          hasUpdateMicrolearning,
+          hasCreatePhishing,
+          hasAutonomous,
+        ].every(Boolean)
+      ).toBe(true);
     });
 
     it('should support importing individual workflows', () => {
@@ -503,7 +505,7 @@ describe('workflows/index.ts - Barrel Export', () => {
         addMultipleLanguagesWorkflow,
         updateMicrolearningWorkflow,
         createPhishingWorkflow,
-        AutonomousWorkflow
+        AutonomousWorkflow,
       };
 
       expect(Object.keys(allWorkflows).length).toBe(6);
@@ -519,7 +521,7 @@ describe('workflows/index.ts - Barrel Export', () => {
         'addLanguageWorkflow',
         'addMultipleLanguagesWorkflow',
         'updateMicrolearningWorkflow',
-        'createPhishingWorkflow'
+        'createPhishingWorkflow',
       ];
 
       names.forEach(name => {
@@ -564,7 +566,7 @@ describe('workflows/index.ts - Barrel Export', () => {
         addMultipleLanguagesWorkflow,
         updateMicrolearningWorkflow,
         createPhishingWorkflow,
-        AutonomousWorkflow
+        AutonomousWorkflow,
       };
 
       Object.entries(allWorkflows).forEach(([_key, value]) => {

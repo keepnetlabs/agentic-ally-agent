@@ -27,9 +27,7 @@ describe('smishingWorkflowExecutorTool', () => {
     status: 'success' as const,
     result: {
       smishingId: 'smishing-123',
-      messages: [
-        'Hi from IT support, verify now: https://example.test/verify',
-      ],
+      messages: ['Hi from IT support, verify now: https://example.test/verify'],
       analysis: {
         method: 'Click-Only',
         scenario: 'IT verification',
@@ -94,11 +92,17 @@ describe('smishingWorkflowExecutorTool', () => {
     const calls = mockWriter.write.mock.calls;
     expect(calls.length).toBeGreaterThanOrEqual(4);
 
-    const smsCall = calls.find((call) =>
-      call[0]?.type === 'text-delta' && typeof call[0]?.delta === 'string' && call[0].delta.includes('::ui:smishing_sms::')
+    const smsCall = calls.find(
+      call =>
+        call[0]?.type === 'text-delta' &&
+        typeof call[0]?.delta === 'string' &&
+        call[0].delta.includes('::ui:smishing_sms::')
     );
-    const landingCall = calls.find((call) =>
-      call[0]?.type === 'text-delta' && typeof call[0]?.delta === 'string' && call[0].delta.includes('::ui:smishing_landing_page::')
+    const landingCall = calls.find(
+      call =>
+        call[0]?.type === 'text-delta' &&
+        typeof call[0]?.delta === 'string' &&
+        call[0].delta.includes('::ui:smishing_landing_page::')
     );
 
     expect(smsCall).toBeDefined();
@@ -112,7 +116,9 @@ describe('smishingWorkflowExecutorTool', () => {
     expect(smsDecoded.messages).toHaveLength(1);
 
     const landingDelta = (landingCall as NonNullable<typeof landingCall>)[0].delta as string;
-    const landingPayload = landingDelta.split('::ui:smishing_landing_page::')[1].split('::/ui:smishing_landing_page::')[0];
+    const landingPayload = landingDelta
+      .split('::ui:smishing_landing_page::')[1]
+      .split('::/ui:smishing_landing_page::')[0];
     const landingDecoded = JSON.parse(Buffer.from(landingPayload, 'base64').toString('utf-8'));
     expect(landingDecoded.smishingId).toBe('smishing-123');
     expect(landingDecoded.landingKey).toBe('smishing:smishing-123:landing:en-gb');
@@ -143,9 +149,9 @@ describe('smishingWorkflowExecutorTool', () => {
     await smishingWorkflowExecutorTool.execute({ context: input, writer: mockWriter } as any);
 
     const uiDeltas = mockWriter.write.mock.calls
-      .map((call) => call[0])
-      .filter((event) => event?.type === 'text-delta' && typeof event?.delta === 'string')
-      .map((event) => event.delta as string);
+      .map(call => call[0])
+      .filter(event => event?.type === 'text-delta' && typeof event?.delta === 'string')
+      .map(event => event.delta as string);
 
     expect(uiDeltas.length).toBeGreaterThan(0);
 

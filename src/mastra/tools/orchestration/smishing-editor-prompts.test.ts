@@ -111,11 +111,7 @@ describe('Smishing Editor Prompts', () => {
 
     it('should preserve message content exactly', () => {
       const input = {
-        messages: [
-          'Click here {PHISHINGURL}',
-          'Verify account now!',
-          'Urgent: {PHISHINGURL}',
-        ],
+        messages: ['Click here {PHISHINGURL}', 'Verify account now!', 'Urgent: {PHISHINGURL}'],
       };
       const prompt = getSmishingSmsUserPrompt(input, 'edit');
       expect(prompt).toContain('Click here {PHISHINGURL}');
@@ -150,7 +146,7 @@ describe('Smishing Editor Prompts', () => {
 
     it('should specify single quote requirement', () => {
       const prompt = getSmishingLandingPageSystemPrompt('edit');
-      expect(prompt).toContain("SINGLE quotes");
+      expect(prompt).toContain('SINGLE quotes');
       expect(prompt).toContain("style='...'");
       expect(prompt).toContain("class='...'");
     });
@@ -344,7 +340,7 @@ Secondary Color: #00FF00`;
         getSmishingLandingPageSystemPrompt('translate'),
       ];
 
-      prompts.forEach((prompt) => {
+      prompts.forEach(prompt => {
         expect(prompt).toContain('JSON ONLY');
       });
     });

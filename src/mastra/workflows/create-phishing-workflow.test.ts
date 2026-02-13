@@ -25,7 +25,7 @@ const mocks = vi.hoisted(() => ({
   loggerInfo: vi.fn(),
   loggerWarn: vi.fn(),
   loggerError: vi.fn(),
-  loggerDebug: vi.fn()
+  loggerDebug: vi.fn(),
 }));
 
 // Mock Dependencies
@@ -39,43 +39,43 @@ vi.mock('../services/kv-service', () => ({
     return {
       savePhishingBase: mocks.savePhishingBase,
       savePhishingEmail: mocks.savePhishingEmail,
-      savePhishingLandingPage: mocks.savePhishingLandingPage
+      savePhishingLandingPage: mocks.savePhishingLandingPage,
     };
-  })
+  }),
 }));
 
 vi.mock('../services/product-service', () => ({
   ProductService: vi.fn().mockImplementation(function () {
     return {
-      getWhitelabelingConfig: mocks.getWhitelabelingConfig
+      getWhitelabelingConfig: mocks.getWhitelabelingConfig,
     };
-  })
+  }),
 }));
 
 // Fix circular dependency by mocking constants
 vi.mock('../constants', () => ({
   MODEL_PROVIDERS: {
     NAMES: ['OPENAI', 'WORKERS_AI', 'GOOGLE'],
-    DEFAULT: 'OPENAI'
+    DEFAULT: 'OPENAI',
   },
   LANDING_PAGE: {
     FLOWS: {
       'Click-Only': ['login'],
-      'Data-Submission': ['login', 'verify']
+      'Data-Submission': ['login', 'verify'],
     },
     PAGE_TYPES: ['login', 'success', 'info'],
     PLACEHOLDERS: {
       SIMULATION_LINK: '{SIMULATION_LINK}',
       TRACK_ID: '{TRACK_ID}',
-      EMAIL: '{EMAIL}'
-    }
+      EMAIL: '{EMAIL}',
+    },
   },
   STRING_TRUNCATION: {
     LOGO_URL_PREFIX_LENGTH: 20,
-    LOGO_URL_PREFIX_LENGTH_ALT: 20
+    LOGO_URL_PREFIX_LENGTH_ALT: 20,
   },
   KV_NAMESPACES: {
-    PHISHING: 'PHISHING_KV'
+    PHISHING: 'PHISHING_KV',
   },
   PHISHING: {
     DIFFICULTY_LEVELS: ['Easy', 'Medium', 'Hard'],
@@ -84,68 +84,68 @@ vi.mock('../constants', () => ({
     DEFAULT_ATTACK_METHOD: 'Data-Submission',
     TIMING: {
       GENERATION_SECONDS_MIN: 20,
-      GENERATION_SECONDS_MAX: 30
+      GENERATION_SECONDS_MAX: 30,
     },
     MIN_TOPIC_LENGTH: 3,
-    MAX_TOPIC_LENGTH: 200
+    MAX_TOPIC_LENGTH: 200,
   },
   PHISHING_EMAIL: {
     MAX_SUBJECT_LENGTH: 200,
     MAX_DESCRIPTION_LENGTH: 300,
     MANDATORY_TAGS: ['{PHISHINGURL}'],
-    RECOMMENDED_TAGS: ['{FIRSTNAME}']
-  }
+    RECOMMENDED_TAGS: ['{FIRSTNAME}'],
+  },
 }));
 
 // Mock model providers to avoid import issues
 vi.mock('../model-providers', () => ({
-  getModelWithOverride: vi.fn().mockReturnValue('mock-model')
+  getModelWithOverride: vi.fn().mockReturnValue('mock-model'),
 }));
 
 // Mock error utilities
 vi.mock('../utils/core/error-utils', () => ({
-  normalizeError: vi.fn((err) => err instanceof Error ? err : new Error(String(err))),
-  logErrorInfo: vi.fn()
+  normalizeError: vi.fn(err => (err instanceof Error ? err : new Error(String(err)))),
+  logErrorInfo: vi.fn(),
 }));
 
 vi.mock('../services/error-service', () => ({
   errorService: {
-    validation: vi.fn((msg) => ({ message: msg, code: 'VALIDATION_ERROR' })),
+    validation: vi.fn(msg => ({ message: msg, code: 'VALIDATION_ERROR' })),
     aiModel: vi.fn((msg, _details) => ({ message: msg, code: 'AI_GENERATION_FAILED' })),
-    external: vi.fn((msg, _details) => ({ message: msg, code: 'EXTERNAL_SERVICE_ERROR' }))
-  }
+    external: vi.fn((msg, _details) => ({ message: msg, code: 'EXTERNAL_SERVICE_ERROR' })),
+  },
 }));
 
 vi.mock('../utils/phishing/brand-resolver', () => ({
   resolveLogoAndBrand: mocks.resolveLogoAndBrand,
-  generateContextualBrand: mocks.generateContextualBrand
+  generateContextualBrand: mocks.generateContextualBrand,
 }));
 
 vi.mock('../utils/landing-page', () => ({
   detectIndustry: mocks.detectIndustry,
   validateLandingPage: mocks.validateLandingPage,
   logValidationResults: vi.fn(),
-  fixBrokenImages: mocks.fixBrokenImages
+  fixBrokenImages: mocks.fixBrokenImages,
 }));
 
 vi.mock('../utils/landing-page/image-validator', () => ({
   validateImageUrlCached: mocks.validateImageUrlCached,
   normalizeImgAttributes: mocks.normalizeImgAttributes,
-  DEFAULT_GENERIC_LOGO: 'default-logo.png'
+  DEFAULT_GENERIC_LOGO: 'default-logo.png',
 }));
 
 vi.mock('../utils/content-processors/phishing-html-postprocessors', () => ({
   postProcessPhishingEmailHtml: mocks.postProcessPhishingEmailHtml,
-  postProcessPhishingLandingHtml: mocks.postProcessPhishingLandingHtml
+  postProcessPhishingLandingHtml: mocks.postProcessPhishingLandingHtml,
 }));
 
 vi.mock('../utils/kv-consistency', () => ({
   waitForKVConsistency: mocks.waitForKVConsistency,
-  buildExpectedPhishingKeys: vi.fn().mockReturnValue([])
+  buildExpectedPhishingKeys: vi.fn().mockReturnValue([]),
 }));
 
 vi.mock('../utils/core/resilience-utils', () => ({
-  withRetry: mocks.withRetry
+  withRetry: mocks.withRetry,
 }));
 
 vi.mock('../utils/core/logger', () => ({
@@ -153,23 +153,23 @@ vi.mock('../utils/core/logger', () => ({
     info: mocks.loggerInfo,
     warn: mocks.loggerWarn,
     error: mocks.loggerError,
-    debug: mocks.loggerDebug
-  })
+    debug: mocks.loggerDebug,
+  }),
 }));
 
 // Mock prompt builders to avoid complex dependencies
 vi.mock('../utils/prompt-builders/phishing-prompts', () => ({
   buildAnalysisPrompts: vi.fn().mockReturnValue({ systemPrompt: 'sys', userPrompt: 'usr' }),
   buildEmailPrompts: vi.fn().mockReturnValue({ systemPrompt: 'sys', userPrompt: 'usr' }),
-  buildLandingPagePrompts: vi.fn().mockReturnValue({ systemPrompt: 'sys', userPrompt: 'usr' })
+  buildLandingPagePrompts: vi.fn().mockReturnValue({ systemPrompt: 'sys', userPrompt: 'usr' }),
 }));
 
 vi.mock('../utils/phishing/retry-generator', () => ({
-  retryGenerationWithStrongerPrompt: mocks.retryGenerationWithStrongerPrompt || vi.fn()
+  retryGenerationWithStrongerPrompt: mocks.retryGenerationWithStrongerPrompt || vi.fn(),
 }));
 
 vi.mock('../utils/core/reasoning-stream', () => ({
-  streamDirectReasoning: mocks.streamDirectReasoning || vi.fn()
+  streamDirectReasoning: mocks.streamDirectReasoning || vi.fn(),
 }));
 
 describe('CreatePhishingWorkflow', () => {
@@ -181,30 +181,30 @@ describe('CreatePhishingWorkflow', () => {
     mocks.savePhishingEmail.mockResolvedValue(true);
     mocks.savePhishingLandingPage.mockResolvedValue(true);
     mocks.getWhitelabelingConfig.mockResolvedValue({
-      mainLogoUrl: 'https://whitelabel.com/logo.png'
+      mainLogoUrl: 'https://whitelabel.com/logo.png',
     });
     mocks.resolveLogoAndBrand.mockResolvedValue({
       logoUrl: 'https://logo.com/logo.png',
       brandName: 'TestBrand',
       isRecognizedBrand: true,
-      brandColors: { primary: '#000', secondary: '#fff', accent: '#f00' }
+      brandColors: { primary: '#000', secondary: '#fff', accent: '#f00' },
     });
     mocks.generateContextualBrand.mockResolvedValue({
       brandName: 'ContextBrand',
-      logoUrl: 'https://context.com/logo.png'
+      logoUrl: 'https://context.com/logo.png',
     });
     mocks.detectIndustry.mockResolvedValue({
       industry: 'Technology',
-      colors: { primary: '#000' }
+      colors: { primary: '#000' },
     });
     mocks.validateLandingPage.mockReturnValue({ isValid: true, errors: [] });
-    mocks.fixBrokenImages.mockImplementation((html) => html);
+    mocks.fixBrokenImages.mockImplementation(html => html);
     mocks.validateImageUrlCached.mockResolvedValue(true);
-    mocks.normalizeImgAttributes.mockImplementation((html) => html);
+    mocks.normalizeImgAttributes.mockImplementation(html => html);
     mocks.postProcessPhishingEmailHtml.mockImplementation(({ html }) => html);
     mocks.postProcessPhishingLandingHtml.mockImplementation(({ html }) => html);
     mocks.waitForKVConsistency.mockResolvedValue(true);
-    mocks.withRetry.mockImplementation(async (fn) => await fn());
+    mocks.withRetry.mockImplementation(async fn => await fn());
 
     // Setup default AI responses
     mocks.generateText.mockResolvedValue({
@@ -218,13 +218,13 @@ describe('CreatePhishingWorkflow', () => {
         psychologicalTriggers: ['Fear'],
         subject: 'Urgent Alert',
         template: '<html>Test Email {CUSTOMMAINLOGO}</html>',
-        pages: [{ type: 'login', template: '<html>Login Page</html>' }]
-      })
+        pages: [{ type: 'login', template: '<html>Login Page</html>' }],
+      }),
     });
 
     mocks.retryGenerationWithStrongerPrompt.mockResolvedValue({
       response: { text: JSON.stringify({ subject: 'Retry Success', template: '<html>Retry</html>' }) },
-      parsedResult: { subject: 'Retry Success', template: '<html>Retry</html>' }
+      parsedResult: { subject: 'Retry Success', template: '<html>Retry</html>' },
     });
     mocks.streamDirectReasoning.mockResolvedValue(true);
   });
@@ -239,7 +239,7 @@ describe('CreatePhishingWorkflow', () => {
         isQuishing: false,
         difficulty: 'Medium' as const,
         method: 'Click-Only' as const,
-        targetProfile: { department: 'IT' }
+        targetProfile: { department: 'IT' },
       };
 
       const result = await run.start({ inputData: input });
@@ -261,15 +261,15 @@ describe('CreatePhishingWorkflow', () => {
           fromAddress: 'hr@test.com',
           fromName: 'HR',
           method: 'Data-Submission',
-          isQuishing: true
-        })
+          isQuishing: true,
+        }),
       });
 
       const run = await createPhishingWorkflow.createRunAsync();
       const input = {
         topic: 'HR Survey',
         isQuishing: true,
-        language: 'en'
+        language: 'en',
       };
 
       const result = await run.start({ inputData: input });
@@ -294,8 +294,12 @@ describe('CreatePhishingWorkflow', () => {
       // First call (Analysis) succeeds
       mocks.generateText.mockResolvedValueOnce({
         text: JSON.stringify({
-          scenario: 'Test', category: 'Test', fromAddress: 'test@test.com', fromName: 'Test', method: 'Click-Only'
-        })
+          scenario: 'Test',
+          category: 'Test',
+          fromAddress: 'test@test.com',
+          fromName: 'Test',
+          method: 'Click-Only',
+        }),
       });
 
       // Second call (Email) fails
@@ -318,7 +322,7 @@ describe('CreatePhishingWorkflow', () => {
         language: 'en',
         isQuishing: false,
         includeEmail: false,
-        includeLandingPage: false
+        includeLandingPage: false,
       };
 
       const result = await run.start({ inputData: input });
@@ -342,15 +346,20 @@ describe('CreatePhishingWorkflow', () => {
       // First call (Analysis) succeeds
       mocks.generateText.mockResolvedValueOnce({
         text: JSON.stringify({
-          scenario: 'Test', category: 'Test', fromAddress: 'test@test.com', fromName: 'Test', method: 'Click-Only'
-        })
+          scenario: 'Test',
+          category: 'Test',
+          fromAddress: 'test@test.com',
+          fromName: 'Test',
+          method: 'Click-Only',
+        }),
       });
 
       // Second call (Email) succeeds
       mocks.generateText.mockResolvedValueOnce({
         text: JSON.stringify({
-          subject: 'Test', template: '<html>Test</html>'
-        })
+          subject: 'Test',
+          template: '<html>Test</html>',
+        }),
       });
 
       // Third call (Landing Page) fails
@@ -373,7 +382,7 @@ describe('CreatePhishingWorkflow', () => {
         language: 'en',
         isQuishing: false,
         includeEmail: true,
-        includeLandingPage: false
+        includeLandingPage: false,
       };
 
       const result = await run.start({ inputData: input });
@@ -403,12 +412,18 @@ describe('CreatePhishingWorkflow', () => {
           fromAddress: 'test@test.com',
           fromName: 'Test',
           method: 'Click-Only',
-          description: longDescription
-        })
+          description: longDescription,
+        }),
       });
 
       const run = await createPhishingWorkflow.createRunAsync();
-      const input = { topic: 'Long Description', language: 'en', isQuishing: false, includeEmail: false, includeLandingPage: false };
+      const input = {
+        topic: 'Long Description',
+        language: 'en',
+        isQuishing: false,
+        includeEmail: false,
+        includeLandingPage: false,
+      };
 
       const result = await run.start({ inputData: input });
 
@@ -422,7 +437,7 @@ describe('CreatePhishingWorkflow', () => {
         text: JSON.stringify({
           scenario: 'Test',
           // Missing category, fromAddress, method
-        })
+        }),
       });
 
       const run = await createPhishingWorkflow.createRunAsync();
@@ -442,15 +457,15 @@ describe('CreatePhishingWorkflow', () => {
           category: 'Test',
           fromAddress: 'test@test.com',
           fromName: 'Test',
-          method: 'Click-Only'
-        })
+          method: 'Click-Only',
+        }),
       });
 
       mocks.generateText.mockResolvedValueOnce({
         text: JSON.stringify({
-          subject: 'Test'
+          subject: 'Test',
           // Missing template
-        })
+        }),
       });
 
       const run = await createPhishingWorkflow.createRunAsync();
@@ -470,8 +485,8 @@ describe('CreatePhishingWorkflow', () => {
           category: 'Test',
           fromAddress: 'test@test.com',
           fromName: 'Test',
-          method: 'Click-Only'
-        })
+          method: 'Click-Only',
+        }),
       });
 
       const run = await createPhishingWorkflow.createRunAsync();
@@ -480,8 +495,8 @@ describe('CreatePhishingWorkflow', () => {
           topic: 'No Quishing Field',
           language: 'en',
           includeEmail: false,
-          includeLandingPage: false
-        }
+          includeLandingPage: false,
+        },
       });
 
       expect(result.status).toBe('success');
@@ -508,7 +523,7 @@ describe('CreatePhishingWorkflow', () => {
     it('should use whitelabel logo if brand is not recognized', async () => {
       mocks.resolveLogoAndBrand.mockResolvedValue({
         logoUrl: '',
-        isRecognizedBrand: false
+        isRecognizedBrand: false,
       });
 
       const run = await createPhishingWorkflow.createRunAsync();
@@ -526,15 +541,15 @@ describe('CreatePhishingWorkflow', () => {
           category: 'Test',
           fromAddress: 'test@test.com',
           fromName: 'Test',
-          method: 'Click-Only'
-        })
+          method: 'Click-Only',
+        }),
       });
 
       mocks.generateText.mockResolvedValueOnce({
         text: JSON.stringify({
           subject: 'Test',
-          template: '<html><img src="{CUSTOMMAINLOGO}" /></html>'
-        })
+          template: '<html><img src="{CUSTOMMAINLOGO}" /></html>',
+        }),
       });
 
       const run = await createPhishingWorkflow.createRunAsync();
@@ -553,7 +568,7 @@ describe('CreatePhishingWorkflow', () => {
       mocks.resolveLogoAndBrand.mockResolvedValueOnce({
         logoUrl: '',
         brandName: '',
-        isRecognizedBrand: false
+        isRecognizedBrand: false,
       });
 
       const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.1);
@@ -564,8 +579,8 @@ describe('CreatePhishingWorkflow', () => {
           topic: 'Generic Internal Notice',
           language: 'en',
           includeEmail: false,
-          includeLandingPage: false
-        }
+          includeLandingPage: false,
+        },
       });
 
       expect(result.status).toBe('success');
@@ -585,24 +600,24 @@ describe('CreatePhishingWorkflow', () => {
           fromAddress: 'it@test.com',
           fromName: 'IT',
           method: 'Data-Submission',
-          isQuishing: false
-        })
+          isQuishing: false,
+        }),
       });
 
       mocks.generateText.mockResolvedValueOnce({
         text: JSON.stringify({
           subject: 'Submit Data',
-          template: '<html>Submit Form</html>'
-        })
+          template: '<html>Submit Form</html>',
+        }),
       });
 
       mocks.generateText.mockResolvedValueOnce({
         text: JSON.stringify({
           pages: [
             { type: 'login', template: '<html>Login</html>' },
-            { type: 'verify', template: '<html>Verify</html>' }
-          ]
-        })
+            { type: 'verify', template: '<html>Verify</html>' },
+          ],
+        }),
       });
 
       const run = await createPhishingWorkflow.createRunAsync();
@@ -610,7 +625,7 @@ describe('CreatePhishingWorkflow', () => {
         topic: 'Data Submission Test',
         language: 'en',
         isQuishing: false,
-        method: 'Data-Submission' as const
+        method: 'Data-Submission' as const,
       };
 
       const result = await run.start({ inputData: input });
@@ -621,7 +636,14 @@ describe('CreatePhishingWorkflow', () => {
     });
     it('should prioritize agent-provided isQuishing over AI output', async () => {
       mocks.generateText.mockResolvedValueOnce({
-        text: JSON.stringify({ scenario: 'Test', category: 'Test', fromAddress: 'a@a.com', fromName: 'A', method: 'Click-Only', isQuishing: false })
+        text: JSON.stringify({
+          scenario: 'Test',
+          category: 'Test',
+          fromAddress: 'a@a.com',
+          fromName: 'A',
+          method: 'Click-Only',
+          isQuishing: false,
+        }),
       });
 
       const run = await createPhishingWorkflow.createRunAsync();
@@ -635,12 +657,18 @@ describe('CreatePhishingWorkflow', () => {
   describe('Reasoning & Streaming', () => {
     it('should stream reasoning if present in AI response', async () => {
       mocks.generateText.mockResolvedValueOnce({
-        text: JSON.stringify({ scenario: 'Test', category: 'Test', fromAddress: 'a@a.com', fromName: 'A', method: 'Click-Only' }),
+        text: JSON.stringify({
+          scenario: 'Test',
+          category: 'Test',
+          fromAddress: 'a@a.com',
+          fromName: 'A',
+          method: 'Click-Only',
+        }),
         response: {
           body: {
-            reasoning: 'AI reasoning text'
-          }
-        }
+            reasoning: 'AI reasoning text',
+          },
+        },
       } as any);
 
       const writer = { write: vi.fn() };
@@ -655,7 +683,13 @@ describe('CreatePhishingWorkflow', () => {
     it('should use retryGenerationWithStrongerPrompt if primary email generation fails', async () => {
       // Analysis succeeds
       mocks.generateText.mockResolvedValueOnce({
-        text: JSON.stringify({ scenario: 'Test', category: 'Test', fromAddress: 'a@a.com', fromName: 'A', method: 'Click-Only' })
+        text: JSON.stringify({
+          scenario: 'Test',
+          category: 'Test',
+          fromAddress: 'a@a.com',
+          fromName: 'A',
+          method: 'Click-Only',
+        }),
       });
       // Email Gen fails primary attempt
       mocks.generateText.mockRejectedValueOnce(new Error('Primary Fail'));
@@ -673,7 +707,7 @@ describe('CreatePhishingWorkflow', () => {
       mocks.resolveLogoAndBrand.mockResolvedValueOnce({
         logoUrl: '',
         brandName: '',
-        isRecognizedBrand: false
+        isRecognizedBrand: false,
       });
 
       const run = await createPhishingWorkflow.createRunAsync();
@@ -689,7 +723,7 @@ describe('CreatePhishingWorkflow', () => {
       mocks.resolveLogoAndBrand.mockResolvedValueOnce({
         logoUrl: '',
         brandName: '',
-        isRecognizedBrand: false
+        isRecognizedBrand: false,
       });
 
       const run = await createPhishingWorkflow.createRunAsync();
@@ -697,7 +731,7 @@ describe('CreatePhishingWorkflow', () => {
         topic: 'Landing Without Industry',
         language: 'en',
         includeEmail: false,
-        includeLandingPage: true
+        includeLandingPage: true,
       };
 
       const result = await run.start({ inputData: input });
@@ -714,8 +748,8 @@ describe('CreatePhishingWorkflow', () => {
           topic: 'Base Only',
           language: 'en',
           includeEmail: false,
-          includeLandingPage: false
-        }
+          includeLandingPage: false,
+        },
       });
 
       expect(result.status).toBe('success');

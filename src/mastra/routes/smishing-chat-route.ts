@@ -9,14 +9,12 @@ import { INBOX_TEXT_PARAMS } from '../utils/config/llm-generation-params';
 import { cleanResponse } from '../utils/content-processors/json-cleaner';
 import { loadScene4RouteData } from './scene4-route-helpers';
 import { resolveEffectiveProvider, shouldMapAssistantHistoryAsUser } from './chat-provider-compat';
-import {
-  parsedSmishingChatResponseSchema,
-  smishingChatRequestSchema,
-} from './smishing-chat-route.schemas';
+import { parsedSmishingChatResponseSchema, smishingChatRequestSchema } from './smishing-chat-route.schemas';
 import type { SmishingChatRequestBody, SmishingChatResponse } from '../types';
 
 const logger = getLogger('SmishingChatRoute');
-const SMISHING_CHAT_JSON_OUTPUT_INSTRUCTION = 'Return ONLY valid JSON with exactly these keys: {"reply":"string","isFinished":boolean}. Set isFinished=true ONLY when your reply is the final security/debrief guidance message (simulation reminder + red flags + correct next step). Otherwise set isFinished=false. Do not include markdown or extra text.';
+const SMISHING_CHAT_JSON_OUTPUT_INSTRUCTION =
+  'Return ONLY valid JSON with exactly these keys: {"reply":"string","isFinished":boolean}. Set isFinished=true ONLY when your reply is the final security/debrief guidance message (simulation reminder + red flags + correct next step). Otherwise set isFinished=false. Do not include markdown or extra text.';
 
 interface ParsedSmishingChatResponse {
   reply: string;
@@ -71,7 +69,7 @@ export async function smishingChatHandler(c: Context) {
 
     const parsedRequest = smishingChatRequestSchema.safeParse(body);
     if (!parsedRequest.success) {
-      const hasInvalidMessages = parsedRequest.error.issues.some((issue) => issue.path[0] === 'messages');
+      const hasInvalidMessages = parsedRequest.error.issues.some(issue => issue.path[0] === 'messages');
       const response: SmishingChatResponse = {
         success: false,
         error: hasInvalidMessages ? 'Invalid message format' : 'Invalid request format',
@@ -117,11 +115,11 @@ export async function smishingChatHandler(c: Context) {
     const effectiveProvider = resolveEffectiveProvider(modelProvider, modelOverride);
     const shouldMapAssistantToUser = shouldMapAssistantHistoryAsUser(modelProvider, modelOverride);
 
-    const hasExplicitUserMessage = messages.some((message) => message.role === 'user');
+    const hasExplicitUserMessage = messages.some(message => message.role === 'user');
 
     const conversationMessages = messages
-      .filter((message) => message.role === 'user' || message.role === 'assistant')
-      .map((message) => {
+      .filter(message => message.role === 'user' || message.role === 'assistant')
+      .map(message => {
         if (shouldMapAssistantToUser && message.role === 'assistant') {
           return {
             role: 'user' as const,
@@ -148,8 +146,8 @@ export async function smishingChatHandler(c: Context) {
       requestedProvider: typeof modelProvider === 'string' ? modelProvider : 'default',
       effectiveProvider,
       messageCount: conversationMessages.length,
-      userMessageCount: conversationMessages.filter((message) => message.role === 'user').length,
-      assistantMessageCount: messages.filter((message) => message.role === 'assistant').length,
+      userMessageCount: conversationMessages.filter(message => message.role === 'user').length,
+      assistantMessageCount: messages.filter(message => message.role === 'assistant').length,
     });
 
     const model = getModelWithOverride(modelProvider, modelOverride);
@@ -160,11 +158,12 @@ export async function smishingChatHandler(c: Context) {
     ];
 
     const aiResponse = await withRetry(
-      () => generateText({
-        model,
-        messages: chatMessages,
-        ...INBOX_TEXT_PARAMS,
-      }),
+      () =>
+        generateText({
+          model,
+          messages: chatMessages,
+          ...INBOX_TEXT_PARAMS,
+        }),
       'Smishing chat completion'
     );
     const parsedResponse = parseSmishingChatResponse(aiResponse.text);

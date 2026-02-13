@@ -28,10 +28,11 @@ interface VideoDatabaseEntry {
 export async function selectVideoForTopic(analysis: PromptAnalysis): Promise<string> {
   logger.info('Selecting video for topic', {
     topic: analysis.topic,
-    audience: analysis.isCodeTopic ? 'development' : 'general'
+    audience: analysis.isCodeTopic ? 'development' : 'general',
   });
 
-  const fallbackUrl = "https://customer-0lll6yc8omc23rbm.cloudflarestream.com/5fdb12ff1436c991f50b698a02e2faa1/manifest/video.m3u8";
+  const fallbackUrl =
+    'https://customer-0lll6yc8omc23rbm.cloudflarestream.com/5fdb12ff1436c991f50b698a02e2faa1/manifest/video.m3u8';
 
   // Multi-level matching strategy for robust SCENARIO video selection with audience filtering
   function findRelevantVideos(): typeof videoDatabase {
@@ -46,54 +47,73 @@ export async function selectVideoForTopic(analysis: PromptAnalysis): Promise<str
       const fullText = `${videoTitle} ${videoDesc}`;
 
       // Include scenario keywords
-      const scenarioKeywords = ['scenario', 'real case', 'real story', 'case study', 'example', 'incident', 'attack', 'threat'];
+      const scenarioKeywords = [
+        'scenario',
+        'real case',
+        'real story',
+        'case study',
+        'example',
+        'incident',
+        'attack',
+        'threat',
+      ];
       const isScenario = scenarioKeywords.some(kw => fullText.includes(kw));
 
       // Exclude tutorial/tool keywords
-      const excludeKeywords = ['tutorial', 'how to', 'how-to', 'guide', 'setup', 'install', 'configure', 'demo', 'feature'];
+      const excludeKeywords = [
+        'tutorial',
+        'how to',
+        'how-to',
+        'guide',
+        'setup',
+        'install',
+        'configure',
+        'demo',
+        'feature',
+      ];
       const isTutorial = excludeKeywords.some(kw => fullText.includes(kw));
 
       return isScenario || !isTutorial;
     };
 
     // Level 1: Exact topic match in topics array (scenario-only, audience-matched)
-    let matches = videoDatabase.filter(video =>
-      (video.audience || 'general') === userAudience &&
-      isScenarioVideo(video) &&
-      video.topics.some(topic =>
-        topicLower.includes(topic) ||
-        topic.includes(topicLower)
-      )
+    let matches = videoDatabase.filter(
+      video =>
+        (video.audience || 'general') === userAudience &&
+        isScenarioVideo(video) &&
+        video.topics.some(topic => topicLower.includes(topic) || topic.includes(topicLower))
     );
 
     // Level 2: Keyword match in topics or title (scenario-only, audience-matched)
     if (matches.length === 0 && topicKeywords.length > 0) {
-      matches = videoDatabase.filter(video =>
-        (video.audience || 'general') === userAudience &&
-        isScenarioVideo(video) &&
-        topicKeywords.some(keyword =>
-          video.topics.some(topic => topic.includes(keyword) || keyword.includes(topic)) ||
-          video.title.toLowerCase().includes(keyword)
-        )
+      matches = videoDatabase.filter(
+        video =>
+          (video.audience || 'general') === userAudience &&
+          isScenarioVideo(video) &&
+          topicKeywords.some(
+            keyword =>
+              video.topics.some(topic => topic.includes(keyword) || keyword.includes(topic)) ||
+              video.title.toLowerCase().includes(keyword)
+          )
       );
     }
 
     // Level 3: Related topic fallback (MFA→password, authentication→data protection, etc)
     if (matches.length === 0) {
       const relatedTopicMap: Record<string, string[]> = {
-        'mfa': ['password', 'authentication', 'account security'],
+        mfa: ['password', 'authentication', 'account security'],
         'multi-factor': ['password', 'authentication'],
-        'authentication': ['password', 'mfa'],
-        'login': ['password', 'authentication'],
-        'quishing': ['phishing', 'email security', 'social engineering', 'spoofing'],
-        'ransomware': ['data protection', 'incident response', 'backup', 'recovery'],
-        'malware': ['ransomware', 'data protection', 'threat response', 'security'],
+        authentication: ['password', 'mfa'],
+        login: ['password', 'authentication'],
+        quishing: ['phishing', 'email security', 'social engineering', 'spoofing'],
+        ransomware: ['data protection', 'incident response', 'backup', 'recovery'],
+        malware: ['ransomware', 'data protection', 'threat response', 'security'],
         'social-engineering': ['phishing', 'vishing', 'smishing', 'quishing'],
-        'deepfake': ['phishing', 'email security', 'spoofing', 'threat'],
-        'smishing': ['phishing', 'social engineering', 'email security'],
-        'compliance': ['data protection', 'incident response', 'human risk'],
-        'policy': ['security awareness', 'incident response', 'human risk'],
-        'awareness': ['security', 'human risk', 'data protection'],
+        deepfake: ['phishing', 'email security', 'spoofing', 'threat'],
+        smishing: ['phishing', 'social engineering', 'email security'],
+        compliance: ['data protection', 'incident response', 'human risk'],
+        policy: ['security awareness', 'incident response', 'human risk'],
+        awareness: ['security', 'human risk', 'data protection'],
       };
 
       const relatedTopics = Object.entries(relatedTopicMap)
@@ -101,18 +121,17 @@ export async function selectVideoForTopic(analysis: PromptAnalysis): Promise<str
         .flatMap(([, topics]) => topics);
 
       if (relatedTopics.length > 0) {
-        matches = videoDatabase.filter(video =>
-          (video.audience || 'general') === userAudience &&
-          isScenarioVideo(video) &&
-          video.topics.some(topic =>
-            relatedTopics.some(relatedTopic =>
-              topic.includes(relatedTopic) || relatedTopic.includes(topic)
+        matches = videoDatabase.filter(
+          video =>
+            (video.audience || 'general') === userAudience &&
+            isScenarioVideo(video) &&
+            video.topics.some(topic =>
+              relatedTopics.some(relatedTopic => topic.includes(relatedTopic) || relatedTopic.includes(topic))
             )
-          )
         );
         if (matches.length > 0) {
           logger.info('No exact match found, using related topic', {
-            relatedTopics: relatedTopics.join(', ')
+            relatedTopics: relatedTopics.join(', '),
           });
         }
       }
@@ -120,13 +139,10 @@ export async function selectVideoForTopic(analysis: PromptAnalysis): Promise<str
 
     // Level 4: Return scenario videos only (last resort - no fallback to tutorials)
     if (matches.length === 0) {
-      matches = videoDatabase.filter(video =>
-        (video.audience || 'general') === userAudience &&
-        isScenarioVideo(video)
-      );
+      matches = videoDatabase.filter(video => (video.audience || 'general') === userAudience && isScenarioVideo(video));
       if (matches.length > 0) {
         logger.info('No topic match found, returning generic scenario video', {
-          audience: userAudience
+          audience: userAudience,
         });
       }
     }
@@ -134,32 +150,31 @@ export async function selectVideoForTopic(analysis: PromptAnalysis): Promise<str
     // Level 5: Cross-audience fallback - if no videos found in primary audience, try the other
     if (matches.length === 0) {
       const fallbackAudience = userAudience === 'development' ? 'general' : 'development';
-      matches = videoDatabase.filter(video =>
-        (video.audience || 'general') === fallbackAudience &&
-        isScenarioVideo(video)
+      matches = videoDatabase.filter(
+        video => (video.audience || 'general') === fallbackAudience && isScenarioVideo(video)
       );
       if (matches.length > 0) {
         logger.info('Using cross-audience fallback', {
           primaryAudience: userAudience,
-          fallbackAudience
+          fallbackAudience,
         });
       }
     }
 
-    return matches.length > 0 ? matches : [];  // Return empty if no scenarios found
+    return matches.length > 0 ? matches : []; // Return empty if no scenarios found
   }
 
   try {
     const relevantVideos = findRelevantVideos();
     logger.info('Found relevant SCENARIO videos', {
       count: relevantVideos.length,
-      totalVideos: videoDatabase.length
+      totalVideos: videoDatabase.length,
     });
 
     // CRITICAL: If no scenario videos found, return fallback
     if (relevantVideos.length === 0) {
       logger.warn('No SCENARIO videos found, using fallback', {
-        topic: analysis.topic
+        topic: analysis.topic,
       });
       return fallbackUrl;
     }
@@ -178,10 +193,11 @@ Return the best matching video URL only:`;
       messages: [
         {
           role: 'system',
-          content: 'You are a video selector. From the available videos list, select the SINGLE most relevant video URL for the given topic. Return ONLY the complete URL from the list (starting with https://), nothing else - no explanation, no markdown, no extra text. If you cannot find a good match, return the first video URL from the list.'
+          content:
+            'You are a video selector. From the available videos list, select the SINGLE most relevant video URL for the given topic. Return ONLY the complete URL from the list (starting with https://), nothing else - no explanation, no markdown, no extra text. If you cannot find a good match, return the first video URL from the list.',
         },
-        { role: 'user', content: videoSelectionPrompt }
-      ]
+        { role: 'user', content: videoSelectionPrompt },
+      ],
     });
 
     let selectedUrl = videoSelection.text.trim();
@@ -212,12 +228,12 @@ Return the best matching video URL only:`;
     if (isValidUrl) {
       const selectedVideo = videoDatabase.find(v => v.url === selectedUrl);
       logger.info('Selected video', {
-        title: selectedVideo?.title
+        title: selectedVideo?.title,
       });
       return selectedUrl;
     } else {
       logger.warn('AI returned invalid URL, using first available video', {
-        invalidUrl: selectedUrl
+        invalidUrl: selectedUrl,
       });
       // Fallback to first relevant video
       if (relevantVideos.length > 0) {
@@ -225,13 +241,12 @@ Return the best matching video URL only:`;
       }
       return fallbackUrl;
     }
-
   } catch (error) {
     const err = normalizeError(error);
     const errorInfo = errorService.aiModel(`Video selection failed: ${err.message}`, {
       topic: analysis.topic,
       audience: analysis.isCodeTopic ? 'development' : 'general',
-      stack: err.stack
+      stack: err.stack,
     });
     logErrorInfo(logger, 'error', 'Video selection failed, using fallback', errorInfo);
     return fallbackUrl;
@@ -298,36 +313,30 @@ Return ONLY valid JSON, no markdown:
 {"title":"...","subtitle":"..."}`;
 
     logger.info('🤖 Generating video metadata', { topic, language });
-    const metadata = await generateVideoMetadataFromPrompt(
-      model,
-      buildGenerationPrompt(),
-      topic,
-      language
-    );
+    const metadata = await generateVideoMetadataFromPrompt(model, buildGenerationPrompt(), topic, language);
 
     logger.info('Generated video metadata', {
       topic,
-      language
+      language,
     });
     return {
       title: metadata.title || `Real ${topic} Scenario`,
-      subtitle: metadata.subtitle || 'Learn to recognize and respond to threats'
+      subtitle: metadata.subtitle || 'Learn to recognize and respond to threats',
     };
-
   } catch (error) {
     const err = normalizeError(error);
     const errorInfo = errorService.aiModel(`Video metadata generation failed: ${err.message}`, {
       topic,
       language,
       department,
-      stack: err.stack
+      stack: err.stack,
     });
     logErrorInfo(logger, 'warn', 'Video metadata generation failed, using fallback', errorInfo);
 
     // Fallback values if AI generation fails
     return {
       title: `Real ${topic} Scenario`,
-      subtitle: 'Learn to recognize and respond to threats'
+      subtitle: 'Learn to recognize and respond to threats',
     };
   }
 }

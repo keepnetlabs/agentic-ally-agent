@@ -193,7 +193,11 @@ describe('ExampleRepo Service', () => {
 
     it('should support exec() method for direct queries', () => {
       const mockDB = {
-        exec: vi.fn().mockResolvedValue({ results: [], success: true, meta: { changes: 0, last_row_id: 0, rows_read: 0, rows_written: 0 } }),
+        exec: vi.fn().mockResolvedValue({
+          results: [],
+          success: true,
+          meta: { changes: 0, last_row_id: 0, rows_read: 0, rows_written: 0 },
+        }),
       };
 
       expect(mockDB.exec).toBeDefined();

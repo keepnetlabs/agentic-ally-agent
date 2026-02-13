@@ -267,10 +267,10 @@ describe('Scene 7 - Nudge Generator', () => {
 
     it('should include THREAT PROTECT examples', () => {
       const prompt = generateScene7Prompt(baseAnalysis, baseMicrolearning);
-      expect(prompt).toContain("Phishing: \"Don't click links");
-      expect(prompt).toContain("Vishing: \"Don't confirm credentials");
-      expect(prompt).toContain("Ransomware: \"Don't pay ransom");
-      expect(prompt).toContain("Deepfake: \"Don't trust unusual media");
+      expect(prompt).toContain('Phishing: "Don\'t click links');
+      expect(prompt).toContain('Vishing: "Don\'t confirm credentials');
+      expect(prompt).toContain('Ransomware: "Don\'t pay ransom');
+      expect(prompt).toContain('Deepfake: "Don\'t trust unusual media');
     });
 
     it('should include TOOL category PROTECT pattern', () => {

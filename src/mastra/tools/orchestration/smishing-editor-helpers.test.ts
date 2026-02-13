@@ -78,9 +78,7 @@ describe('smishing-editor-helpers', () => {
   });
 
   it('returns sms content and logs info when sms exists', async () => {
-    mocks.kvGet
-      .mockResolvedValueOnce({ messages: ['m1'] })
-      .mockResolvedValueOnce(null);
+    mocks.kvGet.mockResolvedValueOnce({ messages: ['m1'] }).mockResolvedValueOnce(null);
 
     const result = await loadSmishingContent('sid-3', 'en-gb');
 
@@ -109,9 +107,7 @@ describe('smishing-editor-helpers', () => {
   });
 
   it('handles rejected landing kv read while sms exists', async () => {
-    mocks.kvGet
-      .mockResolvedValueOnce({ messages: ['sms-ok'] })
-      .mockRejectedValueOnce(new Error('landing down'));
+    mocks.kvGet.mockResolvedValueOnce({ messages: ['sms-ok'] }).mockRejectedValueOnce(new Error('landing down'));
 
     const result = await loadSmishingContent('sid-3c', 'en-gb');
     expect(result.success).toBe(true);
@@ -122,9 +118,7 @@ describe('smishing-editor-helpers', () => {
   });
 
   it('parses and validates sms response', () => {
-    const result = parseAndValidateSmsResponse(
-      JSON.stringify({ messages: ['a', 'b'], summary: 'ok summary' })
-    );
+    const result = parseAndValidateSmsResponse(JSON.stringify({ messages: ['a', 'b'], summary: 'ok summary' }));
 
     expect(result.success).toBe(true);
     if (result.success) {
@@ -185,16 +179,7 @@ describe('smishing-editor-helpers', () => {
   it('swallows stream writer failures and logs warning', async () => {
     const write = vi.fn().mockRejectedValue(new Error('write failed'));
 
-    await streamEditResultsToUI(
-      { write },
-      'sid-5',
-      null,
-      null,
-      'en-gb',
-      null,
-      null,
-      null
-    );
+    await streamEditResultsToUI({ write }, 'sid-5', null, null, 'en-gb', null, null, null);
 
     expect(mocks.loggerWarn).toHaveBeenCalledWith(
       'Failed to stream updated components to UI',
@@ -205,16 +190,7 @@ describe('smishing-editor-helpers', () => {
   it('logs stringified warning when writer throws non-Error', async () => {
     const write = vi.fn().mockRejectedValue('write-failed-string');
 
-    await streamEditResultsToUI(
-      { write },
-      'sid-5b',
-      null,
-      null,
-      'en-gb',
-      null,
-      null,
-      null
-    );
+    await streamEditResultsToUI({ write }, 'sid-5b', null, null, 'en-gb', null, null, null);
 
     expect(mocks.loggerWarn).toHaveBeenCalledWith(
       'Failed to stream updated components to UI',
@@ -247,16 +223,7 @@ describe('smishing-editor-helpers', () => {
   it('still emits text-start/end when there is no sms and no landing payload', async () => {
     const write = vi.fn().mockResolvedValue(undefined);
 
-    await streamEditResultsToUI(
-      { write },
-      'sid-6b',
-      null,
-      null,
-      'en-gb',
-      null,
-      { pages: [], summary: 'none' },
-      null
-    );
+    await streamEditResultsToUI({ write }, 'sid-6b', null, null, 'en-gb', null, { pages: [], summary: 'none' }, null);
 
     expect(write).toHaveBeenCalledTimes(2);
     expect(write).toHaveBeenNthCalledWith(1, { type: 'text-start', id: 'msg-1' });
@@ -278,11 +245,7 @@ describe('smishing-editor-helpers', () => {
     );
 
     expect(mocks.kvPut).toHaveBeenCalledTimes(2);
-    expect(mocks.kvPut).toHaveBeenNthCalledWith(
-      1,
-      'sms-key',
-      expect.objectContaining({ messages: ['new'] })
-    );
+    expect(mocks.kvPut).toHaveBeenNthCalledWith(1, 'sms-key', expect.objectContaining({ messages: ['new'] }));
     expect(mocks.kvPut).toHaveBeenNthCalledWith(
       2,
       'landing-key',
@@ -296,13 +259,7 @@ describe('smishing-editor-helpers', () => {
   });
 
   it('does not write to kv when both update payloads are null/empty', async () => {
-    await saveSmishingContent(
-      'sms-key',
-      'landing-key',
-      null,
-      null,
-      { pages: [], summary: 'none' }
-    );
+    await saveSmishingContent('sms-key', 'landing-key', null, null, { pages: [], summary: 'none' });
 
     expect(mocks.kvPut).not.toHaveBeenCalled();
   });

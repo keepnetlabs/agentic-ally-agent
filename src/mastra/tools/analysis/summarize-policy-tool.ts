@@ -14,30 +14,36 @@ import { DEFAULT_GENERATION_PARAMS } from '../../utils/config/llm-generation-par
 const logger = getLogger('SummarizePolicyTool');
 
 const summarizePolicySchema = z.object({
-  question: z.string()
+  question: z
+    .string()
     .min(1, 'Question about company policy is required')
     .max(5000, 'Question must not exceed 5000 characters'),
-  focusArea: z.string()
+  focusArea: z
+    .string()
     .max(200, 'Focus area must not exceed 200 characters')
-    .optional().describe('Optional focus area (e.g., "phishing", "password", "data protection")'),
-  language: z.string()
+    .optional()
+    .describe('Optional focus area (e.g., "phishing", "password", "data protection")'),
+  language: z
+    .string()
     .max(10, 'Language code must not exceed 10 characters')
-    .optional().default('en').describe('Target language for summary (BCP-47 code)'),
+    .optional()
+    .default('en')
+    .describe('Target language for summary (BCP-47 code)'),
   modelProvider: z.enum(['OPENAI', 'WORKERS_AI', 'GOOGLE']).optional(),
-  model: z.string()
-    .max(100, 'Model name must not exceed 100 characters')
-    .optional(),
+  model: z.string().max(100, 'Model name must not exceed 100 characters').optional(),
 });
 
 const summarizePolicyOutputSchema = z.object({
   success: z.boolean(),
-  data: z.object({
-    question: z.string(),
-    summary: z.string().describe('1-2 paragraph executive summary of the relevant policy section'),
-    key_points: z.array(z.string()).describe('3-5 key takeaways from the policy'),
-    recommendations: z.array(z.string()).describe('Actionable recommendations based on the policy'),
-    relevant_sections: z.array(z.string()).optional().describe('Names of relevant policy sections found'),
-  }).optional(),
+  data: z
+    .object({
+      question: z.string(),
+      summary: z.string().describe('1-2 paragraph executive summary of the relevant policy section'),
+      key_points: z.array(z.string()).describe('3-5 key takeaways from the policy'),
+      recommendations: z.array(z.string()).describe('Actionable recommendations based on the policy'),
+      relevant_sections: z.array(z.string()).optional().describe('Names of relevant policy sections found'),
+    })
+    .optional(),
   error: z.string().optional(),
 });
 
@@ -108,12 +114,13 @@ Return ONLY a valid JSON object with this structure (no markdown, no extra text)
       const modelToUse = getModelWithOverride(modelProvider, model);
 
       const { text } = await withRetry(
-        () => generateText({
-          model: modelToUse,
-          system: systemPrompt,
-          prompt: userPrompt,
-          ...DEFAULT_GENERATION_PARAMS,
-        }),
+        () =>
+          generateText({
+            model: modelToUse,
+            system: systemPrompt,
+            prompt: userPrompt,
+            ...DEFAULT_GENERATION_PARAMS,
+          }),
         `[SummarizePolicyTool] policy-summary-${focusArea || 'general'}`
       );
 

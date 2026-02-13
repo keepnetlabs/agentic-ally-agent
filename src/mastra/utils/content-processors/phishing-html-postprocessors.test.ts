@@ -1,8 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import {
-  postProcessPhishingEmailHtml,
-  postProcessPhishingLandingHtml,
-} from './phishing-html-postprocessors';
+import { postProcessPhishingEmailHtml, postProcessPhishingLandingHtml } from './phishing-html-postprocessors';
 
 vi.mock('../core/logger');
 vi.mock('./html-sanitizer');
@@ -12,7 +9,7 @@ vi.mock('./email-card-padding-normalizer');
 vi.mock('../validation/json-validation-utils');
 vi.mock('../landing-page');
 vi.mock('./landing-page-layout-fixer', () => ({
-  fixLandingPageLayout: vi.fn((html) => html),
+  fixLandingPageLayout: vi.fn(html => html),
 }));
 
 describe('phishing-html-postprocessors', () => {
@@ -73,7 +70,8 @@ describe('phishing-html-postprocessors', () => {
       });
 
       it('should handle deeply nested tables', () => {
-        const html = '<table><tr><td><table><tr><td><table><tr><td>Deep</td></tr></table></td></tr></table></td></tr></table>';
+        const html =
+          '<table><tr><td><table><tr><td><table><tr><td>Deep</td></tr></table></td></tr></table></td></tr></table>';
         expect(() => postProcessPhishingEmailHtml({ html })).not.toThrow();
       });
 
@@ -165,7 +163,8 @@ describe('phishing-html-postprocessors', () => {
       });
 
       it('should handle centered card layout', () => {
-        const html = '<div style="display: flex; align-items: center; justify-content: center;"><div><form><input type="email" /></form></div></div>';
+        const html =
+          '<div style="display: flex; align-items: center; justify-content: center;"><div><form><input type="email" /></form></div></div>';
         expect(() => postProcessPhishingLandingHtml({ html })).not.toThrow();
       });
 
@@ -186,26 +185,32 @@ describe('phishing-html-postprocessors', () => {
 
       it('should handle landing page with long title', () => {
         const html = '<div>Content</div>';
-        expect(() => postProcessPhishingLandingHtml({ html, title: 'Verify Your Microsoft Account - Sign In' })).not.toThrow();
+        expect(() =>
+          postProcessPhishingLandingHtml({ html, title: 'Verify Your Microsoft Account - Sign In' })
+        ).not.toThrow();
       });
 
       it('should handle Microsoft-style layout', () => {
-        const html = '<div style="display: flex;"><div style="flex: 1; background: #0078d4;"></div><div style="flex: 1;"><form><input type="email" /></form></div></div>';
+        const html =
+          '<div style="display: flex;"><div style="flex: 1; background: #0078d4;"></div><div style="flex: 1;"><form><input type="email" /></form></div></div>';
         expect(() => postProcessPhishingLandingHtml({ html })).not.toThrow();
       });
 
       it('should handle hero section layout', () => {
-        const html = '<div><div style="background: linear-gradient(135deg, #0066cc, #004499);"></div><div><form><input type="email" /></form></div></div>';
+        const html =
+          '<div><div style="background: linear-gradient(135deg, #0066cc, #004499);"></div><div><form><input type="email" /></form></div></div>';
         expect(() => postProcessPhishingLandingHtml({ html })).not.toThrow();
       });
 
       it('should handle split layout', () => {
-        const html = '<div style="display: flex;"><div style="flex: 1;"></div><div style="flex: 1;"><form></form></div></div>';
+        const html =
+          '<div style="display: flex;"><div style="flex: 1;"></div><div style="flex: 1;"><form></form></div></div>';
         expect(() => postProcessPhishingLandingHtml({ html })).not.toThrow();
       });
 
       it('should handle minimal layout', () => {
-        const html = '<div style="max-width: 400px; margin: 0 auto;"><h1>Sign In</h1><form><input type="email" /></form></div>';
+        const html =
+          '<div style="max-width: 400px; margin: 0 auto;"><h1>Sign In</h1><form><input type="email" /></form></div>';
         expect(() => postProcessPhishingLandingHtml({ html })).not.toThrow();
       });
 

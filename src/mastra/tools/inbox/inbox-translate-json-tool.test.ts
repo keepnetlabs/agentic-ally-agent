@@ -687,9 +687,7 @@ describe('inboxTranslateJsonTool', () => {
             {
               sender: 'user@example.com',
               content: 'Important message',
-              replies: [
-                { author: 'admin', text: 'Response 1' },
-              ],
+              replies: [{ author: 'admin', text: 'Response 1' }],
             },
           ],
         },

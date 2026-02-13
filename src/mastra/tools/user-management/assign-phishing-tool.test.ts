@@ -22,7 +22,7 @@ vi.mock('../../utils/core/logger', () => ({
 
 // Mock security-utils
 vi.mock('../../utils/core/security-utils', () => ({
-  maskSensitiveField: vi.fn((obj, field) => ({ ...obj, [field]: '***MASKED***' }))
+  maskSensitiveField: vi.fn((obj, field) => ({ ...obj, [field]: '***MASKED***' })),
 }));
 
 // Mock error-service
@@ -31,13 +31,13 @@ vi.mock('../../services/error-service', () => ({
     auth: vi.fn(() => ({ code: 'AUTH_ERROR', message: 'Auth failed', category: 'AUTH' })),
     validation: vi.fn(() => ({ code: 'VALIDATION_ERROR', message: 'Invalid input', category: 'VALIDATION' })),
     internal: vi.fn(() => ({ code: 'INTERNAL_ERROR', message: 'Internal error', category: 'INTERNAL' })),
-    external: vi.fn(() => ({ code: 'EXTERNAL_ERROR', message: 'External error', category: 'EXTERNAL' }))
-  }
+    external: vi.fn(() => ({ code: 'EXTERNAL_ERROR', message: 'External error', category: 'EXTERNAL' })),
+  },
 }));
 
 // Mock worker-api-client
 vi.mock('../../utils/core/worker-api-client', () => ({
-  callWorkerAPI: vi.fn()
+  callWorkerAPI: vi.fn(),
 }));
 
 /**
@@ -51,8 +51,8 @@ describe('assignPhishingTool', () => {
   const mockCompanyId = 'test-company-id';
   const mockEnv = {
     PHISHING_CRUD_WORKER: {
-      fetch: vi.fn()
-    }
+      fetch: vi.fn(),
+    },
   };
 
   beforeEach(() => {
@@ -62,7 +62,7 @@ describe('assignPhishingTool', () => {
     requestStorage.enterWith({
       token: mockToken,
       companyId: mockCompanyId,
-      env: mockEnv
+      env: mockEnv,
     });
   });
 
@@ -72,7 +72,7 @@ describe('assignPhishingTool', () => {
 
       const input = {
         resourceId: 'phishing-resource-123',
-        targetUserResourceId: 'user-789'
+        targetUserResourceId: 'user-789',
       };
 
       const result = await assignPhishingTool.execute({ context: input } as any);
@@ -86,7 +86,7 @@ describe('assignPhishingTool', () => {
       const input = {
         resourceId: 'phishing-resource-123',
         languageId: 'lang-456',
-        targetUserResourceId: 'user-789'
+        targetUserResourceId: 'user-789',
       };
 
       const result = await assignPhishingTool.execute({ context: input } as any);
@@ -100,7 +100,7 @@ describe('assignPhishingTool', () => {
         resourceId: 'phishing-resource-123',
         targetUserResourceId: 'user-789',
         trainingId: 'training-123',
-        sendTrainingLanguageId: 'lang-456'
+        sendTrainingLanguageId: 'lang-456',
       };
 
       const result = await assignPhishingTool.execute({ context: input } as any);
@@ -109,7 +109,7 @@ describe('assignPhishingTool', () => {
 
     it('should require resourceId', async () => {
       const input: any = {
-        targetUserResourceId: 'user-789'
+        targetUserResourceId: 'user-789',
       };
 
       // Tool framework validates input schema and returns error response (doesn't throw)
@@ -122,7 +122,7 @@ describe('assignPhishingTool', () => {
 
     it('should require exactly one assignment target (user OR group)', async () => {
       const input: any = {
-        resourceId: 'phishing-resource-123'
+        resourceId: 'phishing-resource-123',
       };
 
       // Tool framework validates input schema and returns error response
@@ -155,13 +155,13 @@ describe('assignPhishingTool', () => {
     it('should return error when token is missing', async () => {
       requestStorage.enterWith({
         companyId: mockCompanyId,
-        env: mockEnv
+        env: mockEnv,
         // token is missing
       });
 
       const input = {
         resourceId: 'phishing-resource-123',
-        targetUserResourceId: 'user-789'
+        targetUserResourceId: 'user-789',
       };
 
       const result = await assignPhishingTool.execute({ context: input } as any);
@@ -174,7 +174,7 @@ describe('assignPhishingTool', () => {
 
       const input = {
         resourceId: 'phishing-resource-123',
-        targetUserResourceId: 'user-789'
+        targetUserResourceId: 'user-789',
       };
 
       const result = await assignPhishingTool.execute({ context: input } as any);
@@ -189,7 +189,7 @@ describe('assignPhishingTool', () => {
 
       const input = {
         resourceId: 'phishing-resource-123',
-        targetUserResourceId: 'user-789'
+        targetUserResourceId: 'user-789',
       };
 
       const result = await assignPhishingTool.execute({ context: input } as any);
@@ -204,7 +204,7 @@ describe('assignPhishingTool', () => {
       const input = {
         resourceId: 'phishing-resource-123',
         languageId: 'lang-456',
-        targetUserResourceId: 'user-789'
+        targetUserResourceId: 'user-789',
       };
 
       await assignPhishingTool.execute({ context: input } as any);
@@ -221,11 +221,11 @@ describe('assignPhishingTool', () => {
             accessToken: mockToken,
             companyId: mockCompanyId,
             name: expect.stringContaining('user-789'),
-            isQuishing: false
+            isQuishing: false,
           }),
           token: mockToken,
           errorPrefix: expect.any(String),
-          operationName: expect.any(String)
+          operationName: expect.any(String),
         })
       );
     });
@@ -237,7 +237,7 @@ describe('assignPhishingTool', () => {
         resourceId: 'phishing-resource-123',
         targetUserResourceId: 'user-789',
         trainingId: 'training-123',
-        sendTrainingLanguageId: 'lang-456'
+        sendTrainingLanguageId: 'lang-456',
       };
 
       await assignPhishingTool.execute({ context: input } as any);
@@ -246,8 +246,8 @@ describe('assignPhishingTool', () => {
         expect.objectContaining({
           payload: expect.objectContaining({
             trainingId: 'training-123',
-            sendTrainingLanguageId: 'lang-456'
-          })
+            sendTrainingLanguageId: 'lang-456',
+          }),
         })
       );
     });
@@ -257,7 +257,7 @@ describe('assignPhishingTool', () => {
 
       const input = {
         resourceId: 'phishing-resource-123',
-        targetGroupResourceId: 'group-123'
+        targetGroupResourceId: 'group-123',
       };
 
       const result = await assignPhishingTool.execute({ context: input } as any);
@@ -281,7 +281,7 @@ describe('assignPhishingTool', () => {
 
       const input = {
         resourceId: 'phishing-resource-123',
-        targetUserResourceId: 'user-789'
+        targetUserResourceId: 'user-789',
       };
 
       const result = await assignPhishingTool.execute({ context: input } as any);
@@ -295,7 +295,7 @@ describe('assignPhishingTool', () => {
 
       const input = {
         resourceId: 'phishing-resource-123',
-        targetUserResourceId: 'user-789'
+        targetUserResourceId: 'user-789',
       };
 
       const result = await assignPhishingTool.execute({ context: input } as any);
@@ -309,7 +309,7 @@ describe('assignPhishingTool', () => {
 
       const input = {
         resourceId: 'phishing-resource-123',
-        targetUserResourceId: 'user-789'
+        targetUserResourceId: 'user-789',
       };
 
       const result = await assignPhishingTool.execute({ context: input } as any);
@@ -325,7 +325,7 @@ describe('assignPhishingTool', () => {
 
       const input = {
         resourceId: 'phishing-resource-123',
-        targetUserResourceId: 'user-789'
+        targetUserResourceId: 'user-789',
       };
 
       const result = await assignPhishingTool.execute({ context: input } as any);
@@ -348,7 +348,7 @@ describe('assignPhishingTool', () => {
 
       const input = {
         resourceId: 'phishing-resource-123',
-        targetUserResourceId: 'user-789'
+        targetUserResourceId: 'user-789',
       };
 
       await assignPhishingTool.execute({ context: input } as any);

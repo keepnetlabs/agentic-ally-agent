@@ -178,9 +178,14 @@ Provide clear SOC-ready justification.
 `;
 
       const result = await withRetry(
-        () => emailIRAnalyst.generate(prompt, {
-          output: riskAssessmentOutputSchema.omit({ original_email: true, triage_result: true, feature_result: true }),
-        }),
+        () =>
+          emailIRAnalyst.generate(prompt, {
+            output: riskAssessmentOutputSchema.omit({
+              original_email: true,
+              triage_result: true,
+              feature_result: true,
+            }),
+          }),
         'risk-assessment-llm'
       );
 

@@ -32,7 +32,7 @@ describe('codeReviewCheckTool', () => {
     it('should accept valid input with all required fields', async () => {
       const input = {
         issueType: 'SQL Injection',
-        originalCode: "SELECT * FROM users WHERE id = " + "'user_input'",
+        originalCode: 'SELECT * FROM users WHERE id = ' + "'user_input'",
         fixedCode: 'SELECT * FROM users WHERE id = ?',
         language: 'javascript',
       };
@@ -264,7 +264,8 @@ describe('codeReviewCheckTool', () => {
       const input = {
         issueType: 'Path Traversal',
         originalCode: "fs.readFile(userPath, 'utf8');",
-        fixedCode: "const safe = path.resolve(allowedDir, userPath); if (!safe.startsWith(allowedDir)) throw Error('Invalid path'); fs.readFile(safe, 'utf8');",
+        fixedCode:
+          "const safe = path.resolve(allowedDir, userPath); if (!safe.startsWith(allowedDir)) throw Error('Invalid path'); fs.readFile(safe, 'utf8');",
         language: 'javascript',
       };
 
@@ -278,8 +279,8 @@ describe('codeReviewCheckTool', () => {
     it('should validate JavaScript code', async () => {
       const input = {
         issueType: 'SQL Injection',
-        originalCode: "SELECT * FROM users WHERE id = " + 'user-123',
-        fixedCode: "SELECT * FROM users WHERE id = ?",
+        originalCode: 'SELECT * FROM users WHERE id = ' + 'user-123',
+        fixedCode: 'SELECT * FROM users WHERE id = ?',
         language: 'javascript',
       };
 
@@ -314,8 +315,9 @@ describe('codeReviewCheckTool', () => {
     it('should validate Java code', async () => {
       const input = {
         issueType: 'SQL Injection',
-        originalCode: "String query = \"SELECT * FROM users WHERE id = \" + 'user-123';",
-        fixedCode: "PreparedStatement stmt = con.prepareStatement(\"SELECT * FROM users WHERE id = ?\"); stmt.setInt(1, userId);",
+        originalCode: 'String query = "SELECT * FROM users WHERE id = " + \'user-123\';',
+        fixedCode:
+          'PreparedStatement stmt = con.prepareStatement("SELECT * FROM users WHERE id = ?"); stmt.setInt(1, userId);',
         language: 'java',
       };
 
@@ -362,7 +364,7 @@ describe('codeReviewCheckTool', () => {
     it('should validate Ruby code', async () => {
       const input = {
         issueType: 'SQL Injection',
-        originalCode: "User.where(\"id = #{user_id}\")",
+        originalCode: 'User.where("id = #{user_id}")',
         fixedCode: "User.where('id = ?', user_id)",
         language: 'ruby',
       };
@@ -374,7 +376,7 @@ describe('codeReviewCheckTool', () => {
     it('should validate PHP code', async () => {
       const input = {
         issueType: 'SQL Injection',
-        originalCode: "$query = \"SELECT * FROM users WHERE id = \" . $userId;",
+        originalCode: '$query = "SELECT * FROM users WHERE id = " . $userId;',
         fixedCode: "$stmt = $pdo->prepare('SELECT * FROM users WHERE id = ?'); $stmt->execute([$userId]);",
         language: 'php',
       };
@@ -386,8 +388,9 @@ describe('codeReviewCheckTool', () => {
     it('should validate C# code', async () => {
       const input = {
         issueType: 'SQL Injection',
-        originalCode: "string query = $\"SELECT * FROM users WHERE id = {userId}\";",
-        fixedCode: "using (SqlCommand cmd = new SqlCommand(\"SELECT * FROM users WHERE id = @id\", connection)) { cmd.Parameters.AddWithValue(\"@id\", userId); }",
+        originalCode: 'string query = $"SELECT * FROM users WHERE id = {userId}";',
+        fixedCode:
+          'using (SqlCommand cmd = new SqlCommand("SELECT * FROM users WHERE id = @id", connection)) { cmd.Parameters.AddWithValue("@id", userId); }',
         language: 'csharp',
       };
 
@@ -401,8 +404,8 @@ describe('codeReviewCheckTool', () => {
     it('should generate feedback in English', async () => {
       const input = {
         issueType: 'SQL Injection',
-        originalCode: "SELECT * FROM users WHERE id = " + 'user-123',
-        fixedCode: "SELECT * FROM users WHERE id = ?",
+        originalCode: 'SELECT * FROM users WHERE id = ' + 'user-123',
+        fixedCode: 'SELECT * FROM users WHERE id = ?',
         language: 'javascript',
         outputLanguage: 'en',
       };
@@ -416,8 +419,8 @@ describe('codeReviewCheckTool', () => {
     it('should generate feedback in Turkish', async () => {
       const input = {
         issueType: 'SQL Injection',
-        originalCode: "SELECT * FROM users WHERE id = " + 'user-123',
-        fixedCode: "SELECT * FROM users WHERE id = ?",
+        originalCode: 'SELECT * FROM users WHERE id = ' + 'user-123',
+        fixedCode: 'SELECT * FROM users WHERE id = ?',
         language: 'javascript',
         outputLanguage: 'tr',
       };
@@ -509,8 +512,8 @@ describe('codeReviewCheckTool', () => {
     it('should return 25 points for correct fix', async () => {
       const input = {
         issueType: 'SQL Injection',
-        originalCode: "SELECT * FROM users WHERE id = " + 'user-123',
-        fixedCode: "SELECT * FROM users WHERE id = ?",
+        originalCode: 'SELECT * FROM users WHERE id = ' + 'user-123',
+        fixedCode: 'SELECT * FROM users WHERE id = ?',
         language: 'javascript',
       };
 
@@ -526,7 +529,7 @@ describe('codeReviewCheckTool', () => {
     it('should return 10 points for partial fix', async () => {
       const input = {
         issueType: 'SQL Injection',
-        originalCode: "SELECT * FROM users WHERE id = " + 'user-123',
+        originalCode: 'SELECT * FROM users WHERE id = ' + 'user-123',
         fixedCode: "SELECT * FROM users WHERE id = '" + 'user-123'.replace(/[^0-9]/g, '') + "'", // Partial solution
         language: 'javascript',
       };
@@ -543,8 +546,8 @@ describe('codeReviewCheckTool', () => {
     it('should return 0 points for incorrect fix', async () => {
       const input = {
         issueType: 'SQL Injection',
-        originalCode: "SELECT * FROM users WHERE id = " + 'user-123',
-        fixedCode: "SELECT * FROM users WHERE id = " + 'user-123',
+        originalCode: 'SELECT * FROM users WHERE id = ' + 'user-123',
+        fixedCode: 'SELECT * FROM users WHERE id = ' + 'user-123',
         language: 'javascript',
       };
 
@@ -560,8 +563,8 @@ describe('codeReviewCheckTool', () => {
     it('should mark severity as correct when isCorrect=true', async () => {
       const input = {
         issueType: 'SQL Injection',
-        originalCode: "SELECT * FROM users WHERE id = " + 'user-123',
-        fixedCode: "SELECT * FROM users WHERE id = ?",
+        originalCode: 'SELECT * FROM users WHERE id = ' + 'user-123',
+        fixedCode: 'SELECT * FROM users WHERE id = ?',
         language: 'javascript',
       };
 
@@ -576,8 +579,8 @@ describe('codeReviewCheckTool', () => {
     it('should mark severity as incorrect when isCorrect=false and not partial', async () => {
       const input = {
         issueType: 'SQL Injection',
-        originalCode: "SELECT * FROM users WHERE id = " + 'user-123',
-        fixedCode: "SELECT * FROM users WHERE id = " + 'user-123',
+        originalCode: 'SELECT * FROM users WHERE id = ' + 'user-123',
+        fixedCode: 'SELECT * FROM users WHERE id = ' + 'user-123',
         language: 'javascript',
       };
 
@@ -595,8 +598,8 @@ describe('codeReviewCheckTool', () => {
     it('should return success flag', async () => {
       const input = {
         issueType: 'SQL Injection',
-        originalCode: "SELECT * FROM users WHERE id = " + 'user-123',
-        fixedCode: "SELECT * FROM users WHERE id = ?",
+        originalCode: 'SELECT * FROM users WHERE id = ' + 'user-123',
+        fixedCode: 'SELECT * FROM users WHERE id = ?',
         language: 'javascript',
       };
 
@@ -607,8 +610,8 @@ describe('codeReviewCheckTool', () => {
     it('should return data object when successful', async () => {
       const input = {
         issueType: 'SQL Injection',
-        originalCode: "SELECT * FROM users WHERE id = " + 'user-123',
-        fixedCode: "SELECT * FROM users WHERE id = ?",
+        originalCode: 'SELECT * FROM users WHERE id = ' + 'user-123',
+        fixedCode: 'SELECT * FROM users WHERE id = ?',
         language: 'javascript',
       };
 
@@ -711,8 +714,8 @@ describe('codeReviewCheckTool', () => {
     it('should not have error when success=true', async () => {
       const input = {
         issueType: 'SQL Injection',
-        originalCode: "SELECT * FROM users WHERE id = " + 'user-123',
-        fixedCode: "SELECT * FROM users WHERE id = ?",
+        originalCode: 'SELECT * FROM users WHERE id = ' + 'user-123',
+        fixedCode: 'SELECT * FROM users WHERE id = ?',
         language: 'javascript',
       };
 
@@ -728,8 +731,8 @@ describe('codeReviewCheckTool', () => {
     it('should provide hint when fix is incorrect', async () => {
       const input = {
         issueType: 'SQL Injection',
-        originalCode: "SELECT * FROM users WHERE id = " + 'user-123',
-        fixedCode: "SELECT * FROM users WHERE id = " + 'user-123' + ";",
+        originalCode: 'SELECT * FROM users WHERE id = ' + 'user-123',
+        fixedCode: 'SELECT * FROM users WHERE id = ' + 'user-123' + ';',
         language: 'javascript',
       };
 
@@ -760,8 +763,8 @@ describe('codeReviewCheckTool', () => {
     it('should accept parameterized queries as valid SQL Injection fix', async () => {
       const input = {
         issueType: 'SQL Injection',
-        originalCode: "SELECT * FROM users WHERE id = " + 'user-123',
-        fixedCode: "SELECT * FROM users WHERE id = ?",
+        originalCode: 'SELECT * FROM users WHERE id = ' + 'user-123',
+        fixedCode: 'SELECT * FROM users WHERE id = ?',
         language: 'javascript',
       };
 
@@ -772,14 +775,14 @@ describe('codeReviewCheckTool', () => {
     it('should accept multiple valid approaches for same issue', async () => {
       const approaches = [
         "const safe = userId.replace(/[^0-9]/g, ''); SELECT * FROM users WHERE id = 123",
-        "SELECT * FROM users WHERE id = ?",
+        'SELECT * FROM users WHERE id = ?',
         "const escaped = escapeSQL(userId); SELECT * FROM users WHERE id = 'user-123'",
       ];
 
       for (const fixedCode of approaches) {
         const input = {
           issueType: 'SQL Injection',
-          originalCode: "SELECT * FROM users WHERE id = " + 'user-123',
+          originalCode: 'SELECT * FROM users WHERE id = ' + 'user-123',
           fixedCode: fixedCode,
           language: 'javascript',
         };
@@ -792,8 +795,8 @@ describe('codeReviewCheckTool', () => {
     it('should not penalize for non-optimal code style', async () => {
       const input = {
         issueType: 'SQL Injection',
-        originalCode: "SELECT * FROM users WHERE id = " + 'user-123',
-        fixedCode: "SELECT * FROM users WHERE id = ?",
+        originalCode: 'SELECT * FROM users WHERE id = ' + 'user-123',
+        fixedCode: 'SELECT * FROM users WHERE id = ?',
         language: 'javascript',
       };
 
@@ -807,7 +810,7 @@ describe('codeReviewCheckTool', () => {
     it('should handle missing required field gracefully', async () => {
       const input: any = {
         issueType: 'SQL Injection',
-        originalCode: "SELECT * FROM users WHERE id = " + 'user-123',
+        originalCode: 'SELECT * FROM users WHERE id = ' + 'user-123',
         // Missing fixedCode
         language: 'javascript',
       };
@@ -819,8 +822,8 @@ describe('codeReviewCheckTool', () => {
     it('should handle null values gracefully', async () => {
       const input: any = {
         issueType: null,
-        originalCode: "SELECT * FROM users WHERE id = " + 'user-123',
-        fixedCode: "SELECT * FROM users WHERE id = ?",
+        originalCode: 'SELECT * FROM users WHERE id = ' + 'user-123',
+        fixedCode: 'SELECT * FROM users WHERE id = ?',
         language: 'javascript',
       };
 
@@ -831,8 +834,8 @@ describe('codeReviewCheckTool', () => {
     it('should return error message on failure', async () => {
       const input: any = {
         issueType: 'SQL Injection',
-        originalCode: "SELECT * FROM users WHERE id = " + 'user-123',
-        fixedCode: "SELECT * FROM users WHERE id = ?",
+        originalCode: 'SELECT * FROM users WHERE id = ' + 'user-123',
+        fixedCode: 'SELECT * FROM users WHERE id = ?',
         // Missing language
       };
 
@@ -861,8 +864,8 @@ describe('codeReviewCheckTool', () => {
     it('should handle code with special characters', async () => {
       const input = {
         issueType: 'XSS',
-        originalCode: "element.innerHTML = `<script>${userInput}</script>`;",
-        fixedCode: "element.textContent = userInput;",
+        originalCode: 'element.innerHTML = `<script>${userInput}</script>`;',
+        fixedCode: 'element.textContent = userInput;',
         language: 'javascript',
       };
 
@@ -873,8 +876,8 @@ describe('codeReviewCheckTool', () => {
     it('should handle code with Unicode characters', async () => {
       const input = {
         issueType: 'SQL Injection',
-        originalCode: "SELECT * FROM users WHERE name = '" + "用户输入" + "'",
-        fixedCode: "SELECT * FROM users WHERE name = ?",
+        originalCode: "SELECT * FROM users WHERE name = '" + '用户输入' + "'",
+        fixedCode: 'SELECT * FROM users WHERE name = ?',
         language: 'javascript',
       };
 
@@ -885,7 +888,7 @@ describe('codeReviewCheckTool', () => {
     it('should handle empty fixedCode', async () => {
       const input = {
         issueType: 'SQL Injection',
-        originalCode: "SELECT * FROM users WHERE id = " + 'user-123',
+        originalCode: 'SELECT * FROM users WHERE id = ' + 'user-123',
         fixedCode: '',
         language: 'javascript',
       };
@@ -897,8 +900,8 @@ describe('codeReviewCheckTool', () => {
     it('should handle identical originalCode and fixedCode', async () => {
       const input = {
         issueType: 'SQL Injection',
-        originalCode: "SELECT * FROM users WHERE id = " + 'user-123',
-        fixedCode: "SELECT * FROM users WHERE id = " + 'user-123',
+        originalCode: 'SELECT * FROM users WHERE id = ' + 'user-123',
+        fixedCode: 'SELECT * FROM users WHERE id = ' + 'user-123',
         language: 'javascript',
       };
 
@@ -939,8 +942,8 @@ SELECT * FROM users WHERE id = ?`,
     it('should handle code with regex patterns', async () => {
       const input = {
         issueType: 'SQL Injection',
-        originalCode: "const pattern = /[a-z]+/; SELECT * FROM users WHERE id = " + 'user-123',
-        fixedCode: "const pattern = /[a-z]+/; SELECT * FROM users WHERE id = ?",
+        originalCode: 'const pattern = /[a-z]+/; SELECT * FROM users WHERE id = ' + 'user-123',
+        fixedCode: 'const pattern = /[a-z]+/; SELECT * FROM users WHERE id = ?',
         language: 'javascript',
       };
 
@@ -954,7 +957,7 @@ SELECT * FROM users WHERE id = ?`,
     it('should handle complete SQL Injection scenario in English', async () => {
       const input = {
         issueType: 'SQL Injection',
-        originalCode: "const query = `SELECT * FROM users WHERE id = ${userId}`;",
+        originalCode: 'const query = `SELECT * FROM users WHERE id = ${userId}`;',
         fixedCode: "const stmt = db.prepare('SELECT * FROM users WHERE id = ?'); stmt.run(userId);",
         language: 'javascript',
         outputLanguage: 'en',
@@ -1015,8 +1018,9 @@ SELECT * FROM users WHERE id = ?`,
     it('should handle Java security fix validation', async () => {
       const input = {
         issueType: 'SQL Injection',
-        originalCode: "String query = \"SELECT * FROM users WHERE username = '\" + username + \"'\";",
-        fixedCode: "PreparedStatement pstmt = connection.prepareStatement(\"SELECT * FROM users WHERE username = ?\"); pstmt.setString(1, username);",
+        originalCode: 'String query = "SELECT * FROM users WHERE username = \'" + username + "\'";',
+        fixedCode:
+          'PreparedStatement pstmt = connection.prepareStatement("SELECT * FROM users WHERE username = ?"); pstmt.setString(1, username);',
         language: 'java',
         outputLanguage: 'en',
       };
@@ -1026,7 +1030,7 @@ SELECT * FROM users WHERE id = ?`,
     });
 
     it('should handle multi-language developer scenarios', async () => {
-      const languages = ['en', 'tr'];  // Test 2 languages instead of 5 to avoid timeout
+      const languages = ['en', 'tr']; // Test 2 languages instead of 5 to avoid timeout
 
       for (const lang of languages) {
         const input = {
@@ -1040,7 +1044,7 @@ SELECT * FROM users WHERE id = ?`,
         const result = await executeTool(input);
         expect(result).toBeDefined();
       }
-    }, 30000);  // Increase timeout to 30 seconds for multiple AI calls
+    }, 30000); // Increase timeout to 30 seconds for multiple AI calls
   });
 
   // ==================== PRAGMATIC ACCEPTANCE TESTS ====================
@@ -1048,8 +1052,8 @@ SELECT * FROM users WHERE id = ?`,
     it('should accept fix that solves the primary issue even if not optimal', async () => {
       const input = {
         issueType: 'SQL Injection',
-        originalCode: "SELECT * FROM users WHERE id = " + 'user-123',
-        fixedCode: "SELECT * FROM users WHERE id = ?", // Simple parameterized query
+        originalCode: 'SELECT * FROM users WHERE id = ' + 'user-123',
+        fixedCode: 'SELECT * FROM users WHERE id = ?', // Simple parameterized query
         language: 'javascript',
       };
 
@@ -1067,7 +1071,7 @@ SELECT * FROM users WHERE id = ?`,
       for (const fixedCode of validApproaches) {
         const input = {
           issueType: 'SQL Injection',
-          originalCode: "SELECT * FROM users WHERE id = " + 'user-123',
+          originalCode: 'SELECT * FROM users WHERE id = ' + 'user-123',
           fixedCode: fixedCode,
           language: 'javascript',
         };
@@ -1091,8 +1095,8 @@ SELECT * FROM users WHERE id = ?`,
 
       const input = {
         issueType: 'SQL Injection',
-        originalCode: "SELECT * FROM users WHERE id = " + 'user-123',
-        fixedCode: "SELECT * FROM users WHERE id = " + 'user-123', // Not fixed
+        originalCode: 'SELECT * FROM users WHERE id = ' + 'user-123',
+        fixedCode: 'SELECT * FROM users WHERE id = ' + 'user-123', // Not fixed
         language: 'javascript',
       };
 
@@ -1105,8 +1109,8 @@ SELECT * FROM users WHERE id = ?`,
     it('should mark correct when issue is definitively solved', async () => {
       const input = {
         issueType: 'SQL Injection',
-        originalCode: "SELECT * FROM users WHERE id = " + 'user-123',
-        fixedCode: "SELECT * FROM users WHERE id = ?",
+        originalCode: 'SELECT * FROM users WHERE id = ' + 'user-123',
+        fixedCode: 'SELECT * FROM users WHERE id = ?',
         language: 'javascript',
       };
 
@@ -1120,8 +1124,8 @@ SELECT * FROM users WHERE id = ?`,
     it('should accept OPENAI provider', async () => {
       const input = {
         issueType: 'SQL Injection',
-        originalCode: "SELECT * FROM users WHERE id = " + 'user-123',
-        fixedCode: "SELECT * FROM users WHERE id = ?",
+        originalCode: 'SELECT * FROM users WHERE id = ' + 'user-123',
+        fixedCode: 'SELECT * FROM users WHERE id = ?',
         language: 'javascript',
         modelProvider: 'OPENAI',
       };
@@ -1189,8 +1193,8 @@ SELECT * FROM users WHERE id = ?`,
     it('should always include all data fields in success response', async () => {
       const input = {
         issueType: 'SQL Injection',
-        originalCode: "SELECT * FROM users WHERE id = " + 'user-123',
-        fixedCode: "SELECT * FROM users WHERE id = ?",
+        originalCode: 'SELECT * FROM users WHERE id = ' + 'user-123',
+        fixedCode: 'SELECT * FROM users WHERE id = ?',
         language: 'javascript',
       };
 
@@ -1293,4 +1297,3 @@ SELECT * FROM users WHERE id = ?`,
     });
   });
 });
-

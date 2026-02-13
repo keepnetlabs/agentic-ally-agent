@@ -66,7 +66,7 @@ describe('App Texts Rewriter', () => {
   const baseContext: RewriteContext = {
     sourceLanguage: 'en',
     targetLanguage: 'tr',
-    topic: '',  // Not used for app-texts
+    topic: '', // Not used for app-texts
     model: mockModel,
     department: 'IT',
   };
@@ -108,22 +108,16 @@ describe('App Texts Rewriter', () => {
     });
 
     it('should require app texts parameter', async () => {
-      await expect(
-        rewriteAppTexts(undefined as any, baseContext)
-      ).resolves.toBeUndefined();
+      await expect(rewriteAppTexts(undefined as any, baseContext)).resolves.toBeUndefined();
     });
 
     it('should require context parameter', async () => {
-      await expect(
-        rewriteAppTexts(baseAppTexts as any, undefined as any)
-      ).resolves.toBeDefined();
+      await expect(rewriteAppTexts(baseAppTexts as any, undefined as any)).resolves.toBeDefined();
     });
 
     it('should require context with proper structure', async () => {
       const invalidContext = { targetLanguage: 'tr' } as any;
-      await expect(
-        rewriteAppTexts(baseAppTexts as any, invalidContext)
-      ).resolves.toBeDefined();
+      await expect(rewriteAppTexts(baseAppTexts as any, invalidContext)).resolves.toBeDefined();
     });
   });
 

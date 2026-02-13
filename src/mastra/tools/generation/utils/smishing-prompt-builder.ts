@@ -36,17 +36,19 @@ export async function buildSmishingAgentPrompt(
   }
 
   const localizedPromptResponse = await withRetry(
-    () => generateText({
-      model: model,
-      messages: [
-        {
-          role: 'system',
-          content: `Localize the following system prompt into ${analysis.language}. ` +
-            'Preserve meaning and formatting, output only the localized text.'
-        },
-        { role: 'user', content: systemPrompt }
-      ]
-    }),
+    () =>
+      generateText({
+        model: model,
+        messages: [
+          {
+            role: 'system',
+            content:
+              `Localize the following system prompt into ${analysis.language}. ` +
+              'Preserve meaning and formatting, output only the localized text.',
+          },
+          { role: 'user', content: systemPrompt },
+        ],
+      }),
     'Scene 4 smishing prompt localization'
   );
 

@@ -11,25 +11,30 @@ import { withRetry } from '../../utils/core/resilience-utils';
 import { CODE_REVIEW_PARAMS } from '../../utils/config/llm-generation-params';
 
 const CodeReviewCheckSchema = z.object({
-  issueType: z.string()
+  issueType: z
+    .string()
     .max(200, 'Issue type must not exceed 200 characters')
     .describe('Type of issue to fix (e.g., "SQL Injection", "XSS", "Logic Error", "Performance Issue")'),
-  originalCode: z.string()
+  originalCode: z
+    .string()
     .max(100000, 'Code must not exceed 100,000 characters')
     .describe('The original code with the issue'),
-  fixedCode: z.string()
+  fixedCode: z
+    .string()
     .max(100000, 'Code must not exceed 100,000 characters')
     .describe('The code after developer attempted to fix it'),
-  language: z.string()
+  language: z
+    .string()
     .max(50, 'Language name must not exceed 50 characters')
     .describe('Programming language (javascript, python, java, etc.)'),
-  outputLanguage: z.string()
+  outputLanguage: z
+    .string()
     .max(10, 'Language code must not exceed 10 characters')
-    .optional().default('en').describe('Output language for feedback, explanation and hint (e.g., "en", "tr", "de", "fr", etc.)'),
+    .optional()
+    .default('en')
+    .describe('Output language for feedback, explanation and hint (e.g., "en", "tr", "de", "fr", etc.)'),
   modelProvider: z.enum(MODEL_PROVIDERS.NAMES).optional().describe('Model provider'),
-  model: z.string()
-    .max(100, 'Model name must not exceed 100 characters')
-    .optional().describe('Model name override'),
+  model: z.string().max(100, 'Model name must not exceed 100 characters').optional().describe('Model name override'),
 });
 
 const CodeReviewCheckOutputSchema = z.object({
@@ -40,7 +45,10 @@ const CodeReviewCheckOutputSchema = z.object({
     feedback: z.string().describe('Immediate 1-2 sentence feedback for learner (in requested output language)'),
     explanation: z.string().describe('Detailed explanation why correct/incorrect (in requested output language)'),
     points: z.number().min(0).max(25).describe('Points earned (0-25)'),
-    hint: z.string().optional().describe('Solution-oriented hint for next attempt if incorrect (in requested output language)'),
+    hint: z
+      .string()
+      .optional()
+      .describe('Solution-oriented hint for next attempt if incorrect (in requested output language)'),
   }),
   error: z.string().optional(),
 });
@@ -71,33 +79,28 @@ export const codeReviewCheckTool = new Tool({
 
     try {
       // Create validation prompt
-      const validationPrompt = buildCodeReviewCheckPrompt(
-        issueType,
-        originalCode,
-        fixedCode,
-        language,
-        outputLanguage
-      );
+      const validationPrompt = buildCodeReviewCheckPrompt(issueType, originalCode, fixedCode, language, outputLanguage);
 
       // Call AI for validation with automatic retry
       const response = await withRetry(
-        () => generateText({
-          model: model,
-          messages: [
-            {
-              role: 'system',
-              content: `You are a pragmatic code reviewer. Your job is to validate if a developer correctly fixed a code issue (could be a security vulnerability, logic error, performance problem, or other code defect).
+        () =>
+          generateText({
+            model: model,
+            messages: [
+              {
+                role: 'system',
+                content: `You are a pragmatic code reviewer. Your job is to validate if a developer correctly fixed a code issue (could be a security vulnerability, logic error, performance problem, or other code defect).
 
 Focus on: Does the fix solve the issue? If yes, it's correct - don't worry about whether it's the most elegant or best-practice approach. There are infinite ways to solve a problem.
 
 IMPORTANT: Respond in ${outputLanguage} language. All feedback, explanation, and hint must be in ${outputLanguage}.
 
 Return ONLY valid JSON - NO markdown, NO backticks, NO formatting. Start directly with {.`,
-            },
-            { role: 'user', content: validationPrompt },
-          ],
-          ...CODE_REVIEW_PARAMS,
-        }),
+              },
+              { role: 'user', content: validationPrompt },
+            ],
+            ...CODE_REVIEW_PARAMS,
+          }),
         `[CodeReviewCheckTool] code-review-validation-${issueType}`
       );
 

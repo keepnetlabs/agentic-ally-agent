@@ -6,144 +6,156 @@ import { normalizeError, logErrorInfo } from '../../utils/core/error-utils';
 import { errorService } from '../error-service';
 import { API_ENDPOINTS } from '../../constants';
 import { AutonomousRequest, AutonomousResponse } from '../../types/autonomous-types';
-import {
-    buildExecutiveReport,
-    generateContentForUser,
-    generateContentForGroup,
-} from './autonomous-content-generators';
+import { buildExecutiveReport, generateContentForUser, generateContentForGroup } from './autonomous-content-generators';
 
 /**
  * Autonomous service - Executes user/group analysis and generates training/phishing content
  */
-export async function executeAutonomousGeneration(
-    request: AutonomousRequest
-): Promise<AutonomousResponse> {
-    const logger = getLogger('ExecuteAutonomousGeneration');
-    const { token, firstName, lastName, targetUserResourceId, targetGroupResourceId, departmentName, actions, sendAfterPhishingSimulation, preferredLanguage, baseApiUrl } = request;
+export async function executeAutonomousGeneration(request: AutonomousRequest): Promise<AutonomousResponse> {
+  const logger = getLogger('ExecuteAutonomousGeneration');
+  const {
+    token,
+    firstName,
+    lastName,
+    targetUserResourceId,
+    targetGroupResourceId,
+    departmentName,
+    actions,
+    sendAfterPhishingSimulation,
+    preferredLanguage,
+    baseApiUrl,
+  } = request;
 
-    // Use provided baseApiUrl or fallback to default
-    let effectiveBaseApiUrl = baseApiUrl || API_ENDPOINTS.DEFAULT_BASE_API_URL;
-    if (effectiveBaseApiUrl.includes('dash.keepnetlabs.com')) {
-        effectiveBaseApiUrl = effectiveBaseApiUrl.replace('dash.keepnetlabs.com', 'api.keepnetlabs.com')
-    }
-    if (effectiveBaseApiUrl.includes('test-ui.devkeepnet.com')) {
-        effectiveBaseApiUrl = effectiveBaseApiUrl.replace('test-ui.devkeepnet.com', 'test-api.devkeepnet.com')
-    }
-    // Determine assignment type
-    const isUserAssignment = !!(firstName || targetUserResourceId);
-    const isGroupAssignment = !!targetGroupResourceId;
+  // Use provided baseApiUrl or fallback to default
+  let effectiveBaseApiUrl = baseApiUrl || API_ENDPOINTS.DEFAULT_BASE_API_URL;
+  if (effectiveBaseApiUrl.includes('dash.keepnetlabs.com')) {
+    effectiveBaseApiUrl = effectiveBaseApiUrl.replace('dash.keepnetlabs.com', 'api.keepnetlabs.com');
+  }
+  if (effectiveBaseApiUrl.includes('test-ui.devkeepnet.com')) {
+    effectiveBaseApiUrl = effectiveBaseApiUrl.replace('test-ui.devkeepnet.com', 'test-api.devkeepnet.com');
+  }
+  // Determine assignment type
+  const isUserAssignment = !!(firstName || targetUserResourceId);
+  const isGroupAssignment = !!targetGroupResourceId;
 
-    if (!isUserAssignment && !isGroupAssignment) {
-        logger.error('Invalid assignment: neither user nor group specified');
-        return { success: false, error: 'Must specify either user or group assignment', actions };
-    }
+  if (!isUserAssignment && !isGroupAssignment) {
+    logger.error('Invalid assignment: neither user nor group specified');
+    return { success: false, error: 'Must specify either user or group assignment', actions };
+  }
 
-    try {
-        return await requestStorage.run({ token, baseApiUrl: effectiveBaseApiUrl }, async (): Promise<AutonomousResponse> => {
-            // USER ASSIGNMENT: Get user info and generate personalized content
-            if (isUserAssignment) {
-                logger.info('USER ASSIGNMENT: Analyzing user behavior');
+  try {
+    return await requestStorage.run(
+      { token, baseApiUrl: effectiveBaseApiUrl },
+      async (): Promise<AutonomousResponse> => {
+        // USER ASSIGNMENT: Get user info and generate personalized content
+        if (isUserAssignment) {
+          logger.info('USER ASSIGNMENT: Analyzing user behavior');
 
-                if (!getUserInfoTool.execute) {
-                    return { success: false, error: 'getUserInfoTool not executable', actions };
-                }
+          if (!getUserInfoTool.execute) {
+            return { success: false, error: 'getUserInfoTool not executable', actions };
+          }
 
-                // Fast path (direct ID) or slow path (name search)
-                const toolContext = targetUserResourceId
-                    ? { targetUserResourceId, departmentName }
-                    : { firstName, lastName };
+          // Fast path (direct ID) or slow path (name search)
+          const toolContext = targetUserResourceId ? { targetUserResourceId, departmentName } : { firstName, lastName };
 
-                const toolResult = await getUserInfoTool.execute({ context: toolContext } as any);
-                logger.debug('Tool result retrieved', { toolResult });
-                if (!toolResult.success) {
-                    return { success: false, error: toolResult.error || 'User info retrieval failed', actions };
-                }
+          const toolResult = await getUserInfoTool.execute({ context: toolContext } as any);
+          logger.debug('Tool result retrieved', { toolResult });
+          if (!toolResult.success) {
+            return { success: false, error: toolResult.error || 'User info retrieval failed', actions };
+          }
 
-                // Override preferredLanguage if provided
-                if (preferredLanguage && toolResult.userInfo) {
-                    toolResult.userInfo.preferredLanguage = preferredLanguage;
-                }
+          // Override preferredLanguage if provided
+          if (preferredLanguage && toolResult.userInfo) {
+            toolResult.userInfo.preferredLanguage = preferredLanguage;
+          }
 
-                const runTimestamp = Date.now();
-                const userId = toolResult.userInfo?.targetUserResourceId || runTimestamp;
-                const executiveReport = buildExecutiveReport(toolResult);
+          const runTimestamp = Date.now();
+          const userId = toolResult.userInfo?.targetUserResourceId || runTimestamp;
+          const executiveReport = buildExecutiveReport(toolResult);
 
-                // CRITICAL: Append timestamp to thread IDs to ensure UNIQUE memory context per run
-                // This prevents "pollution" from previous runs and prevents the agent from hallucinating based on old history
-                const phishingThreadId = `phishing-${userId}-${runTimestamp}`;
-                const trainingThreadId = `training-${userId}-${runTimestamp}`;
+          // CRITICAL: Append timestamp to thread IDs to ensure UNIQUE memory context per run
+          // This prevents "pollution" from previous runs and prevents the agent from hallucinating based on old history
+          const phishingThreadId = `phishing-${userId}-${runTimestamp}`;
+          const trainingThreadId = `training-${userId}-${runTimestamp}`;
 
-                const { phishingResult, trainingResult, smishingResult } = await generateContentForUser(
-                    toolResult, executiveReport, actions, sendAfterPhishingSimulation, userId,
-                    phishingThreadId, trainingThreadId
-                );
+          const { phishingResult, trainingResult, smishingResult } = await generateContentForUser(
+            toolResult,
+            executiveReport,
+            actions,
+            sendAfterPhishingSimulation,
+            userId,
+            phishingThreadId,
+            trainingThreadId
+          );
 
-                logger.info('✅ Autonomous service completed successfully', {
-                    assignmentType: 'user',
-                    userId,
-                    phishingSuccess: phishingResult?.success,
-                    trainingSuccess: trainingResult?.success,
-                    smishingSuccess: smishingResult?.success
-                });
+          logger.info('✅ Autonomous service completed successfully', {
+            assignmentType: 'user',
+            userId,
+            phishingSuccess: phishingResult?.success,
+            trainingSuccess: trainingResult?.success,
+            smishingSuccess: smishingResult?.success,
+          });
 
-                const resolvedTargetUserResourceId =
-                    toolResult.userInfo?.targetUserResourceId ?? String(userId);
+          const resolvedTargetUserResourceId = toolResult.userInfo?.targetUserResourceId ?? String(userId);
 
-                return {
-                    success: true,
-                    userInfo: toolResult.userInfo && {
-                        ...toolResult.userInfo,
-                        targetUserResourceId: resolvedTargetUserResourceId
-                    },
-                    recentActivities: toolResult.recentActivities,
-                    analysisReport: toolResult.analysisReport,
-                    executiveReport,
-                    phishingResult,
-                    trainingResult,
-                    smishingResult,
-                    actions,
-                    message: `User analysis and content generation completed`
-                };
-            } else if (isGroupAssignment) {
-                // GROUP ASSIGNMENT: Generate generic content for bulk assignment
-                logger.info('GROUP ASSIGNMENT: Generating generic content for group', { targetGroupResourceId });
+          return {
+            success: true,
+            userInfo: toolResult.userInfo && {
+              ...toolResult.userInfo,
+              targetUserResourceId: resolvedTargetUserResourceId,
+            },
+            recentActivities: toolResult.recentActivities,
+            analysisReport: toolResult.analysisReport,
+            executiveReport,
+            phishingResult,
+            trainingResult,
+            smishingResult,
+            actions,
+            message: `User analysis and content generation completed`,
+          };
+        } else if (isGroupAssignment) {
+          // GROUP ASSIGNMENT: Generate generic content for bulk assignment
+          logger.info('GROUP ASSIGNMENT: Generating generic content for group', { targetGroupResourceId });
 
-                const { phishingResult, trainingResult, smishingResult } = await generateContentForGroup(
-                    actions, preferredLanguage, targetGroupResourceId
-                );
+          const { phishingResult, trainingResult, smishingResult } = await generateContentForGroup(
+            actions,
+            preferredLanguage,
+            targetGroupResourceId
+          );
 
-                logger.info('✅ Autonomous service completed successfully', {
-                    assignmentType: 'group',
-                    targetGroupResourceId,
-                    phishingSuccess: phishingResult?.success,
-                    trainingSuccess: trainingResult?.success,
-                    smishingSuccess: smishingResult?.success
-                });
+          logger.info('✅ Autonomous service completed successfully', {
+            assignmentType: 'group',
+            targetGroupResourceId,
+            phishingSuccess: phishingResult?.success,
+            trainingSuccess: trainingResult?.success,
+            smishingSuccess: smishingResult?.success,
+          });
 
-                return {
-                    success: true,
-                    phishingResult,
-                    trainingResult,
-                    smishingResult,
-                    actions,
-                    message: `Generic content generated for group ${targetGroupResourceId}`
-                };
-            }
+          return {
+            success: true,
+            phishingResult,
+            trainingResult,
+            smishingResult,
+            actions,
+            message: `Generic content generated for group ${targetGroupResourceId}`,
+          };
+        }
 
-            // Fallback (should never reach here due to validation)
-            return {
-                success: false,
-                error: 'Invalid assignment type',
-                actions
-            };
-        });
-    } catch (error) {
-        const err = normalizeError(error);
-        const errorInfo = errorService.external(err.message, {
-            step: 'execute-autonomous-generation',
-            stack: err.stack,
-        });
-        logErrorInfo(logger, 'error', 'Autonomous service error', errorInfo);
-        return { success: false, error: err.message, actions };
-    }
+        // Fallback (should never reach here due to validation)
+        return {
+          success: false,
+          error: 'Invalid assignment type',
+          actions,
+        };
+      }
+    );
+  } catch (error) {
+    const err = normalizeError(error);
+    const errorInfo = errorService.external(err.message, {
+      step: 'execute-autonomous-generation',
+      stack: err.stack,
+    });
+    logErrorInfo(logger, 'error', 'Autonomous service error', errorInfo);
+    return { success: false, error: err.message, actions };
+  }
 }

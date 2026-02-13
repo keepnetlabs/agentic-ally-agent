@@ -1,6 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { z } from 'zod';
-import { addLanguageWorkflow, loadExistingStep, translateLanguageStep, updateInboxStep, combineResultsStep } from './add-language-workflow';
+import {
+  addLanguageWorkflow,
+  loadExistingStep,
+  translateLanguageStep,
+  updateInboxStep,
+  combineResultsStep,
+} from './add-language-workflow';
 import { loadInboxWithFallback } from '../utils/kv-helpers';
 
 // Mocks using flattened flattened object for reliability
@@ -11,7 +17,7 @@ const mocks = vi.hoisted(() => ({
   updateLanguageAvailabilityAtomic: vi.fn(),
   storeInboxContent: vi.fn(),
   translateExecute: vi.fn(),
-  inboxExecute: vi.fn()
+  inboxExecute: vi.fn(),
 }));
 
 vi.mock('../services/kv-service', () => ({
@@ -21,34 +27,34 @@ vi.mock('../services/kv-service', () => ({
       get: mocks.get,
       storeLanguageContent: mocks.storeLanguageContent,
       updateLanguageAvailabilityAtomic: mocks.updateLanguageAvailabilityAtomic,
-      storeInboxContent: mocks.storeInboxContent
+      storeInboxContent: mocks.storeInboxContent,
     };
-  })
+  }),
 }));
 
 vi.mock('../tools/generation', () => ({
   translateLanguageJsonTool: {
-    execute: mocks.translateExecute
-  }
+    execute: mocks.translateExecute,
+  },
 }));
 
 vi.mock('../tools/inbox', () => ({
   inboxTranslateJsonTool: {
-    execute: mocks.inboxExecute
-  }
+    execute: mocks.inboxExecute,
+  },
 }));
 
 vi.mock('../utils/core/resilience-utils', () => ({
-  withRetry: vi.fn((fn) => fn())
+  withRetry: vi.fn(fn => fn()),
 }));
 
 vi.mock('../utils/kv-helpers', () => ({
-  loadInboxWithFallback: vi.fn()
+  loadInboxWithFallback: vi.fn(),
 }));
 
 vi.mock('../utils/kv-consistency', () => ({
   waitForKVConsistency: vi.fn(),
-  buildExpectedKVKeys: vi.fn().mockReturnValue([])
+  buildExpectedKVKeys: vi.fn().mockReturnValue([]),
 }));
 
 describe('add-language-workflow', () => {
@@ -94,7 +100,7 @@ describe('add-language-workflow', () => {
 
     it('should require existingMicrolearningId', () => {
       const testData = {
-        targetLanguage: 'tr-TR'
+        targetLanguage: 'tr-TR',
       };
       expect(() => {
         inputSchema.parse(testData);
@@ -104,7 +110,7 @@ describe('add-language-workflow', () => {
     it('should accept valid existingMicrolearningId', () => {
       const testData = {
         existingMicrolearningId: 'phishing-101',
-        targetLanguage: 'tr-TR'
+        targetLanguage: 'tr-TR',
       };
       expect(() => {
         inputSchema.parse(testData);
@@ -113,7 +119,7 @@ describe('add-language-workflow', () => {
 
     it('should require targetLanguage', () => {
       const testData = {
-        existingMicrolearningId: 'phishing-101'
+        existingMicrolearningId: 'phishing-101',
       };
       expect(() => {
         inputSchema.parse(testData);
@@ -127,7 +133,7 @@ describe('add-language-workflow', () => {
       validLanguages.forEach(lang => {
         const testData = {
           existingMicrolearningId: 'test-id',
-          targetLanguage: lang
+          targetLanguage: lang,
         };
         expect(() => {
           inputSchema.parse(testData);
@@ -138,7 +144,7 @@ describe('add-language-workflow', () => {
     it('should make sourceLanguage optional', () => {
       const testData = {
         existingMicrolearningId: 'phishing-101',
-        targetLanguage: 'tr-TR'
+        targetLanguage: 'tr-TR',
       };
       expect(() => {
         inputSchema.parse(testData);
@@ -149,7 +155,7 @@ describe('add-language-workflow', () => {
       const testData = {
         existingMicrolearningId: 'phishing-101',
         targetLanguage: 'tr-TR',
-        sourceLanguage: 'en-US'
+        sourceLanguage: 'en-US',
       };
       expect(() => {
         inputSchema.parse(testData);
@@ -159,7 +165,7 @@ describe('add-language-workflow', () => {
     it('should make department optional', () => {
       const testData = {
         existingMicrolearningId: 'phishing-101',
-        targetLanguage: 'tr-TR'
+        targetLanguage: 'tr-TR',
       };
       expect(() => {
         inputSchema.parse(testData);
@@ -170,7 +176,7 @@ describe('add-language-workflow', () => {
       const testData = {
         existingMicrolearningId: 'phishing-101',
         targetLanguage: 'tr-TR',
-        department: 'IT'
+        department: 'IT',
       };
       expect(() => {
         inputSchema.parse(testData);
@@ -180,7 +186,7 @@ describe('add-language-workflow', () => {
     it('should make modelProvider optional', () => {
       const testData = {
         existingMicrolearningId: 'phishing-101',
-        targetLanguage: 'tr-TR'
+        targetLanguage: 'tr-TR',
       };
       expect(() => {
         inputSchema.parse(testData);
@@ -191,14 +197,14 @@ describe('add-language-workflow', () => {
       const validProviders = ['OPENAI', 'WORKERS_AI', 'GOOGLE'];
       const baseData = {
         existingMicrolearningId: 'test-id',
-        targetLanguage: 'tr-TR'
+        targetLanguage: 'tr-TR',
       };
 
       validProviders.forEach(provider => {
         expect(() => {
           inputSchema.parse({
             ...baseData,
-            modelProvider: provider
+            modelProvider: provider,
           });
         }).not.toThrow();
       });
@@ -207,7 +213,7 @@ describe('add-language-workflow', () => {
     it('should make model optional', () => {
       const testData = {
         existingMicrolearningId: 'phishing-101',
-        targetLanguage: 'tr-TR'
+        targetLanguage: 'tr-TR',
       };
       expect(() => {
         inputSchema.parse(testData);
@@ -218,7 +224,7 @@ describe('add-language-workflow', () => {
       const testData = {
         existingMicrolearningId: 'phishing-101',
         targetLanguage: 'tr-TR',
-        model: 'OPENAI_GPT_4O_MINI'
+        model: 'OPENAI_GPT_4O_MINI',
       };
       expect(() => {
         inputSchema.parse(testData);
@@ -228,7 +234,7 @@ describe('add-language-workflow', () => {
     it('should reject empty existingMicrolearningId', () => {
       const testData = {
         existingMicrolearningId: '',
-        targetLanguage: 'tr-TR'
+        targetLanguage: 'tr-TR',
       };
       expect(() => {
         inputSchema.parse(testData);
@@ -242,7 +248,7 @@ describe('add-language-workflow', () => {
         sourceLanguage: 'en-US',
         department: 'HR',
         modelProvider: 'OPENAI',
-        model: 'gpt-4o-mini'
+        model: 'gpt-4o-mini',
       };
       expect(() => {
         inputSchema.parse(testData);
@@ -308,8 +314,8 @@ describe('add-language-workflow', () => {
           title: 'Stop Phishing Attacks',
           targetLanguage: 'tr-TR',
           trainingUrl: 'https://example.com/?courseId=phishing-101&langUrl=lang%2Ftr-TR',
-          filesGenerated: ['phishing-101/tr-TR.json']
-        }
+          filesGenerated: ['phishing-101/tr-TR.json'],
+        },
       };
 
       expect(() => {
@@ -415,7 +421,7 @@ describe('add-language-workflow', () => {
     it('should accept lowercase language codes', () => {
       const testData = {
         existingMicrolearningId: 'test-id',
-        targetLanguage: 'en'
+        targetLanguage: 'en',
       };
       expect(() => {
         inputSchema.parse(testData);
@@ -425,7 +431,7 @@ describe('add-language-workflow', () => {
     it('should accept language codes with hyphens', () => {
       const testData = {
         existingMicrolearningId: 'test-id',
-        targetLanguage: 'en-US'
+        targetLanguage: 'en-US',
       };
       expect(() => {
         inputSchema.parse(testData);
@@ -449,7 +455,7 @@ describe('add-language-workflow', () => {
         expect(() => {
           inputSchema.parse({
             existingMicrolearningId: 'test-id',
-            targetLanguage: lang
+            targetLanguage: lang,
           });
         }).not.toThrow();
       });
@@ -463,7 +469,7 @@ describe('add-language-workflow', () => {
     it('should apply default for department', () => {
       const testData = {
         existingMicrolearningId: 'phishing-101',
-        targetLanguage: 'tr-TR'
+        targetLanguage: 'tr-TR',
       };
       const parsed = inputSchema.parse(testData);
       expect(parsed.department).toBeDefined();
@@ -474,7 +480,7 @@ describe('add-language-workflow', () => {
       const testData = {
         existingMicrolearningId: 'phishing-101',
         targetLanguage: 'tr-TR',
-        department: 'HR'
+        department: 'HR',
       };
       const parsed = inputSchema.parse(testData);
       expect(parsed.department).toBe('HR');
@@ -483,7 +489,7 @@ describe('add-language-workflow', () => {
     it('should not apply default for sourceLanguage', () => {
       const testData = {
         existingMicrolearningId: 'phishing-101',
-        targetLanguage: 'tr-TR'
+        targetLanguage: 'tr-TR',
       };
       const parsed = inputSchema.parse(testData);
       expect(parsed.sourceLanguage).toBeUndefined();
@@ -492,7 +498,7 @@ describe('add-language-workflow', () => {
     it('should not apply default for modelProvider', () => {
       const testData = {
         existingMicrolearningId: 'phishing-101',
-        targetLanguage: 'tr-TR'
+        targetLanguage: 'tr-TR',
       };
       const parsed = inputSchema.parse(testData);
       expect(parsed.modelProvider).toBeUndefined();
@@ -501,7 +507,7 @@ describe('add-language-workflow', () => {
     it('should not apply default for model', () => {
       const testData = {
         existingMicrolearningId: 'phishing-101',
-        targetLanguage: 'tr-TR'
+        targetLanguage: 'tr-TR',
       };
       const parsed = inputSchema.parse(testData);
       expect(parsed.model).toBeUndefined();
@@ -519,7 +525,7 @@ describe('add-language-workflow', () => {
         expect(() => {
           inputSchema.parse({
             existingMicrolearningId: id,
-            targetLanguage: 'tr-TR'
+            targetLanguage: 'tr-TR',
           });
         }).not.toThrow();
       });
@@ -529,7 +535,7 @@ describe('add-language-workflow', () => {
       expect(() => {
         inputSchema.parse({
           existingMicrolearningId: null,
-          targetLanguage: 'tr-TR'
+          targetLanguage: 'tr-TR',
         });
       }).toThrow();
     });
@@ -538,7 +544,7 @@ describe('add-language-workflow', () => {
       expect(() => {
         inputSchema.parse({
           existingMicrolearningId: undefined,
-          targetLanguage: 'tr-TR'
+          targetLanguage: 'tr-TR',
         });
       }).toThrow();
     });
@@ -576,7 +582,7 @@ describe('add-language-workflow', () => {
 
     it('should validate with missing targetLanguage', () => {
       const testData = {
-        existingMicrolearningId: 'phishing-101'
+        existingMicrolearningId: 'phishing-101',
       };
       expect(() => {
         inputSchema.parse(testData);
@@ -585,7 +591,7 @@ describe('add-language-workflow', () => {
 
     it('should validate with missing existingMicrolearningId', () => {
       const testData = {
-        targetLanguage: 'tr-TR'
+        targetLanguage: 'tr-TR',
       };
       expect(() => {
         inputSchema.parse(testData);
@@ -597,7 +603,7 @@ describe('add-language-workflow', () => {
         inputSchema.parse({
           existingMicrolearningId: 'test-id',
           targetLanguage: 'tr-TR',
-          modelProvider: 'INVALID_PROVIDER'
+          modelProvider: 'INVALID_PROVIDER',
         });
       }).toThrow();
     });
@@ -605,7 +611,7 @@ describe('add-language-workflow', () => {
     it('should type-check object properties correctly', () => {
       const testData = {
         existingMicrolearningId: 'phishing-101',
-        targetLanguage: 'tr-TR'
+        targetLanguage: 'tr-TR',
       };
       const parsed = inputSchema.parse(testData);
 
@@ -672,15 +678,15 @@ describe('add-language-workflow', () => {
           microlearning_id: 'test-id',
           microlearning_metadata: {
             title: 'Test Title',
-            language: 'en-gb'
-          }
+            language: 'en-gb',
+          },
         };
         mocks.getMicrolearning.mockResolvedValue({ base: mockExisting });
 
         const input = {
           existingMicrolearningId: 'test-id',
           targetLanguage: 'tr-TR',
-          department: 'IT'
+          department: 'IT',
         };
 
         const result = await (loadExistingStep as any).execute({ inputData: input });
@@ -696,23 +702,24 @@ describe('add-language-workflow', () => {
 
         const input = {
           existingMicrolearningId: 'missing-id',
-          targetLanguage: 'tr-TR'
+          targetLanguage: 'tr-TR',
         };
 
-        await expect((loadExistingStep as any).execute({ inputData: input }))
-          .rejects.toThrow('Microlearning not found');
+        await expect((loadExistingStep as any).execute({ inputData: input })).rejects.toThrow(
+          'Microlearning not found'
+        );
       });
 
       it('should detect code review training and disable inbox', async () => {
         const mockCodeReview = {
           microlearning_id: 'code-review-id',
           microlearning_metadata: { language: 'en' },
-          scenes: [{ metadata: { scene_type: 'code_review' } }]
+          scenes: [{ metadata: { scene_type: 'code_review' } }],
         };
         mocks.getMicrolearning.mockResolvedValue({ base: mockCodeReview });
 
         const result = await (loadExistingStep as any).execute({
-          inputData: { existingMicrolearningId: 'id', targetLanguage: 'tr' }
+          inputData: { existingMicrolearningId: 'id', targetLanguage: 'tr' },
         });
 
         expect(result.hasInbox).toBe(false);
@@ -725,17 +732,17 @@ describe('add-language-workflow', () => {
         microlearningId: 'test-id',
         analysis: {
           language: 'tr-tr',
-          topic: 'Phishing'
+          topic: 'Phishing',
         },
         sourceLanguage: 'en-gb',
-        targetLanguage: 'tr-TR'
+        targetLanguage: 'tr-TR',
       };
 
       it('should translate successfully', async () => {
         mocks.get.mockResolvedValue({ '1': 'content' }); // base content
         mocks.translateExecute.mockResolvedValue({
           success: true,
-          data: { '1': 'translated' }
+          data: { '1': 'translated' },
         });
         mocks.storeLanguageContent.mockResolvedValue(true);
 
@@ -750,35 +757,37 @@ describe('add-language-workflow', () => {
       it('should throw if base content is missing in KV', async () => {
         mocks.get.mockResolvedValue(null);
 
-        await expect((translateLanguageStep as any).execute({ inputData: mockMeta }))
-          .rejects.toThrow('Base language content (en-gb) not found');
+        await expect((translateLanguageStep as any).execute({ inputData: mockMeta })).rejects.toThrow(
+          'Base language content (en-gb) not found'
+        );
       });
 
       it('should throw if translation tool returns error', async () => {
         mocks.get.mockResolvedValue({ '1': 'content' });
         mocks.translateExecute.mockResolvedValue({
           success: false,
-          error: 'AI Error'
+          error: 'AI Error',
         });
 
-        await expect((translateLanguageStep as any).execute({ inputData: mockMeta }))
-          .rejects.toThrow('Language translation failed: AI Error');
+        await expect((translateLanguageStep as any).execute({ inputData: mockMeta })).rejects.toThrow(
+          'Language translation failed: AI Error'
+        );
       });
     });
 
     describe('updateInboxStep', () => {
       const baseInput = {
         data: {
-          microlearning_metadata: { language: 'en', department_relevance: ['IT'] }
+          microlearning_metadata: { language: 'en', department_relevance: ['IT'] },
         },
         microlearningId: 'test-id',
         analysis: { language: 'tr', department: 'HR', topic: 'Topic' },
-        hasInbox: true
+        hasInbox: true,
       };
 
       it('should skip if hasInbox is false', async () => {
         const result = await (updateInboxStep as any).execute({
-          inputData: { ...baseInput, hasInbox: false }
+          inputData: { ...baseInput, hasInbox: false },
         });
         expect(result.success).toBe(true);
         expect(result.filesGenerated).toEqual([]);
@@ -796,7 +805,7 @@ describe('add-language-workflow', () => {
         (loadInboxWithFallback as any).mockResolvedValue({ subject: 'Test' });
         mocks.inboxExecute.mockResolvedValue({
           success: true,
-          data: { subject: 'Test Translated' }
+          data: { subject: 'Test Translated' },
         });
         mocks.storeInboxContent.mockResolvedValue(true);
 
@@ -812,14 +821,14 @@ describe('add-language-workflow', () => {
       const translateResult = {
         success: true,
         microlearningId: 'id',
-        analysis: { language: 'tr', title: 'Title' }
+        analysis: { language: 'tr', title: 'Title' },
       };
 
       it('should combine successful results', async () => {
         const inboxResult = { success: true, usedDepartment: 'IT', filesGenerated: ['inbox.json'] };
         const input = {
           'translate-language-content': { ...translateResult, hasInbox: true },
-          'update-inbox': inboxResult
+          'update-inbox': inboxResult,
         };
 
         const result = await (combineResultsStep as any).execute({ inputData: input });
@@ -833,7 +842,7 @@ describe('add-language-workflow', () => {
         const inboxResult = { success: false, filesGenerated: [] };
         const input = {
           'translate-language-content': { ...translateResult, hasInbox: true },
-          'update-inbox': inboxResult
+          'update-inbox': inboxResult,
         };
 
         const result = await (combineResultsStep as any).execute({ inputData: input });
@@ -848,11 +857,12 @@ describe('add-language-workflow', () => {
       it('should throw if translation failed', async () => {
         const input = {
           'translate-language-content': { success: false },
-          'update-inbox': {}
+          'update-inbox': {},
         };
 
-        await expect((combineResultsStep as any).execute({ inputData: input }))
-          .rejects.toThrow('Language translation failed');
+        await expect((combineResultsStep as any).execute({ inputData: input })).rejects.toThrow(
+          'Language translation failed'
+        );
       });
     });
   });

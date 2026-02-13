@@ -25,9 +25,11 @@ vi.mock('./phishing-editor-utils', () => ({
 
 vi.mock('./smishing-editor-llm', () => ({
   createSmsEditPromise: vi.fn().mockResolvedValue({ text: '{"messages":["m1"],"summary":"ok"}' }),
-  createLandingEditPromises: vi.fn().mockReturnValue([
-    Promise.resolve({ text: '{"type":"login","template":"<html>ok</html>","edited":true,"summary":"lp"}' })
-  ]),
+  createLandingEditPromises: vi
+    .fn()
+    .mockReturnValue([
+      Promise.resolve({ text: '{"type":"login","template":"<html>ok</html>","edited":true,"summary":"lp"}' }),
+    ]),
 }));
 
 vi.mock('./smishing-editor-helpers', () => ({
@@ -180,12 +182,8 @@ describe('smishingEditorTool', () => {
 
     const result = await executeTool({ context: input } as any);
     expect(result.success).toBe(true);
-    expect(llm.createSmsEditPromise).toHaveBeenCalledWith(
-      expect.objectContaining({ mode: 'translate' })
-    );
-    expect(llm.createLandingEditPromises).toHaveBeenCalledWith(
-      expect.objectContaining({ mode: 'translate' })
-    );
+    expect(llm.createSmsEditPromise).toHaveBeenCalledWith(expect.objectContaining({ mode: 'translate' }));
+    expect(llm.createLandingEditPromises).toHaveBeenCalledWith(expect.objectContaining({ mode: 'translate' }));
   });
 
   it('should resolve brand when hasBrandUpdate is true', async () => {

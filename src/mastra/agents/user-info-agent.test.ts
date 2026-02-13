@@ -59,7 +59,7 @@ describe('User Info Agent', () => {
 
     it('should have the language rule', () => {
       expect(userInfoAgent.instructions).toContain('LANGUAGE RULE');
-      expect(userInfoAgent.instructions).toContain('Match user\'s exact language');
+      expect(userInfoAgent.instructions).toContain("Match user's exact language");
     });
 
     it('should describe the available modes', () => {
@@ -124,7 +124,7 @@ describe('User Info Agent', () => {
   // ==================== LANGUAGE SUPPORT ====================
   describe('Language Support', () => {
     it('should require matching user language', () => {
-      expect(userInfoAgent.instructions).toContain('Match user\'s exact language');
+      expect(userInfoAgent.instructions).toContain("Match user's exact language");
     });
 
     it('should check current message language', () => {
@@ -361,13 +361,9 @@ describe('User Info Agent', () => {
     });
 
     it('should NOT contain unauthorized system strings', () => {
-      const forbiddenStrings = [
-        'EMPLOYEE_MATCH',
-        'ASSIGNMENT_SUCCESS.TRAINING',
-        'ASSIGNMENT_SUCCESS.SIMULATION',
-      ];
+      const forbiddenStrings = ['EMPLOYEE_MATCH', 'ASSIGNMENT_SUCCESS.TRAINING', 'ASSIGNMENT_SUCCESS.SIMULATION'];
 
-      forbiddenStrings.forEach((str) => {
+      forbiddenStrings.forEach(str => {
         expect(userInfoAgent.instructions).not.toContain(str);
       });
     });
@@ -400,7 +396,6 @@ describe('User Info Agent', () => {
       expect(typeof userInfoAgent.tools.getTargetGroupInfo).toBe('object');
     });
   });
-
 
   // ==================== BASIC STRUCTURAL VALIDATION TESTS ====================
   describe('Basic Structural Validation', () => {
@@ -437,7 +432,7 @@ describe('User Info Agent', () => {
     });
 
     it('should use user language for question', () => {
-      expect(userInfoAgent.instructions).toContain('SAME as user\'s current message language');
+      expect(userInfoAgent.instructions).toContain("SAME as user's current message language");
     });
   });
 

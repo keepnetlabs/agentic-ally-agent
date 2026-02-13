@@ -23,7 +23,7 @@ export interface LogoAndBrandInfo {
 /**
  * Resolve {CUSTOMMAINLOGO} tag to actual logo URL and detect brand using LLM
  * Analyzes company name, scenario, and email template to determine brand recognition
- * 
+ *
  * @param fromName - Company/brand name from email analysis
  * @param scenario - Phishing scenario context
  * @param model - AI model instance for brand detection
@@ -49,12 +49,12 @@ export async function resolveLogoAndBrand(
         {
           role: 'system',
           content:
-            'You are a brand domain expert. Analyze the company/brand name, scenario, and email content to determine if it represents a well-known, recognized brand. Return ONLY valid JSON with: { "domain": "microsoft.com" or null, "brandName": "Microsoft" or null, "isRecognizedBrand": true/false, "brandColors": { "primary": "#0078D4", "secondary": "#737373", "accent": "#00A4EF" } or null }. If it\'s a generic/internal company (IT Support, HR Department, etc.), return domain: null, brandName: null, isRecognizedBrand: false, brandColors: null. For recognized brands, include their authentic brand colors (primary, secondary, accent) in hex format.'
+            'You are a brand domain expert. Analyze the company/brand name, scenario, and email content to determine if it represents a well-known, recognized brand. Return ONLY valid JSON with: { "domain": "microsoft.com" or null, "brandName": "Microsoft" or null, "isRecognizedBrand": true/false, "brandColors": { "primary": "#0078D4", "secondary": "#737373", "accent": "#00A4EF" } or null }. If it\'s a generic/internal company (IT Support, HR Department, etc.), return domain: null, brandName: null, isRecognizedBrand: false, brandColors: null. For recognized brands, include their authentic brand colors (primary, secondary, accent) in hex format.',
         },
         {
           role: 'user',
-          content: `Company/Brand Name: "${fromName}"\nScenario: "${scenario}"${emailContext}\n\nAnalyze if this represents a well-known brand:\n- Examples of recognized brands: Microsoft, Google, Amazon, Apple, PayPal, Netflix, Spotify, Adobe, Salesforce, Stripe, Shopify, Meta, Facebook, Twitter, LinkedIn, Instagram, TikTok, YouTube, Hepsiburada, Trendyol, GittiGidiyor, N11, Amazon.tr, etc.\n- Examples of generic/internal: IT Support, HR Department, Finance Team, Security Team, etc.\n\nFor recognized brands, include their authentic brand colors:\n- Amazon: primary: "#FF9900", secondary: "#000000", accent: "#FF9900"\n- Microsoft: primary: "#0078D4", secondary: "#737373", accent: "#00A4EF"\n- Google: primary: "#4285F4", secondary: "#EA4335", accent: "#34A853"\n- PayPal: primary: "#003087", secondary: "#009CDE", accent: "#012169"\n- Apple: primary: "#000000", secondary: "#A8A8A8", accent: "#007AFF"\n\nReturn ONLY valid JSON: { "domain": "microsoft.com" or null, "brandName": "Microsoft" or null, "isRecognizedBrand": true/false, "brandColors": { "primary": "#0078D4", "secondary": "#737373", "accent": "#00A4EF" } or null }`
-        }
+          content: `Company/Brand Name: "${fromName}"\nScenario: "${scenario}"${emailContext}\n\nAnalyze if this represents a well-known brand:\n- Examples of recognized brands: Microsoft, Google, Amazon, Apple, PayPal, Netflix, Spotify, Adobe, Salesforce, Stripe, Shopify, Meta, Facebook, Twitter, LinkedIn, Instagram, TikTok, YouTube, Hepsiburada, Trendyol, GittiGidiyor, N11, Amazon.tr, etc.\n- Examples of generic/internal: IT Support, HR Department, Finance Team, Security Team, etc.\n\nFor recognized brands, include their authentic brand colors:\n- Amazon: primary: "#FF9900", secondary: "#000000", accent: "#FF9900"\n- Microsoft: primary: "#0078D4", secondary: "#737373", accent: "#00A4EF"\n- Google: primary: "#4285F4", secondary: "#EA4335", accent: "#34A853"\n- PayPal: primary: "#003087", secondary: "#009CDE", accent: "#012169"\n- Apple: primary: "#000000", secondary: "#A8A8A8", accent: "#007AFF"\n\nReturn ONLY valid JSON: { "domain": "microsoft.com" or null, "brandName": "Microsoft" or null, "isRecognizedBrand": true/false, "brandColors": { "primary": "#0078D4", "secondary": "#737373", "accent": "#00A4EF" } or null }`,
+        },
       ],
       ...EXTRACTION_PARAMS,
     });
@@ -82,13 +82,13 @@ export async function resolveLogoAndBrand(
             brandName: brandName || fromName,
             domain: cleanDomain,
             logoUrl,
-            hasBrandColors: !!brandColors
+            hasBrandColors: !!brandColors,
           });
           return {
             logoUrl,
             brandName: brandName || fromName,
             isRecognizedBrand: true,
-            brandColors: brandColors || undefined
+            brandColors: brandColors || undefined,
           };
         }
       }
@@ -97,7 +97,7 @@ export async function resolveLogoAndBrand(
     // Fallback to placeholder domain logo for generic/internal companies
     // Instead of using generic corporate icon, generate a domain-based logo
     logger.info('No recognized brand found, generating placeholder domain logo', {
-      fromName
+      fromName,
     });
 
     // Generate placeholder domain from company name
@@ -107,13 +107,13 @@ export async function resolveLogoAndBrand(
     logger.info('Using placeholder domain logo', {
       fromName,
       placeholderDomain,
-      logoUrl: placeholderLogoUrl
+      logoUrl: placeholderLogoUrl,
     });
 
     return {
       logoUrl: placeholderLogoUrl,
       brandName: null,
-      isRecognizedBrand: false
+      isRecognizedBrand: false,
     };
   } catch (error) {
     const err = normalizeError(error);
@@ -130,7 +130,7 @@ export async function resolveLogoAndBrand(
       return {
         logoUrl: placeholderLogoUrl,
         brandName: null,
-        isRecognizedBrand: false
+        isRecognizedBrand: false,
       };
     } catch (fallbackError) {
       const fallbackErr = normalizeError(fallbackError);
@@ -142,7 +142,7 @@ export async function resolveLogoAndBrand(
       return {
         logoUrl: DEFAULT_GENERIC_LOGO,
         brandName: null,
-        isRecognizedBrand: false
+        isRecognizedBrand: false,
       };
     }
   }
@@ -151,7 +151,7 @@ export async function resolveLogoAndBrand(
 /**
  * Generate a contextual brand name and logo URL based on phishing scenario analysis
  * Used when brand detection fails - generates a realistic brand that fits the scenario context
- * 
+ *
  * @param scenario - Phishing scenario description
  * @param category - Phishing category (e.g., "Invoice", "Security Alert")
  * @param fromName - Original sender name from analysis
@@ -168,7 +168,7 @@ export async function generateContextualBrand(
     logger.info('Generating contextual brand based on scenario analysis', {
       scenario: scenario.substring(0, 100),
       category,
-      fromName
+      fromName,
     });
 
     const response = await generateText({
@@ -176,12 +176,13 @@ export async function generateContextualBrand(
       messages: [
         {
           role: 'system',
-          content: 'You are a brand naming expert. Based on the phishing scenario analysis, suggest a realistic, contextually appropriate brand/company name that fits the scenario. Return ONLY valid JSON: { "suggestedBrandName": "Brand Name", "domain": "brandname.com" or null }. The brand name should be realistic and fit the scenario context (e.g., for "invoice" scenarios: accounting/finance brands, for "security" scenarios: tech/security brands). Keep it simple and realistic - 1-2 words maximum. If you suggest a domain, make it realistic but generic (e.g., "securepay.com", "invoicepro.com").'
+          content:
+            'You are a brand naming expert. Based on the phishing scenario analysis, suggest a realistic, contextually appropriate brand/company name that fits the scenario. Return ONLY valid JSON: { "suggestedBrandName": "Brand Name", "domain": "brandname.com" or null }. The brand name should be realistic and fit the scenario context (e.g., for "invoice" scenarios: accounting/finance brands, for "security" scenarios: tech/security brands). Keep it simple and realistic - 1-2 words maximum. If you suggest a domain, make it realistic but generic (e.g., "securepay.com", "invoicepro.com").',
         },
         {
           role: 'user',
-          content: `Scenario: "${scenario}"\nCategory: "${category}"\nFrom Name: "${fromName}"\n\nSuggest a realistic brand name and optional domain that fits this phishing scenario context. Return ONLY valid JSON: { "suggestedBrandName": "Brand Name", "domain": "brandname.com" or null }`
-        }
+          content: `Scenario: "${scenario}"\nCategory: "${category}"\nFrom Name: "${fromName}"\n\nSuggest a realistic brand name and optional domain that fits this phishing scenario context. Return ONLY valid JSON: { "suggestedBrandName": "Brand Name", "domain": "brandname.com" or null }`,
+        },
       ],
       ...BRAND_CREATIVE_PARAMS,
     });
@@ -204,14 +205,14 @@ export async function generateContextualBrand(
           logger.info('Generated contextual brand with logo from domain', {
             brandName: suggestedBrandName,
             domain: cleanDomain,
-            logoUrl
+            logoUrl,
           });
         } else {
           // Invalid domain format, use placeholder
           logoUrl = getLogoUrl(generatePlaceholderDomain(suggestedBrandName), 96);
           logger.info('Generated contextual brand with placeholder logo (invalid domain)', {
             brandName: suggestedBrandName,
-            logoUrl
+            logoUrl,
           });
         }
       } else {
@@ -219,7 +220,7 @@ export async function generateContextualBrand(
         logoUrl = getLogoUrl(generatePlaceholderDomain(suggestedBrandName), 96);
         logger.info('Generated contextual brand with placeholder logo', {
           brandName: suggestedBrandName,
-          logoUrl
+          logoUrl,
         });
       }
 
@@ -236,7 +237,7 @@ export async function generateContextualBrand(
     return {
       logoUrl: placeholderLogoUrl,
       brandName: null,
-      isRecognizedBrand: false
+      isRecognizedBrand: false,
     };
   } catch (error) {
     const err = normalizeError(error);
@@ -252,7 +253,7 @@ export async function generateContextualBrand(
       return {
         logoUrl: placeholderLogoUrl,
         brandName: null,
-        isRecognizedBrand: false
+        isRecognizedBrand: false,
       };
     } catch (fallbackError) {
       const fallbackErr = normalizeError(fallbackError);
@@ -264,7 +265,7 @@ export async function generateContextualBrand(
       return {
         logoUrl: DEFAULT_GENERIC_LOGO,
         brandName: null,
-        isRecognizedBrand: false
+        isRecognizedBrand: false,
       };
     }
   }
@@ -282,10 +283,10 @@ function generatePlaceholderDomain(brandName: string): string {
   const sanitized = brandName
     .toLowerCase()
     .trim()
-    .replace(/[^a-z0-9\s]/g, '')  // Remove special characters
-    .replace(/\s+/g, '-')          // Replace spaces with hyphens
-    .replace(/-+/g, '-')           // Collapse multiple hyphens
-    .replace(/^-|-$/g, '');        // Remove leading/trailing hyphens
+    .replace(/[^a-z0-9\s]/g, '') // Remove special characters
+    .replace(/\s+/g, '-') // Replace spaces with hyphens
+    .replace(/-+/g, '-') // Collapse multiple hyphens
+    .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
 
   // Ensure non-empty result
   const domainName = sanitized || 'brand';
@@ -295,5 +296,3 @@ function generatePlaceholderDomain(brandName: string): string {
   // For invalid domains, getLogoUrl falls back to random letter logo
   return `${domainName}.local`;
 }
-
-

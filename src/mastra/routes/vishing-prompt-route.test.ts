@@ -18,7 +18,7 @@ vi.mock('../services/kv-service', () => ({
 }));
 
 vi.mock('../utils/language/language-utils', () => ({
-  validateBCP47LanguageCode: vi.fn((lang) => lang),
+  validateBCP47LanguageCode: vi.fn(lang => lang),
 }));
 
 vi.mock('../utils/core/logger', () => ({
@@ -62,7 +62,7 @@ describe('Vishing Prompt Route Handler', () => {
 
     const { KVService } = await import('../services/kv-service');
     // Mock the constructor to return the mockKVService instance
-    vi.mocked(KVService).mockImplementation(function(this: any) {
+    vi.mocked(KVService).mockImplementation(function (this: any) {
       return mockKVService;
     } as any);
 

@@ -4,11 +4,7 @@
  */
 
 import { LANDING_PAGE } from '../../constants';
-import {
-  LANDING_PAGE_LOGO_RULE,
-  QUISHING_LANDING_PAGE_RULE,
-  NO_QR_CODE_LANDING_PAGE_RULE,
-} from './shared-email-rules';
+import { LANDING_PAGE_LOGO_RULE, QUISHING_LANDING_PAGE_RULE, NO_QR_CODE_LANDING_PAGE_RULE } from './shared-email-rules';
 
 /**
  * Build landing page system prompt with design directives

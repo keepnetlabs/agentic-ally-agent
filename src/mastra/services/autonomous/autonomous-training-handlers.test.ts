@@ -48,15 +48,9 @@ vi.mock('../error-service', () => ({
  */
 
 describe('AutonomousTrainingHandlers', () => {
-  const mockWorkflowExecute = vi.mocked(
-    (orchestrationModule as any).workflowExecutorTool.execute
-  );
-  const mockUploadExecute = vi.mocked(
-    (userManagementModule as any).uploadTrainingTool.execute
-  );
-  const mockAssignExecute = vi.mocked(
-    (userManagementModule as any).assignTrainingTool.execute
-  );
+  const mockWorkflowExecute = vi.mocked((orchestrationModule as any).workflowExecutorTool.execute);
+  const mockUploadExecute = vi.mocked((userManagementModule as any).uploadTrainingTool.execute);
+  const mockAssignExecute = vi.mocked((userManagementModule as any).assignTrainingTool.execute);
 
   beforeEach(() => {
     vi.resetAllMocks();
@@ -173,16 +167,7 @@ describe('AutonomousTrainingHandlers', () => {
 
   describe('Training content organization', () => {
     it('should organize training into 8 scenes', () => {
-      const sceneTypes = [
-        'Intro',
-        'Goals',
-        'Video',
-        'Actionable',
-        'Quiz',
-        'Survey',
-        'Nudge',
-        'Summary',
-      ];
+      const sceneTypes = ['Intro', 'Goals', 'Video', 'Actionable', 'Quiz', 'Survey', 'Nudge', 'Summary'];
 
       expect(sceneTypes.length).toBe(8);
     });
@@ -204,11 +189,7 @@ describe('AutonomousTrainingHandlers', () => {
     });
 
     it('should support learning objectives mapping', () => {
-      const objectives = [
-        'Understand phishing techniques',
-        'Identify suspicious emails',
-        'Report phishing incidents',
-      ];
+      const objectives = ['Understand phishing techniques', 'Identify suspicious emails', 'Report phishing incidents'];
 
       expect(Array.isArray(objectives)).toBe(true);
       expect(objectives.length).toBeGreaterThan(0);
@@ -631,10 +612,7 @@ describe('AutonomousTrainingHandlers', () => {
 
   describe('uploadAndAssignTrainingForGroup', () => {
     it('returns failure when targetGroupResourceId is missing', async () => {
-      const result = await uploadAndAssignTrainingForGroup(
-        undefined as any,
-        'thread-upload-group-1'
-      );
+      const result = await uploadAndAssignTrainingForGroup(undefined as any, 'thread-upload-group-1');
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('targetGroupResourceId');

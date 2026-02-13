@@ -80,7 +80,7 @@ NOT: 'Sender addresses fake' (technical) or 'Always verify' (imperative).",
     },
     "scene_type": "intro",
     "points": 5,
-    "duration_seconds": ${Math.round((microlearning.scenes?.[0]?.metadata?.duration_seconds) || 15)},
+    "duration_seconds": ${Math.round(microlearning.scenes?.[0]?.metadata?.duration_seconds || 15)},
     "hasAchievementNotification": false,
     "scientific_basis": "Intro – Attention Capture + Emotional Salience: Salience theory and emotionally triggered memory formation. Emotional hooks increase attention and memory encoding for subsequent learning.",
     "icon": {

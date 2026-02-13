@@ -14,7 +14,10 @@ const logger = getLogger('JsonValidation');
  * @param translated - The translated JSON object
  * @returns boolean indicating if structure is valid
  */
-export function validateInboxStructure(original: Record<string, unknown>, translated: Record<string, unknown>): boolean {
+export function validateInboxStructure(
+  original: Record<string, unknown>,
+  translated: Record<string, unknown>
+): boolean {
   if (!original || !translated) {
     logger.warn('Missing original or translated data for validation');
     return false;
@@ -27,7 +30,7 @@ export function validateInboxStructure(original: Record<string, unknown>, transl
   if (originalKeys.join(',') !== translatedKeys.join(',')) {
     logger.warn('Key mismatch detected', {
       originalKeys: originalKeys.join(', '),
-      translatedKeys: translatedKeys.join(', ')
+      translatedKeys: translatedKeys.join(', '),
     });
     return false;
   }
@@ -46,7 +49,7 @@ export function validateInboxStructure(original: Record<string, unknown>, transl
     if (origEmails.length !== transEmails.length) {
       logger.warn('Email count mismatch', {
         originalCount: origEmails.length,
-        translatedCount: transEmails.length
+        translatedCount: transEmails.length,
       });
       return false;
     }
@@ -68,7 +71,7 @@ export function validateInboxStructure(original: Record<string, unknown>, transl
         logger.warn('Email key mismatch', {
           emailIndex: i,
           originalKeys: origEmailKeys.join(', '),
-          translatedKeys: transEmailKeys.join(', ')
+          translatedKeys: transEmailKeys.join(', '),
         });
         return false;
       }
@@ -87,7 +90,7 @@ export function validateInboxStructure(original: Record<string, unknown>, transl
           logger.warn('Email attachment count mismatch', {
             emailIndex: i,
             originalCount: origAttachments.length,
-            translatedCount: transAttachments.length
+            translatedCount: transAttachments.length,
           });
           return false;
         }
@@ -118,7 +121,7 @@ export function validateInboxStructure(original: Record<string, unknown>, transl
       if (origModalKeys.join(',') !== transModalKeys.join(',')) {
         logger.warn('phishingReportModal key mismatch', {
           originalKeys: origModalKeys.join(', '),
-          translatedKeys: transModalKeys.join(', ')
+          translatedKeys: transModalKeys.join(', '),
         });
         return false;
       }
@@ -136,7 +139,7 @@ export function validateInboxStructure(original: Record<string, unknown>, transl
       if (origResultModalKeys.join(',') !== transResultModalKeys.join(',')) {
         logger.warn('phishingResultModal key mismatch', {
           originalKeys: origResultModalKeys.join(', '),
-          translatedKeys: transResultModalKeys.join(', ')
+          translatedKeys: transResultModalKeys.join(', '),
         });
         return false;
       }
@@ -153,7 +156,10 @@ export function validateInboxStructure(original: Record<string, unknown>, transl
  * @param translated - The translated JSON object that may have structural issues
  * @returns Corrected JSON object
  */
-export function correctInboxStructure(original: Record<string, unknown>, translated: Record<string, unknown>): Record<string, unknown> {
+export function correctInboxStructure(
+  original: Record<string, unknown>,
+  translated: Record<string, unknown>
+): Record<string, unknown> {
   if (!original || !translated) {
     logger.warn('Cannot correct structure - missing original or translated data');
     return original;
@@ -353,7 +359,7 @@ export function truncateText(text: string, maxLength: number): string {
   logger.info('Text truncated', {
     originalLength: text.length,
     maxLength,
-    truncatedLength: truncated.length
+    truncatedLength: truncated.length,
   });
   return truncated;
 }
@@ -381,7 +387,7 @@ export function repairHtml(html: string): string {
     const err = error instanceof Error ? error : new Error(String(error));
     logger.warn('Failed to repair HTML, returning original', {
       error: err.message,
-      htmlLength: html.length
+      htmlLength: html.length,
     });
     return html; // Graceful fallback
   }
@@ -392,7 +398,9 @@ export function repairHtml(html: string): string {
  * @param inbox - Inbox object containing emails array
  * @returns Repaired inbox object
  */
-export function repairInboxHtml(inbox: EmailSimulationInbox | Record<string, unknown>): EmailSimulationInbox | Record<string, unknown> {
+export function repairInboxHtml(
+  inbox: EmailSimulationInbox | Record<string, unknown>
+): EmailSimulationInbox | Record<string, unknown> {
   if (!inbox || typeof inbox !== 'object') {
     return inbox;
   }
@@ -427,7 +435,7 @@ export function repairInboxHtml(inbox: EmailSimulationInbox | Record<string, unk
                 emailIndex,
                 emailId: email.id,
                 attachmentIndex: attIndex,
-                attachmentName: attachment.name
+                attachmentName: attachment.name,
               });
             }
             return { ...attachment, content: after };
@@ -442,7 +450,7 @@ export function repairInboxHtml(inbox: EmailSimulationInbox | Record<string, unk
     if (totalRepairs > 0) {
       logger.info('Repaired HTML in inbox', {
         totalEmails: repaired.emails.length,
-        totalRepairs
+        totalRepairs,
       });
     }
   }
@@ -472,7 +480,7 @@ export function detectAndRepairInbox(inbox: EmailSimulationInbox | Record<string
       hadCorruption: false,
       issuesFound: [],
       issuesRemaining: [],
-      wasRepaired: false
+      wasRepaired: false,
     };
   }
 
@@ -489,7 +497,7 @@ export function detectAndRepairInbox(inbox: EmailSimulationInbox | Record<string
   } else {
     logger.warn('Some corruption issues remain after repair', {
       issuesFound: issuesFound.length,
-      issuesRemaining: issuesRemaining.length
+      issuesRemaining: issuesRemaining.length,
     });
   }
 
@@ -498,6 +506,6 @@ export function detectAndRepairInbox(inbox: EmailSimulationInbox | Record<string
     hadCorruption: true,
     issuesFound,
     issuesRemaining,
-    wasRepaired
+    wasRepaired,
   };
 }

@@ -141,7 +141,7 @@ describe('bodySizeLimitMiddleware', () => {
     });
 
     it('should reject requests exceeding limit', async () => {
-      const sizeBytes = ((1 * BYTES_PER_MB) + 1).toString();
+      const sizeBytes = (1 * BYTES_PER_MB + 1).toString();
       mockContext.req.header.mockReturnValue(sizeBytes);
 
       await bodySizeLimitMiddleware(mockContext, mockNext);
@@ -298,7 +298,7 @@ describe('bodySizeLimitMiddleware', () => {
     it('should accept BODY_SIZE_LIMIT_MB environment variable', async () => {
       process.env.BODY_SIZE_LIMIT_MB = '2';
 
-      const sizeBytes = ((2 * BYTES_PER_MB) + 1).toString();
+      const sizeBytes = (2 * BYTES_PER_MB + 1).toString();
       mockContext.req.header.mockReturnValue(sizeBytes);
 
       await bodySizeLimitMiddleware(mockContext, mockNext);

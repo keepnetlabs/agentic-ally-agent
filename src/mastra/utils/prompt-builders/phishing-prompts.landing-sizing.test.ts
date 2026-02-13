@@ -50,7 +50,7 @@ describe('phishing-prompts landing sizing', () => {
 
     it('should work with minimum random value for MINIMAL (0.50)', () => {
       vi.spyOn(Math, 'random')
-        .mockImplementationOnce(() => 0.50) // layout -> floor(0.50*4)=2 (MINIMAL)
+        .mockImplementationOnce(() => 0.5) // layout -> floor(0.50*4)=2 (MINIMAL)
         .mockImplementationOnce(() => 0.0);
 
       const { systemPrompt } = buildLandingPagePrompts(makeBaseParams());
@@ -74,7 +74,7 @@ describe('phishing-prompts landing sizing', () => {
 
     it('should work with different style options', () => {
       vi.spyOn(Math, 'random')
-        .mockImplementationOnce(() => 0.50) // MINIMAL
+        .mockImplementationOnce(() => 0.5) // MINIMAL
         .mockImplementationOnce(() => 0.99); // style -> floor(0.99*3)=2
 
       const { systemPrompt } = buildLandingPagePrompts(makeBaseParams());
@@ -206,7 +206,7 @@ describe('phishing-prompts landing sizing', () => {
   describe('Style Options (index 0, 1, 2)', () => {
     it('should work with style index 0 (random: 0.0)', () => {
       vi.spyOn(Math, 'random')
-        .mockImplementationOnce(() => 0.50) // MINIMAL
+        .mockImplementationOnce(() => 0.5) // MINIMAL
         .mockImplementationOnce(() => 0.0); // style -> floor(0*3)=0
 
       const { systemPrompt } = buildLandingPagePrompts(makeBaseParams());
@@ -217,7 +217,7 @@ describe('phishing-prompts landing sizing', () => {
 
     it('should work with style index 0 (random: 0.33)', () => {
       vi.spyOn(Math, 'random')
-        .mockImplementationOnce(() => 0.50) // MINIMAL
+        .mockImplementationOnce(() => 0.5) // MINIMAL
         .mockImplementationOnce(() => 0.33); // style -> floor(0.33*3)=0
 
       const { systemPrompt } = buildLandingPagePrompts(makeBaseParams());
@@ -247,7 +247,7 @@ describe('phishing-prompts landing sizing', () => {
 
     it('should work with style index 2 (random: 0.667)', () => {
       vi.spyOn(Math, 'random')
-        .mockImplementationOnce(() => 0.50) // MINIMAL
+        .mockImplementationOnce(() => 0.5) // MINIMAL
         .mockImplementationOnce(() => 0.667); // style -> floor(0.667*3)=2
 
       const { systemPrompt } = buildLandingPagePrompts(makeBaseParams());
@@ -272,7 +272,7 @@ describe('phishing-prompts landing sizing', () => {
       params.fromName = 'Different Company';
 
       vi.spyOn(Math, 'random')
-        .mockImplementationOnce(() => 0.50) // MINIMAL
+        .mockImplementationOnce(() => 0.5) // MINIMAL
         .mockImplementationOnce(() => 0.0);
 
       const { systemPrompt } = buildLandingPagePrompts(params);
@@ -298,7 +298,7 @@ describe('phishing-prompts landing sizing', () => {
       params.industryDesign.industry = 'Finance';
 
       vi.spyOn(Math, 'random')
-        .mockImplementationOnce(() => 0.50) // MINIMAL
+        .mockImplementationOnce(() => 0.5) // MINIMAL
         .mockImplementationOnce(() => 0.0);
 
       const { systemPrompt } = buildLandingPagePrompts(params);
@@ -324,7 +324,7 @@ describe('phishing-prompts landing sizing', () => {
       params.isQuishing = true;
 
       vi.spyOn(Math, 'random')
-        .mockImplementationOnce(() => 0.50) // MINIMAL
+        .mockImplementationOnce(() => 0.5) // MINIMAL
         .mockImplementationOnce(() => 0.0);
 
       const { systemPrompt } = buildLandingPagePrompts(params);
@@ -349,7 +349,7 @@ describe('phishing-prompts landing sizing', () => {
   describe('Return Value Structure', () => {
     it('should return object with systemPrompt property', () => {
       vi.spyOn(Math, 'random')
-        .mockImplementationOnce(() => 0.50)
+        .mockImplementationOnce(() => 0.5)
         .mockImplementationOnce(() => 0.0);
 
       const result = buildLandingPagePrompts(makeBaseParams());
@@ -374,7 +374,7 @@ describe('phishing-prompts landing sizing', () => {
       params.fromName = 'TestCompany';
 
       vi.spyOn(Math, 'random')
-        .mockImplementationOnce(() => 0.50)
+        .mockImplementationOnce(() => 0.5)
         .mockImplementationOnce(() => 0.0);
 
       const result = buildLandingPagePrompts(params);
@@ -417,7 +417,7 @@ describe('phishing-prompts landing sizing', () => {
 
       // 0.50 -> MINIMAL (index 2)
       vi.spyOn(Math, 'random')
-        .mockImplementationOnce(() => 0.50)
+        .mockImplementationOnce(() => 0.5)
         .mockImplementationOnce(() => 0.0);
 
       const result2 = buildLandingPagePrompts(makeBaseParams());
@@ -429,7 +429,7 @@ describe('phishing-prompts landing sizing', () => {
       params.fromName = '';
 
       vi.spyOn(Math, 'random')
-        .mockImplementationOnce(() => 0.50)
+        .mockImplementationOnce(() => 0.5)
         .mockImplementationOnce(() => 0.0);
 
       const result = buildLandingPagePrompts(params);
@@ -454,7 +454,7 @@ describe('phishing-prompts landing sizing', () => {
   describe('Consistency', () => {
     it('should produce consistent results with same random values', () => {
       vi.spyOn(Math, 'random')
-        .mockImplementationOnce(() => 0.50)
+        .mockImplementationOnce(() => 0.5)
         .mockImplementationOnce(() => 0.0);
 
       const result1 = buildLandingPagePrompts(makeBaseParams());
@@ -462,7 +462,7 @@ describe('phishing-prompts landing sizing', () => {
       vi.clearAllMocks();
 
       vi.spyOn(Math, 'random')
-        .mockImplementationOnce(() => 0.50)
+        .mockImplementationOnce(() => 0.5)
         .mockImplementationOnce(() => 0.0);
 
       const result2 = buildLandingPagePrompts(makeBaseParams());
@@ -472,7 +472,7 @@ describe('phishing-prompts landing sizing', () => {
 
     it('should produce different layouts with different random values', () => {
       vi.spyOn(Math, 'random')
-        .mockImplementationOnce(() => 0.50) // MINIMAL
+        .mockImplementationOnce(() => 0.5) // MINIMAL
         .mockImplementationOnce(() => 0.0);
 
       const result1 = buildLandingPagePrompts(makeBaseParams());

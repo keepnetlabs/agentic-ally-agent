@@ -14,37 +14,37 @@ import { EMAIL_IR_EMAIL_CATEGORIES } from '../../schemas/email-ir';
 
 // Input is the combined analysis from the previous step
 export const triageInputSchema = z.object({
-    original_email: EmailIREmailDataSchema,
-    header_analysis: headerAnalysisOutputSchema.omit({ original_email: true }),
-    behavioral_analysis: bodyBehavioralAnalysisOutputSchema.omit({ original_email: true }),
-    intent_analysis: bodyIntentAnalysisOutputSchema.omit({ original_email: true }),
+  original_email: EmailIREmailDataSchema,
+  header_analysis: headerAnalysisOutputSchema.omit({ original_email: true }),
+  behavioral_analysis: bodyBehavioralAnalysisOutputSchema.omit({ original_email: true }),
+  intent_analysis: bodyIntentAnalysisOutputSchema.omit({ original_email: true }),
 });
 
 export const triageOutputSchema = z.object({
-    category: z.enum(EMAIL_IR_EMAIL_CATEGORIES),
-    reason: z.string().describe('Clear explanation for the category decision'),
-    confidence: z.number().min(0).max(1).describe('Confidence score between 0 and 1'),
-    original_email: EmailIREmailDataSchema, // Pass-through
+  category: z.enum(EMAIL_IR_EMAIL_CATEGORIES),
+  reason: z.string().describe('Clear explanation for the category decision'),
+  confidence: z.number().min(0).max(1).describe('Confidence score between 0 and 1'),
+  original_email: EmailIREmailDataSchema, // Pass-through
 });
 
 export const triageTool = createTool({
-    id: 'email-ir-triage-tool',
-    description: 'Classifies email into Triage categories categories using full analysis context',
-    inputSchema: triageInputSchema,
-    outputSchema: triageOutputSchema,
-    execute: async ({ context }) => {
-        const { original_email, header_analysis, behavioral_analysis, intent_analysis } = context;
-        const emailId = original_email.from?.split('@')[0] || 'unknown-sender';
-        const ctx = createLogContext(emailId, 'triage');
+  id: 'email-ir-triage-tool',
+  description: 'Classifies email into Triage categories categories using full analysis context',
+  inputSchema: triageInputSchema,
+  outputSchema: triageOutputSchema,
+  execute: async ({ context }) => {
+    const { original_email, header_analysis, behavioral_analysis, intent_analysis } = context;
+    const emailId = original_email.from?.split('@')[0] || 'unknown-sender';
+    const ctx = createLogContext(emailId, 'triage');
 
-        try {
-            logStepStart(loggerTriage, ctx, { subject: original_email.subject });
+    try {
+      logStepStart(loggerTriage, ctx, { subject: original_email.subject });
 
-            // Fallbacks for display name and body
-            const senderDisplay = original_email.senderName || original_email.from;
-            const emailBody = sanitizeEmailBody(original_email.htmlBody || '') || JSON.stringify(original_email.urls || []);
+      // Fallbacks for display name and body
+      const senderDisplay = original_email.senderName || original_email.from;
+      const emailBody = sanitizeEmailBody(original_email.htmlBody || '') || JSON.stringify(original_email.urls || []);
 
-            const prompt = `
+      const prompt = `
 # Task: Enterprise Email Incident Triage & Classification
 
 You are the **Triage Decision Engine** in an Enterprise Security Operations Center (SOC).
@@ -209,30 +209,28 @@ This classification will be used for:
 Accuracy is critical. When uncertain, prefer **Other Suspicious** over misclassification.
 `;
 
-            const result = await withRetry(
-                () => emailIRAnalyst.generate(prompt, {
-                    output: triageOutputSchema.omit({ original_email: true }),
-                }),
-                'triage-llm'
-            );
+      const result = await withRetry(
+        () =>
+          emailIRAnalyst.generate(prompt, {
+            output: triageOutputSchema.omit({ original_email: true }),
+          }),
+        'triage-llm'
+      );
 
-            logStepComplete(loggerTriage, ctx, { result: result.object });
+      logStepComplete(loggerTriage, ctx, { result: result.object });
 
-            return {
-                ...result.object,
-                original_email: original_email,
-            };
-        } catch (error) {
-            const err = normalizeError(error);
-            logStepError(loggerTriage, ctx, err);
-            const errorInfo = errorService.aiModel(err.message, { step: 'triage', stack: err.stack });
-            logErrorInfo(loggerTriage, 'error', 'Triage failed', errorInfo);
-            const e = new Error(err.message);
-            (e as Error & { code?: string }).code = errorInfo.code;
-            throw e;
-        }
-    },
+      return {
+        ...result.object,
+        original_email: original_email,
+      };
+    } catch (error) {
+      const err = normalizeError(error);
+      logStepError(loggerTriage, ctx, err);
+      const errorInfo = errorService.aiModel(err.message, { step: 'triage', stack: err.stack });
+      logErrorInfo(loggerTriage, 'error', 'Triage failed', errorInfo);
+      const e = new Error(err.message);
+      (e as Error & { code?: string }).code = errorInfo.code;
+      throw e;
+    }
+  },
 });
-
-
-

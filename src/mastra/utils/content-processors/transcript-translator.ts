@@ -25,20 +25,21 @@ export async function translateTranscript(
   try {
     const languageRules = getLanguagePrompt(targetLanguage);
     const response = await withRetry(
-      () => generateText({
-        model,
-        messages: [
-          {
-            role: 'system',
-            content: `Translate video transcript to ${targetLanguage}. Preserve ALL timestamps (00:00:04.400) and line breaks (\\n) exactly. Translate ONLY the text after timestamps.\n\n${languageRules}`
-          },
-          {
-            role: 'user',
-            content: `Translate this transcript:\n\n${transcript}`
-          }
-        ],
-        ...TRANSCRIPT_TRANSLATION_PARAMS,
-      }),
+      () =>
+        generateText({
+          model,
+          messages: [
+            {
+              role: 'system',
+              content: `Translate video transcript to ${targetLanguage}. Preserve ALL timestamps (00:00:04.400) and line breaks (\\n) exactly. Translate ONLY the text after timestamps.\n\n${languageRules}`,
+            },
+            {
+              role: 'user',
+              content: `Translate this transcript:\n\n${transcript}`,
+            },
+          ],
+          ...TRANSCRIPT_TRANSLATION_PARAMS,
+        }),
       'Transcript translation'
     );
     return response.text.trim();

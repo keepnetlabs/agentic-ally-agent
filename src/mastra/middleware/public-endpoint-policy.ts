@@ -21,14 +21,8 @@ export const INTERNAL_AUTH_SKIP_ENDPOINTS = [
   '/api/telemetry',
 ] as const;
 
-export const SKIP_AUTH_PATHS = [
-  ...INTERNAL_AUTH_SKIP_ENDPOINTS,
-  ...PUBLIC_UNAUTHENTICATED_ENDPOINTS,
-] as const;
+export const SKIP_AUTH_PATHS = [...INTERNAL_AUTH_SKIP_ENDPOINTS, ...PUBLIC_UNAUTHENTICATED_ENDPOINTS] as const;
 
 export function isPublicUnauthenticatedPath(path: string): boolean {
-  return PUBLIC_UNAUTHENTICATED_ENDPOINTS.includes(
-    path as (typeof PUBLIC_UNAUTHENTICATED_ENDPOINTS)[number]
-  );
+  return PUBLIC_UNAUTHENTICATED_ENDPOINTS.includes(path as (typeof PUBLIC_UNAUTHENTICATED_ENDPOINTS)[number]);
 }
-

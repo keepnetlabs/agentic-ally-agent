@@ -21,11 +21,7 @@ const logger = getLogger('ListPhoneNumbersTool');
 // ============================================
 
 const listPhoneNumbersInputSchema = z.object({
-  refresh: z
-    .boolean()
-    .optional()
-    .default(false)
-    .describe('Force refresh the phone number list (bypass any cache)'),
+  refresh: z.boolean().optional().default(false).describe('Force refresh the phone number list (bypass any cache)'),
 });
 
 const phoneNumberSchema = z.object({
@@ -52,7 +48,7 @@ export const listPhoneNumbersTool = createTool({
     'List available outbound phone numbers from ElevenLabs. Returns phone numbers that can be used as caller ID for vishing (voice phishing) simulation calls.',
   inputSchema: listPhoneNumbersInputSchema,
   outputSchema: listPhoneNumbersOutputSchema,
-  execute: async ({ context }) => {
+  execute: async ({ context: _context }) => {
     const startTime = Date.now();
 
     try {

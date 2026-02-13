@@ -25,7 +25,7 @@ describe('resilience-utils', () => {
   beforeAll(() => {
     // Suppress unhandled rejections that are inherent to the withTimeout implementation
     // since we cannot change the source code.
-    process.on('unhandledRejection', (reason) => {
+    process.on('unhandledRejection', reason => {
       if (reason instanceof Error && reason.message.includes('Timeout after')) {
         return;
       }
@@ -52,7 +52,7 @@ describe('resilience-utils', () => {
     });
 
     it('should reject with timeout error when promise exceeds timeout', async () => {
-      const promise = new Promise((resolve) => {
+      const promise = new Promise(resolve => {
         setTimeout(() => resolve('delayed'), 10000);
       });
 
@@ -64,7 +64,7 @@ describe('resilience-utils', () => {
     });
 
     it('should include timeout duration in error message', async () => {
-      const promise = new Promise((resolve) => {
+      const promise = new Promise(resolve => {
         setTimeout(() => resolve('delayed'), 10000);
       });
 
@@ -91,7 +91,7 @@ describe('resilience-utils', () => {
       const testCases = [100, 1000, 5000, 30000];
 
       for (const timeoutMs of testCases) {
-        const promise = new Promise((resolve) => {
+        const promise = new Promise(resolve => {
           setTimeout(() => resolve('success'), timeoutMs + 1000);
         });
 
@@ -103,7 +103,7 @@ describe('resilience-utils', () => {
     });
 
     it('should handle promise that resolves exactly at timeout boundary', async () => {
-      const promise = new Promise((resolve) => {
+      const promise = new Promise(resolve => {
         setTimeout(() => resolve('resolved'), 1000);
       });
 
@@ -155,10 +155,7 @@ describe('resilience-utils', () => {
     });
 
     it('should retry operation on failure', async () => {
-      const operation = vi
-        .fn()
-        .mockRejectedValueOnce(new Error('Attempt 1 failed'))
-        .mockResolvedValueOnce('success');
+      const operation = vi.fn().mockRejectedValueOnce(new Error('Attempt 1 failed')).mockResolvedValueOnce('success');
 
       const promise = withRetry(operation, 'test-operation');
       await vi.advanceTimersByTimeAsync(100); // Advance enough to trigger potential delay if it existed
@@ -288,10 +285,7 @@ describe('resilience-utils', () => {
   // ==================== COMBINED TESTS ====================
   describe('withTimeout + withRetry combination', () => {
     it('should retry with timeout on each attempt', async () => {
-      const operation = vi
-        .fn()
-        .mockRejectedValueOnce(new Error('Attempt 1 failed'))
-        .mockResolvedValueOnce('success');
+      const operation = vi.fn().mockRejectedValueOnce(new Error('Attempt 1 failed')).mockResolvedValueOnce('success');
 
       const wrappedOperation = () => withTimeout(operation(), 5000);
 
@@ -307,7 +301,7 @@ describe('resilience-utils', () => {
       let callCount = 0;
       const operation = vi.fn().mockImplementation(
         () =>
-          new Promise((resolve) => {
+          new Promise(resolve => {
             callCount++;
             if (callCount === 1) {
               setTimeout(() => resolve('delayed'), 10000);
@@ -333,7 +327,7 @@ describe('resilience-utils', () => {
     it('should eventually fail if retries keep timing out', async () => {
       const operation = vi.fn().mockImplementation(
         () =>
-          new Promise((resolve) => {
+          new Promise(resolve => {
             setTimeout(() => resolve('success'), 10000); // Always slower than timeout
           })
       );

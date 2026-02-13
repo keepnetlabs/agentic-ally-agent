@@ -8,25 +8,21 @@ export { executeAutonomousGeneration } from './autonomous-service';
 
 // Phishing handlers
 export {
-    generatePhishingSimulation,
-    uploadAndAssignPhishing,
-    uploadAndAssignPhishingForGroup,
-    generatePhishingSimulationForGroup,
-    assignPhishingWithTraining,
+  generatePhishingSimulation,
+  uploadAndAssignPhishing,
+  uploadAndAssignPhishingForGroup,
+  generatePhishingSimulationForGroup,
+  assignPhishingWithTraining,
 } from './autonomous-phishing-handlers';
 
 // Training handlers
 export {
-    uploadTrainingOnly,
-    uploadAndAssignTraining,
-    uploadAndAssignTrainingForGroup,
-    generateTrainingModule,
-    generateTrainingModuleForGroup,
+  uploadTrainingOnly,
+  uploadAndAssignTraining,
+  uploadAndAssignTrainingForGroup,
+  generateTrainingModule,
+  generateTrainingModuleForGroup,
 } from './autonomous-training-handlers';
 
 // Content generators & orchestration
-export {
-    buildExecutiveReport,
-    generateContentForUser,
-    generateContentForGroup,
-} from './autonomous-content-generators';
+export { buildExecutiveReport, generateContentForUser, generateContentForGroup } from './autonomous-content-generators';

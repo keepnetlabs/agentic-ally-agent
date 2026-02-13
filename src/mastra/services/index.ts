@@ -16,4 +16,3 @@ export { performHealthCheck, type HealthCheckResponse } from './health-service';
 
 // Autonomous service (re-export from subdirectory)
 export { executeAutonomousGeneration } from './autonomous';
-

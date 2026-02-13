@@ -76,7 +76,7 @@ describe('Smishing Workflow Schemas', () => {
 
     it('should accept all difficulty levels', () => {
       const difficulties = ['Easy', 'Medium', 'Hard'];
-      difficulties.forEach((difficulty) => {
+      difficulties.forEach(difficulty => {
         const result = createSmishingInputSchema.safeParse({
           ...validInput,
           difficulty: difficulty as any,
@@ -95,7 +95,7 @@ describe('Smishing Workflow Schemas', () => {
 
     it('should accept both attack methods', () => {
       const methods = ['Click-Only', 'Data-Submission'];
-      methods.forEach((method) => {
+      methods.forEach(method => {
         const result = createSmishingInputSchema.safeParse({
           ...validInput,
           method: method as any,
@@ -244,7 +244,7 @@ describe('Smishing Workflow Schemas', () => {
 
     it('should accept all difficulty levels in analysis', () => {
       const difficulties = ['Easy', 'Medium', 'Hard'];
-      difficulties.forEach((difficulty) => {
+      difficulties.forEach(difficulty => {
         const result = createSmishingAnalysisSchema.safeParse({
           ...validAnalysis,
           difficulty: difficulty as any,
@@ -255,7 +255,7 @@ describe('Smishing Workflow Schemas', () => {
 
     it('should accept BCP-47 language codes', () => {
       const languages = ['en-gb', 'tr-tr', 'de-de', 'es-es', 'fr-fr'];
-      languages.forEach((language) => {
+      languages.forEach(language => {
         const result = createSmishingAnalysisSchema.safeParse({
           ...validAnalysis,
           language,
@@ -290,12 +290,7 @@ describe('Smishing Workflow Schemas', () => {
     it('should accept array of key red flags', () => {
       const result = createSmishingAnalysisSchema.safeParse({
         ...validAnalysis,
-        keyRedFlags: [
-          'Generic greeting',
-          'Suspicious link',
-          'Unusual sender',
-          'Urgency language',
-        ],
+        keyRedFlags: ['Generic greeting', 'Suspicious link', 'Unusual sender', 'Urgency language'],
       });
       expect(result.success).toBe(true);
     });
@@ -326,11 +321,7 @@ describe('Smishing Workflow Schemas', () => {
     it('should accept multiple messages', () => {
       const result = createSmishingSmsOutputSchema.safeParse({
         ...validSmsOutput,
-        messages: [
-          'Message 1',
-          'Message 2 variant',
-          'Message 3 alternative',
-        ],
+        messages: ['Message 1', 'Message 2 variant', 'Message 3 alternative'],
       });
       expect(result.success).toBe(true);
     });
@@ -436,7 +427,7 @@ describe('Smishing Workflow Schemas', () => {
 
     it('should accept valid landing page types', () => {
       const types = ['login', 'success', 'info'];
-      types.forEach((type) => {
+      types.forEach(type => {
         const result = createSmishingOutputSchema.safeParse({
           messages: ['Test'],
           landingPage: {

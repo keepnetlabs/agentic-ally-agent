@@ -53,16 +53,15 @@ import {
   AddLanguageResult,
   AddMultipleLanguagesResult,
   UpdateMicrolearningResult,
-  LanguageResultItem
+  LanguageResultItem,
 } from './types';
-import {
-  validateCreateMicrolearningResult,
-  validateAddLanguageResult
-} from './validators';
+import { validateCreateMicrolearningResult, validateAddLanguageResult } from './validators';
 
 // Workflow executor schema
 const workflowExecutorSchema = z.object({
-  workflowType: z.enum(['create-microlearning', 'add-language', 'add-multiple-languages', 'update-microlearning']).describe('Which workflow to execute'),
+  workflowType: z
+    .enum(['create-microlearning', 'add-language', 'add-multiple-languages', 'update-microlearning'])
+    .describe('Which workflow to execute'),
 
   // Create microlearning parameters
   prompt: z
@@ -73,17 +72,26 @@ const workflowExecutorSchema = z.object({
     .describe('User prompt for microlearning creation'),
   additionalContext: z
     .string()
-    .max(PROMPT_ANALYSIS.MAX_ADDITIONAL_CONTEXT_LENGTH, `Additional context must not exceed ${PROMPT_ANALYSIS.MAX_ADDITIONAL_CONTEXT_LENGTH} characters`)
+    .max(
+      PROMPT_ANALYSIS.MAX_ADDITIONAL_CONTEXT_LENGTH,
+      `Additional context must not exceed ${PROMPT_ANALYSIS.MAX_ADDITIONAL_CONTEXT_LENGTH} characters`
+    )
     .optional()
     .describe('Additional context for the microlearning'),
   customRequirements: z
     .string()
-    .max(PROMPT_ANALYSIS.MAX_CUSTOM_REQUIREMENTS_LENGTH, `Custom requirements must not exceed ${PROMPT_ANALYSIS.MAX_CUSTOM_REQUIREMENTS_LENGTH} characters`)
+    .max(
+      PROMPT_ANALYSIS.MAX_CUSTOM_REQUIREMENTS_LENGTH,
+      `Custom requirements must not exceed ${PROMPT_ANALYSIS.MAX_CUSTOM_REQUIREMENTS_LENGTH} characters`
+    )
     .optional()
     .describe('Custom requirements or special requests'),
   department: z
     .string()
-    .max(PROMPT_ANALYSIS.MAX_DEPARTMENT_NAME_LENGTH, `Department name must not exceed ${PROMPT_ANALYSIS.MAX_DEPARTMENT_NAME_LENGTH} characters`)
+    .max(
+      PROMPT_ANALYSIS.MAX_DEPARTMENT_NAME_LENGTH,
+      `Department name must not exceed ${PROMPT_ANALYSIS.MAX_DEPARTMENT_NAME_LENGTH} characters`
+    )
     .optional()
     .describe('Target department'),
   level: z
@@ -91,10 +99,7 @@ const workflowExecutorSchema = z.object({
     .optional()
     .default('Intermediate')
     .describe('Content difficulty level'),
-  priority: z
-    .enum(PROMPT_ANALYSIS.PRIORITY_LEVELS)
-    .optional()
-    .default('medium'),
+  priority: z.enum(PROMPT_ANALYSIS.PRIORITY_LEVELS).optional().default('medium'),
   language: z
     .string()
     .regex(PROMPT_ANALYSIS.LANGUAGE_CODE_REGEX, PROMPT_ANALYSIS.LANGUAGE_CODE_REGEX.toString())
@@ -115,11 +120,7 @@ const workflowExecutorSchema = z.object({
     .nullable()
     .describe('Target language for translation (single language)'),
   targetLanguages: z
-    .array(
-      z
-        .string()
-        .regex(PROMPT_ANALYSIS.LANGUAGE_CODE_REGEX, PROMPT_ANALYSIS.LANGUAGE_CODE_REGEX.toString())
-    )
+    .array(z.string().regex(PROMPT_ANALYSIS.LANGUAGE_CODE_REGEX, PROMPT_ANALYSIS.LANGUAGE_CODE_REGEX.toString()))
     .max(12, 'Maximum 12 languages allowed at once')
     .optional()
     .describe('Target languages for parallel translation (multiple languages)'),
@@ -197,8 +198,8 @@ export const workflowExecutorTool = createTool({
             modelProvider: params.modelProvider,
             model: params.model,
             writer: writer,
-            policyContext: policyContext || undefined // Pass if available
-          }
+            policyContext: policyContext || undefined, // Pass if available
+          },
         });
 
         // Extract info from result - simple fallback approach
@@ -226,7 +227,9 @@ export const workflowExecutorTool = createTool({
             logErrorInfo(logger, 'error', 'Failed to extract validated workflow result data', errorInfo);
           }
         } else {
-          const errorInfo = errorService.external('Create microlearning workflow result validation failed', { status: workflowResult.status });
+          const errorInfo = errorService.external('Create microlearning workflow result validation failed', {
+            status: workflowResult.status,
+          });
           logErrorInfo(logger, 'error', 'Workflow result validation failed', errorInfo);
           return createToolErrorResponse(errorInfo);
         }
@@ -239,7 +242,7 @@ export const workflowExecutorTool = createTool({
           await writer?.write({
             type: 'text-delta',
             id: messageId,
-            delta: `::ui:canvas_open::${trainingUrl}\n`
+            delta: `::ui:canvas_open::${trainingUrl}\n`,
           });
           // Emit structured training metadata for routing/agent context (FE can ignore if unsupported)
           try {
@@ -253,7 +256,7 @@ export const workflowExecutorTool = createTool({
             await writer?.write({
               type: 'text-delta',
               id: messageId,
-              delta: `::ui:training_meta::${encoded}::/ui:training_meta::\n`
+              delta: `::ui:training_meta::${encoded}::/ui:training_meta::\n`,
             });
           } catch (metaErr) {
             const err = normalizeError(metaErr);
@@ -281,7 +284,7 @@ export const workflowExecutorTool = createTool({
           title,
           department,
           microlearningId,
-          status: 'success'
+          status: 'success',
         };
 
         // Validate result against output schema
@@ -292,10 +295,11 @@ export const workflowExecutorTool = createTool({
         }
 
         return validation.data;
-
       } else if (workflowType === 'add-language') {
         if (!params.existingMicrolearningId || !params.targetLanguage) {
-          const errorInfo = errorService.validation('existingMicrolearningId and targetLanguage are required for add-language workflow');
+          const errorInfo = errorService.validation(
+            'existingMicrolearningId and targetLanguage are required for add-language workflow'
+          );
           logErrorInfo(logger, 'warn', 'Validation error', errorInfo);
           return createToolErrorResponse(errorInfo);
         }
@@ -312,10 +316,10 @@ export const workflowExecutorTool = createTool({
             targetLanguage,
             // sourceLanguage omitted: workflow will auto-detect from microlearning_metadata.language
             // This ensures correct language code (e.g., en-US not just en)
-            sourceLanguage: params.sourceLanguage || undefined,  // Only pass if explicitly provided
+            sourceLanguage: params.sourceLanguage || undefined, // Only pass if explicitly provided
             modelProvider: params.modelProvider,
-            model: params.model
-          }
+            model: params.model,
+          },
         });
 
         // Validate and extract trainingUrl from result
@@ -325,7 +329,9 @@ export const workflowExecutorTool = createTool({
         const title = data?.title ?? null;
 
         if (!isValid) {
-          const errorInfo = errorService.external('Add language workflow result validation failed', { status: workflowResult.status });
+          const errorInfo = errorService.external('Add language workflow result validation failed', {
+            status: workflowResult.status,
+          });
           logErrorInfo(logger, 'error', 'Language workflow result validation failed', errorInfo);
           return createToolErrorResponse(errorInfo);
         }
@@ -338,7 +344,7 @@ export const workflowExecutorTool = createTool({
             await writer?.write({
               type: 'text-delta',
               id: messageId,
-              delta: `::ui:canvas_open::${trainingUrl}\n`
+              delta: `::ui:canvas_open::${trainingUrl}\n`,
             });
             await writer?.write({ type: 'text-end', id: messageId });
             logger.debug('Training URL sent to frontend', { urlLength: trainingUrl?.length });
@@ -356,7 +362,7 @@ export const workflowExecutorTool = createTool({
           success: true,
           department: params.department || 'All',
           title: title || 'Microlearning',
-          status: 'success'
+          status: 'success',
         };
 
         // Validate result against output schema
@@ -367,10 +373,11 @@ export const workflowExecutorTool = createTool({
         }
 
         return validation.data;
-
       } else if (workflowType === 'add-multiple-languages') {
         if (!params.existingMicrolearningId || !params.targetLanguages || params.targetLanguages.length === 0) {
-          const errorInfo = errorService.validation('existingMicrolearningId and targetLanguages array are required for add-multiple-languages workflow');
+          const errorInfo = errorService.validation(
+            'existingMicrolearningId and targetLanguages array are required for add-multiple-languages workflow'
+          );
           logErrorInfo(logger, 'warn', 'Validation error', errorInfo);
           return createToolErrorResponse(errorInfo);
         }
@@ -385,8 +392,8 @@ export const workflowExecutorTool = createTool({
             sourceLanguage: params.sourceLanguage || undefined,
             department: params.department || 'All',
             modelProvider: params.modelProvider,
-            model: params.model
-          }
+            model: params.model,
+          },
         });
 
         // Return workflow result
@@ -394,9 +401,7 @@ export const workflowExecutorTool = createTool({
           const workflowResults: LanguageResultItem[] = result.result.results || [];
 
           // Send first successful URL to frontend for UI refresh
-          const firstSuccess = workflowResults.find(
-            (r) => r.success && r.trainingUrl
-          );
+          const firstSuccess = workflowResults.find(r => r.success && r.trainingUrl);
           if (firstSuccess) {
             try {
               const messageId = uuidv4();
@@ -404,7 +409,7 @@ export const workflowExecutorTool = createTool({
               await writer?.write({
                 type: 'text-delta',
                 id: messageId,
-                delta: `::ui:canvas_open::${firstSuccess.trainingUrl}\n`
+                delta: `::ui:canvas_open::${firstSuccess.trainingUrl}\n`,
               });
               await writer?.write({ type: 'text-end', id: messageId });
               logger.debug('Training URL sent to frontend', { urlLength: firstSuccess.trainingUrl?.length });
@@ -424,7 +429,7 @@ export const workflowExecutorTool = createTool({
             failureCount: result.result.failureCount,
             languages: result.result.languages,
             results: result.result.results,
-            status: result.result.status
+            status: result.result.status,
           };
 
           // Validate result against output schema
@@ -440,10 +445,11 @@ export const workflowExecutorTool = createTool({
           logErrorInfo(logger, 'error', 'Workflow failed', errorInfo);
           return createToolErrorResponse(errorInfo);
         }
-
       } else if (workflowType === 'update-microlearning') {
         if (!params.existingMicrolearningId || !params.updates) {
-          const errorInfo = errorService.validation('existingMicrolearningId and updates are required for update-microlearning workflow');
+          const errorInfo = errorService.validation(
+            'existingMicrolearningId and updates are required for update-microlearning workflow'
+          );
           logErrorInfo(logger, 'warn', 'Validation error', errorInfo);
           return createToolErrorResponse(errorInfo);
         }
@@ -458,7 +464,7 @@ export const workflowExecutorTool = createTool({
             updates: params.updates,
             modelProvider: params.modelProvider,
             model: params.model,
-          }
+          },
         });
 
         logger.debug('Update workflow completed', { success: result?.result?.success });
@@ -472,7 +478,7 @@ export const workflowExecutorTool = createTool({
             await writer?.write({
               type: 'text-delta',
               id: messageId,
-              delta: `::ui:canvas_open::${trainingUrl}\n`
+              delta: `::ui:canvas_open::${trainingUrl}\n`,
             });
             await writer?.write({ type: 'text-end', id: messageId });
             logger.debug('Updated training URL sent to frontend', { microlearningId: params.existingMicrolearningId });
@@ -501,19 +507,17 @@ export const workflowExecutorTool = createTool({
         }
 
         return validation.data;
-
       } else {
         const errorInfo = errorService.validation(`Unknown workflow type: ${workflowType}`);
         logErrorInfo(logger, 'warn', 'Unknown workflow type', errorInfo);
         return createToolErrorResponse(errorInfo);
       }
-
     } catch (error) {
       const err = normalizeError(error);
       const errorInfo = errorService.external(err.message, {
         workflowType: context?.workflowType,
         step: 'workflow-execution',
-        stack: err.stack
+        stack: err.stack,
       });
 
       logErrorInfo(logger, 'error', 'Workflow execution failed', errorInfo);
@@ -525,16 +529,19 @@ export const workflowExecutorTool = createTool({
         await writer?.write({
           type: 'text-delta',
           id: messageId,
-          delta: `[ERROR] Workflow failed: ${err.message}\n`
+          delta: `[ERROR] Workflow failed: ${err.message}\n`,
         });
         await writer?.write({ type: 'text-end', id: messageId });
       } catch (writeError) {
         const writeErr = normalizeError(writeError);
-        const errorInfo = errorService.external(writeErr.message, { step: 'send-error-to-frontend', stack: writeErr.stack });
+        const errorInfo = errorService.external(writeErr.message, {
+          step: 'send-error-to-frontend',
+          stack: writeErr.stack,
+        });
         logErrorInfo(logger, 'error', 'Failed to send error message to frontend', errorInfo);
       }
 
       return createToolErrorResponse(errorInfo);
     }
-  }
+  },
 });

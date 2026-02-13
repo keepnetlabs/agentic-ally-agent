@@ -126,9 +126,7 @@ describe('golden invariants (regression guardrails)', () => {
         prefix: '✅ Complete',
         title: 'Full Test',
         suffix: 'All done',
-        kv: [
-          { key: 'id', value: '123' },
-        ],
+        kv: [{ key: 'id', value: '123' }],
       });
       expect(msg).toContain('✅ Complete');
       expect(msg).toContain('"Full Test"');
@@ -281,5 +279,3 @@ describe('golden invariants (regression guardrails)', () => {
     });
   });
 });
-
-

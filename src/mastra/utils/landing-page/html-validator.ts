@@ -8,9 +8,9 @@ import { getLogger } from '../core/logger';
 const logger = getLogger('HtmlValidator');
 
 export interface ValidationResult {
-    isValid: boolean;
-    errors: string[];
-    warnings: string[];
+  isValid: boolean;
+  errors: string[];
+  warnings: string[];
 }
 
 /**
@@ -20,44 +20,55 @@ export interface ValidationResult {
  * @returns ValidationResult
  */
 export function validateCSSPatterns(html: string): ValidationResult {
-    const errors: string[] = [];
-    const warnings: string[] = [];
+  const errors: string[] = [];
+  const warnings: string[] = [];
 
-    // CRITICAL: These patterns indicate "fancy card" design instead of normal page
-    // Using these is now an ERROR, not just a warning
-    const forbiddenPatterns = [
-        { pattern: /shadow-2xl/g, description: 'Overly dramatic shadows - use shadow-md or shadow-lg for normal pages' },
-        { pattern: /rounded-3xl/g, description: 'Excessive border radius - use rounded-lg or rounded-xl max' },
-        { pattern: /backdrop-blur/g, description: 'Glassmorphism not suitable for normal web pages' },
-        { pattern: /bg-gradient-to-[a-z]+ from-[a-z]+-\d+ via-[a-z]+-\d+ to-/g, description: 'Complex 3-color gradients - use simple 2-color or solid colors' }
-    ];
+  // CRITICAL: These patterns indicate "fancy card" design instead of normal page
+  // Using these is now an ERROR, not just a warning
+  const forbiddenPatterns = [
+    { pattern: /shadow-2xl/g, description: 'Overly dramatic shadows - use shadow-md or shadow-lg for normal pages' },
+    { pattern: /rounded-3xl/g, description: 'Excessive border radius - use rounded-lg or rounded-xl max' },
+    { pattern: /backdrop-blur/g, description: 'Glassmorphism not suitable for normal web pages' },
+    {
+      pattern: /bg-gradient-to-[a-z]+ from-[a-z]+-\d+ via-[a-z]+-\d+ to-/g,
+      description: 'Complex 3-color gradients - use simple 2-color or solid colors',
+    },
+  ];
 
-    // Patterns that suggest "card on gradient" layout (critical failures)
-    const cardLayoutPatterns = [
-        { pattern: /min-h-screen.*flex.*items-center.*justify-center/g, description: 'Centered card layout detected - should be normal page flow' },
-        { pattern: /bg-gradient-to-[a-z]+ (?!from-white)(?!from-gray)/g, description: 'Colorful gradient background - normal pages use white/gray' }
-    ];
+  // Patterns that suggest "card on gradient" layout (critical failures)
+  const cardLayoutPatterns = [
+    {
+      pattern: /min-h-screen.*flex.*items-center.*justify-center/g,
+      description: 'Centered card layout detected - should be normal page flow',
+    },
+    {
+      pattern: /bg-gradient-to-[a-z]+ (?!from-white)(?!from-gray)/g,
+      description: 'Colorful gradient background - normal pages use white/gray',
+    },
+  ];
 
-    // Check forbidden patterns (ERRORS)
-    for (const { pattern, description } of forbiddenPatterns) {
-        const matches = html.match(pattern);
-        if (matches && matches.length > 0) {
-            errors.push(`Forbidden CSS pattern "${pattern.source.replace(/\\/g, '')}": ${description} (found ${matches.length} times)`);
-        }
+  // Check forbidden patterns (ERRORS)
+  for (const { pattern, description } of forbiddenPatterns) {
+    const matches = html.match(pattern);
+    if (matches && matches.length > 0) {
+      errors.push(
+        `Forbidden CSS pattern "${pattern.source.replace(/\\/g, '')}": ${description} (found ${matches.length} times)`
+      );
     }
+  }
 
-    // Check card layout patterns (ERRORS)
-    for (const { pattern, description } of cardLayoutPatterns) {
-        if (pattern.test(html)) {
-            errors.push(`Card layout pattern detected: ${description}`);
-        }
+  // Check card layout patterns (ERRORS)
+  for (const { pattern, description } of cardLayoutPatterns) {
+    if (pattern.test(html)) {
+      errors.push(`Card layout pattern detected: ${description}`);
     }
+  }
 
-    return {
-        isValid: errors.length === 0,
-        errors,
-        warnings
-    };
+  return {
+    isValid: errors.length === 0,
+    errors,
+    warnings,
+  };
 }
 
 /**
@@ -67,36 +78,36 @@ export function validateCSSPatterns(html: string): ValidationResult {
  * @returns ValidationResult
  */
 export function validateFormElements(html: string, pageType: string): ValidationResult {
-    const errors: string[] = [];
-    const warnings: string[] = [];
+  const errors: string[] = [];
+  const warnings: string[] = [];
 
-    if (pageType === 'login') {
-        // Check for form tag
-        if (!/<form/i.test(html)) {
-            errors.push('Missing <form> element');
-        }
-
-        // Check for email/username input
-        if (!/type=['"]email['"]|type=['"]text['"].*@/i.test(html)) {
-            warnings.push('Missing email/username input field');
-        }
-
-        // Check for password input
-        if (!/type=['"]password['"]/i.test(html)) {
-            warnings.push('Missing password input field');
-        }
-
-        // Check for submit button
-        if (!/type=['"]submit['"]|<button/i.test(html)) {
-            warnings.push('Missing submit button');
-        }
+  if (pageType === 'login') {
+    // Check for form tag
+    if (!/<form/i.test(html)) {
+      errors.push('Missing <form> element');
     }
 
-    return {
-        isValid: errors.length === 0,
-        errors,
-        warnings
-    };
+    // Check for email/username input
+    if (!/type=['"]email['"]|type=['"]text['"].*@/i.test(html)) {
+      warnings.push('Missing email/username input field');
+    }
+
+    // Check for password input
+    if (!/type=['"]password['"]/i.test(html)) {
+      warnings.push('Missing password input field');
+    }
+
+    // Check for submit button
+    if (!/type=['"]submit['"]|<button/i.test(html)) {
+      warnings.push('Missing submit button');
+    }
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+    warnings,
+  };
 }
 
 /**
@@ -105,34 +116,34 @@ export function validateFormElements(html: string, pageType: string): Validation
  * @returns ValidationResult
  */
 export function validateHTMLStructure(html: string): ValidationResult {
-    const errors: string[] = [];
-    const warnings: string[] = [];
+  const errors: string[] = [];
+  const warnings: string[] = [];
 
-    // Check for DOCTYPE
-    if (!/<!DOCTYPE html>/i.test(html)) {
-        warnings.push('Missing DOCTYPE declaration');
-    }
+  // Check for DOCTYPE
+  if (!/<!DOCTYPE html>/i.test(html)) {
+    warnings.push('Missing DOCTYPE declaration');
+  }
 
-    // Check for html tag
-    if (!/<html/i.test(html)) {
-        errors.push('Missing <html> tag');
-    }
+  // Check for html tag
+  if (!/<html/i.test(html)) {
+    errors.push('Missing <html> tag');
+  }
 
-    // Check for head tag
-    if (!/<head/i.test(html)) {
-        errors.push('Missing <head> tag');
-    }
+  // Check for head tag
+  if (!/<head/i.test(html)) {
+    errors.push('Missing <head> tag');
+  }
 
-    // Check for body tag
-    if (!/<body/i.test(html)) {
-        errors.push('Missing <body> tag');
-    }
+  // Check for body tag
+  if (!/<body/i.test(html)) {
+    errors.push('Missing <body> tag');
+  }
 
-    return {
-        isValid: errors.length === 0,
-        errors,
-        warnings
-    };
+  return {
+    isValid: errors.length === 0,
+    errors,
+    warnings,
+  };
 }
 
 /**
@@ -143,22 +154,22 @@ export function validateHTMLStructure(html: string): ValidationResult {
  * @returns ValidationResult
  */
 export function validateLandingPage(html: string, pageType: string): ValidationResult {
-    const results: ValidationResult[] = [];
+  const results: ValidationResult[] = [];
 
-    // Run all validations
-    results.push(validateHTMLStructure(html));
-    results.push(validateCSSPatterns(html));
-    results.push(validateFormElements(html, pageType));
+  // Run all validations
+  results.push(validateHTMLStructure(html));
+  results.push(validateCSSPatterns(html));
+  results.push(validateFormElements(html, pageType));
 
-    // Aggregate results
-    const allErrors = results.flatMap(r => r.errors);
-    const allWarnings = results.flatMap(r => r.warnings);
+  // Aggregate results
+  const allErrors = results.flatMap(r => r.errors);
+  const allWarnings = results.flatMap(r => r.warnings);
 
-    return {
-        isValid: allErrors.length === 0,
-        errors: allErrors,
-        warnings: allWarnings
-    };
+  return {
+    isValid: allErrors.length === 0,
+    errors: allErrors,
+    warnings: allWarnings,
+  };
 }
 
 /**
@@ -167,22 +178,22 @@ export function validateLandingPage(html: string, pageType: string): ValidationR
  * @param pageType - Type of page being validated
  */
 export function logValidationResults(result: ValidationResult, pageType: string): void {
-    if (result.isValid && result.warnings.length === 0) {
-        logger.info('Page validation passed', { pageType });
-        return;
-    }
+  if (result.isValid && result.warnings.length === 0) {
+    logger.info('Page validation passed', { pageType });
+    return;
+  }
 
-    if (result.errors.length > 0) {
-        logger.error('Page validation FAILED', {
-            pageType,
-            errors: result.errors
-        });
-    }
+  if (result.errors.length > 0) {
+    logger.error('Page validation FAILED', {
+      pageType,
+      errors: result.errors,
+    });
+  }
 
-    if (result.warnings.length > 0) {
-        logger.warn('Page validation warnings', {
-            pageType,
-            warnings: result.warnings
-        });
-    }
+  if (result.warnings.length > 0) {
+    logger.warn('Page validation warnings', {
+      pageType,
+      warnings: result.warnings,
+    });
+  }
 }

@@ -214,7 +214,9 @@ IF you cannot determine the intent or the request is ambiguous:
 3. **Examples of unclear requests:**
    - Vague requests with NO conversation history: "Help", "What can you do"
    - Mixed signals: Contains both "training" and "phishing" without clear intent
-   - **NOT unclear:** ${ORCHESTRATOR_CONFIRMATION_EXAMPLES.slice(0, 5).map(e => `"${e}"`).join(', ')} — these are confirmations/selections, route via SCENARIO A.
+   - **NOT unclear:** ${ORCHESTRATOR_CONFIRMATION_EXAMPLES.slice(0, 5)
+     .map(e => `"${e}"`)
+     .join(', ')} — these are confirmations/selections, route via SCENARIO A.
 
 ### OUTPUT FORMAT & GUIDELINES
 

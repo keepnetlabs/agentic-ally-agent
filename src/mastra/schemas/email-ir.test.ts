@@ -10,7 +10,8 @@ describe('EmailIRCanvasSchema', () => {
       confidence: 0.95,
       status: 'Active investigation',
     },
-    agent_determination: 'This email exhibits clear phishing characteristics including spoofed sender and malicious link.',
+    agent_determination:
+      'This email exhibits clear phishing characteristics including spoofed sender and malicious link.',
     risk_indicators: {
       observed: ['Spoofed sender', 'Malicious link'],
       not_observed: ['Malware attachment'],
@@ -51,7 +52,7 @@ describe('EmailIRCanvasSchema', () => {
         'Benign',
       ];
 
-      categories.forEach((category) => {
+      categories.forEach(category => {
         const data = {
           ...validMinimalData,
           executive_summary: {
@@ -86,7 +87,7 @@ describe('EmailIRCanvasSchema', () => {
 
     it('should accept all risk level enum values', () => {
       const levels = ['Low', 'Medium', 'High', 'Critical'];
-      levels.forEach((level) => {
+      levels.forEach(level => {
         const data = {
           ...validMinimalData,
           executive_summary: {
@@ -151,15 +152,9 @@ describe('EmailIRCanvasSchema', () => {
     });
 
     it('should require all executive summary fields', () => {
-      const fields = [
-        'email_category',
-        'verdict',
-        'risk_level',
-        'confidence',
-        'status',
-      ];
+      const fields = ['email_category', 'verdict', 'risk_level', 'confidence', 'status'];
 
-      fields.forEach((field) => {
+      fields.forEach(field => {
         const data = {
           ...validMinimalData,
           executive_summary: {
@@ -343,17 +338,9 @@ describe('EmailIRCanvasSchema', () => {
       const data = {
         ...validMinimalData,
         actions_recommended: {
-          p1_immediate: [
-            'Reset passwords',
-            'Disable suspicious session tokens',
-          ],
-          p2_follow_up: [
-            'Monitor accounts',
-            'Review logs',
-          ],
-          p3_hardening: [
-            'Update security policies',
-          ],
+          p1_immediate: ['Reset passwords', 'Disable suspicious session tokens'],
+          p2_follow_up: ['Monitor accounts', 'Review logs'],
+          p3_hardening: ['Update security policies'],
         },
       };
       const result = EmailIRCanvasSchema.safeParse(data);

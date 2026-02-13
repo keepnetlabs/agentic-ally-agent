@@ -145,10 +145,7 @@ describe('summarizePolicyTool.execute', () => {
     } as any);
 
     expect(mocks.normalizeError).toHaveBeenCalled();
-    expect(mocks.external).toHaveBeenCalledWith(
-      'LLM down',
-      expect.objectContaining({ step: 'policy-summarization' })
-    );
+    expect(mocks.external).toHaveBeenCalledWith('LLM down', expect.objectContaining({ step: 'policy-summarization' }));
     expect(result.success).toBe(false);
     expect(result.error).toContain('EXTERNAL');
   });

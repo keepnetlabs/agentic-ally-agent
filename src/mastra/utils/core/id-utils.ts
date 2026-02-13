@@ -12,9 +12,9 @@ const SAFE_ID_REGEX = /^[a-zA-Z0-9_-]{3,}$/;
  * Returns true if the value looks like a safe platform/artifact identifier.
  */
 export function isSafeId(value: string): boolean {
-    const v = String(value ?? '').trim();
-    if (v === '') return false;
-    return SAFE_ID_REGEX.test(v);
+  const v = String(value ?? '').trim();
+  if (v === '') return false;
+  return SAFE_ID_REGEX.test(v);
 }
 
 /**
@@ -22,10 +22,10 @@ export function isSafeId(value: string): boolean {
  * Useful when building deterministic [ARTIFACT_IDS] blocks.
  */
 export function normalizeSafeId(value: unknown): string | undefined {
-    const v = String(value ?? '').trim();
-    if (!v) return undefined;
-    if (!isSafeId(v)) return undefined;
-    return v;
+  const v = String(value ?? '').trim();
+  if (!v) return undefined;
+  if (!isSafeId(v)) return undefined;
+  return v;
 }
 
 /**
@@ -34,7 +34,7 @@ export function normalizeSafeId(value: unknown): string | undefined {
  * @returns string UUID
  */
 export function generateUniqueId(): string {
-    return uuidv4();
+  return uuidv4();
 }
 
 /**
@@ -45,16 +45,15 @@ export function generateUniqueId(): string {
  * @returns string
  */
 export function generateSlugId(text: string): string {
-    const slug = text.toLowerCase()
-        .replace(/[^a-z0-9\s-]/g, '') // Remove special chars
-        .replace(/\s+/g, '-')         // Spaces to hyphens
-        .replace(/-+/g, '-')          // Collapse hyphens
-        .substring(0, 50);            // Truncate to avoid too long IDs
+  const slug = text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '') // Remove special chars
+    .replace(/\s+/g, '-') // Spaces to hyphens
+    .replace(/-+/g, '-') // Collapse hyphens
+    .substring(0, 50); // Truncate to avoid too long IDs
 
-    // Append 8-char random suffix from UUID for entropy (sufficient for this context)
-    const uniqueSuffix = uuidv4().split('-')[0]; // First segment (8 chars)
+  // Append 8-char random suffix from UUID for entropy (sufficient for this context)
+  const uniqueSuffix = uuidv4().split('-')[0]; // First segment (8 chars)
 
-    return `${slug}-${uniqueSuffix}`;
+  return `${slug}-${uniqueSuffix}`;
 }
-
-

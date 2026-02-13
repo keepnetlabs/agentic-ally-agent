@@ -17,9 +17,11 @@ describe('Scene 3 - Video Generator', () => {
     vi.clearAllMocks();
     (generateText as any).mockResolvedValue({
       text: JSON.stringify({
-        prompt: 'KEY MESSAGE PATTERNS: THREAT pattern for phishing emails\nSCENE 3 - VIDEO\nGenerate training video transcript about phishing prevention.',
+        prompt:
+          'KEY MESSAGE PATTERNS: THREAT pattern for phishing emails\nSCENE 3 - VIDEO\nGenerate training video transcript about phishing prevention.',
         videoUrl: 'https://example.com/phishing-video.mp4',
-        transcript: 'Welcome to phishing awareness training. In this video, you will learn to identify suspicious emails and protect yourself from cyber threats.',
+        transcript:
+          'Welcome to phishing awareness training. In this video, you will learn to identify suspicious emails and protect yourself from cyber threats.',
       }),
     });
   });
@@ -315,8 +317,6 @@ describe('Scene 3 - Video Generator', () => {
       const result = await generateVideoPrompt(baseAnalysis, baseMicrolearning);
       expect(result.prompt).toContain('Deepfake');
     });
-
-
   });
 
   // ==================== TOOL PATTERN TESTS ====================
@@ -330,8 +330,6 @@ describe('Scene 3 - Video Generator', () => {
       const result = await generateVideoPrompt(baseAnalysis, baseMicrolearning);
       expect(result.prompt).toContain('Password');
     });
-
-
 
     it('should include Backup pattern', async () => {
       const result = await generateVideoPrompt(baseAnalysis, baseMicrolearning);

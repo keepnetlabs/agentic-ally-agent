@@ -17,8 +17,8 @@ describe('uploadTrainingTool', () => {
   const mockCompanyId = 'test-company-id';
   const mockEnv = {
     CRUD_WORKER: {
-      fetch: vi.fn()
-    }
+      fetch: vi.fn(),
+    },
   };
 
   const mockMicrolearningContent = {
@@ -29,9 +29,9 @@ describe('uploadTrainingTool', () => {
         description: 'Test Description',
         category: 'Security',
         role_relevance: ['AllEmployees'],
-        language_availability: ['en-us']
-      }
-    }
+        language_availability: ['en-us'],
+      },
+    },
   };
 
   beforeEach(() => {
@@ -48,7 +48,7 @@ describe('uploadTrainingTool', () => {
     requestStorage.enterWith({
       token: mockToken,
       companyId: mockCompanyId,
-      env: mockEnv
+      env: mockEnv,
     });
   });
 
@@ -57,11 +57,11 @@ describe('uploadTrainingTool', () => {
       vi.spyOn(KVService.prototype, 'getMicrolearning').mockResolvedValue(mockMicrolearningContent);
       vi.spyOn(workerApiClient, 'callWorkerAPI').mockResolvedValue({
         resourceId: 'resource-123',
-        languageId: 'lang-456'
+        languageId: 'lang-456',
       });
 
       const input = {
-        microlearningId: 'ml-123'
+        microlearningId: 'ml-123',
       };
 
       const result = await uploadTrainingTool.execute({ context: input, runtimeContext: {} as any });
@@ -86,12 +86,12 @@ describe('uploadTrainingTool', () => {
     it('should return error when token is missing', async () => {
       requestStorage.enterWith({
         companyId: mockCompanyId,
-        env: mockEnv
+        env: mockEnv,
         // token is missing
       });
 
       const input = {
-        microlearningId: 'ml-123'
+        microlearningId: 'ml-123',
       };
 
       const result = await uploadTrainingTool.execute({ context: input, runtimeContext: {} as any });
@@ -103,11 +103,11 @@ describe('uploadTrainingTool', () => {
       vi.spyOn(KVService.prototype, 'getMicrolearning').mockResolvedValue(mockMicrolearningContent);
       vi.spyOn(workerApiClient, 'callWorkerAPI').mockResolvedValue({
         resourceId: 'resource-123',
-        languageId: 'lang-456'
+        languageId: 'lang-456',
       });
 
       const input = {
-        microlearningId: 'ml-123'
+        microlearningId: 'ml-123',
       };
 
       const result = await uploadTrainingTool.execute({ context: input, runtimeContext: {} as any });
@@ -117,15 +117,16 @@ describe('uploadTrainingTool', () => {
 
   describe('KV Content Fetching', () => {
     it('should fetch microlearning content from KV', async () => {
-      const getMicrolearningSpy = vi.spyOn(KVService.prototype, 'getMicrolearning')
+      const getMicrolearningSpy = vi
+        .spyOn(KVService.prototype, 'getMicrolearning')
         .mockResolvedValue(mockMicrolearningContent);
       vi.spyOn(workerApiClient, 'callWorkerAPI').mockResolvedValue({
         resourceId: 'resource-123',
-        languageId: 'lang-456'
+        languageId: 'lang-456',
       });
 
       const input = {
-        microlearningId: 'ml-123'
+        microlearningId: 'ml-123',
       };
 
       await uploadTrainingTool.execute({ context: input, runtimeContext: {} as any } as any);
@@ -137,7 +138,7 @@ describe('uploadTrainingTool', () => {
       vi.spyOn(KVService.prototype, 'getMicrolearning').mockResolvedValue(null);
 
       const input = {
-        microlearningId: 'ml-123'
+        microlearningId: 'ml-123',
       };
 
       const result = await uploadTrainingTool.execute({ context: input, runtimeContext: {} as any });
@@ -149,7 +150,7 @@ describe('uploadTrainingTool', () => {
       vi.spyOn(KVService.prototype, 'getMicrolearning').mockResolvedValue({});
 
       const input = {
-        microlearningId: 'ml-123'
+        microlearningId: 'ml-123',
       };
 
       const result = await uploadTrainingTool.execute({ context: input, runtimeContext: {} as any });
@@ -163,11 +164,11 @@ describe('uploadTrainingTool', () => {
       vi.spyOn(KVService.prototype, 'getMicrolearning').mockResolvedValue(mockMicrolearningContent);
       const mockCallWorkerAPI = vi.spyOn(workerApiClient, 'callWorkerAPI').mockResolvedValue({
         resourceId: 'resource-123',
-        languageId: 'lang-456'
+        languageId: 'lang-456',
       });
 
       const input = {
-        microlearningId: 'ml-123'
+        microlearningId: 'ml-123',
       };
 
       await uploadTrainingTool.execute({ context: input, runtimeContext: {} as any } as any);
@@ -185,9 +186,9 @@ describe('uploadTrainingTool', () => {
               description: 'Test Description',
               category: 'Security',
               targetAudience: 'AllEmployees',
-              language: 'en-us'
-            })
-          })
+              language: 'en-us',
+            }),
+          }),
         })
       );
     });
@@ -198,19 +199,19 @@ describe('uploadTrainingTool', () => {
           ...mockMicrolearningContent.base,
           microlearning_metadata: {
             ...mockMicrolearningContent.base.microlearning_metadata,
-            role_relevance: ['IT', 'HR', 'Finance']
-          }
-        }
+            role_relevance: ['IT', 'HR', 'Finance'],
+          },
+        },
       };
 
       vi.spyOn(KVService.prototype, 'getMicrolearning').mockResolvedValue(contentWithArrayRoles);
       const mockCallWorkerAPI = vi.spyOn(workerApiClient, 'callWorkerAPI').mockResolvedValue({
         resourceId: 'resource-123',
-        languageId: 'lang-456'
+        languageId: 'lang-456',
       });
 
       const input = {
-        microlearningId: 'ml-123'
+        microlearningId: 'ml-123',
       };
 
       await uploadTrainingTool.execute({ context: input, runtimeContext: {} as any } as any);
@@ -225,19 +226,19 @@ describe('uploadTrainingTool', () => {
           ...mockMicrolearningContent.base,
           microlearning_metadata: {
             ...mockMicrolearningContent.base.microlearning_metadata,
-            language_availability: []
-          }
-        }
+            language_availability: [],
+          },
+        },
       };
 
       vi.spyOn(KVService.prototype, 'getMicrolearning').mockResolvedValue(contentWithoutLang);
       const mockCallWorkerAPI = vi.spyOn(workerApiClient, 'callWorkerAPI').mockResolvedValue({
         resourceId: 'resource-123',
-        languageId: 'lang-456'
+        languageId: 'lang-456',
       });
 
       const input = {
-        microlearningId: 'ml-123'
+        microlearningId: 'ml-123',
       };
 
       await uploadTrainingTool.execute({ context: input, runtimeContext: {} as any } as any);
@@ -252,11 +253,11 @@ describe('uploadTrainingTool', () => {
       vi.spyOn(KVService.prototype, 'getMicrolearning').mockResolvedValue(mockMicrolearningContent);
       vi.spyOn(workerApiClient, 'callWorkerAPI').mockResolvedValue({
         resourceId: 'resource-123',
-        languageId: 'lang-456'
+        languageId: 'lang-456',
       });
 
       const input = {
-        microlearningId: 'ml-123'
+        microlearningId: 'ml-123',
       };
 
       const result = await uploadTrainingTool.execute({ context: input, runtimeContext: {} as any });
@@ -276,7 +277,7 @@ describe('uploadTrainingTool', () => {
       vi.spyOn(KVService.prototype, 'getMicrolearning').mockRejectedValue(new Error('KV fetch failed'));
 
       const input = {
-        microlearningId: 'ml-123'
+        microlearningId: 'ml-123',
       };
 
       const result = await uploadTrainingTool.execute({ context: input, runtimeContext: {} as any });
@@ -290,7 +291,7 @@ describe('uploadTrainingTool', () => {
       vi.spyOn(workerApiClient, 'callWorkerAPI').mockRejectedValue(apiError);
 
       const input = {
-        microlearningId: 'ml-123'
+        microlearningId: 'ml-123',
       };
 
       const result = await uploadTrainingTool.execute({ context: input, runtimeContext: {} as any });
@@ -304,7 +305,7 @@ describe('uploadTrainingTool', () => {
       vi.spyOn(workerApiClient, 'callWorkerAPI').mockRejectedValue(apiError);
 
       const input = {
-        microlearningId: 'ml-123'
+        microlearningId: 'ml-123',
       };
 
       const result = await uploadTrainingTool.execute({ context: input, runtimeContext: {} as any });
@@ -318,11 +319,11 @@ describe('uploadTrainingTool', () => {
       vi.spyOn(KVService.prototype, 'getMicrolearning').mockResolvedValue(mockMicrolearningContent);
       vi.spyOn(workerApiClient, 'callWorkerAPI').mockResolvedValue({
         resourceId: 'resource-123',
-        languageId: 'lang-456'
+        languageId: 'lang-456',
       });
 
       const input = {
-        microlearningId: 'ml-123'
+        microlearningId: 'ml-123',
       };
 
       const result = await uploadTrainingTool.execute({ context: input, runtimeContext: {} as any });

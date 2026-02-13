@@ -42,15 +42,9 @@ vi.mock('../error-service', () => ({
 }));
 
 describe('autonomous-phishing-handlers', () => {
-  const mockPhishingExecute = vi.mocked(
-    (orchestrationModule as any).phishingWorkflowExecutorTool.execute
-  );
-  const mockUploadExecute = vi.mocked(
-    (userManagementModule as any).uploadPhishingTool.execute
-  );
-  const mockAssignExecute = vi.mocked(
-    (userManagementModule as any).assignPhishingTool.execute
-  );
+  const mockPhishingExecute = vi.mocked((orchestrationModule as any).phishingWorkflowExecutorTool.execute);
+  const mockUploadExecute = vi.mocked((userManagementModule as any).uploadPhishingTool.execute);
+  const mockAssignExecute = vi.mocked((userManagementModule as any).assignPhishingTool.execute);
 
   const baseSimulation = {
     title: 'Phishing Test',
@@ -130,27 +124,18 @@ describe('autonomous-phishing-handlers', () => {
       expect(result.message).toContain('uploaded');
       expect(mockAssignExecute).not.toHaveBeenCalled();
     });
-
   });
 
   describe('uploadAndAssignPhishing', () => {
     it('returns success when agent completes upload and assign', async () => {
-      const result = await uploadAndAssignPhishing(
-        'user-789',
-        'thread-upload-1',
-        'phish-xyz'
-      );
+      const result = await uploadAndAssignPhishing('user-789', 'thread-upload-1', 'phish-xyz');
 
       expect(result.success).toBe(true);
       expect(mockPhishingAgentGenerate).toHaveBeenCalled();
     });
 
     it('returns failure when targetUserResourceId is missing', async () => {
-      const result = await uploadAndAssignPhishing(
-        undefined as any,
-        'thread-upload-2',
-        'phish-xyz'
-      );
+      const result = await uploadAndAssignPhishing(undefined as any, 'thread-upload-2', 'phish-xyz');
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('targetUserResourceId');
@@ -182,10 +167,7 @@ describe('autonomous-phishing-handlers', () => {
     });
 
     it('returns failure when targetUserResourceId is missing', async () => {
-      const result = await assignPhishingWithTraining(
-        undefined as any,
-        'thread-assign-2'
-      );
+      const result = await assignPhishingWithTraining(undefined as any, 'thread-assign-2');
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('targetUserResourceId');

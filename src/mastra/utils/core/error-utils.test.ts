@@ -1,10 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { ErrorCategory } from '../../services/error-service';
-import {
-  normalizeError,
-  createToolErrorResponse,
-  logErrorInfo,
-} from './error-utils';
+import { normalizeError, createToolErrorResponse, logErrorInfo } from './error-utils';
 
 describe('error-utils', () => {
   describe('normalizeError', () => {
@@ -180,10 +176,7 @@ describe('error-utils', () => {
 
       logErrorInfo(mockLogger, 'error', 'Operation failed', errorInfo);
 
-      expect(mockLogger.error).toHaveBeenCalledWith(
-        'Operation failed',
-        expect.any(Object)
-      );
+      expect(mockLogger.error).toHaveBeenCalledWith('Operation failed', expect.any(Object));
     });
 
     it('should call logger.warn with warn level', () => {
@@ -202,10 +195,7 @@ describe('error-utils', () => {
 
       logErrorInfo(mockLogger, 'warn', 'Warning', errorInfo);
 
-      expect(mockLogger.warn).toHaveBeenCalledWith(
-        'Warning',
-        expect.any(Object)
-      );
+      expect(mockLogger.warn).toHaveBeenCalledWith('Warning', expect.any(Object));
     });
 
     it('should call logger.info with info level', () => {
@@ -224,10 +214,7 @@ describe('error-utils', () => {
 
       logErrorInfo(mockLogger, 'info', 'Information', errorInfo);
 
-      expect(mockLogger.info).toHaveBeenCalledWith(
-        'Information',
-        expect.any(Object)
-      );
+      expect(mockLogger.info).toHaveBeenCalledWith('Information', expect.any(Object));
     });
 
     it('should log errorInfo code, message, and category', () => {
@@ -268,10 +255,7 @@ describe('error-utils', () => {
 
       logErrorInfo(mockLogger, 'error', 'Custom log message', errorInfo);
 
-      expect(mockLogger.error).toHaveBeenCalledWith(
-        'Custom log message',
-        expect.any(Object)
-      );
+      expect(mockLogger.error).toHaveBeenCalledWith('Custom log message', expect.any(Object));
     });
 
     it('should not mutate errorInfo object', () => {
@@ -413,7 +397,9 @@ describe('error-utils', () => {
     });
 
     it('should handle Function objects', () => {
-      const fn = () => { /* noop */ };
+      const fn = () => {
+        /* noop */
+      };
       const result = normalizeError(fn);
 
       expect(result instanceof Error).toBe(true);

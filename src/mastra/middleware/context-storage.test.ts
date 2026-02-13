@@ -20,12 +20,12 @@ describe('ContextStorage Middleware', () => {
 
     mockContext = createMockContext({
       req: {
-        header: vi.fn()
+        header: vi.fn(),
       } as unknown as Context['req'],
       env: {
         KV: {},
-        D1: {}
-      }
+        D1: {},
+      },
     });
 
     mockNext = vi.fn().mockResolvedValue(undefined);
@@ -59,9 +59,7 @@ describe('ContextStorage Middleware', () => {
   it('should handle missing token gracefully', async () => {
     (mockContext.req.header as any).mockReturnValue(undefined);
 
-    await expect(
-      contextStorage(mockContext, mockNext)
-    ).resolves.not.toThrow();
+    await expect(contextStorage(mockContext, mockNext)).resolves.not.toThrow();
 
     expect(mockNext).toHaveBeenCalled();
   });

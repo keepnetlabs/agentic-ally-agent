@@ -52,13 +52,15 @@ import {
 } from './utils/chat-orchestration-helpers';
 import { normalizeSafeId } from './utils/core/id-utils';
 import { validateBCP47LanguageCode, DEFAULT_LANGUAGE } from './utils/language/language-utils';
-import { postProcessPhishingEmailHtml, postProcessPhishingLandingHtml } from './utils/content-processors/phishing-html-postprocessors';
+import {
+  postProcessPhishingEmailHtml,
+  postProcessPhishingLandingHtml,
+} from './utils/content-processors/phishing-html-postprocessors';
 import { vishingPromptHandler } from './routes/vishing-prompt-route';
 import { vishingConversationsSummaryHandler } from './routes/vishing-conversations-summary-route';
 import { smishingChatHandler } from './routes/smishing-chat-route';
 import { emailIRAnalyzeHandler } from './routes/email-ir-route';
 import { isPublicUnauthenticatedPath } from './middleware/public-endpoint-policy';
-
 
 // Barrel imports - clean organization
 import {
@@ -91,12 +93,7 @@ import {
 import { ExampleRepo, executeAutonomousGeneration, performHealthCheck, KVService } from './services';
 import { validateEnvironmentOrThrow } from './utils/core';
 import { resolveLogLevel } from './utils/core/logger';
-import type {
-  ChatRequestBody,
-  CodeReviewRequestBody,
-  AutonomousRequestBody,
-  CloudflareEnv,
-} from './types';
+import type { ChatRequestBody, CodeReviewRequestBody, AutonomousRequestBody, CloudflareEnv } from './types';
 
 // Type import for D1 database
 import type { D1Database } from './services/example-repo';
@@ -140,7 +137,7 @@ export const mastra = new Mastra({
     createMicrolearningWorkflow,
     addLanguageWorkflow,
     addMultipleLanguagesWorkflow,
-    updateMicrolearningWorkflow
+    updateMicrolearningWorkflow,
   },
   agents: {
     microlearningAgent,
@@ -149,7 +146,7 @@ export const mastra = new Mastra({
     userInfoAssistant: userInfoAgent,
     policySummaryAssistant: policySummaryAgent,
     vishingCallAssistant: vishingCallAgent,
-    orchestrator: orchestratorAgent
+    orchestrator: orchestratorAgent,
   },
   logger,
   deployer: getDeployer(),
@@ -159,7 +156,7 @@ export const mastra = new Mastra({
     accountId: process.env.CLOUDFLARE_ACCOUNT_ID!,
     databaseId: process.env.CLOUDFLARE_D1_DATABASE_ID!,
     apiToken: process.env.CLOUDFLARE_KV_TOKEN!,
-    tablePrefix: "dev_",
+    tablePrefix: 'dev_',
   }),
   /* eslint-enable @typescript-eslint/no-non-null-assertion */
   server: {
@@ -221,16 +218,16 @@ export const mastra = new Mastra({
         maxRequests: RATE_LIMIT_TIERS.PUBLIC_UNAUTH.maxRequests,
         windowMs: RATE_LIMIT_TIERS.PUBLIC_UNAUTH.windowMs,
         keyPrefix: 'ratelimit:public:',
-        skip: (c) => !isPublicUnauthenticatedPath(c.req.path),
+        skip: c => !isPublicUnauthenticatedPath(c.req.path),
       }),
       rateLimitMiddleware({
         maxRequests: RATE_LIMIT_CONFIG.MAX_REQUESTS,
         windowMs: RATE_LIMIT_CONFIG.WINDOW_MS,
-        skip: (c) => c.req.path === '/health', // Skip health checks from rate limiting
+        skip: c => c.req.path === '/health', // Skip health checks from rate limiting
       }),
       injectD1Database,
       disablePlayground,
-      disableSwagger
+      disableSwagger,
     ],
     apiRoutes: [
       registerApiRoute('/chat', {
@@ -259,10 +256,13 @@ export const mastra = new Mastra({
 
           const parsedRequest = parseAndValidateRequest(body);
           if (!parsedRequest) {
-            return c.json({
-              success: false,
-              message: 'Missing prompt. Provide {prompt}, {text}, {input}, or AISDK {messages} with user text.',
-            }, 400);
+            return c.json(
+              {
+                success: false,
+                message: 'Missing prompt. Provide {prompt}, {text}, {input}, or AISDK {messages} with user text.',
+              },
+              400
+            );
           }
 
           const { prompt, routingContext } = parsedRequest;
@@ -270,7 +270,7 @@ export const mastra = new Mastra({
           // Debug: Parse result
           logger.info('🔍 PARSE_RESULT Chat request parsed successfully', {
             prompt: prompt,
-            routingContext: routingContext
+            routingContext: routingContext,
           });
 
           // Step 2: Prepare orchestrator input (no masking)
@@ -287,36 +287,38 @@ export const mastra = new Mastra({
             routeResult = await routeToAgent(mastra, orchestratorInput);
             logger.info('🎬 FINAL_ROUTING Agent selected', {
               agentName: routeResult.agentName,
-              taskContext: routeResult.taskContext
+              taskContext: routeResult.taskContext,
             });
           } catch (routingError) {
             logger.error('agent_routing_failed', {
               error: routingError instanceof Error ? routingError.message : String(routingError),
             });
-            return c.json({
-              success: false,
-              error: 'Agent routing failed',
-              message: routingError instanceof Error ? routingError.message : 'Unknown routing error',
-            }, 500);
+            return c.json(
+              {
+                success: false,
+                error: 'Agent routing failed',
+                message: routingError instanceof Error ? routingError.message : 'Unknown routing error',
+              },
+              500
+            );
           }
 
           // Verify agent exists
           const agent = mastra.getAgent(routeResult.agentName);
           if (!agent) {
             logger.error('agent_not_found', { agentName: routeResult.agentName });
-            return c.json({
-              success: false,
-              error: 'Agent not found',
-              message: `Agent "${routeResult.agentName}" is not available`,
-            }, 500);
+            return c.json(
+              {
+                success: false,
+                error: 'Agent not found',
+                message: `Agent "${routeResult.agentName}" is not available`,
+              },
+              500
+            );
           }
 
           // Step 5: Build final prompt with model overrides
-          let finalPrompt = buildFinalPromptWithModelOverride(
-            prompt,
-            body?.modelProvider,
-            body?.model
-          );
+          let finalPrompt = buildFinalPromptWithModelOverride(prompt, body?.modelProvider, body?.model);
 
           // Inject deterministic artifact IDs (short, code-derived) so agents don't have to guess from long history
           const {
@@ -379,32 +381,30 @@ export const mastra = new Mastra({
           // Step 7: Create agent stream
           let stream;
           try {
-            stream = await createAgentStream(
-              agent,
-              finalPrompt,
-              threadId,
-              routeResult.agentName
-            );
+            stream = await createAgentStream(agent, finalPrompt, threadId, routeResult.agentName);
           } catch (streamError) {
             logger.error('stream_creation_failed', {
               error: streamError instanceof Error ? streamError.message : String(streamError),
             });
-            return c.json({
-              success: false,
-              error: 'Stream creation failed',
-              message: streamError instanceof Error ? streamError.message : 'Unknown stream error',
-            }, 500);
+            return c.json(
+              {
+                success: false,
+                error: 'Stream creation failed',
+                message: streamError instanceof Error ? streamError.message : 'Unknown stream error',
+              },
+              500
+            );
           }
 
           return stream.toUIMessageStreamResponse({
-            sendReasoning: true
+            sendReasoning: true,
           });
         },
       }),
 
       registerApiRoute('/health', {
         method: 'GET',
-        handler: async (c) => {
+        handler: async c => {
           const mastra = c.get('mastra');
           const agents = mastra.getAgents();
           const workflows = mastra.getWorkflows();
@@ -413,15 +413,17 @@ export const mastra = new Mastra({
           const healthResponse = await performHealthCheck(agents, workflows, 5000);
 
           // Return appropriate HTTP status based on health
-          const httpStatus = healthResponse.status === 'healthy' ? 200
-            : healthResponse.status === 'degraded' ? 200
-              : 503;
+          const httpStatus =
+            healthResponse.status === 'healthy' ? 200 : healthResponse.status === 'degraded' ? 200 : 503;
 
-          return c.json({
-            success: healthResponse.status !== 'unhealthy',
-            message: 'Agentic Ally deployment successful',
-            ...healthResponse,
-          }, httpStatus);
+          return c.json(
+            {
+              success: healthResponse.status !== 'unhealthy',
+              message: 'Agentic Ally deployment successful',
+              ...healthResponse,
+            },
+            httpStatus
+          );
         },
       }),
 
@@ -446,18 +448,21 @@ export const mastra = new Mastra({
             logger.error('code_review_validation_error', {
               error: error instanceof Error ? error.message : String(error),
             });
-            return c.json({
-              success: false,
-              data: {
-                isCorrect: false,
-                severity: 'incorrect',
-                feedback: 'Error validating code',
-                explanation: error instanceof Error ? error.message : 'Unknown error occurred',
-                points: 0,
-                hint: '',
+            return c.json(
+              {
+                success: false,
+                data: {
+                  isCorrect: false,
+                  severity: 'incorrect',
+                  feedback: 'Error validating code',
+                  explanation: error instanceof Error ? error.message : 'Unknown error occurred',
+                  points: 0,
+                  hint: '',
+                },
+                error: error instanceof Error ? error.message : 'Unknown error',
               },
-              error: error instanceof Error ? error.message : 'Unknown error',
-            }, 500);
+              500
+            );
           }
         },
       }),
@@ -468,14 +473,7 @@ export const mastra = new Mastra({
           const requestStart = Date.now();
           try {
             const body = await c.req.json<Record<string, any>>();
-            const {
-              phishingId,
-              language,
-              emailKey,
-              landingKey,
-              email,
-              landing,
-            } = body || {};
+            const { phishingId, language, emailKey, landingKey, email, landing } = body || {};
 
             if (!phishingId || typeof phishingId !== 'string') {
               logger.warn('phishing_editor_save_missing_id');
@@ -548,8 +546,8 @@ export const mastra = new Mastra({
                   const replacement = updatedPages.find((updated: any) => updated.type === page.type);
                   return replacement || page;
                 });
-                const appendedPages = updatedPages.filter((updated: any) =>
-                  !existingPages.some((page: any) => page.type === updated.type)
+                const appendedPages = updatedPages.filter(
+                  (updated: any) => !existingPages.some((page: any) => page.type === updated.type)
                 );
 
                 const updatedLanding = {
@@ -576,20 +574,26 @@ export const mastra = new Mastra({
               saved,
               durationMs: Date.now() - requestStart,
             });
-            return c.json({
-              success: true,
-              phishingId,
-              language: normalizedLanguage,
-              saved,
-            }, 200);
+            return c.json(
+              {
+                success: true,
+                phishingId,
+                language: normalizedLanguage,
+                saved,
+              },
+              200
+            );
           } catch (error) {
             logger.error('phishing_editor_save_error', {
               error: error instanceof Error ? error.message : String(error),
             });
-            return c.json({
-              success: false,
-              error: error instanceof Error ? error.message : 'Unknown error',
-            }, 500);
+            return c.json(
+              {
+                success: false,
+                error: error instanceof Error ? error.message : 'Unknown error',
+              },
+              500
+            );
           }
         },
       }),
@@ -614,13 +618,23 @@ export const mastra = new Mastra({
         handler: emailIRAnalyzeHandler,
       }),
 
-
       registerApiRoute('/autonomous', {
         method: 'POST',
         handler: async (c: Context) => {
           try {
             const body = await c.req.json<AutonomousRequestBody>();
-            const { token, firstName, lastName, targetUserResourceId, targetGroupResourceId, departmentName, actions, sendAfterPhishingSimulation, preferredLanguage, baseApiUrl } = body;
+            const {
+              token,
+              firstName,
+              lastName,
+              targetUserResourceId,
+              targetGroupResourceId,
+              departmentName,
+              actions,
+              sendAfterPhishingSimulation,
+              preferredLanguage,
+              baseApiUrl,
+            } = body;
             const env = c.env as CloudflareEnv | undefined;
 
             // Validation
@@ -633,18 +647,34 @@ export const mastra = new Mastra({
             const isGroupAssignment = !!targetGroupResourceId;
 
             if (isUserAssignment && isGroupAssignment) {
-              return c.json({ success: false, error: 'Cannot specify both user assignment (firstName/targetUserResourceId) and group assignment (targetGroupResourceId)' }, 400);
+              return c.json(
+                {
+                  success: false,
+                  error:
+                    'Cannot specify both user assignment (firstName/targetUserResourceId) and group assignment (targetGroupResourceId)',
+                },
+                400
+              );
             }
 
             if (!isUserAssignment && !isGroupAssignment) {
-              return c.json({ success: false, error: 'Must specify either user assignment (firstName) or group assignment (targetGroupResourceId)' }, 400);
+              return c.json(
+                {
+                  success: false,
+                  error: 'Must specify either user assignment (firstName) or group assignment (targetGroupResourceId)',
+                },
+                400
+              );
             }
 
             if (!actions || !Array.isArray(actions) || actions.length === 0) {
               return c.json({ success: false, error: 'Missing or invalid actions array' }, 400);
             }
             if (!actions.every((a: string) => a === 'training' || a === 'phishing' || a === 'smishing')) {
-              return c.json({ success: false, error: 'Actions must be one or more of: "training", "phishing", "smishing"' }, 400);
+              return c.json(
+                { success: false, error: 'Actions must be one or more of: "training", "phishing", "smishing"' },
+                400
+              );
             }
 
             logger.info('autonomous_request_received', {
@@ -653,7 +683,7 @@ export const mastra = new Mastra({
               targetUserResourceId,
               targetGroupResourceId,
               actionsCount: actions.length,
-              assignmentType: isUserAssignment ? 'user' : 'group'
+              assignmentType: isUserAssignment ? 'user' : 'group',
             });
 
             // Primary path: Cloudflare Workflow binding
@@ -671,27 +701,30 @@ export const mastra = new Mastra({
                     actions,
                     sendAfterPhishingSimulation,
                     preferredLanguage,
-                    baseApiUrl
-                  }
+                    baseApiUrl,
+                  },
                 });
 
                 logger.info('autonomous_workflow_started', { workflowId: instance?.id });
-                return c.json({
-                  success: true,
-                  workflowId: instance?.id ?? null,
-                  status: 'started',
-                  firstName,
-                  lastName,
-                  targetUserResourceId,
-                  targetGroupResourceId,
-                  assignmentType: isUserAssignment ? 'user' : 'group',
-                  actions
-                }, 202);
+                return c.json(
+                  {
+                    success: true,
+                    workflowId: instance?.id ?? null,
+                    status: 'started',
+                    firstName,
+                    lastName,
+                    targetUserResourceId,
+                    targetGroupResourceId,
+                    assignmentType: isUserAssignment ? 'user' : 'group',
+                    actions,
+                  },
+                  202
+                );
               }
               logger.warn('autonomous_workflow_binding_missing_falling_back');
             } catch (workflowError) {
               logger.warn('autonomous_workflow_start_failed_falling_back', {
-                error: workflowError instanceof Error ? workflowError.message : String(workflowError)
+                error: workflowError instanceof Error ? workflowError.message : String(workflowError),
               });
             }
 
@@ -705,7 +738,7 @@ export const mastra = new Mastra({
               actions: actions as ('training' | 'phishing' | 'smishing')[],
               sendAfterPhishingSimulation,
               preferredLanguage,
-              baseApiUrl
+              baseApiUrl,
             };
 
             // Fallback 1: run in background via waitUntil if available (preferred in Workers)
@@ -714,24 +747,27 @@ export const mastra = new Mastra({
               if (c.executionCtx && typeof c.executionCtx.waitUntil === 'function') {
                 const executionPromise = executeAutonomousGeneration(requestPayload).catch(err => {
                   logger.error('autonomous_background_execution_failed', {
-                    error: err instanceof Error ? err.message : String(err)
+                    error: err instanceof Error ? err.message : String(err),
                   });
                 });
                 // @ts-ignore
                 c.executionCtx.waitUntil(executionPromise);
                 logger.debug('background_task_registered_with_waituntil');
 
-                return c.json({
-                  success: true,
-                  message: 'Autonomous generation started in background. This process may take 5-10 minutes.',
-                  status: 'processing',
-                  firstName,
-                  lastName,
-                  targetUserResourceId,
-                  targetGroupResourceId,
-                  assignmentType: isUserAssignment ? 'user' : 'group',
-                  actions
-                }, 200);
+                return c.json(
+                  {
+                    success: true,
+                    message: 'Autonomous generation started in background. This process may take 5-10 minutes.',
+                    status: 'processing',
+                    firstName,
+                    lastName,
+                    targetUserResourceId,
+                    targetGroupResourceId,
+                    assignmentType: isUserAssignment ? 'user' : 'group',
+                    actions,
+                  },
+                  200
+                );
               }
             } catch (waitUntilError) {
               logger.warn('waituntil_not_available_using_floating_promise', {
@@ -744,19 +780,24 @@ export const mastra = new Mastra({
             logger.warn('autonomous_no_workflow_no_waituntil_running_inline');
             const result = await executeAutonomousGeneration(requestPayload);
 
-            return c.json({
-              ...result,
-              status: result.success ? 'completed' : 'failed',
-            }, 200);
-
+            return c.json(
+              {
+                ...result,
+                status: result.success ? 'completed' : 'failed',
+              },
+              200
+            );
           } catch (error) {
             logger.error('autonomous_endpoint_error', {
               error: error instanceof Error ? error.message : String(error),
             });
-            return c.json({
-              success: false,
-              error: error instanceof Error ? error.message : 'Unknown error',
-            }, 500);
+            return c.json(
+              {
+                success: false,
+                error: error instanceof Error ? error.message : 'Unknown error',
+              },
+              500
+            );
           }
         },
       }),

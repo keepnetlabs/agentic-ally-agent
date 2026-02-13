@@ -120,7 +120,7 @@ describe('shared-email-rules', () => {
   describe('getMergeTagsRules Function', () => {
     it('should return merge tag rules without QR code by default', () => {
       const rules = getMergeTagsRules();
-      const requiredLine = rules.split('\n').find((l) => l.includes('**Required:**')) || '';
+      const requiredLine = rules.split('\n').find(l => l.includes('**Required:**')) || '';
 
       expect(rules).toBeDefined();
       expect(rules).toContain('Merge Tags');
@@ -131,14 +131,14 @@ describe('shared-email-rules', () => {
 
     it('should include QR code tag when includeQRCode is true', () => {
       const rules = getMergeTagsRules(true);
-      const requiredLine = rules.split('\n').find((l) => l.includes('**Required:**')) || '';
+      const requiredLine = rules.split('\n').find(l => l.includes('**Required:**')) || '';
 
       expect(requiredLine).toContain('{QRCODEURLIMAGE}');
     });
 
     it('should not include QR code tag when includeQRCode is false', () => {
       const rules = getMergeTagsRules(false);
-      const requiredLine = rules.split('\n').find((l) => l.includes('**Required:**')) || '';
+      const requiredLine = rules.split('\n').find(l => l.includes('**Required:**')) || '';
 
       expect(requiredLine).not.toContain('{QRCODEURLIMAGE}');
     });
@@ -350,31 +350,23 @@ describe('shared-email-rules', () => {
         FOOTER_RULES,
       ];
 
-      allRules.forEach((rule) => {
+      allRules.forEach(rule => {
         expect(rule).toMatch(/\*\*|^-|^`/m);
       });
     });
 
     it('rules should use consistent bullet point format', () => {
-      const rulesWithBullets = [
-        EMAIL_SIGNATURE_RULES,
-        TABLE_LAYOUT_RULES,
-        GREETING_RULES,
-      ];
+      const rulesWithBullets = [EMAIL_SIGNATURE_RULES, TABLE_LAYOUT_RULES, GREETING_RULES];
 
-      rulesWithBullets.forEach((rule) => {
+      rulesWithBullets.forEach(rule => {
         expect(rule).toContain('- ');
       });
     });
 
     it('rules should use emphasis (bold) for critical points', () => {
-      const rulesWithEmphasis = [
-        EMAIL_SIGNATURE_RULES,
-        TABLE_LAYOUT_RULES,
-        GREETING_RULES,
-      ];
+      const rulesWithEmphasis = [EMAIL_SIGNATURE_RULES, TABLE_LAYOUT_RULES, GREETING_RULES];
 
-      rulesWithEmphasis.forEach((rule) => {
+      rulesWithEmphasis.forEach(rule => {
         expect(rule).toContain('**');
       });
     });
@@ -467,7 +459,7 @@ describe('shared-email-rules', () => {
         FOOTER_RULES,
       ];
 
-      allConstants.forEach((constant) => {
+      allConstants.forEach(constant => {
         expect(constant).toBeTruthy();
         expect(typeof constant).toBe('string');
         expect(constant.length).toBeGreaterThan(0);
@@ -485,7 +477,7 @@ describe('shared-email-rules', () => {
     it('constants should handle markdown rendering', () => {
       const allConstants = [AUTH_CONTEXT, EMAIL_SIGNATURE_RULES];
 
-      allConstants.forEach((constant) => {
+      allConstants.forEach(constant => {
         // Should not have unmatched markdown
         const boldCount = (constant.match(/\*\*/g) || []).length;
         expect(boldCount % 2).toBe(0); // Pairs of **
@@ -519,7 +511,7 @@ describe('shared-email-rules', () => {
     it('EMAIL_SIGNATURE_RULES should forbid real employee names', () => {
       const wrongExamples = ['Emily Clarke', 'John from IT', 'Sarah Johnson'];
 
-      wrongExamples.forEach((example) => {
+      wrongExamples.forEach(example => {
         expect(EMAIL_SIGNATURE_RULES).toContain(example);
       });
     });

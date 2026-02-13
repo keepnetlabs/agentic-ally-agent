@@ -1,9 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  SceneMetadataSchema,
-  MicrolearningMetadataSchema,
-  MicrolearningContentSchema,
-} from './microlearning-schema';
+import { SceneMetadataSchema, MicrolearningMetadataSchema, MicrolearningContentSchema } from './microlearning-schema';
 
 describe('Microlearning Schema Validation', () => {
   describe('SceneMetadataSchema', () => {
@@ -39,7 +35,7 @@ describe('Microlearning Schema Validation', () => {
         'summary',
       ];
 
-      types.forEach((type) => {
+      types.forEach(type => {
         const result = SceneMetadataSchema.safeParse({
           ...validMetadata,
           scene_type: type as any,
@@ -124,7 +120,7 @@ describe('Microlearning Schema Validation', () => {
 
     it('should accept all training levels', () => {
       const levels = ['Beginner', 'Intermediate', 'Advanced'];
-      levels.forEach((level) => {
+      levels.forEach(level => {
         const result = MicrolearningMetadataSchema.safeParse({
           ...validMetadata,
           level: level as any,

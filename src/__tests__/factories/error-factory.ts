@@ -15,12 +15,12 @@ export function createErrorInfo(overrides?: Partial<ErrorInfo>): ErrorInfo {
     category: ErrorCategory.INTERNAL,
     retryable: false,
     suggestion: 'Test suggestion',
-    timestamp: Date.now()
+    timestamp: Date.now(),
   };
 
   return {
     ...defaultError,
-    ...overrides
+    ...overrides,
   };
 }
 
@@ -31,6 +31,6 @@ export function createErrorResponse(errorInfo?: Partial<ErrorInfo>) {
   const error = createErrorInfo(errorInfo);
   return {
     success: false,
-    error: JSON.stringify(error)
+    error: JSON.stringify(error),
   };
 }

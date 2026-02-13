@@ -32,4 +32,3 @@ export * from './user-management';
 
 // Vishing call tools (ElevenLabs outbound calls)
 export * from './vishing-call';
-

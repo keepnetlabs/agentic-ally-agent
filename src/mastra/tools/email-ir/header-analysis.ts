@@ -2,117 +2,142 @@ import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { emailIRAnalyst } from '../../agents/email-ir-analyst';
 import { EmailIREmailDataSchema } from '../../types/email-ir';
-import { TimingTracker, createLogContext, loggerHeader, logPerformance, logStepComplete, logStepStart, logStepError, logSignalDetected, logAuthResults } from './logger-setup';
+import {
+  TimingTracker,
+  createLogContext,
+  loggerHeader,
+  logPerformance,
+  logStepComplete,
+  logStepStart,
+  logStepError,
+  logSignalDetected,
+  logAuthResults,
+} from './logger-setup';
 import { withRetry } from '../../utils/core/resilience-utils';
 import { normalizeError, logErrorInfo } from '../../utils/core/error-utils';
 import { errorService } from '../../services/error-service';
 
 export const headerAnalysisOutputSchema = z.object({
-    spf_pass: z.boolean().describe('True if SPF authentication passed'),
-    dkim_pass: z.boolean().describe('True if DKIM signature verified'),
-    dmarc_pass: z.boolean().describe('True if DMARC alignment verified'),
-    domain_similarity: z.string().describe('Detected domain spoofing or similarity (e.g., "keepnetlabs.co vs keepnetlabs.com" or "insufficient_data"'),
-    sender_ip_reputation: z.string().describe('Sender IP reputation status (clean/suspicious/blocklisted)'),
-    geolocation_anomaly: z.string().describe('Geographic anomaly if detected (e.g., "Sender IP from China but email claims to be from USA" or "insufficient_data")'),
-    routing_anomaly: z.string().describe('Suspicious routing or relay patterns detected (e.g., "unusual hop count" or "insufficient_data")'),
-    threat_intel_findings: z.string().describe('Summary of external threat intelligence findings (VirusTotal, etc.) from input data'),
-    header_summary: z.string().describe('1-2 sentence summary of authentication and routing assessment'),
-    security_awareness_detected: z.boolean().describe('True if headers indicate a phishing simulation/training email'),
-    list_unsubscribe_present: z.boolean().describe('True if List-Unsubscribe header exists (RFC 2369) - indicates legitimate marketing email'),
+  spf_pass: z.boolean().describe('True if SPF authentication passed'),
+  dkim_pass: z.boolean().describe('True if DKIM signature verified'),
+  dmarc_pass: z.boolean().describe('True if DMARC alignment verified'),
+  domain_similarity: z
+    .string()
+    .describe(
+      'Detected domain spoofing or similarity (e.g., "keepnetlabs.co vs keepnetlabs.com" or "insufficient_data"'
+    ),
+  sender_ip_reputation: z.string().describe('Sender IP reputation status (clean/suspicious/blocklisted)'),
+  geolocation_anomaly: z
+    .string()
+    .describe(
+      'Geographic anomaly if detected (e.g., "Sender IP from China but email claims to be from USA" or "insufficient_data")'
+    ),
+  routing_anomaly: z
+    .string()
+    .describe('Suspicious routing or relay patterns detected (e.g., "unusual hop count" or "insufficient_data")'),
+  threat_intel_findings: z
+    .string()
+    .describe('Summary of external threat intelligence findings (VirusTotal, etc.) from input data'),
+  header_summary: z.string().describe('1-2 sentence summary of authentication and routing assessment'),
+  security_awareness_detected: z.boolean().describe('True if headers indicate a phishing simulation/training email'),
+  list_unsubscribe_present: z
+    .boolean()
+    .describe('True if List-Unsubscribe header exists (RFC 2369) - indicates legitimate marketing email'),
 
-    // Pass-through context
-    original_email: EmailIREmailDataSchema,
+  // Pass-through context
+  original_email: EmailIREmailDataSchema,
 });
 
 export const headerAnalysisTool = createTool({
-    id: 'email-ir-header-analysis-tool',
-    description: 'Analyzes email headers for authentication and routing signals',
-    inputSchema: EmailIREmailDataSchema,
-    outputSchema: headerAnalysisOutputSchema,
-    execute: async ({ context }) => {
-        const email = context;
-        const emailId = email.from?.split('@')[0] || 'unknown-sender';
+  id: 'email-ir-header-analysis-tool',
+  description: 'Analyzes email headers for authentication and routing signals',
+  inputSchema: EmailIREmailDataSchema,
+  outputSchema: headerAnalysisOutputSchema,
+  execute: async ({ context }) => {
+    const email = context;
+    const emailId = email.from?.split('@')[0] || 'unknown-sender';
 
-        const ctx = createLogContext(emailId, 'header-analysis');
-        const timing = new TimingTracker(emailId);
+    const ctx = createLogContext(emailId, 'header-analysis');
+    const timing = new TimingTracker(emailId);
 
-        try {
-            logStepStart(loggerHeader, ctx, {
-                sender: email.from,
-                domain: email.from?.split('@')[1],
-                sender_ip: email.senderIp
-            });
+    try {
+      logStepStart(loggerHeader, ctx, {
+        sender: email.from,
+        domain: email.from?.split('@')[1],
+        sender_ip: email.senderIp,
+      });
 
-            // Parse headers into key-value map for easier access
-            const headerMap = new Map<string, string>();
-            if (email.headers) {
-                email.headers.forEach(h => {
-                    headerMap.set(h.key.toLowerCase(), h.value);
-                });
+      // Parse headers into key-value map for easier access
+      const headerMap = new Map<string, string>();
+      if (email.headers) {
+        email.headers.forEach(h => {
+          headerMap.set(h.key.toLowerCase(), h.value);
+        });
+      }
+
+      // Extract relevant header values
+      const authResults = headerMap.get('authentication-results') || 'Not provided';
+      const senderIP = email.senderIp || 'Unknown';
+      const geoLocation = email.geoLocation || 'Unknown';
+      const headerList = email.headers
+        ? email.headers.map(h => `${h.key}: ${h.value}`).join('\n')
+        : 'No headers available';
+
+      const hasSecurityAwarenessHeader = Array.from(headerMap.entries()).some(([key, value]) => {
+        if (!key) return false;
+        const k = key.toLowerCase();
+        const v = (value || '').toLowerCase();
+        return (
+          k.includes('x-phish-test') ||
+          k.includes('x-phishing-test') ||
+          k.includes('x-security-awareness') ||
+          k.includes('x-simulated-phish') ||
+          k.includes('x-simulation') ||
+          v.includes('phish-test') ||
+          v.includes('phishing-test') ||
+          v.includes('security awareness') ||
+          v.includes('simulated phish') ||
+          v.includes('simulation')
+        );
+      });
+
+      // RFC 2369: List-Unsubscribe header indicates legitimate mailing list/marketing email
+      const hasListUnsubscribe = headerMap.has('list-unsubscribe') || headerMap.has('list-unsubscribe-post');
+
+      // Check if top-level result from API indicates "Simulation" (phishing training)
+      const hasSimulationResult = email.result?.toLowerCase() === 'simulation';
+
+      // Helper to summarize scans and reduce token count
+      const summarizeScans = (items: any[], type: 'url' | 'ip' | 'name') => {
+        return items
+          .slice(0, 10) // Limit to top 10 items to prevent context overflow
+          .map(item => {
+            const val = item[type];
+            const cleanScans = (item.analysisList || []).filter((s: any) => s.result !== 'Error');
+
+            if (cleanScans.length === 0) return null;
+
+            const malicious = cleanScans.filter((s: any) => s.result === 'Malicious' || s.result === 'Phishing');
+
+            // We only care about Malicious or clean. Suspicious is not a valid verdict in our intake.
+            if (malicious.length > 0) {
+              return { value: val, status: 'MALICIOUS', engines: malicious.map((m: any) => m.analysisEngineType) };
             }
 
-            // Extract relevant header values
-            const authResults = headerMap.get('authentication-results') || 'Not provided';
-            const senderIP = email.senderIp || 'Unknown';
-            const geoLocation = email.geoLocation || 'Unknown';
-            const headerList = email.headers ? email.headers.map(h => `${h.key}: ${h.value}`).join('\n') : 'No headers available';
+            return { value: val, status: 'CLEAN', scanned_by: cleanScans.length };
+          })
+          .filter(Boolean); // Remove nulls
+      };
 
-            const hasSecurityAwarenessHeader = Array.from(headerMap.entries()).some(([key, value]) => {
-                if (!key) return false;
-                const k = key.toLowerCase();
-                const v = (value || '').toLowerCase();
-                return (
-                    k.includes('x-phish-test') ||
-                    k.includes('x-phishing-test') ||
-                    k.includes('x-security-awareness') ||
-                    k.includes('x-simulated-phish') ||
-                    k.includes('x-simulation') ||
-                    v.includes('phish-test') ||
-                    v.includes('phishing-test') ||
-                    v.includes('security awareness') ||
-                    v.includes('simulated phish') ||
-                    v.includes('simulation')
-                );
-            });
+      const cleanThreatIntel = summarizeScans(email.urls || [], 'url');
+      const cleanIpIntel = summarizeScans(email.ips || [], 'ip');
+      const cleanAttachmentIntel = summarizeScans(email.attachments || [], 'name');
 
-            // RFC 2369: List-Unsubscribe header indicates legitimate mailing list/marketing email
-            const hasListUnsubscribe = headerMap.has('list-unsubscribe') || headerMap.has('list-unsubscribe-post');
+      // Conditional Attachment Section
+      const attachmentSection =
+        cleanAttachmentIntel.length > 0 ? `**Attachments**:\n${JSON.stringify(cleanAttachmentIntel, null, 2)}` : '';
 
-            // Check if top-level result from API indicates "Simulation" (phishing training)
-            const hasSimulationResult = email.result?.toLowerCase() === 'simulation';
-
-            // Helper to summarize scans and reduce token count
-            const summarizeScans = (items: any[], type: 'url' | 'ip' | 'name') => {
-                return items
-                    .slice(0, 10) // Limit to top 10 items to prevent context overflow
-                    .map(item => {
-                        const val = item[type];
-                        const cleanScans = (item.analysisList || []).filter((s: any) => s.result !== 'Error');
-
-                        if (cleanScans.length === 0) return null;
-
-                        const malicious = cleanScans.filter((s: any) => s.result === 'Malicious' || s.result === 'Phishing');
-
-                        // We only care about Malicious or clean. Suspicious is not a valid verdict in our intake.
-                        if (malicious.length > 0) {
-                            return { value: val, status: 'MALICIOUS', engines: malicious.map((m: any) => m.analysisEngineType) };
-                        }
-
-                        return { value: val, status: 'CLEAN', scanned_by: cleanScans.length };
-                    })
-                    .filter(Boolean); // Remove nulls
-            };
-
-            const cleanThreatIntel = summarizeScans(email.urls || [], 'url');
-            const cleanIpIntel = summarizeScans(email.ips || [], 'ip');
-            const cleanAttachmentIntel = summarizeScans(email.attachments || [], 'name');
-
-            // Conditional Attachment Section
-            const attachmentSection = cleanAttachmentIntel.length > 0
-                ? `**Attachments**:\n${JSON.stringify(cleanAttachmentIntel, null, 2)}`
-                : '';
-
-            const prompt = `
+      const prompt = `
 # Task: Header & Threat Intel Analysis
 Analyze the provided email headers and threat intelligence data.
 Your goal is to validate authentication (SPF/DKIM/DMARC), check for routing anomalies, and synthesize external threat scan results.
@@ -213,72 +238,74 @@ Based on headers provided:
 Note: If header data is incomplete or missing, use the exact string "insufficient_data" for fields you cannot assess.
 `;
 
-            const result = await withRetry(
-                () => emailIRAnalyst.generate(prompt, {
-                    output: headerAnalysisOutputSchema.omit({ original_email: true }),
-                }),
-                'header-analysis-llm'
-            );
+      const result = await withRetry(
+        () =>
+          emailIRAnalyst.generate(prompt, {
+            output: headerAnalysisOutputSchema.omit({ original_email: true }),
+          }),
+        'header-analysis-llm'
+      );
 
-            timing.mark('llm-analysis-complete');
+      timing.mark('llm-analysis-complete');
 
-            // Log authentication results
-            logAuthResults(
-                loggerHeader,
-                emailId,
-                result.object.spf_pass,
-                result.object.dkim_pass,
-                result.object.dmarc_pass,
-                result.object.domain_similarity
-            );
+      // Log authentication results
+      logAuthResults(
+        loggerHeader,
+        emailId,
+        result.object.spf_pass,
+        result.object.dkim_pass,
+        result.object.dmarc_pass,
+        result.object.domain_similarity
+      );
 
-            // Log detected signals
-            if (!result.object.spf_pass) {
-                logSignalDetected(loggerHeader, emailId, 'authentication', 'SPF_FAILED', 'high');
-            }
-            if (!result.object.dkim_pass) {
-                logSignalDetected(loggerHeader, emailId, 'authentication', 'DKIM_FAILED', 'high');
-            }
-            if (!result.object.dmarc_pass) {
-                logSignalDetected(loggerHeader, emailId, 'authentication', 'DMARC_FAILED', 'high');
-            }
-            if (result.object.domain_similarity !== 'insufficient_data') {
-                logSignalDetected(loggerHeader, emailId, 'domain', 'TYPOSQUATTING_DETECTED', 'high');
-            }
-            if (result.object.geolocation_anomaly !== 'insufficient_data') {
-                logSignalDetected(loggerHeader, emailId, 'geolocation', result.object.geolocation_anomaly, 'medium');
-            }
+      // Log detected signals
+      if (!result.object.spf_pass) {
+        logSignalDetected(loggerHeader, emailId, 'authentication', 'SPF_FAILED', 'high');
+      }
+      if (!result.object.dkim_pass) {
+        logSignalDetected(loggerHeader, emailId, 'authentication', 'DKIM_FAILED', 'high');
+      }
+      if (!result.object.dmarc_pass) {
+        logSignalDetected(loggerHeader, emailId, 'authentication', 'DMARC_FAILED', 'high');
+      }
+      if (result.object.domain_similarity !== 'insufficient_data') {
+        logSignalDetected(loggerHeader, emailId, 'domain', 'TYPOSQUATTING_DETECTED', 'high');
+      }
+      if (result.object.geolocation_anomaly !== 'insufficient_data') {
+        logSignalDetected(loggerHeader, emailId, 'geolocation', result.object.geolocation_anomaly, 'medium');
+      }
 
-            // Log performance
-            logPerformance(loggerHeader, emailId, 'header-analysis', timing.getTotal());
+      // Log performance
+      logPerformance(loggerHeader, emailId, 'header-analysis', timing.getTotal());
 
-            // Log completion
-            logStepComplete(loggerHeader, ctx, {
-                spf_pass: result.object.spf_pass,
-                dkim_pass: result.object.dkim_pass,
-                dmarc_pass: result.object.dmarc_pass
-            });
+      // Log completion
+      logStepComplete(loggerHeader, ctx, {
+        spf_pass: result.object.spf_pass,
+        dkim_pass: result.object.dkim_pass,
+        dmarc_pass: result.object.dmarc_pass,
+      });
 
-            return {
-                ...result.object,
-                original_email: email,
-                security_awareness_detected: result.object.security_awareness_detected || hasSecurityAwarenessHeader || hasSimulationResult,
-                list_unsubscribe_present: result.object.list_unsubscribe_present || hasListUnsubscribe,
-            };
-        } catch (error) {
-            const err = normalizeError(error);
-            logStepError(loggerHeader, ctx, err, {
-                sender: email.from,
-                duration_ms: timing.getTotal()
-            });
-            const errorInfo = errorService.aiModel(err.message, {
-                step: 'header-analysis',
-                stack: err.stack,
-            });
-            logErrorInfo(loggerHeader, 'error', 'Header analysis failed', errorInfo);
-            const e = new Error(err.message);
-            (e as Error & { code?: string }).code = errorInfo.code;
-            throw e;
-        }
-    },
+      return {
+        ...result.object,
+        original_email: email,
+        security_awareness_detected:
+          result.object.security_awareness_detected || hasSecurityAwarenessHeader || hasSimulationResult,
+        list_unsubscribe_present: result.object.list_unsubscribe_present || hasListUnsubscribe,
+      };
+    } catch (error) {
+      const err = normalizeError(error);
+      logStepError(loggerHeader, ctx, err, {
+        sender: email.from,
+        duration_ms: timing.getTotal(),
+      });
+      const errorInfo = errorService.aiModel(err.message, {
+        step: 'header-analysis',
+        stack: err.stack,
+      });
+      logErrorInfo(loggerHeader, 'error', 'Header analysis failed', errorInfo);
+      const e = new Error(err.message);
+      (e as Error & { code?: string }).code = errorInfo.code;
+      throw e;
+    }
+  },
 });

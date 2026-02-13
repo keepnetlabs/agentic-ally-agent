@@ -8,25 +8,43 @@ import { normalizeError, logErrorInfo } from '../../utils/core/error-utils';
 import { analyzeUserPromptWithAI, getFallbackAnalysis } from './utils/prompt-analyzer';
 
 const AnalyzeUserPromptSchema = z.object({
-  userPrompt: z.string()
+  userPrompt: z
+    .string()
     .min(PROMPT_ANALYSIS.MIN_PROMPT_LENGTH, `Prompt must be at least ${PROMPT_ANALYSIS.MIN_PROMPT_LENGTH} characters`)
     .max(PROMPT_ANALYSIS.MAX_PROMPT_LENGTH, `Prompt must not exceed ${PROMPT_ANALYSIS.MAX_PROMPT_LENGTH} characters`),
-  additionalContext: z.string()
-    .max(PROMPT_ANALYSIS.MAX_ADDITIONAL_CONTEXT_LENGTH, `Additional context must not exceed ${PROMPT_ANALYSIS.MAX_ADDITIONAL_CONTEXT_LENGTH} characters`)
+  additionalContext: z
+    .string()
+    .max(
+      PROMPT_ANALYSIS.MAX_ADDITIONAL_CONTEXT_LENGTH,
+      `Additional context must not exceed ${PROMPT_ANALYSIS.MAX_ADDITIONAL_CONTEXT_LENGTH} characters`
+    )
     .optional(),
-  suggestedDepartment: z.string()
-    .max(PROMPT_ANALYSIS.MAX_DEPARTMENT_NAME_LENGTH, `Department name must not exceed ${PROMPT_ANALYSIS.MAX_DEPARTMENT_NAME_LENGTH} characters`)
+  suggestedDepartment: z
+    .string()
+    .max(
+      PROMPT_ANALYSIS.MAX_DEPARTMENT_NAME_LENGTH,
+      `Department name must not exceed ${PROMPT_ANALYSIS.MAX_DEPARTMENT_NAME_LENGTH} characters`
+    )
     .optional(),
   suggestedLevel: z.enum(TRAINING_LEVELS).optional().default(DEFAULT_TRAINING_LEVEL),
-  customRequirements: z.string()
-    .max(PROMPT_ANALYSIS.MAX_CUSTOM_REQUIREMENTS_LENGTH, `Custom requirements must not exceed ${PROMPT_ANALYSIS.MAX_CUSTOM_REQUIREMENTS_LENGTH} characters`)
+  customRequirements: z
+    .string()
+    .max(
+      PROMPT_ANALYSIS.MAX_CUSTOM_REQUIREMENTS_LENGTH,
+      `Custom requirements must not exceed ${PROMPT_ANALYSIS.MAX_CUSTOM_REQUIREMENTS_LENGTH} characters`
+    )
     .optional(),
   suggestedLanguage: z.string().optional().describe('Suggested target language (BCP-47)'),
   modelProvider: z.enum(MODEL_PROVIDERS.NAMES).optional().describe('Model provider'),
   model: z.string().optional().describe('Model name (e.g., OPENAI_GPT_4O_MINI, WORKERS_AI_GPT_OSS_120B)'),
-  policyContext: z.string()
-    .max(PROMPT_ANALYSIS.MAX_ADDITIONAL_CONTEXT_LENGTH, `Policy context must not exceed ${PROMPT_ANALYSIS.MAX_ADDITIONAL_CONTEXT_LENGTH} characters`)
-    .optional().describe('Company policy context'),
+  policyContext: z
+    .string()
+    .max(
+      PROMPT_ANALYSIS.MAX_ADDITIONAL_CONTEXT_LENGTH,
+      `Policy context must not exceed ${PROMPT_ANALYSIS.MAX_ADDITIONAL_CONTEXT_LENGTH} characters`
+    )
+    .optional()
+    .describe('Company policy context'),
 });
 
 const AnalyzeUserPromptOutputSchema = z.object({
@@ -68,7 +86,17 @@ export const analyzeUserPromptTool = new Tool({
   execute: async (context: any) => {
     const logger = getLogger('AnalyzeUserPromptTool');
     const input = context?.inputData || context?.input || context;
-    const { userPrompt, additionalContext, suggestedDepartment, customRequirements, modelProvider, model: modelOverride, policyContext, suggestedLevel, suggestedLanguage } = input;
+    const {
+      userPrompt,
+      additionalContext,
+      suggestedDepartment,
+      customRequirements,
+      modelProvider,
+      model: modelOverride,
+      policyContext,
+      suggestedLevel,
+      suggestedLanguage,
+    } = input;
     const writer = input?.writer; // Get writer for streaming
 
     const model = getModelWithOverride(modelProvider, modelOverride);
@@ -85,14 +113,14 @@ export const analyzeUserPromptTool = new Tool({
         suggestedLanguage,
         policyContext,
         model,
-        writer
+        writer,
       });
     } catch (error) {
       const err = normalizeError(error);
       const errorInfo = errorService.aiModel(err.message, {
         userPrompt: userPrompt?.substring(0, 100),
         step: 'prompt-analysis',
-        stack: err.stack
+        stack: err.stack,
       });
       logErrorInfo(logger, 'error', 'Prompt analysis failed, using fallback', errorInfo);
 
@@ -101,19 +129,18 @@ export const analyzeUserPromptTool = new Tool({
         suggestedDepartment,
         additionalContext,
         customRequirements,
-        model
+        model,
       });
 
       return {
         success: true,
         data: fallbackData,
         policyContext,
-        error: JSON.stringify(errorInfo)
+        error: JSON.stringify(errorInfo),
       };
     }
   },
 });
-
 
 export type AnalyzeUserPromptInput = z.infer<typeof AnalyzeUserPromptSchema>;
 export type AnalyzeUserPromptOutput = z.infer<typeof AnalyzeUserPromptOutputSchema>;

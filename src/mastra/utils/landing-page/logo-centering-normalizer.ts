@@ -24,12 +24,12 @@ const logger = getLogger('LogoCenteringNormalizer');
  * - display: flex (self-centering)
  */
 function isIconLikeStyle(style: string): boolean {
-    const lower = style.toLowerCase();
-    const hasBorderRadius = /border-radius\s*:\s*\d+(?:px|%)?/.test(lower);
-    const hasFixedWidth = /\bwidth\s*:\s*\d+px/.test(lower);
-    const hasFlex = /display\s*:\s*flex/.test(lower);
+  const lower = style.toLowerCase();
+  const hasBorderRadius = /border-radius\s*:\s*\d+(?:px|%)?/.test(lower);
+  const hasFixedWidth = /\bwidth\s*:\s*\d+px/.test(lower);
+  const hasFlex = /display\s*:\s*flex/.test(lower);
 
-    return hasBorderRadius && hasFixedWidth && hasFlex;
+  return hasBorderRadius && hasFixedWidth && hasFlex;
 }
 
 /**
@@ -37,55 +37,54 @@ function isIconLikeStyle(style: string): boolean {
  * This handles the case where LLM generates circular icons/logos without parent centering.
  */
 export function normalizeLandingLogoCentering(html: string): string {
-    if (!html || typeof html !== 'string') return html;
+  if (!html || typeof html !== 'string') return html;
 
-    try {
-        let changed = false;
+  try {
+    let changed = false;
 
-        // Find all divs with icon-like styles
-        const iconDivPattern = /<div\b([^>]*style=['"])([^'"]*border-radius[^'"]*display:\s*flex[^'"]*['"])([^>]*)>/gi;
-        let match;
-        const matches: Array<{ full: string; attrs: string; style: string; index: number }> = [];
+    // Find all divs with icon-like styles
+    const iconDivPattern = /<div\b([^>]*style=['"])([^'"]*border-radius[^'"]*display:\s*flex[^'"]*['"])([^>]*)>/gi;
+    let match;
+    const matches: Array<{ full: string; attrs: string; style: string; index: number }> = [];
 
-        // Collect all matches first (to avoid replacement index shifting)
-        while ((match = iconDivPattern.exec(html)) !== null) {
-            const fullMatch = match[0];
-            const style = match[2];
+    // Collect all matches first (to avoid replacement index shifting)
+    while ((match = iconDivPattern.exec(html)) !== null) {
+      const fullMatch = match[0];
+      const style = match[2];
 
-            // Only target icon-like elements
-            if (isIconLikeStyle(style)) {
-                matches.push({
-                    full: fullMatch,
-                    attrs: match[1],
-                    style: style,
-                    index: match.index
-                });
-            }
-        }
-
-        if (matches.length === 0) return html;
-
-        // Process matches in reverse order to maintain indices
-        let result = html;
-        for (let i = matches.length - 1; i >= 0; i--) {
-            const m = matches[i];
-            const before = result.substring(0, m.index);
-            const after = result.substring(m.index + m.full.length);
-
-            // Wrap the icon div with a centered container
-            const wrappedDiv = `<div style='display: flex; justify-content: center; margin-bottom: 24px;'>${m.full}</div>`;
-            result = before + wrappedDiv + after;
-            changed = true;
-        }
-
-        if (changed) {
-            logger.info('✅ Normalized landing logo centering (wrapped icon divs with centered container)');
-        }
-        return result;
-    } catch (error) {
-        const err = normalizeError(error);
-        logger.warn('⚠️ Logo centering normalization failed, continuing', { error: err.message });
-        return html;
+      // Only target icon-like elements
+      if (isIconLikeStyle(style)) {
+        matches.push({
+          full: fullMatch,
+          attrs: match[1],
+          style: style,
+          index: match.index,
+        });
+      }
     }
-}
 
+    if (matches.length === 0) return html;
+
+    // Process matches in reverse order to maintain indices
+    let result = html;
+    for (let i = matches.length - 1; i >= 0; i--) {
+      const m = matches[i];
+      const before = result.substring(0, m.index);
+      const after = result.substring(m.index + m.full.length);
+
+      // Wrap the icon div with a centered container
+      const wrappedDiv = `<div style='display: flex; justify-content: center; margin-bottom: 24px;'>${m.full}</div>`;
+      result = before + wrappedDiv + after;
+      changed = true;
+    }
+
+    if (changed) {
+      logger.info('✅ Normalized landing logo centering (wrapped icon divs with centered container)');
+    }
+    return result;
+  } catch (error) {
+    const err = normalizeError(error);
+    logger.warn('⚠️ Logo centering normalization failed, continuing', { error: err.message });
+    return html;
+  }
+}

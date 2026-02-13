@@ -30,16 +30,20 @@ const logger = getLogger('InitiateVishingCallTool');
 const initiateVishingCallInputSchema = z.object({
   agentPhoneNumberId: z
     .string()
-    .describe('The phone_number_id of the caller (from listPhoneNumbers). This is the number the call will appear to come from.'),
-  toNumber: z
-    .string()
-    .describe('The recipient phone number in E.164 format (e.g., +905551234567)'),
+    .describe(
+      'The phone_number_id of the caller (from listPhoneNumbers). This is the number the call will appear to come from.'
+    ),
+  toNumber: z.string().describe('The recipient phone number in E.164 format (e.g., +905551234567)'),
   prompt: z
     .string()
-    .describe('Dynamic system prompt for the AI voice agent during the call. Describes persona, scenario, and behavioral rules.'),
+    .describe(
+      'Dynamic system prompt for the AI voice agent during the call. Describes persona, scenario, and behavioral rules.'
+    ),
   firstMessage: z
     .string()
-    .describe('The opening line the AI agent speaks when the call connects. Should introduce the persona and reason for calling.'),
+    .describe(
+      'The opening line the AI agent speaks when the call connects. Should introduce the persona and reason for calling.'
+    ),
   agentId: z
     .string()
     .optional()
@@ -131,13 +135,7 @@ export const initiateVishingCallTool = createTool({
         };
       }
 
-      const {
-        agentPhoneNumberId,
-        toNumber,
-        prompt,
-        firstMessage,
-        agentId,
-      } = context;
+      const { agentPhoneNumberId, toNumber, prompt, firstMessage, agentId } = context;
 
       // Use provided agent ID or fall back to environment/default
       const effectiveAgentId = agentId || ELEVENLABS.DEFAULT_AGENT_ID;

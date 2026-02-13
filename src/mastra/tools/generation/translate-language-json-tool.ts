@@ -26,191 +26,193 @@ type RewriterFunction = (scene: any, context: RewriteContext) => Promise<any>;
 /* =========================================================
  * Schemas
  * =======================================================*/
-const TranslateJsonInputSchema = z.object({
+const TranslateJsonInputSchema = z
+  .object({
     json: z.any(),
     microlearningStructure: z.any().describe('Base microlearning structure with scenes metadata'),
     sourceLanguage: LanguageCodeSchema.optional().default('en-gb'),
     targetLanguage: LanguageCodeSchema,
-    topic: z.string()
-        .max(500, 'Topic must not exceed 500 characters')
-        .optional(),
+    topic: z.string().max(500, 'Topic must not exceed 500 characters').optional(),
     doNotTranslateKeys: z.array(z.string()).optional(),
     modelProvider: z.enum(MODEL_PROVIDERS.NAMES).optional().describe('Model provider'),
-    model: z.string()
-        .max(100, 'Model name must not exceed 100 characters')
-        .optional().describe('Model name (e.g., OPENAI_GPT_4O_MINI, WORKERS_AI_GPT_OSS_120B)'),
-}).refine(
-    (data) => validateLanguagesDifferent(data.sourceLanguage, data.targetLanguage),
-    {
-        message: 'Source and target languages must be different',
-        path: ['targetLanguage']
-    }
-);
+    model: z
+      .string()
+      .max(100, 'Model name must not exceed 100 characters')
+      .optional()
+      .describe('Model name (e.g., OPENAI_GPT_4O_MINI, WORKERS_AI_GPT_OSS_120B)'),
+  })
+  .refine(data => validateLanguagesDifferent(data.sourceLanguage, data.targetLanguage), {
+    message: 'Source and target languages must be different',
+    path: ['targetLanguage'],
+  });
 
 const TranslateJsonOutputSchema = z.object({
-    success: z.boolean(),
-    data: z.any(),
-    error: z.string().optional()
+  success: z.boolean(),
+  data: z.any(),
+  error: z.string().optional(),
 });
 
 /* =========================================================
  * Scene Type Detection & Mapping
  * =======================================================*/
 function getSceneRewriter(sceneType: SceneType): RewriterFunction {
-    const rewriterMap: Record<SceneType, RewriterFunction> = {
-        [SceneType.INTRO]: rewriteScene1Intro,
-        [SceneType.GOAL]: rewriteScene2Goal,
-        [SceneType.SCENARIO]: rewriteScene3Video, // scenario is the video scene
-        [SceneType.ACTIONABLE_CONTENT]: rewriteScene4Actionable,
-        [SceneType.CODE_REVIEW]: rewriteScene4Actionable, // Use same rewriter as actionable
-        [SceneType.VISHING_SIMULATION]: rewriteScene4Vishing, // Use vishing-specific rewriter
-        [SceneType.SMISHING_SIMULATION]: rewriteScene4Smishing, // Use smishing-specific rewriter
-        [SceneType.QUIZ]: rewriteScene5Quiz,
-        [SceneType.SURVEY]: rewriteScene6Survey,
-        [SceneType.NUDGE]: rewriteScene7Nudge,
-        [SceneType.SUMMARY]: rewriteScene8Summary,
-    };
+  const rewriterMap: Record<SceneType, RewriterFunction> = {
+    [SceneType.INTRO]: rewriteScene1Intro,
+    [SceneType.GOAL]: rewriteScene2Goal,
+    [SceneType.SCENARIO]: rewriteScene3Video, // scenario is the video scene
+    [SceneType.ACTIONABLE_CONTENT]: rewriteScene4Actionable,
+    [SceneType.CODE_REVIEW]: rewriteScene4Actionable, // Use same rewriter as actionable
+    [SceneType.VISHING_SIMULATION]: rewriteScene4Vishing, // Use vishing-specific rewriter
+    [SceneType.SMISHING_SIMULATION]: rewriteScene4Smishing, // Use smishing-specific rewriter
+    [SceneType.QUIZ]: rewriteScene5Quiz,
+    [SceneType.SURVEY]: rewriteScene6Survey,
+    [SceneType.NUDGE]: rewriteScene7Nudge,
+    [SceneType.SUMMARY]: rewriteScene8Summary,
+  };
 
-    return rewriterMap[sceneType];
+  return rewriterMap[sceneType];
 }
 
 /* =========================================================
  * Scene-by-Scene Rewrite Tool
  * =======================================================*/
 export const translateLanguageJsonTool = new Tool({
-    id: 'translate_language_json',
-    description: 'Rewrite language content scene-by-scene using specialized rewriters for native quality. Each scene is rewritten by a domain-specific expert.',
-    inputSchema: TranslateJsonInputSchema,
-    outputSchema: TranslateJsonOutputSchema,
-    execute: async (context: any) => {
-        const logger = getLogger('TranslateLanguageJsonTool');
+  id: 'translate_language_json',
+  description:
+    'Rewrite language content scene-by-scene using specialized rewriters for native quality. Each scene is rewritten by a domain-specific expert.',
+  inputSchema: TranslateJsonInputSchema,
+  outputSchema: TranslateJsonOutputSchema,
+  execute: async (context: any) => {
+    const logger = getLogger('TranslateLanguageJsonTool');
+
+    try {
+      const {
+        json,
+        microlearningStructure,
+        sourceLanguage = 'en-gb',
+        targetLanguage,
+        topic,
+        modelProvider,
+        model: modelOverride,
+      } = context as z.infer<typeof TranslateJsonInputSchema>;
+
+      const model = getModelWithOverride(modelProvider, modelOverride);
+
+      logger.debug('Starting scene-by-scene rewrite', { sourceLanguage, targetLanguage, topic: topic || 'General' });
+
+      // Extract scenes metadata from microlearningStructure
+      const scenesMetadata = microlearningStructure?.scenes || [];
+      const appTexts = json.app_texts || {};
+
+      if (scenesMetadata.length === 0) {
+        logger.warn('No scenes metadata found, returning original', {});
+        return { success: true, data: json };
+      }
+
+      logger.debug('Scene rewrite parameters', { sceneCount: scenesMetadata.length });
+
+      // Build rewrite context
+      const rewriteContext = {
+        sourceLanguage,
+        targetLanguage,
+        topic: topic || 'Cybersecurity training',
+        model,
+      };
+
+      // Rewrite function for a single scene
+      async function rewriteScene(sceneMetadata: any, sceneIndex: number): Promise<{ sceneId: string; content: any }> {
+        const sceneNumber = sceneIndex + 1;
+        const sceneId = sceneMetadata.scene_id;
+        const sceneTypeRaw = sceneMetadata.metadata?.scene_type;
+        const sceneType = getSceneTypeOrDefault(sceneTypeRaw);
+        const sceneContent = json[sceneId];
+
+        if (!sceneContent) {
+          logger.warn('No content found for scene', { sceneNumber, sceneId });
+          return { sceneId, content: null };
+        }
+
+        const rewriter = getSceneRewriter(sceneType);
+        logger.debug('Rewriting scene', { sceneNumber, totalScenes: scenesMetadata.length, sceneType, sceneId });
 
         try {
-            const {
-                json,
-                microlearningStructure,
-                sourceLanguage = 'en-gb',
-                targetLanguage,
-                topic,
-                modelProvider,
-                model: modelOverride
-            } = context as z.infer<typeof TranslateJsonInputSchema>;
-
-            const model = getModelWithOverride(modelProvider, modelOverride);
-
-            logger.debug('Starting scene-by-scene rewrite', { sourceLanguage, targetLanguage, topic: topic || 'General' });
-
-            // Extract scenes metadata from microlearningStructure
-            const scenesMetadata = microlearningStructure?.scenes || [];
-            const appTexts = json.app_texts || {};
-
-            if (scenesMetadata.length === 0) {
-                logger.warn('No scenes metadata found, returning original', {});
-                return { success: true, data: json };
-            }
-
-            logger.debug('Scene rewrite parameters', { sceneCount: scenesMetadata.length });
-
-            // Build rewrite context
-            const rewriteContext = {
-                sourceLanguage,
-                targetLanguage,
-                topic: topic || 'Cybersecurity training',
-                model
-            };
-
-            // Rewrite function for a single scene
-            async function rewriteScene(sceneMetadata: any, sceneIndex: number): Promise<{ sceneId: string, content: any }> {
-                const sceneNumber = sceneIndex + 1;
-                const sceneId = sceneMetadata.scene_id;
-                const sceneTypeRaw = sceneMetadata.metadata?.scene_type;
-                const sceneType = getSceneTypeOrDefault(sceneTypeRaw);
-                const sceneContent = json[sceneId];
-
-                if (!sceneContent) {
-                    logger.warn('No content found for scene', { sceneNumber, sceneId });
-                    return { sceneId, content: null };
-                }
-
-                const rewriter = getSceneRewriter(sceneType);
-                logger.debug('Rewriting scene', { sceneNumber, totalScenes: scenesMetadata.length, sceneType, sceneId });
-
-                try {
-                    const rewrittenContent = await withRetry(
-                        () => rewriter(sceneContent, rewriteContext),
-                        `Scene ${sceneNumber} rewrite (${sceneType})`
-                    );
-                    logger.debug('Scene rewrite completed', { sceneNumber, totalScenes: scenesMetadata.length });
-                    return { sceneId, content: rewrittenContent };
-                } catch (error) {
-                    const err = normalizeError(error);
-                    const errorInfo = errorService.aiModel(err.message, { step: 'scene-rewrite', sceneNumber, sceneId, stack: err.stack });
-                    logErrorInfo(logger, 'error', 'Scene rewrite failed after retries', errorInfo);
-                    return { sceneId, content: sceneContent }; // Graceful fallback
-                }
-            }
-
-            // Process all scenes in parallel
-            logger.debug('Processing all scenes in parallel', { sceneCount: scenesMetadata.length });
-
-            const allResults = await Promise.allSettled(
-                scenesMetadata.map((sceneMetadata: any, idx: number) => rewriteScene(sceneMetadata, idx))
-            );
-
-            // Map results to scene IDs - handle both fulfilled and rejected promises
-            const rewrittenScenesMap: Record<string, any> = {};
-            allResults.forEach((result, idx) => {
-                if (result.status === 'fulfilled') {
-                    const { sceneId, content } = result.value;
-                    if (content) {
-                        rewrittenScenesMap[sceneId] = content;
-                    }
-                } else {
-                    const err = normalizeError(result.reason);
-                    const errorInfo = errorService.aiModel(err.message, { step: 'scene-rewrite-settled', sceneIndex: idx });
-                    logErrorInfo(logger, 'warn', 'Scene rewrite promise rejected', errorInfo);
-                }
-            });
-
-            // Rewrite app_texts
-            logger.debug('Rewriting application texts', {});
-            let rewrittenAppTexts = appTexts;
-            try {
-                rewrittenAppTexts = await withRetry(
-                    () => rewriteAppTexts(appTexts, rewriteContext),
-                    'App texts rewrite'
-                );
-                logger.debug('Application texts rewrite completed', {});
-            } catch (error) {
-                const err = normalizeError(error);
-                const errorInfo = errorService.aiModel(err.message, { step: 'app-texts-rewrite', stack: err.stack });
-                logErrorInfo(logger, 'error', 'Application texts rewrite failed after retries, using original', errorInfo);
-            }
-
-            // Combine results - preserve original structure with rewritten scenes
-            const result = {
-                ...json, // Keep all original keys
-                ...rewrittenScenesMap, // Override with rewritten scene content
-                app_texts: rewrittenAppTexts
-            };
-
-            logger.debug('Scene rewrite batch completed', { scenesRewritten: Object.keys(rewrittenScenesMap).length });
-
-            return {
-                success: true,
-                data: result
-            };
+          const rewrittenContent = await withRetry(
+            () => rewriter(sceneContent, rewriteContext),
+            `Scene ${sceneNumber} rewrite (${sceneType})`
+          );
+          logger.debug('Scene rewrite completed', { sceneNumber, totalScenes: scenesMetadata.length });
+          return { sceneId, content: rewrittenContent };
         } catch (error) {
-            const err = normalizeError(error);
-            const errorInfo = errorService.aiModel(err.message, {
-                targetLanguage: context?.targetLanguage,
-                step: 'language-translation',
-                stack: err.stack
-            });
-
-            logErrorInfo(logger, 'error', 'Language translation failed', errorInfo);
-
-            return createToolErrorResponse(errorInfo);
+          const err = normalizeError(error);
+          const errorInfo = errorService.aiModel(err.message, {
+            step: 'scene-rewrite',
+            sceneNumber,
+            sceneId,
+            stack: err.stack,
+          });
+          logErrorInfo(logger, 'error', 'Scene rewrite failed after retries', errorInfo);
+          return { sceneId, content: sceneContent }; // Graceful fallback
         }
+      }
+
+      // Process all scenes in parallel
+      logger.debug('Processing all scenes in parallel', { sceneCount: scenesMetadata.length });
+
+      const allResults = await Promise.allSettled(
+        scenesMetadata.map((sceneMetadata: any, idx: number) => rewriteScene(sceneMetadata, idx))
+      );
+
+      // Map results to scene IDs - handle both fulfilled and rejected promises
+      const rewrittenScenesMap: Record<string, any> = {};
+      allResults.forEach((result, idx) => {
+        if (result.status === 'fulfilled') {
+          const { sceneId, content } = result.value;
+          if (content) {
+            rewrittenScenesMap[sceneId] = content;
+          }
+        } else {
+          const err = normalizeError(result.reason);
+          const errorInfo = errorService.aiModel(err.message, { step: 'scene-rewrite-settled', sceneIndex: idx });
+          logErrorInfo(logger, 'warn', 'Scene rewrite promise rejected', errorInfo);
+        }
+      });
+
+      // Rewrite app_texts
+      logger.debug('Rewriting application texts', {});
+      let rewrittenAppTexts = appTexts;
+      try {
+        rewrittenAppTexts = await withRetry(() => rewriteAppTexts(appTexts, rewriteContext), 'App texts rewrite');
+        logger.debug('Application texts rewrite completed', {});
+      } catch (error) {
+        const err = normalizeError(error);
+        const errorInfo = errorService.aiModel(err.message, { step: 'app-texts-rewrite', stack: err.stack });
+        logErrorInfo(logger, 'error', 'Application texts rewrite failed after retries, using original', errorInfo);
+      }
+
+      // Combine results - preserve original structure with rewritten scenes
+      const result = {
+        ...json, // Keep all original keys
+        ...rewrittenScenesMap, // Override with rewritten scene content
+        app_texts: rewrittenAppTexts,
+      };
+
+      logger.debug('Scene rewrite batch completed', { scenesRewritten: Object.keys(rewrittenScenesMap).length });
+
+      return {
+        success: true,
+        data: result,
+      };
+    } catch (error) {
+      const err = normalizeError(error);
+      const errorInfo = errorService.aiModel(err.message, {
+        targetLanguage: context?.targetLanguage,
+        step: 'language-translation',
+        stack: err.stack,
+      });
+
+      logErrorInfo(logger, 'error', 'Language translation failed', errorInfo);
+
+      return createToolErrorResponse(errorInfo);
     }
+  },
 });

@@ -97,7 +97,6 @@ describe('Scene 1 - Intro Rewriter', () => {
     sectionTitle: 'What this training covers',
   } as unknown as Scene1Metadata;
 
-
   // ==================== FUNCTION CALL TESTS ====================
   describe('Function Call', () => {
     it('should accept valid scene and context', async () => {
@@ -119,43 +118,31 @@ describe('Scene 1 - Intro Rewriter', () => {
     });
 
     it('should require scene parameter', async () => {
-      await expect(
-        rewriteScene1Intro(undefined as any, baseContext)
-      ).resolves.toBeUndefined();
+      await expect(rewriteScene1Intro(undefined as any, baseContext)).resolves.toBeUndefined();
     });
 
     it('should require context parameter', async () => {
-      await expect(
-        rewriteScene1Intro(baseScene, undefined as any)
-      ).rejects.toThrow();
+      await expect(rewriteScene1Intro(baseScene, undefined as any)).rejects.toThrow();
     });
 
     it('should require context with sourceLanguage', async () => {
       const invalidContext = { ...baseContext, sourceLanguage: '' };
-      await expect(
-        rewriteScene1Intro(baseScene, invalidContext)
-      ).resolves.toBeDefined();
+      await expect(rewriteScene1Intro(baseScene, invalidContext)).resolves.toBeDefined();
     });
 
     it('should require context with targetLanguage', async () => {
       const invalidContext = { ...baseContext, targetLanguage: '' };
-      await expect(
-        rewriteScene1Intro(baseScene, invalidContext)
-      ).resolves.toBeDefined();
+      await expect(rewriteScene1Intro(baseScene, invalidContext)).resolves.toBeDefined();
     });
 
     it('should require context with model', async () => {
       const invalidContext = { ...baseContext, model: null };
-      await expect(
-        rewriteScene1Intro(baseScene, invalidContext as any)
-      ).resolves.toBeDefined();
+      await expect(rewriteScene1Intro(baseScene, invalidContext as any)).resolves.toBeDefined();
     });
 
     it('should require context with topic', async () => {
       const invalidContext = { ...baseContext, topic: '' };
-      await expect(
-        rewriteScene1Intro(baseScene, invalidContext)
-      ).resolves.toBeDefined();
+      await expect(rewriteScene1Intro(baseScene, invalidContext)).resolves.toBeDefined();
     });
   });
 
@@ -417,9 +404,7 @@ describe('Scene 1 - Intro Rewriter', () => {
         { ...baseContext, targetLanguage: 'fr' },
       ];
 
-      const results = await Promise.all(
-        contexts.map(ctx => rewriteScene1Intro(baseScene, ctx))
-      );
+      const results = await Promise.all(contexts.map(ctx => rewriteScene1Intro(baseScene, ctx)));
 
       expect(results.length).toBe(3);
       results.forEach(result => {
@@ -459,9 +444,7 @@ describe('Scene 1 - Intro Rewriter', () => {
       const phishingScene = {
         title: 'Identify Phishing Attacks',
         subtitle: 'Learn red flags in suspicious emails',
-        highlights: [
-          { iconName: 'mail-warning', text: 'Phishing uses fake emails' },
-        ],
+        highlights: [{ iconName: 'mail-warning', text: 'Phishing uses fake emails' }],
       };
 
       const result = await rewriteScene1Intro(phishingScene as any, baseContext);
@@ -482,9 +465,7 @@ describe('Scene 1 - Intro Rewriter', () => {
       const complexScene = {
         ...baseScene,
         metadata: { duration: 20, difficulty: 'intermediate' },
-        additionalResources: [
-          { title: 'Link 1', url: 'https://example.com' },
-        ],
+        additionalResources: [{ title: 'Link 1', url: 'https://example.com' }],
       };
 
       const result = await rewriteScene1Intro(complexScene, baseContext);

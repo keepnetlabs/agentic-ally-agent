@@ -12,33 +12,33 @@ import { emailIrAnalyzeSuccessResponseSchema } from './email-ir-route.schemas';
 
 const { validEmailIrReport } = vi.hoisted(() => ({
   validEmailIrReport: {
-  executive_summary: {
-    email_category: 'Benign' as const,
-    verdict: 'No Threat Detected - Benign Email',
-    risk_level: 'Low' as const,
-    confidence: 0.95,
-    status: 'Analysis Complete',
-  },
-  agent_determination: 'Message appears informational with no malicious indicators.',
-  risk_indicators: {
-    observed: [],
-    not_observed: ['No credential request', 'No financial request'],
-  },
-  evidence_flow: [
-    {
-      step: 1,
-      title: 'Final Verdict',
-      description: 'Classified as benign.',
-      finding_label: 'Benign' as const,
+    executive_summary: {
+      email_category: 'Benign' as const,
+      verdict: 'No Threat Detected - Benign Email',
+      risk_level: 'Low' as const,
+      confidence: 0.95,
+      status: 'Analysis Complete',
     },
-  ],
-  actions_recommended: {
-    p1_immediate: [],
-    p2_follow_up: [],
-    p3_hardening: [],
+    agent_determination: 'Message appears informational with no malicious indicators.',
+    risk_indicators: {
+      observed: [],
+      not_observed: ['No credential request', 'No financial request'],
+    },
+    evidence_flow: [
+      {
+        step: 1,
+        title: 'Final Verdict',
+        description: 'Classified as benign.',
+        finding_label: 'Benign' as const,
+      },
+    ],
+    actions_recommended: {
+      p1_immediate: [],
+      p2_follow_up: [],
+      p3_hardening: [],
+    },
+    confidence_limitations: 'High confidence in determination. Multiple independent signals converge on this verdict.',
   },
-  confidence_limitations: 'High confidence in determination. Multiple independent signals converge on this verdict.',
-},
 }));
 
 function createMockContext(requestBody: unknown) {
@@ -231,7 +231,10 @@ describe('Public Endpoint Contracts', () => {
     it('vishing conversations summary request contract accepts valid payload', () => {
       const result = vishingConversationsSummaryRequestSchema.safeParse({
         accessToken: 'x'.repeat(32),
-        messages: [{ role: 'agent', text: 'Hello' }, { role: 'user', text: 'Hi' }],
+        messages: [
+          { role: 'agent', text: 'Hello' },
+          { role: 'user', text: 'Hi' },
+        ],
       });
       expect(result.success).toBe(true);
     });
@@ -395,7 +398,10 @@ describe('Public Endpoint Contracts', () => {
 
       const ctx = createMockContext({
         accessToken: 'x'.repeat(32),
-        messages: [{ role: 'agent', text: 'Hello, this is support' }, { role: 'user', text: 'Hi' }],
+        messages: [
+          { role: 'agent', text: 'Hello, this is support' },
+          { role: 'user', text: 'Hi' },
+        ],
       });
 
       await vishingConversationsSummaryHandler(ctx);
@@ -428,7 +434,10 @@ describe('Public Endpoint Contracts', () => {
 
       const ctx = createMockContext({
         accessToken: 'x'.repeat(32),
-        messages: [{ role: 'agent', text: 'Hi' }, { role: 'user', text: 'Hello' }],
+        messages: [
+          { role: 'agent', text: 'Hi' },
+          { role: 'user', text: 'Hello' },
+        ],
       });
 
       await vishingConversationsSummaryHandler(ctx);

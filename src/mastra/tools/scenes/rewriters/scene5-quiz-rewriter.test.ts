@@ -29,7 +29,7 @@ vi.mock('./scene-rewriter-base', () => ({
     const rewritten = JSON.parse(JSON.stringify(scene));
 
     return Promise.resolve(rewritten);
-  })
+  }),
 }));
 
 import { generateText } from 'ai';
@@ -62,12 +62,12 @@ describe('Scene 5 - Quiz Rewriter', () => {
             { id: 'opt1', text: 'Fake urgency', isCorrect: true },
             { id: 'opt2', text: 'Legitimate emails', isCorrect: false },
             { id: 'opt3', text: 'Official logos', isCorrect: false },
-            { id: 'opt4', text: 'Proper grammar', isCorrect: false }
-          ]
+            { id: 'opt4', text: 'Proper grammar', isCorrect: false },
+          ],
         },
-      ]
+      ],
     },
-    icon: { sceneIconName: 'quiz', sparkleIconName: 'question' }
+    icon: { sceneIconName: 'quiz', sparkleIconName: 'question' },
   } as any;
 
   beforeEach(() => {
@@ -90,9 +90,7 @@ describe('Scene 5 - Quiz Rewriter', () => {
     });
 
     it('should require context parameter', async () => {
-      await expect(
-        rewriteScene5Quiz(baseScene, undefined as any)
-      ).rejects.toThrow();
+      await expect(rewriteScene5Quiz(baseScene, undefined as any)).rejects.toThrow();
     });
   });
 
@@ -192,9 +190,9 @@ describe('Scene 5 - Quiz Rewriter', () => {
           ...baseScene.questions,
           list: Array.from({ length: 5 }, (_, i) => ({
             ...baseScene.questions.list[0],
-            id: `${i + 1}`
-          }))
-        }
+            id: `${i + 1}`,
+          })),
+        },
       } as any;
       (generateText as any).mockResolvedValueOnce({ text: JSON.stringify(manyQuestions) });
 
@@ -207,11 +205,13 @@ describe('Scene 5 - Quiz Rewriter', () => {
         ...baseScene,
         questions: {
           ...baseScene.questions,
-          list: [{
-            ...baseScene.questions.list[0],
-            options: Array.from({ length: 10 }, (_, i) => ({ id: `o${i}`, text: `Opt ${i}`, isCorrect: i === 0 }))
-          }]
-        }
+          list: [
+            {
+              ...baseScene.questions.list[0],
+              options: Array.from({ length: 10 }, (_, i) => ({ id: `o${i}`, text: `Opt ${i}`, isCorrect: i === 0 })),
+            },
+          ],
+        },
       } as any;
       (generateText as any).mockResolvedValueOnce({ text: JSON.stringify(manyOptions) });
 

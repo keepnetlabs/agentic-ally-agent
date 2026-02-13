@@ -58,9 +58,7 @@ describe('Scene 7 - Nudge Rewriter', () => {
     });
 
     it('should require context parameter', async () => {
-      await expect(
-        rewriteScene7Nudge(baseScene, undefined as any)
-      ).rejects.toThrow();
+      await expect(rewriteScene7Nudge(baseScene, undefined as any)).rejects.toThrow();
     });
   });
 

@@ -20,10 +20,7 @@ const logger = getLogger('ReasoningStream');
  * - reasoning-end: Complete reasoning block
  */
 
-export async function streamReasoning(
-  reasoningText: string,
-  writer: StreamWriter
-): Promise<void> {
+export async function streamReasoning(reasoningText: string, writer: StreamWriter): Promise<void> {
   if (!reasoningText || !writer) return;
 
   const messageId = uuidv4();
@@ -32,7 +29,7 @@ export async function streamReasoning(
     // Start reasoning block immediately (don't wait for conversion)
     await writer.write({
       type: 'reasoning-start',
-      id: messageId
+      id: messageId,
     });
 
     // Convert technical reasoning to user-friendly summary in background
@@ -45,50 +42,54 @@ export async function streamReasoning(
       messages: [
         {
           role: 'system',
-          content: 'You are a helpful assistant that converts technical AI reasoning into user-friendly progress updates. Extract ONLY the AI\'s thinking process and decision-making steps. Explain what the AI is THINKING and considering in simple, clear language. Use phrases like "I\'m thinking about...", "I\'m considering...", "I\'m analyzing...", "I\'m deciding..." to show the AI is actively thinking (e.g., "I\'m thinking about your request for phishing awareness training...", "I\'m considering the IT Department as the target audience...", "I\'m analyzing the best approach for Email Security category..."). IGNORE any JSON structures, code blocks, or technical field names. Focus ONLY on the AI\'s thought process and decisions. NO technical jargon, NO JSON field mentions, NO internal processing details. Just friendly, natural explanations that make sense to end users. Keep it concise and brief.'
+          content:
+            'You are a helpful assistant that converts technical AI reasoning into user-friendly progress updates. Extract ONLY the AI\'s thinking process and decision-making steps. Explain what the AI is THINKING and considering in simple, clear language. Use phrases like "I\'m thinking about...", "I\'m considering...", "I\'m analyzing...", "I\'m deciding..." to show the AI is actively thinking (e.g., "I\'m thinking about your request for phishing awareness training...", "I\'m considering the IT Department as the target audience...", "I\'m analyzing the best approach for Email Security category..."). IGNORE any JSON structures, code blocks, or technical field names. Focus ONLY on the AI\'s thought process and decisions. NO technical jargon, NO JSON field mentions, NO internal processing details. Just friendly, natural explanations that make sense to end users. Keep it concise and brief.',
         },
         {
           role: 'user',
-          content: `Extract the AI's thinking process from this reasoning (ignore JSON and code):\n\n${reasoningText}`
-        }
+          content: `Extract the AI's thinking process from this reasoning (ignore JSON and code):\n\n${reasoningText}`,
+        },
       ],
       ...REASONING_PARAMS,
-    }).then(async (summaryResponse) => {
-      const userFriendlyReasoning = summaryResponse.text;
+    })
+      .then(async summaryResponse => {
+        const userFriendlyReasoning = summaryResponse.text;
 
-      try {
-        // Send user-friendly reasoning content
-        await writer.write({
-          type: 'reasoning-delta',
-          id: messageId,
-          delta: userFriendlyReasoning
-        });
+        try {
+          // Send user-friendly reasoning content
+          await writer.write({
+            type: 'reasoning-delta',
+            id: messageId,
+            delta: userFriendlyReasoning,
+          });
 
-        // End reasoning block
-        await writer.write({
-          type: 'reasoning-end',
-          id: messageId
-        });
+          // End reasoning block
+          await writer.write({
+            type: 'reasoning-end',
+            id: messageId,
+          });
 
-        logger.info('User-friendly reasoning streamed');
-      } catch {
-        // Stream likely closed, ignore silently
-      }
-    }).catch(() => {
-      // Silent catch for generation errors or stream errors
-      try {
-        writer.write({
-          type: 'reasoning-end',
-          id: messageId
-        }).catch(() => { });
-      } catch { }
-    });
-
+          logger.info('User-friendly reasoning streamed');
+        } catch {
+          // Stream likely closed, ignore silently
+        }
+      })
+      .catch(() => {
+        // Silent catch for generation errors or stream errors
+        try {
+          writer
+            .write({
+              type: 'reasoning-end',
+              id: messageId,
+            })
+            .catch(() => {});
+        } catch {}
+      });
   } catch (error) {
     const err = normalizeError(error);
     logger.error('Failed to start reasoning stream', {
       error: err.message,
-      stack: err.stack
+      stack: err.stack,
     });
   }
 }
@@ -96,10 +97,7 @@ export async function streamReasoning(
 /**
  * Stream multiple reasoning updates (for multi-step processes)
  */
-export async function streamReasoningUpdates(
-  reasoningTexts: string[],
-  writer: StreamWriter
-): Promise<void> {
+export async function streamReasoningUpdates(reasoningTexts: string[], writer: StreamWriter): Promise<void> {
   for (const text of reasoningTexts) {
     await streamReasoning(text, writer);
   }
@@ -109,10 +107,7 @@ export async function streamReasoningUpdates(
  * Stream reasoning directly to frontend without LLM processing
  * Used when the reasoning is already user-friendly or speed is critical
  */
-export async function streamDirectReasoning(
-  reasoning: string,
-  writer: StreamWriter
-): Promise<void> {
+export async function streamDirectReasoning(reasoning: string, writer: StreamWriter): Promise<void> {
   if (!reasoning || !writer) return;
   const messageId = uuidv4();
   try {

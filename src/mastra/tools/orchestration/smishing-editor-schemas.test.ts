@@ -1,8 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  smishingEditorSchema,
-  smsResponseSchema,
-} from './smishing-editor-schemas';
+import { smishingEditorSchema, smsResponseSchema } from './smishing-editor-schemas';
 
 describe('Smishing Editor Schemas', () => {
   describe('smishingEditorSchema', () => {
@@ -83,7 +80,7 @@ describe('Smishing Editor Schemas', () => {
 
     it('should accept various language codes', () => {
       const languages = ['en-gb', 'tr-tr', 'de-de', 'es-es', 'fr-fr', 'it-it'];
-      languages.forEach((lang) => {
+      languages.forEach(lang => {
         const result = smishingEditorSchema.safeParse({
           ...validInput,
           language: lang,
@@ -152,7 +149,8 @@ describe('Smishing Editor Schemas', () => {
     });
 
     it('should accept long edit instructions', () => {
-      const longInstruction = 'Change the tone to be more friendly and add more emojis, but keep it professional. Also make sure the urgency is still there but soften the language a bit.';
+      const longInstruction =
+        'Change the tone to be more friendly and add more emojis, but keep it professional. Also make sure the urgency is still there but soften the language a bit.';
       const result = smishingEditorSchema.safeParse({
         ...validInput,
         editInstruction: longInstruction,
@@ -191,12 +189,7 @@ describe('Smishing Editor Schemas', () => {
 
     it('should accept multiple messages', () => {
       const result = smsResponseSchema.safeParse({
-        messages: [
-          'First variant',
-          'Second variant',
-          'Third variant',
-          'Fourth variant',
-        ],
+        messages: ['First variant', 'Second variant', 'Third variant', 'Fourth variant'],
         summary: 'Added multiple variants',
       });
       expect(result.success).toBe(true);
@@ -220,11 +213,7 @@ describe('Smishing Editor Schemas', () => {
 
     it('should accept messages with placeholders', () => {
       const result = smsResponseSchema.safeParse({
-        messages: [
-          'Verify: {PHISHINGURL}',
-          'Click {PHISHINGURL} to confirm',
-          'Confirm account: {PHISHINGURL}',
-        ],
+        messages: ['Verify: {PHISHINGURL}', 'Click {PHISHINGURL} to confirm', 'Confirm account: {PHISHINGURL}'],
         summary: 'Multiple variants with URL placeholder',
       });
       expect(result.success).toBe(true);
@@ -269,7 +258,7 @@ describe('Smishing Editor Schemas', () => {
         }),
       ];
 
-      results.forEach((result) => {
+      results.forEach(result => {
         expect(result.success).toBe(false);
       });
     });
@@ -343,10 +332,7 @@ describe('Smishing Editor Schemas', () => {
 
     it('should preserve PHISHINGURL in SMS messages', () => {
       const result = smsResponseSchema.safeParse({
-        messages: [
-          'Verify account: {PHISHINGURL}',
-          'Click link: {PHISHINGURL}',
-        ],
+        messages: ['Verify account: {PHISHINGURL}', 'Click link: {PHISHINGURL}'],
         summary: 'SMS with URL placeholders',
       });
       expect(result.success).toBe(true);

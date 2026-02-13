@@ -25,7 +25,7 @@ export function validateBaseApiUrl(headerUrl?: string): string {
   // No header provided → use default
   if (!headerUrl) {
     logger.debug('No X-BASE-API-URL header provided, using default', {
-      defaultUrl: API_ENDPOINTS.DEFAULT_BASE_API_URL
+      defaultUrl: API_ENDPOINTS.DEFAULT_BASE_API_URL,
     });
     return API_ENDPOINTS.DEFAULT_BASE_API_URL;
   }
@@ -39,28 +39,28 @@ export function validateBaseApiUrl(headerUrl?: string): string {
     logger.warn('Invalid URL format in X-BASE-API-URL header, using default', {
       headerUrl: trimmedUrl,
       error: (error as Error).message,
-      defaultUrl: API_ENDPOINTS.DEFAULT_BASE_API_URL
+      defaultUrl: API_ENDPOINTS.DEFAULT_BASE_API_URL,
     });
     return API_ENDPOINTS.DEFAULT_BASE_API_URL;
   }
 
   // Check against allowed list
   const isAllowed = API_ENDPOINTS.ALLOWED_BASE_API_URLS.some(
-    (allowedUrl) => allowedUrl.toLowerCase() === trimmedUrl.toLowerCase()
+    allowedUrl => allowedUrl.toLowerCase() === trimmedUrl.toLowerCase()
   );
 
   if (!isAllowed) {
     logger.warn('X-BASE-API-URL not in allowed list, using default', {
       headerUrl: trimmedUrl,
       allowedUrls: API_ENDPOINTS.ALLOWED_BASE_API_URLS,
-      defaultUrl: API_ENDPOINTS.DEFAULT_BASE_API_URL
+      defaultUrl: API_ENDPOINTS.DEFAULT_BASE_API_URL,
     });
     return API_ENDPOINTS.DEFAULT_BASE_API_URL;
   }
 
   // URL is valid and allowed
   logger.debug('Valid X-BASE-API-URL header accepted', {
-    url: trimmedUrl
+    url: trimmedUrl,
   });
   return trimmedUrl;
 }
@@ -73,9 +73,7 @@ export function validateBaseApiUrl(headerUrl?: string): string {
  * @returns true if URL is allowed, false otherwise
  */
 export function isAllowedBaseApiUrl(url: string): boolean {
-  return API_ENDPOINTS.ALLOWED_BASE_API_URLS.some(
-    (allowedUrl) => allowedUrl.toLowerCase() === url.toLowerCase()
-  );
+  return API_ENDPOINTS.ALLOWED_BASE_API_URLS.some(allowedUrl => allowedUrl.toLowerCase() === url.toLowerCase());
 }
 
 /**

@@ -1,31 +1,36 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { detectLanguageFallback, detectTargetLanguageWithAI, analyzeUserPromptWithAI, getFallbackAnalysis } from './prompt-analyzer';
+import {
+  detectLanguageFallback,
+  detectTargetLanguageWithAI,
+  analyzeUserPromptWithAI,
+  getFallbackAnalysis,
+} from './prompt-analyzer';
 import { ExampleRepo } from '../../../services/example-repo';
 import { validateBCP47LanguageCode } from '../../../utils/language/language-utils';
 import * as ai from 'ai';
 
 // Mock dependencies
 vi.mock('ai', () => ({
-    generateText: vi.fn(),
+  generateText: vi.fn(),
 }));
 
 vi.mock('../../../services/example-repo', () => ({
-    ExampleRepo: {
-        getInstance: vi.fn(() => ({
-            loadExamplesOnce: vi.fn(),
-            getSmartSchemaHints: vi.fn(),
-            getSchemaHints: vi.fn(),
-        })),
-    },
+  ExampleRepo: {
+    getInstance: vi.fn(() => ({
+      loadExamplesOnce: vi.fn(),
+      getSmartSchemaHints: vi.fn(),
+      getSchemaHints: vi.fn(),
+    })),
+  },
 }));
 
 vi.mock('../../../utils/language/language-utils', () => ({
-    validateBCP47LanguageCode: vi.fn((code) => {
-        if (code === 'invalid-code') return 'en-gb'; // Simulate fallback for invalid
-        if (code === 'tr-tr') return 'tr-TR';
-        return code;
-    }),
-    DEFAULT_LANGUAGE: 'en-gb'
+  validateBCP47LanguageCode: vi.fn(code => {
+    if (code === 'invalid-code') return 'en-gb'; // Simulate fallback for invalid
+    if (code === 'tr-tr') return 'tr-TR';
+    return code;
+  }),
+  DEFAULT_LANGUAGE: 'en-gb',
 }));
 
 describe('Language Detection - detectLanguageFallback', () => {
@@ -514,13 +519,14 @@ describe('Language Detection - detectLanguageFallback', () => {
   // ==================== REAL WORLD TEXT SAMPLES ====================
   describe('Real World Text Samples', () => {
     it('should detect Turkish news article', () => {
-      const turkishText = 'Türkiye\'nin başkenti Ankara\'dır. Ülkenin en büyük şehri İstanbul\'dur.';
+      const turkishText = "Türkiye'nin başkenti Ankara'dır. Ülkenin en büyük şehri İstanbul'dur.";
       expect(detectLanguageFallback(turkishText)).toBe('tr');
     });
 
     it('should detect German news article - detects TR due to ü in Turkish pattern', () => {
       // Föderalstaat contains ö which matches Turkish pattern first
-      const germanText = 'Die Bundesrepublik Deutschland ist ein Föderalstaat in Mitteleuropa. Die Hauptstadt ist Berlin.';
+      const germanText =
+        'Die Bundesrepublik Deutschland ist ein Föderalstaat in Mitteleuropa. Die Hauptstadt ist Berlin.';
       expect(detectLanguageFallback(germanText)).toBe('tr');
     });
 
@@ -613,11 +619,7 @@ describe('Language Detection - detectLanguageFallback', () => {
     it('should return same result called multiple times - detects TR due to ü', () => {
       // Note: ü is in Turkish pattern, so this detects as Turkish
       const text = 'Deutsch äöüß';
-      const results = [
-        detectLanguageFallback(text),
-        detectLanguageFallback(text),
-        detectLanguageFallback(text),
-      ];
+      const results = [detectLanguageFallback(text), detectLanguageFallback(text), detectLanguageFallback(text)];
       expect(new Set(results).size).toBe(1);
       expect(results[0]).toBe('tr');
     });
@@ -693,446 +695,448 @@ describe('Language Detection - detectLanguageFallback', () => {
 });
 
 describe('prompt-analyzer - Additional Functions', () => {
-    beforeEach(() => {
-        vi.clearAllMocks();
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('detectTargetLanguageWithAI', () => {
+    it('should return valid language code when AI succeeds', async () => {
+      (ai.generateText as any).mockResolvedValue({
+        text: 'tr-tr',
+      });
+
+      const result = await detectTargetLanguageWithAI('test prompt', {});
+      expect(result).toBe('tr-TR');
     });
 
-    describe('detectTargetLanguageWithAI', () => {
-        it('should return valid language code when AI succeeds', async () => {
-            (ai.generateText as any).mockResolvedValue({
-                text: 'tr-tr',
-            });
+    it('should return null when AI fails or returns invalid code', async () => {
+      (ai.generateText as any).mockResolvedValue({
+        text: 'invalid-code',
+      });
 
-            const result = await detectTargetLanguageWithAI('test prompt', {});
-            expect(result).toBe('tr-TR');
-        });
-
-        it('should return null when AI fails or returns invalid code', async () => {
-            (ai.generateText as any).mockResolvedValue({
-                text: 'invalid-code',
-            });
-
-            // validateBCP47LanguageCode mock returns 'en-gb' (DEFAULT) for 'invalid-code'
-            // Code returns null if validated === DEFAULT_LANGUAGE
-            const result = await detectTargetLanguageWithAI('test prompt', {});
-            // The implementation now allows returning default language if valid
-            // expect(result).toBeNull(); // Old behavior
-            expect(result).toBe('en-gb');
-        });
-
-        it('should include both head and tail text for long prompt/context sampling', async () => {
-            (ai.generateText as any).mockResolvedValue({
-                text: 'tr-tr',
-            });
-
-            const longPrompt = `Start section ${'A'.repeat(2500)} End section`;
-            const longContext = `${'B'.repeat(2500)} Preferred Language: Turkish`;
-
-            await detectTargetLanguageWithAI(longPrompt, {}, longContext);
-
-            const callArgs = (ai.generateText as any).mock.calls[0][0];
-            expect(callArgs.prompt).toContain('Start section');
-            expect(callArgs.prompt).toContain('Preferred Language: Turkish');
-            expect(callArgs.prompt).toContain('...[omitted');
-        });
-
-        it('should return null when AI returns empty language text', async () => {
-            (ai.generateText as any).mockResolvedValue({
-                text: '   ',
-            });
-
-            const result = await detectTargetLanguageWithAI('test prompt', {});
-            expect(result).toBeNull();
-        });
+      // validateBCP47LanguageCode mock returns 'en-gb' (DEFAULT) for 'invalid-code'
+      // Code returns null if validated === DEFAULT_LANGUAGE
+      const result = await detectTargetLanguageWithAI('test prompt', {});
+      // The implementation now allows returning default language if valid
+      // expect(result).toBeNull(); // Old behavior
+      expect(result).toBe('en-gb');
     });
 
-    describe('analyzeUserPromptWithAI', () => {
-        it('should prefer suggestedLanguage and skip AI language detection', async () => {
-            (ai.generateText as any).mockResolvedValue({
-                text: JSON.stringify({ topic: 'Suggested Language Test' })
-            });
+    it('should include both head and tail text for long prompt/context sampling', async () => {
+      (ai.generateText as any).mockResolvedValue({
+        text: 'tr-tr',
+      });
 
-            await analyzeUserPromptWithAI({
-                userPrompt: 'Create training',
-                model: {},
-                suggestedLanguage: 'fr-fr',
-            });
+      const longPrompt = `Start section ${'A'.repeat(2500)} End section`;
+      const longContext = `${'B'.repeat(2500)} Preferred Language: Turkish`;
 
-            const calls = (ai.generateText as any).mock.calls;
-            const languageDetectionCall = calls.find((c: any[]) =>
-                c[0]?.prompt && c[0].prompt.includes('What language should the training/content be created in?')
-            );
-            expect(languageDetectionCall).toBeUndefined();
-        });
+      await detectTargetLanguageWithAI(longPrompt, {}, longContext);
 
-        it('should return analyzed prompt data', async () => {
-            (ai.generateText as any).mockImplementation((params: any) => {
-                if (params.prompt && params.prompt.includes('What language should')) {
-                    return Promise.resolve({ text: 'en-us' });
-                }
-                return Promise.resolve({
-                    response: {
-                        body: {
-                            reasoning: 'Reasoning here'
-                        }
-                    },
-                    text: JSON.stringify({
-                        topic: 'Phishing',
-                        title: 'Phishing Awareness',
-                        description: 'Learn about phishing',
-                        category: 'Email Security',
-                        level: 'Beginner',
-                        roles: ['All Employees'],
-                        learningObjectives: ['Identify phishing'],
-                        language: 'en-us',
-                        duration: 5
-                    })
-                });
-            });
-
-            const mockRepo = {
-                loadExamplesOnce: vi.fn(),
-                getSmartSchemaHints: vi.fn().mockResolvedValue('hints'),
-            };
-            (ExampleRepo.getInstance as any).mockReturnValue(mockRepo);
-            (validateBCP47LanguageCode as any).mockImplementation((code: string) => code);
-
-            const result = await analyzeUserPromptWithAI({
-                userPrompt: 'Create a phishing course',
-                model: {},
-                suggestedDepartment: 'IT'
-            });
-
-            expect(result.success).toBe(true);
-            expect(result.data.topic).toBe('Phishing');
-            expect(result.data.department).toBe('IT');
-        });
-
-        it('should fallback to basic schema hints if smart hints fail', async () => {
-            // Mock AI response
-            (ai.generateText as any).mockResolvedValue({
-                text: JSON.stringify({ topic: 'Test' })
-            });
-
-            const mockRepo = {
-                loadExamplesOnce: vi.fn(),
-                getSmartSchemaHints: vi.fn().mockRejectedValue(new Error('VectorDB down')),
-                getSchemaHints: vi.fn().mockReturnValue('Basic Hints'),
-            };
-            (ExampleRepo.getInstance as any).mockReturnValue(mockRepo);
-
-            await analyzeUserPromptWithAI({
-                userPrompt: 'Test',
-                model: {},
-            });
-
-            expect(mockRepo.getSmartSchemaHints).toHaveBeenCalled();
-            // Need to verify fallback behavior - implicitly via code coverage or verifying calls
-            // Since smart hints fail, it should retry smart with undefined, then fallback to getSchemaHints
-            expect(mockRepo.getSchemaHints).toHaveBeenCalled();
-        });
-
-        it('should fallback to char-based language detection if AI detection fails', async () => {
-            // Mock detectTargetLanguageWithAI failure (it calls generateText)
-            // We can simulate failure by having generateText throw or return invalid code
-            // But since we are mocking generateText, let's make it fail only for lang detection
-
-            (ai.generateText as any).mockImplementation((params: any) => {
-                if (params.prompt && params.prompt.includes('What language should')) {
-                    throw new Error('AI Down');
-                }
-                return Promise.resolve({
-                    text: JSON.stringify({ language: 'tr' }) // Final analysis response
-                });
-            });
-
-            const result = await analyzeUserPromptWithAI({
-                userPrompt: 'Merhaba dünya', // Turkish prompt
-                model: {},
-            });
-
-            // It should infer language from 'Merhaba dünya' -> 'tr' and pass that into the final prompt
-            // We can check if the final prompt contained the hinted language
-            // But checking result.data.language is also a proxy if the prompt guided the generation
-            // In the mock above, we returned 'tr' explicitly, but let's check the language hint logic?
-
-            // Actually, if AI detection fails, it calls detectLanguageFallback
-            // detectLanguageFallback('Merhaba dünya') returns 'tr'
-            // Then 'tr' is passed as languageHint.
-
-            // The implementation:
-            // catch { const charBasedLang = ...; languageHint = charBasedLang.toLowerCase(); }
-
-            // So success means no error was thrown and it proceeded.
-            expect(result.success).toBe(true);
-        });
-
-        it('should stream reasoning if writer is provided', async () => {
-            const mockWriter = { write: vi.fn() };
-
-            // We need to handle multiple calls to generateText:
-            // 1. attributes analysis (returns JSON + reasoning)
-            // 2. reasoning summarization (triggered by streamReasoning)
-            (ai.generateText as any).mockImplementation((params: any) => {
-                // Check if this is the summarization call
-                const isSummaryCall = params.messages?.some((m: any) =>
-                    m.content && m.content.includes("Extract the AI's thinking process")
-                );
-
-                if (isSummaryCall) {
-                    return Promise.resolve({ text: 'User friendly thinking...' });
-                }
-
-                // Default analysis response
-                return Promise.resolve({
-                    response: {
-                        body: {
-                            reasoning: 'Raw technical thinking...'
-                        }
-                    },
-                    text: JSON.stringify({ topic: 'Reasoning Test' })
-                });
-            });
-
-            await analyzeUserPromptWithAI({
-                userPrompt: 'Test',
-                model: {},
-                writer: mockWriter
-            });
-
-            // Allow fire-and-forget promise in streamReasoning to complete
-            await new Promise(resolve => setTimeout(resolve, 10));
-
-            expect(mockWriter.write).toHaveBeenCalled();
-
-            // It should write start
-            expect(mockWriter.write).toHaveBeenCalledWith(expect.objectContaining({
-                type: 'reasoning-start'
-            }));
-
-            // It should write delta (the result of summarization)
-            expect(mockWriter.write).toHaveBeenCalledWith(expect.objectContaining({
-                type: 'reasoning-delta',
-                delta: 'User friendly thinking...'
-            }));
-
-            // It should write end
-            expect(mockWriter.write).toHaveBeenCalledWith(expect.objectContaining({
-                type: 'reasoning-end'
-            }));
-        });
-
-        it('should propagate additionalContext to result', async () => {
-            (ai.generateText as any).mockResolvedValue({
-                text: JSON.stringify({ topic: 'Context Test' })
-            });
-
-            const result = await analyzeUserPromptWithAI({
-                userPrompt: 'Test',
-                model: {},
-                additionalContext: 'User is CTO'
-            });
-
-            expect(result.data.hasRichContext).toBe(true);
-            expect(result.data.additionalContext).toBe('User is CTO');
-        });
-
-        it('should validate and filter invalid theme colors', async () => {
-            (ai.generateText as any).mockResolvedValue({
-                text: JSON.stringify({
-                    topic: 'Color Test',
-                    themeColor: 'invalid-color-code'
-                })
-            });
-
-            const result = await analyzeUserPromptWithAI({
-                userPrompt: 'Test',
-                model: {},
-            });
-
-            expect(result.data.themeColor).toBeUndefined();
-        });
-
-        it('should accept valid theme colors', async () => {
-            (ai.generateText as any).mockResolvedValue({
-                text: JSON.stringify({
-                    topic: 'Color Test',
-                    themeColor: 'bg-gradient-blue'
-                })
-            });
-
-            const result = await analyzeUserPromptWithAI({
-                userPrompt: 'Test',
-                model: {},
-            });
-
-            // Note: prompt-analyzer logic checks only presence in THEME_COLORS.VALUES
-            expect(result.data.themeColor).toBe('bg-gradient-blue');
-        });
-
-        it('should propagate customRequirements', async () => {
-            (ai.generateText as any).mockResolvedValue({
-                text: JSON.stringify({ topic: 'Req Test' })
-            });
-
-            const result = await analyzeUserPromptWithAI({
-                userPrompt: 'Test',
-                model: {},
-                customRequirements: 'Must include video'
-            });
-
-            expect(result.data.customRequirements).toBe('Must include video');
-        });
-
-        it('should preserve mustKeepDetails from analysis response', async () => {
-            (ai.generateText as any).mockResolvedValue({
-                text: JSON.stringify({
-                    topic: 'Detail Test',
-                    mustKeepDetails: ['Keep real-world invoice fraud case', 'Keep urgent payment language']
-                })
-            });
-
-            const result = await analyzeUserPromptWithAI({
-                userPrompt: 'Test',
-                model: {},
-            });
-
-            expect(result.data.mustKeepDetails).toEqual([
-                'Keep real-world invoice fraud case',
-                'Keep urgent payment language',
-            ]);
-        });
-
-        it('should execute high-coverage branch for mustKeepDetails validation', async () => {
-            (ai.generateText as any).mockResolvedValue({
-                text: JSON.stringify({
-                    topic: 'Detail Coverage',
-                    title: 'Invoice fraud case handling',
-                    description: 'Practice urgent payment language controls.',
-                    keyTopics: ['invoice fraud case', 'urgent payment language'],
-                    practicalApplications: ['Verify payment requests against fraud indicators'],
-                    learningObjectives: ['Spot invoice fraud case indicators'],
-                    mustKeepDetails: ['invoice fraud case', 'urgent payment language']
-                })
-            });
-
-            const result = await analyzeUserPromptWithAI({
-                userPrompt: 'Create a microlearning for invoice fraud prevention',
-                model: {},
-            });
-
-            expect(result.success).toBe(true);
-            expect(result.data.mustKeepDetails).toEqual([
-                'invoice fraud case',
-                'urgent payment language',
-            ]);
-        });
-
-        it('should rethrow unexpected analysis errors from outer catch block', async () => {
-            const mockRepo = {
-                loadExamplesOnce: vi.fn().mockRejectedValue(new Error('load failed hard')),
-                getSmartSchemaHints: vi.fn(),
-                getSchemaHints: vi.fn(),
-            };
-            (ExampleRepo.getInstance as any).mockReturnValue(mockRepo);
-
-            await expect(
-                analyzeUserPromptWithAI({
-                    userPrompt: 'Test',
-                    model: {},
-                })
-            ).rejects.toThrow('load failed hard');
-        });
+      const callArgs = (ai.generateText as any).mock.calls[0][0];
+      expect(callArgs.prompt).toContain('Start section');
+      expect(callArgs.prompt).toContain('Preferred Language: Turkish');
+      expect(callArgs.prompt).toContain('...[omitted');
     });
 
-    describe('getFallbackAnalysis', () => {
-        it('should return fallback data with correct defaults', async () => {
-            const result = await getFallbackAnalysis({
-                userPrompt: 'Learn Python Safety',
-                model: {},
-                suggestedDepartment: 'Engineering'
-            });
+    it('should return null when AI returns empty language text', async () => {
+      (ai.generateText as any).mockResolvedValue({
+        text: '   ',
+      });
 
-            expect(result.topic).toContain('Learn Python Safety');
-            expect(result.isCodeTopic).toBe(true);
-            expect(result.department).toBe('Engineering');
-        });
-
-        it('should return normal fallback for non-code', async () => {
-            const result = await getFallbackAnalysis({
-                userPrompt: 'Be careful with emails',
-                model: {},
-            });
-
-            expect(result.isCodeTopic).toBe(false);
-            expect(result.category).toBeDefined();
-        });
-
-        it('should detect vishing keywords in fallback', async () => {
-            const result = await getFallbackAnalysis({
-                userPrompt: 'Create voice phishing and phone scam awareness module',
-                model: {},
-            });
-
-            expect(result.isVishing).toBe(true);
-            expect(result.isSmishing).toBe(false);
-            expect(result.deliveryChannel).toBeUndefined();
-        });
-
-        it('should detect smishing keywords and infer telegram delivery channel', async () => {
-            const result = await getFallbackAnalysis({
-                userPrompt: 'Create smishing simulation for Telegram message scams',
-                model: {},
-            });
-
-            expect(result.isSmishing).toBe(true);
-            expect(result.isVishing).toBe(false);
-            expect(result.deliveryChannel).toBe('telegram');
-        });
-
-        it('should default smishing delivery channel to sms when channel is not explicit', async () => {
-            const result = await getFallbackAnalysis({
-                userPrompt: 'Create SMS phishing (smishing) awareness training',
-                model: {},
-            });
-
-            expect(result.isSmishing).toBe(true);
-            expect(result.deliveryChannel).toBe('sms');
-        });
-
-        it('should preserve custom requirements and additional context in fallback', async () => {
-            const result = await getFallbackAnalysis({
-                userPrompt: 'Create security awareness module',
-                model: {},
-                additionalContext: 'Target audience is finance team',
-                customRequirements: 'Include practical examples',
-            });
-
-            expect(result.hasRichContext).toBe(true);
-            expect(result.additionalContext).toBe('Target audience is finance team');
-            expect(result.customRequirements).toBe('Include practical examples');
-        });
-
-        it('should infer linkedin delivery channel for smishing fallback', async () => {
-            const result = await getFallbackAnalysis({
-                userPrompt: 'Create smishing awareness for LinkedIn message scams',
-                model: {},
-            });
-
-            expect(result.isSmishing).toBe(true);
-            expect(result.deliveryChannel).toBe('linkedin');
-        });
-
-        it('should use char-based fallback language when AI language detection fails', async () => {
-            (ai.generateText as any).mockRejectedValue(new Error('language detection unavailable'));
-
-            const result = await getFallbackAnalysis({
-                userPrompt: '\u3042',
-                model: {},
-            });
-
-            expect(result.language).toBe('ja');
-        });
+      const result = await detectTargetLanguageWithAI('test prompt', {});
+      expect(result).toBeNull();
     });
+  });
+
+  describe('analyzeUserPromptWithAI', () => {
+    it('should prefer suggestedLanguage and skip AI language detection', async () => {
+      (ai.generateText as any).mockResolvedValue({
+        text: JSON.stringify({ topic: 'Suggested Language Test' }),
+      });
+
+      await analyzeUserPromptWithAI({
+        userPrompt: 'Create training',
+        model: {},
+        suggestedLanguage: 'fr-fr',
+      });
+
+      const calls = (ai.generateText as any).mock.calls;
+      const languageDetectionCall = calls.find(
+        (c: any[]) => c[0]?.prompt && c[0].prompt.includes('What language should the training/content be created in?')
+      );
+      expect(languageDetectionCall).toBeUndefined();
+    });
+
+    it('should return analyzed prompt data', async () => {
+      (ai.generateText as any).mockImplementation((params: any) => {
+        if (params.prompt && params.prompt.includes('What language should')) {
+          return Promise.resolve({ text: 'en-us' });
+        }
+        return Promise.resolve({
+          response: {
+            body: {
+              reasoning: 'Reasoning here',
+            },
+          },
+          text: JSON.stringify({
+            topic: 'Phishing',
+            title: 'Phishing Awareness',
+            description: 'Learn about phishing',
+            category: 'Email Security',
+            level: 'Beginner',
+            roles: ['All Employees'],
+            learningObjectives: ['Identify phishing'],
+            language: 'en-us',
+            duration: 5,
+          }),
+        });
+      });
+
+      const mockRepo = {
+        loadExamplesOnce: vi.fn(),
+        getSmartSchemaHints: vi.fn().mockResolvedValue('hints'),
+      };
+      (ExampleRepo.getInstance as any).mockReturnValue(mockRepo);
+      (validateBCP47LanguageCode as any).mockImplementation((code: string) => code);
+
+      const result = await analyzeUserPromptWithAI({
+        userPrompt: 'Create a phishing course',
+        model: {},
+        suggestedDepartment: 'IT',
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.data.topic).toBe('Phishing');
+      expect(result.data.department).toBe('IT');
+    });
+
+    it('should fallback to basic schema hints if smart hints fail', async () => {
+      // Mock AI response
+      (ai.generateText as any).mockResolvedValue({
+        text: JSON.stringify({ topic: 'Test' }),
+      });
+
+      const mockRepo = {
+        loadExamplesOnce: vi.fn(),
+        getSmartSchemaHints: vi.fn().mockRejectedValue(new Error('VectorDB down')),
+        getSchemaHints: vi.fn().mockReturnValue('Basic Hints'),
+      };
+      (ExampleRepo.getInstance as any).mockReturnValue(mockRepo);
+
+      await analyzeUserPromptWithAI({
+        userPrompt: 'Test',
+        model: {},
+      });
+
+      expect(mockRepo.getSmartSchemaHints).toHaveBeenCalled();
+      // Need to verify fallback behavior - implicitly via code coverage or verifying calls
+      // Since smart hints fail, it should retry smart with undefined, then fallback to getSchemaHints
+      expect(mockRepo.getSchemaHints).toHaveBeenCalled();
+    });
+
+    it('should fallback to char-based language detection if AI detection fails', async () => {
+      // Mock detectTargetLanguageWithAI failure (it calls generateText)
+      // We can simulate failure by having generateText throw or return invalid code
+      // But since we are mocking generateText, let's make it fail only for lang detection
+
+      (ai.generateText as any).mockImplementation((params: any) => {
+        if (params.prompt && params.prompt.includes('What language should')) {
+          throw new Error('AI Down');
+        }
+        return Promise.resolve({
+          text: JSON.stringify({ language: 'tr' }), // Final analysis response
+        });
+      });
+
+      const result = await analyzeUserPromptWithAI({
+        userPrompt: 'Merhaba dünya', // Turkish prompt
+        model: {},
+      });
+
+      // It should infer language from 'Merhaba dünya' -> 'tr' and pass that into the final prompt
+      // We can check if the final prompt contained the hinted language
+      // But checking result.data.language is also a proxy if the prompt guided the generation
+      // In the mock above, we returned 'tr' explicitly, but let's check the language hint logic?
+
+      // Actually, if AI detection fails, it calls detectLanguageFallback
+      // detectLanguageFallback('Merhaba dünya') returns 'tr'
+      // Then 'tr' is passed as languageHint.
+
+      // The implementation:
+      // catch { const charBasedLang = ...; languageHint = charBasedLang.toLowerCase(); }
+
+      // So success means no error was thrown and it proceeded.
+      expect(result.success).toBe(true);
+    });
+
+    it('should stream reasoning if writer is provided', async () => {
+      const mockWriter = { write: vi.fn() };
+
+      // We need to handle multiple calls to generateText:
+      // 1. attributes analysis (returns JSON + reasoning)
+      // 2. reasoning summarization (triggered by streamReasoning)
+      (ai.generateText as any).mockImplementation((params: any) => {
+        // Check if this is the summarization call
+        const isSummaryCall = params.messages?.some(
+          (m: any) => m.content && m.content.includes("Extract the AI's thinking process")
+        );
+
+        if (isSummaryCall) {
+          return Promise.resolve({ text: 'User friendly thinking...' });
+        }
+
+        // Default analysis response
+        return Promise.resolve({
+          response: {
+            body: {
+              reasoning: 'Raw technical thinking...',
+            },
+          },
+          text: JSON.stringify({ topic: 'Reasoning Test' }),
+        });
+      });
+
+      await analyzeUserPromptWithAI({
+        userPrompt: 'Test',
+        model: {},
+        writer: mockWriter,
+      });
+
+      // Allow fire-and-forget promise in streamReasoning to complete
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      expect(mockWriter.write).toHaveBeenCalled();
+
+      // It should write start
+      expect(mockWriter.write).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'reasoning-start',
+        })
+      );
+
+      // It should write delta (the result of summarization)
+      expect(mockWriter.write).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'reasoning-delta',
+          delta: 'User friendly thinking...',
+        })
+      );
+
+      // It should write end
+      expect(mockWriter.write).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'reasoning-end',
+        })
+      );
+    });
+
+    it('should propagate additionalContext to result', async () => {
+      (ai.generateText as any).mockResolvedValue({
+        text: JSON.stringify({ topic: 'Context Test' }),
+      });
+
+      const result = await analyzeUserPromptWithAI({
+        userPrompt: 'Test',
+        model: {},
+        additionalContext: 'User is CTO',
+      });
+
+      expect(result.data.hasRichContext).toBe(true);
+      expect(result.data.additionalContext).toBe('User is CTO');
+    });
+
+    it('should validate and filter invalid theme colors', async () => {
+      (ai.generateText as any).mockResolvedValue({
+        text: JSON.stringify({
+          topic: 'Color Test',
+          themeColor: 'invalid-color-code',
+        }),
+      });
+
+      const result = await analyzeUserPromptWithAI({
+        userPrompt: 'Test',
+        model: {},
+      });
+
+      expect(result.data.themeColor).toBeUndefined();
+    });
+
+    it('should accept valid theme colors', async () => {
+      (ai.generateText as any).mockResolvedValue({
+        text: JSON.stringify({
+          topic: 'Color Test',
+          themeColor: 'bg-gradient-blue',
+        }),
+      });
+
+      const result = await analyzeUserPromptWithAI({
+        userPrompt: 'Test',
+        model: {},
+      });
+
+      // Note: prompt-analyzer logic checks only presence in THEME_COLORS.VALUES
+      expect(result.data.themeColor).toBe('bg-gradient-blue');
+    });
+
+    it('should propagate customRequirements', async () => {
+      (ai.generateText as any).mockResolvedValue({
+        text: JSON.stringify({ topic: 'Req Test' }),
+      });
+
+      const result = await analyzeUserPromptWithAI({
+        userPrompt: 'Test',
+        model: {},
+        customRequirements: 'Must include video',
+      });
+
+      expect(result.data.customRequirements).toBe('Must include video');
+    });
+
+    it('should preserve mustKeepDetails from analysis response', async () => {
+      (ai.generateText as any).mockResolvedValue({
+        text: JSON.stringify({
+          topic: 'Detail Test',
+          mustKeepDetails: ['Keep real-world invoice fraud case', 'Keep urgent payment language'],
+        }),
+      });
+
+      const result = await analyzeUserPromptWithAI({
+        userPrompt: 'Test',
+        model: {},
+      });
+
+      expect(result.data.mustKeepDetails).toEqual([
+        'Keep real-world invoice fraud case',
+        'Keep urgent payment language',
+      ]);
+    });
+
+    it('should execute high-coverage branch for mustKeepDetails validation', async () => {
+      (ai.generateText as any).mockResolvedValue({
+        text: JSON.stringify({
+          topic: 'Detail Coverage',
+          title: 'Invoice fraud case handling',
+          description: 'Practice urgent payment language controls.',
+          keyTopics: ['invoice fraud case', 'urgent payment language'],
+          practicalApplications: ['Verify payment requests against fraud indicators'],
+          learningObjectives: ['Spot invoice fraud case indicators'],
+          mustKeepDetails: ['invoice fraud case', 'urgent payment language'],
+        }),
+      });
+
+      const result = await analyzeUserPromptWithAI({
+        userPrompt: 'Create a microlearning for invoice fraud prevention',
+        model: {},
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.data.mustKeepDetails).toEqual(['invoice fraud case', 'urgent payment language']);
+    });
+
+    it('should rethrow unexpected analysis errors from outer catch block', async () => {
+      const mockRepo = {
+        loadExamplesOnce: vi.fn().mockRejectedValue(new Error('load failed hard')),
+        getSmartSchemaHints: vi.fn(),
+        getSchemaHints: vi.fn(),
+      };
+      (ExampleRepo.getInstance as any).mockReturnValue(mockRepo);
+
+      await expect(
+        analyzeUserPromptWithAI({
+          userPrompt: 'Test',
+          model: {},
+        })
+      ).rejects.toThrow('load failed hard');
+    });
+  });
+
+  describe('getFallbackAnalysis', () => {
+    it('should return fallback data with correct defaults', async () => {
+      const result = await getFallbackAnalysis({
+        userPrompt: 'Learn Python Safety',
+        model: {},
+        suggestedDepartment: 'Engineering',
+      });
+
+      expect(result.topic).toContain('Learn Python Safety');
+      expect(result.isCodeTopic).toBe(true);
+      expect(result.department).toBe('Engineering');
+    });
+
+    it('should return normal fallback for non-code', async () => {
+      const result = await getFallbackAnalysis({
+        userPrompt: 'Be careful with emails',
+        model: {},
+      });
+
+      expect(result.isCodeTopic).toBe(false);
+      expect(result.category).toBeDefined();
+    });
+
+    it('should detect vishing keywords in fallback', async () => {
+      const result = await getFallbackAnalysis({
+        userPrompt: 'Create voice phishing and phone scam awareness module',
+        model: {},
+      });
+
+      expect(result.isVishing).toBe(true);
+      expect(result.isSmishing).toBe(false);
+      expect(result.deliveryChannel).toBeUndefined();
+    });
+
+    it('should detect smishing keywords and infer telegram delivery channel', async () => {
+      const result = await getFallbackAnalysis({
+        userPrompt: 'Create smishing simulation for Telegram message scams',
+        model: {},
+      });
+
+      expect(result.isSmishing).toBe(true);
+      expect(result.isVishing).toBe(false);
+      expect(result.deliveryChannel).toBe('telegram');
+    });
+
+    it('should default smishing delivery channel to sms when channel is not explicit', async () => {
+      const result = await getFallbackAnalysis({
+        userPrompt: 'Create SMS phishing (smishing) awareness training',
+        model: {},
+      });
+
+      expect(result.isSmishing).toBe(true);
+      expect(result.deliveryChannel).toBe('sms');
+    });
+
+    it('should preserve custom requirements and additional context in fallback', async () => {
+      const result = await getFallbackAnalysis({
+        userPrompt: 'Create security awareness module',
+        model: {},
+        additionalContext: 'Target audience is finance team',
+        customRequirements: 'Include practical examples',
+      });
+
+      expect(result.hasRichContext).toBe(true);
+      expect(result.additionalContext).toBe('Target audience is finance team');
+      expect(result.customRequirements).toBe('Include practical examples');
+    });
+
+    it('should infer linkedin delivery channel for smishing fallback', async () => {
+      const result = await getFallbackAnalysis({
+        userPrompt: 'Create smishing awareness for LinkedIn message scams',
+        model: {},
+      });
+
+      expect(result.isSmishing).toBe(true);
+      expect(result.deliveryChannel).toBe('linkedin');
+    });
+
+    it('should use char-based fallback language when AI language detection fails', async () => {
+      (ai.generateText as any).mockRejectedValue(new Error('language detection unavailable'));
+
+      const result = await getFallbackAnalysis({
+        userPrompt: '\u3042',
+        model: {},
+      });
+
+      expect(result.language).toBe('ja');
+    });
+  });
 });
-

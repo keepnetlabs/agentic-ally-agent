@@ -3,24 +3,29 @@ import {
   waitForKVConsistency,
   buildExpectedKVKeys,
   buildExpectedPhishingKeys,
+  buildExpectedSmishingKeys,
 } from './kv-consistency';
 
-// Mock dependencies
-vi.mock('../constants', () => ({
-  CLOUDFLARE_KV: {
-    CONSISTENCY_CHECK: {
-      ENABLED: true,
-      INITIAL_DELAY_MS: 500,
-      MAX_DELAY_MS: 2000,
-      MAX_WAIT_MS: 10000,
+// Mock dependencies - use importActual to preserve ERROR_CODES etc. for error-service
+vi.mock('../constants', async importOriginal => {
+  const actual = (await importOriginal()) as Record<string, unknown>;
+  return {
+    ...actual,
+    CLOUDFLARE_KV: {
+      CONSISTENCY_CHECK: {
+        ENABLED: true,
+        INITIAL_DELAY_MS: 500,
+        MAX_DELAY_MS: 2000,
+        MAX_WAIT_MS: 10000,
+      },
+      KEY_TEMPLATES: {
+        base: (id: string) => `ml:${id}:base`,
+        language: (id: string, lang: string) => `ml:${id}:lang:${lang}`,
+        inbox: (id: string, dept: string, lang: string) => `ml:${id}:inbox:${dept}:${lang}`,
+      },
     },
-    KEY_TEMPLATES: {
-      base: (id: string) => `ml:${id}:base`,
-      language: (id: string, lang: string) => `ml:${id}:lang:${lang}`,
-      inbox: (id: string, dept: string, lang: string) => `ml:${id}:inbox:${dept}:${lang}`,
-    },
-  },
-}));
+  };
+});
 
 vi.mock('./core/logger', () => ({
   getLogger: vi.fn(() => ({
@@ -32,7 +37,8 @@ vi.mock('./core/logger', () => ({
 }));
 
 vi.mock('./core/error-utils', () => ({
-  normalizeError: vi.fn((err) => (err instanceof Error ? err : new Error(String(err)))),
+  normalizeError: vi.fn(err => (err instanceof Error ? err : new Error(String(err)))),
+  logErrorInfo: vi.fn(),
 }));
 
 const mockKVGet = vi.fn();
@@ -268,7 +274,7 @@ describe('kv-consistency', () => {
 
     it('should format keys correctly with colons', () => {
       const keys = buildExpectedPhishingKeys('test-id', 'fr-fr', true, true);
-      keys.forEach((key) => {
+      keys.forEach(key => {
         expect(key).toContain(':');
         expect(key.startsWith('phishing:')).toBe(true);
       });
@@ -384,6 +390,65 @@ describe('kv-consistency', () => {
       expect(mlKey[0]).toBe('ml:id:base');
       expect(langKey[1]).toBe('ml:id:lang:en-us');
       expect(inboxKey[2]).toBe('ml:id:inbox:IT:en-us');
+    });
+  });
+
+  describe('buildExpectedSmishingKeys', () => {
+    it('should include base key for smishing', () => {
+      const keys = buildExpectedSmishingKeys('smishing-uuid', 'en-us');
+      expect(keys).toContain('smishing:smishing-uuid:base');
+    });
+
+    it('should include sms key by default', () => {
+      const keys = buildExpectedSmishingKeys('smishing-uuid', 'en-us');
+      expect(keys).toContain('smishing:smishing-uuid:sms:en-us');
+    });
+
+    it('should include landing page key by default', () => {
+      const keys = buildExpectedSmishingKeys('smishing-uuid', 'en-us');
+      expect(keys).toContain('smishing:smishing-uuid:landing:en-us');
+    });
+
+    it('should exclude sms when hasSms is false', () => {
+      const keys = buildExpectedSmishingKeys('smishing-uuid', 'en-us', false);
+      expect(keys).not.toContain('smishing:smishing-uuid:sms:en-us');
+      expect(keys).toContain('smishing:smishing-uuid:landing:en-us');
+    });
+
+    it('should exclude landing page when hasLandingPage is false', () => {
+      const keys = buildExpectedSmishingKeys('smishing-uuid', 'en-us', true, false);
+      expect(keys).toContain('smishing:smishing-uuid:sms:en-us');
+      expect(keys).not.toContain('smishing:smishing-uuid:landing:en-us');
+    });
+
+    it('should exclude both sms and landing page when both false', () => {
+      const keys = buildExpectedSmishingKeys('smishing-uuid', 'en-us', false, false);
+      expect(keys).toEqual(['smishing:smishing-uuid:base']);
+    });
+
+    it('should normalize language to lowercase', () => {
+      const keysUpper = buildExpectedSmishingKeys('smishing-uuid', 'TR-TR');
+      const keysLower = buildExpectedSmishingKeys('smishing-uuid', 'tr-tr');
+      expect(keysUpper[1]).toBe(keysLower[1]);
+    });
+
+    it('should return correct key count based on flags', () => {
+      expect(buildExpectedSmishingKeys('id', 'en-us')).toHaveLength(3);
+      expect(buildExpectedSmishingKeys('id', 'en-us', false, true)).toHaveLength(2);
+      expect(buildExpectedSmishingKeys('id', 'en-us', true, false)).toHaveLength(2);
+      expect(buildExpectedSmishingKeys('id', 'en-us', false, false)).toHaveLength(1);
+    });
+  });
+
+  describe('waitForKVConsistency - Timeout', () => {
+    it('should log warning and diagnose missing keys when max wait exceeded', async () => {
+      mockKVGet.mockResolvedValue(null);
+
+      const promise = waitForKVConsistency('test-id', ['missing-key']);
+      vi.advanceTimersByTime(12000);
+      await promise;
+
+      expect(mockKVGet).toHaveBeenCalledWith('missing-key');
     });
   });
 });

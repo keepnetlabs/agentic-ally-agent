@@ -9,36 +9,50 @@ import { withRetry } from '../../utils/core/resilience-utils';
 import { sanitizeEmailBody } from './email-body-sanitizer';
 
 export const bodyBehavioralAnalysisOutputSchema = z.object({
-    urgency_level: z.enum(['insufficient_data', 'none', 'low', 'medium', 'high']).describe('Degree of time pressure/urgency framing in body'),
-    emotional_pressure: z.enum(['insufficient_data', 'none', 'fear', 'urgency', 'reward']).describe('Type of emotional manipulation detected'),
-    social_engineering_pattern: z.enum(['insufficient_data', 'none', 'pretexting', 'extortion', 'baiting']).describe('Social engineering tactic used'),
-    verification_avoidance: z.boolean().describe('True if email discourages verification/validation'),
-    verification_avoidance_tactics: z.string().describe('Examples: "Don\'t call the number", "keep confidential", etc. or "insufficient_data"'),
-    urgency_indicators: z.string().describe('List of urgency framing phrases found in body (e.g., "immediate action", "act now") or "insufficient_data"'),
-    emotional_pressure_indicators: z.string().describe('Examples of emotional manipulation phrases or "insufficient_data"'),
-    behavioral_summary: z.string().describe('1-2 sentence summary of behavioral manipulation tactics detected'),
+  urgency_level: z
+    .enum(['insufficient_data', 'none', 'low', 'medium', 'high'])
+    .describe('Degree of time pressure/urgency framing in body'),
+  emotional_pressure: z
+    .enum(['insufficient_data', 'none', 'fear', 'urgency', 'reward'])
+    .describe('Type of emotional manipulation detected'),
+  social_engineering_pattern: z
+    .enum(['insufficient_data', 'none', 'pretexting', 'extortion', 'baiting'])
+    .describe('Social engineering tactic used'),
+  verification_avoidance: z.boolean().describe('True if email discourages verification/validation'),
+  verification_avoidance_tactics: z
+    .string()
+    .describe('Examples: "Don\'t call the number", "keep confidential", etc. or "insufficient_data"'),
+  urgency_indicators: z
+    .string()
+    .describe(
+      'List of urgency framing phrases found in body (e.g., "immediate action", "act now") or "insufficient_data"'
+    ),
+  emotional_pressure_indicators: z
+    .string()
+    .describe('Examples of emotional manipulation phrases or "insufficient_data"'),
+  behavioral_summary: z.string().describe('1-2 sentence summary of behavioral manipulation tactics detected'),
 
-    // Pass-through context
-    original_email: EmailIREmailDataSchema,
+  // Pass-through context
+  original_email: EmailIREmailDataSchema,
 });
 
 export const bodyBehavioralAnalysisTool = createTool({
-    id: 'email-ir-body-behavioral-analysis-tool',
-    description: 'Analyzes email body for behavioral manipulation and social engineering tactics',
-    inputSchema: EmailIREmailDataSchema,
-    outputSchema: bodyBehavioralAnalysisOutputSchema,
-    execute: async ({ context }) => {
-        const email = context;
-        const emailId = email.from?.split('@')[0] || 'unknown-sender';
-        const ctx = createLogContext(emailId, 'behavioral-analysis');
+  id: 'email-ir-body-behavioral-analysis-tool',
+  description: 'Analyzes email body for behavioral manipulation and social engineering tactics',
+  inputSchema: EmailIREmailDataSchema,
+  outputSchema: bodyBehavioralAnalysisOutputSchema,
+  execute: async ({ context }) => {
+    const email = context;
+    const emailId = email.from?.split('@')[0] || 'unknown-sender';
+    const ctx = createLogContext(emailId, 'behavioral-analysis');
 
-        try {
-            logStepStart(loggerBehavioral, ctx, { subject: email.subject });
+    try {
+      logStepStart(loggerBehavioral, ctx, { subject: email.subject });
 
-            const emailBody = sanitizeEmailBody(email.htmlBody || '') || email.subject || 'No body content';
-            const senderDisplay = email.senderName || email.from;
+      const emailBody = sanitizeEmailBody(email.htmlBody || '') || email.subject || 'No body content';
+      const senderDisplay = email.senderName || email.from;
 
-            const prompt = `
+      const prompt = `
 # Task: Psychological & Behavioral Analysis (Social Engineering)
 
 Analyze the email body to decode the sender's manipulation tactics.
@@ -110,27 +124,28 @@ Populate the output schema based on the behavioral signals identified:
 - **Edge Cases**: If the body is empty or too short to analyze, use "insufficient_data" for fields you cannot assess.
 `;
 
-            const result = await withRetry(
-                () => emailIRAnalyst.generate(prompt, {
-                    output: bodyBehavioralAnalysisOutputSchema.omit({ original_email: true }),
-                }),
-                'body-behavioral-analysis-llm'
-            );
+      const result = await withRetry(
+        () =>
+          emailIRAnalyst.generate(prompt, {
+            output: bodyBehavioralAnalysisOutputSchema.omit({ original_email: true }),
+          }),
+        'body-behavioral-analysis-llm'
+      );
 
-            logStepComplete(loggerBehavioral, ctx, { result: result.object });
+      logStepComplete(loggerBehavioral, ctx, { result: result.object });
 
-            return {
-                ...result.object,
-                original_email: email,
-            };
-        } catch (error) {
-            const err = normalizeError(error);
-            logStepError(loggerBehavioral, ctx, err);
-            const errorInfo = errorService.aiModel(err.message, { step: 'body-behavioral-analysis', stack: err.stack });
-            logErrorInfo(loggerBehavioral, 'error', 'Body behavioral analysis failed', errorInfo);
-            const e = new Error(err.message);
-            (e as Error & { code?: string }).code = errorInfo.code;
-            throw e;
-        }
-    },
+      return {
+        ...result.object,
+        original_email: email,
+      };
+    } catch (error) {
+      const err = normalizeError(error);
+      logStepError(loggerBehavioral, ctx, err);
+      const errorInfo = errorService.aiModel(err.message, { step: 'body-behavioral-analysis', stack: err.stack });
+      logErrorInfo(loggerBehavioral, 'error', 'Body behavioral analysis failed', errorInfo);
+      const e = new Error(err.message);
+      (e as Error & { code?: string }).code = errorInfo.code;
+      throw e;
+    }
+  },
 });

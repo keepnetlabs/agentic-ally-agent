@@ -134,11 +134,7 @@ describe('executeAutonomousGeneration', () => {
     });
 
     expect(mockGenerateContentForGroup).toHaveBeenCalledTimes(1);
-    expect(mockGenerateContentForGroup).toHaveBeenCalledWith(
-      ['training', 'smishing'],
-      undefined,
-      'group-123'
-    );
+    expect(mockGenerateContentForGroup).toHaveBeenCalledWith(['training', 'smishing'], undefined, 'group-123');
     expect(result.success).toBe(true);
     expect(result.smishingResult?.success).toBe(true);
   });

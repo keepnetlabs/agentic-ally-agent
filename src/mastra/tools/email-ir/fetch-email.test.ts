@@ -33,7 +33,7 @@ describe('fetchEmailTool', () => {
   it('should have default API base URL in schema', () => {
     const parsed = fetchEmailInputSchema.safeParse({
       id: 'test-id',
-      accessToken: 'test-token'
+      accessToken: 'test-token',
     });
 
     expect(parsed.success).toBe(true);
@@ -46,7 +46,7 @@ describe('fetchEmailTool', () => {
     const parsed = fetchEmailInputSchema.safeParse({
       id: 'test-id',
       accessToken: 'test-token',
-      apiBaseUrl: 'https://custom-api.example.com'
+      apiBaseUrl: 'https://custom-api.example.com',
     });
 
     expect(parsed.success).toBe(true);
@@ -57,7 +57,7 @@ describe('fetchEmailTool', () => {
 
   it('should validate required id field', () => {
     const parsed = fetchEmailInputSchema.safeParse({
-      accessToken: 'token-only'
+      accessToken: 'token-only',
     });
 
     expect(parsed.success).toBe(false);
@@ -65,7 +65,7 @@ describe('fetchEmailTool', () => {
 
   it('should validate required accessToken field', () => {
     const parsed = fetchEmailInputSchema.safeParse({
-      id: 'id-only'
+      id: 'id-only',
     });
 
     expect(parsed.success).toBe(false);
@@ -84,7 +84,7 @@ describe('fetchEmailTool', () => {
   it('should validate id is a string', () => {
     const parsed = fetchEmailInputSchema.safeParse({
       id: 123,
-      accessToken: 'token'
+      accessToken: 'token',
     });
 
     expect(parsed.success).toBe(false);
@@ -93,7 +93,7 @@ describe('fetchEmailTool', () => {
   it('should validate accessToken is a string', () => {
     const parsed = fetchEmailInputSchema.safeParse({
       id: 'test-id',
-      accessToken: 456
+      accessToken: 456,
     });
 
     expect(parsed.success).toBe(false);
@@ -103,7 +103,7 @@ describe('fetchEmailTool', () => {
     const parsed = fetchEmailInputSchema.safeParse({
       id: 'email-123',
       accessToken: 'bearer-token-abc',
-      apiBaseUrl: 'https://api.keepnet.com'
+      apiBaseUrl: 'https://api.keepnet.com',
     });
 
     expect(parsed.success).toBe(true);

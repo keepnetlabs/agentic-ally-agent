@@ -185,7 +185,7 @@ describe('WorkflowValidators', () => {
         'https://example.com/training?id=123&lang=en',
       ];
 
-      urlFormats.forEach((url) => {
+      urlFormats.forEach(url => {
         const result: CreateMicrolearningResult = {
           status: 'success',
           result: {
@@ -391,7 +391,7 @@ describe('WorkflowValidators', () => {
         'https://example.com/training-it?id=123&lang=it',
       ];
 
-      urlFormats.forEach((url) => {
+      urlFormats.forEach(url => {
         const result: AddLanguageResult = {
           status: 'success',
           result: {

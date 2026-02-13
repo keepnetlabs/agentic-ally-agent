@@ -32,7 +32,7 @@ function extractCompanyIdFromToken(token: string): string | undefined {
     }
 
     // Add padding if needed for base64 decode
-    const padded = payload + '='.repeat((4 - payload.length % 4) % 4);
+    const padded = payload + '='.repeat((4 - (payload.length % 4)) % 4);
     const decoded = JSON.parse(Buffer.from(padded, 'base64').toString('utf-8'));
 
     // companyId is stored as user_company_resourceid in JWT
@@ -95,18 +95,16 @@ export async function getPolicyContext(): Promise<string> {
     logger.info('Found policies', {
       companyId,
       count: policies.length,
-      policyNames: policies.map((p) => p?.name).filter(Boolean),
+      policyNames: policies.map(p => p?.name).filter(Boolean),
     });
     // 2. Read each policy content in parallel
     const policyContents = await Promise.all(
-      policies.map(async (policy) => {
+      policies.map(async policy => {
         try {
           // Remove "policies/{companyId}/" prefix from blobUrl
           const cleanBlobUrl = policy.blobUrl.replace(/^policies\/[^\/]+\//, '');
           const policyUrl = `/api/policies/policies/${encodeURIComponent(cleanBlobUrl)}`;
-          const fullUrl = policyUrl.startsWith('http')
-            ? policyUrl
-            : `${apiBaseUrl}${policyUrl}`;
+          const fullUrl = policyUrl.startsWith('http') ? policyUrl : `${apiBaseUrl}${policyUrl}`;
           const response = await withRetry(
             () =>
               fetch(fullUrl, {
@@ -127,14 +125,18 @@ export async function getPolicyContext(): Promise<string> {
           logger.info('Policy data received', {
             policyName: policy.name,
             policyId: policyData.policyId,
-            textLength: policyData.text?.length || 0
+            textLength: policyData.text?.length || 0,
           });
 
           const content = policyData.text;
           return `**Policy: ${policy.name}**\n${content}`;
         } catch (error) {
           const err = normalizeError(error);
-          const errorInfo = errorService.external(err.message, { step: 'read-policy', policyName: policy.name, stack: err.stack });
+          const errorInfo = errorService.external(err.message, {
+            step: 'read-policy',
+            policyName: policy.name,
+            stack: err.stack,
+          });
           logErrorInfo(logger, 'warn', 'Error reading policy', errorInfo);
           return null;
         }
@@ -142,7 +144,7 @@ export async function getPolicyContext(): Promise<string> {
     );
 
     // 3. Filter out failures and join
-    const validPolicies = policyContents.filter((p) => p !== null);
+    const validPolicies = policyContents.filter(p => p !== null);
 
     if (validPolicies.length === 0) {
       logger.info('No valid policies could be read');

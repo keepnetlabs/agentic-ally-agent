@@ -12,7 +12,7 @@ export function generateScene8Prompt(analysis: PromptAnalysis, microlearning: Mi
   logger.info('Scene 8 - Resource Resolution Debug', {
     topic: analysis.topic,
     category: analysis.category,
-    keyTopics: analysis.keyTopics
+    keyTopics: analysis.keyTopics,
   });
 
   // Use isCodeTopic from analyze-user-prompt-tool (source of truth)
@@ -20,13 +20,16 @@ export function generateScene8Prompt(analysis: PromptAnalysis, microlearning: Mi
 
   logger.info('isCode detection', { isCodeTopic, source: 'prompt analysis' });
 
-  const resources = getResourcesForScene8({
-    topic: analysis.topic,
-    category: analysis.category,
-    keyTopics: analysis.keyTopics, // Pass keyTopics for dynamic resolution
-    department: analysis.department,
-    language: analysis.language
-  }, isCodeTopic); // Pass isCode flag to ensure DEVELOPMENT resources
+  const resources = getResourcesForScene8(
+    {
+      topic: analysis.topic,
+      category: analysis.category,
+      keyTopics: analysis.keyTopics, // Pass keyTopics for dynamic resolution
+      department: analysis.department,
+      language: analysis.language,
+    },
+    isCodeTopic
+  ); // Pass isCode flag to ensure DEVELOPMENT resources
 
   logger.info('Resources found', { resources: resources.map(r => r.title).join(', ') });
 
@@ -34,8 +37,8 @@ export function generateScene8Prompt(analysis: PromptAnalysis, microlearning: Mi
   const resourcesJson = JSON.stringify(
     resources.slice(0, 2).map(r => ({
       title: r.title,
-      type: "URL",
-      url: r.url
+      type: 'URL',
+      url: r.url,
     }))
   );
 
@@ -53,11 +56,13 @@ isCodeTopic: ${analysis.isCodeTopic}
 
 ⚠️ RESOURCES TRANSLATION (CRITICAL):
 - The "resources" array below contains resource objects with "title", "type", and "url" fields
-${analysis.language.toLowerCase().startsWith('en')
-      ? '- If language is English, keep resource "title" values EXACTLY as provided - do NOT translate or modify'
-      : `- Translate each resource "title" to ${analysis.language} naturally (max 5 words, keep concise and topic-specific)
+${
+  analysis.language.toLowerCase().startsWith('en')
+    ? '- If language is English, keep resource "title" values EXACTLY as provided - do NOT translate or modify'
+    : `- Translate each resource "title" to ${analysis.language} naturally (max 5 words, keep concise and topic-specific)
 - Write titles naturally in ${analysis.language} as a native speaker would - do NOT literally translate word-by-word
-- Example: English "Phishing Detection Guide" → Turkish "Oltalama Tespit Rehberi" (natural, not literal)`}
+- Example: English "Phishing Detection Guide" → Turkish "Oltalama Tespit Rehberi" (natural, not literal)`
+}
 - NEVER change "type" (keep as "URL") or "url" values - only translate titles if language is NOT English
 
 Generate scene 8 (summary):

@@ -55,10 +55,7 @@ export async function loadSmishingContent(
   const smsKey = `smishing:${smishingId}:sms:${normalizedLanguage}`;
   const landingKey = `smishing:${smishingId}:landing:${normalizedLanguage}`;
 
-  const [smsResult, landingResult] = await Promise.allSettled([
-    kvService.get(smsKey),
-    kvService.get(landingKey),
-  ]);
+  const [smsResult, landingResult] = await Promise.allSettled([kvService.get(smsKey), kvService.get(landingKey)]);
 
   const rawSms = smsResult.status === 'fulfilled' ? smsResult.value : null;
   const rawLanding = landingResult.status === 'fulfilled' ? landingResult.value : null;

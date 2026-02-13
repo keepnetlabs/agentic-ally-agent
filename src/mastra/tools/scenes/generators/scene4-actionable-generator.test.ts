@@ -315,7 +315,7 @@ describe('Scene 4 - Actionable Generator', () => {
 
     it('should request protective action for action 2', () => {
       const prompt = generateScene4Prompt(baseAnalysis, baseMicrolearning);
-      expect(prompt).toContain("Avoid clicking suspicious links");
+      expect(prompt).toContain('Avoid clicking suspicious links');
       expect(prompt).toContain('opening unknown attachments');
     });
 

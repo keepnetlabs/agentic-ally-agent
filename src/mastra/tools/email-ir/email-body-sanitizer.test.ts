@@ -8,7 +8,8 @@ describe('sanitizeEmailBody', () => {
   });
 
   it('should remove base64 encoded images', () => {
-    const html = '<p>Image: <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" /></p>';
+    const html =
+      '<p>Image: <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" /></p>';
     const result = sanitizeEmailBody(html);
     expect(result).toContain('[IMAGE]');
     expect(result).not.toContain('iVBORw0KGgo');

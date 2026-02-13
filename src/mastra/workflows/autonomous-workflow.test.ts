@@ -90,7 +90,7 @@ describe('AutonomousWorkflow', () => {
         lastName: 'Doe',
         actions: [],
         sendAfterPhishingSimulation: false,
-        preferredLanguage: 'en'
+        preferredLanguage: 'en',
       };
 
       expect(payloadShape).toHaveProperty('token');
@@ -103,7 +103,7 @@ describe('AutonomousWorkflow', () => {
         lastName: 'Doe',
         actions: [],
         sendAfterPhishingSimulation: false,
-        preferredLanguage: 'en'
+        preferredLanguage: 'en',
       };
 
       expect(payloadShape).toHaveProperty('firstName');
@@ -116,7 +116,7 @@ describe('AutonomousWorkflow', () => {
         lastName: 'Doe',
         actions: [],
         sendAfterPhishingSimulation: false,
-        preferredLanguage: 'en'
+        preferredLanguage: 'en',
       };
 
       expect(payloadShape).toHaveProperty('lastName');
@@ -129,7 +129,7 @@ describe('AutonomousWorkflow', () => {
         lastName: 'Doe',
         actions: [],
         sendAfterPhishingSimulation: false,
-        preferredLanguage: 'en'
+        preferredLanguage: 'en',
       };
 
       expect(payloadShape).toHaveProperty('actions');
@@ -142,7 +142,7 @@ describe('AutonomousWorkflow', () => {
         lastName: 'Doe',
         actions: [],
         sendAfterPhishingSimulation: false,
-        preferredLanguage: 'en'
+        preferredLanguage: 'en',
       };
 
       expect(payloadShape).toHaveProperty('sendAfterPhishingSimulation');
@@ -155,7 +155,7 @@ describe('AutonomousWorkflow', () => {
         lastName: 'Doe',
         actions: [],
         sendAfterPhishingSimulation: false,
-        preferredLanguage: 'en'
+        preferredLanguage: 'en',
       };
 
       expect(payloadShape).toHaveProperty('preferredLanguage');
@@ -169,7 +169,7 @@ describe('AutonomousWorkflow', () => {
         actions: [],
         sendAfterPhishingSimulation: false,
         preferredLanguage: 'en',
-        targetUserResourceId: 'user-123'
+        targetUserResourceId: 'user-123',
       };
 
       expect(payloadShape).toHaveProperty('targetUserResourceId');
@@ -183,7 +183,7 @@ describe('AutonomousWorkflow', () => {
         actions: [],
         sendAfterPhishingSimulation: false,
         preferredLanguage: 'en',
-        targetGroupResourceId: 'group-123'
+        targetGroupResourceId: 'group-123',
       };
 
       expect(payloadShape).toHaveProperty('targetGroupResourceId');
@@ -196,7 +196,7 @@ describe('AutonomousWorkflow', () => {
         lastName: 'Doe',
         actions: ['training', 'phishing'],
         sendAfterPhishingSimulation: false,
-        preferredLanguage: 'en'
+        preferredLanguage: 'en',
       };
 
       expect(Array.isArray(payloadShape.actions)).toBe(true);
@@ -209,7 +209,7 @@ describe('AutonomousWorkflow', () => {
         lastName: 'Doe',
         actions: ['smishing'],
         sendAfterPhishingSimulation: false,
-        preferredLanguage: 'en'
+        preferredLanguage: 'en',
       };
 
       expect(payloadShape.actions).toContain('smishing');
@@ -222,7 +222,7 @@ describe('AutonomousWorkflow', () => {
         lastName: 'Doe',
         actions: [],
         sendAfterPhishingSimulation: true,
-        preferredLanguage: 'en'
+        preferredLanguage: 'en',
       };
 
       expect(typeof payloadShape.sendAfterPhishingSimulation).toBe('boolean');
@@ -252,7 +252,7 @@ describe('AutonomousWorkflow', () => {
     it('success response should have success field as boolean', () => {
       const successResponse = {
         success: true,
-        error: undefined
+        error: undefined,
       };
 
       expect(typeof successResponse.success).toBe('boolean');
@@ -262,7 +262,7 @@ describe('AutonomousWorkflow', () => {
     it('error response should have success field as false', () => {
       const errorResponse = {
         success: false,
-        error: 'Something went wrong'
+        error: 'Something went wrong',
       };
 
       expect(typeof errorResponse.success).toBe('boolean');
@@ -273,7 +273,7 @@ describe('AutonomousWorkflow', () => {
       const errorResponse = {
         success: false,
         error: 'Workflow execution failed',
-        actions: []
+        actions: [],
       };
 
       expect(errorResponse).toHaveProperty('error');
@@ -284,7 +284,7 @@ describe('AutonomousWorkflow', () => {
       const errorResponse = {
         success: false,
         error: 'Error occurred',
-        actions: ['action1', 'action2']
+        actions: ['action1', 'action2'],
       };
 
       expect(Array.isArray(errorResponse.actions)).toBe(true);
@@ -333,7 +333,7 @@ describe('AutonomousWorkflow', () => {
       const errorResponse = {
         success: false,
         error: 'An unexpected error occurred',
-        actions: []
+        actions: [],
       };
 
       expect(errorResponse.success).toBe(false);
@@ -344,7 +344,7 @@ describe('AutonomousWorkflow', () => {
       const errorResponse = {
         success: false,
         error: 'Normalized error message',
-        actions: []
+        actions: [],
       };
 
       expect(typeof errorResponse.error).toBe('string');
@@ -354,7 +354,7 @@ describe('AutonomousWorkflow', () => {
       const errorResponse = {
         success: false,
         error: 'Error occurred',
-        actions: ['create-phishing', 'send-simulation']
+        actions: ['create-phishing', 'send-simulation'],
       };
 
       expect(Array.isArray(errorResponse.actions)).toBe(true);
@@ -365,7 +365,7 @@ describe('AutonomousWorkflow', () => {
       const errorResponse = {
         success: false,
         error: 'Critical error',
-        actions: []
+        actions: [],
       };
 
       expect(Array.isArray(errorResponse.actions)).toBe(true);
@@ -446,8 +446,8 @@ describe('AutonomousWorkflow', () => {
           lastName: 'Doe',
           actions: [],
           sendAfterPhishingSimulation: false,
-          preferredLanguage: 'en'
-        }
+          preferredLanguage: 'en',
+        },
       };
 
       const result = instance.run(event, {} as any);
@@ -464,7 +464,7 @@ describe('AutonomousWorkflow', () => {
   describe('Response Structure Consistency', () => {
     it('success response should always have success field', () => {
       const response = {
-        success: true
+        success: true,
       };
 
       expect(response).toHaveProperty('success');
@@ -473,7 +473,7 @@ describe('AutonomousWorkflow', () => {
     it('error response should always have success and error fields', () => {
       const response = {
         success: false,
-        error: 'Error message'
+        error: 'Error message',
       };
 
       expect(response).toHaveProperty('success');
@@ -484,7 +484,7 @@ describe('AutonomousWorkflow', () => {
       const response = {
         success: false,
         error: 'Error message',
-        actions: []
+        actions: [],
       };
 
       expect(response).toHaveProperty('actions');
@@ -493,7 +493,7 @@ describe('AutonomousWorkflow', () => {
     it('success response should return result object', () => {
       const response = {
         success: true,
-        result: {}
+        result: {},
       };
 
       expect(response.success).toBe(true);
@@ -552,7 +552,7 @@ describe('AutonomousWorkflow', () => {
       const errorResponse = {
         success: false,
         error: 'Invalid payload',
-        actions: []
+        actions: [],
       };
 
       expect(errorResponse.actions).toBeDefined();
@@ -563,7 +563,7 @@ describe('AutonomousWorkflow', () => {
       const errorResponse = {
         success: false,
         error: 'Error',
-        actions: []
+        actions: [],
       };
 
       expect(errorResponse.actions).toBeDefined();
@@ -573,7 +573,7 @@ describe('AutonomousWorkflow', () => {
       const errorResponse = {
         success: false,
         error: 'Error',
-        actions: []
+        actions: [],
       };
 
       expect(errorResponse.actions.length).toBe(0);

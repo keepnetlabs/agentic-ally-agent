@@ -5,11 +5,7 @@ import { LanguageModel } from '../../types/language-model';
 import { MicrolearningContent } from '../../types/microlearning';
 import { MicrolearningService } from '../../services/microlearning-service';
 import { getModelWithOverride } from '../../model-providers';
-import {
-  InboxContentSchema,
-  CreateInboxStructureSchema,
-  CreateInboxStructureOutputSchema
-} from '../../schemas';
+import { InboxContentSchema, CreateInboxStructureSchema, CreateInboxStructureOutputSchema } from '../../schemas';
 import { cleanResponse } from '../../utils/content-processors/json-cleaner';
 import { generateInboxTextsPrompt } from './generators/inbox-texts-generator';
 import { generateInboxEmailsParallel } from './generators/inbox-emails-orchestrator';
@@ -29,12 +25,31 @@ export const createInboxStructureTool = new Tool({
   execute: async (context: any) => {
     const logger = getLogger('CreateInboxStructureTool');
     const input = context?.inputData || context?.input || context;
-    const { department, languageCode, microlearningId, microlearning, additionalContext, modelProvider, model: modelOverride } = input;
+    const {
+      department,
+      languageCode,
+      microlearningId,
+      microlearning,
+      additionalContext,
+      modelProvider,
+      model: modelOverride,
+    } = input;
 
     try {
-      const inboxContent = await createInboxStructure(department, languageCode, microlearningId, microlearning, additionalContext, modelProvider, modelOverride);
+      const inboxContent = await createInboxStructure(
+        department,
+        languageCode,
+        microlearningId,
+        microlearning,
+        additionalContext,
+        modelProvider,
+        modelOverride
+      );
 
-      logger.debug('Tool returning inbox content', { contentType: typeof inboxContent, keyCount: Object.keys(inboxContent || {}).length });
+      logger.debug('Tool returning inbox content', {
+        contentType: typeof inboxContent,
+        keyCount: Object.keys(inboxContent || {}).length,
+      });
 
       return {
         success: true,
@@ -45,10 +60,9 @@ export const createInboxStructureTool = new Tool({
           microlearningId,
           inboxPath: `inbox/${department || 'all'}/${languageCode}.json`,
           itemsGenerated: 1,
-          estimatedDuration: '20 minutes max'
-        }
+          estimatedDuration: '20 minutes max',
+        },
       };
-
     } catch (error) {
       const err = normalizeError(error);
       const errorInfo = errorService.external(err.message, {
@@ -56,7 +70,7 @@ export const createInboxStructureTool = new Tool({
         languageCode,
         microlearningId,
         step: 'inbox-structure-creation',
-        stack: err.stack
+        stack: err.stack,
       });
 
       logErrorInfo(logger, 'error', 'Inbox structure creation failed', errorInfo);
@@ -97,12 +111,11 @@ async function createInboxStructure(
       microlearning,
       languageCode,
       model,
-      dept,  // Pass department for context-specific emails
+      dept, // Pass department for context-specific emails
       additionalContext
     );
 
     return dynamicInboxData; // Return the generated content
-
   } catch (firstError) {
     const err = normalizeError(firstError);
     const errorInfo = errorService.aiModel(err.message, { step: 'create-inbox-first-attempt', stack: err.stack });
@@ -114,12 +127,11 @@ async function createInboxStructure(
         microlearning,
         languageCode,
         model,
-        dept,  // Pass department for context-specific emails
+        dept, // Pass department for context-specific emails
         additionalContext
       );
 
       return dynamicInboxData; // Return the generated content after retry
-
     } catch (secondError) {
       const err = normalizeError(secondError);
       const errorInfo = errorService.aiModel(err.message, { step: 'create-inbox-second-attempt', stack: err.stack });
@@ -130,9 +142,9 @@ async function createInboxStructure(
           title: 'Training Materials',
           description: 'The inbox is loading or temporarily unavailable.',
           emptyState: 'No simulations available at this time. Please try again later.',
-          retry: 'Retry'
+          retry: 'Retry',
         },
-        emails: []
+        emails: [],
       };
       return fallbackPayload;
     }
@@ -143,7 +155,7 @@ async function generateDynamicInboxWithAI(
   microlearning: MicrolearningContent,
   languageCode: string,
   model: LanguageModel,
-  department: string = 'all',  // NEW: Department context for topic-specific emails
+  department: string = 'all', // NEW: Department context for topic-specific emails
   additionalContext?: string
 ) {
   const topic = microlearning.microlearning_metadata.title;
@@ -157,38 +169,40 @@ async function generateDynamicInboxWithAI(
   // Execute both phases
   const [textsResponse, emailsArray] = await Promise.all([
     withRetry(
-      () => generateText({
-        model: model,
-        messages: [
-          {
-            role: 'system',
-            content: `Generate ${topic} UI texts. Return only valid JSON - no markdown, no backticks. Use exact format shown in user prompt.`
-          },
-          { role: 'user', content: textsPrompt }
-        ],
-        ...LOCALIZER_PARAMS,
-      }),
+      () =>
+        generateText({
+          model: model,
+          messages: [
+            {
+              role: 'system',
+              content: `Generate ${topic} UI texts. Return only valid JSON - no markdown, no backticks. Use exact format shown in user prompt.`,
+            },
+            { role: 'user', content: textsPrompt },
+          ],
+          ...LOCALIZER_PARAMS,
+        }),
       `Inbox texts generation for ${topic}`
     ),
     withRetry(
-      () => generateInboxEmailsParallel({
-        topic,
-        languageCode,
-        category,
-        riskArea,
-        level,
-        department,  // NEW: Pass department for context-specific emails
-        additionalContext,
-        model
-      }),
+      () =>
+        generateInboxEmailsParallel({
+          topic,
+          languageCode,
+          category,
+          riskArea,
+          level,
+          department, // NEW: Pass department for context-specific emails
+          additionalContext,
+          model,
+        }),
       `Inbox emails generation for ${topic}`
-    )
+    ),
   ]);
 
   // Parse responses with graceful fallbacks
   const logger = getLogger('GenerateDynamicInboxWithAI');
-  let textsData: Record<string, unknown> = {};  // Default fallback
-  const emailsData = emailsArray;  // Emails already generated
+  let textsData: Record<string, unknown> = {}; // Default fallback
+  const emailsData = emailsArray; // Emails already generated
 
   try {
     // Use json-cleaner for robust JSON cleaning with jsonrepair
@@ -204,7 +218,7 @@ async function generateDynamicInboxWithAI(
 
   const aiResponse = {
     texts: textsData,
-    emails: emailsData
+    emails: emailsData,
   };
 
   // Validate with schema
@@ -219,7 +233,7 @@ async function generateDynamicInboxWithAI(
     // Return fallback structure instead of undefined
     return {
       texts: textsData || {},
-      emails: emailsData || []
+      emails: emailsData || [],
     };
   }
 }

@@ -8,13 +8,25 @@ import { buildInboxEmailBaseSystem } from './inbox-email-base';
 describe('Inbox Email Base System', () => {
   describe('buildInboxEmailBaseSystem', () => {
     it('should generate a system prompt string', () => {
-      const prompt = buildInboxEmailBaseSystem('Phishing Prevention', 'en', 'Security', 'Email Threats', 'intermediate');
+      const prompt = buildInboxEmailBaseSystem(
+        'Phishing Prevention',
+        'en',
+        'Security',
+        'Email Threats',
+        'intermediate'
+      );
       expect(typeof prompt).toBe('string');
       expect(prompt.length).toBeGreaterThan(0);
     });
 
     it('should include language code in output', () => {
-      const prompt = buildInboxEmailBaseSystem('Phishing Prevention', 'tr', 'Security', 'Email Threats', 'intermediate');
+      const prompt = buildInboxEmailBaseSystem(
+        'Phishing Prevention',
+        'tr',
+        'Security',
+        'Email Threats',
+        'intermediate'
+      );
       expect(prompt).toContain('tr');
     });
 
@@ -166,7 +178,7 @@ describe('Inbox Email Base System', () => {
         '"isPhishing"',
         '"content"',
         '"headers"',
-        '"difficulty"'
+        '"difficulty"',
       ];
       requiredFields.forEach(field => {
         expect(prompt).toContain(field);

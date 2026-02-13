@@ -99,7 +99,7 @@ export function cleanResponse(text: string, sectionName: string): string {
     logger.debug('Extracted JSON content', {
       sectionName,
       originalLength: text.length,
-      extractedLength: extracted.length
+      extractedLength: extracted.length,
     });
 
     // Use json-repair to fix remaining JSON issues
@@ -115,11 +115,11 @@ export function cleanResponse(text: string, sectionName: string): string {
     logger.error('Error cleaning response', {
       sectionName,
       error: err.message,
-      stack: err.stack
+      stack: err.stack,
     });
     logger.debug('Raw text sample', {
       sectionName,
-      sample: text.substring(0, 200) + (text.length > 200 ? '...' : '')
+      sample: text.substring(0, 200) + (text.length > 200 ? '...' : ''),
     });
     throw new Error(`Failed to clean ${sectionName} response: ${err.message}`);
   }

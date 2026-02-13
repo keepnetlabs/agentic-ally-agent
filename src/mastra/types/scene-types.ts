@@ -13,7 +13,7 @@ export enum SceneType {
   QUIZ = 'quiz',
   SURVEY = 'survey',
   NUDGE = 'nudge',
-  SUMMARY = 'summary'
+  SUMMARY = 'summary',
 }
 
 /**
@@ -26,7 +26,10 @@ export function isValidSceneType(type: string): type is SceneType {
 /**
  * Get scene type from string with fallback
  */
-export function getSceneTypeOrDefault(type: string | undefined, defaultType: SceneType = SceneType.ACTIONABLE_CONTENT): SceneType {
+export function getSceneTypeOrDefault(
+  type: string | undefined,
+  defaultType: SceneType = SceneType.ACTIONABLE_CONTENT
+): SceneType {
   if (!type) return defaultType;
   return isValidSceneType(type) ? (type as SceneType) : defaultType;
 }

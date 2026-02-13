@@ -1,6 +1,6 @@
 /**
  * Health Check Service
- * 
+ *
  * Provides deep health checks for production monitoring.
  * Checks KV, OpenAI API, and system uptime.
  */
@@ -21,34 +21,34 @@ const startTime = Date.now();
  * Health check result interface
  */
 export interface HealthResult {
-    status: 'healthy' | 'degraded' | 'unhealthy';
-    latencyMs?: number;
-    error?: string;
+  status: 'healthy' | 'degraded' | 'unhealthy';
+  latencyMs?: number;
+  error?: string;
 }
 
 /**
  * Complete health check response
  */
 export interface HealthCheckResponse {
-    status: 'healthy' | 'degraded' | 'unhealthy';
-    timestamp: string;
-    uptime: string;
-    uptimeMs: number;
-    checks: {
-        agents: boolean;
-        workflows: boolean;
-        kv: HealthResult;
-    };
-    details?: {
-        agents: string[];
-        workflows: string[];
-        agentCount: number;
-        workflowCount: number;
-    };
-    cache?: {
-        microlearningCount: number;
-        estimatedSizeMB: number;
-    };
+  status: 'healthy' | 'degraded' | 'unhealthy';
+  timestamp: string;
+  uptime: string;
+  uptimeMs: number;
+  checks: {
+    agents: boolean;
+    workflows: boolean;
+    kv: HealthResult;
+  };
+  details?: {
+    agents: string[];
+    workflows: string[];
+    agentCount: number;
+    workflowCount: number;
+  };
+  cache?: {
+    microlearningCount: number;
+    estimatedSizeMB: number;
+  };
 }
 
 /**
@@ -56,127 +56,121 @@ export interface HealthCheckResponse {
  * Writes and reads a test key to verify connectivity
  */
 export async function checkKVHealth(): Promise<HealthResult> {
-    const startMs = Date.now();
+  const startMs = Date.now();
 
-    try {
-        const kvService = new KVService();
-        const isHealthy = await withRetry(
-            () => kvService.healthCheck(),
-            'KV health check'
-        );
-        const latencyMs = Date.now() - startMs;
+  try {
+    const kvService = new KVService();
+    const isHealthy = await withRetry(() => kvService.healthCheck(), 'KV health check');
+    const latencyMs = Date.now() - startMs;
 
-        if (isHealthy) {
-            return { status: 'healthy', latencyMs };
-        } else {
-            return { status: 'degraded', latencyMs, error: 'KV health check returned false' };
-        }
-    } catch (error) {
-        const latencyMs = Date.now() - startMs;
-        const err = normalizeError(error);
-        const errorInfo = errorService.external(err.message, { step: 'kv-health-check', stack: err.stack });
-        logErrorInfo(logger, 'error', 'KV health check failed', errorInfo);
-        return { status: 'unhealthy', latencyMs, error: err.message };
+    if (isHealthy) {
+      return { status: 'healthy', latencyMs };
+    } else {
+      return { status: 'degraded', latencyMs, error: 'KV health check returned false' };
     }
+  } catch (error) {
+    const latencyMs = Date.now() - startMs;
+    const err = normalizeError(error);
+    const errorInfo = errorService.external(err.message, { step: 'kv-health-check', stack: err.stack });
+    logErrorInfo(logger, 'error', 'KV health check failed', errorInfo);
+    return { status: 'unhealthy', latencyMs, error: err.message };
+  }
 }
 
 /**
  * Get formatted uptime string
  */
 export function getUptime(): { formatted: string; ms: number } {
-    const uptimeMs = Date.now() - startTime;
+  const uptimeMs = Date.now() - startTime;
 
-    const seconds = Math.floor(uptimeMs / 1000);
-    const minutes = Math.floor(seconds / 60);
-    const hours = Math.floor(minutes / 60);
-    const days = Math.floor(hours / 24);
+  const seconds = Math.floor(uptimeMs / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
 
-    let formatted: string;
-    if (days > 0) {
-        formatted = `${days}d ${hours % 24}h ${minutes % 60}m`;
-    } else if (hours > 0) {
-        formatted = `${hours}h ${minutes % 60}m`;
-    } else if (minutes > 0) {
-        formatted = `${minutes}m ${seconds % 60}s`;
-    } else {
-        formatted = `${seconds}s`;
-    }
+  let formatted: string;
+  if (days > 0) {
+    formatted = `${days}d ${hours % 24}h ${minutes % 60}m`;
+  } else if (hours > 0) {
+    formatted = `${hours}h ${minutes % 60}m`;
+  } else if (minutes > 0) {
+    formatted = `${minutes}m ${seconds % 60}s`;
+  } else {
+    formatted = `${seconds}s`;
+  }
 
-    return { formatted, ms: uptimeMs };
+  return { formatted, ms: uptimeMs };
 }
 
 /**
  * Determine overall health status from individual checks
  */
 export function determineOverallStatus(checks: { kv: HealthResult }): 'healthy' | 'degraded' | 'unhealthy' {
-    const { kv } = checks;
+  const { kv } = checks;
 
-    // If KV is unhealthy, overall is unhealthy
-    if (kv.status === 'unhealthy') {
-        return 'unhealthy';
-    }
+  // If KV is unhealthy, overall is unhealthy
+  if (kv.status === 'unhealthy') {
+    return 'unhealthy';
+  }
 
-    // If KV is degraded, overall is degraded
-    if (kv.status === 'degraded') {
-        return 'degraded';
-    }
+  // If KV is degraded, overall is degraded
+  if (kv.status === 'degraded') {
+    return 'degraded';
+  }
 
-    return 'healthy';
+  return 'healthy';
 }
 
 /**
  * Perform complete health check with timeout
  */
 export async function performHealthCheck(
-    agents: Record<string, unknown>,
-    workflows: Record<string, unknown>,
-    timeoutMs: number = 5000
+  agents: Record<string, unknown>,
+  workflows: Record<string, unknown>,
+  timeoutMs: number = 5000
 ): Promise<HealthCheckResponse> {
-    const uptime = getUptime();
+  const uptime = getUptime();
 
-    // Run KV health check with timeout
-    let kvHealth: HealthResult;
-    try {
-        kvHealth = await Promise.race([
-            checkKVHealth(),
-            new Promise<HealthResult>((_, reject) =>
-                setTimeout(() => reject(new Error('Health check timeout')), timeoutMs)
-            )
-        ]);
-    } catch (error) {
-        kvHealth = {
-            status: 'unhealthy',
-            error: error instanceof Error ? error.message : 'Health check timeout'
-        };
-    }
-
-    const agentNames = Object.keys(agents);
-    const workflowNames = Object.keys(workflows);
-
-    const checks = {
-        agents: agentNames.length > 0,
-        workflows: workflowNames.length > 0,
-        kv: kvHealth,
+  // Run KV health check with timeout
+  let kvHealth: HealthResult;
+  try {
+    kvHealth = await Promise.race([
+      checkKVHealth(),
+      new Promise<HealthResult>((_, reject) => setTimeout(() => reject(new Error('Health check timeout')), timeoutMs)),
+    ]);
+  } catch (error) {
+    kvHealth = {
+      status: 'unhealthy',
+      error: error instanceof Error ? error.message : 'Health check timeout',
     };
+  }
 
-    const overallStatus = determineOverallStatus(checks);
+  const agentNames = Object.keys(agents);
+  const workflowNames = Object.keys(workflows);
 
-    // Get in-memory cache stats for monitoring
-    const cacheStats = MicrolearningService.getCacheStats();
+  const checks = {
+    agents: agentNames.length > 0,
+    workflows: workflowNames.length > 0,
+    kv: kvHealth,
+  };
 
-    return {
-        status: overallStatus,
-        timestamp: new Date().toISOString(),
-        uptime: uptime.formatted,
-        uptimeMs: uptime.ms,
-        checks,
-        details: {
-            agents: agentNames,
-            workflows: workflowNames,
-            agentCount: agentNames.length,
-            workflowCount: workflowNames.length,
-        },
-        cache: cacheStats,
-    };
+  const overallStatus = determineOverallStatus(checks);
+
+  // Get in-memory cache stats for monitoring
+  const cacheStats = MicrolearningService.getCacheStats();
+
+  return {
+    status: overallStatus,
+    timestamp: new Date().toISOString(),
+    uptime: uptime.formatted,
+    uptimeMs: uptime.ms,
+    checks,
+    details: {
+      agents: agentNames,
+      workflows: workflowNames,
+      agentCount: agentNames.length,
+      workflowCount: workflowNames.length,
+    },
+    cache: cacheStats,
+  };
 }
-

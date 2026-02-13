@@ -1,6 +1,6 @@
 /** Workers AI / custom providers may attach reasoning to the response body */
 interface ResponseWithReasoning {
-    response?: { body?: { reasoning?: string } };
+  response?: { body?: { reasoning?: string } };
 }
 
 /**
@@ -11,5 +11,5 @@ interface ResponseWithReasoning {
  * @returns The reasoning string or undefined
  */
 export function extractReasoning(response: unknown): string | undefined {
-    return (response as ResponseWithReasoning)?.response?.body?.reasoning;
+  return (response as ResponseWithReasoning)?.response?.body?.reasoning;
 }

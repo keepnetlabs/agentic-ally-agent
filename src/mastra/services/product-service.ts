@@ -16,7 +16,6 @@ export class ProductService {
   private logger = getLogger('ProductService');
 
   constructor(jwtToken?: string) {
-
     const { baseApiUrl } = getRequestContext();
 
     // Get JWT token from parameter or requestStorage
@@ -59,7 +58,10 @@ export class ProductService {
       return store?.token;
     } catch (error) {
       const err = normalizeError(error);
-      const errorInfo = errorService.internal(err.message, { step: 'get-token-from-request-storage', stack: err.stack });
+      const errorInfo = errorService.internal(err.message, {
+        step: 'get-token-from-request-storage',
+        stack: err.stack,
+      });
       logErrorInfo(this.logger, 'warn', 'Failed to get token from requestStorage', errorInfo);
       return undefined;
     }
@@ -74,7 +76,10 @@ export class ProductService {
       return store?.companyId;
     } catch (error) {
       const err = normalizeError(error);
-      const errorInfo = errorService.internal(err.message, { step: 'get-company-id-from-request-storage', stack: err.stack });
+      const errorInfo = errorService.internal(err.message, {
+        step: 'get-company-id-from-request-storage',
+        stack: err.stack,
+      });
       logErrorInfo(this.logger, 'warn', 'Failed to get companyId from requestStorage', errorInfo);
       return undefined;
     }
@@ -91,12 +96,12 @@ export class ProductService {
         return {};
       }
 
-      const padded = payload + '='.repeat((4 - payload.length % 4) % 4);
+      const padded = payload + '='.repeat((4 - (payload.length % 4)) % 4);
       const decoded = JSON.parse(Buffer.from(padded, 'base64').toString('utf-8'));
 
       return {
         idp: decoded.idp,
-        companyId: decoded.user_company_resourceid
+        companyId: decoded.user_company_resourceid,
       };
     } catch (error) {
       const err = normalizeError(error);
@@ -138,7 +143,7 @@ export class ProductService {
       this.logger.info('Requesting URL', { url });
       const options: RequestInit = {
         method,
-        headers: this.getHeaders()
+        headers: this.getHeaders(),
       };
 
       if (body) {
@@ -151,7 +156,7 @@ export class ProductService {
         this.logger.warn(`Request failed`, {
           endpoint,
           method,
-          status: response.status
+          status: response.status,
         });
         return null;
       }
@@ -168,7 +173,11 @@ export class ProductService {
   /**
    * Get whitelabeling configuration
    */
-  async getWhitelabelingConfig(): Promise<{ mainLogoUrl?: string; minimizedMenuLogoUrl?: string; brandName?: string } | null> {
+  async getWhitelabelingConfig(): Promise<{
+    mainLogoUrl?: string;
+    minimizedMenuLogoUrl?: string;
+    brandName?: string;
+  } | null> {
     try {
       const response = await this.request('/whitelabeling');
 
@@ -180,7 +189,7 @@ export class ProductService {
       return {
         mainLogoUrl: response.data.mainLogoUrl,
         minimizedMenuLogoUrl: response.data.minimizedMenuLogoUrl,
-        brandName: response.data.brandName
+        brandName: response.data.brandName,
       };
     } catch (error) {
       const err = normalizeError(error);

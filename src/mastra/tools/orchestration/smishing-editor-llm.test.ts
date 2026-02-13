@@ -99,14 +99,7 @@ describe('smishing-editor-llm', () => {
     expect(mocks.getLandingUserPrompt).toHaveBeenCalledTimes(2);
     expect(logger.info).toHaveBeenCalledWith('Calling LLM for landing page 1 editing');
     expect(logger.info).toHaveBeenCalledWith('Calling LLM for landing page 2 editing');
-    expect(mocks.withRetry).toHaveBeenCalledWith(
-      expect.any(Function),
-      'Smishing landing page 1 editing'
-    );
-    expect(mocks.withRetry).toHaveBeenCalledWith(
-      expect.any(Function),
-      'Smishing landing page 2 editing'
-    );
+    expect(mocks.withRetry).toHaveBeenCalledWith(expect.any(Function), 'Smishing landing page 1 editing');
+    expect(mocks.withRetry).toHaveBeenCalledWith(expect.any(Function), 'Smishing landing page 2 editing');
   });
 });
-

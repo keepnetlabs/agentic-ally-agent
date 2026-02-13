@@ -32,11 +32,8 @@ describe('Scene 6 - Survey Rewriter', () => {
   const baseScene = {
     title: 'Your Feedback Matters',
     subtitle: 'Help us improve',
-    topics: [
-      'Confidence in finding phishing',
-      'Usefulness of training'
-    ],
-    icon: { sceneIconName: 'survey', sparkleIconName: 'star' }
+    topics: ['Confidence in finding phishing', 'Usefulness of training'],
+    icon: { sceneIconName: 'survey', sparkleIconName: 'star' },
   } as any;
 
   beforeEach(() => {
@@ -59,9 +56,7 @@ describe('Scene 6 - Survey Rewriter', () => {
     });
 
     it('should require context parameter', async () => {
-      await expect(
-        rewriteScene6Survey(baseScene, undefined as any)
-      ).rejects.toThrow();
+      await expect(rewriteScene6Survey(baseScene, undefined as any)).rejects.toThrow();
     });
   });
 

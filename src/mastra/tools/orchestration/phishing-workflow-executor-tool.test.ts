@@ -10,8 +10,8 @@ vi.mock('../../workflows/create-phishing-workflow', () => {
   const mockCreateRunAsync = vi.fn();
   return {
     createPhishingWorkflow: {
-      createRunAsync: mockCreateRunAsync
-    }
+      createRunAsync: mockCreateRunAsync,
+    },
   };
 });
 
@@ -23,7 +23,7 @@ vi.mock('../../workflows/create-phishing-workflow', () => {
 
 describe('phishingWorkflowExecutorTool', () => {
   const mockWorkflowRun = {
-    start: vi.fn()
+    start: vi.fn(),
   };
 
   const mockWorkflowResult = {
@@ -42,22 +42,22 @@ describe('phishingWorkflowExecutorTool', () => {
         keyRedFlags: ['suspicious-sender', 'urgent-tone'],
         targetAudienceAnalysis: {
           department: 'IT',
-          role: 'Manager'
-        }
+          role: 'Manager',
+        },
       },
       landingPage: {
         pages: [
           {
             type: 'login',
-            template: '<html>Landing Page</html>'
-          }
-        ]
-      }
-    }
+            template: '<html>Landing Page</html>',
+          },
+        ],
+      },
+    },
   };
 
   const mockWriter = {
-    write: vi.fn().mockResolvedValue(undefined)
+    write: vi.fn().mockResolvedValue(undefined),
   };
 
   let mockCreateRunAsync: ReturnType<typeof vi.fn>;
@@ -77,7 +77,7 @@ describe('phishingWorkflowExecutorTool', () => {
     it('should accept valid input with required fields', async () => {
       const input = {
         workflowType: PHISHING.WORKFLOW_TYPE,
-        topic: 'Reset Password'
+        topic: 'Reset Password',
       };
 
       const result = await phishingWorkflowExecutorTool.execute({ context: input } as any);
@@ -93,8 +93,8 @@ describe('phishingWorkflowExecutorTool', () => {
           name: 'John Doe',
           department: 'IT',
           behavioralTriggers: ['urgency'],
-          vulnerabilities: ['credential-sharing']
-        }
+          vulnerabilities: ['credential-sharing'],
+        },
       };
 
       const result = await phishingWorkflowExecutorTool.execute({ context: input } as any);
@@ -105,7 +105,7 @@ describe('phishingWorkflowExecutorTool', () => {
       const input = {
         workflowType: PHISHING.WORKFLOW_TYPE,
         topic: 'Reset Password',
-        difficulty: 'medium'
+        difficulty: 'medium',
       };
 
       const result = await phishingWorkflowExecutorTool.execute({ context: input } as any);
@@ -116,7 +116,7 @@ describe('phishingWorkflowExecutorTool', () => {
       const input = {
         workflowType: PHISHING.WORKFLOW_TYPE,
         topic: 'Reset Password',
-        language: 'tr-tr'
+        language: 'tr-tr',
       };
 
       const result = await phishingWorkflowExecutorTool.execute({ context: input } as any);
@@ -125,7 +125,7 @@ describe('phishingWorkflowExecutorTool', () => {
 
     it('should require workflowType', async () => {
       const input: any = {
-        topic: 'Reset Password'
+        topic: 'Reset Password',
       };
 
       // Tool framework validates input schema
@@ -138,7 +138,7 @@ describe('phishingWorkflowExecutorTool', () => {
 
     it('should require topic', async () => {
       const input: any = {
-        workflowType: PHISHING.WORKFLOW_TYPE
+        workflowType: PHISHING.WORKFLOW_TYPE,
       };
 
       // Tool framework validates input schema
@@ -158,7 +158,7 @@ describe('phishingWorkflowExecutorTool', () => {
         difficulty: 'medium',
         language: 'en-gb',
         includeEmail: true,
-        includeLandingPage: true
+        includeLandingPage: true,
       };
 
       await phishingWorkflowExecutorTool.execute({ context: input } as any);
@@ -171,8 +171,8 @@ describe('phishingWorkflowExecutorTool', () => {
             difficulty: 'Medium',
             language: 'en-gb',
             includeEmail: true,
-            includeLandingPage: true
-          })
+            includeLandingPage: true,
+          }),
         })
       );
     });
@@ -180,7 +180,7 @@ describe('phishingWorkflowExecutorTool', () => {
     it('should use default difficulty when not provided', async () => {
       const input = {
         workflowType: PHISHING.WORKFLOW_TYPE,
-        topic: 'Reset Password'
+        topic: 'Reset Password',
       };
 
       await phishingWorkflowExecutorTool.execute({ context: input } as any);
@@ -188,8 +188,8 @@ describe('phishingWorkflowExecutorTool', () => {
       expect(mockWorkflowRun.start).toHaveBeenCalledWith(
         expect.objectContaining({
           inputData: expect.objectContaining({
-            difficulty: PHISHING.DEFAULT_DIFFICULTY
-          })
+            difficulty: PHISHING.DEFAULT_DIFFICULTY,
+          }),
         })
       );
     });
@@ -206,8 +206,8 @@ describe('phishingWorkflowExecutorTool', () => {
       expect(mockWorkflowRun.start).toHaveBeenCalledWith(
         expect.objectContaining({
           inputData: expect.objectContaining({
-            difficulty: 'Hard'
-          })
+            difficulty: 'Hard',
+          }),
         })
       );
     });
@@ -215,7 +215,7 @@ describe('phishingWorkflowExecutorTool', () => {
     it('should pass writer to workflow when provided', async () => {
       const input = {
         workflowType: PHISHING.WORKFLOW_TYPE,
-        topic: 'Reset Password'
+        topic: 'Reset Password',
       };
 
       await phishingWorkflowExecutorTool.execute({ context: input, writer: mockWriter } as any);
@@ -223,8 +223,8 @@ describe('phishingWorkflowExecutorTool', () => {
       expect(mockWorkflowRun.start).toHaveBeenCalledWith(
         expect.objectContaining({
           inputData: expect.objectContaining({
-            writer: mockWriter
-          })
+            writer: mockWriter,
+          }),
         })
       );
     });
@@ -236,7 +236,7 @@ describe('phishingWorkflowExecutorTool', () => {
         workflowType: PHISHING.WORKFLOW_TYPE,
         topic: 'Reset Password',
         difficulty: 'medium',
-        language: 'en-gb'
+        language: 'en-gb',
       };
 
       const result = await phishingWorkflowExecutorTool.execute({ context: input } as any);
@@ -254,7 +254,7 @@ describe('phishingWorkflowExecutorTool', () => {
     it('should include analysis data in response', async () => {
       const input = {
         workflowType: PHISHING.WORKFLOW_TYPE,
-        topic: 'Reset Password'
+        topic: 'Reset Password',
       };
 
       const result = await phishingWorkflowExecutorTool.execute({ context: input } as any);
@@ -271,7 +271,7 @@ describe('phishingWorkflowExecutorTool', () => {
     it('should stream email preview when writer is provided and email exists', async () => {
       const input = {
         workflowType: PHISHING.WORKFLOW_TYPE,
-        topic: 'Reset Password'
+        topic: 'Reset Password',
       };
 
       await phishingWorkflowExecutorTool.execute({ context: input, writer: mockWriter } as any);
@@ -283,20 +283,20 @@ describe('phishingWorkflowExecutorTool', () => {
       expect(writeCalls.length).toBeGreaterThanOrEqual(3);
 
       // Check for email streaming
-      const emailCall = writeCalls.find(call =>
-        call[0].type === 'text-delta' && call[0].delta?.includes('phishing_email')
+      const emailCall = writeCalls.find(
+        call => call[0].type === 'text-delta' && call[0].delta?.includes('phishing_email')
       );
       expect(emailCall).toBeDefined();
     });
 
     it('should handle streaming errors gracefully', async () => {
       const errorWriter = {
-        write: vi.fn().mockRejectedValue(new Error('Stream error'))
+        write: vi.fn().mockRejectedValue(new Error('Stream error')),
       };
 
       const input = {
         workflowType: PHISHING.WORKFLOW_TYPE,
-        topic: 'Reset Password'
+        topic: 'Reset Password',
       };
 
       // Should still succeed even if streaming fails
@@ -307,7 +307,7 @@ describe('phishingWorkflowExecutorTool', () => {
     it('should not stream when writer is not provided', async () => {
       const input = {
         workflowType: PHISHING.WORKFLOW_TYPE,
-        topic: 'Reset Password'
+        topic: 'Reset Password',
       };
 
       await phishingWorkflowExecutorTool.execute({ context: input } as any);
@@ -325,9 +325,9 @@ describe('phishingWorkflowExecutorTool', () => {
       await phishingWorkflowExecutorTool.execute({ context: input, writer: mockWriter } as any);
 
       const uiDeltas = mockWriter.write.mock.calls
-        .map((call) => call[0])
-        .filter((event) => event?.type === 'text-delta' && typeof event?.delta === 'string')
-        .map((event) => event.delta as string);
+        .map(call => call[0])
+        .filter(event => event?.type === 'text-delta' && typeof event?.delta === 'string')
+        .map(event => event.delta as string);
 
       expect(uiDeltas.length).toBeGreaterThan(0);
 
@@ -347,12 +347,12 @@ describe('phishingWorkflowExecutorTool', () => {
     it('should handle workflow with no result', async () => {
       mockWorkflowRun.start.mockResolvedValueOnce({
         status: 'success' as const,
-        result: undefined
+        result: undefined,
       });
 
       const input = {
         workflowType: PHISHING.WORKFLOW_TYPE,
-        topic: 'Reset Password'
+        topic: 'Reset Password',
       };
 
       const result = await phishingWorkflowExecutorTool.execute({ context: input } as any);
@@ -366,7 +366,7 @@ describe('phishingWorkflowExecutorTool', () => {
 
       const input = {
         workflowType: PHISHING.WORKFLOW_TYPE,
-        topic: 'Reset Password'
+        topic: 'Reset Password',
       };
 
       const result = await phishingWorkflowExecutorTool.execute({ context: input } as any);
@@ -379,7 +379,7 @@ describe('phishingWorkflowExecutorTool', () => {
     it('should return valid output schema structure', async () => {
       const input = {
         workflowType: PHISHING.WORKFLOW_TYPE,
-        topic: 'Reset Password'
+        topic: 'Reset Password',
       };
 
       const result = await phishingWorkflowExecutorTool.execute({ context: input } as any);

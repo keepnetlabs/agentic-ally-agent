@@ -76,7 +76,17 @@ describe('Microlearning Agent', () => {
     });
 
     describe('Auto-detection: Department from keywords', () => {
-      const ITKeywords = ['SQL injection', 'XSS', 'CSRF', 'phishing', 'ransomware', 'malware', 'breach', 'password', 'authentication'];
+      const ITKeywords = [
+        'SQL injection',
+        'XSS',
+        'CSRF',
+        'phishing',
+        'ransomware',
+        'malware',
+        'breach',
+        'password',
+        'authentication',
+      ];
       const FinanceKeywords = ['fraud', 'embezzlement', 'audit', 'accounting', 'money laundering'];
       const HRKeywords = ['harassment', 'discrimination', 'recruitment', 'DEI', 'workplace safety'];
       const SalesKeywords = ['negotiation', 'pitch', 'customer relations', 'deal closure'];
@@ -127,7 +137,9 @@ describe('Microlearning Agent', () => {
 
       it('should NOT auto-detect for vague topic', () => {
         const topic = 'General Security Training';
-        const department = [...ITKeywords, ...FinanceKeywords].some(kw => topic.toLowerCase().includes(kw)) ? 'IT' : undefined;
+        const department = [...ITKeywords, ...FinanceKeywords].some(kw => topic.toLowerCase().includes(kw))
+          ? 'IT'
+          : undefined;
         expect(department).toBeUndefined();
       });
 
@@ -229,20 +241,23 @@ describe('Microlearning Agent', () => {
   describe('STATE 2: Summary & Confirmation', () => {
     describe('Summary output format', () => {
       it('should use HTML template for summary', () => {
-        const summary = '<strong>Summary</strong><br>Topic: Phishing; Department: IT; Level: intermediate<br>This will take about 3–5 minutes. Should I start?';
+        const summary =
+          '<strong>Summary</strong><br>Topic: Phishing; Department: IT; Level: intermediate<br>This will take about 3–5 minutes. Should I start?';
         expect(summary).toContain('<strong>Summary</strong>');
         expect(summary).toContain('This will take about 3–5 minutes');
       });
 
       it('should include Topic, Department, Level', () => {
-        const summary = '<strong>Summary</strong><br>Topic: SQL Injection; Department: IT; Level: advanced<br>This will take about 3–5 minutes. Should I start?';
+        const summary =
+          '<strong>Summary</strong><br>Topic: SQL Injection; Department: IT; Level: advanced<br>This will take about 3–5 minutes. Should I start?';
         expect(summary).toContain('Topic:');
         expect(summary).toContain('Department:');
         expect(summary).toContain('Level:');
       });
 
       it('should include time warning before confirmation', () => {
-        const summary = '<strong>Summary</strong><br>Topic: Password Security; Department: IT; Level: intermediate<br>This will take about 3–5 minutes. Should I start?';
+        const summary =
+          '<strong>Summary</strong><br>Topic: Password Security; Department: IT; Level: intermediate<br>This will take about 3–5 minutes. Should I start?';
         const timeWarningIndex = summary.indexOf('3–5 minutes');
         const confirmationIndex = summary.indexOf('Should I start?');
         expect(timeWarningIndex < confirmationIndex).toBe(true);
@@ -255,26 +270,48 @@ describe('Microlearning Agent', () => {
       });
 
       it('should NOT repeat info outside template', () => {
-        const summary = '<strong>Summary</strong><br>Topic: Phishing; Department: IT; Level: intermediate<br>This will take about 3–5 minutes. Should I start?';
+        const summary =
+          '<strong>Summary</strong><br>Topic: Phishing; Department: IT; Level: intermediate<br>This will take about 3–5 minutes. Should I start?';
         // Summary should appear once
         const summaryCount = (summary.match(/<strong>Summary<\/strong>/g) || []).length;
         expect(summaryCount).toBe(1);
       });
 
       it('should NOT have explanatory phrases before template', () => {
-        const message = '<strong>Summary</strong><br>Topic: Phishing; Department: IT; Level: intermediate<br>This will take about 3–5 minutes. Should I start?';
-        const hasProhibitedPhrase = /I'll proceed|Here's a summary|Summary:|Assumptions:/.test(message.split('<strong>Summary</strong>')[0]);
+        const message =
+          '<strong>Summary</strong><br>Topic: Phishing; Department: IT; Level: intermediate<br>This will take about 3–5 minutes. Should I start?';
+        const hasProhibitedPhrase = /I'll proceed|Here's a summary|Summary:|Assumptions:/.test(
+          message.split('<strong>Summary</strong>')[0]
+        );
         expect(hasProhibitedPhrase).toBe(false);
       });
 
       it('should use empty assumptions block when no assumptions', () => {
-        const summary = '<strong>Summary</strong><br>Topic: Phishing; Department: IT; Level: intermediate<br>This will take about 3–5 minutes. Should I start?';
+        const summary =
+          '<strong>Summary</strong><br>Topic: Phishing; Department: IT; Level: intermediate<br>This will take about 3–5 minutes. Should I start?';
         expect(summary).not.toContain('Assumptions:');
       });
     });
 
     describe('Confirmation triggers', () => {
-      const confirmationTriggers = ['yes', 'yeah', 'yep', 'ok', 'okay', 'okey', 'go ahead', 'start', 'begin', 'proceed', 'go', 'continue', 'evet', 'tamam', 'başla', 'oluştur'];
+      const confirmationTriggers = [
+        'yes',
+        'yeah',
+        'yep',
+        'ok',
+        'okay',
+        'okey',
+        'go ahead',
+        'start',
+        'begin',
+        'proceed',
+        'go',
+        'continue',
+        'evet',
+        'tamam',
+        'başla',
+        'oluştur',
+      ];
 
       it('should recognize "Yes" as confirmation', () => {
         const userInput = 'Yes';
@@ -315,7 +352,9 @@ describe('Microlearning Agent', () => {
       it('should NOT treat "I think" as confirmation', () => {
         const userInput = 'I think intermediate is good';
         // Check if it starts with or is exactly a confirmation trigger
-        const isConfirmation = confirmationTriggers.some(t => userInput.toLowerCase().startsWith(t) || userInput.toLowerCase() === t);
+        const isConfirmation = confirmationTriggers.some(
+          t => userInput.toLowerCase().startsWith(t) || userInput.toLowerCase() === t
+        );
         expect(isConfirmation).toBe(false);
       });
     });

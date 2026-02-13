@@ -9,35 +9,45 @@ import { withRetry } from '../../utils/core/resilience-utils';
 import { sanitizeEmailBody } from './email-body-sanitizer';
 
 export const bodyIntentAnalysisOutputSchema = z.object({
-    intent: z.enum(['benign', 'phishing', 'sextortion', 'impersonation', 'fraud']).describe('Overall intent classification'),
-    financial_request: z.boolean().describe('True if email requests money, payment, wire transfer, gift cards, etc.'),
-    credential_request: z.boolean().describe('True if email requests passwords, OTPs, login links, MFA codes, etc.'),
-    authority_impersonation: z.boolean().describe('True if sender claims to be CEO, executive, HR, IT, authority figure, etc.'),
-    financial_request_details: z.string().describe('Specific financial requests if present (e.g., "wire $50k to account XYZ") or "insufficient_data"'),
-    credential_request_details: z.string().describe('Specific credential requests if present (e.g., "password reset link") or "insufficient_data"'),
-    authority_claimed: z.string().describe('Authority figure claimed if present (e.g., "CEO John Smith") or "insufficient_data"'),
-    intent_summary: z.string().describe('1-2 sentence summary of what the email is asking/attempting'),
+  intent: z
+    .enum(['benign', 'phishing', 'sextortion', 'impersonation', 'fraud'])
+    .describe('Overall intent classification'),
+  financial_request: z.boolean().describe('True if email requests money, payment, wire transfer, gift cards, etc.'),
+  credential_request: z.boolean().describe('True if email requests passwords, OTPs, login links, MFA codes, etc.'),
+  authority_impersonation: z
+    .boolean()
+    .describe('True if sender claims to be CEO, executive, HR, IT, authority figure, etc.'),
+  financial_request_details: z
+    .string()
+    .describe('Specific financial requests if present (e.g., "wire $50k to account XYZ") or "insufficient_data"'),
+  credential_request_details: z
+    .string()
+    .describe('Specific credential requests if present (e.g., "password reset link") or "insufficient_data"'),
+  authority_claimed: z
+    .string()
+    .describe('Authority figure claimed if present (e.g., "CEO John Smith") or "insufficient_data"'),
+  intent_summary: z.string().describe('1-2 sentence summary of what the email is asking/attempting'),
 
-    // Pass-through context
-    original_email: EmailIREmailDataSchema,
+  // Pass-through context
+  original_email: EmailIREmailDataSchema,
 });
 
 export const bodyIntentAnalysisTool = createTool({
-    id: 'email-ir-body-intent-analysis-tool',
-    description: 'Analyzes email body for intent (what is it asking for?)',
-    inputSchema: EmailIREmailDataSchema,
-    outputSchema: bodyIntentAnalysisOutputSchema,
-    execute: async ({ context }) => {
-        const email = context;
-        const emailId = email.from?.split('@')[0] || 'unknown-sender';
-        const ctx = createLogContext(emailId, 'intent-analysis');
+  id: 'email-ir-body-intent-analysis-tool',
+  description: 'Analyzes email body for intent (what is it asking for?)',
+  inputSchema: EmailIREmailDataSchema,
+  outputSchema: bodyIntentAnalysisOutputSchema,
+  execute: async ({ context }) => {
+    const email = context;
+    const emailId = email.from?.split('@')[0] || 'unknown-sender';
+    const ctx = createLogContext(emailId, 'intent-analysis');
 
-        try {
-            logStepStart(loggerIntent, ctx, { subject: email.subject });
+    try {
+      logStepStart(loggerIntent, ctx, { subject: email.subject });
 
-            const emailBody = sanitizeEmailBody(email.htmlBody || '') || email.subject || 'No body content';
-            const senderDisplay = email.senderName || email.from;
-            const prompt = `
+      const emailBody = sanitizeEmailBody(email.htmlBody || '') || email.subject || 'No body content';
+      const senderDisplay = email.senderName || email.from;
+      const prompt = `
 # Task: Body Intent Analysis
 
 Analyze the email body for its fundamental intent - WHAT is it asking the recipient to do?
@@ -160,27 +170,28 @@ Populate the output schema based on the forensic evidence identified above:
 - **Evidence-Based**: Do not hallucinate requests. If no financial request is present, set \`financial_request\` to false.
 `;
 
-            const result = await withRetry(
-                () => emailIRAnalyst.generate(prompt, {
-                    output: bodyIntentAnalysisOutputSchema.omit({ original_email: true }),
-                }),
-                'body-intent-analysis-llm'
-            );
+      const result = await withRetry(
+        () =>
+          emailIRAnalyst.generate(prompt, {
+            output: bodyIntentAnalysisOutputSchema.omit({ original_email: true }),
+          }),
+        'body-intent-analysis-llm'
+      );
 
-            logStepComplete(loggerIntent, ctx, { result: result.object });
+      logStepComplete(loggerIntent, ctx, { result: result.object });
 
-            return {
-                ...result.object,
-                original_email: email,
-            };
-        } catch (error) {
-            const err = normalizeError(error);
-            logStepError(loggerIntent, ctx, err);
-            const errorInfo = errorService.aiModel(err.message, { step: 'body-intent-analysis', stack: err.stack });
-            logErrorInfo(loggerIntent, 'error', 'Body intent analysis failed', errorInfo);
-            const e = new Error(err.message);
-            (e as Error & { code?: string }).code = errorInfo.code;
-            throw e;
-        }
-    },
+      return {
+        ...result.object,
+        original_email: email,
+      };
+    } catch (error) {
+      const err = normalizeError(error);
+      logStepError(loggerIntent, ctx, err);
+      const errorInfo = errorService.aiModel(err.message, { step: 'body-intent-analysis', stack: err.stack });
+      logErrorInfo(loggerIntent, 'error', 'Body intent analysis failed', errorInfo);
+      const e = new Error(err.message);
+      (e as Error & { code?: string }).code = errorInfo.code;
+      throw e;
+    }
+  },
 });

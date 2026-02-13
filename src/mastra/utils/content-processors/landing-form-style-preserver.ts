@@ -28,8 +28,23 @@ type FormTag = 'input' | 'textarea' | 'select' | 'button';
 const FORM_TAGS: readonly FormTag[] = ['input', 'textarea', 'select', 'button'] as const;
 const SAFE_FORM_ATTR_PREFIXES = ['data-', 'aria-'] as const;
 const SAFE_FORM_ATTR_NAMES = [
-  'id', 'type', 'name', 'value', 'placeholder', 'autocomplete', 'inputmode', 'pattern',
-  'min', 'max', 'step', 'maxlength', 'minlength', 'class', 'style', 'role', 'tabindex',
+  'id',
+  'type',
+  'name',
+  'value',
+  'placeholder',
+  'autocomplete',
+  'inputmode',
+  'pattern',
+  'min',
+  'max',
+  'step',
+  'maxlength',
+  'minlength',
+  'class',
+  'style',
+  'role',
+  'tabindex',
 ] as const;
 type SafeFormAttrName = (typeof SAFE_FORM_ATTR_NAMES)[number];
 

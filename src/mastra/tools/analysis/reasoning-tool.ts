@@ -29,12 +29,13 @@ export const reasoningTool = new Tool({
   id: 'show_reasoning',
   description: 'Show your thinking process to the user. Call this before making any important decision or analysis.',
   inputSchema: z.object({
-    thought: z.string()
+    thought: z
+      .string()
       .max(2000, 'Reasoning must not exceed 2000 characters')
-      .describe('Your reasoning, analysis, or thinking process (1-2 sentences)')
+      .describe('Your reasoning, analysis, or thinking process (1-2 sentences)'),
   }),
   outputSchema: z.object({
-    success: z.boolean()
+    success: z.boolean(),
   }),
   execute: async (context: ReasoningToolContext | any) => {
     const logger = getLogger('ReasoningTool');
@@ -60,18 +61,18 @@ export const reasoningTool = new Tool({
         // Emit reasoning events using AI SDK protocol
         await writer.write({
           type: 'reasoning-start',
-          id
+          id,
         });
 
         await writer.write({
           type: 'reasoning-delta',
           id,
-          delta: thought
+          delta: thought,
         });
 
         await writer.write({
           type: 'reasoning-end',
-          id
+          id,
         });
 
         logger.info('Reasoning emitted', { thought: thought.substring(0, 100) + (thought.length > 100 ? '...' : '') });
@@ -80,17 +81,17 @@ export const reasoningTool = new Tool({
       }
 
       return {
-        success: true
+        success: true,
       };
     } catch (error) {
       const err = normalizeError(error);
       const errorInfo = errorService.internal(err.message, {
         thought: thought?.substring(0, 100),
         step: 'reasoning-emission',
-        stack: err.stack
+        stack: err.stack,
       });
       logErrorInfo(logger, 'error', 'Reasoning tool error', errorInfo);
       return createToolErrorResponse(errorInfo);
     }
-  }
+  },
 });

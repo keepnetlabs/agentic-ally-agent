@@ -142,7 +142,7 @@ describe('Rate Limiting Middleware', () => {
       const middleware = rateLimitMiddleware({
         maxRequests: 1,
         windowMs: 60000,
-        skip: (c) => c.req.path === '/health',
+        skip: c => c.req.path === '/health',
       });
 
       const mockContext = {

@@ -58,7 +58,8 @@ describe('reportingTool', () => {
         p2_follow_up: ['Notify targeted user'],
         p3_hardening: ['Reinforce phishing awareness training'],
       },
-      confidence_limitations: 'High confidence in determination. Multiple independent signals converge on this verdict.',
+      confidence_limitations:
+        'High confidence in determination. Multiple independent signals converge on this verdict.',
     };
 
     generateMock.mockResolvedValue({
@@ -122,4 +123,3 @@ describe('reportingTool', () => {
     expect(EmailIRCanvasSchema.safeParse(result).success).toBe(true);
   });
 });
-

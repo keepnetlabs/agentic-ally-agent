@@ -8,7 +8,7 @@ const mocks = vi.hoisted(() => ({
   runStart: vi.fn(),
   updateLengthAvailabilityAtomic: vi.fn(),
   loggerInfo: vi.fn(),
-  loggerError: vi.fn()
+  loggerError: vi.fn(),
 }));
 
 vi.mock('./add-language-workflow', () => ({
@@ -17,24 +17,24 @@ vi.mock('./add-language-workflow', () => ({
     id: 'add-language-workflow',
     description: 'Add language workflow mock',
     inputSchema: z.object({}),
-    outputSchema: z.object({})
-  }
+    outputSchema: z.object({}),
+  },
 }));
 
 vi.mock('../services/kv-service', () => ({
   KVService: vi.fn().mockImplementation(function () {
     return {
-      updateLanguageAvailabilityAtomic: mocks.updateLengthAvailabilityAtomic
+      updateLanguageAvailabilityAtomic: mocks.updateLengthAvailabilityAtomic,
     };
-  })
+  }),
 }));
 
 vi.mock('../utils/core/logger', () => ({
   getLogger: () => ({
     info: mocks.loggerInfo,
     error: mocks.loggerError,
-    warn: vi.fn()
-  })
+    warn: vi.fn(),
+  }),
 }));
 
 describe('add-multiple-languages-workflow', () => {
@@ -87,7 +87,7 @@ describe('add-multiple-languages-workflow', () => {
 
     it('should require existingMicrolearningId', () => {
       const testData = {
-        targetLanguages: ['tr-TR', 'de-DE']
+        targetLanguages: ['tr-TR', 'de-DE'],
       };
       expect(() => {
         inputSchema.parse(testData);
@@ -97,7 +97,7 @@ describe('add-multiple-languages-workflow', () => {
     it('should accept valid existingMicrolearningId', () => {
       const testData = {
         existingMicrolearningId: 'phishing-101',
-        targetLanguages: ['tr-TR']
+        targetLanguages: ['tr-TR'],
       };
       expect(() => {
         inputSchema.parse(testData);
@@ -106,7 +106,7 @@ describe('add-multiple-languages-workflow', () => {
 
     it('should require targetLanguages', () => {
       const testData = {
-        existingMicrolearningId: 'phishing-101'
+        existingMicrolearningId: 'phishing-101',
       };
       expect(() => {
         inputSchema.parse(testData);
@@ -116,7 +116,7 @@ describe('add-multiple-languages-workflow', () => {
     it('should require targetLanguages to be an array', () => {
       const testData = {
         existingMicrolearningId: 'phishing-101',
-        targetLanguages: 'tr-TR'
+        targetLanguages: 'tr-TR',
       };
       expect(() => {
         inputSchema.parse(testData);
@@ -126,7 +126,7 @@ describe('add-multiple-languages-workflow', () => {
     it('should require at least one language in targetLanguages', () => {
       const testData = {
         existingMicrolearningId: 'phishing-101',
-        targetLanguages: []
+        targetLanguages: [],
       };
       expect(() => {
         inputSchema.parse(testData);
@@ -136,7 +136,7 @@ describe('add-multiple-languages-workflow', () => {
     it('should accept single language in array', () => {
       const testData = {
         existingMicrolearningId: 'phishing-101',
-        targetLanguages: ['tr-TR']
+        targetLanguages: ['tr-TR'],
       };
       expect(() => {
         inputSchema.parse(testData);
@@ -146,7 +146,7 @@ describe('add-multiple-languages-workflow', () => {
     it('should accept multiple languages in array', () => {
       const testData = {
         existingMicrolearningId: 'phishing-101',
-        targetLanguages: ['tr-TR', 'de-DE', 'fr-FR', 'ja-JP']
+        targetLanguages: ['tr-TR', 'de-DE', 'fr-FR', 'ja-JP'],
       };
       expect(() => {
         inputSchema.parse(testData);
@@ -156,7 +156,7 @@ describe('add-multiple-languages-workflow', () => {
     it('should make sourceLanguage optional', () => {
       const testData = {
         existingMicrolearningId: 'phishing-101',
-        targetLanguages: ['tr-TR', 'de-DE']
+        targetLanguages: ['tr-TR', 'de-DE'],
       };
       expect(() => {
         inputSchema.parse(testData);
@@ -167,7 +167,7 @@ describe('add-multiple-languages-workflow', () => {
       const testData = {
         existingMicrolearningId: 'phishing-101',
         targetLanguages: ['tr-TR', 'de-DE'],
-        sourceLanguage: 'en-US'
+        sourceLanguage: 'en-US',
       };
       expect(() => {
         inputSchema.parse(testData);
@@ -177,7 +177,7 @@ describe('add-multiple-languages-workflow', () => {
     it('should make department optional', () => {
       const testData = {
         existingMicrolearningId: 'phishing-101',
-        targetLanguages: ['tr-TR']
+        targetLanguages: ['tr-TR'],
       };
       expect(() => {
         inputSchema.parse(testData);
@@ -188,7 +188,7 @@ describe('add-multiple-languages-workflow', () => {
       const testData = {
         existingMicrolearningId: 'phishing-101',
         targetLanguages: ['tr-TR', 'de-DE'],
-        department: 'HR'
+        department: 'HR',
       };
       expect(() => {
         inputSchema.parse(testData);
@@ -198,7 +198,7 @@ describe('add-multiple-languages-workflow', () => {
     it('should apply default department as All', () => {
       const testData = {
         existingMicrolearningId: 'phishing-101',
-        targetLanguages: ['tr-TR']
+        targetLanguages: ['tr-TR'],
       };
       const parsed = inputSchema.parse(testData);
       expect(parsed.department).toBe('All');
@@ -207,7 +207,7 @@ describe('add-multiple-languages-workflow', () => {
     it('should make modelProvider optional', () => {
       const testData = {
         existingMicrolearningId: 'phishing-101',
-        targetLanguages: ['tr-TR']
+        targetLanguages: ['tr-TR'],
       };
       expect(() => {
         inputSchema.parse(testData);
@@ -218,14 +218,14 @@ describe('add-multiple-languages-workflow', () => {
       const validProviders = ['OPENAI', 'WORKERS_AI', 'GOOGLE'];
       const baseData = {
         existingMicrolearningId: 'test-id',
-        targetLanguages: ['tr-TR']
+        targetLanguages: ['tr-TR'],
       };
 
       validProviders.forEach(provider => {
         expect(() => {
           inputSchema.parse({
             ...baseData,
-            modelProvider: provider
+            modelProvider: provider,
           });
         }).not.toThrow();
       });
@@ -234,7 +234,7 @@ describe('add-multiple-languages-workflow', () => {
     it('should make model optional', () => {
       const testData = {
         existingMicrolearningId: 'phishing-101',
-        targetLanguages: ['tr-TR']
+        targetLanguages: ['tr-TR'],
       };
       expect(() => {
         inputSchema.parse(testData);
@@ -245,7 +245,7 @@ describe('add-multiple-languages-workflow', () => {
       const testData = {
         existingMicrolearningId: 'phishing-101',
         targetLanguages: ['tr-TR'],
-        model: 'gpt-4o-mini'
+        model: 'gpt-4o-mini',
       };
       expect(() => {
         inputSchema.parse(testData);
@@ -259,26 +259,47 @@ describe('add-multiple-languages-workflow', () => {
 
     it('should accept many languages (no hard limit)', () => {
       const manyLanguages = [
-        'tr-TR', 'de-DE', 'fr-FR', 'es-ES', 'it-IT', 'pt-PT',
-        'ru-RU', 'ar-AR', 'zh-CN', 'ja-JP', 'ko-KR', 'hi-IN', 'vi-VN'
+        'tr-TR',
+        'de-DE',
+        'fr-FR',
+        'es-ES',
+        'it-IT',
+        'pt-PT',
+        'ru-RU',
+        'ar-AR',
+        'zh-CN',
+        'ja-JP',
+        'ko-KR',
+        'hi-IN',
+        'vi-VN',
       ];
       expect(() => {
         inputSchema.parse({
           existingMicrolearningId: 'test-id',
-          targetLanguages: manyLanguages
+          targetLanguages: manyLanguages,
         });
       }).not.toThrow();
     });
 
     it('should accept exactly 12 languages', () => {
       const twelveLanguages = [
-        'tr-TR', 'de-DE', 'fr-FR', 'es-ES', 'it-IT', 'pt-PT',
-        'ru-RU', 'ar-AR', 'zh-CN', 'ja-JP', 'ko-KR', 'hi-IN'
+        'tr-TR',
+        'de-DE',
+        'fr-FR',
+        'es-ES',
+        'it-IT',
+        'pt-PT',
+        'ru-RU',
+        'ar-AR',
+        'zh-CN',
+        'ja-JP',
+        'ko-KR',
+        'hi-IN',
       ];
       expect(() => {
         inputSchema.parse({
           existingMicrolearningId: 'test-id',
-          targetLanguages: twelveLanguages
+          targetLanguages: twelveLanguages,
         });
       }).not.toThrow();
     });
@@ -286,7 +307,7 @@ describe('add-multiple-languages-workflow', () => {
     it('should accept language codes in various formats', () => {
       const testData = {
         existingMicrolearningId: 'test-id',
-        targetLanguages: ['en', 'en-US', 'en_US', 'tr-TR']
+        targetLanguages: ['en', 'en-US', 'en_US', 'tr-TR'],
       };
       expect(() => {
         inputSchema.parse(testData);
@@ -296,7 +317,7 @@ describe('add-multiple-languages-workflow', () => {
     it('should normalize languages to lowercase', () => {
       const testData = {
         existingMicrolearningId: 'test-id',
-        targetLanguages: ['TR-TR', 'DE-DE', 'FR-FR']
+        targetLanguages: ['TR-TR', 'DE-DE', 'FR-FR'],
       };
       const parsed = inputSchema.parse(testData);
       expect(parsed.targetLanguages).toBeDefined();
@@ -315,7 +336,7 @@ describe('add-multiple-languages-workflow', () => {
         totalDuration: '4.00s',
         languages: ['tr-TR'],
         results: [{ language: 'tr-TR', success: true }],
-        status: 'success'
+        status: 'success',
       };
       expect(sampleOutput).toHaveProperty('success');
     });
@@ -328,7 +349,7 @@ describe('add-multiple-languages-workflow', () => {
         totalDuration: '12.34s',
         languages: ['tr-TR'],
         results: [{ language: 'tr-TR', success: true }],
-        status: 'success'
+        status: 'success',
       };
       expect(sampleOutput).toHaveProperty('successCount');
     });
@@ -341,7 +362,7 @@ describe('add-multiple-languages-workflow', () => {
         totalDuration: '12.34s',
         languages: ['tr-TR'],
         results: [{ language: 'tr-TR', success: true }],
-        status: 'success'
+        status: 'success',
       };
       expect(sampleOutput).toHaveProperty('failureCount');
     });
@@ -354,7 +375,7 @@ describe('add-multiple-languages-workflow', () => {
         totalDuration: '12.34s',
         languages: ['tr-TR'],
         results: [{ language: 'tr-TR', success: true }],
-        status: 'success'
+        status: 'success',
       };
       expect(sampleOutput).toHaveProperty('totalDuration');
     });
@@ -367,7 +388,7 @@ describe('add-multiple-languages-workflow', () => {
         totalDuration: '12.34s',
         languages: ['tr-TR'],
         results: [{ language: 'tr-TR', success: true }],
-        status: 'success'
+        status: 'success',
       };
       expect(sampleOutput).toHaveProperty('languages');
     });
@@ -380,7 +401,7 @@ describe('add-multiple-languages-workflow', () => {
         totalDuration: '12.34s',
         languages: ['tr-TR'],
         results: [{ language: 'tr-TR', success: true }],
-        status: 'success'
+        status: 'success',
       };
       expect(sampleOutput).toHaveProperty('results');
     });
@@ -393,7 +414,7 @@ describe('add-multiple-languages-workflow', () => {
         totalDuration: '12.34s',
         languages: ['tr-TR'],
         results: [{ language: 'tr-TR', success: true }],
-        status: 'success'
+        status: 'success',
       };
       expect(sampleOutput).toHaveProperty('status');
     });
@@ -401,7 +422,7 @@ describe('add-multiple-languages-workflow', () => {
     it('each result should have language field', () => {
       const sampleResult = {
         language: 'tr-TR',
-        success: true
+        success: true,
       };
       expect(sampleResult).toHaveProperty('language');
     });
@@ -410,7 +431,7 @@ describe('add-multiple-languages-workflow', () => {
       const sampleResult = {
         language: 'tr-TR',
         success: true,
-        trainingUrl: 'https://example.com/?courseId=test'
+        trainingUrl: 'https://example.com/?courseId=test',
       };
       expect(sampleResult).toHaveProperty('success');
     });
@@ -419,7 +440,7 @@ describe('add-multiple-languages-workflow', () => {
       const sampleResult = {
         language: 'tr-TR',
         success: true,
-        trainingUrl: 'https://example.com/?courseId=test'
+        trainingUrl: 'https://example.com/?courseId=test',
       };
       expect(sampleResult).toHaveProperty('trainingUrl');
     });
@@ -428,7 +449,7 @@ describe('add-multiple-languages-workflow', () => {
       const sampleResult = {
         language: 'tr-TR',
         success: false,
-        error: 'Test error message'
+        error: 'Test error message',
       };
       expect(sampleResult).toHaveProperty('error');
     });
@@ -437,7 +458,7 @@ describe('add-multiple-languages-workflow', () => {
       const sampleResult = {
         language: 'tr-TR',
         success: true,
-        duration: 4000
+        duration: 4000,
       };
       expect(sampleResult).toHaveProperty('duration');
     });
@@ -455,24 +476,24 @@ describe('add-multiple-languages-workflow', () => {
             success: true,
             trainingUrl: 'https://example.com/?courseId=test',
             title: 'Test Course',
-            duration: 4000
+            duration: 4000,
           },
           {
             language: 'de-DE',
             success: true,
             trainingUrl: 'https://example.com/?courseId=test',
             title: 'Test Course',
-            duration: 4100
+            duration: 4100,
           },
           {
             language: 'fr-FR',
             success: true,
             trainingUrl: 'https://example.com/?courseId=test',
             title: 'Test Course',
-            duration: 4200
-          }
+            duration: 4200,
+          },
         ],
-        status: 'success'
+        status: 'success',
       };
 
       expect(() => {
@@ -493,23 +514,23 @@ describe('add-multiple-languages-workflow', () => {
             success: true,
             trainingUrl: 'https://example.com/?courseId=test',
             title: 'Test Course',
-            duration: 3000
+            duration: 3000,
           },
           {
             language: 'de-DE',
             success: true,
             trainingUrl: 'https://example.com/?courseId=test',
             title: 'Test Course',
-            duration: 3500
+            duration: 3500,
           },
           {
             language: 'fr-FR',
             success: false,
             error: 'Translation timeout',
-            duration: 3000
-          }
+            duration: 3000,
+          },
         ],
-        status: 'partial'
+        status: 'partial',
       };
 
       expect(() => {
@@ -529,16 +550,16 @@ describe('add-multiple-languages-workflow', () => {
             language: 'tr-TR',
             success: false,
             error: 'Microlearning not found',
-            duration: 2500
+            duration: 2500,
           },
           {
             language: 'de-DE',
             success: false,
             error: 'Microlearning not found',
-            duration: 2500
-          }
+            duration: 2500,
+          },
         ],
-        status: 'failed'
+        status: 'failed',
       };
 
       expect(() => {
@@ -564,10 +585,10 @@ describe('add-multiple-languages-workflow', () => {
             success: true,
             trainingUrl: 'https://example.com',
             title: 'Test',
-            duration: 5000
-          }
+            duration: 5000,
+          },
         ],
-        status: 'success'
+        status: 'success',
       };
 
       expect(() => {
@@ -588,16 +609,16 @@ describe('add-multiple-languages-workflow', () => {
             success: true,
             trainingUrl: 'https://example.com',
             title: 'Test',
-            duration: 2500
+            duration: 2500,
           },
           {
             language: 'de-DE',
             success: false,
             error: 'Error',
-            duration: 2500
-          }
+            duration: 2500,
+          },
         ],
-        status: 'partial'
+        status: 'partial',
       };
 
       expect(() => {
@@ -617,10 +638,10 @@ describe('add-multiple-languages-workflow', () => {
             language: 'tr-TR',
             success: false,
             error: 'Error',
-            duration: 5000
-          }
+            duration: 5000,
+          },
         ],
-        status: 'failed'
+        status: 'failed',
       };
 
       expect(() => {
@@ -682,7 +703,7 @@ describe('add-multiple-languages-workflow', () => {
       const testData = {
         existingMicrolearningId: 'test-id',
         targetLanguages: ['tr-TR', 'de-DE'],
-        modelProvider: 'OPENAI'
+        modelProvider: 'OPENAI',
       };
       expect(() => {
         inputSchema.parse(testData);
@@ -694,7 +715,7 @@ describe('add-multiple-languages-workflow', () => {
       const testData = {
         existingMicrolearningId: 'test-id',
         targetLanguages: ['tr-TR'],
-        model: 'gpt-4o-mini'
+        model: 'gpt-4o-mini',
       };
       expect(() => {
         inputSchema.parse(testData);
@@ -718,10 +739,10 @@ describe('add-multiple-languages-workflow', () => {
             success: true,
             trainingUrl: 'https://example.com',
             title: 'Test',
-            duration: 5000
-          }
+            duration: 5000,
+          },
         ],
-        status: 'success'
+        status: 'success',
       };
 
       expect(() => {
@@ -746,10 +767,10 @@ describe('add-multiple-languages-workflow', () => {
             success: true,
             trainingUrl: 'https://example.com',
             title: 'Test Course',
-            duration: 5000
-          }
+            duration: 5000,
+          },
         ],
-        status: 'success'
+        status: 'success',
       };
 
       expect(() => {
@@ -770,10 +791,10 @@ describe('add-multiple-languages-workflow', () => {
             language: 'tr-TR',
             success: false,
             error: 'Translation failed due to network error',
-            duration: 5000
-          }
+            duration: 5000,
+          },
         ],
-        status: 'failed'
+        status: 'failed',
       };
 
       expect(() => {
@@ -795,10 +816,10 @@ describe('add-multiple-languages-workflow', () => {
             success: true,
             trainingUrl: 'https://example.com',
             title: 'Test',
-            duration: 4500
-          }
+            duration: 4500,
+          },
         ],
-        status: 'success'
+        status: 'success',
       };
 
       const parsed = outputSchema.parse(sampleOutput);
@@ -816,7 +837,7 @@ describe('add-multiple-languages-workflow', () => {
       const inputSchema = addMultipleLanguagesWorkflow.inputSchema as z.ZodSchema;
       const testData = {
         existingMicrolearningId: 'test-id',
-        targetLanguages: ['tr-TR', 'de-DE', 'fr-FR', 'ja-JP', 'ko-KR']
+        targetLanguages: ['tr-TR', 'de-DE', 'fr-FR', 'ja-JP', 'ko-KR'],
       };
       expect(() => {
         inputSchema.parse(testData);
@@ -830,7 +851,7 @@ describe('add-multiple-languages-workflow', () => {
 
     it('should validate with missing existingMicrolearningId', () => {
       const testData = {
-        targetLanguages: ['tr-TR']
+        targetLanguages: ['tr-TR'],
       };
       expect(() => {
         inputSchema.parse(testData);
@@ -839,7 +860,7 @@ describe('add-multiple-languages-workflow', () => {
 
     it('should validate with missing targetLanguages', () => {
       const testData = {
-        existingMicrolearningId: 'test-id'
+        existingMicrolearningId: 'test-id',
       };
       expect(() => {
         inputSchema.parse(testData);
@@ -849,7 +870,7 @@ describe('add-multiple-languages-workflow', () => {
     it('should validate with empty targetLanguages array', () => {
       const testData = {
         existingMicrolearningId: 'test-id',
-        targetLanguages: []
+        targetLanguages: [],
       };
       expect(() => {
         inputSchema.parse(testData);
@@ -860,7 +881,7 @@ describe('add-multiple-languages-workflow', () => {
       expect(() => {
         inputSchema.parse({
           existingMicrolearningId: 'test-id',
-          targetLanguages: [123, 'tr-TR']
+          targetLanguages: [123, 'tr-TR'],
         });
       }).toThrow();
     });
@@ -870,7 +891,7 @@ describe('add-multiple-languages-workflow', () => {
         inputSchema.parse({
           existingMicrolearningId: 'test-id',
           targetLanguages: ['tr-TR'],
-          modelProvider: 'INVALID'
+          modelProvider: 'INVALID',
         });
       }).toThrow();
     });
@@ -889,9 +910,9 @@ describe('add-multiple-languages-workflow', () => {
         languages: ['tr-TR', 'de-DE'],
         results: [
           { language: 'tr-TR', success: true, trainingUrl: 'url1', title: 'Test', duration: 4000 },
-          { language: 'de-DE', success: true, trainingUrl: 'url2', title: 'Test', duration: 4000 }
+          { language: 'de-DE', success: true, trainingUrl: 'url2', title: 'Test', duration: 4000 },
         ],
-        status: 'success'
+        status: 'success',
       };
 
       expect(() => {
@@ -908,9 +929,9 @@ describe('add-multiple-languages-workflow', () => {
         languages: ['tr-TR', 'de-DE'],
         results: [
           { language: 'tr-TR', success: true, trainingUrl: 'url1', title: 'Test', duration: 3000 },
-          { language: 'de-DE', success: false, error: 'Error', duration: 3000 }
+          { language: 'de-DE', success: false, error: 'Error', duration: 3000 },
         ],
-        status: 'partial'
+        status: 'partial',
       };
 
       expect(() => {
@@ -925,10 +946,8 @@ describe('add-multiple-languages-workflow', () => {
         failureCount: 0,
         totalDuration: '12.34s',
         languages: ['tr-TR'],
-        results: [
-          { language: 'tr-TR', success: true, trainingUrl: 'url', title: 'Test', duration: 12340 }
-        ],
-        status: 'success'
+        results: [{ language: 'tr-TR', success: true, trainingUrl: 'url', title: 'Test', duration: 12340 }],
+        status: 'success',
       };
 
       const parsed = outputSchema.parse(sampleOutput);
@@ -945,7 +964,7 @@ describe('add-multiple-languages-workflow', () => {
       expect(() => {
         inputSchema.parse({
           existingMicrolearningId: 'test-id',
-          targetLanguages: ['en-US']
+          targetLanguages: ['en-US'],
         });
       }).not.toThrow();
     });
@@ -954,7 +973,7 @@ describe('add-multiple-languages-workflow', () => {
       expect(() => {
         inputSchema.parse({
           existingMicrolearningId: 'phishing-training-2024-12-31_v1.5',
-          targetLanguages: ['tr-TR', 'de-DE']
+          targetLanguages: ['tr-TR', 'de-DE'],
         });
       }).not.toThrow();
     });
@@ -963,7 +982,7 @@ describe('add-multiple-languages-workflow', () => {
       expect(() => {
         inputSchema.parse({
           existingMicrolearningId: '550e8400-e29b-41d4-a716-446655440000',
-          targetLanguages: ['fr-FR']
+          targetLanguages: ['fr-FR'],
         });
       }).not.toThrow();
     });
@@ -976,7 +995,7 @@ describe('add-multiple-languages-workflow', () => {
       expect(() => {
         inputSchema.parse({
           existingMicrolearningId: 'test-id',
-          targetLanguages: manyLanguages
+          targetLanguages: manyLanguages,
         });
       }).not.toThrow();
     });
@@ -985,7 +1004,7 @@ describe('add-multiple-languages-workflow', () => {
       expect(() => {
         inputSchema.parse({
           existingMicrolearningId: 'test-id',
-          targetLanguages: ['en-US', 'en-US', 'fr-FR']
+          targetLanguages: ['en-US', 'en-US', 'fr-FR'],
         });
       }).not.toThrow();
     });
@@ -998,7 +1017,7 @@ describe('add-multiple-languages-workflow', () => {
           sourceLanguage: 'en-US',
           department: 'IT',
           modelProvider: 'OPENAI',
-          model: 'gpt-4'
+          model: 'gpt-4',
         });
       }).not.toThrow();
     });
@@ -1008,7 +1027,7 @@ describe('add-multiple-languages-workflow', () => {
         inputSchema.parse({
           existingMicrolearningId: 'test-id',
           targetLanguages: ['tr-TR'],
-          sourceLanguage: 'en'
+          sourceLanguage: 'en',
         });
       }).not.toThrow();
     });
@@ -1028,9 +1047,9 @@ describe('add-multiple-languages-workflow', () => {
         results: [
           { language: 'tr-TR', success: true, trainingUrl: 'https://example.com', duration: 4000 },
           { language: 'de-DE', success: true, trainingUrl: 'https://example.com', duration: 4000 },
-          { language: 'fr-FR', success: false, error: 'Network timeout', duration: 500 }
+          { language: 'fr-FR', success: false, error: 'Network timeout', duration: 500 },
         ],
-        status: 'partial'
+        status: 'partial',
       };
       expect(() => {
         outputSchema.parse(partialOutput);
@@ -1046,9 +1065,9 @@ describe('add-multiple-languages-workflow', () => {
         languages: ['tr-TR', 'de-DE'],
         results: [
           { language: 'tr-TR', success: false, error: 'API rate limit exceeded' },
-          { language: 'de-DE', success: false, error: 'Invalid language code' }
+          { language: 'de-DE', success: false, error: 'Invalid language code' },
         ],
-        status: 'failed'
+        status: 'failed',
       };
       expect(() => {
         outputSchema.parse(failureOutput);
@@ -1062,10 +1081,8 @@ describe('add-multiple-languages-workflow', () => {
         failureCount: 0,
         totalDuration: '4.00s',
         languages: ['tr-TR'],
-        results: [
-          { language: 'tr-TR', success: true }
-        ],
-        status: 'success'
+        results: [{ language: 'tr-TR', success: true }],
+        status: 'success',
       };
       expect(() => {
         outputSchema.parse(minimalOutput);
@@ -1084,9 +1101,9 @@ describe('add-multiple-languages-workflow', () => {
           { language: 'de-DE', success: true, duration: 720000 },
           { language: 'fr-FR', success: true, duration: 720000 },
           { language: 'es-ES', success: true, duration: 720000 },
-          { language: 'it-IT', success: true, duration: 720000 }
+          { language: 'it-IT', success: true, duration: 720000 },
         ],
-        status: 'success'
+        status: 'success',
       };
       expect(() => {
         outputSchema.parse(longDurationOutput);
@@ -1100,10 +1117,8 @@ describe('add-multiple-languages-workflow', () => {
         failureCount: 1,
         totalDuration: '0.01s',
         languages: ['tr-TR'],
-        results: [
-          { language: 'tr-TR', success: false, error: 'Instant failure', duration: 0 }
-        ],
-        status: 'failed'
+        results: [{ language: 'tr-TR', success: false, error: 'Instant failure', duration: 0 }],
+        status: 'failed',
       };
       expect(() => {
         outputSchema.parse(zeroDurationOutput);
@@ -1120,7 +1135,7 @@ describe('add-multiple-languages-workflow', () => {
         inputSchema.parse({
           existingMicrolearningId: 'test-id',
           targetLanguages: ['tr-TR'],
-          department: 'IT'
+          department: 'IT',
         });
       }).not.toThrow();
     });
@@ -1130,7 +1145,7 @@ describe('add-multiple-languages-workflow', () => {
         inputSchema.parse({
           existingMicrolearningId: 'test-id',
           targetLanguages: ['tr-TR'],
-          department: 'Finance'
+          department: 'Finance',
         });
       }).not.toThrow();
     });
@@ -1140,7 +1155,7 @@ describe('add-multiple-languages-workflow', () => {
         inputSchema.parse({
           existingMicrolearningId: 'test-id',
           targetLanguages: ['tr-TR'],
-          department: 'HR'
+          department: 'HR',
         });
       }).not.toThrow();
     });
@@ -1150,7 +1165,7 @@ describe('add-multiple-languages-workflow', () => {
         inputSchema.parse({
           existingMicrolearningId: 'test-id',
           targetLanguages: ['tr-TR'],
-          department: 'CustomDept123'
+          department: 'CustomDept123',
         });
       }).not.toThrow();
     });
@@ -1158,7 +1173,7 @@ describe('add-multiple-languages-workflow', () => {
     it('should default to All department when not provided', () => {
       const parsed = inputSchema.parse({
         existingMicrolearningId: 'test-id',
-        targetLanguages: ['tr-TR']
+        targetLanguages: ['tr-TR'],
       });
       expect(parsed.department).toBe('All');
     });
@@ -1173,7 +1188,7 @@ describe('add-multiple-languages-workflow', () => {
         inputSchema.parse({
           existingMicrolearningId: 'test-id',
           targetLanguages: ['tr-TR'],
-          modelProvider: 'OPENAI'
+          modelProvider: 'OPENAI',
         });
       }).not.toThrow();
     });
@@ -1183,7 +1198,7 @@ describe('add-multiple-languages-workflow', () => {
         inputSchema.parse({
           existingMicrolearningId: 'test-id',
           targetLanguages: ['tr-TR'],
-          modelProvider: 'GOOGLE'
+          modelProvider: 'GOOGLE',
         });
       }).not.toThrow();
     });
@@ -1193,7 +1208,7 @@ describe('add-multiple-languages-workflow', () => {
         inputSchema.parse({
           existingMicrolearningId: 'test-id',
           targetLanguages: ['tr-TR'],
-          modelProvider: 'WORKERS_AI'
+          modelProvider: 'WORKERS_AI',
         });
       }).not.toThrow();
     });
@@ -1204,7 +1219,7 @@ describe('add-multiple-languages-workflow', () => {
           existingMicrolearningId: 'test-id',
           targetLanguages: ['tr-TR'],
           modelProvider: 'OPENAI',
-          model: 'gpt-3.5-turbo'
+          model: 'gpt-3.5-turbo',
         });
       }).not.toThrow();
     });
@@ -1218,7 +1233,7 @@ describe('Step Execution (ProcessMultipleLanguages)', () => {
 
     // Default successful run
     mocks.createRunAsync.mockResolvedValue({
-      start: mocks.runStart
+      start: mocks.runStart,
     });
 
     mocks.runStart.mockImplementation(async ({ inputData }) => {
@@ -1227,9 +1242,9 @@ describe('Step Execution (ProcessMultipleLanguages)', () => {
         result: {
           data: {
             trainingUrl: `url-${inputData.targetLanguage}`,
-            title: `Title (${inputData.targetLanguage})`
-          }
-        }
+            title: `Title (${inputData.targetLanguage})`,
+          },
+        },
       };
     });
   });
@@ -1238,7 +1253,7 @@ describe('Step Execution (ProcessMultipleLanguages)', () => {
     const input = {
       existingMicrolearningId: 'ml-123',
       targetLanguages: ['tr', 'de', 'fr'],
-      department: 'IT'
+      department: 'IT',
     };
 
     const result = await (processMultipleLanguagesStep as any).execute({ inputData: input });
@@ -1257,14 +1272,14 @@ describe('Step Execution (ProcessMultipleLanguages)', () => {
       }
       return {
         status: 'success',
-        result: { data: { trainingUrl: 'url', title: 'Title' } }
+        result: { data: { trainingUrl: 'url', title: 'Title' } },
       };
     });
 
     const input = {
       existingMicrolearningId: 'ml-123',
       targetLanguages: ['tr', 'de'],
-      department: 'IT'
+      department: 'IT',
     };
 
     const result = await (processMultipleLanguagesStep as any).execute({ inputData: input });
@@ -1278,13 +1293,13 @@ describe('Step Execution (ProcessMultipleLanguages)', () => {
   it('should handle complete failure', async () => {
     mocks.runStart.mockResolvedValue({
       status: 'failed',
-      error: { message: 'Failed completely' }
+      error: { message: 'Failed completely' },
     });
 
     const input = {
       existingMicrolearningId: 'ml-123',
       targetLanguages: ['tr'],
-      department: 'IT'
+      department: 'IT',
     };
 
     const result = await (processMultipleLanguagesStep as any).execute({ inputData: input });
@@ -1298,11 +1313,11 @@ describe('Step Execution (ProcessMultipleLanguages)', () => {
     const manyLangs = Array(13).fill('en');
     const input = {
       existingMicrolearningId: 'ml-123',
-      targetLanguages: manyLangs
+      targetLanguages: manyLangs,
     };
 
-    await expect((processMultipleLanguagesStep as any).execute({ inputData: input }))
-      .rejects.toThrow('Too many languages requested');
+    await expect((processMultipleLanguagesStep as any).execute({ inputData: input })).rejects.toThrow(
+      'Too many languages requested'
+    );
   });
 });
-

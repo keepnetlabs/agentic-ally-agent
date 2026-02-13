@@ -14,11 +14,11 @@ import { withRetry } from '../../../utils/core/resilience-utils';
 import { LanguageModel } from '../../../types/language-model';
 
 export interface RewriteContext {
-    sourceLanguage: string;
-    targetLanguage: string;
-    topic: string;
-    model: LanguageModel;
-    department?: string;
+  sourceLanguage: string;
+  targetLanguage: string;
+  topic: string;
+  model: LanguageModel;
+  department?: string;
 }
 
 /**
@@ -26,22 +26,22 @@ export interface RewriteContext {
  * Each scene type has a unique prompt instruction
  */
 type SceneType =
-    | 'intro'
-    | 'goal'
-    | 'video'
-    | 'actionable'
-    | 'vishing'
-    | 'smishing'
-    | 'quiz'
-    | 'survey'
-    | 'nudge'
-    | 'summary'
-    | 'app-texts';
+  | 'intro'
+  | 'goal'
+  | 'video'
+  | 'actionable'
+  | 'vishing'
+  | 'smishing'
+  | 'quiz'
+  | 'survey'
+  | 'nudge'
+  | 'summary'
+  | 'app-texts';
 
 interface SceneConfig {
-    displayName: string;              // e.g., "Intro", "Goals", "Video Transcript"
-    typeInstruction: string;          // Scene-specific instruction (e.g., "Make the hook compelling")
-    sceneNumber?: number;             // For logging (1-8)
+  displayName: string; // e.g., "Intro", "Goals", "Video Transcript"
+  typeInstruction: string; // Scene-specific instruction (e.g., "Make the hook compelling")
+  sceneNumber?: number; // For logging (1-8)
 }
 
 /**
@@ -49,60 +49,62 @@ interface SceneConfig {
  * Each entry defines how that scene type should be rewritten
  */
 const SCENE_CONFIGS: Record<SceneType, SceneConfig> = {
-    intro: {
-        displayName: 'Intro',
-        typeInstruction: 'Make the hook compelling to capture attention.',
-        sceneNumber: 1,
-    },
-    goal: {
-        displayName: 'Goals',
-        typeInstruction: 'Make goals clear and measurable.',
-        sceneNumber: 2,
-    },
-    video: {
-        displayName: 'Video Transcript',
-        typeInstruction: 'Create natural, conversational speech patterns.',
-        sceneNumber: 3,
-    },
-    actionable: {
-        displayName: 'Actionable Items',
-        typeInstruction: 'Keep action steps concrete and achievable.',
-        sceneNumber: 4,
-    },
-    vishing: {
-        displayName: 'Vishing Simulation',
-        typeInstruction: 'Actively replace any source-language names/titles/orgs/phone formats with culturally appropriate equivalents in the target locale (no transliteration). If a name appears, it must change to a local name; phone numbers must follow local patterns and stay clearly fictional; avoid any real entities. CRITICAL: If a caller name appears in firstMessage, it must match the callerName field exactly (consistency rule).',
-        sceneNumber: 4,
-    },
-    smishing: {
-        displayName: 'Smishing Simulation',
-        typeInstruction: 'Actively replace any source-language names/titles/orgs/phone formats with culturally appropriate equivalents in the target locale (no transliteration). If a name appears, it must change to a local name; phone numbers must follow local patterns and stay clearly fictional; avoid any real entities. CRITICAL: If a sender name appears in firstMessage, it must match the senderName field exactly (consistency rule). Also do not keep broken references like "link below/attached file" unless the same message includes that fictional artifact.',
-        sceneNumber: 4,
-    },
-    quiz: {
-        displayName: 'Quiz',
-        typeInstruction: 'Keep quiz questions clear and unambiguous.',
-        sceneNumber: 5,
-    },
-    survey: {
-        displayName: 'Survey',
-        typeInstruction: 'Keep survey questions neutral and straightforward.',
-        sceneNumber: 6,
-    },
-    nudge: {
-        displayName: 'Nudge',
-        typeInstruction: 'Keep nudges concise and motivational.',
-        sceneNumber: 7,
-    },
-    summary: {
-        displayName: 'Summary',
-        typeInstruction: 'Summarize key points concisely.',
-        sceneNumber: 8,
-    },
-    'app-texts': {
-        displayName: 'App Text Strings',
-        typeInstruction: 'Keep UI strings concise and user-friendly.',
-    },
+  intro: {
+    displayName: 'Intro',
+    typeInstruction: 'Make the hook compelling to capture attention.',
+    sceneNumber: 1,
+  },
+  goal: {
+    displayName: 'Goals',
+    typeInstruction: 'Make goals clear and measurable.',
+    sceneNumber: 2,
+  },
+  video: {
+    displayName: 'Video Transcript',
+    typeInstruction: 'Create natural, conversational speech patterns.',
+    sceneNumber: 3,
+  },
+  actionable: {
+    displayName: 'Actionable Items',
+    typeInstruction: 'Keep action steps concrete and achievable.',
+    sceneNumber: 4,
+  },
+  vishing: {
+    displayName: 'Vishing Simulation',
+    typeInstruction:
+      'Actively replace any source-language names/titles/orgs/phone formats with culturally appropriate equivalents in the target locale (no transliteration). If a name appears, it must change to a local name; phone numbers must follow local patterns and stay clearly fictional; avoid any real entities. CRITICAL: If a caller name appears in firstMessage, it must match the callerName field exactly (consistency rule).',
+    sceneNumber: 4,
+  },
+  smishing: {
+    displayName: 'Smishing Simulation',
+    typeInstruction:
+      'Actively replace any source-language names/titles/orgs/phone formats with culturally appropriate equivalents in the target locale (no transliteration). If a name appears, it must change to a local name; phone numbers must follow local patterns and stay clearly fictional; avoid any real entities. CRITICAL: If a sender name appears in firstMessage, it must match the senderName field exactly (consistency rule). Also do not keep broken references like "link below/attached file" unless the same message includes that fictional artifact.',
+    sceneNumber: 4,
+  },
+  quiz: {
+    displayName: 'Quiz',
+    typeInstruction: 'Keep quiz questions clear and unambiguous.',
+    sceneNumber: 5,
+  },
+  survey: {
+    displayName: 'Survey',
+    typeInstruction: 'Keep survey questions neutral and straightforward.',
+    sceneNumber: 6,
+  },
+  nudge: {
+    displayName: 'Nudge',
+    typeInstruction: 'Keep nudges concise and motivational.',
+    sceneNumber: 7,
+  },
+  summary: {
+    displayName: 'Summary',
+    typeInstruction: 'Summarize key points concisely.',
+    sceneNumber: 8,
+  },
+  'app-texts': {
+    displayName: 'App Text Strings',
+    typeInstruction: 'Keep UI strings concise and user-friendly.',
+  },
 };
 
 /**
@@ -110,16 +112,16 @@ const SCENE_CONFIGS: Record<SceneType, SceneConfig> = {
  * This is the shared boilerplate that was duplicated 8+ times
  */
 function buildSystemPrompt(
-    sceneType: SceneType,
-    targetLanguage: string,
-    sourceLanguage: string,
-    topic: string,
-    department: string | undefined
+  sceneType: SceneType,
+  targetLanguage: string,
+  sourceLanguage: string,
+  topic: string,
+  department: string | undefined
 ): string {
-    const config = SCENE_CONFIGS[sceneType];
-    const languageRules = getLanguagePrompt(targetLanguage);
+  const config = SCENE_CONFIGS[sceneType];
+  const languageRules = getLanguagePrompt(targetLanguage);
 
-    return `You are a native ${targetLanguage} cybersecurity trainer specializing in *semantic localization* of microlearning content.
+  return `You are a native ${targetLanguage} cybersecurity trainer specializing in *semantic localization* of microlearning content.
 
 === CRITICAL: NOT TRANSLATION, NOT SUMMARY ===
 
@@ -186,12 +188,8 @@ FINAL CHECK (MENTAL):
  * Build the user prompt for scene localization
  * Identical structure for all scene types
  */
-function buildUserPrompt<T>(
-    topic: string,
-    targetLanguage: string,
-    scene: T
-): string {
-    return `Topic: ${topic}
+function buildUserPrompt<T>(topic: string, targetLanguage: string, scene: T): string {
+  return `Topic: ${topic}
 
 === RAW CONTENT CONCEPTS (Source) ===
 
@@ -213,56 +211,47 @@ Output (JSON only):`;
  * @param context The rewrite context (languages, model, etc.)
  * @returns The rewritten scene
  */
-export async function rewriteSceneWithBase<T>(
-    scene: T,
-    sceneType: SceneType,
-    context: RewriteContext
-): Promise<T> {
-    const config = SCENE_CONFIGS[sceneType];
-    const logger = getLogger(`RewriteScene${config.displayName.replace(/\s+/g, '')}`);
-    const { sourceLanguage, targetLanguage, topic, model, department } = context;
+export async function rewriteSceneWithBase<T>(scene: T, sceneType: SceneType, context: RewriteContext): Promise<T> {
+  const config = SCENE_CONFIGS[sceneType];
+  const logger = getLogger(`RewriteScene${config.displayName.replace(/\s+/g, '')}`);
+  const { sourceLanguage, targetLanguage, topic, model, department } = context;
 
-    // Early return for empty content
-    if (!scene || (typeof scene === 'object' && Object.keys(scene).length === 0)) {
-        return scene;
-    }
+  // Early return for empty content
+  if (!scene || (typeof scene === 'object' && Object.keys(scene).length === 0)) {
+    return scene;
+  }
 
-    const systemPrompt = buildSystemPrompt(
-        sceneType,
-        targetLanguage,
-        sourceLanguage,
-        topic,
-        department
+  const systemPrompt = buildSystemPrompt(sceneType, targetLanguage, sourceLanguage, topic, department);
+
+  const userPrompt = buildUserPrompt(topic, targetLanguage, scene);
+
+  try {
+    const response = await withRetry(
+      () =>
+        generateText({
+          model,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt },
+          ],
+          ...SCENE_REWRITE_PARAMS,
+        }),
+      `Scene ${config.sceneNumber ? config.sceneNumber + ' (' + config.displayName + ')' : config.displayName} rewrite`
     );
 
-    const userPrompt = buildUserPrompt(topic, targetLanguage, scene);
+    const cleanKey = sceneType === 'app-texts' ? 'app-texts' : `scene${config.sceneNumber}-${sceneType}`;
+    const cleaned = cleanResponse(response.text, cleanKey);
+    const rewritten = JSON.parse(cleaned) as T;
 
-    try {
-        const response = await withRetry(
-            () => generateText({
-                model,
-                messages: [
-                    { role: 'system', content: systemPrompt },
-                    { role: 'user', content: userPrompt }
-                ],
-                ...SCENE_REWRITE_PARAMS,
-            }),
-            `Scene ${config.sceneNumber ? config.sceneNumber + ' (' + config.displayName + ')' : config.displayName} rewrite`
-        );
-
-        const cleanKey = sceneType === 'app-texts' ? 'app-texts' : `scene${config.sceneNumber}-${sceneType}`;
-        const cleaned = cleanResponse(response.text, cleanKey);
-        const rewritten = JSON.parse(cleaned) as T;
-
-        return rewritten;
-    } catch (error) {
-        const err = normalizeError(error);
-        const sceneLabel = config.sceneNumber ? `Scene ${config.sceneNumber} (${config.displayName})` : config.displayName;
-        const errorInfo = errorService.aiModel(`${sceneLabel} rewrite failed: ${err.message}`, {
-            sceneType,
-            stack: err.stack
-        });
-        logErrorInfo(logger, 'error', `${sceneLabel} rewrite failed`, errorInfo);
-        throw error;
-    }
+    return rewritten;
+  } catch (error) {
+    const err = normalizeError(error);
+    const sceneLabel = config.sceneNumber ? `Scene ${config.sceneNumber} (${config.displayName})` : config.displayName;
+    const errorInfo = errorService.aiModel(`${sceneLabel} rewrite failed: ${err.message}`, {
+      sceneType,
+      stack: err.stack,
+    });
+    logErrorInfo(logger, 'error', `${sceneLabel} rewrite failed`, errorInfo);
+    throw error;
+  }
 }

@@ -1,161 +1,156 @@
-
 import { describe, expect, it } from 'vitest';
-import {
-    extractMessageContent,
-    parseAndValidateRequest,
-    extractUserPrompt
-} from './chat-request-helpers';
+import { extractMessageContent, parseAndValidateRequest, extractUserPrompt } from './chat-request-helpers';
 import type { ChatMessage } from '../types/api-types';
 
 describe('chat-request-helpers', () => {
-    describe('extractMessageContent', () => {
-        it('returns simple string content', () => {
-            const message: ChatMessage = { role: 'user', content: 'Hello' };
-            expect(extractMessageContent(message)).toBe('Hello');
-        });
-
-        it('returns empty string for empty content', () => {
-            const message: ChatMessage = { role: 'user', content: '' };
-            expect(extractMessageContent(message)).toBe('');
-        });
-
-        it('handles array content (OpenAI format)', () => {
-            const message: ChatMessage = {
-                role: 'user',
-                content: [
-                    { type: 'text', text: 'Hello' },
-                    { type: 'image' } // Mock image part
-                ]
-            } as any;
-            expect(extractMessageContent(message)).toBe('Hello [Image]');
-        });
-
-        it('handles Vercel AI SDK parts', () => {
-            const message: ChatMessage = {
-                role: 'assistant',
-                content: null,
-                parts: [
-                    { type: 'text', text: 'Part 1' },
-                    { type: 'text', text: 'Part 2' }
-                ]
-            } as any;
-            expect(extractMessageContent(message)).toBe('Part 1 Part 2');
-        });
-
-        it('returns [Tool Execution Result] for tool invocations', () => {
-            const message: ChatMessage = {
-                role: 'assistant',
-                content: null,
-                toolInvocations: []
-            } as any;
-            expect(extractMessageContent(message)).toBe('[Tool Execution Result]');
-        });
-
-        it('returns [Tool Execution Result] for function_call', () => {
-            const message: ChatMessage = {
-                role: 'assistant',
-                content: null,
-                function_call: {}
-            } as any;
-            expect(extractMessageContent(message)).toBe('[Tool Execution Result]');
-        });
-
-        it('handles object fallback with text field', () => {
-            const message: ChatMessage = {
-                role: 'user',
-                content: { text: 'Object content' }
-            } as any;
-            expect(extractMessageContent(message)).toBe('Object content');
-        });
-
-        it('handles object fallback without text field', () => {
-            const content = { other: 'value' };
-            const message: ChatMessage = {
-                role: 'user',
-                content
-            } as any;
-            expect(extractMessageContent(message)).toBe(JSON.stringify(content));
-        });
-
-        it('returns [Empty Message] for null/undefined content if no other fields', () => {
-            const message: ChatMessage = { role: 'user', content: null } as any;
-            expect(extractMessageContent(message)).toBe('[Empty Message]');
-        });
+  describe('extractMessageContent', () => {
+    it('returns simple string content', () => {
+      const message: ChatMessage = { role: 'user', content: 'Hello' };
+      expect(extractMessageContent(message)).toBe('Hello');
     });
 
-    describe('extractUserPrompt', () => {
-        it('returns undefined for empty messages', () => {
-            expect(extractUserPrompt([])).toBeUndefined();
-        });
-
-        it('returns simple string content from last user message', () => {
-            const messages: ChatMessage[] = [
-                { role: 'system', content: 'sys' },
-                { role: 'user', content: 'first' },
-                { role: 'assistant', content: 'response' },
-                { role: 'user', content: 'last' }
-            ];
-            expect(extractUserPrompt(messages)).toBe('last');
-        });
-
-        it('returns undefined if no user message found', () => {
-            const messages: ChatMessage[] = [
-                { role: 'system', content: 'sys' },
-                { role: 'assistant', content: 'response' }
-            ];
-            expect(extractUserPrompt(messages)).toBeUndefined();
-        });
-
-        it('handles Vercel AI SDK parts in user message', () => {
-            const messages: ChatMessage[] = [
-                {
-                    role: 'user',
-                    content: null,
-                    parts: [{ type: 'text', text: 'part text' }]
-                } as any
-            ];
-            expect(extractUserPrompt(messages)).toBe('part text');
-        });
+    it('returns empty string for empty content', () => {
+      const message: ChatMessage = { role: 'user', content: '' };
+      expect(extractMessageContent(message)).toBe('');
     });
 
-    describe('parseAndValidateRequest', () => {
-        it('extracts prompt from body.prompt', () => {
-            const body = { prompt: 'myprompt' };
-            const result = parseAndValidateRequest(body);
-            expect(result).toEqual({ prompt: 'myprompt', routingContext: '' });
-        });
-
-        it('extracts prompt from body.text', () => {
-            const body = { text: 'mytext' };
-            const result = parseAndValidateRequest(body);
-            expect(result).toEqual({ prompt: 'mytext', routingContext: '' });
-        });
-
-        it('extracts prompt from body.input', () => {
-            const body = { input: 'myinput' };
-            const result = parseAndValidateRequest(body);
-            expect(result).toEqual({ prompt: 'myinput', routingContext: '' });
-        });
-
-        it('extracts prompt from messages array if no explicit prompt', () => {
-            const messages = [{ role: 'user', content: 'msg prompt' }];
-            const body = { messages };
-            const result = parseAndValidateRequest(body as any);
-            expect(result?.prompt).toBe('msg prompt');
-            expect(result?.routingContext).toContain('Content: msg prompt');
-        });
-
-        it('returns null if no prompt found', () => {
-            const body = {};
-            expect(parseAndValidateRequest(body)).toBeNull();
-        });
-
-        it('builds routing context even if explicit prompt is provided', () => {
-            const messages = [{ role: 'user', content: 'msg history' }];
-            const body = { prompt: 'new prompt', messages };
-            const result = parseAndValidateRequest(body as any);
-            expect(result?.prompt).toBe('new prompt');
-            expect(result?.routingContext).toContain('Content: msg history');
-        });
+    it('handles array content (OpenAI format)', () => {
+      const message: ChatMessage = {
+        role: 'user',
+        content: [
+          { type: 'text', text: 'Hello' },
+          { type: 'image' }, // Mock image part
+        ],
+      } as any;
+      expect(extractMessageContent(message)).toBe('Hello [Image]');
     });
+
+    it('handles Vercel AI SDK parts', () => {
+      const message: ChatMessage = {
+        role: 'assistant',
+        content: null,
+        parts: [
+          { type: 'text', text: 'Part 1' },
+          { type: 'text', text: 'Part 2' },
+        ],
+      } as any;
+      expect(extractMessageContent(message)).toBe('Part 1 Part 2');
+    });
+
+    it('returns [Tool Execution Result] for tool invocations', () => {
+      const message: ChatMessage = {
+        role: 'assistant',
+        content: null,
+        toolInvocations: [],
+      } as any;
+      expect(extractMessageContent(message)).toBe('[Tool Execution Result]');
+    });
+
+    it('returns [Tool Execution Result] for function_call', () => {
+      const message: ChatMessage = {
+        role: 'assistant',
+        content: null,
+        function_call: {},
+      } as any;
+      expect(extractMessageContent(message)).toBe('[Tool Execution Result]');
+    });
+
+    it('handles object fallback with text field', () => {
+      const message: ChatMessage = {
+        role: 'user',
+        content: { text: 'Object content' },
+      } as any;
+      expect(extractMessageContent(message)).toBe('Object content');
+    });
+
+    it('handles object fallback without text field', () => {
+      const content = { other: 'value' };
+      const message: ChatMessage = {
+        role: 'user',
+        content,
+      } as any;
+      expect(extractMessageContent(message)).toBe(JSON.stringify(content));
+    });
+
+    it('returns [Empty Message] for null/undefined content if no other fields', () => {
+      const message: ChatMessage = { role: 'user', content: null } as any;
+      expect(extractMessageContent(message)).toBe('[Empty Message]');
+    });
+  });
+
+  describe('extractUserPrompt', () => {
+    it('returns undefined for empty messages', () => {
+      expect(extractUserPrompt([])).toBeUndefined();
+    });
+
+    it('returns simple string content from last user message', () => {
+      const messages: ChatMessage[] = [
+        { role: 'system', content: 'sys' },
+        { role: 'user', content: 'first' },
+        { role: 'assistant', content: 'response' },
+        { role: 'user', content: 'last' },
+      ];
+      expect(extractUserPrompt(messages)).toBe('last');
+    });
+
+    it('returns undefined if no user message found', () => {
+      const messages: ChatMessage[] = [
+        { role: 'system', content: 'sys' },
+        { role: 'assistant', content: 'response' },
+      ];
+      expect(extractUserPrompt(messages)).toBeUndefined();
+    });
+
+    it('handles Vercel AI SDK parts in user message', () => {
+      const messages: ChatMessage[] = [
+        {
+          role: 'user',
+          content: null,
+          parts: [{ type: 'text', text: 'part text' }],
+        } as any,
+      ];
+      expect(extractUserPrompt(messages)).toBe('part text');
+    });
+  });
+
+  describe('parseAndValidateRequest', () => {
+    it('extracts prompt from body.prompt', () => {
+      const body = { prompt: 'myprompt' };
+      const result = parseAndValidateRequest(body);
+      expect(result).toEqual({ prompt: 'myprompt', routingContext: '' });
+    });
+
+    it('extracts prompt from body.text', () => {
+      const body = { text: 'mytext' };
+      const result = parseAndValidateRequest(body);
+      expect(result).toEqual({ prompt: 'mytext', routingContext: '' });
+    });
+
+    it('extracts prompt from body.input', () => {
+      const body = { input: 'myinput' };
+      const result = parseAndValidateRequest(body);
+      expect(result).toEqual({ prompt: 'myinput', routingContext: '' });
+    });
+
+    it('extracts prompt from messages array if no explicit prompt', () => {
+      const messages = [{ role: 'user', content: 'msg prompt' }];
+      const body = { messages };
+      const result = parseAndValidateRequest(body as any);
+      expect(result?.prompt).toBe('msg prompt');
+      expect(result?.routingContext).toContain('Content: msg prompt');
+    });
+
+    it('returns null if no prompt found', () => {
+      const body = {};
+      expect(parseAndValidateRequest(body)).toBeNull();
+    });
+
+    it('builds routing context even if explicit prompt is provided', () => {
+      const messages = [{ role: 'user', content: 'msg history' }];
+      const body = { prompt: 'new prompt', messages };
+      const result = parseAndValidateRequest(body as any);
+      expect(result?.prompt).toBe('new prompt');
+      expect(result?.routingContext).toContain('Content: msg history');
+    });
+  });
 });

@@ -7,10 +7,7 @@ import { getLogger } from '../utils/core/logger';
 import { normalizeError, logErrorInfo } from '../utils/core/error-utils';
 import { errorService } from '../services/error-service';
 
-import {
-  addMultipleLanguagesInputSchema,
-  finalMultiLanguageResultSchema
-} from '../schemas/add-language-schemas';
+import { addMultipleLanguagesInputSchema, finalMultiLanguageResultSchema } from '../schemas/add-language-schemas';
 
 /** Shape of add-language workflow run result (success or error). */
 interface AddLanguageRunResult {
@@ -29,12 +26,18 @@ function extractFromAddLanguageResult(result: AddLanguageRunResult | null | unde
   if (!result) return {};
   const r = result as AddLanguageRunResult;
   const trainingUrl =
-    r?.result?.data?.trainingUrl ?? r?.result?.trainingUrl ?? r?.data?.trainingUrl ?? (r as Record<string, unknown>)?.trainingUrl;
-  const title =
-    r?.result?.data?.title ?? r?.result?.title ?? r?.data?.title ?? (r as Record<string, unknown>)?.title;
+    r?.result?.data?.trainingUrl ??
+    r?.result?.trainingUrl ??
+    r?.data?.trainingUrl ??
+    (r as Record<string, unknown>)?.trainingUrl;
+  const title = r?.result?.data?.title ?? r?.result?.title ?? r?.data?.title ?? (r as Record<string, unknown>)?.title;
   const error =
     r?.error?.message ?? (r?.result as { message?: string })?.message ?? (r as Record<string, unknown>)?.message;
-  return { trainingUrl: trainingUrl as string | undefined, title: title as string | undefined, error: error as string | undefined };
+  return {
+    trainingUrl: trainingUrl as string | undefined,
+    title: title as string | undefined,
+    error: error as string | undefined,
+  };
 }
 
 // Step: Process Multiple Languages in Parallel
@@ -49,7 +52,7 @@ export const processMultipleLanguagesStep = createStep({
 
     logger.info('Starting parallel language processing', {
       languageCount: targetLanguages.length,
-      languages: targetLanguages.join(', ')
+      languages: targetLanguages.join(', '),
     });
 
     try {
@@ -61,28 +64,33 @@ export const processMultipleLanguagesStep = createStep({
       }
 
       if (!Array.isArray(targetLanguages) || targetLanguages.length === 0) {
-        const errorInfo = errorService.validation('targetLanguages must be a non-empty array', { step: 'validate-input' });
-        logErrorInfo(logger, 'error', 'Input validation failed', errorInfo);
-        throw new Error(errorInfo.message);
-      }
-
-      if (targetLanguages.length > 12) {
-        const errorInfo = errorService.validation(`Too many languages requested (${targetLanguages.length}). Maximum supported: 12 languages.`, {
-          requestedCount: targetLanguages.length,
-          step: 'validate-input'
+        const errorInfo = errorService.validation('targetLanguages must be a non-empty array', {
+          step: 'validate-input',
         });
         logErrorInfo(logger, 'error', 'Input validation failed', errorInfo);
         throw new Error(errorInfo.message);
       }
 
-      const normalizedLanguages = targetLanguages.map((lang) => lang.toLowerCase());
+      if (targetLanguages.length > 12) {
+        const errorInfo = errorService.validation(
+          `Too many languages requested (${targetLanguages.length}). Maximum supported: 12 languages.`,
+          {
+            requestedCount: targetLanguages.length,
+            step: 'validate-input',
+          }
+        );
+        logErrorInfo(logger, 'error', 'Input validation failed', errorInfo);
+        throw new Error(errorInfo.message);
+      }
+
+      const normalizedLanguages = targetLanguages.map(lang => lang.toLowerCase());
       logger.info('Validation passed. Processing languages', { languages: normalizedLanguages.join(', ') });
 
       const startTime = Date.now();
       logger.info('Starting parallel execution', { timestamp: new Date().toISOString() });
 
       // Launch all language workflows in parallel
-      const workflowPromises = normalizedLanguages.map(async (targetLanguage) => {
+      const workflowPromises = normalizedLanguages.map(async targetLanguage => {
         const langStartTime = Date.now();
         try {
           logger.info('Starting translation workflow', { language: targetLanguage });
@@ -97,8 +105,8 @@ export const processMultipleLanguagesStep = createStep({
               targetLanguage,
               sourceLanguage: sourceLanguage || undefined,
               modelProvider,
-              model
-            }
+              model,
+            },
           });
 
           const duration = Date.now() - langStartTime;
@@ -113,19 +121,22 @@ export const processMultipleLanguagesStep = createStep({
               success: true,
               trainingUrl,
               title,
-              duration
+              duration,
             };
           } else {
             const { error: extractedError } = extractFromAddLanguageResult(result);
             const errorMsg = extractedError || 'Unknown error';
-            const errorInfo = errorService.external(errorMsg, { step: 'add-language-translation', language: targetLanguage });
+            const errorInfo = errorService.external(errorMsg, {
+              step: 'add-language-translation',
+              language: targetLanguage,
+            });
             logErrorInfo(logger, 'error', 'Translation failed', errorInfo);
 
             return {
               language: targetLanguage,
               success: false,
               error: errorMsg,
-              duration
+              duration,
             };
           }
         } catch (error) {
@@ -134,7 +145,7 @@ export const processMultipleLanguagesStep = createStep({
           const errorInfo = errorService.external(err.message, {
             step: 'add-language-translation',
             stack: err.stack,
-            language: targetLanguage
+            language: targetLanguage,
           });
           logErrorInfo(logger, 'error', 'Translation exception', errorInfo);
 
@@ -142,7 +153,7 @@ export const processMultipleLanguagesStep = createStep({
             language: targetLanguage,
             success: false,
             error: err.message,
-            duration
+            duration,
           };
         }
       });
@@ -153,7 +164,7 @@ export const processMultipleLanguagesStep = createStep({
 
       logger.info('Total execution time', {
         durationMs: totalDuration,
-        durationSec: (totalDuration / 1000).toFixed(2)
+        durationSec: (totalDuration / 1000).toFixed(2),
       });
 
       // Process results
@@ -165,25 +176,23 @@ export const processMultipleLanguagesStep = createStep({
           return {
             language: normalizedLanguages[index],
             success: false,
-            error: err.message
+            error: err.message,
           };
         }
       });
 
-      const successCount = languageResults.filter((r) => r.success).length;
-      const failureCount = languageResults.filter((r) => !r.success).length;
+      const successCount = languageResults.filter(r => r.success).length;
+      const failureCount = languageResults.filter(r => !r.success).length;
 
       logger.info('Translation results', {
         successCount,
         totalCount: targetLanguages.length,
-        durationSec: (totalDuration / 1000).toFixed(2)
+        durationSec: (totalDuration / 1000).toFixed(2),
       });
 
       // Update language_availability ONCE after all parallel workflows (prevents race condition)
       if (successCount > 0) {
-        const successLanguages = languageResults
-          .filter((r) => r.success)
-          .map((r) => r.language);
+        const successLanguages = languageResults.filter(r => r.success).map(r => r.language);
 
         const kvService = new KVService();
         await kvService.updateLanguageAvailabilityAtomic(existingMicrolearningId, successLanguages);
@@ -198,20 +207,20 @@ export const processMultipleLanguagesStep = createStep({
         totalDuration: `${(totalDuration / 1000).toFixed(2)}s`,
         languages: normalizedLanguages,
         results: languageResults,
-        status: status as 'success' | 'partial' | 'failed'
+        status: status as 'success' | 'partial' | 'failed',
       };
     } catch (error) {
       const err = normalizeError(error);
       const errorInfo = errorService.external(err.message, {
         step: 'process-multiple-languages',
-        stack: err.stack
+        stack: err.stack,
       });
       logErrorInfo(logger, 'error', 'Multi-language workflow error', errorInfo);
       const e = new Error(err.message);
       (e as Error & { code?: string }).code = errorInfo.code;
       throw e;
     }
-  }
+  },
 });
 
 // Add Multiple Languages Workflow
@@ -220,8 +229,7 @@ const addMultipleLanguagesWorkflow = createWorkflow({
   description: 'Add multiple languages to existing microlearning in parallel',
   inputSchema: addMultipleLanguagesInputSchema,
   outputSchema: finalMultiLanguageResultSchema,
-})
-  .then(processMultipleLanguagesStep);
+}).then(processMultipleLanguagesStep);
 
 // Commit workflow
 addMultipleLanguagesWorkflow.commit();

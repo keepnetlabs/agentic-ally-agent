@@ -57,17 +57,14 @@ describe('Orchestrator Agent - Request Routing', () => {
     describe('Confirmation vs new request distinction', () => {
       it('should treat "Yes" as confirmation, not new request', () => {
         const userPrompt = 'Yes';
-        const isConfirmation = [...ROUTING.CONFIRMATION_TRIGGERS].some(t =>
-          userPrompt.includes(t)
-        );
+        const isConfirmation = [...ROUTING.CONFIRMATION_TRIGGERS].some(t => userPrompt.includes(t));
 
         expect(isConfirmation).toBe(true);
       });
 
       it('should treat "Yes, but create different..." as new request, not confirmation', () => {
         const userPrompt = 'Yes, but create something different';
-        const hasNewIntent = userPrompt.toLowerCase().includes('but') ||
-          userPrompt.toLowerCase().includes('create');
+        const hasNewIntent = userPrompt.toLowerCase().includes('but') || userPrompt.toLowerCase().includes('create');
 
         expect(hasNewIntent).toBe(true);
       });
@@ -379,11 +376,7 @@ describe('Orchestrator Agent - Request Routing', () => {
     });
 
     it('should only return valid agent names', () => {
-      const validAgents = [
-        AGENT_NAMES.USER_INFO,
-        AGENT_NAMES.MICROLEARNING,
-        AGENT_NAMES.PHISHING,
-      ];
+      const validAgents = [AGENT_NAMES.USER_INFO, AGENT_NAMES.MICROLEARNING, AGENT_NAMES.PHISHING];
 
       for (const agent of validAgents) {
         expect(typeof agent).toBe('string');

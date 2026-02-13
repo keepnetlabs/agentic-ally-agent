@@ -1,9 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import {
-  buildExecutiveReport,
-  generateContentForUser,
-  generateContentForGroup,
-} from './autonomous-content-generators';
+import { buildExecutiveReport, generateContentForUser, generateContentForGroup } from './autonomous-content-generators';
 import '../../../../src/__tests__/setup';
 import * as phishingHandlers from './autonomous-phishing-handlers';
 import * as smishingHandlers from './autonomous-smishing-handlers';

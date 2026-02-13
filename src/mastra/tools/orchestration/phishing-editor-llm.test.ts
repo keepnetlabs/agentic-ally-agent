@@ -77,11 +77,7 @@ describe('phishing-editor-llm', () => {
         logger,
       });
 
-      expect(prompts.getPhishingEmailUserPrompt).toHaveBeenCalledWith(
-        email,
-        'Make formal',
-        'Brand X'
-      );
+      expect(prompts.getPhishingEmailUserPrompt).toHaveBeenCalledWith(email, 'Make formal', 'Brand X');
     });
 
     it('calls system prompt generator', async () => {
@@ -105,10 +101,7 @@ describe('phishing-editor-llm', () => {
         logger,
       });
 
-      expect(withRetry).toHaveBeenCalledWith(
-        expect.any(Function),
-        'Phishing email editing'
-      );
+      expect(withRetry).toHaveBeenCalledWith(expect.any(Function), 'Phishing email editing');
       expect(withTimeout).toHaveBeenCalled();
     });
 
@@ -136,11 +129,7 @@ describe('phishing-editor-llm', () => {
         logger,
       });
 
-      expect(prompts.getPhishingEmailUserPrompt).toHaveBeenCalledWith(
-        expect.any(Object),
-        'Edit',
-        ''
-      );
+      expect(prompts.getPhishingEmailUserPrompt).toHaveBeenCalledWith(expect.any(Object), 'Edit', '');
     });
 
     it('handles non-empty brand context', async () => {
@@ -152,11 +141,7 @@ describe('phishing-editor-llm', () => {
         logger,
       });
 
-      expect(prompts.getPhishingEmailUserPrompt).toHaveBeenCalledWith(
-        expect.any(Object),
-        'Edit',
-        'Acme Corp'
-      );
+      expect(prompts.getPhishingEmailUserPrompt).toHaveBeenCalledWith(expect.any(Object), 'Edit', 'Acme Corp');
     });
 
     it('handles complex email templates', async () => {
@@ -173,11 +158,7 @@ describe('phishing-editor-llm', () => {
         logger,
       });
 
-      expect(prompts.getPhishingEmailUserPrompt).toHaveBeenCalledWith(
-        email,
-        'Simplify',
-        ''
-      );
+      expect(prompts.getPhishingEmailUserPrompt).toHaveBeenCalledWith(email, 'Simplify', '');
     });
 
     it('handles special characters in instruction', async () => {
@@ -305,14 +286,8 @@ describe('phishing-editor-llm', () => {
 
       await Promise.all(promises);
 
-      expect(withRetry).toHaveBeenCalledWith(
-        expect.any(Function),
-        'Phishing landing page 1 editing'
-      );
-      expect(withRetry).toHaveBeenCalledWith(
-        expect.any(Function),
-        'Phishing landing page 2 editing'
-      );
+      expect(withRetry).toHaveBeenCalledWith(expect.any(Function), 'Phishing landing page 1 editing');
+      expect(withRetry).toHaveBeenCalledWith(expect.any(Function), 'Phishing landing page 2 editing');
       expect(withTimeout).toHaveBeenCalledTimes(2);
     });
 
@@ -375,10 +350,12 @@ describe('phishing-editor-llm', () => {
     });
 
     it('handles many pages', async () => {
-      const pages = Array(10).fill(null).map((_, i) => ({
-        type: 'login',
-        template: `<html>${i}</html>`
-      }));
+      const pages = Array(10)
+        .fill(null)
+        .map((_, i) => ({
+          type: 'login',
+          template: `<html>${i}</html>`,
+        }));
 
       const promises = createLandingEditPromises({
         aiModel: model,
@@ -406,11 +383,7 @@ describe('phishing-editor-llm', () => {
         logger,
       });
 
-      expect(prompts.getPhishingEmailUserPrompt).toHaveBeenCalledWith(
-        expect.any(Object),
-        '',
-        ''
-      );
+      expect(prompts.getPhishingEmailUserPrompt).toHaveBeenCalledWith(expect.any(Object), '', '');
     });
 
     it('handles empty instruction in landing edit', async () => {
@@ -425,11 +398,7 @@ describe('phishing-editor-llm', () => {
 
       await Promise.all(promises);
 
-      expect(prompts.getLandingPageUserPrompt).toHaveBeenCalledWith(
-        expect.any(Object),
-        '',
-        ''
-      );
+      expect(prompts.getLandingPageUserPrompt).toHaveBeenCalledWith(expect.any(Object), '', '');
     });
 
     it('handles very long brand context', async () => {
@@ -443,11 +412,7 @@ describe('phishing-editor-llm', () => {
         logger,
       });
 
-      expect(prompts.getPhishingEmailUserPrompt).toHaveBeenCalledWith(
-        expect.any(Object),
-        'Edit',
-        longBrand
-      );
+      expect(prompts.getPhishingEmailUserPrompt).toHaveBeenCalledWith(expect.any(Object), 'Edit', longBrand);
     });
 
     it('handles unicode in instruction', async () => {

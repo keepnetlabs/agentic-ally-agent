@@ -371,7 +371,6 @@ export const MODEL_PROVIDERS = {
     WORKERS_AI: 'WORKERS_AI_GPT_OSS_120B',
     GOOGLE: 'GOOGLE_GEMINI_2_5_PRO',
   },
-
 } as const;
 
 // ============================================
@@ -630,8 +629,15 @@ export const AGENT_IDS = {
 
 /** Short confirmation/selection patterns for orchestrator Scenario A (route to same agent). */
 export const ORCHESTRATOR_CONFIRMATION_EXAMPLES = [
-  'Yes', 'Proceed', 'Do it', 'Olustur', 'Tamam', 'OK',
-  '1', '2', '3',
+  'Yes',
+  'Proceed',
+  'Do it',
+  'Olustur',
+  'Tamam',
+  'OK',
+  '1',
+  '2',
+  '3',
 ] as const;
 
 // ============================================

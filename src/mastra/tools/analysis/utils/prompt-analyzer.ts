@@ -4,7 +4,10 @@ import { ExampleRepo } from '../../../services/example-repo';
 import { validateBCP47LanguageCode, DEFAULT_LANGUAGE } from '../../../utils/language/language-utils';
 import { cleanResponse } from '../../../utils/content-processors/json-cleaner';
 import { buildPolicySystemPrompt } from '../../../utils/prompt-builders/policy-context-builder';
-import { CLARITY_ACCESSIBILITY_POLICY, DEFAULT_MICROLEARNING_ETHICAL_POLICY } from '../../../utils/prompt-builders/prompt-analysis-policies';
+import {
+  CLARITY_ACCESSIBILITY_POLICY,
+  DEFAULT_MICROLEARNING_ETHICAL_POLICY,
+} from '../../../utils/prompt-builders/prompt-analysis-policies';
 import { PROMPT_ANALYSIS_PARAMS, EXTRACTION_PARAMS } from '../../../utils/config/llm-generation-params';
 import { MICROLEARNING, ROLES, CATEGORIES, THEME_COLORS } from '../../../constants';
 import { streamReasoning } from '../../../utils/core/reasoning-stream';
@@ -16,102 +19,107 @@ import { autoRepairPromptAnalysis } from '../prompt-analysis-normalizer';
 import { detectSmishingChannelFromText } from '../../../utils/smishing-channel';
 
 interface AnalyzeUserPromptParams {
-    userPrompt: string;
-    additionalContext?: string;
-    suggestedDepartment?: string;
-    suggestedLevel?: string;
-    customRequirements?: string;
-    suggestedLanguage?: string;
-    policyContext?: string;
-    model: any;
-    writer?: any;
+  userPrompt: string;
+  additionalContext?: string;
+  suggestedDepartment?: string;
+  suggestedLevel?: string;
+  customRequirements?: string;
+  suggestedLanguage?: string;
+  policyContext?: string;
+  model: any;
+  writer?: any;
 }
 
 // Cache formatted lists for performance
-const cachedRolesList = ROLES.VALUES.map((role) => `- "${role}"`).join('\n');
-const cachedCategoriesList = CATEGORIES.VALUES.map((cat) => `- "${cat}"`).join('\n');
-const cachedThemeColorsList = THEME_COLORS.VALUES.map((color) => `- "${color}"`).join('\n');
+const cachedRolesList = ROLES.VALUES.map(role => `- "${role}"`).join('\n');
+const cachedCategoriesList = CATEGORIES.VALUES.map(cat => `- "${cat}"`).join('\n');
+const cachedThemeColorsList = THEME_COLORS.VALUES.map(color => `- "${color}"`).join('\n');
 const LANGUAGE_DETECTION_SEGMENT_LENGTH = 1200;
 
 function computeDetailCoverage(details: string[], outputs: Array<string | undefined>): number {
-    if (!details.length) return 1;
-    const searchableOutput = outputs
-        .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
-        .join(' ')
-        .toLowerCase();
+  if (!details.length) return 1;
+  const searchableOutput = outputs
+    .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+    .join(' ')
+    .toLowerCase();
 
-    if (!searchableOutput) return 0;
+  if (!searchableOutput) return 0;
 
-    const outputTokens = new Set(
-        searchableOutput
-            .split(/[^\p{L}\p{N}]+/u)
-            .map((token) => token.trim())
-            .filter((token) => token.length >= 3)
-    );
+  const outputTokens = new Set(
+    searchableOutput
+      .split(/[^\p{L}\p{N}]+/u)
+      .map(token => token.trim())
+      .filter(token => token.length >= 3)
+  );
 
-    const coveredCount = details.filter((detail) => {
-        const normalized = detail.trim().toLowerCase();
-        if (normalized.length < 5) return false;
-        if (searchableOutput.includes(normalized)) return true;
+  const coveredCount = details.filter(detail => {
+    const normalized = detail.trim().toLowerCase();
+    if (normalized.length < 5) return false;
+    if (searchableOutput.includes(normalized)) return true;
 
-        const detailTokens = normalized
-            .split(/[^\p{L}\p{N}]+/u)
-            .map((token) => token.trim())
-            .filter((token) => token.length >= 3);
+    const detailTokens = normalized
+      .split(/[^\p{L}\p{N}]+/u)
+      .map(token => token.trim())
+      .filter(token => token.length >= 3);
 
-        if (!detailTokens.length) return false;
+    if (!detailTokens.length) return false;
 
-        const matchedTokens = detailTokens.filter((token) => outputTokens.has(token));
-        const ratio = matchedTokens.length / detailTokens.length;
-        return ratio >= 0.6;
-    }).length;
+    const matchedTokens = detailTokens.filter(token => outputTokens.has(token));
+    const ratio = matchedTokens.length / detailTokens.length;
+    return ratio >= 0.6;
+  }).length;
 
-    return coveredCount / details.length;
+  return coveredCount / details.length;
 }
 
 function buildLanguageDetectionSample(promptText: string, contextText: string): string {
-    const combinedText = `Prompt: "${promptText}"\n\nContext: "${contextText}"`;
-    const maxVisibleLength = LANGUAGE_DETECTION_SEGMENT_LENGTH * 2;
+  const combinedText = `Prompt: "${promptText}"\n\nContext: "${contextText}"`;
+  const maxVisibleLength = LANGUAGE_DETECTION_SEGMENT_LENGTH * 2;
 
-    if (combinedText.length <= maxVisibleLength) {
-        return combinedText;
-    }
+  if (combinedText.length <= maxVisibleLength) {
+    return combinedText;
+  }
 
-    const head = combinedText.slice(0, LANGUAGE_DETECTION_SEGMENT_LENGTH);
-    const tail = combinedText.slice(-LANGUAGE_DETECTION_SEGMENT_LENGTH);
-    const omittedChars = combinedText.length - maxVisibleLength;
-    return `${head}\n\n...[omitted ${omittedChars} chars]...\n\n${tail}`;
+  const head = combinedText.slice(0, LANGUAGE_DETECTION_SEGMENT_LENGTH);
+  const tail = combinedText.slice(-LANGUAGE_DETECTION_SEGMENT_LENGTH);
+  const omittedChars = combinedText.length - maxVisibleLength;
+  return `${head}\n\n...[omitted ${omittedChars} chars]...\n\n${tail}`;
 }
 /**
  * Character-based language detection fallback (final safety net)
  */
 export function detectLanguageFallback(text: string): string {
-    if (/[ğüşıöçĞÜŞİÖÇ]/.test(text)) return 'tr';
-    if (/[äöüßÄÖÜ]/.test(text)) return 'de';
-    if (/[àáâäèéêëìíîïòóôöùúûü]/.test(text)) return 'fr';
-    if (/[áéíóúñü¿¡]/.test(text)) return 'es';
-    if (/[àáâãäåæçèéêëìíîïðñòóôõöøùúûüýþß]/.test(text)) return 'pt';
-    if (/[àáäèéëìíîïòóôùúûü]/.test(text)) return 'it';
-    if (/[а-я]/.test(text.toLowerCase())) return 'ru';
-    if (/[\u4e00-\u9fff]/.test(text)) return 'zh';
-    if (/[\u3040-\u309f\u30a0-\u30ff]/.test(text)) return 'ja';
-    if (/[\u0600-\u06ff]/.test(text)) return 'ar';
-    if (/[\uac00-\ud7af]/.test(text)) return 'ko';
-    return 'en';
+  if (/[ğüşıöçĞÜŞİÖÇ]/.test(text)) return 'tr';
+  if (/[äöüßÄÖÜ]/.test(text)) return 'de';
+  if (/[àáâäèéêëìíîïòóôöùúûü]/.test(text)) return 'fr';
+  if (/[áéíóúñü¿¡]/.test(text)) return 'es';
+  if (/[àáâãäåæçèéêëìíîïðñòóôõöøùúûüýþß]/.test(text)) return 'pt';
+  if (/[àáäèéëìíîïòóôùúûü]/.test(text)) return 'it';
+  if (/[а-я]/.test(text.toLowerCase())) return 'ru';
+  if (/[\u4e00-\u9fff]/.test(text)) return 'zh';
+  if (/[\u3040-\u309f\u30a0-\u30ff]/.test(text)) return 'ja';
+  if (/[\u0600-\u06ff]/.test(text)) return 'ar';
+  if (/[\uac00-\ud7af]/.test(text)) return 'ko';
+  return 'en';
 }
 
 /**
  * Ask AI to detect target language (returns BCP-47 code directly)
  */
-export async function detectTargetLanguageWithAI(text: string, model: any, additionalContext: string = ''): Promise<string | null> {
-    try {
-        // Keep both beginning and end of text/context to reduce signal loss in long prompts.
-        const sampledText = buildLanguageDetectionSample(text, additionalContext);
+export async function detectTargetLanguageWithAI(
+  text: string,
+  model: any,
+  additionalContext: string = ''
+): Promise<string | null> {
+  try {
+    // Keep both beginning and end of text/context to reduce signal loss in long prompts.
+    const sampledText = buildLanguageDetectionSample(text, additionalContext);
 
-        const response = await withRetry(
-            () => generateText({
-                model,
-                prompt: `What language should the training/content be created in?
+    const response = await withRetry(
+      () =>
+        generateText({
+          model,
+          prompt: `What language should the training/content be created in?
 1. Look for explicit "in {language}" requests in the Prompt.
 2. Look for "Preferred Language: {language}" or similar indicators in the Context.
 3. If neither is found, identify the language of the Prompt itself.
@@ -122,73 +130,81 @@ Text to Analyze:
 ${sampledText}
 
 Target language code:`,
-                ...EXTRACTION_PARAMS,
-            }),
-            `[AnalyzeUserPromptTool] language-detection`
-        );
+          ...EXTRACTION_PARAMS,
+        }),
+      `[AnalyzeUserPromptTool] language-detection`
+    );
 
-        const code = response.text?.trim().toLowerCase() || '';
-        if (!code) return null;
+    const code = response.text?.trim().toLowerCase() || '';
+    if (!code) return null;
 
-        const validated = validateBCP47LanguageCode(code);
-        // Allow returning the detected language even if it matches default, ensuring we respect explicit choices
-        return validated;
-    } catch {
-        return null;
-    }
+    const validated = validateBCP47LanguageCode(code);
+    // Allow returning the detected language even if it matches default, ensuring we respect explicit choices
+    return validated;
+  } catch {
+    return null;
+  }
 }
 
 /**
  * Core logic for user prompt analysis
  */
 export async function analyzeUserPromptWithAI(params: AnalyzeUserPromptParams) {
-    const { userPrompt, additionalContext, suggestedDepartment, suggestedLevel, customRequirements, suggestedLanguage, policyContext, model, writer } = params;
-    const logger = getLogger('AnalyzeUserPromptTool');
+  const {
+    userPrompt,
+    additionalContext,
+    suggestedDepartment,
+    suggestedLevel,
+    customRequirements,
+    suggestedLanguage,
+    policyContext,
+    model,
+    writer,
+  } = params;
+  const logger = getLogger('AnalyzeUserPromptTool');
 
+  try {
+    const repo = ExampleRepo.getInstance();
+    await repo.loadExamplesOnce();
+
+    let schemaHints: string;
     try {
-        const repo = ExampleRepo.getInstance();
-        await repo.loadExamplesOnce();
+      schemaHints = await repo.getSmartSchemaHints(userPrompt, 3);
+    } catch (error) {
+      const err = normalizeError(error);
+      const errorInfo = errorService.external(err.message, { step: 'semantic-search-hints' });
+      logErrorInfo(logger, 'warn', 'Semantic search unavailable, trying smart sampling', errorInfo);
+      try {
+        schemaHints = await repo.getSmartSchemaHints(undefined, 3);
+      } catch (fallbackError) {
+        const fbErr = normalizeError(fallbackError);
+        const fallbackErrorInfo = errorService.external(fbErr.message, { step: 'smart-sampling-hints' });
+        logErrorInfo(logger, 'warn', 'Smart sampling failed, using basic schema hints', fallbackErrorInfo);
+        schemaHints = repo.getSchemaHints(3);
+      }
+    }
 
-        let schemaHints: string;
-        try {
-            schemaHints = await repo.getSmartSchemaHints(userPrompt, 3);
-        } catch (error) {
-            const err = normalizeError(error);
-            const errorInfo = errorService.external(err.message, { step: 'semantic-search-hints' });
-            logErrorInfo(logger, 'warn', 'Semantic search unavailable, trying smart sampling', errorInfo);
-            try {
-                schemaHints = await repo.getSmartSchemaHints(undefined, 3);
-            } catch (fallbackError) {
-                const fbErr = normalizeError(fallbackError);
-                const fallbackErrorInfo = errorService.external(fbErr.message, { step: 'smart-sampling-hints' });
-                logErrorInfo(logger, 'warn', 'Smart sampling failed, using basic schema hints', fallbackErrorInfo);
-                schemaHints = repo.getSchemaHints(3);
-            }
+    const examplesBlock = schemaHints ? `\n\nSCHEMA HINTS (structure only, do not copy texts):\n${schemaHints}` : '';
+
+    const policyBlock = buildPolicySystemPrompt(policyContext);
+
+    // PRIORITIZE SUGGESTED LANGUAGE (FIX)
+    let languageHint = suggestedLanguage ? suggestedLanguage.toLowerCase() : 'en-gb';
+
+    // ONLY detect with AI if we don't have a suggested language
+    if (!suggestedLanguage) {
+      try {
+        const aiLang = await detectTargetLanguageWithAI(userPrompt, model, additionalContext);
+        if (aiLang) {
+          languageHint = aiLang.toLowerCase();
         }
+      } catch {
+        const charBasedLang = validateBCP47LanguageCode(detectLanguageFallback(userPrompt));
+        languageHint = charBasedLang.toLowerCase();
+      }
+    }
 
-        const examplesBlock = schemaHints
-            ? `\n\nSCHEMA HINTS (structure only, do not copy texts):\n${schemaHints}`
-            : '';
-
-        const policyBlock = buildPolicySystemPrompt(policyContext);
-
-        // PRIORITIZE SUGGESTED LANGUAGE (FIX)
-        let languageHint = suggestedLanguage ? suggestedLanguage.toLowerCase() : 'en-gb';
-
-        // ONLY detect with AI if we don't have a suggested language
-        if (!suggestedLanguage) {
-            try {
-                const aiLang = await detectTargetLanguageWithAI(userPrompt, model, additionalContext);
-                if (aiLang) {
-                    languageHint = aiLang.toLowerCase();
-                }
-            } catch {
-                const charBasedLang = validateBCP47LanguageCode(detectLanguageFallback(userPrompt));
-                languageHint = charBasedLang.toLowerCase();
-            }
-        }
-
-        const analysisPrompt = `Create microlearning metadata from this request:
+    const analysisPrompt = `Create microlearning metadata from this request:
 
 USER: "${userPrompt}" (LANGUAGE: ${languageHint})
 DEPARTMENT: ${suggestedDepartment || 'not specified'}
@@ -294,196 +310,229 @@ RULES:
   - "sms" if the prompt mentions SMS, text message, or if no channel is specified.
   - If isSmishing is false, return null.`;
 
-        const messages: any[] = [
-            {
-                role: 'system',
-                content: 'You are an expert instructional designer and Pedagogical Advisor. Analyze user requests and create professional microlearning metadata. Return ONLY valid JSON - no markdown, no extra text. Follow all RULES in the user prompt exactly.'
-            }
-        ];
+    const messages: any[] = [
+      {
+        role: 'system',
+        content:
+          'You are an expert instructional designer and Pedagogical Advisor. Analyze user requests and create professional microlearning metadata. Return ONLY valid JSON - no markdown, no extra text. Follow all RULES in the user prompt exactly.',
+      },
+    ];
 
-        if (additionalContext) {
-            messages.push({
-                role: 'user',
-                content: `[CRITICAL] USER CONTEXT - Behavior & Risk Analysis:
+    if (additionalContext) {
+      messages.push({
+        role: 'user',
+        content: `[CRITICAL] USER CONTEXT - Behavior & Risk Analysis:
 
-${additionalContext}`
-            });
-        }
-
-        messages.push({
-            role: 'user',
-            content: analysisPrompt
-        });
-
-        const response = await withRetry(
-            () => generateText({
-                model: model,
-                messages: messages,
-                ...PROMPT_ANALYSIS_PARAMS
-            }),
-            `[AnalyzeUserPromptTool] prompt-analysis`
-        );
-
-        const resp = response as { response?: { body?: { reasoning?: string } } };
-        let reasoning = resp?.response?.body?.reasoning;
-        if (reasoning && writer) {
-            reasoning += `\n 'I will create an 8-scene code editor training module if isCodeTopic is true, otherwise I will create an 8-scene inbox-based training module.'`;
-            streamReasoning(reasoning, writer);
-        }
-
-        const cleanedText = cleanResponse(response.text, 'prompt-analysis');
-        const analysis = JSON.parse(cleanedText) as Partial<PromptAnalysis>;
-
-        const normalizedLanguage = validateBCP47LanguageCode(analysis.language || DEFAULT_LANGUAGE);
-        analysis.language = normalizedLanguage;
-
-        if (analysis.themeColor && !(THEME_COLORS.VALUES as readonly string[]).includes(analysis.themeColor)) {
-            analysis.themeColor = undefined;
-        }
-
-        const repaired = autoRepairPromptAnalysis(analysis, { suggestedDepartment });
-
-        if (additionalContext) {
-            analysis.hasRichContext = true;
-            analysis.additionalContext = additionalContext;
-        }
-
-        if (customRequirements) {
-            analysis.customRequirements = customRequirements;
-        }
-
-        repaired.hasRichContext = analysis.hasRichContext;
-        repaired.additionalContext = analysis.additionalContext;
-        repaired.customRequirements = analysis.customRequirements;
-        repaired.themeColor = analysis.themeColor;
-
-        const mustKeepDetails = repaired.mustKeepDetails || [];
-        if (mustKeepDetails.length > 0) {
-            const coverage = computeDetailCoverage(mustKeepDetails, [
-                repaired.title,
-                repaired.description,
-                ...(repaired.keyTopics || []),
-                ...(repaired.practicalApplications || []),
-                ...(repaired.learningObjectives || []),
-            ]);
-
-            if (coverage < 0.5) {
-                logger.warn('Low mustKeepDetails coverage after analysis normalization', {
-                    coverage,
-                    detailsCount: mustKeepDetails.length,
-                    topic: repaired.topic,
-                });
-            } else {
-                logger.debug('mustKeepDetails coverage validated', {
-                    coverage,
-                    detailsCount: mustKeepDetails.length,
-                });
-            }
-        }
-
-        return {
-            success: true,
-            data: repaired as PromptAnalysis,
-            policyContext
-        };
-
-    } catch (error) {
-        throw error;
+${additionalContext}`,
+      });
     }
+
+    messages.push({
+      role: 'user',
+      content: analysisPrompt,
+    });
+
+    const response = await withRetry(
+      () =>
+        generateText({
+          model: model,
+          messages: messages,
+          ...PROMPT_ANALYSIS_PARAMS,
+        }),
+      `[AnalyzeUserPromptTool] prompt-analysis`
+    );
+
+    const resp = response as { response?: { body?: { reasoning?: string } } };
+    let reasoning = resp?.response?.body?.reasoning;
+    if (reasoning && writer) {
+      reasoning += `\n 'I will create an 8-scene code editor training module if isCodeTopic is true, otherwise I will create an 8-scene inbox-based training module.'`;
+      streamReasoning(reasoning, writer);
+    }
+
+    const cleanedText = cleanResponse(response.text, 'prompt-analysis');
+    const analysis = JSON.parse(cleanedText) as Partial<PromptAnalysis>;
+
+    const normalizedLanguage = validateBCP47LanguageCode(analysis.language || DEFAULT_LANGUAGE);
+    analysis.language = normalizedLanguage;
+
+    if (analysis.themeColor && !(THEME_COLORS.VALUES as readonly string[]).includes(analysis.themeColor)) {
+      analysis.themeColor = undefined;
+    }
+
+    const repaired = autoRepairPromptAnalysis(analysis, { suggestedDepartment });
+
+    if (additionalContext) {
+      analysis.hasRichContext = true;
+      analysis.additionalContext = additionalContext;
+    }
+
+    if (customRequirements) {
+      analysis.customRequirements = customRequirements;
+    }
+
+    repaired.hasRichContext = analysis.hasRichContext;
+    repaired.additionalContext = analysis.additionalContext;
+    repaired.customRequirements = analysis.customRequirements;
+    repaired.themeColor = analysis.themeColor;
+
+    const mustKeepDetails = repaired.mustKeepDetails || [];
+    if (mustKeepDetails.length > 0) {
+      const coverage = computeDetailCoverage(mustKeepDetails, [
+        repaired.title,
+        repaired.description,
+        ...(repaired.keyTopics || []),
+        ...(repaired.practicalApplications || []),
+        ...(repaired.learningObjectives || []),
+      ]);
+
+      if (coverage < 0.5) {
+        logger.warn('Low mustKeepDetails coverage after analysis normalization', {
+          coverage,
+          detailsCount: mustKeepDetails.length,
+          topic: repaired.topic,
+        });
+      } else {
+        logger.debug('mustKeepDetails coverage validated', {
+          coverage,
+          detailsCount: mustKeepDetails.length,
+        });
+      }
+    }
+
+    return {
+      success: true,
+      data: repaired as PromptAnalysis,
+      policyContext,
+    };
+  } catch (error) {
+    throw error;
+  }
 }
 
 /**
  * Robust fallback analysis for production stability
  */
 export async function getFallbackAnalysis(params: AnalyzeUserPromptParams) {
-    const { userPrompt, suggestedDepartment, additionalContext, customRequirements, model } = params;
+  const { userPrompt, suggestedDepartment, additionalContext, customRequirements, model } = params;
 
-    const specificCodeSecurityKeywords = [
-        'injection', 'xss', 'cross-site scripting', 'vulnerability', 'vulnerable',
-        'buffer overflow', 'memory leak', 'sql injection', 'code review',
-        'secure coding', 'api security', 'encryption', 'hash', 'authentication',
-        'authorization', 'owasp', 'cwe', 'cvss', 'refactoring', 'debugging',
-        'testing', 'legacy code', 'memory management', 'design pattern'
-    ];
+  const specificCodeSecurityKeywords = [
+    'injection',
+    'xss',
+    'cross-site scripting',
+    'vulnerability',
+    'vulnerable',
+    'buffer overflow',
+    'memory leak',
+    'sql injection',
+    'code review',
+    'secure coding',
+    'api security',
+    'encryption',
+    'hash',
+    'authentication',
+    'authorization',
+    'owasp',
+    'cwe',
+    'cvss',
+    'refactoring',
+    'debugging',
+    'testing',
+    'legacy code',
+    'memory management',
+    'design pattern',
+  ];
 
-    const programmingLanguages = ['javascript', 'python', 'java', 'c++', 'c#', 'php', 'go', 'rust', 'typescript', 'kotlin', 'ruby', 'swift', 'scala', 'r language'];
-    const vishingKeywords = [
-        'vishing',
-        'voice phishing',
-        'phone phishing',
-        'phone scam',
-        'call scam',
-        'voice scam',
-        'caller impersonation',
-        'phone-based social engineering',
-        'voice-based social engineering'
-    ];
-    const smishingKeywords = [
-        'smishing',
-        'sms phishing',
-        'text phishing',
-        'text scam',
-        'sms scam',
-        'text message scam',
-        'telegram scam',
-        'telegram phishing',
-        'instagram dm scam',
-        'instagram phishing',
-        'linkedin message scam',
-        'linkedin phishing',
-        'sms-based social engineering',
-        'text-based social engineering'
-    ];
+  const programmingLanguages = [
+    'javascript',
+    'python',
+    'java',
+    'c++',
+    'c#',
+    'php',
+    'go',
+    'rust',
+    'typescript',
+    'kotlin',
+    'ruby',
+    'swift',
+    'scala',
+    'r language',
+  ];
+  const vishingKeywords = [
+    'vishing',
+    'voice phishing',
+    'phone phishing',
+    'phone scam',
+    'call scam',
+    'voice scam',
+    'caller impersonation',
+    'phone-based social engineering',
+    'voice-based social engineering',
+  ];
+  const smishingKeywords = [
+    'smishing',
+    'sms phishing',
+    'text phishing',
+    'text scam',
+    'sms scam',
+    'text message scam',
+    'telegram scam',
+    'telegram phishing',
+    'instagram dm scam',
+    'instagram phishing',
+    'linkedin message scam',
+    'linkedin phishing',
+    'sms-based social engineering',
+    'text-based social engineering',
+  ];
 
-    const promptLower = userPrompt.toLowerCase();
-    const hasSpecificCodeSecurityKeyword = specificCodeSecurityKeywords.some(kw => promptLower.includes(kw));
-    const hasProgrammingLanguage = programmingLanguages.some(lang => promptLower.includes(lang));
-    const isCodeSecurityFallback = hasProgrammingLanguage || hasSpecificCodeSecurityKeyword;
-    const isVishingFallback = vishingKeywords.some(kw => promptLower.includes(kw));
-    const isSmishingFallback = smishingKeywords.some(kw => promptLower.includes(kw));
+  const promptLower = userPrompt.toLowerCase();
+  const hasSpecificCodeSecurityKeyword = specificCodeSecurityKeywords.some(kw => promptLower.includes(kw));
+  const hasProgrammingLanguage = programmingLanguages.some(lang => promptLower.includes(lang));
+  const isCodeSecurityFallback = hasProgrammingLanguage || hasSpecificCodeSecurityKeyword;
+  const isVishingFallback = vishingKeywords.some(kw => promptLower.includes(kw));
+  const isSmishingFallback = smishingKeywords.some(kw => promptLower.includes(kw));
 
-    let detectedLang: string | null = null;
-    try {
-        detectedLang = await detectTargetLanguageWithAI(userPrompt, model, additionalContext);
-    } catch {
-        // Ignore AI failure in fallback
-    }
+  let detectedLang: string | null = null;
+  try {
+    detectedLang = await detectTargetLanguageWithAI(userPrompt, model, additionalContext);
+  } catch {
+    // Ignore AI failure in fallback
+  }
 
-    if (!detectedLang) {
-        detectedLang = validateBCP47LanguageCode(detectLanguageFallback(userPrompt));
-    }
+  if (!detectedLang) {
+    detectedLang = validateBCP47LanguageCode(detectLanguageFallback(userPrompt));
+  }
 
-    return {
-        language: detectedLang || DEFAULT_LANGUAGE,
-        topic: userPrompt.substring(0, 50),
-        title: `Training: ${userPrompt.substring(0, 30)}`,
-        description: `Essential training on ${userPrompt.substring(0, 50)}.`,
-        department: suggestedDepartment || 'All',
-        level: 'intermediate',
-        category: CATEGORIES.DEFAULT,
-        subcategory: 'Professional Skills',
-        learningObjectives: [
-            `Identify core concepts of ${userPrompt.substring(0, 20)}`,
-            'Apply secure best practices in daily workflows',
-            'Demonstrate mitigation strategies for identified risks'
-        ],
-        duration: MICROLEARNING.DURATION_MINUTES,
-        industries: ['General'],
-        roles: [ROLES.DEFAULT],
-        themeColor: undefined,
-        keyTopics: [userPrompt.substring(0, 30)],
-        practicalApplications: [`Safe handling of ${userPrompt.substring(0, 20)} related tasks`],
-        mustKeepDetails: [userPrompt.substring(0, 60)],
-        assessmentAreas: [`Identify key risks`, `Apply correct procedures`],
-        regulationCompliance: [],
-        hasRichContext: !!additionalContext,
-        additionalContext: additionalContext || undefined,
-        customRequirements: customRequirements,
-        isCodeTopic: isCodeSecurityFallback,
-        isVishing: isVishingFallback,
-        isSmishing: isSmishingFallback,
-        deliveryChannel: isSmishingFallback
-            ? (detectSmishingChannelFromText(userPrompt) ?? 'sms')
-            : undefined,
-    };
+  return {
+    language: detectedLang || DEFAULT_LANGUAGE,
+    topic: userPrompt.substring(0, 50),
+    title: `Training: ${userPrompt.substring(0, 30)}`,
+    description: `Essential training on ${userPrompt.substring(0, 50)}.`,
+    department: suggestedDepartment || 'All',
+    level: 'intermediate',
+    category: CATEGORIES.DEFAULT,
+    subcategory: 'Professional Skills',
+    learningObjectives: [
+      `Identify core concepts of ${userPrompt.substring(0, 20)}`,
+      'Apply secure best practices in daily workflows',
+      'Demonstrate mitigation strategies for identified risks',
+    ],
+    duration: MICROLEARNING.DURATION_MINUTES,
+    industries: ['General'],
+    roles: [ROLES.DEFAULT],
+    themeColor: undefined,
+    keyTopics: [userPrompt.substring(0, 30)],
+    practicalApplications: [`Safe handling of ${userPrompt.substring(0, 20)} related tasks`],
+    mustKeepDetails: [userPrompt.substring(0, 60)],
+    assessmentAreas: [`Identify key risks`, `Apply correct procedures`],
+    regulationCompliance: [],
+    hasRichContext: !!additionalContext,
+    additionalContext: additionalContext || undefined,
+    customRequirements: customRequirements,
+    isCodeTopic: isCodeSecurityFallback,
+    isVishing: isVishingFallback,
+    isSmishing: isSmishingFallback,
+    deliveryChannel: isSmishingFallback ? (detectSmishingChannelFromText(userPrompt) ?? 'sms') : undefined,
+  };
 }

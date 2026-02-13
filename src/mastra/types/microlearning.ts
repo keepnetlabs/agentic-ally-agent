@@ -9,7 +9,7 @@ export interface MicrolearningMetadata {
   regulation_compliance: string[];
   risk_area: string;
   content_provider: string;
-  level: "Beginner" | "Intermediate" | "Advanced";
+  level: 'Beginner' | 'Intermediate' | 'Advanced';
   ethical_inclusive_language_policy: {
     title: string;
     purpose: string;
@@ -33,7 +33,7 @@ export interface MicrolearningMetadata {
     };
     conclusion: string[];
   };
-  language: string;  // Primary language code (e.g., en-US, tr-TR) - used for translation detection
+  language: string; // Primary language code (e.g., en-US, tr-TR) - used for translation detection
   language_availability: string[];
   gamification_enabled: boolean;
   total_points: number;
@@ -47,32 +47,47 @@ export interface ScientificEvidence {
     evidence_level: string;
     peer_reviewed_sources: number;
   };
-  learning_theories: Record<string, {
-    theory: string;
-    application: string;
-    evidence: string;
-  }>;
-  behavioral_psychology: Record<string, {
-    theory: string;
-    application: string;
-    evidence: string;
-  }>;
-  gamification_research: Record<string, {
-    theory: string;
-    application: string;
-    evidence: string;
-  }>;
-  cybersecurity_specific: Record<string, {
-    study: string;
-    findings: string;
-    application: string;
-  }>;
-  methodology_evidence: Record<string, {
-    meta_analysis?: string;
-    study?: string;
-    findings: string;
-    application: string;
-  }>;
+  learning_theories: Record<
+    string,
+    {
+      theory: string;
+      application: string;
+      evidence: string;
+    }
+  >;
+  behavioral_psychology: Record<
+    string,
+    {
+      theory: string;
+      application: string;
+      evidence: string;
+    }
+  >;
+  gamification_research: Record<
+    string,
+    {
+      theory: string;
+      application: string;
+      evidence: string;
+    }
+  >;
+  cybersecurity_specific: Record<
+    string,
+    {
+      study: string;
+      findings: string;
+      application: string;
+    }
+  >;
+  methodology_evidence: Record<
+    string,
+    {
+      meta_analysis?: string;
+      study?: string;
+      findings: string;
+      application: string;
+    }
+  >;
   effectiveness_metrics: {
     learning_outcomes: Record<string, string>;
     engagement_metrics: Record<string, string>;
@@ -108,7 +123,18 @@ export interface Theme {
 }
 
 export interface SceneMetadata {
-  scene_type: "intro" | "goal" | "scenario" | "actionable_content" | "code_review" | "vishing_simulation" | "smishing_simulation" | "quiz" | "survey" | "nudge" | "summary";
+  scene_type:
+    | 'intro'
+    | 'goal'
+    | 'scenario'
+    | 'actionable_content'
+    | 'code_review'
+    | 'vishing_simulation'
+    | 'smishing_simulation'
+    | 'quiz'
+    | 'survey'
+    | 'nudge'
+    | 'summary';
   points: number;
   duration_seconds: number;
   hasAchievementNotification: boolean;
@@ -176,7 +202,7 @@ interface IntroScene extends BaseScene {
   };
 }
 
-// Scene 2: Goal  
+// Scene 2: Goal
 interface GoalScene extends BaseScene {
   title: string;
   subtitle: string;
@@ -234,7 +260,7 @@ interface CodeReviewScene extends BaseScene {
   };
   vulnerability: {
     name: string;
-    severity: "critical" | "high" | "medium";
+    severity: 'critical' | 'high' | 'medium';
     description: string;
     explanation: string;
     cwe: string;
@@ -258,7 +284,7 @@ interface VishingSimulationScene extends BaseScene {
 interface SmishingSimulationScene extends BaseScene {
   title: string;
   subtitle: string;
-  channel?: "sms" | "slack" | "whatsapp" | "teams" | "telegram" | "instagram" | "linkedin";
+  channel?: 'sms' | 'slack' | 'whatsapp' | 'teams' | 'telegram' | 'instagram' | 'linkedin';
   senderName?: string;
   senderNumber?: string;
   prompt: string;
@@ -366,14 +392,14 @@ export interface AppContent {
 
 export interface LanguageContent {
   language_code?: string;
-  "1": IntroScene;
-  "2": GoalScene;
-  "3": ScenarioScene;
-  "4": ActionableScene | CodeReviewScene | VishingSimulationScene | SmishingSimulationScene;
-  "5": QuizScene;
-  "6": SurveyScene;
-  "7": ActionPlanScene;
-  "8": SummaryScene;
+  '1': IntroScene;
+  '2': GoalScene;
+  '3': ScenarioScene;
+  '4': ActionableScene | CodeReviewScene | VishingSimulationScene | SmishingSimulationScene;
+  '5': QuizScene;
+  '6': SurveyScene;
+  '7': ActionPlanScene;
+  '8': SummaryScene;
   app: AppContent;
 }
 
@@ -383,8 +409,8 @@ export interface DepartmentInbox {
     microlearning_id: string;
     assigned_date: string;
     due_date?: string;
-    status: "pending" | "in_progress" | "completed";
-    priority: "low" | "medium" | "high";
+    status: 'pending' | 'in_progress' | 'completed';
+    priority: 'low' | 'medium' | 'high';
     completion_date?: string;
     score?: number;
   }>;
@@ -409,7 +435,7 @@ export interface SimulatedEmail {
   isPhishing: boolean;
   content: string;
   headers: string[];
-  difficulty: "EASY" | "MEDIUM" | "MEDIUM-EASY" | "MEDIUM-HARD" | "HARD";
+  difficulty: 'EASY' | 'MEDIUM' | 'MEDIUM-EASY' | 'MEDIUM-HARD' | 'HARD';
   explanation: string;
   attachments: EmailAttachment[];
 }

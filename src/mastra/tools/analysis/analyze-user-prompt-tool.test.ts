@@ -251,12 +251,9 @@ describe('analyzeUserPromptTool', () => {
     });
 
     it('should fallback to Level 3: basic schema hints on all failures', async () => {
-
       mockExampleRepo.loadExamplesOnce.mockResolvedValue(undefined);
       // Both semantic and smart sampling fail
-      mockExampleRepo.getSmartSchemaHints.mockRejectedValue(
-        new Error('Smart sampling failed')
-      );
+      mockExampleRepo.getSmartSchemaHints.mockRejectedValue(new Error('Smart sampling failed'));
       mockExampleRepo.getSchemaHints.mockReturnValue('Basic schema hints');
 
       expect(mockExampleRepo.getSchemaHints).toBeDefined();
@@ -363,7 +360,8 @@ describe('analyzeUserPromptTool', () => {
     it('should include additionalContext when additionalContext provided', async () => {
       const input = {
         userPrompt: 'Create training',
-        additionalContext: 'Very long context that should be summarized and limited to 200 characters maximum for display purposes. This is additional text to ensure the context string is long enough to demonstrate the truncation behavior. The tool will limit this to 200 chars plus ellipsis.',
+        additionalContext:
+          'Very long context that should be summarized and limited to 200 characters maximum for display purposes. This is additional text to ensure the context string is long enough to demonstrate the truncation behavior. The tool will limit this to 200 chars plus ellipsis.',
       };
 
       // Context should be long enough to demonstrate truncation
@@ -524,14 +522,11 @@ describe('analyzeUserPromptTool', () => {
       { code: 'ko', name: 'Korean' },
     ];
 
-    it.each(supportedLanguages)(
-      'should support $name language code ($code)',
-      ({ code }) => {
-        // Verify the detection patterns exist for each language
-        expect(code).toBeTruthy();
-        expect(code.length).toBeLessThanOrEqual(2);
-      }
-    );
+    it.each(supportedLanguages)('should support $name language code ($code)', ({ code }) => {
+      // Verify the detection patterns exist for each language
+      expect(code).toBeTruthy();
+      expect(code.length).toBeLessThanOrEqual(2);
+    });
   });
 
   describe('error handling and fallback', () => {
@@ -768,9 +763,7 @@ describe('analyzeUserPromptTool', () => {
       for (const objective of objectives) {
         // Should start with action verb
         const actionVerbs = ['spot', 'check', 'create', 'report', 'verify', 'pause', 'enable'];
-        const startsWithAction = actionVerbs.some(verb =>
-          objective.toLowerCase().startsWith(verb)
-        );
+        const startsWithAction = actionVerbs.some(verb => objective.toLowerCase().startsWith(verb));
         expect(startsWithAction).toBe(true);
       }
     });

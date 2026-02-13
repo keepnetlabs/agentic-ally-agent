@@ -146,7 +146,6 @@ describe('requestLoggingMiddleware', () => {
 
       await requestLoggingMiddleware(mockContext, mockNext);
 
-
       const logCall = mockLoggerInstance.info.mock.calls[0] || mockLoggerInstance.debug.mock.calls[0];
       expect(logCall[1].durationMs).toBeLessThan(1000);
     });
@@ -155,7 +154,6 @@ describe('requestLoggingMiddleware', () => {
       mockContext.res.status = 200;
 
       await requestLoggingMiddleware(mockContext, mockNext);
-
 
       const logCall = mockLoggerInstance.info.mock.calls[0] || mockLoggerInstance.debug.mock.calls[0];
       expect(logCall[1]).toHaveProperty('duration');
@@ -171,7 +169,6 @@ describe('requestLoggingMiddleware', () => {
 
       await requestLoggingMiddleware(mockContext, mockNext);
 
-
       const logCall = mockLoggerInstance.info.mock.calls[0] || mockLoggerInstance.debug.mock.calls[0];
       expect(logCall[1].method).toBe('POST');
     });
@@ -181,7 +178,6 @@ describe('requestLoggingMiddleware', () => {
       mockContext.res.status = 200;
 
       await requestLoggingMiddleware(mockContext, mockNext);
-
 
       const logCall = mockLoggerInstance.info.mock.calls[0] || mockLoggerInstance.debug.mock.calls[0];
       expect(logCall[1].path).toBe('/chat');
@@ -193,7 +189,6 @@ describe('requestLoggingMiddleware', () => {
 
       await requestLoggingMiddleware(mockContext, mockNext);
 
-
       const logCall = mockLoggerInstance.info.mock.calls[0] || mockLoggerInstance.debug.mock.calls[0];
       expect(logCall[1]).toHaveProperty('userAgent');
     });
@@ -203,7 +198,6 @@ describe('requestLoggingMiddleware', () => {
       mockContext.res.status = 200;
 
       await requestLoggingMiddleware(mockContext, mockNext);
-
 
       const logCall = mockLoggerInstance.info.mock.calls[0] || mockLoggerInstance.debug.mock.calls[0];
       expect(logCall[1].userAgent).toBe('unknown');
@@ -216,7 +210,6 @@ describe('requestLoggingMiddleware', () => {
 
       await requestLoggingMiddleware(mockContext, mockNext);
 
-
       const logCall = mockLoggerInstance.info.mock.calls[0] || mockLoggerInstance.debug.mock.calls[0];
       expect(logCall[1].status).toBe(200);
     });
@@ -226,7 +219,6 @@ describe('requestLoggingMiddleware', () => {
 
       await requestLoggingMiddleware(mockContext, mockNext);
 
-
       const logCall = mockLoggerInstance.warn.mock.calls[0];
       expect(logCall[1].status).toBe(404);
     });
@@ -235,7 +227,6 @@ describe('requestLoggingMiddleware', () => {
       mockContext.res.status = 500;
 
       await requestLoggingMiddleware(mockContext, mockNext);
-
 
       const logCall = mockLoggerInstance.error.mock.calls[0];
       expect(logCall[1].status).toBe(500);
@@ -249,7 +240,6 @@ describe('requestLoggingMiddleware', () => {
 
       await requestLoggingMiddleware(mockContext, mockNext);
 
-
       // Should call debug for successful health checks
       expect(mockLoggerInstance.debug).toHaveBeenCalled();
     });
@@ -260,7 +250,6 @@ describe('requestLoggingMiddleware', () => {
 
       await requestLoggingMiddleware(mockContext, mockNext);
 
-
       expect(mockLoggerInstance.debug).toHaveBeenCalledWith('Health check', expect.any(Object));
     });
 
@@ -269,7 +258,6 @@ describe('requestLoggingMiddleware', () => {
       mockContext.res.status = 200;
 
       await requestLoggingMiddleware(mockContext, mockNext);
-
 
       const logCall = mockLoggerInstance.debug.mock.calls[0];
       expect(logCall[1]).not.toHaveProperty('userAgent');
@@ -280,7 +268,6 @@ describe('requestLoggingMiddleware', () => {
       mockContext.res.status = 500;
 
       await requestLoggingMiddleware(mockContext, mockNext);
-
 
       // Should use error level, not debug
       expect(mockLoggerInstance.error).toHaveBeenCalled();
@@ -293,7 +280,6 @@ describe('requestLoggingMiddleware', () => {
 
       await requestLoggingMiddleware(mockContext, mockNext);
 
-
       const logCall = mockLoggerInstance.debug.mock.calls[0];
       expect(logCall[1]).not.toHaveProperty('userAgent');
     });
@@ -304,7 +290,6 @@ describe('requestLoggingMiddleware', () => {
       mockContext.req.header.mockReturnValue('Mozilla/5.0');
 
       await requestLoggingMiddleware(mockContext, mockNext);
-
 
       const logCall = mockLoggerInstance.info.mock.calls[0];
       expect(logCall[1]).toHaveProperty('userAgent');
@@ -319,12 +304,11 @@ describe('requestLoggingMiddleware', () => {
     });
 
     it('should log after next completes', async () => {
-
       let loggedBeforeNextReturned = false;
 
       mockNext.mockImplementation(async () => {
-        loggedBeforeNextReturned = mockLoggerInstance.info.mock.calls.length > 0 ||
-                                    mockLoggerInstance.debug.mock.calls.length > 0;
+        loggedBeforeNextReturned =
+          mockLoggerInstance.info.mock.calls.length > 0 || mockLoggerInstance.debug.mock.calls.length > 0;
       });
 
       await requestLoggingMiddleware(mockContext, mockNext);
@@ -346,7 +330,6 @@ describe('requestLoggingMiddleware', () => {
 
       await requestLoggingMiddleware(mockContext, mockNext);
 
-
       const logCall = mockLoggerInstance.info.mock.calls[0] || mockLoggerInstance.debug.mock.calls[0];
       expect(logCall[1].method).toBe('GET');
     });
@@ -356,7 +339,6 @@ describe('requestLoggingMiddleware', () => {
       mockContext.res.status = 200;
 
       await requestLoggingMiddleware(mockContext, mockNext);
-
 
       const logCall = mockLoggerInstance.info.mock.calls[0] || mockLoggerInstance.debug.mock.calls[0];
       expect(logCall[1].method).toBe('POST');
@@ -368,7 +350,6 @@ describe('requestLoggingMiddleware', () => {
 
       await requestLoggingMiddleware(mockContext, mockNext);
 
-
       const logCall = mockLoggerInstance.info.mock.calls[0] || mockLoggerInstance.debug.mock.calls[0];
       expect(logCall[1].method).toBe('PUT');
     });
@@ -379,7 +360,6 @@ describe('requestLoggingMiddleware', () => {
 
       await requestLoggingMiddleware(mockContext, mockNext);
 
-
       const logCall = mockLoggerInstance.info.mock.calls[0] || mockLoggerInstance.debug.mock.calls[0];
       expect(logCall[1].method).toBe('DELETE');
     });
@@ -389,7 +369,6 @@ describe('requestLoggingMiddleware', () => {
       mockContext.res.status = 200;
 
       await requestLoggingMiddleware(mockContext, mockNext);
-
 
       const logCall = mockLoggerInstance.info.mock.calls[0] || mockLoggerInstance.debug.mock.calls[0];
       expect(logCall[1].method).toBe('PATCH');
@@ -404,7 +383,6 @@ describe('requestLoggingMiddleware', () => {
     });
 
     it('should log unhandled errors', async () => {
-
       mockNext.mockRejectedValueOnce(new Error('Test error'));
 
       try {
@@ -417,7 +395,6 @@ describe('requestLoggingMiddleware', () => {
     });
 
     it('should log error with method and path', async () => {
-
       mockContext.req.method = 'POST';
       mockContext.req.path = '/chat';
       mockNext.mockRejectedValueOnce(new Error('Test error'));
@@ -428,9 +405,7 @@ describe('requestLoggingMiddleware', () => {
         // Expected to throw
       }
 
-      const errorCall = mockLoggerInstance.error.mock.calls.find((call: any) =>
-        call[0].includes('failed')
-      );
+      const errorCall = mockLoggerInstance.error.mock.calls.find((call: any) => call[0].includes('failed'));
       expect(errorCall[1].method).toBe('POST');
       expect(errorCall[1].path).toBe('/chat');
     });
@@ -439,9 +414,7 @@ describe('requestLoggingMiddleware', () => {
       const error = new Error('Test error');
       mockNext.mockRejectedValueOnce(error);
 
-      await expect(requestLoggingMiddleware(mockContext, mockNext))
-        .rejects
-        .toThrow('Test error');
+      await expect(requestLoggingMiddleware(mockContext, mockNext)).rejects.toThrow('Test error');
     });
   });
 
@@ -450,7 +423,6 @@ describe('requestLoggingMiddleware', () => {
       mockContext.res.status = 200;
 
       await requestLoggingMiddleware(mockContext, mockNext);
-
 
       const logCall = mockLoggerInstance.info.mock.calls[0] || mockLoggerInstance.debug.mock.calls[0];
       expect(logCall[1]).toHaveProperty('method');
@@ -461,7 +433,6 @@ describe('requestLoggingMiddleware', () => {
 
       await requestLoggingMiddleware(mockContext, mockNext);
 
-
       const logCall = mockLoggerInstance.info.mock.calls[0] || mockLoggerInstance.debug.mock.calls[0];
       expect(logCall[1]).toHaveProperty('path');
     });
@@ -470,7 +441,6 @@ describe('requestLoggingMiddleware', () => {
       mockContext.res.status = 200;
 
       await requestLoggingMiddleware(mockContext, mockNext);
-
 
       const logCall = mockLoggerInstance.info.mock.calls[0] || mockLoggerInstance.debug.mock.calls[0];
       expect(logCall[1]).toHaveProperty('status');
@@ -481,7 +451,6 @@ describe('requestLoggingMiddleware', () => {
 
       await requestLoggingMiddleware(mockContext, mockNext);
 
-
       const logCall = mockLoggerInstance.info.mock.calls[0] || mockLoggerInstance.debug.mock.calls[0];
       expect(logCall[1]).toHaveProperty('duration');
     });
@@ -490,7 +459,6 @@ describe('requestLoggingMiddleware', () => {
       mockContext.res.status = 200;
 
       await requestLoggingMiddleware(mockContext, mockNext);
-
 
       const logCall = mockLoggerInstance.info.mock.calls[0] || mockLoggerInstance.debug.mock.calls[0];
       expect(logCall[1]).toHaveProperty('durationMs');
@@ -503,7 +471,6 @@ describe('requestLoggingMiddleware', () => {
 
       await requestLoggingMiddleware(mockContext, mockNext);
 
-
       const infoCall = mockLoggerInstance.info.mock.calls[0];
       expect(infoCall[0]).toBe('Request completed');
     });
@@ -513,7 +480,6 @@ describe('requestLoggingMiddleware', () => {
       mockContext.res.status = 200;
 
       await requestLoggingMiddleware(mockContext, mockNext);
-
 
       const debugCall = mockLoggerInstance.debug.mock.calls[0];
       expect(debugCall[0]).toBe('Health check');
@@ -528,10 +494,7 @@ describe('requestLoggingMiddleware', () => {
         // Expected
       }
 
-
-      const errorCall = mockLoggerInstance.error.mock.calls.find((call: any) =>
-        call[0].includes('failed')
-      );
+      const errorCall = mockLoggerInstance.error.mock.calls.find((call: any) => call[0].includes('failed'));
       expect(errorCall[0]).toContain('failed');
     });
   });
@@ -541,7 +504,6 @@ describe('requestLoggingMiddleware', () => {
       mockContext.res.status = 200;
 
       await requestLoggingMiddleware(mockContext, mockNext);
-
 
       const logCall = mockLoggerInstance.info.mock.calls[0] || mockLoggerInstance.debug.mock.calls[0];
       expect(logCall[1].durationMs).toBeGreaterThanOrEqual(0);
@@ -553,7 +515,6 @@ describe('requestLoggingMiddleware', () => {
 
       await requestLoggingMiddleware(mockContext, mockNext);
 
-
       const logCall = mockLoggerInstance.info.mock.calls[0];
       expect(logCall[1].userAgent).toBe('unknown');
     });
@@ -563,7 +524,6 @@ describe('requestLoggingMiddleware', () => {
       mockContext.res.status = 200;
 
       await requestLoggingMiddleware(mockContext, mockNext);
-
 
       const logCall = mockLoggerInstance.info.mock.calls[0] || mockLoggerInstance.debug.mock.calls[0];
       expect(logCall[1].path).toBe('/');

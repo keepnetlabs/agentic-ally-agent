@@ -17,14 +17,16 @@ import { formatToolSummary } from '../../utils/core/tool-summary-formatter';
 
 const assignSmishingOutputSchema = z.object({
   success: z.boolean(),
-  data: z.object({
-    campaignName: z.string(),
-    assignmentType: z.enum(['USER', 'GROUP']),
-    targetId: z.string(),
-    targetLabel: z.string(),
-    resourceId: z.string(),
-    languageId: z.string().optional(),
-  }).optional(),
+  data: z
+    .object({
+      campaignName: z.string(),
+      assignmentType: z.enum(['USER', 'GROUP']),
+      targetId: z.string(),
+      targetLabel: z.string(),
+      resourceId: z.string(),
+      languageId: z.string().optional(),
+    })
+    .optional(),
   message: z.string().optional(),
   error: z.string().optional(),
 });
@@ -32,21 +34,46 @@ const assignSmishingOutputSchema = z.object({
 export const assignSmishingTool = createTool({
   id: 'assign-smishing',
   description: 'Assigns an uploaded smishing simulation to a specific user or group.',
-  inputSchema: z.object({
-    resourceId: z.string().describe('The Resource ID returned from the upload process').refine(isSafeId, { message: 'Invalid resourceId format.' }),
-    languageId: z.string().optional().describe('The Language ID returned from the upload process').refine((v) => (v ? isSafeId(v) : true), { message: 'Invalid languageId format.' }),
-    targetUserResourceId: z.string().optional().describe('The User ID to assign the smishing simulation to (user assignment)').refine((v) => (v ? isSafeId(v) : true), { message: 'Invalid targetUserResourceId format.' }),
-    targetUserEmail: z.string().email().optional().describe('Optional: user email for display in summary messages (does not affect assignment).'),
-    targetUserFullName: z.string().optional().describe('Optional: user full name for display in summary messages (does not affect assignment).'),
-    targetGroupResourceId: z.string().optional().describe('The Group ID to assign the smishing simulation to (group assignment)').refine((v) => (v ? isSafeId(v) : true), { message: 'Invalid targetGroupResourceId format.' }),
-  }).refine(
-    data => Boolean(data.targetUserResourceId) !== Boolean(data.targetGroupResourceId),
-    { message: 'Provide EXACTLY ONE: targetUserResourceId (user assignment) OR targetGroupResourceId (group assignment).' }
-  ),
+  inputSchema: z
+    .object({
+      resourceId: z
+        .string()
+        .describe('The Resource ID returned from the upload process')
+        .refine(isSafeId, { message: 'Invalid resourceId format.' }),
+      languageId: z
+        .string()
+        .optional()
+        .describe('The Language ID returned from the upload process')
+        .refine(v => (v ? isSafeId(v) : true), { message: 'Invalid languageId format.' }),
+      targetUserResourceId: z
+        .string()
+        .optional()
+        .describe('The User ID to assign the smishing simulation to (user assignment)')
+        .refine(v => (v ? isSafeId(v) : true), { message: 'Invalid targetUserResourceId format.' }),
+      targetUserEmail: z
+        .string()
+        .email()
+        .optional()
+        .describe('Optional: user email for display in summary messages (does not affect assignment).'),
+      targetUserFullName: z
+        .string()
+        .optional()
+        .describe('Optional: user full name for display in summary messages (does not affect assignment).'),
+      targetGroupResourceId: z
+        .string()
+        .optional()
+        .describe('The Group ID to assign the smishing simulation to (group assignment)')
+        .refine(v => (v ? isSafeId(v) : true), { message: 'Invalid targetGroupResourceId format.' }),
+    })
+    .refine(data => Boolean(data.targetUserResourceId) !== Boolean(data.targetGroupResourceId), {
+      message:
+        'Provide EXACTLY ONE: targetUserResourceId (user assignment) OR targetGroupResourceId (group assignment).',
+    }),
   outputSchema: assignSmishingOutputSchema,
   execute: async ({ context, writer }) => {
     const logger = getLogger('AssignSmishingTool');
-    const { resourceId, languageId, targetUserResourceId, targetUserEmail, targetUserFullName, targetGroupResourceId } = context;
+    const { resourceId, languageId, targetUserResourceId, targetUserEmail, targetUserFullName, targetGroupResourceId } =
+      context;
 
     try {
       const kvService = new KVService(KV_NAMESPACES.SMISHING);
@@ -61,7 +88,7 @@ export const assignSmishingTool = createTool({
       }
     } catch (guardError) {
       logger.warn('Assign smishing upload guard failed, continuing', {
-        error: normalizeError(guardError).message
+        error: normalizeError(guardError).message,
       });
     }
 
@@ -69,7 +96,7 @@ export const assignSmishingTool = createTool({
     const assignmentType = isUserAssignment ? 'USER' : 'GROUP';
     const targetId = targetUserResourceId || targetGroupResourceId;
     const userLabel = isUserAssignment
-      ? (targetUserEmail?.trim() || targetUserFullName?.trim() || targetUserResourceId)
+      ? targetUserEmail?.trim() || targetUserFullName?.trim() || targetUserResourceId
       : undefined;
     const targetLabel = isUserAssignment ? userLabel : targetId;
     const name = `Smishing Campaign - ${targetId} (${assignmentType}) Agentic Ally`;
@@ -78,7 +105,7 @@ export const assignSmishingTool = createTool({
       resourceId,
       languageId,
       targetUserResourceId,
-      targetGroupResourceId
+      targetGroupResourceId,
     });
 
     const { token, companyId, env, baseApiUrl } = getRequestContext();
@@ -107,16 +134,17 @@ export const assignSmishingTool = createTool({
 
     try {
       const result = await withRetry(
-        () => callWorkerAPI({
-          env,
-          serviceBinding: env?.SMISHING_CRUD_WORKER,
-          publicUrl: API_ENDPOINTS.SMISHING_WORKER_SEND,
-          endpoint: 'https://worker/send',
-          payload,
-          token,
-          errorPrefix: 'Assign API failed',
-          operationName: `Assign smishing to ${assignmentType} ${targetId}`
-        }),
+        () =>
+          callWorkerAPI({
+            env,
+            serviceBinding: env?.SMISHING_CRUD_WORKER,
+            publicUrl: API_ENDPOINTS.SMISHING_WORKER_SEND,
+            endpoint: 'https://worker/send',
+            payload,
+            token,
+            errorPrefix: 'Assign API failed',
+            operationName: `Assign smishing to ${assignmentType} ${targetId}`,
+          }),
         `Assign smishing to ${assignmentType} ${targetId}`
       );
 
@@ -132,14 +160,17 @@ export const assignSmishingTool = createTool({
           await writer.write({
             type: 'text-delta',
             id: messageId,
-            delta: `::ui:smishing_assigned::${encoded}::/ui:smishing_assigned::\n`
+            delta: `::ui:smishing_assigned::${encoded}::/ui:smishing_assigned::\n`,
           });
           await writer.write({ type: 'text-end', id: messageId });
-          } catch (emitErr) {
-            const err = normalizeError(emitErr);
-            const errorInfo = errorService.external(err.message, { step: 'emit-ui-signal-smishing-assignment', stack: err.stack });
-            logErrorInfo(logger, 'warn', 'Failed to emit UI signal for smishing assignment', errorInfo);
-          }
+        } catch (emitErr) {
+          const err = normalizeError(emitErr);
+          const errorInfo = errorService.external(err.message, {
+            step: 'emit-ui-signal-smishing-assignment',
+            stack: err.stack,
+          });
+          logErrorInfo(logger, 'warn', 'Failed to emit UI signal for smishing assignment', errorInfo);
+        }
       }
 
       const toolResult = {
@@ -153,13 +184,15 @@ export const assignSmishingTool = createTool({
           ...(languageId ? { languageId } : {}),
         },
         message: formatToolSummary({
-          prefix: result.message ? `✅ ${result.message}` : `✅ Smishing campaign assigned to ${assignmentType} ${targetLabel}`,
+          prefix: result.message
+            ? `✅ ${result.message}`
+            : `✅ Smishing campaign assigned to ${assignmentType} ${targetLabel}`,
           title: result.message ? undefined : name,
           kv: [
             { key: 'resourceId', value: resourceId },
             { key: 'languageId', value: languageId },
           ],
-        })
+        }),
       };
 
       const validation = validateToolResult(toolResult, assignSmishingOutputSchema, 'assign-smishing');

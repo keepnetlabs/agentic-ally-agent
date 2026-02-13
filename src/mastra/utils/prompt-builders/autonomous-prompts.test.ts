@@ -171,11 +171,7 @@ describe('autonomous-prompts', () => {
 
   describe('buildAssignPhishingWithTrainingPrompt', () => {
     it('includes training IDs when provided', () => {
-      const result = buildAssignPhishingWithTrainingPrompt(
-        'user-123',
-        'training-res-456',
-        'en-gb'
-      );
+      const result = buildAssignPhishingWithTrainingPrompt('user-123', 'training-res-456', 'en-gb');
 
       expect(result).toContain('user-123');
       expect(result).toContain('training-res-456');

@@ -4,7 +4,7 @@ import { getLogger } from '../utils/core/logger';
 import '../../../src/__tests__/setup';
 
 vi.mock('../utils/core/logger', async () => {
-  const actual = await vi.importActual('../utils/core/logger') as any;
+  const actual = (await vi.importActual('../utils/core/logger')) as any;
   const mockLogger = {
     info: vi.fn(),
     debug: vi.fn(),
@@ -63,9 +63,7 @@ describe('KVService', () => {
 
   describe('PUT operation', () => {
     it('should successfully store a value', async () => {
-      const fetchMock = vi.fn().mockResolvedValue(
-        new Response(JSON.stringify({ success: true }), { status: 200 })
-      );
+      const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ success: true }), { status: 200 }));
       global.fetch = fetchMock;
 
       const result = await kvService.put('test-key', { data: 'test' });
@@ -83,9 +81,7 @@ describe('KVService', () => {
     });
 
     it('should handle string values directly', async () => {
-      const fetchMock = vi.fn().mockResolvedValue(
-        new Response('OK', { status: 200 })
-      );
+      const fetchMock = vi.fn().mockResolvedValue(new Response('OK', { status: 200 }));
       global.fetch = fetchMock;
 
       await kvService.put('test-key', 'string-value');
@@ -95,9 +91,9 @@ describe('KVService', () => {
     });
 
     it('should return false on PUT failure', async () => {
-      const fetchMock = vi.fn().mockResolvedValue(
-        new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 })
-      );
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValue(new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 }));
       global.fetch = fetchMock;
 
       const result = await kvService.put('test-key', { data: 'test' });
@@ -118,9 +114,7 @@ describe('KVService', () => {
   describe('GET operation', () => {
     it('should successfully retrieve a JSON value', async () => {
       const mockData = { key: 'value', nested: { data: 123 } };
-      const fetchMock = vi.fn().mockResolvedValue(
-        new Response(JSON.stringify(mockData), { status: 200 })
-      );
+      const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(mockData), { status: 200 }));
       global.fetch = fetchMock;
 
       const result = await kvService.get('test-key');
@@ -129,9 +123,7 @@ describe('KVService', () => {
     });
 
     it('should return string values as-is', async () => {
-      const fetchMock = vi.fn().mockResolvedValue(
-        new Response('plain-text-value', { status: 200 })
-      );
+      const fetchMock = vi.fn().mockResolvedValue(new Response('plain-text-value', { status: 200 }));
       global.fetch = fetchMock;
 
       const result = await kvService.get('test-key');
@@ -140,9 +132,9 @@ describe('KVService', () => {
     });
 
     it('should return null for 404 responses', async () => {
-      const fetchMock = vi.fn().mockResolvedValue(
-        new Response(JSON.stringify({ error: 'Not found' }), { status: 404 })
-      );
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValue(new Response(JSON.stringify({ error: 'Not found' }), { status: 404 }));
       global.fetch = fetchMock;
 
       const result = await kvService.get('non-existent-key');
@@ -160,9 +152,7 @@ describe('KVService', () => {
     });
 
     it('should return null on invalid JSON', async () => {
-      const fetchMock = vi.fn().mockResolvedValue(
-        new Response('not-valid-json{', { status: 200 })
-      );
+      const fetchMock = vi.fn().mockResolvedValue(new Response('not-valid-json{', { status: 200 }));
       global.fetch = fetchMock;
 
       const result = await kvService.get('test-key');
@@ -188,9 +178,7 @@ describe('KVService', () => {
     });
 
     it('should return false on DELETE failure', async () => {
-      const fetchMock = vi.fn().mockResolvedValue(
-        new Response('', { status: 404 })
-      );
+      const fetchMock = vi.fn().mockResolvedValue(new Response('', { status: 404 }));
       global.fetch = fetchMock;
 
       const result = await kvService.delete('non-existent-key');
@@ -202,16 +190,10 @@ describe('KVService', () => {
   describe('LIST operation', () => {
     it('should return list of keys', async () => {
       const mockList = {
-        result: [
-          { name: 'ml:key1:base' },
-          { name: 'ml:key2:base' },
-          { name: 'ml:key3:lang:en' },
-        ],
+        result: [{ name: 'ml:key1:base' }, { name: 'ml:key2:base' }, { name: 'ml:key3:lang:en' }],
       };
 
-      const fetchMock = vi.fn().mockResolvedValue(
-        new Response(JSON.stringify(mockList), { status: 200 })
-      );
+      const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(mockList), { status: 200 }));
       global.fetch = fetchMock;
 
       const result = await kvService.list('ml:', 100);
@@ -220,9 +202,7 @@ describe('KVService', () => {
     });
 
     it('should handle empty list', async () => {
-      const fetchMock = vi.fn().mockResolvedValue(
-        new Response(JSON.stringify({ result: [] }), { status: 200 })
-      );
+      const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ result: [] }), { status: 200 }));
       global.fetch = fetchMock;
 
       const result = await kvService.list('ml:nonexistent:');
@@ -231,9 +211,7 @@ describe('KVService', () => {
     });
 
     it('should include prefix and limit in URL params', async () => {
-      const fetchMock = vi.fn().mockResolvedValue(
-        new Response(JSON.stringify({ result: [] }), { status: 200 })
-      );
+      const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ result: [] }), { status: 200 }));
       global.fetch = fetchMock;
 
       await kvService.list('ml:phishing:', 50);
@@ -246,9 +224,7 @@ describe('KVService', () => {
 
   describe('saveMicrolearning', () => {
     it('should save all microlearning components', async () => {
-      const fetchMock = vi.fn().mockResolvedValue(
-        new Response('', { status: 200 })
-      );
+      const fetchMock = vi.fn().mockResolvedValue(new Response('', { status: 200 }));
       global.fetch = fetchMock;
 
       const microlearningData = {
@@ -257,19 +233,15 @@ describe('KVService', () => {
         inboxContent: { emails: [] },
       };
 
-      const result = await kvService.saveMicrolearning(
-        'test-microlearning-id',
-        microlearningData,
-        'en',
-        'IT'
-      );
+      const result = await kvService.saveMicrolearning('test-microlearning-id', microlearningData, 'en', 'IT');
 
       expect(result).toBe(true);
       expect(fetchMock).toHaveBeenCalledTimes(3); // base, lang, inbox
     });
 
     it('should return false if any save fails', async () => {
-      const fetchMock = vi.fn()
+      const fetchMock = vi
+        .fn()
         .mockResolvedValueOnce(new Response('', { status: 200 })) // base success
         .mockResolvedValueOnce(new Response('', { status: 500 })) // lang fail
         .mockResolvedValueOnce(new Response('', { status: 200 })); // inbox
@@ -282,20 +254,13 @@ describe('KVService', () => {
         inboxContent: { emails: [] },
       };
 
-      const result = await kvService.saveMicrolearning(
-        'test-id',
-        microlearningData,
-        'en',
-        'IT'
-      );
+      const result = await kvService.saveMicrolearning('test-id', microlearningData, 'en', 'IT');
 
       expect(result).toBe(false);
     });
 
     it('should normalize language code to lowercase', async () => {
-      const fetchMock = vi.fn().mockResolvedValue(
-        new Response('', { status: 200 })
-      );
+      const fetchMock = vi.fn().mockResolvedValue(new Response('', { status: 200 }));
       global.fetch = fetchMock;
 
       const microlearningData = {
@@ -316,7 +281,8 @@ describe('KVService', () => {
       const baseData = { id: 'test-id', title: 'Test' };
       const langData = { scenes: [] };
 
-      const fetchMock = vi.fn()
+      const fetchMock = vi
+        .fn()
         .mockResolvedValueOnce(new Response(JSON.stringify(baseData), { status: 200 }))
         .mockResolvedValueOnce(new Response(JSON.stringify(langData), { status: 200 }));
 
@@ -331,9 +297,7 @@ describe('KVService', () => {
     });
 
     it('should return null if base microlearning not found', async () => {
-      const fetchMock = vi.fn().mockResolvedValue(
-        new Response(null, { status: 404 })
-      );
+      const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 404 }));
       global.fetch = fetchMock;
 
       const result = await kvService.getMicrolearning('non-existent-id');
@@ -351,7 +315,8 @@ describe('KVService', () => {
         },
       };
 
-      const fetchMock = vi.fn()
+      const fetchMock = vi
+        .fn()
         .mockResolvedValueOnce(new Response(JSON.stringify(baseData), { status: 200 })) // GET
         .mockResolvedValueOnce(new Response('', { status: 200 })); // PUT
 
@@ -370,7 +335,8 @@ describe('KVService', () => {
         },
       };
 
-      const fetchMock = vi.fn()
+      const fetchMock = vi
+        .fn()
         .mockResolvedValueOnce(new Response(JSON.stringify(baseData), { status: 200 }))
         .mockResolvedValueOnce(new Response('', { status: 200 }));
 
@@ -409,7 +375,7 @@ describe('KVService', () => {
             if (storedValue) {
               return new Response(JSON.stringify(storedValue), { status: 200 });
             }
-            return new Response('', { status: 404 }); // Correctly return 404 if not found? 
+            return new Response('', { status: 404 }); // Correctly return 404 if not found?
             // But for healthCheck first run, put hasn't happened? No, put happens first.
             // healthCheck sequence: checkNamespace -> put -> get -> delete.
             // So get should succeed.
@@ -436,9 +402,7 @@ describe('KVService', () => {
     });
 
     it('should return false if namespace is inaccessible', async () => {
-      const fetchMock = vi.fn().mockResolvedValue(
-        new Response('', { status: 403 })
-      );
+      const fetchMock = vi.fn().mockResolvedValue(new Response('', { status: 403 }));
       global.fetch = fetchMock;
 
       const result = await kvService.healthCheck();
