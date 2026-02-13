@@ -176,9 +176,73 @@ describe('user-search-utils', () => {
             expect(result).toEqual(searchUser);
             expect(result?.phoneNumber).toBeUndefined();
         });
+
+        it('should return base user without phone when direct lookup throws (e.g. 500) after retry', async () => {
+            const searchUser = {
+                email: 'resilient@example.com',
+                targetUserResourceId: 'uid-500',
+                firstName: 'Resilient'
+            };
+
+            const error500 = { ok: false, status: 500, text: async () => 'Server Error' };
+            (global.fetch as any)
+                .mockResolvedValueOnce({ ok: true, json: async () => ({ items: [searchUser] }) })
+                .mockResolvedValueOnce(error500)
+                .mockResolvedValueOnce(error500);
+
+            const result = await findUserByEmail(mockDeps, mockTemplate, 'resilient@example.com');
+
+            expect(result).toEqual(searchUser);
+            expect(result?.phoneNumber).toBeUndefined();
+            const warnCalls = mockLogger.warn.mock.calls.filter((c: any) => c[0]?.includes('Phone enrichment failed'));
+            expect(warnCalls.length).toBeGreaterThan(0);
+            expect(global.fetch).toHaveBeenCalledTimes(3);
+        });
     });
 
     describe('findUserById', () => {
+        it('should return user when found with phone', async () => {
+            const mockUser = {
+                targetUserResourceId: 'uid-1',
+                email: 'has-phone@example.com',
+                phoneNumber: '+15551111111',
+                firstName: 'Complete'
+            };
+            (global.fetch as any).mockResolvedValue({
+                ok: true,
+                json: async () => ({ items: [mockUser] })
+            });
+
+            const result = await findUserById(mockDeps, mockTemplate, 'uid-1');
+            expect(result).toEqual(mockUser);
+            expect(global.fetch).toHaveBeenCalledTimes(1);
+        });
+
+        it('should return null when not found', async () => {
+            (global.fetch as any)
+                .mockResolvedValueOnce({ ok: true, json: async () => ({ items: [] }) })
+                .mockResolvedValueOnce({ ok: true, json: async () => ({ items: [] }) });
+
+            const result = await findUserById(mockDeps, mockTemplate, 'uid-nonexistent');
+            expect(result).toBeNull();
+        });
+
+        it('should fallback to target-users search when primary returns no match', async () => {
+            const fallbackUser = {
+                targetUserResourceId: 'uid-fallback',
+                email: 'fallback-id@example.com',
+                firstName: 'Fallback',
+                phoneNumber: '+15550000000'
+            };
+            (global.fetch as any)
+                .mockResolvedValueOnce({ ok: true, json: async () => ({ items: [{ targetUserResourceId: 'other' }] }) })
+                .mockResolvedValueOnce({ ok: true, json: async () => ({ items: [fallbackUser] }) });
+
+            const result = await findUserById(mockDeps, mockTemplate, 'uid-fallback');
+            expect(result).toEqual(fallbackUser);
+            expect(global.fetch).toHaveBeenNthCalledWith(2, expect.stringContaining('/api/target-users/search'), expect.any(Object));
+        });
+
         it('should merge phone from direct lookup when search result has no phoneNumber', async () => {
             const searchUser = {
                 targetUserResourceId: 'uid-456',

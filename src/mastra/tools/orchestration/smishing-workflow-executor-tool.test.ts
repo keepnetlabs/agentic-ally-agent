@@ -104,14 +104,14 @@ describe('smishingWorkflowExecutorTool', () => {
     expect(smsCall).toBeDefined();
     expect(landingCall).toBeDefined();
 
-    const smsDelta = smsCall![0].delta as string;
+    const smsDelta = (smsCall as NonNullable<typeof smsCall>)[0].delta as string;
     const smsPayload = smsDelta.split('::ui:smishing_sms::')[1].split('::/ui:smishing_sms::')[0];
     const smsDecoded = JSON.parse(Buffer.from(smsPayload, 'base64').toString('utf-8'));
     expect(smsDecoded.smishingId).toBe('smishing-123');
     expect(smsDecoded.smsKey).toBe('smishing:smishing-123:sms:en-gb');
     expect(smsDecoded.messages).toHaveLength(1);
 
-    const landingDelta = landingCall![0].delta as string;
+    const landingDelta = (landingCall as NonNullable<typeof landingCall>)[0].delta as string;
     const landingPayload = landingDelta.split('::ui:smishing_landing_page::')[1].split('::/ui:smishing_landing_page::')[0];
     const landingDecoded = JSON.parse(Buffer.from(landingPayload, 'base64').toString('utf-8'));
     expect(landingDecoded.smishingId).toBe('smishing-123');

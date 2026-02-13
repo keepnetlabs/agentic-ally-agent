@@ -17,8 +17,6 @@ import * as parse5 from 'parse5';
 import { getLogger } from '../core/logger';
 import { normalizeError } from '../core/error-utils';
 
-const logger = getLogger('EmailCardPaddingNormalizer');
-
 interface HtmlAttr {
     name: string;
     value: string;
@@ -29,6 +27,8 @@ interface HtmlNode {
     attrs?: HtmlAttr[];
     childNodes?: HtmlNode[];
 }
+
+const logger = getLogger('EmailCardPaddingNormalizer');
 
 function isElement(node: unknown): node is HtmlNode {
     return !!node && typeof node === 'object' && 'nodeName' in (node as Record<string, unknown>);

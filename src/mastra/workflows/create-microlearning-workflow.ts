@@ -101,10 +101,7 @@ export const generateMicrolearningStep = createStep({
     if (!genRes?.success) {
       const errorInfo = errorService.external(`Microlearning generation failed: ${genRes?.error}`, { step: 'generate-microlearning-json' });
       // Cast to any to allow extra context properties
-      logErrorInfo(logger, 'error', 'Microlearning generation failed', {
-        ...errorInfo,
-        topic: analysis.topic
-      } as any);
+      logErrorInfo(logger, 'error', 'Microlearning generation failed', errorInfo);
       throw new Error(errorInfo.message);
     }
 
@@ -151,7 +148,7 @@ export const generateMicrolearningStep = createStep({
       model: inputData.model,
       writer: inputData.writer,
       policyContext: inputData.policyContext,
-    } as any;
+    };
   }
 });
 
@@ -181,11 +178,7 @@ export const generateLanguageStep = createStep({
 
     if (!result?.success) {
       const errorInfo = errorService.external(`Language content generation failed: ${result?.error}`, { step: 'generate-language-json' });
-      logErrorInfo(logger, 'error', 'Language content generation failed', {
-        ...errorInfo,
-        microlearningId,
-        language: analysis.language
-      } as any);
+      logErrorInfo(logger, 'error', 'Language content generation failed', errorInfo);
       throw new Error(errorInfo.message);
     }
 
@@ -201,12 +194,12 @@ export const generateLanguageStep = createStep({
       microlearningId,
       analysis,
       microlearningStructure,
-      hasInbox: (inputData as any).hasInbox,
+      hasInbox: inputData.hasInbox,
       modelProvider: inputData.modelProvider,
       model: inputData.model,
       writer: inputData.writer,
       policyContext: inputData.policyContext,
-    } as any;
+    };
   }
 });
 
@@ -218,7 +211,7 @@ export const createInboxStep = createStep({
   outputSchema: microlearningFinalResultSchema, // Updated output schema name
   execute: async ({ inputData }) => {
     const { analysis, microlearningStructure, microlearningId } = inputData;
-    const hasInbox = (inputData as any).hasInbox !== false;
+    const hasInbox = inputData.hasInbox !== false;
 
     const normalizedDept = analysis.department ? normalizeDepartmentName(analysis.department) : 'all';
 
@@ -298,7 +291,7 @@ export const saveToKVStep = createStep({
   execute: async ({ inputData }) => {
     const inboxResult = inputData['create-inbox-assignment'];
     const languageResult = inputData['generate-language-content'];
-    const hasInbox = (languageResult as any).hasInbox !== false;
+    const hasInbox = languageResult.hasInbox !== false;
 
     // Now save to KV with both results available
     try {

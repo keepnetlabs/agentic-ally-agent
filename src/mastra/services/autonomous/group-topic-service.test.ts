@@ -2,6 +2,30 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { selectGroupTrainingTopic, GroupTopicSelection } from './group-topic-service';
 import '../../../../src/__tests__/setup';
 
+const mockGenerateText = vi.fn();
+vi.mock('ai', () => ({
+  generateText: (...args: unknown[]) => mockGenerateText(...args),
+}));
+
+vi.mock('../../model-providers', () => ({
+  getModelWithOverride: vi.fn(() => 'gpt-4o'),
+}));
+
+vi.mock('../../utils/core/logger', () => ({
+  getLogger: () => ({
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+  }),
+}));
+
+vi.mock('../error-service', () => ({
+  errorService: {
+    aiModel: vi.fn((msg: string) => ({ message: msg })),
+  },
+}));
+
 /**
  * Test Suite: GroupTopicService
  * Tests for group training topic selection and organization
@@ -11,6 +35,9 @@ import '../../../../src/__tests__/setup';
 describe('GroupTopicService', () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    mockGenerateText.mockResolvedValue({
+      text: 'Phishing & Email Security',
+    });
   });
 
   describe('GroupTopicSelection interface', () => {
@@ -507,6 +534,59 @@ Create educational training content on THIS TOPIC: "${topic}"`;
 
     it('should always return complete GroupTopicSelection', () => {
       expect(typeof selectGroupTrainingTopic).toBe('function');
+    });
+  });
+
+  describe('selectGroupTrainingTopic (integration)', () => {
+    it('returns full GroupTopicSelection when AI succeeds', async () => {
+      const result = await selectGroupTrainingTopic('en-gb');
+
+      expect(result).toHaveProperty('topic');
+      expect(result).toHaveProperty('phishingPrompt');
+      expect(result).toHaveProperty('smishingPrompt');
+      expect(result).toHaveProperty('trainingPrompt');
+      expect(result).toHaveProperty('objectives');
+      expect(result).toHaveProperty('scenarios');
+
+      expect(result.topic).toBe('Phishing & Email Security');
+      expect(result.phishingPrompt).toContain('Phishing & Email Security');
+      expect(result.smishingPrompt).toContain('Phishing & Email Security');
+      expect(result.trainingPrompt).toContain('Phishing & Email Security');
+      expect(Array.isArray(result.objectives)).toBe(true);
+      expect(Array.isArray(result.scenarios)).toBe(true);
+    });
+
+    it('returns default topic when AI fails', async () => {
+      mockGenerateText.mockRejectedValueOnce(new Error('API error'));
+
+      const result = await selectGroupTrainingTopic('en-gb');
+
+      expect(result.topic).toBe('Phishing & Email Security');
+      expect(result.phishingPrompt).toContain('Phishing & Email Security');
+    });
+
+    it('uses topic metadata for known topics', async () => {
+      mockGenerateText.mockResolvedValueOnce({
+        text: 'Password & Authentication',
+      });
+
+      const result = await selectGroupTrainingTopic('en-gb');
+
+      expect(result.topic).toBe('Password & Authentication');
+      expect(result.objectives).toContain('Create and manage strong passwords');
+      expect(result.scenarios).toContain('Fake login page requesting credentials');
+    });
+
+    it('uses fallback metadata for unknown topics', async () => {
+      mockGenerateText.mockResolvedValueOnce({
+        text: 'Custom AI Security Topic',
+      });
+
+      const result = await selectGroupTrainingTopic('en-gb');
+
+      expect(result.topic).toBe('Custom AI Security Topic');
+      expect(result.objectives.length).toBeGreaterThan(0);
+      expect(result.objectives[0]).toContain('Custom AI Security Topic');
     });
   });
 });

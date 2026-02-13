@@ -215,7 +215,9 @@ const cleanMessageContent = (content: string): string => {
       try {
         const decoded = decodeBase64Json(payload);
         if (decoded && typeof decoded === 'object') {
-          const { microlearningId, resourceId } = decoded as any;
+          const d = decoded as Record<string, unknown>;
+          const microlearningId = d.microlearningId;
+          const resourceId = d.resourceId;
           if (microlearningId && resourceId) return `[Training Uploaded: microlearningId=${microlearningId}, resourceId=${resourceId}]`;
         }
       } catch { /* ignore */ }
@@ -228,7 +230,9 @@ const cleanMessageContent = (content: string): string => {
       try {
         const decoded = decodeBase64Json(payload);
         if (decoded && typeof decoded === 'object') {
-          const { phishingId, resourceId } = decoded as any;
+          const d = decoded as Record<string, unknown>;
+          const phishingId = d.phishingId;
+          const resourceId = d.resourceId;
           if (phishingId && resourceId) return `[Phishing Simulation Uploaded: phishingId=${phishingId}, resourceId=${resourceId}]`;
         }
       } catch { /* ignore */ }
@@ -241,7 +245,9 @@ const cleanMessageContent = (content: string): string => {
       try {
         const decoded = decodeBase64Json(payload);
         if (decoded && typeof decoded === 'object') {
-          const { smishingId, resourceId } = decoded as any;
+          const d = decoded as Record<string, unknown>;
+          const smishingId = d.smishingId;
+          const resourceId = d.resourceId;
           if (smishingId && resourceId) return `[Smishing Simulation Uploaded: smishingId=${smishingId}, resourceId=${resourceId}]`;
         }
       } catch { /* ignore */ }
@@ -254,7 +260,8 @@ const cleanMessageContent = (content: string): string => {
       try {
         const decoded = decodeBase64Json(payload);
         if (decoded && typeof decoded === 'object') {
-          const { resourceId, targetId, assignmentType } = decoded as any;
+          const d = decoded as Record<string, unknown>;
+          const { resourceId, targetId, assignmentType } = d;
           if (resourceId && targetId) {
             const key = assignmentType === 'GROUP' ? 'targetGroupResourceId' : 'targetUserResourceId';
             return `[Training Assigned to ${assignmentType === 'GROUP' ? 'Group' : 'User'}: resourceId=${resourceId}, ${key}=${targetId}]`;
@@ -270,7 +277,8 @@ const cleanMessageContent = (content: string): string => {
       try {
         const decoded = decodeBase64Json(payload);
         if (decoded && typeof decoded === 'object') {
-          const { resourceId, targetId, assignmentType } = decoded as any;
+          const d = decoded as Record<string, unknown>;
+          const { resourceId, targetId, assignmentType } = d;
           if (resourceId && targetId) {
             const key = assignmentType === 'GROUP' ? 'targetGroupResourceId' : 'targetUserResourceId';
             return `[Phishing Simulation Assigned to ${assignmentType === 'GROUP' ? 'Group' : 'User'}: resourceId=${resourceId}, ${key}=${targetId}]`;
@@ -286,7 +294,8 @@ const cleanMessageContent = (content: string): string => {
       try {
         const decoded = decodeBase64Json(payload);
         if (decoded && typeof decoded === 'object') {
-          const { resourceId, targetId, assignmentType } = decoded as any;
+          const d = decoded as Record<string, unknown>;
+          const { resourceId, targetId, assignmentType } = d;
           if (resourceId && targetId) {
             const key = assignmentType === 'GROUP' ? 'targetGroupResourceId' : 'targetUserResourceId';
             return `[Smishing Simulation Assigned to ${assignmentType === 'GROUP' ? 'Group' : 'User'}: resourceId=${resourceId}, ${key}=${targetId}]`;

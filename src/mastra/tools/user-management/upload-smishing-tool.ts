@@ -120,11 +120,12 @@ export const uploadSmishingTool = createTool({
       };
 
       const maskedPayload = maskSensitiveField(payload, 'accessToken');
+      const masked = maskedPayload as { smishingData?: { sms?: { messages?: unknown }; landingPage?: unknown } };
       logger.debug('Upload payload prepared (redacted)', {
         payload: summarizeForLog(maskedPayload),
-        smishingData: summarizeForLog((maskedPayload as any)?.smishingData),
-        smsMessages: summarizeForLog((maskedPayload as any)?.smishingData?.sms?.messages),
-        landingPage: summarizeForLog((maskedPayload as any)?.smishingData?.landingPage),
+        smishingData: summarizeForLog(masked.smishingData),
+        smsMessages: summarizeForLog(masked.smishingData?.sms?.messages),
+        landingPage: summarizeForLog(masked.smishingData?.landingPage),
       });
 
       const result = await withRetry<UploadSmishingWorkerResult>(

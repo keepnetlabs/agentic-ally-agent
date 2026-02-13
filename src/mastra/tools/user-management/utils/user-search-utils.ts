@@ -1,17 +1,33 @@
 import { normalizeError, logErrorInfo } from '../../../utils/core/error-utils';
 import { errorService } from '../../../services/error-service';
+import { withRetry } from '../../../utils/core/resilience-utils';
 import { PlatformUser } from '../user-management-types';
 
+/** API response shape: get-all returns items or data.results. */
+interface UserSearchApiResponse {
+    items?: PlatformUser[];
+    data?: { results?: PlatformUser[] };
+}
+
+/** Expected shape of GET_ALL payload template (filter.FilterGroups[0].FilterItems). */
+interface GetAllPayloadShape {
+    filter?: {
+        FilterGroups?: Array<{ FilterItems?: unknown[] }>;
+    };
+}
+
+/** Filter item for user search API (e.g. email Equals, targetUserResourceId Equals). */
 export interface UserSearchFilterItem {
     Value: string;
     FieldName: string;
     Operator: string;
 }
 
+/** Dependencies for user search: auth token, optional companyId/baseApiUrl, logger. */
 export interface UserSearchDeps {
     token: string;
     companyId?: string;
-    baseApiUrl?: string; // Dynamic API URL from request context
+    baseApiUrl?: string;
     logger: {
         info: (message: string, context?: Record<string, unknown>) => void;
         debug: (message: string, context?: Record<string, unknown>) => void;
@@ -32,6 +48,14 @@ function getTargetUserByIdUrl(baseApiUrl: string | undefined, resourceId: string
     return `${baseApiUrl || 'https://test-api.devkeepnet.com'}/api/target-users/${encodeURIComponent(resourceId)}`;
 }
 
+/**
+ * Fetches users with filters. Uses primary (leaderboard/get-all), then fallback (target-users/search) if empty.
+ *
+ * @param deps - Token, companyId, baseApiUrl, logger
+ * @param getAllPayloadTemplate - Payload template with filter structure
+ * @param filterItems - Filters to append (e.g. email Equals, targetUserResourceId Equals)
+ * @returns Array of PlatformUser (may be empty)
+ */
 export async function fetchUsersWithFilters(
     deps: UserSearchDeps,
     getAllPayloadTemplate: unknown,
@@ -43,8 +67,8 @@ export async function fetchUsersWithFilters(
         'Authorization': `Bearer ${token}`,
     };
     if (companyId) headers['x-ir-company-id'] = companyId;
-    const payload = JSON.parse(JSON.stringify(getAllPayloadTemplate));
-    const filterGroup = (payload as any)?.filter?.FilterGroups?.[0];
+    const payload = JSON.parse(JSON.stringify(getAllPayloadTemplate)) as GetAllPayloadShape;
+    const filterGroup = payload?.filter?.FilterGroups?.[0];
     if (!filterGroup?.FilterItems) {
         const errorInfo = errorService.validation('Invalid GET_ALL payload template (missing filter group)', { step: 'fetchUsersWithFilters' });
         throw new Error(errorInfo.message);
@@ -80,13 +104,13 @@ export async function fetchUsersWithFilters(
             status: resp.status,
             errorBody: errorText.substring(0, 1000)
         });
-        logErrorInfo(logger as any, 'error', 'User search API failed', errorInfo);
+        logErrorInfo(logger, 'error', 'User search API failed', errorInfo);
         // Throwing the extracted message so it propagates up
         throw new Error(detailedMessage);
     }
 
-    const data = await resp.json();
-    const primaryItems = data?.items || data?.data?.results || [];
+    const data = (await resp.json()) as UserSearchApiResponse | null;
+    const primaryItems = data?.items ?? data?.data?.results ?? [];
     if (primaryItems.length > 0) {
         return primaryItems;
     }
@@ -167,9 +191,9 @@ async function fetchUsersFromFallback(
             });
             return [];
         }
-        const fallbackData = await fallbackResp.json();
+        const fallbackData = (await fallbackResp.json()) as UserSearchApiResponse | null;
         logger.info('Fallback user search response', { fallbackData });
-        return fallbackData?.items || fallbackData?.data?.results || [];
+        return fallbackData?.items ?? fallbackData?.data?.results ?? [];
     } catch (error) {
         const err = normalizeError(error);
         logger.warn('Fallback user search error', { error: err.message });
@@ -181,6 +205,29 @@ async function fetchUsersFromFallback(
 function mergePhoneFromEnriched(base: PlatformUser, enriched: PlatformUser | null): PlatformUser | null {
     if (enriched?.phoneNumber) return { ...base, phoneNumber: enriched.phoneNumber };
     return null;
+}
+
+/** Attempts to enrich base with phone from direct lookup. Retries once on transient failures. Returns merged user if successful, null on failure (caller should return base). */
+async function tryEnrichWithPhone(
+    base: PlatformUser,
+    deps: UserSearchDeps,
+    resourceId: string,
+    logContext: Record<string, unknown>
+): Promise<PlatformUser | null> {
+    try {
+        const enriched = await withRetry(
+            () => fetchUserByIdDirect(deps, resourceId),
+            'phone_enrichment_direct_lookup',
+            { maxAttempts: 2 }
+        );
+        return mergePhoneFromEnriched(base, enriched);
+    } catch (err) {
+        deps.logger.warn('Phone enrichment failed, returning user without phone', {
+            ...logContext,
+            error: (err as Error).message,
+        });
+        return null;
+    }
 }
 
 async function fetchUserByIdDirect(
@@ -217,7 +264,7 @@ async function fetchUserByIdDirect(
             status: resp.status,
             errorBody: errorText.substring(0, 1000)
         });
-        logErrorInfo(logger as any, 'error', 'User lookup API failed', errorInfo);
+        logErrorInfo(logger, 'error', 'User lookup API failed', errorInfo);
         throw new Error(detailedMessage);
     }
 
@@ -238,6 +285,15 @@ async function fetchUserByIdDirect(
     };
 }
 
+/**
+ * Finds a user by email. Uses primary search (get-all), then fallback (target-users/search).
+ * If found but phoneNumber is missing, enriches via direct lookup and merges phone into the result.
+ *
+ * @param deps - Token, logger, baseApiUrl
+ * @param getAllPayloadTemplate - Payload template for leaderboard/get-all
+ * @param email - Email to search (normalized to lowercase)
+ * @returns PlatformUser or null if not found
+ */
 export async function findUserByEmail(
     deps: UserSearchDeps,
     getAllPayloadTemplate: unknown,
@@ -258,8 +314,10 @@ export async function findUserByEmail(
                     email: normalizedEmail,
                     targetUserResourceId: exact.targetUserResourceId,
                 });
-                const enriched = await fetchUserByIdDirect(deps, String(exact.targetUserResourceId));
-                const merged = mergePhoneFromEnriched(exact, enriched);
+                const merged = await tryEnrichWithPhone(exact, deps, String(exact.targetUserResourceId), {
+                    email: normalizedEmail,
+                    targetUserResourceId: exact.targetUserResourceId,
+                });
                 if (merged) return merged;
             }
             deps.logger.info('User found by email', { email: normalizedEmail, userId: exact.targetUserResourceId });
@@ -287,8 +345,10 @@ export async function findUserByEmail(
                 email: normalizedEmail,
                 targetUserResourceId: fallbackExact.targetUserResourceId,
             });
-            const enriched = await fetchUserByIdDirect(deps, String(fallbackExact.targetUserResourceId));
-            const merged = mergePhoneFromEnriched(fallbackExact, enriched);
+            const merged = await tryEnrichWithPhone(fallbackExact, deps, String(fallbackExact.targetUserResourceId), {
+                email: normalizedEmail,
+                targetUserResourceId: fallbackExact.targetUserResourceId,
+            });
             if (merged) return merged;
         }
         deps.logger.info('User found by email via fallback search', {
@@ -299,12 +359,21 @@ export async function findUserByEmail(
     } catch (error) {
         const err = normalizeError(error);
         const errorInfo = errorService.external('User search by email failed', { error: err.message });
-        logErrorInfo(deps.logger as any, 'error', 'User search error', errorInfo);
+        logErrorInfo(deps.logger, 'error', 'User search error', errorInfo);
         // Preserve original error message for higher-level handlers/tests (e.g., "Network error")
         throw new Error(err.message);
     }
 }
 
+/**
+ * Finds a user by targetUserResourceId. Uses primary search, then fallback, then direct GET.
+ * If found via search but phoneNumber is missing, enriches via direct lookup and merges phone.
+ *
+ * @param deps - Token, logger, baseApiUrl
+ * @param getAllPayloadTemplate - Payload template for leaderboard/get-all
+ * @param targetUserResourceId - User ID to search
+ * @returns PlatformUser or null if not found
+ */
 export async function findUserById(
     deps: UserSearchDeps,
     getAllPayloadTemplate: unknown,
@@ -324,8 +393,7 @@ export async function findUserById(
                 deps.logger.info('User found by ID but phoneNumber missing, enriching via direct lookup', {
                     targetUserResourceId: normalizedId,
                 });
-                const enriched = await fetchUserByIdDirect(deps, normalizedId);
-                const merged = mergePhoneFromEnriched(exact, enriched);
+                const merged = await tryEnrichWithPhone(exact, deps, normalizedId, { targetUserResourceId: normalizedId });
                 if (merged) return merged;
             }
             deps.logger.info('User found by ID', { targetUserResourceId: normalizedId });
@@ -361,8 +429,7 @@ export async function findUserById(
             deps.logger.info('User found by ID via fallback but phoneNumber missing, enriching via direct lookup', {
                 targetUserResourceId: normalizedId,
             });
-            const enriched = await fetchUserByIdDirect(deps, normalizedId);
-            const merged = mergePhoneFromEnriched(fallbackExact, enriched);
+            const merged = await tryEnrichWithPhone(fallbackExact, deps, normalizedId, { targetUserResourceId: normalizedId });
             if (merged) return merged;
         }
         deps.logger.info('User found by ID via fallback search', { targetUserResourceId: normalizedId });
@@ -370,11 +437,22 @@ export async function findUserById(
     } catch (error) {
         const err = normalizeError(error);
         const errorInfo = errorService.external('User search by ID failed', { error: err.message });
-        logErrorInfo(deps.logger as any, 'error', 'User search error', errorInfo);
+        logErrorInfo(deps.logger, 'error', 'User search error', errorInfo);
         throw new Error(err.message);
     }
 }
 
+/**
+ * Finds a user by first/last name with fallbacks: full name → last token only → first name only.
+ * If found but phoneNumber is missing, enriches via direct lookup and merges phone.
+ *
+ * @param deps - Token, logger, baseApiUrl
+ * @param getAllPayloadTemplate - Payload template for leaderboard/get-all
+ * @param firstName - First name (required)
+ * @param lastName - Last name (optional; supports "De Luca" → retry with "Luca")
+ * @param fullNameForLogs - Display name for logging (defaults to "firstName lastName")
+ * @returns PlatformUser or null if not found
+ */
 export async function findUserByNameWithFallbacks(
     deps: UserSearchDeps,
     getAllPayloadTemplate: unknown,
@@ -427,8 +505,10 @@ export async function findUserByNameWithFallbacks(
                 name: fullName,
                 targetUserResourceId: result.targetUserResourceId,
             });
-            const enriched = await fetchUserByIdDirect(deps, String(result.targetUserResourceId));
-            const merged = mergePhoneFromEnriched(result, enriched);
+            const merged = await tryEnrichWithPhone(result, deps, String(result.targetUserResourceId), {
+                name: fullName,
+                targetUserResourceId: result.targetUserResourceId,
+            });
             if (merged) return merged;
         }
 
@@ -437,7 +517,7 @@ export async function findUserByNameWithFallbacks(
     } catch (error) {
         const err = normalizeError(error);
         const errorInfo = errorService.external('User search failed', { error: err.message });
-        logErrorInfo(deps.logger as any, 'error', 'User search error', errorInfo);
+        logErrorInfo(deps.logger, 'error', 'User search error', errorInfo);
         // Preserve original error message for higher-level handlers/tests (e.g., "Network error")
         throw new Error(err.message);
     }

@@ -105,7 +105,7 @@ Return ONLY a valid JSON object with this structure (no markdown, no extra text)
   "relevant_sections": ["section name 1", "section name 2"]
 }`;
 
-      const modelToUse = getModelWithOverride(modelProvider as any, model);
+      const modelToUse = getModelWithOverride(modelProvider, model);
 
       const { text } = await withRetry(
         () => generateText({

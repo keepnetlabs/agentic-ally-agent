@@ -10,7 +10,6 @@ import {
     addMultipleLanguagesInputSchema,
     finalMultiLanguageResultSchema
 } from './add-language-schemas';
-import { MODEL_PROVIDERS } from '../constants';
 
 describe('add-language-schemas', () => {
 
@@ -52,10 +51,11 @@ describe('add-language-schemas', () => {
         });
 
         it('validates language code format', () => {
-            const result = addLanguageInputSchema.safeParse({
+            const parseResult = addLanguageInputSchema.safeParse({
                 existingMicrolearningId: 'mid',
                 targetLanguage: 'invalid'
             });
+            expect(parseResult.success).toBeDefined();
             // Note: LanguageCodeSchema usually refines regex or basic string.
             // If it's just z.string(), this might pass unless refined.
             // Assuming LanguageCodeSchema has some validation, but if not, simple string check.

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createMicrolearningWorkflow, analyzePromptStep, generateMicrolearningStep, generateLanguageStep, createInboxStep, saveToKVStep } from './create-microlearning-workflow';
+import { createMicrolearningWorkflow, analyzePromptStep, generateMicrolearningStep, createInboxStep, saveToKVStep } from './create-microlearning-workflow';
 import { analyzeUserPromptTool } from '../tools/analysis';
 import { generateMicrolearningJsonTool } from '../tools/generation';
 import { createInboxStructureTool } from '../tools/inbox';
@@ -162,10 +162,6 @@ describe('CreateMicrolearningWorkflow', () => {
     };
 
     const result = await run.start({ inputData: input });
-
-    if (result.status !== 'success') {
-      console.log('Workflow failed:', JSON.stringify(result, null, 2));
-    }
 
     expect(mocks.analyzeExecute).toHaveBeenCalledWith(expect.objectContaining({
       userPrompt: 'Create phishing training',

@@ -5,6 +5,18 @@ import { normalizeError, logErrorInfo } from './error-utils';
 import { errorService } from '../../services/error-service';
 import { API_ENDPOINTS } from '../../constants';
 
+interface PolicyFile {
+  name: string;
+  blobUrl: string;
+  [key: string]: unknown;
+}
+
+interface PolicyContent {
+  policyId: string;
+  text: string;
+  [key: string]: unknown;
+}
+
 const logger = getLogger('PolicyFetcher');
 
 /**
@@ -28,18 +40,6 @@ function extractCompanyIdFromToken(token: string): string | undefined {
   } catch {
     return undefined;
   }
-}
-
-interface PolicyFile {
-  name: string;
-  blobUrl: string;
-  [key: string]: unknown; // Allow other properties
-}
-
-interface PolicyContent {
-  policyId: string;
-  text: string;
-  [key: string]: unknown;
 }
 
 /**

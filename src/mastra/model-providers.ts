@@ -4,6 +4,9 @@ import { getLogger } from './utils/core/logger';
 import { normalizeError, logErrorInfo } from './utils/core/error-utils';
 import { errorService } from './services/error-service';
 
+/** Fetch-compatible type for AI SDK createOpenAI. */
+type FetchLike = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
+
 const logger = getLogger('ModelProviders');
 
 /**
@@ -133,7 +136,7 @@ function getModelProvider(provider: ModelProvider) {
                 headers: {
                     'cf-aig-authorization': 'Bearer ' + cloudflareGatewayAuthKey,
                 },
-                fetch: workersAICustomFetch as any,
+                fetch: workersAICustomFetch as FetchLike,
             });
 
         case 'google':
@@ -292,7 +295,7 @@ export function getModelWithOverride(
  * @param url Request URL
  * @param options Fetch options
  */
-export async function workersAICustomFetch(url: string, options: any) {
+export async function workersAICustomFetch(url: string, options?: RequestInit): Promise<Response> {
     const response = await fetch(url, options);
     const data = await response.json();
 

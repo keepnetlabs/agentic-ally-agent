@@ -1,6 +1,16 @@
 import { Tool } from '@mastra/core/tools';
 import { generateText } from 'ai';
 import { PromptAnalysis } from '../../types/prompt-analysis';
+
+/** AI SDK usage shape - v5 uses camelCase, older versions use snake_case. */
+type UsageShape = {
+  inputTokens?: number;
+  outputTokens?: number;
+  promptTokens?: number;
+  completionTokens?: number;
+  input_tokens?: number;
+  output_tokens?: number;
+};
 import { MicrolearningContent, LanguageContent } from '../../types/microlearning';
 import { GenerateLanguageJsonSchema, GenerateLanguageJsonOutputSchema } from '../../schemas';
 import { getAppTexts, getAppAriaTexts } from '../../utils/language/app-texts';
@@ -235,7 +245,7 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
       if (response.usage) {
         // AI SDK v5 uses: inputTokens, outputTokens (camelCase)
         // Older versions: promptTokens/completionTokens or input_tokens/output_tokens
-        const usage = response.usage as any;
+        const usage = response.usage as UsageShape;
         const inputTokens = usage.inputTokens ?? usage.promptTokens ?? usage.input_tokens ?? 0;
         const outputTokens = usage.outputTokens ?? usage.completionTokens ?? usage.output_tokens ?? 0;
 

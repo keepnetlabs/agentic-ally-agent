@@ -42,6 +42,7 @@ vi.mock('../services/kv-service', () => {
     KVService: class {
       constructor(_namespaceId?: string) {}
       get = mockKVGet;
+      getNamespaceId = () => 'test-namespace';
     },
   };
 });

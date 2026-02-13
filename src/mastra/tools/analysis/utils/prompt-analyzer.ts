@@ -15,6 +15,18 @@ import { withRetry } from '../../../utils/core/resilience-utils';
 import { autoRepairPromptAnalysis } from '../prompt-analysis-normalizer';
 import { detectSmishingChannelFromText } from '../../../utils/smishing-channel';
 
+interface AnalyzeUserPromptParams {
+    userPrompt: string;
+    additionalContext?: string;
+    suggestedDepartment?: string;
+    suggestedLevel?: string;
+    customRequirements?: string;
+    suggestedLanguage?: string;
+    policyContext?: string;
+    model: any;
+    writer?: any;
+}
+
 // Cache formatted lists for performance
 const cachedRolesList = ROLES.VALUES.map((role) => `- "${role}"`).join('\n');
 const cachedCategoriesList = CATEGORIES.VALUES.map((cat) => `- "${cat}"`).join('\n');
@@ -124,18 +136,6 @@ Target language code:`,
     } catch {
         return null;
     }
-}
-
-interface AnalyzeUserPromptParams {
-    userPrompt: string;
-    additionalContext?: string;
-    suggestedDepartment?: string;
-    suggestedLevel?: string;
-    customRequirements?: string;
-    suggestedLanguage?: string;
-    policyContext?: string;
-    model: any;
-    writer?: any;
 }
 
 /**
@@ -324,7 +324,8 @@ ${additionalContext}`
             `[AnalyzeUserPromptTool] prompt-analysis`
         );
 
-        let reasoning = (response as any).response?.body?.reasoning;
+        const resp = response as { response?: { body?: { reasoning?: string } } };
+        let reasoning = resp?.response?.body?.reasoning;
         if (reasoning && writer) {
             reasoning += `\n 'I will create an 8-scene code editor training module if isCodeTopic is true, otherwise I will create an 8-scene inbox-based training module.'`;
             streamReasoning(reasoning, writer);
@@ -336,7 +337,7 @@ ${additionalContext}`
         const normalizedLanguage = validateBCP47LanguageCode(analysis.language || DEFAULT_LANGUAGE);
         analysis.language = normalizedLanguage;
 
-        if (analysis.themeColor && !THEME_COLORS.VALUES.includes(analysis.themeColor as any)) {
+        if (analysis.themeColor && !(THEME_COLORS.VALUES as readonly string[]).includes(analysis.themeColor)) {
             analysis.themeColor = undefined;
         }
 

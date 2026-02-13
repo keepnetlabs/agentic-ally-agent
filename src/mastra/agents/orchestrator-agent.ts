@@ -17,7 +17,7 @@
 
 import { Agent } from '@mastra/core/agent';
 import { getDefaultAgentModel } from '../model-providers';
-import { AGENT_NAMES, AGENT_IDS } from '../constants';
+import { AGENT_NAMES, AGENT_IDS, ORCHESTRATOR_CONFIRMATION_EXAMPLES } from '../constants';
 
 /**
  * Builds the system instructions for the orchestrator agent.
@@ -134,7 +134,7 @@ If the request targets a specific person (e.g., "for Alice") or GROUP (e.g., "fo
 Evaluate scenarios in order: **A -> B -> C -> D**. Use the FIRST matching scenario.
 
 **SCENARIO A: CONTINUATION & CONFIRMATION**
-IF the user says "Yes", "Proceed", "Do it", "Olustur", "Tamam", a number like "1" or "2" (selection), or any short confirmation AND creates no new topic:
+IF the user says ${ORCHESTRATOR_CONFIRMATION_EXAMPLES.map(e => `"${e}"`).join(', ')} (selection), or any short confirmation AND creates no new topic:
 -> Route to the **SAME AGENT** that spoke last.
 -> *Context:* "User confirmed previous action. Proceed with the next step."
 
@@ -214,7 +214,7 @@ IF you cannot determine the intent or the request is ambiguous:
 3. **Examples of unclear requests:**
    - Vague requests with NO conversation history: "Help", "What can you do"
    - Mixed signals: Contains both "training" and "phishing" without clear intent
-   - **NOT unclear:** "Yes", "OK", "1", "2", "Tamam" — these are confirmations/selections, route via SCENARIO A.
+   - **NOT unclear:** ${ORCHESTRATOR_CONFIRMATION_EXAMPLES.slice(0, 5).map(e => `"${e}"`).join(', ')} — these are confirmations/selections, route via SCENARIO A.
 
 ### OUTPUT FORMAT & GUIDELINES
 

@@ -1,19 +1,31 @@
 // Deep merge utility - handles nested objects properly
-export function deepMerge<T>(target: T, source: any): T {
-    if (!source) return target;
+export function deepMerge<T extends Record<string, unknown>>(
+    target: T,
+    source: Partial<T> | Record<string, unknown> | null | undefined
+): T {
+    if (!source || typeof source !== 'object') return target;
 
-    const result = JSON.parse(JSON.stringify(target)); // Deep clone
+    const result = JSON.parse(JSON.stringify(target)) as T;
 
     for (const key in source) {
         if (Object.prototype.hasOwnProperty.call(source, key)) {
-            if (typeof source[key] === 'object' && source[key] !== null && !Array.isArray(source[key])) {
-                // Recursive merge for nested objects
-
-                result[key] = deepMerge((result as any)[key] || {}, source[key]);
+            const srcVal = source[key];
+            if (typeof srcVal === 'object' && srcVal !== null && !Array.isArray(srcVal)) {
+                const existing = (result as Record<string, unknown>)[key];
+                // Merging object into primitive (number, string, etc.) would assign to primitive - throw
+                if (existing !== null && existing !== undefined && typeof existing !== 'object') {
+                    throw new TypeError(`Cannot merge object into primitive at key "${key}"`);
+                }
+                // Use existing as base when it's object/array; otherwise {}
+                const base = (typeof existing === 'object' && existing !== null)
+                    ? existing
+                    : {};
+                (result as Record<string, unknown>)[key] = deepMerge(
+                    base as Record<string, unknown>,
+                    srcVal as Record<string, unknown>
+                );
             } else {
-                // Direct assignment for primitives and arrays
-
-                (result as any)[key] = source[key];
+                (result as Record<string, unknown>)[key] = srcVal;
             }
         }
     }

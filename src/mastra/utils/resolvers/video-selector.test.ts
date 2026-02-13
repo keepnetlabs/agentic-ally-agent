@@ -140,7 +140,7 @@ describe('video-selector', () => {
                 text: "https://level4.com/video"
             } as any);
 
-            const url = await selectVideoForTopic({
+            await selectVideoForTopic({
                 topic: "completely-unknown-topic",
                 level: "Beginner",
                 department: "IT",

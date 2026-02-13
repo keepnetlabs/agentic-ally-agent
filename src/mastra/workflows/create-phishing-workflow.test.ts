@@ -1,8 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createPhishingWorkflow } from './create-phishing-workflow';
-import { generateText } from 'ai';
-import { KVService } from '../services/kv-service';
-import { ProductService } from '../services/product-service';
 
 // Mocks using flattened hoisted object for reliability
 const mocks = vi.hoisted(() => ({

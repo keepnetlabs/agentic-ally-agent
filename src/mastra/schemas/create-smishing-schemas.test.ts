@@ -123,6 +123,7 @@ describe('Smishing Workflow Schemas', () => {
 
     it('should require topic field', () => {
       const { topic, ...rest } = validInput;
+      void topic;
       const result = createSmishingInputSchema.safeParse(rest);
       expect(result.success).toBe(false);
     });
@@ -265,6 +266,7 @@ describe('Smishing Workflow Schemas', () => {
 
     it('should require scenario field', () => {
       const { scenario, ...rest } = validAnalysis;
+      void scenario;
       const result = createSmishingAnalysisSchema.safeParse(rest);
       expect(result.success).toBe(false);
     });

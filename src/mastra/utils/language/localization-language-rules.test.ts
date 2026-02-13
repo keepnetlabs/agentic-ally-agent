@@ -1,6 +1,5 @@
 
 import { describe, expect, it } from 'vitest';
-import * as Rules from './localization-language-rules';
 import {
     normLang,
     getLanguagePrompt,
@@ -9,10 +8,6 @@ import {
 } from './localization-language-rules';
 
 describe('localization-language-rules', () => {
-    console.log('Imported Rules:', Object.keys(Rules));
-    // console.log('Imported Rules:', Object.keys(Rules));
-
-    // ... existing tests ...
 
     describe('normLang', () => {
         it('defaults to generic if code is undefined/empty', () => {

@@ -13,6 +13,13 @@ import { withRetry } from '../../utils/core/resilience-utils';
 import { repairHtml } from '../../utils/validation/json-validation-utils';
 import { LanguageCodeSchema, validateLanguagesDifferent } from '../../utils/validation/language-validation';
 
+interface ExtractedString {
+    path: string;
+    value: string;
+    context: string;
+    tagMap?: Map<number, string>;
+}
+
 /* =========================================================
  * Schemas
  * =======================================================*/
@@ -68,13 +75,6 @@ function restoreHtmlTags(text: string, tagMap: Map<number, string>): string {
 /* =========================================================
  * Extraction (yol + hafif bağlam) — HTML bulunan her string: auto-fix + protect
  * =======================================================*/
-interface ExtractedString {
-    path: string;
-    value: string;
-    context: string;
-    tagMap?: Map<number, string>;
-}
-
 function extractStringsWithPaths(obj: unknown, protectedKeys: string[], currentPath = ''): ExtractedString[] {
     const results: ExtractedString[] = [];
 

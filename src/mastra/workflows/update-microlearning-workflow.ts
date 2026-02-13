@@ -195,8 +195,9 @@ const mergeUpdatesStep = createStep({
       }
 
       // Track theme changes
-      for (const key in updates.theme) {
-        changes[`theme.${key}`] = (updates.theme as any)[key];
+      const themeObj = updates.theme as Record<string, unknown>;
+      for (const key in themeObj) {
+        changes[`theme.${key}`] = themeObj[key];
       }
     }
 

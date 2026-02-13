@@ -6,7 +6,7 @@ import {
   policySummaryAgent,
   userInfoAgent,
 } from './index';
-import { AGENT_NAMES } from '../constants';
+import { AGENT_NAMES, ORCHESTRATOR_CONFIRMATION_EXAMPLES } from '../constants';
 
 /**
  * Test suite for Agents Index Exports
@@ -85,6 +85,13 @@ describe('Agents Index Exports', () => {
       expect(orchestratorAgent.name).toBeDefined();
       expect(orchestratorAgent.instructions).toBeDefined();
       expect(orchestratorAgent.model).toBeDefined();
+    });
+
+    it('should include ORCHESTRATOR_CONFIRMATION_EXAMPLES in Scenario A instructions', () => {
+      const instructions = orchestratorAgent.instructions as string;
+      for (const example of ORCHESTRATOR_CONFIRMATION_EXAMPLES) {
+        expect(instructions).toContain(example);
+      }
     });
   });
 

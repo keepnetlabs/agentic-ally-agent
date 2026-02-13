@@ -7,6 +7,39 @@ import {
   generateTrainingModuleForGroup,
 } from './autonomous-training-handlers';
 import '../../../../src/__tests__/setup';
+import * as orchestrationModule from '../../tools/orchestration';
+import * as userManagementModule from '../../tools/user-management';
+
+vi.mock('../../tools/orchestration', () => ({
+  workflowExecutorTool: { execute: vi.fn() },
+}));
+
+vi.mock('../../tools/user-management', () => ({
+  uploadTrainingTool: { execute: vi.fn() },
+  assignTrainingTool: { execute: vi.fn() },
+}));
+
+const mockMicrolearningAgentGenerate = vi.fn();
+vi.mock('../../agents/microlearning-agent', () => ({
+  microlearningAgent: {
+    generate: (...args: unknown[]) => mockMicrolearningAgentGenerate(...args),
+  },
+}));
+
+vi.mock('../../utils/core/logger', () => ({
+  getLogger: () => ({
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+  }),
+}));
+
+vi.mock('../error-service', () => ({
+  errorService: {
+    external: vi.fn((msg: string) => ({ message: msg })),
+  },
+}));
 
 /**
  * Test Suite: AutonomousTrainingHandlers
@@ -15,8 +48,36 @@ import '../../../../src/__tests__/setup';
  */
 
 describe('AutonomousTrainingHandlers', () => {
+  const mockWorkflowExecute = vi.mocked(
+    (orchestrationModule as any).workflowExecutorTool.execute
+  );
+  const mockUploadExecute = vi.mocked(
+    (userManagementModule as any).uploadTrainingTool.execute
+  );
+  const mockAssignExecute = vi.mocked(
+    (userManagementModule as any).assignTrainingTool.execute
+  );
+
   beforeEach(() => {
     vi.resetAllMocks();
+    mockMicrolearningAgentGenerate.mockResolvedValue({ text: 'Agent response' });
+
+    mockWorkflowExecute.mockResolvedValue({
+      success: true,
+      microlearningId: 'ml-abc-123',
+    });
+
+    mockUploadExecute.mockResolvedValue({
+      success: true,
+      data: {
+        resourceId: 'res-456',
+        sendTrainingLanguageId: 'en-gb',
+      },
+    });
+
+    mockAssignExecute.mockResolvedValue({
+      success: true,
+    });
   });
 
   describe('Training module configuration', () => {
@@ -475,6 +536,108 @@ describe('AutonomousTrainingHandlers', () => {
 
       expect(errorResponse.success).toBe(false);
       expect(errorResponse.recommendedParams).toBeDefined();
+    });
+  });
+
+  describe('generateTrainingModule (tool-first integration)', () => {
+    const baseMicrolearning = { title: 'Security Awareness' };
+    const baseToolResult = {
+      userInfo: {
+        targetUserResourceId: 'user-123',
+        department: 'IT',
+        preferredLanguage: 'en-gb',
+      },
+    };
+
+    it('returns success when all tools succeed (upload + assign)', async () => {
+      const result = await generateTrainingModule(
+        baseMicrolearning as any,
+        undefined,
+        baseToolResult as any,
+        'thread-train-1',
+        false,
+        false
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.message).toContain('generated, uploaded and assigned');
+      expect(mockWorkflowExecute).toHaveBeenCalled();
+      expect(mockUploadExecute).toHaveBeenCalledWith(
+        expect.objectContaining({
+          context: expect.objectContaining({ microlearningId: 'ml-abc-123' }),
+        })
+      );
+      expect(mockAssignExecute).toHaveBeenCalledWith(
+        expect.objectContaining({
+          context: expect.objectContaining({
+            resourceId: 'res-456',
+            targetUserResourceId: 'user-123',
+          }),
+        })
+      );
+    });
+
+    it('returns success for uploadOnly without assignment', async () => {
+      const result = await generateTrainingModule(
+        baseMicrolearning as any,
+        undefined,
+        baseToolResult as any,
+        'thread-train-2',
+        true,
+        false
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.message).toContain('uploaded');
+      expect(mockAssignExecute).not.toHaveBeenCalled();
+    });
+
+    it('calls workflow with correct context when tool result has user info', async () => {
+      await generateTrainingModule(
+        baseMicrolearning as any,
+        undefined,
+        baseToolResult as any,
+        'thread-train-3',
+        true,
+        false
+      );
+
+      expect(mockWorkflowExecute).toHaveBeenCalledWith(
+        expect.objectContaining({
+          context: expect.objectContaining({
+            workflowType: 'create-microlearning',
+            department: 'IT',
+          }),
+        })
+      );
+    });
+  });
+
+  describe('uploadAndAssignTraining', () => {
+    it('returns success when agent completes', async () => {
+      const result = await uploadAndAssignTraining('user-789', 'thread-upload-1');
+
+      expect(result.success).toBe(true);
+      expect(mockMicrolearningAgentGenerate).toHaveBeenCalled();
+    });
+
+    it('returns failure when targetUserResourceId is missing', async () => {
+      const result = await uploadAndAssignTraining(undefined as any, 'thread-upload-2');
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('targetUserResourceId');
+    });
+  });
+
+  describe('uploadAndAssignTrainingForGroup', () => {
+    it('returns failure when targetGroupResourceId is missing', async () => {
+      const result = await uploadAndAssignTrainingForGroup(
+        undefined as any,
+        'thread-upload-group-1'
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('targetGroupResourceId');
     });
   });
 });

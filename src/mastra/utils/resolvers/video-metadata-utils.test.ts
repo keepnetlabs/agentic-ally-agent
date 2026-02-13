@@ -82,10 +82,6 @@ describe('VideoMetadataUtils', () => {
 
         it('should handle markdown code blocks in response', async () => {
             // Sometimes AI wraps JSON in ```json ... ```
-            const mockResponse = {
-                title: 'Clean JSON',
-                subtitle: 'From Markdown'
-            };
             // NOTE: The current implementation in video-metadata-utils.ts uses `result.text.trim()`,
             // it DOES NOT strip markdown code blocks automatically unless the AI is very compliant or the logic is improved.
             // Let's check the implementation again.

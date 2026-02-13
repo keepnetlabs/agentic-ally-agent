@@ -79,13 +79,14 @@ export const loadExistingStep = createStep({
       level: meta.level || 'beginner',
       category: meta.category || 'General',
       subcategory: meta.subcategory,
-      learningObjectives: (meta as any).learning_objectives || [],
-    } as any;
+      learningObjectives: (meta as { learning_objectives?: string[] }).learning_objectives || [],
+    };
 
     // Detect actualSourceLanguage from microlearning metadata (default to en-gb)
-    const actualSourceLanguage = meta.language || (meta as any).primary_language || sourceLanguage || LANGUAGE.DEFAULT_SOURCE;
+    const metaExt = meta as { primary_language?: string };
+    const actualSourceLanguage = meta.language || metaExt.primary_language || sourceLanguage || LANGUAGE.DEFAULT_SOURCE;
 
-    if (!meta.language && !(meta as any).primary_language && !sourceLanguage) {
+    if (!meta.language && !metaExt.primary_language && !sourceLanguage) {
       logger.info('Source language not specified, defaulting to en-gb');
     }
 
@@ -132,13 +133,13 @@ export const loadExistingStep = createStep({
       data: existing,
       microlearningId: existingTyped.microlearning_id,
       analysis,
-      sourceLanguage: actualSourceLanguage.toLowerCase(), // Use detected source language
-      targetLanguage, // Pass to parallel steps
-      department, // Pass to parallel steps
-      modelProvider, // Pass model override through
-      model, // Pass model override through
-      hasInbox // Pass inbox flag to next steps
-    } as any;
+      sourceLanguage: actualSourceLanguage.toLowerCase(),
+      targetLanguage,
+      department: department ?? LANGUAGE.DEFAULT_DEPARTMENT,
+      modelProvider,
+      model,
+      hasInbox
+    };
   }
 });
 
@@ -256,8 +257,8 @@ export const translateLanguageStep = createStep({
       microlearningId,
       analysis,
       microlearningStructure,
-      hasInbox: (inputData as any).hasInbox // Pass through from previous step
-    } as any;
+      hasInbox: inputData.hasInbox
+    };
   }
 });
 
@@ -274,9 +275,7 @@ export const updateInboxStep = createStep({
     const { analysis, microlearningId, data: microlearningStructure } = inputData;
     const targetLanguage = analysis.language;
     const sourceLanguage = microlearningStructure.microlearning_metadata?.language || LANGUAGE.DEFAULT_SOURCE;
-    const modelProvider = (inputData as any).modelProvider;
-    const model = (inputData as any).model;
-    const hasInbox = (inputData as any).hasInbox;
+    const { modelProvider, model, hasInbox } = inputData;
 
     // Skip inbox processing if not needed (e.g., code_review training)
     if (!hasInbox) {
@@ -289,7 +288,7 @@ export const updateInboxStep = createStep({
     }
 
     const meta = microlearningStructure.microlearning_metadata || {};
-    const inputDepartment = (inputData as { department?: string }).department;
+    const inputDepartment = inputData.department;
     const rawDepartments = [
       ...(Array.isArray(meta.department_relevance) ? meta.department_relevance : []),
       analysis.department,
@@ -444,7 +443,7 @@ export const combineResultsStep = createStep({
       : (analysis.department
         ? normalizeDepartmentName(analysis.department)
         : normalizeDepartmentName(LANGUAGE.DEFAULT_DEPARTMENT));
-    const hasInbox = (translateLanguage as any).hasInbox;
+    const hasInbox = translateLanguage.hasInbox;
 
     // Verify KV consistency before returning URL to UI
     // Only expect inbox key if inbox update was successful

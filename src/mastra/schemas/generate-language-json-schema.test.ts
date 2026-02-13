@@ -38,9 +38,6 @@ describe('GenerateLanguageJsonSchema', () => {
             model: validModel,
         };
         const result = GenerateLanguageJsonSchema.safeParse(input);
-        if (!result.success) {
-            console.error(result.error);
-        }
         expect(result.success).toBe(true);
     });
 

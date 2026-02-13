@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import { ErrorCategory } from '../../services/error-service';
 import {
   normalizeError,
   createToolErrorResponse,
@@ -93,7 +94,8 @@ describe('error-utils', () => {
       const errorInfo = {
         code: 'AUTH_ERROR',
         message: 'Token missing',
-        category: 'authentication'
+        category: ErrorCategory.AUTH,
+        retryable: false,
       };
 
       const response = createToolErrorResponse(errorInfo);
@@ -105,7 +107,8 @@ describe('error-utils', () => {
       const errorInfo = {
         code: 'VALIDATION_ERROR',
         message: 'Invalid input',
-        category: 'validation'
+        category: ErrorCategory.VALIDATION,
+        retryable: false,
       };
 
       const response = createToolErrorResponse(errorInfo);
@@ -118,7 +121,8 @@ describe('error-utils', () => {
       const errorInfo = {
         code: 'TEST_ERROR',
         message: 'Test message',
-        category: 'test'
+        category: ErrorCategory.INTERNAL,
+        retryable: false,
       };
 
       const response = createToolErrorResponse(errorInfo);
@@ -131,9 +135,10 @@ describe('error-utils', () => {
       const errorInfo = {
         code: 'COMPLEX_ERROR',
         message: 'Complex error',
-        category: 'complex',
-        timestamp: '2025-01-08T00:00:00Z',
-        context: { userId: '123' }
+        category: ErrorCategory.INTERNAL,
+        retryable: false,
+        timestamp: 1736294400000,
+        details: { userId: '123' },
       };
 
       const response = createToolErrorResponse(errorInfo);
@@ -146,7 +151,8 @@ describe('error-utils', () => {
       const errorInfo = {
         code: 'ERROR',
         message: 'msg',
-        category: 'cat'
+        category: ErrorCategory.INTERNAL,
+        retryable: false,
       };
 
       const response = createToolErrorResponse(errorInfo);
@@ -168,7 +174,8 @@ describe('error-utils', () => {
       const errorInfo = {
         code: 'ERROR_CODE',
         message: 'Error message',
-        category: 'error'
+        category: ErrorCategory.INTERNAL,
+        retryable: false,
       };
 
       logErrorInfo(mockLogger, 'error', 'Operation failed', errorInfo);
@@ -189,7 +196,8 @@ describe('error-utils', () => {
       const errorInfo = {
         code: 'WARN_CODE',
         message: 'Warning message',
-        category: 'warning'
+        category: ErrorCategory.VALIDATION,
+        retryable: false,
       };
 
       logErrorInfo(mockLogger, 'warn', 'Warning', errorInfo);
@@ -210,7 +218,8 @@ describe('error-utils', () => {
       const errorInfo = {
         code: 'INFO_CODE',
         message: 'Info message',
-        category: 'info'
+        category: ErrorCategory.INTERNAL,
+        retryable: false,
       };
 
       logErrorInfo(mockLogger, 'info', 'Information', errorInfo);
@@ -231,7 +240,8 @@ describe('error-utils', () => {
       const errorInfo = {
         code: 'TEST_CODE',
         message: 'Test message',
-        category: 'test_category'
+        category: ErrorCategory.INTERNAL,
+        retryable: false,
       };
 
       logErrorInfo(mockLogger, 'error', 'Test', errorInfo);
@@ -239,7 +249,7 @@ describe('error-utils', () => {
       const callArgs = mockLogger.error.mock.calls[0][1];
       expect(callArgs.code).toBe('TEST_CODE');
       expect(callArgs.message).toBe('Test message');
-      expect(callArgs.category).toBe('test_category');
+      expect(callArgs.category).toBe(ErrorCategory.INTERNAL);
     });
 
     it('should pass message through to logger', () => {
@@ -252,7 +262,8 @@ describe('error-utils', () => {
       const errorInfo = {
         code: 'CODE',
         message: 'msg',
-        category: 'cat'
+        category: ErrorCategory.INTERNAL,
+        retryable: false,
       };
 
       logErrorInfo(mockLogger, 'error', 'Custom log message', errorInfo);
@@ -273,7 +284,8 @@ describe('error-utils', () => {
       const errorInfo = {
         code: 'CODE',
         message: 'msg',
-        category: 'cat'
+        category: ErrorCategory.INTERNAL,
+        retryable: false,
       };
 
       const originalErrorInfo = JSON.stringify(errorInfo);
@@ -293,7 +305,8 @@ describe('error-utils', () => {
       const errorInfo = {
         code: 'CODE',
         message: 'msg',
-        category: 'cat'
+        category: ErrorCategory.INTERNAL,
+        retryable: false,
       };
 
       logErrorInfo(mockLogger, 'error', 'Error', errorInfo);
@@ -315,7 +328,8 @@ describe('error-utils', () => {
       const errorInfo = {
         code: 'CODE',
         message: 'msg',
-        category: 'cat'
+        category: ErrorCategory.INTERNAL,
+        retryable: false,
       };
 
       logErrorInfo(mockLogger, 'error', 'Test', errorInfo);
@@ -347,7 +361,8 @@ describe('error-utils', () => {
       const errorInfo = {
         code: 'ERROR',
         message: normalized.message,
-        category: 'error'
+        category: ErrorCategory.INTERNAL,
+        retryable: false,
       };
 
       logErrorInfo(mockLogger, 'error', 'Caught error', errorInfo);
@@ -368,7 +383,8 @@ describe('error-utils', () => {
       const errorInfo = {
         code: 'ERROR',
         message: normalized.message,
-        category: 'error'
+        category: ErrorCategory.INTERNAL,
+        retryable: false,
       };
 
       logErrorInfo(mockLogger, 'error', 'Error occurred', errorInfo);
@@ -397,7 +413,7 @@ describe('error-utils', () => {
     });
 
     it('should handle Function objects', () => {
-      const fn = () => console.log('test');
+      const fn = () => { /* noop */ };
       const result = normalizeError(fn);
 
       expect(result instanceof Error).toBe(true);

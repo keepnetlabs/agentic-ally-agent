@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { loadInboxWithFallback } from './kv-helpers';
-import { LANGUAGE, CLOUDFLARE_KV } from '../constants';
+import { LANGUAGE } from '../constants';
 
 // Mock dependencies
 vi.mock('./core/logger', () => ({

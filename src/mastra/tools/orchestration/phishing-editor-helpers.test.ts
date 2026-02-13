@@ -11,7 +11,6 @@ import {
     EditedLanding
 } from './phishing-editor-helpers';
 import { KVService } from '../../services/kv-service';
-import { KV_NAMESPACES } from '../../constants';
 import { cleanResponse } from '../../utils/content-processors/json-cleaner';
 import { fixBrokenImages } from '../../utils/landing-page/image-validator';
 import {

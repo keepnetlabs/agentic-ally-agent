@@ -19,6 +19,9 @@ import { errorService } from '../../services/error-service';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
 import { withRetry } from '../../utils/core/resilience-utils';
 import { LanguageCodeSchema, validateLanguagesDifferent } from '../../utils/validation/language-validation';
+import { RewriteContext } from '../scenes/rewriters/scene-rewriter-base';
+
+type RewriterFunction = (scene: any, context: RewriteContext) => Promise<any>;
 
 /* =========================================================
  * Schemas
@@ -53,11 +56,6 @@ const TranslateJsonOutputSchema = z.object({
 /* =========================================================
  * Scene Type Detection & Mapping
  * =======================================================*/
-
-import { RewriteContext } from '../scenes/rewriters/scene-rewriter-base';
-
-type RewriterFunction = (scene: any, context: RewriteContext) => Promise<any>;
-
 function getSceneRewriter(sceneType: SceneType): RewriterFunction {
     const rewriterMap: Record<SceneType, RewriterFunction> = {
         [SceneType.INTRO]: rewriteScene1Intro,

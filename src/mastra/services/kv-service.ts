@@ -31,6 +31,11 @@ export class KVService {
     }
   }
 
+  /** Expose namespace ID for debugging (e.g. KV consistency logs). */
+  getNamespaceId(): string {
+    return this.namespaceId || 'unknown';
+  }
+
   private getHeaders() {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',

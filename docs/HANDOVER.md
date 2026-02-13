@@ -59,6 +59,11 @@ These settings were tuned after painful debugging sessions. Change them at your 
 *   **PRODUCT_API_KEY:** Required for production. If missing, defaults to 'apikey' (dev mode only).
     *   *Risk:* Integration with main product will fail in Prod if not set.
 
+### 5. User Search & Phone Resolution (`user-search-utils.ts`)
+*   **Flow:** Search (get-all) → fallback (target-users/search) if empty → if found but `phoneNumber` missing → direct lookup (GET /target-users/:id) → merge phone into base.
+*   **Resilience:** If direct lookup fails (404, 500, network), we return the user without phone and log a warning. Vishing flow continues; call may fail later if phone is required.
+*   **See:** [DATA_MODEL.md §3.1](./DATA_MODEL.md), [WORKFLOWS.md §8](./WORKFLOWS.md).
+
 ---
 
 ## 🛠️ How to Debug Like a Pro

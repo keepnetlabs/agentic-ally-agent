@@ -33,7 +33,7 @@ export function formatToolSummaryKV(parts: ToolSummaryKV[]): string {
     try {
         const filtered = parts.filter(p => p && p.key && isPresent(p.value));
         if (filtered.length === 0) return '';
-        return filtered.map(p => `${p.key}=${normalizeValue(p.value as any)}`).join(', ');
+        return filtered.map(p => `${p.key}=${normalizeValue(p.value as Exclude<ToolSummaryKV['value'], undefined | null>)}`).join(', ');
     } catch {
         // Guaranteed fallback
         return '';

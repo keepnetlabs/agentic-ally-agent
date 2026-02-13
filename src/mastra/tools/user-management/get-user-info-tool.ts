@@ -1,4 +1,18 @@
-// src/mastra/tools/get-user-info-tool.ts
+/**
+ * Get User Info Tool
+ *
+ * Retrieves user profile and activity timeline. Supports multiple lookup paths:
+ * - **Direct ID**: targetUserResourceId (fast path, skips search)
+ * - **Email**: Preferred for reliability (handles middle names)
+ * - **Name**: fullName or firstName+lastName with fallbacks (last token, first-only)
+ *
+ * When phoneNumber is missing from search results, enriches via direct lookup (see user-search-utils).
+ *
+ * Output: Structured user info + AI behavioral analysis report (unless skipAnalysis: true).
+ * Use skipAnalysis when you only need user ID (e.g. vishing target resolution).
+ *
+ * @see docs/DATA_MODEL.md §3.1 User Search & Phone Resolution
+ */
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { getRequestContext } from '../../utils/core/request-storage';

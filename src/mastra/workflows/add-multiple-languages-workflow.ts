@@ -12,6 +12,31 @@ import {
   finalMultiLanguageResultSchema
 } from '../schemas/add-language-schemas';
 
+/** Shape of add-language workflow run result (success or error). */
+interface AddLanguageRunResult {
+  status?: string;
+  result?: { data?: { trainingUrl?: string; title?: string }; title?: string; trainingUrl?: string };
+  data?: { trainingUrl?: string; title?: string };
+  error?: { message?: string };
+  message?: string;
+}
+
+function extractFromAddLanguageResult(result: AddLanguageRunResult | null | undefined): {
+  trainingUrl?: string;
+  title?: string;
+  error?: string;
+} {
+  if (!result) return {};
+  const r = result as AddLanguageRunResult;
+  const trainingUrl =
+    r?.result?.data?.trainingUrl ?? r?.result?.trainingUrl ?? r?.data?.trainingUrl ?? (r as Record<string, unknown>)?.trainingUrl;
+  const title =
+    r?.result?.data?.title ?? r?.result?.title ?? r?.data?.title ?? (r as Record<string, unknown>)?.title;
+  const error =
+    r?.error?.message ?? (r?.result as { message?: string })?.message ?? (r as Record<string, unknown>)?.message;
+  return { trainingUrl: trainingUrl as string | undefined, title: title as string | undefined, error: error as string | undefined };
+}
+
 // Step: Process Multiple Languages in Parallel
 export const processMultipleLanguagesStep = createStep({
   id: 'process-multiple-languages',
@@ -79,12 +104,7 @@ export const processMultipleLanguagesStep = createStep({
           const duration = Date.now() - langStartTime;
 
           if (result?.status === 'success') {
-            const trainingUrl = (result as any)?.result?.data?.trainingUrl ||
-              (result as any)?.data?.trainingUrl ||
-              (result as any)?.trainingUrl;
-            const title = (result as any)?.result?.data?.title ||
-              (result as any)?.data?.title ||
-              (result as any)?.title;
+            const { trainingUrl, title } = extractFromAddLanguageResult(result);
 
             logger.info('Translation completed successfully', { language: targetLanguage, durationMs: duration });
 
@@ -96,10 +116,8 @@ export const processMultipleLanguagesStep = createStep({
               duration
             };
           } else {
-            const errorMsg = (result as any)?.error?.message ||
-              (result as any)?.result?.message ||
-              (result as any)?.message ||
-              'Unknown error';
+            const { error: extractedError } = extractFromAddLanguageResult(result);
+            const errorMsg = extractedError || 'Unknown error';
             const errorInfo = errorService.external(errorMsg, { step: 'add-language-translation', language: targetLanguage });
             logErrorInfo(logger, 'error', 'Translation failed', errorInfo);
 

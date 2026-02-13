@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { getLogger, startTimer } from './logger';
 import { requestStorage } from './request-storage';
 import '../../../../src/__tests__/setup';
@@ -578,7 +578,7 @@ describe('Logger with Correlation ID', () => {
         // We just ensure it doesn't crash the process
         try {
           logger.info('Test', circular);
-        } catch (e) {
+        } catch {
           // Expected for circular references
         }
       });

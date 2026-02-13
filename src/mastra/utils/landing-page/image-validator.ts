@@ -7,6 +7,11 @@ import { getLogger } from '../core/logger';
 import { normalizeError } from '../core/error-utils';
 import { CACHE_CONFIG, TIMEOUT_VALUES } from '../../constants';
 
+interface CacheEntry {
+    isValid: boolean;
+    timestamp: number;
+}
+
 const logger = getLogger('ImageValidator');
 
 // Default generic corporate logo URL - used as fallback when brand logos fail
@@ -254,11 +259,6 @@ export async function fixBrokenImages(html: string, brandName: string, fallbackL
  * Stores validation results to avoid repeated HTTP requests
  * Cache entries expire after 5 minutes to handle temporary outages
  */
-interface CacheEntry {
-    isValid: boolean;
-    timestamp: number;
-}
-
 const imageValidationCache = new Map<string, CacheEntry>();
 const CACHE_TTL_MS = CACHE_CONFIG.IMAGE_VALIDATION_TTL_MS;
 

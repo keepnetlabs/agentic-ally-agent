@@ -10,6 +10,14 @@ import { withRetry, withTimeout } from '../../utils/core/resilience-utils';
 import { isSafeId } from '../../utils/core/id-utils';
 import { formatToolSummary } from '../../utils/core/tool-summary-formatter';
 import { uuidv4 } from '../../utils/core/id-utils';
+
+interface GroupSearchDeps {
+    token: string;
+    companyId?: string;
+    baseApiUrl?: string;
+    logger: ReturnType<typeof getLogger>;
+}
+
 const MIN_GROUP_NAME_LENGTH = 3;
 const GROUP_LOOKUP_TIMEOUT_MS = 15000;
 
@@ -26,13 +34,6 @@ const getTargetGroupInfoOutputSchema = z.object({
     message: z.string().optional(),
     error: z.string().optional(),
 });
-
-interface GroupSearchDeps {
-    token: string;
-    companyId?: string;
-    baseApiUrl?: string; // Dynamic API URL from request context
-    logger: ReturnType<typeof getLogger>;
-}
 
 const GROUP_ID_FIELDS = ['targetGroupResourceId', 'groupId', 'id', 'resourceId', 'groupResourceId'] as const;
 const GROUP_NAME_FIELDS = ['groupName', 'name', 'title'] as const;

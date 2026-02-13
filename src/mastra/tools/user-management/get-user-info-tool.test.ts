@@ -437,6 +437,10 @@ describe('getUserInfoTool', () => {
         })
         .mockResolvedValueOnce({
           ok: true,
+          json: async () => ({ data: { resourceId: 'u2', firstName: 'John', lastName: 'Smith', email: 'j2@e.com' } })
+        })
+        .mockResolvedValueOnce({
+          ok: true,
           json: async () => mockTimelineResponse
         });
 

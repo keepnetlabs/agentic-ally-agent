@@ -1,6 +1,6 @@
 # Data Model Documentation
 
-**Last Updated:** January 10, 2026
+**Last Updated:** February 13, 2026
 
 This document defines the core data structures, storage schemas, and type definitions used throughout Agentic Ally.
 
@@ -106,6 +106,28 @@ We use Zod for runtime validation of Agent outputs.
   reasoning: "User clicked 3 phishing links in 30 days."
 }
 ```
+
+---
+
+## 3.1 User Search & Phone Resolution (`PlatformUser`)
+
+User lookup (`getUserInfo`, vishing target resolution) uses `PlatformUser` from `user-management-types.ts`:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `targetUserResourceId` | string | Unique user ID |
+| `firstName`, `lastName`, `email` | string | Identity |
+| `phoneNumber` | string? | E.164 format (required for vishing) |
+| `department`, `preferredLanguage`, `role` | optional | Metadata |
+
+**Phone resolution flow** (when search API omits `phoneNumber`):
+
+1. **Search** (email / ID / name) → primary API, then fallback search.
+2. **Enrich** → if `phoneNumber` missing, call direct lookup `GET /api/target-users/:id`.
+3. **Merge** → `{ ...searchResult, phoneNumber: directLookup.phoneNumber }` (preserves search fields).
+4. **Resilience** → if direct lookup fails (404, 500, network), return user without phone; log warning.
+
+Used by: `getUserInfo` tool, vishing call agent (target resolution).
 
 ---
 

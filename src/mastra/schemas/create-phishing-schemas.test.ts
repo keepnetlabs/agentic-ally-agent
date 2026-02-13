@@ -13,9 +13,6 @@ describe('Phishing Workflow Schemas', () => {
             };
 
             const result = createPhishingInputSchema.safeParse(validInput);
-            if (!result.success) {
-                console.error(result.error);
-            }
             expect(result.success).toBe(true);
         });
 
@@ -60,9 +57,6 @@ describe('Phishing Workflow Schemas', () => {
 
         it('should validate a valid analysis object', () => {
             const result = createPhishingAnalysisSchema.safeParse(validAnalysis);
-            if (!result.success) {
-                console.error(result.error);
-            }
             expect(result.success).toBe(true);
         });
 
@@ -134,9 +128,6 @@ describe('Phishing Workflow Schemas', () => {
                 }
             };
             const result = createPhishingOutputSchema.safeParse(completeOutput);
-            if (!result.success) {
-                console.error(result.error);
-            }
             expect(result.success).toBe(true);
         });
     });

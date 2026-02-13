@@ -15,10 +15,8 @@
 
 import { ErrorInfo } from '../../services/error-service';
 
-/**
- * Logger interface for error logging helper
- */
-interface Logger {
+/** Logger interface for error logging helper. Accepts any object with error/warn/info methods. */
+export interface LoggerLike {
   error(message: string, context?: Record<string, unknown>): void;
   warn(message: string, context?: Record<string, unknown>): void;
   info(message: string, context?: Record<string, unknown>): void;
@@ -97,7 +95,7 @@ export function createToolErrorResponse(errorInfo: ErrorInfo): {
  * ```
  */
 export function logErrorInfo(
-  logger: Logger,
+  logger: LoggerLike,
   level: 'error' | 'warn' | 'info',
   message: string,
   errorInfo: ErrorInfo

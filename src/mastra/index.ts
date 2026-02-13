@@ -39,7 +39,7 @@ import { D1Store } from '@mastra/cloudflare-d1';
 import { KV_NAMESPACES, RATE_LIMIT_CONFIG } from './constants';
 
 // Silence AI SDK warnings (e.g., unsupported presencePenalty/frequencyPenalty for some models)
-(globalThis as any).AI_SDK_LOG_WARNINGS = false;
+(globalThis as { AI_SDK_LOG_WARNINGS?: boolean }).AI_SDK_LOG_WARNINGS = false;
 import { getDeployer } from './deployer';
 import { codeReviewCheckTool } from './tools';
 import { parseAndValidateRequest } from './utils/chat-request-helpers';

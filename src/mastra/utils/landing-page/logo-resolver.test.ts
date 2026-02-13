@@ -32,7 +32,7 @@ describe('logo-resolver', () => {
             const url = getRandomLetterLogoUrl();
             const match = url.match(/domain:([a-z])\.com/);
             expect(match).toBeTruthy();
-            expect(match![1]).toHaveLength(1);
+            expect(match?.[1]).toHaveLength(1);
         });
 
         it('returns different letters over multiple calls', () => {
@@ -49,7 +49,7 @@ describe('logo-resolver', () => {
             for (let i = 0; i < 10; i++) {
                 const url = getRandomLetterLogoUrl();
                 const match = url.match(/domain:([a-z])\.com/);
-                expect(match![1]).toMatch(/^[a-z]$/);
+                expect(match?.[1]).toMatch(/^[a-z]$/);
             }
         });
 
@@ -79,7 +79,7 @@ describe('logo-resolver', () => {
             for (let i = 0; i < 20; i++) {
                 const url = getRandomLetterLogoUrl();
                 const match = url.match(/domain:([a-z])\.com/);
-                expect(match![1]).not.toMatch(/[^a-z]/);
+                expect(match?.[1]).not.toMatch(/[^a-z]/);
             }
         });
     });

@@ -138,11 +138,12 @@ export const uploadPhishingTool = createTool({
 
             // Secure Logging (Mask token)
             const maskedPayload = maskSensitiveField(payload, 'accessToken');
+            const masked = maskedPayload as { phishingData?: { email?: { template?: unknown }; landingPage?: unknown } };
             logger.debug('Upload payload prepared (redacted)', {
                 payload: summarizeForLog(maskedPayload),
-                phishingData: summarizeForLog((maskedPayload as any)?.phishingData),
-                emailTemplate: summarizeForLog((maskedPayload as any)?.phishingData?.email?.template),
-                landingPage: summarizeForLog((maskedPayload as any)?.phishingData?.landingPage),
+                phishingData: summarizeForLog(masked.phishingData),
+                emailTemplate: summarizeForLog(masked.phishingData?.email?.template),
+                landingPage: summarizeForLog(masked.phishingData?.landingPage),
             });
 
             // Wrap API call with retry (exponential backoff: 1s, 2s, 4s)

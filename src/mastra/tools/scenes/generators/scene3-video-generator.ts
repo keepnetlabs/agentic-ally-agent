@@ -5,6 +5,9 @@ import { selectVideoForTopic, generateVideoMetadata } from '../../../utils/resol
 import transcriptDatabase from '../../../data/transcript-database.json';
 import { getLogger } from '../../../utils/core/logger';
 
+/** Transcript database: video URL -> transcript text */
+const transcriptMap = transcriptDatabase as Record<string, string>;
+
 
 export async function generateVideoPrompt(analysis: PromptAnalysis, microlearning: MicrolearningContent): Promise<{ prompt: string; videoUrl: string; transcript: string }> {
   const logger = getLogger('Scene3VideoGenerator');
@@ -16,7 +19,7 @@ export async function generateVideoPrompt(analysis: PromptAnalysis, microlearnin
   logger.info('Selected video URL', { selectedVideoUrl });
 
   // Get base English transcript from database using selected video URL
-  const baseEnglishTranscript = (transcriptDatabase as any)[selectedVideoUrl];
+  const baseEnglishTranscript = transcriptMap[selectedVideoUrl];
   logger.info('Transcript found', { found: baseEnglishTranscript ? 'YES' : 'NO' });
 
   const finalTranscript = baseEnglishTranscript ||

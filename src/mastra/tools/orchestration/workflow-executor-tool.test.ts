@@ -119,7 +119,7 @@ describe('WorkflowExecutorTool', () => {
         model: 'gpt-4o'
       };
 
-      const result: any = await workflowExecutorTool.execute({
+      await workflowExecutorTool.execute({
         context: params as any,
         writer: mockWriter as any,
         runId: 'test-run-id',

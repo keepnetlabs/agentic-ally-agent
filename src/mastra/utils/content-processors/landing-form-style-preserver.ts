@@ -26,6 +26,12 @@ const logger = getLogger('LandingFormStylePreserver');
 type FormTag = 'input' | 'textarea' | 'select' | 'button';
 
 const FORM_TAGS: readonly FormTag[] = ['input', 'textarea', 'select', 'button'] as const;
+const SAFE_FORM_ATTR_PREFIXES = ['data-', 'aria-'] as const;
+const SAFE_FORM_ATTR_NAMES = [
+  'id', 'type', 'name', 'value', 'placeholder', 'autocomplete', 'inputmode', 'pattern',
+  'min', 'max', 'step', 'maxlength', 'minlength', 'class', 'style', 'role', 'tabindex',
+] as const;
+type SafeFormAttrName = (typeof SAFE_FORM_ATTR_NAMES)[number];
 
 function extractStyle(attrs: string): string | undefined {
   const m = attrs.match(/\bstyle\s*=\s*(['"])(.*?)\1/i);
@@ -61,28 +67,6 @@ function normalizeCommonBrokenBooleanAttrs(attrs: string): string {
   out = normalizeBrokenBooleanAttr(out, 'checked');
   return out;
 }
-
-const SAFE_FORM_ATTR_PREFIXES = ['data-', 'aria-'] as const;
-const SAFE_FORM_ATTR_NAMES = [
-  'id',
-  'type',
-  'name',
-  'value',
-  'placeholder',
-  'autocomplete',
-  'inputmode',
-  'pattern',
-  'min',
-  'max',
-  'step',
-  'maxlength',
-  'minlength',
-  'class',
-  'style',
-  'role',
-  'tabindex',
-] as const;
-type SafeFormAttrName = (typeof SAFE_FORM_ATTR_NAMES)[number];
 
 function isSafeAttrName(name: string): name is SafeFormAttrName {
   if (!name) return false;

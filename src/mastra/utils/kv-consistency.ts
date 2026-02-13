@@ -149,7 +149,7 @@ export async function waitForKVConsistency(
         maxWaitMs: maxWait,
         keyCount: expectedKeys.length,
         missingKeys, // Show exactly what is missing
-        namespaceId: (kvService as any).namespaceId || 'unknown', // Check namespace
+        namespaceId: kvService.getNamespaceId(),
         message: 'Continuing despite timeout - keys may not be immediately available',
     });
 }

@@ -2,6 +2,11 @@ import { Context } from 'hono';
 import { getLogger } from '../utils/core/logger';
 import { TIME_UNITS, RATE_LIMIT_CONFIG } from '../constants';
 
+interface RateLimitEntry {
+  count: number;
+  resetTime: number;
+}
+
 const logger = getLogger('RateLimit');
 
 /**
@@ -89,11 +94,6 @@ function getClientIdentifier(c: Context): string {
  *
  * For production: Should use KV or Durable Objects for distributed rate limiting
  */
-interface RateLimitEntry {
-  count: number;
-  resetTime: number;
-}
-
 // In-memory store (per-worker instance)
 // Note: Each Cloudflare Worker instance has its own memory
 const rateLimitStore = new Map<string, RateLimitEntry>();

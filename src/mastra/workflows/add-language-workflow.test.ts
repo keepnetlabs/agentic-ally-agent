@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { z } from 'zod';
 import { addLanguageWorkflow, loadExistingStep, translateLanguageStep, updateInboxStep, combineResultsStep } from './add-language-workflow';
 import { loadInboxWithFallback } from '../utils/kv-helpers';
-import { waitForKVConsistency } from '../utils/kv-consistency';
 
 // Mocks using flattened flattened object for reliability
 const mocks = vi.hoisted(() => ({

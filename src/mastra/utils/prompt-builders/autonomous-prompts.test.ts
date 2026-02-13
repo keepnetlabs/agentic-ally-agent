@@ -1,120 +1,193 @@
-
-import { describe, expect, it } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
-    buildPhishingGenerationPrompt,
-    buildPhishingGenerationPromptSimplified,
-    buildTrainingGenerationPrompt,
-    buildTrainingGenerationPromptSimplified,
-    buildUploadPrompt,
-    buildUploadAndAssignPrompt,
-    buildAssignPhishingWithTrainingPrompt
+  buildPhishingGenerationPrompt,
+  buildPhishingGenerationPromptSimplified,
+  buildTrainingGenerationPrompt,
+  buildTrainingGenerationPromptSimplified,
+  buildUploadPrompt,
+  buildUploadAndAssignPrompt,
+  buildAssignPhishingWithTrainingPrompt,
 } from './autonomous-prompts';
 
+vi.mock('./autonomous-helpers', () => ({
+  getLanguageOrDefault: (lang?: string) => lang || 'en-gb',
+  buildLanguageRequirementBlock: (toolName: string, language?: string) =>
+    `**LANGUAGE: ${language || 'en-gb'}** (for ${toolName})`,
+  EXAMPLE_IDS: {
+    phishing: { generated: 'yl2JfA4r5yYl', resource: 'scenario-abc-123456' },
+    training: { generated: 'ml-generate-xyz123', resource: 'resource-train-789xyz' },
+  },
+}));
+
 describe('autonomous-prompts', () => {
-    describe('buildPhishingGenerationPrompt', () => {
-        it('includes goal and language requirement', () => {
-            const context = {
-                simulation: {
-                    title: 'Test Sim',
-                    vector: 'Email',
-                    persuasion_tactic: 'Urgency'
-                },
-                toolResult: { userInfo: { department: 'Sales' } },
-                department: 'Sales',
-                language: 'fr-fr'
-            };
-            const prompt = buildPhishingGenerationPrompt(context as any);
-            expect(prompt).toContain('Generate a phishing simulation');
-            expect(prompt).toContain('Test Sim');
-            expect(prompt).toContain('fr-fr');
-            expect(prompt).toContain('CRITICAL: LANGUAGE REQUIREMENT');
-        });
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
-        it('includes department context if provided', () => {
-            const context = {
-                simulation: {},
-                toolResult: { userInfo: { department: 'HR' } },
-                department: 'HR'
-            };
-            const prompt = buildPhishingGenerationPrompt(context as any);
-            expect(prompt).toContain('Target Department: HR');
-        });
+  describe('buildPhishingGenerationPrompt', () => {
+    it('includes topic and difficulty from simulation', () => {
+      const result = buildPhishingGenerationPrompt({
+        simulation: { title: 'CEO Fraud', difficulty: 'Hard' },
+        toolResult: {},
+        language: 'en-gb',
+      });
+
+      expect(result).toContain('CEO Fraud');
+      expect(result).toContain('Hard');
+      expect(result).toContain('phishingExecutor');
     });
 
-    describe('buildPhishingGenerationPromptSimplified', () => {
-        it('generates simplified prompt', () => {
-            const context = {
-                simulation: { title: 'Simple Sim' },
-                toolResult: { userInfo: { department: 'IT' } },
-                department: 'IT'
-            };
-            const prompt = buildPhishingGenerationPromptSimplified(context as any);
-            expect(prompt).toContain('Generate a phishing simulation');
-            expect(prompt).toContain('Simple Sim');
-        });
+    it('uses defaults when simulation fields are empty', () => {
+      const result = buildPhishingGenerationPrompt({
+        simulation: {},
+        toolResult: {},
+      });
+
+      expect(result).toContain('Security Update');
+      expect(result).toContain('Medium');
+      expect(result).toContain('CLICK_ONLY');
     });
 
-    describe('buildTrainingGenerationPrompt', () => {
-        it('includes learning objective and language', () => {
-            const context = {
-                microlearning: {
-                    title: 'Training 101',
-                    objective: 'Learn safety'
-                },
-                department: 'Sales',
-                level: 'Beginner',
-                language: 'de-de'
-            };
-            const prompt = buildTrainingGenerationPrompt(context as any);
-            expect(prompt).toContain('Generate a training module');
-            expect(prompt).toContain('Training 101');
-            expect(prompt).toContain('Learn safety');
-            expect(prompt).toContain('de-de');
-        });
+    it('includes department from toolResult', () => {
+      const result = buildPhishingGenerationPrompt({
+        simulation: { title: 'Test' },
+        toolResult: { userInfo: { department: 'Finance' } },
+        language: 'tr-tr',
+      });
+
+      expect(result).toContain('Finance');
+      expect(result).toContain('tr-tr');
+    });
+  });
+
+  describe('buildPhishingGenerationPromptSimplified', () => {
+    it('includes minimal context', () => {
+      const result = buildPhishingGenerationPromptSimplified({
+        simulation: { title: 'Password Reset' },
+        toolResult: {},
+        language: 'en-gb',
+      });
+
+      expect(result).toContain('Password Reset');
+      expect(result).toContain('phishingExecutor');
+      expect(result).toContain('AUTONOMOUS_EXECUTION_MODE');
+    });
+  });
+
+  describe('buildTrainingGenerationPrompt', () => {
+    it('includes microlearning context', () => {
+      const result = buildTrainingGenerationPrompt({
+        microlearning: { title: 'Security Awareness', objective: 'Learn best practices' },
+        department: 'IT',
+        level: 'Intermediate',
+        language: 'en-gb',
+      });
+
+      expect(result).toContain('Security Awareness');
+      expect(result).toContain('Learn best practices');
+      expect(result).toContain('IT');
+      expect(result).toContain('Intermediate');
+      expect(result).toContain('workflowExecutor');
     });
 
-    describe('buildTrainingGenerationPromptSimplified', () => {
-        it('generates simplified training prompt', () => {
-            const context = {
-                microlearning: { title: 'Simple Training' },
-                department: 'Finance',
-                level: 'Beginner'
-            };
-            const prompt = buildTrainingGenerationPromptSimplified(context as any);
-            expect(prompt).toContain('Generate a training module');
-            expect(prompt).toContain('Simple Training');
-        });
+    it('uses defaults for empty microlearning', () => {
+      const result = buildTrainingGenerationPrompt({
+        microlearning: {},
+        department: 'All',
+        level: 'Beginner',
+      });
+
+      expect(result).toContain('Security Awareness');
+      expect(result).toContain('Beginner');
+    });
+  });
+
+  describe('buildTrainingGenerationPromptSimplified', () => {
+    it('includes minimal training context', () => {
+      const result = buildTrainingGenerationPromptSimplified({
+        microlearning: { title: 'Phishing 101' },
+        department: 'HR',
+        level: 'Advanced',
+        language: 'de-de',
+      });
+
+      expect(result).toContain('Phishing 101');
+      expect(result).toContain('HR');
+      expect(result).toContain('Advanced');
+      expect(result).toContain('de-de');
+    });
+  });
+
+  describe('buildUploadPrompt', () => {
+    it('builds phishing upload prompt', () => {
+      const result = buildUploadPrompt('phishing');
+
+      expect(result).toContain('phishing');
+      expect(result).toContain('uploadPhishing');
+      expect(result).toContain('phishingId');
+      expect(result).toContain('UPLOAD_SUCCESS');
     });
 
-    describe('buildUploadPrompt', () => {
-        it('generates upload prompt for phishing', () => {
-            const prompt = buildUploadPrompt('phishing', 'id-123');
-            expect(prompt).toContain('Upload the phishing simulation');
-            expect(prompt).toContain('id-123');
-        });
+    it('builds training upload prompt', () => {
+      const result = buildUploadPrompt('training');
 
-        it('generates upload prompt for training', () => {
-            const prompt = buildUploadPrompt('training');
-            expect(prompt).toContain('Upload the training module');
-        });
+      expect(result).toContain('training');
+      expect(result).toContain('uploadTraining');
+      expect(result).toContain('microlearningId');
     });
 
-    describe('buildUploadAndAssignPrompt', () => {
-        it('generates upload and assign prompt', () => {
-            const prompt = buildUploadAndAssignPrompt('phishing', 'user-123', 'id-555');
-            expect(prompt).toContain('Upload and assign the phishing simulation');
-            expect(prompt).toContain('user-123');
-            expect(prompt).toContain('id-555');
-        });
+    it('includes generated ID when provided', () => {
+      const result = buildUploadPrompt('phishing', 'phish-xyz-123');
+
+      expect(result).toContain('phish-xyz-123');
+      expect(result).toContain('Use this EXACT ID');
+    });
+  });
+
+  describe('buildUploadAndAssignPrompt', () => {
+    it('builds phishing upload and assign prompt', () => {
+      const result = buildUploadAndAssignPrompt('phishing', 'user-456');
+
+      expect(result).toContain('phishing');
+      expect(result).toContain('user-456');
+      expect(result).toContain('uploadPhishing');
+      expect(result).toContain('assignPhishing');
     });
 
-    describe('buildAssignPhishingWithTrainingPrompt', () => {
-        it('generates assignment prompt with training', () => {
-            const prompt = buildAssignPhishingWithTrainingPrompt('user-999', 'train-123', 'lang-456');
-            expect(prompt).toContain('Assign the phishing simulation');
-            expect(prompt).toContain('linking it with the training module');
-            expect(prompt).toContain('trainingId: train-123');
-            expect(prompt).toContain('sendTrainingLanguageId: lang-456');
-        });
+    it('builds training upload and assign prompt', () => {
+      const result = buildUploadAndAssignPrompt('training', 'user-789');
+
+      expect(result).toContain('training');
+      expect(result).toContain('uploadTraining');
+      expect(result).toContain('assignTraining');
     });
+
+    it('includes generated artifact ID when provided', () => {
+      const result = buildUploadAndAssignPrompt('phishing', 'user-1', 'phish-abc');
+
+      expect(result).toContain('phish-abc');
+    });
+  });
+
+  describe('buildAssignPhishingWithTrainingPrompt', () => {
+    it('includes training IDs when provided', () => {
+      const result = buildAssignPhishingWithTrainingPrompt(
+        'user-123',
+        'training-res-456',
+        'en-gb'
+      );
+
+      expect(result).toContain('user-123');
+      expect(result).toContain('training-res-456');
+      expect(result).toContain('en-gb');
+      expect(result).toContain('assignPhishing');
+    });
+
+    it('mentions extracting from history when training IDs not provided', () => {
+      const result = buildAssignPhishingWithTrainingPrompt('user-123');
+
+      expect(result).toContain('conversation history');
+      expect(result).toContain('extract');
+    });
+  });
 });

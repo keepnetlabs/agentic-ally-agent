@@ -205,7 +205,7 @@ describe('translateLanguageJsonTool', () => {
 
     try {
       await (translateLanguageJsonTool as any).execute(sameLangInput);
-    } catch (e) {
+    } catch {
       // If it throws, good. If it returns error object, also good.
       // But the check is usually Zod refine.
     }

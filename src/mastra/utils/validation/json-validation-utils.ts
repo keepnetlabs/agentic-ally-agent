@@ -232,38 +232,44 @@ export function correctInboxStructure(original: Record<string, unknown>, transla
     }
   }
 
-  const origTexts = (original as any).texts;
-  const corrTexts = (corrected as any).texts;
+  const origTexts = (original as Record<string, unknown>).texts;
+  const corrTexts = (corrected as Record<string, unknown>).texts;
 
   // Fix texts object structure
   if (origTexts && typeof origTexts === 'object') {
     if (!corrTexts || typeof corrTexts !== 'object') {
       logger.info('Restoring texts object from original');
-      (corrected as any).texts = origTexts;
+      (corrected as Record<string, unknown>).texts = origTexts;
     } else {
+      const orig = origTexts as Record<string, unknown>;
+      const corr = corrTexts as Record<string, unknown>;
       // Ensure all text keys exist
-      Object.keys(origTexts).forEach(textKey => {
-        if (!(textKey in corrTexts)) {
+      Object.keys(orig).forEach(textKey => {
+        if (!(textKey in corr)) {
           logger.info('Adding missing text key', { textKey });
-          corrTexts[textKey] = origTexts[textKey];
+          corr[textKey] = orig[textKey];
         }
       });
 
       // Fix modal structures
-      if (origTexts.phishingReportModal && corrTexts.phishingReportModal) {
-        Object.keys(origTexts.phishingReportModal).forEach((modalKey: string) => {
-          if (!(modalKey in corrTexts.phishingReportModal)) {
+      const origReportModal = orig.phishingReportModal as Record<string, unknown> | undefined;
+      const corrReportModal = corr.phishingReportModal as Record<string, unknown> | undefined;
+      if (origReportModal && corrReportModal) {
+        Object.keys(origReportModal).forEach((modalKey: string) => {
+          if (!(modalKey in corrReportModal)) {
             logger.info('Adding missing phishingReportModal key', { modalKey });
-            corrTexts.phishingReportModal[modalKey] = origTexts.phishingReportModal[modalKey];
+            corrReportModal[modalKey] = origReportModal[modalKey];
           }
         });
       }
 
-      if (origTexts.phishingResultModal && corrTexts.phishingResultModal) {
-        Object.keys(origTexts.phishingResultModal).forEach((modalKey: string) => {
-          if (!(modalKey in corrTexts.phishingResultModal)) {
+      const origResultModal = orig.phishingResultModal as Record<string, unknown> | undefined;
+      const corrResultModal = corr.phishingResultModal as Record<string, unknown> | undefined;
+      if (origResultModal && corrResultModal) {
+        Object.keys(origResultModal).forEach((modalKey: string) => {
+          if (!(modalKey in corrResultModal)) {
             logger.info('Adding missing phishingResultModal key', { modalKey });
-            corrTexts.phishingResultModal[modalKey] = origTexts.phishingResultModal[modalKey];
+            corrResultModal[modalKey] = origResultModal[modalKey];
           }
         });
       }

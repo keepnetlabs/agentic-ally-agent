@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { LANDING_PAGE } from '../../constants';
-import { getRandomLayout, getRandomStyle, LAYOUT_OPTIONS, STYLE_OPTIONS, LayoutOption, StyleOption } from './landing-page-design-config';
+import { getRandomLayout, getRandomStyle, LAYOUT_OPTIONS, STYLE_OPTIONS } from './landing-page-design-config';
 
 describe('landing-page-design-config', () => {
   describe('getRandomLayout', () => {

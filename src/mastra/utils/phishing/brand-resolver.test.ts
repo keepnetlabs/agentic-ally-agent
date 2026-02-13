@@ -93,7 +93,7 @@ describe('brand-resolver', () => {
                 })
             } as any);
 
-            const result = await resolveLogoAndBrand('Google', 'Search', mockModel);
+            await resolveLogoAndBrand('Google', 'Search', mockModel);
             expect(getLogoUrl).toHaveBeenCalledWith('google.com', 96);
         });
 

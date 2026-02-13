@@ -817,28 +817,12 @@ describe('JSON Validation Utilities', () => {
       // or just trust the logic flow. 
       // Actually, let's add a test for the logic where issues remain.
       // We can simulate this by mocking detectJsonCorruption to return issues even after repair
-
-      const inbox = { corruption: 'persistent' };
       // This integration test depends on internals, so we might skip mocking for now and trust unit tests.
     });
   });
 
   describe('Edge Case Validations', () => {
     it('should handle complex nested key mismatches in validateInboxStructure', () => {
-      const original = {
-        level1: {
-          level2: {
-            validKey: 'value'
-          }
-        }
-      };
-      const translated = {
-        level1: {
-          level2: {
-            wrongKey: 'value'
-          }
-        }
-      };
       // validateInboxStructure only checks top-level keys mostly, except for specific known structures like emails/texts.
       // It does NOT recursively check arbitrary objects. 
       // So this should actually PASS if level1 exists, unless we improve the function.
@@ -872,7 +856,6 @@ describe('JSON Validation Utilities', () => {
     });
 
     it('should fallback gracefully when parse5 fails (mocked)', () => {
-      const badHtml = '<p>Bad</p>';
       // We can't easily mock parse5 here without rewriting imports or using jest.mock which vitest supports.
       // But we can rely on the fact that repairHtml returns original on error.
       // Let's rely on standard behavior for now.

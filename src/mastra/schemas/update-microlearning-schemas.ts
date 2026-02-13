@@ -51,7 +51,7 @@ export const loadMicrolearningOutputSchema = z.object({
     department: z.string(),
     currentContent: z.any(),
     currentVersion: z.number(),
-    updates: updatesSchema as any,
+    updates: updatesSchema,
     model: z.string().optional(),
     modelProvider: z.string().optional(),
 });
@@ -61,7 +61,7 @@ export const mergeUpdatesInputSchema = z.object({
     department: z.string(),
     currentContent: z.any(),
     currentVersion: z.number(),
-    updates: updatesSchema as any,
+    updates: updatesSchema,
     model: z.string().optional(),
     modelProvider: z.string().optional(),
 });

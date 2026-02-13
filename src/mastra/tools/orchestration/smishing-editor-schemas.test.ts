@@ -119,12 +119,14 @@ describe('Smishing Editor Schemas', () => {
 
     it('should require smishingId field', () => {
       const { smishingId, ...rest } = validInput;
+      void smishingId;
       const result = smishingEditorSchema.safeParse(rest);
       expect(result.success).toBe(false);
     });
 
     it('should require editInstruction field', () => {
       const { editInstruction, ...rest } = validInput;
+      void editInstruction;
       const result = smishingEditorSchema.safeParse(rest);
       expect(result.success).toBe(false);
     });
