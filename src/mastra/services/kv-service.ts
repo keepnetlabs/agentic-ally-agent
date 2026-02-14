@@ -377,6 +377,15 @@ export class KVService {
         method: data.analysis?.method || 'Click-Only',
         isQuishing: data.analysis?.isQuishing || false, // Add quishing flag (AI-determined)
         targetProfile: data.analysis?.targetAudienceAnalysis || {},
+        // Active Learning: normalize to array (handles old/corrupt data where it might be string or missing)
+        psychologicalTriggers: (() => {
+          const t = data.analysis?.psychologicalTriggers;
+          if (Array.isArray(t)) return t.map(x => (typeof x === 'string' ? x : String(x)));
+          if (typeof t === 'string') return [t];
+          return [];
+        })(),
+        tone: typeof data.analysis?.tone === 'string' ? data.analysis.tone : undefined,
+        category: typeof data.analysis?.category === 'string' ? data.analysis.category : undefined,
         createdAt: new Date().toISOString(),
         language_availability: [normalizedLang],
       };

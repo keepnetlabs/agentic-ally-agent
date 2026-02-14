@@ -8,6 +8,7 @@
     "build": "cross-env mastra build",
     "build:local": "cross-env mastra build && node scripts/fix-cloudflare-shims.js",
     "build:cloudflare": "cross-env mastra build && node scripts/fix-cloudflare-shims.js",
+    "predeploy": "npm run validate",
     "deploy": "npm run build:cloudflare && npx wrangler deploy .mastra/output/index.mjs --config .mastra/output/wrangler.json",
     "fix-cloudflare": "node scripts/fix-cloudflare-shims.js",
     "test": "vitest run",

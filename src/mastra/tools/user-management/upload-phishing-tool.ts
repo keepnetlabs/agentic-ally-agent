@@ -14,6 +14,7 @@ import { validateToolResult } from '../../utils/tool-result-validation';
 import { extractCompanyIdFromTokenExport } from '../../utils/core/policy-fetcher';
 import { formatToolSummary } from '../../utils/core/tool-summary-formatter';
 import { summarizeForLog } from '../../utils/core/log-redaction-utils';
+import { trySaveCampaignMetadataAfterUpload } from '../../services/campaign-metadata-service';
 
 interface UploadPhishingWorkerResult {
   success?: boolean;
@@ -179,6 +180,9 @@ export const uploadPhishingTool = createTool({
       // CRITICAL: Use scenarioResourceId for assignment if available, otherwise fallback to templateResourceId
       // Backend API expects scenarioResourceId for assignment (based on "Phishing scenario not found" error)
       const resourceIdForAssignment = scenarioResourceId || templateResourceId;
+
+      // Active Learning: save campaign metadata for UserInfoAgent correlation (non-blocking)
+      await trySaveCampaignMetadataAfterUpload(env, phishingData, resourceIdForAssignment);
 
       const formattedMessage = formatToolSummary({
         prefix: result.message ? `✅ ${result.message}` : `✅ ${isQuishing ? 'Quishing' : 'Phishing'} uploaded`,

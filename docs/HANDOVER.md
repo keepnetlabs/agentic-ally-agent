@@ -83,6 +83,15 @@ If you see JSON errors in logs, know that we use `jsonrepair`.
 
 ---
 
+## 🚀 Production Deployment
+
+Before deploying to production:
+
+1. **Pre-deploy validation:** `npm run deploy` automatically runs `npm run validate` (format, lint, tests) first.
+2. **Environment:** Ensure `.env` has `PRODUCT_API_KEY` and all required keys (see `.env.example`).
+
+---
+
 ## 🚀 Future Roadmap
 
 If you have time, tackle these:

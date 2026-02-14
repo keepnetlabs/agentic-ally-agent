@@ -39,6 +39,8 @@ export interface EnrichedActivity {
   isSecurityPositive: boolean;
   context: string;
   timeAgo: string;
+  /** Active Learning: psychological tactic(s) used in this simulation (from campaign_metadata) */
+  tactic?: string;
 }
 
 /**
@@ -229,9 +231,10 @@ export const formatEnrichedActivitiesForPrompt = (enrichedActivities: EnrichedAc
   }
 
   return enrichedActivities
-    .map(
-      activity =>
-        `- ${activity.actionCategory} (Risk: ${activity.riskScore}/100): ${activity.context} (${activity.timeAgo})`
-    )
+    .map(activity => {
+      const tactic = typeof activity.tactic === 'string' && activity.tactic.trim() ? activity.tactic.trim() : undefined;
+      const tacticSuffix = tactic ? ` [Tactic: ${tactic}]` : '';
+      return `- ${activity.actionCategory} (Risk: ${activity.riskScore}/100): ${activity.context} (${activity.timeAgo})${tacticSuffix}`;
+    })
     .join('\n');
 };

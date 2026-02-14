@@ -109,6 +109,12 @@ npx tsx src/debug-workflow.ts
 
 ---
 
+## 🔄 Pre-deploy
+
+- **Pre-deploy:** `npm run deploy` runs `npm run validate` first (format, lint, tests). If any fails, deploy is aborted.
+
+---
+
 ## 🧪 Automated Testing (Vitest)
 
 We have achieved **100% logic coverage** across the agent codebase.

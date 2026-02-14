@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { extractMessageContent, parseAndValidateRequest, extractUserPrompt } from './chat-request-helpers';
+import {
+  extractMessageContent,
+  parseAndValidateRequest,
+  extractUserPrompt,
+  buildRoutingContext,
+  extractArtifactIdsFromRoutingContext,
+} from './chat-request-helpers';
 import type { ChatMessage } from '../types/api-types';
 
 describe('chat-request-helpers', () => {
@@ -151,6 +157,54 @@ describe('chat-request-helpers', () => {
       const result = parseAndValidateRequest(body as any);
       expect(result?.prompt).toBe('new prompt');
       expect(result?.routingContext).toContain('Content: msg history');
+    });
+  });
+
+  describe('buildRoutingContext - UI signal cleaning', () => {
+    it('converts smishing_sms UI signal to semantic message', () => {
+      const smishingPayload = Buffer.from(JSON.stringify({ smishingId: 'sm-123456' }), 'utf-8').toString('base64');
+      const context = buildRoutingContext([
+        { role: 'assistant', content: `::ui:smishing_sms::${smishingPayload}::/ui:smishing_sms::` } as any,
+      ]);
+      expect(context).toContain('[Smishing Simulation Created: smishingId=sm-123456]');
+      const ids = extractArtifactIdsFromRoutingContext(context);
+      expect(ids.smishingId).toBe('sm-123456');
+    });
+
+    it('converts vishing_call_started UI signal to semantic message', () => {
+      const vishingPayload = Buffer.from(
+        JSON.stringify({ conversationId: 'conv-xyz', callSid: 'CA-123' }),
+        'utf-8'
+      ).toString('base64');
+      const context = buildRoutingContext([
+        {
+          role: 'assistant',
+          content: `::ui:vishing_call_started::${vishingPayload}::/ui:vishing_call_started::`,
+        } as any,
+      ]);
+      expect(context).toContain('[Vishing Call Initiated: conversationId=conv-xyz]');
+    });
+
+    it('converts training_uploaded UI signal with microlearningId and resourceId', () => {
+      const payload = Buffer.from(JSON.stringify({ microlearningId: 'ml-up', resourceId: 'res-up' }), 'utf-8').toString(
+        'base64'
+      );
+      const context = buildRoutingContext([
+        { role: 'assistant', content: `::ui:training_uploaded::${payload}::/ui:training_uploaded::` } as any,
+      ]);
+      expect(context).toContain('[Training Uploaded: microlearningId=ml-up, resourceId=res-up]');
+    });
+
+    it('extracts targetUserResourceId and targetGroupResourceId from routing context', () => {
+      const context = buildRoutingContext([
+        {
+          role: 'assistant',
+          content: 'Assigned (targetUserResourceId=user-123, targetGroupResourceId=group-456)',
+        } as any,
+      ]);
+      const ids = extractArtifactIdsFromRoutingContext(context);
+      expect(ids.targetUserResourceId).toBe('user-123');
+      expect(ids.targetGroupResourceId).toBe('group-456');
     });
   });
 });

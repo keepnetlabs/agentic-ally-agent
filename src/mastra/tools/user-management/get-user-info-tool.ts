@@ -42,6 +42,8 @@ import {
   formatEnrichedActivitiesForPrompt,
   type EnrichedActivity,
 } from './activity-enrichment-utils';
+import { getCampaignMetadata } from '../../services/campaign-metadata-service';
+import { extractResourceIdsFromTimeline, enrichActivitiesWithMetadata } from '../../utils/campaign-metadata-helpers';
 import { findUserByEmail, findUserById, findUserByNameWithFallbacks } from './utils/user-search-utils';
 import { uuidv4 } from '../../utils/core/id-utils';
 export const getUserInfoTool = createTool({
@@ -99,7 +101,7 @@ export const getUserInfoTool = createTool({
     } = context;
 
     // Get Auth Token, CompanyId & baseApiUrl (needed for both paths)
-    const { token, companyId, baseApiUrl } = getRequestContext();
+    const { token, companyId, baseApiUrl, env } = getRequestContext();
     if (!token) {
       const errorInfo = errorService.auth(ERROR_MESSAGES.USER_INFO.TOKEN_MISSING);
       logErrorInfo(logger, 'warn', 'Auth error: Token missing', errorInfo);
@@ -293,6 +295,22 @@ export const getUserInfoTool = createTool({
 
         // Enrich activities with semantic context
         enrichedActivities = enrichActivities(results.slice(0, 10));
+
+        // Active Learning: fetch campaign metadata for activities that have resourceId (Product API must return it)
+        try {
+          const { byIndex: resourceIdsByIndex, unique: resourceIds } = extractResourceIdsFromTimeline(
+            results.slice(0, 10) as { scenarioResourceId?: string; resourceId?: string }[]
+          );
+          if (resourceIds.length > 0 && env && Array.isArray(enrichedActivities)) {
+            const metadataMap = await getCampaignMetadata(env as Record<string, unknown>, resourceIds);
+            if (metadataMap.size > 0) {
+              enrichedActivities = enrichActivitiesWithMetadata(enrichedActivities, resourceIdsByIndex, metadataMap);
+            }
+          }
+        } catch {
+          // Swallow — timeline and analysis continue without metadata
+        }
+
         logger.info('Timeline activities retrieved and enriched', { count: results.length });
       } else {
         const errorText = await timelineResponse.text();

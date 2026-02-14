@@ -171,4 +171,26 @@ describe('vishing-conversations-summary-tool', () => {
     expect(result.statusCard.title).toBe('Call Completed');
     expect(result.statusCard.variant).toBe('info');
   });
+
+  it('should normalize non-standard timeline labels like Detected', async () => {
+    const responseWithDetectedLabel = JSON.stringify({
+      summary: {
+        timeline: [
+          { timestamp: '0:05', label: 'Introduction', snippet: 'Hello from security team.' },
+          { timestamp: '0:22', label: 'Detected', snippet: 'User says this sounds like a simulation.' },
+        ],
+        disclosedInfo: [],
+        outcome: 'Detected',
+      },
+      nextSteps: [{ title: 'Keep verifying', description: 'Continue verifying unknown callers.' }],
+    });
+
+    mockGenerateText.mockResolvedValue({ text: responseWithDetectedLabel });
+
+    const result = await generateVishingConversationsSummary([{ role: 'user', text: 'Is this a simulation?' }]);
+
+    expect(result.summary.timeline[1]?.label).toBe('Simulation Reveal');
+    expect(result.summary.outcome).toBe('detected');
+    expect(result.statusCard.title).toBe('Simulation Detected');
+  });
 });

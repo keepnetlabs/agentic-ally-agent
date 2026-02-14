@@ -58,6 +58,67 @@ const STATUS_CARD_BY_OUTCOME: Record<string, VishingStatusCard> = {
 
 export type VishingMessage = { role: 'agent' | 'user'; text: string; timestamp?: number };
 
+type TimelineItemLike = {
+  timestamp?: unknown;
+  label?: unknown;
+  snippet?: unknown;
+};
+
+function normalizeTimelineLabel(label: unknown): string {
+  if (typeof label !== 'string') return 'Other';
+  const v = label.trim().toLowerCase();
+
+  if (v === 'introduction' || v === 'intro') return 'Introduction';
+  if (v === 'credibility building' || v === 'credibility' || v === 'authority') return 'Credibility Building';
+  if (v === 'pressure' || v === 'urgency') return 'Pressure';
+  if (v === 'data request' || v === 'request' || v === 'ask') return 'Data Request';
+  if (v === 'data disclosed' || v === 'disclosed' || v === 'disclosure') return 'Data Disclosed';
+  if (v === 'simulation reveal' || v === 'reveal' || v === 'detected' || v === 'detection') return 'Simulation Reveal';
+  if (v === 'other') return 'Other';
+  return 'Other';
+}
+
+function normalizeTimelineItems(timeline: unknown): unknown[] {
+  if (!Array.isArray(timeline)) return [];
+
+  return timeline.map(item => {
+    const record = (item ?? {}) as TimelineItemLike;
+    return {
+      timestamp: typeof record.timestamp === 'string' ? record.timestamp : '0:00',
+      label: normalizeTimelineLabel(record.label),
+      snippet: typeof record.snippet === 'string' ? record.snippet : '',
+    };
+  });
+}
+
+function normalizeOutcome(outcome: unknown): unknown {
+  if (typeof outcome !== 'string') return outcome;
+  const v = outcome.trim().toLowerCase();
+  if (v === 'data_disclosed' || v === 'disclosed' || v === 'shared') return 'data_disclosed';
+  if (v === 'refused' || v === 'reject' || v === 'rejected') return 'refused';
+  if (v === 'detected' || v === 'detection') return 'detected';
+  if (v === 'other' || v === 'unknown') return 'other';
+  return outcome;
+}
+
+function normalizeRawSummaryPayload(raw: Record<string, unknown>): Record<string, unknown> {
+  const normalized = { ...raw };
+
+  if (normalized.summary && typeof normalized.summary === 'object' && normalized.summary !== null) {
+    const summary = normalized.summary as Record<string, unknown>;
+    normalized.summary = {
+      ...summary,
+      timeline: normalizeTimelineItems(summary.timeline),
+      outcome: normalizeOutcome(summary.outcome),
+    };
+  } else {
+    normalized.timeline = normalizeTimelineItems(normalized.timeline);
+    normalized.outcome = normalizeOutcome(normalized.outcome);
+  }
+
+  return normalized;
+}
+
 function parseNextSteps(raw: unknown): { title: string; description: string }[] {
   if (!Array.isArray(raw)) return [...DEFAULT_NEXT_STEPS];
   const validated = raw
@@ -144,7 +205,7 @@ Return ONLY the JSON object. No markdown, no code blocks, no extra text.`;
   logger.info('vishing_conversations_summary_llm_complete');
 
   const cleaned = cleanResponse(text, 'vishing-conversations-summary');
-  const raw = JSON.parse(cleaned) as Record<string, unknown>;
+  const raw = normalizeRawSummaryPayload(JSON.parse(cleaned) as Record<string, unknown>);
 
   // Normalize: LLM may return flat { timeline, outcome, ... } instead of { summary, nextSteps }
   let parsed: { summary: VishingConversationsSummary; nextSteps: { title: string; description: string }[] };
