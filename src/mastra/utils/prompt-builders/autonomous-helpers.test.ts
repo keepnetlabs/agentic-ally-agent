@@ -1,9 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  getLanguageOrDefault,
-  buildLanguageRequirementBlock,
-  EXAMPLE_IDS,
-} from './autonomous-helpers';
+import { getLanguageOrDefault, buildLanguageRequirementBlock, EXAMPLE_IDS } from './autonomous-helpers';
 
 describe('autonomous-helpers', () => {
   describe('getLanguageOrDefault', () => {

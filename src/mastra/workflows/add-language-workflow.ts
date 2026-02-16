@@ -23,7 +23,7 @@ import {
   languageContentSchema,
   updateInboxSchema,
   combineInputSchema,
-  finalResultSchema
+  finalResultSchema,
 } from '../schemas/add-language-schemas';
 
 // Step 1: Load Existing Microlearning
@@ -36,7 +36,12 @@ export const loadExistingStep = createStep({
   execute: async ({ inputData }) => {
     const { existingMicrolearningId, targetLanguage, sourceLanguage, department, modelProvider, model } = inputData;
 
-    logger.info('Step 1: Loading existing microlearning', { existingMicrolearningId, targetLanguage, sourceLanguage, department, });
+    logger.info('Step 1: Loading existing microlearning', {
+      existingMicrolearningId,
+      targetLanguage,
+      sourceLanguage,
+      department,
+    });
 
     // Try KVService first, fallback to MicrolearningService
     let existing = null;
@@ -54,15 +59,21 @@ export const loadExistingStep = createStep({
         logger.info('Found microlearning in KV', { microlearningId: existing.microlearning_id });
       }
     } catch (kvError) {
-      const err = kvError instanceof Error ? kvError : new Error(String(kvError));
-      logger.warn('KVService failed to load microlearning', { error: err.message, stack: err.stack });
+      const err = normalizeError(kvError);
+      const errorInfo = errorService.external(err.message, { step: 'load-microlearning', stack: err.stack });
+      logErrorInfo(logger, 'warn', 'KVService failed to load microlearning', errorInfo);
     }
 
     if (!existing) {
       logger.error('Microlearning not found in KVService', { existingMicrolearningId });
       // Sanitize ID in error message to prevent log injection confusion
-      const sanitizedId = existingMicrolearningId.length > 50 ? existingMicrolearningId.substring(0, 50) + '...' : existingMicrolearningId;
-      throw new Error(`Microlearning not found with ID: "${sanitizedId}". Please ensure the microlearning exists and provide the correct ID.`);
+      const sanitizedId =
+        existingMicrolearningId.length > 50
+          ? existingMicrolearningId.substring(0, 50) + '...'
+          : existingMicrolearningId;
+      throw new Error(
+        `Microlearning not found with ID: "${sanitizedId}". Please ensure the microlearning exists and provide the correct ID.`
+      );
     }
 
     const existingTyped = existing as unknown as MicrolearningContent;
@@ -70,32 +81,38 @@ export const loadExistingStep = createStep({
     const resolvedDepartment =
       (Array.isArray(meta.department_relevance) && meta.department_relevance.length > 0
         ? meta.department_relevance[0]
-        : undefined) || department || LANGUAGE.DEFAULT_DEPARTMENT;
+        : undefined) ||
+      department ||
+      LANGUAGE.DEFAULT_DEPARTMENT;
     const analysis = {
-      language: targetLanguage.toLowerCase(),  // Normalize to lowercase for KV key consistency
+      language: targetLanguage.toLowerCase(), // Normalize to lowercase for KV key consistency
       topic: meta.title || 'Training',
       title: meta.title || 'Training',
       department: resolvedDepartment,
       level: meta.level || 'beginner',
       category: meta.category || 'General',
       subcategory: meta.subcategory,
-      learningObjectives: (meta as any).learning_objectives || [],
-    } as any;
+      learningObjectives: (meta as { learning_objectives?: string[] }).learning_objectives || [],
+    };
 
     // Detect actualSourceLanguage from microlearning metadata (default to en-gb)
-    const actualSourceLanguage = meta.language || (meta as any).primary_language || sourceLanguage || LANGUAGE.DEFAULT_SOURCE;
+    const metaExt = meta as { primary_language?: string };
+    const actualSourceLanguage = meta.language || metaExt.primary_language || sourceLanguage || LANGUAGE.DEFAULT_SOURCE;
 
-    if (!meta.language && !(meta as any).primary_language && !sourceLanguage) {
+    if (!meta.language && !metaExt.primary_language && !sourceLanguage) {
       logger.info('Source language not specified, defaulting to en-gb');
     }
 
     // Validate that target language is different from source
     if (actualSourceLanguage.toLowerCase() === targetLanguage.toLowerCase()) {
-      const errorInfo = errorService.validation(`Target language (${targetLanguage}) cannot be the same as source language (${actualSourceLanguage})`, {
-        targetLanguage,
-        actualSourceLanguage,
-        step: 'validate-languages'
-      });
+      const errorInfo = errorService.validation(
+        `Target language (${targetLanguage}) cannot be the same as source language (${actualSourceLanguage})`,
+        {
+          targetLanguage,
+          actualSourceLanguage,
+          step: 'validate-languages',
+        }
+      );
       logErrorInfo(logger, 'error', 'Language validation failed', errorInfo);
       throw new Error(errorInfo.message);
     }
@@ -103,9 +120,9 @@ export const loadExistingStep = createStep({
     // Check if training has scene types that do not require inbox
     let hasInbox = true; // Default: inbox is required for most trainings
     const scenes = existingTyped.scenes || [];
-    const hasCodeReview = scenes.some((scene) => scene?.metadata?.scene_type === 'code_review');
-    const hasVishing = scenes.some((scene) => scene?.metadata?.scene_type === 'vishing_simulation');
-    const hasSmishing = scenes.some((scene) => scene?.metadata?.scene_type === 'smishing_simulation');
+    const hasCodeReview = scenes.some(scene => scene?.metadata?.scene_type === 'code_review');
+    const hasVishing = scenes.some(scene => scene?.metadata?.scene_type === 'vishing_simulation');
+    const hasSmishing = scenes.some(scene => scene?.metadata?.scene_type === 'smishing_simulation');
     if (hasCodeReview || hasVishing || hasSmishing) {
       hasInbox = false; // Disable inbox for code_review and vishing trainings
     }
@@ -114,7 +131,7 @@ export const loadExistingStep = createStep({
       logger.info('Inbox will be skipped for this training type', {
         hasCodeReview,
         hasVishing,
-        hasSmishing
+        hasSmishing,
       });
     }
 
@@ -124,7 +141,7 @@ export const loadExistingStep = createStep({
       sourceLanguage: actualSourceLanguage,
       targetLanguage,
       department: analysis.department,
-      inboxRequired: hasInbox
+      inboxRequired: hasInbox,
     });
 
     return {
@@ -132,14 +149,14 @@ export const loadExistingStep = createStep({
       data: existing,
       microlearningId: existingTyped.microlearning_id,
       analysis,
-      sourceLanguage: actualSourceLanguage.toLowerCase(), // Use detected source language
-      targetLanguage, // Pass to parallel steps
-      department, // Pass to parallel steps
-      modelProvider, // Pass model override through
-      model, // Pass model override through
-      hasInbox // Pass inbox flag to next steps
-    } as any;
-  }
+      sourceLanguage: actualSourceLanguage.toLowerCase(),
+      targetLanguage,
+      department: department ?? LANGUAGE.DEFAULT_DEPARTMENT,
+      modelProvider,
+      model,
+      hasInbox,
+    };
+  },
 });
 
 // Step 2: Translate Language Content
@@ -166,19 +183,22 @@ export const translateLanguageStep = createStep({
         logger.info('Found base content in KV', { microlearningId, sourceLanguage });
       }
     } catch (kvError) {
-      const err = kvError instanceof Error ? kvError : new Error(String(kvError));
-      logger.warn('KVService failed to load language content', {
-        error: err.message,
+      const err = normalizeError(kvError);
+      const errorInfo = errorService.external(err.message, {
+        step: 'load-language-content',
         stack: err.stack,
         microlearningId,
-        sourceLanguage
+        sourceLanguage,
       });
+      logErrorInfo(logger, 'warn', 'KVService failed to load language content', errorInfo);
     }
 
     // Validate base content exists and has data
     if (!baseContent || Object.keys(baseContent).length === 0) {
       logger.error('Base content not found or empty in KVService', { microlearningId, sourceLanguage });
-      throw new Error(`Base language content (${sourceLanguage}) not found or empty for translation. Microlearning ID: ${microlearningId}. Please ensure content exists in KV.`);
+      throw new Error(
+        `Base language content (${sourceLanguage}) not found or empty for translation. Microlearning ID: ${microlearningId}. Please ensure content exists in KV.`
+      );
     }
 
     logger.info('Found base content, translating', { microlearningId, sourceLanguage, targetLanguage });
@@ -186,12 +206,12 @@ export const translateLanguageStep = createStep({
     const translationParams = {
       json: baseContent,
       microlearningStructure: microlearningStructure, // Pass scenes metadata for proper scene mapping
-      sourceLanguage: sourceLanguage.toLowerCase(),  // Source language (e.g., en-us)
-      targetLanguage: targetLanguage.toLowerCase(),  // Normalize to lowercase (e.g., tr-tr)
+      sourceLanguage: sourceLanguage.toLowerCase(), // Source language (e.g., en-us)
+      targetLanguage: targetLanguage.toLowerCase(), // Normalize to lowercase (e.g., tr-tr)
       topic: analysis.topic, // Pass topic for context-aware translation
       doNotTranslateKeys: ['iconName', 'id', 'ids', 'url', 'src'],
       modelProvider: inputData.modelProvider, // Pass model override if provided
-      model: inputData.model // Pass model override if provided
+      model: inputData.model, // Pass model override if provided
     };
 
     // Execute with retry for resilience against transient AI failures
@@ -213,14 +233,16 @@ export const translateLanguageStep = createStep({
         error: errorMsg,
         sourceLanguage,
         targetLanguage,
-        microlearningId
+        microlearningId,
       });
       throw new Error(`Language translation failed: ${errorMsg}`);
     }
 
     // Validate translation data is not empty
     if (!translated.data || Object.keys(translated.data).length === 0) {
-      const errorInfo = errorService.external('Translation returned empty content', { step: 'translate-language-json' });
+      const errorInfo = errorService.external('Translation returned empty content', {
+        step: 'translate-language-json',
+      });
       logErrorInfo(logger, 'error', 'Translation succeeded but returned empty data', errorInfo);
       throw new Error(errorInfo.message);
     }
@@ -232,21 +254,17 @@ export const translateLanguageStep = createStep({
       // Store language content
       logger.info('Storing translated content', { microlearningId, targetLanguage });
 
-      const langSuccess = await kvService.storeLanguageContent(
-        microlearningId,
-        targetLanguage,
-        translated.data
-      );
+      const langSuccess = await kvService.storeLanguageContent(microlearningId, targetLanguage, translated.data);
 
       logger.info('Language content storage result', { success: langSuccess });
 
       // Update language_availability atomically (prevents race conditions in parallel workflows)
       await kvService.updateLanguageAvailabilityAtomic(microlearningId, targetLanguage);
-
     } catch (kvError) {
-      const err = kvError instanceof Error ? kvError : new Error(String(kvError));
-      logger.error('KVService storage failed in worker environment', { error: err.message, stack: err.stack });
-      throw new Error(`Translation completed but storage failed: ${kvError}`);
+      const err = normalizeError(kvError);
+      const errorInfo = errorService.external(err.message, { step: 'store-translated-content', stack: err.stack });
+      logErrorInfo(logger, 'error', 'KVService storage failed in worker environment', errorInfo);
+      throw new Error(`Translation completed but storage failed: ${err.message}`);
     }
 
     logger.info('Step 2 completed: Translation successful', { targetLanguage, microlearningId });
@@ -257,14 +275,13 @@ export const translateLanguageStep = createStep({
       microlearningId,
       analysis,
       microlearningStructure,
-      hasInbox: (inputData as any).hasInbox // Pass through from previous step
-    } as any;
-  }
+      hasInbox: inputData.hasInbox,
+    };
+  },
 });
 
 // Step 3: Update Inbox (runs in parallel with translation)
 // Note: success can be false if inbox translation fails - workflow continues with language content only
-
 
 export const updateInboxStep = createStep({
   id: 'update-inbox',
@@ -275,9 +292,7 @@ export const updateInboxStep = createStep({
     const { analysis, microlearningId, data: microlearningStructure } = inputData;
     const targetLanguage = analysis.language;
     const sourceLanguage = microlearningStructure.microlearning_metadata?.language || LANGUAGE.DEFAULT_SOURCE;
-    const modelProvider = (inputData as any).modelProvider;
-    const model = (inputData as any).model;
-    const hasInbox = (inputData as any).hasInbox;
+    const { modelProvider, model, hasInbox } = inputData;
 
     // Skip inbox processing if not needed (e.g., code_review training)
     if (!hasInbox) {
@@ -285,25 +300,23 @@ export const updateInboxStep = createStep({
       return {
         success: true,
         microlearningId,
-        filesGenerated: []
+        filesGenerated: [],
       };
     }
 
     const meta = microlearningStructure.microlearning_metadata || {};
-    const inputDepartment = (inputData as { department?: string }).department;
+    const inputDepartment = inputData.department;
     const rawDepartments = [
       ...(Array.isArray(meta.department_relevance) ? meta.department_relevance : []),
       analysis.department,
       inputDepartment,
-      LANGUAGE.DEFAULT_DEPARTMENT
+      LANGUAGE.DEFAULT_DEPARTMENT,
     ].filter((dept): dept is string => Boolean(dept && dept.trim()));
-    const normalizedDepartments = Array.from(
-      new Set(rawDepartments.map((dept) => normalizeDepartmentName(dept)))
-    );
+    const normalizedDepartments = Array.from(new Set(rawDepartments.map(dept => normalizeDepartmentName(dept))));
     logger.info('🔍 Step 3: Creating inbox', {
       targetLanguage,
       sourceLanguage,
-      candidateDepartments: normalizedDepartments
+      candidateDepartments: normalizedDepartments,
     });
 
     const kvService = new KVService();
@@ -318,12 +331,7 @@ export const updateInboxStep = createStep({
         normalizedDept = dept;
         logger.info('🔍 Checking department', { normalizedDept });
 
-        baseInbox = await loadInboxWithFallback(
-          kvService,
-          microlearningId,
-          normalizedDept,
-          sourceLanguage
-        );
+        baseInbox = await loadInboxWithFallback(kvService, microlearningId, normalizedDept, sourceLanguage);
 
         if (baseInbox) {
           logger.info('✅ Found inbox in department, stopping search', { normalizedDept });
@@ -332,9 +340,13 @@ export const updateInboxStep = createStep({
       }
 
       if (baseInbox) {
-        logger.debug('Found base inbox', { sample: JSON.stringify(baseInbox).substring(0, STRING_TRUNCATION.JSON_SAMPLE_LENGTH) });
+        logger.debug('Found base inbox', {
+          sample: JSON.stringify(baseInbox).substring(0, STRING_TRUNCATION.JSON_SAMPLE_LENGTH),
+        });
         if (!inboxTranslateJsonTool.execute) {
-          const errorInfo = errorService.internal('inboxTranslateJsonTool is not executable', { step: 'translate-inbox-json' });
+          const errorInfo = errorService.internal('inboxTranslateJsonTool is not executable', {
+            step: 'translate-inbox-json',
+          });
           logErrorInfo(logger, 'error', 'Tool execution check failed', errorInfo);
           throw new Error(errorInfo.message);
         }
@@ -347,7 +359,7 @@ export const updateInboxStep = createStep({
           topic: analysis.topic,
           doNotTranslateKeys: ['id', 'ids', 'isPhishing', 'headers', 'attachments'],
           modelProvider,
-          model
+          model,
         };
         logger.debug('Inbox translation parameters', inboxTranslationParams);
         // v1: execute now takes (inputData, context)
@@ -362,8 +374,15 @@ export const updateInboxStep = createStep({
 
           const enhancedParams = {
             ...inboxTranslationParams,
-            doNotTranslateKeys: [...inboxTranslationParams.doNotTranslateKeys,
-              'difficulty', 'size', 'type', 'Return-Path', 'SPF', 'DMARC']
+            doNotTranslateKeys: [
+              ...inboxTranslationParams.doNotTranslateKeys,
+              'difficulty',
+              'size',
+              'type',
+              'Return-Path',
+              'SPF',
+              'DMARC',
+            ],
           };
 
           await new Promise(resolve => setTimeout(resolve, TIMEOUT_VALUES.LANGUAGE_WORKFLOW_BACKOFF_MS));
@@ -388,27 +407,28 @@ export const updateInboxStep = createStep({
           microlearningId,
           sourceLanguage,
           candidateDepartments: normalizedDepartments,
-          suggestion: 'Check if an inbox exists for the source language in KV.'
+          suggestion: 'Check if an inbox exists for the source language in KV.',
         });
         return {
           success: false,
           microlearningId,
-          filesGenerated: []
+          filesGenerated: [],
         };
       }
     } catch (error) {
       const err = normalizeError(error);
-      logger.error('❌ Inbox translation process failed', {
-        error: err.message,
+      const errorInfo = errorService.external(err.message, {
+        step: 'inbox-translation',
         stack: err.stack,
         microlearningId,
         targetLanguage,
-        department: normalizedDept
+        department: normalizedDept,
       });
+      logErrorInfo(logger, 'error', 'Inbox translation process failed', errorInfo);
       return {
         success: false,
         microlearningId,
-        filesGenerated: []
+        filesGenerated: [],
       };
     }
 
@@ -418,13 +438,12 @@ export const updateInboxStep = createStep({
       success: true,
       microlearningId,
       usedDepartment: normalizedDept,
-      filesGenerated: [`inbox/${normalizedDept}/${targetLanguage}.json`]
+      filesGenerated: [`inbox/${normalizedDept}/${targetLanguage}.json`],
     };
-  }
+  },
 });
 
 // Step 4: Combine Results (after parallel steps)
-
 
 export const combineResultsStep = createStep({
   id: 'combine-results',
@@ -437,19 +456,22 @@ export const combineResultsStep = createStep({
 
     // Check if translation succeeded
     if (!translateLanguage || !translateLanguage.success) {
-      const errorInfo = errorService.external('Language translation failed - cannot generate training URL', { step: 'finalize-translation' });
+      const errorInfo = errorService.external('Language translation failed - cannot generate training URL', {
+        step: 'finalize-translation',
+      });
       logErrorInfo(logger, 'error', 'Language translation failed', errorInfo);
       throw new Error(errorInfo.message);
     }
 
     const { microlearningId, analysis } = translateLanguage;
     const targetLanguage = analysis.language;
-    const normalizedDept = updateInbox.success && updateInbox.usedDepartment
-      ? updateInbox.usedDepartment
-      : (analysis.department
-        ? normalizeDepartmentName(analysis.department)
-        : normalizeDepartmentName(LANGUAGE.DEFAULT_DEPARTMENT));
-    const hasInbox = (translateLanguage as any).hasInbox;
+    const normalizedDept =
+      updateInbox.success && updateInbox.usedDepartment
+        ? updateInbox.usedDepartment
+        : analysis.department
+          ? normalizeDepartmentName(analysis.department)
+          : normalizeDepartmentName(LANGUAGE.DEFAULT_DEPARTMENT);
+    const hasInbox = translateLanguage.hasInbox;
 
     // Verify KV consistency before returning URL to UI
     // Only expect inbox key if inbox update was successful
@@ -460,7 +482,7 @@ export const combineResultsStep = createStep({
     logger.info('Waiting for KV consistency', {
       microlearningId,
       targetLanguage,
-      expectingInbox: shouldExpectInbox
+      expectingInbox: shouldExpectInbox,
     });
 
     const expectedKeys = buildExpectedKVKeys(microlearningId, targetLanguage, keysNamespaceDept);
@@ -477,10 +499,7 @@ export const combineResultsStep = createStep({
       // Both language and inbox successful
       const inboxUrl = encodeURIComponent(`inbox/${normalizedDept}`);
       trainingUrl = `${API_ENDPOINTS.FRONTEND_MICROLEARNING_URL}/?courseId=${microlearningId}&langUrl=${langUrl}&inboxUrl=${inboxUrl}&isEditMode=true`;
-      filesGenerated = [
-        `${microlearningId}/${targetLanguage}.json`,
-        ...(updateInbox.filesGenerated || [])
-      ];
+      filesGenerated = [`${microlearningId}/${targetLanguage}.json`, ...(updateInbox.filesGenerated || [])];
     } else if (hasInbox && !updateInbox.success) {
       // Language succeeded but inbox failed - graceful degradation
       logger.warn('Inbox translation failed, but language content is available');
@@ -504,10 +523,10 @@ export const combineResultsStep = createStep({
         title: analysis.title,
         targetLanguage,
         trainingUrl,
-        filesGenerated
-      }
+        filesGenerated,
+      },
     };
-  }
+  },
 });
 
 // Add Language Workflow - Parallel processing

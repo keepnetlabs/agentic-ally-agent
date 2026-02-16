@@ -7,7 +7,7 @@ vi.mock('../services/kv-service', () => ({
 }));
 
 vi.mock('../utils/language/language-utils', () => ({
-  validateBCP47LanguageCode: vi.fn((lang) => lang),
+  validateBCP47LanguageCode: vi.fn(lang => lang),
 }));
 
 describe('scene4-route-helpers', () => {
@@ -15,7 +15,7 @@ describe('scene4-route-helpers', () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
-    vi.mocked(validateBCP47LanguageCode).mockImplementation((lang) => lang);
+    vi.mocked(validateBCP47LanguageCode).mockImplementation(lang => lang);
 
     mockKVService = {
       getMicrolearning: vi.fn(),

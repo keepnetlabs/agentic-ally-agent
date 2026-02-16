@@ -1,4 +1,3 @@
-
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { generateInboxEmailsParallel } from './inbox-emails-orchestrator';
 import { generateText } from 'ai';
@@ -19,12 +18,12 @@ vi.mock('../../../utils/core/logger', () => ({
 }));
 
 vi.mock('../../../utils/core/resilience-utils', () => ({
-  withRetry: vi.fn((fn) => fn()),
+  withRetry: vi.fn(fn => fn()),
 }));
 
 vi.mock('../../../services/error-service', () => ({
   errorService: {
-    aiModel: vi.fn((msg) => ({ message: msg })),
+    aiModel: vi.fn(msg => ({ message: msg })),
   },
 }));
 
@@ -211,14 +210,16 @@ describe('Inbox Emails Orchestrator', () => {
     // Mock all failures even after retries
     (generateText as any).mockRejectedValue(new Error('Everything failed'));
 
-    await expect(generateInboxEmailsParallel({
-      topic: 'Test Topic',
-      languageCode: 'en-US',
-      category: 'Security',
-      riskArea: 'Phishing',
-      level: 'Beginner',
-      department: 'IT',
-      model: mockModel,
-    })).rejects.toThrow();
+    await expect(
+      generateInboxEmailsParallel({
+        topic: 'Test Topic',
+        languageCode: 'en-US',
+        category: 'Security',
+        riskArea: 'Phishing',
+        level: 'Beginner',
+        department: 'IT',
+        model: mockModel,
+      })
+    ).rejects.toThrow();
   });
 });

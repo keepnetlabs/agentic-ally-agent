@@ -1,7 +1,21 @@
 import { getRequestContext } from './request-storage';
 import { getLogger } from './logger';
 import { withRetry } from './resilience-utils';
+import { normalizeError, logErrorInfo } from './error-utils';
+import { errorService } from '../../services/error-service';
 import { API_ENDPOINTS } from '../../constants';
+
+interface PolicyFile {
+  name: string;
+  blobUrl: string;
+  [key: string]: unknown;
+}
+
+interface PolicyContent {
+  policyId: string;
+  text: string;
+  [key: string]: unknown;
+}
 
 const logger = getLogger('PolicyFetcher');
 
@@ -18,7 +32,7 @@ function extractCompanyIdFromToken(token: string): string | undefined {
     }
 
     // Add padding if needed for base64 decode
-    const padded = payload + '='.repeat((4 - payload.length % 4) % 4);
+    const padded = payload + '='.repeat((4 - (payload.length % 4)) % 4);
     const decoded = JSON.parse(Buffer.from(padded, 'base64').toString('utf-8'));
 
     // companyId is stored as user_company_resourceid in JWT
@@ -26,18 +40,6 @@ function extractCompanyIdFromToken(token: string): string | undefined {
   } catch {
     return undefined;
   }
-}
-
-interface PolicyFile {
-  name: string;
-  blobUrl: string;
-  [key: string]: unknown; // Allow other properties
-}
-
-interface PolicyContent {
-  policyId: string;
-  text: string;
-  [key: string]: unknown;
 }
 
 /**
@@ -93,18 +95,16 @@ export async function getPolicyContext(): Promise<string> {
     logger.info('Found policies', {
       companyId,
       count: policies.length,
-      policyNames: policies.map((p) => p?.name).filter(Boolean),
+      policyNames: policies.map(p => p?.name).filter(Boolean),
     });
     // 2. Read each policy content in parallel
     const policyContents = await Promise.all(
-      policies.map(async (policy) => {
+      policies.map(async policy => {
         try {
           // Remove "policies/{companyId}/" prefix from blobUrl
           const cleanBlobUrl = policy.blobUrl.replace(/^policies\/[^\/]+\//, '');
           const policyUrl = `/api/policies/policies/${encodeURIComponent(cleanBlobUrl)}`;
-          const fullUrl = policyUrl.startsWith('http')
-            ? policyUrl
-            : `${apiBaseUrl}${policyUrl}`;
+          const fullUrl = policyUrl.startsWith('http') ? policyUrl : `${apiBaseUrl}${policyUrl}`;
           const response = await withRetry(
             () =>
               fetch(fullUrl, {
@@ -125,21 +125,26 @@ export async function getPolicyContext(): Promise<string> {
           logger.info('Policy data received', {
             policyName: policy.name,
             policyId: policyData.policyId,
-            textLength: policyData.text?.length || 0
+            textLength: policyData.text?.length || 0,
           });
 
           const content = policyData.text;
           return `**Policy: ${policy.name}**\n${content}`;
         } catch (error) {
-          const err = error instanceof Error ? error : new Error(String(error));
-          logger.warn('Error reading policy', { policyName: policy.name, error: err.message });
+          const err = normalizeError(error);
+          const errorInfo = errorService.external(err.message, {
+            step: 'read-policy',
+            policyName: policy.name,
+            stack: err.stack,
+          });
+          logErrorInfo(logger, 'warn', 'Error reading policy', errorInfo);
           return null;
         }
       })
     );
 
     // 3. Filter out failures and join
-    const validPolicies = policyContents.filter((p) => p !== null);
+    const validPolicies = policyContents.filter(p => p !== null);
 
     if (validPolicies.length === 0) {
       logger.info('No valid policies could be read');
@@ -151,9 +156,9 @@ export async function getPolicyContext(): Promise<string> {
 
     return context;
   } catch (error) {
-    const err = error instanceof Error ? error : new Error(String(error));
-    // Downgrade to WARN as this is not critical for agent function
-    logger.warn('Error fetching policy context', { error: err.message });
+    const err = normalizeError(error);
+    const errorInfo = errorService.external(err.message, { step: 'fetch-policy-context', stack: err.stack });
+    logErrorInfo(logger, 'warn', 'Error fetching policy context', errorInfo);
     return ''; // Graceful fallback
   }
 }

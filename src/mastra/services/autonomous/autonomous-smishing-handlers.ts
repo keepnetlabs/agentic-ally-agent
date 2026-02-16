@@ -7,7 +7,8 @@ import { AGENT_CALL_TIMEOUT_MS, SMISHING } from '../../constants';
 import { smishingWorkflowExecutorTool } from '../../tools/orchestration';
 import { assignSmishingTool, uploadSmishingTool } from '../../tools/user-management';
 import { getLogger } from '../../utils/core/logger';
-import { normalizeError } from '../../utils/core/error-utils';
+import { normalizeError, logErrorInfo } from '../../utils/core/error-utils';
+import { errorService } from '../error-service';
 import { normalizeDifficultyValue } from '../../utils/difficulty-level-mapper';
 import { validateBCP47LanguageCode, DEFAULT_LANGUAGE } from '../../utils/language/language-utils';
 import { isSafeId } from '../../utils/core/id-utils';
@@ -162,13 +163,15 @@ export async function generateSmishingSimulation(params: {
     };
   } catch (error) {
     const err = normalizeError(error);
-    logger.error('Smishing autonomous flow failed', {
-      error: err.message,
+    const errorInfo = errorService.external(err.message, {
+      step: 'smishing-autonomous-flow',
+      stack: err.stack,
       topic,
       difficulty,
       method,
       language,
     });
+    logErrorInfo(logger, 'error', 'Smishing autonomous flow failed', errorInfo);
     return {
       success: false,
       error: err.message,

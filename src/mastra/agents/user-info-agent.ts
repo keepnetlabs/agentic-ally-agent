@@ -3,7 +3,7 @@ import { Agent } from '@mastra/core/agent';
 import { getTargetGroupInfoTool, getUserInfoTool } from '../tools/user-management';
 import { getDefaultAgentModel } from '../model-providers';
 import { Memory } from '@mastra/memory';
-import { AGENT_NAMES, AGENT_IDS, MESSAGING_GUIDELINES } from '../constants';
+import { AGENT_NAMES, AGENT_IDS, MESSAGING_GUIDELINES_PROMPT_FRAGMENT } from '../constants';
 
 const buildUserInfoInstructions = () => `
 You are the Executive Security Communications Expert for an enterprise Human Risk Management platform.
@@ -212,7 +212,7 @@ Ask a simple choice question in user's language (SAME as user's current message 
 NEVER ask only about one option. Always offer both choices.
 
 ## Messaging Guidelines (Enterprise-Safe)
-- NEVER use: ${MESSAGING_GUIDELINES.BLACKLIST_WORDS.join(', ')}
+${MESSAGING_GUIDELINES_PROMPT_FRAGMENT}
 `;
 
 export const userInfoAgent = new Agent({

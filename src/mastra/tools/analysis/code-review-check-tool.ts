@@ -37,33 +37,28 @@ export const codeReviewCheckTool = createTool({
 
     try {
       // Create validation prompt
-      const validationPrompt = buildCodeReviewCheckPrompt(
-        issueType,
-        originalCode,
-        fixedCode,
-        language,
-        outputLanguage
-      );
+      const validationPrompt = buildCodeReviewCheckPrompt(issueType, originalCode, fixedCode, language, outputLanguage);
 
       // Call AI for validation with automatic retry
       const response = await withRetry(
-        () => generateText({
-          model: model,
-          messages: [
-            {
-              role: 'system',
-              content: `You are a pragmatic code reviewer. Your job is to validate if a developer correctly fixed a code issue (could be a security vulnerability, logic error, performance problem, or other code defect).
+        () =>
+          generateText({
+            model: model,
+            messages: [
+              {
+                role: 'system',
+                content: `You are a pragmatic code reviewer. Your job is to validate if a developer correctly fixed a code issue (could be a security vulnerability, logic error, performance problem, or other code defect).
 
 Focus on: Does the fix solve the issue? If yes, it's correct - don't worry about whether it's the most elegant or best-practice approach. There are infinite ways to solve a problem.
 
 IMPORTANT: Respond in ${outputLanguage} language. All feedback, explanation, and hint must be in ${outputLanguage}.
 
 Return ONLY valid JSON - NO markdown, NO backticks, NO formatting. Start directly with {.`,
-            },
-            { role: 'user', content: validationPrompt },
-          ],
-          ...CODE_REVIEW_PARAMS,
-        }),
+              },
+              { role: 'user', content: validationPrompt },
+            ],
+            ...CODE_REVIEW_PARAMS,
+          }),
         `[CodeReviewCheckTool] code-review-validation-${issueType}`
       );
 

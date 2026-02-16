@@ -12,10 +12,7 @@ export interface PolicyFallbackOptions {
  * Fallback summary used when AI summarization fails.
  * Produces an excerpt-based plain text summary that is safe and bounded.
  */
-export function buildHeuristicPolicySummary(
-  fullPolicy: string,
-  options: PolicyFallbackOptions = {}
-): string {
+export function buildHeuristicPolicySummary(fullPolicy: string, options: PolicyFallbackOptions = {}): string {
   const cleaned = fullPolicy.trim();
   if (cleaned.length === 0) {
     return '';
@@ -24,10 +21,10 @@ export function buildHeuristicPolicySummary(
   const maxExcerptSections = options.maxExcerptSections ?? 5;
   const excerptMaxChars = options.excerptMaxChars ?? 1200;
 
-  const chunks = cleaned.split(/\n\s*---\s*\n/g).filter((c) => c.trim().length > 0);
+  const chunks = cleaned.split(/\n\s*---\s*\n/g).filter(c => c.trim().length > 0);
   const topChunks = chunks
     .slice(0, maxExcerptSections)
-    .map((c) => truncateText(c, excerptMaxChars, 'policy section excerpt'));
+    .map(c => truncateText(c, excerptMaxChars, 'policy section excerpt'));
 
   return [
     'COMPANY POLICY SUMMARY (fallback, heuristic)',
@@ -37,5 +34,3 @@ export function buildHeuristicPolicySummary(
     ...topChunks.map((c, i) => `SECTION ${i + 1} EXCERPT:\n${c}`),
   ].join('\n');
 }
-
-

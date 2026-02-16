@@ -5,6 +5,8 @@ import { EmailIREmailDataSchema } from '../../types/email-ir';
 import { triageOutputSchema } from './triage';
 import { featureExtractionOutputSchema } from './feature-extraction';
 import { createLogContext, loggerRiskAssessment, logStepStart, logStepComplete, logStepError } from './logger-setup';
+import { normalizeError, logErrorInfo } from '../../utils/core/error-utils';
+import { errorService } from '../../services/error-service';
 import { withRetry } from '../../utils/core/resilience-utils';
 
 export const riskAssessmentOutputSchema = z.object({
@@ -176,9 +178,14 @@ Provide clear SOC-ready justification.
 `;
 
       const result = await withRetry(
-        () => emailIRAnalyst.generate(prompt, {
-          output: riskAssessmentOutputSchema.omit({ original_email: true, triage_result: true, feature_result: true }),
-        }),
+        () =>
+          emailIRAnalyst.generate(prompt, {
+            output: riskAssessmentOutputSchema.omit({
+              original_email: true,
+              triage_result: true,
+              feature_result: true,
+            }),
+          }),
         'risk-assessment-llm'
       );
 
@@ -204,8 +211,13 @@ Provide clear SOC-ready justification.
         },
       };
     } catch (error) {
-      logStepError(loggerRiskAssessment, ctx, error as Error);
-      throw error;
+      const err = normalizeError(error);
+      logStepError(loggerRiskAssessment, ctx, err);
+      const errorInfo = errorService.aiModel(err.message, { step: 'risk-assessment', stack: err.stack });
+      logErrorInfo(loggerRiskAssessment, 'error', 'Risk assessment failed', errorInfo);
+      const e = new Error(err.message);
+      (e as Error & { code?: string }).code = errorInfo.code;
+      throw e;
     }
   },
 });

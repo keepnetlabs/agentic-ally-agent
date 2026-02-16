@@ -5,6 +5,8 @@ import { KVService } from '../../services/kv-service';
 import { getLogger } from '../../utils/core/logger';
 import { KV_NAMESPACES } from '../../constants';
 import { smsResponseSchema, landingPageResponseSchema } from './smishing-editor-schemas';
+import { normalizeError, logErrorInfo } from '../../utils/core/error-utils';
+import { errorService } from '../../services/error-service';
 import { processLandingPageResults } from './phishing-editor-helpers';
 
 export interface ExistingSms {
@@ -53,10 +55,7 @@ export async function loadSmishingContent(
   const smsKey = `smishing:${smishingId}:sms:${normalizedLanguage}`;
   const landingKey = `smishing:${smishingId}:landing:${normalizedLanguage}`;
 
-  const [smsResult, landingResult] = await Promise.allSettled([
-    kvService.get(smsKey),
-    kvService.get(landingKey),
-  ]);
+  const [smsResult, landingResult] = await Promise.allSettled([kvService.get(smsKey), kvService.get(landingKey)]);
 
   const rawSms = smsResult.status === 'fulfilled' ? smsResult.value : null;
   const rawLanding = landingResult.status === 'fulfilled' ? landingResult.value : null;
@@ -171,9 +170,12 @@ export async function streamEditResultsToUI(
 
     await writer.write({ type: 'text-end', id: messageId });
   } catch (err) {
-    logger.warn('Failed to stream updated components to UI', {
-      error: err instanceof Error ? err.message : String(err),
+    const error = normalizeError(err);
+    const errorInfo = errorService.external(error.message, {
+      step: 'stream-smishing-components',
+      stack: error.stack,
     });
+    logErrorInfo(logger, 'warn', 'Failed to stream updated components to UI', errorInfo);
   }
 }
 

@@ -16,7 +16,7 @@ import {
   microlearningSchema,
   microlearningLanguageContentSchema,
   microlearningFinalResultSchema,
-  saveToKVInputSchema
+  saveToKVInputSchema,
 } from '../schemas/create-microlearning-schemas';
 
 // Type definitions from schemas
@@ -32,7 +32,6 @@ import { summarizeForLog } from '../utils/core/log-redaction-utils';
 const logger = getLogger('CreateMicrolearningWorkflow');
 
 // Input/Output Schemas
-
 
 // Step 1: Analyze Prompt
 export const analyzePromptStep = createStep({
@@ -73,14 +72,16 @@ export const analyzePromptStep = createStep({
       const validationError = analysisRes as { error: true; message: string; validationErrors?: unknown };
       const errorInfo = errorService.external(`Prompt analysis validation failed: ${validationError.message}`, {
         step: 'analyze-user-prompt',
-        validationErrors: validationError.validationErrors
+        validationErrors: validationError.validationErrors,
       });
       logErrorInfo(logger, 'error', 'Prompt analysis validation failed', errorInfo);
       throw new Error(errorInfo.message);
     }
 
     if (!analysisRes.success) {
-      const errorInfo = errorService.external('Prompt analysis failed: Unknown error', { step: 'analyze-user-prompt' });
+      const errorInfo = errorService.external(`Prompt analysis failed: ${analysisRes?.error || 'Unknown error'}`, {
+        step: 'analyze-user-prompt',
+      });
       logErrorInfo(logger, 'error', 'Prompt analysis failed', errorInfo);
       throw new Error(errorInfo.message);
     }
@@ -106,7 +107,7 @@ export const analyzePromptStep = createStep({
       model: inputData.model ?? undefined,
       policyContext: inputData.policyContext ?? undefined,
     };
-  }
+  },
 });
 
 // Step 2: Generate Microlearning Structure
@@ -127,13 +128,18 @@ export const generateMicrolearningStep = createStep({
 
     // v1: execute now takes (inputData, context)
     const genRes = await generateMicrolearningJsonTool.execute({
-      analysis, microlearningId, model, policyContext: inputData.policyContext
+      analysis,
+      microlearningId,
+      model,
+      policyContext: inputData.policyContext,
     }, {});
 
     // v1: Check for ValidationError or failure
     if (('error' in genRes && genRes.error) || !genRes.success) {
       const errorMsg = ('error' in genRes && genRes.error) ? String(genRes.error) : 'Unknown error';
-      const errorInfo = errorService.external(`Microlearning generation failed: ${errorMsg}`, { step: 'generate-microlearning-json' });
+      const errorInfo = errorService.external(`Microlearning generation failed: ${errorMsg}`, {
+        step: 'generate-microlearning-json',
+      });
       logErrorInfo(logger, 'error', 'Microlearning generation failed', errorInfo);
       logger.debug('Additional error context', { topic: analysis.topic });
       throw new Error(errorInfo.message);
@@ -159,15 +165,21 @@ export const generateMicrolearningStep = createStep({
     await microlearningService.storeMicrolearning(enrichedMicrolearning);
 
     const scenes = enrichedMicrolearning.scenes || [];
-    const hasCodeReview = scenes.some((scene: { metadata?: { scene_type?: string } }) => scene?.metadata?.scene_type === 'code_review');
-    const hasVishing = scenes.some((scene: { metadata?: { scene_type?: string } }) => scene?.metadata?.scene_type === 'vishing_simulation');
-    const hasSmishing = scenes.some((scene: { metadata?: { scene_type?: string } }) => scene?.metadata?.scene_type === 'smishing_simulation');
+    const hasCodeReview = scenes.some(
+      (scene: { metadata?: { scene_type?: string } }) => scene?.metadata?.scene_type === 'code_review'
+    );
+    const hasVishing = scenes.some(
+      (scene: { metadata?: { scene_type?: string } }) => scene?.metadata?.scene_type === 'vishing_simulation'
+    );
+    const hasSmishing = scenes.some(
+      (scene: { metadata?: { scene_type?: string } }) => scene?.metadata?.scene_type === 'smishing_simulation'
+    );
     const hasInbox = !(hasCodeReview || hasVishing || hasSmishing);
     if (!hasInbox) {
       logger.info('Inbox will be skipped for this training type', {
         hasCodeReview,
         hasVishing,
-        hasSmishing
+        hasSmishing,
       });
     }
 
@@ -183,7 +195,7 @@ export const generateMicrolearningStep = createStep({
       policyContext: inputData.policyContext ?? undefined,
     };
     return output;
-  }
+  },
 });
 
 // Step 3: Generate Language Content
@@ -210,24 +222,22 @@ export const generateLanguageStep = createStep({
       analysis,
       microlearning: microlearningStructure,
       model,
-      policyContext: inputData.policyContext
+      policyContext: inputData.policyContext,
     }, { writer } as ToolExecutionContext);
 
     // v1: Check for ValidationError or failure
     if (('error' in result && result.error) || !result.success) {
       const errorMsg = ('error' in result && result.error) ? String(result.error) : 'Unknown error';
-      const errorInfo = errorService.external(`Language content generation failed: ${errorMsg}`, { step: 'generate-language-json' });
+      const errorInfo = errorService.external(`Language content generation failed: ${errorMsg}`, {
+        step: 'generate-language-json',
+      });
       logErrorInfo(logger, 'error', 'Language content generation failed', errorInfo);
       logger.debug('Additional error context', { microlearningId, language: analysis.language });
       throw new Error(errorInfo.message);
     }
 
     const microlearningService = new MicrolearningService();
-    await microlearningService.storeLanguageContent(
-      microlearningId,
-      analysis.language,
-      result.data
-    );
+    await microlearningService.storeLanguageContent(microlearningId, analysis.language, result.data);
 
     const output: MicrolearningLanguageOutput = {
       ...result,
@@ -240,7 +250,7 @@ export const generateLanguageStep = createStep({
       policyContext: inputData.policyContext ?? undefined,
     };
     return output;
-  }
+  },
 });
 
 // Step 4: Create Inbox Assignment
@@ -268,11 +278,8 @@ export const createInboxStep = createStep({
           language: analysis.language,
           department: normalizedDept,
           trainingUrl,
-          filesGenerated: [
-            `${microlearningId}.json`,
-            `${microlearningId}/${analysis.language}.json`,
-          ]
-        }
+          filesGenerated: [`${microlearningId}.json`, `${microlearningId}/${analysis.language}.json`],
+        },
       };
     }
 
@@ -288,17 +295,18 @@ export const createInboxStep = createStep({
       microlearning: microlearningStructure,
       modelProvider: inputData.modelProvider,
       model: inputData.model,
-      additionalContext: analysis.additionalContext // Pass user context to inbox generation
+      additionalContext: analysis.additionalContext,
     }, {});
 
     // v1: Check for ValidationError or failure
     if (('error' in inboxResult && inboxResult.error) || !inboxResult.success) {
       const errorMsg = ('error' in inboxResult && inboxResult.error) ? String(inboxResult.error) : 'Unknown error';
-      const errorInfo = errorService.external(`Inbox creation failed: ${errorMsg}`, { step: 'create-inbox-structure' });
+      const errorInfo = errorService.external(`Inbox creation failed: ${errorMsg}`, {
+        step: 'create-inbox-structure',
+      });
       logErrorInfo(logger, 'error', 'Inbox creation failed', errorInfo);
       throw new Error(errorInfo.message);
     }
-
 
     const langUrl = encodeURIComponent(`lang/${analysis.language}`);
     const inboxUrl = encodeURIComponent(`inbox/${normalizedDept}`);
@@ -317,11 +325,11 @@ export const createInboxStep = createStep({
         filesGenerated: [
           `${microlearningId}.json`,
           `${microlearningId}/${analysis.language}.json`,
-          `inbox/${normalizedDept}/${analysis.language}.json`
-        ]
-      }
+          `inbox/${normalizedDept}/${analysis.language}.json`,
+        ],
+      },
     };
-  }
+  },
 });
 
 // Create Microlearning Workflow - With parallel language generation and inbox creation
@@ -350,7 +358,7 @@ export const saveToKVStep = createStep({
               {
                 microlearning: microlearningStructure,
                 languageContent: languageResult.data,
-                inboxContent: hasInbox ? inboxResult.data : undefined
+                inboxContent: hasInbox ? inboxResult.data : undefined,
               },
               analysis.language,
               normalizedDept
@@ -368,16 +376,25 @@ export const saveToKVStep = createStep({
         await waitForKVConsistency(microlearningId, expectedKeys);
       } catch (saveError) {
         const err = normalizeError(saveError);
-        logger.warn('KV save failed but continuing', { error: err.message, stack: err.stack, microlearningId });
+        const errorInfo = errorService.external(err.message, {
+          step: 'save-to-kv',
+          stack: err.stack,
+          microlearningId,
+        });
+        logErrorInfo(logger, 'warn', 'KV save failed but continuing', errorInfo);
       }
     } catch (error) {
       const err = normalizeError(error);
-      logger.warn('KV initialization error', { error: err.message, stack: err.stack });
+      const errorInfo = errorService.external(err.message, {
+        step: 'kv-initialization',
+        stack: err.stack,
+      });
+      logErrorInfo(logger, 'warn', 'KV initialization error', errorInfo);
     }
 
     // Return only the inbox result from parallel execution
     return inboxResult;
-  }
+  },
 });
 
 const createMicrolearningWorkflow = createWorkflow({
@@ -390,7 +407,7 @@ const createMicrolearningWorkflow = createWorkflow({
   .then(analyzePromptStep)
   .then(generateMicrolearningStep)
   .parallel([createInboxStep, generateLanguageStep])
-  .then(saveToKVStep)
+  .then(saveToKVStep);
 
 // Commit workflow
 // Workflow chain: analyze → generate → (language + inbox paralel)

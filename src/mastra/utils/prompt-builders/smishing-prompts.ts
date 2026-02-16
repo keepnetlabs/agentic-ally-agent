@@ -35,10 +35,10 @@ type AnalysisPromptParams = {
 
 type SmsPromptParams = {
   analysis: {
-  scenario: string;
-  tone: string;
-  psychologicalTriggers: string[];
-  method: string;
+    scenario: string;
+    tone: string;
+    psychologicalTriggers: string[];
+    method: string;
   };
   language: string;
   difficulty: string;

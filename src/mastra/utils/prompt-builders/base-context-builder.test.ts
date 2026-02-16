@@ -180,7 +180,7 @@ describe('Base Context Builder', () => {
     describe('Native Expression Rules', () => {
       it('should enforce native expression', () => {
         const prompt = buildSystemPrompt('en');
-        expect(prompt).toContain('Create, Don\'t Translate');
+        expect(prompt).toContain("Create, Don't Translate");
         expect(prompt).toContain('native professional');
       });
 
@@ -421,7 +421,7 @@ describe('Base Context Builder', () => {
           return buildContextData(analysis as any, baseMicrolearning);
         });
 
-        contexts.forEach((context) => {
+        contexts.forEach(context => {
           expect(context).toContain('CONTEXT');
           expect(context).toContain('CONTENT RULES');
         });

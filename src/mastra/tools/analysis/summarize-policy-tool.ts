@@ -78,15 +78,16 @@ Return ONLY a valid JSON object with this structure (no markdown, no extra text)
   "relevant_sections": ["section name 1", "section name 2"]
 }`;
 
-      const modelToUse = getModelWithOverride(modelProvider as any, model);
+      const modelToUse = getModelWithOverride(modelProvider, model);
 
       const { text } = await withRetry(
-        () => generateText({
-          model: modelToUse,
-          system: systemPrompt,
-          prompt: userPrompt,
-          ...DEFAULT_GENERATION_PARAMS,
-        }),
+        () =>
+          generateText({
+            model: modelToUse,
+            system: systemPrompt,
+            prompt: userPrompt,
+            ...DEFAULT_GENERATION_PARAMS,
+          }),
         `[SummarizePolicyTool] policy-summary-${focusArea || 'general'}`
       );
 
@@ -109,7 +110,7 @@ Return ONLY a valid JSON object with this structure (no markdown, no extra text)
       // Validate result against output schema
       const validation = validateToolResult(toolResult, summarizePolicyOutputSchema, 'summarize-policy');
       if (!validation.success) {
-        logger.error('Policy summary result validation failed', { code: validation.error.code, message: validation.error.message });
+        logErrorInfo(logger, 'error', 'Policy summary result validation failed', validation.error);
         return {
           success: false,
           error: JSON.stringify(validation.error),

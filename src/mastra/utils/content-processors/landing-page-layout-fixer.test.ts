@@ -74,4 +74,18 @@ describe('fixLandingPageLayout', () => {
     const output = fixLandingPageLayout(input);
     expect(output).toContain('text-align: center');
   });
+
+  it('should add display: block and margin: 0 auto for anchor/button with max-width', () => {
+    const input = `<a style='max-width: 200px; color: blue;'>Click here</a>`;
+    const output = fixLandingPageLayout(input);
+    expect(output).toContain('display: block');
+    expect(output).toContain('margin: 0 auto');
+  });
+
+  it('should replace display: inline-block with display: block for a/button with max-width', () => {
+    const input = `<button style='max-width: 300px; display: inline-block;'>Submit</button>`;
+    const output = fixLandingPageLayout(input);
+    expect(output).toContain('display: block');
+    expect(output).not.toContain('display: inline-block');
+  });
 });

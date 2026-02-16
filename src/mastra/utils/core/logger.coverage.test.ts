@@ -47,6 +47,7 @@ describe('logger.ts coverage branches', () => {
   });
 
   it('resolveLogLevel returns debug in development and info otherwise', async () => {
+    delete process.env.LOG_LEVEL;
     process.env.NODE_ENV = 'development';
     vi.resetModules();
     const devModule = await import('./logger');
@@ -56,6 +57,21 @@ describe('logger.ts coverage branches', () => {
     vi.resetModules();
     const testModule = await import('./logger');
     expect(testModule.resolveLogLevel()).toBe('info');
+  });
+
+  it('resolveLogLevel uses LOG_LEVEL env when set', async () => {
+    process.env.LOG_LEVEL = 'warn';
+    process.env.NODE_ENV = 'development';
+    vi.resetModules();
+    const mod = await import('./logger');
+    expect(mod.resolveLogLevel()).toBe('warn');
+
+    process.env.LOG_LEVEL = 'error';
+    vi.resetModules();
+    const mod2 = await import('./logger');
+    expect(mod2.resolveLogLevel()).toBe('error');
+
+    delete process.env.LOG_LEVEL;
   });
 
   it('getLogger caches PinoLogger instance per module name', async () => {
@@ -123,19 +139,25 @@ describe('logger.ts coverage branches', () => {
     const { getLogger } = await import('./logger');
 
     getLogger('DevModule');
-    expect(mocks.ctor).toHaveBeenLastCalledWith({
-      name: 'DevModule',
-      level: 'debug',
-    });
+    expect(mocks.ctor).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        name: 'DevModule',
+        level: 'debug',
+        formatters: expect.any(Object),
+      })
+    );
 
     process.env.NODE_ENV = 'production';
     vi.resetModules();
     const prodModule = await import('./logger');
     prodModule.getLogger('ProdModule');
-    expect(mocks.ctor).toHaveBeenLastCalledWith({
-      name: 'ProdModule',
-      level: 'info',
-    });
+    expect(mocks.ctor).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        name: 'ProdModule',
+        level: 'info',
+        formatters: expect.any(Object),
+      })
+    );
   });
 
   it('startTimer end returns elapsed milliseconds as number', async () => {

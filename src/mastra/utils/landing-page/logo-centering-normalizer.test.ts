@@ -100,31 +100,31 @@ describe('normalizeLandingLogoCentering', () => {
     it('wraps 64px icon', () => {
       const input = `<div style="width: 64px; height: 64px; border-radius: 999px; display: flex;">✓</div>`;
       const out = normalizeLandingLogoCentering(input);
-      expect(out).toContain("display: flex; justify-content: center;");
+      expect(out).toContain('display: flex; justify-content: center;');
     });
 
     it('wraps 96px icon', () => {
       const input = `<div style="width: 96px; height: 96px; border-radius: 999px; display: flex;">✓</div>`;
       const out = normalizeLandingLogoCentering(input);
-      expect(out).toContain("display: flex; justify-content: center;");
+      expect(out).toContain('display: flex; justify-content: center;');
     });
 
     it('wraps 128px icon', () => {
       const input = `<div style="width: 128px; height: 128px; border-radius: 999px; display: flex;">✓</div>`;
       const out = normalizeLandingLogoCentering(input);
-      expect(out).toContain("display: flex; justify-content: center;");
+      expect(out).toContain('display: flex; justify-content: center;');
     });
 
     it('wraps 32px icon', () => {
       const input = `<div style="width: 32px; height: 32px; border-radius: 999px; display: flex;">✓</div>`;
       const out = normalizeLandingLogoCentering(input);
-      expect(out).toContain("display: flex; justify-content: center;");
+      expect(out).toContain('display: flex; justify-content: center;');
     });
 
     it('wraps 256px icon', () => {
       const input = `<div style="width: 256px; height: 256px; border-radius: 999px; display: flex;">✓</div>`;
       const out = normalizeLandingLogoCentering(input);
-      expect(out).toContain("display: flex; justify-content: center;");
+      expect(out).toContain('display: flex; justify-content: center;');
     });
   });
 
@@ -132,31 +132,31 @@ describe('normalizeLandingLogoCentering', () => {
     it('wraps icon with border-radius: 999px', () => {
       const input = `<div style="width: 64px; border-radius: 999px; display: flex;">✓</div>`;
       const out = normalizeLandingLogoCentering(input);
-      expect(out).toContain("display: flex; justify-content: center;");
+      expect(out).toContain('display: flex; justify-content: center;');
     });
 
     it('wraps icon with border-radius: 50%', () => {
       const input = `<div style="width: 64px; border-radius: 50%; display: flex;">✓</div>`;
       const out = normalizeLandingLogoCentering(input);
-      expect(out).toContain("display: flex; justify-content: center;");
+      expect(out).toContain('display: flex; justify-content: center;');
     });
 
     it('wraps icon with border-radius: 100%', () => {
       const input = `<div style="width: 64px; border-radius: 100%; display: flex;">✓</div>`;
       const out = normalizeLandingLogoCentering(input);
-      expect(out).toContain("display: flex; justify-content: center;");
+      expect(out).toContain('display: flex; justify-content: center;');
     });
 
     it('wraps icon with border-radius: 9999px', () => {
       const input = `<div style="width: 64px; border-radius: 9999px; display: flex;">✓</div>`;
       const out = normalizeLandingLogoCentering(input);
-      expect(out).toContain("display: flex; justify-content: center;");
+      expect(out).toContain('display: flex; justify-content: center;');
     });
 
     it('wraps icon with border-radius: 32px', () => {
       const input = `<div style="width: 64px; border-radius: 32px; display: flex;">✓</div>`;
       const out = normalizeLandingLogoCentering(input);
-      expect(out).toContain("display: flex; justify-content: center;");
+      expect(out).toContain('display: flex; justify-content: center;');
     });
   });
 
@@ -164,37 +164,37 @@ describe('normalizeLandingLogoCentering', () => {
     it('handles single quotes in style', () => {
       const input = `<div style='width: 64px; border-radius: 999px; display: flex;'>✓</div>`;
       const out = normalizeLandingLogoCentering(input);
-      expect(out).toContain("display: flex; justify-content: center;");
+      expect(out).toContain('display: flex; justify-content: center;');
     });
 
     it('handles double quotes in style', () => {
       const input = `<div style="width: 64px; border-radius: 999px; display: flex;">✓</div>`;
       const out = normalizeLandingLogoCentering(input);
-      expect(out).toContain("display: flex; justify-content: center;");
+      expect(out).toContain('display: flex; justify-content: center;');
     });
 
     it('handles style with extra whitespace', () => {
       const input = `<div style="  width:  64px  ;  border-radius:  999px  ;  display:  flex  ;  ">✓</div>`;
       const out = normalizeLandingLogoCentering(input);
-      expect(out).toContain("display: flex; justify-content: center;");
+      expect(out).toContain('display: flex; justify-content: center;');
     });
 
     it('handles style without spaces after colons', () => {
       const input = `<div style="width:64px;border-radius:999px;display:flex;">✓</div>`;
       const out = normalizeLandingLogoCentering(input);
-      expect(out).toContain("display: flex; justify-content: center;");
+      expect(out).toContain('display: flex; justify-content: center;');
     });
 
     it('handles uppercase DISPLAY:FLEX', () => {
       const input = `<div style="width: 64px; border-radius: 999px; DISPLAY: FLEX;">✓</div>`;
       const out = normalizeLandingLogoCentering(input);
-      expect(out).toContain("display: flex; justify-content: center;");
+      expect(out).toContain('display: flex; justify-content: center;');
     });
 
     it('handles mixed case Width:64px', () => {
       const input = `<div style="Width: 64px; Border-Radius: 999px; Display: Flex;">✓</div>`;
       const out = normalizeLandingLogoCentering(input);
-      expect(out).toContain("display: flex; justify-content: center;");
+      expect(out).toContain('display: flex; justify-content: center;');
     });
   });
 
@@ -203,34 +203,34 @@ describe('normalizeLandingLogoCentering', () => {
       const input = `<div style="width: 64px; border-radius: 999px; display: flex;">🔒</div>`;
       const out = normalizeLandingLogoCentering(input);
       expect(out).toContain('🔒');
-      expect(out).toContain("display: flex; justify-content: center;");
+      expect(out).toContain('display: flex; justify-content: center;');
     });
 
     it('wraps icon with text content', () => {
       const input = `<div style="width: 64px; border-radius: 999px; display: flex;">OK</div>`;
       const out = normalizeLandingLogoCentering(input);
       expect(out).toContain('OK');
-      expect(out).toContain("display: flex; justify-content: center;");
+      expect(out).toContain('display: flex; justify-content: center;');
     });
 
     it('wraps icon with nested span', () => {
       const input = `<div style="width: 64px; border-radius: 999px; display: flex;"><span>✓</span></div>`;
       const out = normalizeLandingLogoCentering(input);
       expect(out).toContain('<span>✓</span>');
-      expect(out).toContain("display: flex; justify-content: center;");
+      expect(out).toContain('display: flex; justify-content: center;');
     });
 
     it('wraps icon with unicode characters', () => {
       const input = `<div style="width: 64px; border-radius: 999px; display: flex;">你好</div>`;
       const out = normalizeLandingLogoCentering(input);
       expect(out).toContain('你好');
-      expect(out).toContain("display: flex; justify-content: center;");
+      expect(out).toContain('display: flex; justify-content: center;');
     });
 
     it('wraps empty icon div', () => {
       const input = `<div style="width: 64px; border-radius: 999px; display: flex;"></div>`;
       const out = normalizeLandingLogoCentering(input);
-      expect(out).toContain("display: flex; justify-content: center;");
+      expect(out).toContain('display: flex; justify-content: center;');
     });
   });
 
@@ -329,7 +329,7 @@ describe('normalizeLandingLogoCentering', () => {
     it('handles icon div inside other elements', () => {
       const input = `<section><div><div style="width: 64px; border-radius: 999px; display: flex;">✓</div></div></section>`;
       const out = normalizeLandingLogoCentering(input);
-      expect(out).toContain("display: flex; justify-content: center;");
+      expect(out).toContain('display: flex; justify-content: center;');
       expect(out).toContain('<section>');
       expect(out).toContain('</section>');
     });
@@ -339,7 +339,7 @@ describe('normalizeLandingLogoCentering', () => {
       const out = normalizeLandingLogoCentering(input);
       expect(out).toContain('<p>Before</p>');
       expect(out).toContain('<p>After</p>');
-      expect(out).toContain("display: flex; justify-content: center;");
+      expect(out).toContain('display: flex; justify-content: center;');
     });
 
     it('handles icon with many additional styles', () => {
@@ -347,22 +347,25 @@ describe('normalizeLandingLogoCentering', () => {
       const out = normalizeLandingLogoCentering(input);
       expect(out).toContain('box-shadow: 0 4px 6px rgba(0,0,0,0.1);');
       expect(out).toContain('background: linear-gradient(45deg, #f3f4f6, #e5e7eb);');
-      expect(out).toContain("display: flex; justify-content: center;");
+      expect(out).toContain('display: flex; justify-content: center;');
     });
   });
 
   describe('Special Cases', () => {
     it('handles very long HTML', () => {
-      const longHtml = '<div>'.repeat(100) + `<div style="width: 64px; border-radius: 999px; display: flex;">✓</div>` + '</div>'.repeat(100);
+      const longHtml =
+        '<div>'.repeat(100) +
+        `<div style="width: 64px; border-radius: 999px; display: flex;">✓</div>` +
+        '</div>'.repeat(100);
       const out = normalizeLandingLogoCentering(longHtml);
-      expect(out).toContain("display: flex; justify-content: center;");
+      expect(out).toContain('display: flex; justify-content: center;');
     });
 
     it('handles HTML with special characters', () => {
       const input = `<div style="width: 64px; border-radius: 999px; display: flex;">&lt;&gt;&amp;</div>`;
       const out = normalizeLandingLogoCentering(input);
       expect(out).toContain('&lt;&gt;&amp;');
-      expect(out).toContain("display: flex; justify-content: center;");
+      expect(out).toContain('display: flex; justify-content: center;');
     });
 
     it('handles HTML with line breaks in div', () => {
@@ -370,7 +373,7 @@ describe('normalizeLandingLogoCentering', () => {
         ✓
       </div>`;
       const out = normalizeLandingLogoCentering(input);
-      expect(out).toContain("display: flex; justify-content: center;");
+      expect(out).toContain('display: flex; justify-content: center;');
     });
 
     it('handles malformed style attribute', () => {
@@ -385,21 +388,21 @@ describe('normalizeLandingLogoCentering', () => {
       const out = normalizeLandingLogoCentering(input);
       expect(out).toContain('data-id="icon-1"');
       expect(out).toContain('data-type="logo"');
-      expect(out).toContain("display: flex; justify-content: center;");
+      expect(out).toContain('display: flex; justify-content: center;');
     });
 
     it('handles div with class attribute', () => {
       const input = `<div class="icon-circle" style="width: 64px; border-radius: 999px; display: flex;">✓</div>`;
       const out = normalizeLandingLogoCentering(input);
       expect(out).toContain('class="icon-circle"');
-      expect(out).toContain("display: flex; justify-content: center;");
+      expect(out).toContain('display: flex; justify-content: center;');
     });
 
     it('handles div with id attribute', () => {
       const input = `<div id="main-icon" style="width: 64px; border-radius: 999px; display: flex;">✓</div>`;
       const out = normalizeLandingLogoCentering(input);
       expect(out).toContain('id="main-icon"');
-      expect(out).toContain("display: flex; justify-content: center;");
+      expect(out).toContain('display: flex; justify-content: center;');
     });
   });
 
@@ -433,4 +436,3 @@ describe('normalizeLandingLogoCentering', () => {
     });
   });
 });
-

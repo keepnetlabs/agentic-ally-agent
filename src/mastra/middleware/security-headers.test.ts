@@ -85,10 +85,7 @@ describe('securityHeadersMiddleware', () => {
     it('should set X-Content-Type-Options header', async () => {
       await securityHeadersMiddleware(mockContext, mockNext);
 
-      expect(mockContext.res.headers.set).toHaveBeenCalledWith(
-        'X-Content-Type-Options',
-        'nosniff'
-      );
+      expect(mockContext.res.headers.set).toHaveBeenCalledWith('X-Content-Type-Options', 'nosniff');
     });
 
     it('should have value nosniff', async () => {
@@ -112,10 +109,7 @@ describe('securityHeadersMiddleware', () => {
     it('should set X-Frame-Options header', async () => {
       await securityHeadersMiddleware(mockContext, mockNext);
 
-      expect(mockContext.res.headers.set).toHaveBeenCalledWith(
-        'X-Frame-Options',
-        'DENY'
-      );
+      expect(mockContext.res.headers.set).toHaveBeenCalledWith('X-Frame-Options', 'DENY');
     });
 
     it('should have value DENY', async () => {
@@ -139,10 +133,7 @@ describe('securityHeadersMiddleware', () => {
     it('should set X-XSS-Protection header', async () => {
       await securityHeadersMiddleware(mockContext, mockNext);
 
-      expect(mockContext.res.headers.set).toHaveBeenCalledWith(
-        'X-XSS-Protection',
-        '1; mode=block'
-      );
+      expect(mockContext.res.headers.set).toHaveBeenCalledWith('X-XSS-Protection', '1; mode=block');
     });
 
     it('should have value 1; mode=block', async () => {
@@ -166,10 +157,7 @@ describe('securityHeadersMiddleware', () => {
     it('should set Referrer-Policy header', async () => {
       await securityHeadersMiddleware(mockContext, mockNext);
 
-      expect(mockContext.res.headers.set).toHaveBeenCalledWith(
-        'Referrer-Policy',
-        'strict-origin-when-cross-origin'
-      );
+      expect(mockContext.res.headers.set).toHaveBeenCalledWith('Referrer-Policy', 'strict-origin-when-cross-origin');
     });
 
     it('should have value strict-origin-when-cross-origin', async () => {
@@ -293,19 +281,13 @@ describe('securityHeadersMiddleware', () => {
     it('should include clickjacking protection', async () => {
       await securityHeadersMiddleware(mockContext, mockNext);
 
-      expect(mockContext.res.headers.set).toHaveBeenCalledWith(
-        'X-Frame-Options',
-        'DENY'
-      );
+      expect(mockContext.res.headers.set).toHaveBeenCalledWith('X-Frame-Options', 'DENY');
     });
 
     it('should prevent MIME type sniffing attacks', async () => {
       await securityHeadersMiddleware(mockContext, mockNext);
 
-      expect(mockContext.res.headers.set).toHaveBeenCalledWith(
-        'X-Content-Type-Options',
-        'nosniff'
-      );
+      expect(mockContext.res.headers.set).toHaveBeenCalledWith('X-Content-Type-Options', 'nosniff');
     });
   });
 
@@ -320,10 +302,7 @@ describe('securityHeadersMiddleware', () => {
     it('should set X-Frame-Options to DENY (prevents embedding)', async () => {
       await securityHeadersMiddleware(mockContext, mockNext);
 
-      expect(mockContext.res.headers.set).toHaveBeenCalledWith(
-        'X-Frame-Options',
-        'DENY'
-      );
+      expect(mockContext.res.headers.set).toHaveBeenCalledWith('X-Frame-Options', 'DENY');
     });
 
     it('should not prevent fetch/axios from iframe (handled by CORS)', async () => {

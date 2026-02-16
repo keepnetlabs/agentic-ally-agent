@@ -137,7 +137,7 @@ describe('openapi middleware', () => {
     it('should return 404 for /workflows', async () => {
       mockContext.req.path = '/workflows';
 
-      const result = await disablePlayground(mockContext, mockNext) as Response;
+      const result = (await disablePlayground(mockContext, mockNext)) as Response;
 
       expect(result.status).toBe(404);
     });
@@ -145,7 +145,7 @@ describe('openapi middleware', () => {
     it('should return 404 response with Not found message', async () => {
       mockContext.req.path = '/workflows';
 
-      const result = await disablePlayground(mockContext, mockNext) as Response;
+      const result = (await disablePlayground(mockContext, mockNext)) as Response;
       const text = await result.text();
 
       expect(text).toBe('Not found');
@@ -163,7 +163,7 @@ describe('openapi middleware', () => {
     it('should return 404 for /tools', async () => {
       mockContext.req.path = '/tools';
 
-      const result = await disablePlayground(mockContext, mockNext) as Response;
+      const result = (await disablePlayground(mockContext, mockNext)) as Response;
 
       expect(result.status).toBe(404);
     });
@@ -180,7 +180,7 @@ describe('openapi middleware', () => {
     it('should return 404 for /networks', async () => {
       mockContext.req.path = '/networks';
 
-      const result = await disablePlayground(mockContext, mockNext) as Response;
+      const result = (await disablePlayground(mockContext, mockNext)) as Response;
 
       expect(result.status).toBe(404);
     });
@@ -197,7 +197,7 @@ describe('openapi middleware', () => {
     it('should return 404 for /agents', async () => {
       mockContext.req.path = '/agents';
 
-      const result = await disablePlayground(mockContext, mockNext) as Response;
+      const result = (await disablePlayground(mockContext, mockNext)) as Response;
 
       expect(result.status).toBe(404);
     });
@@ -214,7 +214,7 @@ describe('openapi middleware', () => {
     it('should return 404 for root /', async () => {
       mockContext.req.path = '/';
 
-      const result = await disablePlayground(mockContext, mockNext) as Response;
+      const result = (await disablePlayground(mockContext, mockNext)) as Response;
 
       expect(result.status).toBe(404);
     });
@@ -274,7 +274,7 @@ describe('openapi middleware', () => {
     });
 
     it('handler should accept Context and Next parameters', async () => {
-      const mockNextHandler = vi.fn(async () => { });
+      const mockNextHandler = vi.fn(async () => {});
       await disableSwagger.handler(mockContext, mockNextHandler);
     });
   });
@@ -285,7 +285,7 @@ describe('openapi middleware', () => {
     });
 
     it('should allow access in development', async () => {
-      const mockNextHandler = vi.fn(async () => { });
+      const mockNextHandler = vi.fn(async () => {});
 
       await disableSwagger.handler(mockContext, mockNextHandler);
 
@@ -293,7 +293,7 @@ describe('openapi middleware', () => {
     });
 
     it('should call next in development', async () => {
-      const mockNextHandler = vi.fn(async () => { });
+      const mockNextHandler = vi.fn(async () => {});
 
       await disableSwagger.handler(mockContext, mockNextHandler);
 
@@ -301,7 +301,7 @@ describe('openapi middleware', () => {
     });
 
     it('should return void in development', async () => {
-      const mockNextHandler = vi.fn(async () => { });
+      const mockNextHandler = vi.fn(async () => {});
 
       const result = await disableSwagger.handler(mockContext, mockNextHandler);
 
@@ -315,7 +315,7 @@ describe('openapi middleware', () => {
     });
 
     it('should block access in production', async () => {
-      const mockNextHandler = vi.fn(async () => { });
+      const mockNextHandler = vi.fn(async () => {});
 
       const result = await disableSwagger.handler(mockContext, mockNextHandler);
 
@@ -324,15 +324,15 @@ describe('openapi middleware', () => {
     });
 
     it('should return 404 in production', async () => {
-      const mockNextHandler = vi.fn(async () => { });
+      const mockNextHandler = vi.fn(async () => {});
 
-      const result = await disableSwagger.handler(mockContext, mockNextHandler) as Response;
+      const result = (await disableSwagger.handler(mockContext, mockNextHandler)) as Response;
 
       expect(result.status).toBe(404);
     });
 
     it('should return Response in production', async () => {
-      const mockNextHandler = vi.fn(async () => { });
+      const mockNextHandler = vi.fn(async () => {});
 
       const result = await disableSwagger.handler(mockContext, mockNextHandler);
 
@@ -340,9 +340,9 @@ describe('openapi middleware', () => {
     });
 
     it('should return Not found message', async () => {
-      const mockNextHandler = vi.fn(async () => { });
+      const mockNextHandler = vi.fn(async () => {});
 
-      const result = await disableSwagger.handler(mockContext, mockNextHandler) as Response;
+      const result = (await disableSwagger.handler(mockContext, mockNextHandler)) as Response;
       const text = await result.text();
 
       expect(text).toBe('Not found');
@@ -406,7 +406,7 @@ describe('openapi middleware', () => {
     it('should call isDevelopment in disableSwagger', async () => {
       vi.mocked(isDevelopment).mockClear();
 
-      const mockNextHandler = vi.fn(async () => { });
+      const mockNextHandler = vi.fn(async () => {});
       await disableSwagger.handler(mockContext, mockNextHandler);
 
       expect(isDevelopment).toHaveBeenCalled();
@@ -491,7 +491,7 @@ describe('openapi middleware', () => {
     it('should return Response with 404 status', async () => {
       mockContext.req.path = '/workflows';
 
-      const result = await disablePlayground(mockContext, mockNext) as Response;
+      const result = (await disablePlayground(mockContext, mockNext)) as Response;
 
       expect(result.status).toBe(404);
     });
@@ -499,7 +499,7 @@ describe('openapi middleware', () => {
     it('should return Response with status OK false', async () => {
       mockContext.req.path = '/workflows';
 
-      const result = await disablePlayground(mockContext, mockNext) as Response;
+      const result = (await disablePlayground(mockContext, mockNext)) as Response;
 
       expect(result.ok).toBe(false);
     });
@@ -507,7 +507,7 @@ describe('openapi middleware', () => {
     it('should have response body Not found', async () => {
       mockContext.req.path = '/workflows';
 
-      const result = await disablePlayground(mockContext, mockNext) as Response;
+      const result = (await disablePlayground(mockContext, mockNext)) as Response;
       const text = await result.text();
 
       expect(text).toContain('Not found');

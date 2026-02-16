@@ -4,7 +4,7 @@ import { phishingWorkflowExecutorTool, phishingEditorTool } from '../tools/orche
 import { uploadPhishingTool, assignPhishingTool } from '../tools/user-management';
 import { getDefaultAgentModel } from '../model-providers';
 import { Memory } from '@mastra/memory';
-import { PHISHING, AGENT_NAMES, AGENT_IDS, MESSAGING_GUIDELINES } from '../constants';
+import { PHISHING, AGENT_NAMES, AGENT_IDS, MESSAGING_GUIDELINES_PROMPT_FRAGMENT } from '../constants';
 
 const buildPhishingInstructions = () => `
 You are the **Phishing Simulation Specialist**.
@@ -243,7 +243,7 @@ User: "Change subject to Urgent Action Required"
 → Agent: "No existing template found. Do you have a phishing ID to edit, or should I create a new template first?"
 
 ## Messaging Guidelines (Enterprise-Safe)
-- NEVER use: ${MESSAGING_GUIDELINES.BLACKLIST_WORDS.join(', ')}
+${MESSAGING_GUIDELINES_PROMPT_FRAGMENT}
 
 ## Example Interaction
 **User:** "Create a phishing email for password reset"

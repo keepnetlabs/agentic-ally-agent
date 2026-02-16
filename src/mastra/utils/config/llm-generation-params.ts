@@ -12,8 +12,8 @@
  */
 
 export interface GenerationParams {
-  temperature: number;  // 0-2: Creativity level (0=deterministic, 1=balanced, 2=chaotic)
-  topP?: number;       // 0-1: Nucleus sampling (optional - when omitted, model uses default)
+  temperature: number; // 0-2: Creativity level (0=deterministic, 1=balanced, 2=chaotic)
+  topP?: number; // 0-1: Nucleus sampling (optional - when omitted, model uses default)
 }
 
 /**
@@ -28,37 +28,37 @@ export interface GenerationParams {
  */
 export const SCENE_GENERATION_PARAMS: Record<number, GenerationParams> = {
   1: {
-    temperature: 0.9,  // Intro (CREATIVE): HIGH - maximum varied, engaging highlights
-    topP: 0.92        // High diversity - explore vocabulary variation
+    temperature: 0.9, // Intro (CREATIVE): HIGH - maximum varied, engaging highlights
+    topP: 0.92, // High diversity - explore vocabulary variation
   },
   2: {
-    temperature: 0.75,  // Goals (INFO): MODERATE - SMART but natural, conversational
-    topP: 0.90         // Good diversity while maintaining clarity
+    temperature: 0.75, // Goals (INFO): MODERATE - SMART but natural, conversational
+    topP: 0.9, // Good diversity while maintaining clarity
   },
   3: {
-    temperature: 0.9,  // Video (CREATIVE): HIGH - vivid, immersive, engaging scenarios
-    topP: 0.92        // High diversity for varied narrative styles
+    temperature: 0.9, // Video (CREATIVE): HIGH - vivid, immersive, engaging scenarios
+    topP: 0.92, // High diversity for varied narrative styles
   },
   4: {
-    temperature: 0.8,  // Actions (INFO): MODERATE - precise presentation of steps
-    topP: 0.90        // Good diversity while maintaining clarity
+    temperature: 0.8, // Actions (INFO): MODERATE - precise presentation of steps
+    topP: 0.9, // Good diversity while maintaining clarity
   },
   5: {
-    temperature: 0.75,  // Quiz (INFO): MODERATE - accurate questions with personality
-    topP: 0.90         // Diversity to avoid repetitive patterns
+    temperature: 0.75, // Quiz (INFO): MODERATE - accurate questions with personality
+    topP: 0.9, // Diversity to avoid repetitive patterns
   },
   6: {
-    temperature: 0.8,  // Survey (INFO): MODERATE - natural, consistent questions
-    topP: 0.90        // Good diversity in construction
+    temperature: 0.8, // Survey (INFO): MODERATE - natural, consistent questions
+    topP: 0.9, // Good diversity in construction
   },
   7: {
-    temperature: 0.9,  // Nudge (CREATIVE): HIGH - memorable, engaging triggers
-    topP: 0.92        // High vocabulary distribution
+    temperature: 0.9, // Nudge (CREATIVE): HIGH - memorable, engaging triggers
+    topP: 0.92, // High vocabulary distribution
   },
   8: {
-    temperature: 0.75,  // Summary (INFO): MODERATE - clear recap with personality
-    topP: 0.90         // Diversity while maintaining structure
-  }
+    temperature: 0.75, // Summary (INFO): MODERATE - clear recap with personality
+    topP: 0.9, // Diversity while maintaining structure
+  },
 };
 
 /**
@@ -72,8 +72,8 @@ export const SCENE_GENERATION_PARAMS: Record<number, GenerationParams> = {
  * Each email should feel like a REAL email, not templated
  */
 export const INBOX_GENERATION_PARAMS: GenerationParams = {
-  temperature: 0.9,   // HIGH - Realistic, varied sender names, subjects, bodies
-  topP: 0.92         // High diversity for natural email variations
+  temperature: 0.9, // HIGH - Realistic, varied sender names, subjects, bodies
+  topP: 0.92, // High diversity for natural email variations
 };
 
 /**
@@ -87,8 +87,8 @@ export const INBOX_GENERATION_PARAMS: GenerationParams = {
  * Need variation in interpretation but clear output format
  */
 export const PROMPT_ANALYSIS_PARAMS: GenerationParams = {
-  temperature: 0.7,   // MODERATE - Balanced analysis with some flexibility
-  topP: 0.85         // Good diversity for understanding variations
+  temperature: 0.7, // MODERATE - Balanced analysis with some flexibility
+  topP: 0.85, // Good diversity for understanding variations
 };
 
 /**
@@ -102,8 +102,8 @@ export const PROMPT_ANALYSIS_PARAMS: GenerationParams = {
  * Need clear titles and consistent summaries
  */
 export const METADATA_GENERATION_PARAMS: GenerationParams = {
-  temperature: 0.6,   // MODERATE - Balanced between consistency and variation
-  topP: 0.85         // Good diversity while maintaining clarity
+  temperature: 0.6, // MODERATE - Balanced between consistency and variation
+  topP: 0.85, // Good diversity while maintaining clarity
 };
 
 /**
@@ -117,8 +117,8 @@ export const METADATA_GENERATION_PARAMS: GenerationParams = {
  * SMS should feel natural and varied like real messages
  */
 export const INBOX_TEXT_PARAMS: GenerationParams = {
-  temperature: 0.85,  // HIGH - Natural, varied SMS/text messages
-  topP: 0.90         // High diversity for realistic text patterns
+  temperature: 0.85, // HIGH - Natural, varied SMS/text messages
+  topP: 0.9, // High diversity for realistic text patterns
 };
 
 /**
@@ -133,10 +133,10 @@ export const INBOX_TEXT_PARAMS: GenerationParams = {
  * - presencePenalty: Encourage vocabulary variety and natural expressions
  */
 export const LOCALIZER_PARAMS: GenerationParams & { frequencyPenalty?: number; presencePenalty?: number } = {
-  temperature: 0.15,   // MODERATE - Natural phrasing + meaning preservation balance
-  topP: 0.92,          // Good diversity while maintaining control
-  frequencyPenalty: 0.1,   // Avoid repetitive words - encourages natural language
-  presencePenalty: 0.0     // Encourage vocabulary variety - feels more native
+  temperature: 0.15, // MODERATE - Natural phrasing + meaning preservation balance
+  topP: 0.92, // Good diversity while maintaining control
+  frequencyPenalty: 0.1, // Avoid repetitive words - encourages natural language
+  presencePenalty: 0.0, // Encourage vocabulary variety - feels more native
 };
 
 /**
@@ -146,8 +146,8 @@ export const LOCALIZER_PARAMS: GenerationParams & { frequencyPenalty?: number; p
  * Strategy: Balanced approach - good for most scenarios
  */
 export const DEFAULT_GENERATION_PARAMS: GenerationParams = {
-  temperature: 0.7,   // MODERATE - Balanced creativity and consistency
-  topP: 0.85         // Good diversity
+  temperature: 0.7, // MODERATE - Balanced creativity and consistency
+  topP: 0.85, // Good diversity
 };
 
 /**
@@ -157,7 +157,7 @@ export const DEFAULT_GENERATION_PARAMS: GenerationParams = {
  * Use: create-phishing-workflow.ts (scenario analysis step)
  */
 export const PHISHING_SCENARIO_PARAMS: GenerationParams = {
-  temperature: 0.7
+  temperature: 0.7,
 };
 
 /**
@@ -167,7 +167,7 @@ export const PHISHING_SCENARIO_PARAMS: GenerationParams = {
  * Use: create-phishing-workflow.ts, create-smishing-workflow.ts, retry-generator.ts
  */
 export const PHISHING_CONTENT_PARAMS: GenerationParams = {
-  temperature: 0.8
+  temperature: 0.8,
 };
 
 /**
@@ -177,7 +177,7 @@ export const PHISHING_CONTENT_PARAMS: GenerationParams = {
  * Use: phishing-editor-llm.ts, smishing-editor-llm.ts
  */
 export const EDITOR_PARAMS: GenerationParams = {
-  temperature: 0.3
+  temperature: 0.3,
 };
 
 /**
@@ -187,7 +187,7 @@ export const EDITOR_PARAMS: GenerationParams = {
  * Use: code-review-check-tool.ts
  */
 export const CODE_REVIEW_PARAMS: GenerationParams = {
-  temperature: 0.3
+  temperature: 0.3,
 };
 
 /**
@@ -197,7 +197,7 @@ export const CODE_REVIEW_PARAMS: GenerationParams = {
  * Use: policy-cache.ts, vishing-conversations-summary-tool.ts
  */
 export const LOW_DETERMINISM_PARAMS: GenerationParams = {
-  temperature: 0.2
+  temperature: 0.2,
 };
 
 /**
@@ -207,7 +207,7 @@ export const LOW_DETERMINISM_PARAMS: GenerationParams = {
  * Use: brand-resolver.ts (extraction), phishing-editor-utils.ts
  */
 export const EXTRACTION_PARAMS: GenerationParams = {
-  temperature: 0.1
+  temperature: 0.1,
 };
 
 /**
@@ -217,7 +217,7 @@ export const EXTRACTION_PARAMS: GenerationParams = {
  * Use: brand-resolver.ts (creative path)
  */
 export const BRAND_CREATIVE_PARAMS: GenerationParams = {
-  temperature: 0.7
+  temperature: 0.7,
 };
 
 /**
@@ -227,7 +227,7 @@ export const BRAND_CREATIVE_PARAMS: GenerationParams = {
  * Use: industry-detector.ts
  */
 export const CLASSIFICATION_PARAMS: GenerationParams = {
-  temperature: 0.3
+  temperature: 0.3,
 };
 
 /**
@@ -237,7 +237,7 @@ export const CLASSIFICATION_PARAMS: GenerationParams = {
  * Use: reasoning-stream.ts
  */
 export const REASONING_PARAMS: GenerationParams = {
-  temperature: 0.3
+  temperature: 0.3,
 };
 
 /**
@@ -247,7 +247,7 @@ export const REASONING_PARAMS: GenerationParams = {
  * Use: scene-rewriter-base.ts
  */
 export const SCENE_REWRITE_PARAMS: GenerationParams = {
-  temperature: 0.4
+  temperature: 0.4,
 };
 
 /**
@@ -257,7 +257,7 @@ export const SCENE_REWRITE_PARAMS: GenerationParams = {
  * Use: transcript-translator.ts
  */
 export const TRANSCRIPT_TRANSLATION_PARAMS: GenerationParams = {
-  temperature: 0.3
+  temperature: 0.3,
 };
 
 /**
@@ -265,22 +265,22 @@ export const TRANSCRIPT_TRANSLATION_PARAMS: GenerationParams = {
  */
 export function getGenerationParams(useCase: string): GenerationParams {
   const params: Record<string, GenerationParams> = {
-    'scene': { temperature: 0.82, topP: 0.91 },  // Balanced average: creative (0.9) + info (0.75-0.8)
+    scene: { temperature: 0.82, topP: 0.91 }, // Balanced average: creative (0.9) + info (0.75-0.8)
     'inbox-email': INBOX_GENERATION_PARAMS,
     'inbox-text': INBOX_TEXT_PARAMS,
-    'localization': LOCALIZER_PARAMS,
-    'analysis': PROMPT_ANALYSIS_PARAMS,
-    'metadata': METADATA_GENERATION_PARAMS,
+    localization: LOCALIZER_PARAMS,
+    analysis: PROMPT_ANALYSIS_PARAMS,
+    metadata: METADATA_GENERATION_PARAMS,
     'phishing-scenario': PHISHING_SCENARIO_PARAMS,
     'phishing-content': PHISHING_CONTENT_PARAMS,
-    'editor': EDITOR_PARAMS,
+    editor: EDITOR_PARAMS,
     'code-review': CODE_REVIEW_PARAMS,
     'low-determinism': LOW_DETERMINISM_PARAMS,
-    'extraction': EXTRACTION_PARAMS,
+    extraction: EXTRACTION_PARAMS,
     'brand-creative': BRAND_CREATIVE_PARAMS,
-    'classification': CLASSIFICATION_PARAMS,
-    'reasoning': REASONING_PARAMS,
-    'default': DEFAULT_GENERATION_PARAMS
+    classification: CLASSIFICATION_PARAMS,
+    reasoning: REASONING_PARAMS,
+    default: DEFAULT_GENERATION_PARAMS,
   };
 
   return params[useCase] || DEFAULT_GENERATION_PARAMS;

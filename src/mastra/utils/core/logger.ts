@@ -3,6 +3,14 @@
  * Creates singleton instances of PinoLogger for each module
  * Automatically injects correlation ID from request context into all logs
  *
+ * Structured logging (JSON) for Datadog/Sentry:
+ * - service: 'agentic-ally' (filter by service)
+ * - env: NODE_ENV (filter by environment)
+ * - correlationId: from request context
+ *
+ * Env vars:
+ * - LOG_LEVEL: debug | info | warn | error (overrides NODE_ENV default)
+ *
  * Usage:
  *   import { getLogger } from '../utils/core/logger';
  *   const logger = getLogger('ModuleName');
@@ -14,13 +22,31 @@ import { PinoLogger } from '@mastra/loggers';
 import type { LogLevel } from '@mastra/loggers';
 import { requestStorage } from './request-storage';
 
+const LOG_LEVELS: LogLevel[] = ['debug', 'info', 'warn', 'error'];
+
 const loggers = new Map<string, PinoLogger>();
+
 export function resolveLogLevel(): LogLevel {
+  const envLevel = typeof process !== 'undefined' ? process.env?.LOG_LEVEL?.toLowerCase()?.trim() : undefined;
+  if (envLevel && LOG_LEVELS.includes(envLevel as LogLevel)) {
+    return envLevel as LogLevel;
+  }
   const nodeEnv = typeof process !== 'undefined' ? process.env?.NODE_ENV : undefined;
   return nodeEnv === 'development' ? 'debug' : 'info';
 }
 
 const DEFAULT_LOG_LEVEL = resolveLogLevel();
+
+/** Base fields for structured logging (Datadog/Sentry filtering). Exported for Mastra bootstrap logger. */
+export const STRUCTURED_LOG_FORMATTERS = {
+  log(object: Record<string, unknown>) {
+    return {
+      service: 'agentic-ally',
+      env: typeof process !== 'undefined' ? process.env?.NODE_ENV || 'development' : 'unknown',
+      ...object,
+    };
+  },
+};
 
 /**
  * Logger wrapper that automatically injects correlation ID from request context
@@ -75,6 +101,7 @@ export function getLogger(moduleName: string): LoggerWithCorrelation {
     const pinoLogger = new PinoLogger({
       name: moduleName,
       level: DEFAULT_LOG_LEVEL,
+      formatters: STRUCTURED_LOG_FORMATTERS,
     });
     loggers.set(moduleName, pinoLogger);
   }

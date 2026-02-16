@@ -6,4 +6,3 @@ export const emailIrAnalyzeSuccessResponseSchema = z.object({
   report: EmailIRCanvasSchema,
   runId: z.string().min(1),
 });
-

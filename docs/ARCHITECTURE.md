@@ -89,9 +89,39 @@ Located in `src/mastra/services/`, these services power the entire application.
 
 ### Key Components:
 1.  **KV Service:** Abstraction layer for Cloudflare KV. Handles atomic writes, retries (`KV_MAX_RETRIES`), and key namespace management.
-2.  **Error Service:** Centralized error handling. Captures exceptions, formats them for logging, and determines HTTP status codes.
+2.  **Error Service:** Centralized error handling. Captures exceptions, formats them for logging, and determines HTTP status codes. See [Error Handling Pattern](#error-handling-pattern) below.
 3.  **Health Service:** Diagnostics. Checks connectivity to OpenAI, Cloudflare KV, and other dependencies.
 4.  **Autonomous Service:** The "Proactive Brain". Manages the scheduling and execution of background security checks.
+
+### Error Handling Pattern
+
+All catch blocks use `errorService` + `logErrorInfo` for consistent logging and error codes:
+
+```typescript
+// Throw path (propagate to caller)
+const errorInfo = errorService.aiModel(err.message, { step: '...', stack: err.stack });
+logErrorInfo(logger, 'error', 'Message', errorInfo);
+const e = new Error(err.message);
+(e as Error & { code?: string }).code = errorInfo.code;
+throw e;
+```
+
+```typescript
+// Non-throw path (log and continue / fallback)
+const errorInfo = errorService.external(err.message, { step: '...', stack: err.stack });
+logErrorInfo(logger, 'warn', 'Message', errorInfo);
+```
+
+**Error Service Methods:**
+- `auth()` – token/auth failures
+- `validation()` – input/schema validation
+- `external()` – external API failures
+- `aiModel()` – LLM generation/parsing failures
+- `notFound()` – resource not found
+- `timeout()` – timeouts
+- `internal()` – unexpected internal errors
+
+**Result:** 5xx responses include `errorCode` for support tracing. See `docs/API_REFERENCE.md` for the full error code list.
 
 ---
 

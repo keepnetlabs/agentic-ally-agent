@@ -3,27 +3,28 @@ import { emailIRAnalyst } from '../../agents/email-ir-analyst';
 import { EmailIRCanvasSchema, EMAIL_IR_EMAIL_CATEGORIES } from '../../schemas/email-ir';
 import { riskAssessmentOutputSchema } from './risk-assessment';
 import { createLogContext, loggerReporting, logStepStart, logStepComplete, logStepError } from './logger-setup';
+import { normalizeError, logErrorInfo } from '../../utils/core/error-utils';
+import { errorService } from '../../services/error-service';
 import { withRetry } from '../../utils/core/resilience-utils';
 
 export const reportingTool = createTool({
-    id: 'email-ir-reporting-tool',
-    description: 'Generates Final Canvas JSON Report',
-    inputSchema: riskAssessmentOutputSchema,
-    outputSchema: EmailIRCanvasSchema,
-    execute: async ({ context }) => {
-        const inputData = context;
-        const emailId = inputData.original_email.from?.split('@')[0] || 'unknown-sender';
-        const ctx = createLogContext(emailId, 'reporting');
-        const emailCategoryList = EMAIL_IR_EMAIL_CATEGORIES.join(', ');
-        const evidenceStrength =
-            inputData.confidence >= 0.8 ? 'Strong' :
-            inputData.confidence >= 0.55 ? 'Moderate' : 'Limited';
-        const confidenceBasis = 'Based on behavioral and contextual indicators.';
+  id: 'email-ir-reporting-tool',
+  description: 'Generates Final Canvas JSON Report',
+  inputSchema: riskAssessmentOutputSchema,
+  outputSchema: EmailIRCanvasSchema,
+  execute: async ({ context }) => {
+    const inputData = context;
+    const emailId = inputData.original_email.from?.split('@')[0] || 'unknown-sender';
+    const ctx = createLogContext(emailId, 'reporting');
+    const emailCategoryList = EMAIL_IR_EMAIL_CATEGORIES.join(', ');
+    const evidenceStrength =
+      inputData.confidence >= 0.8 ? 'Strong' : inputData.confidence >= 0.55 ? 'Moderate' : 'Limited';
+    const confidenceBasis = 'Based on behavioral and contextual indicators.';
 
-        try {
-            logStepStart(loggerReporting, ctx, { risk_level: inputData.risk_level });
+    try {
+      logStepStart(loggerReporting, ctx, { risk_level: inputData.risk_level });
 
-            const prompt = `
+      const prompt = `
 # Enterprise Email Incident Response Report Generation
 
 You are a **Senior Incident Response Analyst** generating a formal investigation report for enterprise SOC operations.
@@ -148,19 +149,25 @@ This report format is designed for:
 - Legal/HR escalation documentation
 `;
 
-            const result = await withRetry(
-                () => emailIRAnalyst.generate(prompt, {
-                    output: EmailIRCanvasSchema,
-                }),
-                'reporting-llm'
-            );
+      const result = await withRetry(
+        () =>
+          emailIRAnalyst.generate(prompt, {
+            output: EmailIRCanvasSchema,
+          }),
+        'reporting-llm'
+      );
 
-            logStepComplete(loggerReporting, ctx, { report_generated: true });
+      logStepComplete(loggerReporting, ctx, { report_generated: true });
 
-            return result.object;
-        } catch (error) {
-            logStepError(loggerReporting, ctx, error as Error);
-            throw error;
-        }
+      return result.object;
+    } catch (error) {
+      const err = normalizeError(error);
+      logStepError(loggerReporting, ctx, err);
+      const errorInfo = errorService.aiModel(err.message, { step: 'reporting', stack: err.stack });
+      logErrorInfo(loggerReporting, 'error', 'Reporting failed', errorInfo);
+      const e = new Error(err.message);
+      (e as Error & { code?: string }).code = errorInfo.code;
+      throw e;
     }
+  },
 });

@@ -50,4 +50,3 @@ describe('public-endpoint-policy', () => {
     expect(isPublicUnauthenticatedPath('/unknown')).toBe(false);
   });
 });
-

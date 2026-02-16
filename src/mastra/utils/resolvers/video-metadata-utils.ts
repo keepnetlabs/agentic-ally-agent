@@ -13,7 +13,7 @@ export interface VideoMetadata {
 
 export const VideoMetadataSchema = z.object({
   title: z.string().min(1),
-  subtitle: z.string().min(1)
+  subtitle: z.string().min(1),
 });
 
 export async function generateVideoMetadataFromPrompt(
@@ -27,13 +27,14 @@ export async function generateVideoMetadataFromPrompt(
     messages: [
       {
         role: 'system',
-        content: 'You are a video metadata expert. Generate engaging, contextual titles and subtitles for security awareness videos. Return ONLY valid JSON with no markdown or backticks.'
+        content:
+          'You are a video metadata expert. Generate engaging, contextual titles and subtitles for security awareness videos. Return ONLY valid JSON with no markdown or backticks.',
       },
       {
         role: 'user',
-        content: generationPrompt
-      }
-    ]
+        content: generationPrompt,
+      },
+    ],
   });
 
   const cleanedResponse = result.text.trim();
@@ -45,7 +46,7 @@ export async function generateVideoMetadataFromPrompt(
     const errorInfo = errorService.validation(`Video metadata JSON parsing failed: ${parseErr.message}`, {
       topic,
       language,
-      responsePreview: cleanedResponse.substring(0, 200)
+      responsePreview: cleanedResponse.substring(0, 200),
     });
     logErrorInfo(logger, 'warn', '⚠️ Video metadata JSON parsing failed, using fallback', errorInfo);
     throw parseErr;
@@ -56,7 +57,7 @@ export async function generateVideoMetadataFromPrompt(
     const errorInfo = errorService.validation('Video metadata schema validation failed', {
       topic,
       language,
-      issues: validated.error.issues
+      issues: validated.error.issues,
     });
     logErrorInfo(logger, 'warn', '⚠️ Video metadata schema validation failed, using fallback', errorInfo);
     throw new Error('Video metadata schema validation failed');

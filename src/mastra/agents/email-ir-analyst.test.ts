@@ -5,7 +5,7 @@ import { AGENT_IDS, AGENT_NAMES } from '../constants';
 vi.mock('../model-providers', () => ({
   getModel: vi.fn().mockReturnValue({ id: 'gpt-5-1' }),
   ModelProvider: { OPENAI: 'openai' },
-  Model: { OPENAI_GPT_5_1: 'gpt-5-1' }
+  Model: { OPENAI_GPT_5_1: 'gpt-5-1' },
 }));
 
 describe('emailIRAnalyst', () => {

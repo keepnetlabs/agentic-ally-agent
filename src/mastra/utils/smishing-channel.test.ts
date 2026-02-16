@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { buildSmishingChannelPromptRules, detectSmishingChannelFromText, normalizeSmishingChannel, resolveSmishingChannel } from './smishing-channel';
+import {
+  buildSmishingChannelPromptRules,
+  detectSmishingChannelFromText,
+  normalizeSmishingChannel,
+  resolveSmishingChannel,
+} from './smishing-channel';
 
 describe('smishing-channel utils', () => {
   describe('normalizeSmishingChannel', () => {
@@ -102,9 +107,15 @@ describe('smishing-channel utils', () => {
     });
 
     it('should resolve newly supported explicit channels', () => {
-      expect(resolveSmishingChannel({ deliveryChannel: 'telegram', topic: '', description: '' } as any)).toBe('telegram');
-      expect(resolveSmishingChannel({ deliveryChannel: 'instagram', topic: '', description: '' } as any)).toBe('instagram');
-      expect(resolveSmishingChannel({ deliveryChannel: 'linkedin', topic: '', description: '' } as any)).toBe('linkedin');
+      expect(resolveSmishingChannel({ deliveryChannel: 'telegram', topic: '', description: '' } as any)).toBe(
+        'telegram'
+      );
+      expect(resolveSmishingChannel({ deliveryChannel: 'instagram', topic: '', description: '' } as any)).toBe(
+        'instagram'
+      );
+      expect(resolveSmishingChannel({ deliveryChannel: 'linkedin', topic: '', description: '' } as any)).toBe(
+        'linkedin'
+      );
     });
   });
 

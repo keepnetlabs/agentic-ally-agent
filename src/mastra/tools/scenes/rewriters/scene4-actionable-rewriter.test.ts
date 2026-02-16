@@ -64,15 +64,11 @@ describe('Scene 4 - Actionable Rewriter', () => {
     });
 
     it('should require scene parameter', async () => {
-      await expect(
-        rewriteScene4Actionable(undefined as any, baseContext)
-      ).resolves.toBeUndefined();
+      await expect(rewriteScene4Actionable(undefined as any, baseContext)).resolves.toBeUndefined();
     });
 
     it('should require context parameter', async () => {
-      await expect(
-        rewriteScene4Actionable(baseScene as any, undefined as any)
-      ).rejects.toThrow();
+      await expect(rewriteScene4Actionable(baseScene as any, undefined as any)).rejects.toThrow();
     });
   });
 
@@ -177,9 +173,7 @@ describe('Scene 4 - Actionable Rewriter', () => {
     it('should handle long guidance text', async () => {
       const longScene = {
         ...baseScene,
-        actionItems: [
-          { step: 1, action: 'Check', guidance: 'A'.repeat(500) },
-        ],
+        actionItems: [{ step: 1, action: 'Check', guidance: 'A'.repeat(500) }],
       };
       const result = await rewriteScene4Actionable(longScene as any, baseContext);
       expect(result).toBeDefined();

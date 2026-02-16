@@ -600,9 +600,7 @@ describe('phishingEditorTool', () => {
 
   describe('Error Handling', () => {
     it('should continue editing when whitelabel config fetch fails', async () => {
-      vi.spyOn(ProductService.prototype, 'getWhitelabelingConfig').mockRejectedValueOnce(
-        new Error('whitelabel down')
-      );
+      vi.spyOn(ProductService.prototype, 'getWhitelabelingConfig').mockRejectedValueOnce(new Error('whitelabel down'));
 
       const input = {
         phishingId: 'phishing-123',
@@ -614,15 +612,13 @@ describe('phishingEditorTool', () => {
     });
 
     it('should resolve brand context when hasBrandUpdate is true', async () => {
-      const detectSpy = vi
-        .spyOn(phishingEditorUtils, 'detectAndResolveBrand')
-        .mockResolvedValueOnce({
-          brandContext: 'Use Acme branding',
-          resolvedBrandInfo: {
-            brandName: 'Acme',
-            isRecognizedBrand: true,
-          },
-        } as any);
+      const detectSpy = vi.spyOn(phishingEditorUtils, 'detectAndResolveBrand').mockResolvedValueOnce({
+        brandContext: 'Use Acme branding',
+        resolvedBrandInfo: {
+          brandName: 'Acme',
+          isRecognizedBrand: true,
+        },
+      } as any);
 
       const input = {
         phishingId: 'phishing-123',

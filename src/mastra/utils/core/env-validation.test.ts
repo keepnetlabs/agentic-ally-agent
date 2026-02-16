@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { validateEnvironment, validateEnvironmentOrThrow } from './env-validation';
 
-
 // Mock logger
 const { mockLoggerInstance } = vi.hoisted(() => {
   return {
@@ -28,11 +27,17 @@ describe('env-validation', () => {
 
     // Clear relevant env vars to ensure clean test state
     const varsToClear = [
-      'CLOUDFLARE_ACCOUNT_ID', 'CLOUDFLARE_API_KEY', 'CLOUDFLARE_KV_TOKEN',
-      'CLOUDFLARE_D1_DATABASE_ID', 'CLOUDFLARE_AI_GATEWAY_ID',
-      'CLOUDFLARE_GATEWAY_AUTHENTICATION_KEY', 'OPENAI_API_KEY',
-      'GOOGLE_GENERATIVE_AI_API_KEY', 'MASTRA_MEMORY_URL',
-      'MASTRA_MEMORY_TOKEN', 'LOGO_DEV_TOKEN'
+      'CLOUDFLARE_ACCOUNT_ID',
+      'CLOUDFLARE_API_KEY',
+      'CLOUDFLARE_KV_TOKEN',
+      'CLOUDFLARE_D1_DATABASE_ID',
+      'CLOUDFLARE_AI_GATEWAY_ID',
+      'CLOUDFLARE_GATEWAY_AUTHENTICATION_KEY',
+      'OPENAI_API_KEY',
+      'GOOGLE_GENERATIVE_AI_API_KEY',
+      'MASTRA_MEMORY_URL',
+      'MASTRA_MEMORY_TOKEN',
+      'LOGO_DEV_TOKEN',
     ];
     varsToClear.forEach(key => delete process.env[key]);
   });
@@ -101,7 +106,7 @@ describe('env-validation', () => {
 
     it('should have all required variables in missing array when not set', () => {
       // Clear all env vars
-      Object.keys(process.env).forEach((key) => {
+      Object.keys(process.env).forEach(key => {
         delete process.env[key];
       });
 
@@ -325,9 +330,7 @@ describe('env-validation', () => {
     it('should throw Error with descriptive message', () => {
       process.env.CLOUDFLARE_ACCOUNT_ID = 'account-123';
 
-      expect(() => validateEnvironmentOrThrow()).toThrow(
-        /Invalid environment configuration/
-      );
+      expect(() => validateEnvironmentOrThrow()).toThrow(/Invalid environment configuration/);
     });
 
     it('should include missing variable names in error message', () => {

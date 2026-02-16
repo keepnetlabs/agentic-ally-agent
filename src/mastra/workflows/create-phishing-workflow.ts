@@ -5,27 +5,26 @@ import { cleanResponse } from '../utils/content-processors/json-cleaner';
 import { generateUniqueId } from '../utils/core/id-utils';
 import { LANDING_PAGE, STRING_TRUNCATION, KV_NAMESPACES } from '../constants';
 import { KVService } from '../services/kv-service';
-import {
-  detectIndustry,
-  fixBrokenImages,
-  validateLandingPage,
-  logValidationResults
-} from '../utils/landing-page';
+import { detectIndustry, fixBrokenImages, validateLandingPage, logValidationResults } from '../utils/landing-page';
 import { streamDirectReasoning } from '../utils/core/reasoning-stream';
 import { extractReasoning } from '../utils/core/ai-utils';
 import {
   createPhishingStepInputSchema,
   createPhishingAnalysisSchema,
   createPhishingEmailOutputSchema,
-  createPhishingOutputSchema
+  createPhishingOutputSchema,
 } from '../schemas/create-phishing-schemas';
 import {
   buildAnalysisPrompts,
   buildEmailPrompts,
-  buildLandingPagePrompts
+  buildLandingPagePrompts,
 } from '../utils/prompt-builders/phishing-prompts';
 import { resolveLogoAndBrand, generateContextualBrand } from '../utils/phishing/brand-resolver';
-import { DEFAULT_GENERIC_LOGO, normalizeImgAttributes, validateImageUrlCached } from '../utils/landing-page/image-validator';
+import {
+  DEFAULT_GENERIC_LOGO,
+  normalizeImgAttributes,
+  validateImageUrlCached,
+} from '../utils/landing-page/image-validator';
 import { retryGenerationWithStrongerPrompt } from '../utils/phishing/retry-generator';
 import { getLogger } from '../utils/core/logger';
 import { waitForKVConsistency, buildExpectedPhishingKeys } from '../utils/kv-consistency';
@@ -33,7 +32,10 @@ import { withRetry } from '../utils/core/resilience-utils';
 import { normalizeError, logErrorInfo } from '../utils/core/error-utils';
 import { errorService } from '../services/error-service';
 import { ProductService } from '../services/product-service';
-import { postProcessPhishingEmailHtml, postProcessPhishingLandingHtml } from '../utils/content-processors/phishing-html-postprocessors';
+import {
+  postProcessPhishingEmailHtml,
+  postProcessPhishingLandingHtml,
+} from '../utils/content-processors/phishing-html-postprocessors';
 import { PHISHING_SCENARIO_PARAMS, PHISHING_CONTENT_PARAMS } from '../utils/config/llm-generation-params';
 
 // --- Steps ---
@@ -47,9 +49,30 @@ const analyzeRequest = createStep({
   outputSchema: createPhishingAnalysisSchema,
   execute: async ({ inputData }) => {
     const logger = getLogger('AnalyzePhishingRequest');
-    const { topic, isQuishing, targetProfile, difficulty, language, method, includeLandingPage, includeEmail, additionalContext, modelProvider, model, policyContext } = inputData;
+    const {
+      topic,
+      isQuishing,
+      targetProfile,
+      difficulty,
+      language,
+      method,
+      includeLandingPage,
+      includeEmail,
+      additionalContext,
+      modelProvider,
+      model,
+      policyContext,
+    } = inputData;
 
-    logger.info('Starting phishing scenario analysis', { topic, isQuishing, difficulty, language, method, includeLandingPage, includeEmail });
+    logger.info('Starting phishing scenario analysis', {
+      topic,
+      isQuishing,
+      difficulty,
+      language,
+      method,
+      includeLandingPage,
+      includeEmail,
+    });
 
     // Fetch whitelabeling config for potential logo fallback
     const productService = new ProductService();
@@ -57,7 +80,12 @@ const analyzeRequest = createStep({
     try {
       whitelabelConfig = await productService.getWhitelabelingConfig();
     } catch (err) {
-      logger.warn('Failed to fetch whitelabeling config', { error: err });
+      const normalized = normalizeError(err);
+      const errorInfo = errorService.external(normalized.message, {
+        step: 'fetch-whitelabel-config',
+        stack: normalized.stack,
+      });
+      logErrorInfo(logger, 'warn', 'Failed to fetch whitelabeling config', errorInfo);
     }
 
     const aiModel = getModelWithOverride(modelProvider, model);
@@ -86,20 +114,18 @@ const analyzeRequest = createStep({
     logger.info('Analysis prompt type', {
       promptType: isQuishingDetected ? 'QUISHING' : 'NORMAL_PHISHING',
       systemPromptLength: systemPrompt.length,
-      userPromptLength: userPrompt.length
+      userPromptLength: userPrompt.length,
     });
 
     // Build messages array
-    const messages: Array<{ role: 'system' | 'user'; content: string }> = [
-      { role: 'system', content: systemPrompt }
-    ];
+    const messages: Array<{ role: 'system' | 'user'; content: string }> = [{ role: 'system', content: systemPrompt }];
 
     // Add additionalContext as a separate message BEFORE the task prompt (index 1)
     // This way LLM sees the user behavior context first, then designs the scenario accordingly
     if (additionalContextMessage) {
       messages.push({
         role: 'user',
-        content: additionalContextMessage
+        content: additionalContextMessage,
       });
     }
 
@@ -107,16 +133,13 @@ const analyzeRequest = createStep({
     messages.push({ role: 'user', content: userPrompt });
 
     try {
-      const response = await withRetry(
-        async () => {
-          return await generateText({
-            model: aiModel,
-            messages,
-            ...PHISHING_SCENARIO_PARAMS,
-          });
-        },
-        'phishing-scenario-analysis'
-      );
+      const response = await withRetry(async () => {
+        return await generateText({
+          model: aiModel,
+          messages,
+          ...PHISHING_SCENARIO_PARAMS,
+        });
+      }, 'phishing-scenario-analysis');
 
       // Extract reasoning if available (Workers AI returns it)
       const reasoning = extractReasoning(response);
@@ -136,7 +159,7 @@ const analyzeRequest = createStep({
           hasScenario: !!parsedResult.scenario,
           hasCategory: !!parsedResult.category,
           hasFromAddress: !!parsedResult.fromAddress,
-          hasMethod: !!parsedResult.method
+          hasMethod: !!parsedResult.method,
         });
         logErrorInfo(logger, 'error', 'Phishing analysis validation failed', errorInfo);
         throw new Error(errorInfo.message);
@@ -146,7 +169,7 @@ const analyzeRequest = createStep({
       if (parsedResult.description && parsedResult.description.length > 300) {
         logger.warn('Description exceeds 300 characters, truncating', {
           originalLength: parsedResult.description.length,
-          microlearningId: parsedResult.microlearningId
+          microlearningId: parsedResult.microlearningId,
         });
         parsedResult.description = parsedResult.description.substring(0, 300).trim();
       }
@@ -158,7 +181,7 @@ const analyzeRequest = createStep({
         logger.info('Using agent-provided isQuishing flag', {
           topic: inputData.topic,
           isQuishing: parsedResult.isQuishing,
-          agentProvided: true
+          agentProvided: true,
         });
       } else if (typeof parsedResult.isQuishing !== 'boolean') {
         // Neither agent nor AI provided it - default to false
@@ -169,7 +192,7 @@ const analyzeRequest = createStep({
         logger.info('Using AI-provided isQuishing flag', {
           topic: inputData.topic,
           isQuishing: parsedResult.isQuishing,
-          agentProvided: false
+          agentProvided: false,
         });
       }
 
@@ -180,7 +203,7 @@ const analyzeRequest = createStep({
         method: parsedResult.method,
         sender: parsedResult.fromName,
         fromAddress: parsedResult.fromAddress,
-        triggers: parsedResult.psychologicalTriggers?.join(', ')
+        triggers: parsedResult.psychologicalTriggers?.join(', '),
       });
 
       // Resolve logo and brand detection early (once, in analysis step)
@@ -198,7 +221,9 @@ const analyzeRequest = createStep({
             logoInfo.logoUrl = '';
           }
         } catch (e) {
-          logger.warn('Error validating logo URL - resetting to empty', { error: e });
+          const err = normalizeError(e);
+          const errorInfo = errorService.external(err.message, { step: 'validate-logo-url', stack: err.stack });
+          logErrorInfo(logger, 'warn', 'Error validating logo URL - resetting to empty', errorInfo);
           logoInfo.logoUrl = '';
         }
       }
@@ -207,17 +232,15 @@ const analyzeRequest = createStep({
       // If the brand is NOT recognized (generic/internal) OR the resolved logo is the generic fallback,
       // OR the resolved logo is BROKEN/INVALID (empty), and we have a whitelabel logo configured, use it.
       // This ensures generic emails (HR, IT, etc.) look like they come from the target organization.
-      const useWhitelabelLogo = whitelabelConfig?.mainLogoUrl && (
-        !logoInfo.isRecognizedBrand ||
-        logoInfo.logoUrl === DEFAULT_GENERIC_LOGO ||
-        !logoInfo.logoUrl
-      );
+      const useWhitelabelLogo =
+        whitelabelConfig?.mainLogoUrl &&
+        (!logoInfo.isRecognizedBrand || logoInfo.logoUrl === DEFAULT_GENERIC_LOGO || !logoInfo.logoUrl);
 
       if (useWhitelabelLogo) {
         const logoUrl = whitelabelConfig?.mainLogoUrl || '';
         logger.info('Using Whitelabel Logo configuration', {
           reason: !logoInfo.isRecognizedBrand ? 'Brand not recognized' : 'Generic/Empty/Broken logo detected',
-          logoUrlPrefix: logoUrl.substring(0, STRING_TRUNCATION.LOGO_URL_PREFIX_LENGTH)
+          logoUrlPrefix: logoUrl.substring(0, STRING_TRUNCATION.LOGO_URL_PREFIX_LENGTH),
         });
 
         logoInfo.logoUrl = logoUrl;
@@ -239,7 +262,7 @@ const analyzeRequest = createStep({
           logoInfo = contextualBrandInfo;
           logger.info('Using generated contextual brand', {
             brandName: logoInfo.brandName,
-            logoUrlPrefix: logoInfo.logoUrl.substring(0, STRING_TRUNCATION.LOGO_URL_PREFIX_LENGTH)
+            logoUrlPrefix: logoInfo.logoUrl.substring(0, STRING_TRUNCATION.LOGO_URL_PREFIX_LENGTH),
           });
         }
       }
@@ -247,7 +270,7 @@ const analyzeRequest = createStep({
       logger.info('Brand detection complete', {
         brandName: logoInfo.brandName || 'Generic',
         logoUrlPrefix: logoInfo.logoUrl.substring(0, STRING_TRUNCATION.LOGO_URL_PREFIX_LENGTH),
-        isRecognizedBrand: logoInfo.isRecognizedBrand
+        isRecognizedBrand: logoInfo.isRecognizedBrand,
       });
 
       // Detect industry once in analysis step (avoid duplicate calls in email/landing page steps)
@@ -263,13 +286,13 @@ const analyzeRequest = createStep({
             secondary: logoInfo.brandColors.secondary,
             accent: logoInfo.brandColors.accent,
             gradient: `linear-gradient(135deg, ${logoInfo.brandColors.primary}, ${logoInfo.brandColors.accent})`,
-          }
+          },
         };
         logger.info('Using brand colors for industry design', {
           brandName: logoInfo.brandName,
           primary: logoInfo.brandColors.primary,
           secondary: logoInfo.brandColors.secondary,
-          accent: logoInfo.brandColors.accent
+          accent: logoInfo.brandColors.accent,
         });
       } else {
         logger.info('Using detected industry design', { industry: industryDesign.industry });
@@ -296,8 +319,14 @@ const analyzeRequest = createStep({
       };
     } catch (error) {
       const err = normalizeError(error);
-      logger.error('Phishing analysis step failed', { error: err.message, stack: err.stack });
-      throw new Error(`Phishing analysis workflow error: ${err.message}`);
+      const errorInfo = errorService.aiModel(err.message, {
+        step: 'phishing-analysis',
+        stack: err.stack,
+      });
+      logErrorInfo(logger, 'error', 'Phishing analysis step failed', errorInfo);
+      const e = new Error(`Phishing analysis workflow error: ${err.message}`);
+      (e as Error & { code?: string }).code = errorInfo.code;
+      throw e;
     }
   },
 });
@@ -311,7 +340,16 @@ const generateEmail = createStep({
   execute: async ({ inputData }) => {
     const logger = getLogger('GeneratePhishingEmail');
     const analysis = inputData;
-    const { language, modelProvider, model, difficulty, includeEmail, includeLandingPage, industryDesign, policyContext } = analysis;
+    const {
+      language,
+      modelProvider,
+      model,
+      difficulty,
+      includeEmail,
+      includeLandingPage,
+      industryDesign,
+      policyContext,
+    } = analysis;
 
     // If email generation is disabled, skip this step but pass context
     if (includeEmail === false) {
@@ -323,11 +361,16 @@ const generateEmail = createStep({
         fromName: analysis.fromName,
         analysis,
         includeLandingPage,
-        policyContext: analysis.policyContext
+        policyContext: analysis.policyContext,
       };
     }
 
-    logger.info('Starting phishing email content generation', { scenario: analysis.scenario, language, method: analysis.method, difficulty });
+    logger.info('Starting phishing email content generation', {
+      scenario: analysis.scenario,
+      language,
+      method: analysis.method,
+      difficulty,
+    });
 
     // Validate industry design from analysis step (already detected, no need to call again)
     if (!industryDesign) {
@@ -352,19 +395,16 @@ const generateEmail = createStep({
       let parsedResult;
 
       try {
-        response = await withRetry(
-          async () => {
-            return await generateText({
-              model: aiModel,
-              messages: [
-                { role: 'system', content: systemPrompt },
-                { role: 'user', content: userPrompt }
-              ],
-              ...PHISHING_CONTENT_PARAMS,
-            });
-          },
-          'phishing-email-generation'
-        );
+        response = await withRetry(async () => {
+          return await generateText({
+            model: aiModel,
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: userPrompt },
+            ],
+            ...PHISHING_CONTENT_PARAMS,
+          });
+        }, 'phishing-email-generation');
 
         // Extract reasoning if available (Workers AI returns it)
         const emailReasoning = extractReasoning(response);
@@ -378,17 +418,18 @@ const generateEmail = createStep({
         const cleanedJson = cleanResponse(response.text, 'phishing-email-content');
         parsedResult = JSON.parse(cleanedJson);
       } catch (error) {
-        // Level 2 fallback: Retry with stronger prompt (for JSON parse errors, content issues)
         const err = normalizeError(error);
-        logger.warn('Primary generation failed, using stronger prompt retry', {
-          error: err.message
+        const errorInfo = errorService.aiModel(err.message, {
+          step: 'phishing-email-primary-generation',
+          stack: err.stack,
         });
+        logErrorInfo(logger, 'warn', 'Primary generation failed, using stronger prompt retry', errorInfo);
         const retryResult = await retryGenerationWithStrongerPrompt(
           aiModel,
           systemPrompt,
           [
             { role: 'system', content: systemPrompt },
-            { role: 'user', content: userPrompt }
+            { role: 'user', content: userPrompt },
           ],
           'email',
           analysis.writer
@@ -410,7 +451,7 @@ const generateEmail = createStep({
           cleanedTemplate = cleanedTemplate.replace(/\{CUSTOMMAINLOGO\}/g, logoUrl);
           logger.info('Replaced CUSTOMMAINLOGO tag in email template with logo URL', {
             logoUrlPrefix: logoUrl.substring(0, STRING_TRUNCATION.LOGO_URL_PREFIX_LENGTH_ALT),
-            truncated: logoUrl.length > STRING_TRUNCATION.LOGO_URL_PREFIX_LENGTH_ALT
+            truncated: logoUrl.length > STRING_TRUNCATION.LOGO_URL_PREFIX_LENGTH_ALT,
           });
         }
 
@@ -427,10 +468,13 @@ const generateEmail = createStep({
 
       // Validate required fields
       if (!parsedResult.subject || !parsedResult.template) {
-        const errorInfo = errorService.validation('Missing required fields (subject or template) in email content response', {
-          hasSubject: !!parsedResult.subject,
-          hasTemplate: !!parsedResult.template
-        });
+        const errorInfo = errorService.validation(
+          'Missing required fields (subject or template) in email content response',
+          {
+            hasSubject: !!parsedResult.subject,
+            hasTemplate: !!parsedResult.template,
+          }
+        );
         logErrorInfo(logger, 'error', 'Email content validation failed', errorInfo);
         throw new Error(errorInfo.message);
       }
@@ -438,7 +482,7 @@ const generateEmail = createStep({
       // Log generated content for debugging
       logger.info('Generated Email', {
         subject: parsedResult.subject,
-        templatePreview: parsedResult.template
+        templatePreview: parsedResult.template,
       });
 
       return {
@@ -448,12 +492,18 @@ const generateEmail = createStep({
         analysis: inputData, // Include the analysis in the final output for transparency
         additionalContext: analysis.additionalContext, // Also pass directly for easier access
         includeLandingPage: analysis.includeLandingPage,
-        policyContext: analysis.policyContext
+        policyContext: analysis.policyContext,
       };
     } catch (error) {
       const err = normalizeError(error);
-      logger.error('Phishing email generation step failed', { error: err.message, stack: err.stack });
-      throw new Error(`Phishing email generation workflow error: ${err.message}`);
+      const errorInfo = errorService.aiModel(err.message, {
+        step: 'phishing-email-generation',
+        stack: err.stack,
+      });
+      logErrorInfo(logger, 'error', 'Phishing email generation step failed', errorInfo);
+      const e = new Error(`Phishing email generation workflow error: ${err.message}`);
+      (e as Error & { code?: string }).code = errorInfo.code;
+      throw e;
     }
   },
 });
@@ -468,7 +518,8 @@ const generateLandingPage = createStep({
   outputSchema: createPhishingOutputSchema,
   execute: async ({ inputData }) => {
     const logger = getLogger('GenerateLandingPage');
-    const { analysis, fromAddress, fromName, subject, template, includeLandingPage, additionalContext, policyContext } = inputData;
+    const { analysis, fromAddress, fromName, subject, template, includeLandingPage, additionalContext, policyContext } =
+      inputData;
 
     // If landing page generation is disabled, skip this step
     if (includeLandingPage === false) {
@@ -484,18 +535,23 @@ const generateLandingPage = createStep({
     }
 
     if (!analysis) {
-      const errorInfo = errorService.validation('Analysis data missing from previous step', { step: 'generate-landing-page' });
+      const errorInfo = errorService.validation('Analysis data missing from previous step', {
+        step: 'generate-landing-page',
+      });
       logErrorInfo(logger, 'error', 'Analysis data validation failed', errorInfo);
       throw new Error(errorInfo.message);
     }
 
-    const { language, modelProvider, model, difficulty, method, scenario, name, description, industryDesign } = analysis;
+    const { language, modelProvider, model, difficulty, method, scenario, name, description, industryDesign } =
+      analysis;
 
     logger.info('Starting landing page generation', { method, difficulty });
 
     // Validate industry design from analysis step (already detected, no need to call again)
     if (!industryDesign) {
-      const errorInfo = errorService.validation('Industry design missing from analysis step', { step: 'generate-landing-page' });
+      const errorInfo = errorService.validation('Industry design missing from analysis step', {
+        step: 'generate-landing-page',
+      });
       logErrorInfo(logger, 'error', 'Industry design validation failed', errorInfo);
       throw new Error(errorInfo.message);
     }
@@ -504,7 +560,8 @@ const generateLandingPage = createStep({
     const aiModel = getModelWithOverride(modelProvider, model);
 
     // Determine required pages based on method
-    const requiredPages = (LANDING_PAGE.FLOWS[method as keyof typeof LANDING_PAGE.FLOWS] || LANDING_PAGE.FLOWS['Click-Only']) as readonly string[];
+    const requiredPages = (LANDING_PAGE.FLOWS[method as keyof typeof LANDING_PAGE.FLOWS] ||
+      LANDING_PAGE.FLOWS['Click-Only']) as readonly string[];
 
     // Use brand info from analysis (already detected in analyzeRequest step)
     let emailBrandContext = '';
@@ -530,15 +587,13 @@ const generateLandingPage = createStep({
     });
 
     // Build messages array with multi-message pattern for targeted context
-    const messages: Array<{ role: 'system' | 'user'; content: string }> = [
-      { role: 'system', content: systemPrompt }
-    ];
+    const messages: Array<{ role: 'system' | 'user'; content: string }> = [{ role: 'system', content: systemPrompt }];
 
     // Add user behavior context FIRST (before email context) so landing page design is informed by user analysis
     if (userContextMessage) {
       messages.push({
         role: 'user',
-        content: userContextMessage
+        content: userContextMessage,
       });
     }
 
@@ -546,14 +601,14 @@ const generateLandingPage = createStep({
     if (emailContextMessage) {
       messages.push({
         role: 'user',
-        content: emailContextMessage
+        content: emailContextMessage,
       });
     }
 
     // Add the main task prompt (after context, so LLM can adapt the scenario based on context)
     messages.push({
       role: 'user',
-      content: userPrompt
+      content: userPrompt,
     });
 
     let response;
@@ -561,16 +616,13 @@ const generateLandingPage = createStep({
 
     try {
       try {
-        response = await withRetry(
-          async () => {
-            return await generateText({
-              model: aiModel,
-              messages: messages,
-              ...PHISHING_CONTENT_PARAMS,
-            });
-          },
-          'phishing-landing-page-generation'
-        );
+        response = await withRetry(async () => {
+          return await generateText({
+            model: aiModel,
+            messages: messages,
+            ...PHISHING_CONTENT_PARAMS,
+          });
+        }, 'phishing-landing-page-generation');
 
         // Reasoning handling
         const lpReasoning = extractReasoning(response);
@@ -581,11 +633,12 @@ const generateLandingPage = createStep({
         const cleanedJson = cleanResponse(response.text, 'landing-page');
         parsedResult = JSON.parse(cleanedJson);
       } catch (error) {
-        // Level 2 fallback: Retry with stronger prompt (for JSON parse errors, content issues)
         const err = normalizeError(error);
-        logger.warn('Primary landing page generation failed, using stronger prompt retry', {
-          error: err.message
+        const errorInfo = errorService.aiModel(err.message, {
+          step: 'phishing-landing-page-primary-generation',
+          stack: err.stack,
         });
+        logErrorInfo(logger, 'warn', 'Primary landing page generation failed, using stronger prompt retry', errorInfo);
         const retryResult = await retryGenerationWithStrongerPrompt(
           aiModel,
           systemPrompt,
@@ -615,7 +668,7 @@ const generateLandingPage = createStep({
               cleanedTemplate = normalizeImgAttributes(cleanedTemplate);
               logger.info('Replaced CUSTOMMAINLOGO tag in landing page with logo from analysis', {
                 logoUrlPrefix: logoUrl.substring(0, STRING_TRUNCATION.LOGO_URL_PREFIX_LENGTH_ALT),
-                truncated: logoUrl.length > STRING_TRUNCATION.LOGO_URL_PREFIX_LENGTH_ALT
+                truncated: logoUrl.length > STRING_TRUNCATION.LOGO_URL_PREFIX_LENGTH_ALT,
               });
             }
 
@@ -632,13 +685,13 @@ const generateLandingPage = createStep({
             if (!validationResult.isValid) {
               logger.warn('Landing page validation failed', {
                 pageType: page.type,
-                errors: validationResult.errors
+                errors: validationResult.errors,
               });
             }
 
             return {
               ...page,
-              template: cleanedTemplate
+              template: cleanedTemplate,
             };
           })
         );
@@ -655,16 +708,22 @@ const generateLandingPage = createStep({
           description: description,
           method: method || 'Data-Submission',
           difficulty: difficulty || 'Medium',
-          pages: parsedResult.pages
+          pages: parsedResult.pages,
         },
-        policyContext: analysis.policyContext
+        policyContext: analysis.policyContext,
       };
     } catch (error) {
       const err = normalizeError(error);
-      logger.error('Landing page generation failed', { error: err.message, stack: err.stack });
-      throw error;
+      const errorInfo = errorService.aiModel(err.message, {
+        step: 'landing-page-generation',
+        stack: err.stack,
+      });
+      logErrorInfo(logger, 'error', 'Landing page generation failed', errorInfo);
+      const e = new Error(`Landing page generation workflow error: ${err.message}`);
+      (e as Error & { code?: string }).code = errorInfo.code;
+      throw e;
     }
-  }
+  },
 });
 
 // Step 4: Save to KV
@@ -698,19 +757,14 @@ const savePhishingContent = createStep({
 
     // Verify KV consistency before returning phishing ID
     // Use phishing namespace ID to check consistency
-    const expectedKeys = buildExpectedPhishingKeys(
-      phishingId,
-      language,
-      !!inputData.template,
-      !!inputData.landingPage
-    );
+    const expectedKeys = buildExpectedPhishingKeys(phishingId, language, !!inputData.template, !!inputData.landingPage);
     await waitForKVConsistency(phishingId, expectedKeys, KV_NAMESPACES.PHISHING);
 
     return {
       ...inputData,
-      phishingId
+      phishingId,
     };
-  }
+  },
 });
 
 // --- Workflow Definition ---

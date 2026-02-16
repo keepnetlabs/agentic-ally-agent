@@ -171,10 +171,7 @@ describe('authTokenMiddleware', () => {
       await authTokenMiddleware(mockContext, mockNext);
 
       const mockLogger = vi.mocked(getLogger)('AuthToken');
-      expect(mockLogger.info).not.toHaveBeenCalledWith(
-        'Public unauthenticated endpoint access',
-        expect.any(Object)
-      );
+      expect(mockLogger.info).not.toHaveBeenCalledWith('Public unauthenticated endpoint access', expect.any(Object));
     });
   });
 
@@ -232,7 +229,7 @@ describe('authTokenMiddleware', () => {
 
     it('should return 401 when backend validation service throws', async () => {
       const previousFetch = global.fetch;
-      global.fetch = vi.fn().mockRejectedValueOnce(new Error('network down')) as any;
+      global.fetch = vi.fn().mockRejectedValue(new Error('network down')) as any;
 
       try {
         mockContext.req.path = '/chat';
@@ -251,6 +248,30 @@ describe('authTokenMiddleware', () => {
           401
         );
         expect(mockNext).not.toHaveBeenCalled();
+      } finally {
+        global.fetch = previousFetch;
+      }
+    });
+
+    it('should retry on 5xx and succeed when backend recovers', async () => {
+      const previousFetch = global.fetch;
+      (global.fetch as any) = vi
+        .fn()
+        .mockResolvedValueOnce(new Response('Server Error', { status: 500 }))
+        .mockResolvedValueOnce(new Response('{}', { status: 200 }));
+
+      try {
+        mockContext.req.path = '/chat';
+        mockContext.req.header.mockImplementation((headerName: string) => {
+          if (headerName === 'X-AGENTIC-ALLY-TOKEN') return 'retry-test-token-abcdefghijklmnopqrstuvwxyz8888';
+          return undefined;
+        });
+
+        await authTokenMiddleware(mockContext, mockNext);
+
+        expect(nextCalled).toBe(true);
+        expect(mockContext.json).not.toHaveBeenCalled();
+        expect(global.fetch).toHaveBeenCalledTimes(2);
       } finally {
         global.fetch = previousFetch;
       }
@@ -444,14 +465,14 @@ describe('authTokenMiddleware', () => {
 
     it('should reject token shorter than 32 characters', async () => {
       mockContext.req.path = '/chat';
-      setToken('short-token-123');  // 15 chars
+      setToken('short-token-123'); // 15 chars
 
       await authTokenMiddleware(mockContext, mockNext);
 
       expect(mockContext.json).toHaveBeenCalledWith(
         expect.objectContaining({
           error: 'Unauthorized',
-          message: expect.stringContaining('token')
+          message: expect.stringContaining('token'),
         }),
         401
       );
@@ -459,7 +480,7 @@ describe('authTokenMiddleware', () => {
 
     it('should accept token exactly 32 characters', async () => {
       mockContext.req.path = '/chat';
-      setToken('token-1234567890-abcdefghij-xxxx');  // 33 chars (32+ minimum)
+      setToken('token-1234567890-abcdefghij-xxxx'); // 33 chars (32+ minimum)
 
       await authTokenMiddleware(mockContext, mockNext);
 
@@ -469,7 +490,7 @@ describe('authTokenMiddleware', () => {
 
     it('should accept token longer than 32 characters', async () => {
       mockContext.req.path = '/chat';
-      setToken('token-1234567890-abcdefghij-xxxyyzzz-more-data');  // >32 chars
+      setToken('token-1234567890-abcdefghij-xxxyyzzz-more-data'); // >32 chars
 
       await authTokenMiddleware(mockContext, mockNext);
 
@@ -479,7 +500,7 @@ describe('authTokenMiddleware', () => {
 
     it('should accept token with alphanumeric characters', async () => {
       mockContext.req.path = '/chat';
-      setToken('abcdefghijklmnopqrstuvwxyzABCDEF');  // 32 chars, all letters
+      setToken('abcdefghijklmnopqrstuvwxyzABCDEF'); // 32 chars, all letters
 
       await authTokenMiddleware(mockContext, mockNext);
 
@@ -489,7 +510,7 @@ describe('authTokenMiddleware', () => {
 
     it('should accept token with hyphens', async () => {
       mockContext.req.path = '/chat';
-      setToken('token-with-hyphens-abcdefghijk-12');  // 32 chars with hyphens
+      setToken('token-with-hyphens-abcdefghijk-12'); // 32 chars with hyphens
 
       await authTokenMiddleware(mockContext, mockNext);
 
@@ -499,7 +520,7 @@ describe('authTokenMiddleware', () => {
 
     it('should accept token with underscores', async () => {
       mockContext.req.path = '/chat';
-      setToken('token_with_underscores_abcdefg_12');  // 32 chars with underscores
+      setToken('token_with_underscores_abcdefg_12'); // 32 chars with underscores
 
       await authTokenMiddleware(mockContext, mockNext);
 
@@ -509,7 +530,7 @@ describe('authTokenMiddleware', () => {
 
     it('should accept token with mixed hyphens and underscores', async () => {
       mockContext.req.path = '/chat';
-      setToken('token-with_mixed-chars_abcdefgh12');  // 32 chars mixed
+      setToken('token-with_mixed-chars_abcdefgh12'); // 32 chars mixed
 
       await authTokenMiddleware(mockContext, mockNext);
 
@@ -519,14 +540,14 @@ describe('authTokenMiddleware', () => {
 
     it('should reject token with special characters (@ symbol)', async () => {
       mockContext.req.path = '/chat';
-      setToken('token@invalid-special-char-abcd12');  // 32+ chars but has @
+      setToken('token@invalid-special-char-abcd12'); // 32+ chars but has @
 
       await authTokenMiddleware(mockContext, mockNext);
 
       expect(mockContext.json).toHaveBeenCalledWith(
         expect.objectContaining({
           error: 'Unauthorized',
-          message: expect.stringContaining('token')
+          message: expect.stringContaining('token'),
         }),
         401
       );
@@ -534,7 +555,7 @@ describe('authTokenMiddleware', () => {
 
     it('should reject token with special characters (space)', async () => {
       mockContext.req.path = '/chat';
-      setToken('token with space invalid abcd1234567');  // 32+ chars but has space
+      setToken('token with space invalid abcd1234567'); // 32+ chars but has space
 
       await authTokenMiddleware(mockContext, mockNext);
 
@@ -543,7 +564,7 @@ describe('authTokenMiddleware', () => {
 
     it('should reject token with special characters (! symbol)', async () => {
       mockContext.req.path = '/chat';
-      setToken('token!invalid-special-char-abcdef12');  // 32+ chars but has !
+      setToken('token!invalid-special-char-abcdef12'); // 32+ chars but has !
 
       await authTokenMiddleware(mockContext, mockNext);
 
@@ -552,7 +573,7 @@ describe('authTokenMiddleware', () => {
 
     it('should reject token with special characters (. period)', async () => {
       mockContext.req.path = '/chat';
-      setToken('token.invalid.special.char.abcdef12');  // 32+ chars but has periods
+      setToken('token.invalid.special.char.abcdef12'); // 32+ chars but has periods
 
       await authTokenMiddleware(mockContext, mockNext);
 

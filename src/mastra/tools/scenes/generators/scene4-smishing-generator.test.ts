@@ -139,7 +139,7 @@ describe('Scene 4 - Smishing Simulation Generator', () => {
 
     it('should support multiple language codes', () => {
       const languages = ['en', 'tr', 'de', 'fr', 'es'];
-      languages.forEach((lang) => {
+      languages.forEach(lang => {
         const analysis: any = {
           ...baseAnalysis,
           language: lang,

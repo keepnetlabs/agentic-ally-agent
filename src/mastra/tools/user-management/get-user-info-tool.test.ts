@@ -14,12 +14,12 @@ import '../../../../src/__tests__/setup';
 
 // Mock AI SDK
 vi.mock('ai', () => ({
-  generateText: vi.fn()
+  generateText: vi.fn(),
 }));
 
 // Mock model providers
 vi.mock('../../model-providers', () => ({
-  getModelWithOverride: vi.fn(() => ({ modelId: 'test-model' }))
+  getModelWithOverride: vi.fn(() => ({ modelId: 'test-model' })),
 }));
 
 describe('getUserInfoTool', () => {
@@ -40,9 +40,9 @@ describe('getUserInfoTool', () => {
         email: 'john.doe@example.com',
         departmentName: 'IT',
         department: 'IT',
-        phoneNumber: '+1234567890'
-      }
-    ]
+        phoneNumber: '+1234567890',
+      },
+    ],
   };
 
   const mockTimelineResponse = {
@@ -54,10 +54,10 @@ describe('getUserInfoTool', () => {
           productType: 'Phishing',
           difficultyType: 'Medium',
           points: 10,
-          ActionTimeWithDay: '2024-01-01T10:00:00Z'
-        }
-      ]
-    }
+          ActionTimeWithDay: '2024-01-01T10:00:00Z',
+        },
+      ],
+    },
   };
 
   const mockAnalysisReport = {
@@ -140,7 +140,7 @@ describe('getUserInfoTool', () => {
 
     // Mock generateText
     (generateText as any).mockResolvedValue({
-      text: JSON.stringify(mockAnalysisReport)
+      text: JSON.stringify(mockAnalysisReport),
     });
   });
 
@@ -149,15 +149,15 @@ describe('getUserInfoTool', () => {
       (global.fetch as any)
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => mockUserSearchResponse
+          json: async () => mockUserSearchResponse,
         })
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => mockTimelineResponse
+          json: async () => mockTimelineResponse,
         });
 
       const input = {
-        email: 'john.doe@example.com'
+        email: 'john.doe@example.com',
       };
 
       const result = await getUserInfoTool.execute({ context: input } as any);
@@ -169,15 +169,15 @@ describe('getUserInfoTool', () => {
       (global.fetch as any)
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => mockUserSearchResponse
+          json: async () => mockUserSearchResponse,
         })
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => mockTimelineResponse
+          json: async () => mockTimelineResponse,
         });
 
       const input = {
-        fullName: 'John Doe'
+        fullName: 'John Doe',
       };
 
       const result = await getUserInfoTool.execute({ context: input } as any);
@@ -189,15 +189,15 @@ describe('getUserInfoTool', () => {
       (global.fetch as any)
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => mockUserSearchResponse
+          json: async () => mockUserSearchResponse,
         })
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => mockTimelineResponse
+          json: async () => mockTimelineResponse,
         });
 
       const input = {
-        firstName: 'John'
+        firstName: 'John',
       };
 
       const result = await getUserInfoTool.execute({ context: input } as any);
@@ -208,16 +208,16 @@ describe('getUserInfoTool', () => {
       (global.fetch as any)
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => mockUserSearchResponse
+          json: async () => mockUserSearchResponse,
         })
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => mockTimelineResponse
+          json: async () => mockTimelineResponse,
         });
 
       const input = {
         firstName: 'John',
-        lastName: 'Doe'
+        lastName: 'Doe',
       };
 
       const result = await getUserInfoTool.execute({ context: input } as any);
@@ -237,7 +237,7 @@ describe('getUserInfoTool', () => {
 
     it('should validate name format when fullName is provided', async () => {
       const input = {
-        fullName: 'John123' // Invalid characters
+        fullName: 'John123', // Invalid characters
       };
 
       const result = await getUserInfoTool.execute({ context: input } as any);
@@ -253,24 +253,26 @@ describe('getUserInfoTool', () => {
         .mockResolvedValueOnce({
           ok: true,
           json: async () => ({
-            items: [{
-              targetUserResourceId: 'user-direct-123',
-              firstName: 'User',
-              lastName: 'Direct-123',
-              email: 'user@example.com',
-              department: 'IT',
-              phoneNumber: '+1234567890'
-            }]
-          })
+            items: [
+              {
+                targetUserResourceId: 'user-direct-123',
+                firstName: 'User',
+                lastName: 'Direct-123',
+                email: 'user@example.com',
+                department: 'IT',
+                phoneNumber: '+1234567890',
+              },
+            ],
+          }),
         })
         // Second call: timeline
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => mockTimelineResponse
+          json: async () => mockTimelineResponse,
         });
 
       const input = {
-        targetUserResourceId: 'user-direct-123'
+        targetUserResourceId: 'user-direct-123',
       };
 
       const result = await getUserInfoTool.execute({ context: input } as any);
@@ -294,12 +296,12 @@ describe('getUserInfoTool', () => {
   describe('Authentication', () => {
     it('should return error when token is missing', async () => {
       requestStorage.enterWith({
-        companyId: mockCompanyId
+        companyId: mockCompanyId,
         // token is missing
       });
 
       const input = {
-        fullName: 'John Doe'
+        fullName: 'John Doe',
       };
 
       const result = await getUserInfoTool.execute({ context: input } as any);
@@ -311,15 +313,15 @@ describe('getUserInfoTool', () => {
       (global.fetch as any)
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => mockUserSearchResponse
+          json: async () => mockUserSearchResponse,
         })
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => mockTimelineResponse
+          json: async () => mockTimelineResponse,
         });
 
       const input = {
-        fullName: 'John Doe'
+        fullName: 'John Doe',
       };
 
       const result = await getUserInfoTool.execute({ context: input } as any);
@@ -332,15 +334,15 @@ describe('getUserInfoTool', () => {
       const fetchSpy = (global.fetch as any)
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => mockUserSearchResponse
+          json: async () => mockUserSearchResponse,
         })
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => mockTimelineResponse
+          json: async () => mockTimelineResponse,
         });
 
       const input = {
-        email: 'john.doe@example.com'
+        email: 'john.doe@example.com',
       };
 
       await getUserInfoTool.execute({ context: input } as any);
@@ -350,26 +352,22 @@ describe('getUserInfoTool', () => {
       expect(firstCall[0]).toBe(leaderboardEndpoints.getAll);
       const body = JSON.parse(firstCall[1].body);
       const filterItems = body.filter.FilterGroups[0].FilterItems;
-      expect(filterItems).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({ FieldName: 'email' })
-        ])
-      );
+      expect(filterItems).toEqual(expect.arrayContaining([expect.objectContaining({ FieldName: 'email' })]));
     });
 
     it('should search for user with correct payload', async () => {
       const fetchSpy = (global.fetch as any)
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => mockUserSearchResponse
+          json: async () => mockUserSearchResponse,
         })
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => mockTimelineResponse
+          json: async () => mockTimelineResponse,
         });
 
       const input = {
-        fullName: 'John Doe'
+        fullName: 'John Doe',
       };
 
       await getUserInfoTool.execute({ context: input } as any);
@@ -379,9 +377,9 @@ describe('getUserInfoTool', () => {
         expect.objectContaining({
           method: 'POST',
           headers: expect.objectContaining({
-            'Authorization': `Bearer ${mockToken}`,
-            'Content-Type': 'application/json'
-          })
+            Authorization: `Bearer ${mockToken}`,
+            'Content-Type': 'application/json',
+          }),
         })
       );
     });
@@ -390,15 +388,15 @@ describe('getUserInfoTool', () => {
       const fetchSpy = (global.fetch as any)
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => mockUserSearchResponse
+          json: async () => mockUserSearchResponse,
         })
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => mockTimelineResponse
+          json: async () => mockTimelineResponse,
         });
 
       const input = {
-        fullName: 'John Doe'
+        fullName: 'John Doe',
       };
 
       await getUserInfoTool.execute({ context: input } as any);
@@ -410,11 +408,11 @@ describe('getUserInfoTool', () => {
     it('should return error when user not found', async () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ items: [] })
+        json: async () => ({ items: [] }),
       });
 
       const input = {
-        fullName: 'Nonexistent User'
+        fullName: 'Nonexistent User',
       };
 
       const result = await getUserInfoTool.execute({ context: input } as any);
@@ -426,18 +424,22 @@ describe('getUserInfoTool', () => {
       const multipleUsersMock = {
         items: [
           { targetUserResourceId: 'u1', firstName: 'John', lastName: 'Smithy', email: 'j1@e.com' },
-          { targetUserResourceId: 'u2', firstName: 'John', lastName: 'Smith', email: 'j2@e.com' } // Perfect match for "John Smith"
-        ]
+          { targetUserResourceId: 'u2', firstName: 'John', lastName: 'Smith', email: 'j2@e.com' }, // Perfect match for "John Smith"
+        ],
       };
 
       (global.fetch as any)
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => multipleUsersMock
+          json: async () => multipleUsersMock,
         })
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => mockTimelineResponse
+          json: async () => ({ data: { resourceId: 'u2', firstName: 'John', lastName: 'Smith', email: 'j2@e.com' } }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => mockTimelineResponse,
         });
 
       const input = { fullName: 'John Smith' };
@@ -451,11 +453,11 @@ describe('getUserInfoTool', () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: false,
         status: 500,
-        json: async () => ({ error: 'Internal Server Error' })
+        json: async () => ({ error: 'Internal Server Error' }),
       });
 
       const input = {
-        fullName: 'John Doe'
+        fullName: 'John Doe',
       };
 
       const result = await getUserInfoTool.execute({ context: input } as any);
@@ -469,15 +471,15 @@ describe('getUserInfoTool', () => {
       const fetchSpy = (global.fetch as any)
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => mockUserSearchResponse
+          json: async () => mockUserSearchResponse,
         })
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => mockTimelineResponse
+          json: async () => mockTimelineResponse,
         });
 
       const input = {
-        fullName: 'John Doe'
+        fullName: 'John Doe',
       };
 
       await getUserInfoTool.execute({ context: input } as any);
@@ -488,9 +490,9 @@ describe('getUserInfoTool', () => {
         expect.objectContaining({
           method: 'POST',
           headers: expect.objectContaining({
-            'Authorization': `Bearer ${mockToken}`
+            Authorization: `Bearer ${mockToken}`,
           }),
-          body: expect.stringContaining('user-123') // Should contain userId
+          body: expect.stringContaining('user-123'), // Should contain userId
         })
       );
     });
@@ -499,16 +501,16 @@ describe('getUserInfoTool', () => {
       (global.fetch as any)
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => mockUserSearchResponse
+          json: async () => mockUserSearchResponse,
         })
         .mockResolvedValueOnce({
           ok: false,
           status: 500,
-          text: async () => 'Server Error'
+          text: async () => 'Server Error',
         });
 
       const input = {
-        fullName: 'John Doe'
+        fullName: 'John Doe',
       };
 
       // Should still succeed even if timeline fails
@@ -521,15 +523,15 @@ describe('getUserInfoTool', () => {
       (global.fetch as any)
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => mockUserSearchResponse
+          json: async () => mockUserSearchResponse,
         })
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => mockTimelineResponse
+          json: async () => mockTimelineResponse,
         });
 
       const input = {
-        fullName: 'John Doe'
+        fullName: 'John Doe',
       };
 
       await getUserInfoTool.execute({ context: input } as any);
@@ -543,15 +545,15 @@ describe('getUserInfoTool', () => {
       (global.fetch as any)
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => mockUserSearchResponse
+          json: async () => mockUserSearchResponse,
         })
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => ({ data: { results: [] } }) // No activities
+          json: async () => ({ data: { results: [] } }), // No activities
         });
 
       const input = {
-        fullName: 'John Doe'
+        fullName: 'John Doe',
       };
 
       await getUserInfoTool.execute({ context: input } as any);
@@ -568,40 +570,43 @@ describe('getUserInfoTool', () => {
         .mockResolvedValueOnce({
           ok: true,
           json: async () => ({
-            items: [{
-              targetUserResourceId: 'user-1',
-              firstName: 'Test',
-              lastName: 'User',
-              email: 'test@example.com',
-              department: 'IT',
-              phoneNumber: '+1234567890'
-            }]
-          })
+            items: [
+              {
+                targetUserResourceId: 'user-1',
+                firstName: 'Test',
+                lastName: 'User',
+                email: 'test@example.com',
+                department: 'IT',
+                phoneNumber: '+1234567890',
+              },
+            ],
+          }),
         })
         // Second call: empty timeline
         .mockResolvedValueOnce({ ok: true, json: async () => ({ data: { results: [] } }) });
-
 
       // Mock AI returning a basic structure where simulation array exists but empty/default
       const basicAIResponse = {
         ...mockAnalysisReport,
         ai_recommended_next_steps: {
-          simulations: [{
-            vector: 'DEFAULT',
-            persuasion_tactic: 'DEFAULT',
-            scenario_type: 'CLICK_ONLY',
-            difficulty: 'EASY',
-            title: 'Test Sim',
-            why_this: 'Testing',
-            designed_to_progress: 'Test',
-            nist_phish_scale: {
-              cue_difficulty: 'LOW',
-              premise_alignment: 'LOW'
-            }
-          }],
+          simulations: [
+            {
+              vector: 'DEFAULT',
+              persuasion_tactic: 'DEFAULT',
+              scenario_type: 'CLICK_ONLY',
+              difficulty: 'EASY',
+              title: 'Test Sim',
+              why_this: 'Testing',
+              designed_to_progress: 'Test',
+              nist_phish_scale: {
+                cue_difficulty: 'LOW',
+                premise_alignment: 'LOW',
+              },
+            },
+          ],
           microlearnings: [],
-          nudges: []
-        }
+          nudges: [],
+        },
       };
       (generateText as any).mockResolvedValue({ text: JSON.stringify(basicAIResponse) });
 
@@ -621,16 +626,16 @@ describe('getUserInfoTool', () => {
       (global.fetch as any)
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => mockUserSearchResponse
+          json: async () => mockUserSearchResponse,
         })
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => mockTimelineResponse
+          json: async () => mockTimelineResponse,
         });
 
       const input = {
         fullName: 'John Doe',
-        skipAnalysis: true
+        skipAnalysis: true,
       };
 
       const result = await getUserInfoTool.execute({ context: input } as any);
@@ -646,15 +651,15 @@ describe('getUserInfoTool', () => {
       (global.fetch as any)
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => mockUserSearchResponse
+          json: async () => mockUserSearchResponse,
         })
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => mockTimelineResponse
+          json: async () => mockTimelineResponse,
         });
 
       const input = {
-        fullName: 'John Doe'
+        fullName: 'John Doe',
       };
 
       await getUserInfoTool.execute({ context: input } as any);
@@ -665,8 +670,8 @@ describe('getUserInfoTool', () => {
           model: expect.any(Object),
           messages: expect.arrayContaining([
             expect.objectContaining({ role: 'system' }),
-            expect.objectContaining({ role: 'user' })
-          ])
+            expect.objectContaining({ role: 'user' }),
+          ]),
         })
       );
     });
@@ -675,15 +680,15 @@ describe('getUserInfoTool', () => {
       (global.fetch as any)
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => mockUserSearchResponse
+          json: async () => mockUserSearchResponse,
         })
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => ({ data: { results: [] } })
+          json: async () => ({ data: { results: [] } }),
         });
 
       const input = {
-        fullName: 'John Doe'
+        fullName: 'John Doe',
       };
 
       await getUserInfoTool.execute({ context: input } as any);
@@ -702,17 +707,17 @@ describe('getUserInfoTool', () => {
       (global.fetch as any)
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => mockUserSearchResponse
+          json: async () => mockUserSearchResponse,
         })
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => mockTimelineResponse
+          json: async () => mockTimelineResponse,
         });
 
       (generateText as any).mockRejectedValueOnce(new Error('AI model failed'));
 
       const input = {
-        fullName: 'John Doe'
+        fullName: 'John Doe',
       };
 
       // Should still succeed even if AI analysis fails (analysis is optional)
@@ -725,19 +730,19 @@ describe('getUserInfoTool', () => {
       (global.fetch as any)
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => mockUserSearchResponse
+          json: async () => mockUserSearchResponse,
         })
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => mockTimelineResponse
+          json: async () => mockTimelineResponse,
         });
 
       (generateText as any).mockResolvedValueOnce({
-        text: JSON.stringify({ invalid: 'schema' }) // Fails AnalysisSchema.safeParse
+        text: JSON.stringify({ invalid: 'schema' }), // Fails AnalysisSchema.safeParse
       });
 
       const input = {
-        fullName: 'John Doe'
+        fullName: 'John Doe',
       };
 
       const result = await getUserInfoTool.execute({ context: input } as any);
@@ -750,15 +755,15 @@ describe('getUserInfoTool', () => {
       (global.fetch as any)
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => mockUserSearchResponse
+          json: async () => mockUserSearchResponse,
         })
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => mockTimelineResponse
+          json: async () => mockTimelineResponse,
         });
 
       const input = {
-        fullName: 'John Doe'
+        fullName: 'John Doe',
       };
 
       const result = await getUserInfoTool.execute({ context: input } as any);
@@ -774,15 +779,15 @@ describe('getUserInfoTool', () => {
       (global.fetch as any)
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => mockUserSearchResponse
+          json: async () => mockUserSearchResponse,
         })
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => mockTimelineResponse
+          json: async () => mockTimelineResponse,
         });
 
       const input = {
-        fullName: 'John Doe'
+        fullName: 'John Doe',
       };
 
       const result = await getUserInfoTool.execute({ context: input } as any);
@@ -797,10 +802,10 @@ describe('getUserInfoTool', () => {
 
   describe('Error Handling', () => {
     it('should handle network errors gracefully', async () => {
-      (global.fetch as any).mockRejectedValueOnce(new Error('Network error'));
+      (global.fetch as any).mockRejectedValue(new Error('Network error'));
 
       const input = {
-        fullName: 'John Doe'
+        fullName: 'John Doe',
       };
 
       const result = await getUserInfoTool.execute({ context: input } as any);
@@ -809,10 +814,10 @@ describe('getUserInfoTool', () => {
     });
 
     it('should include context in error response', async () => {
-      (global.fetch as any).mockRejectedValueOnce(new Error('Network error'));
+      (global.fetch as any).mockRejectedValue(new Error('Network error'));
 
       const input = {
-        fullName: 'John Doe'
+        fullName: 'John Doe',
       };
 
       const result = await getUserInfoTool.execute({ context: input } as any);
@@ -821,7 +826,7 @@ describe('getUserInfoTool', () => {
     });
 
     it('should catch and log errors during user search', async () => {
-      (global.fetch as any).mockRejectedValueOnce(new Error('API failure'));
+      (global.fetch as any).mockRejectedValue(new Error('API failure'));
 
       const input = { email: 'test@example.com' };
       const result = await getUserInfoTool.execute({ context: input } as any);
@@ -836,28 +841,30 @@ describe('getUserInfoTool', () => {
       (global.fetch as any)
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => mockUserSearchResponse
+          json: async () => mockUserSearchResponse,
         })
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => mockTimelineResponse
+          json: async () => mockTimelineResponse,
         });
 
       const mockWriter = {
-        write: vi.fn()
+        write: vi.fn(),
       };
 
       const input = {
-        fullName: 'John Doe'
+        fullName: 'John Doe',
       };
 
       await getUserInfoTool.execute({ context: input, writer: mockWriter } as any);
 
       expect(mockWriter.write).toHaveBeenCalledWith(expect.objectContaining({ type: 'text-start' }));
-      expect(mockWriter.write).toHaveBeenCalledWith(expect.objectContaining({
-        type: 'text-delta',
-        delta: expect.stringContaining('::ui:target_user::')
-      }));
+      expect(mockWriter.write).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'text-delta',
+          delta: expect.stringContaining('::ui:target_user::'),
+        })
+      );
       expect(mockWriter.write).toHaveBeenCalledWith(expect.objectContaining({ type: 'text-end' }));
     });
   });
@@ -867,15 +874,15 @@ describe('getUserInfoTool', () => {
       (global.fetch as any)
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => mockUserSearchResponse
+          json: async () => mockUserSearchResponse,
         })
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => mockTimelineResponse
+          json: async () => mockTimelineResponse,
         });
 
       const input = {
-        fullName: 'John Doe'
+        fullName: 'John Doe',
       };
 
       const result = await getUserInfoTool.execute({ context: input } as any);

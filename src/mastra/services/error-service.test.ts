@@ -182,7 +182,7 @@ describe('ErrorService', () => {
       const error = errorService.validation('Invalid input');
       const toolResponse = {
         success: false,
-        error: JSON.stringify(error)
+        error: JSON.stringify(error),
       };
 
       expect(toolResponse.success).toBe(false);

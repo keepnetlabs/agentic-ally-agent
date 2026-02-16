@@ -17,12 +17,13 @@ export const reasoningTool = createTool({
   id: 'show_reasoning',
   description: 'Show your thinking process to the user. Call this before making any important decision or analysis.',
   inputSchema: z.object({
-    thought: z.string()
+    thought: z
+      .string()
       .max(2000, 'Reasoning must not exceed 2000 characters')
-      .describe('Your reasoning, analysis, or thinking process (1-2 sentences)')
+      .describe('Your reasoning, analysis, or thinking process (1-2 sentences)'),
   }),
   outputSchema: z.object({
-    success: z.boolean()
+    success: z.boolean(),
   }),
   // v1: (inputData, context) signature
   execute: async (inputData: { thought?: string }, ctx?: ToolExecutionContext) => {
@@ -47,17 +48,17 @@ export const reasoningTool = createTool({
         // Emit reasoning events (v1: data- prefix for toAISdkStream compatibility)
         await writer.write({
           type: 'data-reasoning',
-          data: { event: 'start', id }
+          data: { event: 'start', id },
         });
 
         await writer.write({
           type: 'data-reasoning',
-          data: { event: 'delta', id, text: thought }
+          data: { event: 'delta', id, text: thought },
         });
 
         await writer.write({
           type: 'data-reasoning',
-          data: { event: 'end', id }
+          data: { event: 'end', id },
         });
 
         logger.info('Reasoning emitted', { thought: thought.substring(0, 100) + (thought.length > 100 ? '...' : '') });
@@ -66,17 +67,17 @@ export const reasoningTool = createTool({
       }
 
       return {
-        success: true
+        success: true,
       };
     } catch (error) {
       const err = normalizeError(error);
       const errorInfo = errorService.internal(err.message, {
         thought: thought?.substring(0, 100),
         step: 'reasoning-emission',
-        stack: err.stack
+        stack: err.stack,
       });
       logErrorInfo(logger, 'error', 'Reasoning tool error', errorInfo);
       return createToolErrorResponse(errorInfo);
     }
-  }
+  },
 });

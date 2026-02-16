@@ -4,79 +4,200 @@
 // =========================
 
 type LangKey =
-  | "tr" | "en" | "fr" | "es" | "de" | "it" | "pt" | "nl" | "sv" | "no" | "da"
-  | "pl" | "cs" | "ru" | "ar" | "fa" | "hi" | "zh" | "ja" | "ko" | "th" | "vi"
-  | "uk" | "el" | "ro" | "hu" | "sk" | "id" | "bn" | "ur" | "he" | "sw"
-  | "ku" | "hr" | "sr" | "bg" | "mk" | "sq" | "is" | "fi"
-  | "generic";
+  | 'tr'
+  | 'en'
+  | 'fr'
+  | 'es'
+  | 'de'
+  | 'it'
+  | 'pt'
+  | 'nl'
+  | 'sv'
+  | 'no'
+  | 'da'
+  | 'pl'
+  | 'cs'
+  | 'ru'
+  | 'ar'
+  | 'fa'
+  | 'hi'
+  | 'zh'
+  | 'ja'
+  | 'ko'
+  | 'th'
+  | 'vi'
+  | 'uk'
+  | 'el'
+  | 'ro'
+  | 'hu'
+  | 'sk'
+  | 'id'
+  | 'bn'
+  | 'ur'
+  | 'he'
+  | 'sw'
+  | 'ku'
+  | 'hr'
+  | 'sr'
+  | 'bg'
+  | 'mk'
+  | 'sq'
+  | 'is'
+  | 'fi'
+  | 'generic';
 
 // --- 1) Lang-code normalizer (aliases + fallback) ---
 export function normLang(code?: string): LangKey {
-  if (!code) return "generic";
-  const raw = code.toLowerCase().trim().replace(/_/g, "-");
-  const primary = raw.split("-")[0];
+  if (!code) return 'generic';
+  const raw = code.toLowerCase().trim().replace(/_/g, '-');
+  const primary = raw.split('-')[0];
 
   const aliases: Record<string, LangKey> = {
     // Base language codes (39 languages)
-    tr: "tr", en: "en", fr: "fr", es: "es", de: "de", it: "it", pt: "pt", nl: "nl",
-    sv: "sv", no: "no", nb: "no", nn: "no", da: "da", pl: "pl", cs: "cs", ru: "ru",
-    ar: "ar", fa: "fa", hi: "hi", zh: "zh", ja: "ja", ko: "ko", th: "th", vi: "vi",
-    uk: "uk", el: "el", ro: "ro", hu: "hu", sk: "sk", id: "id", bn: "bn", ur: "ur",
-    he: "he", sw: "sw", ku: "ku", hr: "hr", sr: "sr", bg: "bg", mk: "mk", sq: "sq",
-    is: "is", fi: "fi",
+    tr: 'tr',
+    en: 'en',
+    fr: 'fr',
+    es: 'es',
+    de: 'de',
+    it: 'it',
+    pt: 'pt',
+    nl: 'nl',
+    sv: 'sv',
+    no: 'no',
+    nb: 'no',
+    nn: 'no',
+    da: 'da',
+    pl: 'pl',
+    cs: 'cs',
+    ru: 'ru',
+    ar: 'ar',
+    fa: 'fa',
+    hi: 'hi',
+    zh: 'zh',
+    ja: 'ja',
+    ko: 'ko',
+    th: 'th',
+    vi: 'vi',
+    uk: 'uk',
+    el: 'el',
+    ro: 'ro',
+    hu: 'hu',
+    sk: 'sk',
+    id: 'id',
+    bn: 'bn',
+    ur: 'ur',
+    he: 'he',
+    sw: 'sw',
+    ku: 'ku',
+    hr: 'hr',
+    sr: 'sr',
+    bg: 'bg',
+    mk: 'mk',
+    sq: 'sq',
+    is: 'is',
+    fi: 'fi',
     // Common regional variants
-    "pt-br": "pt", "pt-pt": "pt",
-    "zh-cn": "zh", "zh-sg": "zh", "zh-hans": "zh", "zh-hant": "zh", "zh-tw": "zh", "zh-hk": "zh",
-    "en-gb": "en", "en-us": "en", "en-au": "en", "en-ca": "en",
-    "fr-ca": "fr",
-    "es-mx": "es", "es-419": "es",
-    "tr-tr": "tr", "de-de": "de", "it-it": "it",
-    "sr-latn": "sr", "sr-cyrl": "sr",
-    "zh-yue": "zh",
+    'pt-br': 'pt',
+    'pt-pt': 'pt',
+    'zh-cn': 'zh',
+    'zh-sg': 'zh',
+    'zh-hans': 'zh',
+    'zh-hant': 'zh',
+    'zh-tw': 'zh',
+    'zh-hk': 'zh',
+    'en-gb': 'en',
+    'en-us': 'en',
+    'en-au': 'en',
+    'en-ca': 'en',
+    'fr-ca': 'fr',
+    'es-mx': 'es',
+    'es-419': 'es',
+    'tr-tr': 'tr',
+    'de-de': 'de',
+    'it-it': 'it',
+    'sr-latn': 'sr',
+    'sr-cyrl': 'sr',
+    'zh-yue': 'zh',
     // Full language names (for AI outputs like "Turkish", "English", etc.)
-    "turkish": "tr", "türkçe": "tr", "turkce": "tr", "turk": "tr",
-    "english": "en", "eng": "en",
-    "german": "de", "deutsch": "de",
-    "french": "fr", "francais": "fr", "français": "fr",
-    "spanish": "es", "espanol": "es", "español": "es",
-    "italian": "it", "italiano": "it",
-    "portuguese": "pt", "português": "pt",
-    "russian": "ru", "россия": "ru",
-    "chinese": "zh",
-    "japanese": "ja",
-    "arabic": "ar",
-    "korean": "ko",
-    "dutch": "nl", "nederlands": "nl",
-    "polish": "pl", "polski": "pl",
-    "swedish": "sv", "svenska": "sv",
-    "norwegian": "no", "norsk": "no",
-    "danish": "da", "dansk": "da",
-    "czech": "cs", "česky": "cs",
-    "persian": "fa", "farsi": "fa",
-    "hindi": "hi",
-    "thai": "th",
-    "vietnamese": "vi",
-    "ukrainian": "uk", "українська": "uk",
-    "greek": "el", "ελληνικά": "el",
-    "romanian": "ro", "română": "ro",
-    "hungarian": "hu", "magyar": "hu",
-    "slovak": "sk", "slovenčina": "sk",
-    "indonesian": "id", "bahasa indonesia": "id",
-    "bengali": "bn", "বাংলা": "bn",
-    "urdu": "ur", "اردو": "ur",
-    "hebrew": "he", "עברית": "he",
-    "swahili": "sw",
-    "kurdish": "ku", "کوردی": "ku",
-    "croatian": "hr", "hrvatski": "hr",
-    "serbian": "sr", "србија": "sr",
-    "bulgarian": "bg", "български": "bg",
-    "macedonian": "mk", "македонски": "mk",
-    "albanian": "sq", "shqiptare": "sq",
-    "icelandic": "is", "íslenska": "is",
-    "finnish": "fi", "suomi": "fi"
+    turkish: 'tr',
+    türkçe: 'tr',
+    turkce: 'tr',
+    turk: 'tr',
+    english: 'en',
+    eng: 'en',
+    german: 'de',
+    deutsch: 'de',
+    french: 'fr',
+    francais: 'fr',
+    français: 'fr',
+    spanish: 'es',
+    espanol: 'es',
+    español: 'es',
+    italian: 'it',
+    italiano: 'it',
+    portuguese: 'pt',
+    português: 'pt',
+    russian: 'ru',
+    россия: 'ru',
+    chinese: 'zh',
+    japanese: 'ja',
+    arabic: 'ar',
+    korean: 'ko',
+    dutch: 'nl',
+    nederlands: 'nl',
+    polish: 'pl',
+    polski: 'pl',
+    swedish: 'sv',
+    svenska: 'sv',
+    norwegian: 'no',
+    norsk: 'no',
+    danish: 'da',
+    dansk: 'da',
+    czech: 'cs',
+    česky: 'cs',
+    persian: 'fa',
+    farsi: 'fa',
+    hindi: 'hi',
+    thai: 'th',
+    vietnamese: 'vi',
+    ukrainian: 'uk',
+    українська: 'uk',
+    greek: 'el',
+    ελληνικά: 'el',
+    romanian: 'ro',
+    română: 'ro',
+    hungarian: 'hu',
+    magyar: 'hu',
+    slovak: 'sk',
+    slovenčina: 'sk',
+    indonesian: 'id',
+    'bahasa indonesia': 'id',
+    bengali: 'bn',
+    বাংলা: 'bn',
+    urdu: 'ur',
+    اردو: 'ur',
+    hebrew: 'he',
+    עברית: 'he',
+    swahili: 'sw',
+    kurdish: 'ku',
+    کوردی: 'ku',
+    croatian: 'hr',
+    hrvatski: 'hr',
+    serbian: 'sr',
+    србија: 'sr',
+    bulgarian: 'bg',
+    български: 'bg',
+    macedonian: 'mk',
+    македонски: 'mk',
+    albanian: 'sq',
+    shqiptare: 'sq',
+    icelandic: 'is',
+    íslenska: 'is',
+    finnish: 'fi',
+    suomi: 'fi',
   };
 
-  return aliases[raw] || aliases[primary] || "generic";
+  return aliases[raw] || aliases[primary] || 'generic';
 }
 
 // --- 2) Language-specific guardrails (map-based) ---
@@ -946,7 +1067,7 @@ For praise/completion: "Congratulations", "Well done", "Successfully completed"
 - Maintain professional, adult, motivational tone.
 - Avoid exaggerated praise, teacherly tone, or fear-based language.
 - Focus on clarity, respect, and cultural neutrality.
-`.trim()
+`.trim(),
 };
 
 const memo = new Map<LangKey, string>();
@@ -961,35 +1082,34 @@ export function getLanguagePrompt(langCode: string): string {
 
 // --- 3) Optional glossary injector (hard override for terms) ---
 export function buildGlossaryPrompt(glossary: Array<Record<string, string>> = []): string {
-  if (!glossary.length) return "";
+  if (!glossary.length) return '';
   return `
 ### 📚 Terminology Glossary (HARD OVERRIDE)
 - Use the target-language equivalents exactly as given below.
-${glossary.map((g, i) => `  ${i + 1}. ${JSON.stringify(g)}`).join("\n")}
-- If a term is not listed, choose the most common enterprise-security usage in ${"${targetLanguage}"}.
+${glossary.map((g, i) => `  ${i + 1}. ${JSON.stringify(g)}`).join('\n')}
+- If a term is not listed, choose the most common enterprise-security usage in ${'${targetLanguage}'}.
 `.trim();
 }
 
 // --- 4) Main system prompt builder (n→n localization) ---
 export function buildSystemPrompt(opts: {
-  topicContext?: string,
-  sourceLanguage: string,
-  targetLanguage: string,
-  extractedLength: number,
-  glossary?: Array<Record<string, string>>,
-  decodingDiscipline?: boolean
+  topicContext?: string;
+  sourceLanguage: string;
+  targetLanguage: string;
+  extractedLength: number;
+  glossary?: Array<Record<string, string>>;
+  decodingDiscipline?: boolean;
 }): string {
   const {
-    topicContext = "",
+    topicContext = '',
     sourceLanguage,
     targetLanguage,
     extractedLength,
     glossary = [],
-    decodingDiscipline = true
+    decodingDiscipline = true,
   } = opts;
 
-  const languagePrompt =
-    typeof getLanguagePrompt === "function" ? getLanguagePrompt(targetLanguage) : "";
+  const languagePrompt = typeof getLanguagePrompt === 'function' ? getLanguagePrompt(targetLanguage) : '';
 
   return `
 ${topicContext}
@@ -1113,11 +1233,15 @@ If ambiguous, default to **Info/Notification** (neutral).
 ### 📐 JSON Schema (implicit)
 Object with string keys "0"…"${extractedLength - 1}" and string values only. No extra keys, no arrays, no comments.
 
-${decodingDiscipline ? `
+${
+  decodingDiscipline
+    ? `
 ### 🧭 Decoding Discipline
 - Prefer deterministic wording; avoid stylistic variation when a minimal faithful rendering exists.
 - If uncertain, choose the literal faithful phrasing over a creative paraphrase.
-`.trim() : ""}
+`.trim()
+    : ''
+}
 
 ---
 

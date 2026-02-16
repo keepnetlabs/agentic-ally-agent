@@ -101,7 +101,9 @@ describe('ensureLandingFullHtmlDocument', () => {
   it('should include viewport meta tag', () => {
     const input = `<div>Test</div>`;
     const out = ensureLandingFullHtmlDocument(input, 'Test');
-    expect(out).toMatch(/<meta name=['"]viewport['"]\s+content=['"]width=device-width,\s*initial-scale=1\.0['"]\s*\/>/i);
+    expect(out).toMatch(
+      /<meta name=['"]viewport['"]\s+content=['"]width=device-width,\s*initial-scale=1\.0['"]\s*\/>/i
+    );
   });
 
   it('should preserve special characters in fragment', () => {
@@ -189,5 +191,3 @@ describe('ensureLandingFullHtmlDocument', () => {
     expect(out).toMatch(/<!\[CDATA\[var x = 1;\]\]>/);
   });
 });
-
-

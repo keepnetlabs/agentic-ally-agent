@@ -17,7 +17,7 @@ import {
   loadMicrolearningOutputSchema,
   mergeUpdatesInputSchema,
   mergeUpdatesOutputSchema,
-  saveUpdatesInputSchema
+  saveUpdatesInputSchema,
 } from '../schemas/update-microlearning-schemas';
 import { handleLogoHallucination } from '../utils/microlearning/logo-utils';
 import { deepMerge } from '../utils/object-utils';
@@ -76,14 +76,22 @@ const mergeUpdatesStep = createStep({
   inputSchema: mergeUpdatesInputSchema,
   outputSchema: mergeUpdatesOutputSchema,
   execute: async ({ inputData }) => {
-    const { microlearningId, department, currentContent, currentVersion, updates: rawUpdates, model, modelProvider } = inputData;
+    const {
+      microlearningId,
+      department,
+      currentContent,
+      currentVersion,
+      updates: rawUpdates,
+      model,
+      modelProvider,
+    } = inputData;
     const updates = handleLogoHallucination(rawUpdates, microlearningId);
 
     logger.info('Received update request', {
       microlearningId,
       department,
       updatesKeys: Object.keys(updates),
-      rawUpdates: JSON.stringify(updates)
+      rawUpdates: JSON.stringify(updates),
     });
 
     const newVersion = currentVersion + 1;
@@ -109,14 +117,20 @@ const mergeUpdatesStep = createStep({
               ...(updates.theme.logo || {}),
               src: config.mainLogoUrl,
               // Fallback to main logo as dark logo is not always available in config
-              darkSrc: config.mainLogoUrl
+              darkSrc: config.mainLogoUrl,
             };
             logger.info('Whitelabel logo applied via overrides', { microlearningId, logoUrl: config.mainLogoUrl });
           } else {
             logger.warn('useWhitelabelLogo requested but no config found', { microlearningId });
           }
         } catch (err) {
-          logger.warn('Failed to apply whitelabel logo', { error: err });
+          const normalized = normalizeError(err);
+          const errorInfo = errorService.external(normalized.message, {
+            step: 'apply-whitelabel-logo',
+            stack: normalized.stack,
+            microlearningId,
+          });
+          logErrorInfo(logger, 'warn', 'Failed to apply whitelabel logo', errorInfo);
         }
       } else if (targetBrandName) {
         logger.info('Processing external brand update', { brandName: targetBrandName });
@@ -131,31 +145,37 @@ const mergeUpdatesStep = createStep({
 
           logger.info('Brand resolution result', {
             brand: targetBrandName,
-            resolvedLogo: brandInfo.logoUrl
+            resolvedLogo: brandInfo.logoUrl,
           });
 
           if (brandInfo.logoUrl) {
             updates.theme.logo = {
               ...(updates.theme.logo || {}),
               src: brandInfo.logoUrl,
-              darkSrc: brandInfo.logoUrl // Use same logo for dark mode if resolved externally
+              darkSrc: brandInfo.logoUrl, // Use same logo for dark mode if resolved externally
             };
             logger.info('External brand logo applied to updates object', {
               microlearningId,
               brand: targetBrandName,
-              finalLogoConfig: updates.theme.logo
+              finalLogoConfig: updates.theme.logo,
             });
           } else {
             logger.warn('Brand resolution returned no logo URL', { brand: targetBrandName });
           }
         } catch (err) {
-          logger.warn('Failed to resolve external brand logo', { brand: targetBrandName, error: err });
+          const normalized = normalizeError(err);
+          const errorInfo = errorService.external(normalized.message, {
+            step: 'resolve-external-brand-logo',
+            stack: normalized.stack,
+            brand: targetBrandName,
+          });
+          logErrorInfo(logger, 'warn', 'Failed to resolve external brand logo', errorInfo);
         }
       } else {
         logger.debug('No brand updates detected', {
           updatesKeys: Object.keys(updates),
           themeKeys: updates.theme ? Object.keys(updates.theme) : [],
-          hasLogo: !!updates.theme?.logo
+          hasLogo: !!updates.theme?.logo,
         });
       }
 
@@ -178,13 +198,14 @@ const mergeUpdatesStep = createStep({
       if (updates.theme?.logo) {
         logger.info('Theme merge complete. Verifying logo state:', {
           inputUpdateLogo: updates.theme.logo,
-          mergedOutputLogo: updatedContent.theme?.logo
+          mergedOutputLogo: updatedContent.theme?.logo,
         });
       }
 
       // Track theme changes
-      for (const key in updates.theme) {
-        changes[`theme.${key}`] = (updates.theme as any)[key];
+      const themeObj = updates.theme as Record<string, unknown>;
+      for (const key in themeObj) {
+        changes[`theme.${key}`] = themeObj[key];
       }
     }
 
@@ -231,7 +252,10 @@ const saveUpdatesStep = createStep({
       const saved = await kvService.put(baseKey, updatedContent);
 
       if (!saved) {
-        const errorInfo = errorService.external('Failed to save updated microlearning to KV', { microlearningId, step: 'save-updated-content' });
+        const errorInfo = errorService.external('Failed to save updated microlearning to KV', {
+          microlearningId,
+          step: 'save-updated-content',
+        });
         logErrorInfo(logger, 'error', 'KV save failed', errorInfo);
         throw new Error(errorInfo.message);
       }
@@ -281,7 +305,12 @@ const saveUpdatesStep = createStep({
       };
     } catch (error) {
       const err = normalizeError(error);
-      logger.error('Failed to save updates', { error: err.message, stack: err.stack, microlearningId });
+      const errorInfo = errorService.external(err.message, {
+        step: 'save-updates',
+        stack: err.stack,
+        microlearningId,
+      });
+      logErrorInfo(logger, 'error', 'Failed to save updates', errorInfo);
 
       return {
         success: false,

@@ -413,7 +413,12 @@ describe('normalizeEmailCardContentPadding', () => {
     });
 
     it('should handle very long HTML', () => {
-      const longTable = '<table style="background:#fff; border-radius:18px;"><tr><td style="padding:0; font-family:Arial;">'.repeat(100) + 'Content' + '</td></tr></table>'.repeat(100);
+      const longTable =
+        '<table style="background:#fff; border-radius:18px;"><tr><td style="padding:0; font-family:Arial;">'.repeat(
+          100
+        ) +
+        'Content' +
+        '</td></tr></table>'.repeat(100);
       const out = normalizeEmailCardContentPadding(longTable, 24);
       expect(out).toContain('padding: 24px');
     });
@@ -500,12 +505,7 @@ describe('normalizeEmailCardContentPadding', () => {
     });
 
     it('should handle multiple fast exits efficiently', () => {
-      const inputs = [
-        '',
-        '<div>test</div>',
-        '<table></table>',
-        '<p>paragraph</p>',
-      ];
+      const inputs = ['', '<div>test</div>', '<table></table>', '<p>paragraph</p>'];
       inputs.forEach(input => {
         const out = normalizeEmailCardContentPadding(input, 24);
         expect(out).toBeDefined();

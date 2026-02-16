@@ -5,26 +5,22 @@ import { cleanResponse } from '../utils/content-processors/json-cleaner';
 import { generateUniqueId } from '../utils/core/id-utils';
 import { LANDING_PAGE, STRING_TRUNCATION, KV_NAMESPACES, SMISHING, PHISHING_EMAIL } from '../constants';
 import { KVService } from '../services/kv-service';
-import {
-  detectIndustry,
-  fixBrokenImages,
-  validateLandingPage,
-  logValidationResults
-} from '../utils/landing-page';
+import { detectIndustry, fixBrokenImages, validateLandingPage, logValidationResults } from '../utils/landing-page';
 import { streamDirectReasoning } from '../utils/core/reasoning-stream';
 import { extractReasoning } from '../utils/core/ai-utils';
 import {
   createSmishingInputSchema,
   createSmishingAnalysisSchema,
   createSmishingSmsOutputSchema,
-  createSmishingOutputSchema
+  createSmishingOutputSchema,
 } from '../schemas/create-smishing-schemas';
-import {
-  buildSmishingAnalysisPrompts,
-  buildSmishingSmsPrompts
-} from '../utils/prompt-builders/smishing-prompts';
+import { buildSmishingAnalysisPrompts, buildSmishingSmsPrompts } from '../utils/prompt-builders/smishing-prompts';
 import { resolveLogoAndBrand, generateContextualBrand } from '../utils/phishing/brand-resolver';
-import { DEFAULT_GENERIC_LOGO, normalizeImgAttributes, validateImageUrlCached } from '../utils/landing-page/image-validator';
+import {
+  DEFAULT_GENERIC_LOGO,
+  normalizeImgAttributes,
+  validateImageUrlCached,
+} from '../utils/landing-page/image-validator';
 import { getLogger } from '../utils/core/logger';
 import { waitForKVConsistency, buildExpectedSmishingKeys } from '../utils/kv-consistency';
 import { withRetry } from '../utils/core/resilience-utils';
@@ -45,9 +41,28 @@ const analyzeRequest = createStep({
   outputSchema: createSmishingAnalysisSchema,
   execute: async ({ inputData }) => {
     const logger = getLogger('AnalyzeSmishingRequest');
-    const { topic, targetProfile, difficulty, language, method, includeLandingPage, includeSms, additionalContext, modelProvider, model, policyContext } = inputData;
+    const {
+      topic,
+      targetProfile,
+      difficulty,
+      language,
+      method,
+      includeLandingPage,
+      includeSms,
+      additionalContext,
+      modelProvider,
+      model,
+      policyContext,
+    } = inputData;
 
-    logger.info('Starting smishing scenario analysis', { topic, difficulty, language, method, includeLandingPage, includeSms });
+    logger.info('Starting smishing scenario analysis', {
+      topic,
+      difficulty,
+      language,
+      method,
+      includeLandingPage,
+      includeSms,
+    });
 
     // Fetch whitelabeling config for potential logo fallback
     const productService = new ProductService();
@@ -55,7 +70,12 @@ const analyzeRequest = createStep({
     try {
       whitelabelConfig = await productService.getWhitelabelingConfig();
     } catch (err) {
-      logger.warn('Failed to fetch whitelabeling config', { error: err });
+      const normalized = normalizeError(err);
+      const errorInfo = errorService.external(normalized.message, {
+        step: 'fetch-whitelabel-config',
+        stack: normalized.stack,
+      });
+      logErrorInfo(logger, 'warn', 'Failed to fetch whitelabeling config', errorInfo);
     }
 
     const aiModel = getModelWithOverride(modelProvider, model);
@@ -70,9 +90,7 @@ const analyzeRequest = createStep({
       policyContext,
     });
 
-    const messages: Array<{ role: 'system' | 'user'; content: string }> = [
-      { role: 'system', content: systemPrompt }
-    ];
+    const messages: Array<{ role: 'system' | 'user'; content: string }> = [{ role: 'system', content: systemPrompt }];
 
     if (additionalContextMessage) {
       messages.push({ role: 'user', content: additionalContextMessage });
@@ -82,11 +100,12 @@ const analyzeRequest = createStep({
 
     try {
       const response = await withRetry(
-        async () => generateText({
-          model: aiModel,
-          messages,
-          ...PHISHING_SCENARIO_PARAMS,
-        }),
+        async () =>
+          generateText({
+            model: aiModel,
+            messages,
+            ...PHISHING_SCENARIO_PARAMS,
+          }),
         'smishing-scenario-analysis'
       );
 
@@ -100,14 +119,14 @@ const analyzeRequest = createStep({
       const cleanedJson = cleanResponse(response.text, 'smishing-analysis');
       const parsedResult = JSON.parse(cleanedJson);
 
-    if (!parsedResult.scenario || !parsedResult.category) {
-      const errorInfo = errorService.validation('Missing required fields in analysis response', {
-        hasScenario: !!parsedResult.scenario,
-        hasCategory: !!parsedResult.category,
-      });
-      logErrorInfo(logger, 'error', 'Smishing analysis validation failed', errorInfo);
-      throw new Error(errorInfo.message);
-    }
+      if (!parsedResult.scenario || !parsedResult.category) {
+        const errorInfo = errorService.validation('Missing required fields in analysis response', {
+          hasScenario: !!parsedResult.scenario,
+          hasCategory: !!parsedResult.category,
+        });
+        logErrorInfo(logger, 'error', 'Smishing analysis validation failed', errorInfo);
+        throw new Error(errorInfo.message);
+      }
 
       if (parsedResult.description && parsedResult.description.length > PHISHING_EMAIL.MAX_DESCRIPTION_LENGTH) {
         logger.warn('Description exceeds max length, truncating', {
@@ -118,7 +137,11 @@ const analyzeRequest = createStep({
 
       // Brand detection
       logger.info('Detecting brand and resolving logo URL');
-      let logoInfo = await resolveLogoAndBrand(parsedResult.name || parsedResult.scenario, parsedResult.scenario, aiModel);
+      let logoInfo = await resolveLogoAndBrand(
+        parsedResult.name || parsedResult.scenario,
+        parsedResult.scenario,
+        aiModel
+      );
 
       if (logoInfo.logoUrl && logoInfo.logoUrl !== DEFAULT_GENERIC_LOGO && !logoInfo.logoUrl.includes('img.logo.dev')) {
         try {
@@ -128,22 +151,22 @@ const analyzeRequest = createStep({
             logoInfo.logoUrl = '';
           }
         } catch (e) {
-          logger.warn('Error validating logo URL - resetting to empty', { error: e });
+          const err = normalizeError(e);
+          const errorInfo = errorService.external(err.message, { step: 'validate-logo-url', stack: err.stack });
+          logErrorInfo(logger, 'warn', 'Error validating logo URL - resetting to empty', errorInfo);
           logoInfo.logoUrl = '';
         }
       }
 
-      const useWhitelabelLogo = whitelabelConfig?.mainLogoUrl && (
-        !logoInfo.isRecognizedBrand ||
-        logoInfo.logoUrl === DEFAULT_GENERIC_LOGO ||
-        !logoInfo.logoUrl
-      );
+      const useWhitelabelLogo =
+        whitelabelConfig?.mainLogoUrl &&
+        (!logoInfo.isRecognizedBrand || logoInfo.logoUrl === DEFAULT_GENERIC_LOGO || !logoInfo.logoUrl);
 
       if (useWhitelabelLogo) {
         const logoUrl = whitelabelConfig?.mainLogoUrl || '';
         logger.info('Using Whitelabel Logo configuration', {
           reason: !logoInfo.isRecognizedBrand ? 'Brand not recognized' : 'Generic/Empty/Broken logo detected',
-          logoUrlPrefix: logoUrl.substring(0, STRING_TRUNCATION.LOGO_URL_PREFIX_LENGTH)
+          logoUrlPrefix: logoUrl.substring(0, STRING_TRUNCATION.LOGO_URL_PREFIX_LENGTH),
         });
 
         logoInfo.logoUrl = logoUrl;
@@ -160,7 +183,7 @@ const analyzeRequest = createStep({
           logoInfo = contextualBrandInfo;
           logger.info('Using generated contextual brand', {
             brandName: logoInfo.brandName,
-            logoUrlPrefix: logoInfo.logoUrl.substring(0, STRING_TRUNCATION.LOGO_URL_PREFIX_LENGTH)
+            logoUrlPrefix: logoInfo.logoUrl.substring(0, STRING_TRUNCATION.LOGO_URL_PREFIX_LENGTH),
           });
         }
       }
@@ -168,12 +191,16 @@ const analyzeRequest = createStep({
       logger.info('Brand detection complete', {
         brandName: logoInfo.brandName || 'Generic',
         logoUrlPrefix: logoInfo.logoUrl.substring(0, STRING_TRUNCATION.LOGO_URL_PREFIX_LENGTH),
-        isRecognizedBrand: logoInfo.isRecognizedBrand
+        isRecognizedBrand: logoInfo.isRecognizedBrand,
       });
 
       // Detect industry once in analysis step
       logger.info('Detecting industry for consistent branding');
-      let industryDesign = await detectIndustry(parsedResult.name || parsedResult.scenario, parsedResult.scenario, aiModel);
+      let industryDesign = await detectIndustry(
+        parsedResult.name || parsedResult.scenario,
+        parsedResult.scenario,
+        aiModel
+      );
 
       if (logoInfo.brandColors && logoInfo.isRecognizedBrand) {
         industryDesign = {
@@ -183,13 +210,13 @@ const analyzeRequest = createStep({
             secondary: logoInfo.brandColors.secondary,
             accent: logoInfo.brandColors.accent,
             gradient: `linear-gradient(135deg, ${logoInfo.brandColors.primary}, ${logoInfo.brandColors.accent})`,
-          }
+          },
         };
         logger.info('Using brand colors for industry design', {
           brandName: logoInfo.brandName,
           primary: logoInfo.brandColors.primary,
           secondary: logoInfo.brandColors.secondary,
-          accent: logoInfo.brandColors.accent
+          accent: logoInfo.brandColors.accent,
         });
       } else {
         logger.info('Using detected industry design', { industry: industryDesign.industry });
@@ -216,8 +243,14 @@ const analyzeRequest = createStep({
       };
     } catch (error) {
       const err = normalizeError(error);
-      logger.error('Smishing analysis step failed', { error: err.message, stack: err.stack });
-      throw new Error(`Smishing analysis workflow error: ${err.message}`);
+      const errorInfo = errorService.aiModel(err.message, {
+        step: 'smishing-analysis',
+        stack: err.stack,
+      });
+      logErrorInfo(logger, 'error', 'Smishing analysis step failed', errorInfo);
+      const e = new Error(`Smishing analysis workflow error: ${err.message}`);
+      (e as Error & { code?: string }).code = errorInfo.code;
+      throw e;
     }
   },
 });
@@ -239,11 +272,16 @@ const generateSms = createStep({
         messages: undefined,
         analysis,
         includeLandingPage,
-        policyContext: analysis.policyContext
+        policyContext: analysis.policyContext,
       };
     }
 
-    logger.info('Starting smishing SMS generation', { scenario: analysis.scenario, language, method: analysis.method, difficulty });
+    logger.info('Starting smishing SMS generation', {
+      scenario: analysis.scenario,
+      language,
+      method: analysis.method,
+      difficulty,
+    });
 
     const aiModel = getModelWithOverride(modelProvider, model);
     const { systemPrompt, userPrompt } = buildSmishingSmsPrompts({
@@ -260,11 +298,12 @@ const generateSms = createStep({
 
     try {
       const response = await withRetry(
-        async () => generateText({
-          model: aiModel,
-          messages,
-          ...PHISHING_CONTENT_PARAMS,
-        }),
+        async () =>
+          generateText({
+            model: aiModel,
+            messages,
+            ...PHISHING_CONTENT_PARAMS,
+          }),
         'smishing-sms-generation'
       );
 
@@ -277,8 +316,9 @@ const generateSms = createStep({
       const cleanedJson = cleanResponse(response.text, 'smishing-sms');
       let parsedResult = JSON.parse(cleanedJson);
 
-      const hasLink = Array.isArray(parsedResult?.messages)
-        && parsedResult.messages.some((msg: string) => msg.includes('{PHISHINGURL}'));
+      const hasLink =
+        Array.isArray(parsedResult?.messages) &&
+        parsedResult.messages.some((msg: string) => msg.includes('{PHISHINGURL}'));
 
       if (!hasLink) {
         logger.warn('SMS messages missing {PHISHINGURL}. Retrying once with stricter instruction.');
@@ -286,7 +326,7 @@ const generateSms = createStep({
           model: aiModel,
           messages: [
             { role: 'system', content: systemPrompt + '\n\nCRITICAL: You MUST include {PHISHINGURL} in one message.' },
-            { role: 'user', content: userPrompt + '\n\nIMPORTANT: Include {PHISHINGURL} in one message.' }
+            { role: 'user', content: userPrompt + '\n\nIMPORTANT: Include {PHISHINGURL} in one message.' },
           ],
           ...PHISHING_CONTENT_PARAMS,
         });
@@ -297,7 +337,7 @@ const generateSms = createStep({
       if (!parsedResult.messages || !Array.isArray(parsedResult.messages) || parsedResult.messages.length === 0) {
         const errorInfo = errorService.validation('Missing required messages in SMS response', {
           hasMessages: !!parsedResult.messages,
-          messageCount: parsedResult.messages?.length
+          messageCount: parsedResult.messages?.length,
         });
         logErrorInfo(logger, 'error', 'SMS content validation failed', errorInfo);
         throw new Error(errorInfo.message);
@@ -312,12 +352,18 @@ const generateSms = createStep({
         ...parsedResult,
         analysis,
         includeLandingPage: analysis.includeLandingPage,
-        policyContext: analysis.policyContext
+        policyContext: analysis.policyContext,
       };
     } catch (error) {
       const err = normalizeError(error);
-      logger.error('Smishing SMS generation step failed', { error: err.message, stack: err.stack });
-      throw new Error(`Smishing SMS generation workflow error: ${err.message}`);
+      const errorInfo = errorService.aiModel(err.message, {
+        step: 'smishing-sms-generation',
+        stack: err.stack,
+      });
+      logErrorInfo(logger, 'error', 'Smishing SMS generation step failed', errorInfo);
+      const e = new Error(`Smishing SMS generation workflow error: ${err.message}`);
+      (e as Error & { code?: string }).code = errorInfo.code;
+      throw e;
     }
   },
 });
@@ -342,24 +388,30 @@ const generateLandingPage = createStep({
     }
 
     if (!analysis) {
-      const errorInfo = errorService.validation('Analysis data missing from previous step', { step: 'generate-smishing-landing-page' });
+      const errorInfo = errorService.validation('Analysis data missing from previous step', {
+        step: 'generate-smishing-landing-page',
+      });
       logErrorInfo(logger, 'error', 'Analysis data validation failed', errorInfo);
       throw new Error(errorInfo.message);
     }
 
-    const { language, modelProvider, model, difficulty, method, scenario, name, description, industryDesign } = analysis;
+    const { language, modelProvider, model, difficulty, method, scenario, name, description, industryDesign } =
+      analysis;
 
     logger.info('Starting smishing landing page generation', { method, difficulty });
 
     if (!industryDesign) {
-      const errorInfo = errorService.validation('Industry design missing from analysis step', { step: 'generate-smishing-landing-page' });
+      const errorInfo = errorService.validation('Industry design missing from analysis step', {
+        step: 'generate-smishing-landing-page',
+      });
       logErrorInfo(logger, 'error', 'Industry design validation failed', errorInfo);
       throw new Error(errorInfo.message);
     }
 
     const aiModel = getModelWithOverride(modelProvider, model);
 
-    const requiredPages = (LANDING_PAGE.FLOWS[method as keyof typeof LANDING_PAGE.FLOWS] || LANDING_PAGE.FLOWS['Click-Only']) as readonly string[];
+    const requiredPages = (LANDING_PAGE.FLOWS[method as keyof typeof LANDING_PAGE.FLOWS] ||
+      LANDING_PAGE.FLOWS['Click-Only']) as readonly string[];
 
     let emailBrandContext = '';
     if (analysis.isRecognizedBrand && analysis.brandName) {
@@ -381,7 +433,7 @@ const generateLandingPage = createStep({
     });
 
     const messagesToSend: Array<{ role: 'system' | 'user'; content: string }> = [
-      { role: 'system', content: systemPrompt }
+      { role: 'system', content: systemPrompt },
     ];
 
     if (userContextMessage) {
@@ -395,11 +447,12 @@ const generateLandingPage = createStep({
 
     try {
       response = await withRetry(
-        async () => generateText({
-          model: aiModel,
-          messages: messagesToSend,
-          ...PHISHING_CONTENT_PARAMS,
-        }),
+        async () =>
+          generateText({
+            model: aiModel,
+            messages: messagesToSend,
+            ...PHISHING_CONTENT_PARAMS,
+          }),
         'smishing-landing-page-generation'
       );
 
@@ -414,7 +467,10 @@ const generateLandingPage = createStep({
       if (parsedResult.pages && Array.isArray(parsedResult.pages)) {
         parsedResult.pages = await Promise.all(
           parsedResult.pages.map(async (page: { type: string; template: string }) => {
-            let cleanedTemplate = postProcessPhishingLandingHtml({ html: page.template, title: `${analysis.brandName || 'Secure Portal'} Login` });
+            let cleanedTemplate = postProcessPhishingLandingHtml({
+              html: page.template,
+              title: `${analysis.brandName || 'Secure Portal'} Login`,
+            });
 
             if (cleanedTemplate.includes('{CUSTOMMAINLOGO}')) {
               const logoUrl = analysis.logoUrl || DEFAULT_GENERIC_LOGO;
@@ -423,7 +479,7 @@ const generateLandingPage = createStep({
               cleanedTemplate = normalizeImgAttributes(cleanedTemplate);
               logger.info('Replaced CUSTOMMAINLOGO tag in landing page with logo from analysis', {
                 logoUrlPrefix: logoUrl.substring(0, STRING_TRUNCATION.LOGO_URL_PREFIX_LENGTH_ALT),
-                truncated: logoUrl.length > STRING_TRUNCATION.LOGO_URL_PREFIX_LENGTH_ALT
+                truncated: logoUrl.length > STRING_TRUNCATION.LOGO_URL_PREFIX_LENGTH_ALT,
               });
             }
 
@@ -435,7 +491,7 @@ const generateLandingPage = createStep({
             if (!validationResult.isValid) {
               logger.warn('Landing page validation failed', {
                 pageType: page.type,
-                errors: validationResult.errors
+                errors: validationResult.errors,
               });
             }
 
@@ -452,16 +508,22 @@ const generateLandingPage = createStep({
           description: description,
           method: method || SMISHING.DEFAULT_ATTACK_METHOD,
           difficulty: difficulty || SMISHING.DEFAULT_DIFFICULTY,
-          pages: parsedResult.pages
+          pages: parsedResult.pages,
         },
-        policyContext: analysis.policyContext
+        policyContext: analysis.policyContext,
       };
     } catch (error) {
       const err = normalizeError(error);
-      logger.error('Smishing landing page generation failed', { error: err.message, stack: err.stack });
-      throw error;
+      const errorInfo = errorService.aiModel(err.message, {
+        step: 'smishing-landing-page-generation',
+        stack: err.stack,
+      });
+      logErrorInfo(logger, 'error', 'Smishing landing page generation failed', errorInfo);
+      const e = new Error(`Smishing landing page generation workflow error: ${err.message}`);
+      (e as Error & { code?: string }).code = errorInfo.code;
+      throw e;
     }
-  }
+  },
 });
 
 // Step 4: Save to KV
@@ -489,19 +551,14 @@ const saveSmishingContent = createStep({
       await kvService.saveSmishingLandingPage(smishingId, inputData, language);
     }
 
-    const expectedKeys = buildExpectedSmishingKeys(
-      smishingId,
-      language,
-      !!inputData.messages,
-      !!inputData.landingPage
-    );
+    const expectedKeys = buildExpectedSmishingKeys(smishingId, language, !!inputData.messages, !!inputData.landingPage);
     await waitForKVConsistency(smishingId, expectedKeys, KV_NAMESPACES.SMISHING);
 
     return {
       ...inputData,
-      smishingId
+      smishingId,
     };
-  }
+  },
 });
 
 // --- Workflow Definition ---

@@ -24,10 +24,7 @@ const DEFAULT_MAX_POLICY_CHARS = 12000;
  * @param format - Format type (system, enhancement, or scene)
  * @returns Formatted policy context block ready for prompt injection
  */
-export function buildPolicyContextBlock(
-  policyContext?: string,
-  format: PolicyContextFormat = 'system'
-): string {
+export function buildPolicyContextBlock(policyContext?: string, format: PolicyContextFormat = 'system'): string {
   if (!policyContext || policyContext.trim() === '') {
     return '';
   }

@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  phishingEditorSchema,
-  emailResponseSchema,
-  landingPageResponseSchema,
-} from './phishing-editor-schemas';
+import { phishingEditorSchema, emailResponseSchema, landingPageResponseSchema } from './phishing-editor-schemas';
 
 describe('phishing-editor-schemas', () => {
   it('applies defaults for optional fields', () => {
@@ -57,4 +53,3 @@ describe('phishing-editor-schemas', () => {
     ).toThrow();
   });
 });
-

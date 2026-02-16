@@ -2,6 +2,7 @@ import { getLogger, startTimer } from '../utils/core/logger';
 import { withRetry } from '../utils/core/resilience-utils';
 import { normalizeError, logErrorInfo } from '../utils/core/error-utils';
 import { errorService } from './error-service';
+import { ERROR_CODES } from '../constants';
 import { detectAndRepairInbox } from '../utils/validation/json-validation-utils';
 
 /**
@@ -30,6 +31,11 @@ export class KVService {
     }
   }
 
+  /** Expose namespace ID for debugging (e.g. KV consistency logs). */
+  getNamespaceId(): string {
+    return this.namespaceId || 'unknown';
+  }
+
   private getHeaders() {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -53,115 +59,131 @@ export class KVService {
   async put(key: string, value: any): Promise<boolean> {
     try {
       const timer = startTimer();
-      return await withRetry(
-        async () => {
-          const url = this.getKVUrl(key);
-          const body = typeof value === 'string' ? value : JSON.stringify(value);
-          const headers = this.getHeaders();
+      return await withRetry(async () => {
+        const url = this.getKVUrl(key);
+        const body = typeof value === 'string' ? value : JSON.stringify(value);
+        const headers = this.getHeaders();
 
-          const response = await fetch(url, {
-            method: 'PUT',
-            headers,
-            body: body
-          });
+        const response = await fetch(url, {
+          method: 'PUT',
+          headers,
+          body: body,
+        });
 
-          if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`KV PUT failed with status ${response.status}: ${errorText.substring(0, 200)}`);
-          }
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`KV PUT failed with status ${response.status}: ${errorText.substring(0, 200)}`);
+        }
 
-          return true;
-        },
-        `KV PUT ${key}`
-      ).then((result) => {
+        return true;
+      }, `KV PUT ${key}`).then(result => {
         const duration = timer.end();
         this.logger.debug(`KV PUT success`, { key, duration });
         return result;
       });
     } catch (error) {
-      const errorMsg = normalizeError(error);
-      this.logger.error(`KV PUT failed after retries`, {
-        error: errorMsg.message,
-        stack: errorMsg.stack,
-        key,
-        valueType: typeof value,
-      });
+      const err = normalizeError(error);
+      const errorInfo = errorService.external(
+        err.message,
+        {
+          step: 'kv-put',
+          stack: err.stack,
+          key,
+          valueType: typeof value,
+        },
+        ERROR_CODES.KV_WRITE_FAILED
+      );
+      logErrorInfo(this.logger, 'error', 'KV PUT failed after retries', errorInfo);
       return false;
     }
   }
 
   async get(key: string): Promise<any | null> {
     try {
-      return await withRetry(
-        async () => {
-          const url = this.getKVUrl(key);
+      return await withRetry(async () => {
+        const url = this.getKVUrl(key);
 
-          const response = await fetch(url, {
-            method: 'GET',
-            headers: this.getHeaders()
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: this.getHeaders(),
+        });
+
+        if (!response.ok) {
+          if (response.status === 404) {
+            await response.text(); // Drain body to free up connection
+            return null; // Key not found - don't retry
+          }
+          const errorText = await response.text();
+          const errorInfo = errorService.external(`KV GET failed with status ${response.status}`, {
+            status: response.status,
+            errorText: errorText.substring(0, 200),
+            key,
+            operation: 'GET',
           });
+          logErrorInfo(this.logger, 'error', 'KV GET failed', errorInfo);
+          throw new Error(errorInfo.message);
+        }
 
-          if (!response.ok) {
-            if (response.status === 404) {
-              await response.text(); // Drain body to free up connection
-              return null; // Key not found - don't retry
-            }
-            const errorText = await response.text();
-            const errorInfo = errorService.external(`KV GET failed with status ${response.status}`, {
-              status: response.status,
-              errorText: errorText.substring(0, 200),
-              key,
-              operation: 'GET'
-            });
-            logErrorInfo(this.logger, 'error', 'KV GET failed', errorInfo);
-            throw new Error(errorInfo.message);
-          }
-
-          const text = await response.text();
-          try {
-            return JSON.parse(text);
-          } catch (parseError) {
-            this.logger.warn(`Failed to parse KV value as JSON for key, returning as string`, {
-              key,
-              error: parseError instanceof Error ? parseError.message : String(parseError),
-              textLength: text.length,
-            });
-            return text; // Return as string if not JSON
-          }
-        },
-        `KV GET ${key}`
-      );
+        const text = await response.text();
+        try {
+          return JSON.parse(text);
+        } catch (parseError) {
+          const err = normalizeError(parseError);
+          const errorInfo = errorService.external(
+            err.message,
+            { key, step: 'kv-get-parse', textLength: text.length },
+            ERROR_CODES.VALIDATION_JSON
+          );
+          logErrorInfo(this.logger, 'warn', 'Failed to parse KV value as JSON for key, returning as string', errorInfo);
+          return text; // Return as string if not JSON
+        }
+      }, `KV GET ${key}`);
     } catch (error) {
       const err = normalizeError(error);
-      this.logger.error(`KV GET failed after retries`, { key, error: err.message, stack: err.stack });
+      const errorInfo = errorService.external(
+        err.message,
+        {
+          step: 'kv-get',
+          stack: err.stack,
+          key,
+        },
+        ERROR_CODES.KV_READ_FAILED
+      );
+      logErrorInfo(this.logger, 'error', 'KV GET failed after retries', errorInfo);
       return null;
     }
   }
 
   async delete(key: string): Promise<boolean> {
     try {
-      return await withRetry(
-        async () => {
-          const url = this.getKVUrl(key);
+      return await withRetry(async () => {
+        const url = this.getKVUrl(key);
 
-          const response = await fetch(url, {
-            method: 'DELETE',
-            headers: this.getHeaders()
-          });
+        const response = await fetch(url, {
+          method: 'DELETE',
+          headers: this.getHeaders(),
+        });
 
-          if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`KV DELETE failed with status ${response.status}: ${errorText.substring(0, 200)}`);
-          }
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`KV DELETE failed with status ${response.status}: ${errorText.substring(0, 200)}`);
+        }
 
-          this.logger.debug(`KV DELETE success for key`, { key });
-          return true;
-        },
-        `KV DELETE ${key}`
-      );
+        this.logger.debug(`KV DELETE success for key`, { key });
+        return true;
+      }, `KV DELETE ${key}`);
     } catch (error) {
       const err = normalizeError(error);
-      this.logger.error(`KV DELETE failed after retries`, { key, error: err.message, stack: err.stack });
+      const errorInfo = errorService.external(
+        err.message,
+        {
+          step: 'kv-delete',
+          stack: err.stack,
+          key,
+        },
+        ERROR_CODES.KV_DELETE_FAILED
+      );
+      logErrorInfo(this.logger, 'error', 'KV DELETE failed after retries', errorInfo);
       return false;
     }
   }
@@ -180,12 +202,20 @@ export class KVService {
 
       const response = await fetch(url, {
         method: 'GET',
-        headers: this.getHeaders()
+        headers: this.getHeaders(),
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        this.logger.error(`KV LIST failed`, { status: response.status, errorText: errorText.substring(0, 200) });
+        const errorInfo = errorService.external(
+          `KV LIST failed with status ${response.status}`,
+          {
+            status: response.status,
+            errorText: errorText.substring(0, 200),
+          },
+          ERROR_CODES.KV_LIST_FAILED
+        );
+        logErrorInfo(this.logger, 'error', 'KV LIST failed', errorInfo);
         return [];
       }
 
@@ -193,7 +223,15 @@ export class KVService {
       return data.result?.map((item: any) => item.name) || [];
     } catch (error) {
       const err = normalizeError(error);
-      this.logger.error(`KV LIST error`, { error: err.message, stack: err.stack });
+      const errorInfo = errorService.external(
+        err.message,
+        {
+          step: 'kv-list',
+          stack: err.stack,
+        },
+        ERROR_CODES.KV_LIST_FAILED
+      );
+      logErrorInfo(this.logger, 'error', 'KV LIST error', errorInfo);
       return [];
     }
   }
@@ -222,7 +260,7 @@ export class KVService {
         if (repairResult.hadCorruption) {
           this.logger.info(`Repaired HTML corruption in inbox before saving`, {
             issuesFound: repairResult.issuesFound.length,
-            issuesRemaining: repairResult.issuesRemaining.length
+            issuesRemaining: repairResult.issuesRemaining.length,
           });
           inboxToSave = repairResult.inbox;
         }
@@ -231,7 +269,7 @@ export class KVService {
       const saveOperations = [
         this.put(baseKey, {
           ...data.microlearning,
-          microlearning_id: microlearningId
+          microlearning_id: microlearningId,
         }),
         this.put(langKey, data.languageContent),
         ...(shouldSaveInbox ? [this.put(inboxKey, inboxToSave)] : []),
@@ -246,8 +284,7 @@ export class KVService {
       // Check results
       const baseSuccess = baseResult.status === 'fulfilled' && baseResult.value === true;
       const langSuccess = langResult.status === 'fulfilled' && langResult.value === true;
-      const inboxSuccess = !shouldSaveInbox
-        || (inboxResult?.status === 'fulfilled' && inboxResult.value === true);
+      const inboxSuccess = !shouldSaveInbox || (inboxResult?.status === 'fulfilled' && inboxResult.value === true);
 
       const allSuccess = baseSuccess && langSuccess && inboxSuccess;
       const duration = timer.end();
@@ -262,7 +299,7 @@ export class KVService {
         const failures = [
           !baseSuccess && 'base',
           !langSuccess && 'language',
-          shouldSaveInbox && !inboxSuccess && 'inbox'
+          shouldSaveInbox && !inboxSuccess && 'inbox',
         ].filter(Boolean);
 
         this.logger.warn(`Partial microlearning save to KV`, {
@@ -276,30 +313,49 @@ export class KVService {
 
         // Log rejection errors with details
         if (baseResult.status === 'rejected') {
-          const baseErr = baseResult.reason instanceof Error ? baseResult.reason : new Error(String(baseResult.reason));
-          this.logger.error(`Base microlearning save failed`, { microlearningId, error: baseErr.message, stack: baseErr.stack });
+          const baseErr = normalizeError(baseResult.reason);
+          const errorInfo = errorService.external(
+            baseErr.message,
+            { microlearningId, step: 'save-microlearning-base', stack: baseErr.stack },
+            ERROR_CODES.KV_WRITE_FAILED
+          );
+          logErrorInfo(this.logger, 'error', 'Base microlearning save failed', errorInfo);
         }
         if (langResult.status === 'rejected') {
-          const langErr = langResult.reason instanceof Error ? langResult.reason : new Error(String(langResult.reason));
-          this.logger.error(`Language content save failed`, { microlearningId, error: langErr.message, stack: langErr.stack });
+          const langErr = normalizeError(langResult.reason);
+          const errorInfo = errorService.external(
+            langErr.message,
+            { microlearningId, step: 'save-microlearning-lang', stack: langErr.stack },
+            ERROR_CODES.KV_WRITE_FAILED
+          );
+          logErrorInfo(this.logger, 'error', 'Language content save failed', errorInfo);
         }
         if (shouldSaveInbox && inboxResult?.status === 'rejected') {
-          const inboxErr = inboxResult.reason instanceof Error ? inboxResult.reason : new Error(String(inboxResult.reason));
-          this.logger.error(`Inbox content save failed`, { microlearningId, error: inboxErr.message, stack: inboxErr.stack });
+          const inboxErr = normalizeError(inboxResult?.reason);
+          const errorInfo = errorService.external(
+            inboxErr.message,
+            { microlearningId, step: 'save-microlearning-inbox', stack: inboxErr.stack },
+            ERROR_CODES.KV_WRITE_FAILED
+          );
+          logErrorInfo(this.logger, 'error', 'Inbox content save failed', errorInfo);
         }
       }
 
       return allSuccess;
     } catch (error) {
-      const errorMsg = normalizeError(error);
-      this.logger.error(`Failed to save microlearning`, {
-        microlearningId,
-        language: normalizedLang,
-        department,
-        duration: timer.end(),
-        error: errorMsg.message,
-        stack: errorMsg.stack,
-      });
+      const err = normalizeError(error);
+      const errorInfo = errorService.external(
+        err.message,
+        {
+          microlearningId,
+          language: normalizedLang,
+          department,
+          step: 'save-microlearning',
+          stack: err.stack,
+        },
+        ERROR_CODES.KV_WRITE_FAILED
+      );
+      logErrorInfo(this.logger, 'error', 'Failed to save microlearning', errorInfo);
       return false;
     }
   }
@@ -321,14 +377,28 @@ export class KVService {
         method: data.analysis?.method || 'Click-Only',
         isQuishing: data.analysis?.isQuishing || false, // Add quishing flag (AI-determined)
         targetProfile: data.analysis?.targetAudienceAnalysis || {},
+        // Active Learning: normalize to array (handles old/corrupt data where it might be string or missing)
+        psychologicalTriggers: (() => {
+          const t = data.analysis?.psychologicalTriggers;
+          if (Array.isArray(t)) return t.map(x => (typeof x === 'string' ? x : String(x)));
+          if (typeof t === 'string') return [t];
+          return [];
+        })(),
+        tone: typeof data.analysis?.tone === 'string' ? data.analysis.tone : undefined,
+        category: typeof data.analysis?.category === 'string' ? data.analysis.category : undefined,
         createdAt: new Date().toISOString(),
-        language_availability: [normalizedLang]
+        language_availability: [normalizedLang],
       };
 
       return await this.put(baseKey, baseData);
     } catch (error) {
       const err = normalizeError(error);
-      this.logger.error(`Failed to save phishing base`, { id, error: err.message, stack: err.stack });
+      const errorInfo = errorService.external(
+        err.message,
+        { id, step: 'save-phishing-base', stack: err.stack },
+        ERROR_CODES.KV_WRITE_FAILED
+      );
+      logErrorInfo(this.logger, 'error', 'Failed to save phishing base', errorInfo);
       return false;
     }
   }
@@ -346,13 +416,18 @@ export class KVService {
         template: data.template,
         fromAddress: data.fromAddress,
         fromName: data.fromName,
-        redFlags: data.analysis?.keyRedFlags || []
+        redFlags: data.analysis?.keyRedFlags || [],
       };
 
       return await this.put(emailKey, emailData);
     } catch (error) {
       const err = normalizeError(error);
-      this.logger.error(`Failed to save phishing email`, { id, error: err.message, stack: err.stack });
+      const errorInfo = errorService.external(
+        err.message,
+        { id, step: 'save-phishing-email', stack: err.stack },
+        ERROR_CODES.KV_WRITE_FAILED
+      );
+      logErrorInfo(this.logger, 'error', 'Failed to save phishing email', errorInfo);
       return false;
     }
   }
@@ -368,13 +443,18 @@ export class KVService {
       const landingData = {
         id,
         language: normalizedLang,
-        ...data.landingPage
+        ...data.landingPage,
       };
 
       return await this.put(landingKey, landingData);
     } catch (error) {
       const err = normalizeError(error);
-      this.logger.error(`Failed to save phishing landing page`, { id, error: err.message, stack: err.stack });
+      const errorInfo = errorService.external(
+        err.message,
+        { id, step: 'save-phishing-landing', stack: err.stack },
+        ERROR_CODES.KV_WRITE_FAILED
+      );
+      logErrorInfo(this.logger, 'error', 'Failed to save phishing landing page', errorInfo);
       return false;
     }
   }
@@ -384,7 +464,7 @@ export class KVService {
     const results = await Promise.allSettled([
       this.savePhishingBase(id, data, language),
       this.savePhishingEmail(id, data, language),
-      this.savePhishingLandingPage(id, data, language)
+      this.savePhishingLandingPage(id, data, language),
     ]);
 
     return results.every(r => r.status === 'fulfilled' && r.value === true);
@@ -418,7 +498,12 @@ export class KVService {
       return result;
     } catch (error) {
       const err = normalizeError(error);
-      this.logger.error(`Failed to get phishing`, { phishingId, error: err.message, stack: err.stack });
+      const errorInfo = errorService.external(
+        err.message,
+        { phishingId, step: 'get-phishing', stack: err.stack },
+        ERROR_CODES.KV_READ_FAILED
+      );
+      logErrorInfo(this.logger, 'error', 'Failed to get phishing', errorInfo);
       return null;
     }
   }
@@ -439,14 +524,26 @@ export class KVService {
         difficulty: data.analysis?.difficulty || 'Medium',
         method: data.analysis?.method || 'Click-Only',
         targetProfile: data.analysis?.targetAudienceAnalysis || {},
+        // Active Learning: psychological triggers for campaign_metadata (User Info tactic enrichment)
+        psychologicalTriggers: (() => {
+          const t = data.analysis?.psychologicalTriggers;
+          if (Array.isArray(t)) return t.map(x => (typeof x === 'string' ? x : String(x)));
+          if (typeof t === 'string') return [t];
+          return [];
+        })(),
         createdAt: new Date().toISOString(),
-        language_availability: [normalizedLang]
+        language_availability: [normalizedLang],
       };
 
       return await this.put(baseKey, baseData);
     } catch (error) {
       const err = normalizeError(error);
-      this.logger.error(`Failed to save smishing base`, { id, error: err.message, stack: err.stack });
+      const errorInfo = errorService.external(
+        err.message,
+        { id, step: 'save-smishing-base', stack: err.stack },
+        ERROR_CODES.KV_WRITE_FAILED
+      );
+      logErrorInfo(this.logger, 'error', 'Failed to save smishing base', errorInfo);
       return false;
     }
   }
@@ -461,13 +558,18 @@ export class KVService {
         id,
         language: normalizedLang,
         messages: data.messages,
-        redFlags: data.analysis?.keyRedFlags || []
+        redFlags: data.analysis?.keyRedFlags || [],
       };
 
       return await this.put(smsKey, smsData);
     } catch (error) {
       const err = normalizeError(error);
-      this.logger.error(`Failed to save smishing sms`, { id, error: err.message, stack: err.stack });
+      const errorInfo = errorService.external(
+        err.message,
+        { id, step: 'save-smishing-sms', stack: err.stack },
+        ERROR_CODES.KV_WRITE_FAILED
+      );
+      logErrorInfo(this.logger, 'error', 'Failed to save smishing sms', errorInfo);
       return false;
     }
   }
@@ -483,13 +585,18 @@ export class KVService {
       const landingData = {
         id,
         language: normalizedLang,
-        ...data.landingPage
+        ...data.landingPage,
       };
 
       return await this.put(landingKey, landingData);
     } catch (error) {
       const err = normalizeError(error);
-      this.logger.error(`Failed to save smishing landing page`, { id, error: err.message, stack: err.stack });
+      const errorInfo = errorService.external(
+        err.message,
+        { id, step: 'save-smishing-landing', stack: err.stack },
+        ERROR_CODES.KV_WRITE_FAILED
+      );
+      logErrorInfo(this.logger, 'error', 'Failed to save smishing landing page', errorInfo);
       return false;
     }
   }
@@ -499,7 +606,7 @@ export class KVService {
     const results = await Promise.allSettled([
       this.saveSmishingBase(id, data, language),
       this.saveSmishingSms(id, data, language),
-      this.saveSmishingLandingPage(id, data, language)
+      this.saveSmishingLandingPage(id, data, language),
     ]);
 
     return results.every(r => r.status === 'fulfilled' && r.value === true);
@@ -533,11 +640,15 @@ export class KVService {
       return result;
     } catch (error) {
       const err = normalizeError(error);
-      this.logger.error(`Failed to get smishing`, { smishingId, error: err.message, stack: err.stack });
+      const errorInfo = errorService.external(
+        err.message,
+        { smishingId, step: 'get-smishing', stack: err.stack },
+        ERROR_CODES.KV_READ_FAILED
+      );
+      logErrorInfo(this.logger, 'error', 'Failed to get smishing', errorInfo);
       return null;
     }
   }
-
 
   async getMicrolearning(microlearningId: string, language?: string): Promise<any> {
     try {
@@ -558,7 +669,12 @@ export class KVService {
       return result;
     } catch (error) {
       const err = normalizeError(error);
-      this.logger.error(`Failed to get microlearning`, { microlearningId, error: err.message, stack: err.stack });
+      const errorInfo = errorService.external(
+        err.message,
+        { microlearningId, step: 'get-microlearning', stack: err.stack },
+        ERROR_CODES.KV_READ_FAILED
+      );
+      logErrorInfo(this.logger, 'error', 'Failed to get microlearning', errorInfo);
       return null;
     }
   }
@@ -579,7 +695,12 @@ export class KVService {
       return success;
     } catch (error) {
       const err = normalizeError(error);
-      this.logger.error(`Failed to store language content`, { microlearningId, language, error: err.message, stack: err.stack });
+      const errorInfo = errorService.external(
+        err.message,
+        { microlearningId, language, step: 'store-language-content', stack: err.stack },
+        ERROR_CODES.KV_WRITE_FAILED
+      );
+      logErrorInfo(this.logger, 'error', 'Failed to store language content', errorInfo);
       return false;
     }
   }
@@ -606,7 +727,12 @@ export class KVService {
       return success;
     } catch (error) {
       const err = normalizeError(error);
-      this.logger.error(`Failed to update microlearning`, { microlearningId: microlearning?.microlearning_id, error: err.message, stack: err.stack });
+      const errorInfo = errorService.external(
+        err.message,
+        { microlearningId: microlearning?.microlearning_id, step: 'update-microlearning', stack: err.stack },
+        ERROR_CODES.KV_WRITE_FAILED
+      );
+      logErrorInfo(this.logger, 'error', 'Failed to update microlearning', errorInfo);
       return false;
     }
   }
@@ -620,7 +746,7 @@ export class KVService {
       if (!baseData?.microlearning_metadata) {
         const errorInfo = errorService.notFound('Microlearning not found or invalid', {
           microlearningId,
-          operation: 'getMicrolearning'
+          operation: 'getMicrolearning',
         });
         logErrorInfo(this.logger, 'error', 'Microlearning validation failed', errorInfo);
         throw new Error(errorInfo.message);
@@ -643,13 +769,23 @@ export class KVService {
       return success;
     } catch (error) {
       const err = normalizeError(error);
-      this.logger.error(`Failed to update language availability`, { microlearningId, error: err.message, stack: err.stack });
+      const errorInfo = errorService.external(
+        err.message,
+        { microlearningId, step: 'update-language-availability', stack: err.stack },
+        ERROR_CODES.KV_WRITE_FAILED
+      );
+      logErrorInfo(this.logger, 'error', 'Failed to update language availability', errorInfo);
       return false;
     }
   }
 
   // Store inbox content for a specific department and language
-  async storeInboxContent(microlearningId: string, department: string, language: string, inboxPayload: any): Promise<boolean> {
+  async storeInboxContent(
+    microlearningId: string,
+    department: string,
+    language: string,
+    inboxPayload: any
+  ): Promise<boolean> {
     try {
       const normalizedLang = language.toLowerCase(); // Normalize to lowercase for consistency
       const inboxKey = `ml:${microlearningId}:inbox:${department}:${normalizedLang}`;
@@ -664,7 +800,12 @@ export class KVService {
       return success;
     } catch (error) {
       const err = normalizeError(error);
-      this.logger.error(`Failed to store inbox content`, { microlearningId, department, language, error: err.message, stack: err.stack });
+      const errorInfo = errorService.external(
+        err.message,
+        { microlearningId, department, language, step: 'store-inbox-content', stack: err.stack },
+        ERROR_CODES.KV_WRITE_FAILED
+      );
+      logErrorInfo(this.logger, 'error', 'Failed to store inbox content', errorInfo);
       return false;
     }
   }
@@ -682,7 +823,12 @@ export class KVService {
       return inbox;
     } catch (error) {
       const err = normalizeError(error);
-      this.logger.error(`Failed to get inbox content`, { microlearningId, department, language, error: err.message, stack: err.stack });
+      const errorInfo = errorService.external(
+        err.message,
+        { microlearningId, department, language, step: 'get-inbox-content', stack: err.stack },
+        ERROR_CODES.KV_READ_FAILED
+      );
+      logErrorInfo(this.logger, 'error', 'Failed to get inbox content', errorInfo);
       return null;
     }
   }
@@ -697,7 +843,8 @@ export class KVService {
       const results: any[] = [];
 
       // Check each microlearning for title match
-      for (const key of microlearningKeys.slice(0, 10)) { // Limit to first 10 to avoid timeouts
+      for (const key of microlearningKeys.slice(0, 10)) {
+        // Limit to first 10 to avoid timeouts
         try {
           const microlearning = await this.get(key);
           if (microlearning && microlearning.microlearning_metadata) {
@@ -715,14 +862,24 @@ export class KVService {
           }
         } catch (error) {
           const err = normalizeError(error);
-          this.logger.warn(`Failed to check microlearning`, { key, error: err.message });
+          const errorInfo = errorService.external(
+            err.message,
+            { key, step: 'search-microlearnings-check' },
+            ERROR_CODES.KV_READ_FAILED
+          );
+          logErrorInfo(this.logger, 'warn', 'Failed to check microlearning', errorInfo);
         }
       }
 
       return results;
     } catch (error) {
       const err = normalizeError(error);
-      this.logger.error(`Failed to search microlearnings`, { searchTerm, error: err.message, stack: err.stack });
+      const errorInfo = errorService.external(
+        err.message,
+        { searchTerm, step: 'search-microlearnings', stack: err.stack },
+        ERROR_CODES.KV_LIST_FAILED
+      );
+      logErrorInfo(this.logger, 'error', 'Failed to search microlearnings', errorInfo);
       return [];
     }
   }
@@ -734,19 +891,32 @@ export class KVService {
 
       const response = await fetch(url, {
         method: 'GET',
-        headers: this.getHeaders()
+        headers: this.getHeaders(),
       });
 
       if (response.ok) {
         return true;
       } else {
         const errorText = await response.text();
-        this.logger.error(`Namespace check failed`, { status: response.status, errorText: errorText.substring(0, 200) });
+        const errorInfo = errorService.external(
+          `Namespace check failed with status ${response.status}`,
+          {
+            status: response.status,
+            errorText: errorText.substring(0, 200),
+          },
+          ERROR_CODES.KV_LIST_FAILED
+        );
+        logErrorInfo(this.logger, 'error', 'Namespace check failed', errorInfo);
         return false;
       }
     } catch (error) {
       const err = normalizeError(error);
-      this.logger.error(`Namespace check error`, { error: err.message, stack: err.stack });
+      const errorInfo = errorService.external(
+        err.message,
+        { step: 'namespace-check', stack: err.stack },
+        ERROR_CODES.KV_LIST_FAILED
+      );
+      logErrorInfo(this.logger, 'error', 'Namespace check error', errorInfo);
       return false;
     }
   }
@@ -784,7 +954,12 @@ export class KVService {
       return true;
     } catch (error) {
       const err = normalizeError(error);
-      this.logger.error(`KV health check failed`, { error: err.message, stack: err.stack });
+      const errorInfo = errorService.external(
+        err.message,
+        { step: 'kv-health-check', stack: err.stack },
+        ERROR_CODES.KV_READ_FAILED
+      );
+      logErrorInfo(this.logger, 'error', 'KV health check failed', errorInfo);
       return false;
     }
   }

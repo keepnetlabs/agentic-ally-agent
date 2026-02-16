@@ -65,7 +65,12 @@ export const smishingEditorTool = createTool({
 
       const [whitelabelConfig, loadResult] = await Promise.all([
         productService.getWhitelabelingConfig().catch(err => {
-          logger.warn('Failed to fetch whitelabeling config', { error: err });
+          const normalized = normalizeError(err);
+          const errorInfo = errorService.external(normalized.message, {
+            step: 'fetch-whitelabel-config',
+            stack: normalized.stack,
+          });
+          logErrorInfo(logger, 'warn', 'Failed to fetch whitelabeling config', errorInfo);
           return null;
         }),
         loadSmishingContent(smishingId, language),
@@ -126,13 +131,13 @@ export const smishingEditorTool = createTool({
 
       const landingPagePromises = shouldEditLanding
         ? createLandingEditPromises({
-          aiModel,
-          pages: existingLanding?.pages ?? [],
-          mode: mode || 'edit',
-          escapedInstruction,
-          brandContext,
-          logger,
-        })
+            aiModel,
+            pages: existingLanding?.pages ?? [],
+            mode: mode || 'edit',
+            escapedInstruction,
+            brandContext,
+            logger,
+          })
         : [];
 
       const allPromises: Array<Promise<GenerateTextResult>> = [
@@ -190,13 +195,13 @@ export const smishingEditorTool = createTool({
 
       const editedLanding = shouldEditLanding
         ? await processLandingPageResults(
-          landingResults,
-          existingLanding || null,
-          mode || 'edit',
-          editInstruction,
-          fromNameForLanding,
-          whitelabelConfig?.mainLogoUrl
-        )
+            landingResults,
+            existingLanding || null,
+            mode || 'edit',
+            editInstruction,
+            fromNameForLanding,
+            whitelabelConfig?.mainLogoUrl
+          )
         : null;
 
       await saveSmishingContent(smsKey, landingKey, updatedSms, existingLanding || null, editedLanding);
@@ -204,11 +209,11 @@ export const smishingEditorTool = createTool({
       if (writer) {
         const landingMeta = existingLanding
           ? {
-            name: existingLanding.name,
-            description: existingLanding.description,
-            method: existingLanding.method,
-            difficulty: existingLanding.difficulty,
-          }
+              name: existingLanding.name,
+              description: existingLanding.description,
+              method: existingLanding.method,
+              difficulty: existingLanding.difficulty,
+            }
           : null;
 
         await streamEditResultsToUI(

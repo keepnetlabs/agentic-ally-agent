@@ -1,4 +1,3 @@
-
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { workflowExecutorTool } from './workflow-executor-tool';
 import { createMicrolearningWorkflow } from '../../workflows/create-microlearning-workflow';
@@ -10,30 +9,30 @@ import { getPolicySummary } from '../../utils/core/policy-cache';
 // Mock dependencies
 vi.mock('../../workflows/create-microlearning-workflow', () => ({
   createMicrolearningWorkflow: {
-    createRunAsync: vi.fn()
-  }
+    createRunAsync: vi.fn(),
+  },
 }));
 
 vi.mock('../../workflows/add-language-workflow', () => ({
   addLanguageWorkflow: {
-    createRunAsync: vi.fn()
-  }
+    createRunAsync: vi.fn(),
+  },
 }));
 
 vi.mock('../../workflows/add-multiple-languages-workflow', () => ({
   addMultipleLanguagesWorkflow: {
-    createRunAsync: vi.fn()
-  }
+    createRunAsync: vi.fn(),
+  },
 }));
 
 vi.mock('../../workflows/update-microlearning-workflow', () => ({
   updateMicrolearningWorkflow: {
-    createRunAsync: vi.fn()
-  }
+    createRunAsync: vi.fn(),
+  },
 }));
 
 vi.mock('../../utils/core/policy-cache', () => ({
-  getPolicySummary: vi.fn()
+  getPolicySummary: vi.fn(),
 }));
 
 vi.mock('../../utils/core/logger', () => ({
@@ -41,17 +40,17 @@ vi.mock('../../utils/core/logger', () => ({
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
-    debug: vi.fn()
-  })
+    debug: vi.fn(),
+  }),
 }));
 
 describe('WorkflowExecutorTool', () => {
   const mockWriter = {
-    write: vi.fn()
+    write: vi.fn(),
   };
 
   const mockRun = {
-    start: vi.fn()
+    start: vi.fn(),
   };
 
   beforeEach(() => {
@@ -73,16 +72,16 @@ describe('WorkflowExecutorTool', () => {
           metadata: {
             trainingUrl: 'https://example.com/training',
             title: 'Safety 101',
-            department: 'HR'
-          }
-        }
+            department: 'HR',
+          },
+        },
       };
       mockRun.start.mockResolvedValue(mockResult);
 
       const params = {
         workflowType: 'create-microlearning',
         prompt: 'Create a course about safety',
-        department: 'HR'
+        department: 'HR',
       };
 
       const result: any = await workflowExecutorTool.execute({
@@ -90,20 +89,22 @@ describe('WorkflowExecutorTool', () => {
         writer: mockWriter as any,
         runId: 'test-run-id',
         runtimeContext: {} as any,
-        suspend: async () => { }
+        suspend: async () => {},
       });
 
       expect(getPolicySummary).toHaveBeenCalled();
       expect(createMicrolearningWorkflow.createRunAsync).toHaveBeenCalled();
 
       // Verify writer passed in inputData
-      expect(mockRun.start).toHaveBeenCalledWith(expect.objectContaining({
-        inputData: expect.objectContaining({
-          prompt: 'Create a course about safety',
-          department: 'HR',
-          writer: mockWriter
+      expect(mockRun.start).toHaveBeenCalledWith(
+        expect.objectContaining({
+          inputData: expect.objectContaining({
+            prompt: 'Create a course about safety',
+            department: 'HR',
+            writer: mockWriter,
+          }),
         })
-      }));
+      );
 
       expect(result.success).toBe(true);
       expect(result.title).toBe('Safety 101');
@@ -116,7 +117,7 @@ describe('WorkflowExecutorTool', () => {
         workflowType: 'create-microlearning',
         prompt: 'test prompt',
         modelProvider: 'OPENAI',
-        model: 'gpt-4o'
+        model: 'gpt-4o',
       };
 
       await workflowExecutorTool.execute({
@@ -124,15 +125,17 @@ describe('WorkflowExecutorTool', () => {
         writer: mockWriter as any,
         runId: 'test-run-id',
         runtimeContext: {} as any,
-        suspend: async () => { }
+        suspend: async () => {},
       });
 
-      expect(mockRun.start).toHaveBeenCalledWith(expect.objectContaining({
-        inputData: expect.objectContaining({
-          modelProvider: 'OPENAI',
-          model: 'gpt-4o'
+      expect(mockRun.start).toHaveBeenCalledWith(
+        expect.objectContaining({
+          inputData: expect.objectContaining({
+            modelProvider: 'OPENAI',
+            model: 'gpt-4o',
+          }),
         })
-      }));
+      );
     });
 
     it('should emit UI signals to writer', async () => {
@@ -142,15 +145,15 @@ describe('WorkflowExecutorTool', () => {
           metadata: {
             trainingUrl: 'https://example.com/training',
             title: 'Safety 101',
-            microlearningId: 'm-123'
-          }
-        }
+            microlearningId: 'm-123',
+          },
+        },
       };
       mockRun.start.mockResolvedValue(mockResult);
 
       const params = {
         workflowType: 'create-microlearning',
-        prompt: 'test prompt'
+        prompt: 'test prompt',
       };
 
       await workflowExecutorTool.execute({
@@ -158,19 +161,23 @@ describe('WorkflowExecutorTool', () => {
         writer: mockWriter as any,
         runId: 'test-run-id',
         runtimeContext: {} as any,
-        suspend: async () => { }
+        suspend: async () => {},
       });
 
       // Should call writer.write multiple times
       expect(mockWriter.write).toHaveBeenCalledWith(expect.objectContaining({ type: 'text-start' }));
-      expect(mockWriter.write).toHaveBeenCalledWith(expect.objectContaining({
-        type: 'text-delta',
-        delta: expect.stringContaining('::ui:canvas_open::https://example.com/training')
-      }));
-      expect(mockWriter.write).toHaveBeenCalledWith(expect.objectContaining({
-        type: 'text-delta',
-        delta: expect.stringContaining('::ui:training_meta::')
-      }));
+      expect(mockWriter.write).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'text-delta',
+          delta: expect.stringContaining('::ui:canvas_open::https://example.com/training'),
+        })
+      );
+      expect(mockWriter.write).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'text-delta',
+          delta: expect.stringContaining('::ui:training_meta::'),
+        })
+      );
       expect(mockWriter.write).toHaveBeenCalledWith(expect.objectContaining({ type: 'text-end' }));
     });
 
@@ -178,7 +185,7 @@ describe('WorkflowExecutorTool', () => {
       const params = {
         workflowType: 'create-microlearning',
         // prompt is missing
-        department: 'HR'
+        department: 'HR',
       };
 
       const result: any = await workflowExecutorTool.execute({
@@ -186,7 +193,7 @@ describe('WorkflowExecutorTool', () => {
         writer: mockWriter as any,
         runId: 'test-run-id',
         runtimeContext: {} as any,
-        suspend: async () => { }
+        suspend: async () => {},
       });
 
       expect(result.success).toBe(false);
@@ -197,7 +204,7 @@ describe('WorkflowExecutorTool', () => {
     it('should return failure when create workflow result validation fails', async () => {
       mockRun.start.mockResolvedValue({
         status: 'failed',
-        result: null
+        result: null,
       });
 
       const params = {
@@ -210,7 +217,7 @@ describe('WorkflowExecutorTool', () => {
         writer: mockWriter as any,
         runId: 'test-run-id',
         runtimeContext: {} as any,
-        suspend: async () => { }
+        suspend: async () => {},
       });
 
       expect(result.success).toBe(false);
@@ -225,16 +232,16 @@ describe('WorkflowExecutorTool', () => {
         result: {
           data: {
             trainingUrl: 'https://example.com/training/es',
-            courseId: '123'
-          }
-        }
+            courseId: '123',
+          },
+        },
       };
       mockRun.start.mockResolvedValue(mockResult);
 
       const params = {
         workflowType: 'add-language',
         existingMicrolearningId: '123',
-        targetLanguage: 'es'
+        targetLanguage: 'es',
       };
 
       const result: any = await workflowExecutorTool.execute({
@@ -242,22 +249,26 @@ describe('WorkflowExecutorTool', () => {
         writer: mockWriter as any,
         runId: 'test-run-id',
         runtimeContext: {} as any,
-        suspend: async () => { }
+        suspend: async () => {},
       });
 
       expect(addLanguageWorkflow.createRunAsync).toHaveBeenCalled();
-      expect(mockRun.start).toHaveBeenCalledWith(expect.objectContaining({
-        inputData: expect.objectContaining({
-          existingMicrolearningId: '123',
-          targetLanguage: 'es'
+      expect(mockRun.start).toHaveBeenCalledWith(
+        expect.objectContaining({
+          inputData: expect.objectContaining({
+            existingMicrolearningId: '123',
+            targetLanguage: 'es',
+          }),
         })
-      }));
+      );
 
       expect(result.success).toBe(true);
       // Should also emit UI signal
-      expect(mockWriter.write).toHaveBeenCalledWith(expect.objectContaining({
-        delta: expect.stringContaining('::ui:canvas_open::https://example.com/training/es')
-      }));
+      expect(mockWriter.write).toHaveBeenCalledWith(
+        expect.objectContaining({
+          delta: expect.stringContaining('::ui:canvas_open::https://example.com/training/es'),
+        })
+      );
     });
 
     it('should return error if missing required params', async () => {
@@ -271,7 +282,7 @@ describe('WorkflowExecutorTool', () => {
         writer: mockWriter as any,
         runId: 'test-run-id',
         runtimeContext: {} as any,
-        suspend: async () => { }
+        suspend: async () => {},
       });
 
       expect(result.success).toBe(false);
@@ -281,13 +292,13 @@ describe('WorkflowExecutorTool', () => {
     it('should return failure when add-language workflow result validation fails', async () => {
       mockRun.start.mockResolvedValue({
         status: 'failed',
-        result: null
+        result: null,
       });
 
       const params = {
         workflowType: 'add-language',
         existingMicrolearningId: '123',
-        targetLanguage: 'es'
+        targetLanguage: 'es',
       };
 
       const result: any = await workflowExecutorTool.execute({
@@ -295,7 +306,7 @@ describe('WorkflowExecutorTool', () => {
         writer: mockWriter as any,
         runId: 'test-run-id',
         runtimeContext: {} as any,
-        suspend: async () => { }
+        suspend: async () => {},
       });
 
       expect(result.success).toBe(false);
@@ -313,16 +324,16 @@ describe('WorkflowExecutorTool', () => {
           failureCount: 0,
           results: [
             { language: 'es', success: true, trainingUrl: 'url-es' },
-            { language: 'fr', success: true, trainingUrl: 'url-fr' }
-          ]
-        }
+            { language: 'fr', success: true, trainingUrl: 'url-fr' },
+          ],
+        },
       };
       mockRun.start.mockResolvedValue(mockResult);
 
       const params = {
         workflowType: 'add-multiple-languages',
         existingMicrolearningId: '123',
-        targetLanguages: ['es', 'fr']
+        targetLanguages: ['es', 'fr'],
       };
 
       const result: any = await workflowExecutorTool.execute({
@@ -330,7 +341,7 @@ describe('WorkflowExecutorTool', () => {
         writer: mockWriter as any,
         runId: 'test-run-id',
         runtimeContext: {} as any,
-        suspend: async () => { }
+        suspend: async () => {},
       });
 
       expect(addMultipleLanguagesWorkflow.createRunAsync).toHaveBeenCalled();
@@ -338,9 +349,11 @@ describe('WorkflowExecutorTool', () => {
       expect(result.successCount).toBe(2);
 
       // Should emit first success URL
-      expect(mockWriter.write).toHaveBeenCalledWith(expect.objectContaining({
-        delta: expect.stringContaining('::ui:canvas_open::url-es')
-      }));
+      expect(mockWriter.write).toHaveBeenCalledWith(
+        expect.objectContaining({
+          delta: expect.stringContaining('::ui:canvas_open::url-es'),
+        })
+      );
     });
   });
 
@@ -351,15 +364,15 @@ describe('WorkflowExecutorTool', () => {
         result: {
           success: true,
           updateStatus: 'complete',
-          metadata: { trainingUrl: 'updated-url' }
-        }
+          metadata: { trainingUrl: 'updated-url' },
+        },
       };
       mockRun.start.mockResolvedValue(mockResult);
 
       const params = {
         workflowType: 'update-microlearning',
         existingMicrolearningId: '123',
-        updates: { theme: { primaryColor: '#000' } }
+        updates: { theme: { primaryColor: '#000' } },
       };
 
       const result: any = await workflowExecutorTool.execute({
@@ -367,19 +380,20 @@ describe('WorkflowExecutorTool', () => {
         writer: mockWriter as any,
         runId: 'test-run-id',
         runtimeContext: {} as any,
-        suspend: async () => { }
+        suspend: async () => {},
       });
 
       expect(updateMicrolearningWorkflow.createRunAsync).toHaveBeenCalled();
       expect(result.success).toBe(true);
-      expect(mockWriter.write).toHaveBeenCalledWith(expect.objectContaining({
-        delta: expect.stringContaining('::ui:canvas_open::updated-url')
-      }));
+      expect(mockWriter.write).toHaveBeenCalledWith(
+        expect.objectContaining({
+          delta: expect.stringContaining('::ui:canvas_open::updated-url'),
+        })
+      );
     });
   });
 
   describe('Error Handling & Validation', () => {
-
     // Zod schema prevents execution with invalid workflowType
     // it('should return error if workflowType is invalid', ...);
 
@@ -388,7 +402,7 @@ describe('WorkflowExecutorTool', () => {
 
       const params = {
         workflowType: 'create-microlearning',
-        prompt: 'test prompt'
+        prompt: 'test prompt',
       };
 
       const result: any = await workflowExecutorTool.execute({
@@ -396,23 +410,25 @@ describe('WorkflowExecutorTool', () => {
         writer: mockWriter as any,
         runId: 'test-run-id',
         runtimeContext: {} as any,
-        suspend: async () => { }
+        suspend: async () => {},
       });
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('Internal Crash');
 
       // Should write error emoji to writer
-      expect(mockWriter.write).toHaveBeenCalledWith(expect.objectContaining({
-        delta: expect.stringContaining('[ERROR] Workflow failed: Internal Crash')
-      }));
+      expect(mockWriter.write).toHaveBeenCalledWith(
+        expect.objectContaining({
+          delta: expect.stringContaining('[ERROR] Workflow failed: Internal Crash'),
+        })
+      );
     });
 
     describe('add-multiple-languages validation', () => {
       it('should fail if existingMicrolearningId is missing', async () => {
         const params = {
           workflowType: 'add-multiple-languages',
-          targetLanguages: ['es']
+          targetLanguages: ['es'],
         };
         const result: any = await workflowExecutorTool.execute({
           context: params as any,
@@ -426,7 +442,7 @@ describe('WorkflowExecutorTool', () => {
         const params = {
           workflowType: 'add-multiple-languages',
           existingMicrolearningId: '123',
-          targetLanguages: []
+          targetLanguages: [],
         };
         const result: any = await workflowExecutorTool.execute({
           context: params as any,
@@ -441,7 +457,7 @@ describe('WorkflowExecutorTool', () => {
       it('should fail if updates object is missing', async () => {
         const params = {
           workflowType: 'update-microlearning',
-          existingMicrolearningId: '123'
+          existingMicrolearningId: '123',
         };
         const result: any = await workflowExecutorTool.execute({
           context: params as any,
@@ -451,6 +467,5 @@ describe('WorkflowExecutorTool', () => {
         expect(result.error).toContain('required');
       });
     });
-
   });
 });

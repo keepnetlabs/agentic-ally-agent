@@ -1,18 +1,29 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import {
-  postProcessPhishingEmailHtml,
-  postProcessPhishingLandingHtml,
-} from './phishing-html-postprocessors';
+import { postProcessPhishingEmailHtml, postProcessPhishingLandingHtml } from './phishing-html-postprocessors';
+import { normalizeEmailNestedTablePadding } from './email-table-padding-normalizer';
+import { repairHtml } from '../validation/json-validation-utils';
 
-vi.mock('../core/logger');
-vi.mock('./html-sanitizer');
+vi.mock('../core/logger', () => ({
+  getLogger: vi.fn(() => ({ warn: vi.fn(), info: vi.fn(), debug: vi.fn() })),
+}));
+vi.mock('./html-sanitizer', () => ({
+  sanitizeHtml: vi.fn((html: string) => html),
+}));
 vi.mock('./email-table-padding-normalizer');
 vi.mock('./email-centering-normalizer');
 vi.mock('./email-card-padding-normalizer');
-vi.mock('../validation/json-validation-utils');
-vi.mock('../landing-page');
+vi.mock('../validation/json-validation-utils', () => ({
+  repairHtml: vi.fn((html: string) => html),
+}));
+vi.mock('../landing-page', () => ({
+  normalizeLandingCentering: vi.fn((html: string) => html),
+  ensureLandingFullHtmlDocument: vi.fn((html: string) => html),
+}));
+vi.mock('../landing-page/logo-centering-normalizer', () => ({
+  normalizeLandingLogoCentering: vi.fn((html: string) => html),
+}));
 vi.mock('./landing-page-layout-fixer', () => ({
-  fixLandingPageLayout: vi.fn((html) => html),
+  fixLandingPageLayout: vi.fn(html => html),
 }));
 
 describe('phishing-html-postprocessors', () => {
@@ -73,7 +84,8 @@ describe('phishing-html-postprocessors', () => {
       });
 
       it('should handle deeply nested tables', () => {
-        const html = '<table><tr><td><table><tr><td><table><tr><td>Deep</td></tr></table></td></tr></table></td></tr></table>';
+        const html =
+          '<table><tr><td><table><tr><td><table><tr><td>Deep</td></tr></table></td></tr></table></td></tr></table>';
         expect(() => postProcessPhishingEmailHtml({ html })).not.toThrow();
       });
 
@@ -165,7 +177,8 @@ describe('phishing-html-postprocessors', () => {
       });
 
       it('should handle centered card layout', () => {
-        const html = '<div style="display: flex; align-items: center; justify-content: center;"><div><form><input type="email" /></form></div></div>';
+        const html =
+          '<div style="display: flex; align-items: center; justify-content: center;"><div><form><input type="email" /></form></div></div>';
         expect(() => postProcessPhishingLandingHtml({ html })).not.toThrow();
       });
 
@@ -186,26 +199,32 @@ describe('phishing-html-postprocessors', () => {
 
       it('should handle landing page with long title', () => {
         const html = '<div>Content</div>';
-        expect(() => postProcessPhishingLandingHtml({ html, title: 'Verify Your Microsoft Account - Sign In' })).not.toThrow();
+        expect(() =>
+          postProcessPhishingLandingHtml({ html, title: 'Verify Your Microsoft Account - Sign In' })
+        ).not.toThrow();
       });
 
       it('should handle Microsoft-style layout', () => {
-        const html = '<div style="display: flex;"><div style="flex: 1; background: #0078d4;"></div><div style="flex: 1;"><form><input type="email" /></form></div></div>';
+        const html =
+          '<div style="display: flex;"><div style="flex: 1; background: #0078d4;"></div><div style="flex: 1;"><form><input type="email" /></form></div></div>';
         expect(() => postProcessPhishingLandingHtml({ html })).not.toThrow();
       });
 
       it('should handle hero section layout', () => {
-        const html = '<div><div style="background: linear-gradient(135deg, #0066cc, #004499);"></div><div><form><input type="email" /></form></div></div>';
+        const html =
+          '<div><div style="background: linear-gradient(135deg, #0066cc, #004499);"></div><div><form><input type="email" /></form></div></div>';
         expect(() => postProcessPhishingLandingHtml({ html })).not.toThrow();
       });
 
       it('should handle split layout', () => {
-        const html = '<div style="display: flex;"><div style="flex: 1;"></div><div style="flex: 1;"><form></form></div></div>';
+        const html =
+          '<div style="display: flex;"><div style="flex: 1;"></div><div style="flex: 1;"><form></form></div></div>';
         expect(() => postProcessPhishingLandingHtml({ html })).not.toThrow();
       });
 
       it('should handle minimal layout', () => {
-        const html = '<div style="max-width: 400px; margin: 0 auto;"><h1>Sign In</h1><form><input type="email" /></form></div>';
+        const html =
+          '<div style="max-width: 400px; margin: 0 auto;"><h1>Sign In</h1><form><input type="email" /></form></div>';
         expect(() => postProcessPhishingLandingHtml({ html })).not.toThrow();
       });
 
@@ -340,6 +359,30 @@ describe('phishing-html-postprocessors', () => {
         postProcessPhishingLandingHtml({ html: '<div></div>', title: 'Title' });
         postProcessPhishingLandingHtml({ html: '<div></div>', title: '' });
       }).not.toThrow();
+    });
+  });
+
+  describe('Fallback Paths (Level 2 and 3)', () => {
+    it('email processor falls back when Level 1 throws', () => {
+      vi.mocked(normalizeEmailNestedTablePadding).mockImplementationOnce(() => {
+        throw new Error('Simulated failure');
+      });
+      const html = '<table><tr><td>Email</td></tr></table>';
+      const result = postProcessPhishingEmailHtml({ html });
+      expect(result).toBeDefined();
+      expect(typeof result).toBe('string');
+      expect(result).toContain('Email');
+    });
+
+    it('landing processor falls back when Level 1 throws', () => {
+      vi.mocked(repairHtml).mockImplementationOnce(() => {
+        throw new Error('Simulated repair failure');
+      });
+      const html = '<div>Content</div>';
+      const result = postProcessPhishingLandingHtml({ html });
+      expect(result).toBeDefined();
+      expect(typeof result).toBe('string');
+      expect(result).toContain('Content');
     });
   });
 

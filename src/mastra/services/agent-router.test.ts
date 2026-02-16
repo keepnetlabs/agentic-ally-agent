@@ -8,11 +8,11 @@ import '../../../../src/__tests__/setup';
 
 // Mock dependencies
 vi.mock('../utils/content-processors/json-cleaner', () => ({
-  cleanResponse: vi.fn()
+  cleanResponse: vi.fn(),
 }));
 
 vi.mock('../utils/core/resilience-utils', () => ({
-  withRetry: vi.fn()
+  withRetry: vi.fn(),
 }));
 
 /**
@@ -31,12 +31,12 @@ describe('AgentRouter', () => {
 
     // Mock orchestrator agent
     mockOrchestrator = {
-      generate: vi.fn()
+      generate: vi.fn(),
     };
 
     // Mock Mastra instance
     mockMastra = {
-      getAgent: vi.fn().mockReturnValue(mockOrchestrator)
+      getAgent: vi.fn().mockReturnValue(mockOrchestrator),
     };
 
     agentRouter = new AgentRouter(mockMastra as Mastra);
@@ -53,20 +53,19 @@ describe('AgentRouter', () => {
     it('should route to microlearning agent when orchestrator returns microlearning', async () => {
       const mockDecision = {
         agent: AGENT_NAMES.MICROLEARNING,
-        taskContext: 'Create training content'
+        taskContext: 'Create training content',
       };
 
       const mockRoutingText = JSON.stringify(mockDecision);
-      mockOrchestrator.generate.mockResolvedValue({
-        text: mockRoutingText
+      mockOrchestrator.generate.mockReturnValue({
+        text: mockRoutingText,
       });
 
       (cleanResponse as any).mockReturnValue(mockRoutingText);
       (withRetry as any).mockImplementation(async (_fn: any) => {
-        // Execute the function passed to withRetry
         const routingResult = await mockOrchestrator.generate('Create a training about cybersecurity');
         const routingText = routingResult.text;
-        const cleanJsonText = (cleanResponse as any)(routingText, 'orchestrator-decision');
+        const cleanJsonText = cleanResponse(routingText, 'orchestrator-decision');
         return JSON.parse(cleanJsonText);
       });
 
@@ -81,19 +80,19 @@ describe('AgentRouter', () => {
     it('should route to phishing agent when orchestrator returns phishing', async () => {
       const mockDecision = {
         agent: AGENT_NAMES.PHISHING,
-        taskContext: 'Generate phishing simulation'
+        taskContext: 'Generate phishing simulation',
       };
 
       const mockRoutingText = JSON.stringify(mockDecision);
-      mockOrchestrator.generate.mockResolvedValue({
-        text: mockRoutingText
+      mockOrchestrator.generate.mockReturnValue({
+        text: mockRoutingText,
       });
 
       (cleanResponse as any).mockReturnValue(mockRoutingText);
       (withRetry as any).mockImplementation(async (_fn: any) => {
         const routingResult = await mockOrchestrator.generate('Generate a phishing email');
         const routingText = routingResult.text;
-        const cleanJsonText = (cleanResponse as any)(routingText, 'orchestrator-decision');
+        const cleanJsonText = cleanResponse(routingText, 'orchestrator-decision');
         return JSON.parse(cleanJsonText);
       });
 
@@ -105,7 +104,7 @@ describe('AgentRouter', () => {
 
     it('should handle routing with optional taskContext', async () => {
       const mockDecision = {
-        agent: AGENT_NAMES.MICROLEARNING
+        agent: AGENT_NAMES.MICROLEARNING,
       };
 
       (cleanResponse as any).mockReturnValue(JSON.stringify(mockDecision));
@@ -115,8 +114,8 @@ describe('AgentRouter', () => {
         return JSON.parse(cleanJsonText);
       });
 
-      mockOrchestrator.generate.mockResolvedValue({
-        text: JSON.stringify(mockDecision)
+      mockOrchestrator.generate.mockReturnValue({
+        text: JSON.stringify(mockDecision),
       });
 
       const result = await agentRouter.route('Create training');
@@ -130,7 +129,7 @@ describe('AgentRouter', () => {
     it('should default to microlearning agent when orchestrator returns invalid agent name', async () => {
       const mockDecision = {
         agent: 'INVALID_AGENT',
-        taskContext: 'Some context'
+        taskContext: 'Some context',
       };
 
       (cleanResponse as any).mockReturnValue(JSON.stringify(mockDecision));
@@ -140,8 +139,8 @@ describe('AgentRouter', () => {
         return JSON.parse(cleanJsonText);
       });
 
-      mockOrchestrator.generate.mockResolvedValue({
-        text: JSON.stringify(mockDecision)
+      mockOrchestrator.generate.mockReturnValue({
+        text: JSON.stringify(mockDecision),
       });
 
       const result = await agentRouter.route('Some prompt');
@@ -153,7 +152,7 @@ describe('AgentRouter', () => {
     it('should default to microlearning when orchestrator returns orchestrator agent name', async () => {
       const mockDecision = {
         agent: AGENT_NAMES.ORCHESTRATOR, // Invalid - orchestrator shouldn't route to itself
-        taskContext: 'Some context'
+        taskContext: 'Some context',
       };
 
       (cleanResponse as any).mockReturnValue(JSON.stringify(mockDecision));
@@ -163,8 +162,8 @@ describe('AgentRouter', () => {
         return JSON.parse(cleanJsonText);
       });
 
-      mockOrchestrator.generate.mockResolvedValue({
-        text: JSON.stringify(mockDecision)
+      mockOrchestrator.generate.mockReturnValue({
+        text: JSON.stringify(mockDecision),
       });
 
       const result = await agentRouter.route('Some prompt');
@@ -185,8 +184,8 @@ describe('AgentRouter', () => {
     });
 
     it('should default to microlearning agent when JSON parsing fails after retries', async () => {
-      mockOrchestrator.generate.mockResolvedValue({
-        text: 'Invalid JSON response'
+      mockOrchestrator.generate.mockReturnValue({
+        text: 'Invalid JSON response',
       });
 
       (cleanResponse as any).mockReturnValue('Invalid JSON');
@@ -211,7 +210,7 @@ describe('AgentRouter', () => {
     it('should use withRetry for orchestrator call and JSON parsing', async () => {
       const mockDecision = {
         agent: AGENT_NAMES.MICROLEARNING,
-        taskContext: 'Test context'
+        taskContext: 'Test context',
       };
 
       (cleanResponse as any).mockReturnValue(JSON.stringify(mockDecision));
@@ -221,28 +220,23 @@ describe('AgentRouter', () => {
         return JSON.parse(cleanJsonText);
       });
 
-      mockOrchestrator.generate.mockResolvedValue({
-        text: JSON.stringify(mockDecision)
+      mockOrchestrator.generate.mockReturnValue({
+        text: JSON.stringify(mockDecision),
       });
 
       await agentRouter.route('Test prompt');
 
-      expect(withRetry).toHaveBeenCalledWith(
-        expect.any(Function),
-        'orchestrator-routing'
-      );
+      expect(withRetry).toHaveBeenCalledWith(expect.any(Function), 'orchestrator-routing');
     });
 
     it('should retry on JSON parse errors', async () => {
       let attemptCount = 0;
       const mockDecision = {
         agent: AGENT_NAMES.MICROLEARNING,
-        taskContext: 'Test context'
+        taskContext: 'Test context',
       };
 
-      (cleanResponse as any)
-        .mockReturnValueOnce('Invalid JSON')
-        .mockReturnValueOnce(JSON.stringify(mockDecision));
+      (cleanResponse as any).mockReturnValueOnce('Invalid JSON').mockReturnValueOnce(JSON.stringify(mockDecision));
 
       (withRetry as any).mockImplementation(async (_fn: any) => {
         attemptCount++;
@@ -254,8 +248,8 @@ describe('AgentRouter', () => {
         return JSON.parse(cleanJsonText);
       });
 
-      mockOrchestrator.generate.mockResolvedValue({
-        text: JSON.stringify(mockDecision)
+      mockOrchestrator.generate.mockReturnValue({
+        text: JSON.stringify(mockDecision),
       });
 
       const result = await agentRouter.route('Test prompt');
@@ -267,7 +261,7 @@ describe('AgentRouter', () => {
   describe('Route - Valid Agents List', () => {
     it('should exclude orchestrator from valid agents list', async () => {
       const mockDecision = {
-        agent: AGENT_NAMES.MICROLEARNING
+        agent: AGENT_NAMES.MICROLEARNING,
       };
 
       (cleanResponse as any).mockReturnValue(JSON.stringify(mockDecision));
@@ -277,8 +271,8 @@ describe('AgentRouter', () => {
         return JSON.parse(cleanJsonText);
       });
 
-      mockOrchestrator.generate.mockResolvedValue({
-        text: JSON.stringify(mockDecision)
+      mockOrchestrator.generate.mockReturnValue({
+        text: JSON.stringify(mockDecision),
       });
 
       await agentRouter.route('Test prompt');
@@ -292,7 +286,7 @@ describe('AgentRouter', () => {
     it('should have agentName field', async () => {
       const mockDecision = {
         agent: AGENT_NAMES.MICROLEARNING,
-        taskContext: 'Create training'
+        taskContext: 'Create training',
       };
 
       (cleanResponse as any).mockReturnValue(JSON.stringify(mockDecision));
@@ -302,8 +296,8 @@ describe('AgentRouter', () => {
         return JSON.parse(cleanJsonText);
       });
 
-      mockOrchestrator.generate.mockResolvedValue({
-        text: JSON.stringify(mockDecision)
+      mockOrchestrator.generate.mockReturnValue({
+        text: JSON.stringify(mockDecision),
       });
 
       const result = await agentRouter.route('Test');
@@ -315,7 +309,7 @@ describe('AgentRouter', () => {
     it('should have optional taskContext field', async () => {
       const mockDecision = {
         agent: AGENT_NAMES.MICROLEARNING,
-        taskContext: 'Build intermediate training'
+        taskContext: 'Build intermediate training',
       };
 
       (cleanResponse as any).mockReturnValue(JSON.stringify(mockDecision));
@@ -325,8 +319,8 @@ describe('AgentRouter', () => {
         return JSON.parse(cleanJsonText);
       });
 
-      mockOrchestrator.generate.mockResolvedValue({
-        text: JSON.stringify(mockDecision)
+      mockOrchestrator.generate.mockReturnValue({
+        text: JSON.stringify(mockDecision),
       });
 
       const result = await agentRouter.route('Test');

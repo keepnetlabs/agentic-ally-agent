@@ -39,7 +39,7 @@ describe('Scene 6 - Survey Generator', () => {
     },
     scientific_evidence: {
       learning_theories: {
-        'Metacognition': {
+        Metacognition: {
           description: 'Self-assessment promotes learning awareness',
         },
       },

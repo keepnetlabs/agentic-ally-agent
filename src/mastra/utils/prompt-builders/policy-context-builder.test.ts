@@ -1,9 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  buildPolicyContextBlock,
-  buildPolicySystemPrompt,
-  buildPolicyScenePrompt,
-} from './policy-context-builder';
+import { buildPolicyContextBlock, buildPolicySystemPrompt, buildPolicyScenePrompt } from './policy-context-builder';
 
 /**
  * Test suite for Policy Context Builder

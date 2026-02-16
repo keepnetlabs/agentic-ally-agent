@@ -8,7 +8,8 @@ vi.mock('ai', () => ({
 }));
 
 vi.mock('./scene-rewriter-base', () => ({
-  rewriteSceneWithBase: vi.fn(async (scene, type, context) => { // Added 'type' argument
+  rewriteSceneWithBase: vi.fn(async (scene, type, context) => {
+    // Added 'type' argument
     if (!context) throw new Error('Context required');
     if (!scene) return undefined;
     return {
@@ -20,7 +21,7 @@ vi.mock('./scene-rewriter-base', () => ({
       ],
       description: 'Translated Description',
     };
-  })
+  }),
 }));
 
 vi.mock('../../../services/error-service', () => ({
@@ -85,15 +86,11 @@ describe('Scene 2 - Goals Rewriter', () => {
     });
 
     it('should require scene parameter', async () => {
-      await expect(
-        rewriteScene2Goal(undefined as any, baseContext)
-      ).resolves.toBeUndefined();
+      await expect(rewriteScene2Goal(undefined as any, baseContext)).resolves.toBeUndefined();
     });
 
     it('should require context parameter', async () => {
-      await expect(
-        rewriteScene2Goal(baseScene as any, undefined as any)
-      ).rejects.toThrow();
+      await expect(rewriteScene2Goal(baseScene as any, undefined as any)).rejects.toThrow();
     });
   });
 
@@ -218,9 +215,7 @@ describe('Scene 2 - Goals Rewriter', () => {
     it('should handle goal with special characters', async () => {
       const specialScene = {
         ...baseScene,
-        goalsList: [
-          { order: 1, goal: 'Identify phishing & spear-phishing (OWASP)', icon: 'check' },
-        ],
+        goalsList: [{ order: 1, goal: 'Identify phishing & spear-phishing (OWASP)', icon: 'check' }],
       };
       const result = await rewriteScene2Goal(specialScene as any, baseContext);
       expect(result).toBeDefined();

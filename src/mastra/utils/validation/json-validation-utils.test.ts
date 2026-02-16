@@ -814,33 +814,17 @@ describe('JSON Validation Utilities', () => {
       // Create a scenario where repairHtml returns original (e.g. valid HTML that looks wrong, or some parse failure mocking)
       // Since parse5 is robust, we can mock repairHtml if needed, or rely on internal logic.
       // For now, let's test the 'hadCorruption' vs 'wasRepaired' logic with a persistent issue simulation if possible,
-      // or just trust the logic flow. 
+      // or just trust the logic flow.
       // Actually, let's add a test for the logic where issues remain.
       // We can simulate this by mocking detectJsonCorruption to return issues even after repair
-
-      const inbox = { corruption: 'persistent' };
       // This integration test depends on internals, so we might skip mocking for now and trust unit tests.
     });
   });
 
   describe('Edge Case Validations', () => {
     it('should handle complex nested key mismatches in validateInboxStructure', () => {
-      const original = {
-        level1: {
-          level2: {
-            validKey: 'value'
-          }
-        }
-      };
-      const translated = {
-        level1: {
-          level2: {
-            wrongKey: 'value'
-          }
-        }
-      };
       // validateInboxStructure only checks top-level keys mostly, except for specific known structures like emails/texts.
-      // It does NOT recursively check arbitrary objects. 
+      // It does NOT recursively check arbitrary objects.
       // So this should actually PASS if level1 exists, unless we improve the function.
       // Looking at source: it checks `emails` specifically and `texts` specifically.
       // It does NOT recursively validate arbitrary keys.
@@ -872,7 +856,6 @@ describe('JSON Validation Utilities', () => {
     });
 
     it('should fallback gracefully when parse5 fails (mocked)', () => {
-      const badHtml = '<p>Bad</p>';
       // We can't easily mock parse5 here without rewriting imports or using jest.mock which vitest supports.
       // But we can rely on the fact that repairHtml returns original on error.
       // Let's rely on standard behavior for now.
@@ -1024,7 +1007,7 @@ describe('Integration tests', () => {
         {
           id: '1',
           subject: 'Phishing Uyarısı',
-          content: '<p>Phishing\'dan kaçının', // Truncated
+          content: "<p>Phishing'dan kaçının", // Truncated
         },
       ],
       texts: { phishingReportModal: { title: 'Phishing Raporla' } },
@@ -1052,7 +1035,8 @@ describe('Integration tests', () => {
           id: '1',
           content: '<p>Original email</p>',
           subject: 'Test Subject',
-          description: 'This is a very long description that should be truncated to fit within character limits for display purposes',
+          description:
+            'This is a very long description that should be truncated to fit within character limits for display purposes',
         },
       ],
     };
@@ -1077,14 +1061,8 @@ describe('Integration tests', () => {
 
     // Step 3: Truncate description if needed
     const maxDescLength = 50;
-    if (
-      (repaired as any).emails[0].description &&
-      (repaired as any).emails[0].description.length > maxDescLength
-    ) {
-      (repaired as any).emails[0].description = truncateText(
-        (repaired as any).emails[0].description,
-        maxDescLength
-      );
+    if ((repaired as any).emails[0].description && (repaired as any).emails[0].description.length > maxDescLength) {
+      (repaired as any).emails[0].description = truncateText((repaired as any).emails[0].description, maxDescLength);
     }
 
     // Verify integrity
@@ -1326,4 +1304,3 @@ describe('Edge cases and error handling', () => {
     expect(result.length).toBe(0);
   });
 });
-

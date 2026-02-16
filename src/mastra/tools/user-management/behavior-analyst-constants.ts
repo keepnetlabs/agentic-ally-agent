@@ -2,14 +2,14 @@
 // Centralized constants for behavioral resilience report generation
 
 export const ANALYSIS_REFERENCES = [
-  "ENISA – Cybersecurity Culture Guidelines (Behavioural Aspects of Cybersecurity)",
-  "Loewenstein (1994) – Curiosity Gap",
-  "Milgram (1963) – Authority Bias",
-  "Duhigg (2012) – Habit Loop",
-  "Kahneman & Tversky (1979) – Loss Aversion",
-  "IBM – Cost of a Data Breach Report",
-  "Verizon – Data Breach Investigations Report (DBIR)",
-  "Gartner – Security Behavior and Culture Program (Context Only)"
+  'ENISA – Cybersecurity Culture Guidelines (Behavioural Aspects of Cybersecurity)',
+  'Loewenstein (1994) – Curiosity Gap',
+  'Milgram (1963) – Authority Bias',
+  'Duhigg (2012) – Habit Loop',
+  'Kahneman & Tversky (1979) – Loss Aversion',
+  'IBM – Cost of a Data Breach Report',
+  'Verizon – Data Breach Investigations Report (DBIR)',
+  'Gartner – Security Behavior and Culture Program (Context Only)',
 ];
 
 export const ALLOWED_ENUMS_TEXT = `

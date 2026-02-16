@@ -50,14 +50,14 @@ export enum ErrorCategory {
  * Can be JSON-serialized to fit outputSchema: error: string
  */
 export interface ErrorInfo {
-  code: string;                           // Short error code (e.g., 'AUTH', 'EXTERNAL')
-  message: string;                        // Human-readable error message
-  category: ErrorCategory;                // Error category for agent understanding
-  retryable: boolean;                     // Whether this error can be retried
-  suggestion?: string;                    // User-friendly suggestion for resolution
-  nextStep?: string;                      // Actionable next step for agent (e.g., "Ask user to provide missing information")
-  details?: Record<string, unknown>;      // Additional context for debugging
-  timestamp?: number;                     // When error occurred
+  code: string; // Short error code (e.g., 'AUTH', 'EXTERNAL')
+  message: string; // Human-readable error message
+  category: ErrorCategory; // Error category for agent understanding
+  retryable: boolean; // Whether this error can be retried
+  suggestion?: string; // User-friendly suggestion for resolution
+  nextStep?: string; // Actionable next step for agent (e.g., "Ask user to provide missing information")
+  details?: Record<string, unknown>; // Additional context for debugging
+  timestamp?: number; // When error occurred
 }
 
 /**
@@ -167,11 +167,12 @@ export const errorService = {
   notFound: (message: string, details?: Record<string, unknown>, errorCode?: ErrorCode): ErrorInfo => {
     const resourceType = details?.resourceType as string | undefined;
     const resourceId = details?.resourceId as string | undefined;
-    const nextStep = resourceType && resourceId
-      ? `Ask user to verify the ${resourceType} ID (${resourceId}) or provide a different ID.`
-      : resourceType
-        ? `Ask user to verify the ${resourceType} ID or provide a different one.`
-        : 'Ask user to verify the resource ID or provide a different one.';
+    const nextStep =
+      resourceType && resourceId
+        ? `Ask user to verify the ${resourceType} ID (${resourceId}) or provide a different ID.`
+        : resourceType
+          ? `Ask user to verify the ${resourceType} ID or provide a different one.`
+          : 'Ask user to verify the resource ID or provide a different one.';
 
     const code = errorCode || ERROR_CODES.NOT_FOUND_MICROLEARNING;
     const errorInfo: ErrorInfo = {

@@ -31,8 +31,8 @@ describe('summarizePolicyTool', () => {
         question: 'Test question',
         summary: 'Test summary',
         key_points: ['Point 1'],
-        recommendations: ['Rec 1']
-      })
+        recommendations: ['Rec 1'],
+      }),
     });
   });
   describe('Tool Configuration', () => {
@@ -91,7 +91,7 @@ describe('summarizePolicyTool', () => {
       const schema = (summarizePolicyTool as any).inputSchema;
       const validInput = {
         question: 'What is the policy?',
-        focusArea: 'phishing'
+        focusArea: 'phishing',
       };
 
       expect(() => {
@@ -112,7 +112,7 @@ describe('summarizePolicyTool', () => {
       const schema = (summarizePolicyTool as any).inputSchema;
       const validInput = {
         question: 'What is the policy?',
-        language: 'en'
+        language: 'en',
       };
 
       expect(() => {
@@ -135,7 +135,7 @@ describe('summarizePolicyTool', () => {
       languages.forEach(lang => {
         const input = {
           question: 'What is the policy?',
-          language: lang
+          language: lang,
         };
 
         expect(() => {
@@ -148,7 +148,7 @@ describe('summarizePolicyTool', () => {
       const schema = (summarizePolicyTool as any).inputSchema;
       const validInput = {
         question: 'What is the policy?',
-        modelProvider: 'OPENAI'
+        modelProvider: 'OPENAI',
       };
 
       expect(() => {
@@ -164,7 +164,7 @@ describe('summarizePolicyTool', () => {
       validProviders.forEach(provider => {
         const input = {
           question: 'What is the policy?',
-          modelProvider: provider
+          modelProvider: provider,
         };
 
         expect(() => {
@@ -177,7 +177,7 @@ describe('summarizePolicyTool', () => {
       const schema = (summarizePolicyTool as any).inputSchema;
       const invalidInput = {
         question: 'What is the policy?',
-        modelProvider: 'INVALID_PROVIDER'
+        modelProvider: 'INVALID_PROVIDER',
       };
 
       expect(() => {
@@ -189,7 +189,7 @@ describe('summarizePolicyTool', () => {
       const schema = (summarizePolicyTool as any).inputSchema;
       const validInput = {
         question: 'What is the policy?',
-        model: 'gpt-4o'
+        model: 'gpt-4o',
       };
 
       expect(() => {
@@ -216,8 +216,8 @@ describe('summarizePolicyTool', () => {
           question: 'What is the phishing policy?',
           summary: 'Policy summary here',
           key_points: ['Point 1', 'Point 2'],
-          recommendations: ['Rec 1', 'Rec 2']
-        }
+          recommendations: ['Rec 1', 'Rec 2'],
+        },
       };
 
       expect(() => {
@@ -229,7 +229,7 @@ describe('summarizePolicyTool', () => {
       const schema = (summarizePolicyTool as any).outputSchema;
       const validOutput = {
         success: false,
-        error: 'Policy not found'
+        error: 'Policy not found',
       };
 
       expect(() => {
@@ -245,8 +245,8 @@ describe('summarizePolicyTool', () => {
           question: 'What is phishing?',
           summary: 'Summary',
           key_points: [],
-          recommendations: []
-        }
+          recommendations: [],
+        },
       };
 
       const parsed = schema.parse(output);
@@ -261,8 +261,8 @@ describe('summarizePolicyTool', () => {
           question: 'What is the policy?',
           summary: 'First paragraph here. Second paragraph here.',
           key_points: [],
-          recommendations: []
-        }
+          recommendations: [],
+        },
       };
 
       const parsed = schema.parse(output);
@@ -278,8 +278,8 @@ describe('summarizePolicyTool', () => {
           question: 'What is the policy?',
           summary: 'Summary',
           key_points: ['Point 1', 'Point 2', 'Point 3'],
-          recommendations: []
-        }
+          recommendations: [],
+        },
       };
 
       const parsed = schema.parse(output);
@@ -295,8 +295,8 @@ describe('summarizePolicyTool', () => {
           question: 'What is the policy?',
           summary: 'Summary',
           key_points: [],
-          recommendations: ['Rec 1', 'Rec 2']
-        }
+          recommendations: ['Rec 1', 'Rec 2'],
+        },
       };
 
       const parsed = schema.parse(output);
@@ -313,8 +313,8 @@ describe('summarizePolicyTool', () => {
           summary: 'Summary',
           key_points: [],
           recommendations: [],
-          relevant_sections: ['Section A', 'Section B']
-        }
+          relevant_sections: ['Section A', 'Section B'],
+        },
       };
 
       const parsed = schema.parse(output);
@@ -329,8 +329,8 @@ describe('summarizePolicyTool', () => {
           question: 'What is the policy?',
           summary: 'Summary',
           key_points: [],
-          recommendations: []
-        }
+          recommendations: [],
+        },
       };
 
       expect(() => {
@@ -382,8 +382,8 @@ describe('summarizePolicyTool', () => {
       const context = {
         context: {
           question: 'What should I do?',
-          focusArea: 'phishing'
-        }
+          focusArea: 'phishing',
+        },
       };
 
       const result = await execute(context);
@@ -393,7 +393,7 @@ describe('summarizePolicyTool', () => {
     it('should handle missing focusArea', async () => {
       const execute = (summarizePolicyTool as any).execute;
       const context = {
-        context: { question: 'What should I do?' }
+        context: { question: 'What should I do?' },
       };
 
       const result = await execute(context);
@@ -447,7 +447,7 @@ describe('summarizePolicyTool', () => {
 
     it('should accept French language code', () => {
       const schema = (summarizePolicyTool as any).inputSchema;
-      const input = { question: 'Qu\'est-ce que la politique?', language: 'fr' };
+      const input = { question: "Qu'est-ce que la politique?", language: 'fr' };
 
       expect(() => {
         schema.parse(input);
@@ -487,7 +487,7 @@ describe('summarizePolicyTool', () => {
       const schema = (summarizePolicyTool as any).inputSchema;
       const input = {
         question: 'What is the policy?',
-        modelProvider: 'OPENAI'
+        modelProvider: 'OPENAI',
       };
 
       expect(() => {
@@ -499,7 +499,7 @@ describe('summarizePolicyTool', () => {
       const schema = (summarizePolicyTool as any).inputSchema;
       const input = {
         question: 'What is the policy?',
-        modelProvider: 'WORKERS_AI'
+        modelProvider: 'WORKERS_AI',
       };
 
       expect(() => {
@@ -511,7 +511,7 @@ describe('summarizePolicyTool', () => {
       const schema = (summarizePolicyTool as any).inputSchema;
       const input = {
         question: 'What is the policy?',
-        modelProvider: 'GOOGLE'
+        modelProvider: 'GOOGLE',
       };
 
       expect(() => {
@@ -523,7 +523,7 @@ describe('summarizePolicyTool', () => {
       const schema = (summarizePolicyTool as any).inputSchema;
       const input = {
         question: 'What is the policy?',
-        model: 'gpt-4o'
+        model: 'gpt-4o',
       };
 
       expect(() => {
@@ -536,7 +536,7 @@ describe('summarizePolicyTool', () => {
       const input = {
         question: 'What is the policy?',
         modelProvider: 'OPENAI',
-        model: 'gpt-4o-mini'
+        model: 'gpt-4o-mini',
       };
 
       expect(() => {
@@ -622,7 +622,7 @@ LANGUAGE: Respond in ${language || 'English'}`;
     it('should handle empty policy gracefully', async () => {
       const execute = (summarizePolicyTool as any).execute;
       const context = {
-        context: { question: 'What is the policy?' }
+        context: { question: 'What is the policy?' },
       };
 
       const result = await execute(context);
@@ -642,8 +642,8 @@ LANGUAGE: Respond in ${language || 'English'}`;
           question: 'Test',
           summary: 'Summary',
           key_points: [],
-          recommendations: []
-        }
+          recommendations: [],
+        },
       };
 
       expect(() => {
@@ -694,8 +694,8 @@ LANGUAGE: Respond in ${language || 'English'}`;
         context: {
           question: 'What is our data protection policy?',
           focusArea: 'data protection',
-          language: 'en'
-        }
+          language: 'en',
+        },
       };
 
       const result = await execute(context);
@@ -707,8 +707,8 @@ LANGUAGE: Respond in ${language || 'English'}`;
       const context = {
         context: {
           question: 'Veri koruması politikamız nedir?',
-          language: 'tr'
-        }
+          language: 'tr',
+        },
       };
 
       const result = await execute(context);
@@ -720,8 +720,8 @@ LANGUAGE: Respond in ${language || 'English'}`;
       const context = {
         context: {
           question: 'Was ist unsere Datenschutzrichtlinie?',
-          language: 'de'
-        }
+          language: 'de',
+        },
       };
 
       const result = await execute(context);
@@ -734,8 +734,8 @@ LANGUAGE: Respond in ${language || 'English'}`;
         context: {
           question: 'What is the compliance policy?',
           modelProvider: 'OPENAI',
-          model: 'gpt-4o'
-        }
+          model: 'gpt-4o',
+        },
       };
 
       const result = await execute(context);
@@ -750,8 +750,8 @@ LANGUAGE: Respond in ${language || 'English'}`;
           focusArea: 'phishing',
           language: 'en',
           modelProvider: 'OPENAI',
-          model: 'gpt-4o-mini'
-        }
+          model: 'gpt-4o-mini',
+        },
       };
 
       const result = await execute(context);
@@ -761,7 +761,7 @@ LANGUAGE: Respond in ${language || 'English'}`;
     it('should handle minimal request with only question', async () => {
       const execute = (summarizePolicyTool as any).execute;
       const context = {
-        context: { question: 'What is the policy?' }
+        context: { question: 'What is the policy?' },
       };
 
       const result = await execute(context);
@@ -778,8 +778,8 @@ LANGUAGE: Respond in ${language || 'English'}`;
           question: 'Test',
           summary: 'Summary',
           key_points: ['Point 1', 'Point 2', 'Point 3'],
-          recommendations: ['Rec 1']
-        }
+          recommendations: ['Rec 1'],
+        },
       };
 
       const parsed = schema.parse(output);
@@ -794,8 +794,8 @@ LANGUAGE: Respond in ${language || 'English'}`;
           question: 'Test',
           summary: 'Summary',
           key_points: [],
-          recommendations: ['Recommendation 1', 'Recommendation 2']
-        }
+          recommendations: ['Recommendation 1', 'Recommendation 2'],
+        },
       };
 
       const parsed = schema.parse(output);
@@ -811,8 +811,8 @@ LANGUAGE: Respond in ${language || 'English'}`;
           question: originalQuestion,
           summary: 'Summary',
           key_points: [],
-          recommendations: []
-        }
+          recommendations: [],
+        },
       };
 
       const parsed = schema.parse(output);
@@ -832,11 +832,11 @@ LANGUAGE: Respond in ${language || 'English'}`;
       const execute = (summarizePolicyTool as any).execute;
 
       const context1 = {
-        context: { question: 'What is the policy?' }
+        context: { question: 'What is the policy?' },
       };
 
       const context2 = {
-        context: { question: 'What is the policy?' }
+        context: { question: 'What is the policy?' },
       };
 
       const result1 = await execute(context1);

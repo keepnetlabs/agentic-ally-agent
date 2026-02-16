@@ -77,13 +77,9 @@ describe('Phishing Email Agent', () => {
     });
 
     it('should NOT contain unauthorized system strings', () => {
-      const forbiddenStrings = [
-        'EMPLOYEE_MATCH',
-        'ASSIGNMENT_SUCCESS.TRAINING',
-        'ASSIGNMENT_SUCCESS.SIMULATION',
-      ];
+      const forbiddenStrings = ['EMPLOYEE_MATCH', 'ASSIGNMENT_SUCCESS.TRAINING', 'ASSIGNMENT_SUCCESS.SIMULATION'];
 
-      forbiddenStrings.forEach((str) => {
+      forbiddenStrings.forEach(str => {
         expect(phishingEmailAgent.instructions).not.toContain(str);
       });
     });
@@ -158,7 +154,7 @@ describe('Phishing Email Agent', () => {
     });
 
     it('should provide language matching rules', () => {
-      expect(instructions).toContain('match the user\'s CURRENT message language');
+      expect(instructions).toContain("match the user's CURRENT message language");
     });
 
     it('should include language examples', () => {
@@ -691,7 +687,6 @@ describe('Phishing Email Agent', () => {
     });
   });
 
-
   // ==================== INTEGRATION VALIDATION ====================
   describe('Integration Validation', () => {
     it('should reference correct constant for name', () => {
@@ -745,4 +740,3 @@ describe('Phishing Email Agent', () => {
     });
   });
 });
-

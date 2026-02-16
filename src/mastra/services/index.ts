@@ -10,10 +10,16 @@ export { ExampleRepo } from './example-repo';
 export { MicrolearningService } from './microlearning-service';
 export { ProductService } from './product-service';
 export { AgentRouter } from './agent-router';
+export {
+  saveCampaignMetadata,
+  getCampaignMetadata,
+  trySaveCampaignMetadataAfterUpload,
+  type CampaignMetadataInput,
+  type CampaignMetadataRow,
+} from './campaign-metadata-service';
 
 // Health check service
 export { performHealthCheck, type HealthCheckResponse } from './health-service';
 
 // Autonomous service (re-export from subdirectory)
 export { executeAutonomousGeneration } from './autonomous';
-

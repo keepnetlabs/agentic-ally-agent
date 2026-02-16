@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // 1. Mock dependency modules
 vi.mock('../../model-providers', () => ({
-  getModelWithOverride: vi.fn().mockReturnValue({ provider: 'OPENAI', modelId: 'gpt-4' })
+  getModelWithOverride: vi.fn().mockReturnValue({ provider: 'OPENAI', modelId: 'gpt-4' }),
 }));
 
 vi.mock('../../utils/core/logger', () => ({
@@ -10,26 +10,48 @@ vi.mock('../../utils/core/logger', () => ({
     info: vi.fn(),
     error: vi.fn(),
     warn: vi.fn(),
-    debug: vi.fn()
-  })
+    debug: vi.fn(),
+  }),
 }));
 
 vi.mock('../../utils/core/resilience-utils', () => ({
-  withRetry: vi.fn((fn: any) => fn())
+  withRetry: vi.fn((fn: any) => fn()),
 }));
 
 // Mock all rewriters
-vi.mock('../scenes/rewriters/scene1-intro-rewriter', () => ({ rewriteScene1Intro: vi.fn().mockResolvedValue({ id: '1', content: 'Intro' }) }));
-vi.mock('../scenes/rewriters/scene2-goal-rewriter', () => ({ rewriteScene2Goal: vi.fn().mockResolvedValue({ id: '2', content: 'Goal' }) }));
-vi.mock('../scenes/rewriters/scene3-video-rewriter', () => ({ rewriteScene3Video: vi.fn().mockResolvedValue({ id: '3', content: 'Video' }) }));
-vi.mock('../scenes/rewriters/scene4-actionable-rewriter', () => ({ rewriteScene4Actionable: vi.fn().mockResolvedValue({ id: '4', content: 'Actions' }) }));
-vi.mock('../scenes/rewriters/scene4-smishing-rewriter', () => ({ rewriteScene4Smishing: vi.fn().mockResolvedValue({ id: '4', content: 'Smishing' }) }));
-vi.mock('../scenes/rewriters/scene4-vishing-rewriter', () => ({ rewriteScene4Vishing: vi.fn().mockResolvedValue({ id: '4', content: 'Vishing' }) }));
-vi.mock('../scenes/rewriters/scene5-quiz-rewriter', () => ({ rewriteScene5Quiz: vi.fn().mockResolvedValue({ id: '5', content: 'Quiz' }) }));
-vi.mock('../scenes/rewriters/scene6-survey-rewriter', () => ({ rewriteScene6Survey: vi.fn().mockResolvedValue({ id: '6', content: 'Survey' }) }));
-vi.mock('../scenes/rewriters/scene7-nudge-rewriter', () => ({ rewriteScene7Nudge: vi.fn().mockResolvedValue({ id: '7', content: 'Nudge' }) }));
-vi.mock('../scenes/rewriters/scene8-summary-rewriter', () => ({ rewriteScene8Summary: vi.fn().mockResolvedValue({ id: '8', content: 'Summary' }) }));
-vi.mock('../scenes/rewriters/app-texts-rewriter', () => ({ rewriteAppTexts: vi.fn().mockResolvedValue({ app: 'texts' }) }));
+vi.mock('../scenes/rewriters/scene1-intro-rewriter', () => ({
+  rewriteScene1Intro: vi.fn().mockResolvedValue({ id: '1', content: 'Intro' }),
+}));
+vi.mock('../scenes/rewriters/scene2-goal-rewriter', () => ({
+  rewriteScene2Goal: vi.fn().mockResolvedValue({ id: '2', content: 'Goal' }),
+}));
+vi.mock('../scenes/rewriters/scene3-video-rewriter', () => ({
+  rewriteScene3Video: vi.fn().mockResolvedValue({ id: '3', content: 'Video' }),
+}));
+vi.mock('../scenes/rewriters/scene4-actionable-rewriter', () => ({
+  rewriteScene4Actionable: vi.fn().mockResolvedValue({ id: '4', content: 'Actions' }),
+}));
+vi.mock('../scenes/rewriters/scene4-smishing-rewriter', () => ({
+  rewriteScene4Smishing: vi.fn().mockResolvedValue({ id: '4', content: 'Smishing' }),
+}));
+vi.mock('../scenes/rewriters/scene4-vishing-rewriter', () => ({
+  rewriteScene4Vishing: vi.fn().mockResolvedValue({ id: '4', content: 'Vishing' }),
+}));
+vi.mock('../scenes/rewriters/scene5-quiz-rewriter', () => ({
+  rewriteScene5Quiz: vi.fn().mockResolvedValue({ id: '5', content: 'Quiz' }),
+}));
+vi.mock('../scenes/rewriters/scene6-survey-rewriter', () => ({
+  rewriteScene6Survey: vi.fn().mockResolvedValue({ id: '6', content: 'Survey' }),
+}));
+vi.mock('../scenes/rewriters/scene7-nudge-rewriter', () => ({
+  rewriteScene7Nudge: vi.fn().mockResolvedValue({ id: '7', content: 'Nudge' }),
+}));
+vi.mock('../scenes/rewriters/scene8-summary-rewriter', () => ({
+  rewriteScene8Summary: vi.fn().mockResolvedValue({ id: '8', content: 'Summary' }),
+}));
+vi.mock('../scenes/rewriters/app-texts-rewriter', () => ({
+  rewriteAppTexts: vi.fn().mockResolvedValue({ app: 'texts' }),
+}));
 
 import { translateLanguageJsonTool } from './translate-language-json-tool';
 import { rewriteScene1Intro } from '../scenes/rewriters/scene1-intro-rewriter';
@@ -48,16 +70,14 @@ describe('translateLanguageJsonTool', () => {
   const baseInput = {
     json: {
       '1': { original: 'content' },
-      app_texts: { key: 'value' }
+      app_texts: { key: 'value' },
     },
     microlearningStructure: {
-      scenes: [
-        { scene_id: '1', metadata: { scene_type: 'intro' } }
-      ]
+      scenes: [{ scene_id: '1', metadata: { scene_type: 'intro' } }],
     },
     sourceLanguage: 'en-gb',
     targetLanguage: 'tr-tr',
-    topic: 'Security'
+    topic: 'Security',
   };
 
   beforeEach(() => {
@@ -93,7 +113,7 @@ describe('translateLanguageJsonTool', () => {
   it('should handle empty scenes metadata', async () => {
     const result = await (translateLanguageJsonTool as any).execute({
       ...baseInput,
-      microlearningStructure: { scenes: [] }
+      microlearningStructure: { scenes: [] },
     });
 
     expect(result.success).toBe(true);
@@ -104,9 +124,14 @@ describe('translateLanguageJsonTool', () => {
     const mixedInput = {
       ...baseInput,
       json: {
-        '1': { id: '1' }, '2': { id: '2' }, '3': { id: '3' },
-        '4': { id: '4' }, '5': { id: '5' }, '6': { id: '6' },
-        '7': { id: '7' }, '8': { id: '8' }
+        '1': { id: '1' },
+        '2': { id: '2' },
+        '3': { id: '3' },
+        '4': { id: '4' },
+        '5': { id: '5' },
+        '6': { id: '6' },
+        '7': { id: '7' },
+        '8': { id: '8' },
       },
       microlearningStructure: {
         scenes: [
@@ -117,9 +142,9 @@ describe('translateLanguageJsonTool', () => {
           { scene_id: '5', metadata: { scene_type: 'quiz' } },
           { scene_id: '6', metadata: { scene_type: 'survey' } },
           { scene_id: '7', metadata: { scene_type: 'nudge' } },
-          { scene_id: '8', metadata: { scene_type: 'summary' } }
-        ]
-      }
+          { scene_id: '8', metadata: { scene_type: 'summary' } },
+        ],
+      },
     };
 
     await (translateLanguageJsonTool as any).execute(mixedInput);
@@ -139,10 +164,8 @@ describe('translateLanguageJsonTool', () => {
       ...baseInput,
       json: { '4': { id: '4' } },
       microlearningStructure: {
-        scenes: [
-          { scene_id: '4', metadata: { scene_type: 'code_review' } }
-        ]
-      }
+        scenes: [{ scene_id: '4', metadata: { scene_type: 'code_review' } }],
+      },
     };
 
     await (translateLanguageJsonTool as any).execute(codeInput);
@@ -155,10 +178,8 @@ describe('translateLanguageJsonTool', () => {
       ...baseInput,
       json: { '4': { id: '4' } },
       microlearningStructure: {
-        scenes: [
-          { scene_id: '4', metadata: { scene_type: 'vishing_simulation' } }
-        ]
-      }
+        scenes: [{ scene_id: '4', metadata: { scene_type: 'vishing_simulation' } }],
+      },
     };
 
     await (translateLanguageJsonTool as any).execute(vishingInput);
@@ -171,10 +192,8 @@ describe('translateLanguageJsonTool', () => {
       ...baseInput,
       json: { '4': { id: '4' } },
       microlearningStructure: {
-        scenes: [
-          { scene_id: '4', metadata: { scene_type: 'smishing_simulation' } }
-        ]
-      }
+        scenes: [{ scene_id: '4', metadata: { scene_type: 'smishing_simulation' } }],
+      },
     };
 
     await (translateLanguageJsonTool as any).execute(smishingInput);
@@ -200,7 +219,7 @@ describe('translateLanguageJsonTool', () => {
     const sameLangInput = {
       ...baseInput,
       sourceLanguage: 'en',
-      targetLanguage: 'en'
+      targetLanguage: 'en',
     };
 
     try {
@@ -209,15 +228,15 @@ describe('translateLanguageJsonTool', () => {
       // If it throws, good. If it returns error object, also good.
       // But the check is usually Zod refine.
     }
-    // Zod validation usually happens before execute in the framework, 
-    // but since we are calling execute directly with 'as any' and bypassing framework overhead 
+    // Zod validation usually happens before execute in the framework,
+    // but since we are calling execute directly with 'as any' and bypassing framework overhead
     // (unless Tool.execute calls schema.parse), we might verify schema directly.
     // Let's rely on the implementation calling schema.parse(input) or similar logic if it exists inside execute.
     // Looking at implementation: `const { ... } = context as z.infer<typeof TranslateJsonInputSchema>;`
-    // It implies context is already validated or just cast. 
+    // It implies context is already validated or just cast.
     // Actually, `Tool.execute` implementation in Mastra usually validates input schema.
 
-    // Let's assume validation happens. But since we are calling .execute() directly on the tool instance, 
+    // Let's assume validation happens. But since we are calling .execute() directly on the tool instance,
     // the base Tool class logic handles input validation wrappers.
     // To support a robust test, we can check if it fails or if we should skip this if we can't invoke validation easily.
     // However, we can assert on the behavior if we test the validation logic separately or trust the Tool harness.
@@ -230,13 +249,11 @@ describe('translateLanguageJsonTool', () => {
       ...baseInput,
       json: {
         // '1' is missing from JSON
-        app_texts: { key: 'val' }
+        app_texts: { key: 'val' },
       },
       microlearningStructure: {
-        scenes: [
-          { scene_id: '1', metadata: { scene_type: 'intro' } }
-        ]
-      }
+        scenes: [{ scene_id: '1', metadata: { scene_type: 'intro' } }],
+      },
     };
 
     const result = await (translateLanguageJsonTool as any).execute(inputMissingContent);
@@ -252,7 +269,7 @@ describe('translateLanguageJsonTool', () => {
   it('should use default topic when topic is missing', async () => {
     const inputNoTopic = {
       ...baseInput,
-      topic: undefined
+      topic: undefined,
     };
 
     const result = await (translateLanguageJsonTool as any).execute(inputNoTopic);
@@ -266,7 +283,7 @@ describe('translateLanguageJsonTool', () => {
   it('should pass custom topic to rewriters', async () => {
     const inputCustomTopic = {
       ...baseInput,
-      topic: 'Phishing Awareness for Executives'
+      topic: 'Phishing Awareness for Executives',
     };
 
     await (translateLanguageJsonTool as any).execute(inputCustomTopic);

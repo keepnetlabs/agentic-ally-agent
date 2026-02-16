@@ -210,12 +210,12 @@ describe('Scene 5 - Quiz Generator', () => {
 
     it('should include required title localization instructions', () => {
       const prompt = generateScene5Prompt(baseAnalysis, baseMicrolearning);
-      expect(prompt).toContain('Localize \'Test Your Knowledge\'');
+      expect(prompt).toContain("Localize 'Test Your Knowledge'");
     });
 
     it('should include subtitle localization instructions', () => {
       const prompt = generateScene5Prompt(baseAnalysis, baseMicrolearning);
-      expect(prompt).toContain('Localize \'Make the right decision');
+      expect(prompt).toContain("Localize 'Make the right decision");
     });
 
     it('should include quiz completion texts', () => {
@@ -785,11 +785,7 @@ describe('Scene 5 - Quiz Generator', () => {
         subcategory: 'Email Security',
         department: 'IT',
         level: 'intermediate',
-        learningObjectives: [
-          'Identify phishing emails',
-          'Report suspicious messages',
-          'Prevent credential theft',
-        ],
+        learningObjectives: ['Identify phishing emails', 'Report suspicious messages', 'Prevent credential theft'],
         duration: 5,
         industries: ['Technology', 'Finance'],
         roles: ['All Roles'],
@@ -878,11 +874,7 @@ describe('Scene 5 - Quiz Generator', () => {
       const advAnalysis: any = {
         ...baseAnalysis,
         level: 'Advanced',
-        learningObjectives: [
-          'Analyze attack patterns',
-          'Design defenses',
-          'Train others',
-        ],
+        learningObjectives: ['Analyze attack patterns', 'Design defenses', 'Train others'],
       };
 
       const prompt = generateScene5Prompt(advAnalysis, baseMicrolearning);

@@ -33,13 +33,11 @@ describe('Scene 8 - Summary Rewriter', () => {
     title: 'Key Takeaways',
     immediateActions: [
       { title: 'Check Headers', description: 'Always verify sender' },
-      { title: 'Report', description: 'Click the report button' }
+      { title: 'Report', description: 'Click the report button' },
     ],
-    resources: [
-      { title: 'Policy', type: 'PDF', url: 'http://policy' }
-    ],
+    resources: [{ title: 'Policy', type: 'PDF', url: 'http://policy' }],
     key_message: ['Phishing emails mimic trusted senders'],
-    icon: { sceneIconName: 'book', sparkleIconName: 'star' }
+    icon: { sceneIconName: 'book', sparkleIconName: 'star' },
   } as any;
 
   beforeEach(() => {
@@ -62,9 +60,7 @@ describe('Scene 8 - Summary Rewriter', () => {
     });
 
     it('should require context parameter', async () => {
-      await expect(
-        rewriteScene8Summary(baseScene, undefined as any)
-      ).rejects.toThrow();
+      await expect(rewriteScene8Summary(baseScene, undefined as any)).rejects.toThrow();
     });
   });
 
@@ -167,8 +163,8 @@ describe('Scene 8 - Summary Rewriter', () => {
         immediateActions: [
           { title: 'A', description: 'D' },
           { title: 'B', description: 'E' },
-          { title: 'C', description: 'F' }
-        ]
+          { title: 'C', description: 'F' },
+        ],
       } as any;
       (generateText as any).mockResolvedValueOnce({ text: JSON.stringify(threeActions) });
 
@@ -179,7 +175,10 @@ describe('Scene 8 - Summary Rewriter', () => {
     it('should handle training with many immediateActions', async () => {
       const manyActions = {
         ...baseScene,
-        immediateActions: Array.from({ length: 10 }, (_, i) => ({ title: `Action ${i + 1}`, description: `Desc ${i + 1}` })),
+        immediateActions: Array.from({ length: 10 }, (_, i) => ({
+          title: `Action ${i + 1}`,
+          description: `Desc ${i + 1}`,
+        })),
       };
       (generateText as any).mockResolvedValueOnce({ text: JSON.stringify(manyActions) });
       const result = await rewriteScene8Summary(manyActions, baseContext);
@@ -278,9 +277,7 @@ describe('Scene 8 - Summary Rewriter', () => {
     it('should produce multi-language summary variants', async () => {
       const languages = ['en', 'de', 'fr', 'tr', 'zh', 'ja'];
       const results = await Promise.all(
-        languages.map(lang =>
-          rewriteScene8Summary(baseScene, { ...baseContext, targetLanguage: lang })
-        )
+        languages.map(lang => rewriteScene8Summary(baseScene, { ...baseContext, targetLanguage: lang }))
       );
       expect(results.length).toBe(languages.length);
       results.forEach(result => {

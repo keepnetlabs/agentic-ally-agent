@@ -219,15 +219,16 @@ export const RETRY = {
 // ============================================
 
 /**
- * Default timeout for agent calls (30s - matches Cloudflare Workers CPU limit)
- * Long-running tasks should be handled asynchronously with fire-and-forget patterns
- * Can be overridden per operation if needed
+ * Default timeout for agent calls (90s / 1.5 min).
+ * Used for standard chat flows. Long-running tasks use LONG_RUNNING_AGENT_TIMEOUT_MS.
+ * @see docs/HANDOVER.md - Critical Constants cheatsheet
  */
 export const AGENT_CALL_TIMEOUT_MS = 90000;
 
 /**
- * Timeout for heavy agent tasks (10 mins - consistently safe for microlearning)
- * Structure generation + enhancement + email generation can exceed 90s widely
+ * Timeout for heavy agent tasks (10 min).
+ * Microlearning generation takes >3 min; structure + enhancement + email can exceed 90s.
+ * @see docs/HANDOVER.md - LONG_RUNNING_AGENT_TIMEOUT_MS = 600,000 (10m)
  */
 export const LONG_RUNNING_AGENT_TIMEOUT_MS = 600000;
 
@@ -370,7 +371,6 @@ export const MODEL_PROVIDERS = {
     WORKERS_AI: 'WORKERS_AI_GPT_OSS_120B',
     GOOGLE: 'GOOGLE_GEMINI_2_5_PRO',
   },
-
 } as const;
 
 // ============================================
@@ -626,6 +626,19 @@ export const AGENT_IDS = {
   ORCHESTRATOR: 'orchestrator-agent',
   EMAIL_IR_ANALYST: 'email-ir-analyst',
 } as const;
+
+/** Short confirmation/selection patterns for orchestrator Scenario A (route to same agent). */
+export const ORCHESTRATOR_CONFIRMATION_EXAMPLES = [
+  'Yes',
+  'Proceed',
+  'Do it',
+  'Olustur',
+  'Tamam',
+  'OK',
+  '1',
+  '2',
+  '3',
+] as const;
 
 // ============================================
 // PHISHING SIMULATION CONFIGURATION
@@ -981,6 +994,9 @@ export const SAFE_COMMUNICATION = {
 // Backwards compatibility aliases (for existing code)
 export const PRIVACY_POLICY = SAFE_COMMUNICATION.PRIVACY;
 export const MESSAGING_GUIDELINES = SAFE_COMMUNICATION.MESSAGING;
+
+/** Prompt fragment for agent instructions - avoids repeating in 6 agents */
+export const MESSAGING_GUIDELINES_PROMPT_FRAGMENT = `- NEVER use: ${MESSAGING_GUIDELINES.BLACKLIST_WORDS.join(', ')}`;
 
 // ============================================
 // STRUCTURED ERROR CODES

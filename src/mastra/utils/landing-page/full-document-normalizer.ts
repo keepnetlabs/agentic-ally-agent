@@ -17,24 +17,23 @@ import { normalizeError } from '../core/error-utils';
 const logger = getLogger('FullDocumentNormalizer');
 
 function hasHtmlTag(html: string): boolean {
-    return /<html\b/i.test(html);
+  return /<html\b/i.test(html);
 }
 
 function hasDoctype(html: string): boolean {
-    return /<!doctype\s+html>/i.test(html);
+  return /<!doctype\s+html>/i.test(html);
 }
 
 export function ensureLandingFullHtmlDocument(fragmentHtml: string, title = 'Secure Portal'): string {
-    if (!fragmentHtml || typeof fragmentHtml !== 'string') return fragmentHtml;
+  if (!fragmentHtml || typeof fragmentHtml !== 'string') return fragmentHtml;
 
-    try {
-        // If it's already a full document (or at least declares <html>), don't touch it.
-        if (hasHtmlTag(fragmentHtml)) return fragmentHtml;
+  try {
+    // If it's already a full document (or at least declares <html>), don't touch it.
+    if (hasHtmlTag(fragmentHtml)) return fragmentHtml;
 
-        // If it includes <head> or <body> without <html>, still wrap conservatively.
-        const doctype = hasDoctype(fragmentHtml) ? '' : '<!DOCTYPE html>';
-        const wrapped =
-            `${doctype}
+    // If it includes <head> or <body> without <html>, still wrap conservatively.
+    const doctype = hasDoctype(fragmentHtml) ? '' : '<!DOCTYPE html>';
+    const wrapped = `${doctype}
 <html>
   <head>
     <meta charset='UTF-8' />
@@ -46,13 +45,11 @@ ${fragmentHtml}
   </body>
 </html>`;
 
-        logger.info('✅ Wrapped landing page fragment into full HTML document');
-        return wrapped;
-    } catch (error) {
-        const err = normalizeError(error);
-        logger.warn('⚠️ Failed to wrap landing fragment, returning original', { error: err.message });
-        return fragmentHtml;
-    }
+    logger.info('✅ Wrapped landing page fragment into full HTML document');
+    return wrapped;
+  } catch (error) {
+    const err = normalizeError(error);
+    logger.warn('⚠️ Failed to wrap landing fragment, returning original', { error: err.message });
+    return fragmentHtml;
+  }
 }
-
-

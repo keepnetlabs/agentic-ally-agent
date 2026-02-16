@@ -17,13 +17,15 @@ import { KVService } from '../../services/kv-service';
 // Output schema defined separately to avoid circular reference
 const assignTrainingOutputSchema = z.object({
   success: z.boolean(),
-  data: z.object({
-    assignmentType: z.enum(['USER', 'GROUP']),
-    targetId: z.string(),
-    targetLabel: z.string(),
-    resourceId: z.string(),
-    sendTrainingLanguageId: z.string(),
-  }).optional(),
+  data: z
+    .object({
+      assignmentType: z.enum(['USER', 'GROUP']),
+      targetId: z.string(),
+      targetLabel: z.string(),
+      resourceId: z.string(),
+      sendTrainingLanguageId: z.string(),
+    })
+    .optional(),
   message: z.string().optional(),
   error: z.string().optional(),
 });
@@ -31,22 +33,52 @@ const assignTrainingOutputSchema = z.object({
 export const assignTrainingTool = createTool({
   id: 'assign-training',
   description: 'Assigns an uploaded training resource to a specific user or group.',
-  inputSchema: z.object({
-    resourceId: z.string().describe('The Resource ID returned from the upload process').refine(isSafeId, { message: 'Invalid resourceId format.' }),
-    sendTrainingLanguageId: z.string().describe('The Language ID returned from the upload process').refine(isSafeId, { message: 'Invalid sendTrainingLanguageId format.' }),
-    targetUserResourceId: z.string().optional().describe('The User ID to assign the training to (user assignment)').refine((v) => (v ? isSafeId(v) : true), { message: 'Invalid targetUserResourceId format.' }),
-    targetUserEmail: z.string().email().optional().describe('Optional: user email for display in summary messages (does not affect assignment).'),
-    targetUserFullName: z.string().optional().describe('Optional: user full name for display in summary messages (does not affect assignment).'),
-    targetGroupResourceId: z.string().optional().describe('The Group ID to assign the training to (group assignment)').refine((v) => (v ? isSafeId(v) : true), { message: 'Invalid targetGroupResourceId format.' }),
-  }).refine(
-    data => Boolean(data.targetUserResourceId) !== Boolean(data.targetGroupResourceId),
-    { message: 'Provide EXACTLY ONE: targetUserResourceId (user assignment) OR targetGroupResourceId (group assignment).' }
-  ),
+  inputSchema: z
+    .object({
+      resourceId: z
+        .string()
+        .describe('The Resource ID returned from the upload process')
+        .refine(isSafeId, { message: 'Invalid resourceId format.' }),
+      sendTrainingLanguageId: z
+        .string()
+        .describe('The Language ID returned from the upload process')
+        .refine(isSafeId, { message: 'Invalid sendTrainingLanguageId format.' }),
+      targetUserResourceId: z
+        .string()
+        .optional()
+        .describe('The User ID to assign the training to (user assignment)')
+        .refine(v => (v ? isSafeId(v) : true), { message: 'Invalid targetUserResourceId format.' }),
+      targetUserEmail: z
+        .string()
+        .email()
+        .optional()
+        .describe('Optional: user email for display in summary messages (does not affect assignment).'),
+      targetUserFullName: z
+        .string()
+        .optional()
+        .describe('Optional: user full name for display in summary messages (does not affect assignment).'),
+      targetGroupResourceId: z
+        .string()
+        .optional()
+        .describe('The Group ID to assign the training to (group assignment)')
+        .refine(v => (v ? isSafeId(v) : true), { message: 'Invalid targetGroupResourceId format.' }),
+    })
+    .refine(data => Boolean(data.targetUserResourceId) !== Boolean(data.targetGroupResourceId), {
+      message:
+        'Provide EXACTLY ONE: targetUserResourceId (user assignment) OR targetGroupResourceId (group assignment).',
+    }),
   outputSchema: assignTrainingOutputSchema,
   // v1: execute now takes (inputData, context)
   execute: async (inputData, ctx?: ToolExecutionContext) => {
     const logger = getLogger('AssignTrainingTool');
-    const { resourceId, sendTrainingLanguageId, targetUserResourceId, targetUserEmail, targetUserFullName, targetGroupResourceId } = inputData;
+    const {
+      resourceId,
+      sendTrainingLanguageId,
+      targetUserResourceId,
+      targetUserEmail,
+      targetUserFullName,
+      targetGroupResourceId,
+    } = inputData;
     const writer = ctx?.writer;
 
     // Guard: prevent assigning with raw microlearningId (must upload first)
@@ -63,7 +95,7 @@ export const assignTrainingTool = createTool({
       }
     } catch (guardError) {
       logger.warn('Assign training upload guard failed, continuing', {
-        error: normalizeError(guardError).message
+        error: normalizeError(guardError).message,
       });
     }
 
@@ -72,11 +104,16 @@ export const assignTrainingTool = createTool({
     const assignmentType = isUserAssignment ? 'USER' : 'GROUP';
     const targetId = targetUserResourceId || targetGroupResourceId;
     const userLabel = isUserAssignment
-      ? (targetUserEmail?.trim() || targetUserFullName?.trim() || targetUserResourceId)
+      ? targetUserEmail?.trim() || targetUserFullName?.trim() || targetUserResourceId
       : undefined;
     const targetLabel = isUserAssignment ? userLabel : targetId;
 
-    logger.info(`Preparing assignment for resource to ${assignmentType}`, { resourceId, languageId: sendTrainingLanguageId, targetUserResourceId, targetGroupResourceId });
+    logger.info(`Preparing assignment for resource to ${assignmentType}`, {
+      resourceId,
+      languageId: sendTrainingLanguageId,
+      targetUserResourceId,
+      targetGroupResourceId,
+    });
 
     // Get Auth Token & Cloudflare bindings from AsyncLocalStorage
     const { token, companyId, env, baseApiUrl } = getRequestContext();
@@ -105,16 +142,17 @@ export const assignTrainingTool = createTool({
     try {
       // Wrap API call with retry (exponential backoff: 1s, 2s, 4s)
       const result = await withRetry(
-        () => callWorkerAPI({
-          env,
-          serviceBinding: env?.CRUD_WORKER,
-          publicUrl: API_ENDPOINTS.TRAINING_WORKER_SEND,
-          endpoint: 'https://worker/send',
-          payload,
-          token,
-          errorPrefix: 'Assign API failed',
-          operationName: `Assign training to ${assignmentType} ${targetId}`
-        }),
+        () =>
+          callWorkerAPI({
+            env,
+            serviceBinding: env?.CRUD_WORKER,
+            publicUrl: API_ENDPOINTS.TRAINING_WORKER_SEND,
+            endpoint: 'https://worker/send',
+            payload,
+            token,
+            errorPrefix: 'Assign API failed',
+            operationName: `Assign training to ${assignmentType} ${targetId}`,
+          }),
         `Assign training to ${assignmentType} ${targetId}`
       );
 
@@ -130,11 +168,16 @@ export const assignTrainingTool = createTool({
             type: 'data-ui-signal',
             data: {
               signal: 'training_assigned',
-              message: `::ui:training_assigned::${encoded}::/ui:training_assigned::\n`
+              message: `::ui:training_assigned::${encoded}::/ui:training_assigned::\n`,
             }
           });
         } catch (emitErr) {
-          logger.warn('Failed to emit UI signal for training assignment', { error: normalizeError(emitErr).message });
+          const err = normalizeError(emitErr);
+          const errorInfo = errorService.external(err.message, {
+            step: 'emit-ui-signal-training-assignment',
+            stack: err.stack,
+          });
+          logErrorInfo(logger, 'warn', 'Failed to emit UI signal for training assignment', errorInfo);
         }
       }
 
@@ -153,7 +196,7 @@ export const assignTrainingTool = createTool({
             { key: 'resourceId', value: resourceId },
             { key: 'sendTrainingLanguageId', value: sendTrainingLanguageId },
           ],
-        })
+        }),
       };
 
       // Validate result against output schema
@@ -164,7 +207,6 @@ export const assignTrainingTool = createTool({
       }
 
       return validation.data;
-
     } catch (error) {
       const err = normalizeError(error);
       const errorInfo = errorService.external(err.message, {

@@ -19,10 +19,7 @@ function buildContentRulesBlock(
 7. No placeholders or instructional text in output values - return final content only`;
 }
 
-function buildRolePlayPromptInstruction(
-  analysis: PromptAnalysis,
-  channelPromptLabel: string
-): string {
+function buildRolePlayPromptInstruction(analysis: PromptAnalysis, channelPromptLabel: string): string {
   return `Generate ONLY a Scenario section for a ${channelPromptLabel} security-training role-play about ${analysis.topic}. Use this exact format with 4 short lines:
 1) Persona: [Fictional sender name and role aligned with ${analysis.topic}]
 2) Pretext: [The believable reason for contacting the target]
@@ -39,9 +36,7 @@ function buildFirstMessageInstruction(
   return `${channelFirstMessageLabel} (final text, not instructions). 1-2 sentences, realistic intro aligned with ${analysis.topic} and the persona. CRITICAL: Sender must introduce themselves by the exact name from the senderName field above. Include a reason for the message and mild urgency, but keep details fictional and safe; do not request real data. If you reference a link/file/code/attachment, include that fictional artifact in the same message; otherwise do not imply 'below/attached' and ask permission to send details in the next message. Keep it ${channelPromptLabel}-style, short. End with a short question.`;
 }
 
-function buildOutputRulesBlock(
-  channelLabel: string
-): string {
+function buildOutputRulesBlock(channelLabel: string): string {
   return `OUTPUT RULES:
 1. Use EXACTLY these JSON keys - do not add or remove any (channel is required)
 2. Return valid JSON only - no markdown, no extra text
@@ -106,4 +101,3 @@ ${contentRulesBlock}
 
 ${outputRulesBlock}`;
 }
-

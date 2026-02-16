@@ -3,12 +3,13 @@ import { cleanResponse } from '../utils/content-processors/json-cleaner';
 import { AGENT_NAMES } from '../constants';
 import { withRetry } from '../utils/core/resilience-utils';
 import { getLogger } from '../utils/core/logger';
-import { normalizeError } from '../utils/core/error-utils';
+import { normalizeError, logErrorInfo } from '../utils/core/error-utils';
+import { errorService } from '../services/error-service';
 
 const logger = getLogger('AgentRouter');
 
 // Extract agent name type from constants
-type AgentName = typeof AGENT_NAMES[keyof typeof AGENT_NAMES];
+type AgentName = (typeof AGENT_NAMES)[keyof typeof AGENT_NAMES];
 
 export type AgentRoutingResult = {
   agentName: AgentName;
@@ -42,20 +43,17 @@ export class AgentRouter {
 
       // Wrap orchestrator call + JSON parsing in retry mechanism
       // withRetry will automatically retry on errors with exponential backoff
-      const decision = await withRetry<RoutingDecision>(
-        async () => {
-          // Get response from orchestrator
-          const routingResult = await orchestrator.generate(prompt);
-          const routingText = routingResult.text;
+      const decision = await withRetry<RoutingDecision>(async () => {
+        // Get response from orchestrator
+        const routingResult = await orchestrator.generate(prompt);
+        const routingText = routingResult.text;
 
-          // Clean and parse JSON (cleanResponse handles jsonrepair internally)
-          const cleanJsonText = cleanResponse(routingText, 'orchestrator-decision');
-          const parsed = JSON.parse(cleanJsonText);
+        // Clean and parse JSON (cleanResponse handles jsonrepair internally)
+        const cleanJsonText = cleanResponse(routingText, 'orchestrator-decision');
+        const parsed = JSON.parse(cleanJsonText);
 
-          return parsed as RoutingDecision;
-        },
-        'orchestrator-routing'
-      );
+        return parsed as RoutingDecision;
+      }, 'orchestrator-routing');
 
       const agent = decision?.agent;
       const taskContext = decision?.taskContext;
@@ -82,18 +80,16 @@ export class AgentRouter {
         received: agent,
         validAgents,
         decision: JSON.stringify(decision),
-        defaultAgent: AGENT_NAMES.MICROLEARNING
+        defaultAgent: AGENT_NAMES.MICROLEARNING,
       });
       return { agentName: AGENT_NAMES.MICROLEARNING };
-
     } catch (error) {
-      // withRetry exhausted all attempts - fallback to default
       const err = normalizeError(error);
-      logger.error('Orchestrator routing failed after all retries', {
-        error: err.message,
+      const errorInfo = errorService.aiModel(err.message, {
+        step: 'orchestrator-routing',
         stack: err.stack,
-        errorType: err.constructor.name
       });
+      logErrorInfo(logger, 'error', 'Orchestrator routing failed after all retries', errorInfo);
       return { agentName: AGENT_NAMES.MICROLEARNING };
     }
   }

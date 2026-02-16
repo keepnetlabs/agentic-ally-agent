@@ -1,9 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import {
-  getPolicySummary,
-  clearPolicyCache,
-  getPolicyCacheStats,
-} from './policy-cache';
+import { getPolicySummary, clearPolicyCache, getPolicyCacheStats } from './policy-cache';
 
 // Mock all dependencies
 vi.mock('./policy-fetcher', () => ({
@@ -29,7 +25,15 @@ vi.mock('./logger', () => ({
 }));
 
 vi.mock('./error-utils', () => ({
-  normalizeError: vi.fn((err) => (err instanceof Error ? err : new Error(String(err)))),
+  normalizeError: vi.fn(err => (err instanceof Error ? err : new Error(String(err)))),
+  logErrorInfo: vi.fn(),
+}));
+
+vi.mock('../../services/error-service', () => ({
+  errorService: {
+    aiModel: vi.fn((msg, _details) => ({ message: msg, code: 'AI_GENERATION_FAILED' })),
+    external: vi.fn((msg, _details) => ({ message: msg, code: 'EXTERNAL_SERVICE_ERROR' })),
+  },
 }));
 
 vi.mock('./request-storage', () => ({
@@ -37,8 +41,8 @@ vi.mock('./request-storage', () => ({
 }));
 
 vi.mock('./resilience-utils', () => ({
-  withRetry: vi.fn((fn) => fn()),
-  withTimeout: vi.fn((promise) => promise),
+  withRetry: vi.fn(fn => fn()),
+  withTimeout: vi.fn(promise => promise),
 }));
 
 vi.mock('./policy-summary-utils', () => ({
@@ -313,10 +317,7 @@ describe('policy-cache', () => {
       vi.advanceTimersByTime(3600000 + 1000);
 
       // Multiple concurrent requests after expiration
-      const [result1, result2] = await Promise.all([
-        getPolicySummary(),
-        getPolicySummary(),
-      ]);
+      const [result1, result2] = await Promise.all([getPolicySummary(), getPolicySummary()]);
 
       expect(result1).toBe(mockSummary);
       expect(result2).toBe(mockSummary);
@@ -1015,7 +1016,7 @@ describe('policy-cache', () => {
       await getPolicySummary();
 
       const calls = vi.mocked(truncateText).mock.calls;
-      const policyTruncateCall = calls.find((c) => c[2]?.includes('policy input'));
+      const policyTruncateCall = calls.find(c => c[2]?.includes('policy input'));
       expect(policyTruncateCall?.[1]).toBe(50000);
     });
   });
@@ -1505,7 +1506,7 @@ describe('policy-cache', () => {
       const results = await Promise.all(promises);
 
       // All should succeed and return same summary
-      results.forEach((r) => {
+      results.forEach(r => {
         expect(r).toBe('Summary');
       });
 

@@ -46,9 +46,7 @@ describe('getTargetGroupInfoTool', () => {
     const payload = JSON.parse(firstCall[1].body);
     const filterItems = payload.filter.FilterGroups[1].FilterItems;
     expect(filterItems).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ FieldName: 'Name', Value: 'IT Department' }),
-      ])
+      expect.arrayContaining([expect.objectContaining({ FieldName: 'Name', Value: 'IT Department' })])
     );
   });
 
@@ -131,8 +129,8 @@ describe('getTargetGroupInfoTool', () => {
     } as any);
 
     expect(mockWriter.write).toHaveBeenCalled();
-    const callArgs = mockWriter.write.mock.calls.map((c) => c[0]);
-    expect(callArgs.some((arg) => arg.type === 'text-delta' && arg.delta.includes('::ui:target_group::'))).toBe(true);
+    const callArgs = mockWriter.write.mock.calls.map(c => c[0]);
+    expect(callArgs.some(arg => arg.type === 'text-delta' && arg.delta.includes('::ui:target_group::'))).toBe(true);
   });
 
   it('prioritizes exact name match', async () => {
@@ -160,8 +158,8 @@ describe('getTargetGroupInfoTool', () => {
       ok: true,
       json: async () => ({
         data: {
-          results: [{ targetGroupResourceId: 'g-nested', groupName: 'Nested' }]
-        }
+          results: [{ targetGroupResourceId: 'g-nested', groupName: 'Nested' }],
+        },
       }),
     });
 
@@ -173,4 +171,3 @@ describe('getTargetGroupInfoTool', () => {
     expect(result.groupInfo?.targetGroupResourceId).toBe('g-nested');
   });
 });
-

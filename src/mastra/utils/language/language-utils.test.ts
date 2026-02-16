@@ -471,15 +471,7 @@ describe('language-utils', () => {
     });
 
     it('should handle all departments', () => {
-      const departments = [
-        'IT',
-        'HR',
-        'Sales',
-        'Finance',
-        'Operations',
-        'Management',
-        'All',
-      ];
+      const departments = ['IT', 'HR', 'Sales', 'Finance', 'Operations', 'Management', 'All'];
 
       departments.forEach(dept => {
         const normalized = normalizeDepartmentName(dept);

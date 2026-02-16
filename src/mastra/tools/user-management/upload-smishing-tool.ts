@@ -14,6 +14,7 @@ import { validateToolResult } from '../../utils/tool-result-validation';
 import { extractCompanyIdFromTokenExport } from '../../utils/core/policy-fetcher';
 import { formatToolSummary } from '../../utils/core/tool-summary-formatter';
 import { summarizeForLog } from '../../utils/core/log-redaction-utils';
+import { trySaveCampaignMetadataAfterUpload } from '../../services/campaign-metadata-service';
 
 interface UploadSmishingWorkerResult {
   success?: boolean;
@@ -30,18 +31,20 @@ interface UploadSmishingWorkerResult {
 
 const uploadSmishingOutputSchema = z.object({
   success: z.boolean(),
-  data: z.object({
-    resourceId: z.string(),
-    templateResourceId: z.string().optional(),
-    templateId: z.number().optional(),
-    landingPageResourceId: z.string().nullable().optional(),
-    landingPageId: z.number().nullable().optional(),
-    scenarioResourceId: z.string().nullable().optional(),
-    scenarioId: z.number().nullable().optional(),
-    languageId: z.string().optional(),
-    smishingId: z.string(),
-    title: z.string().optional(),
-  }).optional(),
+  data: z
+    .object({
+      resourceId: z.string(),
+      templateResourceId: z.string().optional(),
+      templateId: z.number().optional(),
+      landingPageResourceId: z.string().nullable().optional(),
+      landingPageId: z.number().nullable().optional(),
+      scenarioResourceId: z.string().nullable().optional(),
+      scenarioId: z.number().nullable().optional(),
+      languageId: z.string().optional(),
+      smishingId: z.string(),
+      title: z.string().optional(),
+    })
+    .optional(),
   message: z.string().optional(),
   error: z.string().optional(),
 });
@@ -89,14 +92,12 @@ export const uploadSmishingTool = createTool({
       const method = smishingData.method;
 
       const availableLangs = smishingData.language_availability || [];
-      const language = Array.isArray(availableLangs) && availableLangs.length > 0
-        ? availableLangs[0]
-        : 'en-gb';
+      const language = Array.isArray(availableLangs) && availableLangs.length > 0 ? availableLangs[0] : 'en-gb';
 
       logger.debug('Language extracted for upload', {
         availableLangs,
         selectedLanguage: language,
-        smishingId
+        smishingId,
       });
 
       const payloadData = {
@@ -106,9 +107,11 @@ export const uploadSmishingTool = createTool({
         difficulty,
         method,
         language,
-        sms: smsContent ? {
-          messages: smsContent.messages,
-        } : undefined,
+        sms: smsContent
+          ? {
+              messages: smsContent.messages,
+            }
+          : undefined,
         landingPage: landingContent ? { ...landingContent } : undefined,
       };
 
@@ -116,28 +119,30 @@ export const uploadSmishingTool = createTool({
         accessToken: token,
         companyId: effectiveCompanyId,
         url: baseApiUrl,
-        smishingData: payloadData
+        smishingData: payloadData,
       };
 
       const maskedPayload = maskSensitiveField(payload, 'accessToken');
+      const masked = maskedPayload as { smishingData?: { sms?: { messages?: unknown }; landingPage?: unknown } };
       logger.debug('Upload payload prepared (redacted)', {
         payload: summarizeForLog(maskedPayload),
-        smishingData: summarizeForLog((maskedPayload as any)?.smishingData),
-        smsMessages: summarizeForLog((maskedPayload as any)?.smishingData?.sms?.messages),
-        landingPage: summarizeForLog((maskedPayload as any)?.smishingData?.landingPage),
+        smishingData: summarizeForLog(masked.smishingData),
+        smsMessages: summarizeForLog(masked.smishingData?.sms?.messages),
+        landingPage: summarizeForLog(masked.smishingData?.landingPage),
       });
 
       const result = await withRetry<UploadSmishingWorkerResult>(
-        () => callWorkerAPI({
-          env,
-          serviceBinding: env?.SMISHING_CRUD_WORKER,
-          publicUrl: API_ENDPOINTS.SMISHING_WORKER_URL,
-          endpoint: 'https://worker/submit',
-          payload,
-          token,
-          errorPrefix: 'Worker failed',
-          operationName: `Upload smishing content ${smishingId}`
-        }) as Promise<UploadSmishingWorkerResult>,
+        () =>
+          callWorkerAPI({
+            env,
+            serviceBinding: env?.SMISHING_CRUD_WORKER,
+            publicUrl: API_ENDPOINTS.SMISHING_WORKER_URL,
+            endpoint: 'https://worker/submit',
+            payload,
+            token,
+            errorPrefix: 'Worker failed',
+            operationName: `Upload smishing content ${smishingId}`,
+          }) as Promise<UploadSmishingWorkerResult>,
         `Upload smishing content ${smishingId}`
       );
 
@@ -146,6 +151,9 @@ export const uploadSmishingTool = createTool({
       const templateResourceId = result.templateResourceId || result.resourceId;
       const scenarioResourceId = result.scenarioResourceId || null;
       const resourceIdForAssignment = scenarioResourceId || templateResourceId;
+
+      // Active Learning: save campaign metadata for UserInfoAgent tactic enrichment (non-blocking)
+      await trySaveCampaignMetadataAfterUpload(env, smishingData, resourceIdForAssignment);
 
       const formattedMessage = formatToolSummary({
         prefix: result.message ? `OK ${result.message}` : 'OK Smishing uploaded',
@@ -170,11 +178,16 @@ export const uploadSmishingTool = createTool({
           await writer.write({
             type: 'text-delta',
             id: messageId,
-            delta: `::ui:smishing_uploaded::${encoded}::/ui:smishing_uploaded::\n`
+            delta: `::ui:smishing_uploaded::${encoded}::/ui:smishing_uploaded::\n`,
           });
           await writer.write({ type: 'text-end', id: messageId });
         } catch (emitErr) {
-          logger.warn('Failed to emit UI signal for smishing upload', { error: normalizeError(emitErr).message });
+          const err = normalizeError(emitErr);
+          const errorInfo = errorService.external(err.message, {
+            step: 'emit-ui-signal-smishing-upload',
+            stack: err.stack,
+          });
+          logErrorInfo(logger, 'warn', 'Failed to emit UI signal for smishing upload', errorInfo);
         }
       }
 

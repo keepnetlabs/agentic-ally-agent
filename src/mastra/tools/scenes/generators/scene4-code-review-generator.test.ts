@@ -153,7 +153,7 @@ describe('Scene 4 - Code Review Generator', () => {
 
     it('should support multiple language codes', () => {
       const languages = ['en', 'tr', 'de', 'fr', 'es'];
-      languages.forEach((lang) => {
+      languages.forEach(lang => {
         const analysis: any = {
           ...baseAnalysis,
           language: lang,
@@ -240,7 +240,7 @@ describe('Scene 4 - Code Review Generator', () => {
 
     it('should support Go/Rust/PHP topics', () => {
       const languages = ['Go', 'Rust', 'PHP', 'C#'];
-      languages.forEach((lang) => {
+      languages.forEach(lang => {
         const analysis: any = {
           ...baseAnalysis,
           topic: `Security in ${lang}`,

@@ -4,20 +4,20 @@ import { AGENT_NAMES, AGENT_IDS } from '../constants';
 
 vi.mock('../tools/orchestration', () => ({
   smishingWorkflowExecutorTool: { id: 'executor' },
-  smishingEditorTool: { id: 'editor' }
+  smishingEditorTool: { id: 'editor' },
 }));
 
 vi.mock('../tools/analysis', () => ({
-  reasoningTool: { id: 'reasoning' }
+  reasoningTool: { id: 'reasoning' },
 }));
 
 vi.mock('../tools/user-management', () => ({
   uploadSmishingTool: { id: 'upload' },
-  assignSmishingTool: { id: 'assign' }
+  assignSmishingTool: { id: 'assign' },
 }));
 
 vi.mock('../model-providers', () => ({
-  getDefaultAgentModel: vi.fn().mockReturnValue({ id: 'default-model' })
+  getDefaultAgentModel: vi.fn().mockReturnValue({ id: 'default-model' }),
 }));
 
 describe('smishingAgent', () => {

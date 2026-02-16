@@ -22,7 +22,7 @@ vi.mock('../utils/core/logger', () => ({
 }));
 
 vi.mock('../utils/core/resilience-utils', () => ({
-  withRetry: vi.fn(async (fn) => {
+  withRetry: vi.fn(async fn => {
     return fn();
   }),
 }));
@@ -464,7 +464,7 @@ describe('HealthService', () => {
     it('should handle missing cache stats gracefully', async () => {
       vi.mocked(KVService).mockImplementationOnce(function () {
         return {
-        healthCheck: vi.fn().mockResolvedValueOnce(true),
+          healthCheck: vi.fn().mockResolvedValueOnce(true),
         };
       } as any);
 
@@ -478,7 +478,7 @@ describe('HealthService', () => {
     it('should return degraded when KV health check returns false', async () => {
       vi.mocked(KVService).mockImplementationOnce(function () {
         return {
-        healthCheck: vi.fn().mockResolvedValue(false),
+          healthCheck: vi.fn().mockResolvedValue(false),
         };
       } as any);
 
@@ -492,7 +492,7 @@ describe('HealthService', () => {
     it('should return unhealthy when KV health check throws', async () => {
       vi.mocked(KVService).mockImplementationOnce(function () {
         return {
-        healthCheck: vi.fn().mockRejectedValue(new Error('KV unavailable')),
+          healthCheck: vi.fn().mockRejectedValue(new Error('KV unavailable')),
         };
       } as any);
 
@@ -663,7 +663,7 @@ describe('HealthService', () => {
     it('should mark overall status as degraded when KV check returns false', async () => {
       vi.mocked(KVService).mockImplementationOnce(function () {
         return {
-        healthCheck: vi.fn().mockResolvedValue(false),
+          healthCheck: vi.fn().mockResolvedValue(false),
         };
       } as any);
 
@@ -675,7 +675,7 @@ describe('HealthService', () => {
     it('should mark overall status as unhealthy when KV check times out', async () => {
       vi.mocked(KVService).mockImplementationOnce(function () {
         return {
-        healthCheck: vi.fn().mockImplementation(() => new Promise(() => {})),
+          healthCheck: vi.fn().mockImplementation(() => new Promise(() => {})),
         };
       } as any);
 
@@ -699,7 +699,9 @@ describe('HealthService', () => {
 
       // Overall status should match KV status according to determineOverallStatus logic
       const expectedStatus = result.checks.kv.status;
-      expect(determineOverallStatus({ kv: result.checks.kv })).toBe(expectedStatus === 'unhealthy' ? 'unhealthy' : expectedStatus === 'degraded' ? 'degraded' : 'healthy');
+      expect(determineOverallStatus({ kv: result.checks.kv })).toBe(
+        expectedStatus === 'unhealthy' ? 'unhealthy' : expectedStatus === 'degraded' ? 'degraded' : 'healthy'
+      );
     });
 
     it('should determine overall status based on KV status', async () => {
@@ -771,9 +773,7 @@ describe('HealthService', () => {
 
       // Structure should be consistent
       expect(Object.keys(result1).sort()).toEqual(Object.keys(result2).sort());
-      expect(Object.keys(result1.checks).sort()).toEqual(
-        Object.keys(result2.checks).sort()
-      );
+      expect(Object.keys(result1.checks).sort()).toEqual(Object.keys(result2.checks).sort());
     });
   });
 

@@ -5,7 +5,7 @@ export interface RequestContext {
   token?: string;
   companyId?: string;
   user?: Record<string, unknown>; // İleride user objesi de ekleyebiliriz
-  env?: Record<string, unknown>;  // Cloudflare bindings (KV, D1, Service Bindings, etc.)
+  env?: Record<string, unknown>; // Cloudflare bindings (KV, D1, Service Bindings, etc.)
   baseApiUrl?: string; // Platform API URL for upload/assign operations
 }
 
@@ -15,9 +15,9 @@ export const requestStorage = new AsyncLocalStorage<RequestContext>();
 /**
  * Gets request context (token, companyId, env) from AsyncLocalStorage
  * Convenience helper to reduce code duplication across tools
- * 
+ *
  * @returns Object containing token, companyId, and env from request storage
- * 
+ *
  * @example
  * ```typescript
  * const { token, companyId, env } = getRequestContext();
@@ -42,4 +42,3 @@ export function getRequestContext(): {
     baseApiUrl: store?.baseApiUrl,
   };
 }
-

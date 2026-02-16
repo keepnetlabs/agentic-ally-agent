@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { errorHandlerMiddleware } from './error-handler';
+import { ERROR_CODES } from '../constants';
 
 // Use vi.hoisted to create mock logger before vi.mock
 const { mockLoggerInstance } = vi.hoisted(() => {
@@ -150,6 +151,16 @@ describe('errorHandlerMiddleware', () => {
       const callArgs = mockContext.json.mock.calls[0];
       expect(callArgs[0]).toHaveProperty('error');
       expect(callArgs[0].error).toBe('Internal Server Error');
+    });
+
+    it('should include errorCode for support tracing', async () => {
+      mockNext.mockRejectedValueOnce(new Error('Test error'));
+
+      await errorHandlerMiddleware(mockContext, mockNext);
+
+      const callArgs = mockContext.json.mock.calls[0];
+      expect(callArgs[0]).toHaveProperty('errorCode');
+      expect(callArgs[0].errorCode).toBe(ERROR_CODES.INTERNAL_UNEXPECTED);
     });
 
     it('should return message field in response', async () => {

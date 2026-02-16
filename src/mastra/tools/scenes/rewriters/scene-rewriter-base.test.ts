@@ -15,7 +15,7 @@ vi.mock('../../../services/error-service', () => ({
 }));
 
 vi.mock('../../../utils/content-processors/json-cleaner', () => ({
-  cleanResponse: vi.fn((text) => text), // Pass through by default
+  cleanResponse: vi.fn(text => text), // Pass through by default
 }));
 
 vi.mock('../../../utils/language/localization-language-rules', () => ({
@@ -83,49 +83,35 @@ describe('Scene Rewriter Base', () => {
 
   describe('Input Validation', () => {
     it('should require scene parameter', async () => {
-      await expect(
-        rewriteSceneWithBase(undefined as any, 'intro' as any, baseContext)
-      ).resolves.toBeUndefined();
+      await expect(rewriteSceneWithBase(undefined as any, 'intro' as any, baseContext)).resolves.toBeUndefined();
     });
 
     it('should require sceneType parameter', async () => {
-      await expect(
-        rewriteSceneWithBase(baseScene, undefined as any, baseContext)
-      ).rejects.toThrow();
+      await expect(rewriteSceneWithBase(baseScene, undefined as any, baseContext)).rejects.toThrow();
     });
 
     it('should require context parameter', async () => {
-      await expect(
-        rewriteSceneWithBase(baseScene, 'intro' as any, undefined as any)
-      ).rejects.toThrow();
+      await expect(rewriteSceneWithBase(baseScene, 'intro' as any, undefined as any)).rejects.toThrow();
     });
 
     it('should require context.sourceLanguage', async () => {
       const invalidContext = { ...baseContext, sourceLanguage: '' };
-      await expect(
-        rewriteSceneWithBase(baseScene, 'intro' as any, invalidContext)
-      ).resolves.toBeDefined();
+      await expect(rewriteSceneWithBase(baseScene, 'intro' as any, invalidContext)).resolves.toBeDefined();
     });
 
     it('should require context.targetLanguage', async () => {
       const invalidContext = { ...baseContext, targetLanguage: '' };
-      await expect(
-        rewriteSceneWithBase(baseScene, 'intro' as any, invalidContext)
-      ).resolves.toBeDefined();
+      await expect(rewriteSceneWithBase(baseScene, 'intro' as any, invalidContext)).resolves.toBeDefined();
     });
 
     it('should require context.model', async () => {
       const invalidContext = { ...baseContext, model: null };
-      await expect(
-        rewriteSceneWithBase(baseScene, 'intro' as any, invalidContext as any)
-      ).resolves.toBeDefined();
+      await expect(rewriteSceneWithBase(baseScene, 'intro' as any, invalidContext as any)).resolves.toBeDefined();
     });
 
     it('should require context.topic', async () => {
       const invalidContext = { ...baseContext, topic: '' };
-      await expect(
-        rewriteSceneWithBase(baseScene, 'intro' as any, invalidContext)
-      ).resolves.toBeDefined();
+      await expect(rewriteSceneWithBase(baseScene, 'intro' as any, invalidContext)).resolves.toBeDefined();
     });
   });
 
@@ -376,18 +362,14 @@ describe('Scene Rewriter Base', () => {
 
       it('should propagate errors from AI generation', async () => {
         (generateText as any).mockRejectedValue(new Error('AI Overload'));
-        await expect(
-          rewriteSceneWithBase(baseScene, 'intro' as any, baseContext)
-        ).rejects.toThrow('AI Overload');
+        await expect(rewriteSceneWithBase(baseScene, 'intro' as any, baseContext)).rejects.toThrow('AI Overload');
       });
 
       it('should throw error on malformed JSON response', async () => {
         (generateText as any).mockResolvedValue({
           text: 'This is not JSON',
         });
-        await expect(
-          rewriteSceneWithBase(baseScene, 'intro' as any, baseContext)
-        ).rejects.toThrow();
+        await expect(rewriteSceneWithBase(baseScene, 'intro' as any, baseContext)).rejects.toThrow();
       });
     });
   });

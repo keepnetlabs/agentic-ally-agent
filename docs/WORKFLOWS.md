@@ -1,6 +1,6 @@
 # Workflow Documentation
 
-**Last Updated:** February 12, 2026
+**Last Updated:** February 16, 2026
 
 This document visualizes the core logic flows of the Agentic Ally system.
 
@@ -90,6 +90,8 @@ graph TD
     Sanitize --> Save[Save to KV]
 ```
 
+**Implementation:** `create-phishing-workflow` steps: `analyzeRequest` → `generateEmail` → `generateLandingPage` → `savePhishingContent`.
+
 ---
 
 ## 4. Smishing Simulation Workflow
@@ -111,6 +113,8 @@ graph TD
     GenLanding --> Sanitize[Sanitize Output]
     Sanitize --> Save[Save to KV]
 ```
+
+**Implementation:** `create-smishing-workflow` steps: `analyzeRequest` → `generateSms` → `generateLandingPage` → `saveSmishingContent`.
 
 **Edit/Translate (Smishing Editor)**
 - Uses existing SMS + landing page content from KV.
@@ -197,7 +201,36 @@ graph TD
 
 ---
 
-## 8. Vishing Call Workflow
+## 8. User Search & Phone Resolution
+
+How user lookup enriches results when the search API omits phone numbers (used by getUserInfo, vishing target resolution).
+
+```mermaid
+graph TD
+    Input[Input: email / ID / name] --> Search[Primary Search: get-all]
+    Search --> Empty{Results?}
+    Empty -->|Empty| Fallback[Fallback: target-users/search]
+    Empty -->|Found| Exact[Exact Match]
+    Fallback --> Exact
+    
+    Exact --> Phone{phoneNumber?}
+    Phone -->|Present| Return[Return User]
+    Phone -->|Missing| Direct[Direct Lookup: GET /target-users/:id]
+    
+    Direct --> Retry{Success?}
+    Retry -->|Yes| Merge[Merge: base + phoneNumber]
+    Retry -->|Transient| Direct
+    Retry -->|404 / Persistent| Resilient[Return base without phone]
+    
+    Merge --> Return
+    Resilient --> Return
+```
+
+**Flow:** Search → fallback if empty → if found but phone missing → direct lookup (with 1 retry on transient failure) → merge phone into base. On persistent failure (404, 500 after retry), return user without phone; log warning.
+
+---
+
+## 9. Vishing Call Workflow
 
 How the system initiates outbound voice phishing simulations via ElevenLabs.
 
@@ -224,7 +257,7 @@ graph TD
 
 ---
 
-## 9. Localization Workflow (3-Level Fallback)
+## 10. Localization Workflow (3-Level Fallback)
 
 How we translate content without breaking it.
 

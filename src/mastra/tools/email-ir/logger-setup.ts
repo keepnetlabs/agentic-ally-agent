@@ -24,183 +24,156 @@ export const loggerWorkflow = getLogger('email-ir:workflow');
 // ============================================================================
 
 export interface LogContext {
-    email_id: string;
-    step: string;
-    timestamp: string;
-    duration_ms?: number;
+  email_id: string;
+  step: string;
+  timestamp: string;
+  duration_ms?: number;
 }
 
 /**
  * Log a pipeline step execution with structured data
  */
 export function logStepStart(logger: any, context: LogContext, metadata: Record<string, any> = {}) {
-    logger.info('🔄 Step Started', {
-        ...context,
-        ...metadata,
-        level: 'START',
-    });
+  logger.info('🔄 Step Started', {
+    ...context,
+    ...metadata,
+    level: 'START',
+  });
 }
 
-export function logStepComplete(
-    logger: any,
-    context: LogContext,
-    result: Record<string, any> = {}
-) {
-    logger.info('✅ Step Complete', {
-        ...context,
-        ...result,
-        level: 'COMPLETE',
-    });
+export function logStepComplete(logger: any, context: LogContext, result: Record<string, any> = {}) {
+  logger.info('✅ Step Complete', {
+    ...context,
+    ...result,
+    level: 'COMPLETE',
+  });
 }
 
-export function logStepError(
-    logger: any,
-    context: LogContext,
-    error: Error,
-    metadata: Record<string, any> = {}
-) {
-    logger.error('❌ Step Failed', {
-        ...context,
-        ...metadata,
-        error: error.message,
-        stack: error.stack,
-        level: 'ERROR',
-    });
+export function logStepError(logger: any, context: LogContext, error: Error, metadata: Record<string, any> = {}) {
+  logger.error('❌ Step Failed', {
+    ...context,
+    ...metadata,
+    error: error.message,
+    stack: error.stack,
+    level: 'ERROR',
+  });
 }
 
 /**
  * Log signal detection (for behavioral/intent analysis)
  */
 export function logSignalDetected(
-    logger: any,
-    emailId: string,
-    signalType: string,
-    signal: string,
-    severity: 'low' | 'medium' | 'high'
+  logger: any,
+  emailId: string,
+  signalType: string,
+  signal: string,
+  severity: 'low' | 'medium' | 'high'
 ) {
-    logger.info('🚩 Signal Detected', {
-        email_id: emailId,
-        signal_type: signalType,
-        signal,
-        severity,
-    });
+  logger.info('🚩 Signal Detected', {
+    email_id: emailId,
+    signal_type: signalType,
+    signal,
+    severity,
+  });
 }
 
 /**
  * Log confidence score changes
  */
-export function logConfidenceScore(
-    logger: any,
-    emailId: string,
-    stage: string,
-    confidence: number,
-    reasoning: string
-) {
-    logger.info('📊 Confidence Score', {
-        email_id: emailId,
-        stage,
-        confidence,
-        reasoning,
-    });
+export function logConfidenceScore(logger: any, emailId: string, stage: string, confidence: number, reasoning: string) {
+  logger.info('📊 Confidence Score', {
+    email_id: emailId,
+    stage,
+    confidence,
+    reasoning,
+  });
 }
 
 /**
  * Log risk verdict
  */
 export function logRiskVerdict(
-    logger: any,
-    emailId: string,
-    riskLevel: 'low' | 'medium' | 'high',
-    confidence: number,
-    justification: string
+  logger: any,
+  emailId: string,
+  riskLevel: 'low' | 'medium' | 'high',
+  confidence: number,
+  justification: string
 ) {
-    logger.info('⚠️ Risk Verdict', {
-        email_id: emailId,
-        risk_level: riskLevel,
-        confidence,
-        justification: justification.substring(0, 200), // Truncate long text
-    });
+  logger.info('⚠️ Risk Verdict', {
+    email_id: emailId,
+    risk_level: riskLevel,
+    confidence,
+    justification: justification.substring(0, 200), // Truncate long text
+  });
 }
 
 /**
  * Log performance metrics
  */
-export function logPerformance(
-    logger: any,
-    emailId: string,
-    stage: string,
-    durationMs: number,
-    tokens?: number
-) {
-    const performanceClass =
-        durationMs < 2000 ? '⚡ FAST' : durationMs < 5000 ? '🟡 MEDIUM' : '🐢 SLOW';
+export function logPerformance(logger: any, emailId: string, stage: string, durationMs: number, tokens?: number) {
+  const performanceClass = durationMs < 2000 ? '⚡ FAST' : durationMs < 5000 ? '🟡 MEDIUM' : '🐢 SLOW';
 
-    logger.info(`${performanceClass} Performance`, {
-        email_id: emailId,
-        stage,
-        duration_ms: durationMs,
-        tokens_used: tokens,
-    });
+  logger.info(`${performanceClass} Performance`, {
+    email_id: emailId,
+    stage,
+    duration_ms: durationMs,
+    tokens_used: tokens,
+  });
 }
 
 /**
  * Log authentication check results
  */
 export function logAuthResults(
-    logger: any,
-    emailId: string,
-    spf: boolean,
-    dkim: boolean,
-    dmarc: boolean,
-    domainSimilarity: string
+  logger: any,
+  emailId: string,
+  spf: boolean,
+  dkim: boolean,
+  dmarc: boolean,
+  domainSimilarity: string
 ) {
-    logger.info('🔐 Authentication Results', {
-        email_id: emailId,
-        spf_pass: spf,
-        dkim_pass: dkim,
-        dmarc_pass: dmarc,
-        domain_similarity: domainSimilarity,
-        auth_score: (spf && dkim && dmarc) ? 'SECURE' : 'SUSPICIOUS',
-    });
+  logger.info('🔐 Authentication Results', {
+    email_id: emailId,
+    spf_pass: spf,
+    dkim_pass: dkim,
+    dmarc_pass: dmarc,
+    domain_similarity: domainSimilarity,
+    auth_score: spf && dkim && dmarc ? 'SECURE' : 'SUSPICIOUS',
+  });
 }
 
 /**
  * Log workflow execution start/end
  */
 export function logWorkflowStart(logger: any, emailId: string, inputMetadata: Record<string, any>) {
-    logger.info('🚀 Workflow Started', {
-        email_id: emailId,
-        ...inputMetadata,
-        timestamp: new Date().toISOString(),
-    });
+  logger.info('🚀 Workflow Started', {
+    email_id: emailId,
+    ...inputMetadata,
+    timestamp: new Date().toISOString(),
+  });
 }
 
 export function logWorkflowComplete(
-    logger: any,
-    emailId: string,
-    durationMs: number,
-    resultSummary: Record<string, any>
+  logger: any,
+  emailId: string,
+  durationMs: number,
+  resultSummary: Record<string, any>
 ) {
-    logger.info('🏁 Workflow Complete', {
-        email_id: emailId,
-        total_duration_ms: durationMs,
-        ...resultSummary,
-        timestamp: new Date().toISOString(),
-    });
+  logger.info('🏁 Workflow Complete', {
+    email_id: emailId,
+    total_duration_ms: durationMs,
+    ...resultSummary,
+    timestamp: new Date().toISOString(),
+  });
 }
 
-export function logWorkflowError(
-    logger: any,
-    emailId: string,
-    error: Error,
-    stage: string
-) {
-    logger.error('💥 Workflow Failed', {
-        email_id: emailId,
-        failed_at_stage: stage,
-        error: error.message,
-        stack: error.stack?.substring(0, 500),
-    });
+export function logWorkflowError(logger: any, emailId: string, error: Error, stage: string) {
+  logger.error('💥 Workflow Failed', {
+    email_id: emailId,
+    failed_at_stage: stage,
+    error: error.message,
+    stack: error.stack?.substring(0, 500),
+  });
 }
 
 // ============================================================================
@@ -208,11 +181,11 @@ export function logWorkflowError(
 // ============================================================================
 
 export function createLogContext(emailId: string, step: string): LogContext {
-    return {
-        email_id: emailId,
-        step,
-        timestamp: new Date().toISOString(),
-    };
+  return {
+    email_id: emailId,
+    step,
+    timestamp: new Date().toISOString(),
+  };
 }
 
 // ============================================================================
@@ -220,32 +193,32 @@ export function createLogContext(emailId: string, step: string): LogContext {
 // ============================================================================
 
 export class TimingTracker {
-    private startTime: number = Date.now();
-    private marks: Record<string, number> = {};
+  private startTime: number = Date.now();
+  private marks: Record<string, number> = {};
 
-    constructor(private emailId: string) { }
+  constructor(private emailId: string) {}
 
-    mark(stageName: string) {
-        this.marks[stageName] = Date.now() - this.startTime;
-    }
+  mark(stageName: string) {
+    this.marks[stageName] = Date.now() - this.startTime;
+  }
 
-    getTotal(): number {
-        return Date.now() - this.startTime;
-    }
+  getTotal(): number {
+    return Date.now() - this.startTime;
+  }
 
-    getStageTime(stageName: string): number {
-        return this.marks[stageName] || 0;
-    }
+  getStageTime(stageName: string): number {
+    return this.marks[stageName] || 0;
+  }
 
-    getReport() {
-        const total = this.getTotal();
-        return {
-            email_id: this.emailId,
-            total_ms: total,
-            stages: this.marks,
-            summary: `Total: ${total}ms`,
-        };
-    }
+  getReport() {
+    const total = this.getTotal();
+    return {
+      email_id: this.emailId,
+      total_ms: total,
+      stages: this.marks,
+      summary: `Total: ${total}ms`,
+    };
+  }
 }
 
 // ============================================================================
@@ -280,5 +253,3 @@ export class TimingTracker {
  *   }
  * }
  */
-
-

@@ -17,7 +17,17 @@ export const analyzeUserPromptTool = createTool({
   outputSchema: AnalyzeUserPromptOutputSchema,
   // v1: (inputData, ctx) signature
   execute: async (inputData, ctx?: ToolExecutionContext) => {
-    const { userPrompt, additionalContext, suggestedDepartment, customRequirements, modelProvider, model: modelOverride, policyContext, suggestedLevel, suggestedLanguage } = inputData;
+    const {
+      userPrompt,
+      additionalContext,
+      suggestedDepartment,
+      customRequirements,
+      modelProvider,
+      model: modelOverride,
+      policyContext,
+      suggestedLevel,
+      suggestedLanguage,
+    } = inputData;
     const writer = ctx?.writer;
 
     const model = getModelWithOverride(modelProvider, modelOverride);
@@ -34,14 +44,14 @@ export const analyzeUserPromptTool = createTool({
         suggestedLanguage,
         policyContext,
         model,
-        writer
+        writer,
       });
     } catch (error) {
       const err = normalizeError(error);
       const errorInfo = errorService.aiModel(err.message, {
         userPrompt: userPrompt?.substring(0, 100),
         step: 'prompt-analysis',
-        stack: err.stack
+        stack: err.stack,
       });
       logErrorInfo(logger, 'error', 'Prompt analysis failed, using fallback', errorInfo);
 
@@ -50,14 +60,14 @@ export const analyzeUserPromptTool = createTool({
         suggestedDepartment,
         additionalContext,
         customRequirements,
-        model
+        model,
       });
 
       return {
         success: true,
         data: fallbackData,
         policyContext,
-        error: JSON.stringify(errorInfo)
+        error: JSON.stringify(errorInfo),
       };
     }
   },

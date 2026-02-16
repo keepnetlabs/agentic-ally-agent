@@ -1,10 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  ETHICAL_POLICY,
-  SCIENTIFIC_EVIDENCE,
-  DEFAULT_LOGO_CONFIG,
-  getScene4Metadata,
-} from './microlearning-templates';
+import { ETHICAL_POLICY, SCIENTIFIC_EVIDENCE, DEFAULT_LOGO_CONFIG, getScene4Metadata } from './microlearning-templates';
 
 /**
  * Test suite for Microlearning Templates Constants
@@ -30,7 +25,7 @@ describe('Microlearning Templates', () => {
 
     it('should have at least 3 reasons why standards matter', () => {
       expect(ETHICAL_POLICY.why_standards_matter.length).toBeGreaterThanOrEqual(3);
-      ETHICAL_POLICY.why_standards_matter.forEach((reason) => {
+      ETHICAL_POLICY.why_standards_matter.forEach(reason => {
         expect(typeof reason).toBe('string');
         expect(reason.length).toBeGreaterThan(0);
       });
@@ -144,7 +139,7 @@ describe('Microlearning Templates', () => {
     });
 
     it('should have properly formatted research sources', () => {
-      SCIENTIFIC_EVIDENCE.research_sources.forEach((source) => {
+      SCIENTIFIC_EVIDENCE.research_sources.forEach(source => {
         expect(source).toHaveProperty('author');
         expect(source).toHaveProperty('year');
         expect(source).toHaveProperty('title');
@@ -219,7 +214,7 @@ describe('Microlearning Templates', () => {
 
       it('should handle different durations for code_review', () => {
         const durations = [3, 5, 10, 15];
-        durations.forEach((duration) => {
+        durations.forEach(duration => {
           const result = getScene4Metadata(duration, 'code_review');
           const expected = Math.round(duration * 60 * 0.2);
           expect(result.duration_seconds).toBe(expected);
@@ -250,7 +245,7 @@ describe('Microlearning Templates', () => {
 
       it('should handle different durations for vishing_simulation', () => {
         const durations = [3, 5, 10, 15];
-        durations.forEach((duration) => {
+        durations.forEach(duration => {
           const result = getScene4Metadata(duration, 'vishing_simulation');
           const expected = Math.round(duration * 60 * 0.25);
           expect(result.duration_seconds).toBe(expected);
@@ -281,7 +276,7 @@ describe('Microlearning Templates', () => {
 
       it('should handle different durations for smishing_simulation', () => {
         const durations = [3, 5, 10, 15];
-        durations.forEach((duration) => {
+        durations.forEach(duration => {
           const result = getScene4Metadata(duration, 'smishing_simulation');
           const expected = Math.round(duration * 60 * 0.25);
           expect(result.duration_seconds).toBe(expected);
@@ -312,7 +307,7 @@ describe('Microlearning Templates', () => {
 
       it('should handle different durations for actionable_content', () => {
         const durations = [3, 5, 10, 15];
-        durations.forEach((duration) => {
+        durations.forEach(duration => {
           const result = getScene4Metadata(duration, 'actionable_content');
           const expected = Math.round(duration * 60 * 0.25);
           expect(result.duration_seconds).toBe(expected);
@@ -414,7 +409,7 @@ describe('Microlearning Templates', () => {
           'vishing_simulation',
         ];
 
-        types.forEach((type) => {
+        types.forEach(type => {
           const result = getScene4Metadata(5, type);
           expect(result).toHaveProperty('scene_type');
           expect(result).toHaveProperty('points');
@@ -436,7 +431,7 @@ describe('Microlearning Templates', () => {
           'vishing_simulation',
         ];
 
-        types.forEach((type) => {
+        types.forEach(type => {
           const result = getScene4Metadata(5, type);
           expect(typeof result).toBe('object');
           expect(result).not.toBeNull();

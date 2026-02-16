@@ -22,8 +22,14 @@ import { LOW_DETERMINISM_PARAMS } from '../../utils/config/llm-generation-params
 const logger = getLogger('VishingConversationsSummaryTool');
 
 const DEFAULT_NEXT_STEPS: readonly { title: string; description: string }[] = [
-  { title: 'Verifying Caller Identity', description: 'Always verify the caller through official channels before sharing any information.' },
-  { title: 'Never Share OTPs or Passwords', description: 'Legitimate organizations never ask for passwords or one-time codes over the phone.' },
+  {
+    title: 'Verifying Caller Identity',
+    description: 'Always verify the caller through official channels before sharing any information.',
+  },
+  {
+    title: 'Never Share OTPs or Passwords',
+    description: 'Legitimate organizations never ask for passwords or one-time codes over the phone.',
+  },
 ] as const;
 
 const STATUS_CARD_BY_OUTCOME: Record<string, VishingStatusCard> = {
@@ -52,60 +58,149 @@ const STATUS_CARD_BY_OUTCOME: Record<string, VishingStatusCard> = {
 
 export type VishingMessage = { role: 'agent' | 'user'; text: string; timestamp?: number };
 
+type TimelineItemLike = {
+  timestamp?: unknown;
+  label?: unknown;
+  snippet?: unknown;
+};
+
+function normalizeEnumKey(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, '_');
+}
+
+function normalizeTimelineLabel(label: unknown): string {
+  if (typeof label !== 'string') return 'Other';
+  const v = normalizeEnumKey(label);
+
+  if (v === 'introduction' || v === 'intro') return 'Introduction';
+  if (v === 'credibility_building' || v === 'credibility' || v === 'authority') return 'Credibility Building';
+  if (v === 'pressure' || v === 'urgency') return 'Pressure';
+  if (v === 'data_request' || v === 'request' || v === 'ask') return 'Data Request';
+  if (v === 'data_disclosed' || v === 'disclosed' || v === 'disclosure') return 'Data Disclosed';
+  if (v === 'simulation_reveal' || v === 'reveal' || v === 'detected' || v === 'detection') return 'Simulation Reveal';
+  if (v === 'other') return 'Other';
+  return 'Other';
+}
+
+function normalizeTimelineItems(timeline: unknown): unknown[] {
+  if (!Array.isArray(timeline)) return [];
+
+  return timeline.map(item => {
+    const record = (item ?? {}) as TimelineItemLike;
+    return {
+      timestamp: typeof record.timestamp === 'string' ? record.timestamp : '0:00',
+      label: normalizeTimelineLabel(record.label),
+      snippet: typeof record.snippet === 'string' ? record.snippet : '',
+    };
+  });
+}
+
+function normalizeOutcome(outcome: unknown): unknown {
+  if (typeof outcome !== 'string') return outcome;
+  const v = normalizeEnumKey(outcome);
+  if (v === 'data_disclosed' || v === 'disclosed' || v === 'shared') return 'data_disclosed';
+  if (v === 'refused' || v === 'reject' || v === 'rejected') return 'refused';
+  if (v === 'detected' || v === 'detection') return 'detected';
+  if (v === 'other' || v === 'unknown') return 'other';
+  return outcome;
+}
+
+function normalizeRawSummaryPayload(raw: Record<string, unknown>): Record<string, unknown> {
+  const normalized = { ...raw };
+
+  if (normalized.summary && typeof normalized.summary === 'object' && normalized.summary !== null) {
+    const summary = normalized.summary as Record<string, unknown>;
+    normalized.summary = {
+      ...summary,
+      timeline: normalizeTimelineItems(summary.timeline),
+      outcome: normalizeOutcome(summary.outcome),
+    };
+  } else {
+    normalized.timeline = normalizeTimelineItems(normalized.timeline);
+    normalized.outcome = normalizeOutcome(normalized.outcome);
+  }
+
+  return normalized;
+}
+
 function parseNextSteps(raw: unknown): { title: string; description: string }[] {
   if (!Array.isArray(raw)) return [...DEFAULT_NEXT_STEPS];
   const validated = raw
-    .map((item) => VishingNextStepCardSchema.safeParse(item))
+    .map(item => VishingNextStepCardSchema.safeParse(item))
     .filter((r): r is { success: true; data: { title: string; description: string } } => r.success)
-    .map((r) => r.data);
+    .map(r => r.data);
   return validated.length > 0 ? validated : [...DEFAULT_NEXT_STEPS];
 }
 
 function buildMessagesPrompt(messages: VishingMessage[]): string {
   return messages
-    .map((m) => {
+    .map(m => {
       const ts = m.timestamp !== undefined && m.timestamp !== null ? `[${m.timestamp}s] ` : '';
       return `${ts}${m.role === 'agent' ? 'Agent' : 'User'}: ${m.text}`;
     })
     .join('\n');
 }
 
-export async function generateVishingConversationsSummary(
-  messages: VishingMessage[]
-): Promise<{ summary: VishingConversationsSummary; nextSteps: { title: string; description: string }[]; statusCard: VishingStatusCard }> {
+export async function generateVishingConversationsSummary(messages: VishingMessage[]): Promise<{
+  summary: VishingConversationsSummary;
+  nextSteps: { title: string; description: string }[];
+  statusCard: VishingStatusCard;
+}> {
   const conversationText = buildMessagesPrompt(messages);
 
   const systemPrompt = `You are a senior security training analyst specializing in social engineering and vishing (voice phishing) assessments. Analyze this transcript from a simulated vishing call and produce a structured debrief for the learner.
 
-CONTEXT: This is a security training simulation, not a real attack. "Agent" = the simulated scammer; "User" = the learner being assessed. Your job is to identify what happened, what (if anything) was disclosed, and provide actionable feedback.
+CONTEXT: This is a security training simulation, not a real attack. "Agent" = the simulated scammer; "User" = the learner being assessed.
 
-TIMELINE PHASES (use exactly these labels):
-- Introduction: Caller introduces themselves, states reason for call
-- Credibility Building: Caller establishes fake authority or trust
-- Pressure: Caller creates urgency, time pressure, or fear
-- Data Request: Caller explicitly asks for sensitive information
-- Data Disclosed: Moment when learner shared sensitive data (only if outcome is data_disclosed)
-- Simulation Reveal: When the simulation ends and debrief begins
-- Other: Only if the phase does not fit any of the above
+TIMELINE PHASE ENUM (exact, case-sensitive):
+- "Introduction"
+- "Credibility Building"
+- "Pressure"
+- "Data Request"
+- "Data Disclosed"
+- "Simulation Reveal"
+- "Other"
+
+TIMELINE MAPPING:
+- opening/greeting/self-intro -> "Introduction"
+- authority/trust/pretext setup -> "Credibility Building"
+- urgency/threat/deadline pressure -> "Pressure"
+- request for OTP/password/card/account detail -> "Data Request"
+- user shares sensitive detail -> "Data Disclosed"
+- simulation announced or debrief starts -> "Simulation Reveal"
+- unmatched phase -> "Other"
+
+OUTCOME ENUM (exact, lowercase, underscore):
+- "data_disclosed"
+- "refused"
+- "detected"
+- "other"
 
 OUTCOME RULES:
 - data_disclosed: Learner shared sensitive info (passwords, OTP, card numbers, account details, etc.). List each item in disclosedInfo.
-- refused: Learner refused without disclosing. No sensitive data was shared — leave disclosedInfo empty.
-- detected: Learner identified it as a simulation. No sensitive data was shared — leave disclosedInfo empty.
-- other: Call ended without clear outcome (e.g. dropped, incomplete). No sensitive data to report — leave disclosedInfo empty.
+- refused: Learner refused and shared no sensitive data. disclosedInfo must be [].
+- detected: Learner identified simulation and shared no sensitive data. disclosedInfo must be [].
+- other: Call ended without clear outcome. disclosedInfo must be [].
 
-NEXT STEPS: Tailor to outcome. For data_disclosed: include "Change exposed passwords", "Contact bank if financial info shared". For refused/detected: reinforce positive behavior. 2-4 items, each with title and description. Output in English.
+NEXT STEPS:
+- Tailor to outcome.
+- For data_disclosed include actions like password reset and financial provider contact if relevant.
+- For refused/detected reinforce positive behavior.
+- 2-4 items, each with title + description, in English.
 
-OUTPUT STRUCTURE (valid JSON only):
+OUTPUT STRUCTURE:
 {
   "summary": {
     "timeline": [
-      { "timestamp": "MM:SS", "label": "<phase>", "snippet": "<1-2 sentence excerpt, direct quote or close paraphrase>" }
+      { "timestamp": "MM:SS", "label": "Introduction", "snippet": "<1-2 sentence excerpt>" }
     ],
     "disclosedInfo": [
-      { "item": "<what was shared: e.g. OTP, password, card number>", "timestamp": "MM:SS" }
+      { "item": "<what was shared>", "timestamp": "MM:SS" }
     ],
-    "outcome": "data_disclosed" | "refused" | "detected" | "other"
+    "outcome": "refused"
   },
   "nextSteps": [
     { "title": "<short title>", "description": "<actionable recommendation>" }
@@ -136,7 +231,7 @@ Return ONLY the JSON object. No markdown, no code blocks, no extra text.`;
   logger.info('vishing_conversations_summary_llm_complete');
 
   const cleaned = cleanResponse(text, 'vishing-conversations-summary');
-  const raw = JSON.parse(cleaned) as Record<string, unknown>;
+  const raw = normalizeRawSummaryPayload(JSON.parse(cleaned) as Record<string, unknown>);
 
   // Normalize: LLM may return flat { timeline, outcome, ... } instead of { summary, nextSteps }
   let parsed: { summary: VishingConversationsSummary; nextSteps: { title: string; description: string }[] };
@@ -152,16 +247,13 @@ Return ONLY the JSON object. No markdown, no code blocks, no extra text.`;
   } else {
     parsed = VishingConversationsSummaryOutputSchema.parse(raw);
   }
-  const statusCard =
-    STATUS_CARD_BY_OUTCOME[parsed.summary.outcome] ?? STATUS_CARD_BY_OUTCOME.other;
+  const statusCard = STATUS_CARD_BY_OUTCOME[parsed.summary.outcome] ?? STATUS_CARD_BY_OUTCOME.other;
 
   const statusCardValidated = VishingStatusCardSchema.parse(statusCard);
 
   // Enforce: refused/detected/other must have empty disclosedInfo
   const summary =
-    parsed.summary.outcome === 'data_disclosed'
-      ? parsed.summary
-      : { ...parsed.summary, disclosedInfo: [] };
+    parsed.summary.outcome === 'data_disclosed' ? parsed.summary : { ...parsed.summary, disclosedInfo: [] };
 
   return {
     summary,

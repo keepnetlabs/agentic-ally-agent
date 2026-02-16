@@ -71,7 +71,7 @@ describe('Scene Types', () => {
     });
 
     it('should use lowercase values', () => {
-      Object.values(SceneType).forEach((value) => {
+      Object.values(SceneType).forEach(value => {
         expect(value).toBe(value.toLowerCase());
       });
     });
@@ -125,7 +125,7 @@ describe('Scene Types', () => {
       });
 
       it('should return true for all enum values', () => {
-        Object.values(SceneType).forEach((sceneType) => {
+        Object.values(SceneType).forEach(sceneType => {
           expect(isValidSceneType(sceneType)).toBe(true);
         });
       });
@@ -229,7 +229,7 @@ describe('Scene Types', () => {
       });
 
       it('should return correct type for all valid scene types', () => {
-        Object.values(SceneType).forEach((sceneType) => {
+        Object.values(SceneType).forEach(sceneType => {
           const result = getSceneTypeOrDefault(sceneType);
           expect(result).toBe(sceneType);
         });
@@ -290,7 +290,7 @@ describe('Scene Types', () => {
       });
 
       it('should work with all scene types as custom default', () => {
-        Object.values(SceneType).forEach((defaultType) => {
+        Object.values(SceneType).forEach(defaultType => {
           const result = getSceneTypeOrDefault('invalid', defaultType);
           expect(result).toBe(defaultType);
         });
@@ -332,7 +332,7 @@ describe('Scene Types', () => {
 
       it('should always return a valid SceneType', () => {
         const testCases = ['intro', 'invalid', '', undefined, 'INTRO', '123'];
-        testCases.forEach((testCase) => {
+        testCases.forEach(testCase => {
           const result = getSceneTypeOrDefault(testCase);
           expect(isValidSceneType(result)).toBe(true);
         });
@@ -363,7 +363,7 @@ describe('Scene Types', () => {
     });
 
     it('should handle all scene types in workflow', () => {
-      Object.values(SceneType).forEach((sceneType) => {
+      Object.values(SceneType).forEach(sceneType => {
         // Validate
         expect(isValidSceneType(sceneType)).toBe(true);
 
@@ -381,28 +381,24 @@ describe('Scene Types', () => {
   describe('Enum Completeness', () => {
     it('should cover all 8 scenes in microlearning', () => {
       const expectedScenes = [
-        'intro',        // Scene 1
-        'goal',         // Scene 2
-        'scenario',     // Scene 3
-        'quiz',         // Scene 5
-        'survey',       // Scene 6
-        'nudge',        // Scene 7
-        'summary',      // Scene 8
+        'intro', // Scene 1
+        'goal', // Scene 2
+        'scenario', // Scene 3
+        'quiz', // Scene 5
+        'survey', // Scene 6
+        'nudge', // Scene 7
+        'summary', // Scene 8
       ];
 
-      expectedScenes.forEach((scene) => {
+      expectedScenes.forEach(scene => {
         expect(Object.values(SceneType)).toContain(scene);
       });
     });
 
     it('should include scene 4 variants', () => {
-      const scene4Variants = [
-        'actionable_content',
-        'code_review',
-        'vishing_simulation',
-      ];
+      const scene4Variants = ['actionable_content', 'code_review', 'vishing_simulation'];
 
-      scene4Variants.forEach((variant) => {
+      scene4Variants.forEach(variant => {
         expect(Object.values(SceneType)).toContain(variant);
       });
     });

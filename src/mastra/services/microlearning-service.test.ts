@@ -1,6 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { MicrolearningService } from './microlearning-service';
-import { createMicrolearningContent, createLanguageContent } from '../../../src/__tests__/factories/microlearning-factory';
+import {
+  createMicrolearningContent,
+  createLanguageContent,
+} from '../../../src/__tests__/factories/microlearning-factory';
 import '../../../src/__tests__/setup';
 
 /**
@@ -22,8 +25,8 @@ describe('MicrolearningService', () => {
         microlearning_id: 'ml-123',
         microlearning_metadata: {
           title: 'Test Training',
-          department_relevance: ['IT']
-        }
+          department_relevance: ['IT'],
+        },
       });
 
       await expect(service.storeMicrolearning(content)).resolves.not.toThrow();
@@ -34,16 +37,16 @@ describe('MicrolearningService', () => {
         microlearning_id: 'ml-123',
         microlearning_metadata: {
           title: 'Original',
-          level: 'Beginner'
-        }
+          level: 'Beginner',
+        },
       });
 
       const updatedContent = createMicrolearningContent({
         microlearning_id: 'ml-123',
         microlearning_metadata: {
           title: 'Updated',
-          level: 'Advanced'
-        }
+          level: 'Advanced',
+        },
       });
 
       await service.storeMicrolearning(minimalContent);
@@ -62,7 +65,7 @@ describe('MicrolearningService', () => {
           language: 'tr',
           language_availability: ['tr'],
           gamification_enabled: true,
-          total_points: 100
+          total_points: 100,
         },
         scenes: [
           {
@@ -73,10 +76,10 @@ describe('MicrolearningService', () => {
               duration_seconds: 15,
               hasAchievementNotification: false,
               scientific_basis: 'Test basis',
-              icon: { sceneIconName: 'shield' }
-            }
-          }
-        ]
+              icon: { sceneIconName: 'shield' },
+            },
+          },
+        ],
       });
 
       await expect(service.storeMicrolearning(content)).resolves.not.toThrow();
@@ -101,8 +104,8 @@ describe('MicrolearningService', () => {
           highlights: [],
           duration: '15s',
           level: 'Intermediate',
-          callToActionText: { mobile: 'Start', desktop: 'Start' }
-        }
+          callToActionText: { mobile: 'Start', desktop: 'Start' },
+        },
       });
 
       await expect(service.storeLanguageContent('ml-123', 'en', languageContent)).resolves.not.toThrow();
@@ -124,15 +127,15 @@ describe('MicrolearningService', () => {
         highlights: [],
         duration: '',
         level: '',
-        callToActionText: { mobile: '', desktop: '' }
+        callToActionText: { mobile: '', desktop: '' },
       };
 
       const enContent = createLanguageContent({
-        '1': baseScene
+        '1': baseScene,
       });
 
       const trContent = createLanguageContent({
-        '1': { ...baseScene, title: 'Türkçe' }
+        '1': { ...baseScene, title: 'Türkçe' },
       });
 
       await expect(service.storeLanguageContent('ml-123', 'en', enContent)).resolves.not.toThrow();
@@ -156,7 +159,7 @@ describe('MicrolearningService', () => {
           highlights: [],
           duration: '',
           level: '',
-          callToActionText: { mobile: '', desktop: '' }
+          callToActionText: { mobile: '', desktop: '' },
         },
         '2': {
           iconName: 'target',
@@ -170,7 +173,7 @@ describe('MicrolearningService', () => {
           title: 'Goals',
           subtitle: '',
           callToActionText: '',
-          goals: []
+          goals: [],
         } as any,
         '3': {
           iconName: 'play',
@@ -191,9 +194,9 @@ describe('MicrolearningService', () => {
             showTranscript: false,
             transcriptTitle: '',
             transcriptLanguage: '',
-            transcript: ''
-          }
-        } as any
+            transcript: '',
+          },
+        } as any,
       });
 
       await expect(service.storeLanguageContent('ml-789', 'de', languageContent)).resolves.not.toThrow();
@@ -202,23 +205,17 @@ describe('MicrolearningService', () => {
 
   describe('assignMicrolearningToDepartment', () => {
     it('should create new department inbox if not exists', async () => {
-      await expect(
-        service.assignMicrolearningToDepartment('IT', 'en', 'ml-123', 'high')
-      ).resolves.not.toThrow();
+      await expect(service.assignMicrolearningToDepartment('IT', 'en', 'ml-123', 'high')).resolves.not.toThrow();
     });
 
     it('should add to existing department inbox', async () => {
       await service.assignMicrolearningToDepartment('IT', 'en', 'ml-123', 'high');
-      await expect(
-        service.assignMicrolearningToDepartment('IT', 'en', 'ml-456', 'medium')
-      ).resolves.not.toThrow();
+      await expect(service.assignMicrolearningToDepartment('IT', 'en', 'ml-456', 'medium')).resolves.not.toThrow();
     });
 
     it('should update existing assignment if already assigned', async () => {
       await service.assignMicrolearningToDepartment('IT', 'en', 'ml-123', 'low');
-      await expect(
-        service.assignMicrolearningToDepartment('IT', 'en', 'ml-123', 'high')
-      ).resolves.not.toThrow();
+      await expect(service.assignMicrolearningToDepartment('IT', 'en', 'ml-123', 'high')).resolves.not.toThrow();
     });
 
     it('should handle due date', async () => {
@@ -231,9 +228,7 @@ describe('MicrolearningService', () => {
     it('should separate departments and languages', async () => {
       await service.assignMicrolearningToDepartment('IT', 'en', 'ml-123');
       await service.assignMicrolearningToDepartment('HR', 'en', 'ml-456');
-      await expect(
-        service.assignMicrolearningToDepartment('IT', 'tr', 'ml-789')
-      ).resolves.not.toThrow();
+      await expect(service.assignMicrolearningToDepartment('IT', 'tr', 'ml-789')).resolves.not.toThrow();
     });
 
     it('should handle all priority levels', async () => {
@@ -245,15 +240,11 @@ describe('MicrolearningService', () => {
 
   describe('assignMicrolearningToDepartment - edge cases', () => {
     it('should handle empty department name', async () => {
-      await expect(
-        service.assignMicrolearningToDepartment('', 'en', 'ml-123')
-      ).resolves.not.toThrow();
+      await expect(service.assignMicrolearningToDepartment('', 'en', 'ml-123')).resolves.not.toThrow();
     });
 
     it('should handle empty language code', async () => {
-      await expect(
-        service.assignMicrolearningToDepartment('IT', '', 'ml-123')
-      ).resolves.not.toThrow();
+      await expect(service.assignMicrolearningToDepartment('IT', '', 'ml-123')).resolves.not.toThrow();
     });
 
     it('should handle multiple assignments to same department', async () => {
@@ -262,9 +253,7 @@ describe('MicrolearningService', () => {
       await service.assignMicrolearningToDepartment('IT', 'en', 'ml-3', 'low');
 
       // Should not throw
-      await expect(
-        service.assignMicrolearningToDepartment('IT', 'en', 'ml-4', 'high')
-      ).resolves.not.toThrow();
+      await expect(service.assignMicrolearningToDepartment('IT', 'en', 'ml-4', 'high')).resolves.not.toThrow();
     });
   });
 });

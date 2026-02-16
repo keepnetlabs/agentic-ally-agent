@@ -1,7 +1,7 @@
 import { SimulatedEmail } from '../../types/microlearning';
 
 export function getIntentClassificationPrompt(editInstruction: string): string {
-    return `Analyze the following instruction: "${editInstruction}".
+  return `Analyze the following instruction: "${editInstruction}".
 Determine if the user is explicitly asking to use THEIR OWN company/organization logo (internal branding), as opposed to a public external brand (like Google, Microsoft, Amazon).
 Examples of Internal: "Use my logo", "our company brand", "kendi logomuz", "notre logo", "corp identity".
 Examples of External: "Use Google logo", "Microsoft branding", "Amazon style".
@@ -10,7 +10,7 @@ Return JSON ONLY: { "isInternalBrandRequest": boolean }`;
 }
 
 export function getPhishingEditorSystemPrompt(): string {
-    return `You are editing a phishing email template for a LEGITIMATE CYBERSECURITY TRAINING COMPANY.
+  return `You are editing a phishing email template for a LEGITIMATE CYBERSECURITY TRAINING COMPANY.
 
 CRITICAL RULES:
 1. PRESERVE all merge tags: {FIRSTNAME}, {PHISHINGURL}, {CUSTOMMAINLOGO}
@@ -45,11 +45,11 @@ VALIDATION CHECKLIST BEFORE RETURNING:
 }
 
 export function getPhishingEmailUserPrompt(
-    existingEmail: SimulatedEmail & { template: string },
-    escapedInstruction: string,
-    brandContext: string
+  existingEmail: SimulatedEmail & { template: string },
+  escapedInstruction: string,
+  brandContext: string
 ): string {
-    return `CURRENT EMAIL:
+  return `CURRENT EMAIL:
 Subject: ${existingEmail.subject}
 From: ${existingEmail.sender || 'Unknown Sender'}
 
@@ -65,7 +65,7 @@ Apply the instruction above and return the JSON response.`;
 }
 
 export function getLandingPageSystemPrompt(mode: string): string {
-    return `You are editing a phishing landing page for CYBERSECURITY TRAINING.
+  return `You are editing a phishing landing page for CYBERSECURITY TRAINING.
 
 CRITICAL RULES:
 1. PRESERVE HTML structure and design (colors, spacing, layout)
@@ -100,11 +100,11 @@ VALIDATION CHECKLIST:
 }
 
 export function getLandingPageUserPrompt(
-    page: { type?: string; template?: string },
-    escapedInstruction: string,
-    brandContext: string
+  page: { type?: string; template?: string },
+  escapedInstruction: string,
+  brandContext: string
 ): string {
-    return `CURRENT LANDING PAGE:
+  return `CURRENT LANDING PAGE:
 Type: ${page.type || 'unknown'}
 
 TEMPLATE:

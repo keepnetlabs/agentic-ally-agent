@@ -19,9 +19,7 @@ export interface ParsedName {
  * parseName("Madonna") // { firstName: "Madonna", lastName: undefined, fullName: "Madonna" }
  * parseName("Jean-Claude Van Damme") // { firstName: "Jean-Claude", lastName: "Van Damme", fullName: "..." }
  */
-export function parseName(
-  input: string | { firstName: string; lastName?: string }
-): ParsedName {
+export function parseName(input: string | { firstName: string; lastName?: string }): ParsedName {
   // Case 1: Already parsed (object input)
   if (typeof input === 'object') {
     const { firstName, lastName } = input;

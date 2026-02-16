@@ -19,8 +19,8 @@ describe('assignTrainingTool', () => {
   const mockCompanyId = 'test-company-id';
   const mockEnv = {
     CRUD_WORKER: {
-      fetch: vi.fn()
-    }
+      fetch: vi.fn(),
+    },
   };
 
   beforeEach(() => {
@@ -30,7 +30,7 @@ describe('assignTrainingTool', () => {
     requestStorage.enterWith({
       token: mockToken,
       companyId: mockCompanyId,
-      env: mockEnv
+      env: mockEnv,
     });
 
     // Explicitly mock KVService.getMicrolearning to return null (pass guard by default)
@@ -45,7 +45,7 @@ describe('assignTrainingTool', () => {
       const input = {
         resourceId: 'resource-123',
         sendTrainingLanguageId: 'lang-456',
-        targetUserResourceId: 'user-789'
+        targetUserResourceId: 'user-789',
       };
 
       const result = await assignTrainingTool.execute({ context: input } as any);
@@ -61,7 +61,7 @@ describe('assignTrainingTool', () => {
       const input = {
         resourceId: 'resource-123',
         sendTrainingLanguageId: 'lang-456',
-        targetUserResourceId: 'user-789'
+        targetUserResourceId: 'user-789',
       };
 
       const result = await assignTrainingTool.execute({ context: input } as any);
@@ -72,7 +72,7 @@ describe('assignTrainingTool', () => {
     it('should require resourceId', async () => {
       const input: any = {
         sendTrainingLanguageId: 'lang-456',
-        targetUserResourceId: 'user-789'
+        targetUserResourceId: 'user-789',
       };
 
       // Tool framework validates input schema and returns error response (doesn't throw)
@@ -87,7 +87,7 @@ describe('assignTrainingTool', () => {
     it('should require sendTrainingLanguageId', async () => {
       const input: any = {
         resourceId: 'resource-123',
-        targetUserResourceId: 'user-789'
+        targetUserResourceId: 'user-789',
       };
 
       // Tool framework validates input schema and returns error response
@@ -101,7 +101,7 @@ describe('assignTrainingTool', () => {
     it('should require exactly one assignment target (user OR group)', async () => {
       const input: any = {
         resourceId: 'resource-123',
-        sendTrainingLanguageId: 'lang-456'
+        sendTrainingLanguageId: 'lang-456',
       };
 
       // Tool framework validates input schema and returns error response
@@ -135,14 +135,14 @@ describe('assignTrainingTool', () => {
     it('should return error when token is missing', async () => {
       requestStorage.enterWith({
         companyId: mockCompanyId,
-        env: mockEnv
+        env: mockEnv,
         // token is missing
       });
 
       const input = {
         resourceId: 'resource-123',
         sendTrainingLanguageId: 'lang-456',
-        targetUserResourceId: 'user-789'
+        targetUserResourceId: 'user-789',
       };
 
       const result = await assignTrainingTool.execute({ context: input } as any);
@@ -156,7 +156,7 @@ describe('assignTrainingTool', () => {
       const input = {
         resourceId: 'resource-123',
         sendTrainingLanguageId: 'lang-456',
-        targetUserResourceId: 'user-789'
+        targetUserResourceId: 'user-789',
       };
 
       const result = await assignTrainingTool.execute({ context: input } as any);
@@ -172,7 +172,7 @@ describe('assignTrainingTool', () => {
       const input = {
         resourceId: 'resource-123',
         sendTrainingLanguageId: 'lang-456',
-        targetUserResourceId: 'user-789'
+        targetUserResourceId: 'user-789',
       };
 
       const result = await assignTrainingTool.execute({ context: input } as any);
@@ -187,7 +187,7 @@ describe('assignTrainingTool', () => {
       const input = {
         resourceId: 'resource-123',
         sendTrainingLanguageId: 'lang-456',
-        targetUserResourceId: 'user-789'
+        targetUserResourceId: 'user-789',
       };
 
       await assignTrainingTool.execute({ context: input } as any);
@@ -202,11 +202,11 @@ describe('assignTrainingTool', () => {
             languageId: 'lang-456',
             targetUserResourceId: 'user-789',
             accessToken: mockToken,
-            companyId: mockCompanyId
+            companyId: mockCompanyId,
           }),
           token: mockToken,
           errorPrefix: expect.any(String),
-          operationName: expect.any(String)
+          operationName: expect.any(String),
         })
       );
     });
@@ -217,7 +217,7 @@ describe('assignTrainingTool', () => {
       const input = {
         resourceId: 'resource-123',
         sendTrainingLanguageId: 'lang-456',
-        targetGroupResourceId: 'group-123'
+        targetGroupResourceId: 'group-123',
       };
 
       const result = await assignTrainingTool.execute({ context: input } as any);
@@ -242,7 +242,7 @@ describe('assignTrainingTool', () => {
       const input = {
         resourceId: 'resource-123',
         sendTrainingLanguageId: 'lang-456',
-        targetUserResourceId: 'user-789'
+        targetUserResourceId: 'user-789',
       };
 
       const result = await assignTrainingTool.execute({ context: input } as any);
@@ -257,7 +257,7 @@ describe('assignTrainingTool', () => {
       const input = {
         resourceId: 'resource-123',
         sendTrainingLanguageId: 'lang-456',
-        targetUserResourceId: 'user-789'
+        targetUserResourceId: 'user-789',
       };
 
       const result = await assignTrainingTool.execute({ context: input } as any);
@@ -272,7 +272,7 @@ describe('assignTrainingTool', () => {
       const input = {
         resourceId: 'resource-123',
         sendTrainingLanguageId: 'lang-456',
-        targetUserResourceId: 'user-789'
+        targetUserResourceId: 'user-789',
       };
 
       const result = await assignTrainingTool.execute({ context: input } as any);
@@ -288,7 +288,7 @@ describe('assignTrainingTool', () => {
       const input = {
         resourceId: 'resource-123',
         sendTrainingLanguageId: 'lang-456',
-        targetUserResourceId: 'user-789'
+        targetUserResourceId: 'user-789',
       };
 
       const result = await assignTrainingTool.execute({ context: input } as any);

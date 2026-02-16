@@ -51,7 +51,12 @@ export const phishingEditorTool = createTool({
 
       const [whitelabelConfig, loadResult] = await Promise.all([
         productService.getWhitelabelingConfig().catch(err => {
-          logger.warn('Failed to fetch whitelabeling config', { error: err });
+          const normalized = normalizeError(err);
+          const errorInfo = errorService.external(normalized.message, {
+            step: 'fetch-whitelabel-config',
+            stack: normalized.stack,
+          });
+          logErrorInfo(logger, 'warn', 'Failed to fetch whitelabeling config', errorInfo);
           return null;
         }),
         loadPhishingContent(phishingId, language),
@@ -202,11 +207,11 @@ export const phishingEditorTool = createTool({
         const isQuishing = base?.isQuishing ?? false;
         const landingMeta = existingLanding
           ? {
-            name: existingLanding.name,
-            description: existingLanding.description,
-            method: existingLanding.method,
-            difficulty: existingLanding.difficulty,
-          }
+              name: existingLanding.name,
+              description: existingLanding.description,
+              method: existingLanding.method,
+              difficulty: existingLanding.difficulty,
+            }
           : null;
 
         await streamEditResultsToUI(

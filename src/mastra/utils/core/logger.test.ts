@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { getLogger, startTimer } from './logger';
 import { requestStorage } from './request-storage';
 import '../../../../src/__tests__/setup';
@@ -379,24 +379,30 @@ describe('Logger with Correlation ID', () => {
     it('should work with full request context', async () => {
       const logger = getLogger('TestModule');
 
-      await requestStorage.run({
-        correlationId: 'test-id',
-        token: 'test-token',
-        companyId: 'company-123',
-        baseApiUrl: 'https://api.example.com',
-      }, () => {
-        expect(() => logger.info('Test message')).not.toThrow();
-      });
+      await requestStorage.run(
+        {
+          correlationId: 'test-id',
+          token: 'test-token',
+          companyId: 'company-123',
+          baseApiUrl: 'https://api.example.com',
+        },
+        () => {
+          expect(() => logger.info('Test message')).not.toThrow();
+        }
+      );
     });
 
     it('should work with partial request context', async () => {
       const logger = getLogger('TestModule');
 
-      await requestStorage.run({
-        correlationId: 'test-id',
-      }, () => {
-        expect(() => logger.info('Test message')).not.toThrow();
-      });
+      await requestStorage.run(
+        {
+          correlationId: 'test-id',
+        },
+        () => {
+          expect(() => logger.info('Test message')).not.toThrow();
+        }
+      );
     });
 
     it('should work with empty request context', async () => {
@@ -578,7 +584,7 @@ describe('Logger with Correlation ID', () => {
         // We just ensure it doesn't crash the process
         try {
           logger.info('Test', circular);
-        } catch (e) {
+        } catch {
           // Expected for circular references
         }
       });

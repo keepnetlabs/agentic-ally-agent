@@ -33,9 +33,9 @@ vi.mock('./scene-rewriter-base', () => ({
       videoUrl: scene.videoUrl || 'https://example.com/video.mp4',
       transcript: 'Translated Transcript',
       duration: scene.duration || 180,
-      subtitles: scene.subtitles ? scene.subtitles.map((s: any) => ({ ...s, text: 'Translated ' + s.text })) : []
+      subtitles: scene.subtitles ? scene.subtitles.map((s: any) => ({ ...s, text: 'Translated ' + s.text })) : [],
     });
-  })
+  }),
 }));
 
 describe('Scene 3 - Video Rewriter', () => {
@@ -85,15 +85,11 @@ describe('Scene 3 - Video Rewriter', () => {
     });
 
     it('should require scene parameter', async () => {
-      await expect(
-        rewriteScene3Video(undefined as any, baseContext)
-      ).resolves.toBeUndefined();
+      await expect(rewriteScene3Video(undefined as any, baseContext)).resolves.toBeUndefined();
     });
 
     it('should require context parameter', async () => {
-      await expect(
-        rewriteScene3Video(baseScene as any, undefined as any)
-      ).rejects.toThrow();
+      await expect(rewriteScene3Video(baseScene as any, undefined as any)).rejects.toThrow();
     });
   });
 

@@ -52,12 +52,9 @@ import {
   AddLanguageResult,
   AddMultipleLanguagesResult,
   UpdateMicrolearningResult,
-  LanguageResultItem
+  LanguageResultItem,
 } from './types';
-import {
-  validateCreateMicrolearningResult,
-  validateAddLanguageResult
-} from './validators';
+import { validateCreateMicrolearningResult, validateAddLanguageResult } from './validators';
 
 export const workflowExecutorTool = createTool({
   id: 'workflow-executor',
@@ -105,9 +102,9 @@ export const workflowExecutorTool = createTool({
             language: params.language,
             modelProvider: params.modelProvider,
             model: params.model,
-            policyContext: policyContext || undefined // Pass if available
+            policyContext: policyContext || undefined,
           },
-          requestContext
+          requestContext,
         });
 
         // Extract info from result - simple fallback approach
@@ -126,7 +123,7 @@ export const workflowExecutorTool = createTool({
             : (workflowError?.message || 'Workflow execution failed');
           const errorInfo = errorService.external(`Microlearning creation failed: ${errorMessage}`, {
             step: 'workflow-executor',
-            workflowStatus: workflowResult.status
+            workflowStatus: workflowResult.status,
           });
           logErrorInfo(logger, 'error', 'Workflow execution failed', errorInfo);
           return createToolErrorResponse(errorInfo);
@@ -142,19 +139,23 @@ export const workflowExecutorTool = createTool({
             if (metadata?.microlearningId) microlearningId = metadata.microlearningId;
           } catch (error) {
             const err = normalizeError(error);
-            logger.error('Failed to extract validated workflow result data', { error: err.message });
+            const errorInfo = errorService.external(err.message, {
+              step: 'extract-workflow-result',
+              stack: err.stack,
+            });
+            logErrorInfo(logger, 'error', 'Failed to extract validated workflow result data', errorInfo);
           }
         } else {
           // Workflow completed but result validation failed
           const errorInfo = errorService.external('Workflow completed but result validation failed', {
             step: 'workflow-executor',
-            workflowStatus: workflowResult.status
+            workflowStatus: workflowResult.status,
           });
           logErrorInfo(logger, 'error', 'Workflow result validation failed', errorInfo);
           return createToolErrorResponse(errorInfo);
         }
 
-        // Emit UI signal for FE to open canvas (same pattern as phishing)
+        // Emit UI signal for FE to open canvas (v1: data- prefix for toAISdkStream compatibility)
         if (writer) {
           const meta = {
             microlearningId,
@@ -168,16 +169,16 @@ export const workflowExecutorTool = createTool({
             type: 'data-ui-signal',
             data: {
               signal: 'canvas_open',
-              message: `::ui:canvas_open::${trainingUrl}::/ui:canvas_open::\n`
-            }
+              message: `::ui:canvas_open::${trainingUrl}::/ui:canvas_open::\n`,
+            },
           });
 
           await writer.write({
             type: 'data-ui-signal',
             data: {
               signal: 'training_meta',
-              message: `::ui:training_meta::${encodedMeta}::/ui:training_meta::\n`
-            }
+              message: `::ui:training_meta::${encodedMeta}::/ui:training_meta::\n`,
+            },
           });
 
           logger.debug('Training URL sent to frontend', { urlLength: trainingUrl?.length });
@@ -188,21 +189,22 @@ export const workflowExecutorTool = createTool({
           title,
           department,
           microlearningId,
-          status: 'success'
+          status: 'success',
         };
 
         // Validate result against output schema
         const validation = validateToolResult(result, workflowExecutorOutputSchema, 'workflow-executor');
         if (!validation.success) {
-          logger.error('Workflow executor result validation failed', { code: validation.error.code, message: validation.error.message });
+          logErrorInfo(logger, 'error', 'Workflow executor result validation failed', validation.error);
           return createToolErrorResponse(validation.error);
         }
 
         return validation.data;
-
       } else if (workflowType === 'add-language') {
         if (!params.existingMicrolearningId || !params.targetLanguage) {
-          const errorInfo = errorService.validation('existingMicrolearningId and targetLanguage are required for add-language workflow');
+          const errorInfo = errorService.validation(
+            'existingMicrolearningId and targetLanguage are required for add-language workflow'
+          );
           logErrorInfo(logger, 'warn', 'Validation error', errorInfo);
           return createToolErrorResponse(errorInfo);
         }
@@ -219,10 +221,10 @@ export const workflowExecutorTool = createTool({
             targetLanguage,
             // sourceLanguage omitted: workflow will auto-detect from microlearning_metadata.language
             // This ensures correct language code (e.g., en-US not just en)
-            sourceLanguage: params.sourceLanguage || undefined,  // Only pass if explicitly provided
+            sourceLanguage: params.sourceLanguage || undefined, // Only pass if explicitly provided
             modelProvider: params.modelProvider,
-            model: params.model
-          }
+            model: params.model,
+          },
         });
 
         // Validate and extract trainingUrl from result
@@ -232,8 +234,9 @@ export const workflowExecutorTool = createTool({
         const title = data?.title ?? null;
 
         if (!isValid) {
-          logger.error('Language workflow result validation failed', { status: workflowResult.status });
-          const errorInfo = errorService.external('Add language workflow result validation failed');
+          const errorInfo = errorService.external('Add language workflow result validation failed', {
+            status: workflowResult.status,
+          });
           logErrorInfo(logger, 'error', 'Language workflow result validation failed', errorInfo);
           return createToolErrorResponse(errorInfo);
         }
@@ -244,8 +247,8 @@ export const workflowExecutorTool = createTool({
             type: 'data-ui-signal',
             data: {
               signal: 'canvas_open',
-              message: `::ui:canvas_open::${trainingUrl}::/ui:canvas_open::\n`
-            }
+              message: `::ui:canvas_open::${trainingUrl}::/ui:canvas_open::\n`,
+            },
           });
           logger.debug('Training URL sent to frontend', { urlLength: trainingUrl?.length });
         }
@@ -254,21 +257,22 @@ export const workflowExecutorTool = createTool({
           success: true,
           department: params.department || 'All',
           title: title || 'Microlearning',
-          status: 'success'
+          status: 'success',
         };
 
         // Validate result against output schema
         const validation = validateToolResult(toolResult, workflowExecutorOutputSchema, 'workflow-executor');
         if (!validation.success) {
-          logger.error('Add language result validation failed', { code: validation.error.code, message: validation.error.message });
+          logErrorInfo(logger, 'error', 'Add language result validation failed', validation.error);
           return createToolErrorResponse(validation.error);
         }
 
         return validation.data;
-
       } else if (workflowType === 'add-multiple-languages') {
         if (!params.existingMicrolearningId || !params.targetLanguages || params.targetLanguages.length === 0) {
-          const errorInfo = errorService.validation('existingMicrolearningId and targetLanguages array are required for add-multiple-languages workflow');
+          const errorInfo = errorService.validation(
+            'existingMicrolearningId and targetLanguages array are required for add-multiple-languages workflow'
+          );
           logErrorInfo(logger, 'warn', 'Validation error', errorInfo);
           return createToolErrorResponse(errorInfo);
         }
@@ -283,8 +287,8 @@ export const workflowExecutorTool = createTool({
             sourceLanguage: params.sourceLanguage || undefined,
             department: params.department || 'All',
             modelProvider: params.modelProvider,
-            model: params.model
-          }
+            model: params.model,
+          },
         });
 
         // Return workflow result
@@ -292,16 +296,14 @@ export const workflowExecutorTool = createTool({
           const workflowResults: LanguageResultItem[] = result.result.results || [];
 
           // Send first successful URL to frontend for UI refresh
-          const firstSuccess = workflowResults.find(
-            (r) => r.success && r.trainingUrl
-          );
+          const firstSuccess = workflowResults.find(r => r.success && r.trainingUrl);
           if (firstSuccess && writer) {
             await writer.write({
               type: 'data-ui-signal',
               data: {
                 signal: 'canvas_open',
-                message: `::ui:canvas_open::${firstSuccess.trainingUrl}::/ui:canvas_open::\n`
-              }
+                message: `::ui:canvas_open::${firstSuccess.trainingUrl}::/ui:canvas_open::\n`,
+              },
             });
             logger.debug('Training URL sent to frontend', { urlLength: firstSuccess.trainingUrl?.length });
           }
@@ -312,13 +314,13 @@ export const workflowExecutorTool = createTool({
             failureCount: result.result.failureCount,
             languages: result.result.languages,
             results: result.result.results,
-            status: result.result.status
+            status: result.result.status,
           };
 
           // Validate result against output schema
           const validation = validateToolResult(resultData, workflowExecutorOutputSchema, 'workflow-executor');
           if (!validation.success) {
-            logger.error('Add multiple languages result validation failed', { code: validation.error.code, message: validation.error.message });
+            logErrorInfo(logger, 'error', 'Add multiple languages result validation failed', validation.error);
             return createToolErrorResponse(validation.error);
           }
 
@@ -328,10 +330,11 @@ export const workflowExecutorTool = createTool({
           logErrorInfo(logger, 'error', 'Workflow failed', errorInfo);
           return createToolErrorResponse(errorInfo);
         }
-
       } else if (workflowType === 'update-microlearning') {
         if (!params.existingMicrolearningId || !params.updates) {
-          const errorInfo = errorService.validation('existingMicrolearningId and updates are required for update-microlearning workflow');
+          const errorInfo = errorService.validation(
+            'existingMicrolearningId and updates are required for update-microlearning workflow'
+          );
           logErrorInfo(logger, 'warn', 'Validation error', errorInfo);
           return createToolErrorResponse(errorInfo);
         }
@@ -346,7 +349,7 @@ export const workflowExecutorTool = createTool({
             updates: params.updates,
             modelProvider: params.modelProvider,
             model: params.model,
-          }
+          },
         });
 
         logger.debug('Update workflow completed', { success: result?.result?.success });
@@ -358,8 +361,8 @@ export const workflowExecutorTool = createTool({
             type: 'data-ui-signal',
             data: {
               signal: 'canvas_open',
-              message: `::ui:canvas_open::${trainingUrl}::/ui:canvas_open::\n`
-            }
+              message: `::ui:canvas_open::${trainingUrl}::/ui:canvas_open::\n`,
+            },
           });
           logger.debug('Updated training URL sent to frontend', { microlearningId: params.existingMicrolearningId });
         }
@@ -373,24 +376,22 @@ export const workflowExecutorTool = createTool({
         // Validate result against output schema
         const validation = validateToolResult(resultData, workflowExecutorOutputSchema, 'workflow-executor');
         if (!validation.success) {
-          logger.error('Update microlearning result validation failed', { code: validation.error.code, message: validation.error.message });
+          logErrorInfo(logger, 'error', 'Update microlearning result validation failed', validation.error);
           return createToolErrorResponse(validation.error);
         }
 
         return validation.data;
-
       } else {
         const errorInfo = errorService.validation(`Unknown workflow type: ${workflowType}`);
         logErrorInfo(logger, 'warn', 'Unknown workflow type', errorInfo);
         return createToolErrorResponse(errorInfo);
       }
-
     } catch (error) {
       const err = normalizeError(error);
       const errorInfo = errorService.external(err.message, {
         workflowType: inputData?.workflowType,
         step: 'workflow-execution',
-        stack: err.stack
+        stack: err.stack,
       });
 
       logErrorInfo(logger, 'error', 'Workflow execution failed', errorInfo);
@@ -401,12 +402,12 @@ export const workflowExecutorTool = createTool({
           type: 'data-ui-signal',
           data: {
             signal: 'workflow_error',
-            message: `::ui:workflow_error::${err.message}::/ui:workflow_error::\n`
-          }
+            message: `::ui:workflow_error::${err.message}::/ui:workflow_error::\n`,
+          },
         });
       }
 
       return createToolErrorResponse(errorInfo);
     }
-  }
+  },
 });

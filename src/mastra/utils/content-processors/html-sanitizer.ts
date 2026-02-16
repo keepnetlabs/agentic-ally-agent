@@ -3,33 +3,32 @@
  * This is applied AFTER the JSON parsing logic.
  */
 export function sanitizeHtml(html: string): string {
-    if (!html) return html;
+  if (!html) return html;
 
-    let clean = html;
+  let clean = html;
 
-    // 1. Unescape HTML entities for quotes that might have been double-encoded
-    // e.g. class=&quot;foo&quot; -> class="foo"
-    clean = clean.replace(/&quot;/g, '"');
+  // 1. Unescape HTML entities for quotes that might have been double-encoded
+  // e.g. class=&quot;foo&quot; -> class="foo"
+  clean = clean.replace(/&quot;/g, '"');
 
-    // 2. Fix escaped quotes that shouldn't be escaped in the final string
-    // e.g. class=\"foo\" -> class="foo" (Since we are processing the string value, these backslashes are literal characters in the content)
-    clean = clean.replace(/\\"/g, '"');
+  // 2. Fix escaped quotes that shouldn't be escaped in the final string
+  // e.g. class=\"foo\" -> class="foo" (Since we are processing the string value, these backslashes are literal characters in the content)
+  clean = clean.replace(/\\"/g, '"');
 
-    // 3. Fix the specific "User's Bug": class="\"bg-white" -> class="bg-white"
-    // It removes the extra quote at the start of the attribute value
-    clean = clean.replace(/="\\?"/g, '="');
-    clean = clean.replace(/='\\?'/g, "='");
+  // 3. Fix the specific "User's Bug": class="\"bg-white" -> class="bg-white"
+  // It removes the extra quote at the start of the attribute value
+  clean = clean.replace(/="\\?"/g, '="');
+  clean = clean.replace(/='\\?'/g, "='");
 
-    // 4. Fix trailing quote issues like w-full\"" -> w-full"
-    // This is tricky, but generally we want to remove backslashes before quotes
-    clean = clean.replace(/\\"/g, '"'); // Re-run to be safe
+  // 4. Fix trailing quote issues like w-full\"" -> w-full"
+  // This is tricky, but generally we want to remove backslashes before quotes
+  clean = clean.replace(/\\"/g, '"'); // Re-run to be safe
 
-    // 5. Fix weird "attribute name" escaping like <div class="\"flex" items-center=""
-    // The user example showed: <div class="\&quot;bg-white"
-    // Step 1 handling &quot; -> " made it: <div class=""bg-white"
-    // Now we have double quotes at start.
-    clean = clean.replace(/=""/g, '="'); // class=""bg-white" -> class="bg-white"
+  // 5. Fix weird "attribute name" escaping like <div class="\"flex" items-center=""
+  // The user example showed: <div class="\&quot;bg-white"
+  // Step 1 handling &quot; -> " made it: <div class=""bg-white"
+  // Now we have double quotes at start.
+  clean = clean.replace(/=""/g, '="'); // class=""bg-white" -> class="bg-white"
 
-    return clean;
+  return clean;
 }
-

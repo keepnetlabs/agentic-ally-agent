@@ -20,7 +20,11 @@ vi.mock('./logger-setup', () => ({
     error: vi.fn(),
     debug: vi.fn(),
   },
-  createLogContext: vi.fn(() => ({ email_id: 'test', step: 'behavioral-analysis', timestamp: new Date().toISOString() })),
+  createLogContext: vi.fn(() => ({
+    email_id: 'test',
+    step: 'behavioral-analysis',
+    timestamp: new Date().toISOString(),
+  })),
   logStepStart: vi.fn(),
   logStepComplete: vi.fn(),
   logStepError: vi.fn(),

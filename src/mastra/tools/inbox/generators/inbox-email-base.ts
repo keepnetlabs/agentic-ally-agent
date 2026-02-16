@@ -91,5 +91,3 @@ DIFFICULTY CALIBRATION:
 CRITICAL: "attachments" must be array of objects, NOT nested arrays. If no attachment, use empty array [].
 `;
 }
-
-

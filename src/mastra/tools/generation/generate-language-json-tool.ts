@@ -1,6 +1,16 @@
 import { createTool, ToolExecutionContext } from '@mastra/core/tools';
 import { generateText } from 'ai';
 import { PromptAnalysis } from '../../types/prompt-analysis';
+
+/** AI SDK usage shape - v5 uses camelCase, older versions use snake_case. */
+type UsageShape = {
+  inputTokens?: number;
+  outputTokens?: number;
+  promptTokens?: number;
+  completionTokens?: number;
+  input_tokens?: number;
+  output_tokens?: number;
+};
 import { MicrolearningContent, LanguageContent } from '../../types/microlearning';
 import { GenerateLanguageJsonSchema, GenerateLanguageJsonOutputSchema } from '../../schemas';
 import { getAppTexts, getAppAriaTexts } from '../../utils/language/app-texts';
@@ -47,15 +57,14 @@ export const generateLanguageJsonTool = createTool({
 
       return {
         success: true,
-        data: languageContent
+        data: languageContent,
       };
-
     } catch (error) {
       const err = normalizeError(error);
       const errorInfo = errorService.aiModel(err.message, {
         analysis: { language: analysis.language, topic: analysis.topic },
         step: 'language-json-generation',
-        stack: err.stack
+        stack: err.stack,
       });
 
       logErrorInfo(logger, 'error', 'Language JSON generation failed', errorInfo);
@@ -69,7 +78,12 @@ export const generateLanguageJsonTool = createTool({
  * Build messages array with multi-message pattern for scene generation
  * Ensures additionalContext and policy context receive dedicated attention from LLM
  */
-function buildSceneMessages(systemPrompt: string, scenePrompt: string, analysis: PromptAnalysis, policyContext?: string): any[] {
+function buildSceneMessages(
+  systemPrompt: string,
+  scenePrompt: string,
+  analysis: PromptAnalysis,
+  policyContext?: string
+): any[] {
   let system = systemPrompt;
 
   // Add policy context to system prompt using centralized builder
@@ -78,9 +92,7 @@ function buildSceneMessages(systemPrompt: string, scenePrompt: string, analysis:
     system += policyBlock;
   }
 
-  const messages: any[] = [
-    { role: 'system', content: system }
-  ];
+  const messages: any[] = [{ role: 'system', content: system }];
 
   // If we have rich user behavior context, add it as a dedicated message
   // This uses the multi-message pattern recommended by OpenAI/Anthropic:
@@ -92,22 +104,27 @@ function buildSceneMessages(systemPrompt: string, scenePrompt: string, analysis:
       role: 'user',
       content: `🔴 CRITICAL USER CONTEXT - Behavior & Risk Analysis:
 
-${analysis.additionalContext}`
+${analysis.additionalContext}`,
     });
   }
 
   // Add main scene generation request
   messages.push({
     role: 'user',
-    content: scenePrompt
+    content: scenePrompt,
   });
 
   return messages;
 }
 
-
 // Generate language-specific training content from microlearning.json metadata with rich context
-async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearning: MicrolearningContent, model: any, writer?: any, policyContext?: string): Promise<LanguageContent> {
+async function generateLanguageJsonWithAI(
+  analysis: PromptAnalysis,
+  microlearning: MicrolearningContent,
+  model: any,
+  writer?: any,
+  policyContext?: string
+): Promise<LanguageContent> {
   const logger = getLogger('GenerateLanguageJsonWithAI');
   logger.debug('Initializing language content generation', { hasWriter: !!writer, hasPolicies: !!policyContext });
 
@@ -140,11 +157,14 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
   const scene6Prompt = generateScene6Prompt(analysis, microlearning);
 
   // Generate scene 7, 8 prompts using modular generators
-  logger.debug('Preparing final scene prompts', { topic: analysis.topic, category: analysis.category, keyTopicsCount: analysis.keyTopics?.length || 0 });
+  logger.debug('Preparing final scene prompts', {
+    topic: analysis.topic,
+    category: analysis.category,
+    keyTopicsCount: analysis.keyTopics?.length || 0,
+  });
 
   const scene7Prompt = generateScene7Prompt(analysis, microlearning);
   const scene8Prompt = generateScene8Prompt(analysis, microlearning);
-
 
   try {
     logger.debug('Starting parallel content generation', {
@@ -152,104 +172,134 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
       language: analysis.language,
       topic: analysis.topic,
       category: analysis.category,
-      level: analysis.level
+      level: analysis.level,
     });
 
     // Build system prompt with language rules and behavior (level-adaptive vocabulary)
     const systemPrompt = buildSystemPrompt(analysis.language, analysis.level);
 
     // Video-specific system prompt (adds transcript rule)
-    const videoSystemPrompt = systemPrompt + `\n\nVIDEO-SPECIFIC RULE:\n- NEVER use \\n in transcript - use actual line breaks`;
+    const videoSystemPrompt =
+      systemPrompt + `\n\nVIDEO-SPECIFIC RULE:\n- NEVER use \\n in transcript - use actual line breaks`;
 
     // Generate content in parallel for better performance and reliability
     const startTime = Date.now();
-    const [scene1Response, scene2Response, videoResponse, scene4Response, scene5Response, scene6Response, scene7Response, scene8Response] = await Promise.all([
+    const [
+      scene1Response,
+      scene2Response,
+      videoResponse,
+      scene4Response,
+      scene5Response,
+      scene6Response,
+      scene7Response,
+      scene8Response,
+    ] = await Promise.all([
       withRetry(
-        () => generateText({
-          model: model,
-          messages: buildSceneMessages(systemPrompt, scene1Prompt, analysis, policyContext),
-          ...SCENE_GENERATION_PARAMS[1]  // Scene 1: Intro (creative)
-        }),
+        () =>
+          generateText({
+            model: model,
+            messages: buildSceneMessages(systemPrompt, scene1Prompt, analysis, policyContext),
+            ...SCENE_GENERATION_PARAMS[1], // Scene 1: Intro (creative)
+          }),
         'Scene 1 generation'
       ),
       withRetry(
-        () => generateText({
-          model: model,
-          messages: buildSceneMessages(systemPrompt, scene2Prompt, analysis, policyContext),
-          ...SCENE_GENERATION_PARAMS[2]  // Scene 2: Goals (factual)
-        }),
+        () =>
+          generateText({
+            model: model,
+            messages: buildSceneMessages(systemPrompt, scene2Prompt, analysis, policyContext),
+            ...SCENE_GENERATION_PARAMS[2], // Scene 2: Goals (factual)
+          }),
         'Scene 2 generation'
       ),
       withRetry(
-        () => generateText({
-          model: model,
-          messages: buildSceneMessages(videoSystemPrompt, videoPrompt, analysis, policyContext),
-          ...SCENE_GENERATION_PARAMS[3]  // Scene 3: Video (balanced)
-        }),
+        () =>
+          generateText({
+            model: model,
+            messages: buildSceneMessages(videoSystemPrompt, videoPrompt, analysis, policyContext),
+            ...SCENE_GENERATION_PARAMS[3], // Scene 3: Video (balanced)
+          }),
         'Scene 3 generation'
       ),
       withRetry(
-        () => generateText({
-          model: model,
-          messages: buildSceneMessages(systemPrompt, scene4Prompt, analysis, policyContext),
-          ...SCENE_GENERATION_PARAMS[4]  // Scene 4: Actions (specific)
-        }),
+        () =>
+          generateText({
+            model: model,
+            messages: buildSceneMessages(systemPrompt, scene4Prompt, analysis, policyContext),
+            ...SCENE_GENERATION_PARAMS[4], // Scene 4: Actions (specific)
+          }),
         'Scene 4 generation'
       ),
       withRetry(
-        () => generateText({
-          model: model,
-          messages: buildSceneMessages(systemPrompt, scene5Prompt, analysis, policyContext),
-          ...SCENE_GENERATION_PARAMS[5]  // Scene 5: Quiz (precise)
-        }),
+        () =>
+          generateText({
+            model: model,
+            messages: buildSceneMessages(systemPrompt, scene5Prompt, analysis, policyContext),
+            ...SCENE_GENERATION_PARAMS[5], // Scene 5: Quiz (precise)
+          }),
         'Scene 5 generation'
       ),
       withRetry(
-        () => generateText({
-          model: model,
-          messages: buildSceneMessages(systemPrompt, scene6Prompt, analysis, policyContext),
-          ...SCENE_GENERATION_PARAMS[6]  // Scene 6: Survey (neutral)
-        }),
+        () =>
+          generateText({
+            model: model,
+            messages: buildSceneMessages(systemPrompt, scene6Prompt, analysis, policyContext),
+            ...SCENE_GENERATION_PARAMS[6], // Scene 6: Survey (neutral)
+          }),
         'Scene 6 generation'
       ),
       withRetry(
-        () => generateText({
-          model: model,
-          messages: buildSceneMessages(systemPrompt, scene7Prompt, analysis, policyContext),
-          ...SCENE_GENERATION_PARAMS[7]  // Scene 7: Nudge (engaging)
-        }),
+        () =>
+          generateText({
+            model: model,
+            messages: buildSceneMessages(systemPrompt, scene7Prompt, analysis, policyContext),
+            ...SCENE_GENERATION_PARAMS[7], // Scene 7: Nudge (engaging)
+          }),
         'Scene 7 generation'
       ),
       withRetry(
-        () => generateText({
-          model: model,
-          messages: buildSceneMessages(systemPrompt, scene8Prompt, analysis, policyContext),
-          ...SCENE_GENERATION_PARAMS[8]  // Scene 8: Summary (consistent)
-        }),
+        () =>
+          generateText({
+            model: model,
+            messages: buildSceneMessages(systemPrompt, scene8Prompt, analysis, policyContext),
+            ...SCENE_GENERATION_PARAMS[8], // Scene 8: Summary (consistent)
+          }),
         'Scene 8 generation'
-      )
+      ),
     ]);
 
     const generationTime = Date.now() - startTime;
     logger.debug('Parallel generation completed', { durationMs: generationTime });
 
     // Track token usage for cost monitoring
-    const allResponses = [scene1Response, scene2Response, videoResponse, scene4Response, scene5Response, scene6Response, scene7Response, scene8Response];
-    const totalUsage = allResponses.reduce((acc, response) => {
-      if (response.usage) {
-        // AI SDK v5 uses: inputTokens, outputTokens (camelCase)
-        // Older versions: promptTokens/completionTokens or input_tokens/output_tokens
-        const usage = response.usage as any;
-        const inputTokens = usage.inputTokens ?? usage.promptTokens ?? usage.input_tokens ?? 0;
-        const outputTokens = usage.outputTokens ?? usage.completionTokens ?? usage.output_tokens ?? 0;
+    const allResponses = [
+      scene1Response,
+      scene2Response,
+      videoResponse,
+      scene4Response,
+      scene5Response,
+      scene6Response,
+      scene7Response,
+      scene8Response,
+    ];
+    const totalUsage = allResponses.reduce(
+      (acc, response) => {
+        if (response.usage) {
+          // AI SDK v5 uses: inputTokens, outputTokens (camelCase)
+          // Older versions: promptTokens/completionTokens or input_tokens/output_tokens
+          const usage = response.usage as UsageShape;
+          const inputTokens = usage.inputTokens ?? usage.promptTokens ?? usage.input_tokens ?? 0;
+          const outputTokens = usage.outputTokens ?? usage.completionTokens ?? usage.output_tokens ?? 0;
 
-        acc.promptTokens += inputTokens;
-        acc.completionTokens += outputTokens;
-      } else {
-        logger.warn('Response missing usage field', {});
-      }
-      return acc;
-    }, { promptTokens: 0, completionTokens: 0 });
+          acc.promptTokens += inputTokens;
+          acc.completionTokens += outputTokens;
+        } else {
+          logger.warn('Response missing usage field', {});
+        }
+        return acc;
+      },
+      { promptTokens: 0, completionTokens: 0 }
+    );
 
     // Use cost tracker for structured logging
     trackCost('generate-language-content', model.modelId || '@cf/openai/gpt-oss-120b', totalUsage);
@@ -265,7 +315,10 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
       logger.debug('Scene 1 parsed successfully', { hasHighlights: !!scene1Scenes['1']?.highlights });
     } catch (parseErr) {
       const normalizedErr = normalizeError(parseErr);
-      const errorInfo = errorService.aiModel(`Scene 1 JSON parsing failed: ${normalizedErr.message}`, { scene: 1, step: 'parsing' });
+      const errorInfo = errorService.aiModel(`Scene 1 JSON parsing failed: ${normalizedErr.message}`, {
+        scene: 1,
+        step: 'parsing',
+      });
       logErrorInfo(logger, 'error', 'Failed to parse scene 1', errorInfo);
       throw new Error(errorInfo.message);
     }
@@ -277,7 +330,10 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
       logger.debug('Scene 2 parsed successfully');
     } catch (parseErr) {
       const normalizedErr = normalizeError(parseErr);
-      const errorInfo = errorService.aiModel(`Scene 2 JSON parsing failed: ${normalizedErr.message}`, { scene: 2, step: 'parsing' });
+      const errorInfo = errorService.aiModel(`Scene 2 JSON parsing failed: ${normalizedErr.message}`, {
+        scene: 2,
+        step: 'parsing',
+      });
       logErrorInfo(logger, 'error', 'Failed to parse scene 2', errorInfo);
       throw new Error(errorInfo.message);
     }
@@ -291,20 +347,25 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
       if (videoScenes['3'] && videoScenes['3'].video) {
         videoScenes['3'].video.src = selectedVideoUrl;
         videoScenes['3'].video.transcript = selectedTranscript;
-        videoScenes['3'].video.transcriptLanguage = analysis.language.toLowerCase().startsWith('en') ? 'English' : analysis.language;
+        videoScenes['3'].video.transcriptLanguage = analysis.language.toLowerCase().startsWith('en')
+          ? 'English'
+          : analysis.language;
         logger.debug('Video URL overridden', { videoUrl: selectedVideoUrl.substring(0, 50) });
       }
     } catch (parseErr) {
-      logger.warn('Video JSON parsing failed, attempting retry', { originalError: parseErr instanceof Error ? parseErr.message : String(parseErr) });
+      logger.warn('Video JSON parsing failed, attempting retry', {
+        originalError: parseErr instanceof Error ? parseErr.message : String(parseErr),
+      });
 
       try {
         // Retry with fresh AI call using same optimized prompt (withRetry handles exponential backoff)
         const retryResponse = await withRetry(
-          () => generateText({
-            model: model,
-            messages: buildSceneMessages(videoSystemPrompt, videoPrompt, analysis, policyContext),
-            ...SCENE_GENERATION_PARAMS[3]  // Scene 3: Video (balanced) - keep retry consistent with primary call
-          }),
+          () =>
+            generateText({
+              model: model,
+              messages: buildSceneMessages(videoSystemPrompt, videoPrompt, analysis, policyContext),
+              ...SCENE_GENERATION_PARAMS[3], // Scene 3: Video (balanced) - keep retry consistent with primary call
+            }),
           'Video generation retry'
         );
 
@@ -315,14 +376,18 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
         if (videoScenes['3'] && videoScenes['3'].video) {
           videoScenes['3'].video.src = selectedVideoUrl;
           videoScenes['3'].video.transcript = selectedTranscript;
-          videoScenes['3'].video.transcriptLanguage = analysis.language.toLowerCase().startsWith('en') ? 'English' : analysis.language;
+          videoScenes['3'].video.transcriptLanguage = analysis.language.toLowerCase().startsWith('en')
+            ? 'English'
+            : analysis.language;
           logger.debug('Video URL overridden on retry', { videoUrl: selectedVideoUrl.substring(0, 50) });
         }
 
         logger.debug('Video scenes parsed successfully on retry');
-
       } catch {
-        const errorInfo = errorService.aiModel('Video content generation failed after retry. Please regenerate the entire microlearning.', { scene: 3, step: 'retry' });
+        const errorInfo = errorService.aiModel(
+          'Video content generation failed after retry. Please regenerate the entire microlearning.',
+          { scene: 3, step: 'retry' }
+        );
         logErrorInfo(logger, 'error', 'Video generation failed after retry', errorInfo);
         throw new Error(errorInfo.message);
       }
@@ -337,7 +402,10 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
       logger.debug('Scene 4 parsed successfully');
     } catch (parseErr) {
       const normalizedErr = normalizeError(parseErr);
-      const errorInfo = errorService.aiModel(`Scene 4 JSON parsing failed: ${normalizedErr.message}`, { scene: 4, step: 'parsing' });
+      const errorInfo = errorService.aiModel(`Scene 4 JSON parsing failed: ${normalizedErr.message}`, {
+        scene: 4,
+        step: 'parsing',
+      });
       logErrorInfo(logger, 'error', 'Failed to parse scene 4', errorInfo);
       throw new Error(errorInfo.message);
     }
@@ -358,7 +426,10 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
       logger.debug('Scene 5 parsed successfully');
     } catch (parseErr) {
       const normalizedErr = normalizeError(parseErr);
-      const errorInfo = errorService.aiModel(`Scene 5 JSON parsing failed: ${normalizedErr.message}`, { scene: 5, step: 'parsing' });
+      const errorInfo = errorService.aiModel(`Scene 5 JSON parsing failed: ${normalizedErr.message}`, {
+        scene: 5,
+        step: 'parsing',
+      });
       logErrorInfo(logger, 'error', 'Failed to parse scene 5', errorInfo);
       throw new Error(errorInfo.message);
     }
@@ -370,7 +441,10 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
       logger.debug('Scene 6 parsed successfully');
     } catch (parseErr) {
       const normalizedErr = normalizeError(parseErr);
-      const errorInfo = errorService.aiModel(`Scene 6 JSON parsing failed: ${normalizedErr.message}`, { scene: 6, step: 'parsing' });
+      const errorInfo = errorService.aiModel(`Scene 6 JSON parsing failed: ${normalizedErr.message}`, {
+        scene: 6,
+        step: 'parsing',
+      });
       logErrorInfo(logger, 'error', 'Failed to parse scene 6', errorInfo);
       throw new Error(errorInfo.message);
     }
@@ -388,7 +462,10 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
       logger.debug('Scene 7 parsed successfully');
     } catch (parseErr) {
       const normalizedErr = normalizeError(parseErr);
-      const errorInfo = errorService.aiModel(`Scene 7 JSON parsing failed: ${normalizedErr.message}`, { scene: 7, step: 'parsing' });
+      const errorInfo = errorService.aiModel(`Scene 7 JSON parsing failed: ${normalizedErr.message}`, {
+        scene: 7,
+        step: 'parsing',
+      });
       logErrorInfo(logger, 'error', 'Failed to parse scene 7', errorInfo);
       throw new Error(errorInfo.message);
     }
@@ -400,11 +477,13 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
       logger.debug('Scene 8 parsed successfully');
     } catch (parseErr) {
       const normalizedErr = normalizeError(parseErr);
-      const errorInfo = errorService.aiModel(`Scene 8 JSON parsing failed: ${normalizedErr.message}`, { scene: 8, step: 'parsing' });
+      const errorInfo = errorService.aiModel(`Scene 8 JSON parsing failed: ${normalizedErr.message}`, {
+        scene: 8,
+        step: 'parsing',
+      });
       logErrorInfo(logger, 'error', 'Failed to parse scene 8', errorInfo);
       throw new Error(errorInfo.message);
     }
-
 
     // eslint-disable-next-line prefer-const
     closingScenes = { ...scene7Scenes, ...scene8Scenes };
@@ -420,8 +499,8 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
       ...closingScenes,
       app: {
         texts: getAppTexts(analysis.language),
-        ariaTexts: getAppAriaTexts(analysis.language, analysis.topic)
-      }
+        ariaTexts: getAppAriaTexts(analysis.language, analysis.topic),
+      },
     };
 
     // Validate the combined content structure
@@ -429,22 +508,26 @@ async function generateLanguageJsonWithAI(analysis: PromptAnalysis, microlearnin
     logger.debug('Combined content created', { sceneCount, haAppTexts: !!combinedContent.app });
 
     if (sceneCount < 8) {
-      logger.warn('Scene count mismatch', { expected: 8, actual: sceneCount, sceneKeys: Object.keys(combinedContent).filter(k => k !== 'app').join(', ') });
+      logger.warn('Scene count mismatch', {
+        expected: 8,
+        actual: sceneCount,
+        sceneKeys: Object.keys(combinedContent)
+          .filter(k => k !== 'app')
+          .join(', '),
+      });
     }
 
     const totalTime = Date.now() - startTime;
     logger.debug('Language content generation completed', { durationMs: totalTime, sceneCount });
 
     return combinedContent as LanguageContent;
-
   } catch (err) {
     const error = normalizeError(err);
-    logger.error('Critical error in language generation', { error: error.message, stack: error.stack });
-
-    // Re-throw the error instead of returning it as LanguageContent
-    const errorInfo = errorService.aiModel(`Language generation failed: ${error.message}`, { step: 'language-generation' });
-    logErrorInfo(logger, 'error', 'Language generation failed', errorInfo);
+    const errorInfo = errorService.aiModel(`Language generation failed: ${error.message}`, {
+      step: 'language-generation',
+      stack: error.stack,
+    });
+    logErrorInfo(logger, 'error', 'Critical error in language generation', errorInfo);
     throw new Error(errorInfo.message);
   }
 }
-

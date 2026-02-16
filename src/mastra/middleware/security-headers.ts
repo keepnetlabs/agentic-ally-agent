@@ -29,4 +29,3 @@ export const securityHeadersMiddleware = async (c: Context, next: Next) => {
   // Permissions policy - restrict browser features
   c.res.headers.set('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
 };
-

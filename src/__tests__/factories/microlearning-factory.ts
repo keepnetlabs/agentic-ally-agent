@@ -38,15 +38,15 @@ export function createMicrolearningContent(overrides?: {
           positive_and_motivational_tone: [],
           inclusive_and_universal_expression: [],
           clear_and_plain_language: [],
-          accessibility: []
+          accessibility: [],
         },
         value_for_employees: { HR: [], CISO: [], Leaders: [] },
-        conclusion: []
+        conclusion: [],
       },
       language: 'en',
       language_availability: ['en'],
       gamification_enabled: false,
-      total_points: 0
+      total_points: 0,
     },
     scientific_evidence: {
       overview: {
@@ -54,7 +54,7 @@ export function createMicrolearningContent(overrides?: {
         description: 'Description',
         last_updated: '2024-01-01',
         evidence_level: 'High',
-        peer_reviewed_sources: 0
+        peer_reviewed_sources: 0,
       },
       learning_theories: {},
       behavioral_psychology: {},
@@ -64,16 +64,16 @@ export function createMicrolearningContent(overrides?: {
       effectiveness_metrics: {
         learning_outcomes: {},
         engagement_metrics: {},
-        business_impact: {}
+        business_impact: {},
       },
-      research_sources: []
+      research_sources: [],
     },
     theme: {
       fontFamily: { primary: 'Arial', secondary: 'Arial', monospace: 'Courier' },
       colors: { background: '#fff' },
-      logo: { src: '', darkSrc: '', minimizedSrc: '', minimizedDarkSrc: '', alt: '' }
+      logo: { src: '', darkSrc: '', minimizedSrc: '', minimizedDarkSrc: '', alt: '' },
     },
-    scenes: []
+    scenes: [],
   };
 
   return {
@@ -82,8 +82,8 @@ export function createMicrolearningContent(overrides?: {
     ...(overrides?.scenes && { scenes: overrides.scenes }),
     microlearning_metadata: {
       ...defaultContent.microlearning_metadata,
-      ...(overrides?.microlearning_metadata || {})
-    } as MicrolearningContent['microlearning_metadata']
+      ...(overrides?.microlearning_metadata || {}),
+    } as MicrolearningContent['microlearning_metadata'],
   };
 }
 
@@ -107,7 +107,7 @@ export function createLanguageContent(overrides?: Partial<LanguageContent>): Lan
       highlights: [],
       duration: '15s',
       level: 'Intermediate',
-      callToActionText: { mobile: 'Start', desktop: 'Start' }
+      callToActionText: { mobile: 'Start', desktop: 'Start' },
     },
     '2': {} as any,
     '3': {} as any,
@@ -116,11 +116,11 @@ export function createLanguageContent(overrides?: Partial<LanguageContent>): Lan
     '6': {} as any,
     '7': {} as any,
     '8': {} as any,
-    app: {} as any
+    app: {} as any,
   };
 
   return {
     ...defaultContent,
-    ...overrides
+    ...overrides,
   };
 }

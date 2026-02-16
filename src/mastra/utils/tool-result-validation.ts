@@ -1,7 +1,7 @@
 /**
  * Tool Result Validation Utility
  * Validates tool output against Zod schema to ensure type safety and catch errors early
- * 
+ *
  * Usage:
  * ```typescript
  * const result = { success: true, data: {...} };
@@ -31,13 +31,15 @@ export function validateToolResult<T extends z.ZodTypeAny>(
   result: unknown,
   schema: T,
   toolName: string
-): {
-  success: true;
-  data: z.infer<T>;
-} | {
-  success: false;
-  error: ReturnType<typeof errorService.internal>;
-} {
+):
+  | {
+      success: true;
+      data: z.infer<T>;
+    }
+  | {
+      success: false;
+      error: ReturnType<typeof errorService.internal>;
+    } {
   try {
     const validated = schema.safeParse(result);
 
@@ -61,10 +63,7 @@ export function validateToolResult<T extends z.ZodTypeAny>(
         receivedKeys: result && typeof result === 'object' ? Object.keys(result) : undefined,
       });
 
-      const errorInfo = errorService.internal(
-        `Tool result validation failed for ${toolName}`,
-        errorDetails
-      );
+      const errorInfo = errorService.internal(`Tool result validation failed for ${toolName}`, errorDetails);
 
       return {
         success: false,
@@ -85,10 +84,11 @@ export function validateToolResult<T extends z.ZodTypeAny>(
       stack: err.stack,
     });
 
-    const errorInfo = errorService.internal(
-      `Unexpected error during validation for ${toolName}: ${err.message}`,
-      { toolName, originalError: err.message, stack: err.stack }
-    );
+    const errorInfo = errorService.internal(`Unexpected error during validation for ${toolName}: ${err.message}`, {
+      toolName,
+      originalError: err.message,
+      stack: err.stack,
+    });
 
     return {
       success: false,

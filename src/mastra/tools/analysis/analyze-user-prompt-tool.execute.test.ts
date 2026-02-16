@@ -136,10 +136,7 @@ describe('analyzeUserPromptTool.execute', () => {
     });
 
     expect(mocks.normalizeError).toHaveBeenCalled();
-    expect(mocks.aiModel).toHaveBeenCalledWith(
-      'LLM unavailable',
-      expect.objectContaining({ step: 'prompt-analysis' })
-    );
+    expect(mocks.aiModel).toHaveBeenCalledWith('LLM unavailable', expect.objectContaining({ step: 'prompt-analysis' }));
     expect(mocks.logErrorInfo).toHaveBeenCalled();
     expect(mocks.getFallbackAnalysis).toHaveBeenCalledWith(
       expect.objectContaining({

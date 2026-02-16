@@ -11,12 +11,10 @@
  * - Preserves the beginning of the text (most important for context)
  */
 export function truncateText(input: string, maxChars: number, label: string = 'text'): string {
-    const trimmed = input.trim();
-    if (trimmed.length <= maxChars) {
-        return trimmed;
-    }
+  const trimmed = input.trim();
+  if (trimmed.length <= maxChars) {
+    return trimmed;
+  }
 
-    return `${trimmed.slice(0, maxChars).trim()}\n\n[TRUNCATED: ${label} exceeded ${maxChars} characters]`;
+  return `${trimmed.slice(0, maxChars).trim()}\n\n[TRUNCATED: ${label} exceeded ${maxChars} characters]`;
 }
-
-

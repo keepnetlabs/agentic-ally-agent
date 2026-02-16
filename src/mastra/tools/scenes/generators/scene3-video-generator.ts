@@ -5,22 +5,27 @@ import { selectVideoForTopic, generateVideoMetadata } from '../../../utils/resol
 import transcriptDatabase from '../../../data/transcript-database.json';
 import { getLogger } from '../../../utils/core/logger';
 
+/** Transcript database: video URL -> transcript text */
+const transcriptMap = transcriptDatabase as Record<string, string>;
 
-export async function generateVideoPrompt(analysis: PromptAnalysis, microlearning: MicrolearningContent): Promise<{ prompt: string; videoUrl: string; transcript: string }> {
+export async function generateVideoPrompt(
+  analysis: PromptAnalysis,
+  microlearning: MicrolearningContent
+): Promise<{ prompt: string; videoUrl: string; transcript: string }> {
   const logger = getLogger('Scene3VideoGenerator');
   const contextData = buildContextData(analysis, microlearning);
-
 
   // Select appropriate video using AI
   const selectedVideoUrl = await selectVideoForTopic(analysis);
   logger.info('Selected video URL', { selectedVideoUrl });
 
   // Get base English transcript from database using selected video URL
-  const baseEnglishTranscript = (transcriptDatabase as any)[selectedVideoUrl];
+  const baseEnglishTranscript = transcriptMap[selectedVideoUrl];
   logger.info('Transcript found', { found: baseEnglishTranscript ? 'YES' : 'NO' });
 
-  const finalTranscript = baseEnglishTranscript ||
-    "00:00:04.400 Default transcript content for this video is not available yet. This is a placeholder transcript for the selected security awareness video.";
+  const finalTranscript =
+    baseEnglishTranscript ||
+    '00:00:04.400 Default transcript content for this video is not available yet. This is a placeholder transcript for the selected security awareness video.';
 
   // Generate title and subtitle with AI awareness of topic and department
   const videoMetadata = await generateVideoMetadata(
@@ -97,10 +102,9 @@ CRITICAL:
 4. Where you see "Output ONLY..." - return ONLY the final text, NO instructions, NO patterns, NO "Write..." directives
 5. TERMINOLOGY: Use correct grammar for compound topics (e.g., 'Real Ransomware Attack' NOT 'Real Ransomware Backups Story')`;
 
-
   return {
     prompt,
     videoUrl: selectedVideoUrl,
-    transcript: finalTranscript
+    transcript: finalTranscript,
   };
 }

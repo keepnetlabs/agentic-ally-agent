@@ -16,8 +16,8 @@ describe('uploadPhishingTool', () => {
   const mockCompanyId = 'test-company-id';
   const mockEnv = {
     PHISHING_CRUD_WORKER: {
-      fetch: vi.fn()
-    }
+      fetch: vi.fn(),
+    },
   };
 
   const mockPhishingContent = {
@@ -28,18 +28,18 @@ describe('uploadPhishingTool', () => {
       topic: 'Security',
       difficulty: 'medium',
       method: 'email',
-      language_availability: ['en-gb']
+      language_availability: ['en-gb'],
     },
     email: {
       subject: 'Test Subject',
       template: 'Test Template',
       fromAddress: 'test@example.com',
-      fromName: 'Test Sender'
+      fromName: 'Test Sender',
     },
     landing: {
       url: 'https://example.com',
-      content: 'Landing page content'
-    }
+      content: 'Landing page content',
+    },
   };
 
   beforeEach(() => {
@@ -49,7 +49,7 @@ describe('uploadPhishingTool', () => {
     vi.spyOn(requestStorage, 'getStore').mockReturnValue({
       token: mockToken,
       companyId: mockCompanyId,
-      env: mockEnv
+      env: mockEnv,
     });
   });
 
@@ -61,11 +61,11 @@ describe('uploadPhishingTool', () => {
         templateId: 1,
         scenarioResourceId: 'scenario-123',
         scenarioId: 2,
-        message: 'Upload successful'
+        message: 'Upload successful',
       });
 
       const input = {
-        phishingId: 'phishing-123'
+        phishingId: 'phishing-123',
       };
 
       const result = await uploadPhishingTool.execute({ context: input } as any);
@@ -90,12 +90,12 @@ describe('uploadPhishingTool', () => {
     it('should return error when token is missing', async () => {
       vi.spyOn(requestStorage, 'getStore').mockReturnValue({
         companyId: mockCompanyId,
-        env: mockEnv
+        env: mockEnv,
         // token is missing
       });
 
       const input = {
-        phishingId: 'phishing-123'
+        phishingId: 'phishing-123',
       };
 
       const result = await uploadPhishingTool.execute({ context: input } as any);
@@ -108,11 +108,11 @@ describe('uploadPhishingTool', () => {
       vi.spyOn(workerApiClient, 'callWorkerAPI').mockResolvedValue({
         templateResourceId: 'template-123',
         scenarioResourceId: 'scenario-123',
-        message: 'Upload successful'
+        message: 'Upload successful',
       });
 
       const input = {
-        phishingId: 'phishing-123'
+        phishingId: 'phishing-123',
       };
 
       const result = await uploadPhishingTool.execute({ context: input } as any);
@@ -123,16 +123,15 @@ describe('uploadPhishingTool', () => {
   describe('KV Content Fetching', () => {
     it('should fetch phishing content from KV with phishing namespace', async () => {
       // Note: uploadPhishingTool uses KV_NAMESPACES.PHISHING override
-      const getPhishingSpy = vi.spyOn(KVService.prototype, 'getPhishing')
-        .mockResolvedValue(mockPhishingContent);
+      const getPhishingSpy = vi.spyOn(KVService.prototype, 'getPhishing').mockResolvedValue(mockPhishingContent);
       vi.spyOn(workerApiClient, 'callWorkerAPI').mockResolvedValue({
         templateResourceId: 'template-123',
         scenarioResourceId: 'scenario-123',
-        message: 'Upload successful'
+        message: 'Upload successful',
       });
 
       const input = {
-        phishingId: 'phishing-123'
+        phishingId: 'phishing-123',
       };
 
       await uploadPhishingTool.execute({ context: input } as any);
@@ -144,7 +143,7 @@ describe('uploadPhishingTool', () => {
       vi.spyOn(KVService.prototype, 'getPhishing').mockResolvedValue(null);
 
       const input = {
-        phishingId: 'phishing-123'
+        phishingId: 'phishing-123',
       };
 
       const result = await uploadPhishingTool.execute({ context: input } as any);
@@ -156,7 +155,7 @@ describe('uploadPhishingTool', () => {
       vi.spyOn(KVService.prototype, 'getPhishing').mockResolvedValue({});
 
       const input = {
-        phishingId: 'phishing-123'
+        phishingId: 'phishing-123',
       };
 
       const result = await uploadPhishingTool.execute({ context: input } as any);
@@ -171,11 +170,11 @@ describe('uploadPhishingTool', () => {
       const mockCallWorkerAPI = vi.spyOn(workerApiClient, 'callWorkerAPI').mockResolvedValue({
         templateResourceId: 'template-123',
         scenarioResourceId: 'scenario-123',
-        message: 'Upload successful'
+        message: 'Upload successful',
       });
 
       const input = {
-        phishingId: 'phishing-123'
+        phishingId: 'phishing-123',
       };
 
       await uploadPhishingTool.execute({ context: input } as any);
@@ -197,13 +196,13 @@ describe('uploadPhishingTool', () => {
               language: 'en-gb',
               email: expect.objectContaining({
                 subject: 'Test Subject',
-                template: 'Test Template'
+                template: 'Test Template',
               }),
               landingPage: expect.objectContaining({
-                url: 'https://example.com'
-              })
-            })
-          })
+                url: 'https://example.com',
+              }),
+            }),
+          }),
         })
       );
     });
@@ -213,19 +212,19 @@ describe('uploadPhishingTool', () => {
         ...mockPhishingContent,
         base: {
           ...mockPhishingContent.base,
-          language_availability: []
-        }
+          language_availability: [],
+        },
       };
 
       vi.spyOn(KVService.prototype, 'getPhishing').mockResolvedValue(contentWithoutLang);
       const mockCallWorkerAPI = vi.spyOn(workerApiClient, 'callWorkerAPI').mockResolvedValue({
         templateResourceId: 'template-123',
         scenarioResourceId: 'scenario-123',
-        message: 'Upload successful'
+        message: 'Upload successful',
       });
 
       const input = {
-        phishingId: 'phishing-123'
+        phishingId: 'phishing-123',
       };
 
       await uploadPhishingTool.execute({ context: input } as any);
@@ -237,18 +236,18 @@ describe('uploadPhishingTool', () => {
     it('should handle missing email content gracefully', async () => {
       const contentWithoutEmail = {
         ...mockPhishingContent,
-        email: undefined
+        email: undefined,
       };
 
       vi.spyOn(KVService.prototype, 'getPhishing').mockResolvedValue(contentWithoutEmail);
       const mockCallWorkerAPI = vi.spyOn(workerApiClient, 'callWorkerAPI').mockResolvedValue({
         templateResourceId: 'template-123',
         scenarioResourceId: 'scenario-123',
-        message: 'Upload successful'
+        message: 'Upload successful',
       });
 
       const input = {
-        phishingId: 'phishing-123'
+        phishingId: 'phishing-123',
       };
 
       await uploadPhishingTool.execute({ context: input } as any);
@@ -260,18 +259,18 @@ describe('uploadPhishingTool', () => {
     it('should handle missing landing content gracefully', async () => {
       const contentWithoutLanding = {
         ...mockPhishingContent,
-        landing: undefined
+        landing: undefined,
       };
 
       vi.spyOn(KVService.prototype, 'getPhishing').mockResolvedValue(contentWithoutLanding);
       const mockCallWorkerAPI = vi.spyOn(workerApiClient, 'callWorkerAPI').mockResolvedValue({
         templateResourceId: 'template-123',
         scenarioResourceId: 'scenario-123',
-        message: 'Upload successful'
+        message: 'Upload successful',
       });
 
       const input = {
-        phishingId: 'phishing-123'
+        phishingId: 'phishing-123',
       };
 
       await uploadPhishingTool.execute({ context: input } as any);
@@ -289,11 +288,11 @@ describe('uploadPhishingTool', () => {
         templateId: 1,
         scenarioResourceId: 'scenario-123',
         scenarioId: 2,
-        message: 'Upload successful'
+        message: 'Upload successful',
       });
 
       const input = {
-        phishingId: 'phishing-123'
+        phishingId: 'phishing-123',
       };
 
       const result = await uploadPhishingTool.execute({ context: input } as any);
@@ -309,11 +308,11 @@ describe('uploadPhishingTool', () => {
       vi.spyOn(workerApiClient, 'callWorkerAPI').mockResolvedValue({
         templateResourceId: 'template-123',
         templateId: 1,
-        message: 'Upload successful'
+        message: 'Upload successful',
       });
 
       const input = {
-        phishingId: 'phishing-123'
+        phishingId: 'phishing-123',
       };
 
       const result = await uploadPhishingTool.execute({ context: input } as any);
@@ -335,11 +334,11 @@ describe('uploadPhishingTool', () => {
         landingPageId: 3,
         scenarioResourceId: 'scenario-123',
         scenarioId: 2,
-        message: 'Upload successful'
+        message: 'Upload successful',
       });
 
       const input = {
-        phishingId: 'phishing-123'
+        phishingId: 'phishing-123',
       };
 
       const result = await uploadPhishingTool.execute({ context: input } as any);
@@ -368,7 +367,7 @@ describe('uploadPhishingTool', () => {
       vi.spyOn(KVService.prototype, 'getPhishing').mockRejectedValue(new Error('KV fetch failed'));
 
       const input = {
-        phishingId: 'phishing-123'
+        phishingId: 'phishing-123',
       };
 
       const result = await uploadPhishingTool.execute({ context: input } as any);
@@ -382,7 +381,7 @@ describe('uploadPhishingTool', () => {
       vi.spyOn(workerApiClient, 'callWorkerAPI').mockRejectedValue(apiError);
 
       const input = {
-        phishingId: 'phishing-123'
+        phishingId: 'phishing-123',
       };
 
       const result = await uploadPhishingTool.execute({ context: input } as any);
@@ -396,7 +395,7 @@ describe('uploadPhishingTool', () => {
       vi.spyOn(workerApiClient, 'callWorkerAPI').mockRejectedValue(apiError);
 
       const input = {
-        phishingId: 'phishing-123'
+        phishingId: 'phishing-123',
       };
 
       const result = await uploadPhishingTool.execute({ context: input } as any);
@@ -411,11 +410,11 @@ describe('uploadPhishingTool', () => {
       vi.spyOn(workerApiClient, 'callWorkerAPI').mockResolvedValue({
         templateResourceId: 'template-123',
         scenarioResourceId: 'scenario-123',
-        message: 'Upload successful'
+        message: 'Upload successful',
       });
 
       const input = {
-        phishingId: 'phishing-123'
+        phishingId: 'phishing-123',
       };
 
       const result = await uploadPhishingTool.execute({ context: input } as any);

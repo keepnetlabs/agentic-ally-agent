@@ -97,9 +97,14 @@ describe('summarizeForLog', () => {
   describe('Robustness', () => {
     it('handles errors gracefully (e.g. proxy trap errors)', () => {
       // Simulating an object that throws when keys are accessed is hard without Proxy
-      const throwingProxy = new Proxy({}, {
-        ownKeys: () => { throw new Error('trap error'); }
-      });
+      const throwingProxy = new Proxy(
+        {},
+        {
+          ownKeys: () => {
+            throw new Error('trap error');
+          },
+        }
+      );
 
       const out = summarizeForLog(throwingProxy);
       // The utility catches errors and returns type: 'unknown'

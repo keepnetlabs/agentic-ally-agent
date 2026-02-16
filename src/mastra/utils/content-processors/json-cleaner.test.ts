@@ -96,9 +96,7 @@ describe('json-cleaner', () => {
       throw new Error('repair failed');
     });
 
-    expect(() => cleanResponse('{"bad":', 'broken')).toThrow(
-      'Failed to clean broken response: repair failed'
-    );
+    expect(() => cleanResponse('{"bad":', 'broken')).toThrow('Failed to clean broken response: repair failed');
     expect(mocks.error).toHaveBeenCalled();
   });
 });

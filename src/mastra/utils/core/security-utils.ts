@@ -34,7 +34,7 @@
 export function maskSensitiveField<T extends Record<string, unknown>>(
   payload: T,
   fieldName: string,
-  _value?: string  // _value parameter kept for backward compatibility but not used
+  _value?: string // _value parameter kept for backward compatibility but not used
 ): T {
   return {
     ...payload,
@@ -158,7 +158,9 @@ export function deepRedact(
  * // Result: { authorization: '[REDACTED_AUTHORIZATION]', 'user-agent': 'Mozilla/5.0' }
  * ```
  */
-export function maskHeaders(headers: Record<string, string | string[] | undefined>): Record<string, string | string[] | undefined> {
+export function maskHeaders(
+  headers: Record<string, string | string[] | undefined>
+): Record<string, string | string[] | undefined> {
   const sensitiveHeaderPatterns = [
     'authorization',
     'x-api-key',

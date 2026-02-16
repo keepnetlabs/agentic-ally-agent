@@ -12,26 +12,27 @@ export type LearnerLevel = 'Beginner' | 'Intermediate' | 'Advanced';
  * Vocabulary guidance configuration for each level
  */
 interface VocabularyGuidance {
-   simplification: string;
-   conversational: string;
+  simplification: string;
+  conversational: string;
 }
 
 /**
  * Level-specific vocabulary rules mapping
  */
 const VOCABULARY_GUIDANCE: Record<LearnerLevel, VocabularyGuidance> = {
-   Beginner: {
-      simplification: '• Avoid ALL technical jargon - use only everyday words that anyone would understand',
-      conversational: '• Explain as if talking to someone completely new to the topic'
-   },
-   Intermediate: {
-      simplification: '• Simplify technical jargon: if a word requires domain expertise, replace it with an everyday equivalent',
-      conversational: '• Use words a non-expert would use in casual conversation'
-   },
-   Advanced: {
-      simplification: '• Use professional technical vocabulary - audience has domain knowledge',
-      conversational: '• Write for experienced practitioners who understand industry terminology'
-   }
+  Beginner: {
+    simplification: '• Avoid ALL technical jargon - use only everyday words that anyone would understand',
+    conversational: '• Explain as if talking to someone completely new to the topic',
+  },
+  Intermediate: {
+    simplification:
+      '• Simplify technical jargon: if a word requires domain expertise, replace it with an everyday equivalent',
+    conversational: '• Use words a non-expert would use in casual conversation',
+  },
+  Advanced: {
+    simplification: '• Use professional technical vocabulary - audience has domain knowledge',
+    conversational: '• Write for experienced practitioners who understand industry terminology',
+  },
 };
 
 /**
@@ -40,7 +41,7 @@ const VOCABULARY_GUIDANCE: Record<LearnerLevel, VocabularyGuidance> = {
  * @returns Vocabulary guidance rules for simplification and conversational tone
  */
 function getVocabularyGuidance(level: LearnerLevel): VocabularyGuidance {
-   return VOCABULARY_GUIDANCE[level] || VOCABULARY_GUIDANCE.Beginner;
+  return VOCABULARY_GUIDANCE[level] || VOCABULARY_GUIDANCE.Beginner;
 }
 
 /**
@@ -49,9 +50,9 @@ function getVocabularyGuidance(level: LearnerLevel): VocabularyGuidance {
  * @returns Validated LearnerLevel, defaults to 'Beginner'
  */
 function normalizeLevel(level?: string): LearnerLevel {
-   if (!level) return 'Beginner';
-   const normalized = level.charAt(0).toUpperCase() + level.slice(1).toLowerCase();
-   return (normalized in VOCABULARY_GUIDANCE) ? normalized as LearnerLevel : 'Beginner';
+  if (!level) return 'Beginner';
+  const normalized = level.charAt(0).toUpperCase() + level.slice(1).toLowerCase();
+  return normalized in VOCABULARY_GUIDANCE ? (normalized as LearnerLevel) : 'Beginner';
 }
 
 /**
@@ -73,11 +74,11 @@ function normalizeLevel(level?: string): LearnerLevel {
  * ```
  */
 export function buildSystemPrompt(language: string, level?: string): string {
-   const validLevel = normalizeLevel(level);
-   const vocabularyGuidance = getVocabularyGuidance(validLevel);
-   const languageRules = getLanguagePrompt(language);
+  const validLevel = normalizeLevel(level);
+  const vocabularyGuidance = getVocabularyGuidance(validLevel);
+  const languageRules = getLanguagePrompt(language);
 
-   return `You are a native ${language} microlearning content generator.
+  return `You are a native ${language} microlearning content generator.
 
 === YOUR IDENTITY ===
 You are a native professional educator and Pedagogical Specialist in ${language}, skilled in creating clear, engaging, and action-oriented learning content.
@@ -166,27 +167,27 @@ If NO → rewrite before output.
  * ```
  */
 export function buildContextData(analysis: PromptAnalysis, microlearning: MicrolearningContent): string {
-   // Safe access helpers for optional nested properties
-   const metadata = microlearning?.microlearning_metadata;
-   const evidence = microlearning?.scientific_evidence;
+  // Safe access helpers for optional nested properties
+  const metadata = microlearning?.microlearning_metadata;
+  const evidence = microlearning?.scientific_evidence;
 
-   const category = metadata?.category || 'General';
-   const subcategory = metadata?.subcategory || '';
-   const riskArea = metadata?.risk_area || 'General';
-   const learningTheories = evidence?.learning_theories
-      ? Object.keys(evidence.learning_theories).slice(0, 2).join(', ')
-      : 'Cognitive Load Theory';
+  const category = metadata?.category || 'General';
+  const subcategory = metadata?.subcategory || '';
+  const riskArea = metadata?.risk_area || 'General';
+  const learningTheories = evidence?.learning_theories
+    ? Object.keys(evidence.learning_theories).slice(0, 2).join(', ')
+    : 'Cognitive Load Theory';
 
-   // Safe array joins with fallbacks
-   const objectives = analysis.learningObjectives?.join(', ') || 'General awareness';
-   const roles = analysis.roles?.join(', ') || 'All Roles';
-   const industries = analysis.industries?.join(', ') || 'General';
-   const keyTopics = analysis.keyTopics?.join(', ') || analysis.topic;
-   const practicalApps = analysis.practicalApplications?.join(', ') || '';
-   const assessmentAreas = analysis.assessmentAreas?.join(', ') || '';
-   const compliance = analysis.regulationCompliance?.join(', ') || 'General';
+  // Safe array joins with fallbacks
+  const objectives = analysis.learningObjectives?.join(', ') || 'General awareness';
+  const roles = analysis.roles?.join(', ') || 'All Roles';
+  const industries = analysis.industries?.join(', ') || 'General';
+  const keyTopics = analysis.keyTopics?.join(', ') || analysis.topic;
+  const practicalApps = analysis.practicalApplications?.join(', ') || '';
+  const assessmentAreas = analysis.assessmentAreas?.join(', ') || '';
+  const compliance = analysis.regulationCompliance?.join(', ') || 'General';
 
-   return `
+  return `
 Generate ${analysis.language} training content for "${analysis.topic}" in STRICT JSON only.
 
 === CONTEXT ===

@@ -29,9 +29,11 @@ const GenerateMicrolearningJsonSchema = z.object({
     duration: z.number().optional(),
     themeColor: z.string().optional(),
     hasRichContext: z.boolean().optional(),
-    additionalContext: z.string()
+    additionalContext: z
+      .string()
       .max(5000, 'Additional context must not exceed 5000 characters')
-      .optional().describe('User context, vulnerabilities, or specific requirements'),
+      .optional()
+      .describe('User context, vulnerabilities, or specific requirements'),
     customRequirements: z.string().max(2000).optional(),
     isCodeTopic: z.boolean().optional(),
     isVishing: z.boolean().optional(),
@@ -39,9 +41,11 @@ const GenerateMicrolearningJsonSchema = z.object({
   }),
   microlearningId: z.string().max(256, 'Microlearning ID must not exceed 256 characters'),
   model: LanguageModelSchema,
-  policyContext: z.string()
+  policyContext: z
+    .string()
     .max(10000, 'Policy context must not exceed 10000 characters')
-    .optional().describe('Company policy context'),
+    .optional()
+    .describe('Company policy context'),
 });
 
 const GenerateMicrolearningJsonOutputSchema = z.object({
@@ -65,26 +69,25 @@ export const generateMicrolearningJsonTool = createTool({
       const result = await generateMicrolearningJsonWithAI(analysis as PromptAnalysis, microlearningId, model, policyContext);
       return {
         success: true,
-        data: result
+        data: result,
       };
     } catch (error) {
       const err = normalizeError(error);
       const errorInfo = errorService.aiModel(err.message, {
         microlearningId,
         step: 'json-generation',
-        stack: err.stack
+        stack: err.stack,
       });
 
       logErrorInfo(logger, 'error', 'JSON generation failed', errorInfo);
 
       return {
         ...createToolErrorResponse(errorInfo),
-        data: null
+        data: null,
       };
     }
   },
 });
-
 
 export type GenerateMicrolearningJsonInput = z.infer<typeof GenerateMicrolearningJsonSchema>;
 export type GenerateMicrolearningJsonOutput = z.infer<typeof GenerateMicrolearningJsonOutputSchema>;

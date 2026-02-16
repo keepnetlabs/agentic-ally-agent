@@ -5,38 +5,34 @@
  * This makes the system more agentic - agents can plan and adapt
  */
 
-import {
-    getLanguageOrDefault,
-    buildLanguageRequirementBlock,
-    EXAMPLE_IDS
-} from './autonomous-helpers';
+import { getLanguageOrDefault, buildLanguageRequirementBlock, EXAMPLE_IDS } from './autonomous-helpers';
 
 export interface PhishingGenerationContext {
-    simulation: {
-        title?: string;
-        difficulty?: string;
-        scenario_type?: string;
-        vector?: string;
-        persuasion_tactic?: string;
-        rationale?: string;
+  simulation: {
+    title?: string;
+    difficulty?: string;
+    scenario_type?: string;
+    vector?: string;
+    persuasion_tactic?: string;
+    rationale?: string;
+  };
+  toolResult: {
+    userInfo?: {
+      department?: string;
     };
-    toolResult: {
-        userInfo?: {
-            department?: string;
-        };
-    };
-    language?: string;
+  };
+  language?: string;
 }
 
 export interface TrainingGenerationContext {
-    microlearning: {
-        title?: string;
-        objective?: string;
-        rationale?: string;
-    };
-    department: string;
-    level: string;
-    language?: string;
+  microlearning: {
+    title?: string;
+    objective?: string;
+    rationale?: string;
+  };
+  department: string;
+  level: string;
+  language?: string;
 }
 
 /**
@@ -44,7 +40,7 @@ export interface TrainingGenerationContext {
  * Keeps STOP wording centralized for phishing/microlearning prompts.
  */
 function buildStopAfterSuccessBlock(successCondition: string): string {
-    return `**🔴 CRITICAL - AFTER ASSIGNMENT SUCCESS:**
+  return `**🔴 CRITICAL - AFTER ASSIGNMENT SUCCESS:**
 - Once ${successCondition}, your task is **100% COMPLETE**
 - **IMMEDIATELY STOP** - Do NOT call any other tools
 - **DO NOT** call reasoning, analyze, workflow-executor, or any other tools
@@ -58,10 +54,10 @@ function buildStopAfterSuccessBlock(successCondition: string): string {
  * Agent decides how to achieve the goal instead of following scripted steps
  */
 export function buildPhishingGenerationPrompt(context: PhishingGenerationContext): string {
-    const { simulation, toolResult, language } = context;
-    const lang = getLanguageOrDefault(language);
+  const { simulation, toolResult, language } = context;
+  const lang = getLanguageOrDefault(language);
 
-    return `**AUTONOMOUS_EXECUTION_MODE**
+  return `**AUTONOMOUS_EXECUTION_MODE**
 
 ${buildLanguageRequirementBlock('phishingExecutor', language)}
 
@@ -109,10 +105,10 @@ If the tool has already been called, STOP and report the ID from the tool output
  * Simplified fallback prompt (still goal-based but less context)
  */
 export function buildPhishingGenerationPromptSimplified(context: PhishingGenerationContext): string {
-    const { simulation, toolResult, language } = context;
-    const lang = getLanguageOrDefault(language);
+  const { simulation, toolResult, language } = context;
+  const lang = getLanguageOrDefault(language);
 
-    return `**AUTONOMOUS_EXECUTION_MODE**
+  return `**AUTONOMOUS_EXECUTION_MODE**
 
 **CRITICAL: Language Requirement - ${lang}**
 
@@ -139,10 +135,10 @@ Determine the best approach and generate the simulation in ${lang}. Call the too
  * Goal-based prompt for training generation
  */
 export function buildTrainingGenerationPrompt(context: TrainingGenerationContext): string {
-    const { microlearning, department, level, language } = context;
-    const lang = getLanguageOrDefault(language);
+  const { microlearning, department, level, language } = context;
+  const lang = getLanguageOrDefault(language);
 
-    return `**AUTONOMOUS_EXECUTION_MODE**
+  return `**AUTONOMOUS_EXECUTION_MODE**
 
 ${buildLanguageRequirementBlock('workflowExecutor', language)}
 
@@ -179,10 +175,10 @@ Review the context, determine the optimal training approach, and execute the gen
  * Simplified fallback prompt for training
  */
 export function buildTrainingGenerationPromptSimplified(context: TrainingGenerationContext): string {
-    const { microlearning, department, level, language } = context;
-    const lang = getLanguageOrDefault(language);
+  const { microlearning, department, level, language } = context;
+  const lang = getLanguageOrDefault(language);
 
-    return `**AUTONOMOUS_EXECUTION_MODE**
+  return `**AUTONOMOUS_EXECUTION_MODE**
 
 **CRITICAL: Language Requirement - ${lang}**
 
@@ -207,19 +203,16 @@ When calling workflowExecutor, mention the language requirement in the prompt. D
 /**
  * Goal-based prompt for upload (less prescriptive)
  */
-export function buildUploadPrompt(
-    artifactType: 'phishing' | 'training',
-    generatedArtifactId?: string
-): string {
-    const toolName = artifactType === 'phishing' ? 'uploadPhishing' : 'uploadTraining';
-    const idField = artifactType === 'phishing' ? 'phishingId' : 'microlearningId';
-    const artifactLabel = artifactType === 'phishing' ? 'simulation' : 'module';
+export function buildUploadPrompt(artifactType: 'phishing' | 'training', generatedArtifactId?: string): string {
+  const toolName = artifactType === 'phishing' ? 'uploadPhishing' : 'uploadTraining';
+  const idField = artifactType === 'phishing' ? 'phishingId' : 'microlearningId';
+  const artifactLabel = artifactType === 'phishing' ? 'simulation' : 'module';
 
-    const contextInfo = generatedArtifactId
-        ? `- The ${idField} is: **${generatedArtifactId}** (Use this EXACT ID)`
-        : `- The ${idField} should be available in recent conversation history`;
+  const contextInfo = generatedArtifactId
+    ? `- The ${idField} is: **${generatedArtifactId}** (Use this EXACT ID)`
+    : `- The ${idField} should be available in recent conversation history`;
 
-    return `**AUTONOMOUS_EXECUTION_MODE**
+  return `**AUTONOMOUS_EXECUTION_MODE**
 
 **Goal:** Upload the ${artifactType} ${artifactLabel} to the platform and report the Resource IDs.
 
@@ -235,9 +228,11 @@ After uploading, you MUST report the results in this exact format:
 - If successful: "UPLOAD_SUCCESS: resourceId=<ID>, languageId=<LANG>"
 - If failed: "UPLOAD_FAILED: <error message>"
 
-${generatedArtifactId
-            ? `Call ${toolName} using ${idField}="${generatedArtifactId}".`
-            : `Locate the ${idField} from conversation history and call ${toolName}.`}
+${
+  generatedArtifactId
+    ? `Call ${toolName} using ${idField}="${generatedArtifactId}".`
+    : `Locate the ${idField} from conversation history and call ${toolName}.`
+}
 Report results in the format above.`;
 }
 
@@ -245,24 +240,24 @@ Report results in the format above.`;
  * Goal-based prompt for upload and assign
  */
 export function buildUploadAndAssignPrompt(
-    artifactType: 'phishing' | 'training',
-    targetUserResourceId: string,
-    generatedArtifactId?: string
+  artifactType: 'phishing' | 'training',
+  targetUserResourceId: string,
+  generatedArtifactId?: string
 ): string {
-    const uploadTool = artifactType === 'phishing' ? 'uploadPhishing' : 'uploadTraining';
-    const assignTool = artifactType === 'phishing' ? 'assignPhishing' : 'assignTraining';
-    const idField = artifactType === 'phishing' ? 'phishingId' : 'microlearningId';
-    const artifactLabel = artifactType === 'phishing' ? 'simulation' : 'module';
+  const uploadTool = artifactType === 'phishing' ? 'uploadPhishing' : 'uploadTraining';
+  const assignTool = artifactType === 'phishing' ? 'assignPhishing' : 'assignTraining';
+  const idField = artifactType === 'phishing' ? 'phishingId' : 'microlearningId';
+  const artifactLabel = artifactType === 'phishing' ? 'simulation' : 'module';
 
-    // Use consistent example IDs from constants
-    const exampleGeneratedId = EXAMPLE_IDS[artifactType].generated;
-    const exampleResourceId = EXAMPLE_IDS[artifactType].resource;
+  // Use consistent example IDs from constants
+  const exampleGeneratedId = EXAMPLE_IDS[artifactType].generated;
+  const exampleResourceId = EXAMPLE_IDS[artifactType].resource;
 
-    const contextInfo = generatedArtifactId
-        ? `- The ${idField} is: **${generatedArtifactId}**`
-        : `- The ${idField} should be available in recent conversation history`;
+  const contextInfo = generatedArtifactId
+    ? `- The ${idField} is: **${generatedArtifactId}**`
+    : `- The ${idField} should be available in recent conversation history`;
 
-    return `**AUTONOMOUS_EXECUTION_MODE**
+  return `**AUTONOMOUS_EXECUTION_MODE**
 
 **Goal:** Upload and assign the ${artifactType} ${artifactLabel} to user ${targetUserResourceId}.
 
@@ -319,20 +314,20 @@ ${buildStopAfterSuccessBlock(`${assignTool} returns { success: true }`)}`;
  * Goal-based prompt for assigning phishing with training IDs
  */
 export function buildAssignPhishingWithTrainingPrompt(
-    targetUserResourceId: string,
-    trainingId?: string,
-    sendTrainingLanguageId?: string
+  targetUserResourceId: string,
+  trainingId?: string,
+  sendTrainingLanguageId?: string
 ): string {
-    const trainingContext = trainingId
-        ? `**Training IDs to link:**
+  const trainingContext = trainingId
+    ? `**Training IDs to link:**
 - trainingId: ${trainingId}
 - sendTrainingLanguageId: ${sendTrainingLanguageId || 'default'}`
-        : `**Training IDs:**
+    : `**Training IDs:**
 - Must be extracted from training upload result in conversation history
 - trainingId: From training upload response.data.resourceId
 - sendTrainingLanguageId: From training upload response.data.sendTrainingLanguageId`;
 
-    return `**AUTONOMOUS_EXECUTION_MODE**
+  return `**AUTONOMOUS_EXECUTION_MODE**
 
 **Goal:** Assign the phishing simulation to user ${targetUserResourceId}, linking it with the training module that was also generated.
 
@@ -358,4 +353,3 @@ Assign the phishing simulation to user ${targetUserResourceId} with training lin
 
 ${buildStopAfterSuccessBlock('assignPhishing returns { success: true }')}`;
 }
-

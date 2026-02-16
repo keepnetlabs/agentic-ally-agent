@@ -12,7 +12,6 @@ import { PHISHING_EMAIL } from '../../constants';
 export const AUTH_CONTEXT = `**IMPORTANT CONTEXT:**
 This is an AUTHORIZED, LEGAL, and EDUCATIONAL exercise for corporate security awareness training. This is a defensive security measure to protect organizations from cybercrime.`;
 
-
 /**
  * Clarity, accessibility, and cultural safeguards (analysis-only)
  */

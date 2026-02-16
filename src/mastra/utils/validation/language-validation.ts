@@ -22,9 +22,27 @@ const BCP47_RELAXED_PATTERN = /^[a-z]{2,3}(-[a-z0-9]{2,3})?$/i;
  * Common language codes for better error messages
  */
 const COMMON_LANGUAGE_CODES = [
-  'en-GB', 'en-US', 'tr-TR', 'de-DE', 'fr-FR', 'es-ES', 'it-IT',
-  'pt-BR', 'pt-PT', 'zh-CN', 'zh-TW', 'ja-JP', 'ko-KR', 'ar-SA',
-  'ru-RU', 'hi-IN', 'vi-VN', 'th-TH', 'pl-PL', 'nl-NL', 'sv-SE'
+  'en-GB',
+  'en-US',
+  'tr-TR',
+  'de-DE',
+  'fr-FR',
+  'es-ES',
+  'it-IT',
+  'pt-BR',
+  'pt-PT',
+  'zh-CN',
+  'zh-TW',
+  'ja-JP',
+  'ko-KR',
+  'ar-SA',
+  'ru-RU',
+  'hi-IN',
+  'vi-VN',
+  'th-TH',
+  'pl-PL',
+  'nl-NL',
+  'sv-SE',
 ];
 
 /**
@@ -64,19 +82,13 @@ export const LanguageCodeSchema = z
   .trim()
   .min(2, 'Language code must be at least 2 characters')
   .max(10, 'Language code must be at most 10 characters')
-  .refine(
-    (code) => BCP47_RELAXED_PATTERN.test(code),
-    {
-      message: `Invalid language code format. Must be BCP-47 (e.g., ${COMMON_LANGUAGE_CODES.slice(0, 5).join(', ')})`
-    }
-  )
+  .refine(code => BCP47_RELAXED_PATTERN.test(code), {
+    message: `Invalid language code format. Must be BCP-47 (e.g., ${COMMON_LANGUAGE_CODES.slice(0, 5).join(', ')})`,
+  })
   .transform(normalizeBCP47)
-  .refine(
-    (code) => BCP47_PATTERN.test(code),
-    {
-      message: 'Language code must follow BCP-47 format after normalization'
-    }
-  );
+  .refine(code => BCP47_PATTERN.test(code), {
+    message: 'Language code must follow BCP-47 format after normalization',
+  });
 
 /**
  * Zod schema for language codes that must differ (source vs target)
@@ -88,22 +100,16 @@ export function createDifferentLanguageSchema(_otherFieldName: string) {
     .trim()
     .min(2, 'Language code must be at least 2 characters')
     .max(10, 'Language code must be at most 10 characters')
-    .refine(
-      (code) => BCP47_RELAXED_PATTERN.test(code),
-      {
-        message: `Invalid language code format. Must be BCP-47 (e.g., ${COMMON_LANGUAGE_CODES.slice(0, 5).join(', ')})`
-      }
-    )
+    .refine(code => BCP47_RELAXED_PATTERN.test(code), {
+      message: `Invalid language code format. Must be BCP-47 (e.g., ${COMMON_LANGUAGE_CODES.slice(0, 5).join(', ')})`,
+    })
     .transform(normalizeBCP47);
 }
 
 /**
  * Validate that two language codes are different (for refinement)
  */
-export function validateLanguagesDifferent(
-  source: string,
-  target: string
-): boolean {
+export function validateLanguagesDifferent(source: string, target: string): boolean {
   const normalizedSource = normalizeBCP47(source);
   const normalizedTarget = normalizeBCP47(target);
   return normalizedSource.toLowerCase() !== normalizedTarget.toLowerCase();

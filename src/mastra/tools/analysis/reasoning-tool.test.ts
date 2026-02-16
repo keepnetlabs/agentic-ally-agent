@@ -126,7 +126,7 @@ describe('reasoningTool', () => {
   describe('Context Parameter Handling', () => {
     it('should extract thought from context.context', () => {
       const context = {
-        context: { thought: 'Thinking process here' }
+        context: { thought: 'Thinking process here' },
       };
 
       expect(context.context.thought).toBe('Thinking process here');
@@ -134,7 +134,7 @@ describe('reasoningTool', () => {
 
     it('should extract thought from context.inputData', () => {
       const context = {
-        inputData: { thought: 'Thinking process here' }
+        inputData: { thought: 'Thinking process here' },
       };
 
       expect(context.inputData.thought).toBe('Thinking process here');
@@ -142,7 +142,7 @@ describe('reasoningTool', () => {
 
     it('should extract thought from context.input', () => {
       const context = {
-        input: { thought: 'Thinking process here' }
+        input: { thought: 'Thinking process here' },
       };
 
       expect(context.input.thought).toBe('Thinking process here');
@@ -150,7 +150,7 @@ describe('reasoningTool', () => {
 
     it('should extract thought from root context', () => {
       const context = {
-        thought: 'Thinking process here'
+        thought: 'Thinking process here',
       };
 
       expect(context.thought).toBe('Thinking process here');
@@ -212,66 +212,60 @@ describe('reasoningTool', () => {
   describe('Writer Events', () => {
     it('should call writer.write for reasoning-start event', async () => {
       const mockWriter = {
-        write: vi.fn().mockResolvedValue(undefined)
+        write: vi.fn().mockResolvedValue(undefined),
       };
 
       const execute = (reasoningTool as any).execute;
       const context = {
         context: { thought: 'Test thinking' },
-        writer: mockWriter
+        writer: mockWriter,
       };
 
       await execute(context);
 
       // Should have called write at least once for reasoning-start
-      const startCall = mockWriter.write.mock.calls.find(
-        (call: any[]) => call[0]?.type === 'reasoning-start'
-      );
+      const startCall = mockWriter.write.mock.calls.find((call: any[]) => call[0]?.type === 'reasoning-start');
       expect(startCall).toBeDefined();
     });
 
     it('should call writer.write for reasoning-delta event', async () => {
       const mockWriter = {
-        write: vi.fn().mockResolvedValue(undefined)
+        write: vi.fn().mockResolvedValue(undefined),
       };
 
       const execute = (reasoningTool as any).execute;
       const context = {
         context: { thought: 'Test thinking' },
-        writer: mockWriter
+        writer: mockWriter,
       };
 
       await execute(context);
 
-      const deltaCall = mockWriter.write.mock.calls.find(
-        (call: any[]) => call[0]?.type === 'reasoning-delta'
-      );
+      const deltaCall = mockWriter.write.mock.calls.find((call: any[]) => call[0]?.type === 'reasoning-delta');
       expect(deltaCall).toBeDefined();
     });
 
     it('should call writer.write for reasoning-end event', async () => {
       const mockWriter = {
-        write: vi.fn().mockResolvedValue(undefined)
+        write: vi.fn().mockResolvedValue(undefined),
       };
 
       const execute = (reasoningTool as any).execute;
       const context = {
         context: { thought: 'Test thinking' },
-        writer: mockWriter
+        writer: mockWriter,
       };
 
       await execute(context);
 
-      const endCall = mockWriter.write.mock.calls.find(
-        (call: any[]) => call[0]?.type === 'reasoning-end'
-      );
+      const endCall = mockWriter.write.mock.calls.find((call: any[]) => call[0]?.type === 'reasoning-end');
       expect(endCall).toBeDefined();
     });
 
     it('should not call writer.write when writer is undefined', async () => {
       const execute = (reasoningTool as any).execute;
       const context = {
-        context: { thought: 'Test thinking' }
+        context: { thought: 'Test thinking' },
         // No writer provided
       };
 
@@ -285,20 +279,18 @@ describe('reasoningTool', () => {
   describe('Event Structure', () => {
     it('reasoning-start event should have type field', async () => {
       const mockWriter = {
-        write: vi.fn().mockResolvedValue(undefined)
+        write: vi.fn().mockResolvedValue(undefined),
       };
 
       const execute = (reasoningTool as any).execute;
       const context = {
         context: { thought: 'Test' },
-        writer: mockWriter
+        writer: mockWriter,
       };
 
       await execute(context);
 
-      const startEvent = mockWriter.write.mock.calls.find(
-        (call: any[]) => call[0]?.type === 'reasoning-start'
-      );
+      const startEvent = mockWriter.write.mock.calls.find((call: any[]) => call[0]?.type === 'reasoning-start');
 
       if (startEvent) {
         expect(startEvent[0].type).toBe('reasoning-start');
@@ -310,20 +302,18 @@ describe('reasoningTool', () => {
     it('reasoning-delta event should have delta field with thought', async () => {
       const thoughtText = 'My thinking process here';
       const mockWriter = {
-        write: vi.fn().mockResolvedValue(undefined)
+        write: vi.fn().mockResolvedValue(undefined),
       };
 
       const execute = (reasoningTool as any).execute;
       const context = {
         context: { thought: thoughtText },
-        writer: mockWriter
+        writer: mockWriter,
       };
 
       await execute(context);
 
-      const deltaEvent = mockWriter.write.mock.calls.find(
-        (call: any[]) => call[0]?.type === 'reasoning-delta'
-      );
+      const deltaEvent = mockWriter.write.mock.calls.find((call: any[]) => call[0]?.type === 'reasoning-delta');
 
       if (deltaEvent) {
         expect(deltaEvent[0].delta).toBe(thoughtText);
@@ -334,13 +324,13 @@ describe('reasoningTool', () => {
 
     it('events should have consistent id field', async () => {
       const mockWriter = {
-        write: vi.fn().mockResolvedValue(undefined)
+        write: vi.fn().mockResolvedValue(undefined),
       };
 
       const execute = (reasoningTool as any).execute;
       const context = {
         context: { thought: 'Test' },
-        writer: mockWriter
+        writer: mockWriter,
       };
 
       await execute(context);
@@ -358,20 +348,18 @@ describe('reasoningTool', () => {
   describe('UUID Generation for Events', () => {
     it('should generate UUID for reasoning events', async () => {
       const mockWriter = {
-        write: vi.fn().mockResolvedValue(undefined)
+        write: vi.fn().mockResolvedValue(undefined),
       };
 
       const execute = (reasoningTool as any).execute;
       const context = {
         context: { thought: 'Test' },
-        writer: mockWriter
+        writer: mockWriter,
       };
 
       await execute(context);
 
-      const startEvent = mockWriter.write.mock.calls.find(
-        (call: any[]) => call[0]?.type === 'reasoning-start'
-      );
+      const startEvent = mockWriter.write.mock.calls.find((call: any[]) => call[0]?.type === 'reasoning-start');
 
       expect(startEvent).toBeDefined();
       if (startEvent) {
@@ -385,13 +373,13 @@ describe('reasoningTool', () => {
 
     it('should use same UUID across reasoning-start, delta, and end events', async () => {
       const mockWriter = {
-        write: vi.fn().mockResolvedValue(undefined)
+        write: vi.fn().mockResolvedValue(undefined),
       };
 
       const execute = (reasoningTool as any).execute;
       const context = {
         context: { thought: 'Test' },
-        writer: mockWriter
+        writer: mockWriter,
       };
 
       await execute(context);
@@ -406,11 +394,11 @@ describe('reasoningTool', () => {
 
     it('should generate different UUID for multiple calls', async () => {
       const mockWriter1 = {
-        write: vi.fn().mockResolvedValue(undefined)
+        write: vi.fn().mockResolvedValue(undefined),
       };
 
       const mockWriter2 = {
-        write: vi.fn().mockResolvedValue(undefined)
+        write: vi.fn().mockResolvedValue(undefined),
       };
 
       const execute = (reasoningTool as any).execute;
@@ -456,13 +444,13 @@ describe('reasoningTool', () => {
 
     it('should log reasoning emitted message', async () => {
       const mockWriter = {
-        write: vi.fn().mockResolvedValue(undefined)
+        write: vi.fn().mockResolvedValue(undefined),
       };
 
       const execute = (reasoningTool as any).execute;
       const context = {
         context: { thought: 'Test thought' },
-        writer: mockWriter
+        writer: mockWriter,
       };
 
       const result = await execute(context);
@@ -475,13 +463,13 @@ describe('reasoningTool', () => {
   describe('Error Handling', () => {
     it('should handle writer.write errors gracefully', async () => {
       const mockWriter = {
-        write: vi.fn().mockRejectedValue(new Error('Write failed'))
+        write: vi.fn().mockRejectedValue(new Error('Write failed')),
       };
 
       const execute = (reasoningTool as any).execute;
       const context = {
         context: { thought: 'Test' },
-        writer: mockWriter
+        writer: mockWriter,
       };
 
       const result = await execute(context);
@@ -492,13 +480,13 @@ describe('reasoningTool', () => {
 
     it('should return error response on exception', async () => {
       const mockWriter = {
-        write: vi.fn().mockRejectedValue(new Error('Write failed'))
+        write: vi.fn().mockRejectedValue(new Error('Write failed')),
       };
 
       const execute = (reasoningTool as any).execute;
       const context = {
         context: { thought: 'Test' },
-        writer: mockWriter
+        writer: mockWriter,
       };
 
       const result = await execute(context);
@@ -534,13 +522,13 @@ describe('reasoningTool', () => {
   describe('Integration Scenarios', () => {
     it('should emit complete reasoning sequence for agent decision', async () => {
       const mockWriter = {
-        write: vi.fn().mockResolvedValue(undefined)
+        write: vi.fn().mockResolvedValue(undefined),
       };
 
       const execute = (reasoningTool as any).execute;
       const context = {
         context: { thought: 'Evaluating options: A, B, or C. Option B is most optimal.' },
-        writer: mockWriter
+        writer: mockWriter,
       };
 
       const result = await execute(context);
@@ -552,7 +540,7 @@ describe('reasoningTool', () => {
     it('should work without writer (fallback mode)', async () => {
       const execute = (reasoningTool as any).execute;
       const context = {
-        context: { thought: 'Reasoning without streaming' }
+        context: { thought: 'Reasoning without streaming' },
       };
 
       const result = await execute(context);
@@ -563,15 +551,15 @@ describe('reasoningTool', () => {
 
     it('should handle multiline thought text', async () => {
       const mockWriter = {
-        write: vi.fn().mockResolvedValue(undefined)
+        write: vi.fn().mockResolvedValue(undefined),
       };
 
       const execute = (reasoningTool as any).execute;
       const context = {
         context: {
-          thought: 'First consideration.\nSecond consideration.\nConclusion: proceed with option A.'
+          thought: 'First consideration.\nSecond consideration.\nConclusion: proceed with option A.',
         },
-        writer: mockWriter
+        writer: mockWriter,
       };
 
       const result = await execute(context);
@@ -581,15 +569,15 @@ describe('reasoningTool', () => {
 
     it('should handle thought with special characters', async () => {
       const mockWriter = {
-        write: vi.fn().mockResolvedValue(undefined)
+        write: vi.fn().mockResolvedValue(undefined),
       };
 
       const execute = (reasoningTool as any).execute;
       const context = {
         context: {
-          thought: 'Analyzing: regex pattern /[a-z]+/ and SQL "SELECT *". Risk level: HIGH!'
+          thought: 'Analyzing: regex pattern /[a-z]+/ and SQL "SELECT *". Risk level: HIGH!',
         },
-        writer: mockWriter
+        writer: mockWriter,
       };
 
       const result = await execute(context);
@@ -599,15 +587,15 @@ describe('reasoningTool', () => {
 
     it('should handle thought with unicode characters', async () => {
       const mockWriter = {
-        write: vi.fn().mockResolvedValue(undefined)
+        write: vi.fn().mockResolvedValue(undefined),
       };
 
       const execute = (reasoningTool as any).execute;
       const context = {
         context: {
-          thought: 'Analyzing phishing emails with Unicode: 😀 用户输入 🔒'
+          thought: 'Analyzing phishing emails with Unicode: 😀 用户输入 🔒',
         },
-        writer: mockWriter
+        writer: mockWriter,
       };
 
       const result = await execute(context);
@@ -619,13 +607,13 @@ describe('reasoningTool', () => {
   describe('Crypto Usage', () => {
     it('should use crypto.randomUUID for event IDs', async () => {
       const mockWriter = {
-        write: vi.fn().mockResolvedValue(undefined)
+        write: vi.fn().mockResolvedValue(undefined),
       };
 
       const execute = (reasoningTool as any).execute;
       const context = {
         context: { thought: 'Test' },
-        writer: mockWriter
+        writer: mockWriter,
       };
 
       await execute(context);

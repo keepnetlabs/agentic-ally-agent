@@ -6,11 +6,14 @@ These proposals focus on "closing the loop"—enabling agents to learn from thei
 
 ---
 
-## 1. 🧠 Active Learning: Metadata Correlation Loop (High Priority)
+## 1. 🧠 Active Learning: Metadata Correlation Loop — **✅ IMPLEMENTED** (February 2026)
 **Goal:** Enable the system to understand *why* a user failed a simulation, not just *that* they failed.
 
-### The Problem
-Currently, the `PhishingEmailAgent` generates a simulation with specific intent (e.g., "Authority Bias", "Scarcity"), but this intent is lost once the content is generated. When the `UserInfoAgent` later sees a "Clicked Link" event in the timeline, it lacks the context of *which psychological trigger* was effective.
+### Status
+Implemented. See [AGENTIC_ROADMAP.md](./AGENTIC_ROADMAP.md) for details. Flow: `upload-phishing-tool` / `upload-smishing-tool` → D1 `campaign_metadata` → `get-user-info-tool` enriches timeline with `[Tactic: X]` for LLM analysis. **Phishing + Smishing** both supported.
+
+### The Problem (solved)
+Previously, the `PhishingEmailAgent` generated a simulation with specific intent (e.g., "Authority Bias", "Scarcity"), but this intent was lost once the content was generated. When the `UserInfoAgent` saw a "Clicked Link" event in the timeline, it lacked the context of *which psychological trigger* was effective.
 
 ### The Solution: "Tagging & Matching"
 Establish a **Metadata Correlation Loop** using a shared `resourceId`.
@@ -91,7 +94,18 @@ Create an **Inter-Agent Communication Protocol**.
 ---
 
 ## Implementation Priority
-1.  **Active Learning (Metadata Correlation):** Highest value, lowest complexity. Closes the core feedback loop.
+1.  ~~**Active Learning (Metadata Correlation)**~~ — ✅ Done (Feb 2026, Phishing + Smishing).
 2.  **Long-Term Memory:** High value for personalization.
-3.  **Self-Correction:** Improves reliability.
+3.  **Self-Correction (Critic Agent):** Improves reliability.
 4.  **Agent Swarm:** Advanced feature for complex workflows.
+
+---
+
+## Next Steps (Devam)
+
+| Area | Action |
+|------|--------|
+| **Product API** | Timeline response'da `scenarioResourceId`/`resourceId` — tactic enrichment için gerekli |
+| **Critic Agent** | Phishing/Smishing çıktısını PII/pattern, ton, gerçekçilik açısından kontrol |
+| **Long-Term Memory** | Vectorize ile kullanıcı persona (zayıflıklar, tercihler, geçmiş) |
+| **Quick wins** | ~~structured logging~~ ✅ |
