@@ -81,11 +81,21 @@ export async function fetchUsersWithFilters(
 
   // Build URL dynamically from baseApiUrl (defaults to test environment)
   const userAllUrl = getUserAllUrl(baseApiUrl);
-  const resp = await fetch(userAllUrl, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(payload),
-  });
+  const resp = await withRetry(
+    async () => {
+      const res = await fetch(userAllUrl, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok && res.status >= 500) {
+        const text = await res.text();
+        throw new Error(`User search API error ${res.status}: ${text.substring(0, 200)}`);
+      }
+      return res;
+    },
+    'user-search-get-all'
+  );
   if (!resp.ok) {
     const errorText = await resp.text();
     logger.error('RAW BACKEND RESPONSE:', { status: resp.status, body: errorText });
@@ -180,11 +190,21 @@ async function fetchUsersFromFallback(
     payload,
   });
   try {
-    const fallbackResp = await fetch(fallbackUrl, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(payload),
-    });
+    const fallbackResp = await withRetry(
+      async () => {
+        const res = await fetch(fallbackUrl, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok && res.status >= 500) {
+          const text = await res.text();
+          throw new Error(`Fallback user search error ${res.status}: ${text.substring(0, 200)}`);
+        }
+        return res;
+      },
+      'user-search-fallback'
+    );
     if (!fallbackResp.ok) {
       const errorText = await fallbackResp.text();
       logger.warn('Fallback user search failed', {

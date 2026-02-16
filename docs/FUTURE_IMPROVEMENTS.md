@@ -106,6 +106,6 @@ Create an **Inter-Agent Communication Protocol**.
 | Area | Action |
 |------|--------|
 | **Product API** | Timeline response'da `scenarioResourceId`/`resourceId` — tactic enrichment için gerekli |
-| **Critic Agent** | Phishing/Smishing çıktısını ton, yasak kelime, gerçekçilik açısından kontrol |
+| **Critic Agent** | Phishing/Smishing çıktısını PII/pattern, ton, gerçekçilik açısından kontrol |
 | **Long-Term Memory** | Vectorize ile kullanıcı persona (zayıflıklar, tercihler, geçmiş) |
-| **Quick wins** | p-limit (rate limit), ~~structured logging~~ ✅, JSON Fixer Agent |
+| **Quick wins** | ~~structured logging~~ ✅ |

@@ -223,4 +223,26 @@ describe('listPhoneNumbersTool', () => {
     expect(result.success).toBe(true);
     expect(global.fetch).toHaveBeenCalled();
   });
+
+  it('should retry on 5xx and succeed when API recovers', async () => {
+    const mockData = [{ phone_number: '+15551234567', phone_number_id: 'pn-1', label: 'US', provider: 'twilio' }];
+    (global.fetch as ReturnType<typeof vi.fn>) = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 503,
+        statusText: 'Service Unavailable',
+        text: async () => 'Temporary outage',
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockData,
+      });
+
+    const result = await listPhoneNumbersTool.execute({ context: {} } as never);
+
+    expect(result.success).toBe(true);
+    expect(result.phoneNumbers).toHaveLength(1);
+    expect(global.fetch).toHaveBeenCalledTimes(2);
+  });
 });

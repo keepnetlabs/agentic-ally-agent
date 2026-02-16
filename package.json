@@ -14,6 +14,7 @@
     "test": "vitest run",
     "test:watch": "vitest watch",
     "test:coverage": "vitest run --coverage",
+    "test:smoke": "vitest run src/mastra/__tests__/integration/e2e-smoke.test.ts",
     "test:ui": "vitest --ui",
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",

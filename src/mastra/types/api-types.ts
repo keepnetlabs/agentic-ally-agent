@@ -43,6 +43,36 @@ export interface ChatRequestBody {
 }
 
 /**
+ * Phishing editor save request body
+ */
+export interface PhishingEditorLandingPage {
+  template?: string;
+  type?: string;
+  edited?: boolean;
+  summary?: string;
+}
+
+export interface PhishingEditorLanding {
+  pages?: PhishingEditorLandingPage[];
+  name?: string;
+}
+
+export interface PhishingEditorBody {
+  phishingId?: unknown;
+  language?: unknown;
+  emailKey?: unknown;
+  landingKey?: unknown;
+  email?: { template?: string };
+  landing?: PhishingEditorLanding;
+}
+
+/** KV-stored phishing landing record shape */
+export interface KvPhishingLandingRecord {
+  pages?: Array<{ template?: string; type?: string }>;
+  name?: string;
+}
+
+/**
  * Code review validation request body
  */
 export interface CodeReviewRequestBody {

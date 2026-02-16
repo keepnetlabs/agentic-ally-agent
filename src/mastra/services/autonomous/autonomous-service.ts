@@ -13,6 +13,7 @@ import { buildExecutiveReport, generateContentForUser, generateContentForGroup }
  */
 export async function executeAutonomousGeneration(request: AutonomousRequest): Promise<AutonomousResponse> {
   const logger = getLogger('ExecuteAutonomousGeneration');
+  const generationStartMs = Date.now();
   const {
     token,
     firstName,
@@ -88,6 +89,14 @@ export async function executeAutonomousGeneration(request: AutonomousRequest): P
             trainingThreadId
           );
 
+          const generationDurationMs = Date.now() - generationStartMs;
+          logger.info('metric_generation_duration', {
+            metric: 'generation_duration_ms',
+            generation_duration_ms: generationDurationMs,
+            path: '/autonomous',
+            assignmentType: 'user',
+            userId,
+          });
           logger.info('✅ Autonomous service completed successfully', {
             assignmentType: 'user',
             userId,
@@ -123,6 +132,14 @@ export async function executeAutonomousGeneration(request: AutonomousRequest): P
             targetGroupResourceId
           );
 
+          const generationDurationMs = Date.now() - generationStartMs;
+          logger.info('metric_generation_duration', {
+            metric: 'generation_duration_ms',
+            generation_duration_ms: generationDurationMs,
+            path: '/autonomous',
+            assignmentType: 'group',
+            targetGroupResourceId,
+          });
           logger.info('✅ Autonomous service completed successfully', {
             assignmentType: 'group',
             targetGroupResourceId,

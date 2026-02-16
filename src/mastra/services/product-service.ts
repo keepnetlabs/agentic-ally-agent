@@ -3,6 +3,7 @@ import { getRequestContext, requestStorage } from '../utils/core/request-storage
 import { API_KEYS } from '../constants';
 import { normalizeError, logErrorInfo } from '../utils/core/error-utils';
 import { errorService } from './error-service';
+import { withRetry } from '../utils/core/resilience-utils';
 
 /**
  * ProductService for communicating with our product backend
@@ -150,7 +151,17 @@ export class ProductService {
         options.body = JSON.stringify(body);
       }
 
-      const response = await fetch(url, options);
+      const response = await withRetry(
+        async () => {
+          const res = await fetch(url, options);
+          if (!res.ok && res.status >= 500) {
+            const text = await res.text();
+            throw new Error(`Product API error ${res.status}: ${text.substring(0, 200)}`);
+          }
+          return res;
+        },
+        `product-api-${endpoint}`
+      );
 
       if (!response.ok) {
         this.logger.warn(`Request failed`, {

@@ -13,6 +13,7 @@ import { z } from 'zod';
 import { ELEVENLABS } from '../../constants';
 import { getLogger } from '../../utils/core/logger';
 import { normalizeError } from '../../utils/core/error-utils';
+import { withRetry } from '../../utils/core/resilience-utils';
 
 const logger = getLogger('ListPhoneNumbersTool');
 
@@ -65,22 +66,30 @@ export const listPhoneNumbersTool = createTool({
 
       logger.info('list_phone_numbers_request', { url });
 
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), ELEVENLABS.API_TIMEOUT_MS);
-
-      let response: Response;
-      try {
-        response = await fetch(url, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'xi-api-key': apiKey,
-          },
-          signal: controller.signal,
-        });
-      } finally {
-        clearTimeout(timeoutId);
-      }
+      const response = await withRetry(
+        async () => {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), ELEVENLABS.API_TIMEOUT_MS);
+          try {
+            const res = await fetch(url, {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json',
+                'xi-api-key': apiKey,
+              },
+              signal: controller.signal,
+            });
+            if (!res.ok && res.status >= 500) {
+              const text = await res.text().catch(() => '');
+              throw new Error(`ElevenLabs API error ${res.status}: ${text.substring(0, 200)}`);
+            }
+            return res;
+          } finally {
+            clearTimeout(timeoutId);
+          }
+        },
+        'list-phone-numbers'
+      );
 
       if (!response.ok) {
         const errorBody = await response.text().catch(() => 'Unable to read error body');

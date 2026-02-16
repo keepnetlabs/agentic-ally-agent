@@ -93,7 +93,15 @@ import {
 import { ExampleRepo, executeAutonomousGeneration, performHealthCheck, KVService } from './services';
 import { validateEnvironmentOrThrow } from './utils/core';
 import { resolveLogLevel, STRUCTURED_LOG_FORMATTERS } from './utils/core/logger';
-import type { ChatRequestBody, CodeReviewRequestBody, AutonomousRequestBody, CloudflareEnv } from './types';
+import type {
+  ChatRequestBody,
+  CodeReviewRequestBody,
+  AutonomousRequestBody,
+  CloudflareEnv,
+  PhishingEditorBody,
+  KvPhishingLandingRecord,
+  PhishingEditorLandingPage,
+} from './types';
 
 // Type import for D1 database
 import type { D1Database } from './services/example-repo';
@@ -380,9 +388,17 @@ export const mastra = new Mastra({
           }
 
           // Step 7: Create agent stream
+          const generationStartMs = Date.now();
           let stream;
           try {
             stream = await createAgentStream(agent, finalPrompt, threadId, routeResult.agentName);
+            const generationDurationMs = Date.now() - generationStartMs;
+            logger.info('metric_generation_duration', {
+              metric: 'generation_duration_ms',
+              generation_duration_ms: generationDurationMs,
+              path: '/chat',
+              agentName: routeResult.agentName,
+            });
           } catch (streamError) {
             logger.error('stream_creation_failed', {
               error: streamError instanceof Error ? streamError.message : String(streamError),
@@ -413,6 +429,11 @@ export const mastra = new Mastra({
           // Perform deep health check with 5s timeout
           const healthResponse = await performHealthCheck(agents, workflows, 5000);
 
+          // Sentry status (observability)
+          const env = c.env as Record<string, unknown> | undefined;
+          const sentryDsn = env?.SENTRY_DSN ?? (typeof process !== 'undefined' ? process.env?.SENTRY_DSN : undefined);
+          const sentry = { configured: !!sentryDsn };
+
           // Return appropriate HTTP status based on health
           const httpStatus =
             healthResponse.status === 'healthy' ? 200 : healthResponse.status === 'degraded' ? 200 : 503;
@@ -422,6 +443,7 @@ export const mastra = new Mastra({
               success: healthResponse.status !== 'unhealthy',
               message: 'Agentic Ally deployment successful',
               ...healthResponse,
+              sentry,
             },
             httpStatus
           );
@@ -473,15 +495,17 @@ export const mastra = new Mastra({
         handler: async (c: Context) => {
           const requestStart = Date.now();
           try {
-            const body = await c.req.json<Record<string, any>>();
-            const { phishingId, language, emailKey, landingKey, email, landing } = body || {};
+            const body = (await c.req.json()) as PhishingEditorBody | null;
+            const { phishingId, language, emailKey, landingKey, email, landing } = body ?? {};
 
             if (!phishingId || typeof phishingId !== 'string') {
               logger.warn('phishing_editor_save_missing_id');
               return c.json({ success: false, error: 'Missing phishingId' }, 400);
             }
 
-            const normalizedLanguage = validateBCP47LanguageCode(language || DEFAULT_LANGUAGE);
+            const normalizedLanguage = validateBCP47LanguageCode(
+              typeof language === 'string' ? language : DEFAULT_LANGUAGE
+            );
             const baseKeyPrefix = `phishing:${phishingId}`;
             const defaultEmailKey = `${baseKeyPrefix}:email:${normalizedLanguage}`;
             const defaultLandingKey = `${baseKeyPrefix}:landing:${normalizedLanguage}`;
@@ -523,15 +547,18 @@ export const mastra = new Mastra({
             }
 
             if (landing?.pages && Array.isArray(landing.pages) && landing.pages.length > 0) {
-              const existingLanding = await kvService.get(effectiveLandingKey);
+              const existingLanding = (await kvService.get(effectiveLandingKey)) as KvPhishingLandingRecord | null;
               if (!existingLanding) {
                 logger.warn('phishing_editor_save_landing_not_found', { landingKey: effectiveLandingKey });
                 return c.json({ success: false, error: 'Landing template not found for update' }, 404);
               }
 
-              const updatedPages = landing.pages
-                .filter((page: any) => page?.template && page?.type)
-                .map((page: any) => ({
+              const landingPages = landing.pages;
+              const updatedPages = landingPages
+                .filter((page): page is PhishingEditorLandingPage & { template: string; type: string } =>
+                  !!page?.template && !!page?.type
+                )
+                .map(page => ({
                   ...page,
                   template: postProcessPhishingLandingHtml({
                     html: page.template,
@@ -543,12 +570,12 @@ export const mastra = new Mastra({
 
               if (updatedPages.length > 0) {
                 const existingPages = Array.isArray(existingLanding.pages) ? existingLanding.pages : [];
-                const mergedPages = existingPages.map((page: any) => {
-                  const replacement = updatedPages.find((updated: any) => updated.type === page.type);
+                const mergedPages = existingPages.map(page => {
+                  const replacement = updatedPages.find(updated => updated.type === page.type);
                   return replacement || page;
                 });
                 const appendedPages = updatedPages.filter(
-                  (updated: any) => !existingPages.some((page: any) => page.type === updated.type)
+                  updated => !existingPages.some(page => page.type === updated.type)
                 );
 
                 const updatedLanding = {

@@ -1,8 +1,22 @@
 # Agentic Ally — Akıllı Agent Roadmap
 
-**Last Updated:** February 14, 2026
+**Last Updated:** February 10, 2026
 
 > Bu dosya "daha akıllı agentic" için fikirleri ve roadmap'i tutar. Referans için kullanılır.
+
+---
+
+## 0. 🧱 Foundation (Code Quality) — **✅ TAMAMLANDI** (Şubat 2026)
+
+**Odak:** Kritik path'lerin test coverage'ı ve hata yönetimi standardizasyonu.
+
+**Yapılanlar:**
+- **kv-service:** 72% coverage, 41 test (save/get phishing, smishing, microlearning, namespace, LIST error handling)
+- **autonomous-phishing-handlers:** 58% coverage, 17 test (tool-first, agent fallback, upload/assign edge cases)
+- **autonomous-smishing-handlers:** 86% coverage, 10 test (user/group, resolveSmishingMethod, smishingId validation)
+- **Error handling:** `docs/ERROR_HANDLING.md` — Tool'larda `{ success: false, error }` vs `throw` standardı dokümante edildi
+
+**Sonuç:** Kritik modüller daha güvenli; yeni geliştirmelerde tutarlı hata pattern'i kullanılacak.
 
 ---
 
@@ -24,10 +38,10 @@ UserInfoAgent timeline analiz ederken bu metadata ile JOIN yapıp "Bu kullanıc�
 
 **Akış:** Phishing/Smishing agent içerik ürettikten sonra bir Critic agent kontrol etsin:
 - Ton tutarlı mı?
-- Yasak kelimeler var mı?
+- PII / gerçek veri sızıntısı var mı? (kart no, SSN pattern — dil bağımsız)
 - Gerçekçi mi?
 
-**Sonuç:** Daha tutarlı ve güvenilir çıktılar.
+**Not:** "Yasak kelime" listesi 200 dil için sürdürülemez; PII/pattern kontrolü dil bağımsızdır.
 
 ---
 
@@ -36,6 +50,8 @@ UserInfoAgent timeline analiz ederken bu metadata ile JOIN yapıp "Bu kullanıc�
 **Örnek:** MicrolearningAgent quiz sorusu yazarken PhishingEmailAgent'tan "Finans senaryosu için örnek subject line" isteyebilir.
 
 **Sonuç:** Daha tutarlı ve gerçekçi eğitim içerikleri.
+
+**Not:** Delegate tools yaklaşımı ile orta zorlukta uygulanabilir. Şimdilik roadmap'te kalsın; ihtiyaç olunca değerlendirilir.
 
 ---
 
@@ -52,18 +68,32 @@ UserInfoAgent timeline analiz ederken bu metadata ile JOIN yapıp "Bu kullanıc�
 
 ## 5. 🛠️ Daha Hızlı Uygulanabilecekler
 
-- **p-limit:** Autonomous loop'ta rate limit için concurrency sınırı.
 - **Structured logging (JSON):** Datadog/Sentry entegrasyonu.
-- **JSON Fixer Agent:** `jsonrepair` yetmezse LLM tabanlı JSON düzeltme (şimdilik yok, sadece jsonrepair).
+
+---
+
+## 6. 📋 Kalite Önerileri (Öncelik Sırasına Göre)
+
+| # | Öneri | Etki | Efor | Açıklama |
+|---|-------|------|------|----------|
+| 1 | **PII / Pattern kontrolü** | Yüksek | Düşük | Dil bağımsız: kredi kartı, SSN, gerçek email pattern — LLM çıktısında yanlışlıkla gerçek veri sızmasını engelle. Yasak kelime listesi 200 dil için sürdürülemez. |
+| 2 | **Metrikler** | Orta | Orta | ✅ Tamamlandı — `generation_duration_ms` (chat + autonomous). Log tabanlı; Logpush/Datadog ile toplanabilir. json_repair log'u kaldırıldı (gereksiz gürültü). |
+| 3 | **Schema validation tutarlılığı** | Orta | Düşük | `validateToolResult` birçok yerde var; eksik yerlerde de kullan. Erken hata yakalama. |
+| 4 | **Prompt versioning** | Orta | Orta | Kritik prompt'ları versiyonla; A/B test veya regression için. |
+| 5 | **E2E smoke test** | Orta | Orta | ✅ Tamamlandı — /health, /chat, /autonomous (7 test). `npm run test:smoke` |
+| 6 | **Sentry / error tracking** | Yüksek | Düşük | ✅ `/health` response'a `sentry: { configured: boolean }` eklendi. SENTRY_DSN varlığına göre. |
+| 7 | **Input sanitization audit** | Orta | Düşük | `isSafeId` kullanımı tutarlı mı? User-provided input'lar sanitize ediliyor mu? |
+| 8 | **Retry coverage** | Orta | Düşük | ✅ Tamamlandı — auth-token, get-user-info (timeline), user-search-utils, product-service, vishing-conversations-summary, list-phone-numbers. |
 
 ---
 
 ## Implementation Priority
 
-1. ~~**Active Learning (Metadata Correlation)**~~ — ✅ Tamamlandı (Şubat 2026).
-2. **Critic Agent** — Güvenilirlik artışı.
-3. **Agent Swarm** — Karmaşık senaryolar için.
-4. **Long-Term Memory** — Kişiselleştirme.
+1. ~~**Foundation (Coverage + Error Handling)**~~ — ✅ Tamamlandı (Şubat 2026).
+2. ~~**Active Learning (Metadata Correlation)**~~ — ✅ Tamamlandı (Şubat 2026).
+3. **Critic Agent** — Güvenilirlik artışı (PII/pattern kontrolü ile başlanabilir).
+4. **Agent Swarm** — Karmaşık senaryolar için.
+5. ~~**Long-Term Memory**~~ — Şimdilik geç.
 
 ---
 
@@ -164,7 +194,7 @@ if (resourceId && env?.agentic_ally_memory) {
 - [x] `savePhishingBase` (kv-service): `psychologicalTriggers` base'e eklendi
 - [x] `upload-phishing-tool`: upload sonrası `trySaveCampaignMetadataAfterUpload` ile metadata yaz
 - [x] `upload-smishing-tool`: upload sonrası metadata yaz (smishing için)
-- [ ] Product API: timeline'da `scenarioResourceId`/`resourceId` alanı (varsa tactic enrichment çalışır)
+- [x] Product API: timeline'da `scenarioResourceId`/`resourceId` alanı — ✅ Tamamlandı
 - [x] `get-user-info-tool`: timeline activities için metadata fetch + `[Tactic: X]` prompt zenginleştirme
 
 **Deploy sonrası:** `npx wrangler d1 execute agentic-ally-memory --remote --file=./migrations/0002_campaign_metadata.sql`
@@ -180,28 +210,41 @@ if (resourceId && env?.agentic_ally_memory) {
 
 ## Yapılacaklar
 
-### 1. Product API Bağımlılığı (Tactic Enrichment için)
+### 1. Product API — ✅ Tamamlandı
 
-| Görev | Sahip | Durum |
-|-------|-------|-------|
-| Timeline API (`/api/leaderboard/get-user-timeline`) response'unda her activity için `scenarioResourceId` veya `resourceId` döndür | Product/Backend | Bekliyor |
-
-**Not:** Bu alan yoksa UserInfoAgent timeline'ı analiz eder ama tactic bilgisi olmaz. Alan varsa otomatik çalışır.
+Timeline API artık her activity için `scenarioResourceId` veya `resourceId` döndürüyor. Active Learning tactic enrichment tam çalışır.
 
 ### 2. Öncelikli Özellikler (Roadmap)
 
 | Sıra | Özellik | Değer |
 |------|---------|-------|
-| 1 | **Critic Agent** — Phishing/Smishing çıktısını ton, yasak kelime, gerçekçilik açısından kontrol | Güvenilirlik |
+| 1 | **Critic Agent** — Phishing/Smishing çıktısını PII/pattern, ton, gerçekçilik açısından kontrol | Güvenilirlik |
 | 2 | **Long-Term Memory** — Vectorize ile kullanıcı persona (zayıflıklar, tercihler) | Kişiselleştirme |
 | 3 | **Agent Swarm** — Agentlar arası işbirliği (örn. Microlearning ↔ Phishing) | Tutarlılık |
 
 ### 3. Hızlı Kazanımlar
 
-- **p-limit:** Autonomous loop'ta concurrency sınırı (rate limit) — *şimdilik bekletildi*
 - **Structured logging (JSON):** ✅ Yapıldı — `service`, `env`, `correlationId` her logda; `LOG_LEVEL` env desteği
-- **JSON Fixer Agent:** `jsonrepair` yetmezse LLM fallback (şimdilik yok)
 
 ### 4. Opsiyonel Dokümantasyon
 
 - `DATA_MODEL.md`: Smishing KV schema (`smishing:{id}:base` alanları) dokümante edilebilir
+
+---
+
+# Yorum: Sıradaki Adımlar Ne Olmalı?
+
+## Öncelik Matrisi
+
+| Özellik | Zorluk | Değer | Bağımlılık | Öneri |
+|---------|--------|-------|------------|-------|
+| **Critic Agent** | Orta | Yüksek | Yok | PII/pattern kontrolü (dil bağımsız) ile başlanabilir |
+| ~~**Long-Term Memory**~~ | — | — | — | Şimdilik geç |
+| **Agent Swarm** | Yüksek | Orta | Agent refactor | Orta vadede — Inter-agent protocol tasarımı gerekir |
+| ~~**Product API (resourceId)**~~ | — | — | — | ✅ Tamamlandı |
+
+## Önerilen Sıra (Product API tamam olduğuna göre)
+
+1. **Critic Agent** — Phishing/Smishing çıktısına PII/pattern kontrolü (dil bağımsız); ton/gerçekçilik LLM ile (opsiyonel).
+2. **Agent Swarm** — Inter-agent protocol; orta vadede.
+3. ~~**Long-Term Memory**~~ — Şimdilik geç; Vectorize + persona büyük proje.

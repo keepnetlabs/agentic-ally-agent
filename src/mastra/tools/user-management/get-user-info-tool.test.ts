@@ -802,7 +802,7 @@ describe('getUserInfoTool', () => {
 
   describe('Error Handling', () => {
     it('should handle network errors gracefully', async () => {
-      (global.fetch as any).mockRejectedValueOnce(new Error('Network error'));
+      (global.fetch as any).mockRejectedValue(new Error('Network error'));
 
       const input = {
         fullName: 'John Doe',
@@ -814,7 +814,7 @@ describe('getUserInfoTool', () => {
     });
 
     it('should include context in error response', async () => {
-      (global.fetch as any).mockRejectedValueOnce(new Error('Network error'));
+      (global.fetch as any).mockRejectedValue(new Error('Network error'));
 
       const input = {
         fullName: 'John Doe',
@@ -826,7 +826,7 @@ describe('getUserInfoTool', () => {
     });
 
     it('should catch and log errors during user search', async () => {
-      (global.fetch as any).mockRejectedValueOnce(new Error('API failure'));
+      (global.fetch as any).mockRejectedValue(new Error('API failure'));
 
       const input = { email: 'test@example.com' };
       const result = await getUserInfoTool.execute({ context: input } as any);

@@ -11,6 +11,7 @@ import { errorService } from '../services/error-service';
 import { getLogger } from '../utils/core/logger';
 import { logErrorInfo, normalizeError } from '../utils/core/error-utils';
 import { tokenCache } from '../utils/core/token-cache';
+import { withRetry } from '../utils/core/resilience-utils';
 import { generateVishingConversationsSummary } from '../tools/vishing-call/vishing-conversations-summary-tool';
 import { vishingConversationsSummaryRequestSchema } from './vishing-conversations-summary-route.schemas';
 
@@ -47,10 +48,20 @@ export async function vishingConversationsSummaryHandler(c: Context) {
     let tokenValid = cached;
     if (cached === null) {
       try {
-        const res = await fetch(`${baseApiUrl}/auth/validate`, {
-          method: 'GET',
-          headers: { Authorization: `Bearer ${accessToken}` },
-        });
+        const res = await withRetry(
+          async () => {
+            const r = await fetch(`${baseApiUrl}/auth/validate`, {
+              method: 'GET',
+              headers: { Authorization: `Bearer ${accessToken}` },
+            });
+            if (!r.ok && r.status >= 500) {
+              const text = await r.text();
+              throw new Error(`Auth validate error ${r.status}: ${text.substring(0, 200)}`);
+            }
+            return r;
+          },
+          'vishing-auth-validate'
+        );
         tokenValid = res.ok;
         if (tokenValid) tokenCache.set(accessToken, true);
         else tokenCache.set(accessToken, false, TOKEN_CACHE_INVALID_TTL_MS);

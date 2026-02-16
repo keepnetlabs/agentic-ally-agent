@@ -80,8 +80,7 @@ npx tsx src/debug-workflow.ts
 *Logs detailed Emojis (🤖, ✅, ❌) to show exactly what step failed.*
 
 ### JSON "Self-Correction"
-If you see JSON errors in logs, know that we use `jsonrepair`.
-*   **Future Improvement:** Implement a dedicated LLM-based "JSON Fixer Agent" for 100% recovery rates.
+If you see JSON errors in logs, know that we use `jsonrepair` (industry standard, 1.2M weekly npm) plus 4 extraction strategies in `json-cleaner.ts`. This setup is sufficient.
 
 ---
 
@@ -100,8 +99,7 @@ Before deploying to production:
 If you have time, tackle these:
 
 1.  **Memory Cleanup:** Write a Cron job to delete old `phishing-{thread}` keys from KV Store (older than 7 days).
-2.  **Concurrency Control:** Implement `p-limit` for the Autonomous loop to handle 1000+ users without rate limiting.
-3.  **Observability:** Add structured logging (JSON) for Datadog/Sentry integration.
+2.  **Observability:** Add structured logging (JSON) for Datadog/Sentry integration.
 
 **✅ Done:** Active Learning (campaign metadata → User Info tactic enrichment) — Şubat 2026.
 

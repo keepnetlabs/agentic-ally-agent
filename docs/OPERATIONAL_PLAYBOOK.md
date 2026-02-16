@@ -43,7 +43,6 @@ Runbooks for maintaining the reliability of Agentic Ally. Follow industry-standa
 **Symptoms:** `429 Too Many Requests`.
 **Fix:**
 1.  Check `RateLimitMiddleware` (config in `constants.ts`).
-2.  If during bulk generation, implement `p-limit` in `autonomous-service.ts` to throttle concurrency.
 
 ### Scenario 4: Vishing / ElevenLabs Failures (P2)
 **Symptoms:** `/vishing/prompt` or `/vishing/conversations/summary` returns 5xx.

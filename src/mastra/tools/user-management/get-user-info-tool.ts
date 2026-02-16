@@ -271,11 +271,14 @@ export const getUserInfoTool = createTool({
       // Build timeline URL dynamically from baseApiUrl (defaults to test environment)
       const timelineUrl = `${baseApiUrl || 'https://test-api.devkeepnet.com'}/api/leaderboard/get-user-timeline`;
 
-      const timelineResponse = await fetch(timelineUrl, {
-        method: 'POST',
-        headers: timelineHeaders,
-        body: JSON.stringify(timelinePayload),
-      });
+      const timelineResponse = await withRetry(
+        async () => fetch(timelineUrl, {
+          method: 'POST',
+          headers: timelineHeaders,
+          body: JSON.stringify(timelinePayload),
+        }),
+        'get-user-timeline'
+      );
 
       let recentActivities = [];
       let enrichedActivities: EnrichedActivity[] = [];

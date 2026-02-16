@@ -1,7 +1,40 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { fetchEmailTool, fetchEmailInputSchema } from './fetch-email';
 
+vi.mock('../../utils/core/resilience-utils', () => ({
+  withRetry: vi.fn(async (fn: () => Promise<unknown>) => fn()),
+}));
+
+vi.mock('./logger-setup', () => ({
+  createLogContext: vi.fn(() => ({})),
+  loggerFetch: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+  logStepStart: vi.fn(),
+  logStepComplete: vi.fn(),
+  logStepError: vi.fn(),
+}));
+
+vi.mock('../../utils/core/error-utils', () => ({
+  normalizeError: vi.fn((e: unknown) => ({ message: e instanceof Error ? e.message : 'Unknown' })),
+  logErrorInfo: vi.fn(),
+}));
+
+vi.mock('../../services/error-service', () => ({
+  errorService: {
+    external: vi.fn(() => ({ code: 'ERR_EXT_001' })),
+  },
+}));
+
 describe('fetchEmailTool', () => {
+  let originalFetch: typeof global.fetch;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    originalFetch = global.fetch;
+  });
+
+  afterEach(() => {
+    global.fetch = originalFetch;
+  });
   it('should be defined', () => {
     expect(fetchEmailTool).toBeDefined();
   });
@@ -107,5 +140,81 @@ describe('fetchEmailTool', () => {
     });
 
     expect(parsed.success).toBe(true);
+  });
+
+  describe('execute', () => {
+    it('should return email data when API returns success', async () => {
+      const mockEmailData = {
+        id: 'email-123',
+        subject: 'Test',
+        from: 'sender@example.com',
+        htmlBody: '<p>Body</p>',
+      };
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ data: mockEmailData }),
+      });
+
+      const result = await (fetchEmailTool as any).execute({
+        context: {
+          id: 'email-123',
+          accessToken: 'token',
+          apiBaseUrl: 'https://api.example.com',
+        },
+      });
+
+      expect(result).toEqual(mockEmailData);
+      expect(global.fetch).toHaveBeenCalledWith(
+        'https://api.example.com/notified-emails/email-123',
+        expect.objectContaining({
+          method: 'GET',
+          headers: expect.objectContaining({
+            Authorization: 'Bearer token',
+          }),
+        })
+      );
+    });
+
+    it('should use data wrapper when API returns { data: ... }', async () => {
+      const innerData = { id: 'x', subject: 'S' };
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ data: innerData }),
+      });
+
+      const result = await (fetchEmailTool as any).execute({
+        context: { id: 'x', accessToken: 't', apiBaseUrl: 'https://a.com' },
+      });
+
+      expect(result).toEqual(innerData);
+    });
+
+    it('should use root object when API returns email directly (no data wrapper)', async () => {
+      const directData = { id: 'x', subject: 'S', from: 'f@x.com' };
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(directData),
+      });
+
+      const result = await (fetchEmailTool as any).execute({
+        context: { id: 'x', accessToken: 't', apiBaseUrl: 'https://a.com' },
+      });
+
+      expect(result).toEqual(directData);
+    });
+
+    it('should throw when API returns non-ok response', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 404,
+        text: () => Promise.resolve('Not found'),
+      });
+
+      await expect(
+        (fetchEmailTool as any).execute({
+          context: { id: 'x', accessToken: 't', apiBaseUrl: 'https://a.com' },
+        })
+      ).rejects.toThrow(/404/);
+    });
   });
 });

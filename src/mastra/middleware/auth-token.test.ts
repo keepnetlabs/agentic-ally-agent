@@ -229,7 +229,7 @@ describe('authTokenMiddleware', () => {
 
     it('should return 401 when backend validation service throws', async () => {
       const previousFetch = global.fetch;
-      global.fetch = vi.fn().mockRejectedValueOnce(new Error('network down')) as any;
+      global.fetch = vi.fn().mockRejectedValue(new Error('network down')) as any;
 
       try {
         mockContext.req.path = '/chat';
@@ -248,6 +248,30 @@ describe('authTokenMiddleware', () => {
           401
         );
         expect(mockNext).not.toHaveBeenCalled();
+      } finally {
+        global.fetch = previousFetch;
+      }
+    });
+
+    it('should retry on 5xx and succeed when backend recovers', async () => {
+      const previousFetch = global.fetch;
+      (global.fetch as any) = vi
+        .fn()
+        .mockResolvedValueOnce(new Response('Server Error', { status: 500 }))
+        .mockResolvedValueOnce(new Response('{}', { status: 200 }));
+
+      try {
+        mockContext.req.path = '/chat';
+        mockContext.req.header.mockImplementation((headerName: string) => {
+          if (headerName === 'X-AGENTIC-ALLY-TOKEN') return 'retry-test-token-abcdefghijklmnopqrstuvwxyz8888';
+          return undefined;
+        });
+
+        await authTokenMiddleware(mockContext, mockNext);
+
+        expect(nextCalled).toBe(true);
+        expect(mockContext.json).not.toHaveBeenCalled();
+        expect(global.fetch).toHaveBeenCalledTimes(2);
       } finally {
         global.fetch = previousFetch;
       }

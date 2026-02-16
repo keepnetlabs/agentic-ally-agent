@@ -4,6 +4,7 @@ import { normalizeError, logErrorInfo } from '../utils/core/error-utils';
 import { errorService } from '../services/error-service';
 import { API_ENDPOINTS, TOKEN_CACHE_INVALID_TTL_MS } from '../constants';
 import { tokenCache } from '../utils/core/token-cache';
+import { withRetry } from '../utils/core/resilience-utils';
 import { SKIP_AUTH_PATHS, isPublicUnauthenticatedPath } from './public-endpoint-policy';
 
 const logger = getLogger('AuthToken');
@@ -138,12 +139,20 @@ export const authTokenMiddleware = async (c: Context, next: Next): Promise<Respo
     const baseApiUrl = c.req.header('X-BASE-API-URL') || API_ENDPOINTS.DEFAULT_AUTH_URL;
     const validationUrl = `${baseApiUrl}/auth/validate`;
     logger.info('Validation URL', { url: validationUrl });
-    const response = await fetch(validationUrl, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${token}`,
+    const response = await withRetry(
+      async () => {
+        const res = await fetch(validationUrl, {
+          method: 'GET',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok && res.status >= 500) {
+          const text = await res.text();
+          throw new Error(`Auth server error ${res.status}: ${text.substring(0, 200)}`);
+        }
+        return res;
       },
-    });
+      'auth-validate'
+    );
 
     const responseText = await response.text();
     logger.debug('Auth Validation Response', {

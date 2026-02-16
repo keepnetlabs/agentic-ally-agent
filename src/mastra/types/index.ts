@@ -23,6 +23,9 @@ export type {
   AutonomousRequestBody,
   CloudflareEnv,
   WorkflowBinding,
+  PhishingEditorBody,
+  PhishingEditorLandingPage,
+  KvPhishingLandingRecord,
 } from './api-types';
 
 // Autonomous types

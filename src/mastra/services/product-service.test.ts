@@ -207,6 +207,22 @@ describe('ProductService', () => {
       expect(result).toBeNull();
     });
 
+    it('should retry on 5xx and succeed when API recovers', async () => {
+      const payload = { idp: 'https://test-idp.com', user_company_resourceid: 'company-123' };
+      const token = createMockJWT(payload);
+      const service = new ProductService(token);
+      const mockResponse = { data: { recovered: true } };
+
+      (global.fetch as any)
+        .mockResolvedValueOnce({ ok: false, status: 503, text: async () => 'Service Unavailable' })
+        .mockResolvedValueOnce({ ok: true, json: async () => mockResponse });
+
+      const result = await service.request('/test-endpoint');
+
+      expect(result).toEqual(mockResponse);
+      expect(global.fetch).toHaveBeenCalledTimes(2);
+    });
+
     it('should include API key in headers when configured', async () => {
       const payload = { idp: 'https://test-idp.com', user_company_resourceid: 'company-123' };
       const token = createMockJWT(payload);

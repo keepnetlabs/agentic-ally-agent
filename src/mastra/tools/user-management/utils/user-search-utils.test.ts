@@ -82,7 +82,7 @@ describe('user-search-utils', () => {
         json: async () => ({ error: 'Server Error' }),
       });
 
-      await expect(fetchUsersWithFilters(mockDeps, mockTemplate, [])).rejects.toThrow('User search API error: 500');
+      await expect(fetchUsersWithFilters(mockDeps, mockTemplate, [])).rejects.toThrow('User search API error 500');
     });
   });
 
