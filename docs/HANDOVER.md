@@ -33,7 +33,9 @@ Agentic Ally is an **Autonomous Security Awareness Platform** powered by **8 Spe
 3.  **[ARCHITECTURE.md](./ARCHITECTURE.md)** - Deep dive into resilience & state machines.
 4.  **[API_REFERENCE.md](./API_REFERENCE.md)** - Full list of endpoints (`/chat`, `/autonomous`, `/smishing/chat`, `/vishing/*`, `/email-ir/analyze`).
 5.  **[DEVELOPMENT.md](./DEVELOPMENT.md)** - How to debug & run locally.
-6.  **[FUTURE_IMPROVEMENTS.md](./FUTURE_IMPROVEMENTS.md)** - Roadmap for Autonomous Agentic System (Active Learning, Memory).
+6.  **[ERROR_HANDLING.md](./ERROR_HANDLING.md)** - Tool error pattern: `{ success: false, error }` vs `throw`.
+6.  **[FUTURE_IMPROVEMENTS.md](./FUTURE_IMPROVEMENTS.md)** - Roadmap for Autonomous Agentic System (Memory, Critic Agent).
+7.  **[AGENTIC_ROADMAP.md](./AGENTIC_ROADMAP.md)** - Active Learning (✅ tamamlandı), Critic Agent, Agent Swarm planı.
 
 ---
 
@@ -89,6 +91,7 @@ Before deploying to production:
 
 1. **Pre-deploy validation:** `npm run deploy` automatically runs `npm run validate` (format, lint, tests) first.
 2. **Environment:** Ensure `.env` has `PRODUCT_API_KEY` and all required keys (see `.env.example`).
+3. **D1 migration (Active Learning):** After deploy, run `npx wrangler d1 execute agentic-ally-memory --remote --file=./migrations/0002_campaign_metadata.sql` — see [DEPLOYMENT.md §6](./DEPLOYMENT.md).
 
 ---
 
@@ -99,6 +102,8 @@ If you have time, tackle these:
 1.  **Memory Cleanup:** Write a Cron job to delete old `phishing-{thread}` keys from KV Store (older than 7 days).
 2.  **Concurrency Control:** Implement `p-limit` for the Autonomous loop to handle 1000+ users without rate limiting.
 3.  **Observability:** Add structured logging (JSON) for Datadog/Sentry integration.
+
+**✅ Done:** Active Learning (campaign metadata → User Info tactic enrichment) — Şubat 2026.
 
 ---
 

@@ -128,15 +128,46 @@ npx vitest run
 
 # Run specific test file
 npx vitest run src/mastra/index.test.ts
+
+# Run integration/E2E flow tests only
+npx vitest run src/mastra/__tests__/integration/
+npx vitest run src/mastra/tools/vishing-call/vishing-flow.integration.test.ts
 ```
+
+### E2E / Integration Flow Tests
+
+Flow tests verify the full chain: **Tool → Workflow → KV** with mocked AI and external APIs.
+
+| Test | Flow | Mocks |
+|------|------|-------|
+| `phishing-flow.integration.test.ts` | phishingWorkflowExecutorTool → createPhishingWorkflow | generateText, KV, getPolicySummary, ProductService |
+| `smishing-flow.integration.test.ts` | smishingWorkflowExecutorTool → createSmishingWorkflow | generateText, KV, getPolicySummary, ProductService |
+| `autonomous-flow.integration.test.ts` | executeAutonomousGeneration: group smishing, group phishing, user smishing, user phishing, reject validation | selectGroupTrainingTopic, getUserInfoTool, generateText, KV, phishingWorkflowExecutorTool, upload/assign tools |
+| `vishing-flow.integration.test.ts` | getUserInfo → listPhoneNumbers → initiateVishingCall | global.fetch (Platform API, ElevenLabs) |
 
 ### Test Structure
 | Type | Location | Coverage |
 |------|----------|----------|
 | **Unit** | `src/mastra/utils/**` | Helpers, Transformers, Prompts |
 | **Integration** | `src/mastra/index.test.ts` | `/chat`, `/health`, `/autonomous` |
+| **E2E / Flow** | `src/mastra/__tests__/integration/*.integration.test.ts` | Phishing/Smishing tool → workflow → KV |
+| **Integration** | `src/mastra/tools/vishing-call/vishing-flow.integration.test.ts` | UserInfo → Vishing call chain |
 | **Validation** | `src/mastra/schemas/**` | Zod Schemas & Data Models |
 | **Config** | `src/mastra/deployer.test.ts` | Cloudflare Bindings |
+
+---
+
+## Logging (Structured JSON)
+
+Logs are JSON-formatted for Datadog/Sentry. Each entry includes:
+
+| Field | Description |
+|-------|-------------|
+| `service` | `agentic-ally` (filter by service) |
+| `env` | `NODE_ENV` (development, production, test) |
+| `correlationId` | Request trace ID (when in request context) |
+
+**Env:** `LOG_LEVEL=debug|info|warn|error` overrides the default (development=debug, else=info).
 
 ---
 

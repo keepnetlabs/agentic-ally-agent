@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   categorizeAction,
   inferOutcome,
@@ -96,6 +96,11 @@ describe('activity-enrichment-utils', () => {
     it('should handle unknown incident types', () => {
       expect(categorizeAction('INCIDENT', 'Created Ticket')).toBe('CREATED_TICKET');
     });
+
+    it('should fallback for other SECURITY AWARENESS training types', () => {
+      expect(categorizeAction('SECURITY AWARENESS', 'Video Watched')).toBe('VIDEO_WATCHED');
+      expect(categorizeAction('SECURITY AWARENESS', 'Module Started')).toBe('MODULE_STARTED');
+    });
   });
 
   describe('calculateRisk - Extended', () => {
@@ -156,6 +161,55 @@ describe('activity-enrichment-utils', () => {
     it('should format empty string gracefully', () => {
       // Empty string gets parsed and produces a formatted result
       const result = formatTimeAgo('');
+      expect(typeof result).toBe('string');
+    });
+
+    it('should format hours ago', () => {
+      const fixedNow = new Date('2025-02-10T14:00:00Z');
+      vi.setSystemTime(fixedNow);
+      expect(formatTimeAgo('10/02/2025 12:00')).toContain('h ago');
+      vi.useRealTimers();
+    });
+
+    it('should format 1h ago', () => {
+      const fixedNow = new Date('2025-02-10T14:00:00Z');
+      vi.setSystemTime(fixedNow);
+      expect(formatTimeAgo('10/02/2025 13:00')).toContain('h ago');
+      vi.useRealTimers();
+    });
+
+    it('should format yesterday', () => {
+      const fixedNow = new Date('2025-02-10T14:00:00Z');
+      vi.setSystemTime(fixedNow);
+      // 09/02/2025 14:00 UTC = 1 day ago
+      expect(formatTimeAgo('09/02/2025 14:00')).toBe('yesterday');
+      vi.useRealTimers();
+    });
+
+    it('should format days ago', () => {
+      const fixedNow = new Date('2025-02-10T14:00:00Z');
+      vi.setSystemTime(fixedNow);
+      expect(formatTimeAgo('07/02/2025 14:00')).toContain('days ago');
+      vi.useRealTimers();
+    });
+
+    it('should format weeks ago', () => {
+      const fixedNow = new Date('2025-02-10T14:00:00Z');
+      vi.setSystemTime(fixedNow);
+      expect(formatTimeAgo('27/01/2025 14:00')).toContain('weeks ago');
+      vi.useRealTimers();
+    });
+
+    it('should format months ago', () => {
+      const fixedNow = new Date('2025-02-10T14:00:00Z');
+      vi.setSystemTime(fixedNow);
+      expect(formatTimeAgo('05/12/2024 14:00')).toContain('months ago');
+      vi.useRealTimers();
+    });
+
+    it('should handle invalid date format without throwing', () => {
+      // Invalid date may produce Invalid Date; function returns string without throwing
+      const result = formatTimeAgo('32/13/2025 25:99');
       expect(typeof result).toBe('string');
     });
   });
@@ -314,6 +368,52 @@ describe('activity-enrichment-utils', () => {
 
     it('should return NO DATA message for empty array', () => {
       expect(formatEnrichedActivitiesForPrompt([])).toBe('NO ACTIVITY DATA AVAILABLE');
+    });
+
+    it('should include tactic when present', () => {
+      const enriched = [
+        {
+          actionType: 'Clicked Link',
+          productType: 'PHISHING',
+          campaignName: 'Test',
+          difficulty: 'Hard',
+          category: undefined,
+          points: -10,
+          actionTime: '01/01/2025 12:00',
+          actionCategory: 'PHISHING_LINK_CLICKED',
+          outcome: 'FAILED' as const,
+          riskScore: 70,
+          isSecurityPositive: false,
+          context: 'User clicked link',
+          timeAgo: '1h ago',
+          tactic: 'Urgency',
+        },
+      ];
+      const formatted = formatEnrichedActivitiesForPrompt(enriched);
+      expect(formatted).toContain('[Tactic: Urgency]');
+    });
+
+    it('should omit tactic when empty or whitespace', () => {
+      const enriched = [
+        {
+          actionType: 'Action',
+          productType: 'TYPE',
+          campaignName: 'Campaign',
+          difficulty: 'Easy',
+          category: undefined,
+          points: 10,
+          actionTime: '01/01/2025 12:00',
+          actionCategory: 'CAT',
+          outcome: 'PASSED' as const,
+          riskScore: 0,
+          isSecurityPositive: true,
+          context: 'Context',
+          timeAgo: '1h ago',
+          tactic: '   ',
+        },
+      ];
+      const formatted = formatEnrichedActivitiesForPrompt(enriched);
+      expect(formatted).not.toContain('[Tactic:');
     });
 
     it('should format multiple activities with newlines', () => {

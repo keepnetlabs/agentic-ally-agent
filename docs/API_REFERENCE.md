@@ -1,6 +1,6 @@
 # API Reference
 
-**Last Updated:** February 12, 2026
+**Last Updated:** February 16, 2026
 
 This document details the REST API endpoints available in Agentic Ally.
 
@@ -182,10 +182,14 @@ Manually trigger the proactive generation loop. Useful for testing or on-demand 
 |-------|------|----------|-------------|
 | `token` | string | Yes | Auth token (verification) |
 | `actions` | array | Yes | Any combination of `["training"]`, `["phishing"]`, `["smishing"]` |
-| `firstName` | string | No* | Target specific User by Name |
+| `firstName` | string | No* | Target specific User by first name |
+| `lastName` | string | No* | Target specific User by last name (use with `firstName`) |
 | `targetUserResourceId` | string | No* | Target specific User by ID (Preferred) |
+| `departmentName` | string | No | Department name (with `targetUserResourceId` avoids extra API call) |
 | `targetGroupResourceId` | string | No* | Target a specific Group |
 | `sendAfterPhishingSimulation` | boolean | No | Auto-send email (default: false) |
+| `preferredLanguage` | string | No | BCP-47 language code (e.g. `en-gb`, `tr-tr`) |
+| `baseApiUrl` | string | No | Product API base URL (default from config) |
 
 *\*Must specify either User (Name/ID) OR Group ID.*
 

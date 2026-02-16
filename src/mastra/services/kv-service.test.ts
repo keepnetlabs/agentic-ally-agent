@@ -353,6 +353,231 @@ describe('KVService', () => {
     });
   });
 
+  describe('getNamespaceId', () => {
+    it('should return namespace from override', () => {
+      const svc = new KVService('custom-namespace-id');
+      expect(svc.getNamespaceId()).toBe('custom-namespace-id');
+    });
+
+    it('should return unknown when empty', () => {
+      const orig = process.env.MICROLEARNING_KV_NAMESPACE_ID;
+      delete process.env.MICROLEARNING_KV_NAMESPACE_ID;
+      const svc = new KVService();
+      expect(svc.getNamespaceId()).toBe('unknown');
+      if (orig) process.env.MICROLEARNING_KV_NAMESPACE_ID = orig;
+    });
+  });
+
+  describe('savePhishing / getPhishing', () => {
+    it('should save and retrieve phishing components', async () => {
+      const baseData = { id: 'p1', language_availability: ['en-us'] };
+      const emailData = { subject: 'Test', template: '<p>Hi</p>' };
+      const landingData = { html: '<div>Landing</div>' };
+
+      const fetchMock = vi.fn().mockImplementation(async (_url: string, opts?: { method?: string; body?: string }) => {
+        const method = opts?.method || 'GET';
+        if (method === 'PUT') return new Response('', { status: 200 });
+        if (method === 'GET') {
+          if (_url.includes('phishing:phish-1:base')) return new Response(JSON.stringify(baseData), { status: 200 });
+          if (_url.includes('phishing:phish-1:email')) return new Response(JSON.stringify(emailData), { status: 200 });
+          if (_url.includes('phishing:phish-1:landing')) return new Response(JSON.stringify(landingData), { status: 200 });
+        }
+        return new Response('', { status: 404 });
+      });
+
+      global.fetch = fetchMock;
+
+      const phishingData = {
+        analysis: { name: 'Test', scenario: 'Topic', difficulty: 'Medium', method: 'Click-Only' },
+        subject: 'Test',
+        template: '<p>Hi</p>',
+        fromAddress: 'test@example.com',
+        fromName: 'Test',
+        landingPage: { html: '<div>Landing</div>' },
+      };
+
+      const saveResult = await kvService.savePhishing('phish-1', phishingData, 'en-us');
+      expect(saveResult).toBe(true);
+
+      const getResult = await kvService.getPhishing('phish-1', 'en-us');
+      expect(getResult).toBeDefined();
+      expect(getResult.base).toEqual(baseData);
+      expect(getResult.email).toEqual(emailData);
+      expect(getResult.landing).toEqual(landingData);
+    });
+
+    it('should return null when phishing base not found', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(new Response('', { status: 404 }));
+      global.fetch = fetchMock;
+
+      const result = await kvService.getPhishing('non-existent');
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('saveSmishing / getSmishing', () => {
+    it('should save and retrieve smishing components', async () => {
+      const baseData = { id: 's1', language_availability: ['en-us'] };
+      const smsData = { messages: ['SMS 1'] };
+      const landingData = { html: '<div>Landing</div>' };
+
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce(new Response('', { status: 200 }))
+        .mockResolvedValueOnce(new Response('', { status: 200 }))
+        .mockResolvedValueOnce(new Response('', { status: 200 }))
+        .mockResolvedValueOnce(new Response(JSON.stringify(baseData), { status: 200 }))
+        .mockResolvedValueOnce(new Response(JSON.stringify(smsData), { status: 200 }))
+        .mockResolvedValueOnce(new Response(JSON.stringify(landingData), { status: 200 }));
+
+      global.fetch = fetchMock;
+
+      const smishingData = {
+        analysis: { name: 'Test', scenario: 'Topic', difficulty: 'Medium' },
+        messages: ['SMS 1'],
+        landingPage: { html: '<div>Landing</div>' },
+      };
+
+      const saveResult = await kvService.saveSmishing('smish-1', smishingData, 'en-us');
+      expect(saveResult).toBe(true);
+
+      const getResult = await kvService.getSmishing('smish-1', 'en-us');
+      expect(getResult).toBeDefined();
+      expect(getResult.base).toEqual(baseData);
+      expect(getResult.sms).toEqual(smsData);
+      expect(getResult.landing).toEqual(landingData);
+    });
+
+    it('should skip landing page when data.landingPage is missing', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(new Response('', { status: 200 }));
+      global.fetch = fetchMock;
+
+      const smishingData = {
+        analysis: { name: 'Test' },
+        messages: ['SMS 1'],
+      };
+
+      const result = await kvService.saveSmishing('smish-2', smishingData, 'en-us');
+      expect(result).toBe(true);
+      expect(fetchMock).toHaveBeenCalledTimes(2); // base + sms only
+    });
+  });
+
+  describe('saveMicrolearning without inbox', () => {
+    it('should save base and language only when inboxContent is undefined', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(new Response('', { status: 200 }));
+      global.fetch = fetchMock;
+
+      const data = {
+        microlearning: { id: 'ml-1' },
+        languageContent: { scenes: [] },
+      };
+
+      const result = await kvService.saveMicrolearning('ml-1', data, 'en', 'IT');
+      expect(result).toBe(true);
+      expect(fetchMock).toHaveBeenCalledTimes(2); // base + lang only
+    });
+  });
+
+  describe('storeLanguageContent / storeInboxContent / getInboxContent', () => {
+    it('should store and retrieve language content', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(new Response('', { status: 200 }));
+      global.fetch = fetchMock;
+
+      const result = await kvService.storeLanguageContent('ml-1', 'en-us', { scenes: [] });
+      expect(result).toBe(true);
+    });
+
+    it('should store and retrieve inbox content', async () => {
+      const inboxPayload = { emails: [] };
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce(new Response('', { status: 200 }))
+        .mockResolvedValueOnce(new Response(JSON.stringify(inboxPayload), { status: 200 }));
+      global.fetch = fetchMock;
+
+      const storeResult = await kvService.storeInboxContent('ml-1', 'IT', 'en-us', inboxPayload);
+      expect(storeResult).toBe(true);
+
+      const getResult = await kvService.getInboxContent('ml-1', 'IT', 'en-us');
+      expect(getResult).toEqual(inboxPayload);
+    });
+  });
+
+  describe('updateMicrolearning', () => {
+    it('should update microlearning base', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(new Response('', { status: 200 }));
+      global.fetch = fetchMock;
+
+      const microlearning = {
+        microlearning_id: 'ml-1',
+        microlearning_metadata: { title: 'Updated' },
+      };
+
+      const result = await kvService.updateMicrolearning(microlearning);
+      expect(result).toBe(true);
+    });
+
+    it('should return false when microlearning_id is missing', async () => {
+      const result = await kvService.updateMicrolearning({ microlearning_metadata: {} });
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('searchMicrolearnings', () => {
+    it('should return matching microlearnings', async () => {
+      const listResult = { result: [{ name: 'ml:ml-1:base' }, { name: 'ml:ml-2:base' }] };
+      const ml1 = {
+        microlearning_id: 'ml-1',
+        microlearning_metadata: { title: 'Phishing Awareness' },
+      };
+      const ml2 = {
+        microlearning_id: 'ml-2',
+        microlearning_metadata: { title: 'Ransomware' },
+      };
+
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce(new Response(JSON.stringify(listResult), { status: 200 }))
+        .mockResolvedValueOnce(new Response(JSON.stringify(ml1), { status: 200 }))
+        .mockResolvedValueOnce(new Response(JSON.stringify(ml2), { status: 200 }));
+
+      global.fetch = fetchMock;
+
+      const result = await kvService.searchMicrolearnings('phishing');
+      expect(result).toHaveLength(1);
+      expect(result[0].microlearning_metadata.title).toBe('Phishing Awareness');
+    });
+  });
+
+  describe('checkNamespace', () => {
+    it('should return true when namespace is accessible', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(new Response('', { status: 200 }));
+      global.fetch = fetchMock;
+
+      const result = await kvService.checkNamespace();
+      expect(result).toBe(true);
+    });
+
+    it('should return false when namespace check fails', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(new Response('', { status: 403 }));
+      global.fetch = fetchMock;
+
+      const result = await kvService.checkNamespace();
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('LIST error handling', () => {
+    it('should return empty array when list fails', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(new Response('', { status: 500 }));
+      global.fetch = fetchMock;
+
+      const result = await kvService.list('ml:');
+      expect(result).toEqual([]);
+    });
+  });
+
   describe('health check', () => {
     it('should return true when KV is accessible', async () => {
       let storedValue: any = null;

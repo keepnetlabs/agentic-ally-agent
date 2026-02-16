@@ -1,13 +1,27 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { postProcessPhishingEmailHtml, postProcessPhishingLandingHtml } from './phishing-html-postprocessors';
+import { normalizeEmailNestedTablePadding } from './email-table-padding-normalizer';
+import { repairHtml } from '../validation/json-validation-utils';
 
-vi.mock('../core/logger');
-vi.mock('./html-sanitizer');
+vi.mock('../core/logger', () => ({
+  getLogger: vi.fn(() => ({ warn: vi.fn(), info: vi.fn(), debug: vi.fn() })),
+}));
+vi.mock('./html-sanitizer', () => ({
+  sanitizeHtml: vi.fn((html: string) => html),
+}));
 vi.mock('./email-table-padding-normalizer');
 vi.mock('./email-centering-normalizer');
 vi.mock('./email-card-padding-normalizer');
-vi.mock('../validation/json-validation-utils');
-vi.mock('../landing-page');
+vi.mock('../validation/json-validation-utils', () => ({
+  repairHtml: vi.fn((html: string) => html),
+}));
+vi.mock('../landing-page', () => ({
+  normalizeLandingCentering: vi.fn((html: string) => html),
+  ensureLandingFullHtmlDocument: vi.fn((html: string) => html),
+}));
+vi.mock('../landing-page/logo-centering-normalizer', () => ({
+  normalizeLandingLogoCentering: vi.fn((html: string) => html),
+}));
 vi.mock('./landing-page-layout-fixer', () => ({
   fixLandingPageLayout: vi.fn(html => html),
 }));
@@ -345,6 +359,30 @@ describe('phishing-html-postprocessors', () => {
         postProcessPhishingLandingHtml({ html: '<div></div>', title: 'Title' });
         postProcessPhishingLandingHtml({ html: '<div></div>', title: '' });
       }).not.toThrow();
+    });
+  });
+
+  describe('Fallback Paths (Level 2 and 3)', () => {
+    it('email processor falls back when Level 1 throws', () => {
+      vi.mocked(normalizeEmailNestedTablePadding).mockImplementationOnce(() => {
+        throw new Error('Simulated failure');
+      });
+      const html = '<table><tr><td>Email</td></tr></table>';
+      const result = postProcessPhishingEmailHtml({ html });
+      expect(result).toBeDefined();
+      expect(typeof result).toBe('string');
+      expect(result).toContain('Email');
+    });
+
+    it('landing processor falls back when Level 1 throws', () => {
+      vi.mocked(repairHtml).mockImplementationOnce(() => {
+        throw new Error('Simulated repair failure');
+      });
+      const html = '<div>Content</div>';
+      const result = postProcessPhishingLandingHtml({ html });
+      expect(result).toBeDefined();
+      expect(typeof result).toBe('string');
+      expect(result).toContain('Content');
     });
   });
 

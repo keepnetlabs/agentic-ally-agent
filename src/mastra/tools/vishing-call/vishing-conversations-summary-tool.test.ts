@@ -193,4 +193,27 @@ describe('vishing-conversations-summary-tool', () => {
     expect(result.summary.outcome).toBe('detected');
     expect(result.statusCard.title).toBe('Simulation Detected');
   });
+
+  it('should normalize underscore and hyphen enum variants', async () => {
+    const responseWithEnumVariants = JSON.stringify({
+      summary: {
+        timeline: [
+          { timestamp: '0:01', label: 'credibility_building', snippet: 'Caller builds trust.' },
+          { timestamp: '0:18', label: 'data-request', snippet: 'Caller asks for account details.' },
+        ],
+        disclosedInfo: [{ item: 'Account number', timestamp: '0:21' }],
+        outcome: 'data-disclosed',
+      },
+      nextSteps: [{ title: 'Rotate credentials', description: 'Update exposed credentials immediately.' }],
+    });
+
+    mockGenerateText.mockResolvedValue({ text: responseWithEnumVariants });
+
+    const result = await generateVishingConversationsSummary([{ role: 'user', text: 'Test enum variants' }]);
+
+    expect(result.summary.timeline[0]?.label).toBe('Credibility Building');
+    expect(result.summary.timeline[1]?.label).toBe('Data Request');
+    expect(result.summary.outcome).toBe('data_disclosed');
+    expect(result.statusCard.title).toBe('Data Disclosed');
+  });
 });

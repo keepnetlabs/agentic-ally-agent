@@ -92,7 +92,7 @@ import {
 } from './workflows';
 import { ExampleRepo, executeAutonomousGeneration, performHealthCheck, KVService } from './services';
 import { validateEnvironmentOrThrow } from './utils/core';
-import { resolveLogLevel } from './utils/core/logger';
+import { resolveLogLevel, STRUCTURED_LOG_FORMATTERS } from './utils/core/logger';
 import type { ChatRequestBody, CodeReviewRequestBody, AutonomousRequestBody, CloudflareEnv } from './types';
 
 // Type import for D1 database
@@ -104,6 +104,7 @@ validateEnvironmentOrThrow();
 const logger = new PinoLogger({
   name: 'Mastra',
   level: resolveLogLevel(),
+  formatters: STRUCTURED_LOG_FORMATTERS,
 });
 // Middleware to inject D1 database into ExampleRepo
 const injectD1Database = async (c: Context, next: Next) => {

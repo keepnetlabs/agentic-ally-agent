@@ -18,11 +18,12 @@ import { Mastra } from '@mastra/core/mastra';
 import { AgentRouter } from '../services/agent-router';
 import { Agent } from '@mastra/core/agent';
 import { ChatRequestBody } from '../types/api-types';
-import { resolveLogLevel } from './core/logger';
+import { resolveLogLevel, STRUCTURED_LOG_FORMATTERS } from './core/logger';
 
 const logger = new PinoLogger({
   name: 'ChatOrchestration',
   level: resolveLogLevel(),
+  formatters: STRUCTURED_LOG_FORMATTERS,
 });
 
 /**

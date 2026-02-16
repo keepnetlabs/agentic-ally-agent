@@ -1,6 +1,6 @@
 # Workflow Documentation
 
-**Last Updated:** February 12, 2026
+**Last Updated:** February 16, 2026
 
 This document visualizes the core logic flows of the Agentic Ally system.
 
@@ -90,6 +90,8 @@ graph TD
     Sanitize --> Save[Save to KV]
 ```
 
+**Implementation:** `create-phishing-workflow` steps: `analyzeRequest` → `generateEmail` → `generateLandingPage` → `savePhishingContent`.
+
 ---
 
 ## 4. Smishing Simulation Workflow
@@ -111,6 +113,8 @@ graph TD
     GenLanding --> Sanitize[Sanitize Output]
     Sanitize --> Save[Save to KV]
 ```
+
+**Implementation:** `create-smishing-workflow` steps: `analyzeRequest` → `generateSms` → `generateLandingPage` → `saveSmishingContent`.
 
 **Edit/Translate (Smishing Editor)**
 - Uses existing SMS + landing page content from KV.

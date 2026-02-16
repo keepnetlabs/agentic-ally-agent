@@ -64,16 +64,23 @@ type TimelineItemLike = {
   snippet?: unknown;
 };
 
+function normalizeEnumKey(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, '_');
+}
+
 function normalizeTimelineLabel(label: unknown): string {
   if (typeof label !== 'string') return 'Other';
-  const v = label.trim().toLowerCase();
+  const v = normalizeEnumKey(label);
 
   if (v === 'introduction' || v === 'intro') return 'Introduction';
-  if (v === 'credibility building' || v === 'credibility' || v === 'authority') return 'Credibility Building';
+  if (v === 'credibility_building' || v === 'credibility' || v === 'authority') return 'Credibility Building';
   if (v === 'pressure' || v === 'urgency') return 'Pressure';
-  if (v === 'data request' || v === 'request' || v === 'ask') return 'Data Request';
-  if (v === 'data disclosed' || v === 'disclosed' || v === 'disclosure') return 'Data Disclosed';
-  if (v === 'simulation reveal' || v === 'reveal' || v === 'detected' || v === 'detection') return 'Simulation Reveal';
+  if (v === 'data_request' || v === 'request' || v === 'ask') return 'Data Request';
+  if (v === 'data_disclosed' || v === 'disclosed' || v === 'disclosure') return 'Data Disclosed';
+  if (v === 'simulation_reveal' || v === 'reveal' || v === 'detected' || v === 'detection') return 'Simulation Reveal';
   if (v === 'other') return 'Other';
   return 'Other';
 }
@@ -93,7 +100,7 @@ function normalizeTimelineItems(timeline: unknown): unknown[] {
 
 function normalizeOutcome(outcome: unknown): unknown {
   if (typeof outcome !== 'string') return outcome;
-  const v = outcome.trim().toLowerCase();
+  const v = normalizeEnumKey(outcome);
   if (v === 'data_disclosed' || v === 'disclosed' || v === 'shared') return 'data_disclosed';
   if (v === 'refused' || v === 'reject' || v === 'rejected') return 'refused';
   if (v === 'detected' || v === 'detection') return 'detected';
@@ -146,35 +153,54 @@ export async function generateVishingConversationsSummary(messages: VishingMessa
 
   const systemPrompt = `You are a senior security training analyst specializing in social engineering and vishing (voice phishing) assessments. Analyze this transcript from a simulated vishing call and produce a structured debrief for the learner.
 
-CONTEXT: This is a security training simulation, not a real attack. "Agent" = the simulated scammer; "User" = the learner being assessed. Your job is to identify what happened, what (if anything) was disclosed, and provide actionable feedback.
+CONTEXT: This is a security training simulation, not a real attack. "Agent" = the simulated scammer; "User" = the learner being assessed.
 
-TIMELINE PHASES (use exactly these labels):
-- Introduction: Caller introduces themselves, states reason for call
-- Credibility Building: Caller establishes fake authority or trust
-- Pressure: Caller creates urgency, time pressure, or fear
-- Data Request: Caller explicitly asks for sensitive information
-- Data Disclosed: Moment when learner shared sensitive data (only if outcome is data_disclosed)
-- Simulation Reveal: When the simulation ends and debrief begins
-- Other: Only if the phase does not fit any of the above
+TIMELINE PHASE ENUM (exact, case-sensitive):
+- "Introduction"
+- "Credibility Building"
+- "Pressure"
+- "Data Request"
+- "Data Disclosed"
+- "Simulation Reveal"
+- "Other"
+
+TIMELINE MAPPING:
+- opening/greeting/self-intro -> "Introduction"
+- authority/trust/pretext setup -> "Credibility Building"
+- urgency/threat/deadline pressure -> "Pressure"
+- request for OTP/password/card/account detail -> "Data Request"
+- user shares sensitive detail -> "Data Disclosed"
+- simulation announced or debrief starts -> "Simulation Reveal"
+- unmatched phase -> "Other"
+
+OUTCOME ENUM (exact, lowercase, underscore):
+- "data_disclosed"
+- "refused"
+- "detected"
+- "other"
 
 OUTCOME RULES:
 - data_disclosed: Learner shared sensitive info (passwords, OTP, card numbers, account details, etc.). List each item in disclosedInfo.
-- refused: Learner refused without disclosing. No sensitive data was shared — leave disclosedInfo empty.
-- detected: Learner identified it as a simulation. No sensitive data was shared — leave disclosedInfo empty.
-- other: Call ended without clear outcome (e.g. dropped, incomplete). No sensitive data to report — leave disclosedInfo empty.
+- refused: Learner refused and shared no sensitive data. disclosedInfo must be [].
+- detected: Learner identified simulation and shared no sensitive data. disclosedInfo must be [].
+- other: Call ended without clear outcome. disclosedInfo must be [].
 
-NEXT STEPS: Tailor to outcome. For data_disclosed: include "Change exposed passwords", "Contact bank if financial info shared". For refused/detected: reinforce positive behavior. 2-4 items, each with title and description. Output in English.
+NEXT STEPS:
+- Tailor to outcome.
+- For data_disclosed include actions like password reset and financial provider contact if relevant.
+- For refused/detected reinforce positive behavior.
+- 2-4 items, each with title + description, in English.
 
-OUTPUT STRUCTURE (valid JSON only):
+OUTPUT STRUCTURE:
 {
   "summary": {
     "timeline": [
-      { "timestamp": "MM:SS", "label": "<phase>", "snippet": "<1-2 sentence excerpt, direct quote or close paraphrase>" }
+      { "timestamp": "MM:SS", "label": "Introduction", "snippet": "<1-2 sentence excerpt>" }
     ],
     "disclosedInfo": [
-      { "item": "<what was shared: e.g. OTP, password, card number>", "timestamp": "MM:SS" }
+      { "item": "<what was shared>", "timestamp": "MM:SS" }
     ],
-    "outcome": "data_disclosed" | "refused" | "detected" | "other"
+    "outcome": "refused"
   },
   "nextSteps": [
     { "title": "<short title>", "description": "<actionable recommendation>" }

@@ -14,6 +14,7 @@ import { validateToolResult } from '../../utils/tool-result-validation';
 import { extractCompanyIdFromTokenExport } from '../../utils/core/policy-fetcher';
 import { formatToolSummary } from '../../utils/core/tool-summary-formatter';
 import { summarizeForLog } from '../../utils/core/log-redaction-utils';
+import { trySaveCampaignMetadataAfterUpload } from '../../services/campaign-metadata-service';
 
 interface UploadSmishingWorkerResult {
   success?: boolean;
@@ -150,6 +151,9 @@ export const uploadSmishingTool = createTool({
       const templateResourceId = result.templateResourceId || result.resourceId;
       const scenarioResourceId = result.scenarioResourceId || null;
       const resourceIdForAssignment = scenarioResourceId || templateResourceId;
+
+      // Active Learning: save campaign metadata for UserInfoAgent tactic enrichment (non-blocking)
+      await trySaveCampaignMetadataAfterUpload(env, smishingData, resourceIdForAssignment);
 
       const formattedMessage = formatToolSummary({
         prefix: result.message ? `OK ${result.message}` : 'OK Smishing uploaded',

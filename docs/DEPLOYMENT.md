@@ -1,6 +1,6 @@
 # Deployment Guide
 
-**Last Updated:** February 13, 2026
+**Last Updated:** February 14, 2026
 
 This guide covers deploying Agentic Ally to **Cloudflare Workers**.
 
@@ -91,7 +91,20 @@ npx wrangler tail
 
 ---
 
-## 6. Troubleshooting Common Issues
+## 6. D1 Migrations (Active Learning)
+
+After first deploy, run the `campaign_metadata` migration for Active Learning (tactic enrichment in User Info reports):
+
+```bash
+npx wrangler d1 execute agentic-ally-memory --remote --file=./migrations/0002_campaign_metadata.sql
+```
+
+- **Without migration:** App works normally; tactic enrichment is skipped (no crash).
+- **With migration:** User Info Agent shows `[Tactic: X]` for timeline activities when metadata exists.
+
+---
+
+## 7. Troubleshooting Common Issues
 
 ### "KV Namespace Not Found"
 *   **Fix:** Run `npx wrangler kv:namespace create MICROLEARNING_KV` and update the ID in `wrangler.toml`.

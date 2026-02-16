@@ -19,19 +19,21 @@ export default defineConfig({
         '**/*.test.ts',
         '**/*.spec.ts',
       ],
-      lines: 50,        // Target 50% line coverage initially
-      functions: 50,
-      branches: 50,
-      statements: 50,
+      thresholds: {
+        lines: 50,
+        functions: 50,
+        branches: 50,
+        statements: 50,
+      },
     },
 
     // Test file patterns
     include: ['src/**/*.{test,spec}.ts'],
     exclude: ['node_modules/', 'dist/', '.mastra/'],
 
-    // Timeout configuration
-    testTimeout: 10000,
-    hookTimeout: 10000,
+    // Timeout configuration (integration tests may need longer)
+    testTimeout: 15000,
+    hookTimeout: 15000,
 
     // Output
     reporters: ['verbose'],

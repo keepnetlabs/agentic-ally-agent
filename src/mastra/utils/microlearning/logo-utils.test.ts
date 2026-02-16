@@ -98,4 +98,56 @@ describe('handleLogoHallucination', () => {
     const result = handleLogoHallucination(updates, microlearningId);
     expect(result.theme?.logo?.src).toBe('https://cdn.example.com/img/unknown_startup_logo.jpg');
   });
+
+  it('should handle missing src with valid alt containing "logo" (Scenario 2)', () => {
+    const updates = {
+      theme: {
+        logo: {
+          alt: 'Microsoft logo',
+        },
+      },
+    };
+    const result = handleLogoHallucination(updates, microlearningId);
+    expect(result.theme?.logo).toBeUndefined();
+    expect(result.brandName).toBe('Microsoft');
+  });
+
+  it('should not extract brand when alt has no "logo"', () => {
+    const updates = {
+      theme: {
+        logo: {
+          alt: 'Company icon',
+        },
+      },
+    };
+    const result = handleLogoHallucination(updates, microlearningId);
+    expect(result.theme?.logo?.alt).toBe('Company icon');
+    expect(result.brandName).toBeUndefined();
+  });
+
+  it('should not extract when possibleBrandName is too short', () => {
+    const updates = {
+      theme: {
+        logo: {
+          alt: 'logo',
+        },
+      },
+    };
+    const result = handleLogoHallucination(updates, microlearningId);
+    expect(result.theme?.logo?.alt).toBe('logo');
+    expect(result.brandName).toBeUndefined();
+  });
+
+  it('should not process raw filename when extracted name is too short', () => {
+    const updates = {
+      theme: {
+        logo: {
+          src: 'ab.png',
+        },
+      },
+    };
+    const result = handleLogoHallucination(updates, microlearningId);
+    expect(result.theme?.logo?.src).toBe('ab.png');
+    expect(result.brandName).toBeUndefined();
+  });
 });

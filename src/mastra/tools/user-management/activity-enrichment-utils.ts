@@ -134,7 +134,6 @@ export const formatTimeAgo = (actionTime: string): string => {
 
     if (diffMins < 60) return `${diffMins} min ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays === 0) return 'today';
     if (diffDays === 1) return 'yesterday';
     if (diffDays < 7) return `${diffDays} days ago`;
     if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;

@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   generatePhishingSimulation,
   uploadAndAssignPhishing,
+  uploadAndAssignPhishingForGroup,
   assignPhishingWithTraining,
 } from './autonomous-phishing-handlers';
 import '../../../../src/__tests__/setup';
@@ -142,6 +143,22 @@ describe('autonomous-phishing-handlers', () => {
     });
   });
 
+  describe('uploadAndAssignPhishingForGroup', () => {
+    it('returns failure when targetGroupResourceId is missing', async () => {
+      const result = await uploadAndAssignPhishingForGroup(undefined as any, 'thread-group-1', 'phish-xyz');
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('targetGroupResourceId');
+    });
+
+    it('returns success when agent completes upload and assign for group', async () => {
+      const result = await uploadAndAssignPhishingForGroup('group-456', 'thread-group-2', 'phish-xyz');
+
+      expect(result.success).toBe(true);
+      expect(mockPhishingAgentGenerate).toHaveBeenCalled();
+    });
+  });
+
   describe('assignPhishingWithTraining', () => {
     it('uses tool-first path when phishingResourceId is provided', async () => {
       const result = await assignPhishingWithTraining(
@@ -171,6 +188,183 @@ describe('autonomous-phishing-handlers', () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('targetUserResourceId');
+    });
+
+    it('uses agent path when phishingResourceId is not provided', async () => {
+      mockPhishingAgentGenerate.mockResolvedValue({ text: 'Agent assigned phishing with training' });
+
+      const result = await assignPhishingWithTraining('user-888', 'thread-assign-3', 'training-1', 'en-gb');
+
+      expect(result.success).toBe(true);
+      expect(mockPhishingAgentGenerate).toHaveBeenCalled();
+    });
+  });
+
+  describe('generatePhishingSimulation (agent fallback when tool-first fails)', () => {
+    it('falls back to agent when tool generation fails', async () => {
+      mockPhishingExecute.mockResolvedValue({
+        success: false,
+        error: 'Generation failed',
+        data: null,
+      });
+      mockPhishingAgentGenerate
+        .mockResolvedValueOnce({ text: 'Agent response with "phishingId":"phish-agent-123"' })
+        .mockResolvedValueOnce({ text: 'STOP' })
+        .mockResolvedValueOnce({ text: 'Upload and assign done' })
+        .mockResolvedValueOnce({ text: 'STOP' });
+
+      const result = await generatePhishingSimulation(
+        baseSimulation as any,
+        undefined,
+        baseToolResult as any,
+        'thread-fallback-1',
+        false
+      );
+
+      expect(mockPhishingAgentGenerate).toHaveBeenCalled();
+      expect(result.success).toBe(true);
+    });
+
+    it('returns recommendedParams when all fallbacks fail', async () => {
+      mockPhishingExecute.mockResolvedValue({ success: false, error: 'Tool failed' });
+      mockPhishingAgentGenerate.mockRejectedValue(new Error('Agent failed'));
+
+      const result = await generatePhishingSimulation(
+        baseSimulation as any,
+        undefined,
+        baseToolResult as any,
+        'thread-fail-1',
+        false
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.recommendedParams).toBeDefined();
+      expect(result.recommendedParams?.topic).toBeDefined();
+    });
+  });
+
+  describe('generatePhishingSimulation (tool-first edge cases)', () => {
+    it('falls back to agent when tool returns invalid phishingId (agent succeeds)', async () => {
+      mockPhishingExecute.mockResolvedValue({
+        success: true,
+        data: { phishingId: '../evil-id' },
+      });
+      mockPhishingAgentGenerate
+        .mockResolvedValueOnce({ text: 'Agent with "phishingId":"phish-valid"' })
+        .mockResolvedValueOnce({ text: 'STOP' })
+        .mockResolvedValueOnce({ text: 'Upload and assign done' })
+        .mockResolvedValueOnce({ text: 'STOP' });
+
+      const result = await generatePhishingSimulation(
+        baseSimulation as any,
+        undefined,
+        baseToolResult as any,
+        'thread-invalid-1',
+        false
+      );
+
+      expect(result.success).toBe(true);
+      expect(mockPhishingAgentGenerate).toHaveBeenCalled();
+      expect(mockUploadExecute).not.toHaveBeenCalled();
+    });
+
+    it('falls back to agent when tool returns no phishingId', async () => {
+      mockPhishingExecute.mockResolvedValue({ success: true, data: {} });
+      mockPhishingAgentGenerate
+        .mockResolvedValueOnce({ text: 'Agent with "phishingId":"phish-valid"' })
+        .mockResolvedValueOnce({ text: 'STOP' })
+        .mockResolvedValueOnce({ text: 'Upload and assign done' })
+        .mockResolvedValueOnce({ text: 'STOP' });
+
+      const result = await generatePhishingSimulation(
+        baseSimulation as any,
+        undefined,
+        baseToolResult as any,
+        'thread-no-id-1',
+        false
+      );
+
+      expect(result.success).toBe(true);
+      expect(mockPhishingAgentGenerate).toHaveBeenCalled();
+    });
+
+    it('falls back to agent when upload fails in tool-first', async () => {
+      mockUploadExecute.mockResolvedValue({ success: false, error: 'Upload API error' });
+      mockPhishingAgentGenerate
+        .mockResolvedValueOnce({ text: 'Agent with "phishingId":"phish-valid"' })
+        .mockResolvedValueOnce({ text: 'STOP' })
+        .mockResolvedValueOnce({ text: 'Upload and assign done' })
+        .mockResolvedValueOnce({ text: 'STOP' });
+
+      const result = await generatePhishingSimulation(
+        baseSimulation as any,
+        undefined,
+        baseToolResult as any,
+        'thread-upload-fail-1',
+        false
+      );
+
+      expect(result.success).toBe(true);
+      expect(mockPhishingAgentGenerate).toHaveBeenCalled();
+    });
+
+    it('falls back to agent when assign fails in tool-first', async () => {
+      mockAssignExecute.mockResolvedValue({ success: false, error: 'Assign failed' });
+      mockPhishingAgentGenerate
+        .mockResolvedValueOnce({ text: 'Agent with "phishingId":"phish-valid"' })
+        .mockResolvedValueOnce({ text: 'STOP' })
+        .mockResolvedValueOnce({ text: 'Upload and assign done' })
+        .mockResolvedValueOnce({ text: 'STOP' });
+
+      const result = await generatePhishingSimulation(
+        baseSimulation as any,
+        undefined,
+        baseToolResult as any,
+        'thread-assign-fail-1',
+        false
+      );
+
+      expect(result.success).toBe(true);
+      expect(mockPhishingAgentGenerate).toHaveBeenCalled();
+    });
+
+    it('uses Data-Submission method when scenario_type includes DATA', async () => {
+      const result = await generatePhishingSimulation(
+        { ...baseSimulation, scenario_type: 'DATA_SUBMISSION' } as any,
+        undefined,
+        baseToolResult as any,
+        'thread-data-1',
+        false
+      );
+
+      expect(result.success).toBe(true);
+      expect(mockPhishingExecute).toHaveBeenCalledWith(
+        expect.objectContaining({
+          context: expect.objectContaining({
+            method: 'Data-Submission',
+          }),
+        })
+      );
+    });
+
+    it('falls back to agent when tool-first throws', async () => {
+      mockPhishingExecute.mockRejectedValue(new Error('Network timeout'));
+      mockPhishingAgentGenerate
+        .mockResolvedValueOnce({ text: 'Agent response with "phishingId":"phish-catch-1"' })
+        .mockResolvedValueOnce({ text: 'STOP' })
+        .mockResolvedValueOnce({ text: 'Upload and assign done' })
+        .mockResolvedValueOnce({ text: 'STOP' });
+
+      const result = await generatePhishingSimulation(
+        baseSimulation as any,
+        undefined,
+        baseToolResult as any,
+        'thread-throw-1',
+        false
+      );
+
+      expect(mockPhishingAgentGenerate).toHaveBeenCalled();
+      expect(result.success).toBe(true);
     });
   });
 });

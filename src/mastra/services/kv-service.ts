@@ -524,6 +524,13 @@ export class KVService {
         difficulty: data.analysis?.difficulty || 'Medium',
         method: data.analysis?.method || 'Click-Only',
         targetProfile: data.analysis?.targetAudienceAnalysis || {},
+        // Active Learning: psychological triggers for campaign_metadata (User Info tactic enrichment)
+        psychologicalTriggers: (() => {
+          const t = data.analysis?.psychologicalTriggers;
+          if (Array.isArray(t)) return t.map(x => (typeof x === 'string' ? x : String(x)));
+          if (typeof t === 'string') return [t];
+          return [];
+        })(),
         createdAt: new Date().toISOString(),
         language_availability: [normalizedLang],
       };

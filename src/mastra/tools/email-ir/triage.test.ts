@@ -13,6 +13,10 @@ vi.mock('../../utils/core/resilience-utils', () => ({
   withRetry: vi.fn(async (fn: any) => await fn()),
 }));
 
+vi.mock('./email-body-sanitizer', () => ({
+  sanitizeEmailBody: vi.fn((s: string) => s || ''),
+}));
+
 vi.mock('./logger-setup', () => ({
   loggerTriage: {
     info: vi.fn(),
@@ -40,44 +44,42 @@ describe('triageTool', () => {
       },
     });
 
-    expect(async () => {
-      await (triageTool as any).execute({
-        context: {
-          original_email: { from: 'alert@example.com', subject: 'Test' },
-          header_analysis: {
-            spf_pass: true,
-            dkim_pass: true,
-            dmarc_pass: true,
-            domain_similarity: 'insufficient_data',
-            sender_ip_reputation: 'insufficient_data',
-            geolocation_anomaly: 'insufficient_data',
-            routing_anomaly: 'insufficient_data',
-            threat_intel_findings: 'insufficient_data',
-            header_summary: 'summary',
-            security_awareness_detected: true,
-          },
-          behavioral_analysis: {
-            urgency_level: 'insufficient_data',
-            emotional_pressure: 'insufficient_data',
-            social_engineering_pattern: 'insufficient_data',
-            verification_avoidance: false,
-            verification_avoidance_tactics: 'insufficient_data',
-            urgency_indicators: 'insufficient_data',
-            emotional_pressure_indicators: 'insufficient_data',
-            behavioral_summary: 'summary',
-          },
-          intent_analysis: {
-            intent: 'benign',
-            financial_request: false,
-            credential_request: false,
-            authority_impersonation: false,
-            financial_request_details: 'insufficient_data',
-            credential_request_details: 'insufficient_data',
-            authority_claimed: 'insufficient_data',
-            intent_summary: 'summary',
-          },
-        },
-      });
-    }).not.toThrow();
+    const input = {
+      original_email: { from: 'alert@example.com', subject: 'Test' },
+      header_analysis: {
+        spf_pass: true,
+        dkim_pass: true,
+        dmarc_pass: true,
+        domain_similarity: 'insufficient_data',
+        sender_ip_reputation: 'insufficient_data',
+        geolocation_anomaly: 'insufficient_data',
+        routing_anomaly: 'insufficient_data',
+        threat_intel_findings: 'insufficient_data',
+        header_summary: 'summary',
+        security_awareness_detected: true,
+      },
+      behavioral_analysis: {
+        urgency_level: 'insufficient_data',
+        emotional_pressure: 'insufficient_data',
+        social_engineering_pattern: 'insufficient_data',
+        verification_avoidance: false,
+        verification_avoidance_tactics: 'insufficient_data',
+        urgency_indicators: 'insufficient_data',
+        emotional_pressure_indicators: 'insufficient_data',
+        behavioral_summary: 'summary',
+      },
+      intent_analysis: {
+        intent: 'benign',
+        financial_request: false,
+        credential_request: false,
+        authority_impersonation: false,
+        financial_request_details: 'insufficient_data',
+        credential_request_details: 'insufficient_data',
+        authority_claimed: 'insufficient_data',
+        intent_summary: 'summary',
+      },
+    };
+    const result = await (triageTool as any).execute({ context: input });
+    expect(result).toBeDefined();
   });
 });

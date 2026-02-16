@@ -199,5 +199,36 @@ describe('autonomous-smishing-handlers', () => {
         })
       );
     });
+
+    it('uses Data-Submission method when scenario_type includes DATA', async () => {
+      const result = await generateSmishingSimulation({
+        simulation: { ...baseSimulation, scenario_type: 'DATA_SUBMISSION' } as any,
+        toolResult: baseToolResult as any,
+      });
+
+      expect(result.success).toBe(true);
+      expect(mockSmishingExecute).toHaveBeenCalledWith(
+        expect.objectContaining({
+          context: expect.objectContaining({
+            method: 'Data-Submission',
+          }),
+        })
+      );
+    });
+
+    it('returns failure when generation returns no smishingId', async () => {
+      mockSmishingExecute.mockResolvedValueOnce({
+        success: true,
+        data: {},
+      });
+
+      const result = await generateSmishingSimulation({
+        simulation: baseSimulation as any,
+        toolResult: baseToolResult as any,
+      });
+
+      expect(result.success).toBe(false);
+      expect(mockUploadExecute).not.toHaveBeenCalled();
+    });
   });
 });

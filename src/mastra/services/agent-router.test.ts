@@ -57,16 +57,15 @@ describe('AgentRouter', () => {
       };
 
       const mockRoutingText = JSON.stringify(mockDecision);
-      mockOrchestrator.generate.mockResolvedValue({
+      mockOrchestrator.generate.mockReturnValue({
         text: mockRoutingText,
       });
 
       (cleanResponse as any).mockReturnValue(mockRoutingText);
       (withRetry as any).mockImplementation(async (_fn: any) => {
-        // Execute the function passed to withRetry
         const routingResult = await mockOrchestrator.generate('Create a training about cybersecurity');
         const routingText = routingResult.text;
-        const cleanJsonText = (cleanResponse as any)(routingText, 'orchestrator-decision');
+        const cleanJsonText = cleanResponse(routingText, 'orchestrator-decision');
         return JSON.parse(cleanJsonText);
       });
 
@@ -85,7 +84,7 @@ describe('AgentRouter', () => {
       };
 
       const mockRoutingText = JSON.stringify(mockDecision);
-      mockOrchestrator.generate.mockResolvedValue({
+      mockOrchestrator.generate.mockReturnValue({
         text: mockRoutingText,
       });
 
@@ -93,7 +92,7 @@ describe('AgentRouter', () => {
       (withRetry as any).mockImplementation(async (_fn: any) => {
         const routingResult = await mockOrchestrator.generate('Generate a phishing email');
         const routingText = routingResult.text;
-        const cleanJsonText = (cleanResponse as any)(routingText, 'orchestrator-decision');
+        const cleanJsonText = cleanResponse(routingText, 'orchestrator-decision');
         return JSON.parse(cleanJsonText);
       });
 
@@ -115,7 +114,7 @@ describe('AgentRouter', () => {
         return JSON.parse(cleanJsonText);
       });
 
-      mockOrchestrator.generate.mockResolvedValue({
+      mockOrchestrator.generate.mockReturnValue({
         text: JSON.stringify(mockDecision),
       });
 
@@ -140,7 +139,7 @@ describe('AgentRouter', () => {
         return JSON.parse(cleanJsonText);
       });
 
-      mockOrchestrator.generate.mockResolvedValue({
+      mockOrchestrator.generate.mockReturnValue({
         text: JSON.stringify(mockDecision),
       });
 
@@ -163,7 +162,7 @@ describe('AgentRouter', () => {
         return JSON.parse(cleanJsonText);
       });
 
-      mockOrchestrator.generate.mockResolvedValue({
+      mockOrchestrator.generate.mockReturnValue({
         text: JSON.stringify(mockDecision),
       });
 
@@ -185,7 +184,7 @@ describe('AgentRouter', () => {
     });
 
     it('should default to microlearning agent when JSON parsing fails after retries', async () => {
-      mockOrchestrator.generate.mockResolvedValue({
+      mockOrchestrator.generate.mockReturnValue({
         text: 'Invalid JSON response',
       });
 
@@ -221,7 +220,7 @@ describe('AgentRouter', () => {
         return JSON.parse(cleanJsonText);
       });
 
-      mockOrchestrator.generate.mockResolvedValue({
+      mockOrchestrator.generate.mockReturnValue({
         text: JSON.stringify(mockDecision),
       });
 
@@ -249,7 +248,7 @@ describe('AgentRouter', () => {
         return JSON.parse(cleanJsonText);
       });
 
-      mockOrchestrator.generate.mockResolvedValue({
+      mockOrchestrator.generate.mockReturnValue({
         text: JSON.stringify(mockDecision),
       });
 
@@ -272,7 +271,7 @@ describe('AgentRouter', () => {
         return JSON.parse(cleanJsonText);
       });
 
-      mockOrchestrator.generate.mockResolvedValue({
+      mockOrchestrator.generate.mockReturnValue({
         text: JSON.stringify(mockDecision),
       });
 
@@ -297,7 +296,7 @@ describe('AgentRouter', () => {
         return JSON.parse(cleanJsonText);
       });
 
-      mockOrchestrator.generate.mockResolvedValue({
+      mockOrchestrator.generate.mockReturnValue({
         text: JSON.stringify(mockDecision),
       });
 
@@ -320,7 +319,7 @@ describe('AgentRouter', () => {
         return JSON.parse(cleanJsonText);
       });
 
-      mockOrchestrator.generate.mockResolvedValue({
+      mockOrchestrator.generate.mockReturnValue({
         text: JSON.stringify(mockDecision),
       });
 
