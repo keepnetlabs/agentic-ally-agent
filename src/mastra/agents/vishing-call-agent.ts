@@ -141,8 +141,9 @@ Once you have the target number:
 </ol>
 {Localized: "Which number should I use to place the call?"}
 
-3. If only ONE number is available, auto-select it and inform the user in the Interaction Language.
-4. If NO numbers are available, tell the user in the Interaction Language: "No outbound phone numbers are configured. Please set up a Twilio number in ElevenLabs first."
+3. **Country-code auto-select:** Compare the target phone number's country code (e.g., +90, +1, +44) with the available caller numbers. If one or more share the same country code, auto-select the first match. Inform the user which number was auto-selected and that they can say "change number" to pick a different one. If no country-code match exists, show the full list and let the user choose.
+4. If only ONE number is available (regardless of country code), auto-select it and inform the user in the Interaction Language.
+5. If NO numbers are available, tell the user in the Interaction Language: "No outbound phone numbers are configured. Please set up a Twilio number in ElevenLabs first."
 5. After user selection (or auto-selection), do NOT call any initiation tool yet. Immediately continue to STATE 4 summary/confirmation step.
 6. Accept selection by index ("1", "2"), exact label ("US", "UK"), or exact phone number text; if ambiguous, ask clarification and remain in STATE 3.
 7. STRICT OUTPUT AFTER VALID SELECTION:
@@ -170,19 +171,12 @@ This is the FIRST and ONLY time the user sees the full call details. Present the
 - Do not ask for call-start confirmation unless the summary block is present in the same assistant turn.
 - If any summary field is missing, ask only for the missing field; do not proceed to confirmation wording.
 
-**TWO-STEP CONFIRMATION PROTOCOL (HARD RULE):**
+**CONFIRMATION PROTOCOL (HARD RULE):**
 - Step A: After caller-number selection, your NEXT assistant message MUST be the summary + confirmation question above.
-- Step B: Only after that summary message, wait for a new user confirmation message.
-- If the latest user message is only a number/label selection ("1", "2", "US", "UK"), treat it as Step A input only. Never treat it as Step B confirmation.
+- Step B: Only after that summary message, wait for a SEPARATE explicit user confirmation ("Yes", "Proceed", "Evet", "Ara", "Tamam").
+- Number/label selections ("1", "2", "US", "UK") are VALID in STATE 3 for caller-number choice, but are NEVER call-start confirmation in STATE 4.
 - Never combine Step A and call initiation in the same turn.
 - If you are about to say "proceeding/placing/initiating call" but no explicit confirmation was received after summary, STOP and output the summary question instead.
-
-**Wait for user confirmation** ("Yes", "Proceed", "Ara", "Tamam").
-**MANDATORY CONFIRMATION GATE:**
-- Do NOT initiate a call right after caller-number selection.
-- Do NOT treat "1/2", "US/UK", or number-pick messages as confirmation.
-- Only start after a separate, explicit confirmation to the summary question (e.g., "Yes", "Proceed", "Evet", "Ara", "Tamam"); otherwise clarify and ask again.
-- IMPORTANT: "1"/"2" are VALID and expected in STATE 3 for caller-number selection. They are only invalid as call-start confirmation in STATE 4.
 
 Upon confirmation:
 1. Call show_reasoning to log the prompt construction logic.
@@ -201,10 +195,17 @@ Upon confirmation:
    - End each turn with a question. Invent fictional reference numbers if needed.
    - NEVER output tags, brackets, annotations, or stage directions like [urgent], [pause], [thinking], etc. Everything you say is spoken aloud as natural speech. No metadata in your output.
    - Do NOT reveal that this is a simulation in the opening message. Keep realism for the first part of the call.
-   - If target refuses or detects the vishing: give safety debrief immediately and end call.
-   - If target complies: continue realistic role-play for 2-4 turns max, then give safety debrief and end call.
-   - Debrief: 1 sentence "this was a simulation", 2-3 red flags, 1 correct next step.
-   - Hard cap: Never exceed 5 total assistant turns or 90 seconds of conversation. If cap is reached, debrief and end call.
+   - If target REFUSES or DEFLECTS (does not give information but does not explicitly detect vishing):
+     - Do NOT debrief immediately. Persist up to **3 attempts** total, each using a DIFFERENT social engineering angle:
+       - Attempt 1: Authority/formality — make the original request with professional credibility.
+       - Attempt 2: Urgency/time pressure — introduce or escalate a deadline or negative consequence.
+       - Attempt 3: Emotional/helpfulness appeal — frame a personal consequence ("my manager will...", "I could lose...").
+     - Count each refusal internally. At count 3: STOP and debrief. Never make a 4th attempt.
+     - After 3 failed attempts: give positive reinforcement ("You resisted all attempts — well done!"), then debrief and end call.
+   - If target DETECTS the vishing (explicitly says "this is a scam/fake/phishing"): give immediate positive feedback ("Excellent catch!"), then debrief and end call. Do NOT persist.
+   - If target COMPLIES (gives information): continue realistic role-play for 2-3 turns max to show escalation (ask for progressively more info), then give safety debrief and end call.
+   - Debrief format: 1 sentence "this was a simulation", 2-3 red flags they should have noticed, 1 correct next step.
+   - Hard cap: Never exceed 7 total assistant turns or 180 seconds of conversation. If cap is reached, debrief and end call.
    - CALL TERMINATION (MANDATORY): After the debrief, say a single goodbye sentence (e.g., "Have a good day, goodbye.") and then STOP RESPONDING COMPLETELY. Do NOT say anything else. If the target is silent, speaks, or asks questions after your goodbye — do NOT reply. The call is over. Stay silent.
    - Priority order: safety > scenario fit > realism > brevity.
 
@@ -285,8 +286,10 @@ Before initiating the call (State 4), perform a self-critique using show_reasoni
    - Is the urgency cue time-bound? (Not just "urgent" but "before 3 PM today")
 6. **Conversation Pacing Check:**
    - Does the plan avoid revealing "simulation" in the opening line?
-   - If target complies, is the role-play length constrained to 2-4 turns before debrief?
-   - Is there a hard cap of 5 turns / 90 seconds with forced debrief?
+   - If target refuses, are there exactly 3 persistence attempts with distinct social engineering angles (authority → urgency → emotional)?
+   - If target complies, is the role-play length constrained to 2-3 turns before debrief?
+   - If target detects vishing, is there immediate positive feedback + debrief (no persistence)?
+   - Is there a hard cap of 7 turns / 180 seconds with forced debrief?
 
 ## Messaging Guidelines (Enterprise-Safe)
 ${MESSAGING_GUIDELINES_PROMPT_FRAGMENT}
@@ -296,23 +299,23 @@ ${MESSAGING_GUIDELINES_PROMPT_FRAGMENT}
 `;
 
 export const vishingCallAgent = new Agent({
-  id: AGENT_IDS.VISHING_CALL,
-  name: AGENT_NAMES.VISHING_CALL,
-  description: `Initiates outbound vishing (voice phishing) simulation calls via ElevenLabs AI voice agents.
+   id: AGENT_IDS.VISHING_CALL,
+   name: AGENT_NAMES.VISHING_CALL,
+   description: `Initiates outbound vishing (voice phishing) simulation calls via ElevenLabs AI voice agents.
     Handles scenario design, phone number resolution, caller number selection, and dynamic prompt generation.
     Supports custom personas (CEO, IT Support, Bank Officer, etc.) with safety-first simulation rules.`,
-  instructions: buildVishingCallInstructions(),
-  model: getDefaultAgentModel(),
-  tools: {
-    getUserInfo: getUserInfoTool,
-    listPhoneNumbers: listPhoneNumbersTool,
-    initiateVishingCall: initiateVishingCallTool,
-    showReasoning: reasoningTool,
-  },
-  memory: new Memory({
-    options: {
-      lastMessages: 15,
-      workingMemory: { enabled: false },
-    },
-  }),
+   instructions: buildVishingCallInstructions(),
+   model: getDefaultAgentModel(),
+   tools: {
+      getUserInfo: getUserInfoTool,
+      listPhoneNumbers: listPhoneNumbersTool,
+      initiateVishingCall: initiateVishingCallTool,
+      showReasoning: reasoningTool,
+   },
+   memory: new Memory({
+      options: {
+         lastMessages: 15,
+         workingMemory: { enabled: false },
+      },
+   }),
 });

@@ -42,7 +42,12 @@ export const emailIRAnalyzeHandler = async (c: Context) => {
 
     const inputData = validation.data;
 
-    logger.info('Starting Email IR Analysis', { id: inputData.id });
+    // Normalize apiBaseUrl: dashboard URL → API URL (dash serves HTML, api serves JSON)
+    if (inputData.apiBaseUrl.includes('dash.keepnetlabs.com')) {
+      inputData.apiBaseUrl = inputData.apiBaseUrl.replace('dash.keepnetlabs.com', 'api.keepnetlabs.com');
+    }
+
+    logger.info('Starting Email IR Analysis', { id: inputData.id, apiBaseUrl: inputData.apiBaseUrl });
 
     // Start Workflow
     const run = await emailIRWorkflow.createRunAsync();

@@ -21,14 +21,16 @@ import { LOW_DETERMINISM_PARAMS } from '../../utils/config/llm-generation-params
 
 const logger = getLogger('VishingConversationsSummaryTool');
 
-const DEFAULT_NEXT_STEPS: readonly { title: string; description: string }[] = [
+const DEFAULT_NEXT_STEPS: readonly { title: string; description: string; prompt: string }[] = [
   {
     title: 'Verifying Caller Identity',
     description: 'Always verify the caller through official channels before sharing any information.',
+    prompt: 'Create a microlearning module about verifying caller identity. Focus on: how to independently verify a caller through official channels, red flags of impersonation, and steps to take when receiving unexpected calls requesting information.',
   },
   {
     title: 'Never Share OTPs or Passwords',
     description: 'Legitimate organizations never ask for passwords or one-time codes over the phone.',
+    prompt: 'Create a microlearning module about protecting passwords and OTPs. Focus on: why legitimate organizations never ask for credentials over the phone, common pretexts attackers use to request OTPs, and what to do if pressured to share sensitive codes.',
   },
 ] as const;
 
@@ -126,11 +128,11 @@ function normalizeRawSummaryPayload(raw: Record<string, unknown>): Record<string
   return normalized;
 }
 
-function parseNextSteps(raw: unknown): { title: string; description: string }[] {
+function parseNextSteps(raw: unknown): { title: string; description: string; prompt?: string }[] {
   if (!Array.isArray(raw)) return [...DEFAULT_NEXT_STEPS];
   const validated = raw
     .map(item => VishingNextStepCardSchema.safeParse(item))
-    .filter((r): r is { success: true; data: { title: string; description: string } } => r.success)
+    .filter((r): r is { success: true; data: { title: string; description: string; prompt?: string } } => r.success)
     .map(r => r.data);
   return validated.length > 0 ? validated : [...DEFAULT_NEXT_STEPS];
 }
@@ -189,7 +191,13 @@ NEXT STEPS:
 - Tailor to outcome.
 - For data_disclosed include actions like password reset and financial provider contact if relevant.
 - For refused/detected reinforce positive behavior.
-- 2-4 items, each with title + description, in English.
+- 2-4 items, each with title + description + prompt, in English.
+- The "prompt" field is a context-rich microlearning creation prompt. It MUST include:
+  1. The training topic (from title).
+  2. Specific context from THIS vishing call: what persona was used, what social engineering technique was applied, what the learner did right or wrong.
+  3. Focus areas for the training module.
+  4. The language the learner spoke during the call (e.g., "Language: Turkish").
+  Example prompt: "Create a microlearning module about verifying caller identity. Context: In a vishing simulation, the learner accepted an IT Security officer's credentials without independent verification. The caller used authority impersonation and deadline pressure (2-hour audit window). Focus on: how to verify callers through official channels, red flags of authority impersonation. Language: Turkish."
 
 OUTPUT STRUCTURE:
 {
@@ -203,7 +211,7 @@ OUTPUT STRUCTURE:
     "outcome": "refused"
   },
   "nextSteps": [
-    { "title": "<short title>", "description": "<actionable recommendation>" }
+    { "title": "<short title>", "description": "<actionable recommendation>", "prompt": "<context-rich microlearning creation prompt>" }
   ]
 }
 
