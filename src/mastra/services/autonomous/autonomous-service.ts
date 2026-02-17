@@ -5,7 +5,11 @@ import { getLogger } from '../../utils/core/logger';
 import { normalizeError, logErrorInfo } from '../../utils/core/error-utils';
 import { errorService } from '../error-service';
 import { API_ENDPOINTS } from '../../constants';
-import { AutonomousRequest, AutonomousResponse } from '../../types/autonomous-types';
+import {
+  AutonomousRequest,
+  AutonomousResponse,
+  getGroupEligibleActions,
+} from '../../types/autonomous-types';
 import { buildExecutiveReport, generateContentForUser, generateContentForGroup } from './autonomous-content-generators';
 
 /**
@@ -79,15 +83,16 @@ export async function executeAutonomousGeneration(request: AutonomousRequest): P
           const phishingThreadId = `phishing-${userId}-${runTimestamp}`;
           const trainingThreadId = `training-${userId}-${runTimestamp}`;
 
-          const { phishingResult, trainingResult, smishingResult } = await generateContentForUser(
-            toolResult,
-            executiveReport,
-            actions,
-            sendAfterPhishingSimulation,
-            userId,
-            phishingThreadId,
-            trainingThreadId
-          );
+          const { phishingResult, trainingResult, smishingResult, vishingCallResult } =
+            await generateContentForUser(
+              toolResult,
+              executiveReport,
+              actions,
+              sendAfterPhishingSimulation,
+              userId,
+              phishingThreadId,
+              trainingThreadId
+            );
 
           const generationDurationMs = Date.now() - generationStartMs;
           logger.info('metric_generation_duration', {
@@ -103,6 +108,7 @@ export async function executeAutonomousGeneration(request: AutonomousRequest): P
             phishingSuccess: phishingResult?.success,
             trainingSuccess: trainingResult?.success,
             smishingSuccess: smishingResult?.success,
+            vishingCallSuccess: vishingCallResult?.success,
           });
 
           const resolvedTargetUserResourceId = toolResult.userInfo?.targetUserResourceId ?? String(userId);
@@ -119,15 +125,18 @@ export async function executeAutonomousGeneration(request: AutonomousRequest): P
             phishingResult,
             trainingResult,
             smishingResult,
+            vishingCallResult,
             actions,
             message: `User analysis and content generation completed`,
           };
         } else if (isGroupAssignment) {
           // GROUP ASSIGNMENT: Generate generic content for bulk assignment
+          // vishing-call requires user phone; skip for groups
+          const groupActions = getGroupEligibleActions(actions);
           logger.info('GROUP ASSIGNMENT: Generating generic content for group', { targetGroupResourceId });
 
           const { phishingResult, trainingResult, smishingResult } = await generateContentForGroup(
-            actions,
+            groupActions,
             preferredLanguage,
             targetGroupResourceId
           );

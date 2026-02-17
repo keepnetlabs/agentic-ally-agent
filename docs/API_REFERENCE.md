@@ -181,7 +181,7 @@ Manually trigger the proactive generation loop. Useful for testing or on-demand 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `token` | string | Yes | Auth token (verification) |
-| `actions` | array | Yes | Any combination of `["training"]`, `["phishing"]`, `["smishing"]` |
+| `actions` | array | Yes | Any combination of `["training"]`, `["phishing"]`, `["smishing"]`, `["vishing-call"]`. `vishing-call` = outbound voice simulation (user assignment only, requires phone). |
 | `firstName` | string | No* | Target specific User by first name |
 | `lastName` | string | No* | Target specific User by last name (use with `firstName`) |
 | `targetUserResourceId` | string | No* | Target specific User by ID (Preferred) |
@@ -239,12 +239,17 @@ When workflow binding is unavailable (for example in local development), the end
   "smishingResult": {
     "success": false,
     "error": "No recommended smishing content found in analysis report"
+  },
+  "vishingCallResult": {
+    "success": true,
+    "message": "Vishing call initiated",
+    "data": { "conversationId": "...", "callSid": "..." }
   }
 }
 ```
 
 ### Result Object Semantics
-- `phishingResult`, `trainingResult`, `smishingResult` appear only for requested actions.
+- `phishingResult`, `trainingResult`, `smishingResult`, `vishingCallResult` appear only for requested actions.
 - Each action result follows:
   - `success: true` with `message` when generation succeeded.
   - `success: false` with `error` when generation failed or no recommendation was available.

@@ -5,6 +5,8 @@
  * These types ensure type safety for request bodies, responses, and middleware.
  */
 
+import type { AutonomousAction } from './autonomous-types';
+
 /**
  * Message content types for AI SDK compatibility
  */
@@ -99,7 +101,7 @@ export interface AutonomousRequestBody {
   // Group assignment (bulk)
   targetGroupResourceId?: string;
   // Common
-  actions: ('training' | 'phishing' | 'smishing')[];
+  actions: AutonomousAction[];
   sendAfterPhishingSimulation?: boolean;
   preferredLanguage?: string;
 }

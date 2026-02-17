@@ -95,6 +95,10 @@ import { validateEnvironmentOrThrow } from './utils/core';
 import { normalizeError, logErrorInfo } from './utils/core/error-utils';
 import { errorService } from './services/error-service';
 import { resolveLogLevel, STRUCTURED_LOG_FORMATTERS } from './utils/core/logger';
+import {
+  AUTONOMOUS_ACTIONS,
+  isValidAutonomousAction,
+} from './types';
 import type {
   ChatRequestBody,
   CodeReviewRequestBody,
@@ -435,11 +439,11 @@ export const mastra = new Mastra({
           const agents = mastra.getAgents();
           const workflows = mastra.getWorkflows();
 
-          // Perform deep health check with 5s timeout
-          const healthResponse = await performHealthCheck(agents, workflows, 5000);
+          // Perform deep health check with 5s timeout (includes D1 when env available)
+          const env = c.env as Record<string, unknown> | undefined;
+          const healthResponse = await performHealthCheck(agents, workflows, 5000, env);
 
           // Sentry status (observability)
-          const env = c.env as Record<string, unknown> | undefined;
           const sentryDsn = env?.SENTRY_DSN ?? (typeof process !== 'undefined' ? process.env?.SENTRY_DSN : undefined);
           const sentry = { configured: !!sentryDsn };
 
@@ -713,9 +717,12 @@ export const mastra = new Mastra({
             if (!actions || !Array.isArray(actions) || actions.length === 0) {
               return c.json({ success: false, error: 'Missing or invalid actions array' }, 400);
             }
-            if (!actions.every((a: string) => a === 'training' || a === 'phishing' || a === 'smishing')) {
+            if (!actions.every((a: unknown) => isValidAutonomousAction(a))) {
               return c.json(
-                { success: false, error: 'Actions must be one or more of: "training", "phishing", "smishing"' },
+                {
+                  success: false,
+                  error: `Actions must be one or more of: ${AUTONOMOUS_ACTIONS.map(a => `"${a}"`).join(', ')}`,
+                },
                 400
               );
             }
@@ -778,7 +785,7 @@ export const mastra = new Mastra({
               targetUserResourceId,
               targetGroupResourceId,
               departmentName,
-              actions: actions as ('training' | 'phishing' | 'smishing')[],
+              actions,
               sendAfterPhishingSimulation,
               preferredLanguage,
               baseApiUrl,

@@ -6,7 +6,11 @@
 import { getLogger } from '../../utils/core/logger';
 import { normalizeError } from '../../utils/core/error-utils';
 import { DEFAULT_TRAINING_LEVEL, PHISHING, SMISHING, TRAINING_LEVELS } from '../../constants';
-import type { AutonomousActionResult } from '../../types/autonomous-types';
+import type {
+  AutonomousActionResult,
+  AutonomousAction,
+  ContentGeneratableAction,
+} from '../../types/autonomous-types';
 import {
   generatePhishingSimulation,
   generatePhishingSimulationForGroup,
@@ -14,6 +18,7 @@ import {
 } from './autonomous-phishing-handlers';
 import { generateSmishingSimulation } from './autonomous-smishing-handlers';
 import { generateTrainingModule, generateTrainingModuleForGroup } from './autonomous-training-handlers';
+import { initiateAutonomousVishingCall } from './autonomous-vishing-handlers';
 import { selectGroupTrainingTopic } from './group-topic-service';
 
 interface ContentGenerationReport {
@@ -48,6 +53,7 @@ interface AutonomousToolResult {
     preferredLanguage?: string;
     department?: string;
     targetUserResourceId?: string;
+    phoneNumber?: string;
   };
 }
 
@@ -84,9 +90,10 @@ interface GenerationResults {
   phishingResult?: AutonomousActionResult;
   trainingResult?: AutonomousActionResult;
   smishingResult?: AutonomousActionResult;
+  vishingCallResult?: AutonomousActionResult;
 }
 
-function createMissingRecommendationResult(action: 'training' | 'phishing' | 'smishing'): AutonomousActionResult {
+function createMissingRecommendationResult(action: ContentGeneratableAction): AutonomousActionResult {
   return {
     success: false,
     error: `No recommended ${action} content found in analysis report`,
@@ -200,7 +207,7 @@ ${references || 'None provided'}`;
  * Uses group-topic-service to get topic + prompts
  */
 export async function generateContentForGroup(
-  actions: ('training' | 'phishing' | 'smishing')[],
+  actions: ContentGeneratableAction[],
   preferredLanguage: string | undefined,
   targetGroupResourceId: string | undefined
 ): Promise<GenerationResults> {
@@ -348,7 +355,7 @@ export async function generateContentForGroup(
 export async function generateContentForUser(
   toolResult: AutonomousToolResult,
   executiveReport: string | undefined,
-  actions: ('training' | 'phishing' | 'smishing')[],
+  actions: AutonomousAction[],
   sendAfterPhishingSimulation: boolean | undefined,
   userId: string | number,
   phishingThreadId: string,
@@ -358,6 +365,7 @@ export async function generateContentForUser(
   let phishingResult: AutonomousActionResult | undefined;
   let trainingResult: AutonomousActionResult | undefined;
   let smishingResult: AutonomousActionResult | undefined;
+  let vishingCallResult: AutonomousActionResult | undefined;
   const generationPromises: Promise<void>[] = [];
 
   // Determine upload modes based on sendAfterPhishingSimulation
@@ -417,6 +425,32 @@ export async function generateContentForUser(
   } else if (actions.includes('smishing')) {
     logger.warn('Skipping smishing generation: simulation recommendation is missing');
     smishingResult = createMissingRecommendationResult('smishing');
+  }
+
+  // Vishing-call: outbound voice simulation (user assignment only, requires phone)
+  if (actions.includes('vishing-call')) {
+    const phoneNumber = toolResult.userInfo?.phoneNumber?.trim();
+    if (!phoneNumber) {
+      logger.warn('Skipping vishing-call: user has no phone number');
+      vishingCallResult = { success: false, error: 'User has no phone number' };
+    } else {
+      generationPromises.push(
+        initiateAutonomousVishingCall({
+          toNumber: phoneNumber,
+          executiveReport,
+          toolResult,
+        })
+          .then(result => {
+            logger.info('Vishing-call result received', { success: result?.success });
+            vishingCallResult = result;
+          })
+          .catch(error => {
+            const err = normalizeError(error);
+            logger.error('Vishing-call failed', { error: err.message });
+            vishingCallResult = { success: false, error: err.message };
+          })
+      );
+    }
   }
 
   // Generate training if requested and training available
@@ -514,5 +548,5 @@ export async function generateContentForUser(
     }
   }
 
-  return { phishingResult, trainingResult, smishingResult };
+  return { phishingResult, trainingResult, smishingResult, vishingCallResult };
 }

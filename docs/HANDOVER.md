@@ -100,9 +100,11 @@ If you have time, tackle these:
 
 1.  **Memory Cleanup:** Write a Cron job to delete old `phishing-{thread}` keys from D1 (Mastra threads table). *Note: Chat history must be preserved; only autonomous threads (phishing-*, training-*) are candidates.*
 2.  **Observability:** Add structured logging (JSON) for Datadog/Sentry integration.
+3.  **vishing (future):** `vishing-call` = outbound voice. Future `vishing` type may cover voicemail, VoIP, etc.
 
 **✅ Done:** Active Learning (campaign metadata → User Info tactic enrichment) — Şubat 2026.
 **✅ Done:** Error handling — index.ts catch blocks use `errorService` + `logErrorInfo` for structured logging.
+**✅ Done:** D1 health check — `/health` endpoint now checks `agentic_ally_memory` D1 binding (SELECT 1) when running on Cloudflare Workers.
 
 ---
 

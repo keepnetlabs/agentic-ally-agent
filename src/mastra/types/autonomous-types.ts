@@ -4,6 +4,28 @@ import type { CloudflareEnv } from './api-types';
 import { Mastra } from '@mastra/core';
 import type { AnalysisReport } from '../tools/user-management/user-management-types';
 
+/** All supported autonomous action types (single source of truth) */
+export const AUTONOMOUS_ACTIONS = ['training', 'phishing', 'smishing', 'vishing-call'] as const;
+
+/** Union type derived from AUTONOMOUS_ACTIONS */
+export type AutonomousAction = (typeof AUTONOMOUS_ACTIONS)[number];
+
+/** Actions eligible for group assignment (vishing-call requires user phone) */
+export const GROUP_ELIGIBLE_ACTIONS = ['training', 'phishing', 'smishing'] as const;
+
+/** Union type for content-generatable actions (excludes vishing-call) */
+export type ContentGeneratableAction = (typeof GROUP_ELIGIBLE_ACTIONS)[number];
+
+/** Type guard: returns true if value is a valid autonomous action */
+export function isValidAutonomousAction(value: unknown): value is AutonomousAction {
+  return typeof value === 'string' && (AUTONOMOUS_ACTIONS as readonly string[]).includes(value);
+}
+
+/** Filters actions to those eligible for group assignment (excludes vishing-call) */
+export function getGroupEligibleActions(actions: AutonomousAction[]): ContentGeneratableAction[] {
+  return actions.filter((a): a is ContentGeneratableAction => a !== 'vishing-call');
+}
+
 export interface AutonomousRequest {
   token: string;
   baseApiUrl?: string; // Optional: API base URL (e.g., https://test-api.devkeepnet.com)
@@ -15,7 +37,7 @@ export interface AutonomousRequest {
   // Group assignment (bulk)
   targetGroupResourceId?: string;
   // Common
-  actions: ('training' | 'phishing' | 'smishing')[];
+  actions: AutonomousAction[];
   sendAfterPhishingSimulation?: boolean;
   preferredLanguage?: string;
   env?: CloudflareEnv;
@@ -78,7 +100,8 @@ export interface AutonomousResponse {
   phishingResult?: AutonomousActionResult;
   smishingResult?: AutonomousActionResult;
   trainingResult?: AutonomousActionResult;
-  actions: ('training' | 'phishing' | 'smishing')[];
+  vishingCallResult?: AutonomousActionResult;
+  actions: AutonomousAction[];
   message?: string;
   error?: string;
 }

@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   checkKVHealth,
+  checkD1Health,
   getUptime,
   determineOverallStatus,
   performHealthCheck,
@@ -253,6 +254,45 @@ describe('HealthService', () => {
       };
 
       expect(determineOverallStatus(checks)).toBe('degraded');
+    });
+
+    it('should return unhealthy when D1 is unhealthy', () => {
+      const checks = {
+        kv: { status: 'healthy' as const },
+        d1: { status: 'unhealthy' as const, error: 'D1 connection failed' },
+      };
+      expect(determineOverallStatus(checks)).toBe('unhealthy');
+    });
+
+    it('should return healthy when KV and D1 are healthy', () => {
+      const checks = {
+        kv: { status: 'healthy' as const },
+        d1: { status: 'healthy' as const, latencyMs: 5 },
+      };
+      expect(determineOverallStatus(checks)).toBe('healthy');
+    });
+  });
+
+  describe('checkD1Health', () => {
+    it('should return undefined when db is undefined', async () => {
+      const result = await checkD1Health(undefined);
+      expect(result).toBeUndefined();
+    });
+
+    it('should return healthy when D1 SELECT 1 succeeds', async () => {
+      const db = { prepare: () => ({ first: () => Promise.resolve(1) }) };
+      const result = await checkD1Health(db as Parameters<typeof checkD1Health>[0]);
+      expect(result).toBeDefined();
+      expect(result!.status).toBe('healthy');
+      expect(result!.latencyMs).toBeGreaterThanOrEqual(0);
+    });
+
+    it('should return unhealthy when D1 throws', async () => {
+      const db = { prepare: () => ({ first: () => Promise.reject(new Error('D1 unavailable')) }) };
+      const result = await checkD1Health(db as Parameters<typeof checkD1Health>[0]);
+      expect(result).toBeDefined();
+      expect(result!.status).toBe('unhealthy');
+      expect(result!.error).toContain('D1 unavailable');
     });
   });
 
