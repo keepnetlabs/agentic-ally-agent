@@ -34,8 +34,8 @@ Agentic Ally is an **Autonomous Security Awareness Platform** powered by **8 Spe
 4.  **[API_REFERENCE.md](./API_REFERENCE.md)** - Full list of endpoints (`/chat`, `/autonomous`, `/smishing/chat`, `/vishing/*`, `/email-ir/analyze`).
 5.  **[DEVELOPMENT.md](./DEVELOPMENT.md)** - How to debug & run locally.
 6.  **[ERROR_HANDLING.md](./ERROR_HANDLING.md)** - Tool error pattern: `{ success: false, error }` vs `throw`.
-6.  **[FUTURE_IMPROVEMENTS.md](./FUTURE_IMPROVEMENTS.md)** - Roadmap for Autonomous Agentic System (Memory, Critic Agent).
-7.  **[AGENTIC_ROADMAP.md](./AGENTIC_ROADMAP.md)** - Active Learning (✅ tamamlandı), Critic Agent, Agent Swarm planı.
+7.  **[FUTURE_IMPROVEMENTS.md](./FUTURE_IMPROVEMENTS.md)** - Roadmap for Autonomous Agentic System (Memory, Critic Agent).
+8.  **[AGENTIC_ROADMAP.md](./AGENTIC_ROADMAP.md)** - Active Learning (✅ tamamlandı), Critic Agent, Agent Swarm planı.
 
 ---
 
@@ -98,10 +98,11 @@ Before deploying to production:
 
 If you have time, tackle these:
 
-1.  **Memory Cleanup:** Write a Cron job to delete old `phishing-{thread}` keys from KV Store (older than 7 days).
+1.  **Memory Cleanup:** Write a Cron job to delete old `phishing-{thread}` keys from D1 (Mastra threads table). *Note: Chat history must be preserved; only autonomous threads (phishing-*, training-*) are candidates.*
 2.  **Observability:** Add structured logging (JSON) for Datadog/Sentry integration.
 
 **✅ Done:** Active Learning (campaign metadata → User Info tactic enrichment) — Şubat 2026.
+**✅ Done:** Error handling — index.ts catch blocks use `errorService` + `logErrorInfo` for structured logging.
 
 ---
 

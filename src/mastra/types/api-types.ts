@@ -183,6 +183,8 @@ export type CloudflareEnv = Record<string, unknown> & {
   agentic_ally_memory?: unknown; // D1Database
   MICROLEARNING_KV?: unknown; // KVNamespace
   CRUD_WORKER?: unknown; // Service
+  PHISHING_CRUD_WORKER?: unknown; // Service
+  SMISHING_CRUD_WORKER?: unknown; // Service
   AUTONOMOUS_WORKFLOW?: WorkflowBinding<AutonomousRequestBody>;
 };
 

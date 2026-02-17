@@ -27,6 +27,14 @@ preview_id = "c96ef0b5a2424edca1426f6e7a85b9dc"
 binding = "CRUD_WORKER"
 service = "crud-training-worker"
 
+[[services]]
+binding = "PHISHING_CRUD_WORKER"
+service = "crud-phishing-worker"
+
+[[services]]
+binding = "SMISHING_CRUD_WORKER"
+service = "crud-smishing-worker"
+
 # Cloudflare Workflows binding for autonomous generation
 [[workflows]]
 binding = "AUTONOMOUS_WORKFLOW"

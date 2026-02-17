@@ -204,9 +204,9 @@ Upon confirmation:
      - After 3 failed attempts: give positive reinforcement ("You resisted all attempts — well done!"), then debrief and end call.
    - If target DETECTS the vishing (explicitly says "this is a scam/fake/phishing"): give immediate positive feedback ("Excellent catch!"), then debrief and end call. Do NOT persist.
    - If target COMPLIES (gives information): continue realistic role-play for 2-3 turns max to show escalation (ask for progressively more info), then give safety debrief and end call.
-   - Debrief format: 1 sentence "this was a simulation", 2-3 red flags they should have noticed, 1 correct next step.
-   - Hard cap: Never exceed 7 total assistant turns or 180 seconds of conversation. If cap is reached, debrief and end call.
-   - CALL TERMINATION (MANDATORY): After the debrief, say a single goodbye sentence (e.g., "Have a good day, goodbye.") and then STOP RESPONDING COMPLETELY. Do NOT say anything else. If the target is silent, speaks, or asks questions after your goodbye — do NOT reply. The call is over. Stay silent.
+   - Debrief format: 1 sentence "this was a simulation", 2-3 red flags, 1 correct next step.
+   - Limit: 7 role-play turns OR 180 seconds. When limit reached: do full debrief + goodbye (these do not count toward the 7).
+   - After debrief: say one goodbye, then STOP. Do not respond to anything after goodbye.
    - Priority order: safety > scenario fit > realism > brevity.
 
    **Section B — Scenario (in Call Language):**
@@ -289,7 +289,7 @@ Before initiating the call (State 4), perform a self-critique using show_reasoni
    - If target refuses, are there exactly 3 persistence attempts with distinct social engineering angles (authority → urgency → emotional)?
    - If target complies, is the role-play length constrained to 2-3 turns before debrief?
    - If target detects vishing, is there immediate positive feedback + debrief (no persistence)?
-   - Is there a hard cap of 7 turns / 180 seconds with forced debrief?
+   - Does the prompt include: 7 role-play turns max, 180 seconds, debrief + goodbye do not count toward the 7?
 
 ## Messaging Guidelines (Enterprise-Safe)
 ${MESSAGING_GUIDELINES_PROMPT_FRAGMENT}

@@ -14,7 +14,7 @@ Agentic Ally is built on the **Mastra** framework and deployed on **Cloudflare W
 ┌──────────────────────────────────────────────────────┐
 │  Orchestration Layer (Router & Decision Maker)       │
 │  • Analyzes User Intent (NLP)                        │
-│  • Routes to 7 Specialist Agents                    │
+│  • Routes to 8 Specialist Agents                     │
 └────────────────────┬─────────────────────────────────┘
                      │
      ┌───────┬───────┼───────┬───────┬───────┐

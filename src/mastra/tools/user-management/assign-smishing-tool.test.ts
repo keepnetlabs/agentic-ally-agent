@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { assignSmishingTool } from './assign-smishing-tool';
 import { requestStorage } from '../../utils/core/request-storage';
 import { callWorkerAPI } from '../../utils/core/worker-api-client';
+import { KVService } from '../../services/kv-service';
 import '../../../../src/__tests__/setup';
 
 const { mockLogger } = vi.hoisted(() => ({
@@ -53,11 +54,29 @@ describe('assignSmishingTool', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // Default: getSmishing returns null (content not in KV = pass guard, proceed to assign)
+    vi.spyOn(KVService.prototype, 'getSmishing').mockResolvedValue(null);
 
     requestStorage.enterWith({
       token: mockToken,
       companyId: mockCompanyId,
       env: mockEnv,
+    });
+  });
+
+  describe('Upload Guard', () => {
+    it('should block when smishing content not yet uploaded (getSmishing returns base)', async () => {
+      vi.spyOn(KVService.prototype, 'getSmishing').mockResolvedValue({ base: { name: 'Test' } } as any);
+
+      const input = {
+        resourceId: 'smishing-resource-123',
+        targetUserResourceId: 'user-789',
+      };
+
+      const result = await assignSmishingTool.execute({ context: input } as any);
+      expect(result.success).toBe(false);
+      expect(result.error).toBeDefined();
+      expect(callWorkerAPI).not.toHaveBeenCalled();
     });
   });
 

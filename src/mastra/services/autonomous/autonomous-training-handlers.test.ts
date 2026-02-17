@@ -617,5 +617,13 @@ describe('AutonomousTrainingHandlers', () => {
       expect(result.success).toBe(false);
       expect(result.error).toContain('targetGroupResourceId');
     });
+
+    it('returns success when agent completes upload and assign for group', async () => {
+      const result = await uploadAndAssignTrainingForGroup('group-456', 'thread-group-2');
+
+      expect(result.success).toBe(true);
+      expect(mockMicrolearningAgentGenerate).toHaveBeenCalled();
+    });
   });
+
 });

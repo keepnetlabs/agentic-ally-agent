@@ -230,5 +230,18 @@ describe('autonomous-smishing-handlers', () => {
       expect(result.success).toBe(false);
       expect(mockUploadExecute).not.toHaveBeenCalled();
     });
+
+    it('returns failure when smishing workflow tool throws', async () => {
+      mockSmishingExecute.mockRejectedValueOnce(new Error('Network timeout'));
+
+      const result = await generateSmishingSimulation({
+        simulation: baseSimulation as any,
+        toolResult: baseToolResult as any,
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBeDefined();
+      expect(mockUploadExecute).not.toHaveBeenCalled();
+    });
   });
 });

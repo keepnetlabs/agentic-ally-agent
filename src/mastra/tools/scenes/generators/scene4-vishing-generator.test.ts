@@ -234,9 +234,9 @@ describe('Scene 4 - Vishing Simulation Generator', () => {
 
     it('should specify safe training guidelines', () => {
       const prompt = generateScene4VishingPrompt(baseAnalysis, baseMicrolearning);
-      expect(prompt).toContain('never request real passwords');
-      expect(prompt).toContain('OTPs');
-      expect(prompt).toContain('money, gift cards');
+      expect(prompt).toContain('Generate ONLY a Scenario');
+      expect(prompt).toContain('fictional');
+      expect(prompt).toContain('Avoid these words');
     });
 
     it('should specify fictional identifiers requirement', () => {
@@ -339,9 +339,12 @@ describe('Scene 4 - Vishing Simulation Generator', () => {
       expect(prompt).toContain('max 12 words');
     });
 
-    it('should specify prompt is 6-9 sentences', () => {
+    it('should specify prompt asks for Scenario format', () => {
       const prompt = generateScene4VishingPrompt(baseAnalysis, baseMicrolearning);
-      expect(prompt).toContain('6-9 short sentences');
+      expect(prompt).toContain('Persona');
+      expect(prompt).toContain('Pretext');
+      expect(prompt).toContain('FictionalRequest');
+      expect(prompt).toContain('UrgencyCue');
     });
 
     it('should specify firstMessage is 1-2 sentences', () => {
@@ -455,25 +458,18 @@ describe('Scene 4 - Vishing Simulation Generator', () => {
 
   // ==================== SAFETY AND ETHICS TESTS ====================
   describe('Safety and Ethics', () => {
-    it('should prohibit real credential requests', () => {
+    it('should require fictional and safe scenario content', () => {
       const prompt = generateScene4VishingPrompt(baseAnalysis, baseMicrolearning);
-      expect(prompt).toContain('never request real passwords');
-      expect(prompt).toContain('OTPs');
+      expect(prompt).toContain('fictional');
+      expect(prompt).toContain('safe');
+      expect(prompt).toContain('Avoid these words');
     });
 
-    it('should prohibit financial requests', () => {
+    it('should avoid sensitive terms in scenario', () => {
       const prompt = generateScene4VishingPrompt(baseAnalysis, baseMicrolearning);
-      expect(prompt).toContain('money, gift cards');
-    });
-
-    it('should prohibit personal data requests', () => {
-      const prompt = generateScene4VishingPrompt(baseAnalysis, baseMicrolearning);
-      expect(prompt).toContain('personal/company secrets');
-    });
-
-    it('should require polite conclusion', () => {
-      const prompt = generateScene4VishingPrompt(baseAnalysis, baseMicrolearning);
-      expect(prompt).toContain('end politely');
+      expect(prompt).toContain('account');
+      expect(prompt).toContain('transfer');
+      expect(prompt).toContain('beneficiary');
     });
 
     it('should keep requests fictional', () => {

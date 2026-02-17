@@ -374,6 +374,11 @@ function patchWranglerConfig() {
       service: "crud-phishing-worker"
     };
 
+    const smishingCrudWorkerBinding = {
+      binding: "SMISHING_CRUD_WORKER",
+      service: "crud-smishing-worker"
+    };
+
     const autonomousWorkflowBinding = {
       binding: "AUTONOMOUS_WORKFLOW",
       name: "AUTONOMOUS_WORKFLOW",
@@ -400,6 +405,16 @@ function patchWranglerConfig() {
       added = true;
     } else {
       console.log(`  ✅ PHISHING_CRUD_WORKER service binding already exists`);
+    }
+
+    // Check if SMISHING_CRUD_WORKER already exists
+    const existingSmishingBinding = config.services.find(s => s.binding === "SMISHING_CRUD_WORKER");
+    if (!existingSmishingBinding) {
+      config.services.push(smishingCrudWorkerBinding);
+      console.log(`  ✅ Added SMISHING_CRUD_WORKER service binding`);
+      added = true;
+    } else {
+      console.log(`  ✅ SMISHING_CRUD_WORKER service binding already exists`);
     }
 
     // Check if AUTONOMOUS_WORKFLOW already exists

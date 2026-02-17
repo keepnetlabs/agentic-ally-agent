@@ -92,6 +92,8 @@ import {
 } from './workflows';
 import { ExampleRepo, executeAutonomousGeneration, performHealthCheck, KVService } from './services';
 import { validateEnvironmentOrThrow } from './utils/core';
+import { normalizeError, logErrorInfo } from './utils/core/error-utils';
+import { errorService } from './services/error-service';
 import { resolveLogLevel, STRUCTURED_LOG_FORMATTERS } from './utils/core/logger';
 import type {
   ChatRequestBody,
@@ -299,9 +301,12 @@ export const mastra = new Mastra({
               taskContext: routeResult.taskContext,
             });
           } catch (routingError) {
-            logger.error('agent_routing_failed', {
-              error: routingError instanceof Error ? routingError.message : String(routingError),
+            const err = normalizeError(routingError);
+            const errorInfo = errorService.aiModel(err.message, {
+              step: 'agent-routing',
+              stack: err.stack,
             });
+            logErrorInfo(logger, 'error', 'agent_routing_failed', errorInfo);
             return c.json(
               {
                 success: false,
@@ -400,9 +405,13 @@ export const mastra = new Mastra({
               agentName: routeResult.agentName,
             });
           } catch (streamError) {
-            logger.error('stream_creation_failed', {
-              error: streamError instanceof Error ? streamError.message : String(streamError),
+            const err = normalizeError(streamError);
+            const errorInfo = errorService.external(err.message, {
+              step: 'stream-creation',
+              stack: err.stack,
+              agentName: routeResult.agentName,
             });
+            logErrorInfo(logger, 'error', 'stream_creation_failed', errorInfo);
             return c.json(
               {
                 success: false,
@@ -468,9 +477,12 @@ export const mastra = new Mastra({
               return c.json(result, 400);
             }
           } catch (error) {
-            logger.error('code_review_validation_error', {
-              error: error instanceof Error ? error.message : String(error),
+            const err = normalizeError(error);
+            const errorInfo = errorService.aiModel(err.message, {
+              step: 'code-review-validate',
+              stack: err.stack,
             });
+            logErrorInfo(logger, 'error', 'code_review_validation_error', errorInfo);
             return c.json(
               {
                 success: false,
@@ -612,9 +624,12 @@ export const mastra = new Mastra({
               200
             );
           } catch (error) {
-            logger.error('phishing_editor_save_error', {
-              error: error instanceof Error ? error.message : String(error),
+            const err = normalizeError(error);
+            const errorInfo = errorService.external(err.message, {
+              step: 'phishing-editor-save',
+              stack: err.stack,
             });
+            logErrorInfo(logger, 'error', 'phishing_editor_save_error', errorInfo);
             return c.json(
               {
                 success: false,
@@ -816,9 +831,12 @@ export const mastra = new Mastra({
               200
             );
           } catch (error) {
-            logger.error('autonomous_endpoint_error', {
-              error: error instanceof Error ? error.message : String(error),
+            const err = normalizeError(error);
+            const errorInfo = errorService.external(err.message, {
+              step: 'autonomous-endpoint',
+              stack: err.stack,
             });
+            logErrorInfo(logger, 'error', 'autonomous_endpoint_error', errorInfo);
             return c.json(
               {
                 success: false,
