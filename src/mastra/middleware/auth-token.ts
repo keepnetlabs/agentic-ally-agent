@@ -6,6 +6,7 @@ import { API_ENDPOINTS, TOKEN_CACHE_INVALID_TTL_MS } from '../constants';
 import { tokenCache } from '../utils/core/token-cache';
 import { withRetry } from '../utils/core/resilience-utils';
 import { SKIP_AUTH_PATHS, isPublicUnauthenticatedPath } from './public-endpoint-policy';
+import { validateBaseApiUrl } from '../utils/core/url-validator';
 
 const logger = getLogger('AuthToken');
 
@@ -136,7 +137,8 @@ export const authTokenMiddleware = async (c: Context, next: Next): Promise<Respo
 
   // 4. Validate with backend (if not cached or expired)
   try {
-    const baseApiUrl = c.req.header('X-BASE-API-URL') || API_ENDPOINTS.DEFAULT_AUTH_URL;
+    const rawBaseApiUrl = c.req.header('X-BASE-API-URL');
+    const baseApiUrl = rawBaseApiUrl ? validateBaseApiUrl(rawBaseApiUrl) : API_ENDPOINTS.DEFAULT_AUTH_URL;
     const validationUrl = `${baseApiUrl}/auth/validate`;
     logger.info('Validation URL', { url: validationUrl });
     const response = await withRetry(

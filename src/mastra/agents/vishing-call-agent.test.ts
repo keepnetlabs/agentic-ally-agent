@@ -77,7 +77,7 @@ describe('vishingCallAgent', () => {
   it('should require prompt and firstMessage before call tool invocation', () => {
     const instructions = vishingCallAgent.instructions;
     expect(instructions).toContain('NEVER call this tool with an empty prompt or firstMessage');
-    expect(instructions).toContain('If EITHER is missing or empty, **STOP. DO NOT call the tool.**');
+    expect(instructions).toContain('If prompt or firstMessage is missing or empty, **STOP. DO NOT call the tool.**');
   });
 
   it('should require debrief behavior in call prompt rules', () => {
@@ -136,14 +136,14 @@ describe('vishingCallAgent', () => {
 
   it('should require pre-call validation against explicit post-summary confirmation', () => {
     const instructions = vishingCallAgent.instructions;
-    expect(instructions).toContain('Confirm the immediately previous assistant turn included the summary');
-    expect(instructions).toContain('Confirm the latest user turn is an explicit confirmation intent');
-    expect(instructions).toContain('not a number/label selection');
+    expect(instructions).toContain("Confirm the user's CURRENT message expresses explicit confirmation intent");
+    expect(instructions).toContain('Do NOT try to validate the previous assistant turn');
+    expect(instructions).toContain('must never trigger call initiation');
   });
 
   it('should include hard stop rule when prompt or firstMessage is missing', () => {
     const instructions = vishingCallAgent.instructions;
-    expect(instructions).toContain('If EITHER is missing or empty, **STOP. DO NOT call the tool.**');
+    expect(instructions).toContain('If prompt or firstMessage is missing or empty, **STOP. DO NOT call the tool.**');
     expect(instructions).toContain('Build the missing piece first');
   });
 

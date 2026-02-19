@@ -168,14 +168,14 @@ REPORT STRUCTURE (MARKDOWN - MUST MATCH PDF FORMAT)
 - [growth_opportunities[2]]
 (Render ALL items from growth_opportunities[] as bullet points)
 
-## AI-Recommended Next Steps
+## Next Steps
 
 ### Next Simulation: [simulations[0].vector] / [simulations[0].scenario_type] / [simulations[0].difficulty] ([simulations[0].persuasion_tactic])
 **NIST Phish Scale:** cue [simulations[0].nist_phish_scale.cue_difficulty], premise [simulations[0].nist_phish_scale.premise_alignment]
 **Why:** [simulations[0].why_this]
 **Designed to progress:** [simulations[0].designed_to_progress]
 
-### Next Microlearning: [microlearnings[0].title] ([microlearnings[0].duration_min] min, [microlearnings[0].language])
+### Next Microlearning: [microlearnings[0].title] ([microlearnings[0].duration_min] min, [microlearnings[0].language as human-readable label, e.g. "English", "Türkçe"])
 **Objective:** [microlearnings[0].objective]
 **Why:** [microlearnings[0].why_this]
 
@@ -236,7 +236,7 @@ export const userInfoAgent = new Agent({
   },
   memory: new Memory({
     options: {
-      lastMessages: 15, // Increased for better context awareness
+      lastMessages: 20,
       workingMemory: { enabled: false }, // Disabled - stateless operation
     },
   }),

@@ -311,15 +311,12 @@ export async function uploadTrainingOnly(threadId: string, microlearning: Microl
         error: errorMsg,
       };
     } else {
-      // Fallback: couldn't parse response format
+      // Fallback: couldn't parse response format — IDs unavailable, do not assume success
       logger.warn('Could not parse upload response format', { response: responseText.substring(0, 200) });
       return {
-        success: true, // Assume success if agent didn't report failure
+        success: false,
         agentResponse: uploadResponse.text,
-        data: {
-          // IDs not extracted - caller will need to handle this
-          microlearningId: microlearning?.title || 'Training',
-        },
+        error: 'Could not parse upload response — IDs unavailable',
       };
     }
   } catch (uploadError) {
@@ -556,7 +553,7 @@ export async function generateTrainingModule(
     if (uploadOnly) {
       const uploadResult = await uploadTrainingOnly(trainingThreadId, microlearning);
       return {
-        success: uploadResult?.success || true,
+        success: uploadResult?.success ?? true,
         message: uploadResult?.success
           ? 'Training module generated and uploaded'
           : 'Training module generated (upload may have failed)',
@@ -594,7 +591,7 @@ export async function generateTrainingModule(
       if (uploadOnly) {
         const uploadResult = await uploadTrainingOnly(trainingThreadId, microlearning);
         return {
-          success: uploadResult?.success || true,
+          success: uploadResult?.success ?? true,
           message: uploadResult?.success
             ? 'Training module generated via agent (simplified) and uploaded'
             : 'Training module generated (upload may have failed)',
@@ -801,7 +798,7 @@ export async function generateTrainingModuleForGroup(
     const uploadAssignResult = await uploadAndAssignTrainingForGroup(targetGroupResourceId, trainingThreadId);
 
     return {
-      success: uploadAssignResult?.success || true,
+      success: uploadAssignResult?.success ?? true,
       message: uploadAssignResult?.success
         ? 'Training module generated, uploaded and assigned to group'
         : 'Training module generated (assign may have failed)',
@@ -849,7 +846,7 @@ export async function generateTrainingModuleForGroup(
       const uploadAssignResult = await uploadAndAssignTrainingForGroup(targetGroupResourceId, trainingThreadId);
 
       return {
-        success: uploadAssignResult?.success || true,
+        success: uploadAssignResult?.success ?? true,
         message: uploadAssignResult?.success
           ? 'Training module generated (simplified), uploaded and assigned to group'
           : 'Training module generated',

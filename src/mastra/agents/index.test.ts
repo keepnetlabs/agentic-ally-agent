@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { microlearningAgent, orchestratorAgent, phishingEmailAgent, policySummaryAgent, userInfoAgent } from './index';
+import { microlearningAgent, orchestratorAgent, phishingEmailAgent, policySummaryAgent, userInfoAgent, smishingSmsAgent, vishingCallAgent } from './index';
 import { AGENT_NAMES, ORCHESTRATOR_CONFIRMATION_EXAMPLES } from '../constants';
 
 /**
@@ -202,14 +202,14 @@ describe('Agents Index Exports', () => {
 
   // ==================== ALL EXPORTS DEFINED TESTS ====================
   describe('All Exports Validation', () => {
-    it('should export exactly 5 agents', () => {
-      const agents = [microlearningAgent, orchestratorAgent, phishingEmailAgent, policySummaryAgent, userInfoAgent];
+    it('should export exactly 7 agents', () => {
+      const agents = [microlearningAgent, orchestratorAgent, phishingEmailAgent, policySummaryAgent, userInfoAgent, smishingSmsAgent, vishingCallAgent];
 
-      expect(agents).toHaveLength(5);
+      expect(agents).toHaveLength(7);
     });
 
     it('should export all agents as defined and not null', () => {
-      const agents = [microlearningAgent, orchestratorAgent, phishingEmailAgent, policySummaryAgent, userInfoAgent];
+      const agents = [microlearningAgent, orchestratorAgent, phishingEmailAgent, policySummaryAgent, userInfoAgent, smishingSmsAgent, vishingCallAgent];
 
       agents.forEach(agent => {
         expect(agent).toBeDefined();
@@ -218,7 +218,7 @@ describe('Agents Index Exports', () => {
     });
 
     it('should export all agents as objects', () => {
-      const agents = [microlearningAgent, orchestratorAgent, phishingEmailAgent, policySummaryAgent, userInfoAgent];
+      const agents = [microlearningAgent, orchestratorAgent, phishingEmailAgent, policySummaryAgent, userInfoAgent, smishingSmsAgent, vishingCallAgent];
 
       agents.forEach(agent => {
         expect(typeof agent).toBe('object');
@@ -227,7 +227,7 @@ describe('Agents Index Exports', () => {
     });
 
     it('should have each agent with name property', () => {
-      const agents = [microlearningAgent, orchestratorAgent, phishingEmailAgent, policySummaryAgent, userInfoAgent];
+      const agents = [microlearningAgent, orchestratorAgent, phishingEmailAgent, policySummaryAgent, userInfoAgent, smishingSmsAgent, vishingCallAgent];
 
       agents.forEach(agent => {
         expect(agent).toHaveProperty('name');
@@ -237,7 +237,7 @@ describe('Agents Index Exports', () => {
     });
 
     it('should have each agent with instructions property', () => {
-      const agents = [microlearningAgent, orchestratorAgent, phishingEmailAgent, policySummaryAgent, userInfoAgent];
+      const agents = [microlearningAgent, orchestratorAgent, phishingEmailAgent, policySummaryAgent, userInfoAgent, smishingSmsAgent, vishingCallAgent];
 
       agents.forEach(agent => {
         expect(agent).toHaveProperty('instructions');
@@ -247,7 +247,7 @@ describe('Agents Index Exports', () => {
     });
 
     it('should have each agent with model property', () => {
-      const agents = [microlearningAgent, orchestratorAgent, phishingEmailAgent, policySummaryAgent, userInfoAgent];
+      const agents = [microlearningAgent, orchestratorAgent, phishingEmailAgent, policySummaryAgent, userInfoAgent, smishingSmsAgent, vishingCallAgent];
 
       agents.forEach(agent => {
         expect(agent).toHaveProperty('model');
@@ -279,6 +279,8 @@ describe('Agents Index Exports', () => {
         phishingEmailAgent.name,
         policySummaryAgent.name,
         userInfoAgent.name,
+        smishingSmsAgent.name,
+        vishingCallAgent.name,
       ];
 
       const uniqueNames = new Set(agentNames);
@@ -291,6 +293,8 @@ describe('Agents Index Exports', () => {
       expect(phishingEmailAgent.name).toBe(AGENT_NAMES.PHISHING);
       expect(policySummaryAgent.name).toBe(AGENT_NAMES.POLICY_SUMMARY);
       expect(userInfoAgent.name).toBe(AGENT_NAMES.USER_INFO);
+      expect(smishingSmsAgent.name).toBe(AGENT_NAMES.SMISHING);
+      expect(vishingCallAgent.name).toBe(AGENT_NAMES.VISHING_CALL);
     });
 
     it('should have all constant names defined', () => {
@@ -300,6 +304,8 @@ describe('Agents Index Exports', () => {
         AGENT_NAMES.PHISHING,
         AGENT_NAMES.POLICY_SUMMARY,
         AGENT_NAMES.USER_INFO,
+        AGENT_NAMES.SMISHING,
+        AGENT_NAMES.VISHING_CALL,
       ];
 
       constantNames.forEach(name => {
@@ -336,6 +342,16 @@ describe('Agents Index Exports', () => {
       expect(AGENT_NAMES.USER_INFO).toBe('userInfoAssistant');
       expect(userInfoAgent.name).toBe('userInfoAssistant');
     });
+
+    it('should map SMISHING constant correctly', () => {
+      expect(AGENT_NAMES.SMISHING).toBe('smishingSmsAssistant');
+      expect(smishingSmsAgent.name).toBe('smishingSmsAssistant');
+    });
+
+    it('should map VISHING_CALL constant correctly', () => {
+      expect(AGENT_NAMES.VISHING_CALL).toBe('vishingCallAssistant');
+      expect(vishingCallAgent.name).toBe('vishingCallAssistant');
+    });
   });
 
   // ==================== IMPORT PATH TESTS ====================
@@ -347,6 +363,8 @@ describe('Agents Index Exports', () => {
       expect(phishingEmailAgent).toBeDefined();
       expect(policySummaryAgent).toBeDefined();
       expect(userInfoAgent).toBeDefined();
+      expect(smishingSmsAgent).toBeDefined();
+      expect(vishingCallAgent).toBeDefined();
     });
 
     it('should support named imports', () => {
@@ -356,6 +374,8 @@ describe('Agents Index Exports', () => {
       expect(typeof phishingEmailAgent).not.toBe('undefined');
       expect(typeof policySummaryAgent).not.toBe('undefined');
       expect(typeof userInfoAgent).not.toBe('undefined');
+      expect(typeof smishingSmsAgent).not.toBe('undefined');
+      expect(typeof vishingCallAgent).not.toBe('undefined');
     });
   });
 
@@ -384,8 +404,16 @@ describe('Agents Index Exports', () => {
       expect(Object.keys(userInfoAgent.tools).length).toBeGreaterThan(0);
     });
 
+    it('smishingSmsAgent should have tools defined', () => {
+      expect(Object.keys(smishingSmsAgent.tools).length).toBeGreaterThan(0);
+    });
+
+    it('vishingCallAgent should have tools defined', () => {
+      expect(Object.keys(vishingCallAgent.tools).length).toBeGreaterThan(0);
+    });
+
     it('all agents should have tools as object (except orchestrator)', () => {
-      const agents = [microlearningAgent, phishingEmailAgent, policySummaryAgent, userInfoAgent];
+      const agents = [microlearningAgent, phishingEmailAgent, policySummaryAgent, userInfoAgent, smishingSmsAgent, vishingCallAgent];
 
       agents.forEach(agent => {
         expect(typeof agent.tools).toBe('object');
@@ -400,7 +428,7 @@ describe('Agents Index Exports', () => {
   // ==================== MODEL CONFIGURATION TESTS ====================
   describe('Model Configuration Across Agents', () => {
     it('should have models configured for all agents', () => {
-      const agents = [microlearningAgent, orchestratorAgent, phishingEmailAgent, policySummaryAgent, userInfoAgent];
+      const agents = [microlearningAgent, orchestratorAgent, phishingEmailAgent, policySummaryAgent, userInfoAgent, smishingSmsAgent, vishingCallAgent];
 
       agents.forEach(agent => {
         expect(agent.model).toBeDefined();
@@ -433,7 +461,7 @@ describe('Agents Index Exports', () => {
     });
 
     it('all agents should have non-empty trimmed instructions', () => {
-      const agents = [microlearningAgent, orchestratorAgent, phishingEmailAgent, policySummaryAgent, userInfoAgent];
+      const agents = [microlearningAgent, orchestratorAgent, phishingEmailAgent, policySummaryAgent, userInfoAgent, smishingSmsAgent, vishingCallAgent];
 
       agents.forEach(agent => {
         expect(agent.instructions.trim().length).toBeGreaterThan(0);
@@ -443,22 +471,24 @@ describe('Agents Index Exports', () => {
 
   // ==================== COMPLETE EXPORT INTEGRITY TESTS ====================
   describe('Complete Export Integrity', () => {
-    it('should export all 5 agents without duplicates', () => {
+    it('should export all 7 agents without duplicates', () => {
       const exportedAgents = {
         microlearningAgent,
         orchestratorAgent,
         phishingEmailAgent,
         policySummaryAgent,
         userInfoAgent,
+        smishingSmsAgent,
+        vishingCallAgent,
       };
 
       const agentCount = Object.keys(exportedAgents).length;
-      expect(agentCount).toBe(5);
+      expect(agentCount).toBe(7);
     });
 
     it('should maintain consistency across exports', () => {
       // Verify that each agent maintains its properties consistently
-      const agents = [microlearningAgent, orchestratorAgent, phishingEmailAgent, policySummaryAgent, userInfoAgent];
+      const agents = [microlearningAgent, orchestratorAgent, phishingEmailAgent, policySummaryAgent, userInfoAgent, smishingSmsAgent, vishingCallAgent];
 
       agents.forEach(agent => {
         expect(agent.name).toBeDefined();
@@ -479,10 +509,12 @@ describe('Agents Index Exports', () => {
         phishingEmailAgent.name,
         policySummaryAgent.name,
         userInfoAgent.name,
+        smishingSmsAgent.name,
+        vishingCallAgent.name,
       ]);
 
-      // Should have exactly 5 unique agent types
-      expect(agentTypes.size).toBe(5);
+      // Should have exactly 7 unique agent types
+      expect(agentTypes.size).toBe(7);
 
       // Should include all expected agent names
       expect(agentTypes.has('microlearningAgent')).toBe(true);
@@ -490,6 +522,8 @@ describe('Agents Index Exports', () => {
       expect(agentTypes.has('phishingEmailAssistant')).toBe(true);
       expect(agentTypes.has('policySummaryAssistant')).toBe(true);
       expect(agentTypes.has('userInfoAssistant')).toBe(true);
+      expect(agentTypes.has('smishingSmsAssistant')).toBe(true);
+      expect(agentTypes.has('vishingCallAssistant')).toBe(true);
     });
   });
 });

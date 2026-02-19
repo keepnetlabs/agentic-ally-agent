@@ -586,7 +586,7 @@ export const THEME_COLORS = {
     // AI/Innovation → Orange/Yellow
     'ai/ml security': 'bg-gradient-orange',
     'ai-powered threats': 'bg-gradient-orange',
-    'deepfake & synthetic media': 'bg-gradient-yellow',
+    'deepfake synthetic media': 'bg-gradient-yellow',
 
     // People/HR → Pink/Light Blue
     'social engineering': 'bg-gradient-pink',
@@ -632,7 +632,7 @@ export const ORCHESTRATOR_CONFIRMATION_EXAMPLES = [
   'Yes',
   'Proceed',
   'Do it',
-  'Olustur',
+  'Oluştur',
   'Tamam',
   'OK',
   '1',
@@ -881,7 +881,7 @@ export const API_ENDPOINTS = {
     process.env.PHISHING_WORKER_URL ||
     'https://crud-phishing-worker.keepnet-labs-ltd-business-profile4086.workers.dev/submit',
   PHISHING_WORKER_SUBMIT:
-    process.env.PHISHING_WORKER_URL ||
+    process.env.PHISHING_WORKER_SUBMIT ||
     'https://crud-phishing-worker.keepnet-labs-ltd-business-profile4086.workers.dev/submit',
   PHISHING_WORKER_SEND:
     process.env.PHISHING_WORKER_SEND ||
@@ -901,6 +901,7 @@ export const API_ENDPOINTS = {
     process.env.PHISHING_WORKER_URL ||
     'https://crud-phishing-worker.keepnet-labs-ltd-business-profile4086.workers.dev/submit',
   SMISHING_WORKER_SUBMIT:
+    process.env.SMISHING_WORKER_SUBMIT ||
     process.env.SMISHING_WORKER_URL ||
     process.env.PHISHING_WORKER_URL ||
     'https://crud-phishing-worker.keepnet-labs-ltd-business-profile4086.workers.dev/submit',
@@ -935,7 +936,7 @@ export const API_ENDPOINTS = {
   DEFAULT_AUTH_URL: 'https://test-ui.devkeepnet.com',
 
   // Agentic AI Chat endpoint (Policy)
-  AGENTIC_AI_CHAT_URL: 'http://agentic-ai-chat.keepnetlabs.com',
+  AGENTIC_AI_CHAT_URL: 'https://agentic-ai-chat.keepnetlabs.com',
 } as const;
 
 // API Keys and authentication

@@ -85,7 +85,7 @@ Before routing, perform this internal analysis:
      - **PRIORITY RULE:** If any Training keywords are present, treat as **TRAINING** even if Smishing/Phishing keywords also appear.
      - "Training", "Module", "Course", "Microlearning" -> **TRAINING**
      - "Phishing email", "Simulation", "Template", "Fake email", "Landing page" -> **PHISHING**
-      - "Smishing", "SMS", "Text message", "SMS template" -> **SMISHING**
+     - "Smishing", "SMS", "Text message", "SMS template" -> **SMISHING**
 
 ### CRITICAL: GLOBAL PRIORITY RULE — USER/GROUP ID RESOLUTION
 If the request targets a specific person (e.g., "for Alice") or GROUP (e.g., "for IT Group"):
