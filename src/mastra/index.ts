@@ -1,7 +1,7 @@
 /**
  * Agentic Ally - Main Agent Framework Entry Point
  *
- * Sets up and configures 8 specialized agents:
+ * Sets up and configures 9 specialized agents:
  * 1. Orchestrator Agent - Routes requests to appropriate agents
  * 2. Microlearning Agent - 4-state orchestrator for training generation
  * 3. Phishing Email Agent - Creates realistic phishing simulations
@@ -10,6 +10,7 @@
  * 6. Policy Summary Agent - Generates legal compliance content
  * 7. Vishing Call Agent - Initiates outbound vishing calls via ElevenLabs
  * 8. Email IR Analyst - Analyzes suspicious emails and generates IR reports
+ * 9. Deepfake Video Agent - Generates AI deepfake video simulations via HeyGen
  *
  * API Endpoints:
  * - POST /chat - Main chat endpoint (routes through orchestrator)
@@ -60,6 +61,7 @@ import { vishingPromptHandler } from './routes/vishing-prompt-route';
 import { vishingConversationsSummaryHandler } from './routes/vishing-conversations-summary-route';
 import { smishingChatHandler } from './routes/smishing-chat-route';
 import { emailIRAnalyzeHandler } from './routes/email-ir-route';
+import { deepfakeStatusHandler } from './routes/deepfake-status-route';
 import { isPublicUnauthenticatedPath } from './middleware/public-endpoint-policy';
 
 // Barrel imports - clean organization
@@ -71,6 +73,7 @@ import {
   userInfoAgent,
   policySummaryAgent,
   vishingCallAgent,
+  deepfakeVideoAgent,
 } from './agents';
 import {
   errorHandlerMiddleware,
@@ -161,6 +164,7 @@ export const mastra = new Mastra({
     userInfoAssistant: userInfoAgent,
     policySummaryAssistant: policySummaryAgent,
     vishingCallAssistant: vishingCallAgent,
+    deepfakeVideoAssistant: deepfakeVideoAgent,
     orchestrator: orchestratorAgent,
   },
   logger,
@@ -663,6 +667,11 @@ export const mastra = new Mastra({
       registerApiRoute('/email-ir/analyze', {
         method: 'POST',
         handler: emailIRAnalyzeHandler,
+      }),
+
+      registerApiRoute('/deepfake/status/:videoId', {
+        method: 'GET',
+        handler: deepfakeStatusHandler,
       }),
 
       registerApiRoute('/autonomous', {

@@ -366,6 +366,22 @@ const cleanMessageContent = (content: string): string => {
     }
     return '[Vishing Call Initiated]';
   }
+  if (content.match(/::ui:deepfake_video_generating::/)) {
+    const payload = extractUiPayload(content, 'deepfake_video_generating');
+    if (payload) {
+      try {
+        const decoded = decodeBase64Json(payload);
+        if (decoded && typeof decoded === 'object' && 'videoId' in decoded) {
+          const value = (decoded as Record<string, unknown>).videoId;
+          const videoId = typeof value === 'string' && value.trim() ? value.trim() : undefined;
+          if (videoId) return `[Deepfake Video Generated: videoId=${videoId}]`;
+        }
+      } catch {
+        // ignore
+      }
+    }
+    return '[Deepfake Video Generated]';
+  }
 
   // Remove remaining UI signals (includes both formats with/without closing tags)
   let cleaned = content.replace(/::ui:\w+::[^\n]*/g, '');

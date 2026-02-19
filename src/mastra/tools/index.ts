@@ -32,3 +32,6 @@ export * from './user-management';
 
 // Vishing call tools (ElevenLabs outbound calls)
 export * from './vishing-call';
+
+// Deepfake video tools (HeyGen AI video generation)
+export * from './deepfake';

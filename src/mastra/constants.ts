@@ -610,6 +610,7 @@ export const AGENT_NAMES = {
   VISHING_CALL: 'vishingCallAssistant',
   ORCHESTRATOR: 'orchestrator',
   EMAIL_IR_ANALYST: 'emailIrAnalyst',
+  DEEPFAKE_VIDEO: 'deepfakeVideoAssistant',
 } as const;
 
 // ============================================
@@ -625,6 +626,7 @@ export const AGENT_IDS = {
   VISHING_CALL: 'vishing-call-agent',
   ORCHESTRATOR: 'orchestrator-agent',
   EMAIL_IR_ANALYST: 'email-ir-analyst',
+  DEEPFAKE_VIDEO: 'deepfake-video-agent',
 } as const;
 
 /** Short confirmation/selection patterns for orchestrator Scenario A (route to same agent). */
@@ -841,6 +843,31 @@ export const ROUTING = {
     'Telefon',
     'Telefon et',
   ] as const,
+} as const;
+
+// ============================================
+// HEYGEN CONFIGURATION
+// ============================================
+
+export const HEYGEN = {
+  /** Base URL for all HeyGen API calls */
+  API_BASE_URL: 'https://api.heygen.com',
+
+  /** Endpoint paths */
+  ENDPOINTS: {
+    LIST_AVATARS: '/v2/avatars',
+    GENERATE_VIDEO: '/v1/video_agent/generate',
+    VIDEO_STATUS: '/v1/video_status.get',
+  },
+
+  /** Timeout for HeyGen API calls (ms) */
+  API_TIMEOUT_MS: 30000,
+
+  /** Default video orientation */
+  DEFAULT_ORIENTATION: 'landscape' as const,
+
+  /** Default video duration in seconds (minimum 5) */
+  DEFAULT_DURATION_SEC: 60,
 } as const;
 
 // ============================================
