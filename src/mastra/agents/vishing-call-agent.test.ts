@@ -89,7 +89,7 @@ describe('vishingCallAgent', () => {
 
   it('should include updated post-initiation user-facing success messaging', () => {
     const instructions = vishingCallAgent.instructions;
-    expect(instructions).toContain('Call started. The target is being called now.');
+    expect(instructions).toContain('Call started. The recipient is being called now.');
     expect(instructions).toContain('The transcript will appear here after the call ends.');
   });
 
@@ -112,10 +112,10 @@ describe('vishingCallAgent', () => {
   it('should require all six summary fields before asking call-start confirmation', () => {
     const instructions = vishingCallAgent.instructions;
     expect(instructions).toContain('{Localized: "Persona"}');
-    expect(instructions).toContain('{Localized: "Target"}');
-    expect(instructions).toContain('{Localized: "Target Number"}');
+    expect(instructions).toContain('{Localized: "Recipient"}');
+    expect(instructions).toContain('{Localized: "Recipient Number"}');
     expect(instructions).toContain('{Localized: "Pretext"}');
-    expect(instructions).toContain('{Localized: "Caller Number"}');
+    expect(instructions).toContain('{Localized: "Caller ID"}');
     expect(instructions).toContain('{Localized: "Language"}');
     expect(instructions).toContain('Before any call-initiation confirmation question, you MUST output the full summary block above with all 6 list items.');
   });
