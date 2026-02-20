@@ -211,7 +211,7 @@ export function getSuccessTemplateExample({ fromName, industryDesign }: Template
 
     <div style='${industryDesign.patterns.cardStyle}; text-align: center;'>
       <div style='margin-bottom: 16px;'>
-        <div style='width: 64px; height: 64px; border-radius: 999px; background: #22c55e; margin: 0 auto 16px auto; display: flex; align-items: center; justify-content: center;'><span style='color: #ffffff; font-size: 32px; line-height: 1;'>✓</span></div>
+        <div style='width: 64px; height: 64px; border-radius: 999px; background: #22c55e; margin: 0 auto 16px auto; color: white; font-size: 34px; font-weight: 700; line-height: 64px; text-align: center;'>&#10003;</div>
         <h1 style='font-size: 22px; font-weight: 700; margin: 0 0 8px 0;'>Account updated</h1>
         <p style='margin: 0; font-size: 14px; color: #4b5563;'>
           Your account information has been updated successfully.
@@ -354,6 +354,7 @@ Purpose: confirmation after a successful action (e.g. login verification, profil
 **SUCCESS TEMPLATE EXAMPLE (ADAPT TO SCENARIO, DON'T COPY VERBATIM):**
 
 ${getSuccessTemplateExample({ fromName, industryDesign })}
+
 `;
 }
 
