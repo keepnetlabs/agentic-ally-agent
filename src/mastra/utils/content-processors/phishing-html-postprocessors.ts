@@ -14,6 +14,8 @@ import { sanitizeHtml } from './html-sanitizer';
 import { normalizeEmailNestedTablePadding } from './email-table-padding-normalizer';
 import { normalizeEmailCentering } from './email-centering-normalizer';
 import { normalizeEmailCardContentPadding } from './email-card-padding-normalizer';
+import { normalizeEmailButtonDivs, normalizeEmailButtonRowPadding } from './email-button-normalizer';
+import { normalizeEmailParagraphs } from './email-paragraph-normalizer';
 import { repairHtml } from '../validation/json-validation-utils';
 import { normalizeLandingCentering, ensureLandingFullHtmlDocument } from '../landing-page';
 import { normalizeLandingLogoCentering } from '../landing-page/logo-centering-normalizer';
@@ -35,6 +37,9 @@ export function postProcessPhishingEmailHtml(params: PostProcessEmailHtmlParams)
     out = normalizeEmailNestedTablePadding(out);
     out = normalizeEmailCentering(out);
     out = normalizeEmailCardContentPadding(out, 24);
+    out = normalizeEmailButtonDivs(out); // Unwrap <div>-wrapped CTAs inside <td> (GrapeJS compat)
+    out = normalizeEmailButtonRowPadding(out); // Remove excess top padding from button-only rows
+    out = normalizeEmailParagraphs(out); // Convert <br><br> to <p> tags for GrapeJS text editability
     return out;
   } catch (error) {
     const err = normalizeError(error);

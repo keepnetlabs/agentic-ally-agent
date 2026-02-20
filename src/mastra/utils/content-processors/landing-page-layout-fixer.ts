@@ -41,22 +41,33 @@ export function fixLandingPageLayout(html: string): string {
   );
 
   // 2. Fix Icon Nesting (The "Green Circle" Bug)
-  // Problem: <div style='...border-radius: 999px...'></div><span>✓</span>
-  // Fix: <div style='...border-radius: 999px...'><span>✓</span></div>
-  // Strategy: Look for an empty div with high border-radius (circular container) followed by a span.
+  // Problem A: <div style='...border-radius: 999px...'></div><span>✓</span>
+  // Fix A: Move the sibling span INSIDE the div.
+  // Problem B: <div style='...border-radius: 999px; background: #22c55e...'></div> (truly empty, no span)
+  // Fix B: Inject a checkmark into the empty circle div.
 
-  // Regex explanation:
-  // (<div[^>]*border-radius:\s*(?:999px|50%|99px|100px)[^>]*>) -> Group 1: Circle div (flexible radius)
-  // (<\/div>)                                               -> Group 2: Empty closure
-  // (\s*<span[^>]*>.*?<\/span>)                             -> Group 3: The icon span (any content)
-
-  // Note: We use .*? in span for non-greedy match to handle multiple spans correctly
+  // Fix A: sibling span outside the circle div
   const iconNestingRegex =
     /(<div[^>]*border-radius:\s*(?:999px|50%|99px|100px)[^>]*>)(<\/div>)(\s*<span[^>]*>.*?<\/span>)/gi;
 
   fixedHtml = fixedHtml.replace(iconNestingRegex, (match, openDiv, closeDiv, checkmarkSpan) => {
-    // Move the checkmark span INSIDE the div, trimming whitespace for cleaner HTML
     return `${openDiv}${checkmarkSpan.trim()}${closeDiv}`;
+  });
+
+  // Fix B: truly empty circle div with a background color (icon container with no content).
+  // Bug fixes vs previous version:
+  //   - Order-independent: border-radius check is in regex, background check is in callback
+  //     (AI can emit CSS properties in any order)
+  //   - No dead hasChildren check: regex already guarantees \s*-only inner content
+  //   - Injected span uses only visual styles; parent handles centering (line-height or flex)
+  const emptyCircleRegex =
+    /(<div[^>]*style=['"][^'"]*border-radius:\s*(?:999px|50%|99px|100px)[^'"]*['"][^>]*>)\s*(<\/div>)/gi;
+
+  fixedHtml = fixedHtml.replace(emptyCircleRegex, (match, openDiv, closeDiv) => {
+    // Only act on colored circles (has explicit hex background = icon container, not decorative ring)
+    if (!/background(?:-color)?:\s*#[0-9a-fA-F]{3,8}/i.test(openDiv)) return match;
+    const checkmark = `<span style='color:white;font-size:28px;font-weight:700;'>&#10003;</span>`;
+    return `${openDiv}${checkmark}${closeDiv}`;
   });
 
   // 3. Fix H1 Typography Alignment

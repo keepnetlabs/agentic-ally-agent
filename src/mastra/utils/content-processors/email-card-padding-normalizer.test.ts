@@ -525,9 +525,10 @@ describe('normalizeEmailCardContentPadding', () => {
     it('should handle "padding: 20px" (non-zero, should not override)', () => {
       const input = `<table style='background:#fff; border-radius:18px;'><tr><td style='padding: 20px; font-family:Arial;'>Content</td></tr></table>`;
       const out = normalizeEmailCardContentPadding(input, 24);
-      // Should add padding-left/right as overrides
-      expect(out).toContain('padding-left: 24px');
-      expect(out).toContain('padding-right: 24px');
+      // horizontal component is already 20px — no override should be injected
+      expect(out).not.toContain('padding-left: 24px');
+      expect(out).not.toContain('padding-right: 24px');
+      expect(out).toContain('padding: 20px');
     });
 
     it('should fix the exact Outlook bug case', () => {
