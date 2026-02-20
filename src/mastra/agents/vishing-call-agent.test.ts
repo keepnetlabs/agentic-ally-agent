@@ -77,7 +77,7 @@ describe('vishingCallAgent', () => {
   it('should require prompt and firstMessage before call tool invocation', () => {
     const instructions = vishingCallAgent.instructions;
     expect(instructions).toContain('NEVER call this tool with an empty prompt or firstMessage');
-    expect(instructions).toContain('If EITHER is missing or empty, **STOP. DO NOT call the tool.**');
+    expect(instructions).toContain('If prompt or firstMessage is missing or empty, **STOP. DO NOT call the tool.**');
   });
 
   it('should require debrief behavior in call prompt rules', () => {
@@ -89,7 +89,7 @@ describe('vishingCallAgent', () => {
 
   it('should include updated post-initiation user-facing success messaging', () => {
     const instructions = vishingCallAgent.instructions;
-    expect(instructions).toContain('Call started. The target is being called now.');
+    expect(instructions).toContain('Call started. The recipient is being called now.');
     expect(instructions).toContain('The transcript will appear here after the call ends.');
   });
 
@@ -112,10 +112,10 @@ describe('vishingCallAgent', () => {
   it('should require all six summary fields before asking call-start confirmation', () => {
     const instructions = vishingCallAgent.instructions;
     expect(instructions).toContain('{Localized: "Persona"}');
-    expect(instructions).toContain('{Localized: "Target"}');
-    expect(instructions).toContain('{Localized: "Target Number"}');
+    expect(instructions).toContain('{Localized: "Recipient"}');
+    expect(instructions).toContain('{Localized: "Recipient Number"}');
     expect(instructions).toContain('{Localized: "Pretext"}');
-    expect(instructions).toContain('{Localized: "Caller Number"}');
+    expect(instructions).toContain('{Localized: "Caller ID"}');
     expect(instructions).toContain('{Localized: "Language"}');
     expect(instructions).toContain('Before any call-initiation confirmation question, you MUST output the full summary block above with all 6 list items.');
   });
@@ -136,14 +136,14 @@ describe('vishingCallAgent', () => {
 
   it('should require pre-call validation against explicit post-summary confirmation', () => {
     const instructions = vishingCallAgent.instructions;
-    expect(instructions).toContain('Confirm the immediately previous assistant turn included the summary');
-    expect(instructions).toContain('Confirm the latest user turn is an explicit confirmation intent');
-    expect(instructions).toContain('not a number/label selection');
+    expect(instructions).toContain("Confirm the user's CURRENT message expresses explicit confirmation intent");
+    expect(instructions).toContain('Do NOT try to validate the previous assistant turn');
+    expect(instructions).toContain('must never trigger call initiation');
   });
 
   it('should include hard stop rule when prompt or firstMessage is missing', () => {
     const instructions = vishingCallAgent.instructions;
-    expect(instructions).toContain('If EITHER is missing or empty, **STOP. DO NOT call the tool.**');
+    expect(instructions).toContain('If prompt or firstMessage is missing or empty, **STOP. DO NOT call the tool.**');
     expect(instructions).toContain('Build the missing piece first');
   });
 

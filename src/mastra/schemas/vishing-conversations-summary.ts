@@ -30,9 +30,9 @@ export const VishingConversationsSummarySchema = z.object({
     .array(VishingConversationsSummaryDisclosedItemSchema)
     .describe('List of sensitive items disclosed (badge numbers, passwords, etc.)'),
   outcome: z
-    .enum(['data_disclosed', 'refused', 'detected', 'other'])
+    .enum(['data_disclosed', 'refused', 'detected', 'not_answered', 'other'])
     .describe(
-      'Overall outcome: data_disclosed=user shared info, refused=user refused, detected=user identified simulation'
+      'Overall outcome: data_disclosed=user shared info, refused=user refused, detected=user identified simulation, not_answered=recipient never picked up'
     ),
 });
 

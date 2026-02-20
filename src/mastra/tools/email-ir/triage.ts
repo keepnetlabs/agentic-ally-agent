@@ -29,7 +29,7 @@ export const triageOutputSchema = z.object({
 
 export const triageTool = createTool({
   id: 'email-ir-triage-tool',
-  description: 'Classifies email into Triage categories categories using full analysis context',
+  description: 'Classifies email into Triage categories using full analysis context',
   inputSchema: triageInputSchema,
   outputSchema: triageOutputSchema,
   execute: async ({ context }) => {

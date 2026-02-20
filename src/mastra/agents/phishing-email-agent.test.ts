@@ -20,8 +20,8 @@ describe('Phishing Email Agent', () => {
       expect(Object.keys(phishingEmailAgent.tools)).toContain('assignPhishing');
     });
 
-    it('should have exactly 4 tools', () => {
-      expect(Object.keys(phishingEmailAgent.tools)).toHaveLength(4);
+    it('should have exactly 5 tools', () => {
+      expect(Object.keys(phishingEmailAgent.tools)).toHaveLength(5);
     });
 
     it('should have name as string', () => {
@@ -321,8 +321,8 @@ describe('Phishing Email Agent', () => {
       expect(instructions).toContain('Platform Integration');
     });
 
-    it('should mention show_reasoning in states', () => {
-      expect(instructions).toContain('show_reasoning');
+    it('should mention showReasoning in states', () => {
+      expect(instructions).toContain('showReasoning');
     });
 
     it('should define confirmation wait', () => {
@@ -705,9 +705,9 @@ describe('Phishing Email Agent', () => {
       });
     });
 
-    it('should have 4 tools configured', () => {
+    it('should have 5 tools configured', () => {
       const toolCount = Object.keys(phishingEmailAgent.tools).length;
-      expect(toolCount).toBe(4);
+      expect(toolCount).toBe(5);
     });
   });
 

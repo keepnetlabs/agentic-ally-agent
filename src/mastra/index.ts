@@ -346,6 +346,7 @@ export const mastra = new Mastra({
           const {
             microlearningId,
             phishingId,
+            smishingId,
             resourceId,
             scenarioResourceId,
             landingPageResourceId,
@@ -358,6 +359,7 @@ export const mastra = new Mastra({
           if (
             microlearningId ||
             phishingId ||
+            smishingId ||
             resourceId ||
             scenarioResourceId ||
             landingPageResourceId ||
@@ -369,6 +371,7 @@ export const mastra = new Mastra({
             // Canonical / allowlisted [ARTIFACT_IDS] block (key=value, stable order, safe chars only)
             const safeMicrolearningId = normalizeSafeId(microlearningId);
             const safePhishingId = normalizeSafeId(phishingId);
+            const safeSmishingId = normalizeSafeId(smishingId);
             const safeResourceId = normalizeSafeId(resourceId);
             const safeScenarioResourceId = normalizeSafeId(scenarioResourceId);
             const safeLandingPageResourceId = normalizeSafeId(landingPageResourceId);
@@ -380,6 +383,7 @@ export const mastra = new Mastra({
             const parts = [
               safeMicrolearningId ? `microlearningId=${safeMicrolearningId}` : undefined,
               safePhishingId ? `phishingId=${safePhishingId}` : undefined,
+              safeSmishingId ? `smishingId=${safeSmishingId}` : undefined,
               // upload/assign IDs (phishing + training)
               safeResourceId ? `resourceId=${safeResourceId}` : undefined,
               safeScenarioResourceId ? `scenarioResourceId=${safeScenarioResourceId}` : undefined,

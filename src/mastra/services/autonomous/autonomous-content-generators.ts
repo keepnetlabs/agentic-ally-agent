@@ -530,7 +530,7 @@ export async function generateContentForUser(
       });
     } else {
       const assignResult = await assignPhishingWithTraining(
-        userId as string,
+        String(userId),
         phishingThreadId,
         trainingId,
         sendTrainingLanguageId,

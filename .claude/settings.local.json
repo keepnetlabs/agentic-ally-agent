@@ -53,7 +53,8 @@
       "Bash(xargs:*)",
       "Bash(npm run type-check:*)",
       "Bash(npx eslint:*)",
-      "Bash(node -e:*)"
+      "Bash(node -e:*)",
+      "Bash(cmd /c \"dir /s /b \"\"C:\\\\Users\\\\user\\\\Desktop\\\\Agentic Ally\\\\fleet-v2-main\\\\platform\"\" | findstr /i \"\"\\\\.vue\"\" | head\")"
     ],
     "deny": [],
     "ask": []

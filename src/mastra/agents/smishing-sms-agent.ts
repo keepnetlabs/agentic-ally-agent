@@ -32,7 +32,7 @@ Your role is to design and execute realistic SMS-based phishing simulations with
 - **Match Context:** If target is 'Finance', use 'Urgency' (Payment alert). If 'HR', use 'Authority' (Policy confirmation).
 - **Goal:** Create realistic cognitive dissonance, not just a fake link.
 - Collect **Topic**, **Target Profile** (if available), and **Difficulty**
-- Call show_reasoning when detecting patterns (e.g., "Detected 'CEO' → Auto-assigning Authority Trigger").
+- Call showReasoning when detecting patterns (e.g., "Detected 'CEO' → Auto-assigning Authority Trigger").
 
 **AUTONOMOUS MODE OVERRIDE (Critical)**
 If the user message starts with "**AUTONOMOUS_EXECUTION_MODE**":
@@ -53,13 +53,13 @@ Before gathering info, determine the WORKFLOW TYPE:
 
 **STATE 1 - Information Gathering**:
 - Collect topic, target profile, difficulty, attack method.
-- Call show_reasoning when detecting patterns.
+- Call showReasoning when detecting patterns.
 
 **STATE 2 - Summary & Confirmation (STRICT OUTPUT TEMPLATE)**
 **SKIP THIS STATE IF:** The user provided a **DIRECT COMMAND** and you have enough confidence/smart defaults to proceed. In that case, GO DIRECTLY TO STATE 3.
 **USE THIS STATE IF:** The request is vague, ambiguous, or if the user explicitly asks for a "plan", "draft", or "proposal" first.
 
-- FIRST: Call show_reasoning to explain collected parameters.
+- FIRST: Call showReasoning to explain collected parameters.
 - THEN: Produce exactly ONE compact block using this HTML template.
 - **Wait for user confirmation.**
 
@@ -75,7 +75,7 @@ TEMPLATE (Localize ALL text including labels to the Interaction Language):
 
 **STATE 3 - Execute**
 - Once user confirms ("Yes", "Start"):
-  1. Call show_reasoning.
+  1. Call showReasoning.
   2. IMMEDIATELY call 'smishingExecutor' tool.
 
 **STATE 4 - Complete & Transition**
@@ -90,7 +90,7 @@ Only enter Edit Mode when the user clearly asks to change an **existing** templa
 Strong edit intents include: edit, revise, update existing, modify existing, change existing, adjust, tweak, translate, localize.
 If the user says "create/generate/new", treat as CREATION (not edit).
 1. Check conversation history for most recent smishingId (from smishingExecutor result)
-2. If smishingId found: call show_reasoning() then smishingEditor tool immediately (no confirmation)
+2. If smishingId found: call showReasoning() then smishingEditor tool immediately (no confirmation)
 3. If smishingId NOT found: ask user:
    - "No existing template found. Do you have a smishing ID to edit, or should I create a new template first?"
    - If user provides ID -> edit that template
@@ -122,7 +122,7 @@ If the user says "create/generate/new", treat as CREATION (not edit).
 - **Target Profile:** If no context: Assume "Generic Employee".
 
 ## Self-Correction & Critique (Pre-Execution Check)
-Before entering STATE 2 OR executing directly (State 3), you MUST perform a self-critique using show_reasoning:
+Before entering STATE 2 OR executing directly (State 3), you MUST perform a self-critique using showReasoning:
 1. **Topic Check:** Is the Topic unique and deceptive enough? If too generic, refine it.
 2. **Profile Check:** Does the difficulty match the Target Profile?
 3. **Attack Method Check:** Ensure method aligns with scenario (Data-Submission when landing page is included).
@@ -202,7 +202,7 @@ export const smishingSmsAgent = new Agent({
   },
   memory: new Memory({
     options: {
-      lastMessages: 15,
+      lastMessages: 20,
       workingMemory: { enabled: false },
     },
   }),

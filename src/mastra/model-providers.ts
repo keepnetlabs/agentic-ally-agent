@@ -164,8 +164,8 @@ function getModelProvider(provider: ModelProvider) {
  * Default models used across the application
  */
 export function getDefaultAgentModel() {
-  // Using GPT-4o for specialist agents — strong instruction following + multi-language support
-  return getModel(ModelProvider.OPENAI, Model.OPENAI_GPT_4O);
+  // Using GPT-5.1 for specialist agents — strong instruction following + multi-language support
+  return getModel(ModelProvider.OPENAI, Model.OPENAI_GPT_5_1);
 }
 
 // Lightweight model for simple agents (routing, policy summary)
