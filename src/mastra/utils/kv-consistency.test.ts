@@ -41,6 +41,12 @@ vi.mock('./core/error-utils', () => ({
   logErrorInfo: vi.fn(),
 }));
 
+vi.mock('../services/error-service', () => ({
+  errorService: {
+    external: vi.fn((msg: string, ctx?: object) => ({ message: msg, ...ctx })),
+  },
+}));
+
 const mockKVGet = vi.fn();
 
 vi.mock('../services/kv-service', () => {
@@ -451,6 +457,26 @@ describe('kv-consistency', () => {
       await promise;
 
       expect(mockKVGet).toHaveBeenCalledTimes(2);
+    });
+
+    it('should log and retry when KV get throws in catch block', async () => {
+      const { logErrorInfo } = await import('./core/error-utils');
+      mockKVGet
+        .mockRejectedValueOnce(new Error('KV connection failed'))
+        .mockRejectedValueOnce(new Error('KV connection failed'))
+        .mockResolvedValueOnce('value');
+
+      const promise = waitForKVConsistency('test-id', ['key1']);
+      await vi.advanceTimersByTimeAsync(2000);
+      await promise;
+
+      expect(mockKVGet).toHaveBeenCalledTimes(3);
+      expect(logErrorInfo).toHaveBeenCalledWith(
+        expect.anything(),
+        'warn',
+        'KV consistency check error',
+        expect.objectContaining({ step: 'kv-consistency-check' })
+      );
     });
   });
 

@@ -211,6 +211,18 @@ describe('ContextStorage Middleware', () => {
       });
     });
 
+    it('should normalize test-ui.devkeepnet.com to test-api.devkeepnet.com', async () => {
+      (mockContext.req.header as any).mockImplementation((header: string) => {
+        if (header === 'X-BASE-API-URL') return 'https://test-ui.devkeepnet.com';
+        return undefined;
+      });
+
+      await contextStorage(mockContext, async () => {
+        const context = requestStorage.getStore();
+        expect(context?.baseApiUrl).toBe('https://test-api.devkeepnet.com');
+      });
+    });
+
     it('should reject invalid URL format and use default', async () => {
       (mockContext.req.header as any).mockImplementation((header: string) => {
         if (header === 'X-BASE-API-URL') return 'not-a-valid-url';

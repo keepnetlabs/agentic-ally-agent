@@ -5,6 +5,7 @@ import {
   getClientIdentifier,
   createEndpointRateLimiter,
   skipHealthCheck,
+  cleanupExpiredEntries,
 } from './rate-limit';
 
 describe('Rate Limiting Middleware', () => {
@@ -276,6 +277,80 @@ describe('Rate Limiting Middleware', () => {
     it('should return false for non-health path', () => {
       const c = { req: { path: '/chat' } } as any;
       expect(skipHealthCheck(c)).toBe(false);
+    });
+  });
+
+  describe('cleanupExpiredEntries', () => {
+    it('should not throw when called', () => {
+      expect(() => cleanupExpiredEntries()).not.toThrow();
+    });
+
+    it('should remove expired entries when time has passed', async () => {
+      vi.useFakeTimers();
+      const middleware = rateLimitMiddleware({
+        maxRequests: 5,
+        windowMs: 1000,
+      });
+
+      const mockContext = {
+        req: { header: () => 'cleanup-test-ip', path: '/test', method: 'POST' },
+        res: { headers: new Map() },
+      } as any;
+      const next = vi.fn();
+
+      await middleware(mockContext, next);
+      expect(next).toHaveBeenCalledTimes(1);
+
+      vi.advanceTimersByTime(2000);
+
+      cleanupExpiredEntries();
+
+      await middleware(mockContext, next);
+      expect(next).toHaveBeenCalledTimes(2);
+
+      vi.useRealTimers();
+    });
+
+    it('should trigger periodic cleanup when store size reaches CLEANUP_FREQUENCY multiple', async () => {
+      vi.useFakeTimers();
+      const middleware = rateLimitMiddleware({
+        maxRequests: 5,
+        windowMs: 60000,
+        identifier: (c: any) => c.req.header('x-test-id') || 'unknown',
+      });
+
+      const next = vi.fn();
+
+      // Create 100 distinct entries to reach CLEANUP_FREQUENCY (100)
+      for (let i = 0; i < 100; i++) {
+        const mockContext = {
+          req: {
+            header: (name: string) => (name === 'x-test-id' ? `id-${i}` : undefined),
+            path: '/test',
+            method: 'POST',
+          },
+          res: { headers: new Map() },
+        } as any;
+        await middleware(mockContext, next);
+      }
+      expect(next).toHaveBeenCalledTimes(100);
+
+      // Advance time so all entries expire
+      vi.advanceTimersByTime(65000);
+
+      // 101st request triggers cleanup (size % 100 === 0), then processes
+      const mockContext101 = {
+        req: {
+          header: (name: string) => (name === 'x-test-id' ? 'id-100' : undefined),
+          path: '/test',
+          method: 'POST',
+        },
+        res: { headers: new Map() },
+      } as any;
+      await middleware(mockContext101, next);
+
+      expect(next).toHaveBeenCalledTimes(101);
+      vi.useRealTimers();
     });
   });
 

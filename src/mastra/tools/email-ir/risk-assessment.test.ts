@@ -125,4 +125,46 @@ describe('riskAssessmentTool', () => {
       (riskAssessmentTool as any).execute({ context: validContext })
     ).rejects.toThrow('LLM timeout');
   });
+
+  it('should use unknown-sender when original_email.from is empty', async () => {
+    generateMock.mockResolvedValue({
+      object: {
+        risk_level: 'Low',
+        confidence: 0.95,
+        justification: 'Benign email',
+      },
+    });
+
+    const ctxWithEmptyFrom = {
+      ...validContext,
+      original_email: { ...validContext.original_email, from: '' },
+    };
+
+    const result = await (riskAssessmentTool as any).execute({ context: ctxWithEmptyFrom });
+
+    expect(result.risk_level).toBe('Low');
+    expect(result.original_email.from).toBe('');
+  });
+
+  it('should use threat_intel_findings fallback when empty string', async () => {
+    generateMock.mockResolvedValue({
+      object: {
+        risk_level: 'Medium',
+        confidence: 0.65,
+        justification: 'Mixed signals',
+      },
+    });
+
+    const ctxWithEmptyThreatIntel = {
+      ...validContext,
+      header_analysis: {
+        ...validContext.header_analysis,
+        threat_intel_findings: '',
+      },
+    };
+
+    const result = await (riskAssessmentTool as any).execute({ context: ctxWithEmptyThreatIntel });
+
+    expect(result.risk_level).toBe('Medium');
+  });
 });

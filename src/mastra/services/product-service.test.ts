@@ -119,6 +119,14 @@ describe('ProductService', () => {
       expect(service).toBeDefined();
     });
 
+    it('should handle JWT with payload that decodes to invalid JSON', () => {
+      // Payload "eA" decodes to "x", JSON.parse("x") throws
+      const malformedToken = 'eyJhbGciOiJIUzI1NiJ9.eA.mockSig';
+      const service = new ProductService(malformedToken);
+
+      expect(service).toBeDefined();
+    });
+
     it('should handle JWT token with padding requirements', () => {
       // JWT payload that requires base64 padding
       const payload = { idp: 'https://test.com', user_company_resourceid: 'company' };
@@ -390,6 +398,27 @@ describe('ProductService', () => {
 
       expect(service).toBeDefined();
       // Service should initialize without token when requestStorage is empty
+    });
+
+    it('should handle getCompanyIdFromRequestStorage throwing', () => {
+      const payload = { idp: 'https://test-idp.com', user_company_resourceid: 'company-123' };
+      const token = createMockJWT(payload);
+
+      let callCount = 0;
+      const getStoreSpy = vi.spyOn(requestStorage, 'getStore').mockImplementation(() => {
+        callCount++;
+        if (callCount === 2) {
+          throw new Error('AsyncLocalStorage unavailable');
+        }
+        return { baseApiUrl: undefined };
+      });
+
+      try {
+        const service = new ProductService(token);
+        expect(service).toBeDefined();
+      } finally {
+        getStoreSpy.mockRestore();
+      }
     });
   });
 });

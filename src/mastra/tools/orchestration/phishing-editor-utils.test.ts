@@ -28,6 +28,18 @@ vi.mock('../../utils/core/resilience-utils', () => ({
   withTimeout: vi.fn(promise => promise),
 }));
 
+vi.mock('../../utils/core/error-utils', () => ({
+  normalizeError: vi.fn((err: any) => ({ message: err?.message || 'Unknown', stack: err?.stack })),
+  logErrorInfo: vi.fn(),
+}));
+
+vi.mock('../../services/error-service', () => ({
+  errorService: {
+    aiModel: vi.fn((msg: string, opts: any) => ({ message: msg, ...opts })),
+    external: vi.fn((msg: string, opts: any) => ({ message: msg, ...opts })),
+  },
+}));
+
 describe('detectAndResolveBrand', () => {
   const mockModel = { id: 'test-model', provider: 'test' } as any;
   const mockWhitelabelConfig = { mainLogoUrl: 'https://whitelabel.com/logo.png' };
@@ -121,5 +133,41 @@ describe('detectAndResolveBrand', () => {
 
     expect(result.brandContext).toBe('');
     expect(result.resolvedBrandInfo).toBeNull();
+  });
+
+  it('should continue with default resolution when brand extraction throws', async () => {
+    // First call: intent classification returns external
+    // Second call: brand extraction throws
+    (generateText as any)
+      .mockResolvedValueOnce({ text: JSON.stringify({ isInternalBrandRequest: false }) })
+      .mockRejectedValueOnce(new Error('Brand extraction failed'));
+
+    (resolveLogoAndBrand as any).mockResolvedValue({
+      brandName: 'Fallback Brand',
+      logoUrl: 'https://fallback.com/logo.png',
+      isRecognizedBrand: true,
+    });
+
+    const result = await detectAndResolveBrand('Make it look like Amazon', mockModel, mockWhitelabelConfig);
+
+    expect(resolveLogoAndBrand).toHaveBeenCalledWith('Make it look like Amazon', 'Make it look like Amazon', mockModel);
+    expect(result.resolvedBrandInfo?.brandName).toBe('Fallback Brand');
+  });
+
+  it('should continue with default resolution when brand extraction returns invalid JSON', async () => {
+    (generateText as any)
+      .mockResolvedValueOnce({ text: JSON.stringify({ isInternalBrandRequest: false }) })
+      .mockResolvedValueOnce({ text: 'not valid json {' });
+
+    (resolveLogoAndBrand as any).mockResolvedValue({
+      brandName: 'Resolved Brand',
+      logoUrl: 'https://resolved.com/logo.png',
+      isRecognizedBrand: true,
+    });
+
+    const result = await detectAndResolveBrand('Use Nike logo', mockModel, mockWhitelabelConfig);
+
+    expect(resolveLogoAndBrand).toHaveBeenCalledWith('Use Nike logo', 'Use Nike logo', mockModel);
+    expect(result.resolvedBrandInfo?.brandName).toBe('Resolved Brand');
   });
 });

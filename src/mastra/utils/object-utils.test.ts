@@ -315,6 +315,16 @@ describe('object-utils', () => {
         // JSON.stringify removes undefined, so b won't be in result
         expect(result).toEqual({ a: 1 });
       });
+
+      it('should skip inherited properties (only merge own properties)', () => {
+        const parent = { inherited: 999 };
+        const source = Object.create(parent);
+        source.own = 42;
+        const target = {};
+        const result = deepMerge(target, source);
+        expect(result).toEqual({ own: 42 });
+        expect(result).not.toHaveProperty('inherited');
+      });
     });
 
     describe('Immutability', () => {

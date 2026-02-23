@@ -310,6 +310,53 @@ describe('EmailIRCanvasSchema', () => {
       expect(result.success).toBe(false);
     });
 
+    it('should add issue with correct message when finding_label does not match email_category (superRefine)', () => {
+      const data = {
+        ...validMinimalData,
+        executive_summary: {
+          ...validMinimalData.executive_summary,
+          email_category: 'Phishing' as const,
+        },
+        evidence_flow: [
+          {
+            step: 1,
+            title: 'Final Step',
+            description: 'Conclusion',
+            finding_label: 'CEO Fraud' as const,
+          },
+        ],
+      };
+      const result = EmailIRCanvasSchema.safeParse(data);
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        const mismatchError = result.error.errors.find(
+          e =>
+            e.path.join('.') === 'evidence_flow.0.finding_label' &&
+            e.message?.includes('must match executive_summary.email_category')
+        );
+        expect(mismatchError).toBeDefined();
+      }
+    });
+
+    it('should reject when final step has no finding_label', () => {
+      const data = {
+        ...validMinimalData,
+        evidence_flow: [
+          {
+            step: 1,
+            title: 'Final Step',
+            description: 'Analysis complete',
+          },
+        ],
+      };
+      const result = EmailIRCanvasSchema.safeParse(data);
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        const msg = result.error.errors.find(e => e.path.includes('finding_label'))?.message;
+        expect(msg).toContain('finding_label');
+      }
+    });
+
     it('should require evidence_flow to be an array', () => {
       const data = {
         ...validMinimalData,

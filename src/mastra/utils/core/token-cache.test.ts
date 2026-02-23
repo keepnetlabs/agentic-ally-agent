@@ -56,6 +56,14 @@ describe('TokenCache', () => {
     expect(cache.get('token1')).toBeNull();
   });
 
+  it('should evict when capacity is 1 and second item is added', () => {
+    cache = new TokenCache(10000, 1);
+    cache.set('first', true);
+    cache.set('second', true);
+    expect(cache.get('first')).toBeNull();
+    expect(cache.get('second')).toBe(true);
+  });
+
   it('should evict oldest items when capacity is reached (LRU-ish)', () => {
     const capacity = 3;
     cache = new TokenCache(10000, capacity);

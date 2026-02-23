@@ -164,6 +164,34 @@ describe('JSON Validation Utilities', () => {
       expect(result).toBe(false);
     });
 
+    it('should reject when phishingResultModal has key mismatch', () => {
+      const original = {
+        emails: [],
+        texts: { phishingResultModal: { title: 'Result', description: 'Desc' } },
+      };
+      const translated = {
+        emails: [],
+        texts: { phishingResultModal: { title: 'Sonuç' } },
+      };
+
+      const result = validateInboxStructure(original, translated);
+      expect(result).toBe(false);
+    });
+
+    it('should reject when phishingReportModal has key mismatch', () => {
+      const original = {
+        emails: [],
+        texts: { phishingReportModal: { title: 'Report', description: 'Report phishing' } },
+      };
+      const translated = {
+        emails: [],
+        texts: { phishingReportModal: { title: 'Rapor' } }, // missing description key
+      };
+
+      const result = validateInboxStructure(original, translated);
+      expect(result).toBe(false);
+    });
+
     it('should reject when transTexts is not an object (origTexts exists)', () => {
       const original = { emails: [], texts: { phishingReportModal: {} } };
       const translated = { emails: [], texts: 'invalid' };

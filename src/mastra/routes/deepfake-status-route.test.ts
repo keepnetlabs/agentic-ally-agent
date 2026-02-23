@@ -206,6 +206,33 @@ describe('deepfakeStatusHandler', () => {
       );
     });
 
+    it('should use videoData.message when error is non-object non-string (e.g. number)', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            data: {
+              video_id: 'vid-msg-fallback',
+              status: 'failed',
+              error: 12345,
+              message: 'Rendering failed with code',
+            },
+          }),
+      });
+
+      const c = createMockContext('vid-msg-fallback');
+      await deepfakeStatusHandler(c);
+
+      expect(c.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: true,
+          status: 'failed',
+          failureReason: 'Rendering failed with code',
+        }),
+        200
+      );
+    });
+
     it('should use videoData.message when error object has no detail or message', async () => {
       global.fetch = vi.fn().mockResolvedValue({
         ok: true,
@@ -252,6 +279,55 @@ describe('deepfakeStatusHandler', () => {
         }),
         200
       );
+    });
+
+    it('should default to processing when data is null', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ data: null }),
+      });
+
+      const c = createMockContext('vid-null');
+      await deepfakeStatusHandler(c);
+
+      expect(c.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: true,
+          videoId: 'vid-null',
+          status: 'processing',
+          videoUrl: null,
+        }),
+        200
+      );
+    });
+
+    it('should use JSON.stringify when error object has neither detail nor message', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            data: {
+              video_id: 'vid-json',
+              status: 'failed',
+              error: { code: 'UNKNOWN', customField: 'custom' },
+            },
+          }),
+      });
+
+      const c = createMockContext('vid-json');
+      await deepfakeStatusHandler(c);
+
+      expect(c.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: true,
+          status: 'failed',
+          failureReason: expect.any(String),
+          failureCode: 'UNKNOWN',
+        }),
+        200
+      );
+      const callArg = c.json.mock.calls[0][0];
+      expect(callArg.failureReason).toContain('UNKNOWN');
     });
 
     it('should use failureReason when error is a string', async () => {
@@ -310,6 +386,22 @@ describe('deepfakeStatusHandler', () => {
 
       expect(c.json).toHaveBeenCalledWith(
         { success: false, error: 'HeyGen API returned 401' },
+        502
+      );
+    });
+
+    it('should handle response.text() throwing when reading error body', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 502,
+        text: () => Promise.reject(new Error('Read failed')),
+      });
+
+      const c = createMockContext('vid-123');
+      await deepfakeStatusHandler(c);
+
+      expect(c.json).toHaveBeenCalledWith(
+        { success: false, error: 'HeyGen API returned 502' },
         502
       );
     });

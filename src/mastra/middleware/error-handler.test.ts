@@ -337,6 +337,17 @@ describe('errorHandlerMiddleware', () => {
       expect(sentryArgs.options.environment).toBe('production');
     });
 
+    it('should log with stack undefined when Sentry path receives non-Error', async () => {
+      process.env.SENTRY_DSN = 'https://examplePublicKey@o0.ingest.sentry.io/0';
+      mockNext.mockRejectedValueOnce('String error in Sentry path');
+
+      await errorHandlerMiddleware(mockContext, mockNext);
+
+      const loggerCall = mockLoggerInstance.error.mock.calls[0];
+      expect(loggerCall[1].error).toBe('String error in Sentry path');
+      expect(loggerCall[1].stack).toBeUndefined();
+    });
+
     it('should handle context when executionCtx access throws', async () => {
       process.env.SENTRY_DSN = 'https://examplePublicKey@o0.ingest.sentry.io/0';
       mockNext.mockRejectedValueOnce(new Error('Test error'));

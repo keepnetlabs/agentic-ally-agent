@@ -26,6 +26,10 @@ vi.mock('./logger-setup', () => ({
   logStepError: vi.fn(),
 }));
 
+vi.mock('./email-body-sanitizer', () => ({
+  sanitizeEmailBody: vi.fn((s: string) => s || ''),
+}));
+
 describe('bodyIntentAnalysisTool', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -70,6 +74,19 @@ describe('bodyIntentAnalysisTool', () => {
     ).rejects.toThrow('LLM error');
   });
 
+  it('should set error code on thrown error when LLM fails', async () => {
+    generateMock.mockRejectedValue(new Error('LLM timeout'));
+
+    try {
+      await (bodyIntentAnalysisTool as any).execute({
+        context: { from: 'a@b.com', subject: 'Test', htmlBody: '' },
+      });
+    } catch (e: any) {
+      expect(e.message).toBe('LLM timeout');
+      expect(e.code).toBeDefined();
+    }
+  });
+
   it('should return object with original_email when LLM succeeds', async () => {
     const email = { from: 'user@example.com', subject: 'Test', htmlBody: '<p>Hello</p>' };
     generateMock.mockResolvedValue({
@@ -89,6 +106,116 @@ describe('bodyIntentAnalysisTool', () => {
     const result = await (bodyIntentAnalysisTool as any).execute({ context: email });
     expect(result.intent).toBe('benign');
     expect(result.original_email).toEqual(email);
+  });
+
+  it('should use subject as body when htmlBody is empty', async () => {
+    let capturedPrompt = '';
+    generateMock.mockImplementation((prompt: string) => {
+      capturedPrompt = prompt;
+      return Promise.resolve({
+        object: {
+          intent: 'benign',
+          financial_request: false,
+          credential_request: false,
+          authority_impersonation: false,
+          financial_request_details: 'insufficient_data',
+          credential_request_details: 'insufficient_data',
+          authority_claimed: 'insufficient_data',
+          intent_summary: 'OK',
+        },
+      });
+    });
+
+    await (bodyIntentAnalysisTool as any).execute({
+      context: { from: 'a@b.com', subject: 'Urgent: Verify Account', htmlBody: '' },
+    });
+
+    expect(capturedPrompt).toContain('Urgent: Verify Account');
+  });
+
+  it('should use No body content when htmlBody and subject are empty', async () => {
+    let capturedPrompt = '';
+    generateMock.mockImplementation((prompt: string) => {
+      capturedPrompt = prompt;
+      return Promise.resolve({
+        object: {
+          intent: 'benign',
+          financial_request: false,
+          credential_request: false,
+          authority_impersonation: false,
+          financial_request_details: 'insufficient_data',
+          credential_request_details: 'insufficient_data',
+          authority_claimed: 'insufficient_data',
+          intent_summary: 'OK',
+        },
+      });
+    });
+
+    await (bodyIntentAnalysisTool as any).execute({
+      context: { from: 'a@b.com', subject: '', htmlBody: '' },
+    });
+
+    expect(capturedPrompt).toContain('No body content');
+  });
+
+  it('should use from when senderName is absent', async () => {
+    let capturedPrompt = '';
+    generateMock.mockImplementation((prompt: string) => {
+      capturedPrompt = prompt;
+      return Promise.resolve({
+        object: {
+          intent: 'benign',
+          financial_request: false,
+          credential_request: false,
+          authority_impersonation: false,
+          financial_request_details: 'insufficient_data',
+          credential_request_details: 'insufficient_data',
+          authority_claimed: 'insufficient_data',
+          intent_summary: 'OK',
+        },
+      });
+    });
+
+    await (bodyIntentAnalysisTool as any).execute({
+      context: {
+        from: 'support@company.com',
+        subject: 'Test',
+        htmlBody: '',
+        // senderName intentionally omitted
+      },
+    });
+
+    expect(capturedPrompt).toContain('support@company.com');
+  });
+
+  it('should use senderName in prompt when present', async () => {
+    let capturedPrompt = '';
+    generateMock.mockImplementation((prompt: string) => {
+      capturedPrompt = prompt;
+      return Promise.resolve({
+        object: {
+          intent: 'benign',
+          financial_request: false,
+          credential_request: false,
+          authority_impersonation: false,
+          financial_request_details: 'insufficient_data',
+          credential_request_details: 'insufficient_data',
+          authority_claimed: 'insufficient_data',
+          intent_summary: 'OK',
+        },
+      });
+    });
+
+    await (bodyIntentAnalysisTool as any).execute({
+      context: {
+        from: 'ceo@company.com',
+        senderName: 'John CEO',
+        subject: 'Test',
+        htmlBody: '',
+      },
+    });
+
+    expect(capturedPrompt).toContain('John CEO');
   });
 });
 

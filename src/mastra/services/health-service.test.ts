@@ -271,6 +271,14 @@ describe('HealthService', () => {
       };
       expect(determineOverallStatus(checks)).toBe('healthy');
     });
+
+    it('should return degraded when D1 is degraded', () => {
+      const checks = {
+        kv: { status: 'healthy' as const },
+        d1: { status: 'degraded' as const, latencyMs: 5000, error: 'Slow query' },
+      };
+      expect(determineOverallStatus(checks)).toBe('degraded');
+    });
   });
 
   describe('checkD1Health', () => {

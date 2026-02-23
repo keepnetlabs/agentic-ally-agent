@@ -315,6 +315,60 @@ describe('Smishing Chat Route Handler', () => {
       expect(calls[0][1]).toBe(200);
     });
 
+    it('should handle invalid JSON from LLM gracefully', async () => {
+      const { generateText } = await import('ai');
+      (generateText as any).mockResolvedValue({ text: 'not valid json {{{' });
+
+      const ctx = createMockContext({
+        microlearningId: 'ml-123',
+        language: 'en',
+        messages: [{ role: 'user', content: 'Hi' }],
+      });
+      mockKVService.getMicrolearning.mockResolvedValue(validMicrolearning);
+
+      await smishingChatHandler(ctx);
+
+      const calls = ctx._getJsonCalls();
+      expect(calls[0][0]).toMatchObject({ success: true, isFinished: false });
+      expect(calls[0][0].reply).toBeDefined();
+    });
+
+    it('should use fallback reply when LLM returns empty or unparseable content', async () => {
+      const { generateText } = await import('ai');
+      (generateText as any).mockResolvedValue({ text: '' });
+
+      const ctx = createMockContext({
+        microlearningId: 'ml-123',
+        language: 'en',
+        messages: [{ role: 'user', content: 'Hi' }],
+      });
+      mockKVService.getMicrolearning.mockResolvedValue(validMicrolearning);
+
+      await smishingChatHandler(ctx);
+
+      const calls = ctx._getJsonCalls();
+      expect(calls[0][0]).toMatchObject({ success: true, isFinished: false });
+      expect(calls[0][0].reply).toContain('Unable to generate');
+    });
+
+    it('should use fallback when LLM returns valid JSON but schema validation fails', async () => {
+      const { generateText } = await import('ai');
+      (generateText as any).mockResolvedValue({ text: '{"wrongKey":"value"}' });
+
+      const ctx = createMockContext({
+        microlearningId: 'ml-123',
+        language: 'en',
+        messages: [{ role: 'user', content: 'Hi' }],
+      });
+      mockKVService.getMicrolearning.mockResolvedValue(validMicrolearning);
+
+      await smishingChatHandler(ctx);
+
+      const calls = ctx._getJsonCalls();
+      expect(calls[0][0]).toMatchObject({ success: true, isFinished: false });
+      expect(calls[0][0].reply).toBeDefined();
+    });
+
     it('should include system prompt in LLM call', async () => {
       const { generateText } = await import('ai');
       (generateText as any).mockResolvedValue({ text: 'Test reply' });

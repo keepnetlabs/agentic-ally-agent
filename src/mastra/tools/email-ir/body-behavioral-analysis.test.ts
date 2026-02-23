@@ -30,6 +30,10 @@ vi.mock('./logger-setup', () => ({
   logStepError: vi.fn(),
 }));
 
+vi.mock('./email-body-sanitizer', () => ({
+  sanitizeEmailBody: vi.fn((s: string) => s || ''),
+}));
+
 describe('bodyBehavioralAnalysisTool', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -93,6 +97,56 @@ describe('bodyBehavioralAnalysisTool', () => {
     const result = await (bodyBehavioralAnalysisTool as any).execute({ context: email });
     expect(result.urgency_level).toBe('none');
     expect(result.original_email).toEqual(email);
+  });
+
+  it('should use subject as body when htmlBody is empty', async () => {
+    let capturedPrompt = '';
+    generateMock.mockImplementation((prompt: string) => {
+      capturedPrompt = prompt;
+      return Promise.resolve({
+        object: {
+          urgency_level: 'none',
+          emotional_pressure: 'none',
+          social_engineering_pattern: 'none',
+          verification_avoidance: false,
+          verification_avoidance_tactics: 'insufficient_data',
+          urgency_indicators: 'insufficient_data',
+          emotional_pressure_indicators: 'insufficient_data',
+          behavioral_summary: 'OK',
+        },
+      });
+    });
+
+    await (bodyBehavioralAnalysisTool as any).execute({
+      context: { from: 'a@b.com', subject: 'Urgent Action Required', htmlBody: '' },
+    });
+
+    expect(capturedPrompt).toContain('Urgent Action Required');
+  });
+
+  it('should use No body content when htmlBody and subject are empty', async () => {
+    let capturedPrompt = '';
+    generateMock.mockImplementation((prompt: string) => {
+      capturedPrompt = prompt;
+      return Promise.resolve({
+        object: {
+          urgency_level: 'none',
+          emotional_pressure: 'none',
+          social_engineering_pattern: 'none',
+          verification_avoidance: false,
+          verification_avoidance_tactics: 'insufficient_data',
+          urgency_indicators: 'insufficient_data',
+          emotional_pressure_indicators: 'insufficient_data',
+          behavioral_summary: 'OK',
+        },
+      });
+    });
+
+    await (bodyBehavioralAnalysisTool as any).execute({
+      context: { from: 'a@b.com', subject: '', htmlBody: '' },
+    });
+
+    expect(capturedPrompt).toContain('No body content');
   });
 });
 

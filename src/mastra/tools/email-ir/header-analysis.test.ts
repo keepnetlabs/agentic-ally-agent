@@ -217,6 +217,47 @@ describe('headerAnalysisTool', () => {
       'IP from Nigeria',
       'medium'
     );
+    expect(logSignalDetected).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.any(String),
+      'authentication',
+      'DMARC_FAILED',
+      'high'
+    );
+  });
+
+  it('should include senderName in prompt when present', async () => {
+    let capturedPrompt = '';
+    generateMock.mockImplementation((prompt: string) => {
+      capturedPrompt = prompt;
+      return Promise.resolve({
+        object: {
+          spf_pass: true,
+          dkim_pass: true,
+          dmarc_pass: true,
+          domain_similarity: 'insufficient_data',
+          sender_ip_reputation: 'insufficient_data',
+          geolocation_anomaly: 'insufficient_data',
+          routing_anomaly: 'insufficient_data',
+          threat_intel_findings: 'insufficient_data',
+          header_summary: 'summary',
+          security_awareness_detected: false,
+          list_unsubscribe_present: false,
+          original_email: { from: 'a@b.com', subject: 'Test', htmlBody: '' },
+        },
+      });
+    });
+
+    await (headerAnalysisTool as any).execute({
+      context: {
+        from: 'a@b.com',
+        subject: 'Test',
+        senderName: 'John Doe',
+        headers: [],
+      },
+    });
+
+    expect(capturedPrompt).toContain('John Doe');
   });
 
   it('should include threat intel from urls/ips/attachments in prompt', async () => {
@@ -409,6 +450,40 @@ describe('headerAnalysisTool', () => {
       expect(e.message).toBe('LLM timeout');
       expect(e.code).toBeDefined();
     }
+  });
+
+  it('should use No headers available when headers is undefined', async () => {
+    let capturedPrompt = '';
+    generateMock.mockImplementation((prompt: string) => {
+      capturedPrompt = prompt;
+      return Promise.resolve({
+        object: {
+          spf_pass: true,
+          dkim_pass: true,
+          dmarc_pass: true,
+          domain_similarity: 'insufficient_data',
+          sender_ip_reputation: 'insufficient_data',
+          geolocation_anomaly: 'insufficient_data',
+          routing_anomaly: 'insufficient_data',
+          threat_intel_findings: 'insufficient_data',
+          header_summary: 'summary',
+          security_awareness_detected: false,
+          list_unsubscribe_present: false,
+          original_email: { from: 'a@b.com', subject: 'Test', htmlBody: '' },
+        },
+      });
+    });
+
+    await (headerAnalysisTool as any).execute({
+      context: {
+        from: 'a@b.com',
+        subject: 'Test',
+        htmlBody: '',
+        // headers intentionally omitted (undefined)
+      },
+    });
+
+    expect(capturedPrompt).toContain('No headers available');
   });
 
   it('should include attachments with analysisList in prompt when provided', async () => {

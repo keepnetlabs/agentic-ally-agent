@@ -179,4 +179,164 @@ describe('triageTool', () => {
 
     await expect((triageTool as any).execute({ context: input })).rejects.toThrow('LLM API error');
   });
+
+  it('should use unknown-sender when original_email.from is empty', async () => {
+    generateMock.mockResolvedValue({
+      object: { category: 'Benign', reason: 'ok', confidence: 0.9 },
+    });
+
+    const { createLogContext } = await import('./logger-setup');
+    const input = {
+      original_email: { from: '', subject: 'Test' },
+      header_analysis: {
+        spf_pass: true,
+        dkim_pass: true,
+        dmarc_pass: true,
+        domain_similarity: 'insufficient_data',
+        sender_ip_reputation: 'insufficient_data',
+        geolocation_anomaly: 'insufficient_data',
+        routing_anomaly: 'insufficient_data',
+        threat_intel_findings: 'insufficient_data',
+        header_summary: 'OK',
+        security_awareness_detected: false,
+        list_unsubscribe_present: false,
+      },
+      behavioral_analysis: {
+        urgency_level: 'insufficient_data',
+        emotional_pressure: 'insufficient_data',
+        social_engineering_pattern: 'insufficient_data',
+        verification_avoidance: false,
+        verification_avoidance_tactics: 'insufficient_data',
+        urgency_indicators: 'insufficient_data',
+        emotional_pressure_indicators: 'insufficient_data',
+        behavioral_summary: 'OK',
+      },
+      intent_analysis: {
+        intent: 'benign',
+        financial_request: false,
+        credential_request: false,
+        authority_impersonation: false,
+        financial_request_details: 'insufficient_data',
+        credential_request_details: 'insufficient_data',
+        authority_claimed: 'insufficient_data',
+        intent_summary: 'OK',
+      },
+    };
+
+    await (triageTool as any).execute({ context: input });
+
+    expect(createLogContext).toHaveBeenCalledWith('unknown-sender', 'triage');
+  });
+
+  it('should use senderName in prompt when present', async () => {
+    let capturedPrompt = '';
+    generateMock.mockImplementation((prompt: string) => {
+      capturedPrompt = prompt;
+      return Promise.resolve({
+        object: { category: 'Benign', reason: 'ok', confidence: 0.9 },
+      });
+    });
+
+    const input = {
+      original_email: {
+        from: 'ceo@company.com',
+        senderName: 'John CEO',
+        subject: 'Test',
+      },
+      header_analysis: {
+        spf_pass: true,
+        dkim_pass: true,
+        dmarc_pass: true,
+        domain_similarity: 'insufficient_data',
+        sender_ip_reputation: 'insufficient_data',
+        geolocation_anomaly: 'insufficient_data',
+        routing_anomaly: 'insufficient_data',
+        threat_intel_findings: 'insufficient_data',
+        header_summary: 'OK',
+        security_awareness_detected: false,
+        list_unsubscribe_present: false,
+      },
+      behavioral_analysis: {
+        urgency_level: 'insufficient_data',
+        emotional_pressure: 'insufficient_data',
+        social_engineering_pattern: 'insufficient_data',
+        verification_avoidance: false,
+        verification_avoidance_tactics: 'insufficient_data',
+        urgency_indicators: 'insufficient_data',
+        emotional_pressure_indicators: 'insufficient_data',
+        behavioral_summary: 'OK',
+      },
+      intent_analysis: {
+        intent: 'benign',
+        financial_request: false,
+        credential_request: false,
+        authority_impersonation: false,
+        financial_request_details: 'insufficient_data',
+        credential_request_details: 'insufficient_data',
+        authority_claimed: 'insufficient_data',
+        intent_summary: 'OK',
+      },
+    };
+
+    await (triageTool as any).execute({ context: input });
+
+    expect(capturedPrompt).toContain('John CEO');
+    expect(capturedPrompt).toContain('ceo@company.com');
+  });
+
+  it('should truncate body and append ...(truncated) when htmlBody exceeds 2000 chars', async () => {
+    let capturedPrompt = '';
+    generateMock.mockImplementation((prompt: string) => {
+      capturedPrompt = prompt;
+      return Promise.resolve({
+        object: { category: 'Benign', reason: 'ok', confidence: 0.9 },
+      });
+    });
+
+    const longBody = 'x'.repeat(2500);
+    const input = {
+      original_email: {
+        from: 'test@example.com',
+        subject: 'Test',
+        htmlBody: longBody,
+      },
+      header_analysis: {
+        spf_pass: true,
+        dkim_pass: true,
+        dmarc_pass: true,
+        domain_similarity: 'insufficient_data',
+        sender_ip_reputation: 'insufficient_data',
+        geolocation_anomaly: 'insufficient_data',
+        routing_anomaly: 'insufficient_data',
+        threat_intel_findings: 'insufficient_data',
+        header_summary: 'OK',
+        security_awareness_detected: false,
+        list_unsubscribe_present: false,
+      },
+      behavioral_analysis: {
+        urgency_level: 'insufficient_data',
+        emotional_pressure: 'insufficient_data',
+        social_engineering_pattern: 'insufficient_data',
+        verification_avoidance: false,
+        verification_avoidance_tactics: 'insufficient_data',
+        urgency_indicators: 'insufficient_data',
+        emotional_pressure_indicators: 'insufficient_data',
+        behavioral_summary: 'OK',
+      },
+      intent_analysis: {
+        intent: 'benign',
+        financial_request: false,
+        credential_request: false,
+        authority_impersonation: false,
+        financial_request_details: 'insufficient_data',
+        credential_request_details: 'insufficient_data',
+        authority_claimed: 'insufficient_data',
+        intent_summary: 'OK',
+      },
+    };
+
+    await (triageTool as any).execute({ context: input });
+
+    expect(capturedPrompt).toContain('...(truncated)');
+  });
 });

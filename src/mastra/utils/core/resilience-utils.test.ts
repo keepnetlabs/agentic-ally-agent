@@ -116,5 +116,20 @@ describe('resilience-utils', () => {
       ]);
       expect(op).toHaveBeenCalledTimes(2);
     });
+
+    it('should handle undefined error in recoveryAttempt', async () => {
+      const { errorService } = await import('../../services/error-service');
+      const op = vi.fn().mockRejectedValueOnce(undefined).mockResolvedValueOnce('ok');
+      const resultPromise = withRetry(op, 'undefined-error-op');
+      await vi.runAllTimersAsync();
+      await resultPromise;
+      expect(errorService.recoveryAttempt).toHaveBeenCalledWith(
+        1,
+        3,
+        'undefined-error-op',
+        'undefined',
+        expect.any(Object)
+      );
+    });
   });
 });

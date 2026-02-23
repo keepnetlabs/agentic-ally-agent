@@ -212,6 +212,164 @@ describe('reportingTool', () => {
     expect(prompt).toContain(`executive_summary.evidence_strength | "${expectedStrength}"`);
   });
 
+  it('should use unknown-sender when original_email.from has no @', async () => {
+    const validReport = {
+      executive_summary: {
+        email_category: 'Benign' as const,
+        verdict: 'OK',
+        risk_level: 'Low' as const,
+        confidence: 0.9,
+        evidence_strength: 'Strong' as const,
+        confidence_basis: 'OK',
+        status: 'Analysis Complete',
+      },
+      agent_determination: 'Benign.',
+      risk_indicators: { observed: [], not_observed: [] },
+      evidence_flow: [
+        { step: 1, title: 'Triage', description: 'OK', finding_label: 'Benign' as const },
+      ],
+      actions_recommended: { p1_immediate: [], p2_follow_up: [], p3_hardening: [] },
+      confidence_limitations: 'OK',
+    };
+    generateMock.mockResolvedValue({ object: validReport });
+
+    const { createLogContext } = await import('./logger-setup');
+    await (reportingTool as any).execute({
+      context: {
+        original_email: { from: 'invalid-no-at-sign', subject: 'Test' },
+        triage_result: { category: 'Benign', reason: 'ok', confidence: 0.9 },
+        feature_result: {
+          intent: 'benign',
+          urgency: 'none',
+          authority_impersonation: false,
+          financial_request: false,
+          credential_request: false,
+          emotional_pressure: 'none',
+          social_engineering_pattern: 'none',
+          engine_indicators_present: false,
+          analysis_summary: 'OK',
+          header_analysis: {
+            spf_pass: true,
+            dkim_pass: true,
+            dmarc_pass: true,
+            domain_similarity: 'none',
+            sender_ip_reputation: 'clean',
+            geolocation_anomaly: 'none',
+            routing_anomaly: 'none',
+            threat_intel_findings: 'none',
+            header_summary: 'OK',
+            security_awareness_detected: false,
+            list_unsubscribe_present: false,
+          },
+          behavioral_analysis: {
+            urgency_level: 'none',
+            emotional_pressure: 'none',
+            social_engineering_pattern: 'none',
+            verification_avoidance: false,
+            verification_avoidance_tactics: 'insufficient_data',
+            urgency_indicators: 'insufficient_data',
+            emotional_pressure_indicators: 'insufficient_data',
+            behavioral_summary: 'OK',
+          },
+          intent_analysis: {
+            intent: 'benign',
+            financial_request: false,
+            credential_request: false,
+            authority_impersonation: false,
+            financial_request_details: 'insufficient_data',
+            credential_request_details: 'insufficient_data',
+            authority_claimed: 'insufficient_data',
+            intent_summary: 'OK',
+          },
+        },
+        risk_level: 'Low',
+        confidence: 0.9,
+        justification: 'OK',
+      },
+    });
+
+    expect(createLogContext).toHaveBeenCalledWith('invalid-no-at-sign', 'reporting');
+  });
+
+  it('should use unknown-sender when original_email.from is empty string', async () => {
+    const validReport = {
+      executive_summary: {
+        email_category: 'Benign' as const,
+        verdict: 'OK',
+        risk_level: 'Low' as const,
+        confidence: 0.9,
+        evidence_strength: 'Strong' as const,
+        confidence_basis: 'OK',
+        status: 'Analysis Complete',
+      },
+      agent_determination: 'Benign.',
+      risk_indicators: { observed: [], not_observed: [] },
+      evidence_flow: [
+        { step: 1, title: 'Triage', description: 'OK', finding_label: 'Benign' as const },
+      ],
+      actions_recommended: { p1_immediate: [], p2_follow_up: [], p3_hardening: [] },
+      confidence_limitations: 'OK',
+    };
+    generateMock.mockResolvedValue({ object: validReport });
+
+    const { createLogContext } = await import('./logger-setup');
+    await (reportingTool as any).execute({
+      context: {
+        original_email: { from: '', subject: 'Test' },
+        triage_result: { category: 'Benign', reason: 'ok', confidence: 0.9 },
+        feature_result: {
+          intent: 'benign',
+          urgency: 'none',
+          authority_impersonation: false,
+          financial_request: false,
+          credential_request: false,
+          emotional_pressure: 'none',
+          social_engineering_pattern: 'none',
+          engine_indicators_present: false,
+          analysis_summary: 'OK',
+          header_analysis: {
+            spf_pass: true,
+            dkim_pass: true,
+            dmarc_pass: true,
+            domain_similarity: 'none',
+            sender_ip_reputation: 'clean',
+            geolocation_anomaly: 'none',
+            routing_anomaly: 'none',
+            threat_intel_findings: 'none',
+            header_summary: 'OK',
+            security_awareness_detected: false,
+            list_unsubscribe_present: false,
+          },
+          behavioral_analysis: {
+            urgency_level: 'none',
+            emotional_pressure: 'none',
+            social_engineering_pattern: 'none',
+            verification_avoidance: false,
+            verification_avoidance_tactics: 'insufficient_data',
+            urgency_indicators: 'insufficient_data',
+            emotional_pressure_indicators: 'insufficient_data',
+            behavioral_summary: 'OK',
+          },
+          intent_analysis: {
+            intent: 'benign',
+            financial_request: false,
+            credential_request: false,
+            authority_impersonation: false,
+            financial_request_details: 'insufficient_data',
+            credential_request_details: 'insufficient_data',
+            authority_claimed: 'insufficient_data',
+            intent_summary: 'OK',
+          },
+        },
+        risk_level: 'Low',
+        confidence: 0.9,
+        justification: 'OK',
+      },
+    });
+
+    expect(createLogContext).toHaveBeenCalledWith('unknown-sender', 'reporting');
+  });
+
   it('should throw when LLM fails', async () => {
     generateMock.mockRejectedValue(new Error('LLM timeout'));
 

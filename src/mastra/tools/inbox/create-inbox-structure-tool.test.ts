@@ -253,6 +253,24 @@ describe('Create Inbox Structure Tool', () => {
       expect(result.success).toBe(true);
       expect(mockGenerateInboxEmailsParallel).toHaveBeenCalledTimes(2);
     });
+
+    it('should return fallback when generateInboxEmailsParallel fails both attempts', async () => {
+      mockGetModelWithOverride.mockReturnValue({ modelId: 'test' } as any);
+      mockGenerateText.mockResolvedValue({ text: '{"title":"T","description":"D","emptyState":"E","retry":"R"}' });
+      mockGenerateInboxEmailsParallel.mockRejectedValue(new Error('Email API down'));
+
+      const result = await (createInboxStructureTool as any).execute(baseInput);
+
+      expect(result.success).toBe(true);
+      expect(result.data).toMatchObject({
+        texts: expect.objectContaining({
+          title: 'Training Materials',
+          description: expect.stringContaining('loading or temporarily unavailable'),
+        }),
+        emails: [],
+      });
+      expect(mockGenerateInboxEmailsParallel).toHaveBeenCalledTimes(2);
+    });
   });
 
   beforeEach(() => {

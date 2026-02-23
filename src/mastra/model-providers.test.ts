@@ -115,6 +115,21 @@ describe('model-providers', () => {
 
       process.env.OPENAI_API_KEY = orig;
     });
+
+    it('should use cached provider on second call', async () => {
+      const orig = process.env.OPENAI_API_KEY;
+      process.env.OPENAI_API_KEY = 'sk-test-key';
+
+      const { getModel } = await import('./model-providers');
+      const model1 = getModel(ModelProvider.OPENAI, Model.OPENAI_GPT_4O_MINI);
+      const model2 = getModel(ModelProvider.OPENAI, Model.OPENAI_GPT_4O);
+      expect(model1).toBeDefined();
+      expect(model2).toBeDefined();
+      expect(model1.modelId).toBe(Model.OPENAI_GPT_4O_MINI);
+      expect(model2.modelId).toBe(Model.OPENAI_GPT_4O);
+
+      process.env.OPENAI_API_KEY = orig;
+    });
   });
 
   describe('getModelWithOverride', () => {

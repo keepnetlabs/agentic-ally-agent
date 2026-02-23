@@ -105,6 +105,11 @@ describe('error-service', () => {
       expect(result.nextStep).toContain('verify');
       expect(result.nextStep).not.toContain('undefined');
     });
+
+    it('should use default nextStep when neither resourceType nor resourceId provided', () => {
+      const result = errorService.notFound('Resource missing');
+      expect(result.nextStep).toBe('Ask user to verify the resource ID or provide a different one.');
+    });
   });
 
   describe('aiModel', () => {
