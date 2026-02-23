@@ -59,6 +59,37 @@ describe('bodyIntentAnalysisTool', () => {
 
     expect(capturedPrompt).toContain('insufficient_data');
   });
+
+  it('should throw when LLM fails', async () => {
+    generateMock.mockRejectedValue(new Error('LLM error'));
+
+    await expect(
+      (bodyIntentAnalysisTool as any).execute({
+        context: { from: 'a@b.com', subject: 'Test', htmlBody: '' },
+      })
+    ).rejects.toThrow('LLM error');
+  });
+
+  it('should return object with original_email when LLM succeeds', async () => {
+    const email = { from: 'user@example.com', subject: 'Test', htmlBody: '<p>Hello</p>' };
+    generateMock.mockResolvedValue({
+      object: {
+        intent: 'benign',
+        financial_request: false,
+        credential_request: false,
+        authority_impersonation: false,
+        financial_request_details: 'insufficient_data',
+        credential_request_details: 'insufficient_data',
+        authority_claimed: 'insufficient_data',
+        intent_summary: 'Informational',
+        original_email: email,
+      },
+    });
+
+    const result = await (bodyIntentAnalysisTool as any).execute({ context: email });
+    expect(result.intent).toBe('benign');
+    expect(result.original_email).toEqual(email);
+  });
 });
 
 describe('bodyIntentAnalysisOutputSchema', () => {

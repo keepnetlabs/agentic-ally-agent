@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { streamDirectReasoning, streamReasoningUpdates, StreamWriter } from './reasoning-stream';
+import { streamDirectReasoning, streamReasoningUpdates, streamReasoning, StreamWriter } from './reasoning-stream';
 
 // Mock getModelWithOverride
 vi.mock('../../model-providers', () => ({
@@ -230,6 +230,57 @@ describe('Reasoning Stream Utils', () => {
       await streamDirectReasoning('test', mockWriter);
 
       expect(ids).toEqual(['test-uuid-1', 'test-uuid-1', 'test-uuid-1']);
+    });
+  });
+
+  describe('streamReasoning', () => {
+    it('should return early when reasoningText is empty', async () => {
+      await streamReasoning('', mockWriter);
+      expect(writeSpy).not.toHaveBeenCalled();
+      expect(mockGenerateText).not.toHaveBeenCalled();
+    });
+
+    it('should return early when reasoningText is null/undefined', async () => {
+      await streamReasoning(null as any, mockWriter);
+      await streamReasoning(undefined as any, mockWriter);
+      expect(writeSpy).not.toHaveBeenCalled();
+    });
+
+    it('should return early when writer is null/undefined', async () => {
+      await streamReasoning('text', null as any);
+      await streamReasoning('text', undefined as any);
+      expect(mockGenerateText).not.toHaveBeenCalled();
+    });
+
+    it('should call writer.write with reasoning-start immediately', async () => {
+      mockGenerateText.mockImplementation(() => new Promise(() => {})); // Never resolves
+      await streamReasoning('reasoning text', mockWriter);
+      expect(writeSpy).toHaveBeenCalledWith(expect.objectContaining({ type: 'reasoning-start' }));
+    });
+
+    it('should handle writer.write throwing on first call', async () => {
+      const failingWriter = {
+        write: vi.fn().mockRejectedValue(new Error('Stream closed')),
+      };
+      await expect(streamReasoning('reasoning text', failingWriter as any)).resolves.not.toThrow();
+    });
+
+    it('should handle generateText rejection (catch in .catch)', async () => {
+      mockGenerateText.mockRejectedValue(new Error('Model error'));
+      const writer = { write: vi.fn().mockResolvedValue(undefined) };
+      await streamReasoning('reasoning text', writer as any);
+      await new Promise(r => setTimeout(r, 50));
+      expect(writer.write).toHaveBeenCalledWith(expect.objectContaining({ type: 'reasoning-end' }));
+    });
+
+    it('should stream delta and reasoning-end when generateText succeeds', async () => {
+      mockGenerateText.mockResolvedValue({ text: 'User-friendly summary' });
+      await streamReasoning('technical reasoning', mockWriter);
+      await new Promise(r => setTimeout(r, 50));
+      expect(writeSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'reasoning-delta', delta: 'User-friendly summary' })
+      );
+      expect(writeSpy).toHaveBeenCalledWith(expect.objectContaining({ type: 'reasoning-end' }));
     });
   });
 

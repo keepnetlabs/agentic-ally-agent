@@ -277,6 +277,24 @@ describe('chat-request-helpers', () => {
       const result = parseAndValidateRequest(body);
       expect(result?.prompt).toBe('p');
     });
+
+    it('extracts prompt from last user message parts when no explicit prompt', () => {
+      const body = {
+        messages: [
+          { role: 'user', content: null, parts: [{ type: 'text', text: 'First part' }, { type: 'text', text: 'Second part' }] },
+        ] as any,
+      };
+      const result = parseAndValidateRequest(body);
+      expect(result?.prompt).toBe('First part\nSecond part');
+    });
+
+    it('returns null when messages array has no user message with content', () => {
+      const body = {
+        messages: [{ role: 'assistant', content: 'Hi' }] as any,
+      };
+      const result = parseAndValidateRequest(body);
+      expect(result).toBeNull();
+    });
   });
 
   describe('buildRoutingContext - additional UI signals', () => {
@@ -338,6 +356,50 @@ describe('chat-request-helpers', () => {
     it('extracts smishingId from routing context', () => {
       const ids = extractArtifactIdsFromRoutingContext('Smishing: smishingId=sm-xyz123');
       expect(ids.smishingId).toBe('sm-xyz123');
+    });
+
+    it('extracts scenarioResourceId and landingPageResourceId', () => {
+      const ids = extractArtifactIdsFromRoutingContext(
+        'scenarioResourceId=scen-123 landingPageResourceId=lp-456'
+      );
+      expect(ids.scenarioResourceId).toBe('scen-123');
+      expect(ids.landingPageResourceId).toBe('lp-456');
+    });
+
+    it('converts deepfake_video_generating UI signal with videoId', () => {
+      const payload = Buffer.from(JSON.stringify({ videoId: 'vid-abc123' }), 'utf-8').toString('base64');
+      const context = buildRoutingContext([
+        {
+          role: 'assistant',
+          content: `::ui:deepfake_video_generating::${payload}::/ui:deepfake_video_generating::`,
+        } as any,
+      ]);
+      expect(context).toContain('[Deepfake Video Generated: videoId=vid-abc123]');
+    });
+
+    it('converts deepfake_video_generating UI signal without videoId', () => {
+      const payload = Buffer.from(JSON.stringify({}), 'utf-8').toString('base64');
+      const context = buildRoutingContext([
+        {
+          role: 'assistant',
+          content: `::ui:deepfake_video_generating::${payload}::/ui:deepfake_video_generating::`,
+        } as any,
+      ]);
+      expect(context).toContain('[Deepfake Video Generated]');
+    });
+
+    it('shortens long URLs in message content', () => {
+      const longUrl =
+        'https://example.com/training/course/very-long-microlearning-id-12345678901234567890?lang=en';
+      const context = buildRoutingContext([{ role: 'user', content: `Check this ${longUrl} please` }]);
+      expect(context).toContain('[URL:');
+      expect(context).not.toContain('very-long-microlearning-id-12345678901234567890');
+    });
+
+    it('replaces short URLs with [URL] placeholder', () => {
+      const shortUrl = 'https://example.com/x';
+      const context = buildRoutingContext([{ role: 'user', content: shortUrl }]);
+      expect(context).toContain('[URL]');
     });
   });
 });

@@ -576,6 +576,14 @@ describe('KVService', () => {
       const result = await kvService.list('ml:');
       expect(result).toEqual([]);
     });
+
+    it('should return empty array when list throws', async () => {
+      const fetchMock = vi.fn().mockRejectedValue(new Error('Network error'));
+      global.fetch = fetchMock;
+
+      const result = await kvService.list('ml:');
+      expect(result).toEqual([]);
+    });
   });
 
   describe('health check', () => {
@@ -632,6 +640,44 @@ describe('KVService', () => {
 
       const result = await kvService.healthCheck();
 
+      expect(result).toBe(false);
+    });
+
+    it('should return false when PUT fails during health check', async () => {
+      const fetchMock = vi.fn().mockImplementation(async (url: string, options?: RequestInit) => {
+        const method = options?.method || 'GET';
+        if (method === 'GET' && url.includes('/namespaces/')) return new Response('', { status: 200 });
+        if (method === 'PUT') return new Response('', { status: 500 });
+        return new Response('', { status: 200 });
+      });
+      global.fetch = fetchMock;
+
+      const result = await kvService.healthCheck();
+      expect(result).toBe(false);
+    });
+
+    it('should return false when GET returns wrong value during health check', async () => {
+      const fetchMock = vi.fn().mockImplementation(async (url: string, options?: RequestInit) => {
+        const method = options?.method || 'GET';
+        if (method === 'GET' && url.includes('/namespaces/')) return new Response('', { status: 200 });
+        if (method === 'PUT') return new Response('', { status: 200 });
+        if (method === 'GET' && url.includes('/values/')) {
+          return new Response(JSON.stringify({ timestamp: 'wrong-timestamp' }), { status: 200 });
+        }
+        if (method === 'DELETE') return new Response('', { status: 200 });
+        return new Response('', { status: 200 });
+      });
+      global.fetch = fetchMock;
+
+      const result = await kvService.healthCheck();
+      expect(result).toBe(false);
+    });
+
+    it('should return false when health check throws', async () => {
+      const fetchMock = vi.fn().mockRejectedValue(new Error('Network error'));
+      global.fetch = fetchMock;
+
+      const result = await kvService.healthCheck();
       expect(result).toBe(false);
     });
   });

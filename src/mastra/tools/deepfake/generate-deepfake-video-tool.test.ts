@@ -138,5 +138,111 @@ describe('generateDeepfakeVideoTool', () => {
       expect(callBody.video_inputs[0].character.avatar_style).toBe('closeUp');
       expect(callBody.caption).toBe(false);
     });
+
+    it('should return error when HeyGen response has error field', async () => {
+      process.env.HEYGEN_API_KEY = 'test-key';
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+        new Response(
+          JSON.stringify({ error: { message: 'Invalid avatar_id' } }),
+          { status: 200 }
+        )
+      );
+
+      const result = await generateDeepfakeVideoTool.execute!({
+        context: { inputText: 'Script', avatarId: 'av-1', voiceId: 'v-1' },
+      } as any);
+
+      expect(result).toMatchObject({
+        success: false,
+        error: expect.stringContaining('HeyGen error'),
+      });
+    });
+
+    it('should return error when response has no video_id', async () => {
+      process.env.HEYGEN_API_KEY = 'test-key';
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+        new Response(JSON.stringify({ data: {} }), { status: 200 })
+      );
+
+      const result = await generateDeepfakeVideoTool.execute!({
+        context: { inputText: 'Script', avatarId: 'av-1', voiceId: 'v-1' },
+      } as any);
+
+      expect(result).toMatchObject({
+        success: false,
+        error: expect.stringContaining('no video_id'),
+      });
+    });
+
+    it('should return error when fetch throws', async () => {
+      process.env.HEYGEN_API_KEY = 'test-key';
+      vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('Network failure'));
+
+      const result = await generateDeepfakeVideoTool.execute!({
+        context: { inputText: 'Script', avatarId: 'av-1', voiceId: 'v-1' },
+      } as any);
+
+      expect(result).toMatchObject({
+        success: false,
+        error: expect.stringContaining('Network failure'),
+      });
+    });
+
+    it('should return timeout error when fetch throws AbortError', async () => {
+      process.env.HEYGEN_API_KEY = 'test-key';
+      const abortErr = new Error('The operation was aborted');
+      abortErr.name = 'AbortError';
+      vi.spyOn(globalThis, 'fetch').mockRejectedValue(abortErr);
+
+      const result = await generateDeepfakeVideoTool.execute!({
+        context: { inputText: 'Script', avatarId: 'av-1', voiceId: 'v-1' },
+      } as any);
+
+      expect(result).toMatchObject({
+        success: false,
+        error: expect.stringContaining('timed out'),
+      });
+    });
+
+    it('should handle HeyGen error as string', async () => {
+      process.env.HEYGEN_API_KEY = 'test-key';
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+        new Response(JSON.stringify({ error: 'Invalid voice_id' }), { status: 200 })
+      );
+
+      const result = await generateDeepfakeVideoTool.execute!({
+        context: { inputText: 'Script', avatarId: 'av-1', voiceId: 'v-1' },
+      } as any);
+
+      expect(result).toMatchObject({
+        success: false,
+        error: expect.stringContaining('HeyGen error'),
+      });
+    });
+
+    it('should emit video generating signal when writer is provided', async () => {
+      process.env.HEYGEN_API_KEY = 'test-key';
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+        new Response(
+          JSON.stringify({ data: { video_id: 'vid-signal-123', status: 'pending' } }),
+          { status: 200 }
+        )
+      );
+
+      const mockWriter = { write: vi.fn().mockResolvedValue(undefined) };
+
+      const result = await generateDeepfakeVideoTool.execute!({
+        context: { inputText: 'Script', avatarId: 'av-1', voiceId: 'v-1' },
+        writer: mockWriter,
+      } as any);
+
+      expect(result).toMatchObject({ success: true, videoId: 'vid-signal-123' });
+      expect(mockWriter.write).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'text-delta',
+          delta: expect.stringContaining('::ui:deepfake_video_generating::'),
+        })
+      );
+    });
   });
 });

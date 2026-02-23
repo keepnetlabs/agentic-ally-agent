@@ -336,6 +336,28 @@ describe('errorHandlerMiddleware', () => {
       const sentryArgs = sentryMocks.wrapRequestHandler.mock.calls[0]?.[0];
       expect(sentryArgs.options.environment).toBe('production');
     });
+
+    it('should handle context when executionCtx access throws', async () => {
+      process.env.SENTRY_DSN = 'https://examplePublicKey@o0.ingest.sentry.io/0';
+      mockNext.mockRejectedValueOnce(new Error('Test error'));
+      Object.defineProperty(mockContext, 'executionCtx', {
+        get: () => {
+          throw new Error('executionCtx not available');
+        },
+        configurable: true,
+      });
+
+      const result = await errorHandlerMiddleware(mockContext, mockNext);
+
+      expect(result).toBeDefined();
+      expect(mockContext.json).toHaveBeenCalled();
+      expect(sentryMocks.wrapRequestHandler).toHaveBeenCalledWith(
+        expect.objectContaining({
+          context: undefined,
+        }),
+        expect.any(Function)
+      );
+    });
   });
 
   describe('response structure', () => {

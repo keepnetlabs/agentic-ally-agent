@@ -77,6 +77,22 @@ describe('TokenCache', () => {
     expect(cache.get('4')).toBe(true);
   });
 
+  it('should overwrite value when setting same key', () => {
+    cache = new TokenCache(10000);
+    cache.set('key1', true);
+    cache.set('key1', false);
+    expect(cache.get('key1')).toBe(false);
+  });
+
+  it('should return null for expired token', () => {
+    cache = new TokenCache(100);
+    cache.set('expiring', true);
+    vi.setSystemTime(START_TIME + 50);
+    expect(cache.get('expiring')).toBe(true);
+    vi.setSystemTime(START_TIME + 101);
+    expect(cache.get('expiring')).toBeNull();
+  });
+
   it('should not evict if updating existing key', () => {
     const capacity = 2;
     cache = new TokenCache(10000, capacity);

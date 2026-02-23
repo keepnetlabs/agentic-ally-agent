@@ -69,6 +69,17 @@ describe('cost-tracker', () => {
       expect(warnCall[1].originalModel).toBe('unknown-model-v2024');
     });
 
+    it('should use prefix match when exact match not found (e.g. gpt-4o-custom)', () => {
+      const usage = { promptTokens: 1000, completionTokens: 500 };
+      trackCost('prefix-match', 'gpt-4o-custom-variant', usage);
+
+      expect(mockLogger.info).toHaveBeenCalled();
+      const logCall = mockLogger.info.mock.calls[0];
+      expect(logCall[1].model).toBe('gpt-4o-custom-variant');
+      expect(logCall[1].cost).toBeDefined();
+      expect(mockLogger.warn).not.toHaveBeenCalled();
+    });
+
     it('should handle gpt-5-nano with version suffix', () => {
       const usage = { promptTokens: 800, completionTokens: 400 };
       trackCost('generate-simple', 'gpt-5-nano-2024-12-01', usage);

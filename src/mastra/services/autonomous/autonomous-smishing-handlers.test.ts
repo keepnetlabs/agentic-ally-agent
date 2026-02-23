@@ -243,5 +243,67 @@ describe('autonomous-smishing-handlers', () => {
       expect(result.error).toBeDefined();
       expect(mockUploadExecute).not.toHaveBeenCalled();
     });
+
+    it('uses Data-Submission method when scenario_type includes SUBMISSION', async () => {
+      const result = await generateSmishingSimulation({
+        simulation: { ...baseSimulation, scenario_type: 'FORM_SUBMISSION' } as any,
+        toolResult: baseToolResult as any,
+      });
+
+      expect(result.success).toBe(true);
+      expect(mockSmishingExecute).toHaveBeenCalledWith(
+        expect.objectContaining({
+          context: expect.objectContaining({
+            method: 'Data-Submission',
+          }),
+        })
+      );
+    });
+
+    it('uses Click-Only method when scenario_type includes CLICK', async () => {
+      const result = await generateSmishingSimulation({
+        simulation: { ...baseSimulation, scenario_type: 'CLICK_ONLY' } as any,
+        toolResult: baseToolResult as any,
+      });
+
+      expect(result.success).toBe(true);
+      expect(mockSmishingExecute).toHaveBeenCalledWith(
+        expect.objectContaining({
+          context: expect.objectContaining({
+            method: 'Click-Only',
+          }),
+        })
+      );
+    });
+
+    it('returns failure when upload returns success but no resourceId', async () => {
+      mockUploadExecute.mockResolvedValueOnce({
+        success: true,
+        data: { languageId: 'en-gb' },
+      });
+
+      const result = await generateSmishingSimulation({
+        simulation: baseSimulation as any,
+        toolResult: baseToolResult as any,
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error?.toLowerCase()).toContain('upload');
+    });
+
+    it('uses default topic when simulation has no title', async () => {
+      await generateSmishingSimulation({
+        simulation: { difficulty: 'Medium', scenario_type: 'CLICK_ONLY' } as any,
+        toolResult: baseToolResult as any,
+      });
+
+      expect(mockSmishingExecute).toHaveBeenCalledWith(
+        expect.objectContaining({
+          context: expect.objectContaining({
+            topic: 'Security Verification Alert',
+          }),
+        })
+      );
+    });
   });
 });

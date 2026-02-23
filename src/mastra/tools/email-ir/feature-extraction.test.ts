@@ -81,6 +81,34 @@ describe('featureExtractionTool', () => {
     expect(result.engine_indicators_present).toBe(false);
   });
 
+  it('sets engine_indicators_present=true from attachment when urls is empty array', async () => {
+    const input = {
+      ...baseInput,
+      original_email: {
+        ...baseInput.original_email,
+        urls: [],
+        attachments: [{ name: 'malware.exe', result: 'Malicious' }],
+      },
+    };
+
+    const result = await (featureExtractionTool as any).execute({ context: input });
+    expect(result.engine_indicators_present).toBe(true);
+  });
+
+  it('sets engine_indicators_present=true from attachment when urls are absent', async () => {
+    const input = {
+      ...baseInput,
+      original_email: {
+        ...baseInput.original_email,
+        urls: undefined,
+        attachments: [{ name: 'malware.exe', result: 'Malicious' }],
+      },
+    };
+
+    const result = await (featureExtractionTool as any).execute({ context: input });
+    expect(result.engine_indicators_present).toBe(true);
+  });
+
   it('returns composed summary and preserves pass-through objects', async () => {
     const result = await (featureExtractionTool as any).execute({ context: baseInput });
 

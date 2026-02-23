@@ -1,9 +1,14 @@
 /**
  * Unit tests for language-validation
- * Covers normalizeBCP47, LanguageCodeSchema, validateLanguagesDifferent
+ * Covers normalizeBCP47, LanguageCodeSchema, validateLanguagesDifferent, createDifferentLanguageSchema
  */
 import { describe, it, expect } from 'vitest';
-import { normalizeBCP47, LanguageCodeSchema, validateLanguagesDifferent } from './language-validation';
+import {
+  normalizeBCP47,
+  LanguageCodeSchema,
+  validateLanguagesDifferent,
+  createDifferentLanguageSchema,
+} from './language-validation';
 
 describe('language-validation', () => {
   describe('normalizeBCP47', () => {
@@ -74,6 +79,45 @@ describe('language-validation', () => {
 
     it('should be case-insensitive for comparison', () => {
       expect(validateLanguagesDifferent('EN', 'en')).toBe(false);
+    });
+
+    it('should return true for different regional variants', () => {
+      expect(validateLanguagesDifferent('en', 'en-gb')).toBe(true);
+      expect(validateLanguagesDifferent('pt-br', 'pt-pt')).toBe(true);
+    });
+
+    it('should return false for same language with different casing', () => {
+      expect(validateLanguagesDifferent('TR', 'tr')).toBe(false);
+      expect(validateLanguagesDifferent('de-DE', 'de-de')).toBe(false);
+    });
+  });
+
+  describe('createDifferentLanguageSchema', () => {
+    it('should parse valid language code', () => {
+      const schema = createDifferentLanguageSchema('source');
+      const result = schema.parse('en-gb');
+      expect(result).toBe('en-GB');
+    });
+
+    it('should trim and normalize', () => {
+      const schema = createDifferentLanguageSchema('source');
+      const result = schema.parse('  tr-tr  ');
+      expect(result).toBe('tr-TR');
+    });
+
+    it('should reject too short', () => {
+      const schema = createDifferentLanguageSchema('source');
+      expect(() => schema.parse('e')).toThrow();
+    });
+
+    it('should reject too long', () => {
+      const schema = createDifferentLanguageSchema('source');
+      expect(() => schema.parse('en-gb-extra')).toThrow();
+    });
+
+    it('should reject invalid format', () => {
+      const schema = createDifferentLanguageSchema('source');
+      expect(() => schema.parse('invalid!')).toThrow();
     });
   });
 });

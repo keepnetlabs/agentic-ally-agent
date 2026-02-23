@@ -635,6 +635,25 @@ describe('AutonomousTrainingHandlers', () => {
       expect(result.success).toBe(false);
     });
 
+    it('returns failure when workflow returns success but no microlearningId', async () => {
+      mockWorkflowExecute.mockResolvedValueOnce({
+        success: true,
+        microlearningId: undefined,
+      });
+
+      const result = await generateTrainingModule(
+        baseMicrolearning as any,
+        undefined,
+        baseToolResult as any,
+        'thread-train-5b',
+        true,
+        false
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.error || result.uploadResult?.error).toBeTruthy();
+    });
+
     it('returns failure when upload fails in tool-first path', async () => {
       mockUploadExecute.mockResolvedValueOnce({
         success: false,

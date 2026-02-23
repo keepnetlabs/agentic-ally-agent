@@ -63,6 +63,37 @@ describe('bodyBehavioralAnalysisTool', () => {
 
     expect(capturedPrompt).toContain('insufficient_data');
   });
+
+  it('should throw when LLM fails', async () => {
+    generateMock.mockRejectedValue(new Error('LLM error'));
+
+    await expect(
+      (bodyBehavioralAnalysisTool as any).execute({
+        context: { from: 'a@b.com', subject: 'Test', htmlBody: '' },
+      })
+    ).rejects.toThrow('LLM error');
+  });
+
+  it('should return object with original_email when LLM succeeds', async () => {
+    const email = { from: 'user@example.com', subject: 'Test', htmlBody: '<p>Hello</p>' };
+    generateMock.mockResolvedValue({
+      object: {
+        urgency_level: 'none',
+        emotional_pressure: 'none',
+        social_engineering_pattern: 'none',
+        verification_avoidance: false,
+        verification_avoidance_tactics: 'insufficient_data',
+        urgency_indicators: 'insufficient_data',
+        emotional_pressure_indicators: 'insufficient_data',
+        behavioral_summary: 'No pressure',
+        original_email: email,
+      },
+    });
+
+    const result = await (bodyBehavioralAnalysisTool as any).execute({ context: email });
+    expect(result.urgency_level).toBe('none');
+    expect(result.original_email).toEqual(email);
+  });
 });
 
 describe('bodyBehavioralAnalysisOutputSchema', () => {

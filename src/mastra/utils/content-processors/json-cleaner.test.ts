@@ -140,4 +140,35 @@ describe('json-cleaner', () => {
     expect(cleaned).toBe('[1, 2, 3]');
     expect(mocks.jsonrepair).toHaveBeenCalledWith('[1, 2, 3]');
   });
+
+  it('falls through when wrapped in quotes but inner is not JSON-like', () => {
+    const input = '"plain text"';
+    mocks.jsonrepair.mockReturnValueOnce('"plain text"');
+    const cleaned = cleanResponse(input, 'quoted-non-json');
+    expect(cleaned).toBe('"plain text"');
+    expect(mocks.jsonrepair).toHaveBeenCalledWith('"plain text"');
+  });
+
+  it('logs raw text sample with ellipsis when cleaning fails and text exceeds 200 chars', () => {
+    const longText = 'x'.repeat(250);
+    mocks.jsonrepair.mockImplementationOnce(() => {
+      throw new Error('repair failed');
+    });
+
+    expect(() => cleanResponse(longText, 'long-fail')).toThrow('Failed to clean long-fail response');
+    expect(mocks.error).toHaveBeenCalledWith(
+      'Error cleaning response',
+      expect.objectContaining({
+        sectionName: 'long-fail',
+        error: 'repair failed',
+      })
+    );
+    expect(mocks.debug).toHaveBeenCalledWith(
+      'Raw text sample',
+      expect.objectContaining({
+        sectionName: 'long-fail',
+        sample: expect.stringMatching(/\.\.\.$/),
+      })
+    );
+  });
 });

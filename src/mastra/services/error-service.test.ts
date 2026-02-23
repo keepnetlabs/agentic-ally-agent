@@ -96,6 +96,15 @@ describe('error-service', () => {
       expect(result.nextStep).toContain('microlearning');
       expect(result.nextStep).toContain('ml-1');
     });
+
+    it('should use resourceType only for nextStep when resourceId missing', () => {
+      const result = errorService.notFound('Not found', {
+        resourceType: 'inbox',
+      });
+      expect(result.nextStep).toContain('inbox');
+      expect(result.nextStep).toContain('verify');
+      expect(result.nextStep).not.toContain('undefined');
+    });
   });
 
   describe('aiModel', () => {
@@ -166,6 +175,12 @@ describe('error-service', () => {
     it('should extract message from string', () => {
       const result = errorService.generic('String error', ErrorCategory.EXTERNAL);
       expect(result.message).toBe('String error');
+    });
+
+    it('should fallback to internal when category is unknown', () => {
+      const result = errorService.generic(new Error('Unknown'), 'UNKNOWN' as ErrorCategory);
+      expect(result.category).toBe(ErrorCategory.INTERNAL);
+      expect(result.message).toBe('Unknown');
     });
   });
 

@@ -1,5 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { rateLimitMiddleware, RATE_LIMIT_TIERS, getClientIdentifier } from './rate-limit';
+import {
+  rateLimitMiddleware,
+  RATE_LIMIT_TIERS,
+  getClientIdentifier,
+  createEndpointRateLimiter,
+  skipHealthCheck,
+} from './rate-limit';
 
 describe('Rate Limiting Middleware', () => {
   describe('getClientIdentifier', () => {
@@ -41,6 +47,17 @@ describe('Rate Limiting Middleware', () => {
 
       const identifier = getClientIdentifier(mockContext);
       expect(identifier).toBe('unknown');
+    });
+
+    it('should fall back to x-real-ip when cf and x-forwarded-for absent', () => {
+      const mockContext = {
+        req: {
+          header: (name: string) => (name === 'x-real-ip' ? '10.0.0.1' : undefined),
+        },
+      } as any;
+
+      const identifier = getClientIdentifier(mockContext);
+      expect(identifier).toBe('10.0.0.1');
     });
   });
 
@@ -218,6 +235,69 @@ describe('Rate Limiting Middleware', () => {
     it('should have public unauthenticated endpoint config', () => {
       expect(RATE_LIMIT_TIERS.PUBLIC_UNAUTH.maxRequests).toBe(180);
       expect(RATE_LIMIT_TIERS.PUBLIC_UNAUTH.windowMs).toBe(60 * 1000);
+    });
+  });
+
+  describe('createEndpointRateLimiter', () => {
+    it('should create middleware with CHAT tier config', async () => {
+      const middleware = createEndpointRateLimiter('CHAT');
+      const mockContext = {
+        req: { header: () => '1.2.3.8', path: '/chat', method: 'POST' },
+        res: { headers: new Map() },
+      } as any;
+      const next = vi.fn();
+
+      await middleware(mockContext, next);
+
+      expect(next).toHaveBeenCalled();
+      expect(mockContext.res.headers.get('X-RateLimit-Limit')).toBe('50');
+    });
+
+    it('should create middleware with HEALTH tier config', async () => {
+      const middleware = createEndpointRateLimiter('HEALTH');
+      const mockContext = {
+        req: { header: () => '1.2.3.9', path: '/health', method: 'GET' },
+        res: { headers: new Map() },
+      } as any;
+      const next = vi.fn();
+
+      await middleware(mockContext, next);
+
+      expect(mockContext.res.headers.get('X-RateLimit-Limit')).toBe('300');
+    });
+  });
+
+  describe('skipHealthCheck', () => {
+    it('should return true for /health path', () => {
+      const c = { req: { path: '/health' } } as any;
+      expect(skipHealthCheck(c)).toBe(true);
+    });
+
+    it('should return false for non-health path', () => {
+      const c = { req: { path: '/chat' } } as any;
+      expect(skipHealthCheck(c)).toBe(false);
+    });
+  });
+
+  describe('rate limit warning when remaining low', () => {
+    it('should allow requests when remaining drops below 10', async () => {
+      const middleware = rateLimitMiddleware({
+        maxRequests: 12,
+        windowMs: 60000,
+      });
+
+      const mockContext = {
+        req: { header: () => '1.2.3.10', path: '/api', method: 'GET' },
+        res: { headers: new Map() },
+      } as any;
+      const next = vi.fn();
+
+      for (let i = 0; i < 5; i++) {
+        await middleware(mockContext, next);
+      }
+
+      expect(next).toHaveBeenCalledTimes(5);
+      expect(mockContext.res.headers.get('X-RateLimit-Remaining')).toBe('7');
     });
   });
 });

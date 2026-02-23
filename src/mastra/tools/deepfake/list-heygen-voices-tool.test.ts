@@ -161,5 +161,19 @@ describe('listHeyGenVoicesTool', () => {
         error: expect.stringContaining('Failed to list voices'),
       });
     });
+
+    it('should return timeout error when fetch throws AbortError', async () => {
+      process.env.HEYGEN_API_KEY = 'test-key';
+      const abortErr = new Error('The operation was aborted');
+      abortErr.name = 'AbortError';
+      vi.spyOn(globalThis, 'fetch').mockRejectedValue(abortErr);
+
+      const result = await listHeyGenVoicesTool.execute!({ context: {} } as any);
+
+      expect(result).toMatchObject({
+        success: false,
+        error: expect.stringContaining('timed out'),
+      });
+    });
   });
 });

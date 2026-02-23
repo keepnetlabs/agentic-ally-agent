@@ -47,6 +47,20 @@ describe('error-utils', () => {
       expect(result.stack).toBeDefined();
       expect(result.stack).toContain('Error');
     });
+
+    it('should preserve Error name when present', () => {
+      const err = new Error('Custom error');
+      err.name = 'CustomError';
+      const result = normalizeError(err);
+      expect(result.name).toBe('CustomError');
+      expect(result.message).toBe('Custom error');
+    });
+
+    it('should convert boolean to Error', () => {
+      const result = normalizeError(true);
+      expect(result).toBeInstanceOf(Error);
+      expect(result.message).toBe('true');
+    });
   });
 
   describe('createToolErrorResponse', () => {

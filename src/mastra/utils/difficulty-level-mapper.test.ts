@@ -91,6 +91,9 @@ describe('difficulty-level-mapper', () => {
       expect(mapPhishingDifficultyToTrainingLevel('Hard')).toBe('Advanced');
     });
 
+    it('should return Intermediate for unknown difficulty', () => {
+      expect(mapPhishingDifficultyToTrainingLevel('Unknown' as any)).toBe('Intermediate');
+    });
   });
 
   describe('round-trip mapping', () => {

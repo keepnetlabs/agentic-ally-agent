@@ -81,6 +81,13 @@ describe('constants', () => {
       const delay = RETRY.getBackoffDelay(20); // 2^20 * 1000 >> MAX_DELAY_MS
       expect(delay).toBeLessThanOrEqual(RETRY.MAX_DELAY_MS);
     });
+
+    it('should return cappedDelay when jitter disabled (no random)', () => {
+      const retryNoJitter = { ...RETRY, JITTER_ENABLED: false } as typeof RETRY;
+      const delay = retryNoJitter.getBackoffDelay.call(retryNoJitter, 2);
+      const expected = Math.min(Math.pow(2, 2) * 1000, 10000);
+      expect(delay).toBe(expected);
+    });
   });
 
   describe('TRANSLATION_CONFIG', () => {

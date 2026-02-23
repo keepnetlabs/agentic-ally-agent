@@ -347,6 +347,18 @@ describe('ProductService', () => {
         brandName: undefined,
       });
     });
+
+    it('should return null when request throws', async () => {
+      const payload = { idp: 'https://test-idp.com', user_company_resourceid: 'company-123' };
+      const token = createMockJWT(payload);
+      const service = new ProductService(token);
+
+      (global.fetch as any).mockRejectedValue(new Error('Network error'));
+
+      const result = await service.getWhitelabelingConfig();
+
+      expect(result).toBeNull();
+    });
   });
 
   describe('RequestStorage Integration', () => {

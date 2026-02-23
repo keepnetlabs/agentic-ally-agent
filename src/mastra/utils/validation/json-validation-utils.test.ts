@@ -135,6 +135,42 @@ describe('JSON Validation Utilities', () => {
       expect(result1).toBe(false);
       expect(result2).toBe(false);
     });
+
+    it('should reject when origTexts has phishingReportModal but transTexts does not', () => {
+      const original = {
+        emails: [],
+        texts: { phishingReportModal: { title: 'Report' } },
+      };
+      const translated = {
+        emails: [],
+        texts: {},
+      };
+
+      const result = validateInboxStructure(original, translated);
+      expect(result).toBe(false);
+    });
+
+    it('should reject when origTexts has phishingResultModal but transTexts does not', () => {
+      const original = {
+        emails: [],
+        texts: { phishingResultModal: { title: 'Result' } },
+      };
+      const translated = {
+        emails: [],
+        texts: {},
+      };
+
+      const result = validateInboxStructure(original, translated);
+      expect(result).toBe(false);
+    });
+
+    it('should reject when transTexts is not an object (origTexts exists)', () => {
+      const original = { emails: [], texts: { phishingReportModal: {} } };
+      const translated = { emails: [], texts: 'invalid' };
+
+      const result = validateInboxStructure(original, translated);
+      expect(result).toBe(false);
+    });
   });
 
   describe('correctInboxStructure', () => {
@@ -512,6 +548,19 @@ describe('JSON Validation Utilities', () => {
 
     it('should return text without tags unchanged', () => {
       const text = 'Just plain text';
+      const result = repairHtml(text);
+      expect(result).toBe(text);
+    });
+
+    it('should return unchanged when html has < but no > (no valid tags)', () => {
+      const text = 'Partial tag<unclosed';
+      const result = repairHtml(text);
+      expect(result).toBeDefined();
+      expect(typeof result).toBe('string');
+    });
+
+    it('should skip repair when string has no angle brackets', () => {
+      const text = 'No html here at all';
       const result = repairHtml(text);
       expect(result).toBe(text);
     });

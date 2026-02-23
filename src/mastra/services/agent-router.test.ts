@@ -229,6 +229,26 @@ describe('AgentRouter', () => {
       expect(withRetry).toHaveBeenCalledWith(expect.any(Function), 'orchestrator-routing');
     });
 
+    it('should invoke withRetry callback which calls orchestrator and cleanResponse', async () => {
+      const mockDecision = {
+        agent: AGENT_NAMES.POLICY_SUMMARY,
+        taskContext: 'Summarize policy',
+        reasoning: 'User asked for policy summary',
+      };
+      const jsonText = JSON.stringify(mockDecision);
+
+      mockOrchestrator.generate.mockResolvedValue({ text: jsonText });
+      (cleanResponse as any).mockReturnValue(jsonText);
+      (withRetry as any).mockImplementation(async (fn: () => Promise<unknown>) => fn());
+
+      const result = await agentRouter.route('Summarize this policy document');
+
+      expect(result.agentName).toBe(AGENT_NAMES.POLICY_SUMMARY);
+      expect(result.taskContext).toBe('Summarize policy');
+      expect(mockOrchestrator.generate).toHaveBeenCalledWith('Summarize this policy document');
+      expect(cleanResponse).toHaveBeenCalledWith(jsonText, 'orchestrator-decision');
+    });
+
     it('should retry on JSON parse errors', async () => {
       let attemptCount = 0;
       const mockDecision = {

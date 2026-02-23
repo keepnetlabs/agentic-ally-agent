@@ -126,6 +126,27 @@ describe('listPhoneNumbersTool', () => {
     expect(result.phoneNumbers?.[0]?.provider).toBe('twilio');
   });
 
+  it('should preserve sip_trunk provider when API returns it', async () => {
+    const mockData = [
+      {
+        phone_number: '+15550001111',
+        phone_number_id: 'pn-sip',
+        label: 'SIP Trunk',
+        provider: 'sip_trunk',
+      },
+    ];
+
+    (global.fetch as ReturnType<typeof vi.fn>) = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => mockData,
+    });
+
+    const result = await listPhoneNumbersTool.execute({ context: {} } as never);
+
+    expect(result.success).toBe(true);
+    expect(result.phoneNumbers?.[0]?.provider).toBe('sip_trunk');
+  });
+
   it('should use default label when missing', async () => {
     const mockData = [
       {
@@ -201,6 +222,19 @@ describe('listPhoneNumbersTool', () => {
     (global.fetch as ReturnType<typeof vi.fn>) = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => [],
+    });
+
+    const result = await listPhoneNumbersTool.execute({ context: {} } as never);
+
+    expect(result.success).toBe(true);
+    expect(result.phoneNumbers).toEqual([]);
+    expect(result.count).toBe(0);
+  });
+
+  it('should return empty array when API returns object without phone_numbers', async () => {
+    (global.fetch as ReturnType<typeof vi.fn>) = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({}),
     });
 
     const result = await listPhoneNumbersTool.execute({ context: {} } as never);

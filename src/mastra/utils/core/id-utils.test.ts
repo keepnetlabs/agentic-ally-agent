@@ -20,6 +20,21 @@ describe('id-utils', () => {
       expect(isSafeId(null as any)).toBe(false);
       expect(isSafeId(123 as any)).toBe(true);
     });
+
+    it('should return false for empty string', () => {
+      expect(isSafeId('')).toBe(false);
+    });
+
+    it('should return true for exactly 3 alphanumeric chars', () => {
+      expect(isSafeId('abc')).toBe(true);
+      expect(isSafeId('123')).toBe(true);
+    });
+
+    it('should return false for strings with special chars', () => {
+      expect(isSafeId('test@')).toBe(false);
+      expect(isSafeId('test#id')).toBe(false);
+      expect(isSafeId('test id')).toBe(false);
+    });
   });
 
   describe('normalizeSafeId', () => {
