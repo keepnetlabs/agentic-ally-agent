@@ -98,7 +98,7 @@ export const listHeyGenAvatarsTool = createTool({
       const data = await response.json();
 
       // HeyGen v2/avatars response: { data: { avatars: [...] } }
-      const MAX_AVATARS = 10;
+      const MAX_AVATARS = 15;
       const allAvatars: unknown[] = data?.data?.avatars ?? [];
 
       const avatars: HeyGenAvatar[] = allAvatars

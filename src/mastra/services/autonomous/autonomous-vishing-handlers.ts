@@ -29,9 +29,13 @@ const VISHING_SYSTEM_PROMPT =
   'Avoid terms like account, transfer, wire, beneficiary, funds in the scenario. ' +
   'Do not reveal that this is a simulation in the opening message. Keep realism for the first part of the call. ' +
   'Use mild urgency and pretext; no threats or abusive language. ' +
+  'NEVER output tags, brackets, annotations, or stage directions. Everything you say is spoken aloud. ' +
+  'FORBIDDEN: Never say standalone labels like "professional", "tone:", "style:", "format:", or any meta-annotation before or after your spoken lines. Your output must be 100% natural conversational speech. ' +
+  'Do NOT ask the target to perform password resets (every company has different flows). Instead target universal credentials: MFA codes, verification codes sent to their phone, employee ID digits, badge numbers, or verbal authorization codes. ' +
   'If the user REFUSES or DEFLECTS: persist up to 3 attempts (authority, urgency, emotional appeal), then STOP and debrief. ' +
   'If the user DETECTS vishing: give immediate positive feedback, debrief and end. ' +
   'If the user COMPLIES: continue briefly (2-3 turns), then debrief. ' +
+  'If you reach a voicemail or answering machine: leave a brief, realistic voicemail consistent with the persona and pretext. Keep it under 20 seconds. Include a callback instruction. Do NOT debrief in voicemail. ' +
   'Debrief format: 1 sentence "this was a simulation", 2-3 red flags, 1 correct next step. ' +
   'Limit: 7 role-play turns OR 180 seconds. After debrief: say goodbye, then STOP.';
 
@@ -58,7 +62,7 @@ async function generateVishingScenarioFromContext(params: {
 
 Output ONLY valid JSON with exactly these keys (no markdown, no explanation):
 - role: The persona the caller will pretend to be (e.g., "IT Support Specialist", "Bank Security Officer", "HR Benefits Representative")
-- pretext: The reason for the call (e.g., "Security audit callback for anomalous login activity", "Benefits enrollment deadline", "Invoice verification")
+- pretext: The reason for the call. Focus on universal social engineering targets: MFA codes, verification codes, employee ID digits, badge numbers, verbal authorization codes. Do NOT use password reset flows (every company has different systems, breaking realism). Good examples: "MFA verification callback for anomalous login activity", "Confirm the 6-digit code sent to your phone for fraud alert", "Badge number verification for security audit".
 - firstMessage: The opening line the AI voice agent will say when the call connects. MUST be written entirely in ${language} (BCP-47). Keep it natural, 1-2 sentences, mild urgency. Write as a native speaker of that language would.`;
 
     const userParts: string[] = [];

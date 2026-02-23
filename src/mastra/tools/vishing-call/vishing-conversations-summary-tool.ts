@@ -199,10 +199,17 @@ OUTCOME ENUM (exact, lowercase, underscore):
 - "other"
 
 OUTCOME RULES:
-- data_disclosed: Learner shared sensitive info (passwords, OTP, card numbers, account details, etc.). List each item in disclosedInfo.
+- data_disclosed: Learner shared an ACTUAL sensitive credential or exploitable detail. Only classify as data_disclosed when the learner reveals a specific credential, code, number, or personally identifiable detail that could be exploited — for example: a password, OTP/MFA code, credit card number, bank account details, employee badge number, Social Security number, or similar.
+  CRITICAL — The following are NOT data disclosure (do NOT classify as data_disclosed):
+  • Procedural acknowledgments: "I'm on the page", "I can see the reset screen", "Yes, I opened it", "I'm looking at it now"
+  • Navigational confirmations: "I went to the portal", "I'm on the Microsoft login page", "I see the form"
+  • Emotional or social responses: "I'm worried", "That sounds urgent", "OK I understand"
+  • General work info already known to the caller: confirming their own name, department, or job title
+  • Agreeing to follow instructions without actually sharing a credential
+  Only items in disclosedInfo must be actual credentials/codes/numbers the learner read out or typed.
 - refused: Learner refused and shared no sensitive data. disclosedInfo must be [].
 - detected: Learner identified simulation and shared no sensitive data. disclosedInfo must be [].
-- not_answered: The call was NOT answered by a real person. Use this when "User" messages are from a voicemail system, answering machine, IVR, or automated service (e.g., "mesajınız kaydedilmiştir", "leave a message after the tone"). timeline and disclosedInfo must be []. nextSteps must be [].
+- not_answered: The call was NOT answered by a real person. Use this when "User" messages are from a voicemail system, answering machine, IVR, or automated service. Common voicemail indicators include: "leave a message after the tone", "please leave a message", "mesajınız kaydedilmiştir", "mesajınızı bırakın", "the person you are calling is not available", "lütfen mesaj bırakın", automated greetings with no human interaction, or when the agent left a voicemail without any real human response. timeline and disclosedInfo must be []. nextSteps must be [].
 - other: Call ended without clear outcome. disclosedInfo must be [].
 
 NEXT STEPS:

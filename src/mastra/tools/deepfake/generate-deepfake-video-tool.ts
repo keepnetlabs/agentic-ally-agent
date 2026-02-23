@@ -278,7 +278,7 @@ export const generateDeepfakeVideoTool = createTool({
         });
         return {
           success: false,
-          error: `HeyGen API returned ${response.status}: ${response.statusText}`,
+          error: 'Video generation failed. Please check your avatar and voice selection, then try again.',
         };
       }
 
@@ -294,9 +294,10 @@ export const generateDeepfakeVideoTool = createTool({
           error: JSON.stringify(data.error).substring(0, 500),
         });
         const errorMsg = typeof data.error === 'object' ? data.error.message ?? JSON.stringify(data.error) : String(data.error);
+        logger.error('generate_deepfake_video_heygen_error_detail', { errorMsg: errorMsg.substring(0, 500) });
         return {
           success: false,
-          error: `HeyGen error: ${errorMsg}`,
+          error: 'Video generation failed due to a configuration issue. Please try a different avatar or voice.',
         };
       }
 
@@ -323,7 +324,7 @@ export const generateDeepfakeVideoTool = createTool({
       return {
         success: true,
         videoId,
-        message: 'Video generation started. Rendering typically takes 3–5 minutes for AI avatars.',
+        message: 'Video generation started. Rendering typically takes 5–10 minutes for AI avatars.',
       };
     } catch (error) {
       const err = normalizeError(error);

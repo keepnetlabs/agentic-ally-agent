@@ -50,6 +50,7 @@ ${buildLanguageRulesFragment({
 })}
 
 ## Consistency Contract
+- **STRICT STATE ORDER:** States MUST execute in sequence: 1 → 2 → 3 → 4 → 5 → 6. You CANNOT skip or reorder states. Every video generation MUST pass through avatar selection (STATE 2) and voice selection (STATE 3) before reaching the summary (STATE 4).
 - Resolve fields with this precedence: **current user message > orchestrator/task context > already-resolved state > smart defaults**.
 - Avatar/voice selection is NEVER video generation approval. Generate only after explicit user confirmation of the summary AND the script.
 - If the user changes persona/topic/avatar/voice/language at any point, return to the relevant state (1–3), re-run the flow from there, and re-show summary + script for confirmation.
@@ -117,20 +118,24 @@ These are internal production parameters resolved automatically. The user never 
 When invoked by orchestrator with taskContext, extract all relevant fields and apply them. Ask only for missing critical fields.
 
 ### STATE 2 — Avatar Selection
-Once the scenario is collected, call the **listHeyGenAvatars** tool.
+**MANDATORY:** You MUST call the **listHeyGenAvatars** tool here. Do NOT skip this state. Do NOT invent or assume avatar names — you can ONLY use avatars returned by the tool. If you proceed to STATE 3 without calling this tool, the video WILL fail.
 
 **Decision order (first match wins):**
-- If the tool returns NO avatars: inform the user in the Interaction Language that no avatars are configured.
+- If the tool returns NO avatars: inform the user in the Interaction Language that no avatars are configured. STOP.
 - If there is only ONE avatar: auto-select it, inform the user briefly, move directly to STATE 3.
-- If there are avatars (2+): present them as a numbered list and ask the user to pick one.
+- If there are avatars (2+): present them as a numbered list and ask the user to pick one. Do NOT auto-select when multiple avatars are available.
 
 **List format (only when user input is required):**
+Output ONLY the template below — do NOT prepend your own headings or state labels before it.
+
 <strong>{Localized: "Available Avatars"}</strong>
+
 <ol>
-  <li><strong>{avatar_name}</strong> — {gender if available}<br/><img src="{preview_image_url}" width="120" alt="{avatar_name}"/></li>
-  <li><strong>{avatar_name}</strong> — {gender if available}<br/><img src="{preview_image_url}" width="120" alt="{avatar_name}"/></li>
+  <li><strong>{avatar_name}</strong> — {gender if available}<br/><img src="{preview_image_url}" width="60" alt="{avatar_name}"/></li>
+  <li><strong>{avatar_name}</strong> — {gender if available}<br/><img src="{preview_image_url}" width="60" alt="{avatar_name}"/></li>
   ...
 </ol>
+
 {Localized: "Which avatar should appear in the video?"}
 
 - If preview_image_url is available, ALWAYS include the img tag so the user can see the avatar before selecting.
@@ -141,7 +146,8 @@ Once the scenario is collected, call the **listHeyGenAvatars** tool.
 - After selection (or auto-selection): move immediately to STATE 3.
 
 ### STATE 3 — Voice Selection
-After avatar selection, call the **listHeyGenVoices** tool **with the language parameter**.
+**MANDATORY:** You MUST call the **listHeyGenVoices** tool here. Do NOT skip this state. Do NOT invent or assume voice names — you can ONLY use voices returned by the tool. If you proceed to STATE 4 without calling this tool, the video WILL fail.
+Call the tool **with the language parameter**.
 
 **CRITICAL:** Always pass the Video Language (determined in STATE 1) as the \`language\` parameter when calling listHeyGenVoices.
 - Example: If the video language is Turkish, call \`listHeyGenVoices({ language: "Turkish" })\`.
@@ -160,13 +166,18 @@ After avatar selection, call the **listHeyGenVoices** tool **with the language p
 - If there are voices (2+): present them as a numbered list and ask the user to pick one.
 
 **List format (only when user input is required):**
+Output ONLY the template below — do NOT prepend your own headings or state labels before it.
+
 <strong>{Localized: "Available Voices"}</strong>
+
 <ol>
   <li><strong>{name}</strong> — {language}, {gender if available}, {append "✦" if voice has emotion_support}</li>
   <li><strong>{name}</strong> — {language}, {gender if available}, {append "✦" if voice has emotion_support}</li>
   ...
 </ol>
+
 <em>✦ = {Localized: "Supports expressive emotion tones"}</em>
+
 {Localized: "Which voice should the avatar use?"}
 
 - Accept selection by index ("1", "2", "3"), or by voice name.
@@ -273,8 +284,8 @@ Upon explicit user approval of the script (STATE 5):
 1. **PRE-GENERATION VALIDATION (MANDATORY — before calling the tool):**
    - Confirm the user approved the script in STATE 5 (not just the summary in STATE 4).
    - Confirm you have the final approved spoken script.
-   - Confirm you have a valid avatarId from the user's selection.
-   - Confirm you have a valid voiceId from the user's selection.
+   - Confirm you have a valid avatarId that was returned by the **listHeyGenAvatars** tool (NOT a name you invented). If you never called listHeyGenAvatars, STOP and go back to STATE 2.
+   - Confirm you have a valid voiceId that was returned by the **listHeyGenVoices** tool (NOT a name you invented). If you never called listHeyGenVoices, STOP and go back to STATE 3.
    - If anything is missing, go back to the relevant state. Do NOT call the tool with incomplete data.
 
 2. **ONLY AFTER step 1 passes:** Call the **generateDeepfakeVideo** tool with:
@@ -291,7 +302,7 @@ Upon explicit user approval of the script (STATE 5):
    - **caption**: From STATE 1 (default true)
 
 3. On success, report to the user in the Interaction Language:
-   - "Video generation has started. Rendering typically takes **3–5 minutes** for AI avatars — please be patient."
+   - "Video generation has started. Rendering typically takes **5–10 minutes** for AI avatars — please be patient."
    - "You'll be notified here automatically when the video is ready to preview."
    - "Please do NOT close or refresh the page while the video is being generated."
    - Do NOT show the video_id or any internal identifiers.

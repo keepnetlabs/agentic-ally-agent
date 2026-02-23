@@ -171,7 +171,7 @@ export const initiateVishingCallTool = createTool({
       logger.info('initiate_vishing_call_request', {
         agentId: effectiveAgentId,
         agentPhoneNumberId,
-        toNumber: toNumber.substring(0, 6) + '***', // Mask for privacy
+        toNumber: toNumber.substring(0, 6) + '***',
         promptLength: prompt.length,
         firstMessageLength: firstMessage.length,
       });
@@ -207,9 +207,10 @@ export const initiateVishingCallTool = createTool({
 
         // Provide user-friendly error messages for common cases
         if (response.status === 422) {
+          logger.error('initiate_vishing_call_422_detail', { body: errorBody.substring(0, 500) });
           return {
             success: false,
-            error: `Call setup failed (422): The phone number or agent configuration may be invalid. Details: ${errorBody.substring(0, 200)}`,
+            error: 'Call setup failed: The phone number or agent configuration may be invalid. Please check the number format and try again.',
           };
         }
 
