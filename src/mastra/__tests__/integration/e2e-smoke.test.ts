@@ -83,6 +83,7 @@ vi.mock('../../agents', () => ({
   policySummaryAgent: {},
   userInfoAgent: {},
   vishingCallAgent: {},
+  deepfakeVideoAgent: {},
 }));
 
 const handlers: Record<string, (c: unknown) => Promise<unknown>> = {};

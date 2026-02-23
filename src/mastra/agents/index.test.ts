@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { microlearningAgent, orchestratorAgent, phishingEmailAgent, policySummaryAgent, userInfoAgent, smishingSmsAgent, vishingCallAgent } from './index';
+import { microlearningAgent, orchestratorAgent, phishingEmailAgent, policySummaryAgent, userInfoAgent, smishingSmsAgent, vishingCallAgent, deepfakeVideoAgent } from './index';
 import { AGENT_NAMES, ORCHESTRATOR_CONFIRMATION_EXAMPLES } from '../constants';
 
 /**
@@ -202,10 +202,10 @@ describe('Agents Index Exports', () => {
 
   // ==================== ALL EXPORTS DEFINED TESTS ====================
   describe('All Exports Validation', () => {
-    it('should export exactly 7 agents', () => {
-      const agents = [microlearningAgent, orchestratorAgent, phishingEmailAgent, policySummaryAgent, userInfoAgent, smishingSmsAgent, vishingCallAgent];
+    it('should export exactly 8 agents', () => {
+      const agents = [microlearningAgent, orchestratorAgent, phishingEmailAgent, policySummaryAgent, userInfoAgent, smishingSmsAgent, vishingCallAgent, deepfakeVideoAgent];
 
-      expect(agents).toHaveLength(7);
+      expect(agents).toHaveLength(8);
     });
 
     it('should export all agents as defined and not null', () => {
@@ -412,8 +412,12 @@ describe('Agents Index Exports', () => {
       expect(Object.keys(vishingCallAgent.tools).length).toBeGreaterThan(0);
     });
 
+    it('deepfakeVideoAgent should have tools defined', () => {
+      expect(Object.keys(deepfakeVideoAgent.tools).length).toBeGreaterThan(0);
+    });
+
     it('all agents should have tools as object (except orchestrator)', () => {
-      const agents = [microlearningAgent, phishingEmailAgent, policySummaryAgent, userInfoAgent, smishingSmsAgent, vishingCallAgent];
+      const agents = [microlearningAgent, phishingEmailAgent, policySummaryAgent, userInfoAgent, smishingSmsAgent, vishingCallAgent, deepfakeVideoAgent];
 
       agents.forEach(agent => {
         expect(typeof agent.tools).toBe('object');
@@ -460,8 +464,12 @@ describe('Agents Index Exports', () => {
       expect(userInfoAgent.instructions.length).toBeGreaterThan(500);
     });
 
+    it('deepfakeVideoAgent should have substantial instructions', () => {
+      expect(deepfakeVideoAgent.instructions.length).toBeGreaterThan(500);
+    });
+
     it('all agents should have non-empty trimmed instructions', () => {
-      const agents = [microlearningAgent, orchestratorAgent, phishingEmailAgent, policySummaryAgent, userInfoAgent, smishingSmsAgent, vishingCallAgent];
+      const agents = [microlearningAgent, orchestratorAgent, phishingEmailAgent, policySummaryAgent, userInfoAgent, smishingSmsAgent, vishingCallAgent, deepfakeVideoAgent];
 
       agents.forEach(agent => {
         expect(agent.instructions.trim().length).toBeGreaterThan(0);
@@ -471,7 +479,7 @@ describe('Agents Index Exports', () => {
 
   // ==================== COMPLETE EXPORT INTEGRITY TESTS ====================
   describe('Complete Export Integrity', () => {
-    it('should export all 7 agents without duplicates', () => {
+    it('should export all 8 agents without duplicates', () => {
       const exportedAgents = {
         microlearningAgent,
         orchestratorAgent,
@@ -480,15 +488,16 @@ describe('Agents Index Exports', () => {
         userInfoAgent,
         smishingSmsAgent,
         vishingCallAgent,
+        deepfakeVideoAgent,
       };
 
       const agentCount = Object.keys(exportedAgents).length;
-      expect(agentCount).toBe(7);
+      expect(agentCount).toBe(8);
     });
 
     it('should maintain consistency across exports', () => {
       // Verify that each agent maintains its properties consistently
-      const agents = [microlearningAgent, orchestratorAgent, phishingEmailAgent, policySummaryAgent, userInfoAgent, smishingSmsAgent, vishingCallAgent];
+      const agents = [microlearningAgent, orchestratorAgent, phishingEmailAgent, policySummaryAgent, userInfoAgent, smishingSmsAgent, vishingCallAgent, deepfakeVideoAgent];
 
       agents.forEach(agent => {
         expect(agent.name).toBeDefined();
@@ -511,10 +520,11 @@ describe('Agents Index Exports', () => {
         userInfoAgent.name,
         smishingSmsAgent.name,
         vishingCallAgent.name,
+        deepfakeVideoAgent.name,
       ]);
 
-      // Should have exactly 7 unique agent types
-      expect(agentTypes.size).toBe(7);
+      // Should have exactly 8 unique agent types
+      expect(agentTypes.size).toBe(8);
 
       // Should include all expected agent names
       expect(agentTypes.has('microlearningAgent')).toBe(true);
@@ -524,6 +534,7 @@ describe('Agents Index Exports', () => {
       expect(agentTypes.has('userInfoAssistant')).toBe(true);
       expect(agentTypes.has('smishingSmsAssistant')).toBe(true);
       expect(agentTypes.has('vishingCallAssistant')).toBe(true);
+      expect(agentTypes.has('deepfakeVideoAssistant')).toBe(true);
     });
   });
 });

@@ -71,15 +71,36 @@ export async function deepfakeStatusHandler(c: Context) {
     const data = await response.json();
 
     // HeyGen response shape:
-    // { error: null, data: { video_id, status, video_url, thumbnail_url, duration } }
+    // Success: { error: null, data: { video_id, status, video_url, thumbnail_url, duration } }
+    // Failed:  { error: null, data: { video_id, status: "failed", error: { code, message } } }
     const videoData = data?.data ?? {};
     const status: string = videoData.status ?? 'processing';
     const videoUrl: string | null = videoData.video_url ?? null;
     const thumbnailUrl: string | null = videoData.thumbnail_url ?? null;
     const durationSec: number | null = videoData.duration ?? null;
 
+    // Extract failure reason from HeyGen when video rendering fails
+    let failureReason: string | null = null;
+    let failureCode: string | null = null;
+    if (status === 'failed') {
+      const heygenError = videoData.error ?? data?.error;
+      if (heygenError && typeof heygenError === 'object') {
+        const errObj = heygenError as Record<string, unknown>;
+        failureCode = errObj.code ? String(errObj.code) : null;
+        failureReason = errObj.detail
+          ? String(errObj.detail)
+          : errObj.message
+            ? String(errObj.message)
+            : JSON.stringify(heygenError);
+      } else if (typeof heygenError === 'string') {
+        failureReason = heygenError;
+      } else if (videoData.message) {
+        failureReason = String(videoData.message);
+      }
+    }
+
     logger.info('deepfake_status_raw', { videoId, rawData: JSON.stringify(data).substring(0, 500) });
-    logger.info('deepfake_status_success', { videoId, status });
+    logger.info('deepfake_status_result', { videoId, status, failureCode, failureReason });
 
     return c.json(
       {
@@ -89,6 +110,8 @@ export async function deepfakeStatusHandler(c: Context) {
         videoUrl,
         thumbnailUrl,
         durationSec,
+        ...(failureReason ? { failureReason } : {}),
+        ...(failureCode ? { failureCode } : {}),
       },
       200
     );

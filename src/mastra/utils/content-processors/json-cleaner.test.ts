@@ -99,4 +99,45 @@ describe('json-cleaner', () => {
     expect(() => cleanResponse('{"bad":', 'broken')).toThrow('Failed to clean broken response: repair failed');
     expect(mocks.error).toHaveBeenCalled();
   });
+
+  it('extracts JSON from double-quoted wrapper', () => {
+    const input = '"{"agent":"microlearning"}"';
+    const cleaned = cleanResponse(input, 'double-wrapped');
+    expect(cleaned).toBe('{"agent":"microlearning"}');
+    expect(mocks.jsonrepair).toHaveBeenCalledWith('{"agent":"microlearning"}');
+  });
+
+  it('extracts from markdown block without json tag', () => {
+    const input = '```\n{"nested":{"key":"value"}}\n```';
+    const cleaned = cleanResponse(input, 'plain-markdown');
+    expect(cleaned).toBe('{"nested":{"key":"value"}}');
+    expect(mocks.jsonrepair).toHaveBeenCalledWith('{"nested":{"key":"value"}}');
+  });
+
+  it('handles jsonrepair fixing invalid JSON (trailing comma)', () => {
+    const input = '{"a":1,"b":2,}';
+    mocks.jsonrepair.mockReturnValueOnce('{"a":1,"b":2}');
+    const cleaned = cleanResponse(input, 'trailing-comma');
+    expect(cleaned).toBe('{"a":1,"b":2}');
+  });
+
+  it('handles empty string input', () => {
+    mocks.jsonrepair.mockReturnValueOnce('""');
+    const cleaned = cleanResponse('', 'empty');
+    expect(cleaned).toBe('""');
+    expect(mocks.jsonrepair).toHaveBeenCalledWith('');
+  });
+
+  it('extracts nested object JSON from text', () => {
+    const input = 'Here is the result: {"outer":{"inner":123}} thanks';
+    const cleaned = cleanResponse(input, 'nested');
+    expect(cleaned).toBe('{"outer":{"inner":123}}');
+  });
+
+  it('extracts array when only array pattern exists (no object braces)', () => {
+    const input = 'Result: [1, 2, 3] done';
+    const cleaned = cleanResponse(input, 'array-numbers');
+    expect(cleaned).toBe('[1, 2, 3]');
+    expect(mocks.jsonrepair).toHaveBeenCalledWith('[1, 2, 3]');
+  });
 });

@@ -162,4 +162,22 @@ describe('vishingCallAgent', () => {
     expect(instructions).toContain('Hide model names, providers, tool IDs, API details');
     expect(instructions).toContain('Messaging Guidelines (Enterprise-Safe)');
   });
+
+  it('should have exactly 4 tools', () => {
+    expect(Object.keys(vishingCallAgent.tools)).toHaveLength(4);
+  });
+
+  it('should include vishing-specific language rules (Do NOT mix)', () => {
+    expect(vishingCallAgent.instructions).toContain('Do NOT mix languages');
+    expect(vishingCallAgent.instructions).toContain('transitions, lists, questions, confirmations');
+  });
+
+  it('should have substantial instructions', () => {
+    expect(vishingCallAgent.instructions.length).toBeGreaterThan(3000);
+  });
+
+  it('should include CALL LANGUAGE for voice content', () => {
+    expect(vishingCallAgent.instructions).toContain('CALL');
+    expect(vishingCallAgent.instructions).toContain('Language Rules');
+  });
 });

@@ -268,7 +268,7 @@ export function getInfoTemplateExample({ fromName, industryDesign }: TemplatePar
         <span style='font-size: 12px; color: #6b7280;'>${fromName}</span>
       </div>
 
-      <div style='margin-bottom: 16px;'>
+      <div style='margin-bottom: 16px; text-align: center;'>
         <h1 style='font-size: 24px; font-weight: 700; margin: 0 0 8px 0;'>Policy update</h1>
         <p style='margin: 0; font-size: 14px; color: #4b5563;'>
           We have updated our account policy to improve security and transparency.

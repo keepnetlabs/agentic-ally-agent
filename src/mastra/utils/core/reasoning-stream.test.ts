@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { streamDirectReasoning, StreamWriter } from './reasoning-stream';
+import { streamDirectReasoning, streamReasoningUpdates, StreamWriter } from './reasoning-stream';
 
 // Mock getModelWithOverride
 vi.mock('../../model-providers', () => ({
@@ -233,8 +233,26 @@ describe('Reasoning Stream Utils', () => {
     });
   });
 
-  // NOTE: streamReasoningUpdates tests removed because they depend on fire-and-forget
-  // AI calls (generateText) that are difficult to unit test properly. The function
-  // calls streamReasoning which uses async AI processing in a non-awaited promise chain.
-  // Integration tests would be more appropriate for this functionality.
+  describe('streamReasoningUpdates', () => {
+    it('should call streamReasoning for each text (uses generateText)', async () => {
+      mockGenerateText.mockResolvedValue({ text: 'User-friendly summary' });
+      const texts = ['First', 'Second'];
+      await streamReasoningUpdates(texts, mockWriter);
+
+      expect(mockGenerateText).toHaveBeenCalledTimes(2);
+      expect(writeSpy).toHaveBeenCalled();
+    });
+
+    it('should handle empty array', async () => {
+      await streamReasoningUpdates([], mockWriter);
+      expect(mockGenerateText).not.toHaveBeenCalled();
+      expect(writeSpy).not.toHaveBeenCalled();
+    });
+
+    it('should handle single item array', async () => {
+      mockGenerateText.mockResolvedValue({ text: 'Single' });
+      await streamReasoningUpdates(['Only one'], mockWriter);
+      expect(mockGenerateText).toHaveBeenCalledTimes(1);
+    });
+  });
 });

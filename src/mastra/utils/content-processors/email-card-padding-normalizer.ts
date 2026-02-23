@@ -4,11 +4,13 @@
  * Problem:
  * - LLM sometimes outputs a "card" table (white background + border radius + shadow)
  *   but forgets to add padding to the inner content <td> (e.g., padding:0).
- * - This makes the content visually stick to the card border in many clients.
+ * - Corporate Letter layout or other structures may have content <td> with no horizontal padding,
+ *   causing text to stick to the left edge (ugly, cramped appearance).
  *
  * Goal:
- * - Ensure the primary content <td> inside a card table has a reasonable padding (default 24px),
- *   without changing overall structure.
+ * - Ensure the primary content <td> inside a card table has a reasonable padding (default 24px).
+ * - Also ensure ALL content-like <td> (in any table) have minimum horizontal padding (24px left/right),
+ *   so text never sticks to edges regardless of layout strategy.
  *
  * Never throws: 3-level fallback.
  */
@@ -126,6 +128,49 @@ function findAllTdDescendants(node: HtmlNode): HtmlNode[] {
   return out;
 }
 
+/** Check if td contains text content (p, span, or has font-related styles) */
+function isContentTd(td: HtmlNode): boolean {
+  const style = (getAttr(td, 'style') ?? '').toLowerCase();
+  const hasFontStyle =
+    style.includes('font-family') || style.includes('line-height') || style.includes('font-size');
+  if (hasFontStyle) return true;
+  const children = Array.isArray(td.childNodes) ? td.childNodes : [];
+  for (const c of children) {
+    if (!isElement(c)) continue;
+    const name = nodeName(c);
+    if (name === 'p' || name === 'span' || name === 'div') return true;
+  }
+  return false;
+}
+
+const MIN_HORIZONTAL_PADDING_PX = 20;
+
+function ensureTdHorizontalPadding(td: HtmlNode, defaultPaddingPx: number): boolean {
+  const style = getAttr(td, 'style') ?? '';
+  const parts = splitStyle(style);
+  const hasLeft = hasDecl(parts, 'padding-left');
+  const hasRight = hasDecl(parts, 'padding-right');
+  const hasShorthand = hasDecl(parts, 'padding');
+
+  let needsLeft = !hasLeft;
+  let needsRight = !hasRight;
+
+  if (hasShorthand) {
+    const horiz = getShorthandHorizontalPx(parts);
+    if (horiz >= MIN_HORIZONTAL_PADDING_PX) return false;
+    needsLeft = needsRight = true;
+  }
+
+  if (!needsLeft && !needsRight) return false;
+
+  const newDecls: string[] = [];
+  if (needsLeft) newDecls.push(`padding-left: ${defaultPaddingPx}px`);
+  if (needsRight) newDecls.push(`padding-right: ${defaultPaddingPx}px`);
+  const nextParts = [...parts, ...newDecls];
+  setAttr(td, 'style', joinStyle(nextParts));
+  return true;
+}
+
 function primaryNormalize(html: string, defaultPaddingPx: number): { html: string; changed: boolean } {
   const fragment = parse5.parseFragment(html);
   const root = fragment as unknown as HtmlNode;
@@ -187,6 +232,16 @@ function primaryNormalize(html: string, defaultPaddingPx: number): { html: strin
           }
 
           // REMOVED break; to process ALL rows in the card (e.g. multiple paragraphs)
+        }
+      }
+
+      // Pass 2: Ensure ALL content td (in any table) have minimum horizontal padding.
+      // Fixes Corporate Letter layout and other structures where text sticks to left edge.
+      if (nodeName(child) === 'table') {
+        const tds = findAllTdDescendants(child);
+        for (const td of tds) {
+          if (!isContentTd(td)) continue;
+          if (ensureTdHorizontalPadding(td, defaultPaddingPx)) changed = true;
         }
       }
 

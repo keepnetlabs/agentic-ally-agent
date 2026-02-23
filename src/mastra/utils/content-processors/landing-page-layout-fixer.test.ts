@@ -75,6 +75,20 @@ describe('fixLandingPageLayout', () => {
     expect(output).toContain('text-align: center');
   });
 
+  it('should add text-align: center to P directly below H1 (intro paragraph)', () => {
+    const input = `<h1 style="font-size: 24px; font-weight: 700; margin: 0 0 8px 0; text-align: center;">Yeni Yan Haklar Paketi Başvurusu</h1><p style="font-size: 14px; color: #4b5563; margin: 0 0 24px 0;">Çalışanlarımız için tasarladığımız yeni fayda paketini keşfedin.</p>`;
+    const output = fixLandingPageLayout(input);
+    expect(output).toContain('<p');
+    expect(output).toMatch(/<p[^>]*text-align:\s*center/);
+  });
+
+  it('should NOT add text-align to P below H1 if already has text-align', () => {
+    const input = `<h1>Title</h1><p style="text-align: left; font-size: 14px;">Left-aligned intro</p>`;
+    const output = fixLandingPageLayout(input);
+    // P should keep its text-align: left, not get center appended
+    expect(output).toContain('text-align: left');
+  });
+
   it('should add display: block and margin: 0 auto for anchor/button with max-width', () => {
     const input = `<a style='max-width: 200px; color: blue;'>Click here</a>`;
     const output = fixLandingPageLayout(input);
@@ -87,5 +101,43 @@ describe('fixLandingPageLayout', () => {
     const output = fixLandingPageLayout(input);
     expect(output).toContain('display: block');
     expect(output).not.toContain('display: inline-block');
+  });
+
+  it('should inject checkmark into empty circle div with background color (Fix B)', () => {
+    const input = `<div style='border-radius: 999px; background: #22c55e; width: 64px;'></div>`;
+    const output = fixLandingPageLayout(input);
+    expect(output).toContain('&#10003;');
+    expect(output).toContain("color:white");
+    expect(output).toMatch(/<span[^>]*>.*?<\/span>/);
+  });
+
+  it('should NOT inject checkmark into circle div without background color', () => {
+    const input = `<div style='border-radius: 999px; width: 64px;'></div>`;
+    const output = fixLandingPageLayout(input);
+    expect(output).toBe(input);
+  });
+
+  it('should NOT add text-align to H1 if already has text-align', () => {
+    const input = `<h1 style="text-align: left;">Left Title</h1>`;
+    const output = fixLandingPageLayout(input);
+    expect(output).toContain('text-align: left');
+  });
+
+  it('should handle section and main tags with max-width', () => {
+    const input = `<section style="max-width: 800px;">Content</section>`;
+    const output = fixLandingPageLayout(input);
+    expect(output).toContain('margin: 0 auto');
+  });
+
+  it('should handle form tag with max-width', () => {
+    const input = `<form style='max-width: 400px;'>Form</form>`;
+    const output = fixLandingPageLayout(input);
+    expect(output).toContain('margin: 0 auto');
+  });
+
+  it('should handle empty circle with background-color property', () => {
+    const input = `<div style='border-radius: 50%; background-color: #22c55e;'></div>`;
+    const output = fixLandingPageLayout(input);
+    expect(output).toContain('&#10003;');
   });
 });

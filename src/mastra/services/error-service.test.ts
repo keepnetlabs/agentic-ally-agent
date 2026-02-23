@@ -1,209 +1,228 @@
+/**
+ * Unit tests for error-service
+ * Covers ErrorCategory, ErrorInfo, all error factory methods, parse, isRetryable, recoveryAttempt
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { errorService, ErrorCategory } from './error-service';
-import '../../../src/__tests__/setup';
+import { ERROR_CODES } from '../constants';
 
-/**
- * Test Suite: ErrorService
- * Tests for centralized error handling service
- * Covers: All error categories, error info structure, JSON serialization
- */
+vi.mock('../utils/core/logger', () => ({
+  getLogger: () => ({
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+  }),
+}));
 
-describe('ErrorService', () => {
+describe('error-service', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
+  describe('ErrorCategory', () => {
+    it('should have expected categories', () => {
+      expect(ErrorCategory.AUTH).toBe('AUTH');
+      expect(ErrorCategory.VALIDATION).toBe('VALIDATION');
+      expect(ErrorCategory.EXTERNAL).toBe('EXTERNAL');
+      expect(ErrorCategory.NOT_FOUND).toBe('NOT_FOUND');
+      expect(ErrorCategory.AI_MODEL).toBe('AI_MODEL');
+      expect(ErrorCategory.TIMEOUT).toBe('TIMEOUT');
+      expect(ErrorCategory.RATE_LIMIT).toBe('RATE_LIMIT');
+      expect(ErrorCategory.INTERNAL).toBe('INTERNAL');
+    });
+  });
+
   describe('auth', () => {
-    it('should create AUTH error with correct structure', () => {
-      const error = errorService.auth('Token expired');
-
-      expect(error.code).toBe('ERR_AUTH_001');
-      expect(error.message).toBe('Token expired');
-      expect(error.category).toBe(ErrorCategory.AUTH);
-      expect(error.retryable).toBe(false);
-      expect(error.suggestion).toContain('authentication');
-      expect(error.nextStep).toBeDefined();
-      expect(error.nextStep).toContain('Ask user');
-      expect(error.timestamp).toBeTypeOf('number');
-    });
-
-    it('should include details when provided', () => {
-      const error = errorService.auth('Token missing', { userId: 'user-123' });
-
-      expect(error.details).toEqual({ userId: 'user-123' });
-    });
-
-    it('should be JSON serializable', () => {
-      const error = errorService.auth('Token expired');
-      const serialized = JSON.stringify(error);
-      const parsed = JSON.parse(serialized);
-
-      expect(parsed.code).toBe('ERR_AUTH_001');
-      expect(parsed.message).toBe('Token expired');
-      expect(parsed.category).toBe('AUTH');
+    it('should return ErrorInfo with AUTH category', () => {
+      const result = errorService.auth('Token expired');
+      expect(result.code).toBe(ERROR_CODES.AUTH_TOKEN_MISSING);
+      expect(result.message).toBe('Token expired');
+      expect(result.category).toBe(ErrorCategory.AUTH);
+      expect(result.retryable).toBe(false);
+      expect(result.suggestion).toContain('credentials');
+      expect(result.nextStep).toContain('token');
+      expect(result.timestamp).toBeDefined();
     });
 
     it('should accept custom error code', () => {
-      const error = errorService.auth('Token invalid', {}, 'ERR_AUTH_002');
+      const result = errorService.auth('Invalid token', undefined, ERROR_CODES.AUTH_TOKEN_INVALID);
+      expect(result.code).toBe(ERROR_CODES.AUTH_TOKEN_INVALID);
+    });
 
-      expect(error.code).toBe('ERR_AUTH_002');
-      expect(error.message).toBe('Token invalid');
+    it('should include details when provided', () => {
+      const result = errorService.auth('Token missing', { userId: 'u-1' });
+      expect(result.details).toEqual({ userId: 'u-1' });
     });
   });
 
   describe('validation', () => {
-    it('should create VALIDATION error with correct structure', () => {
-      const error = errorService.validation('Invalid email format');
-
-      expect(error.code).toBe('ERR_VAL_001');
-      expect(error.message).toBe('Invalid email format');
-      expect(error.category).toBe(ErrorCategory.VALIDATION);
-      expect(error.retryable).toBe(false);
-      expect(error.suggestion).toContain('input');
+    it('should return ErrorInfo with VALIDATION category', () => {
+      const result = errorService.validation('Invalid email format');
+      expect(result.category).toBe(ErrorCategory.VALIDATION);
+      expect(result.retryable).toBe(false);
     });
 
-    it('should include field details', () => {
-      const error = errorService.validation('Email required', { field: 'email' });
-
-      expect(error.details).toEqual({ field: 'email' });
-    });
-
-    it('should include context-aware nextStep when field is provided', () => {
-      const error = errorService.validation('Email required', { field: 'email' });
-
-      expect(error.nextStep).toContain('email');
-      expect(error.nextStep).toContain('Ask user');
-    });
-
-    it('should include generic nextStep when field is not provided', () => {
-      const error = errorService.validation('Invalid input');
-
-      expect(error.nextStep).toBeDefined();
-      expect(error.nextStep).toContain('Ask user');
+    it('should use field from details for nextStep', () => {
+      const result = errorService.validation('Invalid', { field: 'email' });
+      expect(result.nextStep).toContain('email');
     });
   });
 
   describe('external', () => {
-    it('should create EXTERNAL error with retryable flag', () => {
-      const error = errorService.external('Worker failed: 502');
-
-      expect(error.code).toBe('ERR_API_001');
-      expect(error.category).toBe(ErrorCategory.EXTERNAL);
-      expect(error.retryable).toBe(true);
-      expect(error.suggestion).toContain('temporarily unavailable');
+    it('should return ErrorInfo with EXTERNAL category and retryable true', () => {
+      const result = errorService.external('API 502');
+      expect(result.category).toBe(ErrorCategory.EXTERNAL);
+      expect(result.retryable).toBe(true);
     });
 
-    it('should include service details', () => {
-      const error = errorService.external('API error', { service: 'KV', status: 502 });
-
-      expect(error.details).toEqual({ service: 'KV', status: 502 });
-    });
-
-    it('should include context-aware nextStep when service is provided', () => {
-      const error = errorService.external('API error', { service: 'KV' });
-
-      expect(error.nextStep).toContain('KV');
-      expect(error.nextStep).toContain('Retry');
+    it('should use service from details for nextStep', () => {
+      const result = errorService.external('Failed', { service: 'KV' });
+      expect(result.nextStep).toContain('KV');
     });
   });
 
   describe('notFound', () => {
-    it('should create NOT_FOUND error', () => {
-      const error = errorService.notFound('Microlearning not found');
-
-      expect(error.code).toBe('ERR_NF_001');
-      expect(error.category).toBe(ErrorCategory.NOT_FOUND);
-      expect(error.retryable).toBe(false);
+    it('should return ErrorInfo with NOT_FOUND category', () => {
+      const result = errorService.notFound('Microlearning ml-123 not found');
+      expect(result.category).toBe(ErrorCategory.NOT_FOUND);
+      expect(result.retryable).toBe(false);
     });
 
-    it('should include resource details', () => {
-      const error = errorService.notFound('Resource missing', { resourceId: 'ml-123' });
-
-      expect(error.details).toEqual({ resourceId: 'ml-123' });
-    });
-
-    it('should include context-aware nextStep when resourceType and resourceId are provided', () => {
-      const error = errorService.notFound('Resource missing', { resourceType: 'microlearning', resourceId: 'ml-123' });
-
-      expect(error.nextStep).toContain('microlearning');
-      expect(error.nextStep).toContain('ml-123');
-      expect(error.nextStep).toContain('Ask user');
+    it('should use resourceType and resourceId for nextStep', () => {
+      const result = errorService.notFound('Not found', {
+        resourceType: 'microlearning',
+        resourceId: 'ml-1',
+      });
+      expect(result.nextStep).toContain('microlearning');
+      expect(result.nextStep).toContain('ml-1');
     });
   });
 
   describe('aiModel', () => {
-    it('should create AI_MODEL error', () => {
-      const error = errorService.aiModel('JSON parsing failed');
-
-      expect(error.code).toBe('ERR_AI_001');
-      expect(error.category).toBe(ErrorCategory.AI_MODEL);
-      expect(error.retryable).toBe(true);
+    it('should return ErrorInfo with AI_MODEL category and retryable true', () => {
+      const result = errorService.aiModel('JSON parse failed');
+      expect(result.category).toBe(ErrorCategory.AI_MODEL);
+      expect(result.retryable).toBe(true);
     });
 
-    it('should include step details', () => {
-      const error = errorService.aiModel('Generation failed', { step: 'scene-1', scene: 1 });
-
-      expect(error.details).toEqual({ step: 'scene-1', scene: 1 });
+    it('should customize nextStep when reason includes JSON', () => {
+      const result = errorService.aiModel('Failed', { reason: 'JSON parsing failed' });
+      expect(result.nextStep).toContain('JSON');
     });
   });
 
   describe('timeout', () => {
-    it('should create TIMEOUT error', () => {
-      const error = errorService.timeout('Request timed out');
+    it('should return ErrorInfo with TIMEOUT category', () => {
+      const result = errorService.timeout('Operation exceeded 60s');
+      expect(result.category).toBe(ErrorCategory.TIMEOUT);
+      expect(result.retryable).toBe(true);
+    });
 
-      expect(error.code).toBe('ERR_TO_001');
-      expect(error.category).toBe(ErrorCategory.TIMEOUT);
-      expect(error.retryable).toBe(true);
+    it('should use operation from details for nextStep', () => {
+      const result = errorService.timeout('Timeout', { operation: 'generate' });
+      expect(result.nextStep).toContain('generate');
     });
   });
 
   describe('rateLimit', () => {
-    it('should create RATE_LIMIT error', () => {
-      const error = errorService.rateLimit('Too many requests');
+    it('should return ErrorInfo with RATE_LIMIT category', () => {
+      const result = errorService.rateLimit('Too many requests');
+      expect(result.category).toBe(ErrorCategory.RATE_LIMIT);
+      expect(result.retryable).toBe(true);
+    });
 
-      expect(error.code).toBe('ERR_RL_001');
-      expect(error.category).toBe(ErrorCategory.RATE_LIMIT);
-      expect(error.retryable).toBe(true);
+    it('should use resetAt for nextStep', () => {
+      const resetAt = Date.now() + 60000;
+      const result = errorService.rateLimit('Rate limited', { resetAt });
+      expect(result.nextStep).toContain('Wait until');
+      expect(result.nextStep).toContain('retrying');
     });
   });
 
   describe('internal', () => {
-    it('should create INTERNAL error', () => {
-      const error = errorService.internal('Unexpected error');
-
-      expect(error.code).toBe('ERR_INT_001');
-      expect(error.category).toBe(ErrorCategory.INTERNAL);
-      expect(error.retryable).toBe(false);
+    it('should return ErrorInfo with INTERNAL category', () => {
+      const result = errorService.internal('Unexpected error');
+      expect(result.category).toBe(ErrorCategory.INTERNAL);
+      expect(result.retryable).toBe(false);
     });
   });
 
-  describe('Error format compatibility', () => {
-    it('should be compatible with tool outputSchema format', () => {
-      const error = errorService.validation('Invalid input');
-      const toolResponse = {
-        success: false,
-        error: JSON.stringify(error),
-      };
-
-      expect(toolResponse.success).toBe(false);
-      expect(() => JSON.parse(toolResponse.error)).not.toThrow();
-      const parsed = JSON.parse(toolResponse.error);
-      expect(parsed.code).toBe('ERR_VAL_001');
+  describe('generic', () => {
+    it('should delegate to auth when category is AUTH', () => {
+      const result = errorService.generic(new Error('Token invalid'), ErrorCategory.AUTH);
+      expect(result.category).toBe(ErrorCategory.AUTH);
     });
 
-    it('should have consistent timestamp format', () => {
-      const error1 = errorService.auth('Error 1');
-      const error2 = errorService.auth('Error 2');
+    it('should delegate to internal when category is INTERNAL (default)', () => {
+      const result = errorService.generic(new Error('Something broke'));
+      expect(result.category).toBe(ErrorCategory.INTERNAL);
+    });
 
-      expect(error1.timestamp).toBeTypeOf('number');
-      expect(error2.timestamp).toBeTypeOf('number');
+    it('should extract message from Error', () => {
+      const result = errorService.generic(new Error('Custom msg'), ErrorCategory.VALIDATION);
+      expect(result.message).toBe('Custom msg');
+    });
 
-      // TypeScript guard: timestamp is always defined in errorService methods
-      if (error1.timestamp !== undefined && error2.timestamp !== undefined) {
-        expect(error2.timestamp).toBeGreaterThanOrEqual(error1.timestamp);
-      } else {
-        throw new Error('Timestamp should always be defined');
-      }
+    it('should extract message from string', () => {
+      const result = errorService.generic('String error', ErrorCategory.EXTERNAL);
+      expect(result.message).toBe('String error');
+    });
+  });
+
+  describe('parse', () => {
+    it('should parse valid ErrorInfo JSON string', () => {
+      const errorInfo = errorService.auth('Test');
+      const json = JSON.stringify(errorInfo);
+      const parsed = errorService.parse(json);
+      expect(parsed).not.toBeNull();
+      expect(parsed!.code).toBe(errorInfo.code);
+      expect(parsed!.message).toBe(errorInfo.message);
+    });
+
+    it('should return null for invalid JSON', () => {
+      expect(errorService.parse('not json')).toBeNull();
+    });
+
+    it('should return null when code, message, or category missing', () => {
+      expect(errorService.parse('{"code":"X"}')).toBeNull();
+      expect(errorService.parse('{"message":"x"}')).toBeNull();
+      expect(errorService.parse('{}')).toBeNull();
+    });
+  });
+
+  describe('isRetryable', () => {
+    it('should return true for retryable ErrorInfo', () => {
+      const error = errorService.external('API failed');
+      expect(errorService.isRetryable(error)).toBe(true);
+    });
+
+    it('should return false for non-retryable ErrorInfo', () => {
+      const error = errorService.auth('Token missing');
+      expect(errorService.isRetryable(error)).toBe(false);
+    });
+
+    it('should parse JSON string and return retryable from parsed', () => {
+      const error = errorService.external('Retry me');
+      const json = JSON.stringify(error);
+      expect(errorService.isRetryable(json)).toBe(true);
+    });
+
+    it('should return false for invalid JSON string', () => {
+      expect(errorService.isRetryable('invalid')).toBe(false);
+    });
+  });
+
+  describe('recoveryAttempt', () => {
+    it('should not throw when called', () => {
+      expect(() => {
+        errorService.recoveryAttempt(1, 3, 'test-op', 'Error message');
+      }).not.toThrow();
+    });
+
+    it('should accept optional context', () => {
+      expect(() => {
+        errorService.recoveryAttempt(1, 3, 'op', 'err', { jitterEnabled: true });
+      }).not.toThrow();
     });
   });
 });

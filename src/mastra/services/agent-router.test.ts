@@ -282,6 +282,46 @@ describe('AgentRouter', () => {
     });
   });
 
+  describe('Route - All valid agents', () => {
+    const setupRouteTest = async (
+      agent: string,
+      taskContext: string,
+      prompt: string
+    ): Promise<{ agentName: string; taskContext?: string }> => {
+      const mockDecision = { agent, taskContext };
+      const json = JSON.stringify(mockDecision);
+      vi.mocked(cleanResponse).mockReturnValue(json);
+      vi.mocked(withRetry).mockResolvedValue(mockDecision as never);
+      return agentRouter.route(prompt);
+    };
+
+    it('should route to smishing agent', async () => {
+      const result = await setupRouteTest(AGENT_NAMES.SMISHING, 'SMS phishing', 'Create smishing');
+      expect(result.agentName).toBe(AGENT_NAMES.SMISHING);
+      expect(result.taskContext).toBe('SMS phishing');
+    });
+
+    it('should route to vishing agent', async () => {
+      const result = await setupRouteTest(AGENT_NAMES.VISHING_CALL, 'Place call', 'Initiate vishing call');
+      expect(result.agentName).toBe(AGENT_NAMES.VISHING_CALL);
+    });
+
+    it('should route to deepfake video agent', async () => {
+      const result = await setupRouteTest(AGENT_NAMES.DEEPFAKE_VIDEO, 'Generate video', 'Create deepfake video');
+      expect(result.agentName).toBe(AGENT_NAMES.DEEPFAKE_VIDEO);
+    });
+
+    it('should route to user info agent', async () => {
+      const result = await setupRouteTest(AGENT_NAMES.USER_INFO, 'Get user list', 'Show user assignments');
+      expect(result.agentName).toBe(AGENT_NAMES.USER_INFO);
+    });
+
+    it('should route to policy summary agent', async () => {
+      const result = await setupRouteTest(AGENT_NAMES.POLICY_SUMMARY, 'Summarize policy', 'Summarize policy doc');
+      expect(result.agentName).toBe(AGENT_NAMES.POLICY_SUMMARY);
+    });
+  });
+
   describe('AgentRoutingResult interface', () => {
     it('should have agentName field', async () => {
       const mockDecision = {

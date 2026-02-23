@@ -77,8 +77,9 @@ export const TABLE_LAYOUT_RULES = `**Body (HTML) - Outlook/Gmail Compatible:**
 export const LAYOUT_STRATEGY_RULES = `**LAYOUT STRATEGY:**
 * **OPTION A: Transactional Card (DEFAULT)** - Use unless CEO/HR/Policy memo
   - Background: Light gray (#f3f4f6), outer td padding: 20px
-  - Content: Centered WHITE card with rounded corners and shadow
-  - text-align: center. Best for: Password Reset, Order, Security Alert, E-commerce
+  - Content: Centered WHITE card with rounded corners and shadow. **Inner card table:** max-width: ${PHISHING_EMAIL.EMAIL_CARD_MAX_WIDTH_PX}px (NOT 420px — that is too narrow for email content).
+  - **Text alignment:** Greeting, body paragraphs, and signature MUST be left-aligned (text-align: left). Only logo and CTA button may be centered. Professional emails are never fully centered.
+  - Best for: Password Reset, Order, Security Alert, E-commerce
 * **OPTION B: Corporate Letter** - For formal internal communications
   - Background: Full White (#ffffff), no card box
   - **IMPORTANT:** Container MUST still be CENTERED in the viewport (Outlook-safe table centering). Only the letter text can be left-aligned.

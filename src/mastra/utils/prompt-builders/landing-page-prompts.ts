@@ -149,6 +149,7 @@ For each new page/template, change at least **3** of the following visual aspect
    - Main heading: clear, strong, around 22–28px, bold.
    - Subheading: smaller, muted color (e.g. #4b5563), explaining context.
    - Helper/footer text: 11–13px, subtle.
+   - **Header block alignment:** H1 and the intro/description paragraph directly below it MUST both use \`text-align: center\` (or wrap logo + h1 + p in a div with \`text-align: center\`). This ensures the title and intro text are visually aligned.
    - **FOR QUISHING LANDING PAGES:**
      - Heading MUST be a normal login heading: "Sign In", "Log In to Your Account", "Sign In Securely", etc.
      - Do NOT use: "QR Code Verification", "Verify via QR", "Account Verification via QR", or any QR-related text.

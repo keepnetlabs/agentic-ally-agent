@@ -16,6 +16,8 @@ import { normalizeEmailCentering } from './email-centering-normalizer';
 import { normalizeEmailCardContentPadding } from './email-card-padding-normalizer';
 import { normalizeEmailButtonDivs, normalizeEmailButtonRowPadding } from './email-button-normalizer';
 import { normalizeEmailParagraphs } from './email-paragraph-normalizer';
+import { normalizeEmailCardWidth } from './email-card-width-normalizer';
+import { normalizeEmailContentAlign } from './email-content-align-normalizer';
 import { repairHtml } from '../validation/json-validation-utils';
 import { normalizeLandingCentering, ensureLandingFullHtmlDocument } from '../landing-page';
 import { normalizeLandingLogoCentering } from '../landing-page/logo-centering-normalizer';
@@ -36,6 +38,8 @@ export function postProcessPhishingEmailHtml(params: PostProcessEmailHtmlParams)
     let out = sanitizeHtml(html);
     out = normalizeEmailNestedTablePadding(out);
     out = normalizeEmailCentering(out);
+    out = normalizeEmailCardWidth(out); // Widen narrow 420px cards to 560px for email content
+    out = normalizeEmailContentAlign(out); // Greeting/body left-aligned (not centered)
     out = normalizeEmailCardContentPadding(out, 24);
     out = normalizeEmailButtonDivs(out); // Unwrap <div>-wrapped CTAs inside <td> (GrapeJS compat)
     out = normalizeEmailButtonRowPadding(out); // Remove excess top padding from button-only rows

@@ -592,6 +592,152 @@ describe('AutonomousTrainingHandlers', () => {
         })
       );
     });
+
+    it('returns failure when workflow returns invalid microlearningId', async () => {
+      mockWorkflowExecute.mockResolvedValueOnce({
+        success: true,
+        microlearningId: '!!!invalid!!!',
+      });
+      mockMicrolearningAgentGenerate
+        .mockResolvedValueOnce({ text: 'Generated' })
+        .mockResolvedValueOnce({ text: 'STOP' })
+        .mockResolvedValueOnce({ text: 'Some response' })
+        .mockResolvedValueOnce({ text: 'STOP' });
+
+      const result = await generateTrainingModule(
+        baseMicrolearning as any,
+        undefined,
+        baseToolResult as any,
+        'thread-train-4',
+        true,
+        false
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.uploadResult?.error || result.message).toBeTruthy();
+    });
+
+    it('returns failure when workflow returns no success', async () => {
+      mockWorkflowExecute.mockResolvedValueOnce({
+        success: false,
+        error: 'Workflow failed',
+      });
+
+      const result = await generateTrainingModule(
+        baseMicrolearning as any,
+        undefined,
+        baseToolResult as any,
+        'thread-train-5',
+        true,
+        false
+      );
+
+      expect(result.success).toBe(false);
+    });
+
+    it('returns failure when upload fails in tool-first path', async () => {
+      mockUploadExecute.mockResolvedValueOnce({
+        success: false,
+        error: 'Upload failed',
+      });
+      mockMicrolearningAgentGenerate
+        .mockResolvedValueOnce({ text: 'Generated' })
+        .mockResolvedValueOnce({ text: 'STOP' })
+        .mockResolvedValueOnce({ text: 'Unparseable' })
+        .mockResolvedValueOnce({ text: 'STOP' });
+
+      const result = await generateTrainingModule(
+        baseMicrolearning as any,
+        undefined,
+        baseToolResult as any,
+        'thread-train-6',
+        true,
+        false
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.uploadResult?.error || result.message).toBeTruthy();
+    });
+
+    it('uses custom prompt when isCustomPrompt is true', async () => {
+      await generateTrainingModule(
+        baseMicrolearning as any,
+        'Create CEO fraud training in Turkish',
+        baseToolResult as any,
+        'thread-train-7',
+        true,
+        true
+      );
+
+      expect(mockWorkflowExecute).toHaveBeenCalledWith(
+        expect.objectContaining({
+          context: expect.objectContaining({
+            prompt: 'Create CEO fraud training in Turkish',
+          }),
+        })
+      );
+    });
+
+    it('falls back to agent when assign needed but no target in tool-first', async () => {
+      const toolResultNoTarget = {
+        userInfo: { department: 'IT', preferredLanguage: 'en-gb' },
+      };
+
+      const result = await generateTrainingModule(
+        baseMicrolearning as any,
+        undefined,
+        toolResultNoTarget as any,
+        'thread-train-8',
+        false,
+        false
+      );
+
+      expect(mockMicrolearningAgentGenerate).toHaveBeenCalled();
+      expect(result.uploadAssignResult?.success).toBe(false);
+      expect(result.uploadAssignResult?.error).toContain('targetUserResourceId');
+    });
+  });
+
+  describe('uploadTrainingOnly', () => {
+    it('returns success when agent response contains UPLOAD_SUCCESS', async () => {
+      mockMicrolearningAgentGenerate
+        .mockResolvedValueOnce({ text: 'UPLOAD_SUCCESS: resourceId=res-789, languageId=en-gb' })
+        .mockResolvedValueOnce({ text: 'STOP acknowledged' });
+
+      const result = await uploadTrainingOnly('thread-upload-only-1', {
+        title: 'Test Training',
+      } as any);
+
+      expect(result.success).toBe(true);
+      expect(result.data?.resourceId).toBe('res-789');
+      expect(result.data?.sendTrainingLanguageId).toBe('en-gb');
+    });
+
+    it('returns failure when agent response contains UPLOAD_FAILED', async () => {
+      mockMicrolearningAgentGenerate
+        .mockResolvedValueOnce({ text: 'UPLOAD_FAILED: Tool execution error' })
+        .mockResolvedValueOnce({ text: 'STOP acknowledged' });
+
+      const result = await uploadTrainingOnly('thread-upload-only-2', {
+        title: 'Test Training',
+      } as any);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Tool execution error');
+    });
+
+    it('returns failure when response format is unparseable', async () => {
+      mockMicrolearningAgentGenerate
+        .mockResolvedValueOnce({ text: 'Some random response without expected format' })
+        .mockResolvedValueOnce({ text: 'STOP acknowledged' });
+
+      const result = await uploadTrainingOnly('thread-upload-only-3', {
+        title: 'Test Training',
+      } as any);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Could not parse');
+    });
   });
 
   describe('uploadAndAssignTraining', () => {
@@ -626,4 +772,24 @@ describe('AutonomousTrainingHandlers', () => {
     });
   });
 
+  describe('generateTrainingModuleForGroup', () => {
+    it('returns success when tool-first path succeeds for group', async () => {
+      const result = await generateTrainingModuleForGroup(
+        { title: 'Group Training' } as any,
+        'Create security training for Finance',
+        'en-gb',
+        'thread-group-gen-1',
+        'group-789'
+      );
+
+      expect(result.success).toBe(true);
+      expect(mockWorkflowExecute).toHaveBeenCalledWith(
+        expect.objectContaining({
+          context: expect.objectContaining({
+            prompt: 'Create security training for Finance',
+          }),
+        })
+      );
+    });
+  });
 });

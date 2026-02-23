@@ -91,4 +91,44 @@ describe('id-utils', () => {
       expect(slugId.length).toBe(59);
     });
   });
+
+  describe('isSafeId edge cases', () => {
+    it('should accept ids with hyphens and underscores', () => {
+      expect(isSafeId('my-id_123')).toBe(true);
+      expect(isSafeId('abc')).toBe(true);
+    });
+
+    it('should reject ids shorter than 3 chars', () => {
+      expect(isSafeId('ab')).toBe(false);
+      expect(isSafeId('a')).toBe(false);
+    });
+
+    it('should reject ids with special characters', () => {
+      expect(isSafeId('test@user')).toBe(false);
+      expect(isSafeId('test.user')).toBe(false);
+      expect(isSafeId('test user')).toBe(false);
+    });
+  });
+
+  describe('normalizeSafeId edge cases', () => {
+    it('should return undefined for empty string', () => {
+      expect(normalizeSafeId('')).toBeUndefined();
+    });
+
+    it('should trim whitespace before validation', () => {
+      expect(normalizeSafeId('  valid-id  ')).toBe('valid-id');
+    });
+  });
+
+  describe('generateSlugId edge cases', () => {
+    it('should handle empty string', () => {
+      const slugId = generateSlugId('');
+      expect(slugId).toMatch(/^-[0-9a-f]{8}$/);
+    });
+
+    it('should strip unicode and special chars', () => {
+      const slugId = generateSlugId('Café & Bar™');
+      expect(slugId).toMatch(/^caf-bar-[0-9a-f]{8}$/);
+    });
+  });
 });

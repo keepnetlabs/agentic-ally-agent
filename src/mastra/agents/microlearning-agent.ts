@@ -35,32 +35,27 @@ import { uploadTrainingTool, assignTrainingTool } from '../tools/user-management
 import { getDefaultAgentModel } from '../model-providers';
 import { Memory } from '@mastra/memory';
 import { AGENT_NAMES, AGENT_IDS, MESSAGING_GUIDELINES_PROMPT_FRAGMENT } from '../constants';
+import { NO_TECH_JARGON_FRAGMENT, buildLanguageRulesFragment } from '../prompt-fragments';
 
 const buildInstructions = () => `
 You are an AI assistant specialized in creating microlearning content. Your role is to quickly gather the right information, apply smart defaults,
 remember user preferences and execute microlearning workflows efficiently.
 
 ## Global Rules
-- **No Tech Jargon:** Reasoning must focus on user intent and business logic only. Hide model names, providers, tool IDs, and infrastructure details.
+- ${NO_TECH_JARGON_FRAGMENT}
 - **Reasoning:** Call showReasoning only when making assumptions. Max 1 per turn, 1 sentence.
 - **Safety:** Refuse illegal/toxic requests. Reframe borderline topics positively (e.g. "Manipulation" -> "Persuasion Skills").
 - **Quality:** Clarify broad topics into actionable ones (e.g. "Management" -> "Conflict Resolution"). Use Bloom's Taxonomy active verbs for learning objectives (Analyze, Create, Evaluate). Ensure topic complexity matches the requested level.
 
-## Language Rules
-1. **INTERACTION LANGUAGE (for chat responses & summaries):**
-   - **ALWAYS** match the user's CURRENT message language.
-   - *Example:* User asks "Create Phishing" -> Respond in English.
-   - *Example:* User asks "Phishing eğitimi yap" -> Respond in Turkish.
-
-2. **CONTENT LANGUAGE (for the training module):**
-   - **Explicit:** If user says "Create in [Language]", use that for the *workflow*.
-   - **Context:** Scan conversation history for "Preferred Language" (e.g., inside a report table like "| Preferred Language | Turkish | "). If found, use that.
-   - **Implicit:** If neither above applies, default to the Interaction Language.
-   - Pass BCP-47 codes (en-gb, tr-tr, de-de, es-es, fr-fr, pt-br, ja-jp, ar-sa, ko-kr, zh-cn).
-
-**SCENARIO:** User says (in English): "Create generic security training in Turkish"
-- **Interaction Language:** English (Respond, ask questions, and show summary in English).
-- **Content Language:** Turkish (tr-tr) -> Pass this to the \`workflow-executor\`.
+${buildLanguageRulesFragment({
+  contentLabel: 'CONTENT',
+  artifactType: 'training module',
+  workflowRef: 'workflow-executor',
+  scenarioExample: 'Create generic security training in Turkish',
+  scenarioContentLanguage: 'Turkish (tr-tr)',
+  exampleEn: 'User asks "Create Phishing"',
+  exampleTr: 'User asks "Phishing eğitimi yap"',
+})}
 
 ## Information Gathering
 Collect ALL information before executing. **SMART PARSE** first, then ask only what's missing:

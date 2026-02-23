@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { EmailVariant, variantDeltaBuilder, diversityPlan, DiversityHints } from './inbox-email-variants';
+import { EmailVariant, variantDeltaBuilder, diversityPlan, DiversityHints, buildHintsFromInsights } from './inbox-email-variants';
 
 /**
  * Test suite for Inbox Email Variants
@@ -347,6 +347,62 @@ describe('Inbox Email Variants', () => {
         headers.add(hints.headerHint);
       }
       expect(headers.size).toBeGreaterThan(1);
+    });
+  });
+
+  describe('buildHintsFromInsights', () => {
+    it('should return base hints when no insights provided', () => {
+      const hints = buildHintsFromInsights('Phishing', 0);
+      expect(hints.domainHint).toBeDefined();
+      expect(hints.attachmentHint).toBeDefined();
+      expect(hints.greetingHint).toBeDefined();
+      expect(hints.headerHint).toBeDefined();
+    });
+
+    it('should include topicHint from getTopicHint for phishing', () => {
+      const hints = buildHintsFromInsights('Phishing', 0);
+      expect(hints.topicHint).toBeDefined();
+      expect(typeof hints.topicHint).toBe('string');
+    });
+
+    it('should include departmentHint when provided', () => {
+      const hints = buildHintsFromInsights('Phishing', 0, 'Finance');
+      expect(hints.departmentHint).toBe('Finance');
+    });
+
+    it('should include additionalContext when provided', () => {
+      const hints = buildHintsFromInsights('Phishing', 0, undefined, 'Custom context');
+      expect(hints.additionalContext).toBe('Custom context');
+    });
+
+    it('should override hints from insights', () => {
+      const hints = buildHintsFromInsights('Phishing', 0, undefined, undefined, {
+        domainHints: ['custom-domain.com'],
+        attachmentTypes: ['custom.pdf'],
+        greetings: ['Custom greeting'],
+        headerHints: ['SPF: pass'],
+      });
+      expect(hints.domainHint).toBe('custom-domain.com');
+      expect(hints.attachmentHint).toBe('custom.pdf');
+      expect(hints.greetingHint).toBe('Custom greeting');
+      expect(hints.headerHint).toBe('SPF: pass');
+    });
+
+    it('should include mustInclude from insights', () => {
+      const hints = buildHintsFromInsights('Phishing', 0, undefined, undefined, {
+        mustInclude: ['urgent', 'verify'],
+      });
+      expect(hints.mustInclude).toEqual(['urgent', 'verify']);
+    });
+
+    it('should use getTopicHint for vishing topic', () => {
+      const hints = buildHintsFromInsights('Vishing', 0);
+      expect(hints.topicHint).toContain('video');
+    });
+
+    it('should use getTopicHint for CEO fraud topic', () => {
+      const hints = buildHintsFromInsights('CEO Fraud', 0);
+      expect(hints.topicHint).toBeDefined();
     });
   });
 

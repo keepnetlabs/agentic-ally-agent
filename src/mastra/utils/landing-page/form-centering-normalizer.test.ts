@@ -18,6 +18,26 @@ describe('normalizeLandingFormCentering', () => {
     const out = normalizeLandingFormCentering(input);
     expect(out).toMatch(/margin:\s*0 16px/i);
   });
+
+  it('returns original when no form tag present', () => {
+    const input = `<div>No form</div>`;
+    expect(normalizeLandingFormCentering(input)).toBe(input);
+  });
+
+  it('returns original for empty string', () => {
+    expect(normalizeLandingFormCentering('')).toBe('');
+  });
+
+  it('returns original for null/undefined (no-op)', () => {
+    expect(normalizeLandingFormCentering(null as any)).toBe(null);
+    expect(normalizeLandingFormCentering(undefined as any)).toBe(undefined);
+  });
+
+  it('skips form without max-width in style', () => {
+    const input = `<form style='width: 100%; padding: 20px;'><input /></form>`;
+    const out = normalizeLandingFormCentering(input);
+    expect(out).not.toMatch(/margin:\s*0 auto/i);
+  });
 });
 
 describe('normalizeLandingMaxWidthCentering', () => {
@@ -31,6 +51,24 @@ describe('normalizeLandingMaxWidthCentering', () => {
     const input = `<div style='max-width: 480px; width: 100%; padding: 24px; background: #fff;'>X</div>`;
     const out = normalizeLandingMaxWidthCentering(input);
     expect(out).toMatch(/margin:\s*0 auto/i);
+  });
+
+  it('returns original when no max-width in html', () => {
+    const input = `<div style='width: 100%;'>X</div>`;
+    expect(normalizeLandingMaxWidthCentering(input)).toBe(input);
+  });
+
+  it('adds display:block for button with max-width and no margin', () => {
+    const input = `<button style='max-width: 400px; width: 100%; padding: 10px;'>Submit</button>`;
+    const out = normalizeLandingMaxWidthCentering(input);
+    expect(out).toMatch(/display:\s*block/i);
+    expect(out).toMatch(/margin:\s*0 auto/i);
+  });
+
+  it('adds display:block for anchor with max-width and no margin', () => {
+    const input = `<a href='#' style='max-width: 300px; width: 100%;'>Link</a>`;
+    const out = normalizeLandingMaxWidthCentering(input);
+    expect(out).toMatch(/display:\s*block/i);
   });
 });
 

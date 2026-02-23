@@ -97,25 +97,29 @@ export const listHeyGenAvatarsTool = createTool({
 
       const data = await response.json();
 
-      // HeyGen v2/avatars response shape: { data: { avatars: [...] } }
-      // Limit to first 5 avatars — keeps the selection concise and LLM context lean
-      const MAX_AVATARS = 5;
-      const rawAvatars: unknown[] = (data?.data?.avatars ?? []).slice(0, MAX_AVATARS);
+      // HeyGen v2/avatars response: { data: { avatars: [...] } }
+      const MAX_AVATARS = 10;
+      const allAvatars: unknown[] = data?.data?.avatars ?? [];
 
-      const avatars: HeyGenAvatar[] = rawAvatars
+      const avatars: HeyGenAvatar[] = allAvatars
         .map((a: unknown) => {
           const av = a as Record<string, unknown>;
+          const gender = av.gender ? String(av.gender) : undefined;
           return {
             avatar_id: String(av.avatar_id ?? ''),
             avatar_name: String(av.avatar_name ?? 'Unnamed Avatar'),
-            gender: av.gender ? String(av.gender) : undefined,
+            gender: gender === 'unknown' ? undefined : gender,
             preview_image_url: av.preview_image_url ? String(av.preview_image_url) : undefined,
             preview_video_url: av.preview_video_url ? String(av.preview_video_url) : undefined,
           };
         })
-        .filter(a => a.avatar_id.length > 0);
+        .filter(a => a.avatar_id.length > 0)
+        .slice(0, MAX_AVATARS);
 
-      logger.info('list_heygen_avatars_success', { count: avatars.length });
+      logger.info('list_heygen_avatars_success', {
+        totalFromApi: allAvatars.length,
+        returned: avatars.length,
+      });
 
       return {
         success: true,

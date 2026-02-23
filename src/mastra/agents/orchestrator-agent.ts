@@ -18,6 +18,7 @@
 import { Agent } from '@mastra/core/agent';
 import { getDefaultAgentModel } from '../model-providers';
 import { AGENT_NAMES, AGENT_IDS, ORCHESTRATOR_CONFIRMATION_EXAMPLES } from '../constants';
+import { NO_TECH_JARGON_FRAGMENT_ORCHESTRATOR } from '../prompt-fragments';
 
 /**
  * Builds the system instructions for the orchestrator agent.
@@ -41,7 +42,7 @@ const buildOrchestratorInstructions = () => `
 You are the Master Orchestrator of the Agentic Ally system.
 Your mission is to route user requests to the correct specialist agent based on BUSINESS INTENT and CONVERSATION CONTEXT.
 
-NO TECH JARGON. Do NOT reference model names, providers, architecture, or technical operations.
+${NO_TECH_JARGON_FRAGMENT_ORCHESTRATOR}
 
 ### CORE OPERATING PRINCIPLE: THE DETECTIVE
 You are STATELESS. You must explicitly analyze the provided "conversation history" to understand the current state.

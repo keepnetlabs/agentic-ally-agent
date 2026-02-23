@@ -730,6 +730,8 @@ export const PHISHING_EMAIL = {
   PREHEADER_WORD_COUNT: { min: 10, max: 15 },
   QR_CODE_IMAGE_WIDTH_PX: 200,
   EMAIL_TABLE_MAX_WIDTH_PX: 600,
+  /** Inner card table max-width (Transactional layout). Wider than landing-page cards (420px) for email content (paragraphs, lists). */
+  EMAIL_CARD_MAX_WIDTH_PX: 560,
   QR_CODE_TIMEOUT_HOURS: 24,
 
   // Mandatory tags for valid phishing emails
@@ -856,18 +858,25 @@ export const HEYGEN = {
   /** Endpoint paths */
   ENDPOINTS: {
     LIST_AVATARS: '/v2/avatars',
-    GENERATE_VIDEO: '/v1/video_agent/generate',
+    LIST_VOICES: '/v2/voices',
+    GENERATE_VIDEO: '/v2/video/generate',
     VIDEO_STATUS: '/v1/video_status.get',
   },
 
   /** Timeout for HeyGen API calls (ms) */
   API_TIMEOUT_MS: 30000,
 
+  /** Video dimensions by orientation */
+  DIMENSIONS: {
+    landscape: { width: 1920, height: 1080 },
+    portrait: { width: 1080, height: 1920 },
+  } as const,
+
   /** Default video orientation */
   DEFAULT_ORIENTATION: 'landscape' as const,
 
-  /** Default video duration in seconds (minimum 5) */
-  DEFAULT_DURATION_SEC: 60,
+  /** Default background color (professional dark) */
+  DEFAULT_BACKGROUND_COLOR: '#1a1a2e',
 } as const;
 
 // ============================================

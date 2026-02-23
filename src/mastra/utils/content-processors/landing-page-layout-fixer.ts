@@ -81,5 +81,17 @@ export function fixLandingPageLayout(html: string): string {
     return `${prefix}${styleContent}; text-align: center;${suffix}`;
   });
 
+  // 4. Fix P below H1: Intro/description paragraph directly under H1 should be centered too
+  // Pattern: </h1>...<p style="..."> (p is typically the intro text, should match h1 alignment)
+  fixedHtml = fixedHtml.replace(
+    /(<\/h1[^>]*>)\s*(<p\b)([^>]*?)style=(['"])([^'"]*)\4([^>]*)>/gi,
+    (match, closeH1, openP, preStyle, quote, styleContent, postStyle) => {
+      if (/text-align:/i.test(styleContent)) {
+        return match;
+      }
+      return `${closeH1}${openP}${preStyle}style=${quote}${styleContent}; text-align: center;${quote}${postStyle}>`;
+    }
+  );
+
   return fixedHtml;
 }
