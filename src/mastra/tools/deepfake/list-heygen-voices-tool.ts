@@ -11,6 +11,7 @@
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { HEYGEN } from '../../constants';
+import { uuidv4 } from '../../utils/core/id-utils';
 import { getLogger } from '../../utils/core/logger';
 import { normalizeError } from '../../utils/core/error-utils';
 import { withRetry } from '../../utils/core/resilience-utils';
@@ -54,6 +55,41 @@ const listHeyGenVoicesOutputSchema = z.object({
 export type HeyGenVoice = z.infer<typeof heygenVoiceSchema>;
 
 // ============================================
+// Helper: Emit UI signal to frontend
+// ============================================
+
+async function emitVoiceSelectionSignal(
+  writer: any,
+  payload: {
+    voices: HeyGenVoice[];
+    total: number;
+    requestedLanguage: string | null;
+    warning: string | null;
+  }
+): Promise<void> {
+  if (!writer) return;
+
+  try {
+    const messageId = uuidv4();
+    const encoded = Buffer.from(JSON.stringify(payload)).toString('base64');
+
+    await writer.write({ type: 'text-start', id: messageId });
+    await writer.write({
+      type: 'text-delta',
+      id: messageId,
+      delta: `::ui:voice_selection::${encoded}::/ui:voice_selection::\n`,
+    });
+    await writer.write({ type: 'text-end', id: messageId });
+
+    logger.info('voice_selection_ui_signal_emitted', { total: payload.total });
+  } catch (emitErr) {
+    logger.warn('voice_selection_ui_signal_failed', {
+      error: normalizeError(emitErr).message,
+    });
+  }
+}
+
+// ============================================
 // Tool Definition
 // ============================================
 
@@ -63,7 +99,7 @@ export const listHeyGenVoicesTool = createTool({
     'Lists available HeyGen voices for deepfake video generation. Accepts an optional "language" parameter (e.g., "Turkish", "English") to filter voices by language. Returns target language voices first, then Multilingual voices (which support emotion tones), then English fallback.',
   inputSchema: listHeyGenVoicesInputSchema,
   outputSchema: listHeyGenVoicesOutputSchema,
-  execute: async ({ context }) => {
+  execute: async ({ context, writer }) => {
     try {
       const apiKey = process.env.HEYGEN_API_KEY;
       if (!apiKey) {
@@ -114,7 +150,7 @@ export const listHeyGenVoicesTool = createTool({
       // HeyGen v2/voices response: { data: { voices: [...] } }
       // First ~60 voices are custom/cloned with language:"unknown" — skip them.
       // Only return voices with real language metadata for reliable filtering.
-      const MAX_VOICES = 15;
+      const MAX_VOICES = 30;
       const allVoices: unknown[] = data?.data?.voices ?? [];
 
       const mappedVoices: HeyGenVoice[] = allVoices
@@ -181,6 +217,16 @@ export const listHeyGenVoicesTool = createTool({
       });
 
       const noTargetFound = targetLanguage && targetVoices.length === 0;
+      const warning = noTargetFound
+        ? `No dedicated ${targetLanguage} voices found. Showing Multilingual and English voices as alternatives. Multilingual voices can speak in any language.`
+        : null;
+
+      await emitVoiceSelectionSignal(writer, {
+        voices,
+        total: voices.length,
+        requestedLanguage: targetLanguage ?? null,
+        warning,
+      });
 
       return {
         success: true,
@@ -189,11 +235,7 @@ export const listHeyGenVoicesTool = createTool({
         ...(targetLanguage ? { requestedLanguage: targetLanguage } : {}),
         ...(targetLanguage ? { targetLanguageCount: targetVoices.length } : {}),
         ...(targetLanguage ? { multilingualCount: multilingualVoices.length } : {}),
-        ...(noTargetFound
-          ? {
-              warning: `No dedicated ${targetLanguage} voices found. Showing Multilingual and English voices as alternatives. Multilingual voices can speak in any language.`,
-            }
-          : {}),
+        ...(warning ? { warning } : {}),
       };
     } catch (error) {
       const err = normalizeError(error);

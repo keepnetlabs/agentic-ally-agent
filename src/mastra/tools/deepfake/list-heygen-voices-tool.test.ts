@@ -14,6 +14,10 @@ vi.mock('../../utils/core/resilience-utils', () => ({
   withRetry: vi.fn((fn: () => Promise<unknown>) => fn()),
 }));
 
+vi.mock('../../utils/core/id-utils', () => ({
+  uuidv4: () => 'test-uuid-voices',
+}));
+
 const originalEnv = process.env;
 
 describe('listHeyGenVoicesTool', () => {
@@ -148,6 +152,34 @@ describe('listHeyGenVoicesTool', () => {
         targetLanguageCount: 0,
       });
       expect((result as any).warning).toContain('No dedicated Arabic voices');
+    });
+
+    it('should emit voice selection signal when writer is provided', async () => {
+      process.env.HEYGEN_API_KEY = 'test-key';
+      const mockVoices = [
+        { voice_id: 'v-1', name: 'Emma', language: 'English', gender: 'female', emotion_support: true, preview_audio: 'https://example.com/emma.mp3' },
+        { voice_id: 'v-2', name: 'James', language: 'English', gender: 'male', emotion_support: false },
+      ];
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+        new Response(
+          JSON.stringify({ data: { voices: mockVoices } }),
+          { status: 200 }
+        )
+      );
+      const mockWriter = { write: vi.fn().mockResolvedValue(undefined) };
+
+      const result = await listHeyGenVoicesTool.execute!({
+        context: { language: 'English' },
+        writer: mockWriter,
+      } as any);
+
+      expect(result).toMatchObject({ success: true });
+      expect(mockWriter.write).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'text-delta',
+          delta: expect.stringContaining('::ui:voice_selection::'),
+        })
+      );
     });
 
     it('should return error on fetch throw', async () => {

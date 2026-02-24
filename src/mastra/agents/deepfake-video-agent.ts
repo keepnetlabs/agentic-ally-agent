@@ -123,23 +123,11 @@ When invoked by orchestrator with taskContext, extract all relevant fields and a
 **Decision order (first match wins):**
 - If the tool returns NO avatars: inform the user in the Interaction Language that no avatars are configured. STOP.
 - If there is only ONE avatar: auto-select it, inform the user briefly, move directly to STATE 3.
-- If there are avatars (2+): present them as a numbered list and ask the user to pick one. Do NOT auto-select when multiple avatars are available.
+- If there are avatars (2+): show the avatar selection UI and ask the user to pick one. Do NOT auto-select when multiple avatars are available.
 
-**List format (only when user input is required):**
-Output ONLY the template below — do NOT prepend your own headings or state labels before it.
-
-<strong>{Localized: "Available Avatars"}</strong>
-
-<ol>
-  <li><strong>{avatar_name}</strong> — {gender if available}<br/><img src="{preview_image_url}" width="60" alt="{avatar_name}"/></li>
-  <li><strong>{avatar_name}</strong> — {gender if available}<br/><img src="{preview_image_url}" width="60" alt="{avatar_name}"/></li>
-  ...
-</ol>
-
-{Localized: "Which avatar should appear in the video?"}
-
-- If preview_image_url is available, ALWAYS include the img tag so the user can see the avatar before selecting.
-- If preview_image_url is not available, omit the img tag and show only the name.
+**Display (only when user input is required):**
+After calling listHeyGenAvatars, the UI automatically renders an avatar selection grid — do NOT write an HTML list.
+Write only a brief localized prompt, e.g.: {Localized: "Please select an avatar from the options shown."}
 
 - Accept selection by index ("1", "2", "3"), by avatar name.
 - **CRITICAL:** After the user selects, store the corresponding "avatar_id" from the tool response. You will pass this exact "avatar_id" string to the generateDeepfakeVideo tool in STATE 6. Do NOT pass the display name or index — the tool requires the raw "avatar_id".
@@ -163,22 +151,11 @@ Call the tool **with the language parameter**.
 - If the tool returns NO voices: inform the user in the Interaction Language that no voices are configured.
 - If there is only ONE voice: auto-select it, inform the user briefly, move directly to STATE 4.
 - If there are matching-language voices and only ONE matches: auto-select it, inform the user, move to STATE 4.
-- If there are voices (2+): present them as a numbered list and ask the user to pick one.
+- If there are voices (2+): show the voice selection UI and ask the user to pick one.
 
-**List format (only when user input is required):**
-Output ONLY the template below — do NOT prepend your own headings or state labels before it.
-
-<strong>{Localized: "Available Voices"}</strong>
-
-<ol>
-  <li><strong>{name}</strong> — {language}, {gender if available}, {append "✦" if voice has emotion_support}</li>
-  <li><strong>{name}</strong> — {language}, {gender if available}, {append "✦" if voice has emotion_support}</li>
-  ...
-</ol>
-
-<em>✦ = {Localized: "Supports expressive emotion tones"}</em>
-
-{Localized: "Which voice should the avatar use?"}
+**Display (only when user input is required):**
+After calling listHeyGenVoices, the UI automatically renders a voice selection table with audio preview — do NOT write an HTML list.
+Write only a brief localized prompt, e.g.: {Localized: "Please select a voice from the options shown."}
 
 - Accept selection by index ("1", "2", "3"), or by voice name.
 - **CRITICAL:** After the user selects, store the corresponding "voice_id" AND the "emotion_support" boolean from the tool response. You will pass the exact "voice_id" string to the generateDeepfakeVideo tool in STATE 6. Do NOT pass the display name or index — the tool requires the raw "voice_id".

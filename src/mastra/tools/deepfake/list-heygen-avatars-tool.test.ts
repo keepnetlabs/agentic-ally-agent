@@ -14,6 +14,10 @@ vi.mock('../../utils/core/resilience-utils', () => ({
   withRetry: vi.fn((fn: () => Promise<unknown>) => fn()),
 }));
 
+vi.mock('../../utils/core/id-utils', () => ({
+  uuidv4: () => 'test-uuid-avatars',
+}));
+
 const originalEnv = process.env;
 
 describe('listHeyGenAvatarsTool', () => {
@@ -114,9 +118,9 @@ describe('listHeyGenAvatarsTool', () => {
       expect((result as any).avatars[0].avatar_id).toBe('av-1');
     });
 
-    it('should limit to MAX_AVATARS (10)', async () => {
+    it('should limit to MAX_AVATARS (50)', async () => {
       process.env.HEYGEN_API_KEY = 'test-key';
-      const manyAvatars = Array.from({ length: 15 }, (_, i) => ({
+      const manyAvatars = Array.from({ length: 55 }, (_, i) => ({
         avatar_id: `av-${i}`,
         avatar_name: `Avatar ${i}`,
       }));
@@ -129,7 +133,35 @@ describe('listHeyGenAvatarsTool', () => {
 
       const result = await listHeyGenAvatarsTool.execute!({ context: {} } as any);
 
-      expect((result as any).avatars).toHaveLength(15);
+      expect((result as any).avatars).toHaveLength(50);
+    });
+
+    it('should emit avatar selection signal when writer is provided', async () => {
+      process.env.HEYGEN_API_KEY = 'test-key';
+      const mockAvatars = [
+        { avatar_id: 'av-1', avatar_name: 'Alice', gender: 'female', preview_image_url: 'https://example.com/alice.jpg' },
+        { avatar_id: 'av-2', avatar_name: 'Bob', gender: 'male' },
+      ];
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+        new Response(
+          JSON.stringify({ data: { avatars: mockAvatars } }),
+          { status: 200 }
+        )
+      );
+      const mockWriter = { write: vi.fn().mockResolvedValue(undefined) };
+
+      const result = await listHeyGenAvatarsTool.execute!({
+        context: {},
+        writer: mockWriter,
+      } as any);
+
+      expect(result).toMatchObject({ success: true });
+      expect(mockWriter.write).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'text-delta',
+          delta: expect.stringContaining('::ui:avatar_selection::'),
+        })
+      );
     });
 
     it('should handle empty data.avatars', async () => {

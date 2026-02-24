@@ -11,6 +11,7 @@
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { HEYGEN } from '../../constants';
+import { uuidv4 } from '../../utils/core/id-utils';
 import { getLogger } from '../../utils/core/logger';
 import { normalizeError } from '../../utils/core/error-utils';
 import { withRetry } from '../../utils/core/resilience-utils';
@@ -41,6 +42,36 @@ const listHeyGenAvatarsOutputSchema = z.object({
 export type HeyGenAvatar = z.infer<typeof heygenAvatarSchema>;
 
 // ============================================
+// Helper: Emit UI signal to frontend
+// ============================================
+
+async function emitAvatarSelectionSignal(
+  writer: any,
+  payload: { avatars: HeyGenAvatar[]; total: number }
+): Promise<void> {
+  if (!writer) return;
+
+  try {
+    const messageId = uuidv4();
+    const encoded = Buffer.from(JSON.stringify(payload)).toString('base64');
+
+    await writer.write({ type: 'text-start', id: messageId });
+    await writer.write({
+      type: 'text-delta',
+      id: messageId,
+      delta: `::ui:avatar_selection::${encoded}::/ui:avatar_selection::\n`,
+    });
+    await writer.write({ type: 'text-end', id: messageId });
+
+    logger.info('avatar_selection_ui_signal_emitted', { total: payload.total });
+  } catch (emitErr) {
+    logger.warn('avatar_selection_ui_signal_failed', {
+      error: normalizeError(emitErr).message,
+    });
+  }
+}
+
+// ============================================
 // Tool Definition
 // ============================================
 
@@ -50,7 +81,7 @@ export const listHeyGenAvatarsTool = createTool({
     'Lists all available HeyGen avatars that can be used for deepfake video generation. Returns avatar ID, name, gender, and preview URLs so the user can select one.',
   inputSchema: listHeyGenAvatarsInputSchema,
   outputSchema: listHeyGenAvatarsOutputSchema,
-  execute: async () => {
+  execute: async ({ writer }) => {
     try {
       const apiKey = process.env.HEYGEN_API_KEY;
       if (!apiKey) {
@@ -98,7 +129,7 @@ export const listHeyGenAvatarsTool = createTool({
       const data = await response.json();
 
       // HeyGen v2/avatars response: { data: { avatars: [...] } }
-      const MAX_AVATARS = 15;
+      const MAX_AVATARS = 50;
       const allAvatars: unknown[] = data?.data?.avatars ?? [];
 
       const avatars: HeyGenAvatar[] = allAvatars
@@ -120,6 +151,8 @@ export const listHeyGenAvatarsTool = createTool({
         totalFromApi: allAvatars.length,
         returned: avatars.length,
       });
+
+      await emitAvatarSelectionSignal(writer, { avatars, total: avatars.length });
 
       return {
         success: true,
