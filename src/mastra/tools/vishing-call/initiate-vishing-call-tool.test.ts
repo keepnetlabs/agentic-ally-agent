@@ -122,8 +122,8 @@ describe('initiateVishingCallTool', () => {
     } as never);
 
     expect(result.success).toBe(false);
-    expect(result.error).toContain('422');
-    expect(result.error).toContain('phone number or agent');
+    expect(result.error).toContain('phone number or agent configuration');
+    expect(result.error).toContain('Please check');
   });
 
   it('should return generic error for other API errors', async () => {

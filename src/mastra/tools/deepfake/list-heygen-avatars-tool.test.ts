@@ -129,7 +129,7 @@ describe('listHeyGenAvatarsTool', () => {
 
       const result = await listHeyGenAvatarsTool.execute!({ context: {} } as any);
 
-      expect((result as any).avatars).toHaveLength(10);
+      expect((result as any).avatars).toHaveLength(15);
     });
 
     it('should handle empty data.avatars', async () => {

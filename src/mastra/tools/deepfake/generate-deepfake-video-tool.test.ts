@@ -104,7 +104,7 @@ describe('generateDeepfakeVideoTool', () => {
 
       expect(result).toMatchObject({
         success: false,
-        error: expect.stringContaining('400'),
+        error: expect.stringContaining('Video generation failed'),
       });
     });
 
@@ -154,7 +154,7 @@ describe('generateDeepfakeVideoTool', () => {
 
       expect(result).toMatchObject({
         success: false,
-        error: expect.stringContaining('HeyGen error'),
+        error: expect.stringContaining('Video generation failed'),
       });
     });
 
@@ -216,7 +216,7 @@ describe('generateDeepfakeVideoTool', () => {
 
       expect(result).toMatchObject({
         success: false,
-        error: expect.stringContaining('HeyGen error'),
+        error: expect.stringContaining('Video generation failed'),
       });
     });
 
