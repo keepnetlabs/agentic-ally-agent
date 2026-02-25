@@ -62,17 +62,17 @@ ${isQuishing ? QUISHING_LANDING_PAGE_RULE : NO_QR_CODE_LANDING_PAGE_RULE}
    - Do NOT include external CSS or JS files.
    - Styling must be done with inline \`style='...'\` attributes.
 
-5. **CRITICAL: INLINE CSS IS THE SOURCE OF TRUTH:**
+5. **INLINE CSS IS THE SOURCE OF TRUTH:**
    - You MAY use the design hints from \`industryDesign\`, but the final visual result must come from inline styles.
    - For the main card, primary button and inputs, use the provided design patterns:
      - Card: \`style='${industryDesign.patterns.cardStyle}'\`
      - Button: \`style='${industryDesign.patterns.buttonStyle}'\`
      - Input: \`style='${industryDesign.patterns.inputStyle}'\`
-   - **CRITICAL FOR HERO LAYOUT:** Hero section (class='hero') MUST use \`flex-direction: column;\` in inline style:
+   - **For HERO layout:** Hero section (class='hero') MUST use \`flex-direction: column;\` in inline style:
      - ✅ Correct: \`style='display: flex; flex-direction: column; align-items: center; justify-content: center;'\`
      - ❌ Wrong: \`style='display: flex; align-items: center; justify-content: center;'\` (missing flex-direction: column)
 
-  6. **🚨 MANDATORY DESIGN DIRECTIVE (YOU MUST FOLLOW THIS):**
+  6. **MANDATORY DESIGN DIRECTIVE:**
 
      You act as a rendering engine. You have been assigned a specific design system for this generation.
 
@@ -87,7 +87,7 @@ ${isQuishing ? QUISHING_LANDING_PAGE_RULE : NO_QR_CODE_LANDING_PAGE_RULE}
 
      **Specific Implementation Rules for ${randomLayout.id}:**
      ${randomLayout.id === 'SPLIT' ? '- Use `display: flex; flex-wrap: wrap;` on body.\n     - Left side: Brand color background, centered logo/text.\n     - Right side: White background, form content.' : ''}
-    ${randomLayout.id === 'MINIMAL' ? `- NO CARD CONTAINER. Content sits directly on background.\n     - CRITICAL: body max-width: ${LANDING_PAGE.MINIMAL_BODY_MAX_WIDTH_PX}px, form max-width: ${LANDING_PAGE.FORM_MAX_WIDTH_PX}px (never full-width).\n     - Centered logo and form with generous spacing (24px gaps).\n     - Clean, minimalist, alert-like layout with breathing room.` : ''}
+    ${randomLayout.id === 'MINIMAL' ? `- NO CARD CONTAINER. Content sits directly on background.\n     - Use body max-width: ${LANDING_PAGE.MINIMAL_BODY_MAX_WIDTH_PX}px, form max-width: ${LANDING_PAGE.FORM_MAX_WIDTH_PX}px (never full-width).\n     - Centered logo and form with generous spacing (24px gaps).\n     - Clean, minimalist, alert-like layout with breathing room.` : ''}
      ${randomLayout.id === 'CENTERED' ? '- Classic centered card with shadow.\n     - Background color surrounds the card.' : ''}
     ${randomLayout.id === 'HERO' ? `- Top full-width hero bar (brand color, ~200px height).\n     - Hero section: \`display: flex; flex-direction: column;\` (logo and title must stack vertically).\n     - Content card overlaps the hero bar with a subtle negative margin-top.\n     - Recommended: main container \`style='width: 100%; max-width: ${LANDING_PAGE.HERO_MAIN_CONTAINER_MAX_WIDTH_PX}px; margin: ${LANDING_PAGE.HERO_MAIN_CONTAINER_MARGIN_TOP_PX}px auto 0; padding: 0 20px; display: flex; flex-direction: column; align-items: center; justify-content: center;'\`.` : ''}
 
@@ -118,7 +118,7 @@ Pages for the same brand must feel related (same color palette, logo, general mo
 
 For each new page/template, change at least **3** of the following visual aspects in a natural way:
 
-1. Card max-width (e.g. 420–520px) via \`style='max-width: 420px;'\` vs \`480px\`.
+1. Card max-width (e.g. 520–${LANDING_PAGE.FORM_MAX_WIDTH_PX}px) via \`style='max-width: ${LANDING_PAGE.FORM_MAX_WIDTH_PX}px;'\` vs \`560px\`.
 2. Card border-radius (e.g. 14px, 18px, 22px).
 3. Card shadow strength (softer or stronger \`box-shadow\`).
 4. Logo size or alignment (center vs left).
@@ -142,7 +142,7 @@ For each new page/template, change at least **3** of the following visual aspect
      <div style='${industryDesign.patterns.cardStyle}'>
        ...
      </div>
-   - **🚨 IMPORTANT:** If you see \`margin: 0 auto;\` already in templates/examples above, **DO NOT change or remove it** – it's correct centering. If adding new containers, ensure they use \`margin: 0 auto;\` (never \`margin: 0 16px;\` or asymmetric margins).
+   - **IMPORTANT:** If you see \`margin: 0 auto;\` already in templates/examples above, **DO NOT change or remove it** – it's correct centering. If adding new containers, ensure they use \`margin: 0 auto;\` (never \`margin: 0 16px;\` or asymmetric margins).
    - **For wrapper divs**: Use \`display: flex; justify-content: center;\` to center content horizontally.
 
 2. **Typography Hierarchy:**
@@ -253,8 +253,6 @@ Return ONLY this JSON structure (no extra commentary, no markdown):
 }
 
 - Include only the page objects that match \`requiredPages\`.
-- Each \`template\` must be a COMPLETE HTML document.
 - DO NOT include email-related fields (subject, fromName, fromAddress). This is a WEBSITE, not an email.
-- Inside each \`template\`, ALL HTML attributes must use SINGLE QUOTES.
 `;
 }

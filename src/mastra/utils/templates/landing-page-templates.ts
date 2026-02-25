@@ -81,7 +81,7 @@ export function getLoginTemplateExample({ fromName, industryDesign }: TemplatePa
 '>
   <div style='
     width: 100%;
-    max-width: 420px;
+    max-width: ${LANDING_PAGE.FORM_MAX_WIDTH_PX}px;
     margin: 0 auto !important;
     display: flex;
     flex-direction: column;
@@ -201,7 +201,7 @@ export function getSuccessTemplateExample({ fromName, industryDesign }: Template
 '>
   <div style='
     width: 100%;
-    max-width: 420px;
+    max-width: ${LANDING_PAGE.FORM_MAX_WIDTH_PX}px;
     margin: 0 auto !important;
     display: flex;
     flex-direction: column;

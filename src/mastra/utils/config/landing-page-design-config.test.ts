@@ -192,7 +192,7 @@ describe('landing-page-design-config', () => {
       });
 
       it('should have cssRule with max-width', () => {
-        expect(centered?.cssRule).toContain('max-width: 420px');
+        expect(centered?.cssRule).toContain(`max-width: ${LANDING_PAGE.FORM_MAX_WIDTH_PX}px`);
       });
 
       it('should have cssRule with card styling', () => {

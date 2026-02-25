@@ -27,8 +27,7 @@ export const LAYOUT_OPTIONS: LayoutOption[] = [
     id: 'CENTERED',
     name: 'CENTERED CARD (Classic)',
     description: 'A centered white card on a colored background. Best for generic login.',
-    cssRule:
-      'body { display: flex; align-items: center; justify-content: center; background-color: #f3f4f6; } .card { max-width: 420px; margin: 0 auto !important; background: white; padding: 32px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }',
+    cssRule: `body { display: flex; align-items: center; justify-content: center; background-color: #f3f4f6; } .card { max-width: ${LANDING_PAGE.FORM_MAX_WIDTH_PX}px; width: 100%; margin: 0 auto !important; background: white; padding: 32px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }`,
   },
   {
     id: 'SPLIT',
