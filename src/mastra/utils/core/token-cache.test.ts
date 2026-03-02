@@ -56,6 +56,14 @@ describe('TokenCache', () => {
     expect(cache.get('token1')).toBeNull();
   });
 
+  it('should evict when capacity is 1 and second item is added', () => {
+    cache = new TokenCache(10000, 1);
+    cache.set('first', true);
+    cache.set('second', true);
+    expect(cache.get('first')).toBeNull();
+    expect(cache.get('second')).toBe(true);
+  });
+
   it('should evict oldest items when capacity is reached (LRU-ish)', () => {
     const capacity = 3;
     cache = new TokenCache(10000, capacity);
@@ -75,6 +83,22 @@ describe('TokenCache', () => {
     expect(cache.get('2')).toBe(true);
     expect(cache.get('3')).toBe(true);
     expect(cache.get('4')).toBe(true);
+  });
+
+  it('should overwrite value when setting same key', () => {
+    cache = new TokenCache(10000);
+    cache.set('key1', true);
+    cache.set('key1', false);
+    expect(cache.get('key1')).toBe(false);
+  });
+
+  it('should return null for expired token', () => {
+    cache = new TokenCache(100);
+    cache.set('expiring', true);
+    vi.setSystemTime(START_TIME + 50);
+    expect(cache.get('expiring')).toBe(true);
+    vi.setSystemTime(START_TIME + 101);
+    expect(cache.get('expiring')).toBeNull();
   });
 
   it('should not evict if updating existing key', () => {

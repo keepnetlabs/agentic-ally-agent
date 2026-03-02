@@ -1,6 +1,12 @@
 /**
  * Initiate Vishing Call Tool
  *
+ * EU AI Act (Art. 9) Tool Risk Metadata:
+ * - riskLevel: limited
+ * - rationale: Initiates real voice call; target selection affects user
+ * - humanOversight: Chat confirmation before execution
+ * @see docs/AI_COMPLIANCE_INVENTORY.md
+ *
  * Triggers an outbound phone call via ElevenLabs Twilio integration.
  * The tool dynamically overrides the agent's system prompt and first message
  * using `conversation_initiation_client_data` to create scenario-specific
@@ -20,6 +26,7 @@ import { uuidv4 } from '../../utils/core/id-utils';
 import { getLogger } from '../../utils/core/logger';
 import { normalizeError } from '../../utils/core/error-utils';
 import { withRetry } from '../../utils/core/resilience-utils';
+import { withHeartbeat } from '../../utils/core/sse-heartbeat';
 
 const logger = getLogger('InitiateVishingCallTool');
 
@@ -171,31 +178,33 @@ export const initiateVishingCallTool = createTool({
       logger.info('initiate_vishing_call_request', {
         agentId: effectiveAgentId,
         agentPhoneNumberId,
-        toNumber: toNumber.substring(0, 6) + '***', // Mask for privacy
+        toNumber: toNumber.substring(0, 6) + '***',
         promptLength: prompt.length,
         firstMessageLength: firstMessage.length,
       });
 
-      const response = await withRetry(async () => {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), ELEVENLABS.API_TIMEOUT_MS);
+      const response = await withHeartbeat(writer, () =>
+        withRetry(async () => {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), ELEVENLABS.API_TIMEOUT_MS);
 
-        try {
-          const res = await fetch(url, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'xi-api-key': apiKey,
-            },
-            body: JSON.stringify(requestBody),
-            signal: controller.signal,
-          });
+          try {
+            const res = await fetch(url, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'xi-api-key': apiKey,
+              },
+              body: JSON.stringify(requestBody),
+              signal: controller.signal,
+            });
 
-          return res;
-        } finally {
-          clearTimeout(timeoutId);
-        }
-      }, 'initiate_vishing_call_request');
+            return res;
+          } finally {
+            clearTimeout(timeoutId);
+          }
+        }, 'initiate_vishing_call_request'),
+      );
 
       if (!response.ok) {
         const errorBody = await response.text().catch(() => 'Unable to read error body');
@@ -207,9 +216,10 @@ export const initiateVishingCallTool = createTool({
 
         // Provide user-friendly error messages for common cases
         if (response.status === 422) {
+          logger.error('initiate_vishing_call_422_detail', { body: errorBody.substring(0, 500) });
           return {
             success: false,
-            error: `Call setup failed (422): The phone number or agent configuration may be invalid. Details: ${errorBody.substring(0, 200)}`,
+            error: 'Call setup failed: The phone number or agent configuration may be invalid. Please check the number format and try again.',
           };
         }
 

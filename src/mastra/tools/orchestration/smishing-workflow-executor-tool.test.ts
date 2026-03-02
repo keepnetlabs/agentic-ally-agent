@@ -205,4 +205,48 @@ describe('smishingWorkflowExecutorTool', () => {
     expect(typeof result.error).toBe('string');
     expect(result.message).toBe(ERROR_MESSAGES.SMISHING.GENERIC);
   });
+
+  it('should return ANALYSIS_FAILED message when workflow throws error containing "analysis"', async () => {
+    mockWorkflowRun.start.mockRejectedValue(new Error('Scenario analysis failed for smishing'));
+
+    const result = await smishingWorkflowExecutorTool.execute({
+      context: {
+        workflowType: SMISHING.WORKFLOW_TYPE,
+        topic: 'IT verification',
+      },
+    } as any);
+
+    expect(result.success).toBe(false);
+    expect(result.message).toBe(ERROR_MESSAGES.SMISHING.ANALYSIS_FAILED);
+  });
+
+  it('should return GENERATION_FAILED message when workflow throws error containing "sms"', async () => {
+    mockWorkflowRun.start.mockRejectedValue(new Error('sms template generation failed'));
+
+    const result = await smishingWorkflowExecutorTool.execute({
+      context: {
+        workflowType: SMISHING.WORKFLOW_TYPE,
+        topic: 'IT verification',
+      },
+    } as any);
+
+    expect(result.success).toBe(false);
+    expect(result.message).toBe(ERROR_MESSAGES.SMISHING.GENERATION_FAILED);
+  });
+
+  it('should pass targetProfile and additionalContext to workflow', async () => {
+    const input = {
+      workflowType: SMISHING.WORKFLOW_TYPE,
+      topic: 'Delivery scam',
+      targetProfile: { department: 'Finance', vulnerabilities: ['urgency'] },
+      additionalContext: 'Target CFO with invoice urgency',
+    };
+
+    await smishingWorkflowExecutorTool.execute({ context: input } as any);
+
+    expect(mockCreateRunAsync).toHaveBeenCalled();
+    const startCall = mockWorkflowRun.start.mock.calls[0][0];
+    expect(startCall.inputData.targetProfile).toEqual({ department: 'Finance', vulnerabilities: ['urgency'] });
+    expect(startCall.inputData.additionalContext).toBe('Target CFO with invoice urgency');
+  });
 });

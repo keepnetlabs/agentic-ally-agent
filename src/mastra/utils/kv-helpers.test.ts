@@ -1,108 +1,129 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { loadInboxWithFallback } from './kv-helpers';
-import { LANGUAGE } from '../constants';
 
-// Mock dependencies
+const mockKvGet = vi.fn();
+
+vi.mock('../services/kv-service', () => ({
+  KVService: class {
+    get = mockKvGet;
+  },
+}));
+
 vi.mock('./core/logger', () => ({
-  getLogger: vi.fn().mockReturnValue({
+  getLogger: () => ({
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
-    debug: vi.fn(),
   }),
 }));
 
 vi.mock('./core/resilience-utils', () => ({
-  withRetry: vi.fn(fn => fn()), // Pass-through mock
+  withRetry: vi.fn((fn: () => Promise<unknown>) => fn()),
 }));
 
-describe('KV Helpers', () => {
-  let mockKVService: any;
+vi.mock('../constants', async (importOriginal) => {
+  const actual = (await importOriginal()) as Record<string, unknown>;
+  return {
+    ...actual,
+    CLOUDFLARE_KV: {
+      KEY_TEMPLATES: {
+        inbox: (mlId: string, dept: string, lang: string) => `ml:${mlId}:inbox:${dept}:${lang}`,
+      },
+    },
+    LANGUAGE: { DEFAULT_SOURCE: 'en-gb' },
+  };
+});
+
+// Mock error-utils and error-service to avoid side effects
+vi.mock('./core/error-utils', () => ({
+  normalizeError: (e: unknown) => (e instanceof Error ? e : new Error(String(e))),
+  logErrorInfo: vi.fn(),
+}));
+
+vi.mock('../services/error-service', () => ({
+  errorService: {
+    external: vi.fn(() => ({ code: 'ERR', message: 'err', category: 'EXTERNAL' })),
+  },
+}));
+
+describe('kv-helpers', () => {
+  const mockKvService = { get: mockKvGet };
 
   beforeEach(() => {
-    mockKVService = {
-      get: vi.fn(),
-    };
     vi.clearAllMocks();
   });
 
   describe('loadInboxWithFallback', () => {
-    const microlearningId = 'ml-001';
-    const department = 'IT';
-    const sourceLanguage = 'tr-tr';
+    it('returns data when primary key found', async () => {
+      const inboxData = { emails: [] };
+      mockKvGet.mockResolvedValue(inboxData);
 
-    it('should load inbox from primary key when available', async () => {
-      const inboxData = { items: ['email1', 'email2'] };
-      mockKVService.get.mockResolvedValue(inboxData);
-
-      const result = await loadInboxWithFallback(mockKVService, microlearningId, department, sourceLanguage);
+      const result = await loadInboxWithFallback(
+        mockKvService as any,
+        'ml-123',
+        'IT',
+        'en-gb'
+      );
 
       expect(result).toEqual(inboxData);
-      expect(mockKVService.get).toHaveBeenCalledTimes(1);
+      expect(mockKvGet).toHaveBeenCalledWith('ml:ml-123:inbox:IT:en-gb');
     });
 
-    it('should fallback to default language when primary not found', async () => {
-      const fallbackData = { items: ['fallback-email'] };
-      mockKVService.get.mockResolvedValueOnce(null).mockResolvedValueOnce(fallbackData);
+    it('returns fallback when primary not found and sourceLanguage differs from default', async () => {
+      mockKvGet
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce({ emails: ['fallback'] });
 
-      const result = await loadInboxWithFallback(mockKVService, microlearningId, department, sourceLanguage);
+      const result = await loadInboxWithFallback(
+        mockKvService as any,
+        'ml-123',
+        'IT',
+        'de-de'
+      );
 
-      expect(result).toEqual(fallbackData);
-      expect(mockKVService.get).toHaveBeenCalledTimes(2);
+      expect(result).toEqual({ emails: ['fallback'] });
+      expect(mockKvGet).toHaveBeenCalledWith('ml:ml-123:inbox:IT:de-de');
+      expect(mockKvGet).toHaveBeenCalledWith('ml:ml-123:inbox:IT:en-gb');
     });
 
-    it('should return null when both primary and fallback not found', async () => {
-      mockKVService.get.mockResolvedValue(null);
+    it('returns null when primary and fallback both not found', async () => {
+      mockKvGet.mockResolvedValue(null);
 
-      const result = await loadInboxWithFallback(mockKVService, microlearningId, department, sourceLanguage);
+      const result = await loadInboxWithFallback(
+        mockKvService as any,
+        'ml-123',
+        'IT',
+        'de-de'
+      );
 
       expect(result).toBeNull();
-      expect(mockKVService.get).toHaveBeenCalledTimes(2);
     });
 
-    it('should not try fallback if primary language is already default', async () => {
-      mockKVService.get.mockResolvedValue(null);
+    it('returns null when primary not found and sourceLanguage is default (no fallback key)', async () => {
+      mockKvGet.mockResolvedValue(null);
 
-      const result = await loadInboxWithFallback(mockKVService, microlearningId, department, LANGUAGE.DEFAULT_SOURCE);
+      const result = await loadInboxWithFallback(
+        mockKvService as any,
+        'ml-123',
+        'IT',
+        'en-gb'
+      );
 
       expect(result).toBeNull();
-      expect(mockKVService.get).toHaveBeenCalledTimes(1);
+      expect(mockKvGet).toHaveBeenCalledTimes(1);
     });
 
-    it('should handle KV service errors gracefully', async () => {
-      mockKVService.get.mockRejectedValue(new Error('KV service error'));
+    it('returns null on KV error', async () => {
+      mockKvGet.mockRejectedValue(new Error('KV error'));
 
-      const result = await loadInboxWithFallback(mockKVService, microlearningId, department, sourceLanguage);
+      const result = await loadInboxWithFallback(
+        mockKvService as any,
+        'ml-123',
+        'IT',
+        'en-gb'
+      );
 
       expect(result).toBeNull();
-      expect(mockKVService.get).toHaveBeenCalled();
-    });
-
-    it('should handle empty inbox data', async () => {
-      const emptyData = { items: [] };
-      mockKVService.get.mockResolvedValue(emptyData);
-
-      const result = await loadInboxWithFallback(mockKVService, microlearningId, department, sourceLanguage);
-
-      expect(result).toEqual(emptyData);
-    });
-
-    it('should work with different microlearning IDs', async () => {
-      const data = { items: ['test'] };
-      mockKVService.get.mockResolvedValue(data);
-
-      const result = await loadInboxWithFallback(mockKVService, 'ml-different', department, sourceLanguage);
-
-      expect(result).toEqual(data);
-    });
-
-    it('should work with different departments', async () => {
-      const data = { items: ['test'] };
-      mockKVService.get.mockResolvedValue(data);
-
-      const result = await loadInboxWithFallback(mockKVService, microlearningId, 'Sales', sourceLanguage);
-
-      expect(result).toEqual(data);
     });
   });
 });

@@ -1,10 +1,17 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { MicrolearningService } from './microlearning-service';
 import {
   createMicrolearningContent,
   createLanguageContent,
 } from '../../../src/__tests__/factories/microlearning-factory';
 import '../../../src/__tests__/setup';
+
+const { mockLoggerInfo } = vi.hoisted(() => ({
+  mockLoggerInfo: vi.fn(),
+}));
+vi.mock('../utils/core/logger', () => ({
+  getLogger: () => ({ info: mockLoggerInfo, debug: vi.fn(), warn: vi.fn(), error: vi.fn() }),
+}));
 
 /**
  * Test Suite: MicrolearningService
@@ -254,6 +261,76 @@ describe('MicrolearningService', () => {
 
       // Should not throw
       await expect(service.assignMicrolearningToDepartment('IT', 'en', 'ml-4', 'high')).resolves.not.toThrow();
+    });
+
+    it('should handle inbox with missing inbox_items (defensive branch)', async () => {
+      const deptInboxes = (MicrolearningService as any).departmentInboxes;
+      try {
+        deptInboxes.set('HR_de', {
+          department: 'HR',
+          last_updated: new Date().toISOString(),
+        });
+
+        await expect(service.assignMicrolearningToDepartment('HR', 'de', 'ml-defensive')).resolves.not.toThrow();
+
+        const inbox = deptInboxes.get('HR_de');
+        expect(inbox.inbox_items).toBeDefined();
+        expect(inbox.inbox_items).toHaveLength(1);
+        expect(inbox.inbox_items[0].microlearning_id).toBe('ml-defensive');
+      } finally {
+        deptInboxes.delete('HR_de');
+      }
+    });
+  });
+
+  describe('getCacheStats', () => {
+    it('should return cache statistics with microlearningCount and estimatedSizeMB', async () => {
+      await service.storeMicrolearning(
+        createMicrolearningContent({ microlearning_id: 'ml-stats-1', microlearning_metadata: { title: 'Stats' } })
+      );
+
+      const stats = MicrolearningService.getCacheStats();
+
+      expect(stats).toMatchObject({
+        microlearningCount: expect.any(Number),
+        estimatedSizeMB: expect.any(Number),
+      });
+      expect(stats.microlearningCount).toBeGreaterThanOrEqual(1);
+      expect(typeof stats.estimatedSizeMB).toBe('number');
+    });
+  });
+
+  describe('cache size logging', () => {
+    it('should log cache size when storing 10th item (cacheSize % 10 === 0)', async () => {
+      mockLoggerInfo.mockClear();
+      const ids = Array.from({ length: 10 }, (_, i) => `ml-log-${i}`);
+      for (const id of ids) {
+        await service.storeMicrolearning(
+          createMicrolearningContent({ microlearning_id: id, microlearning_metadata: { title: 'Log' } })
+        );
+      }
+
+      expect(mockLoggerInfo).toHaveBeenCalledWith(
+        '📊 In-memory cache size',
+        expect.objectContaining({
+          items: expect.any(Number),
+          estimatedMB: expect.any(Number),
+        })
+      );
+    });
+
+    it('should log cache size when cache exceeds 30 items', async () => {
+      mockLoggerInfo.mockClear();
+      for (let i = 0; i < 31; i++) {
+        await service.storeMicrolearning(
+          createMicrolearningContent({
+            microlearning_id: `ml-bulk-${Date.now()}-${i}`,
+            microlearning_metadata: { title: 'Bulk' },
+          })
+        );
+      }
+
+      expect(mockLoggerInfo).toHaveBeenCalled();
     });
   });
 });

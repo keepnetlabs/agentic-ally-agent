@@ -135,5 +135,62 @@ describe('smishing-channel utils', () => {
       expect(rules.channelFirstMessageLabel).toBe('First Slack chat line');
       expect(rules.channelInteractionRule).toContain('workplace DM');
     });
+
+    it('should build rules for all supported channels', () => {
+      const channels = ['sms', 'slack', 'whatsapp', 'teams', 'telegram', 'instagram', 'linkedin'] as const;
+      for (const ch of channels) {
+        const rules = buildSmishingChannelPromptRules(ch);
+        expect(rules.channelLabel).toBeTruthy();
+        expect(rules.channelFocusRule).toBeTruthy();
+        expect(rules.channelToneRule).toBeTruthy();
+        expect(rules.channelInteractionRule).toBeTruthy();
+        expect(rules.channelPromptLabel).toBeTruthy();
+        expect(rules.channelFirstMessageLabel).toBeTruthy();
+      }
+    });
+
+    it('should include WhatsApp-specific interaction rule', () => {
+      const rules = buildSmishingChannelPromptRules('whatsapp');
+      expect(rules.channelInteractionRule).toContain('WhatsApp');
+    });
+
+    it('should include Teams-specific interaction rule', () => {
+      const rules = buildSmishingChannelPromptRules('teams');
+      expect(rules.channelInteractionRule).toContain('Teams');
+    });
+
+    it('should include Telegram-specific interaction rule', () => {
+      const rules = buildSmishingChannelPromptRules('telegram');
+      expect(rules.channelInteractionRule).toContain('Telegram');
+    });
+  });
+
+  describe('resolveSmishingChannel with full context', () => {
+    it('should use additionalContext for detection', () => {
+      const analysis = {
+        topic: 'Security',
+        description: '',
+        additionalContext: 'WhatsApp verification scam',
+      } as any;
+      expect(resolveSmishingChannel(analysis)).toBe('whatsapp');
+    });
+
+    it('should use customRequirements for detection', () => {
+      const analysis = {
+        topic: 'Training',
+        description: '',
+        customRequirements: 'Use LinkedIn DM style',
+      } as any;
+      expect(resolveSmishingChannel(analysis)).toBe('linkedin');
+    });
+
+    it('should prefer deliveryChannel over context detection', () => {
+      const analysis = {
+        deliveryChannel: 'teams',
+        topic: 'WhatsApp scam',
+        description: '',
+      } as any;
+      expect(resolveSmishingChannel(analysis)).toBe('teams');
+    });
   });
 });

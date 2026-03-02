@@ -6,6 +6,11 @@ import {
   type CampaignMetadataInput,
 } from './campaign-metadata-service';
 
+const buildMetadataFromPhishingBaseMock = vi.fn();
+vi.mock('../utils/campaign-metadata-helpers', () => ({
+  buildMetadataFromPhishingBase: (...args: unknown[]) => buildMetadataFromPhishingBaseMock(...args),
+}));
+
 describe('campaign-metadata-service', () => {
   describe('saveCampaignMetadata', () => {
     it('returns false when env is undefined', async () => {
@@ -23,6 +28,11 @@ describe('campaign-metadata-service', () => {
 
     it('returns false when resourceId is empty string', async () => {
       const result = await saveCampaignMetadata({}, { resourceId: '' });
+      expect(result).toBe(false);
+    });
+
+    it('returns false when resourceId is whitespace only', async () => {
+      const result = await saveCampaignMetadata({}, { resourceId: '   ' });
       expect(result).toBe(false);
     });
 
@@ -68,6 +78,15 @@ describe('campaign-metadata-service', () => {
       const runMock = vi.fn().mockRejectedValue(new Error('D1 table not found'));
       const bindMock = vi.fn().mockReturnValue({ run: runMock });
       const env = { agentic_ally_memory: { prepare: () => ({ bind: bindMock }) } };
+
+      const result = await saveCampaignMetadata(env as any, { resourceId: 'test-123' });
+
+      expect(result).toBe(false);
+    });
+
+    it('handles non-Error in catch (String(error) branch)', async () => {
+      const runMock = vi.fn().mockRejectedValue('string error');
+      const env = { agentic_ally_memory: { prepare: () => ({ bind: () => ({ run: runMock }) }) } };
 
       const result = await saveCampaignMetadata(env as any, { resourceId: 'test-123' });
 
@@ -120,6 +139,15 @@ describe('campaign-metadata-service', () => {
       expect(result).toEqual(new Map());
     });
 
+    it('handles non-Error in getCampaignMetadata catch', async () => {
+      const allMock = vi.fn().mockRejectedValue('network error string');
+      const env = { agentic_ally_memory: { prepare: () => ({ bind: () => ({ all: allMock }) }) } };
+
+      const result = await getCampaignMetadata(env as any, ['id1']);
+
+      expect(result).toEqual(new Map());
+    });
+
     it('returns Map with results when D1 succeeds', async () => {
       const allMock = vi.fn().mockResolvedValue({
         success: true,
@@ -154,15 +182,35 @@ describe('campaign-metadata-service', () => {
   });
 
   describe('trySaveCampaignMetadataAfterUpload', () => {
+    beforeEach(() => {
+      buildMetadataFromPhishingBaseMock.mockReset();
+    });
+
     it('never throws when env and resourceId are undefined', async () => {
+      buildMetadataFromPhishingBaseMock.mockReturnValue(null);
       await expect(trySaveCampaignMetadataAfterUpload(undefined, {}, undefined)).resolves.toBeUndefined();
     });
 
     it('never throws when build returns null (empty resourceId)', async () => {
+      buildMetadataFromPhishingBaseMock.mockReturnValue(null);
       await expect(trySaveCampaignMetadataAfterUpload({}, { topic: 'X' }, '')).resolves.toBeUndefined();
     });
 
+    it('never throws when buildMetadataFromPhishingBase throws', async () => {
+      buildMetadataFromPhishingBaseMock.mockImplementation(() => {
+        throw new Error('build error');
+      });
+      await expect(
+        trySaveCampaignMetadataAfterUpload({ agentic_ally_memory: {} }, { topic: 'X' }, 'res-1')
+      ).resolves.toBeUndefined();
+    });
+
     it('calls save and persists when build returns metadata', async () => {
+      buildMetadataFromPhishingBaseMock.mockReturnValue({
+        resourceId: 'res-456',
+        tactic: 'Authority, Fear',
+        scenario: 'CEO Fraud',
+      });
       const runMock = vi.fn().mockResolvedValue({ success: true });
       const bindMock = vi.fn().mockReturnValue({ run: runMock });
       const prepareMock = vi.fn().mockReturnValue({ bind: bindMock });
@@ -179,6 +227,7 @@ describe('campaign-metadata-service', () => {
     });
 
     it('never throws when save fails (D1 error)', async () => {
+      buildMetadataFromPhishingBaseMock.mockReturnValue({ resourceId: 'res-789', tactic: 'Urgency' });
       const runMock = vi.fn().mockRejectedValue(new Error('D1 error'));
       const env = { agentic_ally_memory: { prepare: () => ({ bind: () => ({ run: runMock }) }) } };
 

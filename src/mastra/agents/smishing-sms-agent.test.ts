@@ -108,4 +108,22 @@ describe('smishingAgent', () => {
     expect(smishingSmsAgent.instructions).toContain('AUTONOMOUS_EXECUTION_MODE');
     expect(smishingSmsAgent.instructions).toContain('smishingExecutor');
   });
+
+  it('should have exactly 5 tools', () => {
+    expect(Object.keys(smishingSmsAgent.tools)).toHaveLength(5);
+  });
+
+  it('should include messaging guidelines (blacklist words)', () => {
+    expect(smishingSmsAgent.instructions).toContain('NEVER use');
+    expect(smishingSmsAgent.instructions).toContain('Messaging Guidelines');
+  });
+
+  it('should have substantial instructions', () => {
+    expect(smishingSmsAgent.instructions.length).toBeGreaterThan(2000);
+  });
+
+  it('should include SCENARIO block for language rules', () => {
+    expect(smishingSmsAgent.instructions).toContain('SCENARIO');
+    expect(smishingSmsAgent.instructions).toContain('Pass this to');
+  });
 });

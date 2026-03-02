@@ -1,3 +1,11 @@
+/**
+ * summarize-policy-tool
+ *
+ * EU AI Act (Art. 9) Tool Risk Metadata:
+ * - riskLevel: minimal
+ * - rationale: Policy summary (RAG); informational
+ * @see docs/AI_COMPLIANCE_INVENTORY.md
+ */
 import { createTool, ToolExecutionContext } from '@mastra/core/tools';
 import { generateText } from 'ai';
 import { getModelWithOverride } from '../../model-providers';

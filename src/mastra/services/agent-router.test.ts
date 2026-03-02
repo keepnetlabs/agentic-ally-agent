@@ -229,6 +229,26 @@ describe('AgentRouter', () => {
       expect(withRetry).toHaveBeenCalledWith(expect.any(Function), 'orchestrator-routing');
     });
 
+    it('should invoke withRetry callback which calls orchestrator and cleanResponse', async () => {
+      const mockDecision = {
+        agent: AGENT_NAMES.POLICY_SUMMARY,
+        taskContext: 'Summarize policy',
+        reasoning: 'User asked for policy summary',
+      };
+      const jsonText = JSON.stringify(mockDecision);
+
+      mockOrchestrator.generate.mockResolvedValue({ text: jsonText });
+      (cleanResponse as any).mockReturnValue(jsonText);
+      (withRetry as any).mockImplementation(async (fn: () => Promise<unknown>) => fn());
+
+      const result = await agentRouter.route('Summarize this policy document');
+
+      expect(result.agentName).toBe(AGENT_NAMES.POLICY_SUMMARY);
+      expect(result.taskContext).toBe('Summarize policy');
+      expect(mockOrchestrator.generate).toHaveBeenCalledWith('Summarize this policy document');
+      expect(cleanResponse).toHaveBeenCalledWith(jsonText, 'orchestrator-decision');
+    });
+
     it('should retry on JSON parse errors', async () => {
       let attemptCount = 0;
       const mockDecision = {
@@ -279,6 +299,90 @@ describe('AgentRouter', () => {
 
       // Verify orchestrator is not in valid agents (implicitly tested by routing logic)
       expect(AGENT_NAMES.ORCHESTRATOR).toBeDefined();
+    });
+  });
+
+  describe('Route - All valid agents', () => {
+    const setupRouteTest = async (
+      agent: string,
+      taskContext: string,
+      prompt: string
+    ): Promise<{ agentName: string; taskContext?: string }> => {
+      const mockDecision = { agent, taskContext };
+      const json = JSON.stringify(mockDecision);
+      vi.mocked(cleanResponse).mockReturnValue(json);
+      vi.mocked(withRetry).mockResolvedValue(mockDecision as never);
+      return agentRouter.route(prompt);
+    };
+
+    it('should route to smishing agent', async () => {
+      const result = await setupRouteTest(AGENT_NAMES.SMISHING, 'SMS phishing', 'Create smishing');
+      expect(result.agentName).toBe(AGENT_NAMES.SMISHING);
+      expect(result.taskContext).toBe('SMS phishing');
+    });
+
+    it('should route to vishing agent', async () => {
+      const result = await setupRouteTest(AGENT_NAMES.VISHING_CALL, 'Place call', 'Initiate vishing call');
+      expect(result.agentName).toBe(AGENT_NAMES.VISHING_CALL);
+    });
+
+    it('should route to deepfake video agent', async () => {
+      const result = await setupRouteTest(AGENT_NAMES.DEEPFAKE_VIDEO, 'Generate video', 'Create deepfake video');
+      expect(result.agentName).toBe(AGENT_NAMES.DEEPFAKE_VIDEO);
+    });
+
+    it('should route to user info agent', async () => {
+      const result = await setupRouteTest(AGENT_NAMES.USER_INFO, 'Get user list', 'Show user assignments');
+      expect(result.agentName).toBe(AGENT_NAMES.USER_INFO);
+    });
+
+    it('should route to policy summary agent', async () => {
+      const result = await setupRouteTest(AGENT_NAMES.POLICY_SUMMARY, 'Summarize policy', 'Summarize policy doc');
+      expect(result.agentName).toBe(AGENT_NAMES.POLICY_SUMMARY);
+    });
+  });
+
+  describe('Route - Out-of-Scope Handling', () => {
+    it('should return outOfScope when orchestrator classifies request as out-of-scope', async () => {
+      const mockDecision = {
+        agent: AGENT_NAMES.OUT_OF_SCOPE,
+        taskContext: 'User asked about product pricing',
+        reasoning: 'Scenario D: pricing is outside agent capabilities',
+      };
+
+      vi.mocked(withRetry).mockResolvedValue(mockDecision as never);
+
+      const result = await agentRouter.route('What is the price of the product?');
+
+      expect(result.agentName).toBe(AGENT_NAMES.OUT_OF_SCOPE);
+      expect(result.taskContext).toBe('User asked about product pricing');
+    });
+
+    it('should return outOfScope for general knowledge questions', async () => {
+      const mockDecision = {
+        agent: AGENT_NAMES.OUT_OF_SCOPE,
+        taskContext: 'User asked about weather',
+      };
+
+      vi.mocked(withRetry).mockResolvedValue(mockDecision as never);
+
+      const result = await agentRouter.route("What's the weather today?");
+
+      expect(result.agentName).toBe(AGENT_NAMES.OUT_OF_SCOPE);
+    });
+
+    it('should NOT return outOfScope for security training requests', async () => {
+      const mockDecision = {
+        agent: AGENT_NAMES.MICROLEARNING,
+        taskContext: 'Create security awareness training',
+      };
+
+      vi.mocked(withRetry).mockResolvedValue(mockDecision as never);
+
+      const result = await agentRouter.route('Create a phishing awareness training');
+
+      expect(result.agentName).toBe(AGENT_NAMES.MICROLEARNING);
+      expect(result.agentName).not.toBe(AGENT_NAMES.OUT_OF_SCOPE);
     });
   });
 

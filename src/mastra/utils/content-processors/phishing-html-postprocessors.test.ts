@@ -374,6 +374,16 @@ describe('phishing-html-postprocessors', () => {
       expect(result).toContain('Email');
     });
 
+    it('email processor returns raw html when Level 2 (sanitizeHtml in catch) also throws', async () => {
+      const { sanitizeHtml } = await import('./html-sanitizer');
+      vi.mocked(sanitizeHtml).mockImplementation(() => {
+        throw new Error('sanitize always fails');
+      });
+      const html = '<table><tr><td>Raw</td></tr></table>';
+      const result = postProcessPhishingEmailHtml({ html });
+      expect(result).toBe(html);
+    });
+
     it('landing processor falls back when Level 1 throws', () => {
       vi.mocked(repairHtml).mockImplementationOnce(() => {
         throw new Error('Simulated repair failure');
@@ -383,6 +393,20 @@ describe('phishing-html-postprocessors', () => {
       expect(result).toBeDefined();
       expect(typeof result).toBe('string');
       expect(result).toContain('Content');
+    });
+
+    it('landing processor returns raw html when Level 2 (ensureLandingFullHtmlDocument in catch) also throws', async () => {
+      const { repairHtml } = await import('../validation/json-validation-utils');
+      const { ensureLandingFullHtmlDocument } = await import('../landing-page');
+      vi.mocked(repairHtml).mockImplementationOnce(() => {
+        throw new Error('repair fails');
+      });
+      vi.mocked(ensureLandingFullHtmlDocument).mockImplementationOnce(() => {
+        throw new Error('ensure wrapper fails');
+      });
+      const html = '<div>Raw landing</div>';
+      const result = postProcessPhishingLandingHtml({ html });
+      expect(result).toBe(html);
     });
   });
 

@@ -1,3 +1,11 @@
+/**
+ * get-target-group-info-tool
+ *
+ * EU AI Act (Art. 9) Tool Risk Metadata:
+ * - riskLevel: minimal
+ * - rationale: Group information lookup
+ * @see docs/AI_COMPLIANCE_INVENTORY.md
+ */
 import { createTool, ToolExecutionContext } from '@mastra/core/tools';
 import { z } from 'zod';
 import { errorService } from '../../services/error-service';
@@ -7,7 +15,7 @@ import { getRequestContext } from '../../utils/core/request-storage';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
 import { validateToolResult } from '../../utils/tool-result-validation';
 import { withRetry, withTimeout } from '../../utils/core/resilience-utils';
-import { isSafeId } from '../../utils/core/id-utils';
+import { isSafeId, uuidv4 } from '../../utils/core/id-utils';
 import { formatToolSummary } from '../../utils/core/tool-summary-formatter';
 
 interface GroupSearchDeps {

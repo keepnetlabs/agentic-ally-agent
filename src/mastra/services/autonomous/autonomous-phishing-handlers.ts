@@ -719,7 +719,7 @@ export async function generatePhishingSimulationForGroup(
     );
 
     return {
-      success: uploadAssignResult?.success || true,
+      success: uploadAssignResult?.success ?? true,
       message: uploadAssignResult?.success
         ? 'Phishing simulation generated, uploaded and assigned to group'
         : 'Phishing simulation generated (assign may have failed)',
@@ -751,7 +751,7 @@ export async function generatePhishingSimulationForGroup(
       );
 
       return {
-        success: uploadAssignResult?.success || true,
+        success: uploadAssignResult?.success ?? true,
         message: uploadAssignResult?.success
           ? 'Phishing simulation generated, uploaded and assigned to group (fallback)'
           : 'Phishing simulation generated (fallback, assign may have failed)',

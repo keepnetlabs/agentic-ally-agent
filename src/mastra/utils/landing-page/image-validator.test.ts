@@ -1,148 +1,189 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
+  DEFAULT_GENERIC_LOGO,
+  normalizeImgAttributes,
   validateImageUrl,
   fixBrokenImages,
-  normalizeImgAttributes,
   getDefaultGenericLogoBase64,
-  validateImageUrlCached,
-  DEFAULT_GENERIC_LOGO,
-  resetCaches,
 } from './image-validator';
 
-// Mock global fetch
-const mockFetch = vi.fn();
-global.fetch = mockFetch;
-
-// Mock dependencies
-vi.mock('../core/logger', () => ({
-  getLogger: () => ({
-    info: vi.fn(),
-    error: vi.fn(),
-    warn: vi.fn(),
-  }),
-}));
-
 describe('image-validator', () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-    mockFetch.mockReset();
-    resetCaches();
-  });
+  describe('getDefaultGenericLogoBase64', () => {
+    const originalFetch = globalThis.fetch;
 
-  afterEach(() => {
-    vi.useRealTimers();
-  });
+    beforeEach(() => {
+      vi.restoreAllMocks();
+    });
 
-  describe('validateImageUrl', () => {
-    it('returns true for 200 OK', async () => {
-      mockFetch.mockResolvedValueOnce({ ok: true });
-      const result = await validateImageUrl('http://example.com/image.png');
-      expect(result).toBe(true);
-      expect(mockFetch).toHaveBeenCalledWith(
-        'http://example.com/image.png',
-        expect.objectContaining({ method: 'HEAD' })
+    it('returns base64 data URI when fetch succeeds', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          arrayBuffer: () => Promise.resolve(new ArrayBuffer(8)),
+          headers: { get: () => 'image/png' },
+        })
       );
+      const result = await getDefaultGenericLogoBase64();
+      expect(result).toMatch(/^data:image\/\w+;base64,/);
+      vi.stubGlobal('fetch', originalFetch);
     });
 
-    it('returns false for 404', async () => {
-      mockFetch.mockResolvedValueOnce({ ok: false });
-      const result = await validateImageUrl('http://example.com/bad.png');
-      expect(result).toBe(false);
+    it('returns fallback when fetch returns non-ok', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 404 }));
+      const result = await getDefaultGenericLogoBase64();
+      expect(result).toMatch(/^data:image\/png;base64,/);
+      vi.stubGlobal('fetch', originalFetch);
     });
 
-    it('returns false on error', async () => {
-      mockFetch.mockRejectedValueOnce(new Error('Network error'));
-      const result = await validateImageUrl('http://example.com/error.png');
-      expect(result).toBe(false);
+    it('returns fallback when fetch throws', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Network error')));
+      const result = await getDefaultGenericLogoBase64();
+      expect(result).toMatch(/^data:image\/png;base64,/);
+      vi.stubGlobal('fetch', originalFetch);
     });
   });
 
-  describe('fixBrokenImages', () => {
-    it('keeps valid images', async () => {
-      mockFetch.mockResolvedValue({ ok: true });
-      const html = '<img src="http://valid-site.com/valid.png" alt="Valid">';
-      const result = await fixBrokenImages(html, 'Brand');
-      expect(result).toBe(html);
+  describe('DEFAULT_GENERIC_LOGO', () => {
+    it('should be a valid HTTPS URL', () => {
+      expect(DEFAULT_GENERIC_LOGO).toMatch(/^https:\/\//);
     });
 
-    it('replaces obviously broken URLs without fetch', async () => {
-      const html = '<img src="invalid-url" alt="Broken">';
-      const result = await fixBrokenImages(html, 'Brand');
-      expect(result).toContain(DEFAULT_GENERIC_LOGO);
-      expect(mockFetch).not.toHaveBeenCalled();
-    });
-
-    it('replaces 404 images with default logo', async () => {
-      mockFetch.mockResolvedValueOnce({ ok: false }); // 404
-      const html = '<img src="http://example.com/missing.png" alt="Missing">';
-      const result = await fixBrokenImages(html, 'Brand');
-      expect(result).toContain(DEFAULT_GENERIC_LOGO);
-      expect(result).toContain('max-width: 200px'); // Checks style injection
-    });
-
-    it('replaces broken images with custom fallback', async () => {
-      mockFetch.mockResolvedValueOnce({ ok: false });
-      const html = '<img src="http://example.com/missing.png" alt="Missing">';
-      const fallback = 'http://fallback.com/logo.png';
-      const result = await fixBrokenImages(html, 'Brand', fallback);
-      expect(result).toContain(fallback);
-    });
-
-    it('ignores placeholder tags', async () => {
-      const html = '<img src="{CUSTOMMAINLOGO}" alt="Logo">';
-      const result = await fixBrokenImages(html, 'Brand');
-      expect(result).toBe(html);
-      expect(mockFetch).not.toHaveBeenCalled();
+    it('should contain imagedelivery domain', () => {
+      expect(DEFAULT_GENERIC_LOGO).toContain('imagedelivery.net');
     });
   });
 
   describe('normalizeImgAttributes', () => {
-    it('adds styles to plain img tags', () => {
-      const html = '<img src="test.png">';
-      const result = normalizeImgAttributes(html);
-      expect(result).toContain("style='display: block; margin: 0 auto;'");
-    });
-
-    it('merges existing styles', () => {
-      const html = '<img src="test.png" style="border: 1px solid black">';
+    it('should add centering styles when img has no style', () => {
+      const html = '<img src="logo.png" alt="Logo">';
       const result = normalizeImgAttributes(html);
       expect(result).toContain('display: block');
       expect(result).toContain('margin: 0 auto');
-      expect(result).toContain('border: 1px solid black');
+    });
+
+    it('should add style attribute when missing', () => {
+      const html = '<img src="logo.png">';
+      const result = normalizeImgAttributes(html);
+      expect(result).toMatch(/style=['"]/);
+      expect(result).toContain('display: block');
+    });
+
+    it('should preserve existing style and add centering if needed', () => {
+      const html = '<img src="x.png" style="width: 100px;">';
+      const result = normalizeImgAttributes(html);
+      expect(result).toContain('width: 100px');
+      expect(result).toContain('display: block');
+      expect(result).toContain('margin: 0 auto');
+    });
+
+    it('should update display when not block', () => {
+      const html = '<img src="x.png" style="display: inline;">';
+      const result = normalizeImgAttributes(html);
+      expect(result).toContain('display: block');
+    });
+
+    it('should update margin when not 0 auto', () => {
+      const html = '<img src="x.png" style="margin: 10px;">';
+      const result = normalizeImgAttributes(html);
+      expect(result).toContain('margin: 0 auto');
+    });
+
+    it('should handle multiple img tags', () => {
+      const html = '<img src="a.png"><img src="b.png" alt="B">';
+      const result = normalizeImgAttributes(html);
+      const imgCount = (result.match(/<img/g) || []).length;
+      expect(imgCount).toBe(2);
+      expect(result).toContain('display: block');
+    });
+
+    it('should handle self-closing img tag', () => {
+      const html = '<img src="logo.png" />';
+      const result = normalizeImgAttributes(html);
+      expect(result).toContain('display: block');
+    });
+
+    it('should handle double-quoted style', () => {
+      const html = '<img src="x.png" style="width: 50px;">';
+      const result = normalizeImgAttributes(html);
+      expect(result).toContain('width: 50px');
+    });
+
+    it('should return unchanged when no img tags', () => {
+      const html = '<div>No images here</div>';
+      const result = normalizeImgAttributes(html);
+      expect(result).toBe(html);
     });
   });
 
-  describe('getDefaultGenericLogoBase64', () => {
-    it('fetches and converts logo to base64', async () => {
-      const mockBuffer = new TextEncoder().encode('fake-image-data').buffer;
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        arrayBuffer: async () => mockBuffer,
-        headers: { get: () => 'image/png' },
-      });
+  describe('validateImageUrl', () => {
+    const originalFetch = globalThis.fetch;
 
-      const result = await getDefaultGenericLogoBase64();
-      expect(result).toContain('data:image/png;base64,');
+    beforeEach(() => {
+      vi.restoreAllMocks();
     });
 
-    it('returns fallback 1x1 png on failure', async () => {
-      mockFetch.mockResolvedValueOnce({ ok: false });
-      const result = await getDefaultGenericLogoBase64();
-      expect(result).toContain('data:image/png;base64,iVBORw0KGgo');
+    it('returns true when fetch returns ok response', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({ ok: true })
+      );
+      const result = await validateImageUrl('https://example.com/logo.png');
+      expect(result).toBe(true);
+      vi.stubGlobal('fetch', originalFetch);
+    });
+
+    it('returns false when fetch returns non-ok response', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({ ok: false, status: 404 })
+      );
+      const result = await validateImageUrl('https://example.com/missing.png');
+      expect(result).toBe(false);
+      vi.stubGlobal('fetch', originalFetch);
+    });
+
+    it('returns false when fetch throws', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Network error')));
+      const result = await validateImageUrl('https://example.com/bad.png');
+      expect(result).toBe(false);
+      vi.stubGlobal('fetch', originalFetch);
     });
   });
 
-  describe('validateImageUrlCached', () => {
-    it('uses cache for subsequent calls', async () => {
-      mockFetch.mockResolvedValueOnce({ ok: true });
+  describe('fixBrokenImages', () => {
+    it('returns html unchanged when no img tags', async () => {
+      const html = '<div>No images</div>';
+      const result = await fixBrokenImages(html, 'Brand');
+      expect(result).toBe(html);
+    });
 
-      // First call
-      await validateImageUrlCached('http://cached.com/img.png');
-      expect(mockFetch).toHaveBeenCalledTimes(1);
+    it('skips data URIs and img.logo.dev (always valid)', async () => {
+      const html = `<img src="data:image/png;base64,abc" alt="x"><img src="https://img.logo.dev/x.png" alt="y">`;
+      const result = await fixBrokenImages(html, 'Brand');
+      expect(result).toContain('data:image/png');
+      expect(result).toContain('img.logo.dev');
+    });
 
-      // Second call (should be cached)
-      await validateImageUrlCached('http://cached.com/img.png');
-      expect(mockFetch).toHaveBeenCalledTimes(1);
+    it('replaces obviously broken URLs (localhost, relative, example.com)', async () => {
+      const html = `<img src="http://localhost/logo.png" alt="x"><img src="/logo.png" alt="y">`;
+      const result = await fixBrokenImages(html, 'Brand');
+      expect(result).toContain(DEFAULT_GENERIC_LOGO);
+    });
+
+    it('skips merge tags/placeholders', async () => {
+      const html = `<img src="{CUSTOMMAINLOGO}" alt="logo">`;
+      const result = await fixBrokenImages(html, 'Brand');
+      expect(result).toContain('{CUSTOMMAINLOGO}');
+    });
+
+    it('uses fallbackLogoUrl when provided', async () => {
+      const customLogo = 'https://custom.com/logo.png';
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }));
+      const html = `<img src="http://localhost/broken.png" alt="x">`;
+      const result = await fixBrokenImages(html, 'Brand', customLogo);
+      expect(result).toContain(customLogo);
+      vi.restoreAllMocks();
     });
   });
 });

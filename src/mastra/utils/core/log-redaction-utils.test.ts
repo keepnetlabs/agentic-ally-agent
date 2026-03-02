@@ -44,6 +44,18 @@ describe('summarizeForLog', () => {
       expect(out.type).toBe('string');
       expect(out.length).toBe(0);
     });
+
+    it('does not add preview for empty string even when maxStringPreview > 0', () => {
+      const out = summarizeForLog('', { maxStringPreview: 5 });
+      expect(out.type).toBe('string');
+      expect(out.length).toBe(0);
+      expect(out.preview).toBeUndefined();
+    });
+
+    it('preview truncates at maxStringPreview', () => {
+      const out = summarizeForLog('hello world', { maxStringPreview: 3 });
+      expect(out.preview).toBe('hel');
+    });
   });
 
   describe('Arrays', () => {

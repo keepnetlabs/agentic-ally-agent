@@ -22,6 +22,16 @@ global.fetch = vi.fn((_input: RequestInfo | URL, _init?: RequestInit) => {
   return Promise.resolve(new Response(JSON.stringify({ valid: true }), { status: 200 }));
 });
 
+// Mock token cache for cache hit/miss tests
+const mockTokenCacheGet = vi.fn();
+const mockTokenCacheSet = vi.fn();
+vi.mock('../utils/core/token-cache', () => ({
+  tokenCache: {
+    get: (...args: unknown[]) => mockTokenCacheGet(...args),
+    set: (...args: unknown[]) => mockTokenCacheSet(...args),
+  },
+}));
+
 describe('authTokenMiddleware', () => {
   let mockContext: any;
   let mockNext: any;
@@ -39,6 +49,7 @@ describe('authTokenMiddleware', () => {
   beforeEach(() => {
     nextCalled = false;
     vi.clearAllMocks();
+    mockTokenCacheGet.mockReturnValue(null);
 
     mockNext = vi.fn(async () => {
       nextCalled = true;
@@ -227,6 +238,62 @@ describe('authTokenMiddleware', () => {
       expect(mockContext.json).not.toHaveBeenCalled();
     });
 
+    it('should proceed when token is cached as valid', async () => {
+      mockTokenCacheGet.mockReturnValue(true);
+      mockContext.req.path = '/chat';
+      mockContext.req.header.mockImplementation((headerName: string) => {
+        if (headerName === 'X-AGENTIC-ALLY-TOKEN') return 'cached-valid-token-abcdefghijklmnopqrstuvwxyz12';
+        return undefined;
+      });
+
+      await authTokenMiddleware(mockContext, mockNext);
+
+      expect(nextCalled).toBe(true);
+      expect(global.fetch).not.toHaveBeenCalled();
+      expect(mockContext.json).not.toHaveBeenCalled();
+    });
+
+    it('should return 401 when token is cached as invalid', async () => {
+      mockTokenCacheGet.mockReturnValue(false);
+      mockContext.req.path = '/chat';
+      mockContext.req.header.mockImplementation((headerName: string) => {
+        if (headerName === 'X-AGENTIC-ALLY-TOKEN') return 'cached-invalid-token-abcdefghijklmnopqrstuvwxyz12';
+        return undefined;
+      });
+
+      await authTokenMiddleware(mockContext, mockNext);
+
+      expect(mockContext.json).toHaveBeenCalledWith(
+        { error: 'Unauthorized', message: 'Token invalid (cached)' },
+        401
+      );
+      expect(global.fetch).not.toHaveBeenCalled();
+      expect(mockNext).not.toHaveBeenCalled();
+    });
+
+    it('should return 401 when backend validation returns non-ok', async () => {
+      const previousFetch = global.fetch;
+      (global.fetch as any) = vi.fn().mockResolvedValue(new Response('Unauthorized', { status: 401 }));
+
+      try {
+        mockContext.req.path = '/chat';
+        mockContext.req.header.mockImplementation((headerName: string) => {
+          if (headerName === 'X-AGENTIC-ALLY-TOKEN') return 'backend-invalid-token-abcdefghijklmnopqrstuvwxyz12';
+          return undefined;
+        });
+
+        await authTokenMiddleware(mockContext, mockNext);
+
+        expect(mockContext.json).toHaveBeenCalledWith(
+          { error: 'Unauthorized', message: 'Token validation failed' },
+          401
+        );
+        expect(mockNext).not.toHaveBeenCalled();
+      } finally {
+        global.fetch = previousFetch;
+      }
+    });
+
     it('should return 401 when backend validation service throws', async () => {
       const previousFetch = global.fetch;
       global.fetch = vi.fn().mockRejectedValue(new Error('network down')) as any;
@@ -325,6 +392,32 @@ describe('authTokenMiddleware', () => {
 
       it('should reject JWT with wrong segment count', async () => {
         const badJwt = 'part.one';
+        mockContext.req.path = '/chat';
+        mockContext.req.header.mockImplementation((headerName: string) => {
+          if (headerName === 'X-AGENTIC-ALLY-TOKEN') return badJwt;
+          return undefined;
+        });
+
+        await authTokenMiddleware(mockContext, mockNext);
+
+        expect(mockContext.json).toHaveBeenCalled();
+      });
+
+      it('should reject JWT with more than 3 segments', async () => {
+        const badJwt = 'a.b.c.d';
+        mockContext.req.path = '/chat';
+        mockContext.req.header.mockImplementation((headerName: string) => {
+          if (headerName === 'X-AGENTIC-ALLY-TOKEN') return badJwt;
+          return undefined;
+        });
+
+        await authTokenMiddleware(mockContext, mockNext);
+
+        expect(mockContext.json).toHaveBeenCalled();
+      });
+
+      it('should reject JWT with invalid segment characters', async () => {
+        const badJwt = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0In0.invalid!segment';
         mockContext.req.path = '/chat';
         mockContext.req.header.mockImplementation((headerName: string) => {
           if (headerName === 'X-AGENTIC-ALLY-TOKEN') return badJwt;

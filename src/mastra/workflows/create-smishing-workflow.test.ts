@@ -217,6 +217,23 @@ describe('CreateSmishingWorkflow', () => {
     expect(mocks.saveSmishingLandingPage).toHaveBeenCalled();
   });
 
+  it('should continue when getWhitelabelingConfig throws', async () => {
+    mocks.getWhitelabelingConfig.mockRejectedValueOnce(new Error('Product API unavailable'));
+
+    const run = await createSmishingWorkflow.createRunAsync();
+    const input = {
+      topic: 'Password Reset',
+      language: 'en-gb',
+      difficulty: 'Medium' as const,
+      method: 'Click-Only' as const,
+      targetProfile: { department: 'IT' },
+    };
+
+    const result = await run.start({ inputData: input });
+    expect(result.status).toBe('success');
+    expect(mocks.saveSmishingBase).toHaveBeenCalled();
+  });
+
   it('should skip sms generation when includeSms is false', async () => {
     const run = await createSmishingWorkflow.createRunAsync();
     const input = {
@@ -417,5 +434,22 @@ describe('CreateSmishingWorkflow', () => {
 
     expect(result.status).toBe('success');
     expect(mocks.saveSmishingBase).toHaveBeenCalledWith(expect.any(String), expect.any(Object), 'en-gb');
+  });
+
+  it('should continue when getWhitelabelingConfig throws', async () => {
+    mocks.getWhitelabelingConfig.mockRejectedValueOnce(new Error('Product API down'));
+
+    const run = await createSmishingWorkflow.createRunAsync();
+    const result = await run.start({
+      inputData: {
+        topic: 'Whitelabel Error',
+        language: 'en-gb',
+        includeSms: false,
+        includeLandingPage: false,
+      },
+    });
+
+    expect(result.status).toBe('success');
+    expect(mocks.resolveLogoAndBrand).toHaveBeenCalled();
   });
 });

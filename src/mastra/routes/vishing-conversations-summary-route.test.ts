@@ -152,5 +152,153 @@ describe('vishingConversationsSummaryHandler', () => {
     const [body, status] = mockContext.json.mock.calls[0];
     expect(status).toBe(401);
     expect(body.error).toContain('Unauthorized');
+    expect(tokenCache.set).toHaveBeenCalledWith('a'.repeat(32), false, expect.any(Number));
+  });
+
+  it('returns 200 when token validation succeeds via fetch (cached null)', async () => {
+    tokenCache.get.mockReturnValue(null);
+    const { withRetry } = await import('../utils/core/resilience-utils');
+    vi.mocked(withRetry).mockResolvedValue({ ok: true } as Response);
+
+    mockContext.req.json.mockResolvedValue({
+      accessToken: 'a'.repeat(32),
+      messages: validMessages,
+    });
+
+    const mockSummary = {
+      summary: {
+        outcome: 'refused',
+        disclosedInfo: [],
+        timeline: [],
+      },
+      nextSteps: [],
+      statusCard: { variant: 'success', title: 'OK', description: 'OK' },
+    };
+    vi.mocked(generateVishingConversationsSummary).mockResolvedValue(mockSummary);
+
+    await vishingConversationsSummaryHandler(mockContext as any);
+
+    expect(mockContext.json).toHaveBeenCalledWith(
+      expect.objectContaining({ success: true, summary: mockSummary.summary })
+    );
+    expect(tokenCache.set).toHaveBeenCalledWith('a'.repeat(32), true);
+  });
+
+  it('returns 401 when auth validate returns 5xx', async () => {
+    tokenCache.get.mockReturnValue(null);
+    mockContext.req.header.mockReturnValue('');
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 500,
+      text: () => Promise.resolve('Internal Server Error'),
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    const { withRetry } = await import('../utils/core/resilience-utils');
+    vi.mocked(withRetry).mockImplementation(async (fn: () => Promise<Response>) => fn());
+
+    mockContext.req.json.mockResolvedValue({
+      accessToken: 'a'.repeat(32),
+      messages: validMessages,
+    });
+
+    await vishingConversationsSummaryHandler(mockContext as any);
+
+    expect(mockContext.json).toHaveBeenCalledWith(
+      expect.objectContaining({ error: 'Unauthorized' }),
+      401
+    );
+    vi.unstubAllGlobals();
+  });
+
+  it('returns 401 when token validation fetch throws', async () => {
+    tokenCache.get.mockReturnValue(null);
+    const { withRetry } = await import('../utils/core/resilience-utils');
+    vi.mocked(withRetry).mockRejectedValue(new Error('Network error'));
+
+    mockContext.req.json.mockResolvedValue({
+      accessToken: 'a'.repeat(32),
+      messages: validMessages,
+    });
+
+    await vishingConversationsSummaryHandler(mockContext as any);
+
+    expect(mockContext.json).toHaveBeenCalledWith(
+      expect.objectContaining({ error: 'Unauthorized' }),
+      401
+    );
+  });
+
+  it('returns 500 when generateVishingConversationsSummary throws', async () => {
+    tokenCache.get.mockReturnValue(true);
+    mockContext.req.json.mockResolvedValue({
+      accessToken: 'a'.repeat(32),
+      messages: validMessages,
+    });
+    vi.mocked(generateVishingConversationsSummary).mockRejectedValue(new Error('Tool failed'));
+
+    await vishingConversationsSummaryHandler(mockContext as any);
+
+    expect(mockContext.json).toHaveBeenCalledWith(
+      expect.objectContaining({ success: false, error: 'Tool failed' }),
+      500
+    );
+  });
+
+  it('returns 500 when c.req.json throws', async () => {
+    mockContext.req.json.mockRejectedValue(new Error('Invalid JSON body'));
+
+    await vishingConversationsSummaryHandler(mockContext as any);
+
+    expect(mockContext.json).toHaveBeenCalledWith(
+      expect.objectContaining({ success: false, error: 'Invalid JSON body' }),
+      500
+    );
+  });
+
+  it('returns 400 when rawBody is null (body becomes {})', async () => {
+    mockContext.req.json.mockResolvedValue(null);
+
+    await vishingConversationsSummaryHandler(mockContext as any);
+
+    expect(mockContext.json).toHaveBeenCalledWith(
+      expect.objectContaining({ success: false, error: 'Invalid request format' }),
+      400
+    );
+  });
+
+  it('uses X-BASE-API-URL header when provided for token validation', async () => {
+    tokenCache.get.mockReturnValue(null);
+    mockContext.req.header.mockReturnValue('https://test-api.devkeepnet.com');
+    const { withRetry } = await import('../utils/core/resilience-utils');
+    vi.mocked(withRetry).mockImplementation(async (fn: () => Promise<Response>) => {
+      const res = await fn();
+      return res;
+    });
+    const mockFetch = vi.fn().mockResolvedValue({ ok: true });
+    vi.stubGlobal('fetch', mockFetch);
+
+    mockContext.req.json.mockResolvedValue({
+      accessToken: 'a'.repeat(32),
+      messages: validMessages,
+    });
+
+    const mockSummary = {
+      summary: { outcome: 'refused', disclosedInfo: [], timeline: [] },
+      nextSteps: [],
+      statusCard: { variant: 'success', title: 'OK', description: 'OK' },
+    };
+    vi.mocked(generateVishingConversationsSummary).mockResolvedValue(mockSummary);
+
+    await vishingConversationsSummaryHandler(mockContext as any);
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      'https://test-api.devkeepnet.com/auth/validate',
+      expect.objectContaining({
+        method: 'GET',
+        headers: { Authorization: 'Bearer ' + 'a'.repeat(32) },
+      })
+    );
+    vi.unstubAllGlobals();
   });
 });

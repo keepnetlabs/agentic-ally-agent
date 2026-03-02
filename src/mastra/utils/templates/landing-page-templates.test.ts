@@ -69,14 +69,8 @@ describe('landing-page-templates', () => {
       // Correct: <div ... background:#22c55e ...> ... ✓ ... </div>
       // This is a simplified check assuming the icon is within the same div
       // 2. Icon Nesting Check: Checkmark (✓) must be INSIDE the green circle (div)
-      // Regex explanation:
-      // background:\s*#22c55e  -> matches background color with optional space
-      // [^>]*>                 -> matches rest of opening tag and closing bracket
-      // .*                     -> matches any content (s flag enabled)
-      // ✓                     -> matches the checkmark
-      // .*                     -> matches any content
-      // <\/div>                -> matches closing div
-      const iconContainerRegex = /background:\s*#22c55e[^>]*>.*✓.*<\/div>/s;
+      // Regex: green circle (#22c55e) and checkmark (✓ or &#10003;)
+      const iconContainerRegex = /background:\s*#22c55e[^>]*>.*(?:✓|&#10003;).*<\/div>/s;
       expect(html).toMatch(iconContainerRegex);
     });
   });

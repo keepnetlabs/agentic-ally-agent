@@ -8,6 +8,11 @@ describe('chat-provider-compat', () => {
     expect(resolveEffectiveProvider('openai', undefined)).toBe(ModelProvider.WORKERS_AI);
   });
 
+  it('falls back to workers-ai when model normalizes to empty string', () => {
+    expect(resolveEffectiveProvider('openai', '')).toBe(ModelProvider.WORKERS_AI);
+    expect(resolveEffectiveProvider('openai', '   ')).toBe(ModelProvider.WORKERS_AI);
+  });
+
   it('resolves valid openai override as effective provider', () => {
     expect(resolveEffectiveProvider('openai', 'gpt-4o-mini')).toBe(ModelProvider.OPENAI);
   });
@@ -22,6 +27,11 @@ describe('chat-provider-compat', () => {
 
   it('falls back to workers-ai when model is invalid', () => {
     expect(resolveEffectiveProvider('openai', 'unknown-model')).toBe(ModelProvider.WORKERS_AI);
+  });
+
+  it('resolves model name via enum key normalization', () => {
+    expect(resolveEffectiveProvider('openai', 'openai_gpt_4o_mini')).toBe(ModelProvider.OPENAI);
+    expect(resolveEffectiveProvider('openai', 'OPENAI_GPT_4O_MINI')).toBe(ModelProvider.OPENAI);
   });
 
   it('maps assistant history for workers-ai effective provider', () => {

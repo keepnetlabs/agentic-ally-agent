@@ -14,5 +14,8 @@ export { securityHeadersMiddleware } from './security-headers';
 export { bodySizeLimitMiddleware } from './body-limit';
 export { rateLimitMiddleware, createEndpointRateLimiter, RATE_LIMIT_TIERS } from './rate-limit';
 
+// GDPR compliance (Art. 30 — automatic audit for personal data endpoints)
+export { gdprAuditMiddleware } from './gdpr-audit';
+
 // OpenAPI controls
 export { disablePlayground, disableSwagger } from './openapi';

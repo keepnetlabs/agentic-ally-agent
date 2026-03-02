@@ -1,5 +1,15 @@
+/**
+ * assign-phishing-tool
+ *
+ * EU AI Act (Art. 9) Tool Risk Metadata:
+ * - riskLevel: limited
+ * - rationale: Assigns phishing simulation to user/group; affects training assignment and target selection
+ * - humanOversight: approval-gated (Chat confirmation before execution)
+ * @see docs/AI_COMPLIANCE_INVENTORY.md
+ */
 import { createTool, ToolExecutionContext } from '@mastra/core/tools';
 import { z } from 'zod';
+import { isSafeId } from '../../utils/core/id-utils';
 import { KVService } from '../../services/kv-service';
 import { getRequestContext } from '../../utils/core/request-storage';
 import { getLogger } from '../../utils/core/logger';
@@ -11,7 +21,6 @@ import { ERROR_MESSAGES, API_ENDPOINTS, KV_NAMESPACES } from '../../constants';
 import { errorService } from '../../services/error-service';
 import { validateToolResult } from '../../utils/tool-result-validation';
 import { extractCompanyIdFromTokenExport } from '../../utils/core/policy-fetcher';
-import { isSafeId } from '../../utils/core/id-utils';
 import { formatToolSummary } from '../../utils/core/tool-summary-formatter';
 
 // Output schema defined separately to avoid circular reference

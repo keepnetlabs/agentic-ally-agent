@@ -69,6 +69,29 @@ describe('uploadSmishingTool', () => {
       expect(result.success).toBe(true);
     });
 
+    it('should use en-gb when language_availability is empty', async () => {
+      const contentWithNoLangs = {
+        ...mockSmishingContent,
+        base: { ...mockSmishingContent.base, language_availability: [] },
+      };
+      vi.spyOn(KVService.prototype, 'getSmishing').mockResolvedValue(contentWithNoLangs);
+      const callSpy = vi.spyOn(workerApiClient, 'callWorkerAPI').mockResolvedValue({
+        templateResourceId: 't-1',
+        templateId: 1,
+        scenarioResourceId: 's-1',
+        scenarioId: 2,
+        message: 'OK',
+      });
+
+      const result = await uploadSmishingTool.execute({
+        context: { smishingId: 'smishing-123' },
+      } as any);
+
+      expect(result.success).toBe(true);
+      const callArg = callSpy.mock.calls[0][0];
+      expect(callArg.payload.smishingData.language).toBe('en-gb');
+    });
+
     it('should require smishingId', async () => {
       const input: any = {};
 

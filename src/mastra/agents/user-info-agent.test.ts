@@ -59,7 +59,7 @@ describe('User Info Agent', () => {
 
     it('should have the language rule', () => {
       expect(userInfoAgent.instructions).toContain('LANGUAGE RULE');
-      expect(userInfoAgent.instructions).toContain("Match user's exact language");
+      expect(userInfoAgent.instructions).toContain("match the user's CURRENT message language");
     });
 
     it('should describe the available modes', () => {
@@ -124,7 +124,7 @@ describe('User Info Agent', () => {
   // ==================== LANGUAGE SUPPORT ====================
   describe('Language Support', () => {
     it('should require matching user language', () => {
-      expect(userInfoAgent.instructions).toContain("Match user's exact language");
+      expect(userInfoAgent.instructions).toContain("match the user's CURRENT message language");
     });
 
     it('should check current message language', () => {
@@ -132,17 +132,17 @@ describe('User Info Agent', () => {
     });
 
     it('should handle English example', () => {
-      expect(userInfoAgent.instructions).toContain('Analyze...');
+      expect(userInfoAgent.instructions).toContain('Analyze John');
       expect(userInfoAgent.instructions).toContain('English');
     });
 
     it('should handle Turkish example', () => {
-      expect(userInfoAgent.instructions).toContain('Analiz et...');
+      expect(userInfoAgent.instructions).toContain('Analiz et');
       expect(userInfoAgent.instructions).toContain('Turkish');
     });
 
     it('should handle mixed language messages', () => {
-      expect(userInfoAgent.instructions).toContain('dominant language');
+      expect(userInfoAgent.instructions).toContain('current message language');
     });
 
     it('should apply language to all report sections', () => {

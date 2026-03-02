@@ -126,6 +126,27 @@ describe('listPhoneNumbersTool', () => {
     expect(result.phoneNumbers?.[0]?.provider).toBe('twilio');
   });
 
+  it('should preserve sip_trunk provider when API returns it', async () => {
+    const mockData = [
+      {
+        phone_number: '+15550001111',
+        phone_number_id: 'pn-sip',
+        label: 'SIP Trunk',
+        provider: 'sip_trunk',
+      },
+    ];
+
+    (global.fetch as ReturnType<typeof vi.fn>) = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => mockData,
+    });
+
+    const result = await listPhoneNumbersTool.execute({ context: {} } as never);
+
+    expect(result.success).toBe(true);
+    expect(result.phoneNumbers?.[0]?.provider).toBe('sip_trunk');
+  });
+
   it('should use default label when missing', async () => {
     const mockData = [
       {
@@ -210,6 +231,50 @@ describe('listPhoneNumbersTool', () => {
     expect(result.count).toBe(0);
   });
 
+  it('should return empty array when API returns object without phone_numbers', async () => {
+    (global.fetch as ReturnType<typeof vi.fn>) = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({}),
+    });
+
+    const result = await listPhoneNumbersTool.execute({ context: {} } as never);
+
+    expect(result.success).toBe(true);
+    expect(result.phoneNumbers).toEqual([]);
+    expect(result.count).toBe(0);
+  });
+
+  it('should use empty string fallback when phone_number or phone_number_id is null', async () => {
+    const mockData = [
+      {
+        phone_number: null,
+        phone_number_id: 'pn-1',
+        label: 'Test',
+        provider: 'twilio',
+      },
+      {
+        phone_number: '+15559999999',
+        phone_number_id: undefined,
+        label: 'Test2',
+        provider: 'twilio',
+      },
+    ];
+
+    (global.fetch as ReturnType<typeof vi.fn>) = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => mockData,
+    });
+
+    const result = await listPhoneNumbersTool.execute({ context: {} } as never);
+
+    expect(result.success).toBe(true);
+    expect(result.phoneNumbers).toHaveLength(2);
+    expect(result.phoneNumbers?.[0]?.phone_number).toBe('');
+    expect(result.phoneNumbers?.[0]?.phone_number_id).toBe('pn-1');
+    expect(result.phoneNumbers?.[1]?.phone_number).toBe('+15559999999');
+    expect(result.phoneNumbers?.[1]?.phone_number_id).toBe('');
+  });
+
   it('should handle refresh input (schema validation)', async () => {
     (global.fetch as ReturnType<typeof vi.fn>) = vi.fn().mockResolvedValue({
       ok: true,
@@ -222,6 +287,20 @@ describe('listPhoneNumbersTool', () => {
 
     expect(result.success).toBe(true);
     expect(global.fetch).toHaveBeenCalled();
+  });
+
+  it('should return error when response.json throws (invalid JSON)', async () => {
+    (global.fetch as ReturnType<typeof vi.fn>) = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => {
+        throw new SyntaxError('Unexpected token');
+      },
+    });
+
+    const result = await listPhoneNumbersTool.execute({ context: {} } as never);
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBeDefined();
   });
 
   it('should retry on 5xx and succeed when API recovers', async () => {

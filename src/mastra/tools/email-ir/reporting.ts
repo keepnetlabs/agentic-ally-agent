@@ -1,3 +1,11 @@
+/**
+ * email-ir-reporting-tool
+ *
+ * EU AI Act (Art. 9) Tool Risk Metadata:
+ * - riskLevel: limited
+ * - rationale: Email IR report generation; incident analysis output
+ * @see docs/AI_COMPLIANCE_INVENTORY.md
+ */
 import { createTool } from '@mastra/core/tools';
 import { emailIRAnalyst } from '../../agents/email-ir-analyst';
 import { EmailIRCanvasSchema, EMAIL_IR_EMAIL_CATEGORIES } from '../../schemas/email-ir';

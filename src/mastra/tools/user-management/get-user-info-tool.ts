@@ -1,6 +1,11 @@
 /**
  * Get User Info Tool
  *
+ * EU AI Act (Art. 9) Tool Risk Metadata:
+ * - riskLevel: limited
+ * - rationale: User timeline, risk score; personal data access
+ * @see docs/AI_COMPLIANCE_INVENTORY.md
+ *
  * Retrieves user profile and activity timeline. Supports multiple lookup paths:
  * - **Direct ID**: targetUserResourceId (fast path, skips search)
  * - **Email**: Preferred for reliability (handles middle names)

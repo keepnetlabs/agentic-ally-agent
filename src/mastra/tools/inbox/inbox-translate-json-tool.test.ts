@@ -168,6 +168,7 @@ describe('inboxTranslateJsonTool', () => {
       const result = await tool.execute(input);
       expect(result).toBeDefined();
     });
+
   });
 
   // ==================== TARGET LANGUAGE TESTS ====================
@@ -895,6 +896,64 @@ describe('inboxTranslateJsonTool', () => {
 
       const result = await tool.execute(input);
       expect(result.success === false || result.error).toBeDefined();
+    });
+
+    it('should use originals when generateText throws', async () => {
+      (generateText as any).mockRejectedValueOnce(new Error('API rate limit'));
+
+      const input = {
+        json: { title: 'Hello', description: 'World' },
+        targetLanguage: 'de',
+      };
+
+      const result = await tool.execute(input);
+
+      expect(result.success).toBe(true);
+      expect(result.data).toBeDefined();
+      expect(result.data.title).toBe('Hello');
+      expect(result.data.description).toBe('World');
+    });
+
+    it('should use originals when generateText returns unparseable JSON', async () => {
+      (generateText as any).mockResolvedValueOnce({ text: '{"0":' });
+
+      const input = {
+        json: { content: 'Translate me' },
+        targetLanguage: 'tr',
+      };
+
+      const result = await tool.execute(input);
+
+      expect(result.success).toBe(true);
+      expect(result.data.content).toBe('Translate me');
+    });
+
+    it('should use originals when generateText returns JSON missing required keys', async () => {
+      (generateText as any).mockResolvedValueOnce({ text: '{"0":"only-one"}' });
+
+      const input = {
+        json: { a: 'First', b: 'Second' },
+        targetLanguage: 'fr',
+      };
+
+      const result = await tool.execute(input);
+
+      expect(result.success).toBe(true);
+      expect(result.data.a).toBe('First');
+      expect(result.data.b).toBe('Second');
+    });
+
+    it('should return json unchanged when no translatable strings extracted', async () => {
+      const input = {
+        json: { id: 'x', type: 'email', timestamp: 12345 },
+        targetLanguage: 'de',
+      };
+
+      const result = await tool.execute(input);
+
+      expect(result.success).toBe(true);
+      expect(result.data).toEqual(input.json);
+      expect(generateText).not.toHaveBeenCalled();
     });
   });
 

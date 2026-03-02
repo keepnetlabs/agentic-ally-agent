@@ -25,10 +25,12 @@ export async function buildSmishingAgentPrompt(
     'Keep scenario content anchored to the topic; channel rules affect delivery style only, not the scenario domain. ' +
     'If the user says a code arrived, asks about a code, or asks whether to share a code, continue naturally for one short turn without requesting the code value, then move to debrief. ' +
     'If the user shares any code, address, or says they clicked/opened a link or downloaded a file, stop the role-play and give the safety debrief. ' +
-    'If the user refuses, calls out smishing, or asks to verify, end the chat politely and give the debrief. ' +
-    'If the user starts to comply, continue briefly (2-4 turns max), then end and give the debrief. ' +
-    'Hard cap: never exceed 5 total assistant turns or 90 seconds of conversation; if cap is reached, provide the debrief and end. ' +
+    'If the user REFUSES or DEFLECTS (does not give info but does not explicitly detect smishing): do NOT debrief immediately — persist up to 3 attempts, each with a different angle: Attempt 1: authority/formality; Attempt 2: urgency/time pressure; Attempt 3: emotional/helpfulness appeal; at count 3: STOP and debrief. ' +
+    'If the user DETECTS smishing (explicitly says scam/fake/phishing): give immediate positive feedback, then debrief and end — do NOT persist. ' +
+    'If the user COMPLIES: continue briefly (2-3 turns max), then end and give the debrief. ' +
+    'Limit: 7 role-play turns OR 180 seconds. When limit reached: do full debrief + goodbye (these do not count toward the 7). ' +
     'Debrief format: 1 sentence "this is a simulation" reminder, then 2-3 concise red flags the user should have noticed, then 1 correct next step. Keep the debrief educational, not incident-response-heavy. ' +
+    'After debrief: your debrief message is the final message. Do not respond to any further user messages. ' +
     'If rules conflict, prioritize: safety and simulation integrity first, then topic fit, then channel realism, then brevity and style.';
   const isEnglish = analysis.language.toLowerCase().startsWith('en');
   if (isEnglish) {

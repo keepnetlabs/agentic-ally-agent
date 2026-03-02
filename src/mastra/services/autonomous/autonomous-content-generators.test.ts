@@ -21,6 +21,10 @@ vi.mock('./autonomous-smishing-handlers', () => ({
   generateSmishingSimulation: vi.fn().mockResolvedValue({ success: true }),
 }));
 
+vi.mock('./autonomous-vishing-handlers', () => ({
+  initiateAutonomousVishingCall: vi.fn().mockResolvedValue({ success: true, message: 'Vishing call initiated' }),
+}));
+
 vi.mock('./group-topic-service', () => ({
   selectGroupTrainingTopic: vi.fn().mockResolvedValue({
     topic: 'Credential Theft Awareness',

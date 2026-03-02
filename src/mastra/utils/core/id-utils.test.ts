@@ -20,6 +20,21 @@ describe('id-utils', () => {
       expect(isSafeId(null as any)).toBe(false);
       expect(isSafeId(123 as any)).toBe(true);
     });
+
+    it('should return false for empty string', () => {
+      expect(isSafeId('')).toBe(false);
+    });
+
+    it('should return true for exactly 3 alphanumeric chars', () => {
+      expect(isSafeId('abc')).toBe(true);
+      expect(isSafeId('123')).toBe(true);
+    });
+
+    it('should return false for strings with special chars', () => {
+      expect(isSafeId('test@')).toBe(false);
+      expect(isSafeId('test#id')).toBe(false);
+      expect(isSafeId('test id')).toBe(false);
+    });
   });
 
   describe('normalizeSafeId', () => {
@@ -89,6 +104,46 @@ describe('id-utils', () => {
       const slugId = generateSlugId(longTopic);
       // 50 chars from topic + 1 hyphen + 8 chars from uuid = 59 chars
       expect(slugId.length).toBe(59);
+    });
+  });
+
+  describe('isSafeId edge cases', () => {
+    it('should accept ids with hyphens and underscores', () => {
+      expect(isSafeId('my-id_123')).toBe(true);
+      expect(isSafeId('abc')).toBe(true);
+    });
+
+    it('should reject ids shorter than 3 chars', () => {
+      expect(isSafeId('ab')).toBe(false);
+      expect(isSafeId('a')).toBe(false);
+    });
+
+    it('should reject ids with special characters', () => {
+      expect(isSafeId('test@user')).toBe(false);
+      expect(isSafeId('test.user')).toBe(false);
+      expect(isSafeId('test user')).toBe(false);
+    });
+  });
+
+  describe('normalizeSafeId edge cases', () => {
+    it('should return undefined for empty string', () => {
+      expect(normalizeSafeId('')).toBeUndefined();
+    });
+
+    it('should trim whitespace before validation', () => {
+      expect(normalizeSafeId('  valid-id  ')).toBe('valid-id');
+    });
+  });
+
+  describe('generateSlugId edge cases', () => {
+    it('should handle empty string', () => {
+      const slugId = generateSlugId('');
+      expect(slugId).toMatch(/^-[0-9a-f]{8}$/);
+    });
+
+    it('should strip unicode and special chars', () => {
+      const slugId = generateSlugId('Café & Bar™');
+      expect(slugId).toMatch(/^caf-bar-[0-9a-f]{8}$/);
     });
   });
 });

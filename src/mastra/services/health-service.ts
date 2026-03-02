@@ -2,7 +2,7 @@
  * Health Check Service
  *
  * Provides deep health checks for production monitoring.
- * Checks KV, OpenAI API, and system uptime.
+ * Checks KV, D1 (when in Workers), and system uptime.
  */
 
 import { getLogger } from '../utils/core/logger';
@@ -38,6 +38,7 @@ export interface HealthCheckResponse {
     agents: boolean;
     workflows: boolean;
     kv: HealthResult;
+    d1?: HealthResult;
   };
   details?: {
     agents: string[];
@@ -49,6 +50,11 @@ export interface HealthCheckResponse {
     microlearningCount: number;
     estimatedSizeMB: number;
   };
+}
+
+/** D1Database binding interface (Cloudflare Workers) */
+interface D1Database {
+  prepare(query: string): { first: () => Promise<unknown> };
 }
 
 /**
@@ -103,31 +109,55 @@ export function getUptime(): { formatted: string; ms: number } {
 }
 
 /**
+ * Check D1 database health (Mastra memory, campaign metadata)
+ * Runs simple SELECT 1 to verify connectivity
+ */
+export async function checkD1Health(db: D1Database | undefined): Promise<HealthResult | undefined> {
+  if (!db) return undefined;
+
+  const startMs = Date.now();
+  try {
+    await db.prepare('SELECT 1').first();
+    const latencyMs = Date.now() - startMs;
+    return { status: 'healthy', latencyMs };
+  } catch (error) {
+    const latencyMs = Date.now() - startMs;
+    const err = normalizeError(error);
+    const errorInfo = errorService.external(err.message, { step: 'd1-health-check', stack: err.stack });
+    logErrorInfo(logger, 'error', 'D1 health check failed', errorInfo);
+    return { status: 'unhealthy', latencyMs, error: err.message };
+  }
+}
+
+/**
  * Determine overall health status from individual checks
  */
-export function determineOverallStatus(checks: { kv: HealthResult }): 'healthy' | 'degraded' | 'unhealthy' {
-  const { kv } = checks;
+export function determineOverallStatus(checks: {
+  kv: HealthResult;
+  d1?: HealthResult;
+}): 'healthy' | 'degraded' | 'unhealthy' {
+  const { kv, d1 } = checks;
 
   // If KV is unhealthy, overall is unhealthy
-  if (kv.status === 'unhealthy') {
-    return 'unhealthy';
-  }
+  if (kv.status === 'unhealthy') return 'unhealthy';
+  if (kv.status === 'degraded') return 'degraded';
 
-  // If KV is degraded, overall is degraded
-  if (kv.status === 'degraded') {
-    return 'degraded';
-  }
+  // If D1 check ran and failed, overall is unhealthy
+  if (d1 && d1.status === 'unhealthy') return 'unhealthy';
+  if (d1 && d1.status === 'degraded') return 'degraded';
 
   return 'healthy';
 }
 
 /**
  * Perform complete health check with timeout
+ * @param env - Optional Cloudflare env (for D1 check when in Workers)
  */
 export async function performHealthCheck(
   agents: Record<string, unknown>,
   workflows: Record<string, unknown>,
-  timeoutMs: number = 5000
+  timeoutMs: number = 5000,
+  env?: { agentic_ally_memory?: D1Database }
 ): Promise<HealthCheckResponse> {
   const uptime = getUptime();
 
@@ -145,6 +175,22 @@ export async function performHealthCheck(
     };
   }
 
+  // Run D1 health check when binding available (Cloudflare Workers)
+  let d1Health: HealthResult | undefined;
+  const d1 = env?.agentic_ally_memory;
+  if (d1) {
+    try {
+      d1Health = await Promise.race([
+        checkD1Health(d1 as D1Database),
+        new Promise<HealthResult>((_, reject) =>
+          setTimeout(() => reject(new Error('D1 health check timeout')), timeoutMs)
+        ),
+      ]) as HealthResult;
+    } catch {
+      d1Health = { status: 'unhealthy', error: 'D1 health check timeout' };
+    }
+  }
+
   const agentNames = Object.keys(agents);
   const workflowNames = Object.keys(workflows);
 
@@ -152,6 +198,7 @@ export async function performHealthCheck(
     agents: agentNames.length > 0,
     workflows: workflowNames.length > 0,
     kv: kvHealth,
+    ...(d1Health !== undefined && { d1: d1Health }),
   };
 
   const overallStatus = determineOverallStatus(checks);

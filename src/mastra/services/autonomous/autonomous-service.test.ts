@@ -63,6 +63,25 @@ describe('executeAutonomousGeneration', () => {
     } as any);
   });
 
+  it('returns error when getUserInfoTool.execute is not available', async () => {
+    const originalExecute = userManagementModule.getUserInfoTool.execute;
+    (userManagementModule.getUserInfoTool as any).execute = undefined;
+
+    try {
+      const result = await executeAutonomousGeneration({
+        token: mockToken,
+        firstName: 'John',
+        lastName: 'Doe',
+        actions: ['phishing'],
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('getUserInfoTool not executable');
+    } finally {
+      (userManagementModule.getUserInfoTool as any).execute = originalExecute;
+    }
+  });
+
   it('returns error when neither user nor group assignment is provided', async () => {
     const result = await executeAutonomousGeneration({
       token: mockToken,
@@ -168,5 +187,43 @@ describe('executeAutonomousGeneration', () => {
 
     expect(result.success).toBe(false);
     expect(result.actions).toEqual(['phishing', 'smishing']);
+  });
+
+  it('replaces dash.keepnetlabs.com with api.keepnetlabs.com in baseApiUrl', async () => {
+    const { requestStorage } = await import('../../utils/core/request-storage');
+    let capturedContext: { baseApiUrl?: string } = {};
+    vi.spyOn(requestStorage, 'run').mockImplementation(async (ctx: any, fn: () => Promise<any>) => {
+      capturedContext = ctx;
+      return fn();
+    });
+
+    await executeAutonomousGeneration({
+      token: mockToken,
+      firstName: 'John',
+      lastName: 'Doe',
+      baseApiUrl: 'https://dash.keepnetlabs.com/v1',
+      actions: ['phishing'],
+    });
+
+    expect(capturedContext.baseApiUrl).toBe('https://api.keepnetlabs.com/v1');
+  });
+
+  it('replaces test-ui.devkeepnet.com with test-api.devkeepnet.com in baseApiUrl', async () => {
+    const { requestStorage } = await import('../../utils/core/request-storage');
+    let capturedContext: { baseApiUrl?: string } = {};
+    vi.spyOn(requestStorage, 'run').mockImplementation(async (ctx: any, fn: () => Promise<any>) => {
+      capturedContext = ctx;
+      return fn();
+    });
+
+    await executeAutonomousGeneration({
+      token: mockToken,
+      firstName: 'John',
+      lastName: 'Doe',
+      baseApiUrl: 'https://test-ui.devkeepnet.com/api',
+      actions: ['phishing'],
+    });
+
+    expect(capturedContext.baseApiUrl).toBe('https://test-api.devkeepnet.com/api');
   });
 });

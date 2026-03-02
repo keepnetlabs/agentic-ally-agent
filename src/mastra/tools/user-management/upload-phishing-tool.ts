@@ -1,5 +1,14 @@
+/**
+ * upload-phishing-tool
+ *
+ * EU AI Act (Art. 9) Tool Risk Metadata:
+ * - riskLevel: limited
+ * - rationale: Uploads phishing content to platform
+ * @see docs/AI_COMPLIANCE_INVENTORY.md
+ */
 import { createTool, ToolExecutionContext } from '@mastra/core/tools';
 import { z } from 'zod';
+import { isSafeId } from '../../utils/core/id-utils';
 import { getRequestContext } from '../../utils/core/request-storage';
 import { getLogger } from '../../utils/core/logger';
 import { withRetry } from '../../utils/core/resilience-utils';
@@ -55,7 +64,10 @@ export const uploadPhishingTool = createTool({
   description:
     'Fetches the phishing content by ID, prepares it, and uploads it to the platform via the phishing worker.',
   inputSchema: z.object({
-    phishingId: z.string().describe('The ID of the phishing content to upload'),
+    phishingId: z
+      .string()
+      .describe('The ID of the phishing content to upload')
+      .refine(isSafeId, { message: 'Invalid phishingId format.' }),
   }),
   outputSchema: uploadPhishingOutputSchema,
   // v1: execute now takes (inputData, context)

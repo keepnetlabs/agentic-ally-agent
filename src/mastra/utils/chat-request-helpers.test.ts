@@ -207,4 +207,199 @@ describe('chat-request-helpers', () => {
       expect(ids.targetGroupResourceId).toBe('group-456');
     });
   });
+
+  describe('buildRoutingContext', () => {
+    it('returns empty string for empty messages array', () => {
+      expect(buildRoutingContext([])).toBe('');
+    });
+
+    it('returns empty string for null/undefined', () => {
+      expect(buildRoutingContext(null as any)).toBe('');
+      expect(buildRoutingContext(undefined as any)).toBe('');
+    });
+
+    it('returns empty string for non-array', () => {
+      expect(buildRoutingContext({} as any)).toBe('');
+    });
+
+    it('includes CONVERSATION HISTORY header', () => {
+      const context = buildRoutingContext([{ role: 'user', content: 'Hi' }]);
+      expect(context).toContain('CONVERSATION HISTORY');
+      expect(context).toContain('Role: User');
+      expect(context).toContain('Content: Hi');
+    });
+  });
+
+  describe('extractArtifactIdsFromRoutingContext', () => {
+    it('returns empty object for empty string', () => {
+      expect(extractArtifactIdsFromRoutingContext('')).toEqual({});
+    });
+
+    it('returns empty object for null/undefined', () => {
+      expect(extractArtifactIdsFromRoutingContext(null as any)).toEqual({});
+      expect(extractArtifactIdsFromRoutingContext(undefined as any)).toEqual({});
+    });
+
+    it('extracts microlearningId from context', () => {
+      const ids = extractArtifactIdsFromRoutingContext('Training: microlearningId=ml-abc123');
+      expect(ids.microlearningId).toBe('ml-abc123');
+    });
+
+    it('extracts phishingId from context', () => {
+      const ids = extractArtifactIdsFromRoutingContext('Phishing: phishingId=ph-xyz789');
+      expect(ids.phishingId).toBe('ph-xyz789');
+    });
+
+    it('extracts resourceId from context', () => {
+      const ids = extractArtifactIdsFromRoutingContext('resourceId=res-456');
+      expect(ids.resourceId).toBe('res-456');
+    });
+
+    it('takes last match when multiple same-type IDs present', () => {
+      const ids = extractArtifactIdsFromRoutingContext(
+        'microlearningId=ml-first microlearningId=ml-last'
+      );
+      expect(ids.microlearningId).toBe('ml-last');
+    });
+
+    it('extracts languageId and sendTrainingLanguageId', () => {
+      const ids = extractArtifactIdsFromRoutingContext(
+        'languageId=lang-en sendTrainingLanguageId=lang-tr'
+      );
+      expect(ids.languageId).toBe('lang-en');
+      expect(ids.sendTrainingLanguageId).toBe('lang-tr');
+    });
+  });
+
+  describe('parseAndValidateRequest edge cases', () => {
+    it('prefers prompt over text over input', () => {
+      const body = { prompt: 'p', text: 't', input: 'i' };
+      const result = parseAndValidateRequest(body);
+      expect(result?.prompt).toBe('p');
+    });
+
+    it('extracts prompt from last user message parts when no explicit prompt', () => {
+      const body = {
+        messages: [
+          { role: 'user', content: null, parts: [{ type: 'text', text: 'First part' }, { type: 'text', text: 'Second part' }] },
+        ] as any,
+      };
+      const result = parseAndValidateRequest(body);
+      expect(result?.prompt).toBe('First part\nSecond part');
+    });
+
+    it('returns null when messages array has no user message with content', () => {
+      const body = {
+        messages: [{ role: 'assistant', content: 'Hi' }] as any,
+      };
+      const result = parseAndValidateRequest(body);
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('buildRoutingContext - additional UI signals', () => {
+    it('converts phishing_email UI signal to semantic message', () => {
+      const payload = Buffer.from(JSON.stringify({ phishingId: 'ph-abc' }), 'utf-8').toString('base64');
+      const context = buildRoutingContext([
+        { role: 'assistant', content: `::ui:phishing_email::${payload}::/ui:phishing_email::` } as any,
+      ]);
+      expect(context).toContain('[Phishing Simulation Email Created: phishingId=ph-abc]');
+      const ids = extractArtifactIdsFromRoutingContext(context);
+      expect(ids.phishingId).toBe('ph-abc');
+    });
+
+    it('converts landing_page UI signal with phishingId', () => {
+      const payload = Buffer.from(JSON.stringify({ phishingId: 'ph-landing' }), 'utf-8').toString('base64');
+      const context = buildRoutingContext([
+        { role: 'assistant', content: `::ui:landing_page::${payload}::/ui:landing_page::` } as any,
+      ]);
+      expect(context).toContain('[Phishing Simulation Landing Page Created: phishingId=ph-landing]');
+    });
+
+    it('converts training_meta UI signal with microlearningId', () => {
+      const payload = Buffer.from(
+        JSON.stringify({ microlearningId: 'ml-training-meta' }),
+        'utf-8'
+      ).toString('base64');
+      const context = buildRoutingContext([
+        { role: 'assistant', content: `::ui:training_meta::${payload}::/ui:training_meta::` } as any,
+      ]);
+      expect(context).toContain('[Training Created: microlearningId=ml-training-meta]');
+    });
+
+    it('converts phishing_uploaded UI signal', () => {
+      const payload = Buffer.from(
+        JSON.stringify({ phishingId: 'ph-up', resourceId: 'res-up' }),
+        'utf-8'
+      ).toString('base64');
+      const context = buildRoutingContext([
+        { role: 'assistant', content: `::ui:phishing_uploaded::${payload}::/ui:phishing_uploaded::` } as any,
+      ]);
+      expect(context).toContain('[Phishing Simulation Uploaded: phishingId=ph-up, resourceId=res-up]');
+    });
+
+    it('converts phishing_assigned UI signal with GROUP', () => {
+      const payload = Buffer.from(
+        JSON.stringify({
+          resourceId: 'res-1',
+          targetId: 'group-1',
+          assignmentType: 'GROUP',
+        }),
+        'utf-8'
+      ).toString('base64');
+      const context = buildRoutingContext([
+        { role: 'assistant', content: `::ui:phishing_assigned::${payload}::/ui:phishing_assigned::` } as any,
+      ]);
+      expect(context).toContain('targetGroupResourceId=group-1');
+    });
+
+    it('extracts smishingId from routing context', () => {
+      const ids = extractArtifactIdsFromRoutingContext('Smishing: smishingId=sm-xyz123');
+      expect(ids.smishingId).toBe('sm-xyz123');
+    });
+
+    it('extracts scenarioResourceId and landingPageResourceId', () => {
+      const ids = extractArtifactIdsFromRoutingContext(
+        'scenarioResourceId=scen-123 landingPageResourceId=lp-456'
+      );
+      expect(ids.scenarioResourceId).toBe('scen-123');
+      expect(ids.landingPageResourceId).toBe('lp-456');
+    });
+
+    it('converts deepfake_video_generating UI signal with videoId', () => {
+      const payload = Buffer.from(JSON.stringify({ videoId: 'vid-abc123' }), 'utf-8').toString('base64');
+      const context = buildRoutingContext([
+        {
+          role: 'assistant',
+          content: `::ui:deepfake_video_generating::${payload}::/ui:deepfake_video_generating::`,
+        } as any,
+      ]);
+      expect(context).toContain('[Deepfake Video Generated: videoId=vid-abc123]');
+    });
+
+    it('converts deepfake_video_generating UI signal without videoId', () => {
+      const payload = Buffer.from(JSON.stringify({}), 'utf-8').toString('base64');
+      const context = buildRoutingContext([
+        {
+          role: 'assistant',
+          content: `::ui:deepfake_video_generating::${payload}::/ui:deepfake_video_generating::`,
+        } as any,
+      ]);
+      expect(context).toContain('[Deepfake Video Generated]');
+    });
+
+    it('shortens long URLs in message content', () => {
+      const longUrl =
+        'https://example.com/training/course/very-long-microlearning-id-12345678901234567890?lang=en';
+      const context = buildRoutingContext([{ role: 'user', content: `Check this ${longUrl} please` }]);
+      expect(context).toContain('[URL:');
+      expect(context).not.toContain('very-long-microlearning-id-12345678901234567890');
+    });
+
+    it('replaces short URLs with [URL] placeholder', () => {
+      const shortUrl = 'https://example.com/x';
+      const context = buildRoutingContext([{ role: 'user', content: shortUrl }]);
+      expect(context).toContain('[URL]');
+    });
+  });
 });

@@ -59,6 +59,20 @@ describe('logger.ts coverage branches', () => {
     expect(testModule.resolveLogLevel()).toBe('info');
   });
 
+  it('resolveLogLevel ignores invalid LOG_LEVEL and falls back to NODE_ENV', async () => {
+    process.env.LOG_LEVEL = 'invalid-level';
+    process.env.NODE_ENV = 'development';
+    vi.resetModules();
+    const mod = await import('./logger');
+    expect(mod.resolveLogLevel()).toBe('debug');
+
+    process.env.NODE_ENV = 'production';
+    vi.resetModules();
+    const mod2 = await import('./logger');
+    expect(mod2.resolveLogLevel()).toBe('info');
+    delete process.env.LOG_LEVEL;
+  });
+
   it('resolveLogLevel uses LOG_LEVEL env when set', async () => {
     process.env.LOG_LEVEL = 'warn';
     process.env.NODE_ENV = 'development';
@@ -171,6 +185,14 @@ describe('logger.ts coverage branches', () => {
 
     expect(timer.end()).toBe(250);
     nowSpy.mockRestore();
+  });
+
+  it('STRUCTURED_LOG_FORMATTERS uses development when NODE_ENV is empty', async () => {
+    process.env.NODE_ENV = '';
+    vi.resetModules();
+    const { STRUCTURED_LOG_FORMATTERS } = await import('./logger');
+    const result = STRUCTURED_LOG_FORMATTERS.log({ msg: 'test' });
+    expect(result.env).toBe('development');
   });
 
   it('startTimer endMs returns elapsed milliseconds as suffixed string', async () => {

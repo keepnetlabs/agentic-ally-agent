@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { generateInboxTextsPrompt } from './inbox-texts-generator';
 
 /**
  * Test suite for Inbox Texts Generator
@@ -7,6 +8,39 @@ import { describe, it, expect } from 'vitest';
  * SMS texts complement email training with channel-specific phishing attempts
  */
 describe('Inbox Texts Generator', () => {
+  describe('generateInboxTextsPrompt', () => {
+    it('should return prompt string with topic and language', () => {
+      const microlearning = { microlearning_metadata: { title: 'Phishing', category: 'Security', risk_area: 'Email', level: 'Beginner' } } as any;
+      const result = generateInboxTextsPrompt('Phishing', 'en', microlearning);
+      expect(result).toContain('Phishing');
+      expect(result).toContain('en');
+      expect(result).toContain('Create inbox UI texts');
+    });
+
+    it('should include phishingReportModal and phishingResultModal in prompt', () => {
+      const microlearning = { microlearning_metadata: { title: 'Test', category: 'X', risk_area: 'Y', level: 'Z' } } as any;
+      const result = generateInboxTextsPrompt('Email Security', 'tr', microlearning);
+      expect(result).toContain('phishingReportModal');
+      expect(result).toContain('phishingResultModal');
+      expect(result).toContain('legitimateExplanationTitle');
+    });
+
+    it('should include JSON structure template', () => {
+      const microlearning = { microlearning_metadata: { title: 'X', category: 'Y', risk_area: 'Z', level: 'L' } } as any;
+      const result = generateInboxTextsPrompt('Topic', 'de', microlearning);
+      expect(result).toContain('"title"');
+      expect(result).toContain('"description"');
+      expect(result).toContain('"instructions"');
+      expect(result).toContain('"reportButtonText"');
+    });
+
+    it('should use topic in mobileTitle', () => {
+      const microlearning = { microlearning_metadata: { title: 'X', category: 'Y', risk_area: 'Z', level: 'L' } } as any;
+      const result = generateInboxTextsPrompt('CEO Fraud', 'fr', microlearning);
+      expect(result).toContain('"mobileTitle": "CEO Fraud Training"');
+    });
+  });
+
   describe('Text Message Generation', () => {
     it('should generate text messages alongside emails', () => {
       // SMS phishing is realistic threat alongside email phishing

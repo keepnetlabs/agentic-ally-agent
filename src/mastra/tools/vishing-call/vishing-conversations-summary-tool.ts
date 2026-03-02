@@ -21,14 +21,16 @@ import { LOW_DETERMINISM_PARAMS } from '../../utils/config/llm-generation-params
 
 const logger = getLogger('VishingConversationsSummaryTool');
 
-const DEFAULT_NEXT_STEPS: readonly { title: string; description: string }[] = [
+const DEFAULT_NEXT_STEPS: readonly { title: string; description: string; prompt: string }[] = [
   {
     title: 'Verifying Caller Identity',
     description: 'Always verify the caller through official channels before sharing any information.',
+    prompt: 'Create a microlearning module about verifying caller identity. Focus on: how to independently verify a caller through official channels, red flags of impersonation, and steps to take when receiving unexpected calls requesting information.',
   },
   {
     title: 'Never Share OTPs or Passwords',
     description: 'Legitimate organizations never ask for passwords or one-time codes over the phone.',
+    prompt: 'Create a microlearning module about protecting passwords and OTPs. Focus on: why legitimate organizations never ask for credentials over the phone, common pretexts attackers use to request OTPs, and what to do if pressured to share sensitive codes.',
   },
 ] as const;
 
@@ -37,17 +39,22 @@ const STATUS_CARD_BY_OUTCOME: Record<string, VishingStatusCard> = {
     variant: 'warning',
     title: 'Data Disclosed',
     description:
-      'Sensitive information was shared during the call. Review what was disclosed and take recommended next steps.',
+      'The recipient shared sensitive information during the call. Review what was disclosed and take recommended next steps.',
   },
   refused: {
     variant: 'success',
     title: 'No Data Disclosed',
-    description: 'You correctly refused to share sensitive information. Well done recognizing the attempt.',
+    description: 'The recipient correctly refused to share sensitive information. Well done recognizing the attempt.',
   },
   detected: {
     variant: 'success',
     title: 'Simulation Detected',
-    description: 'You identified this as a simulation. Great awareness of vishing tactics.',
+    description: 'The recipient identified this as a simulation. Great awareness of vishing tactics.',
+  },
+  not_answered: {
+    variant: 'info',
+    title: 'Call Not Answered',
+    description: 'The recipient did not pick up the phone. No conversation took place.',
   },
   other: {
     variant: 'info',
@@ -104,6 +111,7 @@ function normalizeOutcome(outcome: unknown): unknown {
   if (v === 'data_disclosed' || v === 'disclosed' || v === 'shared') return 'data_disclosed';
   if (v === 'refused' || v === 'reject' || v === 'rejected') return 'refused';
   if (v === 'detected' || v === 'detection') return 'detected';
+  if (v === 'not_answered' || v === 'no_answer' || v === 'unanswered') return 'not_answered';
   if (v === 'other' || v === 'unknown') return 'other';
   return outcome;
 }
@@ -126,11 +134,11 @@ function normalizeRawSummaryPayload(raw: Record<string, unknown>): Record<string
   return normalized;
 }
 
-function parseNextSteps(raw: unknown): { title: string; description: string }[] {
+function parseNextSteps(raw: unknown): { title: string; description: string; prompt?: string }[] {
   if (!Array.isArray(raw)) return [...DEFAULT_NEXT_STEPS];
   const validated = raw
     .map(item => VishingNextStepCardSchema.safeParse(item))
-    .filter((r): r is { success: true; data: { title: string; description: string } } => r.success)
+    .filter((r): r is { success: true; data: { title: string; description: string; prompt?: string } } => r.success)
     .map(r => r.data);
   return validated.length > 0 ? validated : [...DEFAULT_NEXT_STEPS];
 }
@@ -149,6 +157,16 @@ export async function generateVishingConversationsSummary(messages: VishingMessa
   nextSteps: { title: string; description: string }[];
   statusCard: VishingStatusCard;
 }> {
+  const userMessages = messages.filter(m => m.role === 'user' && m.text.trim().length > 0);
+  if (userMessages.length === 0) {
+    logger.info('vishing_conversations_summary_not_answered', { totalMessages: messages.length });
+    return {
+      summary: { timeline: [], disclosedInfo: [], outcome: 'not_answered' },
+      nextSteps: [],
+      statusCard: STATUS_CARD_BY_OUTCOME.not_answered,
+    };
+  }
+
   const conversationText = buildMessagesPrompt(messages);
 
   const systemPrompt = `You are a senior security training analyst specializing in social engineering and vishing (voice phishing) assessments. Analyze this transcript from a simulated vishing call and produce a structured debrief for the learner.
@@ -177,19 +195,35 @@ OUTCOME ENUM (exact, lowercase, underscore):
 - "data_disclosed"
 - "refused"
 - "detected"
+- "not_answered"
 - "other"
 
 OUTCOME RULES:
-- data_disclosed: Learner shared sensitive info (passwords, OTP, card numbers, account details, etc.). List each item in disclosedInfo.
+- data_disclosed: Learner shared an ACTUAL sensitive credential or exploitable detail. Only classify as data_disclosed when the learner reveals a specific credential, code, number, or personally identifiable detail that could be exploited — for example: a password, OTP/MFA code, credit card number, bank account details, employee badge number, Social Security number, or similar.
+  CRITICAL — The following are NOT data disclosure (do NOT classify as data_disclosed):
+  • Procedural acknowledgments: "I'm on the page", "I can see the reset screen", "Yes, I opened it", "I'm looking at it now"
+  • Navigational confirmations: "I went to the portal", "I'm on the Microsoft login page", "I see the form"
+  • Emotional or social responses: "I'm worried", "That sounds urgent", "OK I understand"
+  • General work info already known to the caller: confirming their own name, department, or job title
+  • Agreeing to follow instructions without actually sharing a credential
+  Only items in disclosedInfo must be actual credentials/codes/numbers the learner read out or typed.
 - refused: Learner refused and shared no sensitive data. disclosedInfo must be [].
 - detected: Learner identified simulation and shared no sensitive data. disclosedInfo must be [].
+- not_answered: The call was NOT answered by a real person. Use this when "User" messages are from a voicemail system, answering machine, IVR, or automated service. Common voicemail indicators include: "leave a message after the tone", "please leave a message", "mesajınız kaydedilmiştir", "mesajınızı bırakın", "the person you are calling is not available", "lütfen mesaj bırakın", automated greetings with no human interaction, or when the agent left a voicemail without any real human response. timeline and disclosedInfo must be []. nextSteps must be [].
 - other: Call ended without clear outcome. disclosedInfo must be [].
 
 NEXT STEPS:
 - Tailor to outcome.
 - For data_disclosed include actions like password reset and financial provider contact if relevant.
 - For refused/detected reinforce positive behavior.
-- 2-4 items, each with title + description, in English.
+- 2-4 items, each with title + description + prompt, in English.
+- The "prompt" field is a context-rich microlearning creation prompt. It MUST include:
+  1. The training topic (from title).
+  2. Specific context from THIS vishing call: what persona was used, what social engineering technique was applied, what the learner did right or wrong.
+  3. Focus areas for the training module.
+  4. The recipient's role and seniority level, inferred from the transcript (e.g., "Recipient: Executive (C-Suite)", "Recipient: IT Manager (Mid-Level)"). Detect from how the agent addressed the recipient, their access level, and the pretext used.
+  5. The language spoken during the call in full locale format (e.g., "Language: English (United Kingdom)", "Language: Türkçe (Türkiye)"). Detect from the transcript text and use the most specific locale possible.
+  Example prompt: "Create a microlearning module about verifying caller identity. Context: In a vishing simulation, the learner (Executive, C-Suite) accepted an IT Security officer's credentials without independent verification. The caller used authority impersonation and deadline pressure (2-hour audit window). Focus on: how to verify callers through official channels, red flags of authority impersonation. Recipient: Executive (C-Suite). Language: English (United Kingdom)."
 
 OUTPUT STRUCTURE:
 {
@@ -203,7 +237,7 @@ OUTPUT STRUCTURE:
     "outcome": "refused"
   },
   "nextSteps": [
-    { "title": "<short title>", "description": "<actionable recommendation>" }
+    { "title": "<short title>", "description": "<actionable recommendation>", "prompt": "<context-rich microlearning creation prompt>" }
   ]
 }
 
@@ -251,9 +285,20 @@ Return ONLY the JSON object. No markdown, no code blocks, no extra text.`;
 
   const statusCardValidated = VishingStatusCardSchema.parse(statusCard);
 
+  // Enforce: not_answered must have empty timeline, disclosedInfo, and nextSteps
+  if (parsed.summary.outcome === 'not_answered') {
+    return {
+      summary: { timeline: [], disclosedInfo: [], outcome: 'not_answered' },
+      nextSteps: [],
+      statusCard: STATUS_CARD_BY_OUTCOME.not_answered,
+    };
+  }
+
   // Enforce: refused/detected/other must have empty disclosedInfo
   const summary =
-    parsed.summary.outcome === 'data_disclosed' ? parsed.summary : { ...parsed.summary, disclosedInfo: [] };
+    parsed.summary.outcome === 'data_disclosed'
+      ? parsed.summary
+      : { ...parsed.summary, disclosedInfo: [] };
 
   return {
     summary,

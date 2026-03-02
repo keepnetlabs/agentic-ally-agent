@@ -4,11 +4,13 @@
  * Problem:
  * - LLM sometimes outputs a "card" table (white background + border radius + shadow)
  *   but forgets to add padding to the inner content <td> (e.g., padding:0).
- * - This makes the content visually stick to the card border in many clients.
+ * - Corporate Letter layout or other structures may have content <td> with no horizontal padding,
+ *   causing text to stick to the left edge (ugly, cramped appearance).
  *
  * Goal:
- * - Ensure the primary content <td> inside a card table has a reasonable padding (default 24px),
- *   without changing overall structure.
+ * - Ensure the primary content <td> inside a card table has a reasonable padding (default 24px).
+ * - Also ensure ALL content-like <td> (in any table) have minimum horizontal padding (24px left/right),
+ *   so text never sticks to edges regardless of layout strategy.
  *
  * Never throws: 3-level fallback.
  */
@@ -69,6 +71,25 @@ function hasDecl(parts: string[], key: string): boolean {
   return parts.some(p => p.split(':')[0]?.trim().toLowerCase() === k);
 }
 
+/**
+ * Extracts the horizontal (left/right) padding value from a shorthand padding declaration.
+ * Returns 0 if shorthand is not found or value cannot be parsed.
+ * CSS shorthand rules: 1 value = all sides; 2 = top/bottom + left/right;
+ * 3 = top + left/right + bottom; 4 = top right bottom left.
+ */
+function getShorthandHorizontalPx(parts: string[]): number {
+  const shorthand = parts.find(p => p.split(':')[0]?.trim().toLowerCase() === 'padding');
+  if (!shorthand) return 0;
+  const val = shorthand.split(':').slice(1).join(':').trim();
+  const values = val.split(/\s+/).map(v => parseFloat(v));
+  if (values.some(isNaN)) return 0;
+  if (values.length === 1) return values[0];                          // all sides
+  if (values.length === 2) return values[1];                          // left/right
+  if (values.length === 3) return values[1];                          // left/right
+  if (values.length === 4) return Math.min(values[1], values[3]);     // right, left
+  return 0;
+}
+
 function replacePaddingZero(parts: string[], toPx: number): string[] {
   return parts.map(p => {
     const [kRaw, vRaw] = p.split(':');
@@ -107,6 +128,49 @@ function findAllTdDescendants(node: HtmlNode): HtmlNode[] {
   return out;
 }
 
+/** Check if td contains text content (p, span, or has font-related styles) */
+function isContentTd(td: HtmlNode): boolean {
+  const style = (getAttr(td, 'style') ?? '').toLowerCase();
+  const hasFontStyle =
+    style.includes('font-family') || style.includes('line-height') || style.includes('font-size');
+  if (hasFontStyle) return true;
+  const children = Array.isArray(td.childNodes) ? td.childNodes : [];
+  for (const c of children) {
+    if (!isElement(c)) continue;
+    const name = nodeName(c);
+    if (name === 'p' || name === 'span' || name === 'div') return true;
+  }
+  return false;
+}
+
+const MIN_HORIZONTAL_PADDING_PX = 20;
+
+function ensureTdHorizontalPadding(td: HtmlNode, defaultPaddingPx: number): boolean {
+  const style = getAttr(td, 'style') ?? '';
+  const parts = splitStyle(style);
+  const hasLeft = hasDecl(parts, 'padding-left');
+  const hasRight = hasDecl(parts, 'padding-right');
+  const hasShorthand = hasDecl(parts, 'padding');
+
+  let needsLeft = !hasLeft;
+  let needsRight = !hasRight;
+
+  if (hasShorthand) {
+    const horiz = getShorthandHorizontalPx(parts);
+    if (horiz >= MIN_HORIZONTAL_PADDING_PX) return false;
+    needsLeft = needsRight = true;
+  }
+
+  if (!needsLeft && !needsRight) return false;
+
+  const newDecls: string[] = [];
+  if (needsLeft) newDecls.push(`padding-left: ${defaultPaddingPx}px`);
+  if (needsRight) newDecls.push(`padding-right: ${defaultPaddingPx}px`);
+  const nextParts = [...parts, ...newDecls];
+  setAttr(td, 'style', joinStyle(nextParts));
+  return true;
+}
+
 function primaryNormalize(html: string, defaultPaddingPx: number): { html: string; changed: boolean } {
   const fragment = parse5.parseFragment(html);
   const root = fragment as unknown as HtmlNode;
@@ -142,27 +206,15 @@ function primaryNormalize(html: string, defaultPaddingPx: number): { html: strin
           let nextParts = parts;
 
           if (hasShorthand) {
-            // Even if shorthand exists (e.g. "padding: 0" or "padding: 12px 0"), we want to enforce horizontal padding if it looks like 0.
-            // Simplest safety: replace "padding: 0..." patterns AND blindly append padding-left/right if not specifically set.
-            // But if user set "padding: 20px", we don't want to override with 24px.
-            // However, "padding: 12px 0" is the bug.
-            // Strategy: If shorthand exists, replace strict 0.
-            // THEN, if specific left/right are missing, append them as safety overrides IF the shorthand might be zero-ish?
-            // Actually, relying on "padding-left: 24px" at the end is safe because:
-            // 1. If shorthand was "padding: 20px" -> result "padding: 20px; padding-left: 24px" -> 24px horizontal. Close enough.
-            // 2. If shorthand was "padding: 12px 0" -> result "padding: 12px 0; padding-left: 24px" -> Fixed!
-            // 3. If shorthand was "padding: 0" -> result "padding: 24px" (via replacePaddingZero) -> Fixed!
-
-            // So, simpler strategy:
-            // 1. Run replacePaddingZero (fixes explicit padding:0).
-            // 2. Append padding-left/right if NOT specifically present as "padding-left" key.
-
+            // Fix horizontal padding only when the shorthand has zero horizontal component:
+            // 1. "padding: 0"      → replacePaddingZero → "padding: 24px" (all sides fixed)
+            // 2. "padding: 12px 0" → shorthandHoriz=0  → append padding-left/right overrides
+            // 3. "padding: 20px"   → shorthandHoriz=20 → leave untouched (already has horizontal)
             nextParts = replacePaddingZero(parts, defaultPaddingPx);
 
-            // Append specific horizontal overrides if missing specific keys
-            // This fixes "padding: 12px 0" case by trumping it with specific declaration
-            if (!hasLeft) nextParts.push(`padding-left: ${defaultPaddingPx}px`);
-            if (!hasRight) nextParts.push(`padding-right: ${defaultPaddingPx}px`);
+            const shorthandHoriz = getShorthandHorizontalPx(nextParts);
+            if (!hasLeft && shorthandHoriz === 0) nextParts.push(`padding-left: ${defaultPaddingPx}px`);
+            if (!hasRight && shorthandHoriz === 0) nextParts.push(`padding-right: ${defaultPaddingPx}px`);
           } else {
             // No shorthand. Check specific sides.
             const newDecls: string[] = [];
@@ -180,6 +232,16 @@ function primaryNormalize(html: string, defaultPaddingPx: number): { html: strin
           }
 
           // REMOVED break; to process ALL rows in the card (e.g. multiple paragraphs)
+        }
+      }
+
+      // Pass 2: Ensure ALL content td (in any table) have minimum horizontal padding.
+      // Fixes Corporate Letter layout and other structures where text sticks to left edge.
+      if (nodeName(child) === 'table') {
+        const tds = findAllTdDescendants(child);
+        for (const td of tds) {
+          if (!isContentTd(td)) continue;
+          if (ensureTdHorizontalPadding(td, defaultPaddingPx)) changed = true;
         }
       }
 

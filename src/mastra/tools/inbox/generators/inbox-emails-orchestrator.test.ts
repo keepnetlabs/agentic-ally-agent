@@ -206,6 +206,43 @@ describe('Inbox Emails Orchestrator', () => {
     expect(contextMessage).toBeUndefined();
   });
 
+  it('should include additionalContext in retry messages for phishing variant', async () => {
+    let callCount = 0;
+    (generateText as any).mockImplementation(async (args: any) => {
+      callCount++;
+      const messages = args.messages;
+      const lastMessage = messages[messages.length - 1].content;
+
+      if (lastMessage.includes('If previous output was not valid JSON')) {
+        expect(messages.some((m: any) => m.content?.includes('CRITICAL USER VULNERABILITY'))).toBe(true);
+        expect(messages.some((m: any) => m.content?.includes('Finance team invoice focus'))).toBe(true);
+        return createMockEmailResponse('retry-id', 'Retry With Context');
+      }
+
+      if (callCount === 1) {
+        throw new Error('First attempt failed');
+      }
+      return createMockEmailResponse(`id-${callCount}`, `Subject ${callCount}`);
+    });
+
+    (withRetry as any).mockImplementation((fn: any) => fn());
+
+    const result = await generateInboxEmailsParallel({
+      topic: 'Test Topic',
+      languageCode: 'en-US',
+      category: 'Security',
+      riskArea: 'Phishing',
+      level: 'Beginner',
+      department: 'IT',
+      additionalContext: 'Finance team invoice focus',
+      model: mockModel,
+    });
+
+    expect(result).toHaveLength(4);
+    const retryEmail = result.find(e => e.subject === 'Retry With Context');
+    expect(retryEmail).toBeDefined();
+  });
+
   it('should throw error if ALL generations fail', async () => {
     // Mock all failures even after retries
     (generateText as any).mockRejectedValue(new Error('Everything failed'));

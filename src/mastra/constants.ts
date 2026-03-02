@@ -586,7 +586,7 @@ export const THEME_COLORS = {
     // AI/Innovation → Orange/Yellow
     'ai/ml security': 'bg-gradient-orange',
     'ai-powered threats': 'bg-gradient-orange',
-    'deepfake & synthetic media': 'bg-gradient-yellow',
+    'deepfake synthetic media': 'bg-gradient-yellow',
 
     // People/HR → Pink/Light Blue
     'social engineering': 'bg-gradient-pink',
@@ -610,6 +610,8 @@ export const AGENT_NAMES = {
   VISHING_CALL: 'vishingCallAssistant',
   ORCHESTRATOR: 'orchestrator',
   EMAIL_IR_ANALYST: 'emailIrAnalyst',
+  DEEPFAKE_VIDEO: 'deepfakeVideoAssistant',
+  OUT_OF_SCOPE: 'outOfScope',
 } as const;
 
 // ============================================
@@ -625,6 +627,8 @@ export const AGENT_IDS = {
   VISHING_CALL: 'vishing-call-agent',
   ORCHESTRATOR: 'orchestrator-agent',
   EMAIL_IR_ANALYST: 'email-ir-analyst',
+  DEEPFAKE_VIDEO: 'deepfake-video-agent',
+  OUT_OF_SCOPE: 'out-of-scope-agent',
 } as const;
 
 /** Short confirmation/selection patterns for orchestrator Scenario A (route to same agent). */
@@ -632,7 +636,7 @@ export const ORCHESTRATOR_CONFIRMATION_EXAMPLES = [
   'Yes',
   'Proceed',
   'Do it',
-  'Olustur',
+  'Oluştur',
   'Tamam',
   'OK',
   '1',
@@ -728,6 +732,8 @@ export const PHISHING_EMAIL = {
   PREHEADER_WORD_COUNT: { min: 10, max: 15 },
   QR_CODE_IMAGE_WIDTH_PX: 200,
   EMAIL_TABLE_MAX_WIDTH_PX: 600,
+  /** Inner card table max-width (Transactional layout). Wider than landing-page cards (420px) for email content (paragraphs, lists). */
+  EMAIL_CARD_MAX_WIDTH_PX: 560,
   QR_CODE_TIMEOUT_HOURS: 24,
 
   // Mandatory tags for valid phishing emails
@@ -841,6 +847,52 @@ export const ROUTING = {
     'Telefon',
     'Telefon et',
   ] as const,
+
+  // Deepfake video triggers
+  DEEPFAKE_TRIGGERS: [
+    'Deepfake',
+    'Deepfake video',
+    'Generate video',
+    'Create video',
+    'AI video',
+    'Fake video',
+    'Video simulation',
+    'Sahte video',
+    'Video oluştur',
+    'Deepfake oluştur',
+  ] as const,
+} as const;
+
+// ============================================
+// HEYGEN CONFIGURATION
+// ============================================
+
+export const HEYGEN = {
+  /** Base URL for all HeyGen API calls */
+  API_BASE_URL: 'https://api.heygen.com',
+
+  /** Endpoint paths */
+  ENDPOINTS: {
+    LIST_AVATARS: '/v2/avatars',
+    LIST_VOICES: '/v2/voices',
+    GENERATE_VIDEO: '/v2/video/generate',
+    VIDEO_STATUS: '/v1/video_status.get',
+  },
+
+  /** Timeout for HeyGen API calls (ms) */
+  API_TIMEOUT_MS: 30000,
+
+  /** Video dimensions by orientation */
+  DIMENSIONS: {
+    landscape: { width: 1920, height: 1080 },
+    portrait: { width: 1080, height: 1920 },
+  } as const,
+
+  /** Default video orientation */
+  DEFAULT_ORIENTATION: 'landscape' as const,
+
+  /** Default background color (professional dark) */
+  DEFAULT_BACKGROUND_COLOR: '#1a1a2e',
 } as const;
 
 // ============================================
@@ -881,7 +933,7 @@ export const API_ENDPOINTS = {
     process.env.PHISHING_WORKER_URL ||
     'https://crud-phishing-worker.keepnet-labs-ltd-business-profile4086.workers.dev/submit',
   PHISHING_WORKER_SUBMIT:
-    process.env.PHISHING_WORKER_URL ||
+    process.env.PHISHING_WORKER_SUBMIT ||
     'https://crud-phishing-worker.keepnet-labs-ltd-business-profile4086.workers.dev/submit',
   PHISHING_WORKER_SEND:
     process.env.PHISHING_WORKER_SEND ||
@@ -901,6 +953,7 @@ export const API_ENDPOINTS = {
     process.env.PHISHING_WORKER_URL ||
     'https://crud-phishing-worker.keepnet-labs-ltd-business-profile4086.workers.dev/submit',
   SMISHING_WORKER_SUBMIT:
+    process.env.SMISHING_WORKER_SUBMIT ||
     process.env.SMISHING_WORKER_URL ||
     process.env.PHISHING_WORKER_URL ||
     'https://crud-phishing-worker.keepnet-labs-ltd-business-profile4086.workers.dev/submit',
@@ -935,7 +988,7 @@ export const API_ENDPOINTS = {
   DEFAULT_AUTH_URL: 'https://test-ui.devkeepnet.com',
 
   // Agentic AI Chat endpoint (Policy)
-  AGENTIC_AI_CHAT_URL: 'http://agentic-ai-chat.keepnetlabs.com',
+  AGENTIC_AI_CHAT_URL: 'https://agentic-ai-chat.keepnetlabs.com',
 } as const;
 
 // API Keys and authentication
@@ -999,6 +1052,50 @@ export const MESSAGING_GUIDELINES = SAFE_COMMUNICATION.MESSAGING;
 export const MESSAGING_GUIDELINES_PROMPT_FRAGMENT = `- NEVER use: ${MESSAGING_GUIDELINES.BLACKLIST_WORDS.join(', ')}`;
 
 // ============================================
+// GDPR DATA GOVERNANCE
+// ============================================
+
+/**
+ * GDPR compliance configuration for data retention, audit logging,
+ * and data subject rights (Art. 15-17, 30, 33-34).
+ *
+ * Technical infrastructure — does NOT replace legal obligations.
+ */
+export const GDPR = {
+  /** Data retention periods (days). After expiry, data is eligible for auto-deletion. */
+  RETENTION_DAYS: {
+    CAMPAIGN_DATA: 365, // Phishing/smishing simulation data
+    USER_ACTIVITY: 180, // User interaction logs
+    AUDIT_LOGS: 730, // Audit trail (2 years — regulatory minimum)
+    KV_CONTENT: 365, // Generated content in KV
+    SESSION_DATA: 90, // Chat/thread session data
+  },
+
+  /** Audit action types for data_access_audit table */
+  AUDIT_ACTIONS: ['READ', 'CREATE', 'UPDATE', 'DELETE', 'EXPORT'] as const,
+
+  /** Data categories tracked for Art. 30 records of processing */
+  DATA_CATEGORIES: [
+    'USER_PII', // Names, emails, phone numbers
+    'CAMPAIGN_DATA', // Phishing/smishing simulation content
+    'TRAINING_DATA', // Microlearning content
+    'ANALYTICS', // User behavior / click data
+    'AI_GENERATED', // AI model outputs
+  ] as const,
+
+  /** Paths that involve personal data processing (for audit middleware) */
+  PERSONAL_DATA_PATHS: [
+    '/api/user',
+    '/api/target-group',
+    '/api/assign',
+    '/api/upload',
+  ] as const,
+} as const;
+
+export type GdprAuditAction = (typeof GDPR.AUDIT_ACTIONS)[number];
+export type GdprDataCategory = (typeof GDPR.DATA_CATEGORIES)[number];
+
+// ============================================
 // STRUCTURED ERROR CODES
 // ============================================
 
@@ -1055,6 +1152,13 @@ export const ERROR_CODES = {
   // Internal errors (INT)
   INTERNAL_UNEXPECTED: 'ERR_INT_001',
   INTERNAL_CONFIG: 'ERR_INT_002',
+
+  // GDPR / Data Processing errors (GDPR)
+  GDPR_OPERATION_FAILED: 'ERR_GDPR_000',
+  GDPR_EXPORT_FAILED: 'ERR_GDPR_001',
+  GDPR_DELETE_FAILED: 'ERR_GDPR_002',
+  GDPR_AUDIT_WRITE_FAILED: 'ERR_GDPR_003',
+  GDPR_USER_NOT_FOUND: 'ERR_GDPR_004',
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];

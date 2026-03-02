@@ -5,8 +5,25 @@ import * as workerApiClient from '../../utils/core/worker-api-client';
 import { KVService } from '../../services/kv-service';
 import '../../../../src/__tests__/setup';
 
+const { mockLogger } = vi.hoisted(() => ({
+  mockLogger: {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+  },
+}));
+
 // Mock KVService
 vi.mock('../../services/kv-service');
+
+vi.mock('../../utils/core/logger', () => ({
+  getLogger: () => mockLogger,
+}));
+
+vi.mock('../../utils/core/security-utils', () => ({
+  maskSensitiveField: vi.fn((obj, field) => ({ ...obj, [field]: '***MASKED***' })),
+}));
 
 /**
  * Test Suite: assignTrainingTool
@@ -278,6 +295,31 @@ describe('assignTrainingTool', () => {
       const result = await assignTrainingTool.execute({ context: input } as any);
       expect(result.success).toBe(false);
       expect(result.error).toContain('Worker API failed');
+    });
+  });
+
+  describe('Log Security', () => {
+    it('should never log raw access token', async () => {
+      vi.spyOn(workerApiClient, 'callWorkerAPI').mockResolvedValue({});
+
+      const input = {
+        resourceId: 'resource-123',
+        sendTrainingLanguageId: 'lang-456',
+        targetUserResourceId: 'user-789',
+      };
+
+      await assignTrainingTool.execute({ context: input } as any);
+
+      const allCalls = [
+        ...mockLogger.info.mock.calls,
+        ...mockLogger.warn.mock.calls,
+        ...mockLogger.error.mock.calls,
+        ...mockLogger.debug.mock.calls,
+      ];
+      const logs = JSON.stringify(allCalls);
+
+      expect(logs).not.toContain(mockToken);
+      expect(logs).toContain('***MASKED***');
     });
   });
 

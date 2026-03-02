@@ -41,6 +41,12 @@ vi.mock('./core/error-utils', () => ({
   logErrorInfo: vi.fn(),
 }));
 
+vi.mock('../services/error-service', () => ({
+  errorService: {
+    external: vi.fn((msg: string, ctx?: object) => ({ message: msg, ...ctx })),
+  },
+}));
+
 const mockKVGet = vi.fn();
 
 vi.mock('../services/kv-service', () => {
@@ -437,6 +443,40 @@ describe('kv-consistency', () => {
       expect(buildExpectedSmishingKeys('id', 'en-us', false, true)).toHaveLength(2);
       expect(buildExpectedSmishingKeys('id', 'en-us', true, false)).toHaveLength(2);
       expect(buildExpectedSmishingKeys('id', 'en-us', false, false)).toHaveLength(1);
+    });
+  });
+
+  describe('waitForKVConsistency - Error Handling', () => {
+    it('should retry when KV get throws and eventually succeed', async () => {
+      mockKVGet
+        .mockRejectedValueOnce(new Error('KV temporarily unavailable'))
+        .mockResolvedValueOnce('value');
+
+      const promise = waitForKVConsistency('test-id', ['key1']);
+      await vi.advanceTimersByTimeAsync(600);
+      await promise;
+
+      expect(mockKVGet).toHaveBeenCalledTimes(2);
+    });
+
+    it('should log and retry when KV get throws in catch block', async () => {
+      const { logErrorInfo } = await import('./core/error-utils');
+      mockKVGet
+        .mockRejectedValueOnce(new Error('KV connection failed'))
+        .mockRejectedValueOnce(new Error('KV connection failed'))
+        .mockResolvedValueOnce('value');
+
+      const promise = waitForKVConsistency('test-id', ['key1']);
+      await vi.advanceTimersByTimeAsync(2000);
+      await promise;
+
+      expect(mockKVGet).toHaveBeenCalledTimes(3);
+      expect(logErrorInfo).toHaveBeenCalledWith(
+        expect.anything(),
+        'warn',
+        'KV consistency check error',
+        expect.objectContaining({ step: 'kv-consistency-check' })
+      );
     });
   });
 

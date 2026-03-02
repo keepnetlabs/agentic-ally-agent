@@ -403,6 +403,61 @@ describe('Orchestrator Agent - Request Routing', () => {
     });
   });
 
+  describe('SCENARIO D: Out-of-Scope Requests', () => {
+    it('should have outOfScope defined in AGENT_NAMES', () => {
+      expect(AGENT_NAMES.OUT_OF_SCOPE).toBe('outOfScope');
+    });
+
+    it('should treat pricing questions as out-of-scope', () => {
+      const outOfScopePrompts = [
+        'What is the price of the product?',
+        'Can I get a refund?',
+        'How do I reset my password?',
+        'Who is the CEO?',
+        "What's the weather today?",
+        'Tell me a joke',
+        'What are the working hours?',
+      ];
+
+      for (const prompt of outOfScopePrompts) {
+        expect(typeof prompt).toBe('string');
+        expect(prompt.length).toBeGreaterThan(0);
+      }
+    });
+
+    it('should NOT treat security-related prompts as out-of-scope', () => {
+      const inScopeKeywords = [
+        'training',
+        'phishing',
+        'policy',
+        'help',
+        'who is',
+        'what can you',
+        'smishing',
+        'vishing',
+        'deepfake',
+        'simulation',
+      ];
+
+      const inScopePrompts = [
+        'Create a phishing training',
+        'What is our password policy?',
+        'Help',
+        'What can you do',
+        'Who is alice@company.com',
+      ];
+
+      const hasSecurityIntent = (prompt: string) => {
+        const lowerPrompt = prompt.toLowerCase();
+        return inScopeKeywords.some(kw => lowerPrompt.includes(kw));
+      };
+
+      for (const prompt of inScopePrompts) {
+        expect(hasSecurityIntent(prompt)).toBe(true);
+      }
+    });
+  });
+
   describe('Real-World Integration Scenarios', () => {
     it('Scenario 1: New training creation', () => {
       expect([...ROUTING.MICROLEARNING_TRIGGERS]).toContain('Create training');

@@ -869,6 +869,32 @@ describe('prompt-analyzer - Additional Functions', () => {
       expect(result.success).toBe(true);
     });
 
+    it('should use char-based fallback when detectTargetLanguageWithAI throws (catch block)', async () => {
+      const mod = await import('./prompt-analyzer');
+      const spy = vi.spyOn(mod, 'detectTargetLanguageWithAI').mockRejectedValueOnce(
+        new Error('AI service unreachable')
+      );
+
+      (ai.generateText as any).mockResolvedValue({
+        text: JSON.stringify({ topic: 'Fallback Test', language: 'tr-TR' }),
+      });
+
+      const mockRepo = {
+        loadExamplesOnce: vi.fn(),
+        getSmartSchemaHints: vi.fn().mockResolvedValue('hints'),
+        getSchemaHints: vi.fn(),
+      };
+      (ExampleRepo.getInstance as any).mockReturnValue(mockRepo);
+
+      const result = await mod.analyzeUserPromptWithAI({
+        userPrompt: 'Merhaba dünya',
+        model: {},
+      });
+
+      expect(result.success).toBe(true);
+      spy.mockRestore();
+    });
+
     it('should stream reasoning if writer is provided', async () => {
       const mockWriter = { write: vi.fn() };
 

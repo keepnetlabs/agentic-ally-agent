@@ -1,0 +1,322 @@
+EU AI Act Scanner v0.1.2
+Scan your project for AI framework usage and EU AI Act / GDPR compliance
+
+Scanning: .
+
+Scan Results
+  Files scanned: 532
+  AI files found: 37
+
+  Detected Frameworks:
+    openai (36 files)
+    gemini (5 files)
+    anthropic (3 files)
+
+  Risk Assessment:
+    [HIGH] openai: Art. 51-53 (GPAI obligations)
+           Document OpenAI model usage, register as GPAI deployer, and ensure transparency per Art. 53.
+    [HIGH] gemini: Art. 51-53 (GPAI obligations)
+           Document Gemini model usage and GPAI obligations; assess if system falls under Annex III high-risk.
+    [HIGH] anthropic: Art. 51-53 (GPAI obligations)
+           Document Anthropic model usage, ensure GPAI transparency obligations and downstream risk assessment.
+
+  Compliance: 3/3 (100.0%) for limited-risk
+
+    PASS transparency
+    PASS user_disclosure
+    PASS content_marking
+
+{
+  "report_date": "2026-03-02T20:40:57.360029+00:00",
+  "project_path": "C:\\Users\\user\\Desktop\\Agentic Ally\\fleet-v2-main\\agent",
+  "scan_summary": {
+    "files_scanned": 532,
+    "ai_files_detected": 37,
+    "frameworks_detected": [
+      "openai",
+      "gemini",
+      "anthropic"
+    ]
+  },
+  "compliance_summary": {
+    "risk_category": "limited",
+    "compliance_score": "3/3",
+    "compliance_percentage": 100.0
+  },
+  "detailed_findings": {
+    "detected_models": {
+      "openai": [
+        "src\\mastra\\model-providers.test.ts",
+        "src\\mastra\\model-providers.ts",
+        "src\\mastra\\routes\\chat-provider-compat.test.ts",
+        "src\\mastra\\routes\\public-endpoint-contracts.test.ts",
+        "src\\mastra\\routes\\smishing-chat-route.schemas.test.ts",
+        "src\\mastra\\routes\\smishing-chat-route.test.ts",
+        "src\\mastra\\schemas\\add-language-schemas.test.ts",
+        "src\\mastra\\schemas\\create-inbox-structure-schema.test.ts",
+        "src\\mastra\\schemas\\create-microlearning-schemas.test.ts",
+        "src\\mastra\\schemas\\create-smishing-schemas.test.ts",
+        "src\\mastra\\schemas\\generate-language-json-schema.test.ts",
+        "src\\mastra\\services\\error-service.ts",
+        "src\\mastra\\services\\example-repo.ts",
+        "src\\mastra\\services\\autonomous\\autonomous-phishing-handlers.ts",
+        "src\\mastra\\services\\autonomous\\autonomous-training-handlers.ts",
+        "src\\mastra\\services\\autonomous\\group-topic-service.test.ts",
+        "src\\mastra\\tools\\analysis\\code-review-check-tool.test.ts",
+        "src\\mastra\\tools\\analysis\\summarize-policy-tool.test.ts",
+        "src\\mastra\\tools\\generation\\generate-language-json-tool.test.ts",
+        "src\\mastra\\tools\\generation\\generate-microlearning-json-tool.test.ts",
+        "src\\mastra\\tools\\generation\\translate-language-json-tool.test.ts",
+        "src\\mastra\\tools\\generation\\utils\\microlearning-generator.test.ts",
+        "src\\mastra\\tools\\inbox\\create-inbox-structure-tool.test.ts",
+        "src\\mastra\\tools\\inbox\\inbox-translate-json-tool.test.ts",
+        "src\\mastra\\tools\\orchestration\\phishing-editor-schemas.test.ts",
+        "src\\mastra\\tools\\orchestration\\phishing-editor-tool.test.ts",
+        "src\\mastra\\tools\\orchestration\\smishing-editor-schemas.test.ts",
+        "src\\mastra\\tools\\orchestration\\workflow-executor-tool.test.ts",
+        "src\\mastra\\utils\\chat-orchestration-helpers.test.ts",
+        "src\\mastra\\utils\\core\\ai-utils.test.ts",
+        "src\\mastra\\utils\\core\\cost-tracker.test.ts",
+        "src\\mastra\\utils\\core\\cost-tracker.ts",
+        "src\\mastra\\utils\\resolvers\\video-metadata-utils.test.ts",
+        "src\\mastra\\utils\\theme\\theme-color-normalizer.test.ts",
+        "src\\mastra\\workflows\\add-language-workflow.test.ts",
+        "src\\mastra\\workflows\\add-multiple-languages-workflow.test.ts"
+      ],
+      "gemini": [
+        "src\\mastra\\model-providers.test.ts",
+        "src\\mastra\\model-providers.ts",
+        "src\\mastra\\tools\\orchestration\\smishing-editor-schemas.test.ts",
+        "src\\mastra\\utils\\core\\cost-tracker.test.ts",
+        "src\\mastra\\utils\\core\\cost-tracker.ts"
+      ],
+      "anthropic": [
+        "src\\mastra\\tools\\analysis\\code-review-check-tool.test.ts",
+        "src\\mastra\\utils\\parsers\\name-parser.test.ts",
+        "src\\mastra\\utils\\theme\\theme-color-normalizer.test.ts"
+      ]
+    },
+    "findings": [
+      {
+        "framework": "openai",
+        "files": [
+          "src\\mastra\\model-providers.test.ts",
+          "src\\mastra\\model-providers.ts",
+          "src\\mastra\\routes\\chat-provider-compat.test.ts",
+          "src\\mastra\\routes\\public-endpoint-contracts.test.ts",
+          "src\\mastra\\routes\\smishing-chat-route.schemas.test.ts",
+          "src\\mastra\\routes\\smishing-chat-route.test.ts",
+          "src\\mastra\\schemas\\add-language-schemas.test.ts",
+          "src\\mastra\\schemas\\create-inbox-structure-schema.test.ts",
+          "src\\mastra\\schemas\\create-microlearning-schemas.test.ts",
+          "src\\mastra\\schemas\\create-smishing-schemas.test.ts",
+          "src\\mastra\\schemas\\generate-language-json-schema.test.ts",
+          "src\\mastra\\services\\error-service.ts",
+          "src\\mastra\\services\\example-repo.ts",
+          "src\\mastra\\services\\autonomous\\autonomous-phishing-handlers.ts",
+          "src\\mastra\\services\\autonomous\\autonomous-training-handlers.ts",
+          "src\\mastra\\services\\autonomous\\group-topic-service.test.ts",
+          "src\\mastra\\tools\\analysis\\code-review-check-tool.test.ts",
+          "src\\mastra\\tools\\analysis\\summarize-policy-tool.test.ts",
+          "src\\mastra\\tools\\generation\\generate-language-json-tool.test.ts",
+          "src\\mastra\\tools\\generation\\generate-microlearning-json-tool.test.ts",
+          "src\\mastra\\tools\\generation\\translate-language-json-tool.test.ts",
+          "src\\mastra\\tools\\generation\\utils\\microlearning-generator.test.ts",
+          "src\\mastra\\tools\\inbox\\create-inbox-structure-tool.test.ts",
+          "src\\mastra\\tools\\inbox\\inbox-translate-json-tool.test.ts",
+          "src\\mastra\\tools\\orchestration\\phishing-editor-schemas.test.ts",
+          "src\\mastra\\tools\\orchestration\\phishing-editor-tool.test.ts",
+          "src\\mastra\\tools\\orchestration\\smishing-editor-schemas.test.ts",
+          "src\\mastra\\tools\\orchestration\\workflow-executor-tool.test.ts",
+          "src\\mastra\\utils\\chat-orchestration-helpers.test.ts",
+          "src\\mastra\\utils\\core\\ai-utils.test.ts",
+          "src\\mastra\\utils\\core\\cost-tracker.test.ts",
+          "src\\mastra\\utils\\core\\cost-tracker.ts",
+          "src\\mastra\\utils\\resolvers\\video-metadata-utils.test.ts",
+          "src\\mastra\\utils\\theme\\theme-color-normalizer.test.ts",
+          "src\\mastra\\workflows\\add-language-workflow.test.ts",
+          "src\\mastra\\workflows\\add-multiple-languages-workflow.test.ts"
+        ],
+        "sources": [
+          "code"
+        ],
+        "risk_level": "high",
+        "article_reference": "Art. 51-53 (GPAI obligations)",
+        "article_urls": [
+          "https://artificialintelligenceact.eu/article/51/",
+          "https://artificialintelligenceact.eu/article/52/",
+          "https://artificialintelligenceact.eu/article/53/"
+        ],
+        "eur_lex_url": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32024R1689",
+        "remediation": "Document OpenAI model usage, register as GPAI deployer, and ensure transparency per Art. 53."
+      },
+      {
+        "framework": "gemini",
+        "files": [
+          "src\\mastra\\model-providers.test.ts",
+          "src\\mastra\\model-providers.ts",
+          "src\\mastra\\tools\\orchestration\\smishing-editor-schemas.test.ts",
+          "src\\mastra\\utils\\core\\cost-tracker.test.ts",
+          "src\\mastra\\utils\\core\\cost-tracker.ts"
+        ],
+        "sources": [
+          "code"
+        ],
+        "risk_level": "high",
+        "article_reference": "Art. 51-53 (GPAI obligations)",
+        "article_urls": [
+          "https://artificialintelligenceact.eu/article/51/",
+          "https://artificialintelligenceact.eu/article/52/",
+          "https://artificialintelligenceact.eu/article/53/"
+        ],
+        "eur_lex_url": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32024R1689",
+        "remediation": "Document Gemini model usage and GPAI obligations; assess if system falls under Annex III high-risk."
+      },
+      {
+        "framework": "anthropic",
+        "files": [
+          "src\\mastra\\tools\\analysis\\code-review-check-tool.test.ts",
+          "src\\mastra\\utils\\parsers\\name-parser.test.ts",
+          "src\\mastra\\utils\\theme\\theme-color-normalizer.test.ts"
+        ],
+        "sources": [
+          "code"
+        ],
+        "risk_level": "high",
+        "article_reference": "Art. 51-53 (GPAI obligations)",
+        "article_urls": [
+          "https://artificialintelligenceact.eu/article/51/",
+          "https://artificialintelligenceact.eu/article/52/",
+          "https://artificialintelligenceact.eu/article/53/"
+        ],
+        "eur_lex_url": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32024R1689",
+        "remediation": "Document Anthropic model usage, ensure GPAI transparency obligations and downstream risk assessment."
+      }
+    ],
+    "compliance_checks": {
+      "transparency": true,
+      "user_disclosure": true,
+      "content_marking": true
+    }
+  },
+  "recommendations": [
+    {
+      "check": "transparency",
+      "status": "PASS"
+    },
+    {
+      "check": "user_disclosure",
+      "status": "PASS"
+    },
+    {
+      "check": "content_marking",
+      "status": "PASS"
+    }
+  ]
+}
+GDPR Scan
+  Personal data processing: YES
+  Risk level: MEDIUM
+  Suggested role: controller
+    + Consent mechanism detected
+    + Data deletion/export capability detected
+    + Encryption usage detected
+
+  GDPR Compliance: 3/8 (37.5%)
+
+    FAIL privacy_policy: Create a privacy policy informing users about data processing
+    PASS consent_mechanism
+    PASS data_subject_rights
+    PASS security_measures
+    FAIL records_of_processing: Maintain records of processing activities
+    FAIL dpia: Conduct a Data Protection Impact Assessment for high-risk processing
+    FAIL data_breach_procedure: Document data breach detection and notification procedure
+    FAIL dpa: Establish Data Processing Agreements with all processors
+
+{
+  "report_date": "2026-03-02T20:41:01.811192+00:00",
+  "regulation": "GDPR",
+  "project_path": "C:\\Users\\user\\Desktop\\Agentic Ally\\fleet-v2-main\\agent",
+  "scan_summary": {
+    "files_scanned": 532,
+    "flagged_files": 97,
+    "processing_categories": [
+      "data_deletion",
+      "pii_fields",
+      "ip_logging",
+      "database_queries",
+      "consent_mechanism",
+      "encryption_usage"
+    ]
+  },
+  "processing_summary": {
+    "processes_personal_data": true,
+    "risk_level": "medium",
+    "risk_factors": 1,
+    "positive_signals": [
+      "Consent mechanism detected",
+      "Data deletion/export capability detected",
+      "Encryption usage detected"
+    ],
+    "processing_role": "controller"
+  },
+  "compliance_summary": {
+    "processing_role": "controller",
+    "compliance_score": "3/8",
+    "compliance_percentage": 37.5
+  },
+  "recommendations": [
+    {
+      "check": "privacy_policy",
+      "status": "FAIL",
+      "what": "Create a privacy policy informing users about data processing",
+      "why": "Art. 13-14 - Data subjects must be informed about processing",
+      "gdpr_article": "Art. 13-14",
+      "effort": "medium"
+    },
+    {
+      "check": "consent_mechanism",
+      "status": "PASS"
+    },
+    {
+      "check": "data_subject_rights",
+      "status": "PASS"
+    },
+    {
+      "check": "security_measures",
+      "status": "PASS"
+    },
+    {
+      "check": "records_of_processing",
+      "status": "FAIL",
+      "what": "Maintain records of processing activities",
+      "why": "Art. 30 - Controllers and processors must document their processing activities",
+      "gdpr_article": "Art. 30",
+      "effort": "medium"
+    },
+    {
+      "check": "dpia",
+      "status": "FAIL",
+      "what": "Conduct a Data Protection Impact Assessment for high-risk processing",
+      "why": "Art. 35 - Required when processing is likely to result in high risk",
+      "gdpr_article": "Art. 35",
+      "effort": "high"
+    },
+    {
+      "check": "data_breach_procedure",
+      "status": "FAIL",
+      "what": "Document data breach detection and notification procedure",
+      "why": "Art. 33-34 - Notify supervisory authority within 72h",
+      "gdpr_article": "Art. 33-34",
+      "effort": "medium"
+    },
+    {
+      "check": "dpa",
+      "status": "FAIL",
+      "what": "Establish Data Processing Agreements with all processors",
+      "why": "Art. 28 - Processing by a processor must be governed by a contract",
+      "gdpr_article": "Art. 28",
+      "effort": "medium"
+    }
+  ]
+}

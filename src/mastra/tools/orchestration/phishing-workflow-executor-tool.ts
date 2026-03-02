@@ -1,3 +1,11 @@
+/**
+ * phishing-workflow-executor-tool
+ *
+ * EU AI Act (Art. 9) Tool Risk Metadata:
+ * - riskLevel: limited
+ * - rationale: Generates phishing email + landing page simulation content
+ * @see docs/AI_COMPLIANCE_INVENTORY.md
+ */
 import { createTool, ToolExecutionContext } from '@mastra/core/tools';
 import { createPhishingWorkflow } from '../../workflows/create-phishing-workflow';
 import { PHISHING, ERROR_MESSAGES, TIMEOUT_VALUES } from '../../constants';

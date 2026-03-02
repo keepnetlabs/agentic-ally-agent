@@ -416,6 +416,25 @@ describe('requestLoggingMiddleware', () => {
 
       await expect(requestLoggingMiddleware(mockContext, mockNext)).rejects.toThrow('Test error');
     });
+
+    it('should log non-Error thrown values using String()', async () => {
+      mockNext.mockRejectedValueOnce('String error message');
+
+      try {
+        await requestLoggingMiddleware(mockContext, mockNext);
+      } catch {
+        // Expected to throw
+      }
+
+      expect(mockLoggerInstance.error).toHaveBeenCalledWith(
+        'Request failed with unhandled error',
+        expect.objectContaining({
+          error: 'String error message',
+          method: 'POST',
+          path: '/chat',
+        })
+      );
+    });
   });
 
   describe('log data structure', () => {

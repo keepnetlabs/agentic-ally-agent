@@ -29,7 +29,18 @@ export type {
 } from './api-types';
 
 // Autonomous types
-export type { AutonomousRequest, AutonomousResponse } from './autonomous-types';
+export {
+  AUTONOMOUS_ACTIONS,
+  GROUP_ELIGIBLE_ACTIONS,
+  isValidAutonomousAction,
+  getGroupEligibleActions,
+} from './autonomous-types';
+export type {
+  AutonomousRequest,
+  AutonomousResponse,
+  AutonomousAction,
+  ContentGeneratableAction,
+} from './autonomous-types';
 
 // Microlearning types
 export type {

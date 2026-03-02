@@ -141,8 +141,9 @@ describe('phishing-prompts landing sizing', () => {
       const { systemPrompt } = buildLandingPagePrompts(makeBaseParams());
 
       // Should not include MINIMAL or HERO constants
+      // CENTERED uses max-width: 600px; too, so use HERO-specific margin: -24px auto 0;
       expect(systemPrompt).not.toContain(`body max-width: ${LANDING_PAGE.MINIMAL_BODY_MAX_WIDTH_PX}px`);
-      expect(systemPrompt).not.toContain(`max-width: ${LANDING_PAGE.HERO_MAIN_CONTAINER_MAX_WIDTH_PX}px;`);
+      expect(systemPrompt).not.toContain(`margin: ${LANDING_PAGE.HERO_MAIN_CONTAINER_MARGIN_TOP_PX}px auto 0;`);
     });
 
     it('should work with mid-range value for index 0 (0.12)', () => {
@@ -153,7 +154,7 @@ describe('phishing-prompts landing sizing', () => {
       const { systemPrompt } = buildLandingPagePrompts(makeBaseParams());
 
       expect(systemPrompt).not.toContain(`body max-width: ${LANDING_PAGE.MINIMAL_BODY_MAX_WIDTH_PX}px`);
-      expect(systemPrompt).not.toContain(`max-width: ${LANDING_PAGE.HERO_MAIN_CONTAINER_MAX_WIDTH_PX}px;`);
+      expect(systemPrompt).not.toContain(`margin: ${LANDING_PAGE.HERO_MAIN_CONTAINER_MARGIN_TOP_PX}px auto 0;`);
     });
 
     it('should work with maximum value for index 0 (0.249)', () => {
@@ -164,7 +165,7 @@ describe('phishing-prompts landing sizing', () => {
       const { systemPrompt } = buildLandingPagePrompts(makeBaseParams());
 
       expect(systemPrompt).not.toContain(`body max-width: ${LANDING_PAGE.MINIMAL_BODY_MAX_WIDTH_PX}px`);
-      expect(systemPrompt).not.toContain(`max-width: ${LANDING_PAGE.HERO_MAIN_CONTAINER_MAX_WIDTH_PX}px;`);
+      expect(systemPrompt).not.toContain(`margin: ${LANDING_PAGE.HERO_MAIN_CONTAINER_MARGIN_TOP_PX}px auto 0;`);
     });
   });
 
@@ -177,7 +178,7 @@ describe('phishing-prompts landing sizing', () => {
       const { systemPrompt } = buildLandingPagePrompts(makeBaseParams());
 
       expect(systemPrompt).not.toContain(`body max-width: ${LANDING_PAGE.MINIMAL_BODY_MAX_WIDTH_PX}px`);
-      expect(systemPrompt).not.toContain(`max-width: ${LANDING_PAGE.HERO_MAIN_CONTAINER_MAX_WIDTH_PX}px;`);
+      expect(systemPrompt).not.toContain(`margin: ${LANDING_PAGE.HERO_MAIN_CONTAINER_MARGIN_TOP_PX}px auto 0;`);
     });
 
     it('should work with mid-range value for index 1 (0.37)', () => {
@@ -188,7 +189,7 @@ describe('phishing-prompts landing sizing', () => {
       const { systemPrompt } = buildLandingPagePrompts(makeBaseParams());
 
       expect(systemPrompt).not.toContain(`body max-width: ${LANDING_PAGE.MINIMAL_BODY_MAX_WIDTH_PX}px`);
-      expect(systemPrompt).not.toContain(`max-width: ${LANDING_PAGE.HERO_MAIN_CONTAINER_MAX_WIDTH_PX}px;`);
+      expect(systemPrompt).not.toContain(`margin: ${LANDING_PAGE.HERO_MAIN_CONTAINER_MARGIN_TOP_PX}px auto 0;`);
     });
 
     it('should work with maximum value for index 1 (0.499)', () => {
@@ -199,7 +200,7 @@ describe('phishing-prompts landing sizing', () => {
       const { systemPrompt } = buildLandingPagePrompts(makeBaseParams());
 
       expect(systemPrompt).not.toContain(`body max-width: ${LANDING_PAGE.MINIMAL_BODY_MAX_WIDTH_PX}px`);
-      expect(systemPrompt).not.toContain(`max-width: ${LANDING_PAGE.HERO_MAIN_CONTAINER_MAX_WIDTH_PX}px;`);
+      expect(systemPrompt).not.toContain(`margin: ${LANDING_PAGE.HERO_MAIN_CONTAINER_MARGIN_TOP_PX}px auto 0;`);
     });
   });
 

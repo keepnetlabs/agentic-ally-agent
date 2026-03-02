@@ -1,7 +1,7 @@
 /**
  * Agentic Ally - Main Agent Framework Entry Point
  *
- * Sets up and configures 8 specialized agents:
+ * Sets up and configures 9 specialized agents:
  * 1. Orchestrator Agent - Routes requests to appropriate agents
  * 2. Microlearning Agent - 4-state orchestrator for training generation
  * 3. Phishing Email Agent - Creates realistic phishing simulations
@@ -10,6 +10,7 @@
  * 6. Policy Summary Agent - Generates legal compliance content
  * 7. Vishing Call Agent - Initiates outbound vishing calls via ElevenLabs
  * 8. Email IR Analyst - Analyzes suspicious emails and generates IR reports
+ * 9. Deepfake Video Agent - Generates AI deepfake video simulations via HeyGen
  *
  * API Endpoints:
  * - POST /chat - Main chat endpoint (routes through orchestrator)
@@ -63,6 +64,8 @@ import { vishingPromptHandler } from './routes/vishing-prompt-route';
 import { vishingConversationsSummaryHandler } from './routes/vishing-conversations-summary-route';
 import { smishingChatHandler } from './routes/smishing-chat-route';
 import { emailIRAnalyzeHandler } from './routes/email-ir-route';
+import { deepfakeStatusHandler } from './routes/deepfake-status-route';
+import { auditVerifyHandler } from './routes/audit-verify-route';
 import { isPublicUnauthenticatedPath } from './middleware/public-endpoint-policy';
 
 // Barrel imports - clean organization
@@ -74,6 +77,8 @@ import {
   userInfoAgent,
   policySummaryAgent,
   vishingCallAgent,
+  deepfakeVideoAgent,
+  outOfScopeAgent,
 } from './agents';
 import {
   errorHandlerMiddleware,
@@ -84,6 +89,7 @@ import {
   bodySizeLimitMiddleware,
   rateLimitMiddleware,
   RATE_LIMIT_TIERS,
+  gdprAuditMiddleware,
   disablePlayground,
   disableSwagger,
 } from './middleware';
@@ -95,7 +101,13 @@ import {
 } from './workflows';
 import { ExampleRepo, executeAutonomousGeneration, performHealthCheck, KVService } from './services';
 import { validateEnvironmentOrThrow } from './utils/core';
+import { normalizeError, logErrorInfo } from './utils/core/error-utils';
+import { errorService } from './services/error-service';
 import { resolveLogLevel, STRUCTURED_LOG_FORMATTERS } from './utils/core/logger';
+import {
+  AUTONOMOUS_ACTIONS,
+  isValidAutonomousAction,
+} from './types';
 import type {
   ChatRequestBody,
   CodeReviewRequestBody,
@@ -158,6 +170,8 @@ export const mastra = new Mastra({
     userInfoAssistant: userInfoAgent,
     policySummaryAssistant: policySummaryAgent,
     vishingCallAssistant: vishingCallAgent,
+    deepfakeVideoAssistant: deepfakeVideoAgent,
+    outOfScope: outOfScopeAgent,
     orchestrator: orchestratorAgent,
   },
   logger,
@@ -215,7 +229,13 @@ export const mastra = new Mastra({
      *    - Dependency: contextStorage
      *    - Modifies: ExampleRepo singleton with D1 database instance
      *
-     * 7. disablePlayground & disableSwagger (LAST)
+     * 7. gdprAuditMiddleware (SEVENTH)
+     *    - Purpose: GDPR Art. 30 automatic audit for personal data endpoints
+     *    - Why seventh: Needs companyId (from contextStorage) and D1 (from env)
+     *    - Dependency: contextStorage, injectD1Database
+     *    - Fire-and-forget: does NOT block the response
+     *
+     * 8. disablePlayground & disableSwagger (LAST)
      *    - Purpose: Modify OpenAPI/Swagger documentation
      *    - Why last: Applied after all service setup is complete
      *    - Dependency: All previous middleware
@@ -242,6 +262,7 @@ export const mastra = new Mastra({
         skip: c => c.req.path === '/health', // Skip health checks from rate limiting
       }),
       injectD1Database,
+      gdprAuditMiddleware, // GDPR Art. 30 — automatic audit for personal data endpoints (requires contextStorage + D1)
       disablePlayground,
       disableSwagger,
     ],
@@ -306,9 +327,12 @@ export const mastra = new Mastra({
               taskContext: routeResult.taskContext,
             });
           } catch (routingError) {
-            logger.error('agent_routing_failed', {
-              error: routingError instanceof Error ? routingError.message : String(routingError),
+            const err = normalizeError(routingError);
+            const errorInfo = errorService.aiModel(err.message, {
+              step: 'agent-routing',
+              stack: err.stack,
             });
+            logErrorInfo(logger, 'error', 'agent_routing_failed', errorInfo);
             return c.json(
               {
                 success: false,
@@ -340,6 +364,7 @@ export const mastra = new Mastra({
           const {
             microlearningId,
             phishingId,
+            smishingId,
             resourceId,
             scenarioResourceId,
             landingPageResourceId,
@@ -352,6 +377,7 @@ export const mastra = new Mastra({
           if (
             microlearningId ||
             phishingId ||
+            smishingId ||
             resourceId ||
             scenarioResourceId ||
             landingPageResourceId ||
@@ -363,6 +389,7 @@ export const mastra = new Mastra({
             // Canonical / allowlisted [ARTIFACT_IDS] block (key=value, stable order, safe chars only)
             const safeMicrolearningId = normalizeSafeId(microlearningId);
             const safePhishingId = normalizeSafeId(phishingId);
+            const safeSmishingId = normalizeSafeId(smishingId);
             const safeResourceId = normalizeSafeId(resourceId);
             const safeScenarioResourceId = normalizeSafeId(scenarioResourceId);
             const safeLandingPageResourceId = normalizeSafeId(landingPageResourceId);
@@ -374,6 +401,7 @@ export const mastra = new Mastra({
             const parts = [
               safeMicrolearningId ? `microlearningId=${safeMicrolearningId}` : undefined,
               safePhishingId ? `phishingId=${safePhishingId}` : undefined,
+              safeSmishingId ? `smishingId=${safeSmishingId}` : undefined,
               // upload/assign IDs (phishing + training)
               safeResourceId ? `resourceId=${safeResourceId}` : undefined,
               safeScenarioResourceId ? `scenarioResourceId=${safeScenarioResourceId}` : undefined,
@@ -407,9 +435,13 @@ export const mastra = new Mastra({
               agentName: routeResult.agentName,
             });
           } catch (streamError) {
-            logger.error('stream_creation_failed', {
-              error: streamError instanceof Error ? streamError.message : String(streamError),
+            const err = normalizeError(streamError);
+            const errorInfo = errorService.external(err.message, {
+              step: 'stream-creation',
+              stack: err.stack,
+              agentName: routeResult.agentName,
             });
+            logErrorInfo(logger, 'error', 'stream_creation_failed', errorInfo);
             return c.json(
               {
                 success: false,
@@ -442,11 +474,11 @@ export const mastra = new Mastra({
           const agents = mastra.listAgents();
           const workflows = mastra.listWorkflows();
 
-          // Perform deep health check with 5s timeout
-          const healthResponse = await performHealthCheck(agents, workflows, 5000);
+          // Perform deep health check with 5s timeout (includes D1 when env available)
+          const env = c.env as Record<string, unknown> | undefined;
+          const healthResponse = await performHealthCheck(agents, workflows, 5000, env);
 
           // Sentry status (observability)
-          const env = c.env as Record<string, unknown> | undefined;
           const sentryDsn = env?.SENTRY_DSN ?? (typeof process !== 'undefined' ? process.env?.SENTRY_DSN : undefined);
           const sentry = { configured: !!sentryDsn };
 
@@ -490,9 +522,12 @@ export const mastra = new Mastra({
               return c.json(result, 400);
             }
           } catch (error) {
-            logger.error('code_review_validation_error', {
-              error: error instanceof Error ? error.message : String(error),
+            const err = normalizeError(error);
+            const errorInfo = errorService.aiModel(err.message, {
+              step: 'code-review-validate',
+              stack: err.stack,
             });
+            logErrorInfo(logger, 'error', 'code_review_validation_error', errorInfo);
             return c.json(
               {
                 success: false,
@@ -634,9 +669,12 @@ export const mastra = new Mastra({
               200
             );
           } catch (error) {
-            logger.error('phishing_editor_save_error', {
-              error: error instanceof Error ? error.message : String(error),
+            const err = normalizeError(error);
+            const errorInfo = errorService.external(err.message, {
+              step: 'phishing-editor-save',
+              stack: err.stack,
             });
+            logErrorInfo(logger, 'error', 'phishing_editor_save_error', errorInfo);
             return c.json(
               {
                 success: false,
@@ -666,6 +704,11 @@ export const mastra = new Mastra({
       registerApiRoute('/email-ir/analyze', {
         method: 'POST',
         handler: emailIRAnalyzeHandler,
+      }),
+
+      registerApiRoute('/deepfake/status/:videoId', {
+        method: 'GET',
+        handler: deepfakeStatusHandler,
       }),
 
       registerApiRoute('/autonomous', {
@@ -720,9 +763,12 @@ export const mastra = new Mastra({
             if (!actions || !Array.isArray(actions) || actions.length === 0) {
               return c.json({ success: false, error: 'Missing or invalid actions array' }, 400);
             }
-            if (!actions.every((a: string) => a === 'training' || a === 'phishing' || a === 'smishing')) {
+            if (!actions.every((a: unknown) => isValidAutonomousAction(a))) {
               return c.json(
-                { success: false, error: 'Actions must be one or more of: "training", "phishing", "smishing"' },
+                {
+                  success: false,
+                  error: `Actions must be one or more of: ${AUTONOMOUS_ACTIONS.map(a => `"${a}"`).join(', ')}`,
+                },
                 400
               );
             }
@@ -785,7 +831,7 @@ export const mastra = new Mastra({
               targetUserResourceId,
               targetGroupResourceId,
               departmentName,
-              actions: actions as ('training' | 'phishing' | 'smishing')[],
+              actions,
               sendAfterPhishingSimulation,
               preferredLanguage,
               baseApiUrl,
@@ -838,9 +884,12 @@ export const mastra = new Mastra({
               200
             );
           } catch (error) {
-            logger.error('autonomous_endpoint_error', {
-              error: error instanceof Error ? error.message : String(error),
+            const err = normalizeError(error);
+            const errorInfo = errorService.external(err.message, {
+              step: 'autonomous-endpoint',
+              stack: err.stack,
             });
+            logErrorInfo(logger, 'error', 'autonomous_endpoint_error', errorInfo);
             return c.json(
               {
                 success: false,
@@ -850,6 +899,12 @@ export const mastra = new Mastra({
             );
           }
         },
+      }),
+
+      // ─── Audit Chain Verification (EU AI Act Art. 12) ───
+      registerApiRoute('/audit/verify', {
+        method: 'GET',
+        handler: auditVerifyHandler,
       }),
     ],
   },

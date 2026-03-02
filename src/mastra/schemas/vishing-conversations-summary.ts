@@ -30,9 +30,9 @@ export const VishingConversationsSummarySchema = z.object({
     .array(VishingConversationsSummaryDisclosedItemSchema)
     .describe('List of sensitive items disclosed (badge numbers, passwords, etc.)'),
   outcome: z
-    .enum(['data_disclosed', 'refused', 'detected', 'other'])
+    .enum(['data_disclosed', 'refused', 'detected', 'not_answered', 'other'])
     .describe(
-      'Overall outcome: data_disclosed=user shared info, refused=user refused, detected=user identified simulation'
+      'Overall outcome: data_disclosed=user shared info, refused=user refused, detected=user identified simulation, not_answered=recipient never picked up'
     ),
 });
 
@@ -46,6 +46,12 @@ export const VishingStatusCardSchema = z.object({
 export const VishingNextStepCardSchema = z.object({
   title: z.string().describe('Card title (e.g. "Verifying Caller Identity")'),
   description: z.string().describe('Brief description of the weakness or recommendation'),
+  prompt: z
+    .string()
+    .optional()
+    .describe(
+      'Context-rich prompt for microlearning creation. Includes vishing scenario details, specific weaknesses observed, and training focus areas. Used by frontend to pre-fill chat input when user clicks Create.'
+    ),
 });
 
 export const VishingConversationsSummaryOutputSchema = z.object({

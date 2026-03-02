@@ -1,7 +1,7 @@
 /**
  * Unit tests for context factory
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { createMockContext, createRequestContext } from './context-factory';
 
 describe('context-factory', () => {
@@ -17,6 +17,21 @@ describe('context-factory', () => {
       const customEnv = { KV: {}, D1: {}, CUSTOM: 'value' };
       const ctx = createMockContext({ env: customEnv as any });
       expect(ctx.env).toEqual(customEnv);
+    });
+
+    it('should merge overrides.req with default header', () => {
+      const customHeader = vi.fn(() => 'custom-value');
+      const ctx = createMockContext({ req: { header: customHeader } as any });
+      expect(ctx.req.header).toBe(customHeader);
+      expect(ctx.req.header()).toBe('custom-value');
+    });
+
+    it('should spread overrides.req properties onto mockReq', () => {
+      const customMethod = 'PUT';
+      const ctx = createMockContext({
+        req: { header: () => 'x', method: customMethod } as any,
+      });
+      expect(ctx.req.method).toBe(customMethod);
     });
   });
 

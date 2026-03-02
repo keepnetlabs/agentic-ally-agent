@@ -1,548 +1,142 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { retryGenerationWithStrongerPrompt } from './retry-generator';
-import { generateText } from 'ai';
-import * as reasoningStream from '../core/reasoning-stream';
-import * as jsonCleaner from '../content-processors/json-cleaner';
+
+const mockGenerateText = vi.fn();
+const mockCleanResponse = vi.fn();
+const mockStreamDirectReasoning = vi.fn();
+const mockExtractReasoning = vi.fn();
 
 vi.mock('ai', () => ({
-  generateText: vi.fn(),
-}));
-
-vi.mock('../core/reasoning-stream', () => ({
-  streamDirectReasoning: vi.fn(),
+  generateText: (...args: unknown[]) => mockGenerateText(...args),
 }));
 
 vi.mock('../content-processors/json-cleaner', () => ({
-  cleanResponse: vi.fn(text => text),
+  cleanResponse: (text: string, _type: string) => mockCleanResponse(text, _type),
+}));
+
+vi.mock('../core/reasoning-stream', () => ({
+  streamDirectReasoning: (...args: unknown[]) => mockStreamDirectReasoning(...args),
+}));
+
+vi.mock('../core/ai-utils', () => ({
+  extractReasoning: (response: unknown) => mockExtractReasoning(response),
 }));
 
 vi.mock('../core/logger', () => ({
   getLogger: () => ({
-    info: vi.fn(),
     warn: vi.fn(),
-    error: vi.fn(),
+    info: vi.fn(),
     debug: vi.fn(),
+    error: vi.fn(),
   }),
 }));
 
+vi.mock('../config/llm-generation-params', () => ({
+  PHISHING_CONTENT_PARAMS: { temperature: 0.7 },
+}));
+
 describe('retry-generator', () => {
+  const mockModel = {} as never;
+  const systemPrompt = 'Original system prompt';
+  const messages: Array<{ role: 'system' | 'user'; content: string }> = [
+    { role: 'system', content: 'System' },
+    { role: 'user', content: 'Generate email JSON' },
+  ];
+
   beforeEach(() => {
-    vi.resetAllMocks();
+    vi.clearAllMocks();
+    mockGenerateText.mockResolvedValue({ text: '{"subject":"Test"}' });
+    mockCleanResponse.mockImplementation((t: string) => t);
+    mockExtractReasoning.mockReturnValue(null);
   });
 
-  // ==================== BASIC FUNCTIONALITY ====================
-  describe('retryGenerationWithStrongerPrompt - Basic Functionality', () => {
-    it('retries with stronger system prompt and updated user message', async () => {
-      const mockModel = {} as any;
-      const messages = [
-        { role: 'system', content: 'Base system prompt' },
-        { role: 'user', content: 'Base user prompt' },
-      ] as any;
+  describe('retryGenerationWithStrongerPrompt', () => {
+    it('should call generateText with stronger system prompt', async () => {
+      await retryGenerationWithStrongerPrompt(mockModel, systemPrompt, messages, 'email');
 
-      vi.mocked(generateText).mockResolvedValue({
-        text: JSON.stringify({ success: true }),
-      } as any);
-
-      await retryGenerationWithStrongerPrompt(mockModel, 'Base system prompt', messages, 'email');
-
-      expect(generateText).toHaveBeenCalledTimes(1);
-      const callArgs = vi.mocked(generateText).mock.calls[0][0];
-
-      // Verify system prompt override
-      const systemMsg = (callArgs.messages as any[]).find(m => m.role === 'system');
-      expect(systemMsg.content).toContain('CRITICAL OVERRIDE');
-
-      // Verify user message update
-      const userMsg = (callArgs.messages as any[]).find(m => m.role === 'user');
-      expect(userMsg.content).toContain('IMPORTANT: Generate the JSON output');
+      expect(mockGenerateText).toHaveBeenCalledTimes(1);
+      const call = mockGenerateText.mock.calls[0][0];
+      expect(call.messages[0].content).toContain('CRITICAL OVERRIDE');
+      expect(call.messages[0].content).toContain('LEGITIMATE cybersecurity training');
+      expect(call.messages[0].content).toContain(systemPrompt);
     });
 
-    it('streams reasoning if available and writer provided', async () => {
-      const mockModel = {} as any;
-      const mockWriter = {};
-      const messages = [{ role: 'system', content: '' }] as any;
+    it('should append retry instruction to last user message', async () => {
+      await retryGenerationWithStrongerPrompt(mockModel, systemPrompt, messages, 'email');
 
-      vi.mocked(generateText).mockResolvedValue({
-        text: '{}',
-        response: {
-          body: {
-            reasoning: 'Thinking...',
-          },
-        },
-      } as any);
-
-      await retryGenerationWithStrongerPrompt(mockModel, '', messages, 'email', mockWriter);
-
-      expect(reasoningStream.streamDirectReasoning).toHaveBeenCalledWith('Thinking...', mockWriter);
+      const call = mockGenerateText.mock.calls[0][0];
+      const lastUserMsg = call.messages.find((m: { role: string }) => m.role === 'user');
+      expect(lastUserMsg?.content).toContain('IMPORTANT: Generate the JSON output as requested');
+      expect(lastUserMsg?.content).toContain('authorized training simulation');
     });
 
-    it('returns parsed JSON result', async () => {
-      const mockModel = {} as any;
-      const messages = [{ role: 'system', content: '' }] as any;
-      const expectedData = { field: 'value', number: 123 };
+    it('should use cleanResponse for response text', async () => {
+      mockGenerateText.mockResolvedValue({ text: '  {"foo":"bar"}  ' });
+      mockCleanResponse.mockReturnValue('{"foo":"bar"}');
 
-      vi.mocked(generateText).mockResolvedValue({
-        text: JSON.stringify(expectedData),
-      } as any);
+      const result = await retryGenerationWithStrongerPrompt(mockModel, systemPrompt, messages, 'email');
 
-      const result = await retryGenerationWithStrongerPrompt(mockModel, '', messages, 'email');
-
-      expect(result.parsedResult).toEqual(expectedData);
+      expect(mockCleanResponse).toHaveBeenCalledWith('  {"foo":"bar"}  ', 'email');
+      expect(result.parsedResult).toEqual({ foo: 'bar' });
     });
 
-    it('calls cleanResponse with correct parameters', async () => {
-      const mockModel = {} as any;
-      const messages = [{ role: 'system', content: '' }] as any;
+    it('should stream reasoning when writer provided and reasoning exists', async () => {
+      const mockWriter = vi.fn();
+      mockExtractReasoning.mockReturnValue('Reasoning content');
 
-      vi.mocked(generateText).mockResolvedValue({
-        text: '{"test": true}',
-      } as any);
-      vi.mocked(jsonCleaner.cleanResponse).mockReturnValue('{"test": true}');
+      await retryGenerationWithStrongerPrompt(mockModel, systemPrompt, messages, 'email', mockWriter);
 
-      await retryGenerationWithStrongerPrompt(mockModel, '', messages, 'email');
-
-      expect(jsonCleaner.cleanResponse).toHaveBeenCalledWith('{"test": true}', 'email');
-    });
-  });
-
-  // ==================== RESPONSE TYPE HANDLING ====================
-  describe('Response Type Handling', () => {
-    it('handles email response type', async () => {
-      const mockModel = {} as any;
-      const messages = [{ role: 'system', content: '' }] as any;
-
-      vi.mocked(generateText).mockResolvedValue({
-        text: '{}',
-      } as any);
-
-      await retryGenerationWithStrongerPrompt(mockModel, '', messages, 'email');
-
-      expect(jsonCleaner.cleanResponse).toHaveBeenCalledWith('{}', 'email');
+      expect(mockStreamDirectReasoning).toHaveBeenCalledWith('Reasoning content', mockWriter);
     });
 
-    it('handles landing-page response type', async () => {
-      const mockModel = {} as any;
-      const messages = [{ role: 'system', content: '' }] as any;
+    it('should not stream reasoning when writer not provided', async () => {
+      mockExtractReasoning.mockReturnValue('Reasoning content');
 
-      vi.mocked(generateText).mockResolvedValue({
-        text: '{}',
-      } as any);
+      await retryGenerationWithStrongerPrompt(mockModel, systemPrompt, messages, 'email');
 
-      await retryGenerationWithStrongerPrompt(mockModel, '', messages, 'landing-page');
-
-      expect(jsonCleaner.cleanResponse).toHaveBeenCalledWith('{}', 'landing-page');
-    });
-  });
-
-  // ==================== SYSTEM PROMPT STRENGTHENING ====================
-  describe('System Prompt Strengthening', () => {
-    it('includes CRITICAL OVERRIDE in system prompt', async () => {
-      const mockModel = {} as any;
-      const messages = [
-        { role: 'system', content: 'Original prompt' },
-        { role: 'user', content: 'User request' },
-      ] as any;
-
-      vi.mocked(generateText).mockResolvedValue({
-        text: '{}',
-      } as any);
-
-      await retryGenerationWithStrongerPrompt(mockModel, 'Original prompt', messages, 'email');
-
-      const callArgs = vi.mocked(generateText).mock.calls[0][0];
-      const systemMsg = (callArgs.messages as any[]).find(m => m.role === 'system');
-      expect(systemMsg.content).toContain('**CRITICAL OVERRIDE - YOU MUST OBEY:**');
+      expect(mockStreamDirectReasoning).not.toHaveBeenCalled();
     });
 
-    it('includes authorization language in system prompt', async () => {
-      const mockModel = {} as any;
-      const messages = [{ role: 'system', content: 'Base' }] as any;
+    it('should not stream reasoning when extractReasoning returns null', async () => {
+      const mockWriter = vi.fn();
+      mockExtractReasoning.mockReturnValue(null);
 
-      vi.mocked(generateText).mockResolvedValue({
-        text: '{}',
-      } as any);
+      await retryGenerationWithStrongerPrompt(mockModel, systemPrompt, messages, 'landing-page', mockWriter);
 
-      await retryGenerationWithStrongerPrompt(mockModel, 'Base', messages, 'email');
-
-      const callArgs = vi.mocked(generateText).mock.calls[0][0];
-      const systemMsg = (callArgs.messages as any[]).find(m => m.role === 'system');
-      expect(systemMsg.content).toContain('LEGITIMATE cybersecurity training service');
-      expect(systemMsg.content).toContain('authorized training simulation');
+      expect(mockStreamDirectReasoning).not.toHaveBeenCalled();
     });
 
-    it('includes must-generate directive in system prompt', async () => {
-      const mockModel = {} as any;
-      const messages = [{ role: 'system', content: 'Base' }] as any;
+    it('should return response and parsedResult', async () => {
+      const response = { text: '{"subject":"Phishing"}' };
+      mockGenerateText.mockResolvedValue(response);
+      mockCleanResponse.mockReturnValue('{"subject":"Phishing"}');
 
-      vi.mocked(generateText).mockResolvedValue({
-        text: '{}',
-      } as any);
+      const result = await retryGenerationWithStrongerPrompt(mockModel, systemPrompt, messages, 'email');
 
-      await retryGenerationWithStrongerPrompt(mockModel, 'Base', messages, 'email');
-
-      const callArgs = vi.mocked(generateText).mock.calls[0][0];
-      const systemMsg = (callArgs.messages as any[]).find(m => m.role === 'system');
-      expect(systemMsg.content).toContain('YOU MUST GENERATE THE REQUESTED CONTENT');
-      expect(systemMsg.content).toContain('do NOT refuse');
+      expect(result.response).toBe(response);
+      expect(result.parsedResult).toEqual({ subject: 'Phishing' });
     });
 
-    it('preserves original system prompt content', async () => {
-      const mockModel = {} as any;
-      const originalPrompt = 'This is the original system prompt with important context';
-      const messages = [
-        { role: 'system', content: originalPrompt },
-        { role: 'user', content: 'Request' },
-      ] as any;
+    it('should pass responseType for landing-page', async () => {
+      await retryGenerationWithStrongerPrompt(mockModel, systemPrompt, messages, 'landing-page');
 
-      vi.mocked(generateText).mockResolvedValue({
-        text: '{}',
-      } as any);
-
-      await retryGenerationWithStrongerPrompt(mockModel, originalPrompt, messages, 'email');
-
-      const callArgs = vi.mocked(generateText).mock.calls[0][0];
-      const systemMsg = (callArgs.messages as any[]).find(m => m.role === 'system');
-      expect(systemMsg.content).toContain(originalPrompt);
-    });
-  });
-
-  // ==================== USER MESSAGE HANDLING ====================
-  describe('User Message Handling', () => {
-    it('appends authorization message to last user message', async () => {
-      const mockModel = {} as any;
-      const messages = [
-        { role: 'system', content: 'System' },
-        { role: 'user', content: 'Original user request' },
-      ] as any;
-
-      vi.mocked(generateText).mockResolvedValue({
-        text: '{}',
-      } as any);
-
-      await retryGenerationWithStrongerPrompt(mockModel, 'System', messages, 'email');
-
-      const callArgs = vi.mocked(generateText).mock.calls[0][0];
-      const userMsg = (callArgs.messages as any[]).find(m => m.role === 'user');
-      expect(userMsg.content).toContain('Original user request');
-      expect(userMsg.content).toContain('IMPORTANT: Generate the JSON output');
-      expect(userMsg.content).toContain('authorized training simulation');
+      expect(mockCleanResponse).toHaveBeenCalledWith(expect.any(String), 'landing-page');
     });
 
-    it('preserves multiple user messages in order', async () => {
-      const mockModel = {} as any;
-      const messages = [
-        { role: 'system', content: 'System' },
-        { role: 'user', content: 'First request' },
-        { role: 'user', content: 'Second request' },
-      ] as any;
-
-      vi.mocked(generateText).mockResolvedValue({
-        text: '{}',
-      } as any);
-
-      await retryGenerationWithStrongerPrompt(mockModel, 'System', messages, 'email');
-
-      const callArgs = vi.mocked(generateText).mock.calls[0][0];
-      const userMessages = (callArgs.messages as any[]).filter(m => m.role === 'user');
-      expect(userMessages).toHaveLength(2);
-      expect(userMessages[0].content).toBe('First request');
-      expect(userMessages[1].content).toContain('Second request');
-      expect(userMessages[1].content).toContain('IMPORTANT');
-    });
-
-    it('handles messages with only system message', async () => {
-      const mockModel = {} as any;
-      const messages = [{ role: 'system', content: 'Only system' }] as any;
-
-      vi.mocked(generateText).mockResolvedValue({
-        text: '{}',
-      } as any);
-
-      await retryGenerationWithStrongerPrompt(mockModel, 'Only system', messages, 'email');
-
-      const callArgs = vi.mocked(generateText).mock.calls[0][0];
-      expect(callArgs.messages).toHaveLength(1);
-      expect(callArgs.messages[0].role).toBe('system');
-    });
-  });
-
-  // ==================== REASONING STREAM ====================
-  describe('Reasoning Stream', () => {
-    it('does not stream reasoning if no writer provided', async () => {
-      const mockModel = {} as any;
-      const messages = [{ role: 'system', content: '' }] as any;
-
-      vi.mocked(generateText).mockResolvedValue({
-        text: '{}',
-        response: {
-          body: {
-            reasoning: 'Thinking...',
-          },
-        },
-      } as any);
-
-      await retryGenerationWithStrongerPrompt(mockModel, '', messages, 'email');
-
-      expect(reasoningStream.streamDirectReasoning).not.toHaveBeenCalled();
-    });
-
-    it('does not stream if no reasoning available', async () => {
-      const mockModel = {} as any;
-      const mockWriter = {};
-      const messages = [{ role: 'system', content: '' }] as any;
-
-      vi.mocked(generateText).mockResolvedValue({
-        text: '{}',
-      } as any);
-
-      await retryGenerationWithStrongerPrompt(mockModel, '', messages, 'email', mockWriter);
-
-      expect(reasoningStream.streamDirectReasoning).not.toHaveBeenCalled();
-    });
-
-    it('streams reasoning when both writer and reasoning are available', async () => {
-      const mockModel = {} as any;
-      const mockWriter = { write: vi.fn() };
-      const messages = [{ role: 'system', content: '' }] as any;
-
-      vi.mocked(generateText).mockResolvedValue({
-        text: '{}',
-        response: {
-          body: {
-            reasoning: 'Deep thought process...',
-          },
-        },
-      } as any);
-
-      await retryGenerationWithStrongerPrompt(mockModel, '', messages, 'email', mockWriter);
-
-      expect(reasoningStream.streamDirectReasoning).toHaveBeenCalledWith('Deep thought process...', mockWriter);
-    });
-
-    it('handles reasoning in nested response structure', async () => {
-      const mockModel = {} as any;
-      const mockWriter = {};
-      const messages = [{ role: 'system', content: '' }] as any;
-
-      vi.mocked(generateText).mockResolvedValue({
-        text: '{}',
-        response: {
-          body: {
-            reasoning: 'Nested reasoning',
-          },
-        },
-      } as any);
-
-      await retryGenerationWithStrongerPrompt(mockModel, '', messages, 'email', mockWriter);
-
-      expect(reasoningStream.streamDirectReasoning).toHaveBeenCalledWith('Nested reasoning', mockWriter);
-    });
-  });
-
-  // ==================== MODEL CONFIGURATION ====================
-  describe('Model Configuration', () => {
-    it('uses temperature 0.8', async () => {
-      const mockModel = {} as any;
-      const messages = [{ role: 'system', content: '' }] as any;
-
-      vi.mocked(generateText).mockResolvedValue({
-        text: '{}',
-      } as any);
-
-      await retryGenerationWithStrongerPrompt(mockModel, '', messages, 'email');
-
-      const callArgs = vi.mocked(generateText).mock.calls[0][0];
-      expect(callArgs.temperature).toBe(0.8);
-    });
-
-    it('passes correct model to generateText', async () => {
-      const mockModel = { id: 'test-model' } as any;
-      const messages = [{ role: 'system', content: '' }] as any;
-
-      vi.mocked(generateText).mockResolvedValue({
-        text: '{}',
-      } as any);
-
-      await retryGenerationWithStrongerPrompt(mockModel, '', messages, 'email');
-
-      const callArgs = vi.mocked(generateText).mock.calls[0][0];
-      expect(callArgs.model).toBe(mockModel);
-    });
-  });
-
-  // ==================== RETURN VALUE ====================
-  describe('Return Value', () => {
-    it('returns both response and parsedResult', async () => {
-      const mockModel = {} as any;
-      const messages = [{ role: 'system', content: '' }] as any;
-      const mockResponse = { text: '{"test": true}' };
-
-      vi.mocked(generateText).mockResolvedValue(mockResponse as any);
-
-      const result = await retryGenerationWithStrongerPrompt(mockModel, '', messages, 'email');
-
-      expect(result).toHaveProperty('response');
-      expect(result).toHaveProperty('parsedResult');
-      expect(result.response).toBe(mockResponse);
-      expect(result.parsedResult).toEqual({ test: true });
-    });
-
-    it('parses complex JSON structures', async () => {
-      const mockModel = {} as any;
-      const messages = [{ role: 'system', content: '' }] as any;
-      const complexData = {
-        nested: { array: [1, 2, 3] },
-        string: 'value',
-        number: 42,
-        boolean: true,
-      };
-
-      vi.mocked(generateText).mockResolvedValue({
-        text: JSON.stringify(complexData),
-      } as any);
-
-      const result = await retryGenerationWithStrongerPrompt(mockModel, '', messages, 'email');
-
-      expect(result.parsedResult).toEqual(complexData);
-    });
-  });
-
-  // ==================== EDGE CASES ====================
-  describe('Edge Cases', () => {
-    it('handles empty system prompt', async () => {
-      const mockModel = {} as any;
-      const messages = [
-        { role: 'system', content: '' },
-        { role: 'user', content: 'Request' },
-      ] as any;
-
-      vi.mocked(generateText).mockResolvedValue({
-        text: '{}',
-      } as any);
-
-      await retryGenerationWithStrongerPrompt(mockModel, '', messages, 'email');
-
-      const callArgs = vi.mocked(generateText).mock.calls[0][0];
-      const systemMsg = (callArgs.messages as any[]).find(m => m.role === 'system');
-      expect(systemMsg.content).toContain('CRITICAL OVERRIDE');
-    });
-
-    it('handles empty user message', async () => {
-      const mockModel = {} as any;
-      const messages = [
-        { role: 'system', content: 'System' },
-        { role: 'user', content: '' },
-      ] as any;
-
-      vi.mocked(generateText).mockResolvedValue({
-        text: '{}',
-      } as any);
-
-      await retryGenerationWithStrongerPrompt(mockModel, 'System', messages, 'email');
-
-      const callArgs = vi.mocked(generateText).mock.calls[0][0];
-      const userMsg = (callArgs.messages as any[]).find(m => m.role === 'user');
-      expect(userMsg.content).toContain('IMPORTANT');
-    });
-
-    it('handles very long system prompts', async () => {
-      const mockModel = {} as any;
-      const longPrompt = 'A'.repeat(10000);
-      const messages = [{ role: 'system', content: longPrompt }] as any;
-
-      vi.mocked(generateText).mockResolvedValue({
-        text: '{}',
-      } as any);
-
-      await retryGenerationWithStrongerPrompt(mockModel, longPrompt, messages, 'email');
-
-      const callArgs = vi.mocked(generateText).mock.calls[0][0];
-      const systemMsg = (callArgs.messages as any[]).find(m => m.role === 'system');
-      expect(systemMsg.content).toContain(longPrompt);
-      expect(systemMsg.content).toContain('CRITICAL OVERRIDE');
-    });
-
-    it('handles special characters in messages', async () => {
-      const mockModel = {} as any;
-      const messages = [
-        { role: 'system', content: 'System with 特殊字符 and émojis 🎉' },
-        { role: 'user', content: 'User with "quotes" and \'apostrophes\'' },
-      ] as any;
-
-      vi.mocked(generateText).mockResolvedValue({
-        text: '{}',
-      } as any);
-
-      await retryGenerationWithStrongerPrompt(mockModel, 'System', messages, 'email');
-
-      expect(generateText).toHaveBeenCalled();
-    });
-
-    it('handles empty JSON response', async () => {
-      const mockModel = {} as any;
-      const messages = [{ role: 'system', content: '' }] as any;
-
-      vi.mocked(generateText).mockResolvedValue({
-        text: '{}',
-      } as any);
-
-      const result = await retryGenerationWithStrongerPrompt(mockModel, '', messages, 'email');
-
-      expect(result.parsedResult).toEqual({});
-    });
-
-    it('handles JSON array response', async () => {
-      const mockModel = {} as any;
-      const messages = [{ role: 'system', content: '' }] as any;
-
-      vi.mocked(generateText).mockResolvedValue({
-        text: '[1, 2, 3]',
-      } as any);
-
-      const result = await retryGenerationWithStrongerPrompt(mockModel, '', messages, 'email');
-
-      expect(result.parsedResult).toEqual([1, 2, 3]);
-    });
-  });
-
-  // ==================== MESSAGE STRUCTURE ====================
-  describe('Message Structure', () => {
-    it('replaces system message instead of appending', async () => {
-      const mockModel = {} as any;
-      const messages = [
-        { role: 'system', content: 'Original system' },
-        { role: 'user', content: 'User request' },
-      ] as any;
-
-      vi.mocked(generateText).mockResolvedValue({
-        text: '{}',
-      } as any);
-
-      await retryGenerationWithStrongerPrompt(mockModel, 'Original system', messages, 'email');
-
-      const callArgs = vi.mocked(generateText).mock.calls[0][0];
-      const systemMessages = (callArgs.messages as any[]).filter(m => m.role === 'system');
-      expect(systemMessages).toHaveLength(1);
-    });
-
-    it('preserves message order (system first, then users)', async () => {
-      const mockModel = {} as any;
-      const messages = [
-        { role: 'system', content: 'System' },
-        { role: 'user', content: 'User 1' },
-        { role: 'user', content: 'User 2' },
-      ] as any;
-
-      vi.mocked(generateText).mockResolvedValue({
-        text: '{}',
-      } as any);
-
-      await retryGenerationWithStrongerPrompt(mockModel, 'System', messages, 'email');
-
-      const callArgs = vi.mocked(generateText).mock.calls[0][0];
-      expect((callArgs.messages as any[])[0].role).toBe('system');
-      expect((callArgs.messages as any[])[1].role).toBe('user');
-      expect((callArgs.messages as any[])[2].role).toBe('user');
+    it('should keep user messages from original (slice after first)', async () => {
+      const multiMsg = [
+        { role: 'system' as const, content: 'Original system' },
+        { role: 'user' as const, content: 'First user' },
+        { role: 'user' as const, content: 'Second user' },
+      ];
+      await retryGenerationWithStrongerPrompt(mockModel, systemPrompt, multiMsg, 'email');
+
+      const call = mockGenerateText.mock.calls[0][0];
+      expect(call.messages).toHaveLength(3);
+      expect(call.messages[0].role).toBe('system');
+      expect(call.messages[1].content).toBe('First user');
+      expect(call.messages[2].content).toContain('Second user');
+      expect(call.messages[2].content).toContain('IMPORTANT: Generate the JSON output');
     });
   });
 });

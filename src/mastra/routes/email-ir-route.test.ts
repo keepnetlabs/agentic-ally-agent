@@ -93,6 +93,37 @@ describe('emailIRAnalyzeHandler', () => {
     expect(mockContext.json).toHaveBeenCalled();
   });
 
+  it('should normalize dash.keepnetlabs.com to api.keepnetlabs.com in apiBaseUrl', async () => {
+    const { emailIRWorkflow } = await import('../workflows/email-ir-workflow');
+    const mockStart = vi.fn().mockResolvedValue({
+      status: 'completed',
+      steps: {
+        'email-ir-reporting-step': {
+          status: 'success',
+          output: validReport,
+        },
+      },
+    });
+    (emailIRWorkflow.createRunAsync as any).mockResolvedValue({
+      runId: 'run-123',
+      start: mockStart,
+    });
+
+    mockContext.req.json.mockResolvedValue({
+      id: 'email-123',
+      accessToken: 'bearer-token',
+      apiBaseUrl: 'https://dash.keepnetlabs.com/v1',
+    });
+
+    await emailIRAnalyzeHandler(mockContext as unknown as Context);
+
+    expect(mockStart).toHaveBeenCalledWith({
+      inputData: expect.objectContaining({
+        apiBaseUrl: 'https://api.keepnetlabs.com/v1',
+      }),
+    });
+  });
+
   it('should handle JSON parse errors', async () => {
     mockContext.req.json.mockRejectedValue(new Error('Invalid JSON'));
 

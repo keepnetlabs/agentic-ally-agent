@@ -36,19 +36,17 @@ export class AgentRouter {
    */
   async route(prompt: string): Promise<AgentRoutingResult> {
     const orchestrator = this.mastra.getAgent('orchestrator');
-    const validAgents: AgentName[] = Object.values(AGENT_NAMES).filter(name => name !== AGENT_NAMES.ORCHESTRATOR);
+    const validAgents: AgentName[] = Object.values(AGENT_NAMES).filter(
+      name => name !== AGENT_NAMES.ORCHESTRATOR
+    );
 
     try {
       logger.info('Orchestrator analyzing intent');
 
-      // Wrap orchestrator call + JSON parsing in retry mechanism
-      // withRetry will automatically retry on errors with exponential backoff
       const decision = await withRetry<RoutingDecision>(async () => {
-        // Get response from orchestrator
         const routingResult = await orchestrator.generate(prompt);
         const routingText = routingResult.text;
 
-        // Clean and parse JSON (cleanResponse handles jsonrepair internally)
         const cleanJsonText = cleanResponse(routingText, 'orchestrator-decision');
         const parsed = JSON.parse(cleanJsonText);
 
@@ -59,23 +57,22 @@ export class AgentRouter {
       const taskContext = decision?.taskContext;
       const reasoning = decision?.reasoning;
 
-      // Validate agent name
       if (validAgents.includes(agent)) {
-        logger.info('✅ Routed to agent', {
+        const logEmoji = agent === AGENT_NAMES.OUT_OF_SCOPE ? '🚫' : '✅';
+        logger.info(`${logEmoji} Routed to agent`, {
           agent,
           taskContext,
           reasoning,
         });
-        // Log first 80 chars of user prompt vs taskContext for language mismatch debugging
-        logger.info('🔍 LANGUAGE_DEBUG', {
-          userPromptPreview: prompt.slice(0, 80),
-          taskContextPreview: taskContext?.slice(0, 80),
-        });
+        if (agent !== AGENT_NAMES.OUT_OF_SCOPE) {
+          logger.info('🔍 LANGUAGE_DEBUG', {
+            userPromptPreview: prompt.slice(0, 80),
+            taskContextPreview: taskContext?.slice(0, 80),
+          });
+        }
         return { agentName: agent, taskContext };
       }
 
-      // Invalid agent name - this is a logic error, not a transient error
-      // Don't retry, just fallback to default
       logger.warn('Invalid agent name from orchestrator, defaulting', {
         received: agent,
         validAgents,

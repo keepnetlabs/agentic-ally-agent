@@ -1,5 +1,11 @@
 /**
  * Phishing Editor Tool
+ *
+ * EU AI Act (Art. 9) Tool Risk Metadata:
+ * - riskLevel: limited
+ * - rationale: Edits existing phishing template; content modification
+ * @see docs/AI_COMPLIANCE_INVENTORY.md
+ *
  * Allows editing and customizing existing phishing templates via natural language instructions
  * Supports: text updates, tone changes, language translation, element removal, etc.
  */
@@ -15,7 +21,8 @@ import { ProductService } from '../../services/product-service';
 import { fixBrokenImages } from '../../utils/landing-page/image-validator';
 import { detectAndResolveBrand } from './phishing-editor-utils';
 import { summarizeForLog } from '../../utils/core/log-redaction-utils';
-import { phishingEditorSchema } from './phishing-editor-schemas';
+import { phishingEditorSchema, phishingEditorOutputSchema } from './phishing-editor-schemas';
+import { validateToolResult } from '../../utils/tool-result-validation';
 import {
   loadPhishingContent,
   ExistingEmail,
@@ -236,16 +243,22 @@ export const phishingEditorTool = createTool({
       if (hasEmail) updates.push('Email');
       if (editedLanding?.pages) updates.push('Landing Page');
 
-      return {
+      const toolResult = {
         success: true,
         status: 'success',
         data: {
           phishingId,
           subject: hasEmail ? editedEmail?.subject : undefined,
-          summary: (hasEmail ? editedEmail?.summary || '' : '') || editedLanding?.summary,
+          summary: (hasEmail ? editedEmail?.summary || '' : '') || editedLanding?.summary || '',
           message: `[SUCCESS] Updated: ${updates.join(' + ')}\n${hasEmail ? editedEmail?.summary || '' : ''}${editedLanding?.summary ? '\n' + editedLanding.summary : ''}`,
         },
       };
+      const validation = validateToolResult(toolResult, phishingEditorOutputSchema, 'phishing-editor');
+      if (!validation.success) {
+        logErrorInfo(logger, 'error', 'Phishing editor result validation failed', validation.error);
+        return createToolErrorResponse(validation.error);
+      }
+      return validation.data;
     } catch (error) {
       const err = normalizeError(error);
       const errorInfo = errorService.external(err.message, {

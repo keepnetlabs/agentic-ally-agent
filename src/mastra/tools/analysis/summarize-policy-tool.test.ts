@@ -619,6 +619,39 @@ LANGUAGE: Respond in ${language || 'English'}`;
   });
 
   describe('Error Handling', () => {
+    it('should return error when policy is empty or not found', async () => {
+      (policyCache.getPolicySummary as any).mockResolvedValue('');
+      const execute = (summarizePolicyTool as any).execute;
+      const result = await execute({ context: { question: 'What is the policy?' } });
+      expect(result.success).toBe(false);
+      expect(result.error).toBeDefined();
+    });
+
+    it('should return error when policy is whitespace only', async () => {
+      (policyCache.getPolicySummary as any).mockResolvedValue('   \n\t  ');
+      const execute = (summarizePolicyTool as any).execute;
+      const result = await execute({ context: { question: 'What is the policy?' } });
+      expect(result.success).toBe(false);
+      expect(result.error).toBeDefined();
+    });
+
+    it('should return error when LLM response fails output schema validation', async () => {
+      (policyCache.getPolicySummary as any).mockResolvedValue('Policy content here');
+      (ai.generateText as any).mockResolvedValue({
+        text: JSON.stringify({
+          question: 'What is the policy?',
+          summary: 123,
+          key_points: [],
+          recommendations: [],
+        }),
+      });
+      const execute = (summarizePolicyTool as any).execute;
+      const result = await execute({ context: { question: 'What is the policy?' } });
+      expect(result.success).toBe(false);
+      expect(result.error).toBeDefined();
+      expect(result.error).toContain('summarize-policy');
+    });
+
     it('should handle empty policy gracefully', async () => {
       const execute = (summarizePolicyTool as any).execute;
       const context = {

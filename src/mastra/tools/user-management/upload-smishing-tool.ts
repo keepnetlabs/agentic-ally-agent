@@ -1,6 +1,14 @@
+/**
+ * upload-smishing-tool
+ *
+ * EU AI Act (Art. 9) Tool Risk Metadata:
+ * - riskLevel: limited
+ * - rationale: Uploads smishing content to platform
+ * @see docs/AI_COMPLIANCE_INVENTORY.md
+ */
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
-import { uuidv4 } from '../../utils/core/id-utils';
+import { isSafeId, uuidv4 } from '../../utils/core/id-utils';
 import { getRequestContext } from '../../utils/core/request-storage';
 import { getLogger } from '../../utils/core/logger';
 import { withRetry } from '../../utils/core/resilience-utils';
@@ -53,7 +61,10 @@ export const uploadSmishingTool = createTool({
   id: 'upload-smishing',
   description: 'Fetches smishing content by ID, prepares it, and uploads it to the platform via the smishing worker.',
   inputSchema: z.object({
-    smishingId: z.string().describe('The ID of the smishing content to upload'),
+    smishingId: z
+      .string()
+      .describe('The ID of the smishing content to upload')
+      .refine(isSafeId, { message: 'Invalid smishingId format.' }),
   }),
   outputSchema: uploadSmishingOutputSchema,
   execute: async ({ context, writer }) => {

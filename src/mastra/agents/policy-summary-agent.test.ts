@@ -76,6 +76,14 @@ describe('Policy Summary Agent', () => {
       expect(instructions).toContain('summarizePolicy');
     });
 
+    it('should include messaging guidelines (NEVER use blacklist)', () => {
+      expect(instructions).toContain('NEVER use');
+    });
+
+    it('should have substantial instructions', () => {
+      expect(instructions.length).toBeGreaterThan(500);
+    });
+
     it('should mention tool usage in mission', () => {
       expect(instructions).toContain("Use the 'summarizePolicy' tool");
     });

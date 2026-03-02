@@ -401,7 +401,7 @@ Write realistic quishing (QR code phishing) email content based on provided scen
 - NO buttons or clickable links in the main body (footer links allowed)
 - Use convenience/mobile-friendly language
 - Emphasize ease of use: "Scan QR code to verify", "Quick access via QR", "Mobile-friendly verification"
-- QR code image tag: <img src="{QRCODEURLIMAGE}" alt="QR Code" style="width:${PHISHING_EMAIL.QR_CODE_IMAGE_WIDTH_PX}px;height:auto; margin:0 auto;">
+- QR code image tag: <img src="{QRCODEURLIMAGE}" alt="QR Code" style="display:block; width:${PHISHING_EMAIL.QR_CODE_IMAGE_WIDTH_PX}px;height:auto; margin:0 auto;">
 - Place QR code prominently (center-aligned, after main message text, before signature)
 
 ${BRAND_AWARENESS_RULES}
@@ -414,6 +414,7 @@ ${BRAND_AWARENESS_RULES}
    - Emphasize convenience or urgency related to QR code scanning.
 
 2. ${TABLE_LAYOUT_RULES}
+   - **MUST match the tone** specified in the blueprint. Urgent → deadline language; Helpful → calm support; Formal → professional throughout.
    - **VISUAL DIFFICULTY RULE (${difficulty}):** ${difficultyRules.visuals.rule}. ${difficultyRules.visuals.description}
    - **Psychological Triggers:** Use convenience, technology trust, mobile usage naturally.
    - ${FOOTER_RULES}
@@ -428,10 +429,10 @@ ${BRAND_AWARENESS_RULES}
    - QR code: Must be clearly visible and scannable on mobile devices.
 
 3. **QR Code Placement:**
-   - Must include QR code image using {QRCODEURLIMAGE} merge tag: <img src="{QRCODEURLIMAGE}" alt="QR Code" style="width:${PHISHING_EMAIL.QR_CODE_IMAGE_WIDTH_PX}px;height:auto; margin:0 auto;">
+   - Must include QR code image using {QRCODEURLIMAGE} merge tag: <img src="{QRCODEURLIMAGE}" alt="QR Code" style="display:block; width:${PHISHING_EMAIL.QR_CODE_IMAGE_WIDTH_PX}px;height:auto; margin:0 auto;">
    - Required: Use {QRCODEURLIMAGE} tag only (never placeholder src or empty src)
    - Place QR code prominently (center-aligned, after main message text, before signature)
-   - Add text around QR code: "Scan QR code to verify", "Quick access via QR", "Mobile-friendly verification"
+   - **QR text rule:** Text around QR code MUST be scenario-specific (e.g., "Scan to verify payment" for payment, "Scan to access WiFi" for WiFi). Never use only generic "Scan QR code".
    - No buttons or clickable links in main body (footer links allowed)
 
 4. ${GREETING_RULES}
@@ -479,8 +480,8 @@ ${JSON.stringify(analysis, null, 2)}
 2. **SELECT** the best **Layout Strategy** (Card vs Letter) based on the brand. **DEFAULT to Card format** unless explicitly CEO/HR/Policy scenario.
 3. **GENERATE** the **Preheader** (hidden preview text) - ${PHISHING_EMAIL.PREHEADER_WORD_COUNT.min}-${PHISHING_EMAIL.PREHEADER_WORD_COUNT.max} words about QR code verification.
 4. ${GREETING_INSTRUCTION(language)}
-5. **WRITE** realistic, authentic email content that matches the brand's style and emphasizes convenience/mobile-friendly access.
-6. **QR Code Merge Tag:** Must use {QRCODEURLIMAGE} merge tag for QR code. Add <img src="{QRCODEURLIMAGE}" alt="QR Code" style="width:${PHISHING_EMAIL.QR_CODE_IMAGE_WIDTH_PX}px;height:auto; margin:0 auto;"> prominently (center-aligned, after main message text, before signature). Required: Never use placeholder src like "qr-code.png" or empty src - always use {QRCODEURLIMAGE} tag. Add convenience text around QR code.
+5. **WRITE** realistic, authentic email content that matches the brand's style, the blueprint's tone exactly, and emphasizes convenience/mobile-friendly access.
+6. **QR Code Merge Tag:** Must use {QRCODEURLIMAGE} merge tag for QR code. Add <img src="{QRCODEURLIMAGE}" alt="QR Code" style="display:block; width:${PHISHING_EMAIL.QR_CODE_IMAGE_WIDTH_PX}px;height:auto; margin:0 auto;"> prominently (center-aligned, after main message text, before signature). Required: Never use placeholder src like "qr-code.png" or empty src - always use {QRCODEURLIMAGE} tag. Add convenience text around QR code.
 7. **EMBED** quishing-specific red flags according to difficulty level (unsolicited QR codes, QR codes requesting credentials, QR codes in unexpected contexts).
 8. **VERIFY** NO buttons or clickable links exist in main body (footer links allowed).
 9. **OUTPUT** valid JSON with complete, production-ready HTML template.`;
@@ -519,7 +520,7 @@ ${BRAND_AWARENESS_RULES}
    - **Social Engineering (subtle):** Use 1-2 soft cues that fit the scenario (e.g., authority, urgency/deadline, scarcity/limited time, social proof). Keep it natural; no hard rules.
 
 2. ${TABLE_LAYOUT_RULES}
-   - **MUST match the tone** specified in the blueprint exactly.
+   - **MUST match the tone** specified in the blueprint exactly. Urgent → deadline language; Helpful → calm support; Formal → professional throughout.
    - **VISUAL DIFFICULTY RULE (${difficulty}):** ${difficultyRules.visuals.rule}. ${difficultyRules.visuals.description}
    - **Psychological Triggers (subtle):** Use 1-2 from analysis.psychologicalTriggers naturally (e.g., authority tone, urgency/deadline, curiosity hook). Avoid overuse.
    - **Social Engineering (Cialdini principles):** Apply naturally when fitting: reciprocity (free service, special offer), social proof (colleagues completed, trusted by X users), commitment (you previously agreed), liking (valued customer). Use fear of loss sparingly (account lockout, service suspension).
@@ -541,8 +542,9 @@ ${BRAND_AWARENESS_RULES}
    - **If '${PHISHING.ATTACK_METHODS[0]}' (Click-Only):**
      - Button Text: "View Document", "Track Package", "Read Announcement", "See Photos".
      - Urgency: Low to Medium. Focus on curiosity or helpfulness.
+   - **CTA rule:** Button text MUST be scenario-specific. Never use generic "Click Here", "Submit", or "Continue".
    ${industryDesign ? `\n   - **Brand Colors (${industryDesign.industry}):** Use primary color \`${industryDesign.colors.primary}\` for buttons/links to match brand identity.` : ''}
-   - **LAYOUT RULE:** Buttons MUST be in their own \`<div>\` container with \`text-align: center\`. Do NOT overlap with lists.
+   - **LAYOUT RULE:** Button CTA MUST live in its own dedicated \`<tr><td>\` row — NEVER inside a \`<div>\` within a content \`<td>\`. A \`<div>\` inside a \`<td>\` that also contains text nodes creates invalid mixed block/inline HTML that breaks email clients and the visual editor. Correct pattern: \`<tr><td align='center' style='padding-bottom:16px;'><a href='{PHISHINGURL}' style='...'>Button Text</a></td></tr>\`
    - **NO INLINE-BLOCK ADJACENCY:** Do NOT place buttons immediately next to lists or text using \`display: inline-block\`. Always ensure the button starts on a NEW line below previous content.
 
 4. ${GREETING_RULES}

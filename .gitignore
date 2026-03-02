@@ -2,8 +2,14 @@
 dist/
 output.txt
 
+# Debug scripts (local only)
+src/debug-deepfake.ts
+
 # Dependencies
 node_modules/
+
+# Python (compliance scan - optional)
+.compliance/
 
 # Environment files (NEVER commit with credentials)
 .env

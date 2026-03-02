@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   loggerDebug: vi.fn(),
   cleanResponse: vi.fn(),
   uuidv4: vi.fn(),
+  isSafeId: vi.fn(() => true),
 }));
 
 vi.mock('../../services/kv-service', () => ({
@@ -37,6 +38,7 @@ vi.mock('../../utils/content-processors/json-cleaner', () => ({
 
 vi.mock('../../utils/core/id-utils', () => ({
   uuidv4: mocks.uuidv4,
+  isSafeId: mocks.isSafeId,
 }));
 
 import {

@@ -43,7 +43,7 @@ export const EMAIL_SIGNATURE_RULES = `**Email Signature:**
   ❌ Wrong: "Emily Clarke", "John from IT", "Sarah - Support"
 - Signature format: Team Name + Email Address
 - Padding rule (Outlook-critical): Signature must be wrapped in its own \`<tr><td>\` block with padding. Never use \`<div>\` padding for signatures.
-- Example: "<tr><td style='padding-top:16px; padding-left:20px;'>Best regards,<br>Security Notifications Team<br>security@company.com</td></tr>"`;
+- Example: "<tr><td style='padding-top:16px; padding-left:20px; padding-right:20px;'>Best regards,<br>Security Notifications Team<br>security@company.com</td></tr>"`;
 
 /**
  * No fake personal identities rule (phishing-only safeguard)
@@ -61,11 +61,15 @@ export const TABLE_LAYOUT_RULES = `**Body (HTML) - Outlook/Gmail Compatible:**
 - Use TABLE-BASED layout (no divs for main structure)
 - Main table: width='100%' with style='max-width: ${PHISHING_EMAIL.EMAIL_TABLE_MAX_WIDTH_PX}px; margin: 0 auto; border-collapse: separate;'
 - **PADDING RULE:** NEVER put padding on <table>. ALWAYS put padding on <td> elements. Content <td> must have horizontal padding (min 20px left/right).
-  ❌ Wrong: <table style='padding:32px'> OR <td style='padding-top:12px;'> (no left/right)
+  ❌ Wrong: <table style='padding:32px'> (padding on table, never on <table>)
+  ❌ Wrong: <td style='padding-top:12px;'> (missing left/right — content <td> must have horizontal padding)
   ✅ Correct: <td style='padding:32px'> OR <td style='padding: 12px 24px;'>
 - **BORDER RULE:** Always use border-collapse: separate on tables for better spacing control
 - INLINE CSS only (no style blocks), web-safe fonts (Arial, sans-serif)
-- No Flexbox/Grid (breaks Outlook). Must look professional and authentic.`;
+- No Flexbox/Grid (breaks Outlook). Must look professional and authentic.
+- **PARAGRAPH RULE:** Use <p> for each body paragraph — NEVER raw text + <br><br> as paragraph breaks.
+  ❌ Wrong: Hello {FIRSTNAME},<br><br>We have detected...<br><br>Please log in.
+  ✅ Correct: <p style='margin:0 0 12px 0;'>Hello {FIRSTNAME},</p><p style='margin:0 0 12px 0;'>We have detected...</p>`;
 
 /**
  * Layout strategy options (Card vs Letter)
@@ -73,8 +77,9 @@ export const TABLE_LAYOUT_RULES = `**Body (HTML) - Outlook/Gmail Compatible:**
 export const LAYOUT_STRATEGY_RULES = `**LAYOUT STRATEGY:**
 * **OPTION A: Transactional Card (DEFAULT)** - Use unless CEO/HR/Policy memo
   - Background: Light gray (#f3f4f6), outer td padding: 20px
-  - Content: Centered WHITE card with rounded corners and shadow
-  - text-align: center. Best for: Password Reset, Order, Security Alert, E-commerce
+  - Content: Centered WHITE card with rounded corners and shadow. **Inner card table:** max-width: ${PHISHING_EMAIL.EMAIL_CARD_MAX_WIDTH_PX}px (NOT 420px — that is too narrow for email content).
+  - **Text alignment:** Greeting, body paragraphs, and signature MUST be left-aligned (text-align: left). Only logo and CTA button may be centered. Professional emails are never fully centered.
+  - Best for: Password Reset, Order, Security Alert, E-commerce
 * **OPTION B: Corporate Letter** - For formal internal communications
   - Background: Full White (#ffffff), no card box
   - **IMPORTANT:** Container MUST still be CENTERED in the viewport (Outlook-safe table centering). Only the letter text can be left-aligned.

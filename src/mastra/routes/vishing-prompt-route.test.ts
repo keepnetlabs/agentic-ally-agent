@@ -120,6 +120,15 @@ describe('Vishing Prompt Route Handler', () => {
       expect(calls[0][1]).toBe(400);
     });
 
+    it('should reject request when schema validation fails (e.g. language too short)', async () => {
+      const ctx = createMockContext({ microlearningId: 'ml-123', language: 'x' });
+      await vishingPromptHandler(ctx);
+
+      const calls = ctx._getJsonCalls();
+      expect(calls[0][0]).toMatchObject({ success: false, error: 'Invalid request format' });
+      expect(calls[0][1]).toBe(400);
+    });
+
     it('should accept valid request', async () => {
       const ctx = createMockContext({ microlearningId: 'ml-123', language: 'en' });
       mockKVService.getMicrolearning.mockResolvedValue(validMicrolearning);

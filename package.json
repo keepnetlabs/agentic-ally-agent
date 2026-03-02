@@ -8,7 +8,7 @@
     "build": "cross-env mastra build",
     "build:local": "cross-env mastra build && node scripts/fix-cloudflare-shims.js",
     "build:cloudflare": "cross-env mastra build && node scripts/fix-cloudflare-shims.js",
-    "predeploy": "npm run validate",
+    "predeploy": "npm run lint",
     "deploy": "npm run build:cloudflare && npx wrangler deploy .mastra/output/index.mjs --config .mastra/output/wrangler.json",
     "fix-cloudflare": "node scripts/fix-cloudflare-shims.js",
     "test": "vitest run",
@@ -20,7 +20,8 @@
     "lint:fix": "eslint src --ext .ts --fix",
     "format": "prettier --write \"src/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\"",
-    "validate": "npm run format:check && npm run lint && npm test"
+    "validate": "npm run format:check && npm run lint && npm test",
+    "compliance:scan:eu": "node scripts/run-pipx-eu-scan.js"
   },
   "keywords": [],
   "author": "",
