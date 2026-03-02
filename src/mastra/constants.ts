@@ -611,6 +611,7 @@ export const AGENT_NAMES = {
   ORCHESTRATOR: 'orchestrator',
   EMAIL_IR_ANALYST: 'emailIrAnalyst',
   DEEPFAKE_VIDEO: 'deepfakeVideoAssistant',
+  OUT_OF_SCOPE: 'outOfScope',
 } as const;
 
 // ============================================
@@ -627,6 +628,7 @@ export const AGENT_IDS = {
   ORCHESTRATOR: 'orchestrator-agent',
   EMAIL_IR_ANALYST: 'email-ir-analyst',
   DEEPFAKE_VIDEO: 'deepfake-video-agent',
+  OUT_OF_SCOPE: 'out-of-scope-agent',
 } as const;
 
 /** Short confirmation/selection patterns for orchestrator Scenario A (route to same agent). */
@@ -1050,6 +1052,50 @@ export const MESSAGING_GUIDELINES = SAFE_COMMUNICATION.MESSAGING;
 export const MESSAGING_GUIDELINES_PROMPT_FRAGMENT = `- NEVER use: ${MESSAGING_GUIDELINES.BLACKLIST_WORDS.join(', ')}`;
 
 // ============================================
+// GDPR DATA GOVERNANCE
+// ============================================
+
+/**
+ * GDPR compliance configuration for data retention, audit logging,
+ * and data subject rights (Art. 15-17, 30, 33-34).
+ *
+ * Technical infrastructure — does NOT replace legal obligations.
+ */
+export const GDPR = {
+  /** Data retention periods (days). After expiry, data is eligible for auto-deletion. */
+  RETENTION_DAYS: {
+    CAMPAIGN_DATA: 365, // Phishing/smishing simulation data
+    USER_ACTIVITY: 180, // User interaction logs
+    AUDIT_LOGS: 730, // Audit trail (2 years — regulatory minimum)
+    KV_CONTENT: 365, // Generated content in KV
+    SESSION_DATA: 90, // Chat/thread session data
+  },
+
+  /** Audit action types for data_access_audit table */
+  AUDIT_ACTIONS: ['READ', 'CREATE', 'UPDATE', 'DELETE', 'EXPORT'] as const,
+
+  /** Data categories tracked for Art. 30 records of processing */
+  DATA_CATEGORIES: [
+    'USER_PII', // Names, emails, phone numbers
+    'CAMPAIGN_DATA', // Phishing/smishing simulation content
+    'TRAINING_DATA', // Microlearning content
+    'ANALYTICS', // User behavior / click data
+    'AI_GENERATED', // AI model outputs
+  ] as const,
+
+  /** Paths that involve personal data processing (for audit middleware) */
+  PERSONAL_DATA_PATHS: [
+    '/api/user',
+    '/api/target-group',
+    '/api/assign',
+    '/api/upload',
+  ] as const,
+} as const;
+
+export type GdprAuditAction = (typeof GDPR.AUDIT_ACTIONS)[number];
+export type GdprDataCategory = (typeof GDPR.DATA_CATEGORIES)[number];
+
+// ============================================
 // STRUCTURED ERROR CODES
 // ============================================
 
@@ -1106,6 +1152,13 @@ export const ERROR_CODES = {
   // Internal errors (INT)
   INTERNAL_UNEXPECTED: 'ERR_INT_001',
   INTERNAL_CONFIG: 'ERR_INT_002',
+
+  // GDPR / Data Processing errors (GDPR)
+  GDPR_OPERATION_FAILED: 'ERR_GDPR_000',
+  GDPR_EXPORT_FAILED: 'ERR_GDPR_001',
+  GDPR_DELETE_FAILED: 'ERR_GDPR_002',
+  GDPR_AUDIT_WRITE_FAILED: 'ERR_GDPR_003',
+  GDPR_USER_NOT_FOUND: 'ERR_GDPR_004',
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];

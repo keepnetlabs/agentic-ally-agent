@@ -14,14 +14,14 @@ Agentic Ally is built on the **Mastra** framework and deployed on **Cloudflare W
 ┌──────────────────────────────────────────────────────┐
 │  Orchestration Layer (Router & Decision Maker)       │
 │  • Analyzes User Intent (NLP)                        │
-│  • Routes to 8 Specialist Agents                     │
+│  • Routes to 9 Specialist Agents                     │
 └────────────────────┬─────────────────────────────────┘
                      │
-     ┌───────┬───────┼───────┬───────┬───────┐
-     ▼       ▼       ▼       ▼       ▼       ▼
-  MICRO  PHISH  SMISH  POLICY USER   EMAIL   VISHING
- LEARNING  EMAIL  SMS   RAG    INFO    IR     CALL
-   AGENT   AGENT  AGENT AGENT  AGENT  AGENT   AGENT
+     ┌───────┬───────┬───────┬───────┬───────┬───────┐
+     ▼       ▼       ▼       ▼       ▼       ▼       ▼
+  MICRO  PHISH  SMISH  POLICY USER   EMAIL   VISHING  OUT-OF-
+ LEARNING  EMAIL  SMS   RAG    INFO    IR     CALL    SCOPE
+   AGENT   AGENT  AGENT AGENT  AGENT  AGENT   AGENT   AGENT
      │       │      │     │      │      │       │
      └───────┴──────┴─────┴──────┴──────┴───────┘
                 │
@@ -81,6 +81,14 @@ DEFAULT:             100 req/min
 **Response headers:**
 `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`
 
+### GDPR Audit Middleware (`gdpr-audit.ts`)
+
+Fire-and-forget audit for personal data endpoints (GDPR Art. 30). Runs **after** the handler — never blocks the response.
+
+- Only triggers on paths in `GDPR.PERSONAL_DATA_PATHS` (`/api/user`, `/api/target-group`, `/api/assign`, `/api/upload`)
+- Logs action, resource type, and company to `data_access_audit` (D1) with SHA-256 hash-chain
+- Zero overhead on non-personal-data paths
+
 ---
 
 ## 2. Core Services Layer (The Foundation)
@@ -88,10 +96,11 @@ DEFAULT:             100 req/min
 Located in `src/mastra/services/`, these services power the entire application.
 
 ### Key Components:
-1.  **KV Service:** Abstraction layer for Cloudflare KV. Handles atomic writes, retries (`KV_MAX_RETRIES`), and key namespace management.
+1.  **KV Service:** Abstraction layer for Cloudflare KV. Handles atomic writes, retries (`KV_MAX_RETRIES`), key namespace management, and TTL-based data retention.
 2.  **Error Service:** Centralized error handling. Captures exceptions, formats them for logging, and determines HTTP status codes. See [Error Handling Pattern](#error-handling-pattern) below.
 3.  **Health Service:** Diagnostics. Checks connectivity to OpenAI, Cloudflare KV, and other dependencies.
 4.  **Autonomous Service:** The "Proactive Brain". Manages the scheduling and execution of background security checks.
+5.  **GDPR Service:** Audit logging (D1), deletion request tracking, data export helpers, retention policy. Includes SHA-256 hash-chain for tamper-evident records (EU AI Act Art. 12).
 
 ### Error Handling Pattern
 
@@ -163,6 +172,12 @@ logErrorInfo(logger, 'warn', 'Message', errorInfo);
 ### 6. Email IR Analyst (The Incident Responder)
 - **Role:** Automated incident response for suspicious emails.
 - **Usage:** Performs header/body/intent analysis, triages the email, and generates a SOC-ready report.
+
+### 7. Out-of-Scope Agent (The Boundary Guard)
+- **Role:** Polite scope boundary. Handles requests outside the security awareness domain.
+- **Usage:** Orchestrator routes here when the request is clearly out-of-scope (billing, IT helpdesk, general knowledge, etc.).
+- **Behavior:** Does NOT answer the question. Acknowledges limitation, lists what the system CAN help with, suggests contacting support.
+- **Safety:** Prevents hallucination and misleading responses on topics the system has no verified information for.
 
 ---
 

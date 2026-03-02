@@ -1,5 +1,11 @@
 /**
  * Smishing Editor Tool
+ *
+ * EU AI Act (Art. 9) Tool Risk Metadata:
+ * - riskLevel: limited
+ * - rationale: Edits existing smishing template; content modification
+ * @see docs/AI_COMPLIANCE_INVENTORY.md
+ *
  * Allows editing and customizing existing smishing templates via natural language instructions
  * Supports: text updates, tone changes, language translation, landing page edits
  */
@@ -11,7 +17,8 @@ import { errorService } from '../../services/error-service';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
 import { ProductService } from '../../services/product-service';
 import { summarizeForLog } from '../../utils/core/log-redaction-utils';
-import { smishingEditorSchema } from './smishing-editor-schemas';
+import { smishingEditorSchema, smishingEditorOutputSchema } from './smishing-editor-schemas';
+import { validateToolResult } from '../../utils/tool-result-validation';
 import {
   loadSmishingContent,
   parseAndValidateSmsResponse,
@@ -232,7 +239,7 @@ export const smishingEditorTool = createTool({
       if (editedSms) updates.push('SMS');
       if (editedLanding?.pages) updates.push('Landing Page');
 
-      return {
+      const toolResult = {
         success: true,
         status: 'success',
         data: {
@@ -241,6 +248,12 @@ export const smishingEditorTool = createTool({
           message: `OK Updated: ${updates.join(' + ')}\n${editedSms?.summary || ''}${editedLanding?.summary ? '\n' + editedLanding.summary : ''}`,
         },
       };
+      const validation = validateToolResult(toolResult, smishingEditorOutputSchema, 'smishing-editor');
+      if (!validation.success) {
+        logErrorInfo(logger, 'error', 'Smishing editor result validation failed', validation.error);
+        return createToolErrorResponse(validation.error);
+      }
+      return validation.data;
     } catch (error) {
       const err = normalizeError(error);
       const errorInfo = errorService.external(err.message, {

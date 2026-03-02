@@ -1,8 +1,12 @@
 import { z } from 'zod';
+import { isSafeId } from '../../utils/core/id-utils';
 import { landingPageResponseSchema } from './phishing-editor-schemas';
 
 export const smishingEditorSchema = z.object({
-  smishingId: z.string().describe('ID of the existing smishing template to edit'),
+  smishingId: z
+    .string()
+    .describe('ID of the existing smishing template to edit')
+    .refine(isSafeId, { message: 'Invalid smishingId format.' }),
   editInstruction: z
     .string()
     .describe('Natural language instruction for editing (e.g. "Make it shorter", "Translate to German")'),
@@ -29,3 +33,18 @@ export const smsResponseSchema = z.object({
 });
 
 export { landingPageResponseSchema };
+
+/** Output schema for smishing-editor tool result validation */
+export const smishingEditorOutputSchema = z.object({
+  success: z.boolean(),
+  status: z.string().optional(),
+  data: z
+    .object({
+      smishingId: z.string(),
+      summary: z.string().optional(),
+      message: z.string(),
+    })
+    .optional(),
+  message: z.string().optional(),
+  error: z.string().optional(),
+});

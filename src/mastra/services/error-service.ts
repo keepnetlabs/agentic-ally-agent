@@ -43,6 +43,9 @@ export enum ErrorCategory {
 
   // Internal/unexpected errors
   INTERNAL = 'INTERNAL',
+
+  // GDPR data processing errors (export, delete, audit)
+  DATA_PROCESSING = 'DATA_PROCESSING',
 }
 
 /**
@@ -284,6 +287,37 @@ export const errorService = {
   },
 
   /**
+   * GDPR data processing errors (export, deletion, audit)
+   * @param message - Error message
+   * @param details - Additional context (e.g., { userId, operation: 'delete' })
+   * @returns ErrorInfo object
+   *
+   * @example
+   * const error = errorService.dataProcessing('User data export failed', { userId: '123' });
+   */
+  dataProcessing: (message: string, details?: Record<string, unknown>, errorCode?: ErrorCode): ErrorInfo => {
+    const operation = details?.operation as string | undefined;
+    const nextStep = operation
+      ? `Retry the ${operation} operation or inform user that data processing request could not be completed.`
+      : 'Retry the data processing operation or inform user that the request could not be completed.';
+
+    const code = errorCode || ERROR_CODES.GDPR_OPERATION_FAILED;
+    const errorInfo: ErrorInfo = {
+      code,
+      message,
+      category: ErrorCategory.DATA_PROCESSING,
+      retryable: true,
+      suggestion: 'The data processing request could not be completed. Please try again.',
+      nextStep,
+      details,
+      timestamp: Date.now(),
+    };
+
+    logger.warn('Data processing error', { code, message });
+    return errorInfo;
+  },
+
+  /**
    * Internal/unexpected errors
    * @param message - Error message
    * @param details - Additional context (e.g., { stack, originalError })
@@ -335,6 +369,7 @@ export const errorService = {
       [ErrorCategory.TIMEOUT]: errorService.timeout,
       [ErrorCategory.RATE_LIMIT]: errorService.rateLimit,
       [ErrorCategory.INTERNAL]: errorService.internal,
+      [ErrorCategory.DATA_PROCESSING]: errorService.dataProcessing,
     };
 
     const handler = categoryMap[category] || errorService.internal;

@@ -1,7 +1,11 @@
 import { z } from 'zod';
+import { isSafeId } from '../../utils/core/id-utils';
 
 export const phishingEditorSchema = z.object({
-  phishingId: z.string().describe('ID of the existing phishing template to edit'),
+  phishingId: z
+    .string()
+    .describe('ID of the existing phishing template to edit')
+    .refine(isSafeId, { message: 'Invalid phishingId format.' }),
   editInstruction: z
     .string()
     .describe(
@@ -45,3 +49,19 @@ export type LandingPageInput = {
   edited?: boolean;
   summary?: string;
 };
+
+/** Output schema for phishing-editor tool result validation */
+export const phishingEditorOutputSchema = z.object({
+  success: z.boolean(),
+  status: z.string().optional(),
+  data: z
+    .object({
+      phishingId: z.string(),
+      subject: z.string().optional(),
+      summary: z.string(),
+      message: z.string(),
+    })
+    .optional(),
+  message: z.string().optional(),
+  error: z.string().optional(),
+});

@@ -23,6 +23,7 @@ import { postProcessPhishingLandingHtml } from '../../utils/content-processors/p
 vi.mock('../../services/kv-service');
 vi.mock('../../utils/core/id-utils', () => ({
   uuidv4: vi.fn(() => 'msg-phish'),
+  isSafeId: vi.fn(() => true),
 }));
 vi.mock('../../utils/core/logger', () => ({
   getLogger: vi.fn(() => ({

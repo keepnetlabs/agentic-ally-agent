@@ -118,9 +118,9 @@ describe('listHeyGenAvatarsTool', () => {
       expect((result as any).avatars[0].avatar_id).toBe('av-1');
     });
 
-    it('should limit to MAX_AVATARS (50)', async () => {
+    it('should limit to MAX_AVATARS (100)', async () => {
       process.env.HEYGEN_API_KEY = 'test-key';
-      const manyAvatars = Array.from({ length: 55 }, (_, i) => ({
+      const manyAvatars = Array.from({ length: 105 }, (_, i) => ({
         avatar_id: `av-${i}`,
         avatar_name: `Avatar ${i}`,
       }));
@@ -133,7 +133,7 @@ describe('listHeyGenAvatarsTool', () => {
 
       const result = await listHeyGenAvatarsTool.execute!({ context: {} } as any);
 
-      expect((result as any).avatars).toHaveLength(50);
+      expect((result as any).avatars).toHaveLength(100);
     });
 
     it('should emit avatar selection signal when writer is provided', async () => {

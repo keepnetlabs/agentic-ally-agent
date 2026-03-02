@@ -1,6 +1,6 @@
 # Agentic Ally - Project Guide
 
-**Last Updated:** February 14, 2026
+**Last Updated:** March 2, 2026
 
 > ⚠️ **IMPORTANT:** The documentation has been moved to the `docs/` directory for better organization.
 
@@ -18,6 +18,8 @@
 | **[DEPLOYMENT.md](./docs/DEPLOYMENT.md)** | Cloudflare deploy, D1 migrations (Active Learning). |
 | **[AGENTIC_ROADMAP.md](./docs/AGENTIC_ROADMAP.md)** | Active Learning (✅ done), Critic Agent, Agent Swarm. |
 | **[AI_COMPLIANCE_INVENTORY.md](./docs/AI_COMPLIANCE_INVENTORY.md)** | EU AI Act inventory, tool risk classification. |
+| **[AI_COMPLIANCE_PROGRESS.md](./docs/AI_COMPLIANCE_PROGRESS.md)** | AI compliance done vs planned. |
+| **[EU_AI_ACT_WORKFLOW.md](./docs/EU_AI_ACT_WORKFLOW.md)** | Süreç, raporlama, araçlar (eu-ai-act-scanner, ActProof, Lexsight). |
 
 ---
 
@@ -60,8 +62,9 @@ curl -X POST http://localhost:8000/chat \
 
 ```
 src/mastra/
-├── agents/             # Microlearning, Phishing, Smishing, UserInfo, Policy, Vishing, Email IR, Orchestrator
-├── services/           # Core Logic (Autonomous, KV, Health, Error)
+├── agents/             # Microlearning, Phishing, Smishing, UserInfo, Policy, Vishing, Email IR, Orchestrator, Out-of-Scope
+├── services/           # Core Logic (Autonomous, KV, Health, Error, GDPR)
+├── middleware/          # Auth, Rate Limit, Context Storage, Security Headers, GDPR Audit
 ├── tools/              # 20+ Tools (Generation, Analysis, Inbox)
 ├── workflows/          # Parallel Execution Flows
 └── constants.ts        # CENTRAL CONFIGURATION (Edit this, no magic numbers)

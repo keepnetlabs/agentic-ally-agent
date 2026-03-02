@@ -1,3 +1,11 @@
+/**
+ * smishing-workflow-executor-tool
+ *
+ * EU AI Act (Art. 9) Tool Risk Metadata:
+ * - riskLevel: limited
+ * - rationale: Generates smishing SMS + landing page simulation content
+ * @see docs/AI_COMPLIANCE_INVENTORY.md
+ */
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { createSmishingWorkflow } from '../../workflows/create-smishing-workflow';

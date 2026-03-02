@@ -1,6 +1,12 @@
 /**
  * Initiate Vishing Call Tool
  *
+ * EU AI Act (Art. 9) Tool Risk Metadata:
+ * - riskLevel: limited
+ * - rationale: Initiates real voice call; target selection affects user
+ * - humanOversight: Chat confirmation before execution
+ * @see docs/AI_COMPLIANCE_INVENTORY.md
+ *
  * Triggers an outbound phone call via ElevenLabs Twilio integration.
  * The tool dynamically overrides the agent's system prompt and first message
  * using `conversation_initiation_client_data` to create scenario-specific

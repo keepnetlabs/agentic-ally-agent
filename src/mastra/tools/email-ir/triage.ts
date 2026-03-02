@@ -1,3 +1,11 @@
+/**
+ * email-ir-triage-tool
+ *
+ * EU AI Act (Art. 9) Tool Risk Metadata:
+ * - riskLevel: limited
+ * - rationale: Email IR triage; classifies suspicious emails
+ * @see docs/AI_COMPLIANCE_INVENTORY.md
+ */
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { emailIRAnalyst } from '../../agents/email-ir-analyst';

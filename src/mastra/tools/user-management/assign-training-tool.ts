@@ -9,7 +9,7 @@
  */
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
-import { uuidv4 } from '../../utils/core/id-utils';
+import { isSafeId, uuidv4 } from '../../utils/core/id-utils';
 import { getRequestContext } from '../../utils/core/request-storage';
 import { getLogger } from '../../utils/core/logger';
 import { withRetry } from '../../utils/core/resilience-utils';
@@ -20,7 +20,6 @@ import { ERROR_MESSAGES, API_ENDPOINTS, KV_NAMESPACES } from '../../constants';
 import { errorService } from '../../services/error-service';
 import { validateToolResult } from '../../utils/tool-result-validation';
 import { extractCompanyIdFromTokenExport } from '../../utils/core/policy-fetcher';
-import { isSafeId } from '../../utils/core/id-utils';
 import { formatToolSummary } from '../../utils/core/tool-summary-formatter';
 import { KVService } from '../../services/kv-service';
 

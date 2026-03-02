@@ -56,11 +56,14 @@ export class KVService {
     return `https://api.cloudflare.com/client/v4/accounts/${this.accountId}/storage/kv/namespaces/${this.namespaceId}/values/${key}`;
   }
 
-  async put(key: string, value: any): Promise<boolean> {
+  async put(key: string, value: any, options?: { ttlSeconds?: number }): Promise<boolean> {
     try {
       const timer = startTimer();
       return await withRetry(async () => {
-        const url = this.getKVUrl(key);
+        let url = this.getKVUrl(key);
+        if (options?.ttlSeconds && options.ttlSeconds > 0) {
+          url += `?expiration_ttl=${options.ttlSeconds}`;
+        }
         const body = typeof value === 'string' ? value : JSON.stringify(value);
         const headers = this.getHeaders();
 

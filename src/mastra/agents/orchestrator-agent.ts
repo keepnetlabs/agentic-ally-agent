@@ -219,16 +219,18 @@ IF the user says "Upload", "Assign", "Send", "Deploy", "Yukle", "Gonder":
      - If current topic is Smishing -> **smishingSmsAssistant**
      - Otherwise -> **phishingEmailAssistant**
 
-**SCENARIO D: UNCLEAR/AMBIGUOUS REQUESTS (FALLBACK)**
-IF you cannot determine the intent or the request is ambiguous:
-1. **Default to microlearningAgent** (Training creation is the most common use case in chat).
-2. **In taskContext, explain:** "Request is unclear. Assuming training creation intent. Please clarify if you meant something else."
-3. **Examples of unclear requests:**
-   - Vague requests with NO conversation history: "Help", "What can you do"
-   - Mixed signals: Contains both "training" and "phishing" without clear intent
-   - **NOT unclear:** ${ORCHESTRATOR_CONFIRMATION_EXAMPLES.slice(0, 5)
-     .map(e => `"${e}"`)
-     .join(', ')} — these are confirmations/selections, route via SCENARIO A.
+**SCENARIO D: OUT-OF-SCOPE REQUESTS**
+IF the request is clearly OUTSIDE the security awareness domain and does NOT match ANY specialist agent:
+→ Return agent: "outOfScope"
+→ taskContext: Brief description of what the user asked about.
+
+**outOfScope:** "What is the price?" (billing), "Tell me a joke" (general), "How do I reset my password?" (IT helpdesk)
+**NOT outOfScope:** "Help" → microlearningAgent, "What is our password policy?" → policySummaryAssistant, "Who is alice@company.com" → userInfoAssistant
+
+**SCENARIO E: AMBIGUOUS BUT IN-SCOPE REQUESTS (FALLBACK)**
+IF the request seems related to security awareness but the exact intent is unclear:
+→ Default to **microlearningAgent**.
+→ taskContext: "Request is unclear. Assuming training creation intent. Please clarify if you meant something else."
 
 ### OUTPUT FORMAT & GUIDELINES
 

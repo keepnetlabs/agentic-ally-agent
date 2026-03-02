@@ -1,6 +1,14 @@
+/**
+ * upload-training-tool
+ *
+ * EU AI Act (Art. 9) Tool Risk Metadata:
+ * - riskLevel: limited
+ * - rationale: Uploads training content to platform
+ * @see docs/AI_COMPLIANCE_INVENTORY.md
+ */
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
-import { uuidv4 } from '../../utils/core/id-utils';
+import { isSafeId, uuidv4 } from '../../utils/core/id-utils';
 import { getRequestContext } from '../../utils/core/request-storage';
 import { getLogger } from '../../utils/core/logger';
 import { withRetry } from '../../utils/core/resilience-utils';
@@ -38,7 +46,10 @@ export const uploadTrainingTool = createTool({
   description:
     'Fetches the microlearning content by ID, prepares it, and uploads it to the platform via the SCORM worker.',
   inputSchema: z.object({
-    microlearningId: z.string().describe('The ID of the microlearning content to upload'),
+    microlearningId: z
+      .string()
+      .describe('The ID of the microlearning content to upload')
+      .refine(isSafeId, { message: 'Invalid microlearningId format.' }),
   }),
   outputSchema: uploadTrainingOutputSchema,
   execute: async ({ context, writer }) => {

@@ -1,6 +1,11 @@
 /**
  * Generate Deepfake Video Tool
  *
+ * EU AI Act (Art. 9) Tool Risk Metadata:
+ * - riskLevel: limited
+ * - rationale: Generates deepfake video (HeyGen); visual content
+ * @see docs/AI_COMPLIANCE_INVENTORY.md
+ *
  * Triggers video generation via HeyGen Create Video V2 API.
  * Builds a structured scene with character (avatar), voice (text-to-speech),
  * and background, then returns a video_id — HeyGen renders asynchronously.

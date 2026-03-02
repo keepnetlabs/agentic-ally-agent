@@ -1,3 +1,11 @@
+/**
+ * email-ir-fetch-email-tool
+ *
+ * EU AI Act (Art. 9) Tool Risk Metadata:
+ * - riskLevel: limited
+ * - rationale: Email IR analysis; fetches and processes email data
+ * @see docs/AI_COMPLIANCE_INVENTORY.md
+ */
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { EmailIREmailDataSchema } from '../../types/email-ir';

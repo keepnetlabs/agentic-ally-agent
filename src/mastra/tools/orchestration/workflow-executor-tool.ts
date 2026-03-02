@@ -1,6 +1,11 @@
 /**
  * Workflow Executor Tool - Main Orchestrator
  *
+ * EU AI Act (Art. 9) Tool Risk Metadata:
+ * - riskLevel: limited
+ * - rationale: Generates microlearning training module content
+ * @see docs/AI_COMPLIANCE_INVENTORY.md
+ *
  * Routes microlearning requests to appropriate workflow pipelines:
  *
  * CREATE-MICROLEARNING Workflow:

@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx wrangler d1 execute agentic-ally-memory --local --file=./migrations/0003_gdpr_audit.sql)",
+      "Bash(npx wrangler d1 execute agentic-ally-memory --local --command=\"SELECT name FROM sqlite_master WHERE type=''table'' ORDER BY name;\")",
+      "Bash(npx wrangler d1 execute agentic-ally-memory --local --command=\"INSERT INTO data_access_audit \\(id, company_id, user_id, action, resource_type, resource_id, details, initiated_by\\) VALUES \\(''test-1'', ''company-demo'', ''user-42'', ''READ'', ''USER_PII'', ''res-123'', ''{\"\"path\"\":\"\"/api/user\"\"}'', ''user''\\);\")",
+      "Bash(npx wrangler d1 execute agentic-ally-memory --local --command=\"SELECT * FROM data_access_audit;\")",
+      "Bash(npx wrangler d1 execute agentic-ally-memory --local --command=\"DELETE FROM data_access_audit WHERE id=''test-1'';\")",
+      "Bash(npx wrangler d1 execute agentic-ally-memory --local --file=./migrations/0004_audit_integrity_hash.sql)",
+      "Bash(npx wrangler d1 execute agentic-ally-memory --local --command=\"PRAGMA table_info\\(data_access_audit\\);\")",
+      "Bash(npx wrangler d1 execute agentic-ally-memory --local --command=\"INSERT INTO data_access_audit \\(id, company_id, user_id, action, resource_type, resource_id, details, initiated_by, created_at, integrity_hash, prev_hash\\) VALUES \\(''test-hash-1'', ''c1'', NULL, ''READ'', ''USER_PII'', NULL, NULL, ''system'', ''2026-03-02T22:50:00Z'', ''abc123hash'', ''GENESIS''\\);\")",
+      "Bash(npx wrangler d1 execute agentic-ally-memory --local --command=\"SELECT id, integrity_hash, prev_hash FROM data_access_audit WHERE id = ''test-hash-1'';\")",
+      "Bash(npx wrangler d1 execute agentic-ally-memory --local --command=\"DELETE FROM data_access_audit WHERE id = ''test-hash-1'';\")"
+    ]
+  }
+}

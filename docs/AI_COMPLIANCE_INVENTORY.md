@@ -8,7 +8,7 @@
 
 ## 1. AI System Inventory
 
-### 1.1 Agent List (8 Agents)
+### 1.1 Agent List (9 Agents)
 
 | Agent | Role | Data Flow | Risk Pre-Assessment |
 |-------|------|-----------|---------------------|
@@ -20,6 +20,7 @@
 | **Policy** | RAG-based policy summary | Policy docs, Product API | Minimal |
 | **Vishing Call** | Voice phishing (ElevenLabs) | Product API, ElevenLabs | Limited |
 | **Email IR Analyst** | Suspicious email analysis, IR report | Product API (email fetch) | Limited |
+| **Out-of-Scope** | Scope boundary, polite refusal | Prompt → LLM → Static-like response | Minimal |
 
 ### 1.2 Tool List and Risk Classification (EU AI Act Art. 9)
 
@@ -110,34 +111,65 @@
 
 ## 3. Current Compliance Status
 
+### EU AI Act
+
 | EU AI Act Article | Requirement | Status |
 |-------------------|-------------|--------|
 | **Art. 9** | Tool call risk classification | ✅ Documented in this inventory |
 | **Art. 10** | PII tokenization, data governance | ⚠️ maskSensitiveField, log-redaction exist; pre-LLM PII check missing |
 | **Art. 11** | Technical documentation | ✅ ARCHITECTURE.md, WORKFLOWS.md, DATA_MODEL.md |
-| **Art. 12** | Tamper-evident records | ❌ Standard logging; no hash-chain |
+| **Art. 12** | Tamper-evident records | ✅ SHA-256 hash-chain on `data_access_audit` + `verifyAuditChain()` integrity check |
 | **Art. 13** | Explainability | ⚠️ PBI 44872 in design phase |
 | **Art. 14** | Human oversight | ✅ ApprovalGated, Microlearning state machine |
 | **Art. 15** | Prompt injection, security | ⚠️ Input validation (isSafeId); guardrails to be evaluated |
+
+### GDPR
+
+| GDPR Article | Requirement | Status | Implementation |
+|--------------|-------------|--------|----------------|
+| **Art. 13-14** | Privacy policy / transparency | ❌ | Requires legal/DPO |
+| **Art. 15** | Right of access (data export) | ✅ Technical | `gdpr-service.ts: buildResourceKeyPrefixes()` + KVService |
+| **Art. 17** | Right to erasure (deletion) | ✅ Technical | `gdpr-service.ts: createDeletionRequest()`, `completeDeletionRequest()` |
+| **Art. 28** | Data Processing Agreements | ❌ | Requires legal — OpenAI, HeyGen, ElevenLabs |
+| **Art. 30** | Records of processing | ✅ Technical | `data_access_audit` D1 table + `gdprAuditMiddleware` |
+| **Art. 33-34** | Breach notification | ⚠️ Infra ready | Audit log infrastructure enables detection; procedure doc needed |
+| **Art. 35** | DPIA | ❌ | Requires DPO — deepfake, phishing, vishing assessment |
+
+### GDPR Technical Infrastructure
+
+| Component | File | Purpose |
+|-----------|------|---------|
+| D1 Migration | `migrations/0003_gdpr_audit.sql` | `data_access_audit` + `data_deletion_requests` tables |
+| GDPR Service | `src/mastra/services/gdpr-service.ts` | Audit log, deletion tracking, data export, retention |
+| Audit Middleware | `src/mastra/middleware/gdpr-audit.ts` | Auto audit for personal data endpoints (mounted in middleware chain) |
+| GDPR Constants | `src/mastra/constants.ts` → `GDPR` | Retention days, data categories, personal data paths |
+| Error Codes | `src/mastra/constants.ts` → `ERR_GDPR_*` | 5 GDPR-specific error codes |
+| Error Category | `src/mastra/services/error-service.ts` | `DATA_PROCESSING` category + `dataProcessing()` factory |
+| KV TTL | `src/mastra/services/kv-service.ts` | `put(key, value, { ttlSeconds })` for data retention |
+| Hash-Chain Migration | `migrations/0004_audit_integrity_hash.sql` | `integrity_hash` + `prev_hash` columns on `data_access_audit` |
+| Hash-Chain Functions | `src/mastra/services/gdpr-service.ts` | `computeHash()`, `buildHashPayload()`, `verifyAuditChain()` |
 
 ---
 
 ## 4. Next Steps
 
-### Phase 1 (Completed)
-- [x] AI system inventory
-- [x] Tool risk classification
+See [AI_COMPLIANCE_PROGRESS.md](./AI_COMPLIANCE_PROGRESS.md) for full progress tracker.
 
-### Phase 2 (Recommended)
-- [ ] Clausi scan: `clausi scan . -r EU-AIA`
-- [ ] Pre-LLM PII check (Critic Agent / pre-LLM guard)
-- [ ] Explainability (PBI 44872) completion
-- [ ] Tamper-evident log evaluation
+### Pending
 
-### Phase 3 (Ongoing)
-- [ ] CI/CD: Clausi or Rigour PR integration
-- [ ] Quarterly gap analysis
-- [ ] Evidence pack updates
+| Task | Effort | Blocker |
+|------|--------|---------|
+| ~~Deploy migrations 0003 + 0004 to prod~~ | Low | ✅ Done |
+| Explainability (PBI 44872) | Medium | — |
+| Privacy Policy (Art. 13-14) | Medium | Legal/DPO |
+| DPIA (Art. 35) | High | DPO |
+| DPA with processors (Art. 28) | Medium | Legal |
+
+### Ongoing
+
+- CI/CD: eu-ai-act-scanner or Rigour PR integration
+- Quarterly gap analysis
+- Evidence pack updates
 
 ---
 
@@ -145,6 +177,8 @@
 
 | Document | Content |
 |----------|---------|
+| [AI_COMPLIANCE_PROGRESS.md](./AI_COMPLIANCE_PROGRESS.md) | Done vs planned — progress tracker |
+| [EU_AI_ACT_WORKFLOW.md](./EU_AI_ACT_WORKFLOW.md) | Süreç, raporlama, araçlar |
 | [HANDOVER.md](./HANDOVER.md) | Critical config, timeout, thread ID |
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | 8-agent system, state machine |
 | [DATA_MODEL.md](./DATA_MODEL.md) | KV schema, D1 tables |

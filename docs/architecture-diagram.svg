@@ -13,6 +13,7 @@
       .box-header-smishing { fill: #16a085; } /* Teal */
       .box-header-emailir { fill: #2980b9; }  /* Dark Blue */
       .box-header-vishing { fill: #c0392b; }  /* Dark Red */
+      .box-header-outofscope { fill: #95a5a6; } /* Slate - Boundary Guard */
 
       .workflow-box { fill: #ffffff; stroke-width: 2; }
       .workflow-box-ml { stroke: #3498db; }
@@ -41,6 +42,7 @@
     <marker id="arrowhead-smishing" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><polygon points="0 0, 10 3, 0 6" fill="#16a085" /></marker>
     <marker id="arrowhead-emailir" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><polygon points="0 0, 10 3, 0 6" fill="#2980b9" /></marker>
     <marker id="arrowhead-vishing" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><polygon points="0 0, 10 3, 0 6" fill="#c0392b" /></marker>
+    <marker id="arrowhead-outofscope" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><polygon points="0 0, 10 3, 0 6" fill="#95a5a6" /></marker>
   </defs>
 
   <!-- Title -->
@@ -94,13 +96,20 @@
   <rect class="box" x="300" y="230" width="700" height="60" rx="5"/>
   <rect fill="#9b59b6" x="300" y="230" width="700" height="25" rx="5"/>
   <text class="text-header" x="650" y="247" text-anchor="middle">Orchestrator Agent (The Router)</text>
-  <text class="text-normal" x="350" y="270">Analyzes Intent &amp; History → Routes to 7 Specialist Agents</text>
+  <text class="text-normal" x="350" y="270">Analyzes Intent &amp; History → Routes to 8 Specialist Agents (incl. Out-of-Scope Guard)</text>
+
+  <!-- Out-of-Scope Agent (Guardrail - below orchestrator) -->
+  <rect class="box" x="500" y="305" width="300" height="55" rx="5"/>
+  <rect class="box-header-outofscope" x="500" y="305" width="300" height="22" rx="5"/>
+  <text class="text-header" x="650" y="320" text-anchor="middle">Out-of-Scope Agent (Boundary Guard)</text>
+  <text class="text-small" x="510" y="340">Polite refusal when request is outside security awareness domain. Prevents hallucination.</text>
 
   <!-- Routing Arrows to Main Agents (fan out from center) -->
   <path class="arrow-colored" stroke="#3498db" marker-end="url(#arrowhead-ml)" d="M 650 290 L 250 340"/>     <!-- ML -->
   <path class="arrow-colored" stroke="#e74c3c" marker-end="url(#arrowhead-phishing)" d="M 650 290 L 750 340"/> <!-- Phishing -->
   <path class="arrow-colored" stroke="#8e44ad" marker-end="url(#arrowhead-policy)" d="M 650 290 L 1250 340"/> <!-- Policy -->
   <path class="arrow-colored" stroke="#27ae60" marker-end="url(#arrowhead-userinfo)" d="M 650 290 L 1750 340"/> <!-- UserInfo -->
+  <path class="arrow-colored" stroke="#95a5a6" marker-end="url(#arrowhead-outofscope)" d="M 650 290 L 650 305"/> <!-- Out-of-Scope -->
 
   <!-- Labels -->
   <text x="250" y="325" class="arrow-label" fill="#3498db">Microlearning</text>
@@ -282,7 +291,7 @@
   <rect class="box" x="450" y="1020" width="1100" height="50" rx="5"/>
   <rect class="box-header" x="450" y="1020" width="1100" height="25" rx="5"/>
   <text class="text-header" x="1000" y="1037" text-anchor="middle">Return Response (Streamed)</text>
-  <text class="text-normal" x="500" y="1060">Learning URL | Phishing/Smishing Links | Policy HTML | Risk Report | Vishing Summary | Email IR Report</text>
+  <text class="text-normal" x="500" y="1060">Learning URL | Phishing/Smishing Links | Policy HTML | Risk Report | Vishing Summary | Email IR Report | Out-of-Scope Message</text>
   
   <!-- Storage to Response -->
   <path class="arrow" d="M 1000 980 L 1000 1020"/>
@@ -296,12 +305,13 @@
   <text x="120" y="1140" font-size="16" font-weight="bold" fill="#2c3e50" font-family="sans-serif">Key Features &amp; Capabilities:</text>
 
   <g transform="translate(120, 1170)">
-    <text y="0"  class="text-normal">✓ Orchestrator: NLP-based intent analysis to route between 7 Specialist Agents.</text>
+    <text y="0"  class="text-normal">✓ Orchestrator: NLP-based intent analysis to route between 8 Specialist Agents (incl. Out-of-Scope Guard).</text>
     <text y="20" class="text-normal">✓ Public APIs: /smishing/chat | /vishing/prompt | /vishing/conversations/summary | /email-ir/analyze (direct).</text>
     <text y="40" class="text-normal">✓ Middleware: AsyncLocalStorage, Rate Limiting, Auth.</text>
     <text y="60" class="text-normal">✓ 4-State Machine: Strict checks (Gather -> Summary -> Execute -> Complete) before generation.</text>
     <text y="80" class="text-normal">✓ Smishing: SMS templates + landing pages (department-aware).</text>
     <text y="100" class="text-normal">✓ Vishing: ElevenLabs voice calls with debrief summary.</text>
+    <text y="120" class="text-normal">✓ Out-of-Scope Guard: Polite refusal when request is outside security awareness domain (prevents hallucination).</text>
   </g>
 
   <g transform="translate(700, 1170)">

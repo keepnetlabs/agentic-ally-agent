@@ -342,6 +342,50 @@ describe('AgentRouter', () => {
     });
   });
 
+  describe('Route - Out-of-Scope Handling', () => {
+    it('should return outOfScope when orchestrator classifies request as out-of-scope', async () => {
+      const mockDecision = {
+        agent: AGENT_NAMES.OUT_OF_SCOPE,
+        taskContext: 'User asked about product pricing',
+        reasoning: 'Scenario D: pricing is outside agent capabilities',
+      };
+
+      vi.mocked(withRetry).mockResolvedValue(mockDecision as never);
+
+      const result = await agentRouter.route('What is the price of the product?');
+
+      expect(result.agentName).toBe(AGENT_NAMES.OUT_OF_SCOPE);
+      expect(result.taskContext).toBe('User asked about product pricing');
+    });
+
+    it('should return outOfScope for general knowledge questions', async () => {
+      const mockDecision = {
+        agent: AGENT_NAMES.OUT_OF_SCOPE,
+        taskContext: 'User asked about weather',
+      };
+
+      vi.mocked(withRetry).mockResolvedValue(mockDecision as never);
+
+      const result = await agentRouter.route("What's the weather today?");
+
+      expect(result.agentName).toBe(AGENT_NAMES.OUT_OF_SCOPE);
+    });
+
+    it('should NOT return outOfScope for security training requests', async () => {
+      const mockDecision = {
+        agent: AGENT_NAMES.MICROLEARNING,
+        taskContext: 'Create security awareness training',
+      };
+
+      vi.mocked(withRetry).mockResolvedValue(mockDecision as never);
+
+      const result = await agentRouter.route('Create a phishing awareness training');
+
+      expect(result.agentName).toBe(AGENT_NAMES.MICROLEARNING);
+      expect(result.agentName).not.toBe(AGENT_NAMES.OUT_OF_SCOPE);
+    });
+  });
+
   describe('AgentRoutingResult interface', () => {
     it('should have agentName field', async () => {
       const mockDecision = {

@@ -62,6 +62,7 @@ import { vishingConversationsSummaryHandler } from './routes/vishing-conversatio
 import { smishingChatHandler } from './routes/smishing-chat-route';
 import { emailIRAnalyzeHandler } from './routes/email-ir-route';
 import { deepfakeStatusHandler } from './routes/deepfake-status-route';
+import { auditVerifyHandler } from './routes/audit-verify-route';
 import { isPublicUnauthenticatedPath } from './middleware/public-endpoint-policy';
 
 // Barrel imports - clean organization
@@ -74,6 +75,7 @@ import {
   policySummaryAgent,
   vishingCallAgent,
   deepfakeVideoAgent,
+  outOfScopeAgent,
 } from './agents';
 import {
   errorHandlerMiddleware,
@@ -84,6 +86,7 @@ import {
   bodySizeLimitMiddleware,
   rateLimitMiddleware,
   RATE_LIMIT_TIERS,
+  gdprAuditMiddleware,
   disablePlayground,
   disableSwagger,
 } from './middleware';
@@ -165,6 +168,7 @@ export const mastra = new Mastra({
     policySummaryAssistant: policySummaryAgent,
     vishingCallAssistant: vishingCallAgent,
     deepfakeVideoAssistant: deepfakeVideoAgent,
+    outOfScope: outOfScopeAgent,
     orchestrator: orchestratorAgent,
   },
   logger,
@@ -218,7 +222,13 @@ export const mastra = new Mastra({
      *    - Dependency: contextStorage
      *    - Modifies: ExampleRepo singleton with D1 database instance
      *
-     * 7. disablePlayground & disableSwagger (LAST)
+     * 7. gdprAuditMiddleware (SEVENTH)
+     *    - Purpose: GDPR Art. 30 automatic audit for personal data endpoints
+     *    - Why seventh: Needs companyId (from contextStorage) and D1 (from env)
+     *    - Dependency: contextStorage, injectD1Database
+     *    - Fire-and-forget: does NOT block the response
+     *
+     * 8. disablePlayground & disableSwagger (LAST)
      *    - Purpose: Modify OpenAPI/Swagger documentation
      *    - Why last: Applied after all service setup is complete
      *    - Dependency: All previous middleware
@@ -245,6 +255,7 @@ export const mastra = new Mastra({
         skip: c => c.req.path === '/health', // Skip health checks from rate limiting
       }),
       injectD1Database,
+      gdprAuditMiddleware, // GDPR Art. 30 — automatic audit for personal data endpoints (requires contextStorage + D1)
       disablePlayground,
       disableSwagger,
     ],
@@ -866,6 +877,12 @@ export const mastra = new Mastra({
             );
           }
         },
+      }),
+
+      // ─── Audit Chain Verification (EU AI Act Art. 12) ───
+      registerApiRoute('/audit/verify', {
+        method: 'GET',
+        handler: auditVerifyHandler,
       }),
     ],
   },
