@@ -1,3 +1,12 @@
+/**
+ * assign-training-tool
+ *
+ * EU AI Act (Art. 9) Tool Risk Metadata:
+ * - riskLevel: limited
+ * - rationale: Assigns training to user/group; affects learning assignment
+ * - humanOversight: approval-gated (Chat confirmation before execution)
+ * @see docs/AI_COMPLIANCE_INVENTORY.md
+ */
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { uuidv4 } from '../../utils/core/id-utils';

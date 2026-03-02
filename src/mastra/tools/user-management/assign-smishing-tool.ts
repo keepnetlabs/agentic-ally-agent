@@ -1,3 +1,12 @@
+/**
+ * assign-smishing-tool
+ *
+ * EU AI Act (Art. 9) Tool Risk Metadata:
+ * - riskLevel: limited
+ * - rationale: Assigns smishing simulation to user/group; affects training assignment
+ * - humanOversight: approval-gated (Chat confirmation before execution)
+ * @see docs/AI_COMPLIANCE_INVENTORY.md
+ */
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { uuidv4 } from '../../utils/core/id-utils';

@@ -36,6 +36,7 @@ Agentic Ally is an **Autonomous Security Awareness Platform** powered by **8 Spe
 6.  **[ERROR_HANDLING.md](./ERROR_HANDLING.md)** - Tool error pattern: `{ success: false, error }` vs `throw`.
 7.  **[FUTURE_IMPROVEMENTS.md](./FUTURE_IMPROVEMENTS.md)** - Roadmap for Autonomous Agentic System (Memory, Critic Agent).
 8.  **[AGENTIC_ROADMAP.md](./AGENTIC_ROADMAP.md)** - Active Learning (✅ tamamlandı), Critic Agent, Agent Swarm planı.
+9.  **[AI_COMPLIANCE_INVENTORY.md](./AI_COMPLIANCE_INVENTORY.md)** - EU AI Act inventory, tool risk classification.
 
 ---
 

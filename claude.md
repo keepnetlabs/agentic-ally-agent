@@ -17,6 +17,7 @@
 | **[WORKFLOWS.md](./docs/WORKFLOWS.md)** | Mermaid diagrams of all logic flows. |
 | **[DEPLOYMENT.md](./docs/DEPLOYMENT.md)** | Cloudflare deploy, D1 migrations (Active Learning). |
 | **[AGENTIC_ROADMAP.md](./docs/AGENTIC_ROADMAP.md)** | Active Learning (✅ done), Critic Agent, Agent Swarm. |
+| **[AI_COMPLIANCE_INVENTORY.md](./docs/AI_COMPLIANCE_INVENTORY.md)** | EU AI Act inventory, tool risk classification. |
 
 ---
 
