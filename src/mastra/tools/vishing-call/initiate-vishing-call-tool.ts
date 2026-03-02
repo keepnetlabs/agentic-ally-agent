@@ -20,6 +20,7 @@ import { uuidv4 } from '../../utils/core/id-utils';
 import { getLogger } from '../../utils/core/logger';
 import { normalizeError } from '../../utils/core/error-utils';
 import { withRetry } from '../../utils/core/resilience-utils';
+import { withHeartbeat } from '../../utils/core/sse-heartbeat';
 
 const logger = getLogger('InitiateVishingCallTool');
 
@@ -176,26 +177,28 @@ export const initiateVishingCallTool = createTool({
         firstMessageLength: firstMessage.length,
       });
 
-      const response = await withRetry(async () => {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), ELEVENLABS.API_TIMEOUT_MS);
+      const response = await withHeartbeat(writer, () =>
+        withRetry(async () => {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), ELEVENLABS.API_TIMEOUT_MS);
 
-        try {
-          const res = await fetch(url, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'xi-api-key': apiKey,
-            },
-            body: JSON.stringify(requestBody),
-            signal: controller.signal,
-          });
+          try {
+            const res = await fetch(url, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'xi-api-key': apiKey,
+              },
+              body: JSON.stringify(requestBody),
+              signal: controller.signal,
+            });
 
-          return res;
-        } finally {
-          clearTimeout(timeoutId);
-        }
-      }, 'initiate_vishing_call_request');
+            return res;
+          } finally {
+            clearTimeout(timeoutId);
+          }
+        }, 'initiate_vishing_call_request'),
+      );
 
       if (!response.ok) {
         const errorBody = await response.text().catch(() => 'Unable to read error body');

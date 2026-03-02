@@ -33,3 +33,6 @@ export { getPolicyContext } from './policy-fetcher';
 
 // Cost tracking
 export { trackCost } from './cost-tracker';
+
+// SSE heartbeat (keep-alive for long-running API calls)
+export { withHeartbeat } from './sse-heartbeat';

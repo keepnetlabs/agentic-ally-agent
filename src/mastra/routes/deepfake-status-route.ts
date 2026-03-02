@@ -8,7 +8,10 @@
  *   Frontend receives video_id from ::ui:deepfake_video_generating:: signal
  *   → polls GET /deepfake/status/:videoId every ~10s
  *   → this handler calls HeyGen GET /v1/video_status.get?video_id=...
- *   → returns { status, videoUrl } to frontend
+ *   → returns { status, videoUrl, videoUrlCaption, ... } to frontend
+ *
+ * Caption strategy: videoUrlCaption = altyazılı MP4 (HeyGen caption: true ile üretildiyse).
+ * Frontend bunu videoUrl yerine kullanır — altyazı gömülü, <track> gerekmez.
  *   → frontend shows <video> player when status === "completed"
  *
  * Terminal statuses: completed | failed
@@ -71,13 +74,15 @@ export async function deepfakeStatusHandler(c: Context) {
     const data = await response.json();
 
     // HeyGen response shape:
-    // Success: { error: null, data: { video_id, status, video_url, thumbnail_url, duration } }
+    // Success: { error: null, data: { video_id, status, video_url, thumbnail_url, duration, caption_url, video_url_caption } }
     // Failed:  { error: null, data: { video_id, status: "failed", error: { code, message } } }
     const videoData = data?.data ?? {};
     const status: string = videoData.status ?? 'processing';
     const videoUrl: string | null = videoData.video_url ?? null;
     const thumbnailUrl: string | null = videoData.thumbnail_url ?? null;
     const durationSec: number | null = videoData.duration ?? null;
+    // Altyazılı MP4 — caption: true ile üretildiyse. Frontend bunu videoUrl yerine kullanır.
+    const videoUrlCaption: string | null = videoData.video_url_caption ?? null;
 
     // Extract failure reason from HeyGen when video rendering fails
     let failureReason: string | null = null;
@@ -110,6 +115,7 @@ export async function deepfakeStatusHandler(c: Context) {
         videoUrl,
         thumbnailUrl,
         durationSec,
+        videoUrlCaption,
         ...(failureReason ? { failureReason } : {}),
         ...(failureCode ? { failureCode } : {}),
       },

@@ -116,6 +116,40 @@ describe('deepfakeStatusHandler', () => {
           videoUrl: 'https://example.com/video.mp4',
           thumbnailUrl: 'https://example.com/thumb.jpg',
           durationSec: 120,
+          videoUrlCaption: null,
+        },
+        200
+      );
+    });
+
+    it('should return videoUrlCaption when HeyGen returns completed with captions', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            data: {
+              video_id: 'vid-captions',
+              status: 'completed',
+              video_url: 'https://example.com/video.mp4',
+              thumbnail_url: 'https://example.com/thumb.jpg',
+              duration: 90,
+              video_url_caption: 'https://files2.heygen.ai/movio/video/abc123/caption.mp4',
+            },
+          }),
+      });
+
+      const c = createMockContext('vid-captions');
+      await deepfakeStatusHandler(c);
+
+      expect(c.json).toHaveBeenCalledWith(
+        {
+          success: true,
+          videoId: 'vid-captions',
+          status: 'completed',
+          videoUrl: 'https://example.com/video.mp4',
+          thumbnailUrl: 'https://example.com/thumb.jpg',
+          durationSec: 90,
+          videoUrlCaption: 'https://files2.heygen.ai/movio/video/abc123/caption.mp4',
         },
         200
       );
@@ -144,6 +178,7 @@ describe('deepfakeStatusHandler', () => {
           videoUrl: null,
           thumbnailUrl: null,
           durationSec: null,
+          videoUrlCaption: null,
         },
         200
       );
@@ -276,6 +311,7 @@ describe('deepfakeStatusHandler', () => {
           videoUrl: null,
           thumbnailUrl: null,
           durationSec: null,
+          videoUrlCaption: null,
         }),
         200
       );

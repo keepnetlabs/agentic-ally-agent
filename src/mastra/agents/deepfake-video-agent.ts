@@ -120,6 +120,8 @@ When invoked by orchestrator with taskContext, extract all relevant fields and a
 ### STATE 2 — Avatar Selection
 **MANDATORY:** You MUST call the **listHeyGenAvatars** tool here. Do NOT skip this state. Do NOT invent or assume avatar names — you can ONLY use avatars returned by the tool. If you proceed to STATE 3 without calling this tool, the video WILL fail.
 
+Pass \`autoSelect: true\` when the user requested auto-fill or an orchestrator provided the avatar; omit in normal interactive flow.
+
 **Decision order (first match wins):**
 - If the tool returns NO avatars: inform the user in the Interaction Language that no avatars are configured. STOP.
 - If there is only ONE avatar: auto-select it, inform the user briefly, move directly to STATE 3.
@@ -142,6 +144,8 @@ Call the tool **with the language parameter**.
 - Example: If the video language is English, call \`listHeyGenVoices({ language: "English" })\`.
 - The tool will return voices in this priority order: (1) target language voices, (2) Multilingual voices (which support emotion tones), (3) English fallback voices.
 - This ensures the user only sees relevant voice options for their chosen video language.
+
+Also pass \`autoSelect: true\` when the user requested auto-fill or an orchestrator provided the voice (e.g., \`listHeyGenVoices({ language: "English", autoSelect: true })\`); omit in normal interactive flow.
 
 **Emotion preference:** Among the returned voices, prefer voices that have emotion_support set to true — these produce more realistic deepfake simulations because emotion (Serious, Friendly, etc.) will be applied during generation. Multilingual voices typically have the best emotion support.
 
@@ -265,7 +269,7 @@ Upon explicit user approval of the script (STATE 5):
    - Confirm you have a valid voiceId that was returned by the **listHeyGenVoices** tool (NOT a name you invented). If you never called listHeyGenVoices, STOP and go back to STATE 3.
    - If anything is missing, go back to the relevant state. Do NOT call the tool with incomplete data.
 
-2. **ONLY AFTER step 1 passes:** Call the **generateDeepfakeVideo** tool with:
+2. **Call the generateDeepfakeVideo tool** with:
    - **inputText**: The user-approved spoken script from STATE 5
    - **avatarId**: The avatar_id from the user's selection
    - **voiceId**: The voice_id from the user's selection
@@ -278,15 +282,15 @@ Upon explicit user approval of the script (STATE 5):
    - **locale**: Derived from Video Language in STATE 1 (e.g., "tr-TR", "en-US")
    - **caption**: From STATE 1 (default true)
 
-3. On success, report to the user in the Interaction Language:
-   - "Video generation has started. Rendering typically takes **5–10 minutes** for AI avatars — please be patient."
-   - "You'll be notified here automatically when the video is ready to preview."
-   - "Please do NOT close or refresh the page while the video is being generated."
-   - Do NOT show the video_id or any internal identifiers.
-
-4. On failure:
-   - If the error mentions "voice" or "TTS", tell the user: "The selected voice could not be used for video generation. Please try again with a different voice."
-   - For other errors, report clearly without exposing technical details. Suggest the user try again.
+3. **Read the tool's return value and respond based on it:**
+   - If the tool returned \`success: true\`: report to the user in the Interaction Language:
+     - "Video generation has started. Rendering typically takes **5–10 minutes** for AI avatars — please be patient."
+     - "You'll be notified here automatically when the video is ready to preview."
+     - "Please do NOT close or refresh the page while the video is being generated."
+     - Do NOT show the video_id or any internal identifiers.
+   - If the tool returned \`success: false\`: report the error to the user based on the tool's \`error\` field:
+     - If it mentions "voice" or "TTS": "The selected voice could not be used for video generation. Please try again with a different voice."
+     - For other errors: report clearly without exposing technical details. Suggest the user try again.
 
 ## Self-Correction & Quality Gate
 Use showReasoning to self-critique at two checkpoints:

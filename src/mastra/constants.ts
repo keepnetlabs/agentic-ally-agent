@@ -845,6 +845,20 @@ export const ROUTING = {
     'Telefon',
     'Telefon et',
   ] as const,
+
+  // Deepfake video triggers
+  DEEPFAKE_TRIGGERS: [
+    'Deepfake',
+    'Deepfake video',
+    'Generate video',
+    'Create video',
+    'AI video',
+    'Fake video',
+    'Video simulation',
+    'Sahte video',
+    'Video oluştur',
+    'Deepfake oluştur',
+  ] as const,
 } as const;
 
 // ============================================

@@ -15,6 +15,7 @@ import { uuidv4 } from '../../utils/core/id-utils';
 import { getLogger } from '../../utils/core/logger';
 import { normalizeError } from '../../utils/core/error-utils';
 import { withRetry } from '../../utils/core/resilience-utils';
+import { withHeartbeat } from '../../utils/core/sse-heartbeat';
 
 const logger = getLogger('ListHeyGenAvatarsTool');
 
@@ -22,7 +23,14 @@ const logger = getLogger('ListHeyGenAvatarsTool');
 // Schemas
 // ============================================
 
-const listHeyGenAvatarsInputSchema = z.object({});
+const listHeyGenAvatarsInputSchema = z.object({
+  autoSelect: z
+    .boolean()
+    .optional()
+    .describe(
+      'When true, signals that the agent will auto-select without user input. The UI will show a brief confirmation instead of an interactive selection grid. Use when the user requested auto-fill or an orchestrator already determined the avatar.'
+    ),
+});
 
 const heygenAvatarSchema = z.object({
   avatar_id: z.string().describe('Unique identifier of the avatar'),
@@ -36,6 +44,10 @@ const listHeyGenAvatarsOutputSchema = z.object({
   success: z.boolean(),
   avatars: z.array(heygenAvatarSchema).optional(),
   total: z.number().optional(),
+  selectionRequired: z
+    .boolean()
+    .optional()
+    .describe('Whether user input is needed to select an avatar. false = agent auto-selects; true = show interactive selection grid.'),
   error: z.string().optional(),
 });
 
@@ -47,7 +59,7 @@ export type HeyGenAvatar = z.infer<typeof heygenAvatarSchema>;
 
 async function emitAvatarSelectionSignal(
   writer: any,
-  payload: { avatars: HeyGenAvatar[]; total: number }
+  payload: { avatars: HeyGenAvatar[]; total: number; selectionRequired: boolean }
 ): Promise<void> {
   if (!writer) return;
 
@@ -81,7 +93,7 @@ export const listHeyGenAvatarsTool = createTool({
     'Lists all available HeyGen avatars that can be used for deepfake video generation. Returns avatar ID, name, gender, and preview URLs so the user can select one.',
   inputSchema: listHeyGenAvatarsInputSchema,
   outputSchema: listHeyGenAvatarsOutputSchema,
-  execute: async ({ writer }) => {
+  execute: async ({ context, writer }) => {
     try {
       const apiKey = process.env.HEYGEN_API_KEY;
       if (!apiKey) {
@@ -96,23 +108,25 @@ export const listHeyGenAvatarsTool = createTool({
 
       logger.info('list_heygen_avatars_request');
 
-      const response = await withRetry(async () => {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), HEYGEN.API_TIMEOUT_MS);
+      const response = await withHeartbeat(writer, () =>
+        withRetry(async () => {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), HEYGEN.API_TIMEOUT_MS);
 
-        try {
-          const res = await fetch(url, {
-            method: 'GET',
-            headers: {
-              'x-api-key': apiKey,
-            },
-            signal: controller.signal,
-          });
-          return res;
-        } finally {
-          clearTimeout(timeoutId);
-        }
-      }, 'list_heygen_avatars');
+          try {
+            const res = await fetch(url, {
+              method: 'GET',
+              headers: {
+                'x-api-key': apiKey,
+              },
+              signal: controller.signal,
+            });
+            return res;
+          } finally {
+            clearTimeout(timeoutId);
+          }
+        }, 'list_heygen_avatars'),
+      );
 
       if (!response.ok) {
         const errorBody = await response.text().catch(() => 'Unable to read error body');
@@ -129,7 +143,7 @@ export const listHeyGenAvatarsTool = createTool({
       const data = await response.json();
 
       // HeyGen v2/avatars response: { data: { avatars: [...] } }
-      const MAX_AVATARS = 50;
+      const MAX_AVATARS = 100;
       const allAvatars: unknown[] = data?.data?.avatars ?? [];
 
       const avatars: HeyGenAvatar[] = allAvatars
@@ -147,17 +161,21 @@ export const listHeyGenAvatarsTool = createTool({
         .filter(a => a.avatar_id.length > 0)
         .slice(0, MAX_AVATARS);
 
+      const selectionRequired = !context.autoSelect && avatars.length > 1;
+
       logger.info('list_heygen_avatars_success', {
         totalFromApi: allAvatars.length,
         returned: avatars.length,
+        selectionRequired,
       });
 
-      await emitAvatarSelectionSignal(writer, { avatars, total: avatars.length });
+      await emitAvatarSelectionSignal(writer, { avatars, total: avatars.length, selectionRequired });
 
       return {
         success: true,
         avatars,
         total: avatars.length,
+        selectionRequired,
       };
     } catch (error) {
       const err = normalizeError(error);

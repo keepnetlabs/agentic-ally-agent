@@ -15,6 +15,7 @@ import { uuidv4 } from '../../utils/core/id-utils';
 import { getLogger } from '../../utils/core/logger';
 import { normalizeError } from '../../utils/core/error-utils';
 import { withRetry } from '../../utils/core/resilience-utils';
+import { withHeartbeat } from '../../utils/core/sse-heartbeat';
 
 const logger = getLogger('ListHeyGenVoicesTool');
 
@@ -28,6 +29,12 @@ const listHeyGenVoicesInputSchema = z.object({
     .optional()
     .describe(
       'Filter voices by language (e.g., "Turkish", "English", "Spanish", "Arabic"). If provided, returns only voices matching this language plus Multilingual voices. If omitted, returns a diverse set across all languages.'
+    ),
+  autoSelect: z
+    .boolean()
+    .optional()
+    .describe(
+      'When true, signals that the agent will auto-select without user input. The UI will show a brief confirmation instead of an interactive selection table. Use when the user requested auto-fill or an orchestrator already determined the voice.'
     ),
 });
 
@@ -48,6 +55,10 @@ const listHeyGenVoicesOutputSchema = z.object({
   requestedLanguage: z.string().optional().describe('The language that was requested for filtering'),
   targetLanguageCount: z.number().optional().describe('Number of voices found in the target language'),
   multilingualCount: z.number().optional().describe('Number of multilingual voices included'),
+  selectionRequired: z
+    .boolean()
+    .optional()
+    .describe('Whether user input is needed to select a voice. false = agent auto-selects; true = show interactive selection table.'),
   warning: z.string().optional().describe('Warning message if no target language voices were found'),
   error: z.string().optional(),
 });
@@ -65,6 +76,7 @@ async function emitVoiceSelectionSignal(
     total: number;
     requestedLanguage: string | null;
     warning: string | null;
+    selectionRequired: boolean;
   }
 ): Promise<void> {
   if (!writer) return;
@@ -115,23 +127,25 @@ export const listHeyGenVoicesTool = createTool({
 
       logger.info('list_heygen_voices_request', { targetLanguage: targetLanguage ?? 'all' });
 
-      const response = await withRetry(async () => {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), HEYGEN.API_TIMEOUT_MS);
+      const response = await withHeartbeat(writer, () =>
+        withRetry(async () => {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), HEYGEN.API_TIMEOUT_MS);
 
-        try {
-          const res = await fetch(url, {
-            method: 'GET',
-            headers: {
-              'x-api-key': apiKey,
-            },
-            signal: controller.signal,
-          });
-          return res;
-        } finally {
-          clearTimeout(timeoutId);
-        }
-      }, 'list_heygen_voices');
+          try {
+            const res = await fetch(url, {
+              method: 'GET',
+              headers: {
+                'x-api-key': apiKey,
+              },
+              signal: controller.signal,
+            });
+            return res;
+          } finally {
+            clearTimeout(timeoutId);
+          }
+        }, 'list_heygen_voices'),
+      );
 
       if (!response.ok) {
         const errorBody = await response.text().catch(() => 'Unable to read error body');
@@ -150,7 +164,7 @@ export const listHeyGenVoicesTool = createTool({
       // HeyGen v2/voices response: { data: { voices: [...] } }
       // First ~60 voices are custom/cloned with language:"unknown" — skip them.
       // Only return voices with real language metadata for reliable filtering.
-      const MAX_VOICES = 30;
+      const MAX_VOICES = 50;
       const allVoices: unknown[] = data?.data?.voices ?? [];
 
       const mappedVoices: HeyGenVoice[] = allVoices
@@ -208,15 +222,17 @@ export const listHeyGenVoicesTool = createTool({
       }
       const voices = combined.slice(0, MAX_VOICES);
 
+      const noTargetFound = targetLanguage && targetVoices.length === 0;
+      const selectionRequired = !context.autoSelect && voices.length > 1;
+
       logger.info('list_heygen_voices_success', {
         totalFromApi: allVoices.length,
         targetLanguage: targetLanguage ?? 'all',
         targetCount: targetVoices.length,
         multilingualCount: multilingualVoices.length,
         returned: voices.length,
+        selectionRequired,
       });
-
-      const noTargetFound = targetLanguage && targetVoices.length === 0;
       const warning = noTargetFound
         ? `No dedicated ${targetLanguage} voices found. Showing Multilingual and English voices as alternatives. Multilingual voices can speak in any language.`
         : null;
@@ -226,6 +242,7 @@ export const listHeyGenVoicesTool = createTool({
         total: voices.length,
         requestedLanguage: targetLanguage ?? null,
         warning,
+        selectionRequired,
       });
 
       return {
@@ -235,6 +252,7 @@ export const listHeyGenVoicesTool = createTool({
         ...(targetLanguage ? { requestedLanguage: targetLanguage } : {}),
         ...(targetLanguage ? { targetLanguageCount: targetVoices.length } : {}),
         ...(targetLanguage ? { multilingualCount: multilingualVoices.length } : {}),
+        selectionRequired,
         ...(warning ? { warning } : {}),
       };
     } catch (error) {

@@ -23,6 +23,7 @@ import { uuidv4 } from '../../utils/core/id-utils';
 import { getLogger } from '../../utils/core/logger';
 import { normalizeError } from '../../utils/core/error-utils';
 import { withRetry } from '../../utils/core/resilience-utils';
+import { withHeartbeat } from '../../utils/core/sse-heartbeat';
 
 const logger = getLogger('GenerateDeepfakeVideoTool');
 
@@ -249,25 +250,27 @@ export const generateDeepfakeVideoTool = createTool({
         fullRequestBody: JSON.stringify(requestBody).substring(0, 1500),
       });
 
-      const response = await withRetry(async () => {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), HEYGEN.API_TIMEOUT_MS);
+      const response = await withHeartbeat(writer, () =>
+        withRetry(async () => {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), HEYGEN.API_TIMEOUT_MS);
 
-        try {
-          const res = await fetch(url, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-api-key': apiKey,
-            },
-            body: JSON.stringify(requestBody),
-            signal: controller.signal,
-          });
-          return res;
-        } finally {
-          clearTimeout(timeoutId);
-        }
-      }, 'generate_deepfake_video');
+          try {
+            const res = await fetch(url, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': apiKey,
+              },
+              body: JSON.stringify(requestBody),
+              signal: controller.signal,
+            });
+            return res;
+          } finally {
+            clearTimeout(timeoutId);
+          }
+        }, 'generate_deepfake_video'),
+      );
 
       if (!response.ok) {
         const errorBody = await response.text().catch(() => 'Unable to read error body');
