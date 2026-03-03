@@ -83,7 +83,9 @@ export async function streamReasoning(reasoningText: string, writer: StreamWrite
               id: messageId,
             })
             .catch(() => {});
-        } catch {}
+        } catch {
+          // Stream already closed — safe to ignore
+        }
       });
   } catch (error) {
     const err = normalizeError(error);

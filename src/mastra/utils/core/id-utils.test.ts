@@ -130,8 +130,17 @@ describe('id-utils', () => {
       expect(normalizeSafeId('')).toBeUndefined();
     });
 
+    it('should return undefined for undefined input', () => {
+      expect(normalizeSafeId(undefined)).toBeUndefined();
+    });
+
     it('should trim whitespace before validation', () => {
       expect(normalizeSafeId('  valid-id  ')).toBe('valid-id');
+    });
+
+    it('should return undefined when value fails isSafeId after trim', () => {
+      expect(normalizeSafeId('ab')).toBeUndefined();
+      expect(normalizeSafeId('!!')).toBeUndefined();
     });
   });
 

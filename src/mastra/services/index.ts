@@ -19,7 +19,12 @@ export {
 } from './campaign-metadata-service';
 
 // Health check service
-export { performHealthCheck, type HealthCheckResponse } from './health-service';
+export {
+  performHealthCheck,
+  checkAuditChainHealth,
+  type HealthCheckResponse,
+  type AuditChainHealth,
+} from './health-service';
 
 // Autonomous service (re-export from subdirectory)
 export { executeAutonomousGeneration } from './autonomous';

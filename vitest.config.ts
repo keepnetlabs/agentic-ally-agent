@@ -8,7 +8,7 @@ export default defineConfig({
     globals: true,
     setupFiles: [path.resolve(__dirname, 'src/__tests__/setup.ts')],
 
-    // Coverage configuration
+    // Coverage configuration — industry standard 70-80%
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html', 'lcov'],
@@ -20,10 +20,10 @@ export default defineConfig({
         '**/*.spec.ts',
       ],
       thresholds: {
-        lines: 50,
-        functions: 50,
-        branches: 50,
-        statements: 50,
+        lines: 70,
+        functions: 70,
+        branches: 70,
+        statements: 70,
       },
     },
 

@@ -10,6 +10,7 @@ describe('context-factory', () => {
       const ctx = createMockContext();
       expect(ctx.req).toBeDefined();
       expect(ctx.req.header).toBeDefined();
+      expect(ctx.req.header('any')).toBeUndefined();
       expect(ctx.env).toEqual({ KV: {}, D1: {} });
     });
 

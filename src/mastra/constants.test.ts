@@ -118,8 +118,8 @@ describe('constants', () => {
       expect(AGENT_NAMES.DEEPFAKE_VIDEO).toBe('deepfakeVideoAssistant');
     });
 
-    it('should have 9 agent name entries', () => {
-      expect(Object.keys(AGENT_NAMES)).toHaveLength(9);
+    it('should have 10 agent name entries', () => {
+      expect(Object.keys(AGENT_NAMES)).toHaveLength(10);
     });
   });
 
@@ -131,8 +131,8 @@ describe('constants', () => {
       expect(AGENT_IDS.DEEPFAKE_VIDEO).toBe('deepfake-video-agent');
     });
 
-    it('should have 9 agent ID entries', () => {
-      expect(Object.keys(AGENT_IDS)).toHaveLength(9);
+    it('should have 10 agent ID entries', () => {
+      expect(Object.keys(AGENT_IDS)).toHaveLength(10);
     });
   });
 

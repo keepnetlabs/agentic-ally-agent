@@ -223,7 +223,7 @@ describe('logDataAccess', () => {
     // INSERT with hash columns fails — triggers fallback
     // We need the second prepare call's run to reject
     // Override: make the first INSERT (call index 1) fail
-    const originalPrepare = db.prepare.getMockImplementation()!;
+    const originalPrepare = db.prepare.getMockImplementation() as NonNullable<ReturnType<typeof db.prepare.getMockImplementation>>;
     let callCount = 0;
     db.prepare.mockImplementation((query: string) => {
       callCount++;
@@ -302,7 +302,7 @@ describe('logDataAccess', () => {
     const env = createEnv(db);
 
     // getLastHash returns a previous hash
-    const originalPrepare = db.prepare.getMockImplementation()!;
+    const originalPrepare = db.prepare.getMockImplementation() as NonNullable<ReturnType<typeof db.prepare.getMockImplementation>>;
     let callCount = 0;
     db.prepare.mockImplementation((query: string) => {
       callCount++;
@@ -345,7 +345,7 @@ describe('getAuditLogs', () => {
   it('queries D1 with correct filters', async () => {
     const db = createMockDb();
     // Override the all() mock for the first call
-    const originalPrepare = db.prepare.getMockImplementation()!;
+    const originalPrepare = db.prepare.getMockImplementation() as NonNullable<ReturnType<typeof db.prepare.getMockImplementation>>;
     db.prepare.mockImplementation((query: string) => {
       const result = originalPrepare(query);
       const call = db._calls[db._calls.length - 1];
@@ -374,6 +374,24 @@ describe('getAuditLogs', () => {
 
     expect(db.call(0).bind).toHaveBeenCalledWith('c1', 500);
   });
+
+  it('returns empty array when DB throws', async () => {
+    const db = createMockDb();
+    const origPrepare = db.prepare.getMockImplementation() as (q: string) => { bind: ReturnType<typeof vi.fn> };
+    db.prepare.mockImplementation((query: string) => {
+      const ret = origPrepare(query);
+      const call = db._calls[db._calls.length - 1];
+      if (query.includes('data_access_audit') && query.includes('SELECT')) {
+        call.all.mockRejectedValueOnce(new Error('D1 read failed'));
+      }
+      return ret;
+    });
+    const env = createEnv(db);
+
+    const result = await getAuditLogs(env, 'c1');
+
+    expect(result).toEqual([]);
+  });
 });
 
 describe('createDeletionRequest', () => {
@@ -399,6 +417,24 @@ describe('createDeletionRequest', () => {
     // Should have prepare calls: INSERT deletion + getLastHash + INSERT audit (+ possible getLastHash for audit)
     expect(db._calls.length).toBeGreaterThanOrEqual(2);
   });
+
+  it('returns null when DB throws during insert', async () => {
+    const db = createMockDb();
+    const origPrepare = db.prepare.getMockImplementation() as (q: string) => { bind: ReturnType<typeof vi.fn> };
+    db.prepare.mockImplementation((query: string) => {
+      const ret = origPrepare(query);
+      const call = db._calls[db._calls.length - 1];
+      if (query.includes('data_deletion_requests') && query.includes('INSERT')) {
+        call.run.mockRejectedValueOnce(new Error('D1 insert failed'));
+      }
+      return ret;
+    });
+    const env = createEnv(db);
+
+    const id = await createDeletionRequest(env, 'c1', 'u1');
+
+    expect(id).toBeNull();
+  });
 });
 
 describe('completeDeletionRequest', () => {
@@ -419,6 +455,24 @@ describe('completeDeletionRequest', () => {
       'req-1'
     );
   });
+
+  it('returns false when DB throws during update', async () => {
+    const db = createMockDb();
+    const origPrepare = db.prepare.getMockImplementation() as (q: string) => { bind: ReturnType<typeof vi.fn> };
+    db.prepare.mockImplementation((query: string) => {
+      const ret = origPrepare(query);
+      const call = db._calls[db._calls.length - 1];
+      if (query.includes('UPDATE data_deletion_requests')) {
+        call.run.mockRejectedValueOnce(new Error('D1 write failed'));
+      }
+      return ret;
+    });
+    const env = createEnv(db);
+
+    const result = await completeDeletionRequest(env, 'req-1', ['key1']);
+
+    expect(result).toBe(false);
+  });
 });
 
 describe('getDeletionRequests', () => {
@@ -428,7 +482,7 @@ describe('getDeletionRequests', () => {
 
   it('returns deletion requests from D1', async () => {
     const db = createMockDb();
-    const originalPrepare = db.prepare.getMockImplementation()!;
+    const originalPrepare = db.prepare.getMockImplementation() as NonNullable<ReturnType<typeof db.prepare.getMockImplementation>>;
     db.prepare.mockImplementation((query: string) => {
       const result = originalPrepare(query);
       const call = db._calls[db._calls.length - 1];
@@ -442,6 +496,21 @@ describe('getDeletionRequests', () => {
     const result = await getDeletionRequests(createEnv(db), 'c1');
     expect(result).toHaveLength(1);
     expect(result[0].status).toBe('completed');
+  });
+
+  it('returns empty array when DB throws', async () => {
+    const db = createMockDb();
+    const origPrepare = db.prepare.getMockImplementation() as (q: string) => { bind: ReturnType<typeof vi.fn> };
+    db.prepare.mockImplementation((query: string) => {
+      const ret = origPrepare(query);
+      db._calls[db._calls.length - 1].all.mockRejectedValueOnce(new Error('D1 unavailable'));
+      return ret;
+    });
+    const env = createEnv(db);
+
+    const result = await getDeletionRequests(env, 'c1');
+
+    expect(result).toEqual([]);
   });
 });
 
@@ -461,9 +530,27 @@ describe('verifyAuditChain', () => {
     expect(result.totalRows).toBe(0);
   });
 
+  it('returns empty result when companyId is empty', async () => {
+    const db = createMockDb();
+    const result = await verifyAuditChain(createEnv(db), '');
+    expect(result.valid).toBe(true);
+    expect(result.totalRows).toBe(0);
+    expect(result.verifiedRows).toBe(0);
+  });
+
+  it('returns valid=false when DB throws during verification', async () => {
+    const db = createMockDb();
+    db.prepare.mockImplementation(() => {
+      throw new Error('D1 connection lost');
+    });
+    const result = await verifyAuditChain(createEnv(db), 'c1');
+    expect(result.valid).toBe(false);
+    expect(result.totalRows).toBe(0);
+  });
+
   it('skips rows without integrity_hash (pre-migration)', async () => {
     const db = createMockDb();
-    const originalPrepare = db.prepare.getMockImplementation()!;
+    const originalPrepare = db.prepare.getMockImplementation() as NonNullable<ReturnType<typeof db.prepare.getMockImplementation>>;
     db.prepare.mockImplementation((query: string) => {
       const result = originalPrepare(query);
       const call = db._calls[db._calls.length - 1];
@@ -492,7 +579,7 @@ describe('verifyAuditChain', () => {
     const hash = await computeHash(payload);
 
     const db = createMockDb();
-    const originalPrepare = db.prepare.getMockImplementation()!;
+    const originalPrepare = db.prepare.getMockImplementation() as NonNullable<ReturnType<typeof db.prepare.getMockImplementation>>;
     db.prepare.mockImplementation((query: string) => {
       const result = originalPrepare(query);
       const call = db._calls[db._calls.length - 1];
@@ -535,7 +622,7 @@ describe('verifyAuditChain', () => {
     const hash2 = await computeHash(payload2);
 
     const db = createMockDb();
-    const originalPrepare = db.prepare.getMockImplementation()!;
+    const originalPrepare = db.prepare.getMockImplementation() as NonNullable<ReturnType<typeof db.prepare.getMockImplementation>>;
     db.prepare.mockImplementation((query: string) => {
       const result = originalPrepare(query);
       const call = db._calls[db._calls.length - 1];
@@ -573,7 +660,7 @@ describe('verifyAuditChain', () => {
     const hash = await computeHash(payload);
 
     const db = createMockDb();
-    const originalPrepare = db.prepare.getMockImplementation()!;
+    const originalPrepare = db.prepare.getMockImplementation() as NonNullable<ReturnType<typeof db.prepare.getMockImplementation>>;
     db.prepare.mockImplementation((query: string) => {
       const result = originalPrepare(query);
       const call = db._calls[db._calls.length - 1];
@@ -609,7 +696,7 @@ describe('verifyAuditChain', () => {
     const hash2 = await computeHash(payload2);
 
     const db = createMockDb();
-    const originalPrepare = db.prepare.getMockImplementation()!;
+    const originalPrepare = db.prepare.getMockImplementation() as NonNullable<ReturnType<typeof db.prepare.getMockImplementation>>;
     db.prepare.mockImplementation((query: string) => {
       const result = originalPrepare(query);
       const call = db._calls[db._calls.length - 1];

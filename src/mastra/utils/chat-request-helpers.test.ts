@@ -185,6 +185,41 @@ describe('chat-request-helpers', () => {
       expect(context).toContain('[Vishing Call Initiated: conversationId=conv-xyz]');
     });
 
+    it('converts target_group UI signal with targetGroupResourceId to semantic message', () => {
+      const payload = Buffer.from(JSON.stringify({ targetGroupResourceId: 'grp-789' }), 'utf-8').toString('base64');
+      const context = buildRoutingContext([
+        { role: 'assistant', content: `::ui:target_group::${payload}::/ui:target_group::` } as any,
+      ]);
+      expect(context).toContain('[Group Selected: targetGroupResourceId=grp-789]');
+    });
+
+    it('converts target_user UI signal with targetUserResourceId to semantic message', () => {
+      const payload = Buffer.from(JSON.stringify({ targetUserResourceId: 'usr-456' }), 'utf-8').toString('base64');
+      const context = buildRoutingContext([
+        { role: 'assistant', content: `::ui:target_user::${payload}::/ui:target_user::` } as any,
+      ]);
+      expect(context).toContain('[User Selected: targetUserResourceId=usr-456]');
+    });
+
+    it('converts deepfake_video_generating UI signal with videoId to semantic message', () => {
+      const payload = Buffer.from(JSON.stringify({ videoId: 'vid-abc', status: 'pending' }), 'utf-8').toString('base64');
+      const context = buildRoutingContext([
+        {
+          role: 'assistant',
+          content: `::ui:deepfake_video_generating::${payload}::/ui:deepfake_video_generating::`,
+        } as any,
+      ]);
+      expect(context).toContain('[Deepfake Video Generated: videoId=vid-abc]');
+    });
+
+    it('extracts payload from UI signal without closing tag (canvas_open style)', () => {
+      const payload = Buffer.from(JSON.stringify({ smishingId: 'sm-no-close' }), 'utf-8').toString('base64');
+      const context = buildRoutingContext([
+        { role: 'assistant', content: `::ui:smishing_sms::${payload}\n` } as any,
+      ]);
+      expect(context).toContain('[Smishing Simulation Created: smishingId=sm-no-close]');
+    });
+
     it('converts training_uploaded UI signal with microlearningId and resourceId', () => {
       const payload = Buffer.from(JSON.stringify({ microlearningId: 'ml-up', resourceId: 'res-up' }), 'utf-8').toString(
         'base64'

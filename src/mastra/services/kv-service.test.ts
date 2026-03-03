@@ -59,6 +59,25 @@ describe('KVService', () => {
       const _service = new KVService();
       expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('CLOUDFLARE_KV_TOKEN'));
     });
+
+    it('getNamespaceId returns string (namespace or unknown)', () => {
+      const ns = kvService.getNamespaceId();
+      expect(typeof ns).toBe('string');
+      expect(ns.length).toBeGreaterThan(0);
+    });
+
+    it('getNamespaceId returns override when constructor receives it', () => {
+      const overrideService = new KVService('custom-ns-123');
+      expect(overrideService.getNamespaceId()).toBe('custom-ns-123');
+    });
+
+    it('getNamespaceId returns unknown when namespace is empty', () => {
+      const orig = process.env.MICROLEARNING_KV_NAMESPACE_ID;
+      delete process.env.MICROLEARNING_KV_NAMESPACE_ID;
+      const emptyNsService = new KVService('');
+      expect(emptyNsService.getNamespaceId()).toBe('unknown');
+      if (orig !== undefined) process.env.MICROLEARNING_KV_NAMESPACE_ID = orig;
+    });
   });
 
   describe('PUT operation', () => {
@@ -88,6 +107,36 @@ describe('KVService', () => {
 
       const callArgs = fetchMock.mock.calls[0];
       expect(callArgs[1]?.body).toBe('string-value');
+    });
+
+    it('should include expiration_ttl when ttlSeconds is provided', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(new Response('', { status: 200 }));
+      global.fetch = fetchMock;
+
+      await kvService.put('test-key', { data: 'test' }, { ttlSeconds: 3600 });
+
+      const url = fetchMock.mock.calls[0][0] as string;
+      expect(url).toContain('expiration_ttl=3600');
+    });
+
+    it('should NOT add expiration_ttl when ttlSeconds is 0', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(new Response('', { status: 200 }));
+      global.fetch = fetchMock;
+
+      await kvService.put('test-key', { data: 'test' }, { ttlSeconds: 0 });
+
+      const url = fetchMock.mock.calls[0][0] as string;
+      expect(url).not.toContain('expiration_ttl');
+    });
+
+    it('should NOT add expiration_ttl when options omitted', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(new Response('', { status: 200 }));
+      global.fetch = fetchMock;
+
+      await kvService.put('test-key', { data: 'test' });
+
+      const url = fetchMock.mock.calls[0][0] as string;
+      expect(url).not.toContain('expiration_ttl');
     });
 
     it('should return false on PUT failure', async () => {

@@ -33,6 +33,24 @@ describe('user-search-utils', () => {
   });
 
   describe('fetchUsersWithFilters', () => {
+    it('should throw when template has no filter group', async () => {
+      const badTemplate = { filter: { FilterGroups: [{}] } };
+      await expect(
+        fetchUsersWithFilters(mockDeps, badTemplate, [])
+      ).rejects.toThrow('Invalid GET_ALL payload template');
+    });
+
+    it('should use data.data.results when items is empty', async () => {
+      const mockUsers = [{ id: 2, email: 'via-results@example.com' }];
+      (global.fetch as any).mockResolvedValue({
+        ok: true,
+        json: async () => ({ data: { results: mockUsers } }),
+      });
+
+      const result = await fetchUsersWithFilters(mockDeps, mockTemplate, []);
+      expect(result).toEqual(mockUsers);
+    });
+
     it('should fetch users successfully', async () => {
       const mockUsers = [{ id: 1, email: 'test@example.com' }];
       (global.fetch as any).mockResolvedValue({
@@ -83,6 +101,36 @@ describe('user-search-utils', () => {
       });
 
       await expect(fetchUsersWithFilters(mockDeps, mockTemplate, [])).rejects.toThrow('User search API error 500');
+    });
+
+    it('should extract message from JSON error body on 4xx', async () => {
+      (global.fetch as any).mockResolvedValue({
+        ok: false,
+        status: 404,
+        text: async () => JSON.stringify({ message: 'Simulated company not found' }),
+      });
+
+      await expect(fetchUsersWithFilters(mockDeps, mockTemplate, [])).rejects.toThrow('Simulated company not found');
+    });
+
+    it('should include companyId header when provided', async () => {
+      (global.fetch as any).mockResolvedValue({
+        ok: true,
+        json: async () => ({ items: [] }),
+      });
+
+      await fetchUsersWithFilters(
+        { ...mockDeps, companyId: 'company-xyz' },
+        mockTemplate,
+        []
+      );
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          headers: expect.objectContaining({ 'x-ir-company-id': 'company-xyz' }),
+        })
+      );
     });
   });
 
@@ -294,6 +342,41 @@ describe('user-search-utils', () => {
       expect(result).toEqual(searchUser);
       expect(result?.phoneNumber).toBeUndefined();
     });
+
+    it('should use direct lookup when fallback returns no match', async () => {
+      const directUser = {
+        targetUserResourceId: 'uid-direct',
+        email: 'direct@example.com',
+        firstName: 'Direct',
+        lastName: 'User',
+        phoneNumber: '+15559999999',
+      };
+
+      (global.fetch as any)
+        .mockResolvedValueOnce({ ok: true, json: async () => ({ items: [{ targetUserResourceId: 'other' }] }) })
+        .mockResolvedValueOnce({ ok: true, json: async () => ({ items: [] }) })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            data: {
+              resourceId: 'uid-direct',
+              email: 'direct@example.com',
+              firstName: 'Direct',
+              lastName: 'User',
+              phoneNumber: '+15559999999',
+            },
+          }),
+        });
+
+      const result = await findUserById(mockDeps, mockTemplate, 'uid-direct');
+
+      expect(result).toEqual(directUser);
+      expect(global.fetch).toHaveBeenNthCalledWith(
+        3,
+        expect.stringContaining('/api/target-users/uid-direct'),
+        expect.any(Object)
+      );
+    });
   });
 
   describe('findUserByNameWithFallbacks', () => {
@@ -381,6 +464,31 @@ describe('user-search-utils', () => {
         expect.stringContaining('/api/target-users/uid-name'),
         expect.any(Object)
       );
+    });
+
+    it('should return first user when no lastName (firstName only)', async () => {
+      const mockUser = { firstName: 'John', lastName: 'Doe' };
+      (global.fetch as any).mockResolvedValue({
+        ok: true,
+        json: async () => ({ items: [mockUser] }),
+      });
+
+      const result = await findUserByNameWithFallbacks(mockDeps, mockTemplate, 'John');
+      expect(result).toEqual(mockUser);
+    });
+
+    it('should fallback to users[0] when no exact lastName match', async () => {
+      const users = [
+        { firstName: 'John', lastName: 'Smith' },
+        { firstName: 'John', lastName: 'Doe' },
+      ];
+      (global.fetch as any).mockResolvedValue({
+        ok: true,
+        json: async () => ({ items: users }),
+      });
+
+      const result = await findUserByNameWithFallbacks(mockDeps, mockTemplate, 'John', 'Doe');
+      expect(result?.lastName).toBe('Doe');
     });
   });
 });

@@ -64,13 +64,7 @@ export class AgentRouter {
           taskContext,
           reasoning,
         });
-        if (agent !== AGENT_NAMES.OUT_OF_SCOPE) {
-          logger.info('🔍 LANGUAGE_DEBUG', {
-            userPromptPreview: prompt.slice(0, 80),
-            taskContextPreview: taskContext?.slice(0, 80),
-          });
-        }
-        return { agentName: agent, taskContext };
+          return { agentName: agent, taskContext };
       }
 
       logger.warn('Invalid agent name from orchestrator, defaulting', {

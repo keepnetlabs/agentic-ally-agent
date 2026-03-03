@@ -117,7 +117,26 @@ npx tsx src/debug-workflow.ts
 
 ## 🧪 Automated Testing (Vitest)
 
-We have achieved **100% logic coverage** across the agent codebase.
+### Coverage Thresholds (Industry Standard 70–80%)
+
+| Metric     | Threshold | Current |
+|-----------|-----------|---------|
+| Lines     | 70%       | ~88%    |
+| Statements| 70%       | ~88%    |
+| Branches  | 70%       | ~81%    |
+| Functions | 70%       | ~93%    |
+
+**Branching coverage:** Kritik path'ler (auth, rate-limit, gdpr-audit, error-handler) için branch testleri mevcut. Düşük branch coverage'lı dosyalar: `sse-heartbeat.ts`, `app-texts.ts`, bazı workflow index dosyaları.
+
+```bash
+npm run test:coverage   # Thresholds enforced in vitest.config.ts
+```
+
+**Eksik / İyileştirme alanları:**
+- `sse-heartbeat.ts` — branch coverage ~50% (timeout/error path'leri)
+- `add-multiple-languages-workflow` index — 66% (workflow dispatch branch'leri)
+- `user-search-utils.ts` — bazı edge case'ler (empty result, pagination)
+- `phishing-prompts.landing-sizing.ts` — 10% (çoğunlukla prompt string'leri, düşük öncelik)
 
 ### Running Tests
 ```bash

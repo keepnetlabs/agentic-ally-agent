@@ -90,6 +90,9 @@ class LoggerWithCorrelation {
   }
 }
 
+/** Logger type with info/warn/error/debug methods and automatic correlation ID injection */
+export type Logger = LoggerWithCorrelation;
+
 /**
  * Get or create a PinoLogger instance for a module with correlation ID support
  * Reuses instances to avoid recreating loggers multiple times

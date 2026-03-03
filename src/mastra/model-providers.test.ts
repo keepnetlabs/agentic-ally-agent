@@ -130,6 +130,27 @@ describe('model-providers', () => {
 
       process.env.OPENAI_API_KEY = orig;
     });
+
+    it('should throw when WORKERS_AI provider used without required env vars', async () => {
+      const orig = process.env.CLOUDFLARE_ACCOUNT_ID;
+      delete process.env.CLOUDFLARE_ACCOUNT_ID;
+      delete process.env.CLOUDFLARE_AI_GATEWAY_ID;
+
+      const { getModel } = await import('./model-providers');
+      expect(() => getModel(ModelProvider.WORKERS_AI, Model.WORKERS_AI_GPT_OSS_120B)).toThrow();
+
+      if (orig !== undefined) process.env.CLOUDFLARE_ACCOUNT_ID = orig;
+    });
+
+    it('should throw when GOOGLE provider used without API key', async () => {
+      const orig = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+      delete process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+
+      const { getModel } = await import('./model-providers');
+      expect(() => getModel(ModelProvider.GOOGLE, Model.GOOGLE_GEMINI_2_5_PRO)).toThrow();
+
+      if (orig !== undefined) process.env.GOOGLE_GENERATIVE_AI_API_KEY = orig;
+    });
   });
 
   describe('getModelWithOverride', () => {
@@ -207,6 +228,30 @@ describe('model-providers', () => {
       expect(result.modelId).toBe('default');
 
       process.env.OPENAI_API_KEY = orig;
+    });
+
+    it('should use default when modelProvider is invalid', async () => {
+      const defaultMock = vi.fn(() => mockModel('fallback'));
+      const { getModelWithOverride } = await import('./model-providers');
+      const result = getModelWithOverride('invalid-provider-xyz', 'gpt-4o', defaultMock as any);
+      expect(defaultMock).toHaveBeenCalled();
+      expect(result.modelId).toBe('fallback');
+    });
+
+    it('should fall back to default when getModel throws', async () => {
+      const origAccount = process.env.CLOUDFLARE_ACCOUNT_ID;
+      const origGateway = process.env.CLOUDFLARE_AI_GATEWAY_ID;
+      delete process.env.CLOUDFLARE_ACCOUNT_ID;
+      delete process.env.CLOUDFLARE_AI_GATEWAY_ID;
+
+      const defaultMock = vi.fn(() => mockModel('fallback-on-error'));
+      const { getModelWithOverride } = await import('./model-providers');
+      const result = getModelWithOverride('workers-ai', '@cf/openai/gpt-oss-120b', defaultMock as any);
+      expect(defaultMock).toHaveBeenCalled();
+      expect(result.modelId).toBe('fallback-on-error');
+
+      if (origAccount !== undefined) process.env.CLOUDFLARE_ACCOUNT_ID = origAccount;
+      if (origGateway !== undefined) process.env.CLOUDFLARE_AI_GATEWAY_ID = origGateway;
     });
   });
 

@@ -45,7 +45,7 @@ describe('listHeyGenVoicesTool', () => {
     it('should return error when HEYGEN_API_KEY is not set', async () => {
       delete process.env.HEYGEN_API_KEY;
 
-      const result = await listHeyGenVoicesTool.execute!({ context: {} } as any);
+      const result = await listHeyGenVoicesTool.execute?.({ context: {} } as any);
 
       expect(result).toEqual({
         success: false,
@@ -66,7 +66,7 @@ describe('listHeyGenVoicesTool', () => {
         )
       );
 
-      const result = await listHeyGenVoicesTool.execute!({ context: {} } as any);
+      const result = await listHeyGenVoicesTool.execute?.({ context: {} } as any);
 
       expect(result).toMatchObject({
         success: true,
@@ -90,7 +90,7 @@ describe('listHeyGenVoicesTool', () => {
         )
       );
 
-      const result = await listHeyGenVoicesTool.execute!({
+      const result = await listHeyGenVoicesTool.execute?.({
         context: { language: 'Turkish' },
       } as any);
 
@@ -106,7 +106,7 @@ describe('listHeyGenVoicesTool', () => {
         new Response('Forbidden', { status: 403 })
       );
 
-      const result = await listHeyGenVoicesTool.execute!({ context: {} } as any);
+      const result = await listHeyGenVoicesTool.execute?.({ context: {} } as any);
 
       expect(result).toMatchObject({
         success: false,
@@ -120,7 +120,7 @@ describe('listHeyGenVoicesTool', () => {
         new Response(JSON.stringify({ data: {} }), { status: 200 })
       );
 
-      const result = await listHeyGenVoicesTool.execute!({ context: {} } as any);
+      const result = await listHeyGenVoicesTool.execute?.({ context: {} } as any);
 
       expect(result).toMatchObject({
         success: true,
@@ -142,7 +142,7 @@ describe('listHeyGenVoicesTool', () => {
         )
       );
 
-      const result = await listHeyGenVoicesTool.execute!({
+      const result = await listHeyGenVoicesTool.execute?.({
         context: { language: 'Arabic' },
       } as any);
 
@@ -168,7 +168,7 @@ describe('listHeyGenVoicesTool', () => {
       );
       const mockWriter = { write: vi.fn().mockResolvedValue(undefined) };
 
-      const result = await listHeyGenVoicesTool.execute!({
+      const result = await listHeyGenVoicesTool.execute?.({
         context: { language: 'English' },
         writer: mockWriter,
       } as any);
@@ -186,7 +186,7 @@ describe('listHeyGenVoicesTool', () => {
       process.env.HEYGEN_API_KEY = 'test-key';
       vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('Connection refused'));
 
-      const result = await listHeyGenVoicesTool.execute!({ context: {} } as any);
+      const result = await listHeyGenVoicesTool.execute?.({ context: {} } as any);
 
       expect(result).toMatchObject({
         success: false,
@@ -200,7 +200,7 @@ describe('listHeyGenVoicesTool', () => {
       abortErr.name = 'AbortError';
       vi.spyOn(globalThis, 'fetch').mockRejectedValue(abortErr);
 
-      const result = await listHeyGenVoicesTool.execute!({ context: {} } as any);
+      const result = await listHeyGenVoicesTool.execute?.({ context: {} } as any);
 
       expect(result).toMatchObject({
         success: false,
