@@ -52,6 +52,7 @@ import {
   createAgentStream,
 } from './utils/chat-orchestration-helpers';
 import { normalizeSafeId } from './utils/core/id-utils';
+import { requestStorage } from './utils/core/request-storage';
 import { validateBCP47LanguageCode, DEFAULT_LANGUAGE } from './utils/language/language-utils';
 import {
   postProcessPhishingEmailHtml,
@@ -310,6 +311,10 @@ export const mastra = new Mastra({
 
           // Step 3: Extract or generate thread ID
           const threadId = extractAndPrepareThreadId(body);
+
+          // Persist threadId in request storage so assign tools can use it as batchResourceId
+          const store = requestStorage.getStore();
+          if (store) store.threadId = threadId;
 
           // Step 4: Route to agent
           let routeResult;

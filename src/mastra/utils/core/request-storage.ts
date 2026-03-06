@@ -7,6 +7,7 @@ export interface RequestContext {
   user?: Record<string, unknown>; // İleride user objesi de ekleyebiliriz
   env?: Record<string, unknown>; // Cloudflare bindings (KV, D1, Service Bindings, etc.)
   baseApiUrl?: string; // Platform API URL for upload/assign operations
+  threadId?: string; // Chat/autonomous session ID — used as batchResourceId in assign payloads
 }
 
 // Global storage instance for Request Isolation
@@ -32,6 +33,7 @@ export function getRequestContext(): {
   env?: Record<string, unknown>;
   correlationId?: string;
   baseApiUrl?: string;
+  threadId?: string;
 } {
   const store = requestStorage.getStore();
   return {
@@ -40,5 +42,6 @@ export function getRequestContext(): {
     env: store?.env,
     correlationId: store?.correlationId,
     baseApiUrl: store?.baseApiUrl,
+    threadId: store?.threadId,
   };
 }

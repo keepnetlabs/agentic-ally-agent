@@ -13,7 +13,7 @@ import { isSafeId, uuidv4 } from '../../utils/core/id-utils';
 import { getRequestContext } from '../../utils/core/request-storage';
 import { getLogger } from '../../utils/core/logger';
 import { withRetry } from '../../utils/core/resilience-utils';
-import { callWorkerAPI } from '../../utils/core/worker-api-client';
+import { callWorkerAPI, type AgenticActivitiesPayload, type WorkerSendResponse } from '../../utils/core/worker-api-client';
 import { maskSensitiveField } from '../../utils/core/security-utils';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
 import { ERROR_MESSAGES, API_ENDPOINTS, KV_NAMESPACES } from '../../constants';
@@ -123,7 +123,7 @@ export const assignTrainingTool = createTool({
     });
 
     // Get Auth Token & Cloudflare bindings from AsyncLocalStorage
-    const { token, companyId, env, baseApiUrl } = getRequestContext();
+    const { token, companyId, env, baseApiUrl, threadId } = getRequestContext();
     const effectiveCompanyId = companyId || (token ? extractCompanyIdFromTokenExport(token) : undefined);
 
     if (!token) {
@@ -132,12 +132,15 @@ export const assignTrainingTool = createTool({
       return createToolErrorResponse(errorInfo);
     }
 
-    const payload = {
-      apiUrl: baseApiUrl, // Dynamic URL from header or environment
+    const payload: AgenticActivitiesPayload = {
+      batchResourceId: threadId || uuidv4(),
+      activityType: 'training',
+      trainingResourceId: resourceId,
+      apiUrl: baseApiUrl,
       accessToken: token,
       companyId: effectiveCompanyId,
       trainingId: resourceId,
-      languageId: sendTrainingLanguageId, // Map languageId to resourceId param if API expects it
+      languageId: sendTrainingLanguageId,
       ...(targetUserResourceId && { targetUserResourceId }),
       ...(targetGroupResourceId && { targetGroupResourceId }),
     };
@@ -150,7 +153,7 @@ export const assignTrainingTool = createTool({
       // Wrap API call with retry (exponential backoff: 1s, 2s, 4s)
       const result = await withRetry(
         () =>
-          callWorkerAPI({
+          callWorkerAPI<WorkerSendResponse>({
             env,
             serviceBinding: env?.CRUD_WORKER,
             publicUrl: API_ENDPOINTS.TRAINING_WORKER_SEND,

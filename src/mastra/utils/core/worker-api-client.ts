@@ -87,6 +87,7 @@ export async function callWorkerAPI<TResponse = any, TPayload = any>(
     logger.debug('Using Service Binding', { endpoint, operationName });
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
+      'X-Agentic-Source': 'agentic-ally',
     };
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
@@ -102,6 +103,7 @@ export async function callWorkerAPI<TResponse = any, TPayload = any>(
     logger.debug('Using Public URL fallback', { url: publicUrl, endpoint, operationName });
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
+      'X-Agentic-Source': 'agentic-ally',
     };
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
@@ -126,4 +128,29 @@ export async function callWorkerAPI<TResponse = any, TPayload = any>(
   }
 
   return await response.json();
+}
+
+// ============================================
+// Agentic Activities Types
+// ============================================
+
+/** Extended payload for /api/agentic-ai/activities (proxied via CRUD Worker /send).
+ *  Adds agentic metadata on top of the existing flat payload (apiUrl, accessToken, etc.). */
+export interface AgenticActivitiesPayload {
+  batchResourceId: string;
+  activityType: 'phishing' | 'quishing' | 'smishing' | 'training';
+  scenarioResourceId?: string;
+  trainingResourceId?: string;
+  /** Original flat fields (apiUrl, accessToken, companyId, phishingId, etc.) */
+  [key: string]: unknown;
+}
+
+/** Response from CRUD Worker /send (proxied from /api/agentic-ai/activities) */
+export interface WorkerSendResponse {
+  success: boolean;
+  message?: string;
+  /** 'autonomous' = campaign created, 'approval_gated' = pending admin approval */
+  status?: 'autonomous' | 'approval_gated';
+  approvalId?: string;
+  [key: string]: unknown;
 }

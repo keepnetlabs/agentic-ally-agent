@@ -5,6 +5,7 @@ import { getLogger } from '../../utils/core/logger';
 import { normalizeError, logErrorInfo } from '../../utils/core/error-utils';
 import { errorService } from '../error-service';
 import { API_ENDPOINTS } from '../../constants';
+import { randomUUID } from 'crypto';
 import {
   AutonomousRequest,
   AutonomousResponse,
@@ -49,8 +50,9 @@ export async function executeAutonomousGeneration(request: AutonomousRequest): P
   }
 
   try {
+    const threadId = `autonomous-${randomUUID()}`;
     return await requestStorage.run(
-      { token, baseApiUrl: effectiveBaseApiUrl },
+      { token, baseApiUrl: effectiveBaseApiUrl, threadId },
       async (): Promise<AutonomousResponse> => {
         // USER ASSIGNMENT: Get user info and generate personalized content
         if (isUserAssignment) {

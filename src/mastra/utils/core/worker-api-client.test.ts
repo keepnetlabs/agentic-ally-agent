@@ -50,6 +50,7 @@ describe('worker-api-client', () => {
         expect.objectContaining({
           method: 'POST',
           headers: expect.objectContaining({
+            'X-Agentic-Source': 'agentic-ally',
             Authorization: 'Bearer auth-token',
           }),
           body: JSON.stringify(payload),
@@ -82,6 +83,9 @@ describe('worker-api-client', () => {
         'http://localhost/fallback',
         expect.objectContaining({
           method: 'POST',
+          headers: expect.objectContaining({
+            'X-Agentic-Source': 'agentic-ally',
+          }),
           body: JSON.stringify(payload),
         })
       );

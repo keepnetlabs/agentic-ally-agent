@@ -49,6 +49,7 @@ vi.mock('../../utils/core/worker-api-client', () => ({
 describe('assignPhishingTool', () => {
   const mockToken = 'test-token-123';
   const mockCompanyId = 'test-company-id';
+  const mockThreadId = 'test-thread-id';
   const mockEnv = {
     PHISHING_CRUD_WORKER: {
       fetch: vi.fn(),
@@ -63,6 +64,7 @@ describe('assignPhishingTool', () => {
       token: mockToken,
       companyId: mockCompanyId,
       env: mockEnv,
+      threadId: mockThreadId,
     });
   });
 
@@ -215,6 +217,9 @@ describe('assignPhishingTool', () => {
           serviceBinding: mockEnv.PHISHING_CRUD_WORKER,
           endpoint: expect.stringContaining('/send'),
           payload: expect.objectContaining({
+            batchResourceId: mockThreadId,
+            activityType: 'phishing',
+            scenarioResourceId: 'phishing-resource-123',
             phishingId: 'phishing-resource-123',
             languageId: 'lang-456',
             targetUserResourceId: 'user-789',
@@ -272,6 +277,7 @@ describe('assignPhishingTool', () => {
         })
       );
     });
+
   });
 
   describe('Error Handling', () => {

@@ -1379,4 +1379,46 @@ describe('Step Execution (ProcessMultipleLanguages)', () => {
       'targetLanguages must be a non-empty array'
     );
   });
+
+  it('should extract trainingUrl from result.result shape (alternate API response)', async () => {
+    mocks.runStart.mockResolvedValue({
+      status: 'success',
+      result: {
+        trainingUrl: 'https://example.com/alt-course',
+        title: 'Alternate Course',
+      },
+    });
+
+    const input = {
+      existingMicrolearningId: 'ml-123',
+      targetLanguages: ['tr'],
+      department: 'IT',
+    };
+
+    const result = await (processMultipleLanguagesStep as any).execute({ inputData: input });
+
+    expect(result.results[0].trainingUrl).toBe('https://example.com/alt-course');
+    expect(result.results[0].title).toBe('Alternate Course');
+  });
+
+  it('should extract trainingUrl from top-level data (r.data.trainingUrl)', async () => {
+    mocks.runStart.mockResolvedValue({
+      status: 'success',
+      data: {
+        trainingUrl: 'https://example.com/via-data',
+        title: 'Via Data',
+      },
+    });
+
+    const input = {
+      existingMicrolearningId: 'ml-123',
+      targetLanguages: ['de'],
+      department: 'IT',
+    };
+
+    const result = await (processMultipleLanguagesStep as any).execute({ inputData: input });
+
+    expect(result.results[0].trainingUrl).toBe('https://example.com/via-data');
+    expect(result.results[0].title).toBe('Via Data');
+  });
 });

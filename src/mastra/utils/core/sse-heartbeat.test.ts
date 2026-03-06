@@ -1,13 +1,15 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { withHeartbeat } from './sse-heartbeat';
 
+const mockLoggerFns = vi.hoisted(() => ({
+  debug: vi.fn(),
+  info: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+}));
+
 vi.mock('./logger', () => ({
-  getLogger: () => ({
-    debug: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-  }),
+  getLogger: () => mockLoggerFns,
 }));
 
 describe('withHeartbeat', () => {
@@ -116,6 +118,35 @@ describe('withHeartbeat', () => {
       const writeCountAfterError = write.mock.calls.length;
       vi.advanceTimersByTime(500);
       expect(write.mock.calls.length).toBe(writeCountAfterError);
+    });
+
+    it('should log when writer.write throws (stream closed path)', async () => {
+      const write = vi.fn().mockRejectedValue(new Error('Connection reset'));
+      const writer = { write };
+      const operation = vi.fn().mockImplementation(
+        () => new Promise(resolve => setTimeout(() => resolve('ok'), 50))
+      );
+
+      const promise = withHeartbeat(writer, operation, 10);
+      await vi.advanceTimersByTimeAsync(60);
+      await promise;
+
+      expect(mockLoggerFns.debug).toHaveBeenCalledWith('heartbeat_stream_closed');
+    });
+  });
+
+  describe('operation throws', () => {
+    it('should propagate operation error and still clear interval', async () => {
+      const write = vi.fn().mockResolvedValue(undefined);
+      const writer = { write };
+      const operation = vi.fn().mockRejectedValue(new Error('Operation failed'));
+
+      await expect(withHeartbeat(writer, operation, 10)).rejects.toThrow('Operation failed');
+
+      vi.advanceTimersByTime(100);
+      const callCount = write.mock.calls.length;
+      vi.advanceTimersByTime(500);
+      expect(write.mock.calls.length).toBe(callCount);
     });
   });
 });

@@ -34,6 +34,7 @@ vi.mock('../../utils/core/security-utils', () => ({
 describe('assignTrainingTool', () => {
   const mockToken = 'test-token-123';
   const mockCompanyId = 'test-company-id';
+  const mockThreadId = 'test-thread-id';
   const mockEnv = {
     CRUD_WORKER: {
       fetch: vi.fn(),
@@ -48,6 +49,7 @@ describe('assignTrainingTool', () => {
       token: mockToken,
       companyId: mockCompanyId,
       env: mockEnv,
+      threadId: mockThreadId,
     });
 
     // Explicitly mock KVService.getMicrolearning to return null (pass guard by default)
@@ -215,6 +217,9 @@ describe('assignTrainingTool', () => {
           serviceBinding: mockEnv.CRUD_WORKER,
           endpoint: 'https://worker/send',
           payload: expect.objectContaining({
+            batchResourceId: mockThreadId,
+            activityType: 'training',
+            trainingResourceId: 'resource-123',
             trainingId: 'resource-123',
             languageId: 'lang-456',
             targetUserResourceId: 'user-789',
@@ -249,6 +254,7 @@ describe('assignTrainingTool', () => {
         })
       );
     });
+
   });
 
   describe('Error Handling', () => {

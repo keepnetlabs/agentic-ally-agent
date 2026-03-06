@@ -14,7 +14,7 @@ import { KVService } from '../../services/kv-service';
 import { getRequestContext } from '../../utils/core/request-storage';
 import { getLogger } from '../../utils/core/logger';
 import { withRetry } from '../../utils/core/resilience-utils';
-import { callWorkerAPI } from '../../utils/core/worker-api-client';
+import { callWorkerAPI, type AgenticActivitiesPayload, type WorkerSendResponse } from '../../utils/core/worker-api-client';
 import { maskSensitiveField } from '../../utils/core/security-utils';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
 import { ERROR_MESSAGES, API_ENDPOINTS, KV_NAMESPACES } from '../../constants';
@@ -116,7 +116,7 @@ export const assignSmishingTool = createTool({
       targetGroupResourceId,
     });
 
-    const { token, companyId, env, baseApiUrl } = getRequestContext();
+    const { token, companyId, env, baseApiUrl, threadId } = getRequestContext();
     const effectiveCompanyId = companyId || (token ? extractCompanyIdFromTokenExport(token) : undefined);
 
     if (!token) {
@@ -125,12 +125,15 @@ export const assignSmishingTool = createTool({
       return createToolErrorResponse(errorInfo);
     }
 
-    const payload = {
+    const payload: AgenticActivitiesPayload = {
+      batchResourceId: threadId || uuidv4(),
+      activityType: 'smishing',
+      scenarioResourceId: resourceId,
       apiUrl: baseApiUrl,
       accessToken: token,
       companyId: effectiveCompanyId,
       smishingId: resourceId,
-      languageId: languageId,
+      languageId,
       ...(targetUserResourceId && { targetUserResourceId }),
       ...(targetGroupResourceId && { targetGroupResourceId }),
       name,
@@ -143,7 +146,7 @@ export const assignSmishingTool = createTool({
     try {
       const result = await withRetry(
         () =>
-          callWorkerAPI({
+          callWorkerAPI<WorkerSendResponse>({
             env,
             serviceBinding: env?.SMISHING_CRUD_WORKER,
             publicUrl: API_ENDPOINTS.SMISHING_WORKER_SEND,

@@ -132,6 +132,18 @@ describe('user-search-utils', () => {
         })
       );
     });
+
+    it('should return empty array when both primary and fallback return empty', async () => {
+      (global.fetch as any)
+        .mockResolvedValueOnce({ ok: true, json: async () => ({ items: [] }) })
+        .mockResolvedValueOnce({ ok: true, json: async () => ({ items: [] }) });
+
+      const result = await fetchUsersWithFilters(mockDeps, mockTemplate, []);
+
+      expect(result).toEqual([]);
+      expect(global.fetch).toHaveBeenNthCalledWith(1, expect.stringContaining('/api/leaderboard/get-all'), expect.any(Object));
+      expect(global.fetch).toHaveBeenNthCalledWith(2, expect.stringContaining('/api/target-users/search'), expect.any(Object));
+    });
   });
 
   describe('findUserByEmail', () => {
