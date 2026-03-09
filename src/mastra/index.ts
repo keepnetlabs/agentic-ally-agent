@@ -65,6 +65,7 @@ import { emailIRAnalyzeHandler } from './routes/email-ir-route';
 import { deepfakeStatusHandler } from './routes/deepfake-status-route';
 import { auditVerifyHandler } from './routes/audit-verify-route';
 import { isPublicUnauthenticatedPath } from './middleware/public-endpoint-policy';
+import { routeToCSAgent } from './utils/cs-orchestration-helpers';
 
 // Barrel imports - clean organization
 import {
@@ -77,6 +78,9 @@ import {
   vishingCallAgent,
   deepfakeVideoAgent,
   outOfScopeAgent,
+  companySearchAgent,
+  trainingStatsAgent,
+  csOrchestratorAgent,
 } from './agents';
 import {
   errorHandlerMiddleware,
@@ -171,6 +175,10 @@ export const mastra = new Mastra({
     deepfakeVideoAssistant: deepfakeVideoAgent,
     outOfScope: outOfScopeAgent,
     orchestrator: orchestratorAgent,
+    // Customer Service Agent Swarm
+    companySearchAssistant: companySearchAgent,
+    trainingStatsAssistant: trainingStatsAgent,
+    csOrchestrator: csOrchestratorAgent,
   },
   logger,
   deployer: getDeployer(),
@@ -888,6 +896,118 @@ export const mastra = new Mastra({
       registerApiRoute('/audit/verify', {
         method: 'GET',
         handler: auditVerifyHandler,
+      }),
+
+      // ─── Customer Service Chat (Separate Agent Swarm) ───
+      registerApiRoute('/customer-service/chat', {
+        method: 'POST',
+        handler: async (c: Context) => {
+          const mastra = c.get('mastra');
+
+          // Step 1: Parse and validate request (reuse existing helper)
+          let body: ChatRequestBody = {};
+          try {
+            body = await c.req.json<ChatRequestBody>();
+          } catch {
+            // ignore JSON parse errors
+          }
+
+          const parsedRequest = parseAndValidateRequest(body);
+          if (!parsedRequest) {
+            return c.json(
+              {
+                success: false,
+                message: 'Missing prompt. Provide {prompt}, {text}, {input}, or AISDK {messages} with user text.',
+              },
+              400
+            );
+          }
+
+          const { prompt, routingContext } = parsedRequest;
+
+          logger.info('CS_CHAT_REQUEST Customer service chat request', { prompt });
+
+          // Step 2: Thread ID (reuse existing helper)
+          const threadId = extractAndPrepareThreadId(body);
+          const store = requestStorage.getStore();
+          if (store) store.threadId = threadId;
+
+          // Step 3: Build CS orchestrator input
+          const orchestratorInput = routingContext
+            ? `Here is the recent conversation history:\n---\n${routingContext}\n---\n\nCurrent user message: "${prompt}"\n\nBased on this history and the current message, decide which CS agent should handle the request.`
+            : prompt;
+
+          // Step 4: Route via CS Orchestrator
+          let routeResult;
+          try {
+            routeResult = await routeToCSAgent(mastra, orchestratorInput);
+            logger.info('CS_ROUTING Agent selected', {
+              agentName: routeResult.agentName,
+              taskContext: routeResult.taskContext,
+            });
+          } catch (routingError) {
+            const err = normalizeError(routingError);
+            const errorInfo = errorService.aiModel(err.message, {
+              step: 'cs-agent-routing',
+              stack: err.stack,
+            });
+            logErrorInfo(logger, 'error', 'cs_agent_routing_failed', errorInfo);
+            return c.json(
+              {
+                success: false,
+                error: 'CS agent routing failed',
+                message: routingError instanceof Error ? routingError.message : 'Unknown routing error',
+              },
+              500
+            );
+          }
+
+          // Step 5: Get agent instance
+          const agent = mastra.getAgent(routeResult.agentName);
+          if (!agent) {
+            logger.error('cs_agent_not_found', { agentName: routeResult.agentName });
+            return c.json(
+              {
+                success: false,
+                error: 'CS agent not found',
+                message: `Agent "${routeResult.agentName}" is not available`,
+              },
+              500
+            );
+          }
+
+          // Step 6: Build final prompt with CS context
+          let finalPrompt = buildFinalPromptWithModelOverride(prompt, body?.modelProvider, body?.model);
+          if (routeResult.taskContext) {
+            finalPrompt = `[CONTEXT FROM CS ORCHESTRATOR: ${routeResult.taskContext}]\n\n${finalPrompt}`;
+          }
+
+          // Step 7: Create agent stream (reuse existing helper)
+          let stream;
+          try {
+            stream = await createAgentStream(agent, finalPrompt, threadId, routeResult.agentName);
+          } catch (streamError) {
+            const err = normalizeError(streamError);
+            const errorInfo = errorService.external(err.message, {
+              step: 'cs-stream-creation',
+              stack: err.stack,
+              agentName: routeResult.agentName,
+            });
+            logErrorInfo(logger, 'error', 'cs_stream_creation_failed', errorInfo);
+            return c.json(
+              {
+                success: false,
+                error: 'Stream creation failed',
+                message: streamError instanceof Error ? streamError.message : 'Unknown stream error',
+              },
+              500
+            );
+          }
+
+          return stream.toUIMessageStreamResponse({
+            sendReasoning: true,
+          });
+        },
       }),
     ],
   },

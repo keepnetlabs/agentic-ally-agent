@@ -32,7 +32,7 @@ export function resolveLogLevel(): LogLevel {
     return envLevel as LogLevel;
   }
   const nodeEnv = typeof process !== 'undefined' ? process.env?.NODE_ENV : undefined;
-  return nodeEnv === 'development' ? 'debug' : 'info';
+  return nodeEnv === 'development' ? 'info' : 'info';
 }
 
 const DEFAULT_LOG_LEVEL = resolveLogLevel();

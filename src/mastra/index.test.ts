@@ -33,6 +33,10 @@ vi.mock('./utils/chat-orchestration-helpers', () => ({
   createAgentStream: vi.fn(),
 }));
 
+vi.mock('./utils/cs-orchestration-helpers', () => ({
+  routeToCSAgent: vi.fn(),
+}));
+
 vi.mock('./services', () => ({
   ExampleRepo: { getInstance: vi.fn() },
   executeAutonomousGeneration: vi.fn(),
@@ -68,6 +72,9 @@ vi.mock('./agents', () => ({
   vishingCallAgent: {},
   deepfakeVideoAgent: {},
   outOfScopeAgent: {},
+  companySearchAgent: {},
+  trainingStatsAgent: {},
+  csOrchestratorAgent: {},
 }));
 
 describe('Mastra API Routes', () => {

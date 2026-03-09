@@ -35,3 +35,6 @@ export * from './vishing-call';
 
 // Deepfake video tools (HeyGen AI video generation)
 export * from './deepfake';
+
+// Company search tools (Customer Service)
+export * from './company-search';

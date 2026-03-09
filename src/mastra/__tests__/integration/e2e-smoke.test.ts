@@ -85,6 +85,13 @@ vi.mock('../../agents', () => ({
   vishingCallAgent: {},
   deepfakeVideoAgent: {},
   outOfScopeAgent: {},
+  companySearchAgent: {},
+  trainingStatsAgent: {},
+  csOrchestratorAgent: {},
+}));
+
+vi.mock('../../utils/cs-orchestration-helpers', () => ({
+  routeToCSAgent: vi.fn(),
 }));
 
 const handlers: Record<string, (c: unknown) => Promise<unknown>> = {};
