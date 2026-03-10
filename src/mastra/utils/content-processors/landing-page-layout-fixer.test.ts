@@ -15,8 +15,14 @@ describe('fixLandingPageLayout', () => {
     expect(output).toBe(input);
   });
 
-  it('should NOT add margin: 0 auto if margin already exists (e.g. hero overlap margins)', () => {
+  it('should clamp overly aggressive hero overlap margins to the design constant', () => {
     const input = `<div style='width:100%; max-width:380px; margin:-40px auto 0; padding:0 20px;'>X</div>`;
+    const output = fixLandingPageLayout(input);
+    expect(output).toBe(`<div style='width:100%; max-width:380px; margin:-24px auto 0; padding:0 20px;'>X</div>`);
+  });
+
+  it('should preserve allowed hero overlap margins that already use auto centering', () => {
+    const input = `<div style='width:100%; max-width:380px; margin:-24px auto 0; padding:0 20px;'>X</div>`;
     const output = fixLandingPageLayout(input);
     expect(output).toBe(input);
   });

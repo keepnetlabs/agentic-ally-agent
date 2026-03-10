@@ -160,7 +160,7 @@ export function getLoginTemplateExample({ fromName, industryDesign }: TemplatePa
         </button>
 
         <!-- Security Indicator -->
-        <div style='margin-top: 10px; display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: #6b7280;'>
+        <div style='margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 11px; color: #6b7280;'>
           <span aria-hidden='true'>&#128274;</span>
           <span>256-bit SSL encryption</span>
         </div>

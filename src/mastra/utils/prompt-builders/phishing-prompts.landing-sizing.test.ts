@@ -83,6 +83,18 @@ describe('phishing-prompts landing sizing', () => {
         `body max-width: ${LANDING_PAGE.MINIMAL_BODY_MAX_WIDTH_PX}px, form max-width: ${LANDING_PAGE.FORM_MAX_WIDTH_PX}px`
       );
     });
+
+    it('should keep MINIMAL user reminders aligned with no-card layout', () => {
+      vi.spyOn(Math, 'random')
+        .mockImplementationOnce(() => 0.5) // MINIMAL
+        .mockImplementationOnce(() => 0.0);
+
+      const { userPrompt } = buildLandingPagePrompts(makeBaseParams());
+
+      expect(userPrompt).toContain('Keep the MINIMAL structure: no outer card, generous spacing, constrained form width');
+      expect(userPrompt).toContain('Do not reintroduce a centered card wrapper');
+      expect(userPrompt).not.toContain('Ensure login page is properly centered with inline styles');
+    });
   });
 
   describe('HERO Layout (index 3)', () => {
@@ -96,6 +108,41 @@ describe('phishing-prompts landing sizing', () => {
 
       expect(systemPrompt).toContain(`max-width: ${LANDING_PAGE.HERO_MAIN_CONTAINER_MAX_WIDTH_PX}px;`);
       expect(systemPrompt).toContain(`margin: ${LANDING_PAGE.HERO_MAIN_CONTAINER_MARGIN_TOP_PX}px auto 0;`);
+    });
+
+    it('should explicitly forbid more aggressive HERO overlap values', () => {
+      vi.spyOn(Math, 'random')
+        .mockImplementationOnce(() => 0.99) // HERO
+        .mockImplementationOnce(() => 0.0);
+
+      const { systemPrompt } = buildLandingPagePrompts(makeBaseParams());
+
+      expect(systemPrompt).toContain(
+        `Do NOT make the overlap more aggressive (for example \`-40px\`, \`-48px\`, etc.).`
+      );
+    });
+
+    it('should include HERO safe variation boundaries', () => {
+      vi.spyOn(Math, 'random')
+        .mockImplementationOnce(() => 0.99) // HERO
+        .mockImplementationOnce(() => 0.0);
+
+      const { systemPrompt } = buildLandingPagePrompts(makeBaseParams());
+
+      expect(systemPrompt).toContain('You MAY vary hero height slightly, logo size, card shadow/radius, and CTA corner style.');
+      expect(systemPrompt).toContain('Do NOT break the vertical hero stack or the assigned overlap logic.');
+    });
+
+    it('should keep HERO user reminders aligned with hero structure', () => {
+      vi.spyOn(Math, 'random')
+        .mockImplementationOnce(() => 0.99) // HERO
+        .mockImplementationOnce(() => 0.0);
+
+      const { userPrompt } = buildLandingPagePrompts(makeBaseParams());
+
+      expect(userPrompt).toContain('Keep the assigned HERO structure (top hero + overlapping card)');
+      expect(userPrompt).toContain('Keep the main container centered and preserve the assigned overlap rules');
+      expect(userPrompt).not.toContain('Card must have generous internal padding (32px+)');
     });
 
     it('should work with minimum random value for HERO (0.75)', () => {

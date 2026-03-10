@@ -36,6 +36,7 @@ import {
   postProcessPhishingEmailHtml,
   postProcessPhishingLandingHtml,
 } from '../utils/content-processors/phishing-html-postprocessors';
+import { repairBrokenLandingFormControlAttrs } from '../utils/content-processors/landing-form-style-preserver';
 import { PHISHING_SCENARIO_PARAMS, PHISHING_CONTENT_PARAMS } from '../utils/config/llm-generation-params';
 
 // --- Steps ---
@@ -674,6 +675,9 @@ const generateLandingPage = createStep({
             // Step 3: Fix broken images with real HTTP validation
             // This runs AFTER replace/normalize
             cleanedTemplate = await fixBrokenImages(cleanedTemplate, fromName);
+
+            // Step 3.5: Repair malformed boolean/form control attrs before validation/save.
+            cleanedTemplate = repairBrokenLandingFormControlAttrs(cleanedTemplate);
 
             // Step 4: Validate HTML structure and required elements
             const validationResult = validateLandingPage(cleanedTemplate, page.type);

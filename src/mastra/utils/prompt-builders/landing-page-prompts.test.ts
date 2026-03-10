@@ -93,6 +93,7 @@ describe('landing-page-prompts', () => {
       });
       expect(result).toContain('display: flex');
       expect(result).toContain('flex-wrap');
+      expect(result).toContain('Do NOT collapse this into a single centered card');
     });
 
     it('should include MINIMAL layout rules when layout id is MINIMAL', () => {
@@ -106,6 +107,14 @@ describe('landing-page-prompts', () => {
       });
       expect(result).toContain('NO CARD CONTAINER');
       expect(result).toContain('max-width');
+      expect(result).toContain('Do NOT introduce an outer card');
+    });
+
+    it('should clarify that shared rules defer to layout-specific rules', () => {
+      const result = callPrompt();
+      expect(result).toContain('SHARED DESIGN ELEMENTS');
+      expect(result).toContain('the layout-specific rule wins');
+      expect(result).toContain('Do NOT add this outer card for MINIMAL');
     });
 
     it('should include HERO layout rules when layout id is HERO', () => {
@@ -119,6 +128,7 @@ describe('landing-page-prompts', () => {
       });
       expect(result).toContain('flex-direction: column');
       expect(result).toContain('hero');
+      expect(result).toContain('Do NOT break the vertical hero stack');
     });
 
     it('should include quishing rule when isQuishing is true', () => {

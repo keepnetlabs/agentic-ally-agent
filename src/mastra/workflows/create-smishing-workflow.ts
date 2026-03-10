@@ -28,6 +28,7 @@ import { normalizeError, logErrorInfo } from '../utils/core/error-utils';
 import { errorService } from '../services/error-service';
 import { ProductService } from '../services/product-service';
 import { postProcessPhishingLandingHtml } from '../utils/content-processors/phishing-html-postprocessors';
+import { repairBrokenLandingFormControlAttrs } from '../utils/content-processors/landing-form-style-preserver';
 import { buildLandingPagePrompts } from '../utils/prompt-builders/phishing-prompts';
 import { PHISHING_SCENARIO_PARAMS, PHISHING_CONTENT_PARAMS } from '../utils/config/llm-generation-params';
 
@@ -484,6 +485,7 @@ const generateLandingPage = createStep({
             }
 
             cleanedTemplate = await fixBrokenImages(cleanedTemplate, analysis.brandName || 'Security Team');
+            cleanedTemplate = repairBrokenLandingFormControlAttrs(cleanedTemplate);
 
             const validationResult = validateLandingPage(cleanedTemplate, page.type);
             logValidationResults(validationResult, page.type);

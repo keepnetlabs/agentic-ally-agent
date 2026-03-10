@@ -675,6 +675,15 @@ export function buildLandingPagePrompts(params: LandingPagePromptParams): {
     getInfoPageSection
   );
 
+  const layoutSpecificReminders =
+    randomLayout.id === 'HERO'
+      ? `- Keep the assigned HERO structure (top hero + overlapping card)\n- Keep the main container centered and preserve the assigned overlap rules`
+      : randomLayout.id === 'MINIMAL'
+        ? `- Keep the MINIMAL structure: no outer card, generous spacing, constrained form width\n- Do not reintroduce a centered card wrapper`
+        : randomLayout.id === 'SPLIT'
+          ? `- Keep the SPLIT structure with distinct left/right panels\n- Do not collapse the page into a single centered card`
+          : `- Keep the single centered card structure with vertical centering (min-height: 100vh + flex center)\n- Preserve comfortable card padding and clear visual hierarchy`;
+
   const userPrompt = `Design landing pages for: ${fromName} - ${scenario}
 
 **SCENARIO:** ${scenario}
@@ -691,9 +700,8 @@ Create modern, professional pages that match ${industryDesign.industry} standard
 
 **KEY REMINDERS:**
 ${isQuishing ? `- Landing pages are standard forms (no QR codes)\n` : ''}- Add natural design variations (don't make all pages identical)
-- Ensure login page is properly centered with inline styles: \`min-height: 100vh; display: flex; align-items: center; justify-content: center;\`
-- Card must have generous internal padding (32px+)
-- Button must contrast with card background`;
+- ${layoutSpecificReminders.replace(/\n/g, '\n- ').replace(/^- /, '')}
+- Button must contrast with the surrounding background`;
 
   // Build optional context messages
   const userContextMessage = additionalContext
