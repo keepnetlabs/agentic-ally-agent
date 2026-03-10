@@ -526,6 +526,12 @@ export async function generateContentForUser(
         trainingResult: JSON.stringify(trainingResult, null, 2),
       });
     } else {
+      // Derive contentCategory from phishing simulation metadata
+      const phishingSim = recommendedSteps.simulations?.[0];
+      const phishingContentCategory = phishingSim
+        ? [phishingSim.vector || 'Phishing', phishingSim.scenario_type, phishingSim.persuasion_tactic, phishingSim.difficulty].filter(Boolean).join(' | ')
+        : '';
+
       const assignResult = await assignPhishingWithTraining(
         String(userId),
         phishingThreadId,
@@ -533,7 +539,8 @@ export async function generateContentForUser(
         sendTrainingLanguageId,
         phishingResourceId,
         phishingLanguageId,
-        phishingIsQuishing
+        phishingIsQuishing,
+        phishingContentCategory
       );
       if (assignResult?.success) {
         phishingResult.uploadAssignResult = assignResult;

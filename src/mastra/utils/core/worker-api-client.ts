@@ -135,22 +135,35 @@ export async function callWorkerAPI<TResponse = any, TPayload = any>(
 // ============================================
 
 /** Extended payload for /api/agentic-ai/activities (proxied via CRUD Worker /send).
- *  Adds agentic metadata on top of the existing flat payload (apiUrl, accessToken, etc.). */
+ *  CRUD Worker routes to:
+ *  - Path A (targetUserResourceId): POST /api/agentic-ai/activities (platform handles groups)
+ *  - Path B (targetGroupResourceId): Direct campaign/enrollment API (legacy)
+ */
 export interface AgenticActivitiesPayload {
   batchResourceId: string;
   activityType: 'phishing' | 'quishing' | 'smishing' | 'training';
   scenarioResourceId?: string;
   trainingResourceId?: string;
+  /** Free-text category classifying the activity (e.g. "Social Engineering", "Phishing Awareness") */
+  contentCategory?: string;
   /** Original flat fields (apiUrl, accessToken, companyId, phishingId, etc.) */
   [key: string]: unknown;
 }
 
-/** Response from CRUD Worker /send (proxied from /api/agentic-ai/activities) */
+/** Response from CRUD Worker /send — unified for both Path A and Path B */
 export interface WorkerSendResponse {
   success: boolean;
   message?: string;
-  /** 'autonomous' = campaign created, 'approval_gated' = pending admin approval */
+  /** 'autonomous' = campaign/enrollment created, 'approval_gated' = pending admin approval */
   status?: 'autonomous' | 'approval_gated';
-  approvalId?: string;
+  /** Activity resourceId (Path A — Agentic AI Activities API) */
+  activityResourceId?: string;
+  /** Campaign resourceId (phishing/smishing) */
+  campaignResourceId?: string;
+  campaignId?: string;
+  /** Enrollment resourceId (training) */
+  enrollmentResourceId?: string;
+  /** Batch ID for this activity group */
+  batchResourceId?: string;
   [key: string]: unknown;
 }

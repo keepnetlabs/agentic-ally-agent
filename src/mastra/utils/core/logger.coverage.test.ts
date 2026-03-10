@@ -46,12 +46,12 @@ describe('logger.ts coverage branches', () => {
     process.env.NODE_ENV = originalNodeEnv;
   });
 
-  it('resolveLogLevel returns debug in development and info otherwise', async () => {
+  it('resolveLogLevel returns info by default', async () => {
     delete process.env.LOG_LEVEL;
     process.env.NODE_ENV = 'development';
     vi.resetModules();
     const devModule = await import('./logger');
-    expect(devModule.resolveLogLevel()).toBe('debug');
+    expect(devModule.resolveLogLevel()).toBe('info');
 
     process.env.NODE_ENV = 'test';
     vi.resetModules();
@@ -64,7 +64,7 @@ describe('logger.ts coverage branches', () => {
     process.env.NODE_ENV = 'development';
     vi.resetModules();
     const mod = await import('./logger');
-    expect(mod.resolveLogLevel()).toBe('debug');
+    expect(mod.resolveLogLevel()).toBe('info');
 
     process.env.NODE_ENV = 'production';
     vi.resetModules();
@@ -156,7 +156,7 @@ describe('logger.ts coverage branches', () => {
     expect(mocks.ctor).toHaveBeenLastCalledWith(
       expect.objectContaining({
         name: 'DevModule',
-        level: 'debug',
+        level: 'info',
         formatters: expect.any(Object),
       })
     );

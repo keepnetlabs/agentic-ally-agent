@@ -10,6 +10,7 @@
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { isSafeId, uuidv4 } from '../../utils/core/id-utils';
+import { generateBatchId } from '../../utils/core/short-id';
 import { KVService } from '../../services/kv-service';
 import { getRequestContext } from '../../utils/core/request-storage';
 import { getLogger } from '../../utils/core/logger';
@@ -52,7 +53,9 @@ export const assignPhishingTool = createTool({
         .refine(isSafeId, { message: 'Invalid resourceId format.' }),
       languageId: z
         .string()
+        .nullable()
         .optional()
+        .transform(v => v ?? undefined)
         .describe('The Language ID returned from the upload process')
         .refine(v => (v ? isSafeId(v) : true), { message: 'Invalid languageId format.' }),
       isQuishing: z.boolean().optional().describe('Quishing flag (can be passed from upload result)'),
@@ -77,14 +80,22 @@ export const assignPhishingTool = createTool({
         .refine(v => (v ? isSafeId(v) : true), { message: 'Invalid targetGroupResourceId format.' }),
       trainingId: z
         .string()
+        .nullable()
         .optional()
+        .transform(v => v ?? undefined)
         .describe('The Training Resource ID to send after phishing simulation (if sendAfterPhishingSimulation is true)')
         .refine(v => (v ? isSafeId(v) : true), { message: 'Invalid trainingId format.' }),
       sendTrainingLanguageId: z
         .string()
+        .nullable()
         .optional()
+        .transform(v => v ?? undefined)
         .describe('The Training Language ID to send after phishing simulation (if sendAfterPhishingSimulation is true)')
         .refine(v => (v ? isSafeId(v) : true), { message: 'Invalid sendTrainingLanguageId format.' }),
+      contentCategory: z
+        .string()
+        .optional()
+        .describe('Free-text category classifying the activity (e.g. "Social Engineering", "Phishing Awareness"). Used by the Agentic AI Activities API.'),
     })
     .refine(data => Boolean(data.targetUserResourceId) !== Boolean(data.targetGroupResourceId), {
       message:
@@ -103,6 +114,7 @@ export const assignPhishingTool = createTool({
       targetGroupResourceId,
       trainingId,
       sendTrainingLanguageId,
+      contentCategory,
     } = context;
 
     // Guard: prevent assigning with raw phishingId (must upload first)
@@ -143,7 +155,7 @@ export const assignPhishingTool = createTool({
     });
 
     // Get Auth Token & Cloudflare bindings from AsyncLocalStorage
-    const { token, companyId, env, baseApiUrl, threadId } = getRequestContext();
+    const { token, companyId, env, baseApiUrl } = getRequestContext();
     const effectiveCompanyId = companyId || (token ? extractCompanyIdFromTokenExport(token) : undefined);
 
     if (!token) {
@@ -153,9 +165,10 @@ export const assignPhishingTool = createTool({
     }
 
     const payload: AgenticActivitiesPayload = {
-      batchResourceId: threadId || uuidv4(),
+      batchResourceId: generateBatchId(),
       activityType: isQuishing ? 'quishing' : 'phishing',
       scenarioResourceId: resourceId,
+      contentCategory: contentCategory || '',
       apiUrl: baseApiUrl,
       accessToken: token,
       companyId: effectiveCompanyId,
@@ -168,11 +181,9 @@ export const assignPhishingTool = createTool({
       ...(trainingId && { trainingId }),
       ...(sendTrainingLanguageId && { sendTrainingLanguageId }),
     };
-    logger.info('Assign phishing payload prepared (redacted)');
-
     // Log Payload with masked token
     const maskedPayload = maskSensitiveField(payload, 'accessToken');
-    logger.debug('Assign phishing payload prepared', { payload: maskedPayload });
+    logger.info('Assign phishing payload prepared', { payload: maskedPayload });
 
     try {
       // Wrap API call with retry (exponential backoff: 1s, 2s, 4s)

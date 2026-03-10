@@ -72,6 +72,8 @@ vi.mock('./agents', () => ({
   vishingCallAgent: {},
   deepfakeVideoAgent: {},
   outOfScopeAgent: {},
+  phishingTemplateFixerAgent: {},
+  phishingLandingPageClassifierAgent: {},
   companySearchAgent: {},
   trainingStatsAgent: {},
   csOrchestratorAgent: {},

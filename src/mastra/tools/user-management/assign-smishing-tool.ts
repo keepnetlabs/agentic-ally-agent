@@ -10,6 +10,7 @@
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { isSafeId, uuidv4 } from '../../utils/core/id-utils';
+import { generateBatchId } from '../../utils/core/short-id';
 import { KVService } from '../../services/kv-service';
 import { getRequestContext } from '../../utils/core/request-storage';
 import { getLogger } from '../../utils/core/logger';
@@ -50,7 +51,9 @@ export const assignSmishingTool = createTool({
         .refine(isSafeId, { message: 'Invalid resourceId format.' }),
       languageId: z
         .string()
+        .nullable()
         .optional()
+        .transform(v => v ?? undefined)
         .describe('The Language ID returned from the upload process')
         .refine(v => (v ? isSafeId(v) : true), { message: 'Invalid languageId format.' }),
       targetUserResourceId: z
@@ -72,6 +75,10 @@ export const assignSmishingTool = createTool({
         .optional()
         .describe('The Group ID to assign the smishing simulation to (group assignment)')
         .refine(v => (v ? isSafeId(v) : true), { message: 'Invalid targetGroupResourceId format.' }),
+      contentCategory: z
+        .string()
+        .optional()
+        .describe('Free-text category classifying the activity (e.g. "Social Engineering", "Smishing Awareness"). Used by the Agentic AI Activities API.'),
     })
     .refine(data => Boolean(data.targetUserResourceId) !== Boolean(data.targetGroupResourceId), {
       message:
@@ -80,7 +87,7 @@ export const assignSmishingTool = createTool({
   outputSchema: assignSmishingOutputSchema,
   execute: async ({ context, writer }) => {
     const logger = getLogger('AssignSmishingTool');
-    const { resourceId, languageId, targetUserResourceId, targetUserEmail, targetUserFullName, targetGroupResourceId } =
+    const { resourceId, languageId, targetUserResourceId, targetUserEmail, targetUserFullName, targetGroupResourceId, contentCategory } =
       context;
 
     try {
@@ -116,7 +123,7 @@ export const assignSmishingTool = createTool({
       targetGroupResourceId,
     });
 
-    const { token, companyId, env, baseApiUrl, threadId } = getRequestContext();
+    const { token, companyId, env, baseApiUrl } = getRequestContext();
     const effectiveCompanyId = companyId || (token ? extractCompanyIdFromTokenExport(token) : undefined);
 
     if (!token) {
@@ -126,9 +133,10 @@ export const assignSmishingTool = createTool({
     }
 
     const payload: AgenticActivitiesPayload = {
-      batchResourceId: threadId || uuidv4(),
+      batchResourceId: generateBatchId(),
       activityType: 'smishing',
       scenarioResourceId: resourceId,
+      contentCategory: contentCategory || '',
       apiUrl: baseApiUrl,
       accessToken: token,
       companyId: effectiveCompanyId,
@@ -138,10 +146,8 @@ export const assignSmishingTool = createTool({
       ...(targetGroupResourceId && { targetGroupResourceId }),
       name,
     };
-    logger.info('Assign smishing payload prepared (redacted)');
-
     const maskedPayload = maskSensitiveField(payload, 'accessToken');
-    logger.debug('Assign smishing payload prepared', { payload: maskedPayload });
+    logger.info('Assign smishing payload prepared', { payload: maskedPayload });
 
     try {
       const result = await withRetry(

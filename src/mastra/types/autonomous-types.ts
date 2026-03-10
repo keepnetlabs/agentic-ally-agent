@@ -40,6 +40,7 @@ export interface AutonomousRequest {
   actions: AutonomousAction[];
   sendAfterPhishingSimulation?: boolean;
   preferredLanguage?: string;
+  batchResourceId?: string; // Shared batch ID for group fan-out — all users in same batch share this
   env?: CloudflareEnv;
   mastra?: Mastra; // Mastra instance for agent access
 }

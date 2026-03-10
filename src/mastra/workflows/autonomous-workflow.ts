@@ -28,6 +28,7 @@ export class AutonomousWorkflow extends WorkflowEntrypoint {
         targetUserResourceId,
         targetGroupResourceId,
         baseApiUrl,
+        batchResourceId,
       } = event.payload;
       const result = await executeAutonomousGeneration({
         token,
@@ -39,6 +40,7 @@ export class AutonomousWorkflow extends WorkflowEntrypoint {
         preferredLanguage,
         targetUserResourceId,
         targetGroupResourceId,
+        batchResourceId,
       });
 
       logger.info('autonomous_workflow_completed', { success: result.success });

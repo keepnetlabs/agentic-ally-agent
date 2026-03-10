@@ -45,6 +45,18 @@ interface AutonomousToolResult {
   };
 }
 
+/**
+ * Derive contentCategory from microlearning metadata for the Agentic AI Activities API.
+ * Example output: "Training | Phishing Awareness Basics"
+ */
+function buildContentCategory(microlearning: MicrolearningRecommendation): string {
+  const parts = [
+    'Training',
+    microlearning.title,
+  ].filter(Boolean);
+  return parts.join(' | ');
+}
+
 function pickRandomTrainingLevel(): (typeof TRAINING_LEVELS)[number] {
   return TRAINING_LEVELS[Math.floor(Math.random() * TRAINING_LEVELS.length)];
 }
@@ -200,6 +212,7 @@ async function executeTrainingToolFirst(params: {
       context: {
         resourceId: uploadResult.data.resourceId,
         sendTrainingLanguageId: uploadResult.data.sendTrainingLanguageId,
+        contentCategory: buildContentCategory(microlearning),
         ...assignmentContext,
       },
     } as any);

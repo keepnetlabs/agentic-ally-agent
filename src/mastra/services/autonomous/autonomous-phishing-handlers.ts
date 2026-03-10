@@ -39,6 +39,20 @@ interface AutonomousToolResult {
   };
 }
 
+/**
+ * Derive contentCategory from simulation metadata for the Agentic AI Activities API.
+ * Example output: "Phishing | CEO Fraud | Authority | Hard"
+ */
+function buildContentCategory(simulation: PhishingSimulationRecommendation): string {
+  const parts = [
+    simulation.vector || 'Phishing',
+    simulation.scenario_type,
+    simulation.persuasion_tactic,
+    simulation.difficulty,
+  ].filter(Boolean);
+  return parts.join(' | ');
+}
+
 function resolveAttackMethod(scenarioType?: string): (typeof PHISHING.ATTACK_METHODS)[number] | undefined {
   if (!scenarioType) return undefined;
   const normalized = scenarioType.toUpperCase();
@@ -136,6 +150,7 @@ async function executePhishingToolFirst(params: {
         resourceId: uploadResult.data.resourceId,
         languageId: uploadResult.data.languageId,
         isQuishing: uploadResult.data.isQuishing,
+        contentCategory: buildContentCategory(simulation),
         ...assignmentContext,
       },
     } as any);
@@ -761,7 +776,8 @@ export async function assignPhishingWithTraining(
   sendTrainingLanguageId?: string,
   phishingResourceId?: string,
   phishingLanguageId?: string,
-  isQuishing?: boolean
+  isQuishing?: boolean,
+  contentCategory?: string
 ): Promise<any> {
   const logger = getLogger('AssignPhishingWithTraining');
   if (!targetUserResourceId) {
@@ -789,6 +805,7 @@ export async function assignPhishingWithTraining(
           targetUserResourceId,
           trainingId,
           sendTrainingLanguageId,
+          contentCategory,
         },
       } as any);
 

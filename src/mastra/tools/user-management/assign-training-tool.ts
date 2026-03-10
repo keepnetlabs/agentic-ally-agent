@@ -10,6 +10,7 @@
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { isSafeId, uuidv4 } from '../../utils/core/id-utils';
+import { generateBatchId } from '../../utils/core/short-id';
 import { getRequestContext } from '../../utils/core/request-storage';
 import { getLogger } from '../../utils/core/logger';
 import { withRetry } from '../../utils/core/resilience-utils';
@@ -71,6 +72,10 @@ export const assignTrainingTool = createTool({
         .optional()
         .describe('The Group ID to assign the training to (group assignment)')
         .refine(v => (v ? isSafeId(v) : true), { message: 'Invalid targetGroupResourceId format.' }),
+      contentCategory: z
+        .string()
+        .optional()
+        .describe('Free-text category classifying the activity (e.g. "Security Awareness", "Compliance Training"). Used by the Agentic AI Activities API.'),
     })
     .refine(data => Boolean(data.targetUserResourceId) !== Boolean(data.targetGroupResourceId), {
       message:
@@ -86,6 +91,7 @@ export const assignTrainingTool = createTool({
       targetUserEmail,
       targetUserFullName,
       targetGroupResourceId,
+      contentCategory,
     } = context;
 
     // Guard: prevent assigning with raw microlearningId (must upload first)
@@ -123,7 +129,7 @@ export const assignTrainingTool = createTool({
     });
 
     // Get Auth Token & Cloudflare bindings from AsyncLocalStorage
-    const { token, companyId, env, baseApiUrl, threadId } = getRequestContext();
+    const { token, companyId, env, baseApiUrl } = getRequestContext();
     const effectiveCompanyId = companyId || (token ? extractCompanyIdFromTokenExport(token) : undefined);
 
     if (!token) {
@@ -133,9 +139,10 @@ export const assignTrainingTool = createTool({
     }
 
     const payload: AgenticActivitiesPayload = {
-      batchResourceId: threadId || uuidv4(),
+      batchResourceId: generateBatchId(),
       activityType: 'training',
       trainingResourceId: resourceId,
+      contentCategory: contentCategory || '',
       apiUrl: baseApiUrl,
       accessToken: token,
       companyId: effectiveCompanyId,

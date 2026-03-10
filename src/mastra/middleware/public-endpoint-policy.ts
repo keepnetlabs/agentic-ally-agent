@@ -4,11 +4,13 @@
  */
 export const PUBLIC_UNAUTHENTICATED_ENDPOINTS = [
   '/autonomous',
+  '/batch-autonomous',
   '/code-review-validate',
   '/vishing/prompt',
   '/vishing/conversations/summary',
   '/smishing/chat',
   '/email-ir/analyze',
+  '/phishing/template-fixer',
 ] as const;
 
 /**
