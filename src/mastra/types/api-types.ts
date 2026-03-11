@@ -201,6 +201,8 @@ export type CloudflareEnv = Record<string, unknown> & {
   PHISHING_CRUD_WORKER?: unknown; // Service
   SMISHING_CRUD_WORKER?: unknown; // Service
   AUTONOMOUS_WORKFLOW?: WorkflowBinding<AutonomousRequestBody>;
+  BATCH_ORCHESTRATOR_WORKFLOW?: WorkflowBinding<import('../workflows/batch-orchestrator-workflow').BatchOrchestratorPayload>;
+  BATCH_WORKFLOW_KV?: { put: (key: string, value: string, opts?: { expirationTtl?: number }) => Promise<void>; get: (key: string) => Promise<string | null> };
 };
 
 export interface WorkflowBinding<TParams = unknown, TResult = unknown> {

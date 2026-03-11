@@ -1,11 +1,11 @@
 /**
  * Batch Autonomous Route
  *
- * Fan-out autonomous generation to all users in a target group.
- * Creates individual Cloudflare Workflow instances per user, chunked at 100.
+ * Thin validation layer that delegates fan-out to BatchOrchestratorWorkflow.
+ * The orchestrator runs as a durable CF Workflow — no HTTP timeout risk.
  *
  * POST /batch-autonomous
- *   → 202 { batchResourceId, status, workflowsCreated, ... }
+ *   → 202 { batchResourceId, status: "accepted", ... }
  *
  * GET /batch-autonomous/:batchId/status
  *   → 200 { batchResourceId, status, userCount, ... }
@@ -16,10 +16,9 @@ import { getLogger } from '../utils/core/logger';
 import { normalizeError, logErrorInfo } from '../utils/core/error-utils';
 import { errorService } from '../services/error-service';
 import { KVService } from '../services';
-import { MAX_BATCH_USERS, BATCH_KV_KEYS, BATCH_META_TTL_SECONDS, KV_NAMESPACES } from '../constants';
+import { BATCH_KV_KEYS, BATCH_META_TTL_SECONDS, KV_NAMESPACES } from '../constants';
 import { resolveBaseApiUrl } from '../utils/core/url-validator';
 import { generateBatchId } from '../utils/core/short-id';
-import { fetchGroupMembers } from '../utils/core/group-members';
 import {
   AUTONOMOUS_ACTIONS,
   isValidAutonomousAction,
@@ -28,7 +27,6 @@ import {
 import type { BatchAutonomousRequestBody, CloudflareEnv } from '../types';
 
 const logger = getLogger('BatchAutonomousRoute');
-const CHUNK_SIZE = 100;
 
 export async function batchAutonomousHandler(c: Context) {
   try {
@@ -43,7 +41,7 @@ export async function batchAutonomousHandler(c: Context) {
     } = body;
     const env = c.env as CloudflareEnv | undefined;
 
-    // Validation
+    // ── Validation ──
     if (!token) {
       return c.json({ success: false, error: 'Missing token' }, 400);
     }
@@ -59,170 +57,81 @@ export async function batchAutonomousHandler(c: Context) {
           success: false,
           error: `Actions must be one or more of: ${AUTONOMOUS_ACTIONS.map(a => `"${a}"`).join(', ')}`,
         },
-        400
+        400,
       );
     }
 
-    const effectiveBaseApiUrl = resolveBaseApiUrl(baseApiUrl);
-
-    // Step 1: Fetch group members
-    const users = await fetchGroupMembers(token, targetGroupResourceId, effectiveBaseApiUrl);
-
-    if (users.length === 0) {
-      return c.json({ success: false, error: 'No active users found in group' }, 400);
-    }
-
-    if (users.length > MAX_BATCH_USERS) {
-      return c.json(
-        {
-          success: false,
-          error: `Group has ${users.length} users, exceeds maximum of ${MAX_BATCH_USERS}. Split into smaller groups.`,
-        },
-        400
-      );
-    }
-
-    // Step 2: Filter out vishing-call (requires per-user phone, not suitable for group ops)
     const eligibleActions = getGroupEligibleActions(actions);
     if (eligibleActions.length === 0) {
       return c.json(
         { success: false, error: 'No eligible actions for group assignment (vishing-call requires individual user endpoint)' },
-        400
+        400,
       );
     }
 
-    // Step 3: Shared batch ID for all activities
+    const effectiveBaseApiUrl = resolveBaseApiUrl(baseApiUrl);
     const batchResourceId = generateBatchId();
 
-    logger.info('batch_autonomous_started', {
-      targetGroupResourceId,
-      userCount: users.length,
+    // ── Dispatch to BatchOrchestratorWorkflow ──
+    const orchestrator = env?.BATCH_ORCHESTRATOR_WORKFLOW;
+    if (!orchestrator) {
+      return c.json({ success: false, error: 'Batch orchestrator workflow binding not available' }, 503);
+    }
+
+    await orchestrator.create({
+      id: `orchestrator-${batchResourceId}`,
+      params: {
+        token,
+        targetGroupResourceId,
+        eligibleActions,
+        batchResourceId,
+        sendAfterPhishingSimulation,
+        preferredLanguage,
+        baseApiUrl: effectiveBaseApiUrl,
+        requestedActions: actions,
+        _createdAt: new Date().toISOString(),
+      },
+    });
+
+    logger.info('batch_orchestrator_dispatched', {
       batchResourceId,
-      requestedActions: actions,
+      targetGroupResourceId,
       eligibleActions,
     });
 
-    // Step 4: Chunked fan-out (max 100 per chunk)
-    // Prefer createBatch (1 subrequest, idempotent) → fallback to Promise.all(create())
-    const workflow = env?.AUTONOMOUS_WORKFLOW;
-
-    if (!workflow || (!workflow.createBatch && !workflow.create)) {
-      return c.json({ success: false, error: 'Workflow binding not available' }, 503);
-    }
-
-    const useBatch = typeof workflow.createBatch === 'function';
-    const workflowIds: string[] = [];
-    const failedChunks: Array<{ chunkIndex: number; userCount: number; error: string }> = [];
-    const totalChunks = Math.ceil(users.length / CHUNK_SIZE);
-
-    for (let i = 0; i < users.length; i += CHUNK_SIZE) {
-      const chunkIndex = Math.floor(i / CHUNK_SIZE);
-      const chunk = users.slice(i, i + CHUNK_SIZE);
-      const chunkParams = chunk.map(user => ({
-        id: `batch-${batchResourceId}-${user.resourceId}`,
-        params: {
-          token,
-          targetUserResourceId: user.resourceId,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          departmentName: user.department,
-          actions: eligibleActions,
-          batchResourceId,
-          sendAfterPhishingSimulation,
-          preferredLanguage: user.preferredLanguage || preferredLanguage,
-          baseApiUrl: effectiveBaseApiUrl,
-        },
-      }));
-
-      try {
-        let results: Array<{ id?: string }>;
-        if (useBatch) {
-          results = await workflow.createBatch(chunkParams);
-        } else {
-          results = await Promise.all(chunkParams.map(p => workflow.create(p)));
-        }
-        workflowIds.push(...results.map(r => r?.id).filter(Boolean) as string[]);
-      } catch (firstError) {
-        const firstMsg = firstError instanceof Error ? firstError.message : String(firstError);
-        logger.warn('batch_chunk_failed_retrying', { chunkIndex, totalChunks, error: firstMsg });
-        try {
-          let retryResults: Array<{ id?: string }>;
-          if (useBatch) {
-            retryResults = await workflow.createBatch(chunkParams);
-          } else {
-            retryResults = await Promise.all(chunkParams.map(p => workflow.create(p)));
-          }
-          workflowIds.push(...retryResults.map(r => r?.id).filter(Boolean) as string[]);
-          logger.info('batch_chunk_retry_succeeded', { chunkIndex });
-        } catch (retryError) {
-          const retryMsg = retryError instanceof Error ? retryError.message : String(retryError);
-          logger.error('batch_chunk_retry_failed', { chunkIndex, totalChunks, userCount: chunk.length, error: retryMsg });
-          failedChunks.push({ chunkIndex, userCount: chunk.length, error: retryMsg });
-        }
-      }
-    }
-
-    // Step 5: Evaluate results
-    const allFailed = workflowIds.length === 0 && failedChunks.length > 0;
-
-    logger.info('batch_autonomous_fan_out_complete', {
-      batchResourceId,
-      workflowsCreated: workflowIds.length,
-      totalChunks,
-      failedChunks: failedChunks.length,
-    });
-
-    const batchStatus = allFailed ? 'failed' : failedChunks.length > 0 ? 'partial' : 'started';
-
-    // Step 6: Save batch metadata to KV (fire-and-forget)
-    const batchMeta = {
-      batchResourceId,
-      targetGroupResourceId,
-      status: batchStatus,
-      userCount: users.length,
-      workflowsCreated: workflowIds.length,
-      totalChunks,
-      failedChunks: failedChunks.length > 0 ? failedChunks : undefined,
-      actions: eligibleActions,
-      skippedActions: eligibleActions.length < actions.length
-        ? actions.filter(a => !eligibleActions.includes(a as any))
-        : undefined,
-      createdAt: new Date().toISOString(),
-    };
-
+    // Save initial "accepted" metadata so status endpoint works immediately
     const kvService = new KVService(KV_NAMESPACES.BATCH_WORKFLOW);
-    kvService.put(BATCH_KV_KEYS.meta(batchResourceId), batchMeta, { ttlSeconds: BATCH_META_TTL_SECONDS }).catch(err => {
-      logger.warn('batch_metadata_kv_save_failed', { batchResourceId, error: String(err) });
-    });
-
-    if (allFailed) {
-      return c.json(
+    kvService
+      .put(
+        BATCH_KV_KEYS.meta(batchResourceId),
         {
-          success: false,
-          error: 'All chunks failed to create workflows',
           batchResourceId,
-          failedChunks,
+          targetGroupResourceId,
+          status: 'accepted',
+          actions: eligibleActions,
+          skippedActions: eligibleActions.length < actions.length
+            ? actions.filter(a => !eligibleActions.includes(a as any))
+            : undefined,
+          createdAt: new Date().toISOString(),
         },
-        500
-      );
-    }
+        { ttlSeconds: BATCH_META_TTL_SECONDS },
+      )
+      .catch(err => {
+        logger.warn('batch_initial_meta_save_failed', { batchResourceId, error: String(err) });
+      });
 
     return c.json(
       {
         success: true,
-        status: batchStatus,
+        status: 'accepted',
         batchResourceId,
         targetGroupResourceId,
-        userCount: users.length,
-        workflowsCreated: workflowIds.length,
-        totalChunks,
-        ...(failedChunks.length > 0 && { failedChunks }),
         actions: eligibleActions,
         ...(eligibleActions.length < actions.length && {
           skippedActions: actions.filter(a => !eligibleActions.includes(a as any)),
         }),
       },
-      202
+      202,
     );
   } catch (error) {
     const err = normalizeError(error);
@@ -236,7 +145,7 @@ export async function batchAutonomousHandler(c: Context) {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
       },
-      500
+      500,
     );
   }
 }

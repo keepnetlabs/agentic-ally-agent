@@ -237,10 +237,30 @@ export const LONG_RUNNING_AGENT_TIMEOUT_MS = 600000;
 
 /**
  * Maximum users allowed in a single batch-autonomous request.
- * Constrained by Cloudflare Workers subrequest limits and memory.
- * 50K users = 500 createBatch calls (well within 1000 subrequest limit).
+ * Fan-out is handled by BatchOrchestratorWorkflow (durable CF Workflow),
+ * so there is no HTTP timeout constraint. Limited by fetchGroupMembers
+ * pagination cap (100 pages × 1000 users).
  */
-export const MAX_BATCH_USERS = 50_000;
+export const MAX_BATCH_USERS = 100_000;
+
+/**
+ * Cloudflare Workflows limits (Paid plan).
+ * @see https://developers.cloudflare.com/workflows/reference/limits/
+ */
+export const CF_WORKFLOW_LIMITS = {
+  /** Max instance creation rate — CF returns 429 above this. */
+  INSTANCE_CREATION_RATE_PER_SEC: 100,
+  /** Max instance ID length (chars). */
+  MAX_INSTANCE_ID_LENGTH: 100,
+  /** Max event payload per step (bytes). */
+  MAX_EVENT_PAYLOAD_BYTES: 1_048_576, // 1 MiB
+  /** Max concurrent instances (paid). Excess is queued. */
+  MAX_CONCURRENT_INSTANCES: 10_000,
+  /** Throttle delay between chunks (ms) to stay under 100/s rate limit. */
+  CHUNK_THROTTLE_MS: 1_100,
+  /** Max parallel create() calls per chunk when createBatch is unavailable. */
+  CREATE_FALLBACK_CONCURRENCY: 25,
+} as const;
 
 /**
  * Maximum users allowed in a single chat-context group assignment (assign tools).
