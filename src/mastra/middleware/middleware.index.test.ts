@@ -47,9 +47,13 @@ describe('middleware/index barrel exports', () => {
       expect(middlewareExports).toHaveProperty('disableSwagger');
     });
 
-    it('should have 11 total exports', () => {
+    it('should export gdprAuditMiddleware', () => {
+      expect(middlewareExports).toHaveProperty('gdprAuditMiddleware');
+    });
+
+    it('should have 12 total exports', () => {
       const exportCount = Object.keys(middlewareExports).length;
-      expect(exportCount).toBeGreaterThanOrEqual(11);
+      expect(exportCount).toBeGreaterThanOrEqual(12);
     });
   });
 
@@ -97,6 +101,10 @@ describe('middleware/index barrel exports', () => {
     it('disableSwagger should not be null', () => {
       expect(middlewareExports.disableSwagger).not.toBeNull();
     });
+
+    it('gdprAuditMiddleware should not be null', () => {
+      expect(middlewareExports.gdprAuditMiddleware).not.toBeNull();
+    });
   });
 
   describe('middleware functions types', () => {
@@ -134,6 +142,10 @@ describe('middleware/index barrel exports', () => {
 
     it('disablePlayground should be a function', () => {
       expect(typeof middlewareExports.disablePlayground).toBe('function');
+    });
+
+    it('gdprAuditMiddleware should be a function', () => {
+      expect(typeof middlewareExports.gdprAuditMiddleware).toBe('function');
     });
   });
 
@@ -517,6 +529,10 @@ describe('middleware/index barrel exports', () => {
     it('should re-export from openapi', () => {
       expect(middlewareExports.disablePlayground).toBeDefined();
       expect(middlewareExports.disableSwagger).toBeDefined();
+    });
+
+    it('should re-export from gdpr-audit', () => {
+      expect(middlewareExports.gdprAuditMiddleware).toBeDefined();
     });
   });
 });

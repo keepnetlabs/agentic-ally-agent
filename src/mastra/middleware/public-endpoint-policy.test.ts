@@ -49,4 +49,13 @@ describe('public-endpoint-policy', () => {
     expect(isPublicUnauthenticatedPath('/chat')).toBe(false);
     expect(isPublicUnauthenticatedPath('/unknown')).toBe(false);
   });
+
+  it('isPublicUnauthenticatedPath returns false for path prefixes', () => {
+    expect(isPublicUnauthenticatedPath('/autonomous/extra')).toBe(false);
+    expect(isPublicUnauthenticatedPath('/smishing/chat/xyz')).toBe(false);
+  });
+
+  it('isPublicUnauthenticatedPath returns false for empty string', () => {
+    expect(isPublicUnauthenticatedPath('')).toBe(false);
+  });
 });

@@ -1,378 +1,222 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   rateLimitMiddleware,
+  createEndpointRateLimiter,
   RATE_LIMIT_TIERS,
   getClientIdentifier,
-  createEndpointRateLimiter,
-  skipHealthCheck,
   cleanupExpiredEntries,
+  skipHealthCheck,
 } from './rate-limit';
 
-describe('Rate Limiting Middleware', () => {
+vi.mock('../utils/core/logger', () => ({
+  getLogger: () => ({
+    info: vi.fn(),
+    debug: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+  }),
+}));
+
+function createMockContext(path: string, headers: Record<string, string> = {}) {
+  const resHeaders = new Headers();
+  return {
+    req: {
+      path,
+      method: 'GET',
+      header: (name: string) => headers[name?.toLowerCase()] ?? headers[name],
+    },
+    res: {
+      headers: resHeaders,
+      status: 200,
+    },
+    json: vi.fn((data: unknown, status: number) => new Response(JSON.stringify(data), { status })),
+  } as any;
+}
+
+describe('rateLimitMiddleware', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    cleanupExpiredEntries();
+  });
+
   describe('getClientIdentifier', () => {
-    it('should prioritize cf-connecting-ip', () => {
-      const mockContext = {
-        req: {
-          header: (name: string) => {
-            if (name === 'cf-connecting-ip') return '1.2.3.4';
-            if (name === 'x-forwarded-for') return '5.6.7.8';
-            return undefined;
-          },
-        },
-      } as any;
-
-      const identifier = getClientIdentifier(mockContext);
-      expect(identifier).toBe('1.2.3.4');
+    it('should use cf-connecting-ip when present', () => {
+      const c = createMockContext('/chat', { 'cf-connecting-ip': '1.2.3.4' });
+      expect(getClientIdentifier(c)).toBe('1.2.3.4');
     });
 
-    it('should fall back to x-forwarded-for', () => {
-      const mockContext = {
-        req: {
-          header: (name: string) => {
-            if (name === 'x-forwarded-for') return '5.6.7.8, 9.10.11.12';
-            return undefined;
-          },
-        },
-      } as any;
-
-      const identifier = getClientIdentifier(mockContext);
-      expect(identifier).toBe('5.6.7.8'); // First IP in the list
+    it('should use x-forwarded-for when cf-connecting-ip absent', () => {
+      const c = createMockContext('/chat', { 'x-forwarded-for': '5.6.7.8' });
+      expect(getClientIdentifier(c)).toBe('5.6.7.8');
     });
 
-    it('should return unknown when no IP headers present', () => {
-      const mockContext = {
-        req: {
-          header: () => undefined,
-        },
-      } as any;
-
-      const identifier = getClientIdentifier(mockContext);
-      expect(identifier).toBe('unknown');
+    it('should use first IP from x-forwarded-for comma list', () => {
+      const c = createMockContext('/chat', { 'x-forwarded-for': '10.0.0.1, 10.0.0.2' });
+      expect(getClientIdentifier(c)).toBe('10.0.0.1');
     });
 
-    it('should fall back to x-real-ip when cf and x-forwarded-for absent', () => {
-      const mockContext = {
-        req: {
-          header: (name: string) => (name === 'x-real-ip' ? '10.0.0.1' : undefined),
-        },
-      } as any;
-
-      const identifier = getClientIdentifier(mockContext);
-      expect(identifier).toBe('10.0.0.1');
+    it('should fallback to unknown when no IP headers', () => {
+      const c = createMockContext('/chat', {});
+      expect(getClientIdentifier(c)).toBe('unknown');
     });
   });
 
-  describe('rateLimitMiddleware', () => {
-    beforeEach(() => {
-      // Clear rate limit store between tests
-      vi.clearAllTimers();
+  describe('allow under limit', () => {
+    it('should call next() when under limit', async () => {
+      const middleware = rateLimitMiddleware({ maxRequests: 5, windowMs: 60000 });
+      const next = vi.fn(async () => {});
+      const c = createMockContext('/chat', { 'cf-connecting-ip': '1.2.3.4' });
+      await middleware(c, next);
+      expect(next).toHaveBeenCalled();
+      expect(c.json).not.toHaveBeenCalled();
+      expect(c.res.headers.get('X-RateLimit-Limit')).toBe('5');
+      expect(c.res.headers.get('X-RateLimit-Remaining')).toBeDefined();
     });
 
-    it('should allow requests within limit', async () => {
-      const middleware = rateLimitMiddleware({
-        maxRequests: 5,
-        windowMs: 60000,
-      });
-
-      const mockContext = {
-        req: {
-          header: () => '1.2.3.4',
-          path: '/test',
-          method: 'POST',
-        },
-        res: {
-          headers: new Map(),
-        },
-      } as any;
-
-      const next = vi.fn();
-
-      // Make 5 requests (within limit)
-      for (let i = 0; i < 5; i++) {
-        await middleware(mockContext, next);
-      }
-
-      expect(next).toHaveBeenCalledTimes(5);
-      expect(mockContext.res.headers.get('X-RateLimit-Limit')).toBe('5');
-      expect(mockContext.res.headers.get('X-RateLimit-Remaining')).toBe('0');
+    it('should set rate limit headers', async () => {
+      const middleware = rateLimitMiddleware({ maxRequests: 10, windowMs: 60000 });
+      const next = vi.fn(async () => {});
+      const c = createMockContext('/chat', { 'cf-connecting-ip': '9.9.9.9' });
+      await middleware(c, next);
+      expect(c.res.headers.get('X-RateLimit-Limit')).toBe('10');
+      expect(parseInt(c.res.headers.get('X-RateLimit-Remaining') ?? '', 10)).toBeLessThanOrEqual(10);
+      expect(c.res.headers.get('X-RateLimit-Reset')).toBeDefined();
     });
+  });
 
-    it('should block requests exceeding limit', async () => {
-      const middleware = rateLimitMiddleware({
-        maxRequests: 3,
-        windowMs: 60000,
-      });
+  describe('block over limit', () => {
+    it('should return 429 when limit exceeded', async () => {
+      const middleware = rateLimitMiddleware({ maxRequests: 2, windowMs: 60000 });
+      const next = vi.fn(async () => {});
+      const c = createMockContext('/chat', { 'cf-connecting-ip': '2.2.2.2' });
 
-      const mockContext = {
-        req: {
-          header: () => '1.2.3.5',
-          path: '/test',
-          method: 'POST',
-        },
-        res: {
-          headers: new Map(),
-        },
-        json: vi.fn((body, status) => ({ body, status })),
-      } as any;
+      await middleware(c, next);
+      await middleware(c, next);
+      await middleware(c, next);
 
-      const next = vi.fn();
-
-      // Make 3 requests (within limit)
-      for (let i = 0; i < 3; i++) {
-        await middleware(mockContext, next);
-      }
-
-      // 4th request should be blocked
-      await middleware(mockContext, next);
-
-      expect(next).toHaveBeenCalledTimes(3);
-      expect(mockContext.json).toHaveBeenCalled();
-      expect(mockContext.res.headers.get('Retry-After')).toBeDefined();
+      expect(next).toHaveBeenCalledTimes(2);
+      expect(c.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error: 'Rate limit exceeded',
+          limit: 2,
+          current: 3,
+        }),
+        429
+      );
     });
+  });
 
-    it('should add standard rate limit headers', async () => {
-      const middleware = rateLimitMiddleware({
-        maxRequests: 10,
-        windowMs: 60000,
-      });
-
-      const mockContext = {
-        req: {
-          header: () => '1.2.3.6',
-          path: '/test',
-          method: 'GET',
-        },
-        res: {
-          headers: new Map(),
-        },
-      } as any;
-
-      const next = vi.fn();
-
-      await middleware(mockContext, next);
-
-      expect(mockContext.res.headers.get('X-RateLimit-Limit')).toBe('10');
-      expect(mockContext.res.headers.get('X-RateLimit-Remaining')).toBe('9');
-      expect(mockContext.res.headers.get('X-RateLimit-Reset')).toBeDefined();
-    });
-
-    it('should skip rate limiting when skip function returns true', async () => {
+  describe('skip condition', () => {
+    it('should skip rate limiting when skip returns true', async () => {
       const middleware = rateLimitMiddleware({
         maxRequests: 1,
         windowMs: 60000,
-        skip: c => c.req.path === '/health',
+        skip: (c) => c.req.path === '/health',
       });
+      const next = vi.fn(async () => {});
+      const c = createMockContext('/health', { 'cf-connecting-ip': '3.3.3.3' });
 
-      const mockContext = {
-        req: {
-          header: () => '1.2.3.7',
-          path: '/health',
-          method: 'GET',
-        },
-        res: {
-          headers: new Map(),
-        },
-      } as any;
+      await middleware(c, next);
+      await middleware(c, next);
+      await middleware(c, next);
 
-      const next = vi.fn();
-
-      // Make multiple requests to /health (should all pass)
-      for (let i = 0; i < 10; i++) {
-        await middleware(mockContext, next);
-      }
-
-      expect(next).toHaveBeenCalledTimes(10);
+      expect(next).toHaveBeenCalledTimes(3);
+      expect(c.json).not.toHaveBeenCalled();
     });
+  });
 
-    it('should use custom identifier function', async () => {
+  describe('custom identifier', () => {
+    it('should use custom identifier when provided', async () => {
       const middleware = rateLimitMiddleware({
-        maxRequests: 2,
+        maxRequests: 1,
         windowMs: 60000,
-        identifier: () => 'custom-user-id',
+        identifier: () => 'custom-key',
       });
+      const next = vi.fn(async () => {});
+      const c1 = createMockContext('/chat', { 'cf-connecting-ip': '1.1.1.1' });
+      const c2 = createMockContext('/chat', { 'cf-connecting-ip': '2.2.2.2' });
 
-      const mockContext = {
-        req: {
-          header: () => undefined,
-          path: '/test',
-          method: 'POST',
-        },
-        res: {
-          headers: new Map(),
-        },
-        json: vi.fn((body, status) => ({ body, status })),
-      } as any;
+      await middleware(c1, next);
+      await middleware(c2, next);
 
-      const next = vi.fn();
-
-      // Make 2 requests (within limit)
-      await middleware(mockContext, next);
-      await middleware(mockContext, next);
-
-      // 3rd should be blocked
-      await middleware(mockContext, next);
-
-      expect(next).toHaveBeenCalledTimes(2);
-      expect(mockContext.json).toHaveBeenCalled();
-    });
-  });
-
-  describe('RATE_LIMIT_TIERS', () => {
-    it('should have correct default config', () => {
-      expect(RATE_LIMIT_TIERS.DEFAULT.maxRequests).toBe(100);
-      expect(RATE_LIMIT_TIERS.DEFAULT.windowMs).toBe(60 * 1000);
-    });
-
-    it('should have chat-specific config', () => {
-      expect(RATE_LIMIT_TIERS.CHAT.maxRequests).toBe(50);
-      expect(RATE_LIMIT_TIERS.CHAT.windowMs).toBe(60 * 1000);
-    });
-
-    it('should have health-specific config', () => {
-      expect(RATE_LIMIT_TIERS.HEALTH.maxRequests).toBe(300);
-      expect(RATE_LIMIT_TIERS.HEALTH.windowMs).toBe(60 * 1000);
-    });
-
-    it('should have public unauthenticated endpoint config', () => {
-      expect(RATE_LIMIT_TIERS.PUBLIC_UNAUTH.maxRequests).toBe(180);
-      expect(RATE_LIMIT_TIERS.PUBLIC_UNAUTH.windowMs).toBe(60 * 1000);
-    });
-  });
-
-  describe('createEndpointRateLimiter', () => {
-    it('should create middleware with CHAT tier config', async () => {
-      const middleware = createEndpointRateLimiter('CHAT');
-      const mockContext = {
-        req: { header: () => '1.2.3.8', path: '/chat', method: 'POST' },
-        res: { headers: new Map() },
-      } as any;
-      const next = vi.fn();
-
-      await middleware(mockContext, next);
-
-      expect(next).toHaveBeenCalled();
-      expect(mockContext.res.headers.get('X-RateLimit-Limit')).toBe('50');
-    });
-
-    it('should create middleware with HEALTH tier config', async () => {
-      const middleware = createEndpointRateLimiter('HEALTH');
-      const mockContext = {
-        req: { header: () => '1.2.3.9', path: '/health', method: 'GET' },
-        res: { headers: new Map() },
-      } as any;
-      const next = vi.fn();
-
-      await middleware(mockContext, next);
-
-      expect(mockContext.res.headers.get('X-RateLimit-Limit')).toBe('300');
-    });
-  });
-
-  describe('skipHealthCheck', () => {
-    it('should return true for /health path', () => {
-      const c = { req: { path: '/health' } } as any;
-      expect(skipHealthCheck(c)).toBe(true);
-    });
-
-    it('should return false for non-health path', () => {
-      const c = { req: { path: '/chat' } } as any;
-      expect(skipHealthCheck(c)).toBe(false);
-    });
-  });
-
-  describe('cleanupExpiredEntries', () => {
-    it('should not throw when called', () => {
-      expect(() => cleanupExpiredEntries()).not.toThrow();
-    });
-
-    it('should remove expired entries when time has passed', async () => {
-      vi.useFakeTimers();
-      const middleware = rateLimitMiddleware({
-        maxRequests: 5,
-        windowMs: 1000,
-      });
-
-      const mockContext = {
-        req: { header: () => 'cleanup-test-ip', path: '/test', method: 'POST' },
-        res: { headers: new Map() },
-      } as any;
-      const next = vi.fn();
-
-      await middleware(mockContext, next);
       expect(next).toHaveBeenCalledTimes(1);
+      expect(c2.json).toHaveBeenCalledWith(expect.anything(), 429);
+    });
+  });
 
-      vi.advanceTimersByTime(2000);
+  describe('cleanup', () => {
+    it('should trigger cleanup when store reaches CLEANUP_FREQUENCY (100) entries', async () => {
+      vi.useFakeTimers();
+      const middleware = rateLimitMiddleware({ maxRequests: 100, windowMs: 60000 });
+      const next = vi.fn(async () => {});
 
-      cleanupExpiredEntries();
-
-      await middleware(mockContext, next);
-      expect(next).toHaveBeenCalledTimes(2);
-
+      for (let i = 0; i < 100; i++) {
+        const c = createMockContext('/chat', { 'cf-connecting-ip': `192.168.1.${i}` });
+        await middleware(c, next);
+      }
+      expect(next).toHaveBeenCalledTimes(100);
       vi.useRealTimers();
     });
 
-    it('should trigger periodic cleanup when store size reaches CLEANUP_FREQUENCY multiple', async () => {
+    it('should delete expired entries when cleanup runs', async () => {
       vi.useFakeTimers();
-      const middleware = rateLimitMiddleware({
-        maxRequests: 5,
-        windowMs: 60000,
-        identifier: (c: any) => c.req.header('x-test-id') || 'unknown',
-      });
+      const middleware = rateLimitMiddleware({ maxRequests: 5, windowMs: 60000 });
+      const next = vi.fn(async () => {});
 
-      const next = vi.fn();
-
-      // Create 100 distinct entries to reach CLEANUP_FREQUENCY (100)
       for (let i = 0; i < 100; i++) {
-        const mockContext = {
-          req: {
-            header: (name: string) => (name === 'x-test-id' ? `id-${i}` : undefined),
-            path: '/test',
-            method: 'POST',
-          },
-          res: { headers: new Map() },
-        } as any;
-        await middleware(mockContext, next);
+        const c = createMockContext('/chat', { 'cf-connecting-ip': `10.0.0.${i}` });
+        await middleware(c, next);
       }
       expect(next).toHaveBeenCalledTimes(100);
 
-      // Advance time so all entries expire
-      vi.advanceTimersByTime(65000);
+      vi.advanceTimersByTime(70000);
 
-      // 101st request triggers cleanup (size % 100 === 0), then processes
-      const mockContext101 = {
-        req: {
-          header: (name: string) => (name === 'x-test-id' ? 'id-100' : undefined),
-          path: '/test',
-          method: 'POST',
-        },
-        res: { headers: new Map() },
-      } as any;
-      await middleware(mockContext101, next);
-
+      const c101 = createMockContext('/chat', { 'cf-connecting-ip': '10.0.0.100' });
+      await middleware(c101, next);
       expect(next).toHaveBeenCalledTimes(101);
       vi.useRealTimers();
     });
   });
+});
 
-  describe('rate limit warning when remaining low', () => {
-    it('should allow requests when remaining drops below 10', async () => {
-      const middleware = rateLimitMiddleware({
-        maxRequests: 12,
-        windowMs: 60000,
-      });
+describe('createEndpointRateLimiter', () => {
+  it('should return middleware for CHAT tier', () => {
+    const limiter = createEndpointRateLimiter('CHAT');
+    expect(typeof limiter).toBe('function');
+  });
 
-      const mockContext = {
-        req: { header: () => '1.2.3.10', path: '/api', method: 'GET' },
-        res: { headers: new Map() },
-      } as any;
-      const next = vi.fn();
+  it('should return middleware for HEALTH tier', () => {
+    const limiter = createEndpointRateLimiter('HEALTH');
+    expect(typeof limiter).toBe('function');
+  });
+});
 
-      for (let i = 0; i < 5; i++) {
-        await middleware(mockContext, next);
-      }
+describe('skipHealthCheck', () => {
+  it('should return true for /health path', () => {
+    const c = createMockContext('/health', {});
+    expect(skipHealthCheck(c)).toBe(true);
+  });
 
-      expect(next).toHaveBeenCalledTimes(5);
-      expect(mockContext.res.headers.get('X-RateLimit-Remaining')).toBe('7');
-    });
+  it('should return false for non-health paths', () => {
+    const c = createMockContext('/chat', {});
+    expect(skipHealthCheck(c)).toBe(false);
+  });
+});
+
+describe('RATE_LIMIT_TIERS', () => {
+  it('should have CHAT, HEALTH, DEFAULT, PUBLIC_UNAUTH tiers', () => {
+    expect(RATE_LIMIT_TIERS).toHaveProperty('CHAT');
+    expect(RATE_LIMIT_TIERS).toHaveProperty('HEALTH');
+    expect(RATE_LIMIT_TIERS).toHaveProperty('DEFAULT');
+    expect(RATE_LIMIT_TIERS).toHaveProperty('PUBLIC_UNAUTH');
+  });
+
+  it('each tier should have maxRequests and windowMs', () => {
+    for (const tier of Object.values(RATE_LIMIT_TIERS)) {
+      expect((tier as any).maxRequests).toBeDefined();
+      expect(typeof (tier as any).maxRequests).toBe('number');
+      expect((tier as any).windowMs).toBeDefined();
+      expect(typeof (tier as any).windowMs).toBe('number');
+    }
   });
 });

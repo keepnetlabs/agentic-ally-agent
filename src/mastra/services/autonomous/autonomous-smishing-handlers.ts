@@ -30,6 +30,20 @@ interface AutonomousToolResult {
   };
 }
 
+/**
+ * Derive contentCategory from simulation metadata for the Agentic AI Activities API.
+ * Example output: "Smishing | Click-Only | Urgency | Medium"
+ */
+function buildContentCategory(simulation: SmishingSimulationRecommendation): string {
+  const parts = [
+    'Smishing',
+    simulation.scenario_type,
+    simulation.persuasion_tactic,
+    simulation.difficulty,
+  ].filter(Boolean);
+  return parts.join(' | ');
+}
+
 function resolveSmishingMethod(scenarioType?: string): (typeof SMISHING.ATTACK_METHODS)[number] {
   if (!scenarioType) return SMISHING.DEFAULT_ATTACK_METHOD;
   const normalized = scenarioType.toUpperCase();
@@ -136,6 +150,7 @@ export async function generateSmishingSimulation(params: {
             context: {
               resourceId: uploadedResourceId,
               languageId: uploadResult?.data?.languageId,
+              contentCategory: buildContentCategory(simulation),
               ...assignmentContext,
             },
           } as any),

@@ -49,7 +49,7 @@ describe('generateDeepfakeVideoTool', () => {
     it('should return error when HEYGEN_API_KEY is not set', async () => {
       delete process.env.HEYGEN_API_KEY;
 
-      const result = await generateDeepfakeVideoTool.execute!({
+      const result = await generateDeepfakeVideoTool.execute?.({
         context: {
           inputText: 'Hello',
           avatarId: 'av-1',
@@ -74,7 +74,7 @@ describe('generateDeepfakeVideoTool', () => {
         )
       );
 
-      const result = await generateDeepfakeVideoTool.execute!({
+      const result = await generateDeepfakeVideoTool.execute?.({
         context: {
           inputText: 'Welcome to security training.',
           avatarId: 'av-1',
@@ -94,7 +94,7 @@ describe('generateDeepfakeVideoTool', () => {
         new Response('Bad Request', { status: 400 })
       );
 
-      const result = await generateDeepfakeVideoTool.execute!({
+      const result = await generateDeepfakeVideoTool.execute?.({
         context: {
           inputText: 'Script',
           avatarId: 'av-1',
@@ -117,7 +117,7 @@ describe('generateDeepfakeVideoTool', () => {
         )
       );
 
-      await generateDeepfakeVideoTool.execute!({
+      await generateDeepfakeVideoTool.execute?.({
         context: {
           inputText: 'Script',
           avatarId: 'av-1',
@@ -148,7 +148,7 @@ describe('generateDeepfakeVideoTool', () => {
         )
       );
 
-      const result = await generateDeepfakeVideoTool.execute!({
+      const result = await generateDeepfakeVideoTool.execute?.({
         context: { inputText: 'Script', avatarId: 'av-1', voiceId: 'v-1' },
       } as any);
 
@@ -164,7 +164,7 @@ describe('generateDeepfakeVideoTool', () => {
         new Response(JSON.stringify({ data: {} }), { status: 200 })
       );
 
-      const result = await generateDeepfakeVideoTool.execute!({
+      const result = await generateDeepfakeVideoTool.execute?.({
         context: { inputText: 'Script', avatarId: 'av-1', voiceId: 'v-1' },
       } as any);
 
@@ -178,7 +178,7 @@ describe('generateDeepfakeVideoTool', () => {
       process.env.HEYGEN_API_KEY = 'test-key';
       vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('Network failure'));
 
-      const result = await generateDeepfakeVideoTool.execute!({
+      const result = await generateDeepfakeVideoTool.execute?.({
         context: { inputText: 'Script', avatarId: 'av-1', voiceId: 'v-1' },
       } as any);
 
@@ -194,7 +194,7 @@ describe('generateDeepfakeVideoTool', () => {
       abortErr.name = 'AbortError';
       vi.spyOn(globalThis, 'fetch').mockRejectedValue(abortErr);
 
-      const result = await generateDeepfakeVideoTool.execute!({
+      const result = await generateDeepfakeVideoTool.execute?.({
         context: { inputText: 'Script', avatarId: 'av-1', voiceId: 'v-1' },
       } as any);
 
@@ -210,7 +210,7 @@ describe('generateDeepfakeVideoTool', () => {
         new Response(JSON.stringify({ error: 'Invalid voice_id' }), { status: 200 })
       );
 
-      const result = await generateDeepfakeVideoTool.execute!({
+      const result = await generateDeepfakeVideoTool.execute?.({
         context: { inputText: 'Script', avatarId: 'av-1', voiceId: 'v-1' },
       } as any);
 
@@ -231,7 +231,7 @@ describe('generateDeepfakeVideoTool', () => {
 
       const mockWriter = { write: vi.fn().mockResolvedValue(undefined) };
 
-      const result = await generateDeepfakeVideoTool.execute!({
+      const result = await generateDeepfakeVideoTool.execute?.({
         context: { inputText: 'Script', avatarId: 'av-1', voiceId: 'v-1' },
         writer: mockWriter,
       } as any);
@@ -243,6 +243,25 @@ describe('generateDeepfakeVideoTool', () => {
           delta: expect.stringContaining('::ui:deepfake_video_generating::'),
         })
       );
+    });
+
+    it('should still return success when writer.write throws (catch branch)', async () => {
+      process.env.HEYGEN_API_KEY = 'test-key';
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+        new Response(
+          JSON.stringify({ data: { video_id: 'vid-err-456', status: 'pending' } }),
+          { status: 200 }
+        )
+      );
+
+      const mockWriter = { write: vi.fn().mockRejectedValue(new Error('Stream closed')) };
+
+      const result = await generateDeepfakeVideoTool.execute?.({
+        context: { inputText: 'Script', avatarId: 'av-1', voiceId: 'v-1' },
+        writer: mockWriter,
+      } as any);
+
+      expect(result).toMatchObject({ success: true, videoId: 'vid-err-456' });
     });
   });
 });

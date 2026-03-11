@@ -223,7 +223,7 @@ export class KVService {
       }
 
       const data = await response.json();
-      return data.result?.map((item: any) => item.name) || [];
+      return data.result?.map((item: { name: string }) => item.name) || [];
     } catch (error) {
       const err = normalizeError(error);
       const errorInfo = errorService.external(
@@ -484,11 +484,11 @@ export class KVService {
         return null;
       }
 
-      const result: any = { base };
+      const result: { base: unknown; email?: unknown; landing?: unknown } = { base };
 
       // Use provided language or fallback to first available language from base
-      const availableLangs = base.language_availability || [];
-      const langToUse = language || (availableLangs.length > 0 ? availableLangs[0] : null);
+      const availableLangs = (base as Record<string, unknown>)?.language_availability as string[] | undefined;
+      const langToUse = language || (availableLangs && availableLangs.length > 0 ? availableLangs[0] : null);
 
       if (langToUse) {
         const normalizedLang = langToUse.toLowerCase();
@@ -626,11 +626,11 @@ export class KVService {
         return null;
       }
 
-      const result: any = { base };
+      const result: { base: unknown; sms?: unknown; landing?: unknown } = { base };
 
       // Use provided language or fallback to first available language from base
-      const availableLangs = base.language_availability || [];
-      const langToUse = language || (availableLangs.length > 0 ? availableLangs[0] : null);
+      const availableLangs = (base as Record<string, unknown>)?.language_availability as string[] | undefined;
+      const langToUse = language || (availableLangs && availableLangs.length > 0 ? availableLangs[0] : null);
 
       if (langToUse) {
         const normalizedLang = langToUse.toLowerCase();
@@ -662,7 +662,7 @@ export class KVService {
         return null;
       }
 
-      const result: any = { base };
+      const result: { base: unknown; language?: unknown } = { base };
 
       if (language) {
         const langKey = `ml:${microlearningId}:lang:${language}`;

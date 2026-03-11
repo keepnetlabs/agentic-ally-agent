@@ -3,10 +3,27 @@
  * Handles common CSS/HTML structure issues programmatically to avoid prompt bloat.
  */
 
+import { LANDING_PAGE } from '../../constants';
+
 export function fixLandingPageLayout(html: string): string {
   let fixedHtml = html;
 
-  // 1. Fix Centering: Add margin: 0 auto to fixed-width containers
+  // 1. Clamp overly aggressive hero overlap margins back to the design constant.
+  // Example: margin: -40px auto 0; -> margin: -24px auto 0;
+  fixedHtml = fixedHtml.replace(
+    /(<(?:div|section|main|form)[^>]*style=['"][^'"]*\bmargin\s*:\s*)(-(\d+))px(\s+auto\s+0\s*;?[^'"]*['"])/gi,
+    (match, prefix, rawValue, digits, suffix) => {
+      const absValue = Number.parseInt(String(digits), 10);
+      if (Number.isNaN(absValue)) return match;
+
+      const maxAllowedOverlap = Math.abs(LANDING_PAGE.HERO_MAIN_CONTAINER_MARGIN_TOP_PX);
+      if (absValue <= maxAllowedOverlap) return match;
+
+      return `${prefix}${LANDING_PAGE.HERO_MAIN_CONTAINER_MARGIN_TOP_PX}px${suffix}`;
+    }
+  );
+
+  // 2. Fix Centering: Add margin: 0 auto to fixed-width containers
   // Look for tags with style containing max-width but missing margin: 0 auto
   fixedHtml = fixedHtml.replace(
     /(<(?:div|section|main|form|a|button)[^>]*style=['"])([^'"]*max-width:[^'"]*)(['"])/gi,
@@ -40,7 +57,7 @@ export function fixLandingPageLayout(html: string): string {
     }
   );
 
-  // 2. Fix Icon Nesting (The "Green Circle" Bug)
+  // 3. Fix Icon Nesting (The "Green Circle" Bug)
   // Problem A: <div style='...border-radius: 999px...'></div><span>✓</span>
   // Fix A: Move the sibling span INSIDE the div.
   // Problem B: <div style='...border-radius: 999px; background: #22c55e...'></div> (truly empty, no span)
@@ -70,7 +87,7 @@ export function fixLandingPageLayout(html: string): string {
     return `${openDiv}${checkmark}${closeDiv}`;
   });
 
-  // 3. Fix H1 Typography Alignment
+  // 4. Fix H1 Typography Alignment
   // Ensure all H1 headers are centered (standard for card layouts)
   fixedHtml = fixedHtml.replace(/(<h1[^>]*style=['"])([^'"]*)(['"])/gi, (match, prefix, styleContent, suffix) => {
     // If already has text-align, skip (respect explicit left/right if generated)
@@ -81,7 +98,7 @@ export function fixLandingPageLayout(html: string): string {
     return `${prefix}${styleContent}; text-align: center;${suffix}`;
   });
 
-  // 4. Fix P below H1: Intro/description paragraph directly under H1 should be centered too
+  // 5. Fix P below H1: Intro/description paragraph directly under H1 should be centered too
   // Pattern: </h1>...<p style="..."> (p is typically the intro text, should match h1 alignment)
   fixedHtml = fixedHtml.replace(
     /(<\/h1[^>]*>)\s*(<p\b)([^>]*?)style=(['"])([^'"]*)\4([^>]*)>/gi,

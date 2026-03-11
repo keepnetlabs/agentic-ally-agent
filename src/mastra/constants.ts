@@ -128,6 +128,9 @@ export const KV_NAMESPACES = {
 
   // Microlearning KV Namespace (from env binding)
   MICROLEARNING: process.env.MICROLEARNING_KV_NAMESPACE_ID || '',
+
+  // Batch Workflow KV Namespace (batch autonomous metadata)
+  BATCH_WORKFLOW: process.env.BATCH_WORKFLOW_KV_NAMESPACE_ID || 'a235dbdc79a34c25ba3fd8fc38673d1f',
 } as const;
 
 // ============================================
@@ -232,6 +235,28 @@ export const AGENT_CALL_TIMEOUT_MS = 90000;
  */
 export const LONG_RUNNING_AGENT_TIMEOUT_MS = 600000;
 
+/**
+ * Maximum users allowed in a single batch-autonomous request.
+ * Constrained by Cloudflare Workers subrequest limits and memory.
+ * 50K users = 500 createBatch calls (well within 1000 subrequest limit).
+ */
+export const MAX_BATCH_USERS = 50_000;
+
+/**
+ * Maximum users allowed in a single chat-context group assignment (assign tools).
+ * Larger groups should go through batch-autonomous endpoint instead.
+ * 1000 users × 25 concurrent = 40 chunks ≈ 40-80s (within 90s chat timeout).
+ */
+export const MAX_GROUP_ASSIGN_USERS = 1_000;
+
+/** KV key templates for batch workflow metadata (stored in BATCH_WORKFLOW_KV namespace). */
+export const BATCH_KV_KEYS = {
+  meta: (batchId: string) => `batch:${batchId}:meta`,
+} as const;
+
+/** TTL for batch metadata entries (7 days). */
+export const BATCH_META_TTL_SECONDS = 7 * 24 * 3600;
+
 // ============================================
 // TIME UNIT CONSTANTS
 // ============================================
@@ -264,8 +289,9 @@ export const TIMEOUT_VALUES = {
   PHISHING_WORKFLOW_STREAM_DELAY_MS: 3000,
   LANGUAGE_WORKFLOW_BACKOFF_MS: 1000,
   // Phishing editor LLM call timeouts (milliseconds)
-  PHISHING_EDITOR_EMAIL_TIMEOUT_MS: 120000,
-  PHISHING_EDITOR_LANDING_TIMEOUT_MS: 120000,
+  PHISHING_EDITOR_EMAIL_TIMEOUT_MS: 180000,
+  // Landing page = classification only (no HTML rewrite), much faster
+  PHISHING_EDITOR_LANDING_TIMEOUT_MS: 60000,
 } as const;
 
 // ============================================
@@ -612,6 +638,8 @@ export const AGENT_NAMES = {
   EMAIL_IR_ANALYST: 'emailIrAnalyst',
   DEEPFAKE_VIDEO: 'deepfakeVideoAssistant',
   OUT_OF_SCOPE: 'outOfScope',
+  PHISHING_TEMPLATE_FIXER: 'phishingTemplateFixer',
+  PHISHING_LANDING_CLASSIFIER: 'phishingLandingPageClassifier',
 } as const;
 
 // ============================================
@@ -629,6 +657,8 @@ export const AGENT_IDS = {
   EMAIL_IR_ANALYST: 'email-ir-analyst',
   DEEPFAKE_VIDEO: 'deepfake-video-agent',
   OUT_OF_SCOPE: 'out-of-scope-agent',
+  PHISHING_TEMPLATE_FIXER: 'phishing-template-fixer-agent',
+  PHISHING_LANDING_CLASSIFIER: 'phishing-landing-classifier-agent',
 } as const;
 
 /** Short confirmation/selection patterns for orchestrator Scenario A (route to same agent). */
@@ -669,6 +699,76 @@ export const PHISHING = {
   // Input validation
   MIN_TOPIC_LENGTH: 3,
   MAX_TOPIC_LENGTH: 200,
+} as const;
+
+// ============================================
+// PHISHING TEMPLATE FIXER CONFIGURATION
+// ============================================
+
+export const PHISHING_TEMPLATE_FIXER = {
+  /** Maximum HTML input size in bytes. Templates exceeding this are rejected with 413. */
+  MAX_HTML_SIZE_BYTES: 80_000,
+  /**
+   * Simulation sender domains for from_address generation.
+   * Agent selects the most appropriate domain based on email content,
+   * language (Turkish/English), topic, and brand context.
+   *
+   * To add a new domain: append to this array — prompt picks it up automatically.
+   */
+  SENDER_DOMAINS: [
+    'signin-authzone.com',
+    'verifycloudaccess.com',
+    'akibadem.org',
+    'isdestek.org',
+    'gartnerpeer.com',
+    'global-cloud-llc.com',
+    'cloudverification.online',
+    'accountaccesses.com',
+    'shoppingcenter.site',
+    'hesapdogrulama.info',
+    'banksecure.info',
+    'meetingonline-us.com',
+    'digitalsecurelogin.co',
+    'securelogout.com',
+    'encryptedconnections.info',
+    'kurumsalgiris.com',
+    'yoursecuregateway.com',
+    'securemygateway.com',
+    'hadisendekatil.com',
+    'updatemyinformation.com',
+    'secure-passchanges.com',
+    'swift-intel.com',
+    'hepsibureda.com',
+    'securely-logout.com',
+    'sigortacilarbirligi.com',
+    'btyardimmasasi.com',
+    'sirketiciduyuru.com',
+    'bilgilerimiguncelle.com',
+    'securelinked-in.com',
+    'theconnectionsuccess.com',
+    'sigortacilikhizmetleri.me',
+    'securebankingservices.net',
+    'guvenlibankacilik.com',
+    'insurance-services.me',
+    'btservisleri.com',
+    'secureloginonline.net',
+    'insan-kaynaklari.me',
+    'getaccess.store',
+    'shopping-services.com',
+    'globalsignin.net',
+    'onlineislem.co',
+    'checkyourprofile.com',
+    'mycyberresilience.com',
+    'securelylogout.com',
+    'hrportalonline.com',
+    'grademypassword.com',
+    'getaccesslink.com',
+    'e-voicemail.com',
+    'authsecurelogin.com',
+  ] as const,
+
+  /** Allowed from_address prefixes for prompt guidance */
+  ADDRESS_PREFIXES: ['info@', 'noreply@', 'bilgi@', 'destek@', 'support@', 'admin@', 'security@'] as const,
 } as const;
 
 // ============================================
@@ -928,39 +1028,30 @@ export const TOKEN_CACHE_INVALID_TTL_MS = 60_000;
 // ============================================
 
 export const API_ENDPOINTS = {
-  // Phishing worker endpoints
-  PHISHING_WORKER_URL:
-    process.env.PHISHING_WORKER_URL ||
-    'https://crud-phishing-worker.keepnet-labs-ltd-business-profile4086.workers.dev/submit',
-  PHISHING_WORKER_SUBMIT:
-    process.env.PHISHING_WORKER_SUBMIT ||
-    'https://crud-phishing-worker.keepnet-labs-ltd-business-profile4086.workers.dev/submit',
-  PHISHING_WORKER_SEND:
-    process.env.PHISHING_WORKER_SEND ||
-    'https://crud-phishing-worker.keepnet-labs-ltd-business-profile4086.workers.dev/send',
-
-  // Training worker endpoints
-  TRAINING_WORKER_URL:
-    process.env.TRAINING_WORKER_URL ||
-    'https://crud-training-worker.keepnet-labs-ltd-business-profile4086.workers.dev/submit',
-  TRAINING_WORKER_SEND:
-    process.env.TRAINING_WORKER_SEND ||
-    'https://crud-training-worker.keepnet-labs-ltd-business-profile4086.workers.dev/send',
-
-  // Smishing worker endpoints (fallback: phishing worker when SMISHING_WORKER_* not set)
-  SMISHING_WORKER_URL:
-    process.env.SMISHING_WORKER_URL ||
-    process.env.PHISHING_WORKER_URL ||
-    'https://crud-phishing-worker.keepnet-labs-ltd-business-profile4086.workers.dev/submit',
-  SMISHING_WORKER_SUBMIT:
-    process.env.SMISHING_WORKER_SUBMIT ||
-    process.env.SMISHING_WORKER_URL ||
-    process.env.PHISHING_WORKER_URL ||
-    'https://crud-phishing-worker.keepnet-labs-ltd-business-profile4086.workers.dev/submit',
-  SMISHING_WORKER_SEND:
-    process.env.SMISHING_WORKER_SEND ||
-    process.env.PHISHING_WORKER_SEND ||
-    'https://crud-phishing-worker.keepnet-labs-ltd-business-profile4086.workers.dev/send',
+  // CRUD Worker base domain: dev vs production
+  // Local dev (NODE_ENV=development) → dev workers, production → prod workers
+  ...(() => {
+    const isDev = process.env.NODE_ENV === 'development';
+    const phishingBase = isDev
+      ? 'https://crud-phishing-worker-dev.keepnet-labs-ltd-business-profile4086.workers.dev'
+      : 'https://crud-phishing-worker.keepnet-labs-ltd-business-profile4086.workers.dev';
+    const trainingBase = isDev
+      ? 'https://crud-training-worker-dev.keepnet-labs-ltd-business-profile4086.workers.dev'
+      : 'https://crud-training-worker.keepnet-labs-ltd-business-profile4086.workers.dev';
+    const smishingBase = isDev
+      ? 'https://crud-smishing-worker-dev.keepnet-labs-ltd-business-profile4086.workers.dev'
+      : 'https://crud-phishing-worker.keepnet-labs-ltd-business-profile4086.workers.dev';
+    return {
+      PHISHING_WORKER_URL: process.env.PHISHING_WORKER_URL || `${phishingBase}/submit`,
+      PHISHING_WORKER_SUBMIT: process.env.PHISHING_WORKER_SUBMIT || `${phishingBase}/submit`,
+      PHISHING_WORKER_SEND: process.env.PHISHING_WORKER_SEND || `${phishingBase}/send`,
+      TRAINING_WORKER_URL: process.env.TRAINING_WORKER_URL || `${trainingBase}/submit`,
+      TRAINING_WORKER_SEND: process.env.TRAINING_WORKER_SEND || `${trainingBase}/send`,
+      SMISHING_WORKER_URL: process.env.SMISHING_WORKER_URL || `${smishingBase}/submit`,
+      SMISHING_WORKER_SUBMIT: process.env.SMISHING_WORKER_SUBMIT || `${smishingBase}/submit`,
+      SMISHING_WORKER_SEND: process.env.SMISHING_WORKER_SEND || `${smishingBase}/send`,
+    };
+  })(),
 
   // Microlearning API endpoints
   MICROLEARNING_API_URL:

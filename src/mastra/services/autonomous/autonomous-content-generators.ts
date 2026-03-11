@@ -164,9 +164,8 @@ export function buildExecutiveReport(toolResult: AutonomousToolResult): string |
 - **What It Takes:** ${report.maturity_mapping?.enisa_security_culture?.what_it_takes || 'N/A'}
 
 **Recommended Simulation Strategy:**
-${
-  sim
-    ? `- **Title:** ${sim.title}
+${sim
+      ? `- **Title:** ${sim.title}
 - **Vector:** ${sim.vector}
 - **Scenario Type:** ${sim.scenario_type}
 - **Difficulty:** ${sim.difficulty}
@@ -174,29 +173,27 @@ ${
 - **Rationale:** ${sim.rationale}
 - **NIST Phish Scale:** Cue Difficulty: ${sim.nist_phish_scale?.cue_difficulty || 'N/A'}, Premise Alignment: ${sim.nist_phish_scale?.premise_alignment || 'N/A'}
 - **Designed to Progress:** ${sim.designed_to_progress || 'N/A'}`
-    : 'None'
-}
+      : 'None'
+    }
 
 **Recommended Training Strategy:**
-${
-  ml
-    ? `- **Title:** ${ml.title}
+${ml
+      ? `- **Title:** ${ml.title}
 - **Objective:** ${ml.objective}
 - **Duration:** ${ml.duration_min} minutes
 - **Language:** ${toolResult.userInfo?.preferredLanguage || ml.language || 'en-gb'}
 - **Rationale:** ${ml.rationale}`
-    : 'None'
-}
+      : 'None'
+    }
 
 **Recommended Nudge Strategy:**
-${
-  nudge
-    ? `- **Channel:** ${nudge.channel}
+${nudge
+      ? `- **Channel:** ${nudge.channel}
 - **Message:** ${nudge.message}
 - **Cadence:** ${nudge.cadence}
 - **Rationale:** ${nudge.rationale}`
-    : 'None'
-}
+      : 'None'
+    }
 
 **References (use in generation):**
 ${references || 'None provided'}`;
@@ -529,6 +526,12 @@ export async function generateContentForUser(
         trainingResult: JSON.stringify(trainingResult, null, 2),
       });
     } else {
+      // Derive contentCategory from phishing simulation metadata
+      const phishingSim = recommendedSteps.simulations?.[0];
+      const phishingContentCategory = phishingSim
+        ? [phishingSim.vector || 'Phishing', phishingSim.scenario_type, phishingSim.persuasion_tactic, phishingSim.difficulty].filter(Boolean).join(' | ')
+        : '';
+
       const assignResult = await assignPhishingWithTraining(
         String(userId),
         phishingThreadId,
@@ -536,7 +539,8 @@ export async function generateContentForUser(
         sendTrainingLanguageId,
         phishingResourceId,
         phishingLanguageId,
-        phishingIsQuishing
+        phishingIsQuishing,
+        phishingContentCategory
       );
       if (assignResult?.success) {
         phishingResult.uploadAssignResult = assignResult;

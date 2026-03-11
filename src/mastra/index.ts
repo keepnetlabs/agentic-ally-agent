@@ -55,6 +55,7 @@ import {
 import { toAISdkStream } from '@mastra/ai-sdk';
 import { createUIMessageStream, createUIMessageStreamResponse } from 'ai';
 import { normalizeSafeId } from './utils/core/id-utils';
+import { requestStorage } from './utils/core/request-storage';
 import { validateBCP47LanguageCode, DEFAULT_LANGUAGE } from './utils/language/language-utils';
 import {
   postProcessPhishingEmailHtml,
@@ -66,7 +67,11 @@ import { smishingChatHandler } from './routes/smishing-chat-route';
 import { emailIRAnalyzeHandler } from './routes/email-ir-route';
 import { deepfakeStatusHandler } from './routes/deepfake-status-route';
 import { auditVerifyHandler } from './routes/audit-verify-route';
+import { phishingTemplateFixerHandler } from './routes/phishing-template-fixer-route';
+import { batchAutonomousHandler, batchAutonomousStatusHandler } from './routes/batch-autonomous-route';
+import { autonomousHandler } from './routes/autonomous-route';
 import { isPublicUnauthenticatedPath } from './middleware/public-endpoint-policy';
+import { routeToCSAgent } from './utils/cs-orchestration-helpers';
 
 // Barrel imports - clean organization
 import {
@@ -79,6 +84,11 @@ import {
   vishingCallAgent,
   deepfakeVideoAgent,
   outOfScopeAgent,
+  phishingTemplateFixerAgent,
+  phishingLandingPageClassifierAgent,
+  companySearchAgent,
+  trainingStatsAgent,
+  csOrchestratorAgent,
 } from './agents';
 import {
   errorHandlerMiddleware,
@@ -99,19 +109,14 @@ import {
   addMultipleLanguagesWorkflow,
   updateMicrolearningWorkflow,
 } from './workflows';
-import { ExampleRepo, executeAutonomousGeneration, performHealthCheck, KVService } from './services';
+import { ExampleRepo, performHealthCheck, KVService } from './services';
 import { validateEnvironmentOrThrow } from './utils/core';
 import { normalizeError, logErrorInfo } from './utils/core/error-utils';
 import { errorService } from './services/error-service';
 import { resolveLogLevel, STRUCTURED_LOG_FORMATTERS } from './utils/core/logger';
-import {
-  AUTONOMOUS_ACTIONS,
-  isValidAutonomousAction,
-} from './types';
 import type {
   ChatRequestBody,
   CodeReviewRequestBody,
-  AutonomousRequestBody,
   CloudflareEnv,
   PhishingEditorBody,
   KvPhishingLandingRecord,
@@ -172,7 +177,13 @@ export const mastra = new Mastra({
     vishingCallAssistant: vishingCallAgent,
     deepfakeVideoAssistant: deepfakeVideoAgent,
     outOfScope: outOfScopeAgent,
+    phishingTemplateFixer: phishingTemplateFixerAgent,
+    phishingLandingPageClassifier: phishingLandingPageClassifierAgent,
     orchestrator: orchestratorAgent,
+    // Customer Service Agent Swarm
+    companySearchAssistant: companySearchAgent,
+    trainingStatsAssistant: trainingStatsAgent,
+    csOrchestrator: csOrchestratorAgent,
   },
   logger,
   deployer: getDeployer(),
@@ -317,6 +328,10 @@ export const mastra = new Mastra({
 
           // Step 3: Extract or generate thread ID
           const threadId = extractAndPrepareThreadId(body);
+
+          // Persist threadId in request storage so assign tools can use it as batchResourceId
+          const store = requestStorage.getStore();
+          if (store) store.threadId = threadId;
 
           // Step 4: Route to agent
           let routeResult;
@@ -706,6 +721,11 @@ export const mastra = new Mastra({
         handler: emailIRAnalyzeHandler,
       }),
 
+      registerApiRoute('/phishing/template-fixer', {
+        method: 'POST',
+        handler: phishingTemplateFixerHandler,
+      }),
+
       registerApiRoute('/deepfake/status/:videoId', {
         method: 'GET',
         handler: deepfakeStatusHandler,
@@ -713,198 +733,137 @@ export const mastra = new Mastra({
 
       registerApiRoute('/autonomous', {
         method: 'POST',
-        handler: async (c: Context) => {
-          try {
-            const body = await c.req.json<AutonomousRequestBody>();
-            const {
-              token,
-              firstName,
-              lastName,
-              targetUserResourceId,
-              targetGroupResourceId,
-              departmentName,
-              actions,
-              sendAfterPhishingSimulation,
-              preferredLanguage,
-              baseApiUrl,
-            } = body;
-            const env = c.env as CloudflareEnv | undefined;
+        handler: autonomousHandler,
+      }),
 
-            // Validation
-            if (!token) {
-              return c.json({ success: false, error: 'Missing token' }, 400);
-            }
+      // ─── Batch Autonomous: Fan-out to all users in a group ───
+      registerApiRoute('/batch-autonomous', {
+        method: 'POST',
+        handler: batchAutonomousHandler,
+      }),
 
-            // Check assignment type: user or group (not both, not neither)
-            const isUserAssignment = !!(firstName || targetUserResourceId);
-            const isGroupAssignment = !!targetGroupResourceId;
-
-            if (isUserAssignment && isGroupAssignment) {
-              return c.json(
-                {
-                  success: false,
-                  error:
-                    'Cannot specify both user assignment (firstName/targetUserResourceId) and group assignment (targetGroupResourceId)',
-                },
-                400
-              );
-            }
-
-            if (!isUserAssignment && !isGroupAssignment) {
-              return c.json(
-                {
-                  success: false,
-                  error: 'Must specify either user assignment (firstName) or group assignment (targetGroupResourceId)',
-                },
-                400
-              );
-            }
-
-            if (!actions || !Array.isArray(actions) || actions.length === 0) {
-              return c.json({ success: false, error: 'Missing or invalid actions array' }, 400);
-            }
-            if (!actions.every((a: unknown) => isValidAutonomousAction(a))) {
-              return c.json(
-                {
-                  success: false,
-                  error: `Actions must be one or more of: ${AUTONOMOUS_ACTIONS.map(a => `"${a}"`).join(', ')}`,
-                },
-                400
-              );
-            }
-
-            logger.info('autonomous_request_received', {
-              firstName,
-              lastName,
-              targetUserResourceId,
-              targetGroupResourceId,
-              actionsCount: actions.length,
-              assignmentType: isUserAssignment ? 'user' : 'group',
-            });
-
-            // Primary path: Cloudflare Workflow binding
-            try {
-              const workflow = env?.AUTONOMOUS_WORKFLOW;
-              if (workflow && workflow.create) {
-                const instance = await workflow.create({
-                  params: {
-                    token,
-                    firstName,
-                    lastName,
-                    targetUserResourceId,
-                    targetGroupResourceId,
-                    departmentName,
-                    actions,
-                    sendAfterPhishingSimulation,
-                    preferredLanguage,
-                    baseApiUrl,
-                  },
-                });
-
-                logger.info('autonomous_workflow_started', { workflowId: instance?.id });
-                return c.json(
-                  {
-                    success: true,
-                    workflowId: instance?.id ?? null,
-                    status: 'started',
-                    firstName,
-                    lastName,
-                    targetUserResourceId,
-                    targetGroupResourceId,
-                    assignmentType: isUserAssignment ? 'user' : 'group',
-                    actions,
-                  },
-                  202
-                );
-              }
-              logger.warn('autonomous_workflow_binding_missing_falling_back');
-            } catch (workflowError) {
-              logger.warn('autonomous_workflow_start_failed_falling_back', {
-                error: workflowError instanceof Error ? workflowError.message : String(workflowError),
-              });
-            }
-
-            const requestPayload = {
-              token,
-              firstName,
-              lastName,
-              targetUserResourceId,
-              targetGroupResourceId,
-              departmentName,
-              actions,
-              sendAfterPhishingSimulation,
-              preferredLanguage,
-              baseApiUrl,
-            };
-
-            // Fallback 1: run in background via waitUntil if available (preferred in Workers)
-            try {
-              // @ts-ignore - ExecutionContext check for Cloudflare Workers
-              if (c.executionCtx && typeof c.executionCtx.waitUntil === 'function') {
-                const executionPromise = executeAutonomousGeneration(requestPayload).catch(err => {
-                  logger.error('autonomous_background_execution_failed', {
-                    error: err instanceof Error ? err.message : String(err),
-                  });
-                });
-                // @ts-ignore
-                c.executionCtx.waitUntil(executionPromise);
-                logger.debug('background_task_registered_with_waituntil');
-
-                return c.json(
-                  {
-                    success: true,
-                    message: 'Autonomous generation started in background. This process may take 5-10 minutes.',
-                    status: 'processing',
-                    firstName,
-                    lastName,
-                    targetUserResourceId,
-                    targetGroupResourceId,
-                    assignmentType: isUserAssignment ? 'user' : 'group',
-                    actions,
-                  },
-                  200
-                );
-              }
-            } catch (waitUntilError) {
-              logger.warn('waituntil_not_available_using_floating_promise', {
-                error: waitUntilError instanceof Error ? waitUntilError.message : String(waitUntilError),
-              });
-            }
-
-            // Fallback 2 (LOCAL DEV): no workflow binding and no waitUntil.
-            // Run inline so local requests reliably complete (avoids "floating promise" being dropped).
-            logger.warn('autonomous_no_workflow_no_waituntil_running_inline');
-            const result = await executeAutonomousGeneration(requestPayload);
-
-            return c.json(
-              {
-                ...result,
-                status: result.success ? 'completed' : 'failed',
-              },
-              200
-            );
-          } catch (error) {
-            const err = normalizeError(error);
-            const errorInfo = errorService.external(err.message, {
-              step: 'autonomous-endpoint',
-              stack: err.stack,
-            });
-            logErrorInfo(logger, 'error', 'autonomous_endpoint_error', errorInfo);
-            return c.json(
-              {
-                success: false,
-                error: error instanceof Error ? error.message : 'Unknown error',
-              },
-              500
-            );
-          }
-        },
+      // ─── Batch Status ───
+      registerApiRoute('/batch-autonomous/:batchId/status', {
+        method: 'GET',
+        handler: batchAutonomousStatusHandler,
       }),
 
       // ─── Audit Chain Verification (EU AI Act Art. 12) ───
       registerApiRoute('/audit/verify', {
         method: 'GET',
         handler: auditVerifyHandler,
+      }),
+
+      // ─── Customer Service Chat (Separate Agent Swarm) ───
+      registerApiRoute('/customer-service/chat', {
+        method: 'POST',
+        handler: async (c: Context) => {
+          const mastra = c.get('mastra');
+
+          // Step 1: Parse and validate request (reuse existing helper)
+          let body: ChatRequestBody = {};
+          try {
+            body = await c.req.json<ChatRequestBody>();
+          } catch {
+            // ignore JSON parse errors
+          }
+
+          const parsedRequest = parseAndValidateRequest(body);
+          if (!parsedRequest) {
+            return c.json(
+              {
+                success: false,
+                message: 'Missing prompt. Provide {prompt}, {text}, {input}, or AISDK {messages} with user text.',
+              },
+              400
+            );
+          }
+
+          const { prompt, routingContext } = parsedRequest;
+
+          logger.info('CS_CHAT_REQUEST Customer service chat request', { prompt });
+
+          // Step 2: Thread ID (reuse existing helper)
+          const threadId = extractAndPrepareThreadId(body);
+          const store = requestStorage.getStore();
+          if (store) store.threadId = threadId;
+
+          // Step 3: Build CS orchestrator input
+          const orchestratorInput = routingContext
+            ? `Here is the recent conversation history:\n---\n${routingContext}\n---\n\nCurrent user message: "${prompt}"\n\nBased on this history and the current message, decide which CS agent should handle the request.`
+            : prompt;
+
+          // Step 4: Route via CS Orchestrator
+          let routeResult;
+          try {
+            routeResult = await routeToCSAgent(mastra, orchestratorInput);
+            logger.info('CS_ROUTING Agent selected', {
+              agentName: routeResult.agentName,
+              taskContext: routeResult.taskContext,
+            });
+          } catch (routingError) {
+            const err = normalizeError(routingError);
+            const errorInfo = errorService.aiModel(err.message, {
+              step: 'cs-agent-routing',
+              stack: err.stack,
+            });
+            logErrorInfo(logger, 'error', 'cs_agent_routing_failed', errorInfo);
+            return c.json(
+              {
+                success: false,
+                error: 'CS agent routing failed',
+                message: routingError instanceof Error ? routingError.message : 'Unknown routing error',
+              },
+              500
+            );
+          }
+
+          // Step 5: Get agent instance
+          const agent = mastra.getAgent(routeResult.agentName);
+          if (!agent) {
+            logger.error('cs_agent_not_found', { agentName: routeResult.agentName });
+            return c.json(
+              {
+                success: false,
+                error: 'CS agent not found',
+                message: `Agent "${routeResult.agentName}" is not available`,
+              },
+              500
+            );
+          }
+
+          // Step 6: Build final prompt with CS context
+          let finalPrompt = buildFinalPromptWithModelOverride(prompt, body?.modelProvider, body?.model);
+          if (routeResult.taskContext) {
+            finalPrompt = `[CONTEXT FROM CS ORCHESTRATOR: ${routeResult.taskContext}]\n\n${finalPrompt}`;
+          }
+
+          // Step 7: Create agent stream (reuse existing helper)
+          let stream;
+          try {
+            stream = await createAgentStream(agent, finalPrompt, threadId, routeResult.agentName);
+          } catch (streamError) {
+            const err = normalizeError(streamError);
+            const errorInfo = errorService.external(err.message, {
+              step: 'cs-stream-creation',
+              stack: err.stack,
+              agentName: routeResult.agentName,
+            });
+            logErrorInfo(logger, 'error', 'cs_stream_creation_failed', errorInfo);
+            return c.json(
+              {
+                success: false,
+                error: 'Stream creation failed',
+                message: streamError instanceof Error ? streamError.message : 'Unknown stream error',
+              },
+              500
+            );
+          }
+
+          return stream.toUIMessageStreamResponse({
+            sendReasoning: true,
+          });
+        },
       }),
     ],
   },

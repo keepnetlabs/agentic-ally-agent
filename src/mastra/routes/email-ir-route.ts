@@ -5,6 +5,7 @@ import { logErrorInfo, normalizeError } from '../utils/core/error-utils';
 import { emailIRWorkflow } from '../workflows/email-ir-workflow';
 import { fetchEmailInputSchema } from '../tools/email-ir/fetch-email';
 import { emailIrAnalyzeSuccessResponseSchema } from './email-ir-route.schemas';
+import { resolveBaseApiUrl } from '../utils/core/url-validator';
 
 /**
  * POST /email-ir/analyze
@@ -42,10 +43,7 @@ export const emailIRAnalyzeHandler = async (c: Context) => {
 
     const inputData = validation.data;
 
-    // Normalize apiBaseUrl: dashboard URL → API URL (dash serves HTML, api serves JSON)
-    if (inputData.apiBaseUrl.includes('dash.keepnetlabs.com')) {
-      inputData.apiBaseUrl = inputData.apiBaseUrl.replace('dash.keepnetlabs.com', 'api.keepnetlabs.com');
-    }
+    inputData.apiBaseUrl = resolveBaseApiUrl(inputData.apiBaseUrl);
 
     logger.info('Starting Email IR Analysis', { id: inputData.id, apiBaseUrl: inputData.apiBaseUrl });
 

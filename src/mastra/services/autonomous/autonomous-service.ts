@@ -4,7 +4,8 @@ import { requestStorage } from '../../utils/core/request-storage';
 import { getLogger } from '../../utils/core/logger';
 import { normalizeError, logErrorInfo } from '../../utils/core/error-utils';
 import { errorService } from '../error-service';
-import { API_ENDPOINTS } from '../../constants';
+import { resolveBaseApiUrl } from '../../utils/core/url-validator';
+import { generateBatchId } from '../../utils/core/short-id';
 import {
   AutonomousRequest,
   AutonomousResponse,
@@ -29,16 +30,10 @@ export async function executeAutonomousGeneration(request: AutonomousRequest): P
     sendAfterPhishingSimulation,
     preferredLanguage,
     baseApiUrl,
+    batchResourceId,
   } = request;
 
-  // Use provided baseApiUrl or fallback to default
-  let effectiveBaseApiUrl = baseApiUrl || API_ENDPOINTS.DEFAULT_BASE_API_URL;
-  if (effectiveBaseApiUrl.includes('dash.keepnetlabs.com')) {
-    effectiveBaseApiUrl = effectiveBaseApiUrl.replace('dash.keepnetlabs.com', 'api.keepnetlabs.com');
-  }
-  if (effectiveBaseApiUrl.includes('test-ui.devkeepnet.com')) {
-    effectiveBaseApiUrl = effectiveBaseApiUrl.replace('test-ui.devkeepnet.com', 'test-api.devkeepnet.com');
-  }
+  const effectiveBaseApiUrl = resolveBaseApiUrl(baseApiUrl);
   // Determine assignment type
   const isUserAssignment = !!(firstName || targetUserResourceId);
   const isGroupAssignment = !!targetGroupResourceId;
@@ -49,8 +44,11 @@ export async function executeAutonomousGeneration(request: AutonomousRequest): P
   }
 
   try {
+    // If batchResourceId provided (batch fan-out), use it as threadId so all users share the same batch.
+    // Otherwise generate a unique threadId per autonomous run.
+    const threadId = batchResourceId || generateBatchId();
     return await requestStorage.run(
-      { token, baseApiUrl: effectiveBaseApiUrl },
+      { token, baseApiUrl: effectiveBaseApiUrl, threadId },
       async (): Promise<AutonomousResponse> => {
         // USER ASSIGNMENT: Get user info and generate personalized content
         if (isUserAssignment) {

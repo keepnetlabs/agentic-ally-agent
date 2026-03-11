@@ -21,6 +21,7 @@ export type {
   VishingPromptErrorResponse,
   VishingPromptResponse,
   AutonomousRequestBody,
+  BatchAutonomousRequestBody,
   CloudflareEnv,
   WorkflowBinding,
   PhishingEditorBody,

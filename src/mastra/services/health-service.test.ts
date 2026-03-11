@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   checkKVHealth,
   checkD1Health,
+  checkAuditChainHealth,
   getUptime,
   determineOverallStatus,
   performHealthCheck,
@@ -165,6 +166,47 @@ describe('HealthService', () => {
       const result = getUptime();
       expect(result.formatted).toBeTruthy();
     });
+
+    it('should format uptime in minutes when elapsed > 60s', async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2024-01-01T00:00:00Z'));
+      vi.resetModules();
+      const mod = await import('./health-service');
+      vi.advanceTimersByTime(65000);
+      const result = mod.getUptime();
+      expect(result.formatted).toMatch(/\d+m/);
+      expect(result.ms).toBe(65000);
+      vi.useRealTimers();
+      vi.resetModules();
+      await import('./health-service');
+    });
+
+    it('should format uptime in hours when elapsed > 3600s', async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2024-01-01T00:00:00Z'));
+      vi.resetModules();
+      const mod = await import('./health-service');
+      vi.advanceTimersByTime(7300000);
+      const result = mod.getUptime();
+      expect(result.formatted).toMatch(/\d+h/);
+      expect(result.ms).toBe(7300000);
+      vi.useRealTimers();
+      vi.resetModules();
+      await import('./health-service');
+    });
+
+    it('should format uptime in days when elapsed > 86400s', async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2024-01-01T00:00:00Z'));
+      vi.resetModules();
+      const mod = await import('./health-service');
+      vi.advanceTimersByTime(90000000);
+      const result = mod.getUptime();
+      expect(result.formatted).toMatch(/\d+d/);
+      vi.useRealTimers();
+      vi.resetModules();
+      await import('./health-service');
+    });
   });
 
   describe('checkKVHealth', () => {
@@ -291,16 +333,16 @@ describe('HealthService', () => {
       const db = { prepare: () => ({ first: () => Promise.resolve(1) }) };
       const result = await checkD1Health(db as Parameters<typeof checkD1Health>[0]);
       expect(result).toBeDefined();
-      expect(result!.status).toBe('healthy');
-      expect(result!.latencyMs).toBeGreaterThanOrEqual(0);
+      expect(result?.status).toBe('healthy');
+      expect(result?.latencyMs).toBeGreaterThanOrEqual(0);
     });
 
     it('should return unhealthy when D1 throws', async () => {
       const db = { prepare: () => ({ first: () => Promise.reject(new Error('D1 unavailable')) }) };
       const result = await checkD1Health(db as Parameters<typeof checkD1Health>[0]);
       expect(result).toBeDefined();
-      expect(result!.status).toBe('unhealthy');
-      expect(result!.error).toContain('D1 unavailable');
+      expect(result?.status).toBe('unhealthy');
+      expect(result?.error).toContain('D1 unavailable');
     });
   });
 
@@ -444,6 +486,58 @@ describe('HealthService', () => {
       const result = await performHealthCheck({}, {});
 
       expect(result.checks.workflows).toBe(false);
+    });
+
+    it('should include d1 and auditChain checks when env has agentic_ally_memory', async () => {
+      const mockD1 = {
+        prepare: (query: string) => ({
+          first: () =>
+            query.includes('COUNT')
+              ? Promise.resolve({ total: 0 })
+              : query.includes('integrity_hash')
+                ? Promise.resolve(null)
+                : Promise.resolve(1),
+        }),
+      };
+      const env = { agentic_ally_memory: mockD1 };
+
+      const result = await performHealthCheck({}, {}, 5000, env);
+
+      expect(result.checks).toHaveProperty('d1');
+      expect(result.checks).toHaveProperty('auditChain');
+      expect(result.checks.d1?.status).toBeDefined();
+      expect(result.checks.auditChain?.status).toBeDefined();
+    });
+
+    it('should set d1 unhealthy when D1 health check times out', async () => {
+      const slowD1 = {
+        prepare: () => ({
+          first: () => new Promise<never>(() => {}),
+        }),
+      };
+      const env = { agentic_ally_memory: slowD1 };
+
+      const result = await performHealthCheck({}, {}, 10, env);
+
+      expect(result.checks.d1?.status).toBe('unhealthy');
+      expect(result.checks.d1?.error).toContain('D1 health check timeout');
+    });
+
+    it('should set auditChain unhealthy when audit chain check times out', async () => {
+      const slowD1 = {
+        prepare: (query: string) => ({
+          first: () =>
+            query.includes('SELECT 1')
+              ? Promise.resolve(1)
+              : new Promise<never>(() => {}),
+        }),
+      };
+      const env = { agentic_ally_memory: slowD1 };
+
+      const result = await performHealthCheck({}, {}, 15, env);
+
+      expect(result.checks.auditChain?.status).toBe('unhealthy');
+      expect(result.checks.auditChain?.error).toContain('Audit chain health check timeout');
     });
 
     it('should handle KV health check timeout gracefully', async () => {
@@ -822,6 +916,82 @@ describe('HealthService', () => {
       // Structure should be consistent
       expect(Object.keys(result1).sort()).toEqual(Object.keys(result2).sort());
       expect(Object.keys(result1.checks).sort()).toEqual(Object.keys(result2.checks).sort());
+    });
+  });
+
+  describe('checkAuditChainHealth', () => {
+    it('should return undefined when db is undefined', async () => {
+      const result = await checkAuditChainHealth(undefined);
+      expect(result).toBeUndefined();
+    });
+
+    it('should return healthy with totalRows and hashChainActive when hash exists', async () => {
+      const db = {
+        prepare: vi.fn((query: string) => ({
+          first: vi.fn().mockResolvedValue(
+            query.includes('COUNT') ? { total: 5 } : { integrity_hash: 'abc123' }
+          ),
+        })),
+      };
+      const result = await checkAuditChainHealth(db as Parameters<typeof checkAuditChainHealth>[0]);
+      expect(result).toBeDefined();
+      expect(result?.status).toBe('healthy');
+      expect(result?.totalRows).toBe(5);
+      expect(result?.hashChainActive).toBe(true);
+      expect(result?.latencyMs).toBeGreaterThanOrEqual(0);
+    });
+
+    it('should return healthy when no audit rows exist yet', async () => {
+      const db = {
+        prepare: vi.fn(() => ({
+          first: vi.fn().mockResolvedValue({ total: 0 }),
+        })),
+      };
+      const result = await checkAuditChainHealth(db as Parameters<typeof checkAuditChainHealth>[0]);
+      expect(result).toBeDefined();
+      expect(result?.status).toBe('healthy');
+      expect(result?.totalRows).toBe(0);
+      expect(result?.hashChainActive).toBe(false);
+    });
+
+    it('should return degraded when rows exist but no hash on latest row', async () => {
+      const db = {
+        prepare: vi.fn((query: string) => ({
+          first: vi.fn().mockResolvedValue(
+            query.includes('COUNT') ? { total: 3 } : { integrity_hash: null }
+          ),
+        })),
+      };
+      const result = await checkAuditChainHealth(db as Parameters<typeof checkAuditChainHealth>[0]);
+      expect(result).toBeDefined();
+      expect(result?.status).toBe('degraded');
+      expect(result?.totalRows).toBe(3);
+      expect(result?.hashChainActive).toBe(false);
+    });
+
+    it('should return unhealthy when query throws', async () => {
+      const db = {
+        prepare: vi.fn(() => ({
+          first: vi.fn().mockRejectedValue(new Error('table not found')),
+        })),
+      };
+      const result = await checkAuditChainHealth(db as Parameters<typeof checkAuditChainHealth>[0]);
+      expect(result).toBeDefined();
+      expect(result?.status).toBe('unhealthy');
+      expect(result?.error).toContain('table not found');
+      expect(result?.latencyMs).toBeGreaterThanOrEqual(0);
+    });
+
+    it('should handle null count result gracefully', async () => {
+      const db = {
+        prepare: vi.fn(() => ({
+          first: vi.fn().mockResolvedValue(null),
+        })),
+      };
+      const result = await checkAuditChainHealth(db as Parameters<typeof checkAuditChainHealth>[0]);
+      expect(result).toBeDefined();
+      expect(result?.totalRows).toBe(0);
+      expect(result?.status).toBe('healthy');
     });
   });
 

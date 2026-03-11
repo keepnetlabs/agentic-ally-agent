@@ -86,10 +86,10 @@ ${isQuishing ? QUISHING_LANDING_PAGE_RULE : NO_QR_CODE_LANDING_PAGE_RULE}
      **CONSTRAINT:** You MUST ignore any previous "Option A/B" instructions and strictly implement the **${randomLayout.name}** layout with **${randomStyle.name}** styling.
 
      **Specific Implementation Rules for ${randomLayout.id}:**
-     ${randomLayout.id === 'SPLIT' ? '- Use `display: flex; flex-wrap: wrap;` on body.\n     - Left side: Brand color background, centered logo/text.\n     - Right side: White background, form content.' : ''}
-    ${randomLayout.id === 'MINIMAL' ? `- NO CARD CONTAINER. Content sits directly on background.\n     - Use body max-width: ${LANDING_PAGE.MINIMAL_BODY_MAX_WIDTH_PX}px, form max-width: ${LANDING_PAGE.FORM_MAX_WIDTH_PX}px (never full-width).\n     - Centered logo and form with generous spacing (24px gaps).\n     - Clean, minimalist, alert-like layout with breathing room.` : ''}
-     ${randomLayout.id === 'CENTERED' ? '- Classic centered card with shadow.\n     - Background color surrounds the card.' : ''}
-    ${randomLayout.id === 'HERO' ? `- Top full-width hero bar (brand color, ~200px height).\n     - Hero section: \`display: flex; flex-direction: column;\` (logo and title must stack vertically).\n     - Content card overlaps the hero bar with a subtle negative margin-top.\n     - Recommended: main container \`style='width: 100%; max-width: ${LANDING_PAGE.HERO_MAIN_CONTAINER_MAX_WIDTH_PX}px; margin: ${LANDING_PAGE.HERO_MAIN_CONTAINER_MARGIN_TOP_PX}px auto 0; padding: 0 20px; display: flex; flex-direction: column; align-items: center; justify-content: center;'\`.` : ''}
+     ${randomLayout.id === 'SPLIT' ? '- Use `display: flex; flex-wrap: wrap; min-height: 100vh;` on body so both panels fill the viewport.\n     - Left side: Brand color background, centered logo/text.\n     - Right side: White background, form content.\n     - You MAY vary logo size, panel padding, card shadow, and CTA corner style.\n     - Do NOT collapse this into a single centered card.' : ''}
+    ${randomLayout.id === 'MINIMAL' ? `- NO CARD CONTAINER. Content sits directly on background.\n     - Use body max-width: ${LANDING_PAGE.MINIMAL_BODY_MAX_WIDTH_PX}px, form max-width: ${LANDING_PAGE.FORM_MAX_WIDTH_PX}px (never full-width).\n     - Centered logo and form with generous spacing (24px gaps).\n     - Clean, minimalist, alert-like layout with breathing room.\n     - You MAY vary spacing rhythm, logo size/alignment, helper text placement, and button corner style.\n     - Do NOT introduce an outer card or extra layout sections.` : ''}
+     ${randomLayout.id === 'CENTERED' ? '- Classic centered card with shadow.\n     - Background color surrounds the card.\n     - Use `min-height: 100vh; display: flex; align-items: center; justify-content: center;` on body to vertically center the card.\n     - You MAY vary card radius, shadow strength, logo alignment, and helper/footer treatment.\n     - Do NOT add hero sections, side panels, or multiple primary wrappers.' : ''}
+    ${randomLayout.id === 'HERO' ? `- Top full-width hero bar (brand color, ~200px height).\n     - Hero section: \`display: flex; flex-direction: column;\` (logo and title must stack vertically).\n     - Content card overlaps the hero bar with a subtle negative margin-top.\n     - Use this exact overlap for the main container: \`margin: ${LANDING_PAGE.HERO_MAIN_CONTAINER_MARGIN_TOP_PX}px auto 0;\`.\n     - Do NOT make the overlap more aggressive (for example \`-40px\`, \`-48px\`, etc.).\n     - Recommended: main container \`style='width: 100%; max-width: ${LANDING_PAGE.HERO_MAIN_CONTAINER_MAX_WIDTH_PX}px; margin: ${LANDING_PAGE.HERO_MAIN_CONTAINER_MARGIN_TOP_PX}px auto 0; padding: 0 20px; display: flex; flex-direction: column; align-items: center; justify-content: center;'\`.\n     - You MAY vary hero height slightly, logo size, card shadow/radius, and CTA corner style.\n     - Do NOT break the vertical hero stack or the assigned overlap logic.` : ''}
 
 ---
 
@@ -118,9 +118,11 @@ Pages for the same brand must feel related (same color palette, logo, general mo
 
 For each new page/template, change at least **3** of the following visual aspects in a natural way:
 
-1. Card max-width (e.g. 520–${LANDING_PAGE.FORM_MAX_WIDTH_PX}px) via \`style='max-width: ${LANDING_PAGE.FORM_MAX_WIDTH_PX}px;'\` vs \`560px\`.
-2. Card border-radius (e.g. 14px, 18px, 22px).
-3. Card shadow strength (softer or stronger \`box-shadow\`).
+Items 1–3 apply only to card-based layouts (CENTERED, HERO, and the right-panel form card in SPLIT). For MINIMAL, vary items 4–7 instead.
+
+1. Card max-width for card-based layouts (e.g. 520–${LANDING_PAGE.FORM_MAX_WIDTH_PX}px) via \`style='max-width: ${LANDING_PAGE.FORM_MAX_WIDTH_PX}px;'\` vs \`560px\`.
+2. Card border-radius for card-based layouts (e.g. 14px, 18px, 22px).
+3. Card shadow strength for card-based layouts (softer or stronger \`box-shadow\`).
 4. Logo size or alignment (center vs left).
 5. Button shape (fully pill vs slightly rounded rectangle).
 6. Vertical spacing between sections (margins between logo, card, footer).
@@ -131,14 +133,17 @@ For each new page/template, change at least **3** of the following visual aspect
 
 ---
 
-**REQUIRED DESIGN ELEMENTS (Make it look PREMIUM):**
+**SHARED DESIGN ELEMENTS (Apply when the assigned layout allows):**
 
-1. **Card Container (Main Panel):**
+If a layout-specific rule above conflicts with a shared rule below, the layout-specific rule wins.
+
+1. **Card Container (Main Panel) — SKIP this section entirely for MINIMAL layout:**
+   - Applies to CENTERED, HERO, and most SPLIT pages. Do NOT add this outer card for MINIMAL.
    - White background.
    - Rounded corners.
    - Soft, realistic shadow.
    - Comfortable padding (around 28–36px).
-   - Example:
+   - Example (only for card-based layouts — NOT MINIMAL):
      <div style='${industryDesign.patterns.cardStyle}'>
        ...
      </div>

@@ -191,4 +191,21 @@ describe('initiateVishingCallTool', () => {
     );
     expect(deltaCall).toBeDefined();
   });
+
+  it('should still return success when writer.write throws (catch branch)', async () => {
+    const mockWriter = { write: vi.fn().mockRejectedValue(new Error('Stream closed')) };
+
+    (global.fetch as ReturnType<typeof vi.fn>) = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ conversation_id: 'conv-throw', callSid: 'CA-throw' }),
+    });
+
+    const result = await initiateVishingCallTool.execute({
+      context: validContext,
+      writer: mockWriter,
+    } as never);
+
+    expect(result.success).toBe(true);
+    expect(result.conversationId).toBe('conv-throw');
+  });
 });

@@ -153,6 +153,25 @@ describe('error-service', () => {
     });
   });
 
+  describe('dataProcessing', () => {
+    it('should return ErrorInfo with DATA_PROCESSING category', () => {
+      const result = errorService.dataProcessing('Export failed');
+      expect(result.category).toBe(ErrorCategory.DATA_PROCESSING);
+      expect(result.retryable).toBe(true);
+    });
+
+    it('should customize nextStep when operation is in details', () => {
+      const result = errorService.dataProcessing('Export failed', { operation: 'delete' });
+      expect(result.nextStep).toContain('delete');
+    });
+
+    it('should use default nextStep when operation is not provided', () => {
+      const result = errorService.dataProcessing('Export failed');
+      expect(result.nextStep).toContain('data processing');
+      expect(result.nextStep).not.toContain('undefined');
+    });
+  });
+
   describe('internal', () => {
     it('should return ErrorInfo with INTERNAL category', () => {
       const result = errorService.internal('Unexpected error');
@@ -195,8 +214,8 @@ describe('error-service', () => {
       const json = JSON.stringify(errorInfo);
       const parsed = errorService.parse(json);
       expect(parsed).not.toBeNull();
-      expect(parsed!.code).toBe(errorInfo.code);
-      expect(parsed!.message).toBe(errorInfo.message);
+      expect(parsed?.code).toBe(errorInfo.code);
+      expect(parsed?.message).toBe(errorInfo.message);
     });
 
     it('should return null for invalid JSON', () => {

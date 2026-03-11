@@ -104,6 +104,19 @@ export interface AutonomousRequestBody {
   actions: AutonomousAction[];
   sendAfterPhishingSimulation?: boolean;
   preferredLanguage?: string;
+  batchResourceId?: string; // Shared batch ID for group fan-out
+}
+
+/**
+ * Batch autonomous generation request body — fan-out to all users in a group
+ */
+export interface BatchAutonomousRequestBody {
+  token: string;
+  baseApiUrl?: string;
+  targetGroupResourceId: string;
+  actions: AutonomousAction[];
+  sendAfterPhishingSimulation?: boolean;
+  preferredLanguage?: string;
 }
 
 /**
@@ -191,5 +204,6 @@ export type CloudflareEnv = Record<string, unknown> & {
 };
 
 export interface WorkflowBinding<TParams = unknown, TResult = unknown> {
-  create: (options: { params: TParams }) => Promise<{ id: string } & TResult>;
+  create: (options: { id?: string; params: TParams }) => Promise<{ id: string } & TResult>;
+  createBatch: (batch: Array<{ id?: string; params: TParams }>) => Promise<Array<{ id: string } & TResult>>;
 }

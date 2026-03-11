@@ -7,23 +7,25 @@
  * - humanOversight: approval-gated (Chat confirmation before execution)
  * @see docs/AI_COMPLIANCE_INVENTORY.md
  */
-import { createTool, ToolExecutionContext } from '@mastra/core/tools';
+import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { isSafeId } from '../../utils/core/id-utils';
+import { generateBatchId } from '../../utils/core/short-id';
 import { KVService } from '../../services/kv-service';
 import { getRequestContext } from '../../utils/core/request-storage';
 import { getLogger } from '../../utils/core/logger';
 import { withRetry } from '../../utils/core/resilience-utils';
-import { callWorkerAPI } from '../../utils/core/worker-api-client';
+import { callWorkerAPI, type AgenticActivitiesPayload, type WorkerSendResponse } from '../../utils/core/worker-api-client';
 import { maskSensitiveField } from '../../utils/core/security-utils';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
-import { ERROR_MESSAGES, API_ENDPOINTS, KV_NAMESPACES } from '../../constants';
+import { ERROR_MESSAGES, API_ENDPOINTS, KV_NAMESPACES, MAX_GROUP_ASSIGN_USERS } from '../../constants';
 import { errorService } from '../../services/error-service';
 import { validateToolResult } from '../../utils/tool-result-validation';
 import { extractCompanyIdFromTokenExport } from '../../utils/core/policy-fetcher';
 import { formatToolSummary } from '../../utils/core/tool-summary-formatter';
+import { fanOutGroupAssignment, groupResultSchema } from '../../utils/core/group-assignment';
+import { emitUISignal } from '../../utils/core/ui-signal';
 
-// Output schema defined separately to avoid circular reference
 const assignPhishingOutputSchema = z.object({
   success: z.boolean(),
   data: z
@@ -35,6 +37,7 @@ const assignPhishingOutputSchema = z.object({
       resourceId: z.string(),
       languageId: z.string().optional(),
       followUpTrainingId: z.string().optional(),
+      groupResult: groupResultSchema.optional(),
     })
     .optional(),
   message: z.string().optional(),
@@ -52,7 +55,9 @@ export const assignPhishingTool = createTool({
         .refine(isSafeId, { message: 'Invalid resourceId format.' }),
       languageId: z
         .string()
+        .nullable()
         .optional()
+        .transform(v => v ?? undefined)
         .describe('The Language ID returned from the upload process')
         .refine(v => (v ? isSafeId(v) : true), { message: 'Invalid languageId format.' }),
       isQuishing: z.boolean().optional().describe('Quishing flag (can be passed from upload result)'),
@@ -77,22 +82,29 @@ export const assignPhishingTool = createTool({
         .refine(v => (v ? isSafeId(v) : true), { message: 'Invalid targetGroupResourceId format.' }),
       trainingId: z
         .string()
+        .nullable()
         .optional()
+        .transform(v => v ?? undefined)
         .describe('The Training Resource ID to send after phishing simulation (if sendAfterPhishingSimulation is true)')
         .refine(v => (v ? isSafeId(v) : true), { message: 'Invalid trainingId format.' }),
       sendTrainingLanguageId: z
         .string()
+        .nullable()
         .optional()
+        .transform(v => v ?? undefined)
         .describe('The Training Language ID to send after phishing simulation (if sendAfterPhishingSimulation is true)')
         .refine(v => (v ? isSafeId(v) : true), { message: 'Invalid sendTrainingLanguageId format.' }),
+      contentCategory: z
+        .string()
+        .optional()
+        .describe('Free-text category classifying the activity (e.g. "Social Engineering", "Phishing Awareness"). Used by the Agentic AI Activities API.'),
     })
     .refine(data => Boolean(data.targetUserResourceId) !== Boolean(data.targetGroupResourceId), {
       message:
         'Provide EXACTLY ONE: targetUserResourceId (user assignment) OR targetGroupResourceId (group assignment).',
     }),
   outputSchema: assignPhishingOutputSchema,
-  // v1: execute now takes (inputData, context)
-  execute: async (inputData, ctx?: ToolExecutionContext) => {
+  execute: async ({ context, writer }) => {
     const logger = getLogger('AssignPhishingTool');
     const {
       resourceId,
@@ -104,8 +116,8 @@ export const assignPhishingTool = createTool({
       targetGroupResourceId,
       trainingId,
       sendTrainingLanguageId,
-    } = inputData;
-    const writer = ctx?.writer;
+      contentCategory,
+    } = context;
 
     // Guard: prevent assigning with raw phishingId (must upload first)
     try {
@@ -154,61 +166,144 @@ export const assignPhishingTool = createTool({
       return createToolErrorResponse(errorInfo);
     }
 
-    const payload = {
-      apiUrl: baseApiUrl, // Dynamic URL from header or environment
+    const campaignType = isQuishing ? 'quishing' : 'phishing';
+
+    const commonPayloadFields = {
+      activityType: (isQuishing ? 'quishing' : 'phishing') as 'phishing' | 'quishing',
+      scenarioResourceId: resourceId,
+      contentCategory: contentCategory || '',
+      apiUrl: baseApiUrl,
       accessToken: token,
       companyId: effectiveCompanyId,
       phishingId: resourceId,
-      languageId: languageId,
-      isQuishing: isQuishing || false, // Add quishing flag for backend routing
-      ...(targetUserResourceId && { targetUserResourceId }),
-      ...(targetGroupResourceId && { targetGroupResourceId }),
+      languageId,
+      isQuishing: isQuishing || false,
       name,
       ...(trainingId && { trainingId }),
       ...(sendTrainingLanguageId && { sendTrainingLanguageId }),
     };
-    logger.info('Assign phishing payload prepared (redacted)');
 
-    // Log Payload with masked token
-    const maskedPayload = maskSensitiveField(payload, 'accessToken');
-    logger.debug('Assign phishing payload prepared', { payload: maskedPayload });
-
-    try {
-      // Wrap API call with retry (exponential backoff: 1s, 2s, 4s)
-      const result = await withRetry(
+    const callAssignApi = (p: AgenticActivitiesPayload) =>
+      withRetry(
         () =>
-          callWorkerAPI({
+          callWorkerAPI<WorkerSendResponse>({
             env,
             serviceBinding: env?.PHISHING_CRUD_WORKER,
             publicUrl: API_ENDPOINTS.PHISHING_WORKER_SEND,
             endpoint: 'https://worker/send',
-            payload,
+            payload: p,
             token,
             errorPrefix: 'Assign API failed',
-            operationName: `Assign phishing to ${assignmentType} ${targetId}`,
+            operationName: `Assign ${campaignType} to user ${p.targetUserResourceId}`,
           }),
-        `Assign phishing to ${assignmentType} ${targetId}`
+        `Assign ${campaignType} to user ${p.targetUserResourceId}`
       );
+
+    try {
+      // ─── Group Assignment: fan-out to individual users ───
+      if (targetGroupResourceId) {
+        const fanOutResult = await fanOutGroupAssignment({
+          token,
+          groupResourceId: targetGroupResourceId,
+          baseApiUrl,
+          buildPayload: (userResourceId: string) => ({
+            ...commonPayloadFields,
+            batchResourceId: generateBatchId(),
+            targetUserResourceId: userResourceId,
+          }),
+          callApi: callAssignApi,
+        });
+
+        if (fanOutResult.limitExceeded) {
+          const errorInfo = errorService.validation(
+            `Group has ${fanOutResult.totalUsers} users, exceeding the maximum of ${MAX_GROUP_ASSIGN_USERS}. Use batch-autonomous for larger groups.`,
+            { field: 'targetGroupResourceId', reason: 'group_too_large', totalUsers: fanOutResult.totalUsers }
+          );
+          logErrorInfo(logger, 'warn', 'Group phishing assignment blocked: too many users', errorInfo);
+          return createToolErrorResponse(errorInfo);
+        }
+
+        logger.info('Group phishing assignment complete', { fanOutResult });
+
+        await emitUISignal({
+          writer,
+          signalName: 'phishing_assigned',
+          meta: {
+            resourceId,
+            groupResourceId: targetGroupResourceId,
+            totalUsers: fanOutResult.totalUsers,
+            succeeded: fanOutResult.succeeded,
+            failed: fanOutResult.failed,
+          },
+          logger,
+          stepLabel: 'phishing-assignment',
+        });
+
+        const hasAnySuccess = fanOutResult.succeeded > 0;
+        const isEmptyGroup = fanOutResult.totalUsers === 0;
+        const failedSuffix = fanOutResult.failed > 0 ? ` (${fanOutResult.failed} failed)` : '';
+
+        let prefix: string;
+        if (isEmptyGroup) {
+          prefix = '⚠️ Group has no active users — nothing to assign';
+        } else if (hasAnySuccess) {
+          prefix = `✅ ${campaignType} campaign assigned to ${fanOutResult.succeeded}/${fanOutResult.totalUsers} users${failedSuffix}`;
+        } else {
+          prefix = `❌ ${campaignType} campaign assignment failed for all ${fanOutResult.totalUsers} users`;
+        }
+
+        const toolResult = {
+          success: hasAnySuccess || isEmptyGroup,
+          data: {
+            campaignName: name,
+            assignmentType: 'GROUP' as const,
+            targetId: targetGroupResourceId,
+            targetLabel: targetGroupResourceId,
+            resourceId,
+            ...(languageId ? { languageId } : {}),
+            ...(trainingId ? { followUpTrainingId: trainingId } : {}),
+            groupResult: fanOutResult,
+          },
+          message: formatToolSummary({
+            prefix,
+            title: name,
+            kv: [
+              { key: 'resourceId', value: resourceId },
+              { key: 'groupResourceId', value: targetGroupResourceId },
+            ],
+          }),
+          ...(!hasAnySuccess && !isEmptyGroup ? { error: `All ${fanOutResult.totalUsers} user assignments failed` } : {}),
+        };
+
+        const validation = validateToolResult(toolResult, assignPhishingOutputSchema, 'assign-phishing');
+        if (!validation.success) {
+          logErrorInfo(logger, 'error', 'Assign phishing result validation failed', validation.error);
+          return createToolErrorResponse(validation.error);
+        }
+        return validation.data;
+      }
+
+      // ─── User Assignment: single API call (unchanged) ───
+      const payload: AgenticActivitiesPayload = {
+        ...commonPayloadFields,
+        batchResourceId: generateBatchId(),
+        targetUserResourceId,
+      };
+
+      const maskedPayload = maskSensitiveField(payload, 'accessToken');
+      logger.info('Assign phishing payload prepared', { payload: maskedPayload });
+
+      const result = await callAssignApi(payload);
 
       logger.info('Phishing assignment success', { result });
 
-      // EMIT UI SIGNAL (v1: data- prefix for toAISdkStream compatibility)
-      if (writer) {
-        try {
-          const meta = { resourceId, targetId, assignmentType };
-          const encoded = Buffer.from(JSON.stringify(meta)).toString('base64');
-
-          await writer.write({
-            type: 'data-ui-signal',
-            data: {
-              signal: 'phishing_assigned',
-              message: `::ui:phishing_assigned::${encoded}::/ui:phishing_assigned::\n`,
-            },
-          });
-        } catch (emitErr) {
-          logger.warn('Failed to emit UI signal for phishing assignment', { error: normalizeError(emitErr).message });
-        }
-      }
+      await emitUISignal({
+        writer,
+        signalName: 'phishing_assigned',
+        meta: { resourceId, targetId, assignmentType },
+        logger,
+        stepLabel: 'phishing-assignment',
+      });
 
       const toolResult = {
         success: true,
@@ -224,7 +319,7 @@ export const assignPhishingTool = createTool({
         message: formatToolSummary({
           prefix: result.message
             ? `✅ ${result.message}`
-            : `✅ ${isQuishing ? 'Quishing' : 'Phishing'} campaign assigned to ${assignmentType} ${targetLabel}`,
+            : `✅ ${campaignType} campaign assigned to ${assignmentType} ${targetLabel}`,
           title: result.message ? undefined : name,
           kv: [
             { key: 'resourceId', value: resourceId },
@@ -234,7 +329,6 @@ export const assignPhishingTool = createTool({
         }),
       };
 
-      // Validate result against output schema
       const validation = validateToolResult(toolResult, assignPhishingOutputSchema, 'assign-phishing');
       if (!validation.success) {
         logErrorInfo(logger, 'error', 'Assign phishing result validation failed', validation.error);

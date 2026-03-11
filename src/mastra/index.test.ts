@@ -38,6 +38,10 @@ vi.mock('@mastra/ai-sdk', () => ({
     toAISdkStream: vi.fn().mockReturnValue((async function* () { /* empty */ })())
 }));
 
+vi.mock('./utils/cs-orchestration-helpers', () => ({
+  routeToCSAgent: vi.fn(),
+}));
+
 vi.mock('./services', () => ({
   ExampleRepo: { getInstance: vi.fn() },
   executeAutonomousGeneration: vi.fn(),
@@ -72,6 +76,12 @@ vi.mock('./agents', () => ({
   userInfoAgent: {},
   vishingCallAgent: {},
   deepfakeVideoAgent: {},
+  outOfScopeAgent: {},
+  phishingTemplateFixerAgent: {},
+  phishingLandingPageClassifierAgent: {},
+  companySearchAgent: {},
+  trainingStatsAgent: {},
+  csOrchestratorAgent: {},
 }));
 
 describe('Mastra API Routes', () => {

@@ -300,6 +300,36 @@ describe('AgentRouter', () => {
       // Verify orchestrator is not in valid agents (implicitly tested by routing logic)
       expect(AGENT_NAMES.ORCHESTRATOR).toBeDefined();
     });
+
+    it('should exclude internal landing classifier from valid agents list', async () => {
+      const mockDecision = {
+        agent: AGENT_NAMES.PHISHING_LANDING_CLASSIFIER,
+        taskContext: 'Classify landing page HTML',
+      };
+
+      vi.mocked(cleanResponse).mockReturnValue(JSON.stringify(mockDecision));
+      vi.mocked(withRetry).mockResolvedValue(mockDecision as never);
+
+      const result = await agentRouter.route('Classify this landing page');
+
+      expect(result.agentName).toBe(AGENT_NAMES.MICROLEARNING);
+      expect(result.taskContext).toBeUndefined();
+    });
+
+    it('should exclude internal phishing template fixer from valid agents list', async () => {
+      const mockDecision = {
+        agent: AGENT_NAMES.PHISHING_TEMPLATE_FIXER,
+        taskContext: 'Fix phishing email HTML',
+      };
+
+      vi.mocked(cleanResponse).mockReturnValue(JSON.stringify(mockDecision));
+      vi.mocked(withRetry).mockResolvedValue(mockDecision as never);
+
+      const result = await agentRouter.route('Fix this phishing template');
+
+      expect(result.agentName).toBe(AGENT_NAMES.MICROLEARNING);
+      expect(result.taskContext).toBeUndefined();
+    });
   });
 
   describe('Route - All valid agents', () => {
@@ -369,6 +399,20 @@ describe('AgentRouter', () => {
       const result = await agentRouter.route("What's the weather today?");
 
       expect(result.agentName).toBe(AGENT_NAMES.OUT_OF_SCOPE);
+    });
+
+    it('should normalize out-of-scope agent aliases from orchestrator output', async () => {
+      const mockDecision = {
+        agent: 'out-of-scope',
+        taskContext: '  User asked for a joke  ',
+        reasoning: 'Scenario D: general knowledge request',
+      };
+      vi.mocked(withRetry).mockResolvedValue(mockDecision as never);
+
+      const result = await agentRouter.route('Tell me a joke');
+
+      expect(result.agentName).toBe(AGENT_NAMES.OUT_OF_SCOPE);
+      expect(result.taskContext).toBe('User asked for a joke');
     });
 
     it('should NOT return outOfScope for security training requests', async () => {

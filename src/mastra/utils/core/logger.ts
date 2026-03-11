@@ -32,7 +32,7 @@ export function resolveLogLevel(): LogLevel {
     return envLevel as LogLevel;
   }
   const nodeEnv = typeof process !== 'undefined' ? process.env?.NODE_ENV : undefined;
-  return nodeEnv === 'development' ? 'debug' : 'info';
+  return nodeEnv === 'development' ? 'info' : 'info';
 }
 
 const DEFAULT_LOG_LEVEL = resolveLogLevel();
@@ -89,6 +89,9 @@ class LoggerWithCorrelation {
     this.pinoLogger.debug(message, this.enrichContext(context));
   }
 }
+
+/** Logger type with info/warn/error/debug methods and automatic correlation ID injection */
+export type Logger = LoggerWithCorrelation;
 
 /**
  * Get or create a PinoLogger instance for a module with correlation ID support

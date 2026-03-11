@@ -81,7 +81,9 @@ export async function streamReasoning(reasoningText: string, writer: StreamWrite
             type: 'data-reasoning',
             data: { event: 'end', id: messageId },
           } as any);
-        } catch {}
+        } catch {
+          // Stream already closed — safe to ignore
+        }
       });
   } catch (error) {
     const err = normalizeError(error);

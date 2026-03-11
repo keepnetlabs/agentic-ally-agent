@@ -98,7 +98,7 @@ Located in `src/mastra/services/`, these services power the entire application.
 ### Key Components:
 1.  **KV Service:** Abstraction layer for Cloudflare KV. Handles atomic writes, retries (`KV_MAX_RETRIES`), key namespace management, and TTL-based data retention.
 2.  **Error Service:** Centralized error handling. Captures exceptions, formats them for logging, and determines HTTP status codes. See [Error Handling Pattern](#error-handling-pattern) below.
-3.  **Health Service:** Diagnostics. Checks connectivity to OpenAI, Cloudflare KV, and other dependencies.
+3.  **Health Service:** Diagnostics. Checks KV, D1, and audit chain integrity (lightweight hash-chain health). See `/health` in [API_REFERENCE.md](./API_REFERENCE.md).
 4.  **Autonomous Service:** The "Proactive Brain". Manages the scheduling and execution of background security checks.
 5.  **GDPR Service:** Audit logging (D1), deletion request tracking, data export helpers, retention policy. Includes SHA-256 hash-chain for tamper-evident records (EU AI Act Art. 12).
 

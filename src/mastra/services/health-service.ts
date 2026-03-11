@@ -27,6 +27,17 @@ export interface HealthResult {
 }
 
 /**
+ * Audit chain health result (lightweight — row count + hash presence)
+ */
+export interface AuditChainHealth {
+  status: 'healthy' | 'degraded' | 'unhealthy';
+  latencyMs?: number;
+  totalRows?: number;
+  hashChainActive?: boolean;
+  error?: string;
+}
+
+/**
  * Complete health check response
  */
 export interface HealthCheckResponse {
@@ -39,6 +50,7 @@ export interface HealthCheckResponse {
     workflows: boolean;
     kv: HealthResult;
     d1?: HealthResult;
+    auditChain?: AuditChainHealth;
   };
   details?: {
     agents: string[];
@@ -130,6 +142,46 @@ export async function checkD1Health(db: D1Database | undefined): Promise<HealthR
 }
 
 /**
+ * Lightweight audit chain health check (EU AI Act Art. 12)
+ * Checks: total audit rows + whether latest row has integrity_hash
+ * Does NOT walk the full chain — that's what /audit/verify is for.
+ */
+export async function checkAuditChainHealth(db: D1Database | undefined): Promise<AuditChainHealth | undefined> {
+  if (!db) return undefined;
+
+  const startMs = Date.now();
+  try {
+    const countResult = (await db.prepare('SELECT COUNT(*) as total FROM data_access_audit').first()) as {
+      total: number;
+    } | null;
+    const totalRows = countResult?.total ?? 0;
+
+    let hashChainActive = false;
+    if (totalRows > 0) {
+      const latestRow = (await db
+        .prepare('SELECT integrity_hash FROM data_access_audit ORDER BY created_at DESC LIMIT 1')
+        .first()) as { integrity_hash: string | null } | null;
+      hashChainActive = !!latestRow?.integrity_hash;
+    }
+
+    const latencyMs = Date.now() - startMs;
+
+    return {
+      status: hashChainActive || totalRows === 0 ? 'healthy' : 'degraded',
+      latencyMs,
+      totalRows,
+      hashChainActive,
+    };
+  } catch (error) {
+    const latencyMs = Date.now() - startMs;
+    const err = normalizeError(error);
+    const errorInfo = errorService.external(err.message, { step: 'audit-chain-health', stack: err.stack });
+    logErrorInfo(logger, 'error', 'Audit chain health check failed', errorInfo);
+    return { status: 'unhealthy', latencyMs, error: err.message };
+  }
+}
+
+/**
  * Determine overall health status from individual checks
  */
 export function determineOverallStatus(checks: {
@@ -191,6 +243,21 @@ export async function performHealthCheck(
     }
   }
 
+  // Run audit chain health check when D1 is available (lightweight: row count + hash presence)
+  let auditChainHealth: AuditChainHealth | undefined;
+  if (d1) {
+    try {
+      auditChainHealth = await Promise.race([
+        checkAuditChainHealth(d1 as D1Database),
+        new Promise<AuditChainHealth>((_, reject) =>
+          setTimeout(() => reject(new Error('Audit chain health check timeout')), timeoutMs)
+        ),
+      ]) as AuditChainHealth;
+    } catch {
+      auditChainHealth = { status: 'unhealthy', error: 'Audit chain health check timeout' };
+    }
+  }
+
   const agentNames = Object.keys(agents);
   const workflowNames = Object.keys(workflows);
 
@@ -199,6 +266,7 @@ export async function performHealthCheck(
     workflows: workflowNames.length > 0,
     kv: kvHealth,
     ...(d1Health !== undefined && { d1: d1Health }),
+    ...(auditChainHealth !== undefined && { auditChain: auditChainHealth }),
   };
 
   const overallStatus = determineOverallStatus(checks);

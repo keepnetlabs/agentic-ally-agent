@@ -46,6 +46,12 @@ describe('landing-page-templates', () => {
       expect(html).toContain(mockParams.industryDesign.patterns.buttonStyle);
       expect(html).toContain('trackId'); // Hidden tracking field
     });
+
+    it('uses block-level security indicator row that matches prompt guidance', () => {
+      const html = getLoginTemplateExample(mockParams);
+      expect(html).toContain('display: flex; align-items: center; justify-content: center;');
+      expect(html).not.toContain('display: inline-flex;');
+    });
   });
 
   describe('getSuccessTemplateExample', () => {

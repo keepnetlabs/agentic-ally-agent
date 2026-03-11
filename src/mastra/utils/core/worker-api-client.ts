@@ -87,6 +87,7 @@ export async function callWorkerAPI<TResponse = any, TPayload = any>(
     logger.debug('Using Service Binding', { endpoint, operationName });
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
+      'X-Agentic-Source': 'agentic-ally',
     };
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
@@ -102,6 +103,7 @@ export async function callWorkerAPI<TResponse = any, TPayload = any>(
     logger.debug('Using Public URL fallback', { url: publicUrl, endpoint, operationName });
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
+      'X-Agentic-Source': 'agentic-ally',
     };
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
@@ -126,4 +128,42 @@ export async function callWorkerAPI<TResponse = any, TPayload = any>(
   }
 
   return await response.json();
+}
+
+// ============================================
+// Agentic Activities Types
+// ============================================
+
+/** Extended payload for /api/agentic-ai/activities (proxied via CRUD Worker /send).
+ *  CRUD Worker routes to:
+ *  - Path A (targetUserResourceId): POST /api/agentic-ai/activities (platform handles groups)
+ *  - Path B (targetGroupResourceId): Direct campaign/enrollment API (legacy)
+ */
+export interface AgenticActivitiesPayload {
+  batchResourceId: string;
+  activityType: 'phishing' | 'quishing' | 'smishing' | 'training';
+  scenarioResourceId?: string;
+  trainingResourceId?: string;
+  /** Free-text category classifying the activity (e.g. "Social Engineering", "Phishing Awareness") */
+  contentCategory?: string;
+  /** Original flat fields (apiUrl, accessToken, companyId, phishingId, etc.) */
+  [key: string]: unknown;
+}
+
+/** Response from CRUD Worker /send — unified for both Path A and Path B */
+export interface WorkerSendResponse {
+  success: boolean;
+  message?: string;
+  /** 'autonomous' = campaign/enrollment created, 'approval_gated' = pending admin approval */
+  status?: 'autonomous' | 'approval_gated';
+  /** Activity resourceId (Path A — Agentic AI Activities API) */
+  activityResourceId?: string;
+  /** Campaign resourceId (phishing/smishing) */
+  campaignResourceId?: string;
+  campaignId?: string;
+  /** Enrollment resourceId (training) */
+  enrollmentResourceId?: string;
+  /** Batch ID for this activity group */
+  batchResourceId?: string;
+  [key: string]: unknown;
 }

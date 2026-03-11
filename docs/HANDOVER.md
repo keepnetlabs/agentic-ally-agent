@@ -32,7 +32,7 @@ Agentic Ally is an **Autonomous Security Awareness Platform** powered by **9 Spe
 1.  **[HANDOVER.md](./HANDOVER.md)** (This file) - Critical "Gotchas" and configs.
 2.  **[OVERVIEW.md](./OVERVIEW.md)** - High-level functional description.
 3.  **[ARCHITECTURE.md](./ARCHITECTURE.md)** - Deep dive into resilience & state machines.
-4.  **[API_REFERENCE.md](./API_REFERENCE.md)** - Full list of endpoints (`/chat`, `/autonomous`, `/smishing/chat`, `/vishing/*`, `/email-ir/analyze`).
+4.  **[API_REFERENCE.md](./API_REFERENCE.md)** - Full list of endpoints (`/chat`, `/autonomous`, `/smishing/chat`, `/vishing/*`, `/email-ir/analyze`, `/audit/verify`, `/deepfake/status`).
 5.  **[DEVELOPMENT.md](./DEVELOPMENT.md)** - How to debug & run locally.
 6.  **[ERROR_HANDLING.md](./ERROR_HANDLING.md)** - Tool error pattern: `{ success: false, error }` vs `throw`.
 7.  **[FUTURE_IMPROVEMENTS.md](./FUTURE_IMPROVEMENTS.md)** - Roadmap for Autonomous Agentic System (Memory, Critic Agent).

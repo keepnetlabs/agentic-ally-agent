@@ -341,6 +341,32 @@ describe('policy-fetcher', () => {
       );
     });
 
+    it('should return empty string when policy list returns 404 (no policies yet)', async () => {
+      const payload = {
+        user_company_resourceid: 'company-123',
+      };
+
+      const payloadBase64 = Buffer.from(JSON.stringify(payload)).toString('base64');
+      const token = `header.${payloadBase64}.signature`;
+
+      vi.mocked(getRequestContext).mockReturnValue({
+        token,
+      } as any);
+
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: false,
+        status: 404,
+      } as any);
+
+      const context = await getPolicyContext();
+
+      expect(context).toBe('');
+      expect(mockLoggerInstance.info).toHaveBeenCalledWith(
+        'No policies found for company (404)',
+        expect.objectContaining({ companyId: 'company-123' })
+      );
+    });
+
     it('should handle policy list fetch failure', async () => {
       const payload = {
         user_company_resourceid: 'company-123',

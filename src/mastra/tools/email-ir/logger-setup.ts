@@ -4,6 +4,7 @@
  */
 
 import { getLogger } from '../../utils/core/logger';
+import type { Logger } from '../../utils/core/logger';
 
 // ============================================================================
 // LOGGER INSTANCES FOR EACH STAGE
@@ -33,7 +34,7 @@ export interface LogContext {
 /**
  * Log a pipeline step execution with structured data
  */
-export function logStepStart(logger: any, context: LogContext, metadata: Record<string, any> = {}) {
+export function logStepStart(logger: Logger, context: LogContext, metadata: Record<string, unknown> = {}) {
   logger.info('🔄 Step Started', {
     ...context,
     ...metadata,
@@ -41,7 +42,7 @@ export function logStepStart(logger: any, context: LogContext, metadata: Record<
   });
 }
 
-export function logStepComplete(logger: any, context: LogContext, result: Record<string, any> = {}) {
+export function logStepComplete(logger: Logger, context: LogContext, result: Record<string, unknown> = {}) {
   logger.info('✅ Step Complete', {
     ...context,
     ...result,
@@ -49,7 +50,7 @@ export function logStepComplete(logger: any, context: LogContext, result: Record
   });
 }
 
-export function logStepError(logger: any, context: LogContext, error: Error, metadata: Record<string, any> = {}) {
+export function logStepError(logger: Logger, context: LogContext, error: Error, metadata: Record<string, unknown> = {}) {
   logger.error('❌ Step Failed', {
     ...context,
     ...metadata,
@@ -63,7 +64,7 @@ export function logStepError(logger: any, context: LogContext, error: Error, met
  * Log signal detection (for behavioral/intent analysis)
  */
 export function logSignalDetected(
-  logger: any,
+  logger: Logger,
   emailId: string,
   signalType: string,
   signal: string,
@@ -80,7 +81,7 @@ export function logSignalDetected(
 /**
  * Log confidence score changes
  */
-export function logConfidenceScore(logger: any, emailId: string, stage: string, confidence: number, reasoning: string) {
+export function logConfidenceScore(logger: Logger, emailId: string, stage: string, confidence: number, reasoning: string) {
   logger.info('📊 Confidence Score', {
     email_id: emailId,
     stage,
@@ -93,7 +94,7 @@ export function logConfidenceScore(logger: any, emailId: string, stage: string, 
  * Log risk verdict
  */
 export function logRiskVerdict(
-  logger: any,
+  logger: Logger,
   emailId: string,
   riskLevel: 'low' | 'medium' | 'high',
   confidence: number,
@@ -110,7 +111,7 @@ export function logRiskVerdict(
 /**
  * Log performance metrics
  */
-export function logPerformance(logger: any, emailId: string, stage: string, durationMs: number, tokens?: number) {
+export function logPerformance(logger: Logger, emailId: string, stage: string, durationMs: number, tokens?: number) {
   const performanceClass = durationMs < 2000 ? '⚡ FAST' : durationMs < 5000 ? '🟡 MEDIUM' : '🐢 SLOW';
 
   logger.info(`${performanceClass} Performance`, {
@@ -125,7 +126,7 @@ export function logPerformance(logger: any, emailId: string, stage: string, dura
  * Log authentication check results
  */
 export function logAuthResults(
-  logger: any,
+  logger: Logger,
   emailId: string,
   spf: boolean,
   dkim: boolean,
@@ -145,7 +146,7 @@ export function logAuthResults(
 /**
  * Log workflow execution start/end
  */
-export function logWorkflowStart(logger: any, emailId: string, inputMetadata: Record<string, any>) {
+export function logWorkflowStart(logger: Logger, emailId: string, inputMetadata: Record<string, unknown>) {
   logger.info('🚀 Workflow Started', {
     email_id: emailId,
     ...inputMetadata,
@@ -154,10 +155,10 @@ export function logWorkflowStart(logger: any, emailId: string, inputMetadata: Re
 }
 
 export function logWorkflowComplete(
-  logger: any,
+  logger: Logger,
   emailId: string,
   durationMs: number,
-  resultSummary: Record<string, any>
+  resultSummary: Record<string, unknown>
 ) {
   logger.info('🏁 Workflow Complete', {
     email_id: emailId,
@@ -167,7 +168,7 @@ export function logWorkflowComplete(
   });
 }
 
-export function logWorkflowError(logger: any, emailId: string, error: Error, stage: string) {
+export function logWorkflowError(logger: Logger, emailId: string, error: Error, stage: string) {
   logger.error('💥 Workflow Failed', {
     email_id: emailId,
     failed_at_stage: stage,

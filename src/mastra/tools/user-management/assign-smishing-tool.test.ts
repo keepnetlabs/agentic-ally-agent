@@ -46,6 +46,7 @@ vi.mock('../../utils/core/worker-api-client', () => ({
 describe('assignSmishingTool', () => {
   const mockToken = 'test-token-123';
   const mockCompanyId = 'test-company-id';
+  const mockThreadId = 'test-thread-id';
   const mockEnv = {
     SMISHING_CRUD_WORKER: {
       fetch: vi.fn(),
@@ -61,6 +62,7 @@ describe('assignSmishingTool', () => {
       token: mockToken,
       companyId: mockCompanyId,
       env: mockEnv,
+      threadId: mockThreadId,
     });
   });
 
@@ -211,6 +213,9 @@ describe('assignSmishingTool', () => {
           serviceBinding: mockEnv.SMISHING_CRUD_WORKER,
           endpoint: expect.stringContaining('/send'),
           payload: expect.objectContaining({
+            batchResourceId: mockThreadId,
+            activityType: 'smishing',
+            scenarioResourceId: 'smishing-resource-123',
             smishingId: 'smishing-resource-123',
             languageId: 'lang-456',
             targetUserResourceId: 'user-789',
@@ -245,6 +250,7 @@ describe('assignSmishingTool', () => {
         })
       );
     });
+
   });
 
   describe('Error Handling', () => {

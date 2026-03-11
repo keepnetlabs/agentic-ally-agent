@@ -164,6 +164,18 @@ describe('kv-consistency', () => {
 
       expect(mockKVGet).not.toHaveBeenCalled();
     });
+
+    it('should retry with backoff delay when KV get throws', async () => {
+      mockKVGet
+        .mockRejectedValueOnce(new Error('KV temporarily unavailable'))
+        .mockResolvedValueOnce('value');
+
+      const promise = waitForKVConsistency('test-id', ['key1']);
+      await vi.advanceTimersByTimeAsync(600);
+      await promise;
+
+      expect(mockKVGet).toHaveBeenCalledTimes(2);
+    });
   });
 
   describe('buildExpectedKVKeys', () => {

@@ -98,24 +98,27 @@
   <text class="text-header" x="650" y="247" text-anchor="middle">Orchestrator Agent (The Router)</text>
   <text class="text-normal" x="350" y="270">Analyzes Intent &amp; History → Routes to 8 Specialist Agents (incl. Out-of-Scope Guard)</text>
 
-  <!-- Out-of-Scope Agent (Guardrail - below orchestrator) -->
-  <rect class="box" x="500" y="305" width="300" height="55" rx="5"/>
-  <rect class="box-header-outofscope" x="500" y="305" width="300" height="22" rx="5"/>
-  <text class="text-header" x="650" y="320" text-anchor="middle">Out-of-Scope Agent (Boundary Guard)</text>
-  <text class="text-small" x="510" y="340">Polite refusal when request is outside security awareness domain. Prevents hallucination.</text>
+  <!-- Out-of-Scope Agent (Guardrail - beside orchestrator) -->
+  <rect class="box" x="1050" y="233" width="280" height="52" rx="5"/>
+  <rect class="box-header-outofscope" x="1050" y="233" width="280" height="22" rx="5"/>
+  <text class="text-header" x="1190" y="249" text-anchor="middle">Out-of-Scope (Guard)</text>
+  <text class="text-small" x="1065" y="268">Polite off-domain refusal.</text>
+  <text class="text-small" x="1065" y="280">Prevents hallucination.</text>
 
-  <!-- Routing Arrows to Main Agents (fan out from center) -->
-  <path class="arrow-colored" stroke="#3498db" marker-end="url(#arrowhead-ml)" d="M 650 290 L 250 340"/>     <!-- ML -->
-  <path class="arrow-colored" stroke="#e74c3c" marker-end="url(#arrowhead-phishing)" d="M 650 290 L 750 340"/> <!-- Phishing -->
-  <path class="arrow-colored" stroke="#8e44ad" marker-end="url(#arrowhead-policy)" d="M 650 290 L 1250 340"/> <!-- Policy -->
-  <path class="arrow-colored" stroke="#27ae60" marker-end="url(#arrowhead-userinfo)" d="M 650 290 L 1750 340"/> <!-- UserInfo -->
-  <path class="arrow-colored" stroke="#95a5a6" marker-end="url(#arrowhead-outofscope)" d="M 650 290 L 650 305"/> <!-- Out-of-Scope -->
+  <!-- Arrow: Orchestrator → Out-of-Scope (horizontal) -->
+  <path class="arrow-colored" stroke="#95a5a6" marker-end="url(#arrowhead-outofscope)" d="M 1000 258 L 1050 258"/>
 
-  <!-- Labels -->
-  <text x="250" y="325" class="arrow-label" fill="#3498db">Microlearning</text>
-  <text x="650" y="325" class="arrow-label" fill="#e74c3c">Phishing</text>
-  <text x="1000" y="325" class="arrow-label" fill="#8e44ad">Policy</text>
-  <text x="1550" y="325" class="arrow-label" fill="#27ae60">User Info</text>
+  <!-- Routing Arrows to Main Agents (spread origins along orchestrator bottom) -->
+  <path class="arrow-colored" stroke="#3498db" marker-end="url(#arrowhead-ml)" d="M 450 290 L 250 340"/>     <!-- ML -->
+  <path class="arrow-colored" stroke="#e74c3c" marker-end="url(#arrowhead-phishing)" d="M 600 290 L 750 340"/> <!-- Phishing -->
+  <path class="arrow-colored" stroke="#8e44ad" marker-end="url(#arrowhead-policy)" d="M 750 290 L 1250 340"/> <!-- Policy -->
+  <path class="arrow-colored" stroke="#27ae60" marker-end="url(#arrowhead-userinfo)" d="M 900 290 L 1750 340"/> <!-- UserInfo -->
+
+  <!-- Routing Labels (centered above each agent column) -->
+  <text x="250" y="330" class="arrow-label" fill="#3498db" text-anchor="middle">Microlearning</text>
+  <text x="750" y="330" class="arrow-label" fill="#e74c3c" text-anchor="middle">Phishing</text>
+  <text x="1250" y="330" class="arrow-label" fill="#8e44ad" text-anchor="middle">Policy</text>
+  <text x="1750" y="330" class="arrow-label" fill="#27ae60" text-anchor="middle">User Info</text>
 
 
   <!-- ============================================== -->

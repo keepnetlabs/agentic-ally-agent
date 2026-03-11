@@ -12,3 +12,12 @@ export { userInfoAgent } from './user-info-agent';
 export { vishingCallAgent } from './vishing-call-agent';
 export { deepfakeVideoAgent } from './deepfake-video-agent';
 export { outOfScopeAgent } from './out-of-scope-agent';
+
+// Phishing Template Fixer
+export {
+  phishingTemplateFixerAgent,
+  phishingLandingPageClassifierAgent,
+} from './phishing-template-fixer';
+
+// Customer Service Agent Swarm
+export { companySearchAgent, trainingStatsAgent, csOrchestratorAgent } from './customer-service';

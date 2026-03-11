@@ -1,5 +1,7 @@
 import { generateText } from 'ai';
+import type { LanguageModel } from 'ai';
 import { PromptAnalysis } from '../../../types/prompt-analysis';
+import type { StreamWriter } from '../../../types/stream-writer';
 import { ExampleRepo } from '../../../services/example-repo';
 import { validateBCP47LanguageCode, DEFAULT_LANGUAGE } from '../../../utils/language/language-utils';
 import { cleanResponse } from '../../../utils/content-processors/json-cleaner';
@@ -26,8 +28,8 @@ interface AnalyzeUserPromptParams {
   customRequirements?: string;
   suggestedLanguage?: string;
   policyContext?: string;
-  model: any;
-  writer?: any;
+  model: LanguageModel;
+  writer?: StreamWriter;
 }
 
 // Cache formatted lists for performance
@@ -108,7 +110,7 @@ export function detectLanguageFallback(text: string): string {
  */
 export async function detectTargetLanguageWithAI(
   text: string,
-  model: any,
+  model: LanguageModel,
   additionalContext: string = ''
 ): Promise<string | null> {
   try {
@@ -310,7 +312,7 @@ RULES:
   - "sms" if the prompt mentions SMS, text message, or if no channel is specified.
   - If isSmishing is false, return null.`;
 
-    const messages: any[] = [
+    const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
       {
         role: 'system',
         content:

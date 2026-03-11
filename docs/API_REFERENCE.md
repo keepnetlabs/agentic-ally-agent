@@ -1,6 +1,6 @@
 # API Reference
 
-**Last Updated:** February 16, 2026
+**Last Updated:** March 3, 2026
 
 This document details the REST API endpoints available in Agentic Ally.
 
@@ -268,15 +268,35 @@ Diagnostic endpoint for uptime checks and dependency validation.
 ```json
 {
   "success": true,
-  "status": "healthy", // or "degraded", "unhealthy"
+  "status": "healthy",
   "message": "Agentic Ally deployment successful",
+  "timestamp": "2026-03-03T10:00:00.000Z",
+  "uptime": "2h 15m",
+  "uptimeMs": 8100000,
+  "checks": {
+    "agents": true,
+    "workflows": true,
+    "kv": { "status": "healthy", "latencyMs": 12 },
+    "d1": { "status": "healthy", "latencyMs": 3 },
+    "auditChain": { "status": "healthy", "latencyMs": 5, "totalRows": 42, "hashChainActive": true }
+  },
   "details": {
-    "openai": "connected",
-    "kv": "connected",
-    "vector_db": "connected"
-  }
+    "agents": ["orchestrator", "microlearning", "phishingEmail", "..."],
+    "workflows": ["create-microlearning", "add-language", "..."],
+    "agentCount": 9,
+    "workflowCount": 6
+  },
+  "cache": { "microlearningCount": 10, "estimatedSizeMB": 25.5 },
+  "sentry": { "configured": false }
 }
 ```
+
+**`checks.auditChain` (EU AI Act Art. 12):**
+| Field | Description |
+|-------|-------------|
+| `status` | `healthy` (hash active or no rows yet), `degraded` (rows exist but no hash), `unhealthy` (query failed) |
+| `totalRows` | Total audit log entries |
+| `hashChainActive` | Whether latest row has SHA-256 integrity hash |
 
 ---
 
@@ -611,6 +631,80 @@ Analyzes a completed vishing (voice phishing) call transcript and returns a stru
 
 ---
 
+## 8. Audit Chain Verification (`GET /audit/verify`)
+
+Verify the tamper-evident hash-chain integrity of GDPR audit logs (EU AI Act Art. 12). Each company can only verify its own chain.
+
+### Headers
+| Header | Value | Required | Description |
+|--------|-------|----------|-------------|
+| `X-AGENTIC-ALLY-TOKEN` | `<your-token>` | Yes | Auth token |
+| `X-COMPANY-ID` | `<company-id>` | Yes | Company scope (set by contextStorage middleware) |
+
+### Response (Success)
+```json
+{
+  "success": true,
+  "valid": true,
+  "totalRows": 42,
+  "verifiedRows": 42,
+  "concurrentWrites": 0
+}
+```
+
+### Response Fields
+| Field | Description |
+|-------|-------------|
+| `valid` | `true` if entire chain is intact, `false` if tampering detected |
+| `totalRows` | Total audit rows for this company |
+| `verifiedRows` | Number of rows with verified hash |
+| `concurrentWrites` | Rows where hash couldn't be verified due to concurrent write (not tampering) |
+
+### Error Responses
+
+**401 - Missing Company ID**
+```json
+{ "success": false, "error": "Company ID required" }
+```
+
+**500 - Verification failed**
+```json
+{ "success": false, "error": "Verification failed" }
+```
+
+---
+
+## 9. Deepfake Video Status (`GET /deepfake/status/:videoId`)
+
+Backend proxy for HeyGen video status polling. Keeps `HEYGEN_API_KEY` server-side.
+
+### Headers
+| Header | Value | Required | Description |
+|--------|-------|----------|-------------|
+| `X-AGENTIC-ALLY-TOKEN` | `<your-token>` | Yes | Auth token |
+
+### Response
+```json
+{
+  "success": true,
+  "videoId": "abc-123",
+  "status": "completed",
+  "videoUrl": "https://...",
+  "thumbnailUrl": "https://...",
+  "durationSec": 45,
+  "videoUrlCaption": "https://..."
+}
+```
+
+### Status Values
+| Status | Terminal? | Description |
+|--------|-----------|-------------|
+| `completed` | Yes | Video ready |
+| `failed` | Yes | Rendering failed (includes `failureReason`, `failureCode`) |
+| `processing` / `pending` / `waiting` | No | Still rendering |
+
+---
+
 ## Error Response Format (5xx)
 
 All 5xx responses from the global error handler include:
@@ -654,6 +748,7 @@ All 5xx responses from the global error handler include:
 2.  **Auth Model:**
     *   Requires `X-AGENTIC-ALLY-TOKEN` by default.
     *   Public unauthenticated endpoints: `/autonomous`, `/code-review-validate`, `/vishing/prompt`, `/vishing/conversations/summary`, `/smishing/chat`, `/email-ir/analyze`.
+    *   Authenticated + company-scoped: `/audit/verify`, `/deepfake/status/:videoId`.
     *   Internal auth-skip endpoints: `/health`, `/__refresh`, `/__hot-reload-status`, `/api/telemetry`.
 3.  **Rate Limit Tiers (per IP):**
     *   Public unauthenticated endpoints: `180 req/min`
