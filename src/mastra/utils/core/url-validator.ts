@@ -66,6 +66,23 @@ export function validateBaseApiUrl(headerUrl?: string): string {
 }
 
 /**
+ * Resolves a base API URL by replacing dashboard/UI hostnames with their API counterparts.
+ * Dashboard URLs serve HTML; API URLs serve JSON — callers need the API variant.
+ *
+ * Falls back to API_ENDPOINTS.DEFAULT_BASE_API_URL when no URL is provided.
+ */
+export function resolveBaseApiUrl(url?: string): string {
+  let resolved = url || API_ENDPOINTS.DEFAULT_BASE_API_URL;
+  if (resolved.includes('dash.keepnetlabs.com')) {
+    resolved = resolved.replace('dash.keepnetlabs.com', 'api.keepnetlabs.com');
+  }
+  if (resolved.includes('test-ui.devkeepnet.com')) {
+    resolved = resolved.replace('test-ui.devkeepnet.com', 'test-api.devkeepnet.com');
+  }
+  return resolved;
+}
+
+/**
  * Type guard: check if URL is in allowed list
  * Useful for TypeScript assertions
  *

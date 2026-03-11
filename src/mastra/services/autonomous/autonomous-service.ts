@@ -4,7 +4,7 @@ import { requestStorage } from '../../utils/core/request-storage';
 import { getLogger } from '../../utils/core/logger';
 import { normalizeError, logErrorInfo } from '../../utils/core/error-utils';
 import { errorService } from '../error-service';
-import { API_ENDPOINTS } from '../../constants';
+import { resolveBaseApiUrl } from '../../utils/core/url-validator';
 import { generateBatchId } from '../../utils/core/short-id';
 import {
   AutonomousRequest,
@@ -33,14 +33,7 @@ export async function executeAutonomousGeneration(request: AutonomousRequest): P
     batchResourceId,
   } = request;
 
-  // Use provided baseApiUrl or fallback to default
-  let effectiveBaseApiUrl = baseApiUrl || API_ENDPOINTS.DEFAULT_BASE_API_URL;
-  if (effectiveBaseApiUrl.includes('dash.keepnetlabs.com')) {
-    effectiveBaseApiUrl = effectiveBaseApiUrl.replace('dash.keepnetlabs.com', 'api.keepnetlabs.com');
-  }
-  if (effectiveBaseApiUrl.includes('test-ui.devkeepnet.com')) {
-    effectiveBaseApiUrl = effectiveBaseApiUrl.replace('test-ui.devkeepnet.com', 'test-api.devkeepnet.com');
-  }
+  const effectiveBaseApiUrl = resolveBaseApiUrl(baseApiUrl);
   // Determine assignment type
   const isUserAssignment = !!(firstName || targetUserResourceId);
   const isGroupAssignment = !!targetGroupResourceId;

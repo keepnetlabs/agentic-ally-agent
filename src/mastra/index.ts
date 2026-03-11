@@ -37,7 +37,7 @@ import { PinoLogger } from '@mastra/loggers';
 import { registerApiRoute } from '@mastra/core/server';
 import { Context, Next } from 'hono';
 import { D1Store } from '@mastra/cloudflare-d1';
-import { KV_NAMESPACES, RATE_LIMIT_CONFIG, API_ENDPOINTS } from './constants';
+import { KV_NAMESPACES, RATE_LIMIT_CONFIG } from './constants';
 
 // Silence AI SDK warnings (e.g., unsupported presencePenalty/frequencyPenalty for some models)
 (globalThis as { AI_SDK_LOG_WARNINGS?: boolean }).AI_SDK_LOG_WARNINGS = false;
@@ -53,7 +53,6 @@ import {
 } from './utils/chat-orchestration-helpers';
 import { normalizeSafeId } from './utils/core/id-utils';
 import { requestStorage } from './utils/core/request-storage';
-import { generateBatchId } from './utils/core/short-id';
 import { validateBCP47LanguageCode, DEFAULT_LANGUAGE } from './utils/language/language-utils';
 import {
   postProcessPhishingEmailHtml,
@@ -66,9 +65,10 @@ import { emailIRAnalyzeHandler } from './routes/email-ir-route';
 import { deepfakeStatusHandler } from './routes/deepfake-status-route';
 import { auditVerifyHandler } from './routes/audit-verify-route';
 import { phishingTemplateFixerHandler } from './routes/phishing-template-fixer-route';
+import { batchAutonomousHandler, batchAutonomousStatusHandler } from './routes/batch-autonomous-route';
+import { autonomousHandler } from './routes/autonomous-route';
 import { isPublicUnauthenticatedPath } from './middleware/public-endpoint-policy';
 import { routeToCSAgent } from './utils/cs-orchestration-helpers';
-import { fetchGroupMembers } from './utils/core/group-members';
 
 // Barrel imports - clean organization
 import {
@@ -106,20 +106,14 @@ import {
   addMultipleLanguagesWorkflow,
   updateMicrolearningWorkflow,
 } from './workflows';
-import { ExampleRepo, executeAutonomousGeneration, performHealthCheck, KVService } from './services';
+import { ExampleRepo, performHealthCheck, KVService } from './services';
 import { validateEnvironmentOrThrow } from './utils/core';
 import { normalizeError, logErrorInfo } from './utils/core/error-utils';
 import { errorService } from './services/error-service';
 import { resolveLogLevel, STRUCTURED_LOG_FORMATTERS } from './utils/core/logger';
-import {
-  AUTONOMOUS_ACTIONS,
-  isValidAutonomousAction,
-} from './types';
 import type {
   ChatRequestBody,
   CodeReviewRequestBody,
-  AutonomousRequestBody,
-  BatchAutonomousRequestBody,
   CloudflareEnv,
   PhishingEditorBody,
   KvPhishingLandingRecord,
@@ -717,334 +711,19 @@ export const mastra = new Mastra({
 
       registerApiRoute('/autonomous', {
         method: 'POST',
-        handler: async (c: Context) => {
-          try {
-            const body = await c.req.json<AutonomousRequestBody>();
-            const {
-              token,
-              firstName,
-              lastName,
-              targetUserResourceId,
-              targetGroupResourceId,
-              departmentName,
-              actions,
-              sendAfterPhishingSimulation,
-              preferredLanguage,
-              baseApiUrl,
-              batchResourceId,
-            } = body;
-            const env = c.env as CloudflareEnv | undefined;
-
-            // Validation
-            if (!token) {
-              return c.json({ success: false, error: 'Missing token' }, 400);
-            }
-
-            // Check assignment type: user or group (not both, not neither)
-            const isUserAssignment = !!(firstName || targetUserResourceId);
-            const isGroupAssignment = !!targetGroupResourceId;
-
-            if (isUserAssignment && isGroupAssignment) {
-              return c.json(
-                {
-                  success: false,
-                  error:
-                    'Cannot specify both user assignment (firstName/targetUserResourceId) and group assignment (targetGroupResourceId)',
-                },
-                400
-              );
-            }
-
-            if (!isUserAssignment && !isGroupAssignment) {
-              return c.json(
-                {
-                  success: false,
-                  error: 'Must specify either user assignment (firstName) or group assignment (targetGroupResourceId)',
-                },
-                400
-              );
-            }
-
-            if (!actions || !Array.isArray(actions) || actions.length === 0) {
-              return c.json({ success: false, error: 'Missing or invalid actions array' }, 400);
-            }
-            if (!actions.every((a: unknown) => isValidAutonomousAction(a))) {
-              return c.json(
-                {
-                  success: false,
-                  error: `Actions must be one or more of: ${AUTONOMOUS_ACTIONS.map(a => `"${a}"`).join(', ')}`,
-                },
-                400
-              );
-            }
-
-            logger.info('autonomous_request_received', {
-              firstName,
-              lastName,
-              targetUserResourceId,
-              targetGroupResourceId,
-              actionsCount: actions.length,
-              assignmentType: isUserAssignment ? 'user' : 'group',
-            });
-
-            // Primary path: Cloudflare Workflow binding
-            try {
-              const workflow = env?.AUTONOMOUS_WORKFLOW;
-              if (workflow && workflow.create) {
-                const instance = await workflow.create({
-                  params: {
-                    token,
-                    firstName,
-                    lastName,
-                    targetUserResourceId,
-                    targetGroupResourceId,
-                    departmentName,
-                    actions,
-                    sendAfterPhishingSimulation,
-                    preferredLanguage,
-                    baseApiUrl,
-                    batchResourceId,
-                  },
-                });
-
-                logger.info('autonomous_workflow_started', { workflowId: instance?.id });
-                return c.json(
-                  {
-                    success: true,
-                    workflowId: instance?.id ?? null,
-                    status: 'started',
-                    firstName,
-                    lastName,
-                    targetUserResourceId,
-                    targetGroupResourceId,
-                    assignmentType: isUserAssignment ? 'user' : 'group',
-                    actions,
-                  },
-                  202
-                );
-              }
-              logger.warn('autonomous_workflow_binding_missing_falling_back');
-            } catch (workflowError) {
-              logger.warn('autonomous_workflow_start_failed_falling_back', {
-                error: workflowError instanceof Error ? workflowError.message : String(workflowError),
-              });
-            }
-
-            const requestPayload = {
-              token,
-              firstName,
-              lastName,
-              targetUserResourceId,
-              targetGroupResourceId,
-              departmentName,
-              actions,
-              sendAfterPhishingSimulation,
-              preferredLanguage,
-              baseApiUrl,
-              batchResourceId,
-            };
-
-            // Fallback 1: run in background via waitUntil if available (preferred in Workers)
-            try {
-              // @ts-ignore - ExecutionContext check for Cloudflare Workers
-              if (c.executionCtx && typeof c.executionCtx.waitUntil === 'function') {
-                const executionPromise = executeAutonomousGeneration(requestPayload).catch(err => {
-                  logger.error('autonomous_background_execution_failed', {
-                    error: err instanceof Error ? err.message : String(err),
-                  });
-                });
-                // @ts-ignore
-                c.executionCtx.waitUntil(executionPromise);
-                logger.debug('background_task_registered_with_waituntil');
-
-                return c.json(
-                  {
-                    success: true,
-                    message: 'Autonomous generation started in background. This process may take 5-10 minutes.',
-                    status: 'processing',
-                    firstName,
-                    lastName,
-                    targetUserResourceId,
-                    targetGroupResourceId,
-                    assignmentType: isUserAssignment ? 'user' : 'group',
-                    actions,
-                  },
-                  200
-                );
-              }
-            } catch (waitUntilError) {
-              logger.warn('waituntil_not_available_using_floating_promise', {
-                error: waitUntilError instanceof Error ? waitUntilError.message : String(waitUntilError),
-              });
-            }
-
-            // Fallback 2 (LOCAL DEV): no workflow binding and no waitUntil.
-            // Run inline so local requests reliably complete (avoids "floating promise" being dropped).
-            logger.warn('autonomous_no_workflow_no_waituntil_running_inline');
-            const result = await executeAutonomousGeneration(requestPayload);
-
-            return c.json(
-              {
-                ...result,
-                status: result.success ? 'completed' : 'failed',
-              },
-              200
-            );
-          } catch (error) {
-            const err = normalizeError(error);
-            const errorInfo = errorService.external(err.message, {
-              step: 'autonomous-endpoint',
-              stack: err.stack,
-            });
-            logErrorInfo(logger, 'error', 'autonomous_endpoint_error', errorInfo);
-            return c.json(
-              {
-                success: false,
-                error: error instanceof Error ? error.message : 'Unknown error',
-              },
-              500
-            );
-          }
-        },
+        handler: autonomousHandler,
       }),
 
       // ─── Batch Autonomous: Fan-out to all users in a group ───
       registerApiRoute('/batch-autonomous', {
         method: 'POST',
-        handler: async (c: Context) => {
-          try {
-            const body = await c.req.json<BatchAutonomousRequestBody>();
-            const {
-              token,
-              targetGroupResourceId,
-              actions,
-              sendAfterPhishingSimulation,
-              preferredLanguage,
-              baseApiUrl,
-            } = body;
-            const env = c.env as CloudflareEnv | undefined;
+        handler: batchAutonomousHandler,
+      }),
 
-            // Validation
-            if (!token) {
-              return c.json({ success: false, error: 'Missing token' }, 400);
-            }
-            if (!targetGroupResourceId) {
-              return c.json({ success: false, error: 'Missing targetGroupResourceId' }, 400);
-            }
-            if (!actions || !Array.isArray(actions) || actions.length === 0) {
-              return c.json({ success: false, error: 'Missing or invalid actions array' }, 400);
-            }
-            if (!actions.every((a: unknown) => isValidAutonomousAction(a))) {
-              return c.json(
-                {
-                  success: false,
-                  error: `Actions must be one or more of: ${AUTONOMOUS_ACTIONS.map(a => `"${a}"`).join(', ')}`,
-                },
-                400
-              );
-            }
-
-            // Resolve base API URL (mirror autonomous-service.ts logic)
-            let effectiveBaseApiUrl = baseApiUrl || API_ENDPOINTS.DEFAULT_BASE_API_URL;
-            if (effectiveBaseApiUrl.includes('dash.keepnetlabs.com')) {
-              effectiveBaseApiUrl = effectiveBaseApiUrl.replace('dash.keepnetlabs.com', 'api.keepnetlabs.com');
-            }
-            if (effectiveBaseApiUrl.includes('test-ui.devkeepnet.com')) {
-              effectiveBaseApiUrl = effectiveBaseApiUrl.replace('test-ui.devkeepnet.com', 'test-api.devkeepnet.com');
-            }
-
-            // Step 1: Fetch group members
-            const users = await fetchGroupMembers(token, targetGroupResourceId, effectiveBaseApiUrl);
-
-            if (users.length === 0) {
-              return c.json({ success: false, error: 'No active users found in group' }, 400);
-            }
-
-            // Step 2: Shared batch ID for all activities
-            const batchResourceId = generateBatchId();
-
-            logger.info('batch_autonomous_started', {
-              targetGroupResourceId,
-              userCount: users.length,
-              batchResourceId,
-              actions,
-            });
-
-            // Step 3: Chunked fan-out (max 100 per chunk)
-            // Prefer createBatch (1 subrequest, idempotent) → fallback to Promise.all(create())
-            const CHUNK_SIZE = 100;
-            const workflow = env?.AUTONOMOUS_WORKFLOW;
-
-            if (!workflow || (!workflow.createBatch && !workflow.create)) {
-              return c.json({ success: false, error: 'Workflow binding not available' }, 503);
-            }
-
-            const useBatch = typeof workflow.createBatch === 'function';
-            const workflowIds: string[] = [];
-
-            for (let i = 0; i < users.length; i += CHUNK_SIZE) {
-              const chunk = users.slice(i, i + CHUNK_SIZE);
-              const chunkParams = chunk.map(user => ({
-                id: `batch-${batchResourceId}-${user.resourceId}`,
-                params: {
-                  token,
-                  targetUserResourceId: user.resourceId,
-                  firstName: user.firstName,
-                  lastName: user.lastName,
-                  departmentName: user.department,
-                  actions,
-                  batchResourceId,
-                  sendAfterPhishingSimulation,
-                  preferredLanguage: user.preferredLanguage || preferredLanguage,
-                  baseApiUrl: effectiveBaseApiUrl,
-                },
-              }));
-
-              let results: Array<{ id?: string }>;
-              if (useBatch) {
-                results = await workflow.createBatch(chunkParams);
-              } else {
-                results = await Promise.all(chunkParams.map(p => workflow.create(p)));
-              }
-              workflowIds.push(...results.map(r => r?.id).filter(Boolean) as string[]);
-            }
-
-            logger.info('batch_autonomous_fan_out_complete', {
-              batchResourceId,
-              workflowsCreated: workflowIds.length,
-              chunksUsed: Math.ceil(users.length / CHUNK_SIZE),
-            });
-
-            // Step 4: Return immediately (202 Accepted)
-            return c.json(
-              {
-                success: true,
-                status: 'started',
-                batchResourceId,
-                targetGroupResourceId,
-                userCount: users.length,
-                chunksCreated: Math.ceil(users.length / CHUNK_SIZE),
-                workflowIds,
-                actions,
-              },
-              202
-            );
-          } catch (error) {
-            const err = normalizeError(error);
-            const errorInfo = errorService.external(err.message, {
-              step: 'batch-autonomous-endpoint',
-              stack: err.stack,
-            });
-            logErrorInfo(logger, 'error', 'batch_autonomous_endpoint_error', errorInfo);
-            return c.json(
-              {
-                success: false,
-                error: error instanceof Error ? error.message : 'Unknown error',
-              },
-              500
-            );
-          }
-        },
+      // ─── Batch Status ───
+      registerApiRoute('/batch-autonomous/:batchId/status', {
+        method: 'GET',
+        handler: batchAutonomousStatusHandler,
       }),
 
       // ─── Audit Chain Verification (EU AI Act Art. 12) ───

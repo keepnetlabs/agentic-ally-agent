@@ -1,6 +1,6 @@
 import { Context, Next } from 'hono';
 import { requestStorage } from '../utils/core/request-storage';
-import { validateBaseApiUrl } from '../utils/core/url-validator';
+import { validateBaseApiUrl, resolveBaseApiUrl } from '../utils/core/url-validator';
 import { randomUUID } from 'crypto';
 
 /**
@@ -27,13 +27,7 @@ export const contextStorage = async (c: Context, next: Next) => {
   // Get base API URL from header with validation
   // URL is provided via X-BASE-API-URL header by client
   // Validates against allowed list and falls back to default if invalid
-  let baseApiUrl = validateBaseApiUrl(c.req.header('X-BASE-API-URL'));
-  if (baseApiUrl.includes('dash.keepnetlabs.com')) {
-    baseApiUrl = baseApiUrl.replace('dash.keepnetlabs.com', 'api.keepnetlabs.com');
-  }
-  if (baseApiUrl.includes('test-ui.devkeepnet.com')) {
-    baseApiUrl = baseApiUrl.replace('test-ui.devkeepnet.com', 'test-api.devkeepnet.com');
-  }
+  const baseApiUrl = resolveBaseApiUrl(validateBaseApiUrl(c.req.header('X-BASE-API-URL')));
   // Wrap the next handlers in the AsyncLocalStorage run context
   return requestStorage.run({ correlationId, token, env, companyId, baseApiUrl }, async () => {
     try {

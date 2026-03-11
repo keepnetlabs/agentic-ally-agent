@@ -128,6 +128,9 @@ export const KV_NAMESPACES = {
 
   // Microlearning KV Namespace (from env binding)
   MICROLEARNING: process.env.MICROLEARNING_KV_NAMESPACE_ID || '',
+
+  // Batch Workflow KV Namespace (batch autonomous metadata)
+  BATCH_WORKFLOW: process.env.BATCH_WORKFLOW_KV_NAMESPACE_ID || 'a235dbdc79a34c25ba3fd8fc38673d1f',
 } as const;
 
 // ============================================
@@ -231,6 +234,28 @@ export const AGENT_CALL_TIMEOUT_MS = 90000;
  * @see docs/HANDOVER.md - LONG_RUNNING_AGENT_TIMEOUT_MS = 600,000 (10m)
  */
 export const LONG_RUNNING_AGENT_TIMEOUT_MS = 600000;
+
+/**
+ * Maximum users allowed in a single batch-autonomous request.
+ * Constrained by Cloudflare Workers subrequest limits and memory.
+ * 50K users = 500 createBatch calls (well within 1000 subrequest limit).
+ */
+export const MAX_BATCH_USERS = 50_000;
+
+/**
+ * Maximum users allowed in a single chat-context group assignment (assign tools).
+ * Larger groups should go through batch-autonomous endpoint instead.
+ * 1000 users × 25 concurrent = 40 chunks ≈ 40-80s (within 90s chat timeout).
+ */
+export const MAX_GROUP_ASSIGN_USERS = 1_000;
+
+/** KV key templates for batch workflow metadata (stored in BATCH_WORKFLOW_KV namespace). */
+export const BATCH_KV_KEYS = {
+  meta: (batchId: string) => `batch:${batchId}:meta`,
+} as const;
+
+/** TTL for batch metadata entries (7 days). */
+export const BATCH_META_TTL_SECONDS = 7 * 24 * 3600;
 
 // ============================================
 // TIME UNIT CONSTANTS

@@ -34,7 +34,7 @@ export async function fetchGroupMembers(
   let pageNumber = 1;
   let totalPages = 1;
 
-  const MAX_PAGES = 100; // Safety cap: 100 pages × 100 users = 10,000 max
+  const MAX_PAGES = 100; // Safety cap: 100 pages × 1000 users = 100,000 max
 
   logger.info('group_members_fetch_started', { groupResourceId, baseApiUrl });
 
