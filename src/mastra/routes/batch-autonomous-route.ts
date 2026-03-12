@@ -78,20 +78,26 @@ export async function batchAutonomousHandler(c: Context) {
       return c.json({ success: false, error: 'Batch orchestrator workflow binding not available' }, 503);
     }
 
-    await orchestrator.create({
-      id: `orchestrator-${batchResourceId}`,
-      params: {
-        token,
-        targetGroupResourceId,
-        eligibleActions,
-        batchResourceId,
-        sendAfterPhishingSimulation,
-        preferredLanguage,
-        baseApiUrl: effectiveBaseApiUrl,
-        requestedActions: actions,
-        _createdAt: new Date().toISOString(),
-      },
-    });
+    try {
+      await orchestrator.create({
+        id: `orchestrator-${batchResourceId}`,
+        params: {
+          token,
+          targetGroupResourceId,
+          eligibleActions,
+          batchResourceId,
+          sendAfterPhishingSimulation,
+          preferredLanguage,
+          baseApiUrl: effectiveBaseApiUrl,
+          requestedActions: actions,
+          _createdAt: new Date().toISOString(),
+        },
+      });
+    } catch (createErr) {
+      const msg = createErr instanceof Error ? createErr.message : String(createErr);
+      logger.error('batch_orchestrator_create_failed', { batchResourceId, error: msg });
+      return c.json({ success: false, error: `Failed to create orchestrator workflow: ${msg}` }, 500);
+    }
 
     logger.info('batch_orchestrator_dispatched', {
       batchResourceId,

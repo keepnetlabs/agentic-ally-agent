@@ -68,6 +68,12 @@ export class BatchOrchestratorWorkflow extends WorkflowEntrypoint {
       },
     );
 
+    // Early exit if group has no active users
+    if (totalRecords === 0) {
+      logger.warn('batch_orchestrator_empty_group', { batchResourceId, targetGroupResourceId });
+      return { success: false, batchResourceId, status: 'empty', totalCreated: 0, totalFailed: 0, reason: 'No active users in target group' };
+    }
+
     let totalCreated = 0;
     let totalFailed = 0;
     const MAX_FAILED_ENTRIES = 200; // Cap to prevent unbounded growth hitting 1 MiB step state limit
@@ -110,20 +116,36 @@ export class BatchOrchestratorWorkflow extends WorkflowEntrypoint {
               };
             });
 
-            try {
-              const results = await autonomousWorkflow.createBatch(chunkParams);
-              created += results.filter((r: { id?: string }) => r?.id).length;
-            } catch (err) {
-              const errMsg = err instanceof Error ? err.message : String(err);
-              failed += chunk.length;
-              errors.push(errMsg);
-              logger.error('batch_chunk_dispatch_failed', {
-                batchResourceId,
-                page,
-                chunkStart: c,
-                chunkSize: chunk.length,
-                error: errMsg,
-              });
+            // Chunk-level retry (2 attempts with 2s delay)
+            for (let attempt = 1; attempt <= 2; attempt++) {
+              try {
+                const results = await autonomousWorkflow.createBatch(chunkParams);
+                created += results.filter((r: { id?: string }) => r?.id).length;
+                break;
+              } catch (err) {
+                const errMsg = err instanceof Error ? err.message : String(err);
+                if (attempt < 2) {
+                  logger.warn('batch_chunk_dispatch_retry', {
+                    batchResourceId,
+                    page,
+                    chunkStart: c,
+                    attempt,
+                    error: errMsg,
+                  });
+                  await new Promise(r => setTimeout(r, 2000));
+                } else {
+                  failed += chunk.length;
+                  errors.push(errMsg);
+                  logger.error('batch_chunk_dispatch_failed', {
+                    batchResourceId,
+                    page,
+                    chunkStart: c,
+                    chunkSize: chunk.length,
+                    failedUserIds: chunk.map(u => u.resourceId),
+                    error: errMsg,
+                  });
+                }
+              }
             }
 
             // Rate limit throttle between chunks (except last)
@@ -144,6 +166,7 @@ export class BatchOrchestratorWorkflow extends WorkflowEntrypoint {
         const newEntries = pageResult.errors.map((e: string) => ({ page, error: e }));
         failedPages.push(...newEntries.slice(0, remaining));
       }
+
 
       // Throttle between pages to let rate limit window reset
       if (page < totalPages) {

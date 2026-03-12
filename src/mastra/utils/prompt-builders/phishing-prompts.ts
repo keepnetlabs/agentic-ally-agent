@@ -30,6 +30,7 @@ import {
   FOOTER_RULES,
   GREETING_INSTRUCTION,
   JSON_OUTPUT_RULE,
+  QR_CODE_IMG_TAG,
 } from './shared-email-rules';
 import { z } from 'zod';
 
@@ -292,7 +293,7 @@ ${JSON_OUTPUT_RULE}
 **Field Limits:**
 - **description**: ${PHISHING_EMAIL.MAX_DESCRIPTION_LENGTH} characters or less. Keep it concise and focused on the simulation's purpose.
 
-**EXAMPLE OUTPUT (Scenario Analysis - for EMAIL generation):**
+**EXAMPLE OUTPUT:**
 {
   "scenario": "CEO Urgent Wire Transfer",
   "name": "CEO Fraud - Urgent Transfer",
@@ -309,22 +310,7 @@ ${JSON_OUTPUT_RULE}
   "isQuishing": false
 }
 
-**EXAMPLE OUTPUT (Brand-Specific Scenario - E-commerce Brand):**
-{
-  "scenario": "E-commerce Package Delivery Issue",
-  "name": "Package Delivery - Urgent Action",
-  "description": "Simulates a fake package delivery notification from an e-commerce platform requiring address verification.",
-  "category": "Credential Harvesting",
-  "method": "Data-Submission",
-  "psychologicalTriggers": ["Urgency", "Curiosity", "Fear"],
-  "tone": "Helpful but urgent",
-  "fromName": "Shopping Platform",
-  "fromAddress": "noreply@shopping-notifications.com",
-  "keyRedFlags": ["Suspicious domain (shopping-notifications.com instead of official domain)", "Urgency to verify address", "Request for login credentials"],
-  "targetAudienceAnalysis": "Online shoppers are likely to trust package delivery notifications from platforms they use",
-  "subjectLineStrategy": "Creates urgency with 'Your order is on hold' message",
-  "isQuishing": false
-}`;
+Note: For brand-specific topics (e.g., "Amazon", "Microsoft"), use the brand as fromName and match their notification style.`;
 
   const departmentContext = getDepartmentContext(targetProfile?.department, false);
 
@@ -397,12 +383,10 @@ ${AUTH_CONTEXT}
 Write realistic quishing (QR code phishing) email content based on provided scenario blueprints for cybersecurity training.
 
 **QUISHING-SPECIFIC REQUIREMENTS:**
-- QR code is the ONLY call-to-action in the email body
-- NO buttons or clickable links in the main body (footer links allowed)
-- Use convenience/mobile-friendly language
-- Emphasize ease of use: "Scan QR code to verify", "Quick access via QR", "Mobile-friendly verification"
-- QR code image tag: <img src="{QRCODEURLIMAGE}" alt="QR Code" style="display:block; width:${PHISHING_EMAIL.QR_CODE_IMAGE_WIDTH_PX}px;height:auto; margin:0 auto;">
+- QR code is the ONLY call-to-action — NO buttons or clickable links in the main body (footer links allowed)
+- QR code image tag: ${QR_CODE_IMG_TAG}
 - Place QR code prominently (center-aligned, after main message text, before signature)
+- Use convenience/mobile-friendly language: "Scan QR code to verify", "Quick access via QR", "Mobile-friendly verification"
 
 ${BRAND_AWARENESS_RULES}
 
@@ -429,11 +413,8 @@ ${BRAND_AWARENESS_RULES}
    - QR code: Must be clearly visible and scannable on mobile devices.
 
 3. **QR Code Placement:**
-   - Must include QR code image using {QRCODEURLIMAGE} merge tag: <img src="{QRCODEURLIMAGE}" alt="QR Code" style="display:block; width:${PHISHING_EMAIL.QR_CODE_IMAGE_WIDTH_PX}px;height:auto; margin:0 auto;">
-   - Required: Use {QRCODEURLIMAGE} tag only (never placeholder src or empty src)
-   - Place QR code prominently (center-aligned, after main message text, before signature)
-   - **QR text rule:** Text around QR code MUST be scenario-specific (e.g., "Scan to verify payment" for payment, "Scan to access WiFi" for WiFi). Never use only generic "Scan QR code".
-   - No buttons or clickable links in main body (footer links allowed)
+   - Use the QR code image tag from QUISHING-SPECIFIC REQUIREMENTS above. Never use placeholder src or empty src.
+   - **QR text rule:** Text around QR code MUST be scenario-specific (e.g., "Scan to verify payment", "Scan to access WiFi"). Never generic "Scan QR code".
 
 4. ${GREETING_RULES}
 
@@ -458,10 +439,10 @@ ${JSON_OUTPUT_RULE}
 **EXAMPLE OUTPUT:**
 {
   "subject": "Action Required: Scan QR Code to Verify Your Payment",
-  "template": "[Full HTML email with table layout, logo using {CUSTOMMAINLOGO} tag, QR code with <img src='{QRCODEURLIMAGE}' alt='QR Code' style='width:${PHISHING_EMAIL.QR_CODE_IMAGE_WIDTH_PX}px;height:auto; margin:0 auto;'>, convenience/mobile-friendly language, NO buttons or links in main body, and signature with department name]"
+  "template": "[Full HTML email with table layout, {CUSTOMMAINLOGO} logo, QR code using ${QR_CODE_IMG_TAG}, convenience language, NO buttons in body, signature with team name]"
 }
 
-Note: Template must be complete HTML with {QRCODEURLIMAGE} merge tag for QR code (never placeholder images). QR code is the only call-to-action. No buttons or links in main body.`;
+Note: Template must be complete HTML. QR code is the only call-to-action.`;
 
   const quishingUserPrompt = `Write the QUISHING (QR Code Phishing) simulation email content based on this blueprint.
 
@@ -481,10 +462,9 @@ ${JSON.stringify(analysis, null, 2)}
 3. **GENERATE** the **Preheader** (hidden preview text) - ${PHISHING_EMAIL.PREHEADER_WORD_COUNT.min}-${PHISHING_EMAIL.PREHEADER_WORD_COUNT.max} words about QR code verification.
 4. ${GREETING_INSTRUCTION(language)}
 5. **WRITE** realistic, authentic email content that matches the brand's style, the blueprint's tone exactly, and emphasizes convenience/mobile-friendly access.
-6. **QR Code Merge Tag:** Must use {QRCODEURLIMAGE} merge tag for QR code. Add <img src="{QRCODEURLIMAGE}" alt="QR Code" style="display:block; width:${PHISHING_EMAIL.QR_CODE_IMAGE_WIDTH_PX}px;height:auto; margin:0 auto;"> prominently (center-aligned, after main message text, before signature). Required: Never use placeholder src like "qr-code.png" or empty src - always use {QRCODEURLIMAGE} tag. Add convenience text around QR code.
-7. **EMBED** quishing-specific red flags according to difficulty level (unsolicited QR codes, QR codes requesting credentials, QR codes in unexpected contexts).
-8. **VERIFY** NO buttons or clickable links exist in main body (footer links allowed).
-9. **OUTPUT** valid JSON with complete, production-ready HTML template.`;
+6. **QR Code:** Insert ${QR_CODE_IMG_TAG} prominently (center-aligned, after main text, before signature). Never use placeholder src. Add scenario-specific convenience text around it.
+7. **EMBED** quishing-specific red flags according to difficulty level.
+8. **VERIFY** no buttons or links in main body, then **OUTPUT** valid JSON with complete HTML template.`;
 
   return {
     systemPrompt: quishingSystemPrompt,
@@ -645,6 +625,8 @@ export function buildLandingPagePrompts(params: LandingPagePromptParams): {
     isQuishing = false,
   } = params;
 
+  const hasFormPages = requiredPages.includes('login') || requiredPages.includes('success');
+
   // 🎲 RANDOMIZE DESIGN 🎲
   const randomLayout = LAYOUT_OPTIONS[Math.floor(Math.random() * LAYOUT_OPTIONS.length)];
   const randomStyle = STYLE_OPTIONS[Math.floor(Math.random() * STYLE_OPTIONS.length)];
@@ -692,16 +674,16 @@ export function buildLandingPagePrompts(params: LandingPagePromptParams): {
 Create modern, professional pages that match ${industryDesign.industry} standards. Make them look authentic and realistic for ${fromName}.
 
 **GENERATION STEPS (Follow this order):**
-1. **Plan first:** Review checklist above, decide on colors, layout, spacing
+1. **Plan first:** Review the rules and template examples in system prompt, decide on colors, layout, spacing
 2. **Match email branding:** Use same logo, colors, and style from phishing email
 3. **Generate HTML:** Create complete, valid HTML with all required elements
-4. **Validate:** Check output validation list before returning
-5. **Ensure variation:** If multiple pages, make them related but NOT identical. Adapt button text, messages, and content to match the specific scenario - make it look like a real ${fromName} page, not a generic template.
+4. **Validate:** Check against the structure requirements and template examples before returning
+5. **Ensure variation:** If multiple pages, make them related but NOT identical. Adapt messages and content to match the specific scenario - make it look like a real ${fromName} page, not a generic template.
 
 **KEY REMINDERS:**
 ${isQuishing ? `- Landing pages are standard forms (no QR codes)\n` : ''}- Add natural design variations (don't make all pages identical)
 - ${layoutSpecificReminders.replace(/\n/g, '\n- ').replace(/^- /, '')}
-- Button must contrast with the surrounding background`;
+${hasFormPages ? '- Button must contrast with the surrounding background' : '- **No buttons or CTA links** — show content directly (lists, highlighted boxes, metadata)'}`;
 
   // Build optional context messages
   const userContextMessage = additionalContext

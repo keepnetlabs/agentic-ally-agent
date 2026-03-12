@@ -86,7 +86,7 @@ describe('landing-page-templates', () => {
       const html = getInfoTemplateExample(mockParams);
       expect(html).toContain('Policy update');
       expect(html).toContain('Test Corp');
-      expect(html).toContain('View full policy');
+      expect(html).toContain('Key changes:');
     });
   });
 

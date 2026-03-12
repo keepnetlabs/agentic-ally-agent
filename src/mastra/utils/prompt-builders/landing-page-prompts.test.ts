@@ -114,7 +114,7 @@ describe('landing-page-prompts', () => {
       const result = callPrompt();
       expect(result).toContain('SHARED DESIGN ELEMENTS');
       expect(result).toContain('the layout-specific rule wins');
-      expect(result).toContain('Do NOT add this outer card for MINIMAL');
+      expect(result).toContain('SKIP for MINIMAL layout');
     });
 
     it('should include HERO layout rules when layout id is HERO', () => {

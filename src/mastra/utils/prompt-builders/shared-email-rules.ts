@@ -7,6 +7,11 @@
 import { PHISHING_EMAIL } from '../../constants';
 
 /**
+ * QR code image tag for quishing emails (single source of truth)
+ */
+export const QR_CODE_IMG_TAG = `<img src='{QRCODEURLIMAGE}' alt='QR Code' style='display:block; width:${PHISHING_EMAIL.QR_CODE_IMAGE_WIDTH_PX}px; height:auto; margin:0 auto;'>`;
+
+/**
  * Authorization context for phishing simulations
  */
 export const AUTH_CONTEXT = `**IMPORTANT CONTEXT:**
