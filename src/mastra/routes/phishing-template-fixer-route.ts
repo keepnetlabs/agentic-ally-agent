@@ -7,8 +7,14 @@ import {
   PhishingTemplateFixerInputSchema,
   type PhishingTemplateFixerOutput,
   type LandingPageClassifierOutput,
+  type EmailRewriterOutput,
+  type EmailClassifierOutput,
 } from '../agents/phishing-template-fixer/types';
-import { parseEmailTemplateOutput, parseLandingPageOutput } from '../agents/phishing-template-fixer/output-parser';
+import {
+  parseLandingPageOutput,
+  parseRewriterOutput,
+  parseClassifierOutput,
+} from '../agents/phishing-template-fixer/output-parser';
 import { AGENT_NAMES, TIMEOUT_VALUES, PHISHING_TEMPLATE_FIXER, API_ENDPOINTS } from '../constants';
 import { getRequestContext } from '../utils/core/request-storage';
 import { normalizeEmailLocalBoxes } from '../utils/content-processors/email-local-box-normalizer';
@@ -17,6 +23,8 @@ import {
   normalizeEmailButtonOnlyRowAlignment,
   normalizeEmailCtaWrapperAlignment,
 } from '../utils/content-processors/email-button-normalizer';
+import { normalizeEmailMergeTags } from '../utils/content-processors/email-merge-tag-normalizer';
+import { postProcessPhishingLandingHtml } from '../utils/content-processors/phishing-html-postprocessors';
 
 /**
  * Maximum HTML characters sent to LLM for landing page classification.
@@ -46,12 +54,6 @@ function assertAllowedDomain(selectedDomain: string, allowedDomains: readonly st
       `${fieldName} must be selected from available domains. Received: ${selectedDomain}`
     );
   }
-}
-
-function getFixerAgentName(type: 'email_template' | 'landing_page') {
-  return type === 'landing_page'
-    ? AGENT_NAMES.PHISHING_LANDING_CLASSIFIER
-    : AGENT_NAMES.PHISHING_TEMPLATE_FIXER;
 }
 
 /**
@@ -186,19 +188,22 @@ export const phishingTemplateFixerHandler = async (c: Context) => {
       htmlLength: html.length,
     });
 
-    // Step 3: Get agent
+    // Step 3: Get agents and branch by type
     const mastra = c.get('mastra');
-    const agentName = getFixerAgentName(type);
-    const agent = mastra.getAgent(agentName);
-    if (!agent) {
-      throw new Error(`${agentName} agent not found`);
-    }
 
-    // Step 4: Branch by type
     if (type === 'landing_page') {
+      const agent = mastra.getAgent(AGENT_NAMES.PHISHING_LANDING_CLASSIFIER);
+      if (!agent) throw new Error(`${AGENT_NAMES.PHISHING_LANDING_CLASSIFIER} agent not found`);
       return await handleLandingPage(c, agent, html, domainList, logger, requestStart);
     }
-    return await handleEmailTemplate(c, agent, html, domainList, logger, requestStart);
+
+    // Email template: parallel Rewriter + Classifier
+    const rewriterAgent = mastra.getAgent(AGENT_NAMES.EMAIL_REWRITER);
+    const classifierAgent = mastra.getAgent(AGENT_NAMES.EMAIL_CLASSIFIER);
+    if (!rewriterAgent || !classifierAgent) {
+      throw new Error('emailRewriter or emailClassifier agent not found');
+    }
+    return await handleEmailTemplate(c, rewriterAgent, classifierAgent, html, domainList, logger, requestStart);
   } catch (error) {
     const err = normalizeError(error);
     const errorInfo = errorService.internal(err.message, {
@@ -222,45 +227,72 @@ export const phishingTemplateFixerHandler = async (c: Context) => {
 
 async function handleEmailTemplate(
   c: Context,
-  agent: { generate: (msg: string) => Promise<{ text: string }> },
+  rewriterAgent: { generate: (msg: string) => Promise<{ text: string }> },
+  classifierAgent: { generate: (msg: string) => Promise<{ text: string }> },
   html: string,
   domainList: readonly string[],
   logger: ReturnType<typeof getLogger>,
   requestStart: number,
 ) {
-  const userMessage = `type="email_template"\n\nAvailable domains:\n${domainList.join(', ')}\n\n${html}`;
+  const domainListStr = domainList.join(', ');
+  const rewriterMessage = `type="email_template"\n\n${html}`;
+  const classifierMessage = `type="email_template"\n\nAvailable domains:\n${domainListStr}\n\n${html}`;
 
-  const data = await withTimeout(
-    withRetry<PhishingTemplateFixerOutput>(async () => {
-      const response = await agent.generate(userMessage);
-      const result = parseEmailTemplateOutput(response.text);
+  // Run Rewriter and Classifier in parallel — each with its own retry/timeout
+  const [rewriterData, classifierData] = await withTimeout(
+    Promise.all([
+      withRetry<EmailRewriterOutput>(async () => {
+        const response = await rewriterAgent.generate(rewriterMessage);
+        const result = parseRewriterOutput(response.text);
+        if (!result.success) throw new Error(`Rewriter: ${result.error}`);
+        return result.data;
+      }, 'email-rewriter'),
 
-      if (!result.success) {
-        throw new Error(result.error);
-      }
+      withRetry<EmailClassifierOutput>(async () => {
+        const response = await classifierAgent.generate(classifierMessage);
+        const result = parseClassifierOutput(response.text);
+        if (!result.success) throw new Error(`Classifier: ${result.error}`);
 
-      assertAllowedDomain(
-        extractDomainFromEmail(result.data.from_address),
-        domainList,
-        'from_address domain'
-      );
+        assertAllowedDomain(
+          extractDomainFromEmail(result.data.from_address),
+          domainList,
+          'from_address domain'
+        );
 
-      return {
-        ...result.data,
-        fixed_html: normalizeEmailButtonOnlyRowAlignment(
-          normalizeEmailCtaWrapperAlignment(
-            normalizeEmailButtonDivs(
-              normalizeEmailLocalBoxes(result.data.fixed_html)
-            )
-          )
-        ),
-      };
-    }, 'phishing-template-fixer-email'),
+        return result.data;
+      }, 'email-classifier'),
+    ]),
     TIMEOUT_VALUES.PHISHING_EDITOR_EMAIL_TIMEOUT_MS,
   );
 
+  // Post-process rewriter HTML through the normalizer pipeline
+  const normalizedHtml = normalizeEmailButtonOnlyRowAlignment(
+    normalizeEmailCtaWrapperAlignment(
+      normalizeEmailButtonDivs(
+        normalizeEmailLocalBoxes(rewriterData.fixed_html)
+      )
+    )
+  );
+
+  const { html: finalHtml, corrections } = normalizeEmailMergeTags(normalizedHtml);
+  if (corrections.length > 0) {
+    logger.info('merge_tags_corrected', { corrections });
+  }
+
+  // Merge rewriter + classifier results into the same response format
+  const data: PhishingTemplateFixerOutput = {
+    fixed_html: finalHtml,
+    change_log: rewriterData.change_log,
+    tags: classifierData.tags,
+    difficulty: classifierData.difficulty,
+    from_address: classifierData.from_address,
+    from_name: classifierData.from_name,
+    subject: classifierData.subject,
+  };
+
   logger.info('phishing_template_fixer_completed', {
     type: 'email_template',
+    mode: 'parallel',
     tagsCount: data.tags.length,
     difficulty: data.difficulty,
     fromAddress: data.from_address,
@@ -284,9 +316,27 @@ async function handleLandingPage(
   logger: ReturnType<typeof getLogger>,
   requestStart: number,
 ) {
+  // Normalize merge tags in input before classification (fixes user typos like {phishing})
+  const { html: normalizedHtml, corrections } = normalizeEmailMergeTags(html);
+  if (corrections.length > 0) {
+    logger.info('landing_page_merge_tags_corrected', { corrections });
+  }
+
   // Truncate HTML — classification only needs enough to identify brand/premise/trigger
-  const truncatedHtml = html.slice(0, LANDING_PAGE_CLASSIFICATION_CHAR_LIMIT);
-  const userMessage = `type="landing_page"\n\nAvailable domains:\n${domainList.join(', ')}\n\n${truncatedHtml}`;
+  const truncatedHtml = normalizedHtml.slice(0, LANDING_PAGE_CLASSIFICATION_CHAR_LIMIT);
+  const wasTruncated = normalizedHtml.length > LANDING_PAGE_CLASSIFICATION_CHAR_LIMIT;
+
+  if (wasTruncated) {
+    logger.warn('landing_page_truncated', {
+      originalLength: normalizedHtml.length,
+      truncatedTo: truncatedHtml.length,
+    });
+  }
+
+  const truncationNote = wasTruncated
+    ? `\n\nNOTE: This HTML was truncated from ${normalizedHtml.length} to ${truncatedHtml.length} characters. Key content (forms, CTAs) may be in the truncated portion — classify based on what is visible.`
+    : '';
+  const userMessage = `type="landing_page"\n\nAvailable domains:\n${domainList.join(', ')}\n\n${truncatedHtml}${truncationNote}`;
 
   const data = await withTimeout(
     withRetry<LandingPageClassifierOutput>(async () => {
@@ -315,5 +365,9 @@ async function handleLandingPage(
     durationMs: Date.now() - requestStart,
   });
 
-  return c.json({ success: true, data });
+  // Post-process the full (non-truncated) HTML through landing page pipeline
+  // (sanitize, repair, centering, merge tag fix, full document wrapper)
+  const fixedHtml = postProcessPhishingLandingHtml({ html: normalizedHtml });
+
+  return c.json({ success: true, data: { ...data, fixed_html: fixedHtml } });
 }

@@ -16,19 +16,17 @@ export function sanitizeHtml(html: string): string {
   clean = clean.replace(/\\"/g, '"');
 
   // 3. Fix the specific "User's Bug": class="\"bg-white" -> class="bg-white"
-  // It removes the extra quote at the start of the attribute value
-  clean = clean.replace(/="\\?"/g, '="');
-  clean = clean.replace(/='\\?'/g, "='");
+  // Only when a backslash-quote is followed by content — preserves empty attrs like data-skip=""
+  clean = clean.replace(/="\\"/g, '="');
+  clean = clean.replace(/='\\'/g, "='");
 
   // 4. Fix trailing quote issues like w-full\"" -> w-full"
   // This is tricky, but generally we want to remove backslashes before quotes
   clean = clean.replace(/\\"/g, '"'); // Re-run to be safe
 
-  // 5. Fix weird "attribute name" escaping like <div class="\"flex" items-center=""
-  // The user example showed: <div class="\&quot;bg-white"
-  // Step 1 handling &quot; -> " made it: <div class=""bg-white"
-  // Now we have double quotes at start.
-  clean = clean.replace(/=""/g, '="'); // class=""bg-white" -> class="bg-white"
+  // 5. Fix double-opening-quotes: class=""bg-white" -> class="bg-white"
+  // Only when followed by non-quote content — preserves legitimate empty attrs like data-skip=""
+  clean = clean.replace(/=""([^"=\s>])/g, '="$1');
 
   return clean;
 }

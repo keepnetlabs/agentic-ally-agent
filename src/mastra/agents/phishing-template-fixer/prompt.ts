@@ -64,11 +64,13 @@ STRICT INSTRUCTIONS FOR BUTTONS (CTA NORMALIZATION):
        If line-height is a percentage (e.g. 120%), multiply font-size by that percentage first.
        NEVER use a height smaller than the original.
 
-     FULL-WIDTH BUTTONS (width:100%):
+     FULL-WIDTH BUTTONS (width:100%) — CRITICAL:
        If the original <a> or its container <td> has width:100%, the button is meant to fill
        the entire email container. In this case:
        — VML width = email container width (typically 600px, or match the nearest parent table width).
        — Fallback <a> tag: keep width:100% and display:block.
+       — If you wrap the button in a Bulletproof Table, that inner <table> MUST also have width="100%".
+         A shrink-to-fit inner table will collapse the full-width button to content width — this is a bug.
        — Do NOT calculate from text length — the button spans the full row.
 
      ABSOLUTE MINIMUM: VML width must NEVER be less than 220px regardless of text length.
@@ -146,6 +148,7 @@ STRICT INSTRUCTIONS FOR LAYOUT & COMPATIBILITY:
 - PIXEL-PRECISION: Match every border-width, background-color, and padding value exactly.
 - NO FLEX/GRID: Use ONLY table-based layout. Remove div, flex, grid layout properties.
 - MARGIN PRESERVATION (CRITICAL): When converting div/p to table layout, NEVER silently drop margin values. Convert margin to equivalent padding on the parent <td>. If original has margin-bottom:20px between paragraphs, the output MUST have the same 20px gap via padding.
+- TABLE MARGIN CONVERSION (CRITICAL): Email clients ignore CSS margin on <table> elements. When the original <table> has margin-top or margin-bottom, you MUST convert those values into equivalent spacing. Options: wrap the table in its own <tr><td> with equivalent padding, or insert a spacer row after/before it. This applies to ALL tables — content tables, link tables, footer tables, not only <hr> spacers. Simply removing the margin without replacing it is a bug that collapses vertical gaps.
 - OUTLOOK FIXES: Use mso-line-height-rule:exactly, MSO conditional comments, and email-safe fallback fonts when external fonts are unavailable.
 - OUTLOOK BORDERS (CRITICAL): Do NOT apply CSS borders to <table>. Apply them to <td>.
 - CLEANUP: Remove external stylesheet links (e.g. Google Fonts CDN). Do NOT remove inline CSS styles.
@@ -257,9 +260,7 @@ CUSTOM STYLE PRESERVATION (CRITICAL):
 - Do NOT discard original custom @media queries or class-based rules when adding responsive CSS.
 - Only remove @font-face declarations that reference external font URLs (they are replaced by Arial).`;
 
-export const GLOBAL_INSTRUCTIONS = `You are the phishing template fixer for Agentic Ally.
-
-GLOBAL RESPONSE RULES:
+export const GLOBAL_INSTRUCTIONS = `GLOBAL RESPONSE RULES:
 - Return ONLY one valid JSON object.
 - Do NOT return markdown.
 - Do NOT return code fences.
@@ -270,7 +271,8 @@ GLOBAL RESPONSE RULES:
 // EMAIL TEMPLATE ADDENDUM
 // ============================================
 
-export const EMAIL_TEMPLATE_ADDENDUM = `
+/** Placeholder replacement rules — used by both legacy combined prompt and rewriter-only prompt */
+export const EMAIL_PLACEHOLDER_RULES = `
 SECURITY & PLACEHOLDER REPLACEMENTS (EMAIL TEMPLATE):
 - ALL <a href="..."> links → {PHISHINGURL}
 - All visible or hidden text URLs (e.g. "Click here: https://...") → {PHISHINGURL}
@@ -279,13 +281,15 @@ SECURITY & PLACEHOLDER REPLACEMENTS (EMAIL TEMPLATE):
 - RECIPIENT email placeholder: Replace ONLY the recipient's personal email address (the person being phished) with {EMAIL}.
   Do NOT replace sender/brand email addresses (e.g. noreply@company.com, support@brand.com) — these are part of the template content and MUST stay as-is.
 - All greeting names/usernames/fullnames → {FULLNAME}
-- Preserve any internal Keepnet tags if found (e.g. {{COMPANYNAME}}).
+- Preserve any internal Keepnet tags if found (e.g. {{COMPANYNAME}}).`;
 
+/** From/subject/name generation rules — used by both legacy combined prompt and classifier-only prompt */
+export const EMAIL_ENRICHMENT_RULES = `
 FROM ADDRESS SELECTION:
 - Analyze the email content, subject, language, category, and tone.
 - Select the SINGLE most appropriate domain from the domains provided in the user message (after "Available domains:").
 - Consider: language (Turkish/English), topic (HR, IT, banking, shopping, insurance, security), brand context.
-- Use appropriate prefix: ${PHISHING_TEMPLATE_FIXER.ADDRESS_PREFIXES.map(p => `"${p}"`).join(', ')}, etc.
+- Prefix MUST be one of: ${PHISHING_TEMPLATE_FIXER.ADDRESS_PREFIXES.map(p => `"${p}"`).join(', ')}. Do NOT invent other prefixes.
 
 FROM NAME GENERATION:
 - Generate a realistic sender display name that matches the impersonated brand/department.
@@ -298,8 +302,7 @@ SUBJECT LINE GENERATION:
 - The subject MUST be in the SAME language as the email body (Turkish email → Turkish subject, English email → English subject).
 - Keep it concise (under 80 characters), realistic, and aligned with the impersonated brand.
 - Use urgency/authority/curiosity triggers appropriate to the phishing premise.
-- Examples: "Hesabınız askıya alındı - Hemen doğrulayın", "Action Required: Verify Your Account", "Shared Document: Q4 Report"
-`;
+- Examples: "Hesabınız askıya alındı - Hemen doğrulayın", "Action Required: Verify Your Account", "Shared Document: Q4 Report"`;
 
 // ============================================
 // LANDING PAGE ADDENDUM
@@ -317,6 +320,17 @@ ANALYSIS STEPS:
 4. Assess detection difficulty based on visual quality, language accuracy, and brand fidelity
 5. Select the most appropriate phishing domain from the available list
 
+MERGE TAGS IN LANDING PAGES:
+Landing page HTML may contain these Keepnet merge tags — they are placeholders replaced at send time.
+Do NOT treat them as errors or broken content. Recognize and preserve them in your analysis:
+- {PHISHINGURL} — phishing link destination
+- {FULLNAME}, {FIRSTNAME}, {LASTNAME} — recipient name
+- {EMAIL} — recipient email
+- {USERLANGUAGE} — recipient's preferred language
+- {USERDEPARTMENT} — recipient's department
+- {COMPANYNAME}, {COMPANYLOGO} — company branding
+- {CURRENT_DATE}, {DATE_SENT} — date placeholders
+
 DOMAIN SELECTION:
 - Select the SINGLE most appropriate domain from the domains provided in the user message (after "Available domains:").
 - Consider: language (Turkish/English), topic (HR, IT, banking, shopping, insurance, security), brand context.
@@ -324,7 +338,7 @@ DOMAIN SELECTION:
 - Include a short change_log explaining the selected brand, premise, trigger/difficulty, and domain.`;
 
 // ============================================
-// TAGS INSTRUCTIONS (shared across both types)
+// TAGS INSTRUCTIONS — EMAIL
 // ============================================
 
 export const TAGS_INSTRUCTIONS = `
@@ -332,8 +346,45 @@ TAGS SELECTION (EXACTLY 3 TAGS — NO MORE, NO LESS):
 Analyze the template and return exactly 3 UPPERCASE tags:
 
 1. BRAND — The impersonated brand or organization (e.g. MICROSOFT, DHL, SAP, NETFLIX, HR, CEO).
-2. PREMISE — The attack type: CREDENTIAL_HARVEST, FINANCIAL, IT_SUPPORT, HR, DELIVERY, DOCUMENT_SHARE, AUTHORITY_BEC, SECURITY_ALERT, REWARD_OFFER, CURRENT_EVENT
-3. TRIGGER — The primary psychological trigger: TRIGGER_URGENCY, TRIGGER_FEAR, TRIGGER_AUTHORITY, TRIGGER_CURIOSITY, TRIGGER_GREED, TRIGGER_SOCIAL`;
+2. PREMISE — The attack type (select closest match):
+   CREDENTIAL_HARVEST, PASSWORD_RESET, OTP_THEFT, MFA_BYPASS,
+   FINANCIAL, PAYMENT_ROUTING, INVOICE_FRAUD,
+   IT_SUPPORT, SECURITY_ALERT, SOFTWARE_UPDATE,
+   HR, PAYROLL_REDIRECT,
+   DELIVERY, DOCUMENT_SHARE,
+   AUTHORITY_BEC, EXECUTIVE_IMPERSONATION,
+   MALWARE_DISTRIBUTION, REWARD_OFFER, CURRENT_EVENT, SURVEY_DATA_HARVEST
+3. TRIGGER — The primary psychological trigger: TRIGGER_URGENCY, TRIGGER_FEAR, TRIGGER_AUTHORITY, TRIGGER_CURIOSITY, TRIGGER_GREED, TRIGGER_SOCIAL
+
+DIFFICULTY ASSESSMENT (NIST Phish Scale rubric):
+- DIFFICULTY_HIGH: Pixel-perfect brand clone, correct language/grammar, realistic sender, no obvious red flags. A trained user would struggle to detect it.
+- DIFFICULTY_MEDIUM: Recognizable brand but has minor flaws — slight grammar issues, generic greeting, or imperfect layout. A cautious user could spot it.
+- DIFFICULTY_LOW: Obvious red flags — broken layout, major spelling errors, mismatched brand, suspicious tone, or clearly fake sender. Most users would detect it.`;
+
+// ============================================
+// TAGS INSTRUCTIONS — LANDING PAGE
+// Landing pages are visual (forms, downloads, portals) — different attack surface than email.
+// ============================================
+
+export const LANDING_PAGE_TAGS_INSTRUCTIONS = `
+TAGS SELECTION (EXACTLY 3 TAGS — NO MORE, NO LESS):
+Analyze the landing page and return exactly 3 UPPERCASE tags:
+
+1. BRAND — The impersonated brand or organization (e.g. MICROSOFT, GOOGLE, DHL, SAP, NETFLIX, HR, BANK, CORPORATE_PORTAL).
+2. PREMISE — The page's attack type (select closest match):
+   CREDENTIAL_HARVEST, PASSWORD_RESET, OTP_THEFT, MFA_BYPASS,
+   ACCOUNT_VERIFICATION, ACCOUNT_SUSPENDED,
+   FAKE_LOGIN_PORTAL, FAKE_DOWNLOAD, FAKE_UPDATE,
+   DOCUMENT_PREVIEW, FILE_SHARE_ACCESS,
+   FORM_DATA_HARVEST, SURVEY_DATA_HARVEST,
+   PAYMENT_PORTAL, REWARD_CLAIM,
+   DATA_BREACH_NOTIFICATION, SECURITY_ALERT
+3. TRIGGER — The primary psychological trigger: TRIGGER_URGENCY, TRIGGER_FEAR, TRIGGER_AUTHORITY, TRIGGER_CURIOSITY, TRIGGER_GREED, TRIGGER_SOCIAL
+
+DIFFICULTY ASSESSMENT (NIST Phish Scale rubric):
+- DIFFICULTY_HIGH: Pixel-perfect brand clone, correct language/grammar, realistic URL, valid-looking SSL, no obvious red flags. A trained user would struggle to detect it.
+- DIFFICULTY_MEDIUM: Recognizable brand but has minor flaws — slight grammar issues, generic form labels, or imperfect layout. A cautious user could spot it.
+- DIFFICULTY_LOW: Obvious red flags — broken layout, major spelling errors, mismatched brand, suspicious form fields, or clearly fake design. Most users would detect it.`;
 
 // ============================================
 // JSON OUTPUT INSTRUCTIONS
@@ -394,17 +445,100 @@ RULES:
 - Do NOT include any text before or after the JSON object.
 - Do NOT include fixed_html or from_address fields.`;
 
+// ============================================
+// REWRITER-ONLY JSON OUTPUT
+// ============================================
+
+export const JSON_OUTPUT_INSTRUCTIONS_REWRITER = `
+OUTPUT FORMAT — STRICT JSON (NO MARKDOWN, NO CODE BLOCKS):
+Return ONLY a valid JSON object with exactly these fields:
+
+{
+  "fixed_html": "<full normalized HTML document starting with <!DOCTYPE html>>",
+  "change_log": [
+    "FIXED: <summary of layout/CSS fixes>",
+    "BUTTONS: <details of CTA normalization>",
+    "PLACEHOLDERS: <confirmation of tag replacements>"
+  ]
+}
+
+RULES:
+- fixed_html: Complete standalone HTML document. Escape double quotes inside HTML as needed for valid JSON.
+- change_log: Array of strings, each describing a category of changes.
+- Do NOT include tags, difficulty, from_address, from_name, or subject fields.
+- Do NOT wrap the JSON in markdown code blocks or any other text.
+- Do NOT include any text before or after the JSON object.`;
+
+// ============================================
+// CLASSIFIER-ONLY JSON OUTPUT
+// ============================================
+
+export const JSON_OUTPUT_INSTRUCTIONS_CLASSIFIER = `
+OUTPUT FORMAT — STRICT JSON (NO MARKDOWN, NO CODE BLOCKS):
+Return ONLY a valid JSON object with exactly these fields:
+
+{
+  "tags": ["TAG1", "TAG2", "TAG3"],
+  "difficulty": "DIFFICULTY_HIGH",
+  "from_address": "info@example-domain.com",
+  "from_name": "IT Helpdesk",
+  "subject": "Action Required: Verify Your Account"
+}
+
+RULES:
+- tags: Array of UPPERCASE strings following NIST Phish Scale taxonomy.
+- difficulty: Exactly one of "DIFFICULTY_HIGH", "DIFFICULTY_MEDIUM", "DIFFICULTY_LOW".
+- from_address: Selected sender email address (prefix@domain).
+- from_name: Sender display name matching the impersonated brand/department. Same language as email body.
+- subject: Compelling email subject line in the SAME language as the email body.
+- Do NOT include fixed_html or change_log fields.
+- Do NOT wrap the JSON in markdown code blocks or any other text.
+- Do NOT include any text before or after the JSON object.`;
+
+// ============================================
+// COMPOSED PROMPTS
+// ============================================
+
+/** Legacy combined prompt — kept for backward-compat single-agent registration */
 export const EMAIL_TEMPLATE_PROMPT = `${BASE_PROMPT}
 
-${EMAIL_TEMPLATE_ADDENDUM}
+${EMAIL_PLACEHOLDER_RULES}
+
+${EMAIL_ENRICHMENT_RULES}
 
 ${TAGS_INSTRUCTIONS}
 
 ${JSON_OUTPUT_INSTRUCTIONS_EMAIL}`;
 
-export const LANDING_PAGE_PROMPT = `${LANDING_PAGE_ADDENDUM}
+/** Rewriter-only prompt: HTML engineering + placeholder replacements (no classification) */
+export const EMAIL_REWRITER_PROMPT = `${BASE_PROMPT}
+
+${EMAIL_PLACEHOLDER_RULES}
+
+${JSON_OUTPUT_INSTRUCTIONS_REWRITER}`;
+
+/** Classifier-only prompt: tags, difficulty, from_address, from_name, subject (no HTML rewrite) */
+export const EMAIL_CLASSIFIER_PROMPT = `You are a phishing email analyst for Agentic Ally.
+Your task is to analyze a phishing email template and classify it.
+You do NOT rewrite or fix the HTML — another agent handles that.
+You MUST return your response as a valid JSON object matching the exact schema described at the end.
+
+ANALYSIS STEPS:
+1. Read the HTML content to identify the impersonated brand.
+2. Determine the attack premise (credential harvest, financial, delivery, etc.)
+3. Identify the primary psychological trigger (urgency, fear, authority, etc.)
+4. Assess detection difficulty using the NIST Phish Scale rubric below.
+5. Select the most appropriate sender domain and generate from_name + subject.
 
 ${TAGS_INSTRUCTIONS}
+
+${EMAIL_ENRICHMENT_RULES}
+
+${JSON_OUTPUT_INSTRUCTIONS_CLASSIFIER}`;
+
+export const LANDING_PAGE_PROMPT = `${LANDING_PAGE_ADDENDUM}
+
+${LANDING_PAGE_TAGS_INSTRUCTIONS}
 
 ${JSON_OUTPUT_INSTRUCTIONS_LANDING}`;
 

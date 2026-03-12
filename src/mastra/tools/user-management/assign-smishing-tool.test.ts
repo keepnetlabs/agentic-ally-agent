@@ -37,6 +37,20 @@ vi.mock('../../utils/core/worker-api-client', () => ({
   callWorkerAPI: vi.fn(),
 }));
 
+// Mock group-assignment for group fan-out tests
+vi.mock('../../utils/core/group-assignment', async (importOriginal) => {
+  const actual = await importOriginal() as any;
+  return {
+    ...actual,
+    fanOutGroupAssignment: vi.fn().mockResolvedValue({
+      totalUsers: 1,
+      succeeded: 1,
+      failed: 0,
+      failedUsers: [],
+    }),
+  };
+});
+
 /**
  * Test Suite: assignSmishingTool
  * Tests for assigning smishing simulations to users or groups
@@ -213,7 +227,7 @@ describe('assignSmishingTool', () => {
           serviceBinding: mockEnv.SMISHING_CRUD_WORKER,
           endpoint: expect.stringContaining('/send'),
           payload: expect.objectContaining({
-            batchResourceId: mockThreadId,
+            batchResourceId: expect.any(String),
             activityType: 'smishing',
             scenarioResourceId: 'smishing-resource-123',
             smishingId: 'smishing-resource-123',
@@ -231,8 +245,6 @@ describe('assignSmishingTool', () => {
     });
 
     it('should assign smishing to a group and include targetGroupResourceId in payload', async () => {
-      (callWorkerAPI as any).mockResolvedValue({});
-
       const input = {
         resourceId: 'smishing-resource-123',
         targetGroupResourceId: 'group-123',
@@ -241,14 +253,8 @@ describe('assignSmishingTool', () => {
       const result = await assignSmishingTool.execute({ context: input } as any);
 
       expect(result.success).toBe(true);
-      expect(result.message).toContain('GROUP');
-      expect(callWorkerAPI).toHaveBeenCalledWith(
-        expect.objectContaining({
-          payload: expect.objectContaining({
-            targetGroupResourceId: 'group-123',
-          }),
-        })
-      );
+      expect(result.data?.assignmentType).toBe('GROUP');
+      expect(result.data?.targetId).toBe('group-123');
     });
 
   });

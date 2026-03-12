@@ -17,8 +17,12 @@ import { cleanResponse } from '../../utils/content-processors/json-cleaner';
 import {
   EmailTemplateFixerOutputSchema,
   LandingPageClassifierOutputSchema,
+  EmailRewriterOutputSchema,
+  EmailClassifierOutputSchema,
   type PhishingTemplateFixerOutput,
   type LandingPageClassifierOutput,
+  type EmailRewriterOutput,
+  type EmailClassifierOutput,
   type PhishingTemplateFixerType,
 } from './types';
 
@@ -32,6 +36,14 @@ export type EmailParseResult =
 
 export type LandingPageParseResult =
   | { success: true; data: LandingPageClassifierOutput }
+  | { success: false; error: string; raw: string };
+
+export type RewriterParseResult =
+  | { success: true; data: EmailRewriterOutput }
+  | { success: false; error: string; raw: string };
+
+export type ClassifierParseResult =
+  | { success: true; data: EmailClassifierOutput }
   | { success: false; error: string; raw: string };
 
 export type ParseResult = EmailParseResult | LandingPageParseResult;
@@ -54,6 +66,22 @@ export function parseEmailTemplateOutput(raw: string): EmailParseResult {
  */
 export function parseLandingPageOutput(raw: string): LandingPageParseResult {
   return parseAndValidate(raw, LandingPageClassifierOutputSchema);
+}
+
+/**
+ * Parses the rewriter agent output (split flow).
+ * Returns: fixed_html, change_log.
+ */
+export function parseRewriterOutput(raw: string): RewriterParseResult {
+  return parseAndValidate(raw, EmailRewriterOutputSchema);
+}
+
+/**
+ * Parses the classifier agent output (split flow).
+ * Returns: tags, difficulty, from_address, from_name, subject.
+ */
+export function parseClassifierOutput(raw: string): ClassifierParseResult {
+  return parseAndValidate(raw, EmailClassifierOutputSchema);
 }
 
 /**

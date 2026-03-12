@@ -83,6 +83,8 @@ import {
   outOfScopeAgent,
   phishingTemplateFixerAgent,
   phishingLandingPageClassifierAgent,
+  emailRewriterAgent,
+  emailClassifierAgent,
   companySearchAgent,
   trainingStatsAgent,
   csOrchestratorAgent,
@@ -176,6 +178,8 @@ export const mastra = new Mastra({
     outOfScope: outOfScopeAgent,
     phishingTemplateFixer: phishingTemplateFixerAgent,
     phishingLandingPageClassifier: phishingLandingPageClassifierAgent,
+    emailRewriter: emailRewriterAgent,
+    emailClassifier: emailClassifierAgent,
     orchestrator: orchestratorAgent,
     // Customer Service Agent Swarm
     companySearchAssistant: companySearchAgent,

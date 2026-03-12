@@ -69,7 +69,7 @@ const BasePhishingTemplateFixerOutputSchema = z.object({
   fixed_html: HtmlDocumentSchema,
 
   /** Itemized list of changes made during normalization */
-  change_log: z.array(ChangeLogEntrySchema).min(3, 'change_log must include at least 3 entries'),
+  change_log: z.array(ChangeLogEntrySchema).min(3, 'change_log must include at least 3 entries').max(10, 'change_log must not exceed 10 entries'),
 
   /**
    * Exactly 3 NIST Phish Scale taxonomy tags:
@@ -119,10 +119,33 @@ export const LandingPageClassifierOutputSchema = z.object({
    * Classification reasoning: why these tags, difficulty, and domain were chosen.
    * Same field name as email template for consistent UI handling.
    */
-  change_log: z.array(z.string().trim().min(1)).min(1, 'change_log must include at least 1 entry'),
+  change_log: z.array(z.string().trim().min(1)).min(1, 'change_log must include at least 1 entry').max(5, 'change_log must not exceed 5 entries'),
 });
 
 export type LandingPageClassifierOutput = z.infer<typeof LandingPageClassifierOutputSchema>;
+
+// ============================================
+// SPLIT AGENT SCHEMAS (Rewriter + Classifier)
+// ============================================
+
+/** Rewriter output: HTML fix only, no classification */
+export const EmailRewriterOutputSchema = z.object({
+  fixed_html: HtmlDocumentSchema,
+  change_log: z.array(ChangeLogEntrySchema).min(1, 'change_log must include at least 1 entry').max(10, 'change_log must not exceed 10 entries'),
+});
+
+export type EmailRewriterOutput = z.infer<typeof EmailRewriterOutputSchema>;
+
+/** Classifier output: tags, difficulty, from_address, from_name, subject */
+export const EmailClassifierOutputSchema = z.object({
+  tags: z.array(TagSchema).length(3, 'tags must contain exactly 3 items'),
+  difficulty: DifficultyLevel,
+  from_address: z.string().trim().email('from_address must be a valid email address'),
+  from_name: z.string().trim().min(1, 'from_name is required'),
+  subject: z.string().trim().min(1, 'subject is required'),
+});
+
+export type EmailClassifierOutput = z.infer<typeof EmailClassifierOutputSchema>;
 
 // ============================================
 // TYPE ALIASES

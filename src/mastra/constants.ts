@@ -660,6 +660,8 @@ export const AGENT_NAMES = {
   OUT_OF_SCOPE: 'outOfScope',
   PHISHING_TEMPLATE_FIXER: 'phishingTemplateFixer',
   PHISHING_LANDING_CLASSIFIER: 'phishingLandingPageClassifier',
+  EMAIL_REWRITER: 'emailRewriter',
+  EMAIL_CLASSIFIER: 'emailClassifier',
 } as const;
 
 // ============================================
@@ -679,6 +681,8 @@ export const AGENT_IDS = {
   OUT_OF_SCOPE: 'out-of-scope-agent',
   PHISHING_TEMPLATE_FIXER: 'phishing-template-fixer-agent',
   PHISHING_LANDING_CLASSIFIER: 'phishing-landing-classifier-agent',
+  EMAIL_REWRITER: 'email-rewriter-agent',
+  EMAIL_CLASSIFIER: 'email-classifier-agent',
 } as const;
 
 /** Short confirmation/selection patterns for orchestrator Scenario A (route to same agent). */
