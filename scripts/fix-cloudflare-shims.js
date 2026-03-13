@@ -6,6 +6,8 @@
  * 1. The import.meta.url issue in generated files by adding null checks
  * 2. The process.versions read-only property assignment issue
  * 3. Reorders AutonomousWorkflow class to appear after executeAutonomousGeneration function
+ * 4. Injects BatchOrchestratorWorkflow class into compiled output
+ * 5. Exports both workflow classes from index.mjs
  */
 
 import { readFileSync, writeFileSync, existsSync, readdirSync } from 'fs';
@@ -182,82 +184,136 @@ function findFunctionEnd(content, startIndex) {
   return braceCount === 0 ? i : -1;
 }
 
-// Source file path for AutonomousWorkflow
+// Source file paths for workflow classes
 const AUTONOMOUS_WORKFLOW_SOURCE = join(PROJECT_ROOT, 'src/mastra/workflows/autonomous-workflow.ts');
+const BATCH_ORCHESTRATOR_WORKFLOW_SOURCE = join(PROJECT_ROOT, 'src/mastra/workflows/batch-orchestrator-workflow.ts');
 
-function getAutonomousWorkflowFromSource() {
+/**
+ * Extract a class from a TS source file using brace matching.
+ * Returns the raw class string (still has TS annotations).
+ */
+function extractClassFromSource(sourcePath, className) {
   try {
-    if (!existsSync(AUTONOMOUS_WORKFLOW_SOURCE)) {
-      console.log(`  ⚠️  Source file not found: ${AUTONOMOUS_WORKFLOW_SOURCE}`);
+    if (!existsSync(sourcePath)) {
+      console.log(`  ⚠️  Source file not found: ${sourcePath}`);
       return null;
     }
 
-    const sourceContent = readFileSync(AUTONOMOUS_WORKFLOW_SOURCE, 'utf8');
-    
-    // Extract the class definition - find export class AutonomousWorkflow ... }
-    const classMatch = sourceContent.match(/export\s+class\s+AutonomousWorkflow[\s\S]*?\n\}/);
-    if (!classMatch) {
-      console.log(`  ⚠️  Could not find AutonomousWorkflow class in source file`);
+    const sourceContent = readFileSync(sourcePath, 'utf8');
+    const classPattern = new RegExp(`export\\s+class\\s+${className}`);
+    const classStartMatch = sourceContent.match(classPattern);
+    if (!classStartMatch) {
+      console.log(`  ⚠️  Could not find ${className} class in source file`);
       return null;
     }
 
-    // Convert TypeScript to JavaScript-compatible format
-    let workflowClass = classMatch[0];
-    
-    // Remove type annotations and imports - keep only the class body
-    workflowClass = workflowClass
-      // Remove type imports
-      .replace(/import\s+type\s+.*?from\s+['"].*?['"];?\n?/g, '')
-      // Remove regular imports (they should already be in compiled file)
-      .replace(/import\s+.*?from\s+['"].*?['"];?\n/g, '')
-      // Remove type annotations from function parameters
-      .replace(/:\s*\{[^}]*payload:\s*AutonomousRequestBody[^}]*\}/g, '')
-      .replace(/:\s*CloudflareEnv/g, '')
-      // Clean up extra newlines
-      .replace(/\n{3,}/g, '\n\n')
-      .trim();
+    const classEndIndex = findFunctionEnd(sourceContent, classStartMatch.index);
+    if (classEndIndex === -1) {
+      console.log(`  ⚠️  Could not find end of ${className} class`);
+      return null;
+    }
 
-    return workflowClass;
+    return sourceContent.substring(classStartMatch.index, classEndIndex);
   } catch (error) {
-    console.error(`  ❌ Error reading source file:`, error.message);
+    console.error(`  ❌ Error reading source file for ${className}:`, error.message);
     return null;
   }
 }
 
+/**
+ * Strip TS annotations from AutonomousWorkflow (simple class, few annotations).
+ */
+function stripAutonomousWorkflowTypes(code) {
+  return code
+    .replace(/import\s+type\s+.*?from\s+['"].*?['"];?\n?/g, '')
+    .replace(/import\s+.*?from\s+['"].*?['"];?\n?/g, '')
+    // run(event: { payload: AutonomousRequestBody }, step: WorkflowStep)
+    .replace(/:\s*\{[^}]*payload:\s*AutonomousRequestBody[^}]*\}/g, '')
+    .replace(/:\s*WorkflowStep/g, '')
+    .replace(/:\s*CloudflareEnv/g, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+/**
+ * Strip TS annotations from BatchOrchestratorWorkflow.
+ * Uses PRECISE patterns to avoid destroying object literals like retries: {...} and params: {...}.
+ */
+function stripBatchOrchestratorTypes(code) {
+  return code
+    .replace(/import\s+type\s+.*?from\s+['"].*?['"];?\n?/g, '')
+    .replace(/import\s+.*?from\s+['"].*?['"];?\n?/g, '')
+    // run(event: { payload: BatchOrchestratorPayload }, step: WorkflowStep)
+    .replace(
+      /async\s+run\(event:\s*\{\s*payload:\s*\w+\s*\},\s*step:\s*WorkflowStep\)/,
+      'async run(event, step)'
+    )
+    // const failedPages: Array<{ page: number; error: string }> = []
+    .replace(/:\s*Array<[^>]*>/g, '')
+    // const errors: string[] = []
+    .replace(/:\s*string\[\]/g, '')
+    // .filter((r: { id?: string }) => ...)  →  .filter((r) => ...)
+    .replace(/\(r:\s*\{[^}]*\}\)/g, '(r)')
+    // .map((e: string) => ...)  →  .map((e) => ...)
+    .replace(/\(e:\s*string\)/g, '(e)')
+    // .map((a: unknown) => ...)  →  .map((a) => ...)
+    .replace(/\(a:\s*unknown\)/g, '(a)')
+    // as AutonomousAction (type assertion)
+    .replace(/\s+as\s+AutonomousAction/g, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+function getAutonomousWorkflowFromSource() {
+  const raw = extractClassFromSource(AUTONOMOUS_WORKFLOW_SOURCE, 'AutonomousWorkflow');
+  return raw ? stripAutonomousWorkflowTypes(raw) : null;
+}
+
+function getBatchOrchestratorWorkflowFromSource() {
+  const raw = extractClassFromSource(BATCH_ORCHESTRATOR_WORKFLOW_SOURCE, 'BatchOrchestratorWorkflow');
+  return raw ? stripBatchOrchestratorTypes(raw) : null;
+}
+
 function ensureWorkflowEntrypointImport(content) {
+  // NOTE: Only import WorkflowEntrypoint — WorkflowStep is a TypeScript-only type,
+  // it does NOT exist as a runtime export in cloudflare:workers module.
+  const NEEDED_IMPORT = "import { WorkflowEntrypoint } from 'cloudflare:workers';";
+
   // Check if WorkflowEntrypoint import already exists
-  if (content.includes("import { WorkflowEntrypoint }") || content.includes("import {WorkflowEntrypoint}")) {
+  if (content.includes('WorkflowEntrypoint')) {
+    // Remove WorkflowStep from import if present (it's TS-only, not a runtime export)
+    const stepImportPattern = /import\s*\{\s*WorkflowEntrypoint\s*,\s*WorkflowStep\s*\}\s*from\s*['"]cloudflare:workers['"];?/g;
+    if (stepImportPattern.test(content)) {
+      content = content.replace(stepImportPattern, "import { WorkflowEntrypoint } from 'cloudflare:workers';");
+      console.log(`  ✅ Removed WorkflowStep from cloudflare:workers import (TS-only type)`);
+      return { content, fixed: true };
+    }
     console.log(`  ✅ WorkflowEntrypoint import already exists`);
     return { content, fixed: false };
   }
 
-  // Find a good place to add the import - usually near other cloudflare:workers imports or at the top
-  // Look for other imports from cloudflare:workers
+  // Find a good place to add the import - near other cloudflare:workers imports or at the top
   const cloudflareImportPattern = /import\s+.*?\s+from\s+['"]cloudflare:workers['"];?\n/;
   const cloudflareMatch = content.match(cloudflareImportPattern);
-  
+
   if (cloudflareMatch) {
-    // Add after existing cloudflare:workers import
     const insertIndex = cloudflareMatch.index + cloudflareMatch[0].length;
     const beforeInsert = content.substring(0, insertIndex);
     const afterInsert = content.substring(insertIndex);
-    const newContent = beforeInsert + "import { WorkflowEntrypoint } from 'cloudflare:workers';\n" + afterInsert;
-    return { content: newContent, fixed: true };
+    return { content: beforeInsert + NEEDED_IMPORT + '\n' + afterInsert, fixed: true };
   }
 
-  // If no cloudflare:workers import exists, add at the top after other imports
   // Find the first function or class declaration
   const firstDeclaration = content.match(/(?:^|\n)(?:export\s+)?(?:async\s+)?(?:function|class|const|let|var)\s+/);
   if (firstDeclaration) {
-    const insertIndex = firstDeclaration.index + 1; // After the newline
+    const insertIndex = firstDeclaration.index + 1;
     const beforeInsert = content.substring(0, insertIndex);
     const afterInsert = content.substring(insertIndex);
-    const newContent = beforeInsert + "import { WorkflowEntrypoint } from 'cloudflare:workers';\n" + afterInsert;
-    return { content: newContent, fixed: true };
+    return { content: beforeInsert + NEEDED_IMPORT + '\n' + afterInsert, fixed: true };
   }
 
   // Fallback: add at the very beginning
-  return { content: "import { WorkflowEntrypoint } from 'cloudflare:workers';\n" + content, fixed: true };
+  return { content: NEEDED_IMPORT + '\n' + content, fixed: true };
 }
 
 function addAutonomousWorkflowToCompiled(content) {
@@ -340,15 +396,131 @@ function addAutonomousWorkflowToCompiled(content) {
   return { content: newContent, fixed: true };
 }
 
+/**
+ * Inject dependencies that BatchOrchestratorWorkflow needs but Mastra build doesn't include.
+ * These are injected right before the workflow class.
+ */
+function getBatchOrchestratorDependencies(content) {
+  const deps = [];
+
+  // fetchGroupMembersPage — hardcoded JS version (not in Mastra bundle, regex extraction too fragile)
+  if (!content.includes('function fetchGroupMembersPage')) {
+    deps.push(`async function fetchGroupMembersPage(token, groupResourceId, baseApiUrl, pageNumber, pageSize = 1000) {
+  const logger = getLogger('FetchGroupMembersPage');
+  const payload = {
+    pageNumber,
+    pageSize,
+    orderBy: 'CreateTime',
+    ascending: false,
+    filter: {
+      Condition: 'AND',
+      SearchInputTextValue: '',
+      FilterGroups: [
+        { Condition: 'AND', FilterItems: [], FilterGroups: [] },
+        { Condition: 'OR', FilterItems: [], FilterGroups: [] },
+      ],
+    },
+    excludeGroupUsers: false,
+  };
+  const response = await fetch(\`\${baseApiUrl}/api/target-groups/\${groupResourceId}/users\`, {
+    method: 'POST',
+    headers: {
+      Authorization: \`Bearer \${token}\`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    const errorBody = await response.text().catch(() => '');
+    logger.error('group_members_page_fetch_failed', {
+      groupResourceId,
+      pageNumber,
+      status: response.status,
+      errorBody: errorBody.slice(0, 500),
+    });
+    throw new Error(\`Failed to fetch group members page \${pageNumber}: \${response.status} \${response.statusText}\`);
+  }
+  const result = await response.json();
+  const rawUsers = result.data?.results || [];
+  const users = [];
+  for (const user of rawUsers) {
+    if (user.status !== 'Active' && user.status !== undefined) continue;
+    users.push({
+      resourceId: user.resourceId,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      department: user.department || undefined,
+      email: user.email,
+      preferredLanguage: user.preferredLanguage,
+      phoneNumber: user.phoneNumber,
+    });
+  }
+  return {
+    users,
+    totalPages: result.data?.totalNumberOfPages || 1,
+    totalRecords: result.data?.totalNumberOfRecords || 0,
+  };
+}`);
+    console.log(`  ✅ Injected fetchGroupMembersPage function (hardcoded JS)`);
+  }
+
+  // CHUNK_SIZE — used by BatchOrchestratorWorkflow, defined outside class in source file
+  // Other CHUNK_SIZE in bundle are function-scoped (translation), won't conflict at top level
+  deps.push(`const CHUNK_SIZE = 100;`);
+  console.log(`  ✅ Injected CHUNK_SIZE constant`);
+
+  // CF_WORKFLOW_LIMITS — not in Mastra bundle
+  if (!content.includes('CF_WORKFLOW_LIMITS')) {
+    deps.push(`const CF_WORKFLOW_LIMITS = {
+  INSTANCE_CREATION_RATE_PER_SEC: 100,
+  MAX_INSTANCE_ID_LENGTH: 100,
+  MAX_EVENT_PAYLOAD_BYTES: 1048576,
+  MAX_CONCURRENT_INSTANCES: 10000,
+  CHUNK_THROTTLE_MS: 1100,
+  CREATE_FALLBACK_CONCURRENCY: 25,
+};`);
+    console.log(`  ✅ Injected CF_WORKFLOW_LIMITS constant`);
+  }
+
+  return deps.join('\n\n');
+}
+
+function addBatchOrchestratorWorkflowToCompiled(content) {
+  let fixed = false;
+
+  // Always inject missing dependencies first (even if class already exists)
+  const deps = getBatchOrchestratorDependencies(content);
+  if (deps) {
+    // Insert dependencies BEFORE the class if it exists, otherwise at the end
+    const classMatch = content.match(/export\s+class\s+BatchOrchestratorWorkflow/);
+    if (classMatch) {
+      const beforeClass = content.substring(0, classMatch.index);
+      const afterClass = content.substring(classMatch.index);
+      content = beforeClass.trimEnd() + '\n\n' + deps + '\n\n' + afterClass;
+    } else {
+      content = content.trimEnd() + '\n\n' + deps + '\n';
+    }
+    fixed = true;
+  }
+
+  // Add class if not already present
+  if (!content.includes('class BatchOrchestratorWorkflow')) {
+    const workflowClass = getBatchOrchestratorWorkflowFromSource();
+    if (!workflowClass) {
+      return { content, fixed };
+    }
+    content = content.trimEnd() + '\n\n' + workflowClass + '\n';
+    fixed = true;
+  } else {
+    console.log(`  ✅ BatchOrchestratorWorkflow class already exists`);
+  }
+
+  return { content, fixed };
+}
+
 function fixIndexMjsExport(filePath, content) {
   // Only process index.mjs
   if (!filePath.includes('index.mjs')) {
-    return { content, fixed: false };
-  }
-
-  // Check if export already exists
-  if (content.includes("export { AutonomousWorkflow }")) {
-    console.log(`  ✅ AutonomousWorkflow export already exists in index.mjs`);
     return { content, fixed: false };
   }
 
@@ -358,24 +530,40 @@ function fixIndexMjsExport(filePath, content) {
     return { content, fixed: false };
   }
 
-  // Find the line after mastra.mjs import
   const mastraImportPattern = /import\s+['"]\.\/mastra\.mjs['"];?\n/;
   const match = content.match(mastraImportPattern);
-  
   if (!match) {
     console.log(`  ⚠️  Could not find mastra.mjs import pattern`);
     return { content, fixed: false };
   }
 
+  let fixed = false;
   const insertIndex = match.index + match[0].length;
-  
-  // Insert export right after mastra.mjs import
+
+  // Workflow classes to export from index.mjs
+  const workflowExports = [
+    { className: 'AutonomousWorkflow' },
+    { className: 'BatchOrchestratorWorkflow' },
+  ];
+
+  let exportLines = '';
+  for (const { className } of workflowExports) {
+    if (content.includes(`export { ${className} }`)) {
+      console.log(`  ✅ ${className} export already exists in index.mjs`);
+    } else {
+      exportLines += `export { ${className} } from './mastra.mjs';\n`;
+      console.log(`  ✅ Added ${className} export to index.mjs`);
+      fixed = true;
+    }
+  }
+
+  if (!fixed) {
+    return { content, fixed: false };
+  }
+
   const beforeInsert = content.substring(0, insertIndex);
   const afterInsert = content.substring(insertIndex);
-  
-  const newContent = beforeInsert + "export { AutonomousWorkflow } from './mastra.mjs';\n" + afterInsert;
-
-  return { content: newContent, fixed: true };
+  return { content: beforeInsert + exportLines + afterInsert, fixed: true };
 }
 
 function fixFile(filePath) {
@@ -402,12 +590,21 @@ function fixFile(filePath) {
       fixed = true;
     }
     
-    // Add AutonomousWorkflow to appear after executeAutonomousGeneration (only for mastra.mjs)
+    // Add workflow classes (only for mastra.mjs)
     if (filePath.includes('mastra.mjs')) {
+      // AutonomousWorkflow — positioned after executeAutonomousGeneration
       const addResult = addAutonomousWorkflowToCompiled(content);
       if (addResult.fixed) {
         content = addResult.content;
         console.log(`  ✅ Added AutonomousWorkflow class after executeAutonomousGeneration`);
+        fixed = true;
+      }
+
+      // BatchOrchestratorWorkflow — append at end of file
+      const batchResult = addBatchOrchestratorWorkflowToCompiled(content);
+      if (batchResult.fixed) {
+        content = batchResult.content;
+        console.log(`  ✅ Added BatchOrchestratorWorkflow class to mastra.mjs`);
         fixed = true;
       }
     }
@@ -474,6 +671,23 @@ function patchWranglerConfig() {
       class_name: "AutonomousWorkflow"
     };
 
+    const batchOrchestratorWorkflowBinding = {
+      binding: "BATCH_ORCHESTRATOR_WORKFLOW",
+      name: "BATCH_ORCHESTRATOR_WORKFLOW",
+      class_name: "BatchOrchestratorWorkflow"
+    };
+
+    const batchWorkflowKvBinding = {
+      binding: "BATCH_WORKFLOW_KV",
+      id: "a235dbdc79a34c25ba3fd8fc38673d1f",
+      preview_id: "a235dbdc79a34c25ba3fd8fc38673d1f"
+    };
+
+    // Add kv_namespaces if not already present
+    if (!config.kv_namespaces) {
+      config.kv_namespaces = [];
+    }
+
     let added = false;
 
     // Check if CRUD_WORKER already exists
@@ -514,6 +728,26 @@ function patchWranglerConfig() {
       added = true;
     } else {
       console.log(`  ✅ AUTONOMOUS_WORKFLOW workflow binding already exists`);
+    }
+
+    // Check if BATCH_ORCHESTRATOR_WORKFLOW already exists
+    const existingBatchWorkflow = config.workflows.find(w => w.binding === "BATCH_ORCHESTRATOR_WORKFLOW");
+    if (!existingBatchWorkflow) {
+      config.workflows.push(batchOrchestratorWorkflowBinding);
+      console.log(`  ✅ Added BATCH_ORCHESTRATOR_WORKFLOW workflow binding`);
+      added = true;
+    } else {
+      console.log(`  ✅ BATCH_ORCHESTRATOR_WORKFLOW workflow binding already exists`);
+    }
+
+    // Check if BATCH_WORKFLOW_KV already exists
+    const existingBatchKv = config.kv_namespaces.find(k => k.binding === "BATCH_WORKFLOW_KV");
+    if (!existingBatchKv) {
+      config.kv_namespaces.push(batchWorkflowKvBinding);
+      console.log(`  ✅ Added BATCH_WORKFLOW_KV KV namespace binding`);
+      added = true;
+    } else {
+      console.log(`  ✅ BATCH_WORKFLOW_KV KV namespace binding already exists`);
     }
 
     if (added) {

@@ -14,3 +14,6 @@ export { createPhishingWorkflow } from './create-phishing-workflow';
 
 // Autonomous workflow (Cloudflare Workflow class)
 export { AutonomousWorkflow } from './autonomous-workflow';
+
+// Batch orchestrator workflow (durable fan-out for 100K+ users)
+export { BatchOrchestratorWorkflow } from './batch-orchestrator-workflow';

@@ -75,10 +75,40 @@ function mockDomainFetchFailure() {
   mockFetch.mockResolvedValueOnce({ ok: false, status: 500 });
 }
 
-function createMockContext(body: unknown, agentResponseText = '') {
+/**
+ * Creates a mock Hono context.
+ *
+ * For email_template (parallel flow), pass `agentResponseText` as an object
+ * with `rewriter` and `classifier` keys so each agent returns different text.
+ * For landing_page (single agent), pass a plain string.
+ */
+function createMockContext(
+  body: unknown,
+  agentResponseText: string | { rewriter: string; classifier: string } = '',
+) {
   const json = vi.fn();
-  const generate = vi.fn().mockResolvedValue({ text: agentResponseText });
-  const getAgent = vi.fn().mockReturnValue({ generate });
+
+  // Build per-agent generate mocks
+  const rewriterGenerate = vi.fn();
+  const classifierGenerate = vi.fn();
+  const singleGenerate = vi.fn();
+
+  if (typeof agentResponseText === 'string') {
+    // Single-agent mode (landing page or legacy)
+    singleGenerate.mockResolvedValue({ text: agentResponseText });
+    rewriterGenerate.mockResolvedValue({ text: agentResponseText });
+    classifierGenerate.mockResolvedValue({ text: agentResponseText });
+  } else {
+    rewriterGenerate.mockResolvedValue({ text: agentResponseText.rewriter });
+    classifierGenerate.mockResolvedValue({ text: agentResponseText.classifier });
+    singleGenerate.mockResolvedValue({ text: '' });
+  }
+
+  const getAgent = vi.fn((name: string) => {
+    if (name === 'emailRewriter') return { generate: rewriterGenerate };
+    if (name === 'emailClassifier') return { generate: classifierGenerate };
+    return { generate: singleGenerate };
+  });
 
   const ctx = {
     req: {
@@ -93,7 +123,7 @@ function createMockContext(body: unknown, agentResponseText = '') {
     json,
   } as any;
 
-  return { ctx, json, generate, getAgent };
+  return { ctx, json, rewriterGenerate, classifierGenerate, generate: singleGenerate, getAgent };
 }
 
 // ============================================
@@ -107,16 +137,18 @@ describe('phishingTemplateFixerHandler', () => {
 
   // ---------- EMAIL TEMPLATE ----------
 
-  it('returns 200 for valid email_template output', async () => {
+  it('returns 200 for valid email_template output (parallel rewriter + classifier)', async () => {
     mockDomainFetchSuccess();
 
-    const agentText = JSON.stringify({
+    const rewriterText = JSON.stringify({
       fixed_html: '<!DOCTYPE html><html><head></head><body>Email</body></html>',
       change_log: [
         'FIXED: normalized wrapper table',
         'BUTTONS: rebuilt CTA button',
-        'PLACEHOLDERS: replaced phishing URL placeholders',
       ],
+    });
+
+    const classifierText = JSON.stringify({
       tags: ['MICROSOFT', 'CREDENTIAL_HARVEST', 'TRIGGER_URGENCY'],
       difficulty: 'DIFFICULTY_HIGH',
       from_address: 'info@getsaccess.com',
@@ -124,18 +156,19 @@ describe('phishingTemplateFixerHandler', () => {
       subject: 'Action Required: Verify Your Account',
     });
 
-    const { ctx, json, generate, getAgent } = createMockContext(
+    const { ctx, json, rewriterGenerate, classifierGenerate, getAgent } = createMockContext(
       { html: '<html>Email</html>', type: 'email_template' },
-      agentText,
+      { rewriter: rewriterText, classifier: classifierText },
     );
 
     await phishingTemplateFixerHandler(ctx);
 
-    expect(getAgent).toHaveBeenCalledWith('phishingTemplateFixer');
-    expect(generate).toHaveBeenCalledWith(
+    expect(getAgent).toHaveBeenCalledWith('emailRewriter');
+    expect(getAgent).toHaveBeenCalledWith('emailClassifier');
+    expect(classifierGenerate).toHaveBeenCalledWith(
       expect.stringContaining('Available domains:'),
     );
-    expect(generate).toHaveBeenCalledWith(
+    expect(classifierGenerate).toHaveBeenCalledWith(
       expect.stringContaining('sirketiciduyuruonline.com'),
     );
     expect(json).toHaveBeenCalledWith(
@@ -154,14 +187,13 @@ describe('phishingTemplateFixerHandler', () => {
   it('post-processes email_template HTML to keep spacing email-safe', async () => {
     mockDomainFetchSuccess();
 
-    const agentText = JSON.stringify({
+    const rewriterText = JSON.stringify({
       fixed_html:
         '<!DOCTYPE html><html><body><table width="600"><tr><td style="margin-bottom: 30px; padding: 0;"><img src="logo.png" width="200" alt="logo"></td></tr></table></body></html>',
-      change_log: [
-        'FIXED: normalized wrapper table',
-        'BUTTONS: rebuilt CTA button',
-        'PLACEHOLDERS: replaced phishing URL placeholders',
-      ],
+      change_log: ['FIXED: normalized wrapper table'],
+    });
+
+    const classifierText = JSON.stringify({
       tags: ['MICROSOFT', 'CREDENTIAL_HARVEST', 'TRIGGER_URGENCY'],
       difficulty: 'DIFFICULTY_HIGH',
       from_address: 'info@getsaccess.com',
@@ -171,7 +203,7 @@ describe('phishingTemplateFixerHandler', () => {
 
     const { ctx, json } = createMockContext(
       { html: '<html>Email</html>', type: 'email_template' },
-      agentText,
+      { rewriter: rewriterText, classifier: classifierText },
     );
 
     await phishingTemplateFixerHandler(ctx);
@@ -274,13 +306,12 @@ describe('phishingTemplateFixerHandler', () => {
   it('returns 500 when email_template output selects from_address outside the allowed list', async () => {
     mockDomainFetchSuccess();
 
-    const invalidAgentText = JSON.stringify({
+    const rewriterText = JSON.stringify({
       fixed_html: '<!DOCTYPE html><html><head></head><body>Email</body></html>',
-      change_log: [
-        'FIXED: normalized wrapper table',
-        'BUTTONS: rebuilt CTA button',
-        'PLACEHOLDERS: replaced phishing URL placeholders',
-      ],
+      change_log: ['FIXED: normalized wrapper table'],
+    });
+
+    const classifierText = JSON.stringify({
       tags: ['MICROSOFT', 'CREDENTIAL_HARVEST', 'TRIGGER_URGENCY'],
       difficulty: 'DIFFICULTY_HIGH',
       from_address: 'info@not-in-list.com',
@@ -290,7 +321,7 @@ describe('phishingTemplateFixerHandler', () => {
 
     const { ctx, json } = createMockContext(
       { html: '<html>Email</html>', type: 'email_template' },
-      invalidAgentText,
+      { rewriter: rewriterText, classifier: classifierText },
     );
 
     await phishingTemplateFixerHandler(ctx);

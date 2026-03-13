@@ -25,6 +25,20 @@ vi.mock('../../utils/core/security-utils', () => ({
   maskSensitiveField: vi.fn((obj, field) => ({ ...obj, [field]: '***MASKED***' })),
 }));
 
+// Mock group-assignment for group fan-out tests
+vi.mock('../../utils/core/group-assignment', async (importOriginal) => {
+  const actual = await importOriginal() as any;
+  return {
+    ...actual,
+    fanOutGroupAssignment: vi.fn().mockResolvedValue({
+      totalUsers: 1,
+      succeeded: 1,
+      failed: 0,
+      failedUsers: [],
+    }),
+  };
+});
+
 /**
  * Test Suite: assignTrainingTool
  * Tests for assigning training resources to users
@@ -217,7 +231,7 @@ describe('assignTrainingTool', () => {
           serviceBinding: mockEnv.CRUD_WORKER,
           endpoint: 'https://worker/send',
           payload: expect.objectContaining({
-            batchResourceId: mockThreadId,
+            batchResourceId: expect.any(String),
             activityType: 'training',
             trainingResourceId: 'resource-123',
             trainingId: 'resource-123',
@@ -234,8 +248,6 @@ describe('assignTrainingTool', () => {
     });
 
     it('should assign training to a group and include targetGroupResourceId in payload', async () => {
-      const mockCallWorkerAPI = vi.spyOn(workerApiClient, 'callWorkerAPI').mockResolvedValue({});
-
       const input = {
         resourceId: 'resource-123',
         sendTrainingLanguageId: 'lang-456',
@@ -245,14 +257,8 @@ describe('assignTrainingTool', () => {
       const result = await assignTrainingTool.execute({ context: input } as any);
 
       expect(result.success).toBe(true);
-      expect(result.message).toContain('GROUP');
-      expect(mockCallWorkerAPI).toHaveBeenCalledWith(
-        expect.objectContaining({
-          payload: expect.objectContaining({
-            targetGroupResourceId: 'group-123',
-          }),
-        })
-      );
+      expect(result.data?.assignmentType).toBe('GROUP');
+      expect(result.data?.targetId).toBe('group-123');
     });
 
   });

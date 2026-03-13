@@ -192,10 +192,6 @@ function isZeroValue(value: string | undefined): boolean {
   return normalized === '0' || normalized === '0px';
 }
 
-function hasCenteringAutoMargin(sides: BoxSides): boolean {
-  return isAutoValue(sides.left) || isAutoValue(sides.right);
-}
-
 function migrateTdMarginsToPadding(td: HtmlNode): boolean {
   const style = getAttr(td, 'style');
   if (!style || !style.toLowerCase().includes('margin')) return false;
@@ -210,11 +206,11 @@ function migrateTdMarginsToPadding(td: HtmlNode): boolean {
     left: getDeclValue(parts, 'margin-left') ?? marginBox.left,
   };
 
-  // Preserve centering semantics like margin: 0 auto or margin-left/right:auto.
-  // These are not just "spacing" values and removing them can shift centered blocks left.
-  if (hasCenteringAutoMargin(sides)) {
-    return false;
-  }
+  // For <td> elements, margin-based centering (margin: auto) does NOT work in email clients.
+  // Outlook and most email renderers ignore margins on <td> entirely.
+  // So we always migrate top/bottom spacing to padding, even when auto margins are present.
+  // The loop below already skips auto values (line: if isAutoValue → continue),
+  // so only real spacing values (e.g. 30px) get converted to padding.
 
   parts = removeDecls(parts, ['margin', 'margin-top', 'margin-right', 'margin-bottom', 'margin-left']);
 
@@ -293,6 +289,55 @@ function moveLocalBackgroundOwnership(outerTd: HtmlNode): boolean {
   return true;
 }
 
+/**
+ * Migrates margin from a <table> element to the parent <td>'s padding.
+ * Email clients (especially Outlook) ignore margin on <table> elements.
+ * The AI often places margin-top/margin-bottom on inner <table> wrappers
+ * when converting from flex/div layouts — these need to become padding
+ * on the enclosing <td>.
+ */
+function migrateTableMarginToParentTd(table: HtmlNode, parentTd: HtmlNode): boolean {
+  const tableStyle = getAttr(table, 'style');
+  if (!tableStyle || !tableStyle.toLowerCase().includes('margin')) return false;
+
+  let tableParts = splitStyle(tableStyle);
+  const marginBox = resolveShorthandBox(getDeclValue(tableParts, 'margin') ?? '');
+
+  const sides: BoxSides = {
+    top: getDeclValue(tableParts, 'margin-top') ?? marginBox.top,
+    bottom: getDeclValue(tableParts, 'margin-bottom') ?? marginBox.bottom,
+  };
+
+  // Only migrate top/bottom — horizontal margins on tables are irrelevant
+  const hasTop = sides.top && !isAutoValue(sides.top) && !isZeroValue(sides.top);
+  const hasBottom = sides.bottom && !isAutoValue(sides.bottom) && !isZeroValue(sides.bottom);
+  if (!hasTop && !hasBottom) return false;
+
+  // Remove margin from <table>
+  tableParts = removeDecls(tableParts, ['margin', 'margin-top', 'margin-right', 'margin-bottom', 'margin-left']);
+  const nextTableStyle = joinStyle(tableParts);
+  if (nextTableStyle) setAttr(table, 'style', nextTableStyle);
+  else removeAttr(table, 'style');
+
+  // Add spacing to parent <td> as padding
+  let tdParts = splitStyle(getAttr(parentTd, 'style') ?? '');
+  if (hasTop && sides.top) {
+    const existing = getDeclValue(tdParts, 'padding-top');
+    if (!existing || isZeroValue(existing)) {
+      tdParts = upsertDecl(tdParts, 'padding-top', sides.top);
+    }
+  }
+  if (hasBottom && sides.bottom) {
+    const existing = getDeclValue(tdParts, 'padding-bottom');
+    if (!existing || isZeroValue(existing)) {
+      tdParts = upsertDecl(tdParts, 'padding-bottom', sides.bottom);
+    }
+  }
+  setAttr(parentTd, 'style', joinStyle(tdParts));
+
+  return true;
+}
+
 function primaryNormalize(html: string): { html: string; changed: boolean } {
   const fragment = parse5.parseFragment(html);
   const root = fragment as unknown as HtmlNode;
@@ -306,6 +351,14 @@ function primaryNormalize(html: string): { html: string; changed: boolean } {
       if (nodeName(child) === 'td') {
         const normalizedMargins = migrateTdMarginsToPadding(child);
         const movedBackground = moveLocalBackgroundOwnership(child);
+
+        // Check child <table> elements for margin → migrate to this <td>'s padding
+        const tdChildren = Array.isArray(child.childNodes) ? child.childNodes : [];
+        for (const grandchild of tdChildren) {
+          if (isElement(grandchild) && nodeName(grandchild) === 'table') {
+            if (migrateTableMarginToParentTd(grandchild, child)) changed = true;
+          }
+        }
 
         if (normalizedMargins || movedBackground) changed = true;
         if (movedBackground) continue;

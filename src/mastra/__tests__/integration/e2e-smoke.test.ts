@@ -87,6 +87,8 @@ vi.mock('../../agents', () => ({
   outOfScopeAgent: {},
   phishingTemplateFixerAgent: {},
   phishingLandingPageClassifierAgent: {},
+  emailRewriterAgent: {},
+  emailClassifierAgent: {},
   companySearchAgent: {},
   trainingStatsAgent: {},
   csOrchestratorAgent: {},

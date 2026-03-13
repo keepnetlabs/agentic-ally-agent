@@ -26,6 +26,8 @@ export function buildLandingPageSystemPrompt(
   getSuccessPageSection: Function,
   getInfoPageSection: Function
 ): string {
+  const hasFormPages = requiredPages.includes('login') || requiredPages.includes('success');
+
   return `You are a web developer creating realistic landing pages for ${fromName} (${industryDesign.industry} industry).${emailBrandContext}
 
 Your job: generate modern, professional, trustworthy WEB PAGES (not emails) using ONLY pure HTML + inline CSS. No CSS frameworks.
@@ -47,27 +49,16 @@ ${isQuishing ? QUISHING_LANDING_PAGE_RULE : NO_QR_CODE_LANDING_PAGE_RULE}
    - Bad:  <div style="margin: 0 auto;">
    - JSON keys/values can use normal double quotes. ONLY HTML attributes must use SINGLE quotes.
 
-3. **Full HTML document required for every page:**
-   - \`<!DOCTYPE html>\`
-   - \`<html>\`
-   - \`<head>\` with:
-     - <meta charset='UTF-8' />
-     - <meta name='viewport' content='width=device-width, initial-scale=1.0' />
-     - <title>...</title>
-   - \`<body>\` ... \`</body>\`
-   - \`</html>\`
+3. **Full HTML document** for every page: \`<!DOCTYPE html>\`, \`<head>\` with charset + viewport + title, \`<body>\`. Follow template examples.
 
-4. **NO CSS / JS FRAMEWORKS:**
-   - Do NOT include Tailwind, Bootstrap, or any other library.
-   - Do NOT include external CSS or JS files.
-   - Styling must be done with inline \`style='...'\` attributes.
+4. **NO external CSS/JS** — no Tailwind, Bootstrap, or libraries. Inline \`style='...'\` only.
 
 5. **INLINE CSS IS THE SOURCE OF TRUTH:**
    - You MAY use the design hints from \`industryDesign\`, but the final visual result must come from inline styles.
-   - For the main card, primary button and inputs, use the provided design patterns:
-     - Card: \`style='${industryDesign.patterns.cardStyle}'\`
+   - For the main card${hasFormPages ? ', primary button and inputs' : ''}, use the provided design patterns:
+     - Card: \`style='${industryDesign.patterns.cardStyle}'\`${hasFormPages ? `
      - Button: \`style='${industryDesign.patterns.buttonStyle}'\`
-     - Input: \`style='${industryDesign.patterns.inputStyle}'\`
+     - Input: \`style='${industryDesign.patterns.inputStyle}'\`` : ''}
    - **For HERO layout:** Hero section (class='hero') MUST use \`flex-direction: column;\` in inline style:
      - ✅ Correct: \`style='display: flex; flex-direction: column; align-items: center; justify-content: center;'\`
      - ❌ Wrong: \`style='display: flex; align-items: center; justify-content: center;'\` (missing flex-direction: column)
@@ -104,11 +95,9 @@ Create MODERN, PROFESSIONAL landing pages that look POLISHED, TRUSTWORTHY, and L
 - Accent: ${industryDesign.colors.accent}
 
 Use these mainly for:
-- Primary buttons
-- Highlights
+${hasFormPages ? '- Primary buttons\n' : ''}- Highlights
 - Icons / small accents
-
-Always ensure **high contrast** (e.g. primary button background vs text).
+${hasFormPages ? `\nAlways ensure **high contrast** (e.g. primary button background vs text).` : ''}
 
 ---
 
@@ -124,7 +113,7 @@ Items 1–3 apply only to card-based layouts (CENTERED, HERO, and the right-pane
 2. Card border-radius for card-based layouts (e.g. 14px, 18px, 22px).
 3. Card shadow strength for card-based layouts (softer or stronger \`box-shadow\`).
 4. Logo size or alignment (center vs left).
-5. Button shape (fully pill vs slightly rounded rectangle).
+${hasFormPages ? '5. Button shape (fully pill vs slightly rounded rectangle).' : '5. (No buttons — info pages show content directly, no CTA.)'}
 6. Vertical spacing between sections (margins between logo, card, footer).
 7. Heading text and microcopy wording (same meaning, slightly different sentences).
 
@@ -137,18 +126,9 @@ Items 1–3 apply only to card-based layouts (CENTERED, HERO, and the right-pane
 
 If a layout-specific rule above conflicts with a shared rule below, the layout-specific rule wins.
 
-1. **Card Container (Main Panel) — SKIP this section entirely for MINIMAL layout:**
-   - Applies to CENTERED, HERO, and most SPLIT pages. Do NOT add this outer card for MINIMAL.
-   - White background.
-   - Rounded corners.
-   - Soft, realistic shadow.
-   - Comfortable padding (around 28–36px).
-   - Example (only for card-based layouts — NOT MINIMAL):
-     <div style='${industryDesign.patterns.cardStyle}'>
-       ...
-     </div>
-   - **IMPORTANT:** If you see \`margin: 0 auto;\` already in templates/examples above, **DO NOT change or remove it** – it's correct centering. If adding new containers, ensure they use \`margin: 0 auto;\` (never \`margin: 0 16px;\` or asymmetric margins).
-   - **For wrapper divs**: Use \`display: flex; justify-content: center;\` to center content horizontally.
+1. **Card Container (Main Panel) — SKIP for MINIMAL layout:**
+   - Applies to CENTERED, HERO, SPLIT. Use \`cardStyle\` from the design patterns above.
+   - **IMPORTANT:** Never change or remove \`margin: 0 auto;\` from templates — it's correct centering. New containers must also use \`margin: 0 auto;\`.
 
 2. **Typography Hierarchy:**
    - Main heading: clear, strong, around 22–28px, bold.
@@ -160,26 +140,12 @@ If a layout-specific rule above conflicts with a shared rule below, the layout-s
      - Do NOT use: "QR Code Verification", "Verify via QR", "Account Verification via QR", or any QR-related text.
      - Description MUST be neutral: "Enter your credentials to continue" or "Sign in with your work account" — NOT "verify your account" or "account verification required" which exposes the attack.
 
-3. **Inputs:**
-   - Use this pattern:
-     <input
-       type='...'
-       name='...'
-       placeholder='...'
-       style='${industryDesign.patterns.inputStyle}'
-     />
-   - Each input must have a visible label above it.
+${hasFormPages ? `3. **Inputs:**
+   - Use \`inputStyle\` from the design patterns above. Each input must have a visible label above it.
 
 4. **Primary Button:**
-   - Use this pattern:
-     <button
-       type='submit'
-       style='${industryDesign.patterns.buttonStyle}'
-     >
-       ...
-     </button>
-   - Background must use a strong brand color (e.g. ${industryDesign.colors.primary}) to stand out from the card.
-   - Text must always be readable (e.g. white text on dark/strong background).
+   - Use \`buttonStyle\` from the design patterns above with \`type='submit'\`.
+   - High contrast: strong brand color background, readable text (e.g. white on ${industryDesign.colors.primary}).
 
 5. **Trust & Security Indicator (especially on login):**
    - Small row BELOW the button (centered), with an icon + text. Use display: flex with justify-content: center (NOT inline-flex) to ensure it appears below, not beside the button.
@@ -187,43 +153,19 @@ If a layout-specific rule above conflicts with a shared rule below, the layout-s
      <div style='margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 11px; color: #6b7280;'>
        <span aria-hidden='true'>🔒</span>
        <span>256-bit SSL encryption</span>
-     </div>
+     </div>` : `3. **No Buttons or CTA Links:**
+   - Info pages display content directly — no buttons, no clickable actions, no form inputs.
+   - Show scenario-specific content: lists, highlighted boxes, tables, metadata rows.`}
 
 6. **Footer (ALWAYS under the card):**
-   - Use small text.
-   - Include © YEAR BRAND
-   - Include tiny links: Privacy, Terms, Support.
-   - Example:
-
-     <div style='
-       margin-top: 32px;
-       text-align: center;
-       font-size: 12px;
-       color: #9ca3af;
-     '>
-      <p style='margin: 0;'>© 2026 ${fromName}. All rights reserved.</p>
-       <div style='
-         margin-top: 10px;
-         display: flex;
-         align-items: center;
-         justify-content: center;
-         gap: 12px;
-         font-size: 12px;
-       '>
-         <a href='{PHISHINGURL}' style='color: #9ca3af; text-decoration: none;'>Privacy</a>
-         <span>•</span>
-         <a href='{PHISHINGURL}' style='color: #9ca3af; text-decoration: none;'>Terms</a>
-         <span>•</span>
-         <a href='{PHISHINGURL}' style='color: #9ca3af; text-decoration: none;'>Support</a>
-       </div>
-     </div>
+   - Small text: © YEAR BRAND + tiny links (Privacy, Terms, Support).
+   - Follow the footer pattern shown in template examples below.
 
 ---
 
 **ACCESSIBILITY:**
-- Every input has a label with \`for='id'\` matching \`id='...'\`.
-- Avoid extremely small text for important content (use >= 14px for main copy).
-- Buttons and links should look clearly interactive (cursor changes, visual styling).
+${hasFormPages ? `- Every input has a label with \`for='id'\` matching \`id='...'\`.\n` : ''}- Avoid extremely small text for important content (use >= 14px for main copy).
+${hasFormPages ? `- Buttons and links should look clearly interactive (cursor changes, visual styling).` : '- Links should look clearly interactive (cursor changes, visual styling).'}
 
 ---
 

@@ -17,6 +17,8 @@ export { outOfScopeAgent } from './out-of-scope-agent';
 export {
   phishingTemplateFixerAgent,
   phishingLandingPageClassifierAgent,
+  emailRewriterAgent,
+  emailClassifierAgent,
 } from './phishing-template-fixer';
 
 // Customer Service Agent Swarm

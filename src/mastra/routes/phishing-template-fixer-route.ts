@@ -7,8 +7,14 @@ import {
   PhishingTemplateFixerInputSchema,
   type PhishingTemplateFixerOutput,
   type LandingPageClassifierOutput,
+  type EmailRewriterOutput,
+  type EmailClassifierOutput,
 } from '../agents/phishing-template-fixer/types';
-import { parseEmailTemplateOutput, parseLandingPageOutput } from '../agents/phishing-template-fixer/output-parser';
+import {
+  parseLandingPageOutput,
+  parseRewriterOutput,
+  parseClassifierOutput,
+} from '../agents/phishing-template-fixer/output-parser';
 import { AGENT_NAMES, TIMEOUT_VALUES, PHISHING_TEMPLATE_FIXER, API_ENDPOINTS } from '../constants';
 import { getRequestContext } from '../utils/core/request-storage';
 import { normalizeEmailLocalBoxes } from '../utils/content-processors/email-local-box-normalizer';
@@ -16,7 +22,12 @@ import {
   normalizeEmailButtonDivs,
   normalizeEmailButtonOnlyRowAlignment,
   normalizeEmailCtaWrapperAlignment,
+  normalizeEmailButtonMarginToTdPadding,
 } from '../utils/content-processors/email-button-normalizer';
+import { normalizeEmailMergeTags } from '../utils/content-processors/email-merge-tag-normalizer';
+import { postProcessPhishingLandingHtml } from '../utils/content-processors/phishing-html-postprocessors';
+import { collapseEmptyWrappers } from '../utils/content-processors/email-wrapper-collapser';
+import { cleanGrapejsStyles } from '../utils/content-processors/email-style-cleaner';
 
 /**
  * Maximum HTML characters sent to LLM for landing page classification.
@@ -46,12 +57,6 @@ function assertAllowedDomain(selectedDomain: string, allowedDomains: readonly st
       `${fieldName} must be selected from available domains. Received: ${selectedDomain}`
     );
   }
-}
-
-function getFixerAgentName(type: 'email_template' | 'landing_page') {
-  return type === 'landing_page'
-    ? AGENT_NAMES.PHISHING_LANDING_CLASSIFIER
-    : AGENT_NAMES.PHISHING_TEMPLATE_FIXER;
 }
 
 /**
@@ -186,19 +191,22 @@ export const phishingTemplateFixerHandler = async (c: Context) => {
       htmlLength: html.length,
     });
 
-    // Step 3: Get agent
+    // Step 3: Get agents and branch by type
     const mastra = c.get('mastra');
-    const agentName = getFixerAgentName(type);
-    const agent = mastra.getAgent(agentName);
-    if (!agent) {
-      throw new Error(`${agentName} agent not found`);
-    }
 
-    // Step 4: Branch by type
     if (type === 'landing_page') {
+      const agent = mastra.getAgent(AGENT_NAMES.PHISHING_LANDING_CLASSIFIER);
+      if (!agent) throw new Error(`${AGENT_NAMES.PHISHING_LANDING_CLASSIFIER} agent not found`);
       return await handleLandingPage(c, agent, html, domainList, logger, requestStart);
     }
-    return await handleEmailTemplate(c, agent, html, domainList, logger, requestStart);
+
+    // Email template: parallel Rewriter + Classifier
+    const rewriterAgent = mastra.getAgent(AGENT_NAMES.EMAIL_REWRITER);
+    const classifierAgent = mastra.getAgent(AGENT_NAMES.EMAIL_CLASSIFIER);
+    if (!rewriterAgent || !classifierAgent) {
+      throw new Error('emailRewriter or emailClassifier agent not found');
+    }
+    return await handleEmailTemplate(c, rewriterAgent, classifierAgent, html, domainList, logger, requestStart);
   } catch (error) {
     const err = normalizeError(error);
     const errorInfo = errorService.internal(err.message, {
@@ -222,45 +230,157 @@ export const phishingTemplateFixerHandler = async (c: Context) => {
 
 async function handleEmailTemplate(
   c: Context,
-  agent: { generate: (msg: string) => Promise<{ text: string }> },
+  rewriterAgent: { generate: (msg: string) => Promise<{ text: string }> },
+  classifierAgent: { generate: (msg: string) => Promise<{ text: string }> },
   html: string,
   domainList: readonly string[],
   logger: ReturnType<typeof getLogger>,
   requestStart: number,
 ) {
-  const userMessage = `type="email_template"\n\nAvailable domains:\n${domainList.join(', ')}\n\n${html}`;
+  // Pre-process: strip GrapeJS noise before sending to AI
+  // 1. Collapse empty wrapper divs (saves ~50 tokens per nesting level)
+  // 2. Clean verbose inline styles (saves 60-80% per element)
+  const collapsedHtml = collapseEmptyWrappers(html);
+  const cleanedHtml = cleanGrapejsStyles(collapsedHtml);
+  if (cleanedHtml.length < html.length) {
+    logger.info('email_pre_cleaned', {
+      originalLength: html.length,
+      cleanedLength: cleanedHtml.length,
+      savedChars: html.length - cleanedHtml.length,
+      savedPct: Math.round((1 - cleanedHtml.length / html.length) * 100),
+    });
+  }
 
-  const data = await withTimeout(
-    withRetry<PhishingTemplateFixerOutput>(async () => {
-      const response = await agent.generate(userMessage);
-      const result = parseEmailTemplateOutput(response.text);
+  const domainListStr = domainList.join(', ');
+  const rewriterMessage = `type="email_template"\n\n${cleanedHtml}`;
+  const classifierMessage = `type="email_template"\n\nAvailable domains:\n${domainListStr}\n\n${cleanedHtml}`;
 
-      if (!result.success) {
-        throw new Error(result.error);
-      }
+  // Run Rewriter and Classifier in parallel — each with its own retry/timeout
+  const [rewriterData, classifierData] = await withTimeout(
+    Promise.all([
+      withRetry<EmailRewriterOutput>(async () => {
+        const response = await rewriterAgent.generate(rewriterMessage);
+        const result = parseRewriterOutput(response.text);
+        if (!result.success) throw new Error(`Rewriter: ${result.error}`);
+        return result.data;
+      }, 'email-rewriter'),
 
-      assertAllowedDomain(
-        extractDomainFromEmail(result.data.from_address),
-        domainList,
-        'from_address domain'
-      );
+      withRetry<EmailClassifierOutput>(async () => {
+        const response = await classifierAgent.generate(classifierMessage);
+        const result = parseClassifierOutput(response.text);
+        if (!result.success) throw new Error(`Classifier: ${result.error}`);
 
-      return {
-        ...result.data,
-        fixed_html: normalizeEmailButtonOnlyRowAlignment(
-          normalizeEmailCtaWrapperAlignment(
-            normalizeEmailButtonDivs(
-              normalizeEmailLocalBoxes(result.data.fixed_html)
-            )
-          )
-        ),
-      };
-    }, 'phishing-template-fixer-email'),
+        assertAllowedDomain(
+          extractDomainFromEmail(result.data.from_address),
+          domainList,
+          'from_address domain'
+        );
+
+        return result.data;
+      }, 'email-classifier'),
+    ]),
     TIMEOUT_VALUES.PHISHING_EDITOR_EMAIL_TIMEOUT_MS,
   );
 
+  // Validate AI output — content-aware + structural integrity check.
+  // Size shrink is unreliable: AI legitimately strips verbose GrapeJS inline styles (50%+ reduction).
+  // Content markers alone are also insufficient: AI can include all images/TRs but produce broken HTML structure.
+  // We combine content marker checks with structural tag balance validation.
+  const aiRawHtml = rewriterData.fixed_html;
+
+  // --- Content marker checks ---
+  const inputImgSrcs = [...(cleanedHtml.matchAll(/src="([^"]+)"/gi))].map(m => m[1]);
+  const inputTrCount = (cleanedHtml.match(/<tr/gi) || []).length;
+  const aiTrCount = (aiRawHtml.match(/<tr/gi) || []).length;
+  const aiShrinkPct = Math.round((1 - aiRawHtml.length / cleanedHtml.length) * 100);
+
+  const missingImages = inputImgSrcs.filter(src => !aiRawHtml.includes(src));
+  const hasPhishingUrl = aiRawHtml.includes('{PHISHINGURL}');
+  const inputHadPhishingUrl = cleanedHtml.includes('{PHISHINGURL}');
+  const trLossRatio = inputTrCount > 0 ? aiTrCount / inputTrCount : 1;
+
+  // --- Structural integrity checks ---
+  // AI sometimes generates HTML that starts mid-template or has unclosed tags,
+  // causing the browser to hide content even though all markers exist in the source.
+  const aiTableOpen = (aiRawHtml.match(/<table[\s>]/gi) || []).length;
+  const aiTableClose = (aiRawHtml.match(/<\/table>/gi) || []).length;
+  const aiTdOpen = (aiRawHtml.match(/<td[\s>]/gi) || []).length;
+  const aiTdClose = (aiRawHtml.match(/<\/td>/gi) || []).length;
+
+  const tableImbalance = Math.abs(aiTableOpen - aiTableClose);
+  const tdImbalance = Math.abs(aiTdOpen - aiTdClose);
+  const structurallyBroken = tableImbalance > 1 || tdImbalance > 2;
+
+  const aiLostContent =
+    missingImages.length > 0 ||
+    (inputHadPhishingUrl && !hasPhishingUrl) ||
+    trLossRatio < 0.7 ||
+    structurallyBroken;
+
+  logger.info('email_rewrite_validation', {
+    inputLength: cleanedHtml.length,
+    aiLength: aiRawHtml.length,
+    shrinkPct: aiShrinkPct,
+    inputTrCount,
+    aiTrCount,
+    trLossRatio: Math.round(trLossRatio * 100),
+    inputImgCount: inputImgSrcs.length,
+    missingImgCount: missingImages.length,
+    hasPhishingUrl,
+    tableBalance: `${aiTableOpen}/${aiTableClose}`,
+    tdBalance: `${aiTdOpen}/${aiTdClose}`,
+    structurallyBroken,
+    passed: !aiLostContent,
+    aiHead: aiRawHtml.slice(0, 200),
+    aiTail: aiRawHtml.slice(-200),
+  });
+
+  // If AI output lost content or is structurally broken, fall back to original HTML
+  const baseHtml = aiLostContent ? html : aiRawHtml;
+  if (aiLostContent) {
+    logger.warn('email_rewrite_fallback', {
+      reason: structurallyBroken
+        ? 'AI output has broken HTML structure (unbalanced table/td tags) — using original HTML'
+        : 'AI output lost critical content — using original HTML',
+      missingImages,
+      hasPhishingUrl,
+      trLossRatio: Math.round(trLossRatio * 100),
+      tableBalance: `${aiTableOpen}/${aiTableClose}`,
+      tdBalance: `${aiTdOpen}/${aiTdClose}`,
+      aiLength: aiRawHtml.length,
+      inputLength: cleanedHtml.length,
+      shrinkPct: aiShrinkPct,
+    });
+  }
+
+  // Post-process through the normalizer pipeline
+  const step1 = normalizeEmailLocalBoxes(baseHtml);
+  const step2 = normalizeEmailButtonDivs(step1);
+  const step3 = normalizeEmailCtaWrapperAlignment(step2);
+  const step4 = normalizeEmailButtonOnlyRowAlignment(step3);
+  const normalizedHtml = normalizeEmailButtonMarginToTdPadding(step4);
+
+  const { html: finalHtml, corrections } = normalizeEmailMergeTags(normalizedHtml);
+  if (corrections.length > 0) {
+    logger.info('merge_tags_corrected', { corrections });
+  }
+
+  // Merge rewriter + classifier results into the same response format
+  // When AI output was truncated we silently fall back — no need to expose internals to frontend
+  const changeLog = aiLostContent ? [] : rewriterData.change_log;
+  const data: PhishingTemplateFixerOutput = {
+    fixed_html: finalHtml,
+    change_log: changeLog,
+    tags: classifierData.tags,
+    difficulty: classifierData.difficulty,
+    from_address: classifierData.from_address,
+    from_name: classifierData.from_name,
+    subject: classifierData.subject,
+  };
+
   logger.info('phishing_template_fixer_completed', {
     type: 'email_template',
+    mode: 'parallel',
     tagsCount: data.tags.length,
     difficulty: data.difficulty,
     fromAddress: data.from_address,
@@ -286,7 +406,19 @@ async function handleLandingPage(
 ) {
   // Truncate HTML — classification only needs enough to identify brand/premise/trigger
   const truncatedHtml = html.slice(0, LANDING_PAGE_CLASSIFICATION_CHAR_LIMIT);
-  const userMessage = `type="landing_page"\n\nAvailable domains:\n${domainList.join(', ')}\n\n${truncatedHtml}`;
+  const wasTruncated = html.length > LANDING_PAGE_CLASSIFICATION_CHAR_LIMIT;
+
+  if (wasTruncated) {
+    logger.warn('landing_page_truncated', {
+      originalLength: html.length,
+      truncatedTo: truncatedHtml.length,
+    });
+  }
+
+  const truncationNote = wasTruncated
+    ? `\n\nNOTE: This HTML was truncated from ${html.length} to ${truncatedHtml.length} characters. Key content (forms, CTAs) may be in the truncated portion — classify based on what is visible.`
+    : '';
+  const userMessage = `type="landing_page"\n\nAvailable domains:\n${domainList.join(', ')}\n\n${truncatedHtml}${truncationNote}`;
 
   const data = await withTimeout(
     withRetry<LandingPageClassifierOutput>(async () => {
@@ -315,5 +447,9 @@ async function handleLandingPage(
     durationMs: Date.now() - requestStart,
   });
 
-  return c.json({ success: true, data });
+  // Post-process the full (non-truncated) HTML through landing page pipeline
+  // (sanitize, repair, centering, merge tag fix, full document wrapper)
+  const fixedHtml = postProcessPhishingLandingHtml({ html });
+
+  return c.json({ success: true, data: { ...data, fixed_html: fixedHtml } });
 }

@@ -279,19 +279,24 @@ export function getInfoTemplateExample({ fromName, industryDesign }: TemplatePar
         <p style='margin: 0 0 12px 0;'>
           Please review the updated terms to stay informed about how your information is used and protected.
         </p>
+
+        <div style='background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin: 16px 0;'>
+          <p style='margin: 0 0 8px 0; font-weight: 600; color: #0f172a;'>Key changes:</p>
+          <ul style='margin: 0; padding-left: 20px;'>
+            <li style='margin-bottom: 6px;'>Updated data retention period from 12 to 6 months</li>
+            <li style='margin-bottom: 6px;'>New multi-factor authentication requirement for all accounts</li>
+            <li style='margin-bottom: 6px;'>Revised third-party data sharing guidelines</li>
+          </ul>
+        </div>
+
         <p style='margin: 0;'>
-          By continuing, you confirm that you have read and understood these changes.
+          By continuing to use our services, you confirm that you have read and understood these changes.
         </p>
       </div>
 
-      <div style='display: flex; align-items: center; gap: 12px; flex-wrap: wrap;'>
-        <button
-          type='button'
-          style='${industryDesign.patterns.buttonStyle}; width: auto; padding-left: 20px; padding-right: 20px;'
-        >
-          View full policy
-        </button>
+      <div style='display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;'>
         <span style='font-size: 12px; color: #6b7280;'>Last updated: Jan 5, 2025</span>
+        <span style='font-size: 12px; color: #6b7280;'>Effective: Feb 1, 2025</span>
       </div>
     </div>
 
@@ -366,16 +371,17 @@ export function getInfoPageSection({ fromName, industryDesign }: TemplateParams)
 =====================================================
 ### 3. INFO/DOCUMENT PAGE (type: 'info')
 
-Purpose: display information (policy update, document notice, summary, etc.) for click-only flows.
+Final destination for click-only flows — the email already tracked the click, this page delivers the promised content.
 
 **STRUCTURE:**
 - Body: simple vertical layout.
-- Main content in a wider card (e.g. 640–760px max-width).
+- Wider card (640–760px max-width).
 - Logo + brand at top.
 - Title + intro.
-- 1–3 short paragraphs of text.
-- Primary action button + metadata (e.g. "Last updated: ...").
+- Scenario-specific detail content (lists, highlighted boxes, tables).
+- Metadata row (e.g. "Last updated: ...", "Effective: ...").
 - Footer ©.
+- **NO buttons or CTA links.** Show content directly — never add clickable actions.
 
 **INFO TEMPLATE EXAMPLE (ADAPT TO SCENARIO, DON'T COPY VERBATIM):**
 

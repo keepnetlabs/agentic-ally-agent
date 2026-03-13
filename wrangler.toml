@@ -40,3 +40,15 @@ service = "crud-phishing-worker"
 binding = "AUTONOMOUS_WORKFLOW"
 name = "autonomous-workflow"
 class_name = "AutonomousWorkflow"
+
+# Durable fan-out orchestrator for batch autonomous (scales to 100K+ users)
+[[workflows]]
+binding = "BATCH_ORCHESTRATOR_WORKFLOW"
+name = "BATCH_ORCHESTRATOR_WORKFLOW"
+class_name = "BatchOrchestratorWorkflow"
+
+# KV namespace for batch workflow metadata
+[[kv_namespaces]]
+binding = "BATCH_WORKFLOW_KV"
+id = "a235dbdc79a34c25ba3fd8fc38673d1f"
+preview_id = "a235dbdc79a34c25ba3fd8fc38673d1f"

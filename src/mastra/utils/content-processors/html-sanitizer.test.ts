@@ -166,6 +166,33 @@ describe('html-sanitizer', () => {
     });
   });
 
+  describe('Empty Attribute Preservation', () => {
+    it('should preserve data-i18n-skip="" empty attribute', () => {
+      const html = '<div data-i18n-skip="" class="k-loading-skeleton">content</div>';
+      expect(sanitizeHtml(html)).toBe(html);
+    });
+
+    it('should preserve data-email-content="" empty attribute', () => {
+      const html = '<div data-email-content="" id="ij8o7">content</div>';
+      expect(sanitizeHtml(html)).toBe(html);
+    });
+
+    it('should preserve multiple empty attributes', () => {
+      const html = '<div data-skip="" data-test="" class="my-class">test</div>';
+      expect(sanitizeHtml(html)).toBe(html);
+    });
+
+    it('should preserve items-center="" (GrapeJS pattern)', () => {
+      const html = '<div class="bg-white" items-center="">content</div>';
+      expect(sanitizeHtml(html)).toBe(html);
+    });
+
+    it('should still fix double-opening-quotes followed by content', () => {
+      const html = 'class=""bg-white"';
+      expect(sanitizeHtml(html)).toBe('class="bg-white"');
+    });
+  });
+
   describe('Edge Cases', () => {
     it('should handle HTML with only HTML entities', () => {
       const html = '&quot;&quot;&quot;';

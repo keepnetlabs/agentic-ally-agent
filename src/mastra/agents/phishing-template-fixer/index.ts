@@ -12,6 +12,8 @@ import { AGENT_IDS, AGENT_NAMES } from '../../constants';
 import {
   GLOBAL_INSTRUCTIONS,
   EMAIL_TEMPLATE_PROMPT,
+  EMAIL_REWRITER_PROMPT,
+  EMAIL_CLASSIFIER_PROMPT,
   LANDING_PAGE_PROMPT,
 } from './prompt';
 
@@ -53,6 +55,52 @@ export const phishingTemplateFixerAgent = new Agent({
   description:
     'Analyzes phishing email templates and rewrites them for Outlook/Gmail/mobile compatibility. Returns fixed HTML plus phishing metadata.',
   instructions: buildEmailTemplateInstructions(),
+  model: getDefaultAgentModel(),
+});
+
+// ============================================
+// SPLIT AGENTS — Parallel Rewriter + Classifier
+// ============================================
+
+const buildRewriterInstructions = () => `${GLOBAL_INSTRUCTIONS}
+
+TYPE FOR THIS AGENT:
+- This agent handles ONLY the HTML rewrite portion of email_template.
+- Return fixed HTML and a change log. Do NOT classify.
+
+${EMAIL_REWRITER_PROMPT}
+
+FINAL REMINDER:
+- Return exactly: { fixed_html, change_log }.
+- Never return tags, difficulty, from_address, from_name, or subject.`;
+
+const buildClassifierInstructions = () => `${GLOBAL_INSTRUCTIONS}
+
+TYPE FOR THIS AGENT:
+- This agent handles ONLY the classification portion of email_template.
+- Analyze the HTML content and return classification metadata. Do NOT rewrite HTML.
+
+${EMAIL_CLASSIFIER_PROMPT}
+
+FINAL REMINDER:
+- Return exactly: { tags, difficulty, from_address, from_name, subject }.
+- Never return fixed_html or change_log.`;
+
+export const emailRewriterAgent = new Agent({
+  id: AGENT_IDS.EMAIL_REWRITER,
+  name: AGENT_NAMES.EMAIL_REWRITER,
+  description:
+    'Rewrites phishing email HTML for Outlook/Gmail/mobile compatibility. Returns fixed HTML and change log only — no classification.',
+  instructions: buildRewriterInstructions(),
+  model: getDefaultAgentModel(),
+});
+
+export const emailClassifierAgent = new Agent({
+  id: AGENT_IDS.EMAIL_CLASSIFIER,
+  name: AGENT_NAMES.EMAIL_CLASSIFIER,
+  description:
+    'Classifies phishing email templates. Returns NIST Phish Scale tags, difficulty, sender address, sender name, and subject line — no HTML rewrite.',
+  instructions: buildClassifierInstructions(),
   model: getDefaultAgentModel(),
 });
 

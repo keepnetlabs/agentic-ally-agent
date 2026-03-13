@@ -18,6 +18,8 @@ import { normalizeEmailButtonDivs, normalizeEmailButtonRowPadding } from './emai
 import { normalizeEmailParagraphs } from './email-paragraph-normalizer';
 import { normalizeEmailCardWidth } from './email-card-width-normalizer';
 import { normalizeEmailContentAlign } from './email-content-align-normalizer';
+import { normalizeEmailHrSpacing } from './email-hr-spacing-normalizer';
+import { normalizeEmailMergeTags } from './email-merge-tag-normalizer';
 import { repairHtml } from '../validation/json-validation-utils';
 import { normalizeLandingCentering, ensureLandingFullHtmlDocument } from '../landing-page';
 import { normalizeLandingLogoCentering } from '../landing-page/logo-centering-normalizer';
@@ -44,6 +46,8 @@ export function postProcessPhishingEmailHtml(params: PostProcessEmailHtmlParams)
     out = normalizeEmailButtonDivs(out); // Unwrap <div>-wrapped CTAs inside <td> (GrapeJS compat)
     out = normalizeEmailButtonRowPadding(out); // Remove excess top padding from button-only rows
     out = normalizeEmailParagraphs(out); // Convert <br><br> to <p> tags for GrapeJS text editability
+    out = normalizeEmailHrSpacing(out); // Symmetrical <hr> margins (fix 0-top / N-bottom asymmetry)
+    out = normalizeEmailMergeTags(out).html; // Fix merge tag typos ({phishingurl} → {PHISHINGURL})
     return out;
   } catch (error) {
     const err = normalizeError(error);
@@ -74,6 +78,7 @@ export function postProcessPhishingLandingHtml(params: PostProcessLandingHtmlPar
     out = normalizeLandingLogoCentering(out); // Center logo/icon divs
     out = normalizeLandingCentering(out);
     out = fixLandingPageLayout(out); // Apply prompt-independent structure fixes (centering, icons)
+    out = normalizeEmailMergeTags(out).html; // Fix merge tag typos ({phishingurl} → {PHISHINGURL})
     out = ensureLandingFullHtmlDocument(out, title ?? 'Secure Portal');
     return out;
   } catch (error) {

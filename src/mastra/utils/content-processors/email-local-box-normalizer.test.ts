@@ -76,7 +76,7 @@ describe('normalizeEmailLocalBoxes', () => {
     expect(out).not.toMatch(/margin-bottom:\s*30px/i);
   });
 
-  it('preserves centering auto margins', () => {
+  it('converts auto margin spacing to padding on td (auto centering does not work on td in email)', () => {
     const input = `
       <table width="600">
         <tr>
@@ -87,8 +87,35 @@ describe('normalizeEmailLocalBoxes', () => {
 
     const out = normalizeEmailLocalBoxes(input);
 
-    expect(out).toMatch(/margin:\s*0\s*auto\s*30px/i);
-    expect(out).not.toMatch(/padding-bottom:\s*30px/i);
+    // margin should be removed — td elements cannot use margin centering in email clients
+    expect(out).not.toMatch(/margin:\s*0\s*auto\s*30px/i);
+    // bottom spacing (30px) should be converted to padding
+    expect(out).toMatch(/padding-bottom:\s*30px/i);
+  });
+
+  it('migrates table margin-top to parent td padding', () => {
+    const input = `
+      <table width="600">
+        <tr>
+          <td align="center" style="padding: 0;">
+            <table width="600" style="width: 600px; margin-top: 16px;">
+              <tr>
+                <td align="center" style="text-align: center;">
+                  <img src="icon.png" height="32">
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    `;
+
+    const out = normalizeEmailLocalBoxes(input);
+
+    // margin-top should be removed from inner <table>
+    expect(out).not.toMatch(/<table[^>]*margin-top:\s*16px/i);
+    // padding-top: 16px should appear on the parent <td>
+    expect(out).toMatch(/padding-top:\s*16px/i);
   });
 
   it('is a no-op for non-html input', () => {
