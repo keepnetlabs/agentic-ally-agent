@@ -22,9 +22,12 @@ import {
   normalizeEmailButtonDivs,
   normalizeEmailButtonOnlyRowAlignment,
   normalizeEmailCtaWrapperAlignment,
+  normalizeEmailButtonMarginToTdPadding,
 } from '../utils/content-processors/email-button-normalizer';
 import { normalizeEmailMergeTags } from '../utils/content-processors/email-merge-tag-normalizer';
 import { postProcessPhishingLandingHtml } from '../utils/content-processors/phishing-html-postprocessors';
+import { collapseEmptyWrappers } from '../utils/content-processors/email-wrapper-collapser';
+import { cleanGrapejsStyles } from '../utils/content-processors/email-style-cleaner';
 
 /**
  * Maximum HTML characters sent to LLM for landing page classification.
@@ -234,9 +237,23 @@ async function handleEmailTemplate(
   logger: ReturnType<typeof getLogger>,
   requestStart: number,
 ) {
+  // Pre-process: strip GrapeJS noise before sending to AI
+  // 1. Collapse empty wrapper divs (saves ~50 tokens per nesting level)
+  // 2. Clean verbose inline styles (saves 60-80% per element)
+  const collapsedHtml = collapseEmptyWrappers(html);
+  const cleanedHtml = cleanGrapejsStyles(collapsedHtml);
+  if (cleanedHtml.length < html.length) {
+    logger.info('email_pre_cleaned', {
+      originalLength: html.length,
+      cleanedLength: cleanedHtml.length,
+      savedChars: html.length - cleanedHtml.length,
+      savedPct: Math.round((1 - cleanedHtml.length / html.length) * 100),
+    });
+  }
+
   const domainListStr = domainList.join(', ');
-  const rewriterMessage = `type="email_template"\n\n${html}`;
-  const classifierMessage = `type="email_template"\n\nAvailable domains:\n${domainListStr}\n\n${html}`;
+  const rewriterMessage = `type="email_template"\n\n${cleanedHtml}`;
+  const classifierMessage = `type="email_template"\n\nAvailable domains:\n${domainListStr}\n\n${cleanedHtml}`;
 
   // Run Rewriter and Classifier in parallel — each with its own retry/timeout
   const [rewriterData, classifierData] = await withTimeout(
@@ -265,14 +282,83 @@ async function handleEmailTemplate(
     TIMEOUT_VALUES.PHISHING_EDITOR_EMAIL_TIMEOUT_MS,
   );
 
-  // Post-process rewriter HTML through the normalizer pipeline
-  const normalizedHtml = normalizeEmailButtonOnlyRowAlignment(
-    normalizeEmailCtaWrapperAlignment(
-      normalizeEmailButtonDivs(
-        normalizeEmailLocalBoxes(rewriterData.fixed_html)
-      )
-    )
-  );
+  // Validate AI output — content-aware + structural integrity check.
+  // Size shrink is unreliable: AI legitimately strips verbose GrapeJS inline styles (50%+ reduction).
+  // Content markers alone are also insufficient: AI can include all images/TRs but produce broken HTML structure.
+  // We combine content marker checks with structural tag balance validation.
+  const aiRawHtml = rewriterData.fixed_html;
+
+  // --- Content marker checks ---
+  const inputImgSrcs = [...(cleanedHtml.matchAll(/src="([^"]+)"/gi))].map(m => m[1]);
+  const inputTrCount = (cleanedHtml.match(/<tr/gi) || []).length;
+  const aiTrCount = (aiRawHtml.match(/<tr/gi) || []).length;
+  const aiShrinkPct = Math.round((1 - aiRawHtml.length / cleanedHtml.length) * 100);
+
+  const missingImages = inputImgSrcs.filter(src => !aiRawHtml.includes(src));
+  const hasPhishingUrl = aiRawHtml.includes('{PHISHINGURL}');
+  const inputHadPhishingUrl = cleanedHtml.includes('{PHISHINGURL}');
+  const trLossRatio = inputTrCount > 0 ? aiTrCount / inputTrCount : 1;
+
+  // --- Structural integrity checks ---
+  // AI sometimes generates HTML that starts mid-template or has unclosed tags,
+  // causing the browser to hide content even though all markers exist in the source.
+  const aiTableOpen = (aiRawHtml.match(/<table[\s>]/gi) || []).length;
+  const aiTableClose = (aiRawHtml.match(/<\/table>/gi) || []).length;
+  const aiTdOpen = (aiRawHtml.match(/<td[\s>]/gi) || []).length;
+  const aiTdClose = (aiRawHtml.match(/<\/td>/gi) || []).length;
+
+  const tableImbalance = Math.abs(aiTableOpen - aiTableClose);
+  const tdImbalance = Math.abs(aiTdOpen - aiTdClose);
+  const structurallyBroken = tableImbalance > 1 || tdImbalance > 2;
+
+  const aiLostContent =
+    missingImages.length > 0 ||
+    (inputHadPhishingUrl && !hasPhishingUrl) ||
+    trLossRatio < 0.7 ||
+    structurallyBroken;
+
+  logger.info('email_rewrite_validation', {
+    inputLength: cleanedHtml.length,
+    aiLength: aiRawHtml.length,
+    shrinkPct: aiShrinkPct,
+    inputTrCount,
+    aiTrCount,
+    trLossRatio: Math.round(trLossRatio * 100),
+    inputImgCount: inputImgSrcs.length,
+    missingImgCount: missingImages.length,
+    hasPhishingUrl,
+    tableBalance: `${aiTableOpen}/${aiTableClose}`,
+    tdBalance: `${aiTdOpen}/${aiTdClose}`,
+    structurallyBroken,
+    passed: !aiLostContent,
+    aiHead: aiRawHtml.slice(0, 200),
+    aiTail: aiRawHtml.slice(-200),
+  });
+
+  // If AI output lost content or is structurally broken, fall back to original HTML
+  const baseHtml = aiLostContent ? html : aiRawHtml;
+  if (aiLostContent) {
+    logger.warn('email_rewrite_fallback', {
+      reason: structurallyBroken
+        ? 'AI output has broken HTML structure (unbalanced table/td tags) — using original HTML'
+        : 'AI output lost critical content — using original HTML',
+      missingImages,
+      hasPhishingUrl,
+      trLossRatio: Math.round(trLossRatio * 100),
+      tableBalance: `${aiTableOpen}/${aiTableClose}`,
+      tdBalance: `${aiTdOpen}/${aiTdClose}`,
+      aiLength: aiRawHtml.length,
+      inputLength: cleanedHtml.length,
+      shrinkPct: aiShrinkPct,
+    });
+  }
+
+  // Post-process through the normalizer pipeline
+  const step1 = normalizeEmailLocalBoxes(baseHtml);
+  const step2 = normalizeEmailButtonDivs(step1);
+  const step3 = normalizeEmailCtaWrapperAlignment(step2);
+  const step4 = normalizeEmailButtonOnlyRowAlignment(step3);
+  const normalizedHtml = normalizeEmailButtonMarginToTdPadding(step4);
 
   const { html: finalHtml, corrections } = normalizeEmailMergeTags(normalizedHtml);
   if (corrections.length > 0) {
@@ -280,9 +366,11 @@ async function handleEmailTemplate(
   }
 
   // Merge rewriter + classifier results into the same response format
+  // When AI output was truncated we silently fall back — no need to expose internals to frontend
+  const changeLog = aiLostContent ? [] : rewriterData.change_log;
   const data: PhishingTemplateFixerOutput = {
     fixed_html: finalHtml,
-    change_log: rewriterData.change_log,
+    change_log: changeLog,
     tags: classifierData.tags,
     difficulty: classifierData.difficulty,
     from_address: classifierData.from_address,
@@ -316,25 +404,19 @@ async function handleLandingPage(
   logger: ReturnType<typeof getLogger>,
   requestStart: number,
 ) {
-  // Normalize merge tags in input before classification (fixes user typos like {phishing})
-  const { html: normalizedHtml, corrections } = normalizeEmailMergeTags(html);
-  if (corrections.length > 0) {
-    logger.info('landing_page_merge_tags_corrected', { corrections });
-  }
-
   // Truncate HTML — classification only needs enough to identify brand/premise/trigger
-  const truncatedHtml = normalizedHtml.slice(0, LANDING_PAGE_CLASSIFICATION_CHAR_LIMIT);
-  const wasTruncated = normalizedHtml.length > LANDING_PAGE_CLASSIFICATION_CHAR_LIMIT;
+  const truncatedHtml = html.slice(0, LANDING_PAGE_CLASSIFICATION_CHAR_LIMIT);
+  const wasTruncated = html.length > LANDING_PAGE_CLASSIFICATION_CHAR_LIMIT;
 
   if (wasTruncated) {
     logger.warn('landing_page_truncated', {
-      originalLength: normalizedHtml.length,
+      originalLength: html.length,
       truncatedTo: truncatedHtml.length,
     });
   }
 
   const truncationNote = wasTruncated
-    ? `\n\nNOTE: This HTML was truncated from ${normalizedHtml.length} to ${truncatedHtml.length} characters. Key content (forms, CTAs) may be in the truncated portion — classify based on what is visible.`
+    ? `\n\nNOTE: This HTML was truncated from ${html.length} to ${truncatedHtml.length} characters. Key content (forms, CTAs) may be in the truncated portion — classify based on what is visible.`
     : '';
   const userMessage = `type="landing_page"\n\nAvailable domains:\n${domainList.join(', ')}\n\n${truncatedHtml}${truncationNote}`;
 
@@ -367,7 +449,7 @@ async function handleLandingPage(
 
   // Post-process the full (non-truncated) HTML through landing page pipeline
   // (sanitize, repair, centering, merge tag fix, full document wrapper)
-  const fixedHtml = postProcessPhishingLandingHtml({ html: normalizedHtml });
+  const fixedHtml = postProcessPhishingLandingHtml({ html });
 
   return c.json({ success: true, data: { ...data, fixed_html: fixedHtml } });
 }

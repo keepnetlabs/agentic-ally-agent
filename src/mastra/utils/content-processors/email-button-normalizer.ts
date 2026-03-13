@@ -155,6 +155,64 @@ export function normalizeEmailButtonOnlyRowAlignment(html: string): string {
  * This helps real-world email HTML where the CTA sits inside nested div wrappers
  * and uses a real URL instead of the {PHISHINGURL} placeholder.
  */
+/**
+ * Moves margin from CTA <a> to its parent <td> as padding.
+ * Margin does not work reliably inside table cells — padding does.
+ *
+ * Pattern: <td ...><a style="...margin-top:20px...">CTA</a></td>
+ * Fix:     <td style="...padding-top:20px..."><a style="...">CTA</a></td>
+ */
+export function normalizeEmailButtonMarginToTdPadding(html: string): string {
+  return html.replace(
+    /(<td\b([^>]*)>)\s*(<a\b[^>]*>[\s\S]*?<\/a>)\s*(<\/td>)/gi,
+    (match, tdOpen, tdAttrs, anchor, tdClose) => {
+      if (!isLikelyCtaElement(anchor)) return match;
+
+      const anchorOpen = getOpeningTag(anchor);
+      const styleMatch = anchorOpen.match(/style=['"]([^'"]*)/i);
+      if (!styleMatch) return match;
+
+      const anchorStyles = styleMatch[1];
+      // Extract margin-top and margin-bottom from the <a>
+      const marginTop = anchorStyles.match(/margin-top\s*:\s*([^;]+)/i);
+      const marginBottom = anchorStyles.match(/margin-bottom\s*:\s*([^;]+)/i);
+
+      if (!marginTop && !marginBottom) return match;
+
+      // Build padding to add to <td>
+      const tdPaddings: string[] = [];
+      if (marginTop && marginTop[1].trim() !== '0' && marginTop[1].trim() !== '0px') {
+        tdPaddings.push(`padding-top: ${marginTop[1].trim()}`);
+      }
+      if (marginBottom && marginBottom[1].trim() !== '0' && marginBottom[1].trim() !== '0px') {
+        tdPaddings.push(`padding-bottom: ${marginBottom[1].trim()}`);
+      }
+      if (tdPaddings.length === 0) return match;
+
+      // Remove margin-top/margin-bottom from <a>
+      let cleanedAnchor = anchor.replace(/\s*margin-top\s*:\s*[^;]+;?/gi, '');
+      cleanedAnchor = cleanedAnchor.replace(/\s*margin-bottom\s*:\s*[^;]+;?/gi, '');
+      // Clean up leftover semicolons/spaces in style
+      cleanedAnchor = cleanedAnchor.replace(/style=";\s*/i, 'style="');
+      cleanedAnchor = cleanedAnchor.replace(/;\s*"/g, '"');
+
+      // Add padding to <td>
+      const paddingStr = tdPaddings.join('; ');
+      let newTdOpen: string;
+      if (/style=['"]/i.test(tdOpen)) {
+        newTdOpen = tdOpen.replace(/(style=['"])([^'"]*)/i, (_m: string, prefix: string, styles: string) => {
+          const trimmed = styles.trimEnd().replace(/;$/, '');
+          return trimmed ? `${prefix}${trimmed}; ${paddingStr}` : `${prefix}${paddingStr}`;
+        });
+      } else {
+        newTdOpen = tdOpen.replace(/<td\b/i, `<td style="${paddingStr}"`);
+      }
+
+      return `${newTdOpen}${cleanedAnchor}${tdClose}`;
+    }
+  );
+}
+
 export function normalizeEmailCtaWrapperAlignment(html: string): string {
   return html.replace(
     /<div\b([^>]*)>(\s*(<(?:a|button)\b[^>]*>[\s\S]*?<\/(?:a|button)>)[\s\S]*?)<\/div>/gi,
