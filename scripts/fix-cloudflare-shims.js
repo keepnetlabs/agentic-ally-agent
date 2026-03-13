@@ -10,7 +10,7 @@
  * 5. Exports both workflow classes from index.mjs
  */
 
-import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, readdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -500,6 +500,28 @@ function fixFile(filePath) {
       console.log(`  ✅ Fixed process.versions assignment`);
       fixed = true;
     }
+
+    // Replace dynamic import('typescript') with inline stub to avoid wrangler alias resolution issues
+    const tsImportPattern = /await import\(['"]typescript['"]\)/g;
+    if (tsImportPattern.test(content)) {
+      const TS_INLINE_STUB = `await Promise.resolve({
+  default: {},
+  createSourceFile: () => null,
+  createProgram: () => null,
+  findConfigFile: () => null,
+  readConfigFile: () => ({ error: new Error('TypeScript not available') }),
+  parseJsonConfigFileContent: () => ({ errors: [new Error('TypeScript not available')], fileNames: [], options: {} }),
+  flattenDiagnosticMessageText: (m) => typeof m === 'string' ? m : m?.messageText || '',
+  ScriptTarget: { Latest: 99 },
+  ModuleKind: { ESNext: 99 },
+  JsxEmit: { ReactJSX: 4 },
+  DiagnosticCategory: { Warning: 0, Error: 1, Suggestion: 2, Message: 3 },
+  sys: { fileExists: () => false, readFile: () => undefined }
+})`;
+      content = content.replace(/await import\(['"]typescript['"]\)/g, TS_INLINE_STUB);
+      console.log(`  ✅ Replaced dynamic import('typescript') with inline stub`);
+      fixed = true;
+    }
     
     // Add workflow classes (only for mastra.mjs)
     if (filePath.includes('mastra.mjs')) {
@@ -550,6 +572,25 @@ function patchWranglerConfig() {
     }
 
     const config = JSON.parse(readFileSync(WRANGLER_CONFIG_PATH, 'utf8'));
+
+    // Fix alias paths: convert relative paths to absolute so wrangler resolves them correctly
+    // (wrangler on Windows resolves relative alias paths from its own directory, not from wrangler.json)
+    if (config.alias) {
+      const outputDir = join(PROJECT_ROOT, MASTRA_OUTPUT_DIR);
+      let aliasFixed = false;
+      for (const [key, value] of Object.entries(config.alias)) {
+        if (typeof value === 'string' && value.startsWith('./')) {
+          const absolutePath = join(outputDir, value);
+          if (existsSync(absolutePath)) {
+            config.alias[key] = absolutePath.replace(/\\/g, '/');
+            aliasFixed = true;
+          }
+        }
+      }
+      if (aliasFixed) {
+        console.log(`  ✅ Converted alias paths to absolute (Windows wrangler fix)`);
+      }
+    }
 
     // Add service bindings if not already present
     if (!config.services) {
@@ -682,6 +723,18 @@ function main() {
     const filePath = join(MASTRA_OUTPUT_DIR, fileName);
     if (fixFile(filePath)) {
       fixedCount++;
+    }
+  }
+
+  // Also fix dist-*.mjs files (may contain dynamic import('typescript'))
+  const outputDir = join(PROJECT_ROOT, MASTRA_OUTPUT_DIR);
+  if (existsSync(outputDir)) {
+    const distFiles = readdirSync(outputDir).filter(f => f.startsWith('dist-') && f.endsWith('.mjs'));
+    for (const distFile of distFiles) {
+      const distPath = join(MASTRA_OUTPUT_DIR, distFile);
+      if (fixFile(distPath)) {
+        fixedCount++;
+      }
     }
   }
 

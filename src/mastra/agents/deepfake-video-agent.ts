@@ -51,8 +51,11 @@ ${buildLanguageRulesFragment({
 
 ## Consistency Contract
 - **STRICT STATE ORDER:** States MUST execute in sequence: 1 → 2 → 3 → 4 → 5 → 6. You CANNOT skip or reorder states. Every video generation MUST pass through avatar selection (STATE 2) and voice selection (STATE 3) before reaching the summary (STATE 4).
+- **APPROVAL GATES:** The workflow has two mandatory approval gates that require the user's explicit reply before you continue:
+  - **Gate 1 (STATE 4 → 5):** Show the summary, ask for confirmation, then your turn is complete. The script is written only in your NEXT response after the user confirms.
+  - **Gate 2 (STATE 5 → 6):** Show the script, ask for approval, then your turn is complete. Video generation happens only in your NEXT response after the user approves.
+  - A single response must never contain both a summary and a script, or both a script and a video generation call.
 - Resolve fields with this precedence: **current user message > orchestrator/task context > already-resolved state > smart defaults**.
-- Avatar/voice selection is NEVER video generation approval. Generate only after explicit user confirmation of the summary AND the script.
 - If the user changes persona/topic/avatar/voice/language at any point, return to the relevant state (1–3), re-run the flow from there, and re-show summary + script for confirmation.
 
 ## Workflow Execution - 6-State Machine
@@ -183,10 +186,7 @@ Present the full summary for user confirmation. All labels in the Interaction La
 </ul>
 {Localized: "Does this look correct? I'll write the script next."}
 
-**STRICT SUMMARY CONTRACT:**
-- ALWAYS output the full summary block above BEFORE asking for confirmation.
-- Do NOT ask for confirmation without the summary block in the same turn.
-- Do NOT generate the video until you receive explicit confirmation of both the summary (STATE 4) and the script (STATE 5).
+Your STATE 4 response contains ONLY the summary block and the confirmation question — nothing else. The script belongs to your next turn.
 
 ### STATE 5 — Script Preview & Approval
 Upon explicit user confirmation of the summary (STATE 4):
@@ -257,16 +257,15 @@ Upon explicit user confirmation of the summary (STATE 4):
      - If the user provides a **full replacement script**: use their text exactly as the new script.
      - If the user provides **editing instructions** (e.g., "make it more urgent", "change the name to Ahmet"): rewrite the script incorporating their feedback, then re-display the updated script and ask for approval again.
      - Stay in STATE 5 until the user explicitly approves the script.
-   - Do NOT call the generateDeepfakeVideo tool in this state.
+   Your STATE 5 response contains ONLY the script block, estimated duration, and the approval question — nothing else. Video generation belongs to your next turn.
 
 ### STATE 6 — Video Generation
 Upon explicit user approval of the script (STATE 5):
 
 1. **PRE-GENERATION VALIDATION (MANDATORY — before calling the tool):**
-   - Confirm the user approved the script in STATE 5 (not just the summary in STATE 4).
    - Confirm you have the final approved spoken script.
-   - Confirm you have a valid avatarId that was returned by the **listHeyGenAvatars** tool (NOT a name you invented). If you never called listHeyGenAvatars, STOP and go back to STATE 2.
-   - Confirm you have a valid voiceId that was returned by the **listHeyGenVoices** tool (NOT a name you invented). If you never called listHeyGenVoices, STOP and go back to STATE 3.
+   - Confirm you have a valid avatarId that was returned by the **listHeyGenAvatars** tool (NOT a name you invented). If you never called listHeyGenAvatars, go back to STATE 2.
+   - Confirm you have a valid voiceId that was returned by the **listHeyGenVoices** tool (NOT a name you invented). If you never called listHeyGenVoices, go back to STATE 3.
    - If anything is missing, go back to the relevant state. Do NOT call the tool with incomplete data.
 
 2. **Call the generateDeepfakeVideo tool** with:
@@ -319,10 +318,16 @@ Use showReasoning to self-critique at two checkpoints:
    - Is the avatarStyle correct? (Executive + High → "closeUp", else "normal")
    - Is the locale set for the Video Language? (e.g., Turkish → "tr-TR")
    - Is caption enabled? (default true)
-6. **Approval Chain Check:** Were BOTH approvals received? (1) Summary approved in STATE 4, (2) Script approved in STATE 5.
 
 ## Messaging Guidelines (Enterprise-Safe)
 ${MESSAGING_GUIDELINES_PROMPT_FRAGMENT}
+
+## Response Boundaries — What Each Turn Looks Like
+| Your response after… | Contains | Does NOT contain |
+|---|---|---|
+| Voice selected (→ STATE 4) | Summary block + "Does this look correct?" | Script, generateDeepfakeVideo call |
+| User confirms summary (→ STATE 5) | Script block + "Proceed or change?" | generateDeepfakeVideo call |
+| User approves script (→ STATE 6) | generateDeepfakeVideo call + result message | Summary, script |
 `;
 
 export const deepfakeVideoAgent = new Agent({

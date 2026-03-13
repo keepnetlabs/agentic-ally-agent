@@ -40,7 +40,7 @@ export function getFooterHTML(fromName: string): string {
       font-size: 12px;
       color: #9ca3af;
     '>
-      <p style='margin: 0;'>&copy; 2025 ${fromName}. All rights reserved.</p>
+      <p style='margin: 0;'>&copy; ${new Date().getFullYear()} ${fromName}. All rights reserved.</p>
       <div style='
         margin-top: 10px;
         display: flex;
@@ -209,6 +209,11 @@ export function getSuccessTemplateExample({ fromName, industryDesign }: Template
     align-items: stretch;
   '>
 
+    <!-- Logo (MUST match login page header exactly) -->
+    <div style='text-align: center; margin-bottom: 24px;'>
+      <img src='{CUSTOMMAINLOGO}' alt='${fromName}' style='display: block; margin: 0 auto; height: 96px; object-fit: contain;' />
+    </div>
+
     <div style='${industryDesign.patterns.cardStyle}; text-align: center;'>
       <div style='margin-bottom: 16px;'>
         <div style='width: 64px; height: 64px; border-radius: 999px; background: #22c55e; margin: 0 auto 16px auto; color: white; font-size: 34px; font-weight: 700; line-height: 64px; text-align: center;'>&#10003;</div>
@@ -220,7 +225,7 @@ export function getSuccessTemplateExample({ fromName, industryDesign }: Template
 
       <button
         type='button'
-        style='${industryDesign.patterns.buttonStyle}; width: auto; padding-left: 24px; padding-right: 24px; margin-top: 16px;'
+        style='${industryDesign.patterns.buttonStyle}'
       >
         Go to dashboard
       </button>
@@ -349,17 +354,23 @@ export function getSuccessPageSection({ fromName, industryDesign }: TemplatePara
 Purpose: confirmation after a successful action (e.g. login verification, profile update).
 
 **STRUCTURE:**
+- **MUST use the EXACT same header/hero section as the login page** (same background color, height, logo). Do NOT change the header style.
 - Same body + wrapper pattern as login.
 - Single centered card with:
   - Success icon (checkmark).
   - Title and short message.
-  - Optional primary button.
+  - Optional primary button (same width style as login page button — if login uses full-width, success must too).
   - No form.
 
 **SUCCESS TEMPLATE EXAMPLE (ADAPT TO SCENARIO, DON'T COPY VERBATIM):**
 
 ${getSuccessTemplateExample({ fromName, industryDesign })}
 
+**SUCCESS VALIDATION:**
+- [ ] Header/hero section is identical to login page (same colors, height, logo).
+- [ ] Card is centered with text-align: center.
+- [ ] Button uses same buttonStyle as login (full-width).
+- [ ] All HTML attributes use SINGLE QUOTES.
 `;
 }
 

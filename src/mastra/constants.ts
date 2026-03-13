@@ -716,8 +716,8 @@ export const PHISHING = {
 
   // Timing estimates (includes 3s delay + AI generation + reasoning stream)
   TIMING: {
-    GENERATION_SECONDS_MIN: 20,
-    GENERATION_SECONDS_MAX: 30,
+    GENERATION_SECONDS_MIN: 60,
+    GENERATION_SECONDS_MAX: 90,
   },
 
   // Input validation
@@ -1064,7 +1064,7 @@ export const API_ENDPOINTS = {
       : 'https://crud-training-worker.keepnet-labs-ltd-business-profile4086.workers.dev';
     const smishingBase = isDev
       ? 'https://crud-smishing-worker-dev.keepnet-labs-ltd-business-profile4086.workers.dev'
-      : 'https://crud-phishing-worker.keepnet-labs-ltd-business-profile4086.workers.dev';
+      : 'https://crud-smishing-worker.keepnet-labs-ltd-business-profile4086.workers.dev';
     return {
       PHISHING_WORKER_URL: process.env.PHISHING_WORKER_URL || `${phishingBase}/submit`,
       PHISHING_WORKER_SUBMIT: process.env.PHISHING_WORKER_SUBMIT || `${phishingBase}/submit`,

@@ -54,9 +54,17 @@
       "Bash(npm run type-check:*)",
       "Bash(npx eslint:*)",
       "Bash(node -e:*)",
-      "Bash(cmd /c \"dir /s /b \"\"C:\\\\Users\\\\user\\\\Desktop\\\\Agentic Ally\\\\fleet-v2-main\\\\platform\"\" | findstr /i \"\"\\\\.vue\"\" | head\")"
+      "Bash(cmd /c \"dir /s /b \"\"C:\\\\Users\\\\user\\\\Desktop\\\\Agentic Ally\\\\fleet-v2-main\\\\platform\"\" | findstr /i \"\"\\\\.vue\"\" | head\")",
+      "Read(//c/Users/user/Desktop/Agentic Ally/fleet-v2-main/agent/$TEMP/claude/c--Users-user-Desktop-Agentic-Ally-fleet-v2-main-agent/tasks/**)"
     ],
     "deny": [],
-    "ask": []
+    "ask": [],
+    "additionalDirectories": [
+      "c:\\Users\\user\\Desktop\\Agentic Ally\\fleet-v2-main\\platform\\app\\pages\\chat",
+      "c:\\Users\\user\\Desktop\\Agentic Ally\\fleet-v2-main\\platform\\app\\composables",
+      "c:\\Users\\user\\Desktop\\Agentic Ally\\fleet-v2-main\\platform\\app\\utils",
+      "c:\\Users\\user\\Desktop\\Agentic Ally\\fleet-v2-main\\platform\\server\\api\\chats",
+      "c:\\Users\\user\\Desktop\\CRUD-Phishing\\src"
+    ]
   }
 }

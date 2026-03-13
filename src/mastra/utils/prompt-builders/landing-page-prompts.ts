@@ -105,6 +105,11 @@ ${hasFormPages ? `\nAlways ensure **high contrast** (e.g. primary button backgro
 
 Pages for the same brand must feel related (same color palette, logo, general mood) but **must not be pixel-identical copies**.
 
+**CROSS-PAGE CONSISTENCY (CRITICAL):**
+- ALL pages MUST use the **exact same** header/hero section: same background color, same height, same logo placement.
+- The header/hero is the brand anchor — it MUST be identical across login, success, and info pages.
+- Variation applies ONLY to the content area below the header, never to the header itself.
+
 For each new page/template, change at least **3** of the following visual aspects in a natural way:
 
 Items 1–3 apply only to card-based layouts (CENTERED, HERO, and the right-panel form card in SPLIT). For MINIMAL, vary items 4–7 instead.
@@ -112,7 +117,7 @@ Items 1–3 apply only to card-based layouts (CENTERED, HERO, and the right-pane
 1. Card max-width for card-based layouts (e.g. 520–${LANDING_PAGE.FORM_MAX_WIDTH_PX}px) via \`style='max-width: ${LANDING_PAGE.FORM_MAX_WIDTH_PX}px;'\` vs \`560px\`.
 2. Card border-radius for card-based layouts (e.g. 14px, 18px, 22px).
 3. Card shadow strength for card-based layouts (softer or stronger \`box-shadow\`).
-4. Logo size or alignment (center vs left).
+4. Logo size (keep alignment and placement identical across pages).
 ${hasFormPages ? '5. Button shape (fully pill vs slightly rounded rectangle).' : '5. (No buttons — info pages show content directly, no CTA.)'}
 6. Vertical spacing between sections (margins between logo, card, footer).
 7. Heading text and microcopy wording (same meaning, slightly different sentences).

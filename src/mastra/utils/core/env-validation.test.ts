@@ -38,6 +38,10 @@ describe('env-validation', () => {
       'MASTRA_MEMORY_URL',
       'MASTRA_MEMORY_TOKEN',
       'LOGO_DEV_TOKEN',
+      'HEYGEN_API_KEY',
+      'ELEVENLABS_API_KEY',
+      'ELEVENLABS_AGENT_ID',
+      'PRODUCT_API_KEY',
     ];
     varsToClear.forEach(key => delete process.env[key]);
   });
@@ -81,7 +85,7 @@ describe('env-validation', () => {
       expect(mockLoggerInstance.info).toHaveBeenCalledWith(
         'Environment validation passed',
         expect.objectContaining({
-          requiredVars: 11,
+          requiredVars: 15,
         })
       );
     });
@@ -252,11 +256,15 @@ describe('env-validation', () => {
       process.env.CLOUDFLARE_AI_GATEWAY_ID = 'gateway-id-123';
       process.env.CLOUDFLARE_GATEWAY_AUTHENTICATION_KEY = 'auth-key-123';
       process.env.OPENAI_API_KEY = 'openai-key-123';
-      // Set optional
+      // Set all optional vars that are in the optionalToCheck list
       process.env.GOOGLE_GENERATIVE_AI_API_KEY = 'google-key-123';
       process.env.MASTRA_MEMORY_URL = 'https://memory.example.com';
       process.env.MASTRA_MEMORY_TOKEN = 'memory-token-123';
       process.env.LOGO_DEV_TOKEN = 'logo-token-123';
+      process.env.HEYGEN_API_KEY = 'heygen-key-123';
+      process.env.ELEVENLABS_API_KEY = 'elevenlabs-key-123';
+      process.env.ELEVENLABS_AGENT_ID = 'elevenlabs-agent-123';
+      process.env.PRODUCT_API_KEY = 'product-key-123';
 
       const result = validateEnvironment();
 

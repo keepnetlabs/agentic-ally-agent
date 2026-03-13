@@ -87,7 +87,22 @@ export function fixLandingPageLayout(html: string): string {
     return `${openDiv}${checkmark}${closeDiv}`;
   });
 
-  // 4. Fix H1 Typography Alignment
+  // 4. Fix Success Card Centering
+  // Problem: LLM generates success page card divs containing checkmark icons but omits text-align: center
+  // This causes icon, heading, and paragraph to left-align inside the card
+  // Detect card divs that contain a checkmark icon (border-radius circle) and ensure text-align: center
+  fixedHtml = fixedHtml.replace(
+    /(<div\b)([^>]*style=)(['"])([^'"]*)((?:\3))([^>]*>)([\s\S]*?<div[^>]*border-radius:\s*(?:999px|50%|99px|100px))/gi,
+    (match, openTag, styleAttr, quote, styleContent, _q2, rest, inner) => {
+      // Skip if already has text-align
+      if (/text-align:/i.test(styleContent)) return match;
+      // Only act on card-like containers (have padding or background, not raw wrappers)
+      if (!/(?:padding|background)/i.test(styleContent)) return match;
+      return `${openTag}${styleAttr}${quote}${styleContent}; text-align: center;${quote}${rest}${inner}`;
+    }
+  );
+
+  // 6. Fix H1 Typography Alignment
   // Ensure all H1 headers are centered (standard for card layouts)
   fixedHtml = fixedHtml.replace(/(<h1[^>]*style=['"])([^'"]*)(['"])/gi, (match, prefix, styleContent, suffix) => {
     // If already has text-align, skip (respect explicit left/right if generated)
@@ -98,7 +113,7 @@ export function fixLandingPageLayout(html: string): string {
     return `${prefix}${styleContent}; text-align: center;${suffix}`;
   });
 
-  // 5. Fix P below H1: Intro/description paragraph directly under H1 should be centered too
+  // 7. Fix P below H1: Intro/description paragraph directly under H1 should be centered too
   // Pattern: </h1>...<p style="..."> (p is typically the intro text, should match h1 alignment)
   fixedHtml = fixedHtml.replace(
     /(<\/h1[^>]*>)\s*(<p\b)([^>]*?)style=(['"])([^'"]*)\4([^>]*)>/gi,

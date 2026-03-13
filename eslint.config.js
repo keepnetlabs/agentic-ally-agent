@@ -39,5 +39,11 @@ export default [
       eqeqeq: ['error', 'always'],
     },
   },
+  {
+    files: ['src/**/*.test.ts', 'src/**/*.spec.ts', '__tests__/**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-non-null-assertion': 'off',
+    },
+  },
 ];
 

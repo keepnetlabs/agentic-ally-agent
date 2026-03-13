@@ -28,6 +28,7 @@ import { normalizeEmailMergeTags } from '../utils/content-processors/email-merge
 import { postProcessPhishingLandingHtml } from '../utils/content-processors/phishing-html-postprocessors';
 import { collapseEmptyWrappers } from '../utils/content-processors/email-wrapper-collapser';
 import { cleanGrapejsStyles } from '../utils/content-processors/email-style-cleaner';
+import { restoreLostPadding } from '../utils/content-processors/email-padding-restorer';
 
 /**
  * Maximum HTML characters sent to LLM for landing page classification.
@@ -336,7 +337,8 @@ async function handleEmailTemplate(
   });
 
   // If AI output lost content or is structurally broken, fall back to original HTML
-  const baseHtml = aiLostContent ? html : aiRawHtml;
+  // Otherwise, restore any padding the AI stripped from <td> elements (matched by GrapeJS id)
+  const baseHtml = aiLostContent ? html : restoreLostPadding(cleanedHtml, aiRawHtml);
   if (aiLostContent) {
     logger.warn('email_rewrite_fallback', {
       reason: structurallyBroken

@@ -168,6 +168,10 @@ export function normalizeEmailButtonMarginToTdPadding(html: string): string {
     (match, tdOpen, tdAttrs, anchor, tdClose) => {
       if (!isLikelyCtaElement(anchor)) return match;
 
+      // Skip if <td> has any background color (bgcolor attribute OR background-color in style).
+      // Moving margin to padding would show the background in the padding area, making the button taller.
+      if (/bgcolor\s*=/i.test(tdAttrs) || /background(?:-color)?\s*:/i.test(tdAttrs)) return match;
+
       const anchorOpen = getOpeningTag(anchor);
       const styleMatch = anchorOpen.match(/style=['"]([^'"]*)/i);
       if (!styleMatch) return match;

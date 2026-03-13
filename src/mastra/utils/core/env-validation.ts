@@ -23,6 +23,12 @@ const EnvSchema = z.object({
   CLOUDFLARE_GATEWAY_AUTHENTICATION_KEY: z.string().min(1, 'Cloudflare Gateway Auth Key is required'),
   OPENAI_API_KEY: z.string().min(1, 'OpenAI API Key is required'),
 
+  // --- FEATURE-SPECIFIC (optional at startup, validated when feature is used) ---
+  HEYGEN_API_KEY: z.string().optional(),
+  ELEVENLABS_API_KEY: z.string().optional(),
+  ELEVENLABS_AGENT_ID: z.string().optional(),
+  PRODUCT_API_KEY: z.string().optional(),
+
   // --- OPTIONAL VARIABLES ---
   GOOGLE_GENERATIVE_AI_API_KEY: z.string().optional(),
   MASTRA_MEMORY_URL: z.string().url().optional(),
@@ -72,7 +78,14 @@ export function validateEnvironment(): EnvValidationResult {
   // Check for optional variables specifically to log warnings (Zod parses them as success even if undefined)
   // We manually check if specific useful optionals are missing for visibility
   const warnings: string[] = [];
-  const optionalToCheck = ['GOOGLE_GENERATIVE_AI_API_KEY', 'MASTRA_MEMORY_URL'];
+  const optionalToCheck = [
+    'GOOGLE_GENERATIVE_AI_API_KEY',
+    'MASTRA_MEMORY_URL',
+    'HEYGEN_API_KEY',
+    'ELEVENLABS_API_KEY',
+    'ELEVENLABS_AGENT_ID',
+    'PRODUCT_API_KEY',
+  ];
 
   optionalToCheck.forEach(key => {
     if (!process.env[key]) {

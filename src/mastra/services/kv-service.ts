@@ -193,37 +193,39 @@ export class KVService {
 
   async list(prefix?: string, limit?: number): Promise<string[]> {
     try {
-      let url = `https://api.cloudflare.com/client/v4/accounts/${this.accountId}/storage/kv/namespaces/${this.namespaceId}/keys`;
+      return await withRetry(async () => {
+        let url = `https://api.cloudflare.com/client/v4/accounts/${this.accountId}/storage/kv/namespaces/${this.namespaceId}/keys`;
 
-      const params = new URLSearchParams();
-      if (prefix) params.append('prefix', prefix);
-      if (limit) params.append('limit', limit.toString());
+        const params = new URLSearchParams();
+        if (prefix) params.append('prefix', prefix);
+        if (limit) params.append('limit', limit.toString());
 
-      if (params.toString()) {
-        url += `?${params.toString()}`;
-      }
+        if (params.toString()) {
+          url += `?${params.toString()}`;
+        }
 
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: this.getHeaders(),
-      });
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: this.getHeaders(),
+        });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        const errorInfo = errorService.external(
-          `KV LIST failed with status ${response.status}`,
-          {
-            status: response.status,
-            errorText: errorText.substring(0, 200),
-          },
-          ERROR_CODES.KV_LIST_FAILED
-        );
-        logErrorInfo(this.logger, 'error', 'KV LIST failed', errorInfo);
-        return [];
-      }
+        if (!response.ok) {
+          const errorText = await response.text();
+          const errorInfo = errorService.external(
+            `KV LIST failed with status ${response.status}`,
+            {
+              status: response.status,
+              errorText: errorText.substring(0, 200),
+            },
+            ERROR_CODES.KV_LIST_FAILED
+          );
+          logErrorInfo(this.logger, 'error', 'KV LIST failed', errorInfo);
+          return [];
+        }
 
-      const data = await response.json();
-      return data.result?.map((item: { name: string }) => item.name) || [];
+        const data = await response.json();
+        return data.result?.map((item: { name: string }) => item.name) || [];
+      }, 'kv_list');
     } catch (error) {
       const err = normalizeError(error);
       const errorInfo = errorService.external(
@@ -890,28 +892,30 @@ export class KVService {
   // Check if namespace exists and is accessible
   async checkNamespace(): Promise<boolean> {
     try {
-      const url = `https://api.cloudflare.com/client/v4/accounts/${this.accountId}/storage/kv/namespaces/${this.namespaceId}`;
+      return await withRetry(async () => {
+        const url = `https://api.cloudflare.com/client/v4/accounts/${this.accountId}/storage/kv/namespaces/${this.namespaceId}`;
 
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: this.getHeaders(),
-      });
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: this.getHeaders(),
+        });
 
-      if (response.ok) {
-        return true;
-      } else {
-        const errorText = await response.text();
-        const errorInfo = errorService.external(
-          `Namespace check failed with status ${response.status}`,
-          {
-            status: response.status,
-            errorText: errorText.substring(0, 200),
-          },
-          ERROR_CODES.KV_LIST_FAILED
-        );
-        logErrorInfo(this.logger, 'error', 'Namespace check failed', errorInfo);
-        return false;
-      }
+        if (response.ok) {
+          return true;
+        } else {
+          const errorText = await response.text();
+          const errorInfo = errorService.external(
+            `Namespace check failed with status ${response.status}`,
+            {
+              status: response.status,
+              errorText: errorText.substring(0, 200),
+            },
+            ERROR_CODES.KV_LIST_FAILED
+          );
+          logErrorInfo(this.logger, 'error', 'Namespace check failed', errorInfo);
+          return false;
+        }
+      }, 'kv_check_namespace');
     } catch (error) {
       const err = normalizeError(error);
       const errorInfo = errorService.external(

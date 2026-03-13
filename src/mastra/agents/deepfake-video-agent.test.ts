@@ -95,12 +95,15 @@ describe('deepfakeVideoAgent', () => {
   });
 
   describe('Consistency Contract', () => {
-    it('should enforce avatar/voice selection is never approval', () => {
-      expect(instructions).toContain('Avatar/voice selection is NEVER video generation approval');
+    it('should enforce approval gates between states', () => {
+      expect(instructions).toContain('APPROVAL GATES');
+      expect(instructions).toContain('Gate 1');
+      expect(instructions).toContain('Gate 2');
     });
 
-    it('should require both summary and script confirmation', () => {
-      expect(instructions).toContain('explicit user confirmation of the summary AND the script');
+    it('should require summary confirmation before script', () => {
+      expect(instructions).toContain('STATE 4');
+      expect(instructions).toContain('ask for confirmation');
     });
 
     it('should define rollback rule for late changes', () => {
@@ -163,10 +166,10 @@ describe('deepfakeVideoAgent', () => {
       expect(instructions).toContain('Checkpoint B');
     });
 
-    it('should require approval chain check', () => {
-      expect(instructions).toContain('BOTH approvals received');
-      expect(instructions).toContain('Summary approved in STATE 4');
-      expect(instructions).toContain('Script approved in STATE 5');
+    it('should require pre-generation validation', () => {
+      expect(instructions).toContain('PRE-GENERATION VALIDATION');
+      expect(instructions).toContain('Confirm you have the final approved spoken script');
+      expect(instructions).toContain('valid avatarId');
     });
   });
 

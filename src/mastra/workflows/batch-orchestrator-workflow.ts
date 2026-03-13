@@ -1,5 +1,10 @@
 // @ts-nocheck
-import { WorkflowEntrypoint, WorkflowStep } from 'cloudflare:workers';
+// NOTE: WorkflowEntrypoint import is added by post-build script (fix-cloudflare-shims.js)
+// to avoid Mastra bundler trying to npm install 'cloudflare:workers' which fails
+// Original: import { WorkflowEntrypoint, WorkflowStep } from 'cloudflare:workers';
+declare const WorkflowEntrypoint: any;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+declare const WorkflowStep: any;
 import { getLogger } from '../utils/core/logger';
 import { fetchGroupMembersPage } from '../utils/core/group-members';
 import { CF_WORKFLOW_LIMITS, BATCH_KV_KEYS, BATCH_META_TTL_SECONDS } from '../constants';

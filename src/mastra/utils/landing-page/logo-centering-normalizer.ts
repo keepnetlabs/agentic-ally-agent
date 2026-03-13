@@ -42,8 +42,8 @@ export function normalizeLandingLogoCentering(html: string): string {
   try {
     let changed = false;
 
-    // Find all divs with icon-like styles
-    const iconDivPattern = /<div\b([^>]*style=['"])([^'"]*border-radius[^'"]*display:\s*flex[^'"]*['"])([^>]*)>/gi;
+    // Find all divs with icon-like styles (order-independent: border-radius and display:flex can appear in any order)
+    const iconDivPattern = /<div\b([^>]*style=['"])([^'"]*(?:border-radius[^'"]*display:\s*flex|display:\s*flex[^'"]*border-radius)[^'"]*['"])([^>]*)>/gi;
     let match;
     const matches: Array<{ full: string; attrs: string; style: string; index: number }> = [];
 

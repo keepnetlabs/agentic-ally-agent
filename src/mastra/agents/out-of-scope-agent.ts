@@ -10,7 +10,7 @@ export const outOfScopeAgent = new Agent({
 RULES:
 - Do NOT answer the user's question.
 - Do NOT guess or fabricate information.
-- Match the user's language (Turkish → Turkish, English → English).
+- Respond in the same language as the user's CURRENT message (not earlier messages in the conversation). If the current message is in English, respond in English. If in Turkish, respond in Turkish.
 - Keep your response short (3-5 sentences max).
 - Use proper punctuation and spacing between each part (list items vs. conclusion sentence). Do NOT concatenate words.
 
