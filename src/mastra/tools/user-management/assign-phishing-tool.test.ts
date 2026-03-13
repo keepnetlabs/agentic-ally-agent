@@ -91,7 +91,8 @@ describe('assignPhishingTool', () => {
         targetUserResourceId: 'user-789',
       };
 
-      const result = await assignPhishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await assignPhishingTool.execute!(input, {}) as any;
       expect(result).toBeDefined();
       expect(result.success).toBe(true);
     });
@@ -105,7 +106,8 @@ describe('assignPhishingTool', () => {
         targetUserResourceId: 'user-789',
       };
 
-      const result = await assignPhishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await assignPhishingTool.execute!(input, {}) as any;
       expect(result.success).toBe(true);
     });
 
@@ -119,7 +121,8 @@ describe('assignPhishingTool', () => {
         sendTrainingLanguageId: 'lang-456',
       };
 
-      const result = await assignPhishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await assignPhishingTool.execute!(input, {}) as any;
       expect(result.success).toBe(true);
     });
 
@@ -129,7 +132,8 @@ describe('assignPhishingTool', () => {
       };
 
       // Tool framework validates input schema and returns error response (doesn't throw)
-      const result = await assignPhishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await assignPhishingTool.execute!(input, {}) as any;
       expect(result).toBeDefined();
       if (result && typeof result === 'object' && 'error' in result) {
         expect(result.error).toBeTruthy();
@@ -142,7 +146,8 @@ describe('assignPhishingTool', () => {
       };
 
       // Tool framework validates input schema and returns error response
-      const result = await assignPhishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await assignPhishingTool.execute!(input, {}) as any;
       expect(result).toBeDefined();
       if (result && typeof result === 'object' && 'error' in result) {
         expect(result.error).toBeTruthy();
@@ -156,7 +161,8 @@ describe('assignPhishingTool', () => {
         targetGroupResourceId: 'group-123',
       };
 
-      const result = await assignPhishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await assignPhishingTool.execute!(input, {}) as any;
       expect(result).toBeDefined();
       // Schema validation errors may not include `success: false` depending on tool framework
       if (result && typeof result === 'object' && 'error' in result) {
@@ -180,7 +186,8 @@ describe('assignPhishingTool', () => {
         targetUserResourceId: 'user-789',
       };
 
-      const result = await assignPhishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await assignPhishingTool.execute!(input, {}) as any;
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
     });
@@ -193,7 +200,8 @@ describe('assignPhishingTool', () => {
         targetUserResourceId: 'user-789',
       };
 
-      const result = await assignPhishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await assignPhishingTool.execute!(input, {}) as any;
       expect(result.success).toBe(true);
       expect(callWorkerAPI).toHaveBeenCalled();
     });
@@ -208,7 +216,8 @@ describe('assignPhishingTool', () => {
         targetUserResourceId: 'user-789',
       };
 
-      const result = await assignPhishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await assignPhishingTool.execute!(input, {}) as any;
       expect(result.success).toBe(true);
       expect(result.message).toContain('campaign assigned to');
       expect(result.error).toBeUndefined();
@@ -223,7 +232,8 @@ describe('assignPhishingTool', () => {
         targetUserResourceId: 'user-789',
       };
 
-      await assignPhishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      await assignPhishingTool.execute!(input, {});
 
       expect(callWorkerAPI).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -259,7 +269,8 @@ describe('assignPhishingTool', () => {
         sendTrainingLanguageId: 'lang-456',
       };
 
-      await assignPhishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      await assignPhishingTool.execute!(input, {});
 
       expect(callWorkerAPI).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -277,7 +288,8 @@ describe('assignPhishingTool', () => {
         targetGroupResourceId: 'group-123',
       };
 
-      const result = await assignPhishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await assignPhishingTool.execute!(input, {}) as any;
 
       expect(result.success).toBe(true);
       expect(result.data?.assignmentType).toBe('GROUP');
@@ -296,7 +308,8 @@ describe('assignPhishingTool', () => {
         targetUserResourceId: 'user-789',
       };
 
-      const result = await assignPhishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await assignPhishingTool.execute!(input, {}) as any;
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
     });
@@ -310,7 +323,8 @@ describe('assignPhishingTool', () => {
         targetUserResourceId: 'user-789',
       };
 
-      const result = await assignPhishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await assignPhishingTool.execute!(input, {}) as any;
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
     });
@@ -324,7 +338,8 @@ describe('assignPhishingTool', () => {
         targetUserResourceId: 'user-789',
       };
 
-      const result = await assignPhishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await assignPhishingTool.execute!(input, {}) as any;
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
       expect(typeof result.error).toBe('string');
@@ -340,7 +355,8 @@ describe('assignPhishingTool', () => {
         targetUserResourceId: 'user-789',
       };
 
-      const result = await assignPhishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await assignPhishingTool.execute!(input, {}) as any;
 
       // Validate schema structure
       expect(result).toHaveProperty('success');
@@ -363,7 +379,8 @@ describe('assignPhishingTool', () => {
         targetUserResourceId: 'user-789',
       };
 
-      await assignPhishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      await assignPhishingTool.execute!(input, {});
 
       const allCalls = [
         ...mockLogger.info.mock.calls,

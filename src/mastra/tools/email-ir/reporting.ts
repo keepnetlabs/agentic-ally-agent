@@ -20,8 +20,7 @@ export const reportingTool = createTool({
   description: 'Generates Final Canvas JSON Report',
   inputSchema: riskAssessmentOutputSchema,
   outputSchema: EmailIRCanvasSchema,
-  execute: async ({ context }) => {
-    const inputData = context;
+  execute: async (inputData) => {
     const emailId = inputData.original_email.from?.split('@')[0] || 'unknown-sender';
     const ctx = createLogContext(emailId, 'reporting');
     const emailCategoryList = EMAIL_IR_EMAIL_CATEGORIES.join(', ');
@@ -160,7 +159,7 @@ This report format is designed for:
       const result = await withRetry(
         () =>
           emailIRAnalyst.generate(prompt, {
-            output: EmailIRCanvasSchema,
+            structuredOutput: { schema: EmailIRCanvasSchema },
           }),
         'reporting-llm'
       );

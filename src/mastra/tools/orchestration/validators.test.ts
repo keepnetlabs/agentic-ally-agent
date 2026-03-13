@@ -54,14 +54,14 @@ describe('WorkflowValidators', () => {
     });
 
     it('should return false when status is "error"', () => {
-      const result: CreateMicrolearningResult = {
+      const result = {
         status: 'error',
         result: {
           metadata: {
             trainingUrl: 'https://example.com/training-123',
           },
         },
-      };
+      } as any as CreateMicrolearningResult;
 
       expect(validateCreateMicrolearningResult(result)).toBe(false);
     });
@@ -80,14 +80,14 @@ describe('WorkflowValidators', () => {
     });
 
     it('should return false when status is "pending"', () => {
-      const result: CreateMicrolearningResult = {
+      const result = {
         status: 'error', // Note: 'pending' is not a valid status in the type, but testing edge cases
         result: {
           metadata: {
             trainingUrl: 'https://example.com/training-123',
           },
         },
-      };
+      } as any;
 
       expect(validateCreateMicrolearningResult(result)).toBe(false);
     });
@@ -274,14 +274,14 @@ describe('WorkflowValidators', () => {
     });
 
     it('should return false when status is "error"', () => {
-      const result: AddLanguageResult = {
+      const result = {
         status: 'error',
         result: {
           data: {
             trainingUrl: 'https://example.com/training-123',
           },
         },
-      };
+      } as any as AddLanguageResult;
 
       expect(validateAddLanguageResult(result)).toBe(false);
     });
@@ -508,7 +508,7 @@ describe('WorkflowValidators', () => {
     });
 
     it('should fail both validators when status is invalid', () => {
-      const invalidCreateResult: CreateMicrolearningResult = {
+      const invalidCreateResult = {
         status: 'error',
         result: {
           metadata: {
@@ -526,7 +526,7 @@ describe('WorkflowValidators', () => {
         },
       };
 
-      expect(validateCreateMicrolearningResult(invalidCreateResult)).toBe(false);
+      expect(validateCreateMicrolearningResult(invalidCreateResult as any)).toBe(false);
       expect(validateAddLanguageResult(invalidAddLanguageResult)).toBe(false);
     });
 

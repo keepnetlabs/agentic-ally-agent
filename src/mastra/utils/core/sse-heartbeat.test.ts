@@ -54,7 +54,10 @@ describe('withHeartbeat', () => {
       expect(operation).toHaveBeenCalled();
       expect(write).toHaveBeenCalled();
       expect(write).toHaveBeenCalledWith(
-        expect.objectContaining({ type: 'text-delta', delta: '::heartbeat::' })
+        expect.objectContaining({
+          type: 'data-ui-signal',
+          data: { signal: 'heartbeat', message: '::heartbeat::' },
+        })
       );
     });
 
@@ -97,7 +100,7 @@ describe('withHeartbeat', () => {
       const result = await promise;
 
       expect(result).toBe('done');
-      expect(write.mock.calls.length).toBeLessThanOrEqual(3);
+      expect(write.mock.calls.length).toBeLessThanOrEqual(1);
     });
   });
 

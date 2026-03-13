@@ -64,7 +64,8 @@ describe('uploadSmishingTool', () => {
         smishingId: 'smishing-123',
       };
 
-      const result = await uploadSmishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await uploadSmishingTool.execute!(input, {}) as any;
       expect(result).toBeDefined();
       expect(result.success).toBe(true);
     });
@@ -83,19 +84,19 @@ describe('uploadSmishingTool', () => {
         message: 'OK',
       });
 
-      const result = await uploadSmishingTool.execute({
-        context: { smishingId: 'smishing-123' },
-      } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await uploadSmishingTool.execute!({ smishingId: 'smishing-123' }, {}) as any;
 
       expect(result.success).toBe(true);
-      const callArg = callSpy.mock.calls[0][0];
+      const callArg = callSpy.mock.calls[0][0] as any;
       expect(callArg.payload.smishingData.language).toBe('en-gb');
     });
 
     it('should require smishingId', async () => {
       const input: any = {};
 
-      const result = await uploadSmishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await uploadSmishingTool.execute!(input, {}) as any;
       expect(result).toBeDefined();
       if (result && typeof result === 'object' && 'error' in result) {
         expect(result.error).toBeTruthy();
@@ -114,7 +115,8 @@ describe('uploadSmishingTool', () => {
         smishingId: 'smishing-123',
       };
 
-      const result = await uploadSmishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await uploadSmishingTool.execute!(input, {}) as any;
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
     });
@@ -131,7 +133,8 @@ describe('uploadSmishingTool', () => {
         smishingId: 'smishing-123',
       };
 
-      const result = await uploadSmishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await uploadSmishingTool.execute!(input, {}) as any;
       expect(result.success).toBe(true);
     });
   });
@@ -149,7 +152,8 @@ describe('uploadSmishingTool', () => {
         smishingId: 'smishing-123',
       };
 
-      await uploadSmishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      await uploadSmishingTool.execute!(input, {});
 
       expect(getSmishingSpy).toHaveBeenCalledWith('smishing-123');
     });
@@ -161,7 +165,8 @@ describe('uploadSmishingTool', () => {
         smishingId: 'smishing-123',
       };
 
-      const result = await uploadSmishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await uploadSmishingTool.execute!(input, {}) as any;
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
     });
@@ -173,7 +178,8 @@ describe('uploadSmishingTool', () => {
         smishingId: 'smishing-123',
       };
 
-      const result = await uploadSmishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await uploadSmishingTool.execute!(input, {}) as any;
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
     });
@@ -192,7 +198,8 @@ describe('uploadSmishingTool', () => {
         smishingId: 'smishing-123',
       };
 
-      await uploadSmishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      await uploadSmishingTool.execute!(input, {});
 
       expect(mockCallWorkerAPI).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -241,7 +248,8 @@ describe('uploadSmishingTool', () => {
         smishingId: 'smishing-123',
       };
 
-      await uploadSmishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      await uploadSmishingTool.execute!(input, {});
 
       const callArgs = mockCallWorkerAPI.mock.calls[0][0] as any;
       expect(callArgs.payload.smishingData.language).toBe('en-gb');
@@ -264,7 +272,8 @@ describe('uploadSmishingTool', () => {
         smishingId: 'smishing-123',
       };
 
-      await uploadSmishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      await uploadSmishingTool.execute!(input, {});
 
       const callArgs = mockCallWorkerAPI.mock.calls[0][0] as any;
       expect(callArgs.payload.smishingData.sms).toBeUndefined();
@@ -287,7 +296,8 @@ describe('uploadSmishingTool', () => {
         smishingId: 'smishing-123',
       };
 
-      await uploadSmishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      await uploadSmishingTool.execute!(input, {});
 
       const callArgs = mockCallWorkerAPI.mock.calls[0][0] as any;
       expect(callArgs.payload.smishingData.landingPage).toBeUndefined();
@@ -309,7 +319,8 @@ describe('uploadSmishingTool', () => {
         smishingId: 'smishing-123',
       };
 
-      const result = await uploadSmishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await uploadSmishingTool.execute!(input, {}) as any;
 
       expect(result.success).toBe(true);
       expect(result.data?.resourceId).toBe('scenario-123');
@@ -329,7 +340,8 @@ describe('uploadSmishingTool', () => {
         smishingId: 'smishing-123',
       };
 
-      const result = await uploadSmishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await uploadSmishingTool.execute!(input, {}) as any;
 
       expect(result.success).toBe(true);
       expect(result.data?.resourceId).toBe('template-123');
@@ -355,7 +367,8 @@ describe('uploadSmishingTool', () => {
         smishingId: 'smishing-123',
       };
 
-      const result = await uploadSmishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await uploadSmishingTool.execute!(input, {}) as any;
 
       expect(result.success).toBe(true);
       expect(result.data).toBeDefined();
@@ -383,7 +396,8 @@ describe('uploadSmishingTool', () => {
         smishingId: 'smishing-123',
       };
 
-      const result = await uploadSmishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await uploadSmishingTool.execute!(input, {}) as any;
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
     });
@@ -397,7 +411,8 @@ describe('uploadSmishingTool', () => {
         smishingId: 'smishing-123',
       };
 
-      const result = await uploadSmishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await uploadSmishingTool.execute!(input, {}) as any;
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
     });
@@ -411,7 +426,8 @@ describe('uploadSmishingTool', () => {
         smishingId: 'smishing-123',
       };
 
-      const result = await uploadSmishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await uploadSmishingTool.execute!(input, {}) as any;
       expect(result.success).toBe(false);
       expect(result.error).toContain('Worker API failed');
     });
@@ -430,7 +446,8 @@ describe('uploadSmishingTool', () => {
         smishingId: 'smishing-123',
       };
 
-      const result = await uploadSmishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await uploadSmishingTool.execute!(input, {}) as any;
 
       expect(result).toHaveProperty('success');
       expect(typeof result.success).toBe('boolean');

@@ -305,7 +305,7 @@ describe('EmailIRWorkflow', () => {
   });
 
   it('executes end-to-end and returns final report', async () => {
-    const run = await emailIRWorkflow.createRunAsync();
+    const run = await emailIRWorkflow.createRun();
     const result = await run.start({
       inputData: {
         id: 'incident-123',
@@ -326,16 +326,15 @@ describe('EmailIRWorkflow', () => {
   });
 
   it('fetchStep forwards context and runtimeContext to fetch tool', async () => {
-    const runtimeContext = { traceId: 'trace-1' } as any;
     await (fetchStep as any).execute({
       inputData: { id: 'e-1', accessToken: 'abc', apiBaseUrl: 'https://api.example.com' },
-      runtimeContext,
+      runtimeContext: { traceId: 'trace-1' },
     });
 
-    expect(mocks.fetchExecute).toHaveBeenCalledWith({
-      context: { id: 'e-1', accessToken: 'abc', apiBaseUrl: 'https://api.example.com' },
-      runtimeContext,
-    });
+    expect(mocks.fetchExecute).toHaveBeenCalledWith(
+      { id: 'e-1', accessToken: 'abc', apiBaseUrl: 'https://api.example.com' },
+      {}
+    );
   });
 
   it('fetchStep continues workflow with synthetic email when fetch tool fails', async () => {
@@ -355,15 +354,14 @@ describe('EmailIRWorkflow', () => {
   });
 
   it('multiAnalysisStep maps tool outputs to combined schema shape', async () => {
-    const runtimeContext = { traceId: 'trace-2' } as any;
     const output = await (multiAnalysisStep as any).execute({
       inputData: baseEmail,
-      runtimeContext,
+      runtimeContext: { traceId: 'trace-2' },
     });
 
-    expect(mocks.headerExecute).toHaveBeenCalledWith({ context: baseEmail, runtimeContext });
-    expect(mocks.behavioralExecute).toHaveBeenCalledWith({ context: baseEmail, runtimeContext });
-    expect(mocks.intentExecute).toHaveBeenCalledWith({ context: baseEmail, runtimeContext });
+    expect(mocks.headerExecute).toHaveBeenCalledWith(baseEmail, {});
+    expect(mocks.behavioralExecute).toHaveBeenCalledWith(baseEmail, {});
+    expect(mocks.intentExecute).toHaveBeenCalledWith(baseEmail, {});
     expect(output.original_email).toEqual(baseEmail);
     expect(output.header_analysis.spf_pass).toBe(false);
     expect(output.behavioral_analysis.urgency_level).toBe('high');
@@ -380,7 +378,7 @@ describe('EmailIRWorkflow', () => {
     };
 
     const output = await (triageStep as any).execute({ inputData });
-    expect(mocks.triageExecute).toHaveBeenCalledWith({ context: inputData, runtimeContext: undefined });
+    expect(mocks.triageExecute).toHaveBeenCalledWith(inputData, {});
     expect(output.original_email).toEqual(baseEmail);
     expect(output.triage_result.category).toBe('Phishing');
   });
@@ -395,26 +393,17 @@ describe('EmailIRWorkflow', () => {
     };
 
     await (featureExtractionStep as any).execute({ inputData, runtimeContext: { traceId: 'trace-3' } });
-    expect(mocks.featureExecute).toHaveBeenCalledWith({
-      context: inputData,
-      runtimeContext: { traceId: 'trace-3' },
-    });
+    expect(mocks.featureExecute).toHaveBeenCalledWith(inputData, {});
   });
 
   it('riskAssessmentStep passes feature output directly to risk tool', async () => {
     await (riskAssessmentStep as any).execute({ inputData: featureResult, runtimeContext: { traceId: 'trace-4' } });
-    expect(mocks.riskExecute).toHaveBeenCalledWith({
-      context: featureResult,
-      runtimeContext: { traceId: 'trace-4' },
-    });
+    expect(mocks.riskExecute).toHaveBeenCalledWith(featureResult, {});
   });
 
   it('reportingStep passes risk output directly to reporting tool', async () => {
     await (reportingStep as any).execute({ inputData: riskResult, runtimeContext: { traceId: 'trace-5' } });
-    expect(mocks.reportExecute).toHaveBeenCalledWith({
-      context: riskResult,
-      runtimeContext: { traceId: 'trace-5' },
-    });
+    expect(mocks.reportExecute).toHaveBeenCalledWith(riskResult, {});
   });
 
   it('fails when one of multi-analysis tools rejects', async () => {

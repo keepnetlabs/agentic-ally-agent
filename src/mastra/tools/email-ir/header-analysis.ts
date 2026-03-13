@@ -53,8 +53,8 @@ export const headerAnalysisTool = createTool({
   description: 'Analyzes email headers for authentication and routing signals',
   inputSchema: EmailIREmailDataSchema,
   outputSchema: headerAnalysisOutputSchema,
-  execute: async ({ context }) => {
-    const email = context;
+  execute: async (inputData) => {
+    const email = inputData;
     const emailId = email.from?.split('@')[0] || 'unknown-sender';
 
     const ctx = createLogContext(emailId, 'header-analysis');
@@ -241,7 +241,7 @@ Note: If header data is incomplete or missing, use the exact string "insufficien
       const result = await withRetry(
         () =>
           emailIRAnalyst.generate(prompt, {
-            output: headerAnalysisOutputSchema.omit({ original_email: true }),
+            structuredOutput: { schema: headerAnalysisOutputSchema.omit({ original_email: true }) },
           }),
         'header-analysis-llm'
       );

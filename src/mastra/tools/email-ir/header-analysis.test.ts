@@ -57,11 +57,9 @@ describe('headerAnalysisTool', () => {
     });
 
     const result = await (headerAnalysisTool as any).execute({
-      context: {
-        from: 'alert@example.com',
-        subject: 'Test',
-        headers: [{ key: 'X-Phish-Test', value: 'true' }],
-      },
+      from: 'alert@example.com',
+      subject: 'Test',
+      headers: [{ key: 'X-Phish-Test', value: 'true' }],
     });
 
     expect(result.security_awareness_detected).toBe(true);
@@ -88,11 +86,9 @@ describe('headerAnalysisTool', () => {
     });
 
     await (headerAnalysisTool as any).execute({
-      context: {
-        from: 'alert@example.com',
-        subject: 'Test',
-        headers: [{ key: 'Authentication-Results', value: 'spf=pass dkim=pass dmarc=pass' }],
-      },
+      from: 'alert@example.com',
+      subject: 'Test',
+      headers: [{ key: 'Authentication-Results', value: 'spf=pass dkim=pass dmarc=pass' }],
     });
 
     expect(capturedPrompt).toContain('insufficient_data');
@@ -117,11 +113,9 @@ describe('headerAnalysisTool', () => {
     });
 
     const result = await (headerAnalysisTool as any).execute({
-      context: {
-        from: 'newsletter@example.com',
-        subject: 'Newsletter',
-        headers: [{ key: 'List-Unsubscribe', value: '<mailto:unsubscribe@example.com>' }],
-      },
+      from: 'newsletter@example.com',
+      subject: 'Newsletter',
+      headers: [{ key: 'List-Unsubscribe', value: '<mailto:unsubscribe@example.com>' }],
     });
 
     expect(result.list_unsubscribe_present).toBe(true);
@@ -146,11 +140,9 @@ describe('headerAnalysisTool', () => {
     });
 
     const result = await (headerAnalysisTool as any).execute({
-      context: {
-        from: 'alert@example.com',
-        subject: 'Test',
-        result: 'Simulation',
-      },
+      from: 'alert@example.com',
+      subject: 'Test',
+      result: 'Simulation',
     });
 
     expect(result.security_awareness_detected).toBe(true);
@@ -161,7 +153,7 @@ describe('headerAnalysisTool', () => {
 
     await expect(
       (headerAnalysisTool as any).execute({
-        context: { from: 'a@b.com', subject: 'Test', htmlBody: '' },
+        from: 'a@b.com', subject: 'Test', htmlBody: '',
       })
     ).rejects.toThrow('LLM error');
   });
@@ -186,7 +178,7 @@ describe('headerAnalysisTool', () => {
     });
 
     await (headerAnalysisTool as any).execute({
-      context: { from: 'a@b.com', subject: 'Test', headers: [] },
+      from: 'a@b.com', subject: 'Test', headers: [],
     });
 
     expect(logSignalDetected).toHaveBeenCalledWith(
@@ -249,12 +241,10 @@ describe('headerAnalysisTool', () => {
     });
 
     await (headerAnalysisTool as any).execute({
-      context: {
-        from: 'a@b.com',
-        subject: 'Test',
-        senderName: 'John Doe',
-        headers: [],
-      },
+      from: 'a@b.com',
+      subject: 'Test',
+      senderName: 'John Doe',
+      headers: [],
     });
 
     expect(capturedPrompt).toContain('John Doe');
@@ -283,30 +273,28 @@ describe('headerAnalysisTool', () => {
     });
 
     await (headerAnalysisTool as any).execute({
-      context: {
-        from: 'a@b.com',
-        subject: 'Test',
-        headers: [],
-        urls: [
-          {
-            url: 'https://evil.com',
-            analysisList: [
-              { result: 'Malicious', analysisEngineType: 'VirusTotal' },
-              { result: 'Phishing', analysisEngineType: 'Google' },
-            ],
-          },
-          {
-            url: 'https://safe.com',
-            analysisList: [{ result: 'Clean', analysisEngineType: 'VirusTotal' }],
-          },
-        ],
-        ips: [
-          {
-            ip: '1.2.3.4',
-            analysisList: [{ result: 'Clean', analysisEngineType: 'AbuseIPDB' }],
-          },
-        ],
-      },
+      from: 'a@b.com',
+      subject: 'Test',
+      headers: [],
+      urls: [
+        {
+          url: 'https://evil.com',
+          analysisList: [
+            { result: 'Malicious', analysisEngineType: 'VirusTotal' },
+            { result: 'Phishing', analysisEngineType: 'Google' },
+          ],
+        },
+        {
+          url: 'https://safe.com',
+          analysisList: [{ result: 'Clean', analysisEngineType: 'VirusTotal' }],
+        },
+      ],
+      ips: [
+        {
+          ip: '1.2.3.4',
+          analysisList: [{ result: 'Clean', analysisEngineType: 'AbuseIPDB' }],
+        },
+      ],
     });
 
     expect(capturedPrompt).toContain('MALICIOUS');
@@ -338,17 +326,15 @@ describe('headerAnalysisTool', () => {
     });
 
     await (headerAnalysisTool as any).execute({
-      context: {
-        from: 'a@b.com',
-        subject: 'Test',
-        headers: [],
-        urls: [
-          {
-            url: 'https://unknown.com',
-            analysisList: [{ result: 'Error', analysisEngineType: 'VT' }],
-          },
-        ],
-      },
+      from: 'a@b.com',
+      subject: 'Test',
+      headers: [],
+      urls: [
+        {
+          url: 'https://unknown.com',
+          analysisList: [{ result: 'Error', analysisEngineType: 'VT' }],
+        },
+      ],
     });
 
     expect(capturedPrompt).toContain('[]');
@@ -372,11 +358,9 @@ describe('headerAnalysisTool', () => {
     });
 
     const result = await (headerAnalysisTool as any).execute({
-      context: {
-        from: 'marketing@example.com',
-        subject: 'Newsletter',
-        headers: [{ key: 'List-Unsubscribe-Post', value: 'List-Unsubscribe=One-Click' }],
-      },
+      from: 'marketing@example.com',
+      subject: 'Newsletter',
+      headers: [{ key: 'List-Unsubscribe-Post', value: 'List-Unsubscribe=One-Click' }],
     });
 
     expect(result.list_unsubscribe_present).toBe(true);
@@ -400,11 +384,9 @@ describe('headerAnalysisTool', () => {
     });
 
     const result = await (headerAnalysisTool as any).execute({
-      context: {
-        from: 'alert@example.com',
-        subject: 'Test',
-        headers: [{ key: 'X-Custom-Header', value: 'phishing-test-simulation' }],
-      },
+      from: 'alert@example.com',
+      subject: 'Test',
+      headers: [{ key: 'X-Custom-Header', value: 'phishing-test-simulation' }],
     });
 
     expect(result.security_awareness_detected).toBe(true);
@@ -428,11 +410,9 @@ describe('headerAnalysisTool', () => {
     });
 
     const result = await (headerAnalysisTool as any).execute({
-      context: {
-        from: '',
-        subject: 'Test',
-        headers: [],
-      },
+      from: '',
+      subject: 'Test',
+      headers: [],
     });
 
     expect(result).toBeDefined();
@@ -444,7 +424,7 @@ describe('headerAnalysisTool', () => {
 
     try {
       await (headerAnalysisTool as any).execute({
-        context: { from: 'a@b.com', subject: 'Test', htmlBody: '' },
+        from: 'a@b.com', subject: 'Test', htmlBody: '',
       });
     } catch (e: any) {
       expect(e.message).toBe('LLM timeout');
@@ -475,12 +455,10 @@ describe('headerAnalysisTool', () => {
     });
 
     await (headerAnalysisTool as any).execute({
-      context: {
-        from: 'a@b.com',
-        subject: 'Test',
-        htmlBody: '',
-        // headers intentionally omitted (undefined)
-      },
+      from: 'a@b.com',
+      subject: 'Test',
+      htmlBody: '',
+      // headers intentionally omitted (undefined)
     });
 
     expect(capturedPrompt).toContain('No headers available');
@@ -509,18 +487,16 @@ describe('headerAnalysisTool', () => {
     });
 
     await (headerAnalysisTool as any).execute({
-      context: {
-        from: 'a@b.com',
-        subject: 'Test',
-        headers: [],
-        attachments: [
-          {
-            name: 'invoice.pdf',
-            contentType: 'application/pdf',
-            analysisList: [{ result: 'Clean', analysisEngineType: 'VT' }],
-          },
-        ],
-      },
+      from: 'a@b.com',
+      subject: 'Test',
+      headers: [],
+      attachments: [
+        {
+          name: 'invoice.pdf',
+          contentType: 'application/pdf',
+          analysisList: [{ result: 'Clean', analysisEngineType: 'VT' }],
+        },
+      ],
     });
 
     expect(capturedPrompt).toContain('invoice.pdf');

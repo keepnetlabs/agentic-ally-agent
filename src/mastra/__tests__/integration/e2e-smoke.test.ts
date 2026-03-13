@@ -13,8 +13,8 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 // Mock dependencies BEFORE importing index
 vi.mock('@mastra/core/mastra', () => ({
   Mastra: class {
-    getAgents = () => [];
-    getWorkflows = () => [];
+    listAgents = () => [];
+    listWorkflows = () => [];
   },
 }));
 
@@ -98,6 +98,15 @@ vi.mock('../../utils/cs-orchestration-helpers', () => ({
   routeToCSAgent: vi.fn(),
 }));
 
+vi.mock('@mastra/ai-sdk', () => ({
+  toAISdkStream: vi.fn().mockReturnValue((async function* () {})()),
+}));
+
+vi.mock('ai', () => ({
+  createUIMessageStream: vi.fn().mockReturnValue(new ReadableStream()),
+  createUIMessageStreamResponse: vi.fn().mockReturnValue(new Response('stream-ok', { status: 200 })),
+}));
+
 const handlers: Record<string, (c: unknown) => Promise<unknown>> = {};
 
 describe('E2E Smoke Tests', () => {
@@ -135,7 +144,7 @@ describe('E2E Smoke Tests', () => {
       const json = vi.fn();
       const ctx = {
         get: vi.fn((key: string) => {
-          if (key === 'mastra') return { getAgents: () => [], getWorkflows: () => [] };
+          if (key === 'mastra') return { listAgents: () => [], listWorkflows: () => [] };
           return undefined;
         }),
         env: {},
@@ -169,7 +178,7 @@ describe('E2E Smoke Tests', () => {
       const json = vi.fn();
       const ctx = {
         get: vi.fn((key: string) => {
-          if (key === 'mastra') return { getAgents: () => [], getWorkflows: () => [] };
+          if (key === 'mastra') return { listAgents: () => [], listWorkflows: () => [] };
           return undefined;
         }),
         env: {},
@@ -199,7 +208,7 @@ describe('E2E Smoke Tests', () => {
       const json = vi.fn();
       const ctx = {
         get: vi.fn((key: string) => {
-          if (key === 'mastra') return { getAgents: () => [], getWorkflows: () => [] };
+          if (key === 'mastra') return { listAgents: () => [], listWorkflows: () => [] };
           return undefined;
         }),
         env: { SENTRY_DSN: 'https://key@sentry.io/project' },
@@ -245,9 +254,7 @@ describe('E2E Smoke Tests', () => {
         agentName: 'phishingEmailAgent',
         taskContext: 'Phishing scenario',
       } as any);
-      vi.mocked(createAgentStream).mockResolvedValue({
-        toUIMessageStreamResponse: () => new Response('stream-ok', { status: 200 }),
-      } as any);
+      vi.mocked(createAgentStream).mockResolvedValue({} as any);
 
       const handler = handlers['/chat'];
       if (!handler) throw new Error('Route /chat not registered');
@@ -435,7 +442,8 @@ describe('E2E Smoke Tests', () => {
   describe('Adım 4b: /code-review-validate', () => {
     it('returns 200 when code review succeeds', { timeout: 60000 }, async () => {
       const { codeReviewCheckTool } = await import('../../tools');
-      vi.mocked(codeReviewCheckTool.execute).mockResolvedValue({
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      vi.mocked(codeReviewCheckTool.execute!).mockResolvedValue({
         success: true,
         data: {
           isCorrect: true,
@@ -474,7 +482,8 @@ describe('E2E Smoke Tests', () => {
 
     it('returns 400 when code review indicates incorrect fix', { timeout: 60000 }, async () => {
       const { codeReviewCheckTool } = await import('../../tools');
-      vi.mocked(codeReviewCheckTool.execute).mockResolvedValue({
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      vi.mocked(codeReviewCheckTool.execute!).mockResolvedValue({
         success: false,
         data: {
           isCorrect: false,

@@ -156,6 +156,7 @@ describe('phishingTemplateFixerHandler', () => {
       subject: 'Action Required: Verify Your Account',
     });
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { ctx, json, rewriterGenerate, classifierGenerate, getAgent } = createMockContext(
       { html: '<html>Email</html>', type: 'email_template' },
       { rewriter: rewriterText, classifier: classifierText },

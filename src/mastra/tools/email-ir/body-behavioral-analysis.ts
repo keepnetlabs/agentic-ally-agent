@@ -41,8 +41,8 @@ export const bodyBehavioralAnalysisTool = createTool({
   description: 'Analyzes email body for behavioral manipulation and social engineering tactics',
   inputSchema: EmailIREmailDataSchema,
   outputSchema: bodyBehavioralAnalysisOutputSchema,
-  execute: async ({ context }) => {
-    const email = context;
+  execute: async (inputData) => {
+    const email = inputData;
     const emailId = email.from?.split('@')[0] || 'unknown-sender';
     const ctx = createLogContext(emailId, 'behavioral-analysis');
 
@@ -127,7 +127,7 @@ Populate the output schema based on the behavioral signals identified:
       const result = await withRetry(
         () =>
           emailIRAnalyst.generate(prompt, {
-            output: bodyBehavioralAnalysisOutputSchema.omit({ original_email: true }),
+            structuredOutput: { schema: bodyBehavioralAnalysisOutputSchema.omit({ original_email: true }) },
           }),
         'body-behavioral-analysis-llm'
       );

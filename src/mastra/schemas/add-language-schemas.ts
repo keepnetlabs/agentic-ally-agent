@@ -81,6 +81,9 @@ export const addMultipleLanguagesInputSchema = z.object({
   model: z.string().optional().describe('Model name override'),
 });
 
+export type AddMultipleLanguagesInput = z.output<typeof addMultipleLanguagesInputSchema>;
+export const addMultipleLanguagesStepInputSchema = addMultipleLanguagesInputSchema as z.ZodType<AddMultipleLanguagesInput>;
+
 export const finalMultiLanguageResultSchema = z.object({
   success: z.boolean(),
   successCount: z.number(),

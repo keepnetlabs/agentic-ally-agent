@@ -3,6 +3,7 @@
 // to avoid Mastra bundler trying to npm install 'cloudflare:workers' which fails
 // Original: import { WorkflowEntrypoint, WorkflowStep } from 'cloudflare:workers';
 declare const WorkflowEntrypoint: any;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 declare const WorkflowStep: any;
 import { executeAutonomousGeneration } from '../services/autonomous';
 import { getLogger } from '../utils/core/logger';

@@ -864,8 +864,16 @@ export const mastra = new Mastra({
             );
           }
 
-          return stream.toUIMessageStreamResponse({
-            sendReasoning: true,
+          const uiMessageStream = createUIMessageStream({
+            execute: async ({ writer }) => {
+              for await (const part of toAISdkStream(stream, { from: 'agent' }) as AsyncIterable<any>) {
+                await writer.write(part);
+              }
+            },
+          });
+
+          return createUIMessageStreamResponse({
+            stream: uiMessageStream,
           });
         },
       }),

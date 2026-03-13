@@ -68,7 +68,8 @@ describe('uploadPhishingTool', () => {
         phishingId: 'phishing-123',
       };
 
-      const result = await uploadPhishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await uploadPhishingTool.execute!(input, {}) as any;
       expect(result).toBeDefined();
       expect(result.success).toBe(true);
     });
@@ -77,7 +78,8 @@ describe('uploadPhishingTool', () => {
       const input: any = {};
 
       // Tool framework validates input schema and returns error response (doesn't throw)
-      const result = await uploadPhishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await uploadPhishingTool.execute!(input, {}) as any;
       expect(result).toBeDefined();
       // Framework returns error object when validation fails
       if (result && typeof result === 'object' && 'error' in result) {
@@ -98,7 +100,8 @@ describe('uploadPhishingTool', () => {
         phishingId: 'phishing-123',
       };
 
-      const result = await uploadPhishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await uploadPhishingTool.execute!(input, {}) as any;
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
     });
@@ -115,7 +118,8 @@ describe('uploadPhishingTool', () => {
         phishingId: 'phishing-123',
       };
 
-      const result = await uploadPhishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await uploadPhishingTool.execute!(input, {}) as any;
       expect(result.success).toBe(true);
     });
   });
@@ -134,7 +138,8 @@ describe('uploadPhishingTool', () => {
         phishingId: 'phishing-123',
       };
 
-      await uploadPhishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      await uploadPhishingTool.execute!(input, {});
 
       expect(getPhishingSpy).toHaveBeenCalledWith('phishing-123');
     });
@@ -146,7 +151,8 @@ describe('uploadPhishingTool', () => {
         phishingId: 'phishing-123',
       };
 
-      const result = await uploadPhishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await uploadPhishingTool.execute!(input, {}) as any;
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
     });
@@ -158,7 +164,8 @@ describe('uploadPhishingTool', () => {
         phishingId: 'phishing-123',
       };
 
-      const result = await uploadPhishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await uploadPhishingTool.execute!(input, {}) as any;
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
     });
@@ -177,7 +184,8 @@ describe('uploadPhishingTool', () => {
         phishingId: 'phishing-123',
       };
 
-      await uploadPhishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      await uploadPhishingTool.execute!(input, {});
 
       expect(mockCallWorkerAPI).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -227,7 +235,8 @@ describe('uploadPhishingTool', () => {
         phishingId: 'phishing-123',
       };
 
-      await uploadPhishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      await uploadPhishingTool.execute!(input, {});
 
       const callArgs = mockCallWorkerAPI.mock.calls[0][0] as any;
       expect(callArgs.payload.phishingData.language).toBe('en-gb');
@@ -250,7 +259,8 @@ describe('uploadPhishingTool', () => {
         phishingId: 'phishing-123',
       };
 
-      await uploadPhishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      await uploadPhishingTool.execute!(input, {});
 
       const callArgs = mockCallWorkerAPI.mock.calls[0][0] as any;
       expect(callArgs.payload.phishingData.email).toBeUndefined();
@@ -273,7 +283,8 @@ describe('uploadPhishingTool', () => {
         phishingId: 'phishing-123',
       };
 
-      await uploadPhishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      await uploadPhishingTool.execute!(input, {});
 
       const callArgs = mockCallWorkerAPI.mock.calls[0][0] as any;
       expect(callArgs.payload.phishingData.landingPage).toBeUndefined();
@@ -295,7 +306,8 @@ describe('uploadPhishingTool', () => {
         phishingId: 'phishing-123',
       };
 
-      const result = await uploadPhishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await uploadPhishingTool.execute!(input, {}) as any;
 
       expect(result.success).toBe(true);
       expect(result.data?.resourceId).toBe('scenario-123'); // Should use scenarioResourceId
@@ -315,7 +327,8 @@ describe('uploadPhishingTool', () => {
         phishingId: 'phishing-123',
       };
 
-      const result = await uploadPhishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await uploadPhishingTool.execute!(input, {}) as any;
 
       expect(result.success).toBe(true);
       expect(result.data?.resourceId).toBe('template-123'); // Should fallback to templateResourceId
@@ -341,7 +354,8 @@ describe('uploadPhishingTool', () => {
         phishingId: 'phishing-123',
       };
 
-      const result = await uploadPhishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await uploadPhishingTool.execute!(input, {}) as any;
 
       expect(result.success).toBe(true);
       expect(result.data).toBeDefined();
@@ -370,7 +384,8 @@ describe('uploadPhishingTool', () => {
         phishingId: 'phishing-123',
       };
 
-      const result = await uploadPhishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await uploadPhishingTool.execute!(input, {}) as any;
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
     });
@@ -384,7 +399,8 @@ describe('uploadPhishingTool', () => {
         phishingId: 'phishing-123',
       };
 
-      const result = await uploadPhishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await uploadPhishingTool.execute!(input, {}) as any;
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
     });
@@ -398,7 +414,8 @@ describe('uploadPhishingTool', () => {
         phishingId: 'phishing-123',
       };
 
-      const result = await uploadPhishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await uploadPhishingTool.execute!(input, {}) as any;
       expect(result.success).toBe(false);
       expect(result.error).toContain('Worker API failed');
     });
@@ -417,7 +434,8 @@ describe('uploadPhishingTool', () => {
         phishingId: 'phishing-123',
       };
 
-      const result = await uploadPhishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await uploadPhishingTool.execute!(input, {}) as any;
 
       // Validate schema structure
       expect(result).toHaveProperty('success');

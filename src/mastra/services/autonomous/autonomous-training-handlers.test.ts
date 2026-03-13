@@ -544,17 +544,15 @@ describe('AutonomousTrainingHandlers', () => {
       expect(result.message).toContain('generated, uploaded and assigned');
       expect(mockWorkflowExecute).toHaveBeenCalled();
       expect(mockUploadExecute).toHaveBeenCalledWith(
-        expect.objectContaining({
-          context: expect.objectContaining({ microlearningId: 'ml-abc-123' }),
-        })
+        expect.objectContaining({ microlearningId: 'ml-abc-123' }),
+        expect.anything()
       );
       expect(mockAssignExecute).toHaveBeenCalledWith(
         expect.objectContaining({
-          context: expect.objectContaining({
-            resourceId: 'res-456',
-            targetUserResourceId: 'user-123',
-          }),
-        })
+          resourceId: 'res-456',
+          targetUserResourceId: 'user-123',
+        }),
+        expect.anything()
       );
     });
 
@@ -585,11 +583,10 @@ describe('AutonomousTrainingHandlers', () => {
 
       expect(mockWorkflowExecute).toHaveBeenCalledWith(
         expect.objectContaining({
-          context: expect.objectContaining({
-            workflowType: 'create-microlearning',
-            department: 'IT',
-          }),
-        })
+          workflowType: 'create-microlearning',
+          department: 'IT',
+        }),
+        expect.anything()
       );
     });
 
@@ -690,10 +687,9 @@ describe('AutonomousTrainingHandlers', () => {
 
       expect(mockWorkflowExecute).toHaveBeenCalledWith(
         expect.objectContaining({
-          context: expect.objectContaining({
-            prompt: 'Create CEO fraud training in Turkish',
-          }),
-        })
+          prompt: 'Create CEO fraud training in Turkish',
+        }),
+        expect.anything()
       );
     });
 
@@ -804,10 +800,9 @@ describe('AutonomousTrainingHandlers', () => {
       expect(result.success).toBe(true);
       expect(mockWorkflowExecute).toHaveBeenCalledWith(
         expect.objectContaining({
-          context: expect.objectContaining({
-            prompt: 'Create security training for Finance',
-          }),
-        })
+          prompt: 'Create security training for Finance',
+        }),
+        expect.anything()
       );
     });
   });

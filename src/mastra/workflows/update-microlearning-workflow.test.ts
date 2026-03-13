@@ -84,7 +84,7 @@ describe('UpdateMicrolearningWorkflow', () => {
   });
 
   it('should execute successfully with valid updates', async () => {
-    const run = await updateMicrolearningWorkflow.createRunAsync();
+    const run = await updateMicrolearningWorkflow.createRun();
 
     const input = {
       microlearningId: 'ml-123',
@@ -111,10 +111,11 @@ describe('UpdateMicrolearningWorkflow', () => {
   it('should fail if microlearning not found', async () => {
     mocks.kvGet.mockResolvedValue(null);
 
-    const run = await updateMicrolearningWorkflow.createRunAsync();
+    const run = await updateMicrolearningWorkflow.createRun();
 
     const input = {
       microlearningId: 'missing-ml',
+      department: 'All',
       updates: {},
     };
 
@@ -126,10 +127,11 @@ describe('UpdateMicrolearningWorkflow', () => {
   });
 
   it('should handle whitelabel logo override', async () => {
-    const run = await updateMicrolearningWorkflow.createRunAsync();
+    const run = await updateMicrolearningWorkflow.createRun();
 
     const input = {
       microlearningId: 'ml-123',
+      department: 'All',
       updates: {
         useWhitelabelLogo: true,
         theme: {},
@@ -143,10 +145,11 @@ describe('UpdateMicrolearningWorkflow', () => {
 
   it('should handle whitelabel config failure gracefully', async () => {
     mocks.getWhitelabelingConfig.mockRejectedValue(new Error('Config service down'));
-    const run = await updateMicrolearningWorkflow.createRunAsync();
+    const run = await updateMicrolearningWorkflow.createRun();
 
     const input = {
       microlearningId: 'ml-123',
+      department: 'All',
       updates: {
         useWhitelabelLogo: true,
         theme: {},
@@ -162,10 +165,11 @@ describe('UpdateMicrolearningWorkflow', () => {
   });
 
   it('should resolve and apply external brand logo', async () => {
-    const run = await updateMicrolearningWorkflow.createRunAsync();
+    const run = await updateMicrolearningWorkflow.createRun();
 
     const input = {
       microlearningId: 'ml-brand-test',
+      department: 'All',
       updates: {
         brandName: 'NewBrand',
         theme: {},
@@ -180,7 +184,7 @@ describe('UpdateMicrolearningWorkflow', () => {
   });
 
   it('should resolve brand from nested theme property', async () => {
-    const run = await updateMicrolearningWorkflow.createRunAsync();
+    const run = await updateMicrolearningWorkflow.createRun();
 
     const input = {
       microlearningId: 'ml-nested-brand',
@@ -202,10 +206,11 @@ describe('UpdateMicrolearningWorkflow', () => {
   it('should handle KV save failure gracefully', async () => {
     mocks.kvPut.mockResolvedValue(false);
 
-    const run = await updateMicrolearningWorkflow.createRunAsync();
+    const run = await updateMicrolearningWorkflow.createRun();
 
     const input = {
       microlearningId: 'ml-save-fail',
+      department: 'All',
       updates: { theme: {} },
     };
 
@@ -217,10 +222,11 @@ describe('UpdateMicrolearningWorkflow', () => {
   });
 
   it('should normalize theme background color', async () => {
-    const run = await updateMicrolearningWorkflow.createRunAsync();
+    const run = await updateMicrolearningWorkflow.createRun();
 
     const input = {
       microlearningId: 'ml-color-test',
+      department: 'All',
       updates: {
         theme: {
           colors: { background: 'raw-red' },
@@ -238,9 +244,10 @@ describe('UpdateMicrolearningWorkflow', () => {
   it('should warn when whitelabel logo is requested but config has no mainLogoUrl', async () => {
     mocks.getWhitelabelingConfig.mockResolvedValueOnce({});
 
-    const run = await updateMicrolearningWorkflow.createRunAsync();
+    const run = await updateMicrolearningWorkflow.createRun();
     const input = {
       microlearningId: 'ml-whitelabel-empty',
+      department: 'All',
       updates: {
         useWhitelabelLogo: true,
         theme: {},
@@ -260,9 +267,10 @@ describe('UpdateMicrolearningWorkflow', () => {
   it('should warn when external brand resolution returns no logo URL', async () => {
     mocks.resolveLogoAndBrand.mockResolvedValueOnce({ logoUrl: '' });
 
-    const run = await updateMicrolearningWorkflow.createRunAsync();
+    const run = await updateMicrolearningWorkflow.createRun();
     const input = {
       microlearningId: 'ml-brand-no-logo',
+      department: 'All',
       updates: {
         brandName: 'NoLogoBrand',
         theme: {},
@@ -280,9 +288,10 @@ describe('UpdateMicrolearningWorkflow', () => {
   });
 
   it('should enter no-brand branch and emit debug log when no brand update is provided', async () => {
-    const run = await updateMicrolearningWorkflow.createRunAsync();
+    const run = await updateMicrolearningWorkflow.createRun();
     const input = {
       microlearningId: 'ml-no-brand-update',
+      department: 'All',
       updates: {
         theme: {
           colors: { background: 'bg-green-500' },
@@ -304,7 +313,7 @@ describe('UpdateMicrolearningWorkflow', () => {
       microlearning_metadata: {},
     });
 
-    const run = await updateMicrolearningWorkflow.createRunAsync();
+    const run = await updateMicrolearningWorkflow.createRun();
     const input = {
       microlearningId: 'ml-lang-dept-fallback',
       updates: { theme: {} },
@@ -328,9 +337,10 @@ describe('UpdateMicrolearningWorkflow', () => {
       microlearning_metadata: { language: 'en' },
     });
 
-    const run = await updateMicrolearningWorkflow.createRunAsync();
+    const run = await updateMicrolearningWorkflow.createRun();
     const input = {
       microlearningId: 'ml-deep-merge',
+      department: 'All',
       updates: {
         theme: {
           colors: { background: 'bg-red-500' },
@@ -347,7 +357,7 @@ describe('UpdateMicrolearningWorkflow', () => {
   });
 
   it('should track version history entry with changes', async () => {
-    const run = await updateMicrolearningWorkflow.createRunAsync();
+    const run = await updateMicrolearningWorkflow.createRun();
     const input = {
       microlearningId: 'ml-history-test',
       updates: { theme: { colors: { background: 'blue' } } },

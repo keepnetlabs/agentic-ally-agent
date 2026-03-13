@@ -87,9 +87,7 @@ describe('riskAssessmentTool', () => {
       },
     });
 
-    const result = await (riskAssessmentTool as any).execute({
-      context: validContext,
-    });
+    const result = await (riskAssessmentTool as any).execute(validContext);
 
     expect(result).toMatchObject({
       risk_level: 'Low',
@@ -109,9 +107,7 @@ describe('riskAssessmentTool', () => {
       },
     });
 
-    const result = await (riskAssessmentTool as any).execute({
-      context: validContext,
-    });
+    const result = await (riskAssessmentTool as any).execute(validContext);
 
     expect(result.feature_result).toBeDefined();
     expect(result.feature_result.intent).toBe('benign');
@@ -122,7 +118,7 @@ describe('riskAssessmentTool', () => {
     generateMock.mockRejectedValue(new Error('LLM timeout'));
 
     await expect(
-      (riskAssessmentTool as any).execute({ context: validContext })
+      (riskAssessmentTool as any).execute(validContext)
     ).rejects.toThrow('LLM timeout');
   });
 
@@ -140,7 +136,7 @@ describe('riskAssessmentTool', () => {
       original_email: { ...validContext.original_email, from: '' },
     };
 
-    const result = await (riskAssessmentTool as any).execute({ context: ctxWithEmptyFrom });
+    const result = await (riskAssessmentTool as any).execute(ctxWithEmptyFrom);
 
     expect(result.risk_level).toBe('Low');
     expect(result.original_email.from).toBe('');
@@ -163,7 +159,7 @@ describe('riskAssessmentTool', () => {
       },
     };
 
-    const result = await (riskAssessmentTool as any).execute({ context: ctxWithEmptyThreatIntel });
+    const result = await (riskAssessmentTool as any).execute(ctxWithEmptyThreatIntel);
 
     expect(result.risk_level).toBe('Medium');
   });

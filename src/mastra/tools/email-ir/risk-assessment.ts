@@ -33,8 +33,7 @@ export const riskAssessmentTool = createTool({
   description: 'Assesses risk using Engine-Blind logic',
   inputSchema: featureExtractionOutputSchema,
   outputSchema: riskAssessmentOutputSchema,
-  execute: async ({ context }) => {
-    const inputData = context;
+  execute: async (inputData) => {
     const emailId = inputData.original_email.from?.split('@')[0] || 'unknown-sender';
     const ctx = createLogContext(emailId, 'risk-assessment');
 
@@ -188,11 +187,13 @@ Provide clear SOC-ready justification.
       const result = await withRetry(
         () =>
           emailIRAnalyst.generate(prompt, {
-            output: riskAssessmentOutputSchema.omit({
-              original_email: true,
-              triage_result: true,
-              feature_result: true,
-            }),
+            structuredOutput: {
+              schema: riskAssessmentOutputSchema.omit({
+                original_email: true,
+                triage_result: true,
+                feature_result: true,
+              }),
+            },
           }),
         'risk-assessment-llm'
       );

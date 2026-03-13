@@ -42,6 +42,9 @@ export const updateInputSchema = z.object({
   model: z.string().optional().describe('Model name (e.g., OPENAI_GPT_4O_MINI, WORKERS_AI_GPT_OSS_120B)'),
 });
 
+export type UpdateInput = z.output<typeof updateInputSchema>;
+export const updateStepInputSchema = updateInputSchema as z.ZodType<UpdateInput>;
+
 export const updateOutputSchema = z.object({
   success: z.boolean(),
   status: z.string(),
@@ -67,15 +70,8 @@ export const loadMicrolearningOutputSchema = z.object({
   modelProvider: z.string().optional(),
 });
 
-export const mergeUpdatesInputSchema = z.object({
-  microlearningId: z.string(),
-  department: z.string(),
-  currentContent: z.any(),
-  currentVersion: z.number(),
-  updates: updatesSchema,
-  model: z.string().optional(),
-  modelProvider: z.string().optional(),
-});
+// Same shape as loadMicrolearningOutputSchema — shared reference so Mastra .then() generics match
+export const mergeUpdatesInputSchema = loadMicrolearningOutputSchema;
 
 export const mergeUpdatesOutputSchema = z.object({
   microlearningId: z.string(),
@@ -85,10 +81,5 @@ export const mergeUpdatesOutputSchema = z.object({
   changes: z.record(z.any()),
 });
 
-export const saveUpdatesInputSchema = z.object({
-  microlearningId: z.string(),
-  department: z.string(),
-  updatedContent: z.any(),
-  newVersion: z.number(),
-  changes: z.record(z.any()),
-});
+// Same shape as mergeUpdatesOutputSchema — shared reference so Mastra .then() generics match
+export const saveUpdatesInputSchema = mergeUpdatesOutputSchema;

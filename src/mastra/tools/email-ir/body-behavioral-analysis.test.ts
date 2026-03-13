@@ -58,11 +58,9 @@ describe('bodyBehavioralAnalysisTool', () => {
     });
 
     await (bodyBehavioralAnalysisTool as any).execute({
-      context: {
-        from: 'alert@example.com',
-        subject: 'Test',
-        htmlBody: '',
-      },
+      from: 'alert@example.com',
+      subject: 'Test',
+      htmlBody: '',
     });
 
     expect(capturedPrompt).toContain('insufficient_data');
@@ -72,9 +70,7 @@ describe('bodyBehavioralAnalysisTool', () => {
     generateMock.mockRejectedValue(new Error('LLM error'));
 
     await expect(
-      (bodyBehavioralAnalysisTool as any).execute({
-        context: { from: 'a@b.com', subject: 'Test', htmlBody: '' },
-      })
+      (bodyBehavioralAnalysisTool as any).execute({ from: 'a@b.com', subject: 'Test', htmlBody: '' })
     ).rejects.toThrow('LLM error');
   });
 
@@ -94,7 +90,7 @@ describe('bodyBehavioralAnalysisTool', () => {
       },
     });
 
-    const result = await (bodyBehavioralAnalysisTool as any).execute({ context: email });
+    const result = await (bodyBehavioralAnalysisTool as any).execute(email);
     expect(result.urgency_level).toBe('none');
     expect(result.original_email).toEqual(email);
   });
@@ -117,9 +113,7 @@ describe('bodyBehavioralAnalysisTool', () => {
       });
     });
 
-    await (bodyBehavioralAnalysisTool as any).execute({
-      context: { from: 'a@b.com', subject: 'Urgent Action Required', htmlBody: '' },
-    });
+    await (bodyBehavioralAnalysisTool as any).execute({ from: 'a@b.com', subject: 'Urgent Action Required', htmlBody: '' });
 
     expect(capturedPrompt).toContain('Urgent Action Required');
   });
@@ -142,9 +136,7 @@ describe('bodyBehavioralAnalysisTool', () => {
       });
     });
 
-    await (bodyBehavioralAnalysisTool as any).execute({
-      context: { from: 'a@b.com', subject: '', htmlBody: '' },
-    });
+    await (bodyBehavioralAnalysisTool as any).execute({ from: 'a@b.com', subject: '', htmlBody: '' });
 
     expect(capturedPrompt).toContain('No body content');
   });

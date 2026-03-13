@@ -47,6 +47,7 @@ describe('golden invariants (regression guardrails)', () => {
 
     it('should format message with only suffix', () => {
       const msg = formatToolSummary({
+        prefix: '',
         suffix: 'Operation finished',
       });
       expect(msg).toContain('Operation finished');

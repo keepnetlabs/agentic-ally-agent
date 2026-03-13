@@ -84,7 +84,7 @@ describe('retry-generator', () => {
       const mockWriter = vi.fn();
       mockExtractReasoning.mockReturnValue('Reasoning content');
 
-      await retryGenerationWithStrongerPrompt(mockModel, systemPrompt, messages, 'email', mockWriter);
+      await retryGenerationWithStrongerPrompt(mockModel, systemPrompt, messages, 'email', mockWriter as any);
 
       expect(mockStreamDirectReasoning).toHaveBeenCalledWith('Reasoning content', mockWriter);
     });
@@ -101,7 +101,7 @@ describe('retry-generator', () => {
       const mockWriter = vi.fn();
       mockExtractReasoning.mockReturnValue(null);
 
-      await retryGenerationWithStrongerPrompt(mockModel, systemPrompt, messages, 'landing-page', mockWriter);
+      await retryGenerationWithStrongerPrompt(mockModel, systemPrompt, messages, 'landing-page', mockWriter as any);
 
       expect(mockStreamDirectReasoning).not.toHaveBeenCalled();
     });

@@ -70,8 +70,8 @@ export const getCompanyDetailTool = createTool({
     'Fetches detailed information for a specific company by its resourceId. Returns license details, country, modules, language preferences, and more.',
   inputSchema,
   outputSchema,
-  execute: async ({ context }) => {
-    const { companyResourceId } = context;
+  execute: async (inputData) => {
+    const { companyResourceId } = inputData;
 
     logger.debug('get_company_detail_start', { companyResourceId });
 

@@ -157,6 +157,7 @@ describe('Phishing Flow Integration', () => {
         method: 'Click-Only',
         isQuishing: false,
         psychologicalTriggers: ['Urgency', 'Authority'],
+        tone: 'Urgent',
         keyRedFlags: ['Urgent tone', 'Generic greeting'],
         targetAudienceAnalysis: 'IT department',
         subjectLineStrategy: 'Urgency',
@@ -177,14 +178,13 @@ describe('Phishing Flow Integration', () => {
   });
 
   it('should run full phishing flow: tool → workflow → KV save', { timeout: 15000 }, async () => {
-    const result = await phishingWorkflowExecutorTool.execute({
-      context: {
-        workflowType: PHISHING.WORKFLOW_TYPE,
-        topic: 'Password Reset',
-        difficulty: 'Medium',
-        language: 'en-gb',
-      },
-    } as any);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = (await phishingWorkflowExecutorTool.execute!({
+      workflowType: PHISHING.WORKFLOW_TYPE,
+      topic: 'Password Reset',
+      difficulty: 'Medium',
+      language: 'en-gb',
+    } as any, {} as any)) as any;
 
     expect(result.success).toBe(true);
     expect(result.data?.phishingId).toBeDefined();
@@ -200,12 +200,11 @@ describe('Phishing Flow Integration', () => {
   it('should handle policy summary unavailable gracefully', { timeout: 15000 }, async () => {
     mocks.getPolicySummary.mockRejectedValueOnce(new Error('Policy fetch failed'));
 
-    const result = await phishingWorkflowExecutorTool.execute({
-      context: {
-        workflowType: PHISHING.WORKFLOW_TYPE,
-        topic: 'Invoice Scam',
-      },
-    } as any);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = (await phishingWorkflowExecutorTool.execute!({
+      workflowType: PHISHING.WORKFLOW_TYPE,
+      topic: 'Invoice Scam',
+    } as any, {} as any)) as any;
 
     // Tool may fail or use fallback - we verify it doesn't crash
     expect(result).toBeDefined();

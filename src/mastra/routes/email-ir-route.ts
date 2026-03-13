@@ -48,7 +48,7 @@ export const emailIRAnalyzeHandler = async (c: Context) => {
     logger.info('Starting Email IR Analysis', { id: inputData.id, apiBaseUrl: inputData.apiBaseUrl });
 
     // Start Workflow
-    const run = await emailIRWorkflow.createRunAsync();
+    const run = await emailIRWorkflow.createRun();
     const result = await run.start({ inputData });
 
     if (result.status === 'failed') {

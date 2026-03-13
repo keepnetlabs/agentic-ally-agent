@@ -31,9 +31,10 @@ export const fetchStep = createStep({
   id: 'email-ir-fetch-step',
   inputSchema: fetchEmailInputSchema,
   outputSchema: EmailIREmailDataSchema,
-  execute: async ({ inputData, runtimeContext }) => {
+  execute: async ({ inputData }) => {
     try {
-      return await fetchEmailTool.execute({ context: inputData, runtimeContext });
+      if (!fetchEmailTool.execute) throw new Error('Fetch email tool is not executable');
+      return await fetchEmailTool.execute(inputData, {});
     } catch (error) {
       const err = normalizeError(error);
       const errorInfo = errorService.external(err.message, {
@@ -60,15 +61,22 @@ export const multiAnalysisStep = createStep({
   id: 'email-ir-multi-analysis-step',
   inputSchema: EmailIREmailDataSchema,
   outputSchema: combinedAnalysisSchema,
-  execute: async ({ inputData, runtimeContext }) => {
+  execute: async ({ inputData }) => {
     const email = inputData;
 
-    // Run all three analyses in parallel
-    const [headerResult, behavioralResult, intentResult] = await Promise.all([
-      headerAnalysisTool.execute({ context: email, runtimeContext }),
-      bodyBehavioralAnalysisTool.execute({ context: email, runtimeContext }),
-      bodyIntentAnalysisTool.execute({ context: email, runtimeContext }),
-    ]);
+    if (!headerAnalysisTool.execute) throw new Error('Header analysis tool is not executable');
+    if (!bodyBehavioralAnalysisTool.execute) throw new Error('Body behavioral analysis tool is not executable');
+    if (!bodyIntentAnalysisTool.execute) throw new Error('Body intent analysis tool is not executable');
+
+    const [headerResult, behavioralResult, intentResult] = (await Promise.all([
+      headerAnalysisTool.execute(email, {}),
+      bodyBehavioralAnalysisTool.execute(email, {}),
+      bodyIntentAnalysisTool.execute(email, {}),
+    ])) as [
+      z.infer<typeof headerAnalysisOutputSchema>,
+      z.infer<typeof bodyBehavioralAnalysisOutputSchema>,
+      z.infer<typeof bodyIntentAnalysisOutputSchema>,
+    ];
 
     return {
       original_email: email,
@@ -122,9 +130,10 @@ export const triageStep = createStep({
   id: 'email-ir-triage-step',
   inputSchema: combinedAnalysisSchema,
   outputSchema: analysisWithTriageSchema,
-  execute: async ({ inputData, runtimeContext }) => {
+  execute: async ({ inputData }) => {
     const email = inputData.original_email;
-    const triageResult = await triageTool.execute({ context: inputData, runtimeContext });
+    if (!triageTool.execute) throw new Error('Triage tool is not executable');
+    const triageResult = await triageTool.execute(inputData, {}) as z.infer<typeof triageOutputSchema>;
 
     return {
       original_email: email,
@@ -141,7 +150,7 @@ export const featureExtractionStep = createStep({
   id: 'email-ir-feature-extraction-step',
   inputSchema: analysisWithTriageSchema,
   outputSchema: featureExtractionOutputSchema,
-  execute: async ({ inputData, runtimeContext }) => {
+  execute: async ({ inputData }) => {
     const featureInput = {
       original_email: inputData.original_email,
       triage_result: inputData.triage_result,
@@ -150,7 +159,8 @@ export const featureExtractionStep = createStep({
       intent_analysis: inputData.intent_analysis,
     };
 
-    return await featureExtractionTool.execute({ context: featureInput, runtimeContext });
+    if (!featureExtractionTool.execute) throw new Error('Feature extraction tool is not executable');
+    return await featureExtractionTool.execute(featureInput, {}) as z.infer<typeof featureExtractionOutputSchema>;
   },
 });
 
@@ -158,8 +168,9 @@ export const riskAssessmentStep = createStep({
   id: 'email-ir-risk-assessment-step',
   inputSchema: featureExtractionOutputSchema,
   outputSchema: riskAssessmentOutputSchema,
-  execute: async ({ inputData, runtimeContext }) => {
-    return await riskAssessmentTool.execute({ context: inputData, runtimeContext });
+  execute: async ({ inputData }) => {
+    if (!riskAssessmentTool.execute) throw new Error('Risk assessment tool is not executable');
+    return await riskAssessmentTool.execute(inputData, {}) as z.infer<typeof riskAssessmentOutputSchema>;
   },
 });
 
@@ -167,8 +178,9 @@ export const reportingStep = createStep({
   id: 'email-ir-reporting-step',
   inputSchema: riskAssessmentOutputSchema,
   outputSchema: EmailIRCanvasSchema,
-  execute: async ({ inputData, runtimeContext }) => {
-    return await reportingTool.execute({ context: inputData, runtimeContext });
+  execute: async ({ inputData }) => {
+    if (!reportingTool.execute) throw new Error('Reporting tool is not executable');
+    return await reportingTool.execute(inputData, {}) as z.infer<typeof EmailIRCanvasSchema>;
   },
 });
 

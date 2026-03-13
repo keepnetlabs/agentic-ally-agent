@@ -19,10 +19,10 @@
  * API: POST https://api.elevenlabs.io/v1/convai/twilio/outbound-call
  */
 
-import { createTool } from '@mastra/core/tools';
+import { createTool, ToolExecutionContext } from '@mastra/core/tools';
 import { z } from 'zod';
 import { ELEVENLABS } from '../../constants';
-import { uuidv4 } from '../../utils/core/id-utils';
+
 import { getLogger } from '../../utils/core/logger';
 import { normalizeError } from '../../utils/core/error-utils';
 import { withRetry } from '../../utils/core/resilience-utils';
@@ -80,16 +80,15 @@ async function emitCallStartedSignal(
   if (!writer) return;
 
   try {
-    const messageId = uuidv4();
     const encoded = Buffer.from(JSON.stringify(payload)).toString('base64');
 
-    await writer.write({ type: 'text-start', id: messageId });
     await writer.write({
-      type: 'text-delta',
-      id: messageId,
-      delta: `::ui:vishing_call_started::${encoded}::/ui:vishing_call_started::\n`,
+      type: 'data-ui-signal',
+      data: {
+        signal: 'vishing_call_started',
+        message: `::ui:vishing_call_started::${encoded}::/ui:vishing_call_started::\n`,
+      },
     });
-    await writer.write({ type: 'text-end', id: messageId });
 
     logger.info('vishing_call_ui_signal_emitted', {
       conversationId: payload.conversationId,
@@ -129,8 +128,9 @@ export const initiateVishingCallTool = createTool({
     'Initiate an outbound vishing (voice phishing) simulation call via ElevenLabs. Calls the specified phone number using a dynamically configured AI voice agent with custom prompt and opening message. Streams call status and transcript to the frontend.',
   inputSchema: initiateVishingCallInputSchema,
   outputSchema: initiateVishingCallOutputSchema,
-  execute: async ({ context, writer }) => {
+  execute: async (inputData, ctx?: ToolExecutionContext) => {
     const startTime = Date.now();
+    const writer = ctx?.writer;
 
     try {
       const apiKey = process.env.ELEVENLABS_API_KEY;
@@ -142,7 +142,7 @@ export const initiateVishingCallTool = createTool({
         };
       }
 
-      const { agentPhoneNumberId, toNumber, prompt, firstMessage, agentId } = context;
+      const { agentPhoneNumberId, toNumber, prompt, firstMessage, agentId } = inputData;
 
       // Use provided agent ID or fall back to environment/default
       const effectiveAgentId = agentId || ELEVENLABS.DEFAULT_AGENT_ID;

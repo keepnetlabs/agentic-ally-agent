@@ -12,7 +12,7 @@ import { ProductService } from '../services/product-service';
 import { resolveLogoAndBrand } from '../utils/phishing/brand-resolver';
 import { getModelWithOverride } from '../model-providers';
 import {
-  updateInputSchema,
+  updateStepInputSchema,
   updateOutputSchema,
   loadMicrolearningOutputSchema,
   mergeUpdatesInputSchema,
@@ -30,7 +30,7 @@ const logger = getLogger('UpdateMicrolearningWorkflow');
 const loadMicrolearningStep = createStep({
   id: 'load-microlearning',
   description: 'Load existing microlearning from KV',
-  inputSchema: updateInputSchema,
+  inputSchema: updateStepInputSchema,
   outputSchema: loadMicrolearningOutputSchema,
   execute: async ({ inputData }) => {
     const kvService = new KVService();
@@ -325,7 +325,7 @@ const saveUpdatesStep = createStep({
 const updateMicrolearningWorkflow = createWorkflow({
   id: 'update-microlearning-workflow',
   description: 'Update existing microlearning metadata and theme with version control',
-  inputSchema: updateInputSchema,
+  inputSchema: updateStepInputSchema,
   outputSchema: updateOutputSchema,
 })
   .then(loadMicrolearningStep)

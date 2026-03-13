@@ -160,7 +160,8 @@ describe('getUserInfoTool', () => {
         email: 'john.doe@example.com',
       };
 
-      const result = await getUserInfoTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await getUserInfoTool.execute!(input, {}) as any;
       expect(result).toBeDefined();
       expect(result.success).toBe(true);
     });
@@ -180,7 +181,8 @@ describe('getUserInfoTool', () => {
         fullName: 'John Doe',
       };
 
-      const result = await getUserInfoTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await getUserInfoTool.execute!(input, {}) as any;
       expect(result).toBeDefined();
       expect(result.success).toBe(true);
     });
@@ -200,7 +202,8 @@ describe('getUserInfoTool', () => {
         firstName: 'John',
       };
 
-      const result = await getUserInfoTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await getUserInfoTool.execute!(input, {}) as any;
       expect(result.success).toBe(true);
     });
 
@@ -220,7 +223,8 @@ describe('getUserInfoTool', () => {
         lastName: 'Doe',
       };
 
-      const result = await getUserInfoTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await getUserInfoTool.execute!(input, {}) as any;
       expect(result.success).toBe(true);
     });
 
@@ -228,7 +232,8 @@ describe('getUserInfoTool', () => {
       const input: any = {};
 
       // Tool framework validates input schema (has refine validation) and returns error response
-      const result = await getUserInfoTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await getUserInfoTool.execute!(input, {}) as any;
       expect(result).toBeDefined();
       if (result && typeof result === 'object' && 'error' in result) {
         expect(result.error).toBeTruthy();
@@ -240,7 +245,8 @@ describe('getUserInfoTool', () => {
         fullName: 'John123', // Invalid characters
       };
 
-      const result = await getUserInfoTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await getUserInfoTool.execute!(input, {}) as any;
       expect(result.success).toBe(false);
       expect(result.error).toContain('Invalid name format');
     });
@@ -275,7 +281,8 @@ describe('getUserInfoTool', () => {
         targetUserResourceId: 'user-direct-123',
       };
 
-      const result = await getUserInfoTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await getUserInfoTool.execute!(input, {}) as any;
 
       expect(result.success).toBe(true);
       expect(result.userInfo?.targetUserResourceId).toBe('user-direct-123');
@@ -304,7 +311,8 @@ describe('getUserInfoTool', () => {
         fullName: 'John Doe',
       };
 
-      const result = await getUserInfoTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await getUserInfoTool.execute!(input, {}) as any;
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
     });
@@ -324,7 +332,8 @@ describe('getUserInfoTool', () => {
         fullName: 'John Doe',
       };
 
-      const result = await getUserInfoTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await getUserInfoTool.execute!(input, {}) as any;
       expect(result.success).toBe(true);
     });
   });
@@ -345,7 +354,8 @@ describe('getUserInfoTool', () => {
         email: 'john.doe@example.com',
       };
 
-      await getUserInfoTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      await getUserInfoTool.execute!(input, {});
 
       // First call: user search
       const firstCall = fetchSpy.mock.calls[0];
@@ -370,7 +380,8 @@ describe('getUserInfoTool', () => {
         fullName: 'John Doe',
       };
 
-      await getUserInfoTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      await getUserInfoTool.execute!(input, {});
 
       expect(fetchSpy).toHaveBeenCalledWith(
         leaderboardEndpoints.getAll,
@@ -399,7 +410,8 @@ describe('getUserInfoTool', () => {
         fullName: 'John Doe',
       };
 
-      await getUserInfoTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      await getUserInfoTool.execute!(input, {});
 
       const firstCall = fetchSpy.mock.calls[0];
       expect(firstCall[1].headers['x-ir-company-id']).toBe(mockCompanyId);
@@ -415,7 +427,8 @@ describe('getUserInfoTool', () => {
         fullName: 'Nonexistent User',
       };
 
-      const result = await getUserInfoTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await getUserInfoTool.execute!(input, {}) as any;
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
     });
@@ -443,7 +456,8 @@ describe('getUserInfoTool', () => {
         });
 
       const input = { fullName: 'John Smith' };
-      const result = await getUserInfoTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await getUserInfoTool.execute!(input, {}) as any;
 
       // Should pick u2 because lastName "Smith" matches input last name "Smith" exactly
       expect(result.userInfo?.targetUserResourceId).toBe('u2');
@@ -460,7 +474,8 @@ describe('getUserInfoTool', () => {
         fullName: 'John Doe',
       };
 
-      const result = await getUserInfoTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await getUserInfoTool.execute!(input, {}) as any;
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
     });
@@ -482,7 +497,8 @@ describe('getUserInfoTool', () => {
         fullName: 'John Doe',
       };
 
-      await getUserInfoTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      await getUserInfoTool.execute!(input, {});
 
       expect(fetchSpy).toHaveBeenCalledTimes(2);
       expect(fetchSpy).toHaveBeenCalledWith(
@@ -514,7 +530,8 @@ describe('getUserInfoTool', () => {
       };
 
       // Should still succeed even if timeline fails
-      const result = await getUserInfoTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await getUserInfoTool.execute!(input, {}) as any;
       expect(result.success).toBe(true);
       expect(result.userInfo).toBeDefined();
     });
@@ -534,7 +551,8 @@ describe('getUserInfoTool', () => {
         fullName: 'John Doe',
       };
 
-      await getUserInfoTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      await getUserInfoTool.execute!(input, {});
 
       expect(generateText).toHaveBeenCalled();
       const generateTextCall = (generateText as any).mock.calls[0][0];
@@ -556,7 +574,8 @@ describe('getUserInfoTool', () => {
         fullName: 'John Doe',
       };
 
-      await getUserInfoTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      await getUserInfoTool.execute!(input, {});
 
       expect(generateText).toHaveBeenCalled();
       const generateTextCall = (generateText as any).mock.calls[0][0];
@@ -613,7 +632,8 @@ describe('getUserInfoTool', () => {
       const input = { targetUserResourceId: 'user-1' };
       // 'u' + 's' + 'e' + 'r' + '-' + '1' = 541 (Odd) -> Parity 1 -> QR / AUTHORITY
 
-      const result = await getUserInfoTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await getUserInfoTool.execute!(input, {}) as any;
       const sim = result.analysisReport?.ai_recommended_next_steps?.simulations?.[0];
 
       expect(sim?.vector).toBe('QR');
@@ -638,7 +658,8 @@ describe('getUserInfoTool', () => {
         skipAnalysis: true,
       };
 
-      const result = await getUserInfoTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await getUserInfoTool.execute!(input, {}) as any;
 
       expect(result.success).toBe(true);
       expect(generateText).not.toHaveBeenCalled();
@@ -662,7 +683,8 @@ describe('getUserInfoTool', () => {
         fullName: 'John Doe',
       };
 
-      await getUserInfoTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      await getUserInfoTool.execute!(input, {});
 
       expect(getModelWithOverride).toHaveBeenCalled();
       expect(generateText).toHaveBeenCalledWith(
@@ -691,7 +713,8 @@ describe('getUserInfoTool', () => {
         fullName: 'John Doe',
       };
 
-      await getUserInfoTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      await getUserInfoTool.execute!(input, {});
 
       const callArg = (generateText as any).mock.calls[0][0];
       const systemMessage = callArg.messages.find((msg: any) => msg.role === 'system')?.content || '';
@@ -721,7 +744,8 @@ describe('getUserInfoTool', () => {
       };
 
       // Should still succeed even if AI analysis fails (analysis is optional)
-      const result = await getUserInfoTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await getUserInfoTool.execute!(input, {}) as any;
       expect(result.success).toBe(true);
       // Analysis report might be undefined if AI fails
     });
@@ -745,7 +769,8 @@ describe('getUserInfoTool', () => {
         fullName: 'John Doe',
       };
 
-      const result = await getUserInfoTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await getUserInfoTool.execute!(input, {}) as any;
 
       expect(result.success).toBe(true);
       expect(result.analysisReport).toBeUndefined();
@@ -766,7 +791,8 @@ describe('getUserInfoTool', () => {
         fullName: 'John Doe',
       };
 
-      const result = await getUserInfoTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await getUserInfoTool.execute!(input, {}) as any;
 
       if (result.analysisReport) {
         expect(result.analysisReport.meta?.user_id).toBeDefined();
@@ -790,7 +816,8 @@ describe('getUserInfoTool', () => {
         fullName: 'John Doe',
       };
 
-      const result = await getUserInfoTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await getUserInfoTool.execute!(input, {}) as any;
 
       expect(result.success).toBe(true);
       expect(result.userInfo).toBeDefined();
@@ -808,7 +835,8 @@ describe('getUserInfoTool', () => {
         fullName: 'John Doe',
       };
 
-      const result = await getUserInfoTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await getUserInfoTool.execute!(input, {}) as any;
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
     });
@@ -820,7 +848,8 @@ describe('getUserInfoTool', () => {
         fullName: 'John Doe',
       };
 
-      const result = await getUserInfoTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await getUserInfoTool.execute!(input, {}) as any;
       expect(result.success).toBe(false);
       expect(result.error).toContain('Network error');
     });
@@ -829,7 +858,8 @@ describe('getUserInfoTool', () => {
       (global.fetch as any).mockRejectedValue(new Error('API failure'));
 
       const input = { email: 'test@example.com' };
-      const result = await getUserInfoTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await getUserInfoTool.execute!(input, {}) as any;
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('API failure');
@@ -856,16 +886,18 @@ describe('getUserInfoTool', () => {
         fullName: 'John Doe',
       };
 
-      await getUserInfoTool.execute({ context: input, writer: mockWriter } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      await getUserInfoTool.execute!(input, { writer: mockWriter } as any);
 
-      expect(mockWriter.write).toHaveBeenCalledWith(expect.objectContaining({ type: 'text-start' }));
       expect(mockWriter.write).toHaveBeenCalledWith(
         expect.objectContaining({
-          type: 'text-delta',
-          delta: expect.stringContaining('::ui:target_user::'),
+          type: 'data-ui-signal',
+          data: expect.objectContaining({
+            signal: 'target_user',
+            message: expect.stringContaining('::ui:target_user::'),
+          }),
         })
       );
-      expect(mockWriter.write).toHaveBeenCalledWith(expect.objectContaining({ type: 'text-end' }));
     });
   });
 
@@ -885,7 +917,8 @@ describe('getUserInfoTool', () => {
         fullName: 'John Doe',
       };
 
-      const result = await getUserInfoTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await getUserInfoTool.execute!(input, {}) as any;
 
       // Validate schema structure
       expect(result).toHaveProperty('success');

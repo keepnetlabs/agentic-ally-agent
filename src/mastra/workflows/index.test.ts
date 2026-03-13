@@ -10,9 +10,17 @@ vi.mock('@mastra/cloudflare-d1', () => ({
   },
 }));
 
-// Mock cloudflare:workers module
+// `cloudflare:workers` does not exist in Node/Vitest runtime.
+// autonomous-workflow.ts uses `declare const WorkflowEntrypoint` (needs globalThis via vi.hoisted),
+// batch-orchestrator-workflow.ts uses a real import (needs vi.mock).
+vi.hoisted(() => {
+  (globalThis as any).WorkflowEntrypoint = class {};
+  (globalThis as any).WorkflowStep = class {};
+});
+
 vi.mock('cloudflare:workers', () => ({
   WorkflowEntrypoint: class {},
+  WorkflowStep: class {},
 }));
 
 // Mock services to prevent import crashes
@@ -345,32 +353,32 @@ describe('workflows/index.ts - Barrel Export', () => {
 
   // Tests for workflow methods
   describe('Workflow Methods', () => {
-    it('createMicrolearningWorkflow should have createRunAsync', () => {
-      expect(typeof (createMicrolearningWorkflow as any).createRunAsync).toBe('function');
+    it('createMicrolearningWorkflow should have createRun', () => {
+      expect(typeof (createMicrolearningWorkflow as any).createRun).toBe('function');
     });
 
-    it('addLanguageWorkflow should have createRunAsync', () => {
-      expect(typeof (addLanguageWorkflow as any).createRunAsync).toBe('function');
+    it('addLanguageWorkflow should have createRun', () => {
+      expect(typeof (addLanguageWorkflow as any).createRun).toBe('function');
     });
 
-    it('addMultipleLanguagesWorkflow should have createRunAsync', () => {
-      expect(typeof (addMultipleLanguagesWorkflow as any).createRunAsync).toBe('function');
+    it('addMultipleLanguagesWorkflow should have createRun', () => {
+      expect(typeof (addMultipleLanguagesWorkflow as any).createRun).toBe('function');
     });
 
-    it('updateMicrolearningWorkflow should have createRunAsync', () => {
-      expect(typeof (updateMicrolearningWorkflow as any).createRunAsync).toBe('function');
+    it('updateMicrolearningWorkflow should have createRun', () => {
+      expect(typeof (updateMicrolearningWorkflow as any).createRun).toBe('function');
     });
 
-    it('createPhishingWorkflow should have createRunAsync', () => {
-      expect(typeof (createPhishingWorkflow as any).createRunAsync).toBe('function');
+    it('createPhishingWorkflow should have createRun', () => {
+      expect(typeof (createPhishingWorkflow as any).createRun).toBe('function');
     });
 
-    it('createMicrolearningWorkflow should have createRunAsync method', () => {
-      expect(typeof (createMicrolearningWorkflow as any).createRunAsync).toBe('function');
+    it('createMicrolearningWorkflow should have createRun method', () => {
+      expect(typeof (createMicrolearningWorkflow as any).createRun).toBe('function');
     });
 
-    it('addLanguageWorkflow should have createRunAsync method', () => {
-      expect(typeof (addLanguageWorkflow as any).createRunAsync).toBe('function');
+    it('addLanguageWorkflow should have createRun method', () => {
+      expect(typeof (addLanguageWorkflow as any).createRun).toBe('function');
     });
   });
 

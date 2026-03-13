@@ -11,7 +11,7 @@
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { HEYGEN } from '../../constants';
-import { uuidv4 } from '../../utils/core/id-utils';
+
 import { getLogger } from '../../utils/core/logger';
 import { normalizeError } from '../../utils/core/error-utils';
 import { withRetry } from '../../utils/core/resilience-utils';
@@ -64,16 +64,15 @@ async function emitAvatarSelectionSignal(
   if (!writer) return;
 
   try {
-    const messageId = uuidv4();
     const encoded = Buffer.from(JSON.stringify(payload)).toString('base64');
 
-    await writer.write({ type: 'text-start', id: messageId });
     await writer.write({
-      type: 'text-delta',
-      id: messageId,
-      delta: `::ui:avatar_selection::${encoded}::/ui:avatar_selection::\n`,
+      type: 'data-ui-signal',
+      data: {
+        signal: 'avatar_selection',
+        message: `::ui:avatar_selection::${encoded}::/ui:avatar_selection::\n`,
+      },
     });
-    await writer.write({ type: 'text-end', id: messageId });
 
     logger.info('avatar_selection_ui_signal_emitted', { total: payload.total });
   } catch (emitErr) {
@@ -93,7 +92,8 @@ export const listHeyGenAvatarsTool = createTool({
     'Lists all available HeyGen avatars that can be used for deepfake video generation. Returns avatar ID, name, gender, and preview URLs so the user can select one.',
   inputSchema: listHeyGenAvatarsInputSchema,
   outputSchema: listHeyGenAvatarsOutputSchema,
-  execute: async ({ context, writer }) => {
+  execute: async (inputData, ctx?) => {
+    const writer = ctx?.writer;
     try {
       const apiKey = process.env.HEYGEN_API_KEY;
       if (!apiKey) {
@@ -161,7 +161,7 @@ export const listHeyGenAvatarsTool = createTool({
         .filter(a => a.avatar_id.length > 0)
         .slice(0, MAX_AVATARS);
 
-      const selectionRequired = !context.autoSelect && avatars.length > 1;
+      const selectionRequired = !inputData.autoSelect && avatars.length > 1;
 
       logger.info('list_heygen_avatars_success', {
         totalFromApi: allAvatars.length,

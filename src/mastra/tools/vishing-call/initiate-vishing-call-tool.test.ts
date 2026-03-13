@@ -32,10 +32,8 @@ describe('initiateVishingCallTool', () => {
   it('should return error when ELEVENLABS_API_KEY is not set', async () => {
     delete process.env.ELEVENLABS_API_KEY;
 
-    const result = await initiateVishingCallTool.execute({
-      context: validContext,
-      writer: null,
-    } as never);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = await initiateVishingCallTool.execute!(validContext, {}) as any;
 
     expect(result.success).toBe(false);
     expect(result.error).toContain('ELEVENLABS_API_KEY');
@@ -43,10 +41,8 @@ describe('initiateVishingCallTool', () => {
   });
 
   it('should return error for invalid phone number format', async () => {
-    const result = await initiateVishingCallTool.execute({
-      context: { ...validContext, toNumber: 'invalid' },
-      writer: null,
-    } as never);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = await initiateVishingCallTool.execute!({ ...validContext, toNumber: 'invalid' }, {}) as any;
 
     expect(result.success).toBe(false);
     expect(result.error).toContain('E.164');
@@ -54,10 +50,8 @@ describe('initiateVishingCallTool', () => {
   });
 
   it('should return error for phone number without leading slash', async () => {
-    const result = await initiateVishingCallTool.execute({
-      context: { ...validContext, toNumber: '905551234567' },
-      writer: null,
-    } as never);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = await initiateVishingCallTool.execute!({ ...validContext, toNumber: '905551234567' }, {}) as any;
 
     expect(result.success).toBe(false);
     expect(result.error).toContain('E.164');
@@ -74,10 +68,8 @@ describe('initiateVishingCallTool', () => {
       json: async () => mockData,
     });
 
-    const result = await initiateVishingCallTool.execute({
-      context: validContext,
-      writer: null,
-    } as never);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = await initiateVishingCallTool.execute!(validContext, {}) as any;
 
     expect(result.success).toBe(true);
     expect(result.conversationId).toBe('conv-123');
@@ -99,10 +91,8 @@ describe('initiateVishingCallTool', () => {
       json: async () => ({ conversation_id: 'c1', callSid: 's1' }),
     });
 
-    await initiateVishingCallTool.execute({
-      context: { ...validContext, agentId: 'custom-agent-456' },
-      writer: null,
-    } as never);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    await initiateVishingCallTool.execute!({ ...validContext, agentId: 'custom-agent-456' }, {});
 
     const body = JSON.parse((global.fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].body);
     expect(body.agent_id).toBe('custom-agent-456');
@@ -116,10 +106,8 @@ describe('initiateVishingCallTool', () => {
       text: async () => 'Invalid phone number or agent config',
     });
 
-    const result = await initiateVishingCallTool.execute({
-      context: validContext,
-      writer: null,
-    } as never);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = await initiateVishingCallTool.execute!(validContext, {}) as any;
 
     expect(result.success).toBe(false);
     expect(result.error).toContain('phone number or agent configuration');
@@ -134,10 +122,8 @@ describe('initiateVishingCallTool', () => {
       text: async () => 'Server error',
     });
 
-    const result = await initiateVishingCallTool.execute({
-      context: validContext,
-      writer: null,
-    } as never);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = await initiateVishingCallTool.execute!(validContext, {}) as any;
 
     expect(result.success).toBe(false);
     expect(result.error).toContain('500');
@@ -148,10 +134,8 @@ describe('initiateVishingCallTool', () => {
       .fn()
       .mockRejectedValue(Object.assign(new Error('The operation was aborted'), { name: 'AbortError' }));
 
-    const result = await initiateVishingCallTool.execute({
-      context: validContext,
-      writer: null,
-    } as never);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = await initiateVishingCallTool.execute!(validContext, {}) as any;
 
     expect(result.success).toBe(false);
     expect(result.error).toContain('timed out');
@@ -160,10 +144,8 @@ describe('initiateVishingCallTool', () => {
   it('should return generic error on other fetch failures', async () => {
     (global.fetch as ReturnType<typeof vi.fn>) = vi.fn().mockRejectedValue(new Error('Network error'));
 
-    const result = await initiateVishingCallTool.execute({
-      context: validContext,
-      writer: null,
-    } as never);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = await initiateVishingCallTool.execute!(validContext, {}) as any;
 
     expect(result.success).toBe(false);
     expect(result.error).toContain('Network error');
@@ -179,17 +161,16 @@ describe('initiateVishingCallTool', () => {
       json: async () => ({ conversation_id: 'conv-ui', callSid: 'CA-ui' }),
     });
 
-    const result = await initiateVishingCallTool.execute({
-      context: validContext,
-      writer: mockWriter,
-    } as never);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = await initiateVishingCallTool.execute!(validContext, { writer: mockWriter } as any) as any;
 
     expect(result.success).toBe(true);
     expect(mockWriter.write).toHaveBeenCalled();
-    const deltaCall = mockWriter.write.mock.calls.find((c: unknown[]) =>
-      (c as [{ delta?: string }])[0]?.delta?.includes('::ui:vishing_call_started::')
+    const signalCall = mockWriter.write.mock.calls.find((c: unknown[]) =>
+      (c as [{ type?: string; data?: { signal?: string } }])[0]?.type === 'data-ui-signal' &&
+      (c as [{ data?: { signal?: string } }])[0]?.data?.signal === 'vishing_call_started'
     );
-    expect(deltaCall).toBeDefined();
+    expect(signalCall).toBeDefined();
   });
 
   it('should still return success when writer.write throws (catch branch)', async () => {
@@ -200,10 +181,8 @@ describe('initiateVishingCallTool', () => {
       json: async () => ({ conversation_id: 'conv-throw', callSid: 'CA-throw' }),
     });
 
-    const result = await initiateVishingCallTool.execute({
-      context: validContext,
-      writer: mockWriter,
-    } as never);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = await initiateVishingCallTool.execute!(validContext, { writer: mockWriter } as any) as any;
 
     expect(result.success).toBe(true);
     expect(result.conversationId).toBe('conv-throw');

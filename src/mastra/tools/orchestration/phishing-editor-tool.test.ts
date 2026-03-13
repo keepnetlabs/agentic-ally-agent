@@ -101,7 +101,7 @@ describe('phishingEditorTool', () => {
         editInstruction: 'Make it more urgent',
       };
 
-      const result = (await executeTool({ context: input } as any)) as any;
+      const result = (await executeTool(input as any)) as any;
       expect(result).toBeDefined();
       expect(result.success).toBe(true);
     });
@@ -113,7 +113,7 @@ describe('phishingEditorTool', () => {
         language: 'tr-tr',
       };
 
-      const result = (await executeTool({ context: input } as any)) as any;
+      const result = (await executeTool(input as any)) as any;
       expect(result.success).toBe(true);
     });
 
@@ -125,7 +125,7 @@ describe('phishingEditorTool', () => {
         model: 'gpt-4',
       };
 
-      const result = (await executeTool({ context: input } as any)) as any;
+      const result = (await executeTool(input as any)) as any;
       expect(result.success).toBe(true);
     });
 
@@ -135,7 +135,7 @@ describe('phishingEditorTool', () => {
       };
 
       // Tool framework validates input schema
-      const result = (await executeTool({ context: input } as any)) as any;
+      const result = (await executeTool(input as any)) as any;
       expect(result).toBeDefined();
       if (result && typeof result === 'object' && 'error' in result) {
         expect(result.error).toBeTruthy();
@@ -148,7 +148,7 @@ describe('phishingEditorTool', () => {
       };
 
       // Tool framework validates input schema
-      const result = (await executeTool({ context: input } as any)) as any;
+      const result = (await executeTool(input as any)) as any;
       expect(result).toBeDefined();
       if (result && typeof result === 'object' && 'error' in result) {
         expect(result.error).toBeTruthy();
@@ -164,7 +164,7 @@ describe('phishingEditorTool', () => {
         editInstruction: 'Update subject',
       };
 
-      await executeTool({ context: input } as any);
+      await executeTool(input as any);
 
       expect(getSpy).toHaveBeenCalledWith('phishing:phishing-123:email:en-gb');
     });
@@ -177,7 +177,7 @@ describe('phishingEditorTool', () => {
         language: 'tr-tr',
       };
 
-      await executeTool({ context: input } as any);
+      await executeTool(input as any);
 
       expect(getSpy).toHaveBeenCalledWith('phishing:phishing-123:email:tr-tr');
     });
@@ -190,7 +190,7 @@ describe('phishingEditorTool', () => {
         editInstruction: 'Update subject',
       };
 
-      const result = await executeTool({ context: input } as any);
+      const result = await executeTool(input as any);
       expect(result.success).toBe(false);
       expect(result.error).toContain('not found');
     });
@@ -203,7 +203,7 @@ describe('phishingEditorTool', () => {
         editInstruction: 'Update subject',
       };
 
-      const result = await executeTool({ context: input } as any);
+      const result = await executeTool(input as any);
       expect(result.success).toBe(false);
       expect(result.error).toContain('not found');
     });
@@ -215,7 +215,7 @@ describe('phishingEditorTool', () => {
         editInstruction: 'Update content',
       };
 
-      await executeTool({ context: input } as any);
+      await executeTool(input as any);
 
       expect(getSpy).toHaveBeenCalledWith('phishing:phishing-123:landing:en-gb');
     });
@@ -233,7 +233,7 @@ describe('phishingEditorTool', () => {
         editInstruction: 'Update content',
       };
 
-      const result = (await executeTool({ context: input } as any)) as any;
+      const result = (await executeTool(input as any)) as any;
       expect(result.success).toBe(true);
     });
 
@@ -257,7 +257,7 @@ describe('phishingEditorTool', () => {
         editInstruction: 'Make the landing page English',
       };
 
-      const result = (await executeTool({ context: input } as any)) as any;
+      const result = (await executeTool(input as any)) as any;
       expect(result.success).toBe(true);
 
       // Should only call LLM for landing page (not email)
@@ -289,7 +289,7 @@ describe('phishingEditorTool', () => {
         mode: 'translate',
       };
 
-      const result = (await executeTool({ context: input } as any)) as any;
+      const result = (await executeTool(input as any)) as any;
       expect(result.success).toBe(true);
       expect(generateText).toHaveBeenCalledTimes(1);
       expect(putSpy).toHaveBeenCalledWith(expect.stringContaining(':landing:'), expect.anything());
@@ -303,7 +303,7 @@ describe('phishingEditorTool', () => {
         editInstruction: 'Update subject',
       };
 
-      const result = (await executeTool({ context: input } as any)) as any;
+      const result = (await executeTool(input as any)) as any;
       expect(result.success).toBe(false);
       expect(result.message).toContain('Template not found');
     });
@@ -316,7 +316,7 @@ describe('phishingEditorTool', () => {
         editInstruction: 'Make it more urgent',
       };
 
-      await executeTool({ context: input } as any);
+      await executeTool(input as any);
 
       expect(generateText).toHaveBeenCalled();
       const call = (generateText as any).mock.calls.find((c: any[]) =>
@@ -335,7 +335,7 @@ describe('phishingEditorTool', () => {
         editInstruction: 'Update all content',
       };
 
-      await executeTool({ context: input } as any);
+      await executeTool(input as any);
 
       expect(generateText).toHaveBeenCalledTimes(2); // Email + Landing page
     });
@@ -348,7 +348,7 @@ describe('phishingEditorTool', () => {
         model: 'gpt-4',
       };
 
-      await executeTool({ context: input } as any);
+      await executeTool(input as any);
 
       expect(getModelWithOverride).toHaveBeenCalledWith('OPENAI', 'gpt-4');
     });
@@ -363,7 +363,7 @@ describe('phishingEditorTool', () => {
         editInstruction: 'Update subject',
       };
 
-      const result = await executeTool({ context: input } as any);
+      const result = await executeTool(input as any);
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
     });
@@ -381,7 +381,7 @@ describe('phishingEditorTool', () => {
         editInstruction: 'Update subject',
       };
 
-      const result = await executeTool({ context: input } as any);
+      const result = await executeTool(input as any);
       expect(result.success).toBe(false);
       expect(result.error).toContain('Email response validation failed');
     });
@@ -400,7 +400,7 @@ describe('phishingEditorTool', () => {
         editInstruction: 'Update subject',
       };
 
-      const result = await executeTool({ context: input } as any);
+      const result = await executeTool(input as any);
       expect(result.success).toBe(false);
       expect(result.error).toContain('Email response validation failed');
     });
@@ -414,7 +414,7 @@ describe('phishingEditorTool', () => {
         editInstruction: 'Update subject',
       };
 
-      await executeTool({ context: input } as any);
+      await executeTool(input as any);
 
       expect(putSpy).toHaveBeenCalledWith(
         'phishing:phishing-123:email:en-gb',
@@ -437,7 +437,7 @@ describe('phishingEditorTool', () => {
         editInstruction: 'Update all content',
       };
 
-      await executeTool({ context: input } as any);
+      await executeTool(input as any);
 
       expect(putSpy).toHaveBeenCalledWith(
         'phishing:phishing-123:landing:en-gb',
@@ -468,7 +468,7 @@ describe('phishingEditorTool', () => {
         editInstruction: 'Update subject only',
       };
 
-      const result = await executeTool({ context: input, writer: mockWriter } as any);
+      const result = await executeTool(input as any, { writer: mockWriter } as any);
       expect(result.success).toBe(true);
       expect(mockWriter.write).toHaveBeenCalled();
     });
@@ -479,17 +479,13 @@ describe('phishingEditorTool', () => {
         editInstruction: 'Update subject',
       };
 
-      await executeTool({ context: input, writer: mockWriter } as any);
+      await executeTool(input as any, { writer: mockWriter } as any);
 
       expect(mockWriter.write).toHaveBeenCalled();
       const writeCalls = mockWriter.write.mock.calls;
 
-      // Should have text-start, text-delta (email), text-end
-      expect(writeCalls.length).toBeGreaterThanOrEqual(2);
-
-      // Check for email streaming
       const emailCall = writeCalls.find(
-        call => call[0].type === 'text-delta' && call[0].delta?.includes('phishing_email')
+        call => call[0].type === 'data-ui-signal' && call[0].data?.signal === 'phishing_email'
       );
       expect(emailCall).toBeDefined();
     });
@@ -504,13 +500,12 @@ describe('phishingEditorTool', () => {
         editInstruction: 'Update all content',
       };
 
-      await executeTool({ context: input, writer: mockWriter } as any);
+      await executeTool(input as any, { writer: mockWriter } as any);
 
       const writeCalls = mockWriter.write.mock.calls;
 
-      // Check for landing page streaming
       const landingCall = writeCalls.find(
-        call => call[0].type === 'text-delta' && call[0].delta?.includes('landing_page')
+        call => call[0].type === 'data-ui-signal' && call[0].data?.signal === 'landing_page'
       );
       expect(landingCall).toBeDefined();
     });
@@ -526,7 +521,7 @@ describe('phishingEditorTool', () => {
       };
 
       // Should still succeed even if streaming fails
-      const result = await executeTool({ context: input, writer: errorWriter } as any);
+      const result = await executeTool(input as any, { writer: errorWriter } as any);
       expect(result.success).toBe(true);
     });
 
@@ -536,7 +531,7 @@ describe('phishingEditorTool', () => {
         editInstruction: 'Update subject',
       };
 
-      await executeTool({ context: input } as any);
+      await executeTool(input as any);
 
       expect(mockWriter.write).not.toHaveBeenCalled();
     });
@@ -558,7 +553,7 @@ describe('phishingEditorTool', () => {
         editInstruction: 'Update landing',
       };
 
-      const result = (await executeTool({ context: input } as any)) as any;
+      const result = (await executeTool(input as any)) as any;
       expect(result.success).toBe(true);
       expect(result.data.summary).toContain('landing page');
     });
@@ -569,7 +564,7 @@ describe('phishingEditorTool', () => {
         editInstruction: 'Update subject',
       };
 
-      const result = await executeTool({ context: input } as any);
+      const result = await executeTool(input as any);
 
       expect(result.success).toBe(true);
       expect(result.status).toBe('success');
@@ -590,7 +585,7 @@ describe('phishingEditorTool', () => {
         editInstruction: 'Update all content',
       };
 
-      const result = await executeTool({ context: input } as any);
+      const result = await executeTool(input as any);
 
       expect(result.success).toBe(true);
       expect(result.data?.message).toContain('Email');
@@ -607,7 +602,7 @@ describe('phishingEditorTool', () => {
         editInstruction: 'Update subject',
       };
 
-      const result = await executeTool({ context: input } as any);
+      const result = await executeTool(input as any);
       expect(result.success).toBe(true);
     });
 
@@ -626,7 +621,7 @@ describe('phishingEditorTool', () => {
         hasBrandUpdate: true,
       };
 
-      const result = await executeTool({ context: input } as any);
+      const result = await executeTool(input as any);
       expect(result.success).toBe(true);
       expect(detectSpy).toHaveBeenCalled();
     });
@@ -639,7 +634,7 @@ describe('phishingEditorTool', () => {
         editInstruction: 'Update subject',
       };
 
-      const result = await executeTool({ context: input } as any);
+      const result = await executeTool(input as any);
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
     });
@@ -652,7 +647,7 @@ describe('phishingEditorTool', () => {
         editInstruction: 'Update subject',
       };
 
-      const result = await executeTool({ context: input } as any);
+      const result = await executeTool(input as any);
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
     });
@@ -665,7 +660,7 @@ describe('phishingEditorTool', () => {
         editInstruction: 'Update subject',
       };
 
-      const result = await executeTool({ context: input } as any);
+      const result = await executeTool(input as any);
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
     });
@@ -678,7 +673,7 @@ describe('phishingEditorTool', () => {
         editInstruction: 'Update subject',
       };
 
-      const result = await executeTool({ context: input } as any);
+      const result = await executeTool(input as any);
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
       expect(result.message).toContain('Failed to edit');
@@ -701,7 +696,7 @@ describe('phishingEditorTool', () => {
         editInstruction: 'Update subject',
       };
 
-      const result = await executeTool({ context: input } as any);
+      const result = await executeTool(input as any);
       expect(result.success).toBe(true);
     });
 
@@ -720,7 +715,7 @@ describe('phishingEditorTool', () => {
         editInstruction: 'Update subject',
       };
 
-      const result = await executeTool({ context: input } as any);
+      const result = await executeTool(input as any);
       expect(result.success).toBe(false);
       expect(result.error).toContain('validation');
     });
@@ -743,7 +738,7 @@ describe('phishingEditorTool', () => {
           editInstruction: 'Update',
         };
 
-        const result = await executeTool({ context: input } as any);
+        const result = await executeTool(input as any);
         expect(result.success).toBe(true);
       }
     });
@@ -763,7 +758,7 @@ describe('phishingEditorTool', () => {
         editInstruction: 'Update',
       };
 
-      const result = await executeTool({ context: input } as any);
+      const result = await executeTool(input as any);
       // Email succeeds, invalid landing page is skipped (graceful degradation)
       expect(result.success).toBe(true);
       expect(result.data?.message).toContain('Email');
@@ -781,7 +776,7 @@ describe('phishingEditorTool', () => {
         editInstruction: injectionAttempt,
       };
 
-      await executeTool({ context: input } as any);
+      await executeTool(input as any);
 
       // Verify generateText was called with escaped instruction
       expect(generateText).toHaveBeenCalled();
@@ -806,7 +801,7 @@ describe('phishingEditorTool', () => {
         editInstruction: specialChars,
       };
 
-      const result = await executeTool({ context: input } as any);
+      const result = await executeTool(input as any);
       expect(result).toBeDefined();
       expect(generateText).toHaveBeenCalled();
     });
@@ -824,7 +819,7 @@ describe('phishingEditorTool', () => {
       // Mock normal response
       (generateText as any).mockResolvedValue(mockEditedEmailResponse);
 
-      const result = await executeTool({ context: input } as any);
+      const result = await executeTool(input as any);
 
       // Should complete successfully within timeout
       expect(result.success).toBe(true);
@@ -840,7 +835,7 @@ describe('phishingEditorTool', () => {
         editInstruction: 'Update subject',
       };
 
-      const result = await executeTool({ context: input } as any);
+      const result = await executeTool(input as any);
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
     });
@@ -854,7 +849,7 @@ describe('phishingEditorTool', () => {
         language: 'en-gb',
       };
 
-      const result = await executeTool({ context: input } as any);
+      const result = await executeTool(input as any);
 
       // Result should have proper structure
       expect(result).toHaveProperty('success');
@@ -876,7 +871,7 @@ describe('phishingEditorTool', () => {
         editInstruction: 'Update all',
       };
 
-      const result = (await executeTool({ context: input } as any)) as any;
+      const result = (await executeTool(input as any)) as any;
 
       if (result.success && result.data) {
         // Type system ensures message exists

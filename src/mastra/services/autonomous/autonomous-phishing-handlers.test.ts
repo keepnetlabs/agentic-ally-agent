@@ -99,17 +99,15 @@ describe('autonomous-phishing-handlers', () => {
       expect(result.message).toContain('generated, uploaded and assigned');
       expect(mockPhishingExecute).toHaveBeenCalled();
       expect(mockUploadExecute).toHaveBeenCalledWith(
-        expect.objectContaining({
-          context: expect.objectContaining({ phishingId: 'phish-abc-123' }),
-        })
+        expect.objectContaining({ phishingId: 'phish-abc-123' }),
+        expect.anything()
       );
       expect(mockAssignExecute).toHaveBeenCalledWith(
         expect.objectContaining({
-          context: expect.objectContaining({
-            resourceId: 'res-456',
-            targetUserResourceId: 'user-123',
-          }),
-        })
+          resourceId: 'res-456',
+          targetUserResourceId: 'user-123',
+        }),
+        expect.anything()
       );
     });
 
@@ -175,12 +173,11 @@ describe('autonomous-phishing-handlers', () => {
       expect(result.success).toBe(true);
       expect(mockAssignExecute).toHaveBeenCalledWith(
         expect.objectContaining({
-          context: expect.objectContaining({
-            resourceId: 'res-999',
-            targetUserResourceId: 'user-999',
-            trainingId: 'training-res-1',
-          }),
-        })
+          resourceId: 'res-999',
+          targetUserResourceId: 'user-999',
+          trainingId: 'training-res-1',
+        }),
+        expect.anything()
       );
     });
 
@@ -341,10 +338,9 @@ describe('autonomous-phishing-handlers', () => {
       expect(result.success).toBe(true);
       expect(mockPhishingExecute).toHaveBeenCalledWith(
         expect.objectContaining({
-          context: expect.objectContaining({
-            method: 'Data-Submission',
-          }),
-        })
+          method: 'Data-Submission',
+        }),
+        expect.anything()
       );
     });
 
@@ -380,10 +376,9 @@ describe('autonomous-phishing-handlers', () => {
       expect(result.success).toBe(true);
       expect(mockPhishingExecute).toHaveBeenCalledWith(
         expect.objectContaining({
-          context: expect.objectContaining({
-            method: 'Data-Submission',
-          }),
-        })
+          method: 'Data-Submission',
+        }),
+        expect.anything()
       );
     });
 
@@ -429,10 +424,9 @@ describe('autonomous-phishing-handlers', () => {
       expect(mockPhishingExecute).toHaveBeenCalled();
       expect(mockAssignExecute).toHaveBeenCalledWith(
         expect.objectContaining({
-          context: expect.objectContaining({
-            targetGroupResourceId: 'group-789',
-          }),
-        })
+          targetGroupResourceId: 'group-789',
+        }),
+        expect.anything()
       );
     });
 

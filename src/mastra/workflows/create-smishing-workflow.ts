@@ -9,7 +9,7 @@ import { detectIndustry, fixBrokenImages, validateLandingPage, logValidationResu
 import { streamDirectReasoning } from '../utils/core/reasoning-stream';
 import { extractReasoning } from '../utils/core/ai-utils';
 import {
-  createSmishingInputSchema,
+  createSmishingStepInputSchema,
   createSmishingAnalysisSchema,
   createSmishingSmsOutputSchema,
   createSmishingOutputSchema,
@@ -38,7 +38,7 @@ import { PHISHING_SCENARIO_PARAMS, PHISHING_CONTENT_PARAMS } from '../utils/conf
 const analyzeRequest = createStep({
   id: 'analyze-smishing-request',
   description: 'Analyze smishing request, design scenario, detect brand/logo, and determine industry design',
-  inputSchema: createSmishingInputSchema,
+  inputSchema: createSmishingStepInputSchema,
   outputSchema: createSmishingAnalysisSchema,
   execute: async ({ inputData }) => {
     const logger = getLogger('AnalyzeSmishingRequest');
@@ -568,7 +568,7 @@ const saveSmishingContent = createStep({
 const createSmishingWorkflow = createWorkflow({
   id: 'create-smishing-workflow',
   description: 'Generate realistic smishing (SMS) simulations',
-  inputSchema: createSmishingInputSchema,
+  inputSchema: createSmishingStepInputSchema,
   outputSchema: createSmishingOutputSchema,
 })
   .then(analyzeRequest)

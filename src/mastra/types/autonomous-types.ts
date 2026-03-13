@@ -1,7 +1,7 @@
 // src/mastra/types/autonomous-types.ts
 
 import type { CloudflareEnv } from './api-types';
-import { Mastra } from '@mastra/core';
+import type { Mastra } from '@mastra/core/mastra';
 import type { AnalysisReport } from '../tools/user-management/user-management-types';
 
 /** All supported autonomous action types (single source of truth) */

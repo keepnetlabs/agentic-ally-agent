@@ -705,7 +705,7 @@ describe('prompt-analyzer - Additional Functions', () => {
         text: 'tr-tr',
       });
 
-      const result = await detectTargetLanguageWithAI('test prompt', {});
+      const result = await detectTargetLanguageWithAI('test prompt', {} as any);
       expect(result).toBe('tr-TR');
     });
 
@@ -716,7 +716,7 @@ describe('prompt-analyzer - Additional Functions', () => {
 
       // validateBCP47LanguageCode mock returns 'en-gb' (DEFAULT) for 'invalid-code'
       // Code returns null if validated === DEFAULT_LANGUAGE
-      const result = await detectTargetLanguageWithAI('test prompt', {});
+      const result = await detectTargetLanguageWithAI('test prompt', {} as any);
       // The implementation now allows returning default language if valid
       // expect(result).toBeNull(); // Old behavior
       expect(result).toBe('en-gb');
@@ -730,7 +730,7 @@ describe('prompt-analyzer - Additional Functions', () => {
       const longPrompt = `Start section ${'A'.repeat(2500)} End section`;
       const longContext = `${'B'.repeat(2500)} Preferred Language: Turkish`;
 
-      await detectTargetLanguageWithAI(longPrompt, {}, longContext);
+      await detectTargetLanguageWithAI(longPrompt, {} as any, longContext);
 
       const callArgs = (ai.generateText as any).mock.calls[0][0];
       expect(callArgs.prompt).toContain('Start section');
@@ -743,7 +743,7 @@ describe('prompt-analyzer - Additional Functions', () => {
         text: '   ',
       });
 
-      const result = await detectTargetLanguageWithAI('test prompt', {});
+      const result = await detectTargetLanguageWithAI('test prompt', {} as any);
       expect(result).toBeNull();
     });
   });
@@ -756,7 +756,7 @@ describe('prompt-analyzer - Additional Functions', () => {
 
       await analyzeUserPromptWithAI({
         userPrompt: 'Create training',
-        model: {},
+        model: {} as any,
         suggestedLanguage: 'fr-fr',
       });
 
@@ -801,7 +801,7 @@ describe('prompt-analyzer - Additional Functions', () => {
 
       const result = await analyzeUserPromptWithAI({
         userPrompt: 'Create a phishing course',
-        model: {},
+        model: {} as any,
         suggestedDepartment: 'IT',
       });
 
@@ -825,7 +825,7 @@ describe('prompt-analyzer - Additional Functions', () => {
 
       await analyzeUserPromptWithAI({
         userPrompt: 'Test',
-        model: {},
+        model: {} as any,
       });
 
       expect(mockRepo.getSmartSchemaHints).toHaveBeenCalled();
@@ -850,7 +850,7 @@ describe('prompt-analyzer - Additional Functions', () => {
 
       const result = await analyzeUserPromptWithAI({
         userPrompt: 'Merhaba dünya', // Turkish prompt
-        model: {},
+        model: {} as any,
       });
 
       // It should infer language from 'Merhaba dünya' -> 'tr' and pass that into the final prompt
@@ -888,7 +888,7 @@ describe('prompt-analyzer - Additional Functions', () => {
 
       const result = await mod.analyzeUserPromptWithAI({
         userPrompt: 'Merhaba dünya',
-        model: {},
+        model: {} as any,
       });
 
       expect(result.success).toBe(true);
@@ -924,7 +924,7 @@ describe('prompt-analyzer - Additional Functions', () => {
 
       await analyzeUserPromptWithAI({
         userPrompt: 'Test',
-        model: {},
+        model: {} as any,
         writer: mockWriter,
       });
 
@@ -936,22 +936,24 @@ describe('prompt-analyzer - Additional Functions', () => {
       // It should write start
       expect(mockWriter.write).toHaveBeenCalledWith(
         expect.objectContaining({
-          type: 'reasoning-start',
+          type: 'data-reasoning',
+          data: expect.objectContaining({ event: 'start' }),
         })
       );
 
       // It should write delta (the result of summarization)
       expect(mockWriter.write).toHaveBeenCalledWith(
         expect.objectContaining({
-          type: 'reasoning-delta',
-          delta: 'User friendly thinking...',
+          type: 'data-reasoning',
+          data: expect.objectContaining({ event: 'delta', text: 'User friendly thinking...' }),
         })
       );
 
       // It should write end
       expect(mockWriter.write).toHaveBeenCalledWith(
         expect.objectContaining({
-          type: 'reasoning-end',
+          type: 'data-reasoning',
+          data: expect.objectContaining({ event: 'end' }),
         })
       );
     });
@@ -963,7 +965,7 @@ describe('prompt-analyzer - Additional Functions', () => {
 
       const result = await analyzeUserPromptWithAI({
         userPrompt: 'Test',
-        model: {},
+        model: {} as any,
         additionalContext: 'User is CTO',
       });
 
@@ -981,7 +983,7 @@ describe('prompt-analyzer - Additional Functions', () => {
 
       const result = await analyzeUserPromptWithAI({
         userPrompt: 'Test',
-        model: {},
+        model: {} as any,
       });
 
       expect(result.data.themeColor).toBeUndefined();
@@ -997,7 +999,7 @@ describe('prompt-analyzer - Additional Functions', () => {
 
       const result = await analyzeUserPromptWithAI({
         userPrompt: 'Test',
-        model: {},
+        model: {} as any,
       });
 
       // Note: prompt-analyzer logic checks only presence in THEME_COLORS.VALUES
@@ -1011,7 +1013,7 @@ describe('prompt-analyzer - Additional Functions', () => {
 
       const result = await analyzeUserPromptWithAI({
         userPrompt: 'Test',
-        model: {},
+        model: {} as any,
         customRequirements: 'Must include video',
       });
 
@@ -1028,7 +1030,7 @@ describe('prompt-analyzer - Additional Functions', () => {
 
       const result = await analyzeUserPromptWithAI({
         userPrompt: 'Test',
-        model: {},
+        model: {} as any,
       });
 
       expect(result.data.mustKeepDetails).toEqual([
@@ -1052,7 +1054,7 @@ describe('prompt-analyzer - Additional Functions', () => {
 
       const result = await analyzeUserPromptWithAI({
         userPrompt: 'Create a microlearning for invoice fraud prevention',
-        model: {},
+        model: {} as any,
       });
 
       expect(result.success).toBe(true);
@@ -1070,7 +1072,7 @@ describe('prompt-analyzer - Additional Functions', () => {
       await expect(
         analyzeUserPromptWithAI({
           userPrompt: 'Test',
-          model: {},
+          model: {} as any,
         })
       ).rejects.toThrow('load failed hard');
     });
@@ -1080,7 +1082,7 @@ describe('prompt-analyzer - Additional Functions', () => {
     it('should return fallback data with correct defaults', async () => {
       const result = await getFallbackAnalysis({
         userPrompt: 'Learn Python Safety',
-        model: {},
+        model: {} as any,
         suggestedDepartment: 'Engineering',
       });
 
@@ -1092,7 +1094,7 @@ describe('prompt-analyzer - Additional Functions', () => {
     it('should return normal fallback for non-code', async () => {
       const result = await getFallbackAnalysis({
         userPrompt: 'Be careful with emails',
-        model: {},
+        model: {} as any,
       });
 
       expect(result.isCodeTopic).toBe(false);
@@ -1102,7 +1104,7 @@ describe('prompt-analyzer - Additional Functions', () => {
     it('should detect vishing keywords in fallback', async () => {
       const result = await getFallbackAnalysis({
         userPrompt: 'Create voice phishing and phone scam awareness module',
-        model: {},
+        model: {} as any,
       });
 
       expect(result.isVishing).toBe(true);
@@ -1113,7 +1115,7 @@ describe('prompt-analyzer - Additional Functions', () => {
     it('should detect smishing keywords and infer telegram delivery channel', async () => {
       const result = await getFallbackAnalysis({
         userPrompt: 'Create smishing simulation for Telegram message scams',
-        model: {},
+        model: {} as any,
       });
 
       expect(result.isSmishing).toBe(true);
@@ -1124,7 +1126,7 @@ describe('prompt-analyzer - Additional Functions', () => {
     it('should default smishing delivery channel to sms when channel is not explicit', async () => {
       const result = await getFallbackAnalysis({
         userPrompt: 'Create SMS phishing (smishing) awareness training',
-        model: {},
+        model: {} as any,
       });
 
       expect(result.isSmishing).toBe(true);
@@ -1134,7 +1136,7 @@ describe('prompt-analyzer - Additional Functions', () => {
     it('should preserve custom requirements and additional context in fallback', async () => {
       const result = await getFallbackAnalysis({
         userPrompt: 'Create security awareness module',
-        model: {},
+        model: {} as any,
         additionalContext: 'Target audience is finance team',
         customRequirements: 'Include practical examples',
       });
@@ -1147,7 +1149,7 @@ describe('prompt-analyzer - Additional Functions', () => {
     it('should infer linkedin delivery channel for smishing fallback', async () => {
       const result = await getFallbackAnalysis({
         userPrompt: 'Create smishing awareness for LinkedIn message scams',
-        model: {},
+        model: {} as any,
       });
 
       expect(result.isSmishing).toBe(true);
@@ -1159,7 +1161,7 @@ describe('prompt-analyzer - Additional Functions', () => {
 
       const result = await getFallbackAnalysis({
         userPrompt: '\u3042',
-        model: {},
+        model: {} as any,
       });
 
       expect(result.language).toBe('ja');

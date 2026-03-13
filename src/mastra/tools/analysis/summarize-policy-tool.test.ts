@@ -347,7 +347,7 @@ describe('summarizePolicyTool', () => {
 
     it('should return Promise', async () => {
       const execute = (summarizePolicyTool as any).execute;
-      const result = execute({ context: { question: 'What is phishing?' } });
+      const result = execute({ question: 'What is phishing?' });
 
       expect(result instanceof Promise).toBe(true);
     });
@@ -356,9 +356,8 @@ describe('summarizePolicyTool', () => {
   describe('Missing Question Parameter', () => {
     it('should return error (validation failed) when question is missing', async () => {
       const execute = (summarizePolicyTool as any).execute;
-      const context = { context: {} };
 
-      const result = await execute(context);
+      const result = await execute({});
 
       // Mastra's built-in validation fails before reaching execute logic
       expect(result.error).toBe(true);
@@ -367,9 +366,8 @@ describe('summarizePolicyTool', () => {
 
     it('should return error (validation failed) when question is empty', async () => {
       const execute = (summarizePolicyTool as any).execute;
-      const context = { context: { question: '' } };
 
-      const result = await execute(context);
+      const result = await execute({ question: '' });
 
       // Mastra's built-in validation fails before reaching execute logic
       expect(result.error).toBe(true);
@@ -379,24 +377,15 @@ describe('summarizePolicyTool', () => {
   describe('FocusArea Optional Parameter', () => {
     it('should accept question with focusArea', async () => {
       const execute = (summarizePolicyTool as any).execute;
-      const context = {
-        context: {
-          question: 'What should I do?',
-          focusArea: 'phishing',
-        },
-      };
 
-      const result = await execute(context);
+      const result = await execute({ question: 'What should I do?', focusArea: 'phishing' });
       expect(result).toBeDefined();
     });
 
     it('should handle missing focusArea', async () => {
       const execute = (summarizePolicyTool as any).execute;
-      const context = {
-        context: { question: 'What should I do?' },
-      };
 
-      const result = await execute(context);
+      const result = await execute({ question: 'What should I do?' });
       expect(result).toBeDefined();
     });
 
@@ -622,7 +611,7 @@ LANGUAGE: Respond in ${language || 'English'}`;
     it('should return error when policy is empty or not found', async () => {
       (policyCache.getPolicySummary as any).mockResolvedValue('');
       const execute = (summarizePolicyTool as any).execute;
-      const result = await execute({ context: { question: 'What is the policy?' } });
+      const result = await execute({ question: 'What is the policy?' });
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
     });
@@ -630,7 +619,7 @@ LANGUAGE: Respond in ${language || 'English'}`;
     it('should return error when policy is whitespace only', async () => {
       (policyCache.getPolicySummary as any).mockResolvedValue('   \n\t  ');
       const execute = (summarizePolicyTool as any).execute;
-      const result = await execute({ context: { question: 'What is the policy?' } });
+      const result = await execute({ question: 'What is the policy?' });
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
     });
@@ -646,7 +635,7 @@ LANGUAGE: Respond in ${language || 'English'}`;
         }),
       });
       const execute = (summarizePolicyTool as any).execute;
-      const result = await execute({ context: { question: 'What is the policy?' } });
+      const result = await execute({ question: 'What is the policy?' });
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
       expect(result.error).toContain('summarize-policy');
@@ -654,11 +643,8 @@ LANGUAGE: Respond in ${language || 'English'}`;
 
     it('should handle empty policy gracefully', async () => {
       const execute = (summarizePolicyTool as any).execute;
-      const context = {
-        context: { question: 'What is the policy?' },
-      };
 
-      const result = await execute(context);
+      const result = await execute({ question: 'What is the policy?' });
       expect(result).toBeDefined();
     });
 
@@ -686,9 +672,8 @@ LANGUAGE: Respond in ${language || 'English'}`;
 
     it('should log errors appropriately', async () => {
       const execute = (summarizePolicyTool as any).execute;
-      const context = { context: { question: 'What is the policy?' } };
 
-      const result = await execute(context);
+      const result = await execute({ question: 'What is the policy?' });
       expect(result).toBeDefined();
     });
   });
@@ -723,81 +708,57 @@ LANGUAGE: Respond in ${language || 'English'}`;
   describe('Integration Scenarios', () => {
     it('should handle complete policy summarization request in English', async () => {
       const execute = (summarizePolicyTool as any).execute;
-      const context = {
-        context: {
-          question: 'What is our data protection policy?',
-          focusArea: 'data protection',
-          language: 'en',
-        },
-      };
 
-      const result = await execute(context);
+      const result = await execute({
+        question: 'What is our data protection policy?',
+        focusArea: 'data protection',
+        language: 'en',
+      });
       expect(result).toBeDefined();
     });
 
     it('should handle request in Turkish', async () => {
       const execute = (summarizePolicyTool as any).execute;
-      const context = {
-        context: {
-          question: 'Veri koruması politikamız nedir?',
-          language: 'tr',
-        },
-      };
 
-      const result = await execute(context);
+      const result = await execute({ question: 'Veri koruması politikamız nedir?', language: 'tr' });
       expect(result).toBeDefined();
     });
 
     it('should handle request in German', async () => {
       const execute = (summarizePolicyTool as any).execute;
-      const context = {
-        context: {
-          question: 'Was ist unsere Datenschutzrichtlinie?',
-          language: 'de',
-        },
-      };
 
-      const result = await execute(context);
+      const result = await execute({ question: 'Was ist unsere Datenschutzrichtlinie?', language: 'de' });
       expect(result).toBeDefined();
     });
 
     it('should handle request with model override', async () => {
       const execute = (summarizePolicyTool as any).execute;
-      const context = {
-        context: {
-          question: 'What is the compliance policy?',
-          modelProvider: 'OPENAI',
-          model: 'gpt-4o',
-        },
-      };
 
-      const result = await execute(context);
+      const result = await execute({
+        question: 'What is the compliance policy?',
+        modelProvider: 'OPENAI',
+        model: 'gpt-4o',
+      });
       expect(result).toBeDefined();
     });
 
     it('should handle comprehensive request with all parameters', async () => {
       const execute = (summarizePolicyTool as any).execute;
-      const context = {
-        context: {
-          question: 'What should I do about phishing emails?',
-          focusArea: 'phishing',
-          language: 'en',
-          modelProvider: 'OPENAI',
-          model: 'gpt-4o-mini',
-        },
-      };
 
-      const result = await execute(context);
+      const result = await execute({
+        question: 'What should I do about phishing emails?',
+        focusArea: 'phishing',
+        language: 'en',
+        modelProvider: 'OPENAI',
+        model: 'gpt-4o-mini',
+      });
       expect(result).toBeDefined();
     });
 
     it('should handle minimal request with only question', async () => {
       const execute = (summarizePolicyTool as any).execute;
-      const context = {
-        context: { question: 'What is the policy?' },
-      };
 
-      const result = await execute(context);
+      const result = await execute({ question: 'What is the policy?' });
       expect(result).toBeDefined();
     });
   });
@@ -864,16 +825,10 @@ LANGUAGE: Respond in ${language || 'English'}`;
     it('should maintain consistency in repeated calls', async () => {
       const execute = (summarizePolicyTool as any).execute;
 
-      const context1 = {
-        context: { question: 'What is the policy?' },
-      };
+      const input = { question: 'What is the policy?' };
 
-      const context2 = {
-        context: { question: 'What is the policy?' },
-      };
-
-      const result1 = await execute(context1);
-      const result2 = await execute(context2);
+      const result1 = await execute(input);
+      const result2 = await execute(input);
 
       expect(result1).toBeDefined();
       expect(result2).toBeDefined();

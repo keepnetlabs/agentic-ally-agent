@@ -1,8 +1,16 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { policySummaryAgent } from './policy-summary-agent';
 import { AGENT_NAMES } from '../constants';
 
 describe('Policy Summary Agent', () => {
+  let instructions: string;
+  let tools: Record<string, any>;
+
+  beforeAll(async () => {
+    instructions = (await policySummaryAgent.getInstructions()) as string;
+    tools = await policySummaryAgent.listTools();
+  });
+
   describe('Agent Configuration', () => {
     it('should be properly instantiated', () => {
       expect(policySummaryAgent).toBeDefined();
@@ -18,29 +26,29 @@ describe('Policy Summary Agent', () => {
     });
 
     it('should have tools configured', () => {
-      expect(policySummaryAgent.tools).toHaveProperty('summarizePolicy');
+      expect(tools).toHaveProperty('summarizePolicy');
     });
 
     it('should have only summarizePolicy tool', () => {
-      const toolKeys = Object.keys(policySummaryAgent.tools);
+      const toolKeys = Object.keys(tools);
       expect(toolKeys).toHaveLength(1);
       expect(toolKeys[0]).toBe('summarizePolicy');
     });
 
     it('should have summarizePolicy as object', () => {
-      expect(typeof policySummaryAgent.tools.summarizePolicy).toBe('object');
+      expect(typeof tools.summarizePolicy).toBe('object');
     });
 
     it('should have description-like mission in instructions', () => {
-      expect(policySummaryAgent.instructions).toContain('analyze company security policies');
+      expect(instructions).toContain('analyze company security policies');
     });
 
     it('should have instructions as string', () => {
-      expect(typeof policySummaryAgent.instructions).toBe('string');
+      expect(typeof instructions).toBe('string');
     });
 
     it('should have non-empty instructions', () => {
-      expect(policySummaryAgent.instructions.length).toBeGreaterThan(100);
+      expect(instructions.length).toBeGreaterThan(100);
     });
 
     it('should have model configured', () => {
@@ -49,7 +57,7 @@ describe('Policy Summary Agent', () => {
   });
 
   describe('Agent Instructions', () => {
-    const instructions = policySummaryAgent.instructions;
+    
 
     it('should define role as Policy Intelligence Specialist', () => {
       expect(instructions).toContain('Policy Intelligence Specialist');
@@ -275,25 +283,25 @@ describe('Policy Summary Agent', () => {
 
   describe('Tool Configuration', () => {
     it('should have tools object', () => {
-      expect(policySummaryAgent.tools).toBeDefined();
-      expect(typeof policySummaryAgent.tools).toBe('object');
+      expect(tools).toBeDefined();
+      expect(typeof tools).toBe('object');
     });
 
     it('should have summarizePolicy tool', () => {
-      expect(policySummaryAgent.tools.summarizePolicy).toBeDefined();
+      expect(tools.summarizePolicy).toBeDefined();
     });
 
     it('should only have one tool', () => {
-      const toolCount = Object.keys(policySummaryAgent.tools).length;
+      const toolCount = Object.keys(tools).length;
       expect(toolCount).toBe(1);
     });
 
     it('should not have getUserInfo tool', () => {
-      expect(policySummaryAgent.tools).not.toHaveProperty('getUserInfo');
+      expect(tools).not.toHaveProperty('getUserInfo');
     });
 
     it('should not have getTargetGroupInfo tool', () => {
-      expect(policySummaryAgent.tools).not.toHaveProperty('getTargetGroupInfo');
+      expect(tools).not.toHaveProperty('getTargetGroupInfo');
     });
   });
 
@@ -309,7 +317,7 @@ describe('Policy Summary Agent', () => {
   });
 
   describe('Instructions Structure', () => {
-    const instructions = policySummaryAgent.instructions;
+    
 
     it('should have all major sections', () => {
       expect(instructions).toContain('Policy Intelligence Specialist');
@@ -358,7 +366,7 @@ describe('Policy Summary Agent', () => {
   });
 
   describe('Workflow Instructions', () => {
-    const instructions = policySummaryAgent.instructions;
+    
 
     it('should have 4 workflow steps', () => {
       expect(instructions).toContain('1. **Listen**');
@@ -393,7 +401,7 @@ describe('Policy Summary Agent', () => {
   });
 
   describe('Response Format Instructions', () => {
-    const instructions = policySummaryAgent.instructions;
+    
 
     it('should require single HTML block', () => {
       expect(instructions).toContain('SINGLE block of HTML');
@@ -436,7 +444,7 @@ describe('Policy Summary Agent', () => {
   });
 
   describe('Language Rules', () => {
-    const instructions = policySummaryAgent.instructions;
+    
 
     it('should define language matching behavior', () => {
       expect(instructions).toContain("Match the user's CURRENT message language");
@@ -463,7 +471,7 @@ describe('Policy Summary Agent', () => {
   });
 
   describe('Critical Rules', () => {
-    const instructions = policySummaryAgent.instructions;
+    
 
     it('should have conciseness requirement', () => {
       expect(instructions).toContain('conciseness');
@@ -493,9 +501,9 @@ describe('Policy Summary Agent', () => {
   describe('Edge Cases', () => {
     it('should handle agent with all properties', () => {
       expect(policySummaryAgent.name).toBeDefined();
-      expect(policySummaryAgent.instructions).toBeDefined();
+      expect(instructions).toBeDefined();
       expect(policySummaryAgent.model).toBeDefined();
-      expect(policySummaryAgent.tools).toBeDefined();
+      expect(tools).toBeDefined();
     });
 
     it('should have non-empty name', () => {
@@ -503,17 +511,17 @@ describe('Policy Summary Agent', () => {
     });
 
     it('should have substantial instructions', () => {
-      expect(policySummaryAgent.instructions.length).toBeGreaterThan(500);
+      expect(instructions.length).toBeGreaterThan(500);
     });
 
     it('should have valid tools object', () => {
-      expect(policySummaryAgent.tools).not.toBeNull();
-      expect(Array.isArray(policySummaryAgent.tools)).toBe(false);
+      expect(tools).not.toBeNull();
+      expect(Array.isArray(tools)).toBe(false);
     });
   });
 
   describe('HTML Format Validation', () => {
-    const instructions = policySummaryAgent.instructions;
+    
 
     it('should include all required HTML tags', () => {
       expect(instructions).toContain('<strong>');
@@ -542,7 +550,7 @@ describe('Policy Summary Agent', () => {
   });
 
   describe('Tool Examples', () => {
-    const instructions = policySummaryAgent.instructions;
+    
 
     it('should include Turkish query example', () => {
       expect(instructions).toContain('Şifre kuralları neler?');
@@ -560,7 +568,7 @@ describe('Policy Summary Agent', () => {
   });
 
   describe('No Hallucination Rules', () => {
-    const instructions = policySummaryAgent.instructions;
+    
 
     it('should define no policy found behavior', () => {
       expect(instructions).toContain('No policy found');
@@ -590,7 +598,7 @@ describe('Policy Summary Agent', () => {
     });
 
     it('should have complete agent structure', () => {
-      const requiredProps = ['name', 'instructions', 'model', 'tools'];
+      const requiredProps = ['name', 'getInstructions', 'model', 'listTools'];
       requiredProps.forEach(prop => {
         expect(policySummaryAgent).toHaveProperty(prop);
       });

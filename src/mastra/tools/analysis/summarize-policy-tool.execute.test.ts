@@ -95,18 +95,20 @@ describe('summarizePolicyTool.execute', () => {
   it('returns tool error when policy summary is empty', async () => {
     mocks.getPolicySummary.mockResolvedValueOnce('');
 
-    const result = await summarizePolicyTool.execute({
-      context: { question: 'What is policy?' },
-    } as any);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = await summarizePolicyTool.execute!({
+      question: 'What is policy?',
+    } as any, {}) as any;
 
     expect(mocks.createToolErrorResponse).toHaveBeenCalled();
     expect(result.success).toBe(false);
   });
 
   it('returns validated success payload on happy path', async () => {
-    const result = await summarizePolicyTool.execute({
-      context: { question: 'What is phishing policy?', focusArea: 'phishing', language: 'en' },
-    } as any);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = await summarizePolicyTool.execute!({
+      question: 'What is phishing policy?', focusArea: 'phishing', language: 'en',
+    } as any, {}) as any;
 
     expect(mocks.getModelWithOverride).toHaveBeenCalled();
     expect(mocks.withRetry).toHaveBeenCalled();
@@ -129,9 +131,10 @@ describe('summarizePolicyTool.execute', () => {
       error: { code: 'SCHEMA_INVALID', message: 'invalid output shape' },
     });
 
-    const result = await summarizePolicyTool.execute({
-      context: { question: 'What is policy?' },
-    } as any);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = await summarizePolicyTool.execute!({
+      question: 'What is policy?',
+    } as any, {}) as any;
 
     expect(result.success).toBe(false);
     expect(result.error).toContain('SCHEMA_INVALID');
@@ -140,9 +143,10 @@ describe('summarizePolicyTool.execute', () => {
   it('returns external error payload when execute throws', async () => {
     mocks.generateText.mockRejectedValueOnce(new Error('LLM down'));
 
-    const result = await summarizePolicyTool.execute({
-      context: { question: 'What is policy?', focusArea: 'security' },
-    } as any);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = await summarizePolicyTool.execute!({
+      question: 'What is policy?', focusArea: 'security',
+    } as any, {}) as any;
 
     expect(mocks.normalizeError).toHaveBeenCalled();
     expect(mocks.external).toHaveBeenCalledWith('LLM down', expect.objectContaining({ step: 'policy-summarization' }));
@@ -151,9 +155,10 @@ describe('summarizePolicyTool.execute', () => {
   });
 
   it('uses English in system prompt when language is not provided', async () => {
-    await summarizePolicyTool.execute({
-      context: { question: 'What is our policy?' },
-    } as any);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    await summarizePolicyTool.execute!({
+      question: 'What is our policy?',
+    } as any, {});
 
     const generateArg = mocks.generateText.mock.calls[0][0];
     expect(generateArg.system).toContain('Respond in English');
@@ -162,9 +167,10 @@ describe('summarizePolicyTool.execute', () => {
   it('returns external error when cleaned response is not valid JSON', async () => {
     mocks.cleanResponse.mockReturnValueOnce('not-json');
 
-    const result = await summarizePolicyTool.execute({
-      context: { question: 'What is our policy?' },
-    } as any);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = await summarizePolicyTool.execute!({
+      question: 'What is our policy?',
+    } as any, {}) as any;
 
     expect(result.success).toBe(false);
     expect(result.error).toContain('EXTERNAL');
@@ -175,9 +181,10 @@ describe('summarizePolicyTool.execute', () => {
       text: '{"summary":"Only summary"}',
     });
 
-    const result = await summarizePolicyTool.execute({
-      context: { question: 'Policy question?' },
-    } as any);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = await summarizePolicyTool.execute!({
+      question: 'Policy question?',
+    } as any, {}) as any;
 
     expect(result.success).toBe(true);
     expect(result.data.summary).toBe('Only summary');
@@ -190,9 +197,10 @@ describe('summarizePolicyTool.execute', () => {
       text: '{}',
     });
 
-    const result = await summarizePolicyTool.execute({
-      context: { question: 'Policy question?' },
-    } as any);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = await summarizePolicyTool.execute!({
+      question: 'Policy question?',
+    } as any, {}) as any;
 
     expect(result.success).toBe(true);
     expect(result.data.summary).toBe('');

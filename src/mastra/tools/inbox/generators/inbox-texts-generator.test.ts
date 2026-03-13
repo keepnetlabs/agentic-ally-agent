@@ -365,20 +365,20 @@ describe('Inbox Texts Generator', () => {
 
   describe('Error Handling', () => {
     it('should handle missing topic', () => {
-      // Should use default if topic missing
-      const topic = undefined || 'General Security';
+      const maybeTopic: string | undefined = undefined;
+      const topic = maybeTopic || 'General Security';
       expect(topic).toBeTruthy();
     });
 
     it('should handle invalid language', () => {
-      // Should default to English
-      const language = 'invalid' || 'en';
+      const maybeLang: string | undefined = 'invalid';
+      const language = maybeLang || 'en';
       expect(language).toBeTruthy();
     });
 
     it('should handle empty department', () => {
-      // Should work without department context
-      const department = undefined || 'General';
+      const maybeDept: string | undefined = undefined;
+      const department = maybeDept || 'General';
       expect(department).toBeTruthy();
     });
 

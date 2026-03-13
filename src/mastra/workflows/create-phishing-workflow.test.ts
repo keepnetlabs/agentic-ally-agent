@@ -63,7 +63,7 @@ vi.mock('../constants', () => ({
       'Click-Only': ['login'],
       'Data-Submission': ['login', 'verify'],
     },
-    PAGE_TYPES: ['login', 'success', 'info'],
+    PAGE_TYPES: ['login', 'verify', 'success', 'info'],
     PLACEHOLDERS: {
       SIMULATION_LINK: '{SIMULATION_LINK}',
       TRACK_ID: '{TRACK_ID}',
@@ -195,7 +195,10 @@ describe('CreatePhishingWorkflow', () => {
     });
     mocks.detectIndustry.mockResolvedValue({
       industry: 'Technology',
-      colors: { primary: '#000' },
+      colors: { primary: '#000', secondary: '#111', accent: '#222', gradient: 'linear-gradient(#000, #111)' },
+      typography: { headingClass: 'heading', bodyClass: 'body' },
+      patterns: { cardStyle: 'card', buttonStyle: 'btn', inputStyle: 'input' },
+      logoExample: 'https://example.com/logo.png',
     });
     mocks.validateLandingPage.mockReturnValue({ isValid: true, errors: [] });
     mocks.fixBrokenImages.mockImplementation(html => html);
@@ -210,12 +213,18 @@ describe('CreatePhishingWorkflow', () => {
     mocks.generateText.mockResolvedValue({
       text: JSON.stringify({
         scenario: 'Test Scenario',
+        name: 'Test Scenario - Medium',
+        description: 'A test phishing scenario',
         category: 'Urgency',
         fromAddress: 'security@test.com',
         fromName: 'Security Team',
         method: 'Click-Only',
         isQuishing: false,
         psychologicalTriggers: ['Fear'],
+        tone: 'Urgent',
+        keyRedFlags: ['Suspicious link', 'Generic greeting'],
+        targetAudienceAnalysis: 'Targets IT department employees',
+        subjectLineStrategy: 'Creates urgency with security alert',
         subject: 'Urgent Alert',
         template: '<html>Test Email {CUSTOMMAINLOGO}</html>',
         pages: [{ type: 'login', template: '<html>Login Page</html>' }],
@@ -231,7 +240,7 @@ describe('CreatePhishingWorkflow', () => {
 
   describe('Workflow Execution', () => {
     it('should execute successfully for standard phishing', async () => {
-      const run = await createPhishingWorkflow.createRunAsync();
+      const run = await createPhishingWorkflow.createRun();
 
       const input = {
         topic: 'Password Reset',
@@ -240,7 +249,7 @@ describe('CreatePhishingWorkflow', () => {
         difficulty: 'Medium' as const,
         method: 'Click-Only' as const,
         targetProfile: { department: 'IT' },
-      };
+      } as any;
 
       const result = await run.start({ inputData: input });
 
@@ -257,20 +266,27 @@ describe('CreatePhishingWorkflow', () => {
       mocks.generateText.mockResolvedValueOnce({
         text: JSON.stringify({
           scenario: 'QR Code Scan',
+          name: 'QR Code Scan - Medium',
+          description: 'QR code phishing scenario',
           category: 'Urgency',
           fromAddress: 'hr@test.com',
           fromName: 'HR',
           method: 'Data-Submission',
           isQuishing: true,
+          psychologicalTriggers: ['Authority'],
+          tone: 'Formal',
+          keyRedFlags: ['Unexpected QR code'],
+          targetAudienceAnalysis: 'Targets all employees',
+          subjectLineStrategy: 'HR survey participation request',
         }),
       });
 
-      const run = await createPhishingWorkflow.createRunAsync();
+      const run = await createPhishingWorkflow.createRun();
       const input = {
         topic: 'HR Survey',
         isQuishing: true,
         language: 'en',
-      };
+      } as any;
 
       const result = await run.start({ inputData: input });
       expect(result.status).toBe('success');
@@ -280,8 +296,8 @@ describe('CreatePhishingWorkflow', () => {
     it('should handle analysis step failure', async () => {
       mocks.generateText.mockRejectedValue(new Error('AI invalid response'));
 
-      const run = await createPhishingWorkflow.createRunAsync();
-      const input = { topic: 'Fail', language: 'en', isQuishing: false };
+      const run = await createPhishingWorkflow.createRun();
+      const input = { topic: 'Fail', language: 'en', isQuishing: false } as any;
 
       try {
         await run.start({ inputData: input });
@@ -295,18 +311,26 @@ describe('CreatePhishingWorkflow', () => {
       mocks.generateText.mockResolvedValueOnce({
         text: JSON.stringify({
           scenario: 'Test',
+          name: 'Test - Medium',
+          description: 'Test scenario',
           category: 'Test',
           fromAddress: 'test@test.com',
           fromName: 'Test',
           method: 'Click-Only',
+          isQuishing: false,
+          psychologicalTriggers: ['Fear'],
+          tone: 'Urgent',
+          keyRedFlags: ['Test flag'],
+          targetAudienceAnalysis: 'Test audience',
+          subjectLineStrategy: 'Test strategy',
         }),
       });
 
       // Second call (Email) fails
       mocks.generateText.mockRejectedValueOnce(new Error('Email Gen Failed'));
 
-      const run = await createPhishingWorkflow.createRunAsync();
-      const input = { topic: 'Fail Email', language: 'en', isQuishing: false };
+      const run = await createPhishingWorkflow.createRun();
+      const input = { topic: 'Fail Email', language: 'en', isQuishing: false } as any;
 
       try {
         await run.start({ inputData: input });
@@ -316,14 +340,14 @@ describe('CreatePhishingWorkflow', () => {
     });
 
     it('should skip email generation if includeEmail is false', async () => {
-      const run = await createPhishingWorkflow.createRunAsync();
+      const run = await createPhishingWorkflow.createRun();
       const input = {
         topic: 'No Email',
         language: 'en',
         isQuishing: false,
         includeEmail: false,
         includeLandingPage: false,
-      };
+      } as any;
 
       const result = await run.start({ inputData: input });
 
@@ -347,10 +371,18 @@ describe('CreatePhishingWorkflow', () => {
       mocks.generateText.mockResolvedValueOnce({
         text: JSON.stringify({
           scenario: 'Test',
+          name: 'Test - Medium',
+          description: 'Test scenario',
           category: 'Test',
           fromAddress: 'test@test.com',
           fromName: 'Test',
           method: 'Click-Only',
+          isQuishing: false,
+          psychologicalTriggers: ['Fear'],
+          tone: 'Urgent',
+          keyRedFlags: ['Test flag'],
+          targetAudienceAnalysis: 'Test audience',
+          subjectLineStrategy: 'Test strategy',
         }),
       });
 
@@ -365,8 +397,8 @@ describe('CreatePhishingWorkflow', () => {
       // Third call (Landing Page) fails
       mocks.generateText.mockRejectedValueOnce(new Error('Landing Page Gen Failed'));
 
-      const run = await createPhishingWorkflow.createRunAsync();
-      const input = { topic: 'Fail Landing', language: 'en', isQuishing: false };
+      const run = await createPhishingWorkflow.createRun();
+      const input = { topic: 'Fail Landing', language: 'en', isQuishing: false } as any;
 
       try {
         await run.start({ inputData: input });
@@ -376,14 +408,14 @@ describe('CreatePhishingWorkflow', () => {
     });
 
     it('should skip landing page generation if includeLandingPage is false', async () => {
-      const run = await createPhishingWorkflow.createRunAsync();
+      const run = await createPhishingWorkflow.createRun();
       const input = {
         topic: 'No Landing Page',
         language: 'en',
         isQuishing: false,
         includeEmail: true,
         includeLandingPage: false,
-      };
+      } as any;
 
       const result = await run.start({ inputData: input });
 
@@ -408,22 +440,29 @@ describe('CreatePhishingWorkflow', () => {
       mocks.generateText.mockResolvedValueOnce({
         text: JSON.stringify({
           scenario: 'Test',
+          name: 'Test - Medium',
           category: 'Test',
           fromAddress: 'test@test.com',
           fromName: 'Test',
           method: 'Click-Only',
           description: longDescription,
+          isQuishing: false,
+          psychologicalTriggers: ['Fear'],
+          tone: 'Urgent',
+          keyRedFlags: ['Test flag'],
+          targetAudienceAnalysis: 'Test audience',
+          subjectLineStrategy: 'Test strategy',
         }),
       });
 
-      const run = await createPhishingWorkflow.createRunAsync();
+      const run = await createPhishingWorkflow.createRun();
       const input = {
         topic: 'Long Description',
         language: 'en',
         isQuishing: false,
         includeEmail: false,
         includeLandingPage: false,
-      };
+      } as any;
 
       const result = await run.start({ inputData: input });
 
@@ -440,8 +479,8 @@ describe('CreatePhishingWorkflow', () => {
         }),
       });
 
-      const run = await createPhishingWorkflow.createRunAsync();
-      const input = { topic: 'Invalid', language: 'en', isQuishing: false };
+      const run = await createPhishingWorkflow.createRun();
+      const input = { topic: 'Invalid', language: 'en', isQuishing: false } as any;
 
       try {
         await run.start({ inputData: input });
@@ -454,10 +493,18 @@ describe('CreatePhishingWorkflow', () => {
       mocks.generateText.mockResolvedValueOnce({
         text: JSON.stringify({
           scenario: 'Test',
+          name: 'Test - Medium',
+          description: 'Test scenario',
           category: 'Test',
           fromAddress: 'test@test.com',
           fromName: 'Test',
           method: 'Click-Only',
+          isQuishing: false,
+          psychologicalTriggers: ['Fear'],
+          tone: 'Urgent',
+          keyRedFlags: ['Test flag'],
+          targetAudienceAnalysis: 'Test audience',
+          subjectLineStrategy: 'Test strategy',
         }),
       });
 
@@ -468,8 +515,8 @@ describe('CreatePhishingWorkflow', () => {
         }),
       });
 
-      const run = await createPhishingWorkflow.createRunAsync();
-      const input = { topic: 'Invalid Email', language: 'en', isQuishing: false, includeLandingPage: false };
+      const run = await createPhishingWorkflow.createRun();
+      const input = { topic: 'Invalid Email', language: 'en', isQuishing: false, includeLandingPage: false } as any;
 
       try {
         await run.start({ inputData: input });
@@ -482,21 +529,28 @@ describe('CreatePhishingWorkflow', () => {
       mocks.generateText.mockResolvedValueOnce({
         text: JSON.stringify({
           scenario: 'Test',
+          name: 'Test - Medium',
+          description: 'Test scenario',
           category: 'Test',
           fromAddress: 'test@test.com',
           fromName: 'Test',
           method: 'Click-Only',
+          psychologicalTriggers: ['Fear'],
+          tone: 'Urgent',
+          keyRedFlags: ['Test flag'],
+          targetAudienceAnalysis: 'Test audience',
+          subjectLineStrategy: 'Test strategy',
         }),
       });
 
-      const run = await createPhishingWorkflow.createRunAsync();
+      const run = await createPhishingWorkflow.createRun();
       const result = await run.start({
         inputData: {
           topic: 'No Quishing Field',
           language: 'en',
           includeEmail: false,
           includeLandingPage: false,
-        },
+        } as any,
       });
 
       expect(result.status).toBe('success');
@@ -508,8 +562,8 @@ describe('CreatePhishingWorkflow', () => {
     it('should handle KV save failure', async () => {
       mocks.savePhishingBase.mockRejectedValue(new Error('KV Save Failed'));
 
-      const run = await createPhishingWorkflow.createRunAsync();
-      const input = { topic: 'KV Fail', language: 'en', isQuishing: false };
+      const run = await createPhishingWorkflow.createRun();
+      const input = { topic: 'KV Fail', language: 'en', isQuishing: false } as any;
 
       try {
         await run.start({ inputData: input });
@@ -526,8 +580,8 @@ describe('CreatePhishingWorkflow', () => {
         isRecognizedBrand: false,
       });
 
-      const run = await createPhishingWorkflow.createRunAsync();
-      const input = { topic: 'Generic IT', language: 'en', isQuishing: false };
+      const run = await createPhishingWorkflow.createRun();
+      const input = { topic: 'Generic IT', language: 'en', isQuishing: false } as any;
 
       await run.start({ inputData: input });
 
@@ -538,10 +592,18 @@ describe('CreatePhishingWorkflow', () => {
       mocks.generateText.mockResolvedValueOnce({
         text: JSON.stringify({
           scenario: 'Test',
+          name: 'Test - Medium',
+          description: 'Test scenario',
           category: 'Test',
           fromAddress: 'test@test.com',
           fromName: 'Test',
           method: 'Click-Only',
+          isQuishing: false,
+          psychologicalTriggers: ['Fear'],
+          tone: 'Urgent',
+          keyRedFlags: ['Test flag'],
+          targetAudienceAnalysis: 'Test audience',
+          subjectLineStrategy: 'Test strategy',
         }),
       });
 
@@ -552,8 +614,8 @@ describe('CreatePhishingWorkflow', () => {
         }),
       });
 
-      const run = await createPhishingWorkflow.createRunAsync();
-      const input = { topic: 'Logo Test', language: 'en', isQuishing: false, includeLandingPage: false };
+      const run = await createPhishingWorkflow.createRun();
+      const input = { topic: 'Logo Test', language: 'en', isQuishing: false, includeLandingPage: false } as any;
 
       const result = await run.start({ inputData: input });
 
@@ -573,14 +635,14 @@ describe('CreatePhishingWorkflow', () => {
 
       const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.1);
 
-      const run = await createPhishingWorkflow.createRunAsync();
+      const run = await createPhishingWorkflow.createRun();
       const result = await run.start({
         inputData: {
           topic: 'Generic Internal Notice',
           language: 'en',
           includeEmail: false,
           includeLandingPage: false,
-        },
+        } as any,
       });
 
       expect(result.status).toBe('success');
@@ -596,11 +658,18 @@ describe('CreatePhishingWorkflow', () => {
       mocks.generateText.mockResolvedValueOnce({
         text: JSON.stringify({
           scenario: 'Data Collection',
+          name: 'Data Collection - Medium',
+          description: 'Data submission scenario',
           category: 'Urgency',
           fromAddress: 'it@test.com',
           fromName: 'IT',
           method: 'Data-Submission',
           isQuishing: false,
+          psychologicalTriggers: ['Authority'],
+          tone: 'Formal',
+          keyRedFlags: ['Unusual data request'],
+          targetAudienceAnalysis: 'IT department',
+          subjectLineStrategy: 'Urgent IT update',
         }),
       });
 
@@ -620,13 +689,13 @@ describe('CreatePhishingWorkflow', () => {
         }),
       });
 
-      const run = await createPhishingWorkflow.createRunAsync();
+      const run = await createPhishingWorkflow.createRun();
       const input = {
         topic: 'Data Submission Test',
         language: 'en',
         isQuishing: false,
         method: 'Data-Submission' as const,
-      };
+      } as any;
 
       const result = await run.start({ inputData: input });
 
@@ -638,16 +707,23 @@ describe('CreatePhishingWorkflow', () => {
       mocks.generateText.mockResolvedValueOnce({
         text: JSON.stringify({
           scenario: 'Test',
+          name: 'Test - Medium',
+          description: 'Test scenario',
           category: 'Test',
           fromAddress: 'a@a.com',
           fromName: 'A',
           method: 'Click-Only',
           isQuishing: false,
+          psychologicalTriggers: ['Fear'],
+          tone: 'Urgent',
+          keyRedFlags: ['Test flag'],
+          targetAudienceAnalysis: 'Test audience',
+          subjectLineStrategy: 'Test strategy',
         }),
       });
 
-      const run = await createPhishingWorkflow.createRunAsync();
-      const input = { topic: 'Test', language: 'en', isQuishing: true };
+      const run = await createPhishingWorkflow.createRun();
+      const input = { topic: 'Test', language: 'en', isQuishing: true } as any;
 
       const result = await run.start({ inputData: input });
       expect((result as any).result.analysis.isQuishing).toBe(true);
@@ -659,10 +735,18 @@ describe('CreatePhishingWorkflow', () => {
       mocks.generateText.mockResolvedValueOnce({
         text: JSON.stringify({
           scenario: 'Test',
+          name: 'Test - Medium',
+          description: 'Test scenario',
           category: 'Test',
           fromAddress: 'a@a.com',
           fromName: 'A',
           method: 'Click-Only',
+          isQuishing: false,
+          psychologicalTriggers: ['Fear'],
+          tone: 'Urgent',
+          keyRedFlags: ['Test flag'],
+          targetAudienceAnalysis: 'Test audience',
+          subjectLineStrategy: 'Test strategy',
         }),
         response: {
           body: {
@@ -672,8 +756,8 @@ describe('CreatePhishingWorkflow', () => {
       } as any);
 
       const writer = { write: vi.fn() };
-      const run = await createPhishingWorkflow.createRunAsync();
-      await run.start({ inputData: { topic: 'Reasoning Test', language: 'en', writer } });
+      const run = await createPhishingWorkflow.createRun();
+      await run.start({ inputData: { topic: 'Reasoning Test', language: 'en', writer } as any });
 
       expect(mocks.streamDirectReasoning).toHaveBeenCalledWith('AI reasoning text', expect.anything());
     });
@@ -685,17 +769,25 @@ describe('CreatePhishingWorkflow', () => {
       mocks.generateText.mockResolvedValueOnce({
         text: JSON.stringify({
           scenario: 'Test',
+          name: 'Test - Medium',
+          description: 'Test scenario',
           category: 'Test',
           fromAddress: 'a@a.com',
           fromName: 'A',
           method: 'Click-Only',
+          isQuishing: false,
+          psychologicalTriggers: ['Fear'],
+          tone: 'Urgent',
+          keyRedFlags: ['Test flag'],
+          targetAudienceAnalysis: 'Test audience',
+          subjectLineStrategy: 'Test strategy',
         }),
       });
       // Email Gen fails primary attempt
       mocks.generateText.mockRejectedValueOnce(new Error('Primary Fail'));
 
-      const run = await createPhishingWorkflow.createRunAsync();
-      const result = await run.start({ inputData: { topic: 'Retry Test', language: 'en' } });
+      const run = await createPhishingWorkflow.createRun();
+      const result = await run.start({ inputData: { topic: 'Retry Test', language: 'en' } as any });
 
       expect(result.status).toBe('success');
       expect(mocks.retryGenerationWithStrongerPrompt).toHaveBeenCalled();
@@ -710,12 +802,12 @@ describe('CreatePhishingWorkflow', () => {
         isRecognizedBrand: false,
       });
 
-      const run = await createPhishingWorkflow.createRunAsync();
-      const input = { topic: 'Missing Industry Design', language: 'en', includeLandingPage: false };
+      const run = await createPhishingWorkflow.createRun();
+      const input = { topic: 'Missing Industry Design', language: 'en', includeLandingPage: false } as any;
 
       const result = await run.start({ inputData: input });
       expect(result.status).toBe('failed');
-      expect((result as any).error).toContain('Cannot read properties of undefined');
+      expect(JSON.stringify(result)).toContain('Cannot read properties of undefined');
     });
 
     it('should fail landing page generation when industry design is missing and email is skipped', async () => {
@@ -726,30 +818,30 @@ describe('CreatePhishingWorkflow', () => {
         isRecognizedBrand: false,
       });
 
-      const run = await createPhishingWorkflow.createRunAsync();
+      const run = await createPhishingWorkflow.createRun();
       const input = {
         topic: 'Landing Without Industry',
         language: 'en',
         includeEmail: false,
         includeLandingPage: true,
-      };
+      } as any;
 
       const result = await run.start({ inputData: input });
       expect(result.status).toBe('failed');
-      expect((result as any).error).toContain('Cannot read properties of undefined');
+      expect(JSON.stringify(result)).toContain('Cannot read properties of undefined');
     });
   });
 
   describe('KV Save Behavior', () => {
     it('should save only base content when email and landing page are disabled', async () => {
-      const run = await createPhishingWorkflow.createRunAsync();
+      const run = await createPhishingWorkflow.createRun();
       const result = await run.start({
         inputData: {
           topic: 'Base Only',
           language: 'en',
           includeEmail: false,
           includeLandingPage: false,
-        },
+        } as any,
       });
 
       expect(result.status).toBe('success');

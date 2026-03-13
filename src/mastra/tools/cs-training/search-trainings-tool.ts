@@ -186,7 +186,7 @@ export const searchTrainingsTool = createTool({
     'Searches trainings for a company on the Keepnet platform. If companyResourceId is provided, searches that company; otherwise falls back to the requesting user\'s own company. Supports filtering by training type, search scope, language codes, and level (1=Beginner, 2=Intermediate, 3=Advanced). Returns paginated results.',
   inputSchema,
   outputSchema,
-  execute: async ({ context }) => {
+  execute: async (inputData) => {
     const {
       companyResourceId,
       searchText,
@@ -199,7 +199,7 @@ export const searchTrainingsTool = createTool({
       languageCodes,
       levelIds,
       categoryNames,
-    } = context;
+    } = inputData;
 
     // 1. Get auth context
     const { token, baseApiUrl, companyId } = getRequestContext();

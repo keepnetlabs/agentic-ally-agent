@@ -89,7 +89,8 @@ describe('assignSmishingTool', () => {
         targetUserResourceId: 'user-789',
       };
 
-      const result = await assignSmishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await assignSmishingTool.execute!(input, {}) as any;
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
       expect(callWorkerAPI).not.toHaveBeenCalled();
@@ -105,7 +106,8 @@ describe('assignSmishingTool', () => {
         targetUserResourceId: 'user-789',
       };
 
-      const result = await assignSmishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await assignSmishingTool.execute!(input, {}) as any;
       expect(result).toBeDefined();
       expect(result.success).toBe(true);
     });
@@ -119,7 +121,8 @@ describe('assignSmishingTool', () => {
         targetUserResourceId: 'user-789',
       };
 
-      const result = await assignSmishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await assignSmishingTool.execute!(input, {}) as any;
       expect(result.success).toBe(true);
     });
 
@@ -128,7 +131,8 @@ describe('assignSmishingTool', () => {
         targetUserResourceId: 'user-789',
       };
 
-      const result = await assignSmishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await assignSmishingTool.execute!(input, {}) as any;
       expect(result).toBeDefined();
       if (result && typeof result === 'object' && 'error' in result) {
         expect(result.error).toBeTruthy();
@@ -140,7 +144,8 @@ describe('assignSmishingTool', () => {
         resourceId: 'smishing-resource-123',
       };
 
-      const result = await assignSmishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await assignSmishingTool.execute!(input, {}) as any;
       expect(result).toBeDefined();
       if (result && typeof result === 'object' && 'error' in result) {
         expect(result.error).toBeTruthy();
@@ -154,7 +159,8 @@ describe('assignSmishingTool', () => {
         targetGroupResourceId: 'group-123',
       };
 
-      const result = await assignSmishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await assignSmishingTool.execute!(input, {}) as any;
       expect(result).toBeDefined();
       if (result && typeof result === 'object' && 'error' in result) {
         expect(result.error).toBeTruthy();
@@ -176,7 +182,8 @@ describe('assignSmishingTool', () => {
         targetUserResourceId: 'user-789',
       };
 
-      const result = await assignSmishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await assignSmishingTool.execute!(input, {}) as any;
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
     });
@@ -189,7 +196,8 @@ describe('assignSmishingTool', () => {
         targetUserResourceId: 'user-789',
       };
 
-      const result = await assignSmishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await assignSmishingTool.execute!(input, {}) as any;
       expect(result.success).toBe(true);
       expect(callWorkerAPI).toHaveBeenCalled();
     });
@@ -204,7 +212,8 @@ describe('assignSmishingTool', () => {
         targetUserResourceId: 'user-789',
       };
 
-      const result = await assignSmishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await assignSmishingTool.execute!(input, {}) as any;
       expect(result.success).toBe(true);
       expect(result.message).toContain('Smishing campaign assigned');
       expect(result.error).toBeUndefined();
@@ -219,7 +228,8 @@ describe('assignSmishingTool', () => {
         targetUserResourceId: 'user-789',
       };
 
-      await assignSmishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      await assignSmishingTool.execute!(input, {});
 
       expect(callWorkerAPI).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -250,7 +260,8 @@ describe('assignSmishingTool', () => {
         targetGroupResourceId: 'group-123',
       };
 
-      const result = await assignSmishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await assignSmishingTool.execute!(input, {}) as any;
 
       expect(result.success).toBe(true);
       expect(result.data?.assignmentType).toBe('GROUP');
@@ -269,7 +280,8 @@ describe('assignSmishingTool', () => {
         targetUserResourceId: 'user-789',
       };
 
-      const result = await assignSmishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await assignSmishingTool.execute!(input, {}) as any;
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
     });
@@ -283,7 +295,8 @@ describe('assignSmishingTool', () => {
         targetUserResourceId: 'user-789',
       };
 
-      const result = await assignSmishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await assignSmishingTool.execute!(input, {}) as any;
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
     });
@@ -297,7 +310,8 @@ describe('assignSmishingTool', () => {
         targetUserResourceId: 'user-789',
       };
 
-      const result = await assignSmishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await assignSmishingTool.execute!(input, {}) as any;
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
       expect(typeof result.error).toBe('string');
@@ -313,7 +327,8 @@ describe('assignSmishingTool', () => {
         targetUserResourceId: 'user-789',
       };
 
-      const result = await assignSmishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await assignSmishingTool.execute!(input, {}) as any;
 
       expect(result).toHaveProperty('success');
       expect(typeof result.success).toBe('boolean');
@@ -335,7 +350,8 @@ describe('assignSmishingTool', () => {
         targetUserResourceId: 'user-789',
       };
 
-      await assignSmishingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      await assignSmishingTool.execute!(input, {});
 
       const allCalls = [
         ...mockLogger.info.mock.calls,

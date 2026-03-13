@@ -152,7 +152,7 @@ export class ExampleRepo {
       // Skip embedding generation for faster startup
       // this.initializeWithD1Cache().catch(logger.error); // Disabled for performance
     } catch (error) {
-      logger.warn('⚠️ Example loading failed, using minimal setup:', error);
+      logger.warn('⚠️ Example loading failed, using minimal setup:', error as Record<string, unknown>);
       this.indexed = true;
       this.basicSchemaCacheGenerated = true;
     }
@@ -228,7 +228,7 @@ Scene metadata keys: ${Array.from(sceneMetaKeys).join(', ')}`;
       const results = await this.performSemanticSearch(query, searchOptions);
       return results.map(r => r.doc);
     } catch (error) {
-      logger.warn('❌ Semantic search failed, falling back to token search:', error);
+      logger.warn('❌ Semantic search failed, falling back to token search:', error as Record<string, unknown>);
       this.embeddingsFailed = true;
       return this.searchTopKSync(query, k);
     }
@@ -276,7 +276,7 @@ Scene metadata keys: ${Array.from(sceneMetaKeys).join(', ')}`;
       await this.loadFromD1Cache();
       await this.tryGenerateEmbeddings();
     } catch (error) {
-      logger.warn('⚠️ D1 cache initialization failed:', error);
+      logger.warn('⚠️ D1 cache initialization failed:', error as Record<string, unknown>);
       await this.tryGenerateEmbeddings();
     }
   }
@@ -302,7 +302,7 @@ Scene metadata keys: ${Array.from(sceneMetaKeys).join(', ')}`;
       logger.info('📦 D1 embedding cache table initialized');
       this.cacheInitialized = true;
     } catch (error) {
-      logger.warn('⚠️ Failed to initialize D1 schema:', error);
+      logger.warn('⚠️ Failed to initialize D1 schema:', error as Record<string, unknown>);
       throw error;
     }
   }
@@ -348,7 +348,7 @@ Scene metadata keys: ${Array.from(sceneMetaKeys).join(', ')}`;
       const hitRate = Math.round((cacheHits / this.docs.length) * 100);
       logger.info(`📦 D1 Cache: ${cacheHits}/${this.docs.length} hits (${hitRate}%), ${staleEntries} stale removed`);
     } catch (error) {
-      logger.warn('📦 D1 cache loading failed:', error);
+      logger.warn('📦 D1 cache loading failed:', error as Record<string, unknown>);
     }
   }
 
@@ -374,7 +374,7 @@ Scene metadata keys: ${Array.from(sceneMetaKeys).join(', ')}`;
         )
         .run();
     } catch (error) {
-      logger.warn(`💾 Failed to save cache entry for ${doc.path}:`, error);
+      logger.warn(`💾 Failed to save cache entry for ${doc.path}:`, error as Record<string, unknown>);
     }
   }
 
@@ -387,7 +387,7 @@ Scene metadata keys: ${Array.from(sceneMetaKeys).join(', ')}`;
       );
       await stmt.bind(docPath).run();
     } catch (error) {
-      logger.warn(`Failed to update usage stats for ${docPath}:`, error);
+      logger.warn(`Failed to update usage stats for ${docPath}:`, error as Record<string, unknown>);
     }
   }
 
@@ -398,7 +398,7 @@ Scene metadata keys: ${Array.from(sceneMetaKeys).join(', ')}`;
       const stmt = this.db.prepare('DELETE FROM embedding_cache WHERE path = ?');
       await stmt.bind(docPath).run();
     } catch (error) {
-      logger.warn(`Failed to remove cache entry for ${docPath}:`, error);
+      logger.warn(`Failed to remove cache entry for ${docPath}:`, error as Record<string, unknown>);
     }
   }
 
@@ -421,7 +421,7 @@ Scene metadata keys: ${Array.from(sceneMetaKeys).join(', ')}`;
     try {
       // Initialize embedding provider
       if (!this.embeddingProvider) {
-        this.embeddingProvider = getModel(ModelProvider.WORKERS_AI, Model.WORKERS_AI_GPT_OSS_120B).embedding(
+        this.embeddingProvider = (getModel(ModelProvider.WORKERS_AI, Model.WORKERS_AI_GPT_OSS_120B) as any).embedding(
           'text-embedding-3-small'
         );
       }
@@ -429,7 +429,7 @@ Scene metadata keys: ${Array.from(sceneMetaKeys).join(', ')}`;
       await this.generateEmbeddings();
       return true;
     } catch (error) {
-      logger.warn('🚫 Embedding provider initialization failed:', error);
+      logger.warn('🚫 Embedding provider initialization failed:', error as Record<string, unknown>);
       this.embeddingsFailed = true;
       return false;
     }
@@ -471,7 +471,7 @@ Scene metadata keys: ${Array.from(sceneMetaKeys).join(', ')}`;
         await this.saveCacheEntry(doc);
         newCacheEntries++;
       } catch (error) {
-        logger.warn(`❌ Failed to generate embedding for ${doc.path}:`, error);
+        logger.warn(`❌ Failed to generate embedding for ${doc.path}:`, error as Record<string, unknown>);
         failCount++;
 
         // If too many failures, mark as failed and stop
@@ -589,7 +589,7 @@ Scene metadata keys: ${Array.from(sceneMetaKeys).join(', ')}`;
       });
       queryEmbedding = result.embedding;
     } catch (error) {
-      logger.error('❌ Query embedding generation failed:', error);
+      logger.error('❌ Query embedding generation failed:', { error });
       throw error;
     }
 
@@ -671,7 +671,7 @@ Scene metadata keys: ${Array.from(sceneMetaKeys).join(', ')}`;
         docs = await this.searchTopK(query, maxFiles);
         logger.info('🎯 Used semantic search for complex query');
       } catch (error) {
-        logger.warn('⚠️ Semantic search failed for complex query, using smart sampling:', error);
+        logger.warn('⚠️ Semantic search failed for complex query, using smart sampling:', { error });
         docs = this.getSchemaHintsSmart(maxFiles);
       }
     } else {
@@ -693,7 +693,7 @@ Scene metadata keys: ${Array.from(sceneMetaKeys).join(', ')}`;
       await this.db.exec('DELETE FROM embedding_cache');
       logger.info('🗑️ D1 cache cleared successfully');
     } catch (error) {
-      logger.warn('⚠️ D1 cache clear failed:', error);
+      logger.warn('⚠️ D1 cache clear failed:', { error });
     }
   }
 
@@ -737,7 +737,7 @@ Scene metadata keys: ${Array.from(sceneMetaKeys).join(', ')}`;
         totalUsage: statsResult?.total_usage || 0,
       };
     } catch (error) {
-      logger.warn('Failed to get D1 cache stats:', error);
+      logger.warn('Failed to get D1 cache stats:', { error });
       return {
         totalEntries: 0,
         cacheSize: '0 MB',
@@ -781,7 +781,7 @@ Scene metadata keys: ${Array.from(sceneMetaKeys).join(', ')}`;
         }
       }
     } catch (error) {
-      logger.warn('Failed to validate D1 cache:', error);
+      logger.warn('Failed to validate D1 cache:', { error });
       results.details.push('Validation failed: ' + error);
     }
 
@@ -819,7 +819,7 @@ Scene metadata keys: ${Array.from(sceneMetaKeys).join(', ')}`;
         logger.info(`🧹 D1 Cache optimized: ${cleaned} removed, ${kept} kept`);
       }
     } catch (error) {
-      logger.warn('Failed to optimize D1 cache:', error);
+      logger.warn('Failed to optimize D1 cache:', { error });
     }
 
     return { cleaned, kept };
@@ -950,7 +950,7 @@ Scene metadata keys: ${Array.from(sceneMetaKeys).join(', ')}`;
         });
       }
     } catch (error) {
-      logger.warn('  Failed to get top used examples:', error);
+      logger.warn('  Failed to get top used examples:', { error });
     }
   }
 }

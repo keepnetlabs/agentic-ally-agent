@@ -406,8 +406,10 @@ describe('requestLoggingMiddleware', () => {
       }
 
       const errorCall = mockLoggerInstance.error.mock.calls.find((call: any) => call[0].includes('failed'));
-      expect(errorCall[1].method).toBe('POST');
-      expect(errorCall[1].path).toBe('/chat');
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      expect(errorCall![1].method).toBe('POST');
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      expect(errorCall![1].path).toBe('/chat');
     });
 
     it('should rethrow errors to let them propagate', async () => {
@@ -514,7 +516,8 @@ describe('requestLoggingMiddleware', () => {
       }
 
       const errorCall = mockLoggerInstance.error.mock.calls.find((call: any) => call[0].includes('failed'));
-      expect(errorCall[0]).toContain('failed');
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      expect(errorCall![0]).toContain('failed');
     });
   });
 

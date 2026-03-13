@@ -58,7 +58,7 @@ describe('featureExtractionTool', () => {
       },
     };
 
-    const result = await (featureExtractionTool as any).execute({ context: input });
+    const result = await (featureExtractionTool as any).execute(input);
     expect(result.engine_indicators_present).toBe(true);
   });
 
@@ -72,12 +72,12 @@ describe('featureExtractionTool', () => {
       },
     };
 
-    const result = await (featureExtractionTool as any).execute({ context: input });
+    const result = await (featureExtractionTool as any).execute(input);
     expect(result.engine_indicators_present).toBe(true);
   });
 
   it('sets engine_indicators_present=false when URL and attachment results are clean', async () => {
-    const result = await (featureExtractionTool as any).execute({ context: baseInput });
+    const result = await (featureExtractionTool as any).execute(baseInput);
     expect(result.engine_indicators_present).toBe(false);
   });
 
@@ -91,7 +91,7 @@ describe('featureExtractionTool', () => {
       },
     };
 
-    const result = await (featureExtractionTool as any).execute({ context: input });
+    const result = await (featureExtractionTool as any).execute(input);
     expect(result.engine_indicators_present).toBe(true);
   });
 
@@ -105,12 +105,12 @@ describe('featureExtractionTool', () => {
       },
     };
 
-    const result = await (featureExtractionTool as any).execute({ context: input });
+    const result = await (featureExtractionTool as any).execute(input);
     expect(result.engine_indicators_present).toBe(true);
   });
 
   it('returns composed summary and preserves pass-through objects', async () => {
-    const result = await (featureExtractionTool as any).execute({ context: baseInput });
+    const result = await (featureExtractionTool as any).execute(baseInput);
 
     expect(result.analysis_summary).toContain('Header authentication: Authentication checks failed.');
     expect(result.analysis_summary).toContain('Body behavioral signals: Sender uses urgency and fear-based pressure.');

@@ -247,7 +247,7 @@ export async function resolveLicenseModuleIds(
   if (!success) return ids;
 
   return ids.map(id => {
-    const match = licenseModulesCache!.find(item => item.id === id);
+    const match = licenseModulesCache?.find(item => item.id === id);
     return match ? match.name : id;
   });
 }

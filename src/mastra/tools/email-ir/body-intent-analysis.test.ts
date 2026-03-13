@@ -54,11 +54,9 @@ describe('bodyIntentAnalysisTool', () => {
     });
 
     await (bodyIntentAnalysisTool as any).execute({
-      context: {
-        from: 'alert@example.com',
-        subject: 'Test',
-        htmlBody: '',
-      },
+      from: 'alert@example.com',
+      subject: 'Test',
+      htmlBody: '',
     });
 
     expect(capturedPrompt).toContain('insufficient_data');
@@ -68,9 +66,7 @@ describe('bodyIntentAnalysisTool', () => {
     generateMock.mockRejectedValue(new Error('LLM error'));
 
     await expect(
-      (bodyIntentAnalysisTool as any).execute({
-        context: { from: 'a@b.com', subject: 'Test', htmlBody: '' },
-      })
+      (bodyIntentAnalysisTool as any).execute({ from: 'a@b.com', subject: 'Test', htmlBody: '' })
     ).rejects.toThrow('LLM error');
   });
 
@@ -78,9 +74,7 @@ describe('bodyIntentAnalysisTool', () => {
     generateMock.mockRejectedValue(new Error('LLM timeout'));
 
     try {
-      await (bodyIntentAnalysisTool as any).execute({
-        context: { from: 'a@b.com', subject: 'Test', htmlBody: '' },
-      });
+      await (bodyIntentAnalysisTool as any).execute({ from: 'a@b.com', subject: 'Test', htmlBody: '' });
     } catch (e: any) {
       expect(e.message).toBe('LLM timeout');
       expect(e.code).toBeDefined();
@@ -103,7 +97,7 @@ describe('bodyIntentAnalysisTool', () => {
       },
     });
 
-    const result = await (bodyIntentAnalysisTool as any).execute({ context: email });
+    const result = await (bodyIntentAnalysisTool as any).execute(email);
     expect(result.intent).toBe('benign');
     expect(result.original_email).toEqual(email);
   });
@@ -126,9 +120,7 @@ describe('bodyIntentAnalysisTool', () => {
       });
     });
 
-    await (bodyIntentAnalysisTool as any).execute({
-      context: { from: 'a@b.com', subject: 'Urgent: Verify Account', htmlBody: '' },
-    });
+    await (bodyIntentAnalysisTool as any).execute({ from: 'a@b.com', subject: 'Urgent: Verify Account', htmlBody: '' });
 
     expect(capturedPrompt).toContain('Urgent: Verify Account');
   });
@@ -151,9 +143,7 @@ describe('bodyIntentAnalysisTool', () => {
       });
     });
 
-    await (bodyIntentAnalysisTool as any).execute({
-      context: { from: 'a@b.com', subject: '', htmlBody: '' },
-    });
+    await (bodyIntentAnalysisTool as any).execute({ from: 'a@b.com', subject: '', htmlBody: '' });
 
     expect(capturedPrompt).toContain('No body content');
   });
@@ -177,12 +167,10 @@ describe('bodyIntentAnalysisTool', () => {
     });
 
     await (bodyIntentAnalysisTool as any).execute({
-      context: {
-        from: 'support@company.com',
-        subject: 'Test',
-        htmlBody: '',
-        // senderName intentionally omitted
-      },
+      from: 'support@company.com',
+      subject: 'Test',
+      htmlBody: '',
+      // senderName intentionally omitted
     });
 
     expect(capturedPrompt).toContain('support@company.com');
@@ -207,12 +195,10 @@ describe('bodyIntentAnalysisTool', () => {
     });
 
     await (bodyIntentAnalysisTool as any).execute({
-      context: {
-        from: 'ceo@company.com',
-        senderName: 'John CEO',
-        subject: 'Test',
-        htmlBody: '',
-      },
+      from: 'ceo@company.com',
+      senderName: 'John CEO',
+      subject: 'Test',
+      htmlBody: '',
     });
 
     expect(capturedPrompt).toContain('John CEO');

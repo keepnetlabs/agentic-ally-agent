@@ -161,14 +161,13 @@ describe('Smishing Flow Integration', () => {
   });
 
   it('should run full smishing flow: tool → workflow → KV save', { timeout: 15000 }, async () => {
-    const result = await smishingWorkflowExecutorTool.execute({
-      context: {
-        workflowType: SMISHING.WORKFLOW_TYPE,
-        topic: 'Delivery Update',
-        difficulty: 'Medium',
-        language: 'en-gb',
-      },
-    } as any);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = (await smishingWorkflowExecutorTool.execute!({
+      workflowType: SMISHING.WORKFLOW_TYPE,
+      topic: 'Delivery Update',
+      difficulty: 'Medium',
+      language: 'en-gb',
+    } as any, {} as any)) as any;
 
     expect(result.success).toBe(true);
     expect(result.data?.smishingId).toBeDefined();
@@ -183,12 +182,11 @@ describe('Smishing Flow Integration', () => {
   it('should handle policy summary unavailable gracefully', { timeout: 15000 }, async () => {
     mocks.getPolicySummary.mockRejectedValueOnce(new Error('Policy fetch failed'));
 
-    const result = await smishingWorkflowExecutorTool.execute({
-      context: {
-        workflowType: SMISHING.WORKFLOW_TYPE,
-        topic: 'Account Alert',
-      },
-    } as any);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = (await smishingWorkflowExecutorTool.execute!({
+      workflowType: SMISHING.WORKFLOW_TYPE,
+      topic: 'Account Alert',
+    } as any, {} as any)) as any;
 
     expect(result).toBeDefined();
     expect(typeof result.success).toBe('boolean');

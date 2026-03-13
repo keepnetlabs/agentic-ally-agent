@@ -14,9 +14,6 @@ vi.mock('../../utils/core/resilience-utils', () => ({
   withRetry: vi.fn((fn: () => Promise<unknown>) => fn()),
 }));
 
-vi.mock('../../utils/core/id-utils', () => ({
-  uuidv4: () => 'test-uuid-voices',
-}));
 
 const originalEnv = process.env;
 
@@ -45,7 +42,8 @@ describe('listHeyGenVoicesTool', () => {
     it('should return error when HEYGEN_API_KEY is not set', async () => {
       delete process.env.HEYGEN_API_KEY;
 
-      const result = await listHeyGenVoicesTool.execute?.({ context: {} } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await listHeyGenVoicesTool.execute!({} as any, {}) as any;
 
       expect(result).toEqual({
         success: false,
@@ -66,7 +64,8 @@ describe('listHeyGenVoicesTool', () => {
         )
       );
 
-      const result = await listHeyGenVoicesTool.execute?.({ context: {} } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await listHeyGenVoicesTool.execute!({} as any, {}) as any;
 
       expect(result).toMatchObject({
         success: true,
@@ -90,9 +89,10 @@ describe('listHeyGenVoicesTool', () => {
         )
       );
 
-      const result = await listHeyGenVoicesTool.execute?.({
-        context: { language: 'Turkish' },
-      } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await listHeyGenVoicesTool.execute!({
+        language: 'Turkish',
+      } as any, {}) as any;
 
       expect(result).toMatchObject({
         success: true,
@@ -106,7 +106,8 @@ describe('listHeyGenVoicesTool', () => {
         new Response('Forbidden', { status: 403 })
       );
 
-      const result = await listHeyGenVoicesTool.execute?.({ context: {} } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await listHeyGenVoicesTool.execute!({} as any, {}) as any;
 
       expect(result).toMatchObject({
         success: false,
@@ -120,7 +121,8 @@ describe('listHeyGenVoicesTool', () => {
         new Response(JSON.stringify({ data: {} }), { status: 200 })
       );
 
-      const result = await listHeyGenVoicesTool.execute?.({ context: {} } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await listHeyGenVoicesTool.execute!({} as any, {}) as any;
 
       expect(result).toMatchObject({
         success: true,
@@ -142,9 +144,10 @@ describe('listHeyGenVoicesTool', () => {
         )
       );
 
-      const result = await listHeyGenVoicesTool.execute?.({
-        context: { language: 'Arabic' },
-      } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await listHeyGenVoicesTool.execute!({
+        language: 'Arabic',
+      } as any, {}) as any;
 
       expect(result).toMatchObject({
         success: true,
@@ -168,16 +171,20 @@ describe('listHeyGenVoicesTool', () => {
       );
       const mockWriter = { write: vi.fn().mockResolvedValue(undefined) };
 
-      const result = await listHeyGenVoicesTool.execute?.({
-        context: { language: 'English' },
-        writer: mockWriter,
-      } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await listHeyGenVoicesTool.execute!(
+        { language: 'English' } as any,
+        { writer: mockWriter } as any,
+      ) as any;
 
       expect(result).toMatchObject({ success: true });
       expect(mockWriter.write).toHaveBeenCalledWith(
         expect.objectContaining({
-          type: 'text-delta',
-          delta: expect.stringContaining('::ui:voice_selection::'),
+          type: 'data-ui-signal',
+          data: expect.objectContaining({
+            signal: 'voice_selection',
+            message: expect.stringContaining('::ui:voice_selection::'),
+          }),
         })
       );
     });
@@ -186,7 +193,8 @@ describe('listHeyGenVoicesTool', () => {
       process.env.HEYGEN_API_KEY = 'test-key';
       vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('Connection refused'));
 
-      const result = await listHeyGenVoicesTool.execute?.({ context: {} } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await listHeyGenVoicesTool.execute!({} as any, {}) as any;
 
       expect(result).toMatchObject({
         success: false,
@@ -200,7 +208,8 @@ describe('listHeyGenVoicesTool', () => {
       abortErr.name = 'AbortError';
       vi.spyOn(globalThis, 'fetch').mockRejectedValue(abortErr);
 
-      const result = await listHeyGenVoicesTool.execute?.({ context: {} } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await listHeyGenVoicesTool.execute!({} as any, {}) as any;
 
       expect(result).toMatchObject({
         success: false,

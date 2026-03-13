@@ -9,7 +9,7 @@ vi.mock('../../workflows/create-smishing-workflow', () => {
   const mockCreateRunAsync = vi.fn();
   return {
     createSmishingWorkflow: {
-      createRunAsync: mockCreateRunAsync,
+      createRun: mockCreateRunAsync,
     },
   };
 });
@@ -61,7 +61,7 @@ describe('smishingWorkflowExecutorTool', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockCreateRunAsync = workflowModule.createSmishingWorkflow.createRunAsync as any;
+    mockCreateRunAsync = workflowModule.createSmishingWorkflow.createRun as any;
     mockCreateRunAsync.mockResolvedValue(mockWorkflowRun);
     mockWorkflowRun.start.mockResolvedValue(mockWorkflowResult);
   });
@@ -74,7 +74,8 @@ describe('smishingWorkflowExecutorTool', () => {
       difficulty: 'medium',
     };
 
-    const result = await smishingWorkflowExecutorTool.execute({ context: input } as any);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = await smishingWorkflowExecutorTool.execute!(input as any, {}) as any;
     expect(result.success).toBe(true);
     expect(result.data?.smishingId).toBe('smishing-123');
     expect(result.data?.scenario).toBe('IT verification');
@@ -87,36 +88,35 @@ describe('smishingWorkflowExecutorTool', () => {
       language: 'en-gb',
     };
 
-    await smishingWorkflowExecutorTool.execute({ context: input, writer: mockWriter } as any);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    await smishingWorkflowExecutorTool.execute!(input as any, { writer: mockWriter } as any);
 
     const calls = mockWriter.write.mock.calls;
-    expect(calls.length).toBeGreaterThanOrEqual(4);
+    expect(calls.length).toBeGreaterThanOrEqual(2);
 
     const smsCall = calls.find(
       call =>
-        call[0]?.type === 'text-delta' &&
-        typeof call[0]?.delta === 'string' &&
-        call[0].delta.includes('::ui:smishing_sms::')
+        call[0]?.type === 'data-ui-signal' &&
+        call[0]?.data?.signal === 'smishing_sms'
     );
     const landingCall = calls.find(
       call =>
-        call[0]?.type === 'text-delta' &&
-        typeof call[0]?.delta === 'string' &&
-        call[0].delta.includes('::ui:smishing_landing_page::')
+        call[0]?.type === 'data-ui-signal' &&
+        call[0]?.data?.signal === 'smishing_landing_page'
     );
 
     expect(smsCall).toBeDefined();
     expect(landingCall).toBeDefined();
 
-    const smsDelta = (smsCall as NonNullable<typeof smsCall>)[0].delta as string;
-    const smsPayload = smsDelta.split('::ui:smishing_sms::')[1].split('::/ui:smishing_sms::')[0];
+    const smsMessage = (smsCall as NonNullable<typeof smsCall>)[0].data.message as string;
+    const smsPayload = smsMessage.split('::ui:smishing_sms::')[1].split('::/ui:smishing_sms::')[0];
     const smsDecoded = JSON.parse(Buffer.from(smsPayload, 'base64').toString('utf-8'));
     expect(smsDecoded.smishingId).toBe('smishing-123');
     expect(smsDecoded.smsKey).toBe('smishing:smishing-123:sms:en-gb');
     expect(smsDecoded.messages).toHaveLength(1);
 
-    const landingDelta = (landingCall as NonNullable<typeof landingCall>)[0].delta as string;
-    const landingPayload = landingDelta
+    const landingMessage = (landingCall as NonNullable<typeof landingCall>)[0].data.message as string;
+    const landingPayload = landingMessage
       .split('::ui:smishing_landing_page::')[1]
       .split('::/ui:smishing_landing_page::')[0];
     const landingDecoded = JSON.parse(Buffer.from(landingPayload, 'base64').toString('utf-8'));
@@ -135,7 +135,8 @@ describe('smishingWorkflowExecutorTool', () => {
       topic: 'IT verification',
     };
 
-    const result = await smishingWorkflowExecutorTool.execute({ context: input, writer: badWriter } as any);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = await smishingWorkflowExecutorTool.execute!(input as any, { writer: badWriter } as any) as any;
     expect(result.success).toBe(true);
   });
 
@@ -146,19 +147,20 @@ describe('smishingWorkflowExecutorTool', () => {
       language: 'en-gb',
     };
 
-    await smishingWorkflowExecutorTool.execute({ context: input, writer: mockWriter } as any);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    await smishingWorkflowExecutorTool.execute!(input as any, { writer: mockWriter } as any);
 
-    const uiDeltas = mockWriter.write.mock.calls
+    const uiMessages = mockWriter.write.mock.calls
       .map(call => call[0])
-      .filter(event => event?.type === 'text-delta' && typeof event?.delta === 'string')
-      .map(event => event.delta as string);
+      .filter(event => event?.type === 'data-ui-signal' && typeof event?.data?.message === 'string')
+      .map(event => event.data.message as string);
 
-    expect(uiDeltas.length).toBeGreaterThan(0);
+    expect(uiMessages.length).toBeGreaterThan(0);
 
     const routingContext = buildRoutingContext([
       {
         role: 'assistant',
-        content: uiDeltas.join('\n'),
+        content: uiMessages.join('\n'),
       } as any,
     ]);
 
@@ -172,12 +174,11 @@ describe('smishingWorkflowExecutorTool', () => {
       result: null,
     });
 
-    const result = await smishingWorkflowExecutorTool.execute({
-      context: {
-        workflowType: SMISHING.WORKFLOW_TYPE,
-        topic: 'IT verification',
-      },
-    } as any);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = await smishingWorkflowExecutorTool.execute!({
+      workflowType: SMISHING.WORKFLOW_TYPE,
+      topic: 'IT verification',
+    } as any, {}) as any;
 
     expect(result.success).toBe(false);
     expect(typeof result.error).toBe('string');
@@ -194,12 +195,11 @@ describe('smishingWorkflowExecutorTool', () => {
       },
     });
 
-    const result = await smishingWorkflowExecutorTool.execute({
-      context: {
-        workflowType: SMISHING.WORKFLOW_TYPE,
-        topic: 'IT verification',
-      },
-    } as any);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = await smishingWorkflowExecutorTool.execute!({
+      workflowType: SMISHING.WORKFLOW_TYPE,
+      topic: 'IT verification',
+    } as any, {}) as any;
 
     expect(result.success).toBe(false);
     expect(typeof result.error).toBe('string');
@@ -209,12 +209,11 @@ describe('smishingWorkflowExecutorTool', () => {
   it('should return ANALYSIS_FAILED message when workflow throws error containing "analysis"', async () => {
     mockWorkflowRun.start.mockRejectedValue(new Error('Scenario analysis failed for smishing'));
 
-    const result = await smishingWorkflowExecutorTool.execute({
-      context: {
-        workflowType: SMISHING.WORKFLOW_TYPE,
-        topic: 'IT verification',
-      },
-    } as any);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = await smishingWorkflowExecutorTool.execute!({
+      workflowType: SMISHING.WORKFLOW_TYPE,
+      topic: 'IT verification',
+    } as any, {}) as any;
 
     expect(result.success).toBe(false);
     expect(result.message).toBe(ERROR_MESSAGES.SMISHING.ANALYSIS_FAILED);
@@ -223,12 +222,11 @@ describe('smishingWorkflowExecutorTool', () => {
   it('should return GENERATION_FAILED message when workflow throws error containing "sms"', async () => {
     mockWorkflowRun.start.mockRejectedValue(new Error('sms template generation failed'));
 
-    const result = await smishingWorkflowExecutorTool.execute({
-      context: {
-        workflowType: SMISHING.WORKFLOW_TYPE,
-        topic: 'IT verification',
-      },
-    } as any);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = await smishingWorkflowExecutorTool.execute!({
+      workflowType: SMISHING.WORKFLOW_TYPE,
+      topic: 'IT verification',
+    } as any, {}) as any;
 
     expect(result.success).toBe(false);
     expect(result.message).toBe(ERROR_MESSAGES.SMISHING.GENERATION_FAILED);
@@ -242,7 +240,8 @@ describe('smishingWorkflowExecutorTool', () => {
       additionalContext: 'Target CFO with invoice urgency',
     };
 
-    await smishingWorkflowExecutorTool.execute({ context: input } as any);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    await smishingWorkflowExecutorTool.execute!(input as any, {});
 
     expect(mockCreateRunAsync).toHaveBeenCalled();
     const startCall = mockWorkflowRun.start.mock.calls[0][0];

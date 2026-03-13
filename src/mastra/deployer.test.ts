@@ -30,12 +30,12 @@ describe('getDeployer', () => {
       expect(constructorCallsSpy).toHaveBeenCalledTimes(1);
       expect(constructorCallsSpy).toHaveBeenCalledWith(
         expect.objectContaining({
-          projectName: 'agentic-ally',
-          env: {
+          name: 'agentic-ally',
+          vars: {
             NODE_ENV: 'production',
             BUILD_MODE: 'production',
           },
-          d1Databases: expect.arrayContaining([
+          d1_databases: expect.arrayContaining([
             expect.objectContaining({
               binding: 'agentic_ally_embeddings_cache',
               database_name: 'agentic-ally-embeddings-cache',
@@ -45,7 +45,7 @@ describe('getDeployer', () => {
               database_name: 'agentic-ally-memory',
             }),
           ]),
-          kvNamespaces: expect.arrayContaining([
+          kv_namespaces: expect.arrayContaining([
             expect.objectContaining({
               binding: 'MICROLEARNING_KV',
             }),
@@ -80,21 +80,21 @@ describe('getDeployer', () => {
       getDeployer();
 
       const callArgs = constructorCallsSpy.mock.calls[0][0];
-      expect(callArgs.projectName).toBe('agentic-ally');
+      expect(callArgs.name).toBe('agentic-ally');
     });
 
     it('should have hyphenated project name format', () => {
       getDeployer();
 
       const callArgs = constructorCallsSpy.mock.calls[0][0];
-      expect(callArgs.projectName).toMatch(/^[a-z]+(-[a-z]+)*$/);
+      expect(callArgs.name).toMatch(/^[a-z]+(-[a-z]+)*$/);
     });
 
     it('should have lowercase project name', () => {
       getDeployer();
 
       const callArgs = constructorCallsSpy.mock.calls[0][0];
-      expect(callArgs.projectName).toBe(callArgs.projectName.toLowerCase());
+      expect(callArgs.name).toBe(callArgs.name.toLowerCase());
     });
   });
 
@@ -103,42 +103,42 @@ describe('getDeployer', () => {
       getDeployer();
 
       const callArgs = constructorCallsSpy.mock.calls[0][0];
-      expect(callArgs.env.NODE_ENV).toBe('production');
+      expect(callArgs.vars.NODE_ENV).toBe('production');
     });
 
     it('should set BUILD_MODE to production', () => {
       getDeployer();
 
       const callArgs = constructorCallsSpy.mock.calls[0][0];
-      expect(callArgs.env.BUILD_MODE).toBe('production');
+      expect(callArgs.vars.BUILD_MODE).toBe('production');
     });
 
     it('should have exactly 2 environment variables', () => {
       getDeployer();
 
       const callArgs = constructorCallsSpy.mock.calls[0][0];
-      expect(Object.keys(callArgs.env)).toHaveLength(2);
+      expect(Object.keys(callArgs.vars)).toHaveLength(2);
     });
 
     it('should include NODE_ENV key', () => {
       getDeployer();
 
       const callArgs = constructorCallsSpy.mock.calls[0][0];
-      expect(callArgs.env).toHaveProperty('NODE_ENV');
+      expect(callArgs.vars).toHaveProperty('NODE_ENV');
     });
 
     it('should include BUILD_MODE key', () => {
       getDeployer();
 
       const callArgs = constructorCallsSpy.mock.calls[0][0];
-      expect(callArgs.env).toHaveProperty('BUILD_MODE');
+      expect(callArgs.vars).toHaveProperty('BUILD_MODE');
     });
 
     it('should use same value for NODE_ENV and BUILD_MODE', () => {
       getDeployer();
 
       const callArgs = constructorCallsSpy.mock.calls[0][0];
-      expect(callArgs.env.NODE_ENV).toBe(callArgs.env.BUILD_MODE);
+      expect(callArgs.vars.NODE_ENV).toBe(callArgs.vars.BUILD_MODE);
     });
   });
 
@@ -147,14 +147,14 @@ describe('getDeployer', () => {
       getDeployer();
 
       const callArgs = constructorCallsSpy.mock.calls[0][0];
-      expect(callArgs.d1Databases).toHaveLength(2);
+      expect(callArgs.d1_databases).toHaveLength(2);
     });
 
     it('should configure embeddings cache database', () => {
       getDeployer();
 
       const callArgs = constructorCallsSpy.mock.calls[0][0];
-      const embeddingsDb = callArgs.d1Databases.find((db: any) => db.binding === 'agentic_ally_embeddings_cache');
+      const embeddingsDb = callArgs.d1_databases.find((db: any) => db.binding === 'agentic_ally_embeddings_cache');
       expect(embeddingsDb).toBeDefined();
     });
 
@@ -162,7 +162,7 @@ describe('getDeployer', () => {
       getDeployer();
 
       const callArgs = constructorCallsSpy.mock.calls[0][0];
-      const memoryDb = callArgs.d1Databases.find((db: any) => db.binding === 'agentic_ally_memory');
+      const memoryDb = callArgs.d1_databases.find((db: any) => db.binding === 'agentic_ally_memory');
       expect(memoryDb).toBeDefined();
     });
 
@@ -171,7 +171,7 @@ describe('getDeployer', () => {
         getDeployer();
 
         const callArgs = constructorCallsSpy.mock.calls[0][0];
-        const db = callArgs.d1Databases.find((d: any) => d.binding === 'agentic_ally_embeddings_cache');
+        const db = callArgs.d1_databases.find((d: any) => d.binding === 'agentic_ally_embeddings_cache');
         expect(db.binding).toBe('agentic_ally_embeddings_cache');
       });
 
@@ -179,7 +179,7 @@ describe('getDeployer', () => {
         getDeployer();
 
         const callArgs = constructorCallsSpy.mock.calls[0][0];
-        const db = callArgs.d1Databases.find((d: any) => d.binding === 'agentic_ally_embeddings_cache');
+        const db = callArgs.d1_databases.find((d: any) => d.binding === 'agentic_ally_embeddings_cache');
         expect(db.database_name).toBe('agentic-ally-embeddings-cache');
       });
 
@@ -187,7 +187,7 @@ describe('getDeployer', () => {
         getDeployer();
 
         const callArgs = constructorCallsSpy.mock.calls[0][0];
-        const db = callArgs.d1Databases.find((d: any) => d.binding === 'agentic_ally_embeddings_cache');
+        const db = callArgs.d1_databases.find((d: any) => d.binding === 'agentic_ally_embeddings_cache');
         expect(db.database_id).toBeDefined();
       });
 
@@ -195,7 +195,7 @@ describe('getDeployer', () => {
         getDeployer();
 
         const callArgs = constructorCallsSpy.mock.calls[0][0];
-        const db = callArgs.d1Databases.find((d: any) => d.binding === 'agentic_ally_embeddings_cache');
+        const db = callArgs.d1_databases.find((d: any) => d.binding === 'agentic_ally_embeddings_cache');
         expect(db.database_id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
       });
 
@@ -203,7 +203,7 @@ describe('getDeployer', () => {
         getDeployer();
 
         const callArgs = constructorCallsSpy.mock.calls[0][0];
-        const db = callArgs.d1Databases.find((d: any) => d.binding === 'agentic_ally_embeddings_cache');
+        const db = callArgs.d1_databases.find((d: any) => d.binding === 'agentic_ally_embeddings_cache');
         expect(db.binding).toContain('_');
       });
 
@@ -211,7 +211,7 @@ describe('getDeployer', () => {
         getDeployer();
 
         const callArgs = constructorCallsSpy.mock.calls[0][0];
-        const db = callArgs.d1Databases.find((d: any) => d.binding === 'agentic_ally_embeddings_cache');
+        const db = callArgs.d1_databases.find((d: any) => d.binding === 'agentic_ally_embeddings_cache');
         expect(db.database_name).toContain('-');
       });
 
@@ -219,7 +219,7 @@ describe('getDeployer', () => {
         getDeployer();
 
         const callArgs = constructorCallsSpy.mock.calls[0][0];
-        const db = callArgs.d1Databases.find((d: any) => d.binding === 'agentic_ally_embeddings_cache');
+        const db = callArgs.d1_databases.find((d: any) => d.binding === 'agentic_ally_embeddings_cache');
         expect(Object.keys(db)).toHaveLength(3);
       });
     });
@@ -229,7 +229,7 @@ describe('getDeployer', () => {
         getDeployer();
 
         const callArgs = constructorCallsSpy.mock.calls[0][0];
-        const db = callArgs.d1Databases.find((d: any) => d.binding === 'agentic_ally_memory');
+        const db = callArgs.d1_databases.find((d: any) => d.binding === 'agentic_ally_memory');
         expect(db.binding).toBe('agentic_ally_memory');
       });
 
@@ -237,7 +237,7 @@ describe('getDeployer', () => {
         getDeployer();
 
         const callArgs = constructorCallsSpy.mock.calls[0][0];
-        const db = callArgs.d1Databases.find((d: any) => d.binding === 'agentic_ally_memory');
+        const db = callArgs.d1_databases.find((d: any) => d.binding === 'agentic_ally_memory');
         expect(db.database_name).toBe('agentic-ally-memory');
       });
 
@@ -245,7 +245,7 @@ describe('getDeployer', () => {
         getDeployer();
 
         const callArgs = constructorCallsSpy.mock.calls[0][0];
-        const db = callArgs.d1Databases.find((d: any) => d.binding === 'agentic_ally_memory');
+        const db = callArgs.d1_databases.find((d: any) => d.binding === 'agentic_ally_memory');
         expect(db.database_id).toBeDefined();
       });
 
@@ -253,7 +253,7 @@ describe('getDeployer', () => {
         getDeployer();
 
         const callArgs = constructorCallsSpy.mock.calls[0][0];
-        const db = callArgs.d1Databases.find((d: any) => d.binding === 'agentic_ally_memory');
+        const db = callArgs.d1_databases.find((d: any) => d.binding === 'agentic_ally_memory');
         expect(db.database_id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
       });
 
@@ -261,7 +261,7 @@ describe('getDeployer', () => {
         getDeployer();
 
         const callArgs = constructorCallsSpy.mock.calls[0][0];
-        const db = callArgs.d1Databases.find((d: any) => d.binding === 'agentic_ally_memory');
+        const db = callArgs.d1_databases.find((d: any) => d.binding === 'agentic_ally_memory');
         expect(db.binding).toContain('_');
       });
 
@@ -269,7 +269,7 @@ describe('getDeployer', () => {
         getDeployer();
 
         const callArgs = constructorCallsSpy.mock.calls[0][0];
-        const db = callArgs.d1Databases.find((d: any) => d.binding === 'agentic_ally_memory');
+        const db = callArgs.d1_databases.find((d: any) => d.binding === 'agentic_ally_memory');
         expect(db.database_name).toContain('-');
       });
 
@@ -277,7 +277,7 @@ describe('getDeployer', () => {
         getDeployer();
 
         const callArgs = constructorCallsSpy.mock.calls[0][0];
-        const db = callArgs.d1Databases.find((d: any) => d.binding === 'agentic_ally_memory');
+        const db = callArgs.d1_databases.find((d: any) => d.binding === 'agentic_ally_memory');
         expect(Object.keys(db)).toHaveLength(3);
       });
     });
@@ -287,7 +287,7 @@ describe('getDeployer', () => {
         getDeployer();
 
         const callArgs = constructorCallsSpy.mock.calls[0][0];
-        callArgs.d1Databases.forEach((db: any) => {
+        callArgs.d1_databases.forEach((db: any) => {
           expect(db.binding).toMatch(/^agentic_ally_[a-z_]+$/);
         });
       });
@@ -296,7 +296,7 @@ describe('getDeployer', () => {
         getDeployer();
 
         const callArgs = constructorCallsSpy.mock.calls[0][0];
-        callArgs.d1Databases.forEach((db: any) => {
+        callArgs.d1_databases.forEach((db: any) => {
           expect(db.database_name).toMatch(/^agentic-ally-[a-z-]+$/);
         });
       });
@@ -305,7 +305,7 @@ describe('getDeployer', () => {
         getDeployer();
 
         const callArgs = constructorCallsSpy.mock.calls[0][0];
-        const bindings = callArgs.d1Databases.map((db: any) => db.binding);
+        const bindings = callArgs.d1_databases.map((db: any) => db.binding);
         const uniqueBindings = new Set(bindings);
         expect(uniqueBindings.size).toBe(bindings.length);
       });
@@ -314,7 +314,7 @@ describe('getDeployer', () => {
         getDeployer();
 
         const callArgs = constructorCallsSpy.mock.calls[0][0];
-        const names = callArgs.d1Databases.map((db: any) => db.database_name);
+        const names = callArgs.d1_databases.map((db: any) => db.database_name);
         const uniqueNames = new Set(names);
         expect(uniqueNames.size).toBe(names.length);
       });
@@ -323,7 +323,7 @@ describe('getDeployer', () => {
         getDeployer();
 
         const callArgs = constructorCallsSpy.mock.calls[0][0];
-        const ids = callArgs.d1Databases.map((db: any) => db.database_id);
+        const ids = callArgs.d1_databases.map((db: any) => db.database_id);
         const uniqueIds = new Set(ids);
         expect(uniqueIds.size).toBe(ids.length);
       });
@@ -332,7 +332,7 @@ describe('getDeployer', () => {
         getDeployer();
 
         const callArgs = constructorCallsSpy.mock.calls[0][0];
-        callArgs.d1Databases.forEach((db: any) => {
+        callArgs.d1_databases.forEach((db: any) => {
           expect(db.binding).not.toContain('-');
           expect(db.binding).toContain('_');
         });
@@ -342,7 +342,7 @@ describe('getDeployer', () => {
         getDeployer();
 
         const callArgs = constructorCallsSpy.mock.calls[0][0];
-        callArgs.d1Databases.forEach((db: any) => {
+        callArgs.d1_databases.forEach((db: any) => {
           expect(db.database_name).not.toContain('_');
           expect(db.database_name).toContain('-');
         });
@@ -355,14 +355,14 @@ describe('getDeployer', () => {
       getDeployer();
 
       const callArgs = constructorCallsSpy.mock.calls[0][0];
-      expect(callArgs.kvNamespaces).toHaveLength(1);
+      expect(callArgs.kv_namespaces).toHaveLength(1);
     });
 
     it('should configure MICROLEARNING_KV namespace', () => {
       getDeployer();
 
       const callArgs = constructorCallsSpy.mock.calls[0][0];
-      const kv = callArgs.kvNamespaces[0];
+      const kv = callArgs.kv_namespaces[0];
       expect(kv.binding).toBe('MICROLEARNING_KV');
     });
 
@@ -370,7 +370,7 @@ describe('getDeployer', () => {
       getDeployer();
 
       const callArgs = constructorCallsSpy.mock.calls[0][0];
-      const kv = callArgs.kvNamespaces[0];
+      const kv = callArgs.kv_namespaces[0];
       expect(kv).toHaveProperty('binding');
     });
 
@@ -378,7 +378,7 @@ describe('getDeployer', () => {
       getDeployer();
 
       const callArgs = constructorCallsSpy.mock.calls[0][0];
-      const kv = callArgs.kvNamespaces[0];
+      const kv = callArgs.kv_namespaces[0];
       expect(kv).toHaveProperty('id');
     });
 
@@ -386,7 +386,7 @@ describe('getDeployer', () => {
       getDeployer();
 
       const callArgs = constructorCallsSpy.mock.calls[0][0];
-      const kv = callArgs.kvNamespaces[0];
+      const kv = callArgs.kv_namespaces[0];
       expect(Object.keys(kv)).toHaveLength(2);
     });
 
@@ -394,7 +394,7 @@ describe('getDeployer', () => {
       getDeployer();
 
       const callArgs = constructorCallsSpy.mock.calls[0][0];
-      const kv = callArgs.kvNamespaces[0];
+      const kv = callArgs.kv_namespaces[0];
       expect(kv.binding).toMatch(/^[A-Z_]+$/);
     });
 
@@ -402,7 +402,7 @@ describe('getDeployer', () => {
       getDeployer();
 
       const callArgs = constructorCallsSpy.mock.calls[0][0];
-      const kv = callArgs.kvNamespaces[0];
+      const kv = callArgs.kv_namespaces[0];
       expect(kv.id).toMatch(/^[0-9a-f]+$/);
     });
 
@@ -410,7 +410,7 @@ describe('getDeployer', () => {
       getDeployer();
 
       const callArgs = constructorCallsSpy.mock.calls[0][0];
-      const kv = callArgs.kvNamespaces[0];
+      const kv = callArgs.kv_namespaces[0];
       expect(kv.id).toHaveLength(32);
     });
 
@@ -418,7 +418,7 @@ describe('getDeployer', () => {
       getDeployer();
 
       const callArgs = constructorCallsSpy.mock.calls[0][0];
-      const kv = callArgs.kvNamespaces[0];
+      const kv = callArgs.kv_namespaces[0];
       expect(kv.binding.length).toBeGreaterThan(0);
     });
 
@@ -426,7 +426,7 @@ describe('getDeployer', () => {
       getDeployer();
 
       const callArgs = constructorCallsSpy.mock.calls[0][0];
-      const kv = callArgs.kvNamespaces[0];
+      const kv = callArgs.kv_namespaces[0];
       expect(kv.id.length).toBeGreaterThan(0);
     });
   });
@@ -439,53 +439,53 @@ describe('getDeployer', () => {
       expect(Object.keys(callArgs)).toHaveLength(4);
     });
 
-    it('should include projectName property', () => {
+    it('should include name property', () => {
       getDeployer();
 
       const callArgs = constructorCallsSpy.mock.calls[0][0];
-      expect(callArgs).toHaveProperty('projectName');
+      expect(callArgs).toHaveProperty('name');
     });
 
-    it('should include env property', () => {
+    it('should include vars property', () => {
       getDeployer();
 
       const callArgs = constructorCallsSpy.mock.calls[0][0];
-      expect(callArgs).toHaveProperty('env');
+      expect(callArgs).toHaveProperty('vars');
     });
 
-    it('should include d1Databases property', () => {
+    it('should include d1_databases property', () => {
       getDeployer();
 
       const callArgs = constructorCallsSpy.mock.calls[0][0];
-      expect(callArgs).toHaveProperty('d1Databases');
+      expect(callArgs).toHaveProperty('d1_databases');
     });
 
-    it('should include kvNamespaces property', () => {
+    it('should include kv_namespaces property', () => {
       getDeployer();
 
       const callArgs = constructorCallsSpy.mock.calls[0][0];
-      expect(callArgs).toHaveProperty('kvNamespaces');
+      expect(callArgs).toHaveProperty('kv_namespaces');
     });
 
-    it('should have object type for env', () => {
+    it('should have object type for vars', () => {
       getDeployer();
 
       const callArgs = constructorCallsSpy.mock.calls[0][0];
-      expect(typeof callArgs.env).toBe('object');
+      expect(typeof callArgs.vars).toBe('object');
     });
 
-    it('should have array type for d1Databases', () => {
+    it('should have array type for d1_databases', () => {
       getDeployer();
 
       const callArgs = constructorCallsSpy.mock.calls[0][0];
-      expect(Array.isArray(callArgs.d1Databases)).toBe(true);
+      expect(Array.isArray(callArgs.d1_databases)).toBe(true);
     });
 
-    it('should have array type for kvNamespaces', () => {
+    it('should have array type for kv_namespaces', () => {
       getDeployer();
 
       const callArgs = constructorCallsSpy.mock.calls[0][0];
-      expect(Array.isArray(callArgs.kvNamespaces)).toBe(true);
+      expect(Array.isArray(callArgs.kv_namespaces)).toBe(true);
     });
 
     it('should not have serviceBindings property', () => {
@@ -513,7 +513,7 @@ describe('getDeployer', () => {
       const callArgs = constructorCallsSpy.mock.calls[0][0];
 
       // All D1 databases should have the same structure
-      const dbKeys = callArgs.d1Databases.map((db: any) => Object.keys(db).sort());
+      const dbKeys = callArgs.d1_databases.map((db: any) => Object.keys(db).sort());
       expect(dbKeys[0]).toEqual(dbKeys[1]);
     });
 
@@ -541,9 +541,9 @@ describe('getDeployer', () => {
         getDeployer();
 
         const callArgs = constructorCallsSpy.mock.calls[i][0];
-        expect(callArgs.projectName).toBe('agentic-ally');
-        expect(callArgs.d1Databases).toHaveLength(2);
-        expect(callArgs.kvNamespaces).toHaveLength(1);
+        expect(callArgs.name).toBe('agentic-ally');
+        expect(callArgs.d1_databases).toHaveLength(2);
+        expect(callArgs.kv_namespaces).toHaveLength(1);
       }
     });
 
@@ -551,16 +551,16 @@ describe('getDeployer', () => {
       getDeployer();
 
       const firstCallArgs = constructorCallsSpy.mock.calls[0][0];
-      const originalProjectName = firstCallArgs.projectName;
+      const originalName = firstCallArgs.name;
 
       // Try to mutate
-      firstCallArgs.projectName = 'modified';
+      firstCallArgs.name = 'modified';
 
       getDeployer();
       const secondCallArgs = constructorCallsSpy.mock.calls[1][0];
 
       // Second call should still have original value
-      expect(secondCallArgs.projectName).toBe(originalProjectName);
+      expect(secondCallArgs.name).toBe(originalName);
     });
   });
 });

@@ -2,11 +2,8 @@
  * SSE Heartbeat Utility
  *
  * Prevents Cloudflare from dropping idle SSE connections (~100s timeout)
- * by sending periodic lightweight events during long-running API calls.
- *
- * Each heartbeat emits a complete text-start → text-delta → text-end
- * sequence with a `::heartbeat::` marker.  The frontend must filter
- * these out (single-line check: `delta.includes('::heartbeat::')`).
+ * by sending periodic lightweight data-ui-signal events with a heartbeat marker.
+ * The frontend must filter these out (check `signal === 'heartbeat'`).
  *
  * @see FLEET-AGENT-SSE-HEARTBEAT.md
  */
@@ -18,10 +15,8 @@ const logger = getLogger('SSEHeartbeat');
 const HEARTBEAT_INTERVAL_MS = 15_000;
 
 type Writer = {
-  write: (event: { type: string; id: string; [key: string]: unknown }) => Promise<void>;
+  write: (event: Record<string, unknown>) => Promise<void>;
 };
-
-let heartbeatSeq = 0;
 
 /**
  * Wraps a long-running async operation with periodic SSE heartbeat events.
@@ -38,11 +33,11 @@ export async function withHeartbeat<T>(
   let stopped = false;
   const interval = setInterval(async () => {
     if (stopped) return;
-    const id = `hb-${++heartbeatSeq}`;
     try {
-      await writer.write({ type: 'text-start', id });
-      await writer.write({ type: 'text-delta', id, delta: '::heartbeat::' });
-      await writer.write({ type: 'text-end', id });
+      await writer.write({
+        type: 'data-ui-signal',
+        data: { signal: 'heartbeat', message: '::heartbeat::' },
+      });
     } catch {
       stopped = true;
       clearInterval(interval);

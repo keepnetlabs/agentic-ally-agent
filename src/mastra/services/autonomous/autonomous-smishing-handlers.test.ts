@@ -81,17 +81,15 @@ describe('autonomous-smishing-handlers', () => {
       expect(result.message).toContain('generated, uploaded and assigned');
       expect(mockSmishingExecute).toHaveBeenCalled();
       expect(mockUploadExecute).toHaveBeenCalledWith(
-        expect.objectContaining({
-          context: expect.objectContaining({ smishingId: 'smish-abc-123' }),
-        })
+        expect.objectContaining({ smishingId: 'smish-abc-123' }),
+        {}
       );
       expect(mockAssignExecute).toHaveBeenCalledWith(
         expect.objectContaining({
-          context: expect.objectContaining({
-            resourceId: 'res-456',
-            targetUserResourceId: 'user-123',
-          }),
-        })
+          resourceId: 'res-456',
+          targetUserResourceId: 'user-123',
+        }),
+        {}
       );
     });
 
@@ -105,10 +103,9 @@ describe('autonomous-smishing-handlers', () => {
       expect(result.success).toBe(true);
       expect(mockAssignExecute).toHaveBeenCalledWith(
         expect.objectContaining({
-          context: expect.objectContaining({
-            targetGroupResourceId: 'group-789',
-          }),
-        })
+          targetGroupResourceId: 'group-789',
+        }),
+        {}
       );
     });
 
@@ -193,10 +190,9 @@ describe('autonomous-smishing-handlers', () => {
 
       expect(mockSmishingExecute).toHaveBeenCalledWith(
         expect.objectContaining({
-          context: expect.objectContaining({
-            additionalContext: expect.stringContaining('Rationale'),
-          }),
-        })
+          additionalContext: expect.stringContaining('Rationale'),
+        }),
+        {}
       );
     });
 
@@ -209,10 +205,9 @@ describe('autonomous-smishing-handlers', () => {
       expect(result.success).toBe(true);
       expect(mockSmishingExecute).toHaveBeenCalledWith(
         expect.objectContaining({
-          context: expect.objectContaining({
-            method: 'Data-Submission',
-          }),
-        })
+          method: 'Data-Submission',
+        }),
+        {}
       );
     });
 
@@ -253,10 +248,9 @@ describe('autonomous-smishing-handlers', () => {
       expect(result.success).toBe(true);
       expect(mockSmishingExecute).toHaveBeenCalledWith(
         expect.objectContaining({
-          context: expect.objectContaining({
-            method: 'Data-Submission',
-          }),
-        })
+          method: 'Data-Submission',
+        }),
+        {}
       );
     });
 
@@ -269,10 +263,9 @@ describe('autonomous-smishing-handlers', () => {
       expect(result.success).toBe(true);
       expect(mockSmishingExecute).toHaveBeenCalledWith(
         expect.objectContaining({
-          context: expect.objectContaining({
-            method: 'Click-Only',
-          }),
-        })
+          method: 'Click-Only',
+        }),
+        {}
       );
     });
 
@@ -299,10 +292,9 @@ describe('autonomous-smishing-handlers', () => {
 
       expect(mockSmishingExecute).toHaveBeenCalledWith(
         expect.objectContaining({
-          context: expect.objectContaining({
-            topic: 'Security Verification Alert',
-          }),
-        })
+          topic: 'Security Verification Alert',
+        }),
+        {}
       );
     });
   });

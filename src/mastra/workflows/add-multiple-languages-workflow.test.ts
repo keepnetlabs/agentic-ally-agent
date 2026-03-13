@@ -4,7 +4,7 @@ import { addMultipleLanguagesWorkflow, processMultipleLanguagesStep } from './ad
 
 // Mocks
 const mocks = vi.hoisted(() => ({
-  createRunAsync: vi.fn(),
+  createRun: vi.fn(),
   runStart: vi.fn(),
   updateLengthAvailabilityAtomic: vi.fn(),
   loggerInfo: vi.fn(),
@@ -13,7 +13,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('./add-language-workflow', () => ({
   addLanguageWorkflow: {
-    createRunAsync: mocks.createRunAsync,
+    createRun: mocks.createRun,
     id: 'add-language-workflow',
     description: 'Add language workflow mock',
     inputSchema: z.object({}),
@@ -652,8 +652,8 @@ describe('add-multiple-languages-workflow', () => {
 
   // Tests for workflow steps
   describe('Workflow Steps', () => {
-    it('should have createRunAsync method to execute steps', () => {
-      expect(typeof (addMultipleLanguagesWorkflow as any).createRunAsync).toBe('function');
+    it('should have createRun method to execute steps', () => {
+      expect(typeof (addMultipleLanguagesWorkflow as any).createRun).toBe('function');
     });
 
     it('should have been created with then() chaining', () => {
@@ -669,15 +669,15 @@ describe('add-multiple-languages-workflow', () => {
 
   // Tests for workflow execution pattern
   describe('Workflow Execution Pattern', () => {
-    it('should have createRunAsync method', () => {
-      expect(typeof (addMultipleLanguagesWorkflow as any).createRunAsync).toBe('function');
+    it('should have createRun method', () => {
+      expect(typeof (addMultipleLanguagesWorkflow as any).createRun).toBe('function');
     });
 
     it('should be executable', () => {
       // The workflow should have a method to execute
       const workflow = addMultipleLanguagesWorkflow as any;
       expect(workflow).toBeDefined();
-      expect(typeof workflow.createRunAsync).toBe('function');
+      expect(typeof workflow.createRun).toBe('function');
     });
 
     it('should support chaining with .then()', () => {
@@ -830,7 +830,7 @@ describe('add-multiple-languages-workflow', () => {
   // Tests for async patterns
   describe('Async Workflow Patterns', () => {
     it('should support async execution', () => {
-      expect(typeof (addMultipleLanguagesWorkflow as any).createRunAsync).toBe('function');
+      expect(typeof (addMultipleLanguagesWorkflow as any).createRun).toBe('function');
     });
 
     it('should handle multiple concurrent language requests', () => {
@@ -1232,7 +1232,7 @@ describe('Step Execution (ProcessMultipleLanguages)', () => {
     vi.clearAllMocks();
 
     // Default successful run
-    mocks.createRunAsync.mockResolvedValue({
+    mocks.createRun.mockResolvedValue({
       start: mocks.runStart,
     });
 
@@ -1258,7 +1258,7 @@ describe('Step Execution (ProcessMultipleLanguages)', () => {
 
     const result = await (processMultipleLanguagesStep as any).execute({ inputData: input });
 
-    expect(mocks.createRunAsync).toHaveBeenCalledTimes(3);
+    expect(mocks.createRun).toHaveBeenCalledTimes(3);
     expect(result.success).toBe(true);
     expect(result.successCount).toBe(3);
     expect(result.results).toHaveLength(3);

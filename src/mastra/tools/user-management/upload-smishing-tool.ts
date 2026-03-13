@@ -6,9 +6,9 @@
  * - rationale: Uploads smishing content to platform
  * @see docs/AI_COMPLIANCE_INVENTORY.md
  */
-import { createTool } from '@mastra/core/tools';
+import { createTool, ToolExecutionContext } from '@mastra/core/tools';
 import { z } from 'zod';
-import { isSafeId, uuidv4 } from '../../utils/core/id-utils';
+import { isSafeId } from '../../utils/core/id-utils';
 import { getRequestContext } from '../../utils/core/request-storage';
 import { getLogger } from '../../utils/core/logger';
 import { withRetry } from '../../utils/core/resilience-utils';
@@ -67,9 +67,10 @@ export const uploadSmishingTool = createTool({
       .refine(isSafeId, { message: 'Invalid smishingId format.' }),
   }),
   outputSchema: uploadSmishingOutputSchema,
-  execute: async ({ context, writer }) => {
+  execute: async (inputData, ctx?: ToolExecutionContext) => {
+    const writer = ctx?.writer;
     const logger = getLogger('UploadSmishingTool');
-    const { smishingId } = context;
+    const { smishingId } = inputData;
 
     logger.info('Preparing upload for smishing content', { smishingId });
 
@@ -181,17 +182,16 @@ export const uploadSmishingTool = createTool({
 
       if (writer) {
         try {
-          const messageId = uuidv4();
           const meta = { smishingId, resourceId: resourceIdForAssignment || templateResourceId, title: name };
           const encoded = Buffer.from(JSON.stringify(meta)).toString('base64');
 
-          await writer.write({ type: 'text-start', id: messageId });
           await writer.write({
-            type: 'text-delta',
-            id: messageId,
-            delta: `::ui:smishing_uploaded::${encoded}::/ui:smishing_uploaded::\n`,
+            type: 'data-ui-signal',
+            data: {
+              signal: 'smishing_uploaded',
+              message: `::ui:smishing_uploaded::${encoded}::/ui:smishing_uploaded::\n`,
+            },
           });
-          await writer.write({ type: 'text-end', id: messageId });
         } catch (emitErr) {
           const err = normalizeError(emitErr);
           const errorInfo = errorService.external(err.message, {

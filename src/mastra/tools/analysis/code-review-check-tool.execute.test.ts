@@ -11,22 +11,10 @@ const mocks = vi.hoisted(() => ({
   loggerInfo: vi.fn(),
 }));
 
-vi.mock('@mastra/core/tools', () => ({
-  Tool: class Tool {
-    id: string;
-    description: string;
-    inputSchema: unknown;
-    outputSchema: unknown;
-    execute: (context: unknown) => Promise<unknown>;
-    constructor(config: any) {
-      this.id = config.id;
-      this.description = config.description;
-      this.inputSchema = config.inputSchema;
-      this.outputSchema = config.outputSchema;
-      this.execute = config.execute;
-    }
-  },
-}));
+vi.mock('@mastra/core/tools', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return { ...actual };
+});
 
 vi.mock('ai', () => ({
   generateText: mocks.generateText,
@@ -106,12 +94,10 @@ describe('codeReviewCheckTool.execute', () => {
     });
 
     const result = await (codeReviewCheckTool as any).execute({
-      inputData: {
-        issueType: 'SQL Injection',
-        originalCode: 'unsafe',
-        fixedCode: 'still risky',
-        language: 'javascript',
-      },
+      issueType: 'SQL Injection',
+      originalCode: 'unsafe',
+      fixedCode: 'still risky',
+      language: 'javascript',
     });
 
     expect(result.success).toBe(true);
@@ -155,12 +141,10 @@ describe('codeReviewCheckTool.execute', () => {
     });
 
     const result = await (codeReviewCheckTool as any).execute({
-      input: {
-        issueType: 'SQL Injection',
-        originalCode: 'unsafe',
-        fixedCode: 'unsafe',
-        language: 'javascript',
-      },
+      issueType: 'SQL Injection',
+      originalCode: 'unsafe',
+      fixedCode: 'unsafe',
+      language: 'javascript',
     });
 
     expect(result.success).toBe(true);

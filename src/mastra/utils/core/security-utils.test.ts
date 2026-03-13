@@ -226,7 +226,7 @@ describe('security-utils', () => {
         token: 'abc123xyz',
       };
 
-      const result = deepRedact(obj, ['apiKey', 'token', 'email']);
+      const result = deepRedact(obj, ['apiKey', 'token', 'email']) as any;
 
       expect(result.user.email).toBe('[REDACTED_EMAIL]');
       expect(result.user.apiKey).toBe('[REDACTED_APIKEY]');
@@ -240,7 +240,7 @@ describe('security-utils', () => {
         token: 'secret',
       };
 
-      const result = deepRedact(obj, ['token']);
+      const result = deepRedact(obj, ['token']) as any;
 
       expect(result.userId).toBe('123');
       expect(result.userName).toBe('john');
@@ -254,7 +254,7 @@ describe('security-utils', () => {
         password: 'secret3',
       };
 
-      const result = deepRedact(obj);
+      const result = deepRedact(obj) as any;
 
       expect(result.token).toBe('[REDACTED_TOKEN]');
       expect(result.apiKey).toBe('[REDACTED_APIKEY]');
@@ -266,7 +266,7 @@ describe('security-utils', () => {
         users: [{ token: 'secret1' }, { token: 'secret2' }],
       };
 
-      const result = deepRedact(obj, ['token']);
+      const result = deepRedact(obj, ['token']) as any;
 
       expect(result.users[0].token).toBe('[REDACTED_TOKEN]');
       expect(result.users[1].token).toBe('[REDACTED_TOKEN]');
@@ -283,7 +283,7 @@ describe('security-utils', () => {
         },
       };
 
-      const result = deepRedact(obj, ['secret']);
+      const result = deepRedact(obj, ['secret']) as any;
 
       expect(result.level1.level2.level3.secret).toBe('[REDACTED_SECRET]');
     });
@@ -295,7 +295,7 @@ describe('security-utils', () => {
         Token: 'secret3',
       };
 
-      const result = deepRedact(obj, ['token']);
+      const result = deepRedact(obj, ['token']) as any;
 
       expect(result.TOKEN).toBe('[REDACTED_TOKEN]');
       expect(result.token).toBe('[REDACTED_TOKEN]');
@@ -309,7 +309,7 @@ describe('security-utils', () => {
         password: 'secret',
       };
 
-      const result = deepRedact(obj, ['token', 'apiKey', 'password']);
+      const result = deepRedact(obj, ['token', 'apiKey', 'password']) as any;
 
       // All sensitive fields are masked, even null/undefined ones
       expect(result.token).toBe('[REDACTED_TOKEN]');
@@ -319,7 +319,7 @@ describe('security-utils', () => {
 
     it('should not mutate original object', () => {
       const original = { token: 'secret', id: '123' };
-      const result = deepRedact(original, ['token']);
+      const result = deepRedact(original, ['token']) as any;
 
       expect(original.token).toBe('secret');
       expect(result.token).toBe('[REDACTED_TOKEN]');
@@ -493,7 +493,7 @@ describe('security-utils', () => {
         },
       };
 
-      const result = deepRedact(payload, ['email', 'password', 'token', 'apiKey']);
+      const result = deepRedact(payload, ['email', 'password', 'token', 'apiKey']) as any;
 
       expect(result.user.email).toBe('[REDACTED_EMAIL]');
       expect(result.user.password).toBe('[REDACTED_PASSWORD]');
@@ -516,7 +516,7 @@ describe('security-utils', () => {
 
     it('should not show any visible characters from deep redact', () => {
       const obj = { password: 'MyP@ssw0rd!Secret' };
-      const result = deepRedact(obj, ['password']);
+      const result = deepRedact(obj, ['password']) as any;
 
       expect(result.password).not.toContain('MyP');
       expect(result.password).not.toContain('ssw0rd');

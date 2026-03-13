@@ -113,8 +113,10 @@ describe('CreateMicrolearningWorkflow', () => {
         learningObjectives: ['Objective 1'],
         keyTopics: ['Topic 1'],
         category: 'Security',
-        subCategory: 'Email',
+        subcategory: 'Email',
         language: 'en-us',
+        department: 'IT',
+        level: 'Intermediate',
       },
     });
 
@@ -155,13 +157,13 @@ describe('CreateMicrolearningWorkflow', () => {
   });
 
   it('should execute successfully with valid input', async () => {
-    const run = await createMicrolearningWorkflow.createRunAsync();
+    const run = await createMicrolearningWorkflow.createRun();
 
     const input = {
       prompt: 'Create phishing training',
       department: 'IT',
       writer: { write: vi.fn() },
-    };
+    } as any;
 
     const result = await run.start({ inputData: input });
 
@@ -169,7 +171,8 @@ describe('CreateMicrolearningWorkflow', () => {
       expect.objectContaining({
         userPrompt: 'Create phishing training',
         suggestedDepartment: 'IT',
-      })
+      }),
+      expect.anything()
     );
 
     expect(mocks.genMicrolearningExecute).toHaveBeenCalled();
@@ -194,8 +197,8 @@ describe('CreateMicrolearningWorkflow', () => {
       },
     });
 
-    const run = await createMicrolearningWorkflow.createRunAsync();
-    const result = await run.start({ inputData: { prompt: 'Create vishing training', department: 'IT' } });
+    const run = await createMicrolearningWorkflow.createRun();
+    const result = await run.start({ inputData: { prompt: 'Create vishing training', department: 'IT' } as any });
 
     expect(mocks.createInboxExecute).not.toHaveBeenCalled();
     expect(mocks.saveMicrolearning).toHaveBeenCalledWith(
@@ -208,8 +211,8 @@ describe('CreateMicrolearningWorkflow', () => {
   });
 
   it('should fail if prompt is missing', async () => {
-    const run = await createMicrolearningWorkflow.createRunAsync();
-    const result = await run.start({ inputData: { prompt: '' } });
+    const run = await createMicrolearningWorkflow.createRun();
+    const result = await run.start({ inputData: { prompt: '' } as any });
     expect(result.status).toBe('failed');
   });
 
@@ -219,8 +222,8 @@ describe('CreateMicrolearningWorkflow', () => {
       error: 'Analysis failed',
     });
 
-    const run = await createMicrolearningWorkflow.createRunAsync();
-    const result = await run.start({ inputData: { prompt: 'fail me' } });
+    const run = await createMicrolearningWorkflow.createRun();
+    const result = await run.start({ inputData: { prompt: 'fail me' } as any });
     expect(result.status).toBe('failed');
   });
 
@@ -230,8 +233,8 @@ describe('CreateMicrolearningWorkflow', () => {
       error: 'Generation failed',
     });
 
-    const run = await createMicrolearningWorkflow.createRunAsync();
-    const result = await run.start({ inputData: { prompt: 'fail generation' } });
+    const run = await createMicrolearningWorkflow.createRun();
+    const result = await run.start({ inputData: { prompt: 'fail generation' } as any });
     expect(result.status).toBe('failed');
   });
 
@@ -241,8 +244,8 @@ describe('CreateMicrolearningWorkflow', () => {
       error: 'Language gen failed',
     });
 
-    const run = await createMicrolearningWorkflow.createRunAsync();
-    const result = await run.start({ inputData: { prompt: 'fail language' } });
+    const run = await createMicrolearningWorkflow.createRun();
+    const result = await run.start({ inputData: { prompt: 'fail language' } as any });
     expect(result.status).toBe('failed');
   });
 
@@ -252,8 +255,8 @@ describe('CreateMicrolearningWorkflow', () => {
       error: 'Inbox failed',
     });
 
-    const run = await createMicrolearningWorkflow.createRunAsync();
-    const result = await run.start({ inputData: { prompt: 'fail inbox' } });
+    const run = await createMicrolearningWorkflow.createRun();
+    const result = await run.start({ inputData: { prompt: 'fail inbox' } as any });
     expect(result.status).toBe('failed');
   });
 });
@@ -272,7 +275,8 @@ describe('Step Execution Logic', () => {
         expect.objectContaining({
           userPrompt: 'training',
           suggestedDepartment: 'HR',
-        })
+        }),
+        expect.anything()
       );
       expect(result.success).toBe(true);
     });

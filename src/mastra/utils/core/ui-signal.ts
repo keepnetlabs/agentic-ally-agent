@@ -1,11 +1,10 @@
 /**
  * Shared helper for emitting UI signal events through the Mastra stream writer.
  *
- * Reduces boilerplate: writer null-check, base64 encoding, text-start/delta/end
- * triplet, and structured error logging are all handled here.
+ * Reduces boilerplate: writer null-check, base64 encoding, data-ui-signal
+ * emission, and structured error logging are all handled here.
  */
 
-import { v4 as uuidv4 } from 'uuid';
 import { normalizeError, logErrorInfo } from './error-utils';
 import { errorService } from '../../services/error-service';
 import type { Logger } from './logger';
@@ -32,16 +31,15 @@ export async function emitUISignal({ writer, signalName, meta, logger, stepLabel
   if (!writer) return;
 
   try {
-    const messageId = uuidv4();
     const encoded = Buffer.from(JSON.stringify(meta)).toString('base64');
 
-    await writer.write({ type: 'text-start', id: messageId });
     await writer.write({
-      type: 'text-delta',
-      id: messageId,
-      delta: `::ui:${signalName}::${encoded}::/ui:${signalName}::\n`,
+      type: 'data-ui-signal',
+      data: {
+        signal: signalName,
+        message: `::ui:${signalName}::${encoded}::/ui:${signalName}::\n`,
+      },
     });
-    await writer.write({ type: 'text-end', id: messageId });
   } catch (emitErr) {
     const err = normalizeError(emitErr);
     const errorInfo = errorService.external(err.message, {

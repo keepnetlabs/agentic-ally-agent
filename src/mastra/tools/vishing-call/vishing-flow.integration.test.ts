@@ -61,26 +61,25 @@ describe('Vishing Flow Integration', () => {
         json: async () => mockCallResponse,
       });
 
-    const userResult = await getUserInfoTool.execute({
-      context: { email: 'alice@example.com', skipAnalysis: true },
-    } as any);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const userResult = await getUserInfoTool.execute!({ email: 'alice@example.com', skipAnalysis: true } as any, {}) as any;
 
     expect(userResult.success).toBe(true);
     expect(userResult.userInfo?.targetUserResourceId).toBe('user-vish');
     expect(userResult.userInfo?.phoneNumber).toBe('+905551234567');
 
-    const listResult = await listPhoneNumbersTool.execute({ context: {} } as any);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const listResult = await listPhoneNumbersTool.execute!({} as any, {}) as any;
     expect(listResult.phoneNumbers).toHaveLength(2);
     expect(listResult.phoneNumbers?.[0]?.phone_number_id).toBe('pn-1');
 
-    const callResult = await initiateVishingCallTool.execute({
-      context: {
-        agentPhoneNumberId: 'pn-1',
-        toNumber: userResult.userInfo?.phoneNumber ?? '',
-        prompt: 'You are a bank officer. Verify account.',
-        firstMessage: 'Hello, this is the bank calling.',
-      },
-    } as any);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const callResult = await initiateVishingCallTool.execute!({
+      agentPhoneNumberId: 'pn-1',
+      toNumber: userResult.userInfo?.phoneNumber ?? '',
+      prompt: 'You are a bank officer. Verify account.',
+      firstMessage: 'Hello, this is the bank calling.',
+    } as any, {}) as any;
 
     expect(callResult.success).toBe(true);
     expect(callResult.conversationId).toBe('conv-123');
@@ -94,9 +93,8 @@ describe('Vishing Flow Integration', () => {
       .mockResolvedValueOnce({ ok: true, json: async () => ({ items: [] }) })
       .mockResolvedValueOnce({ ok: true, json: async () => ({ items: [] }) });
 
-    const userResult = await getUserInfoTool.execute({
-      context: { email: 'nonexistent@example.com', skipAnalysis: true },
-    } as any);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const userResult = await getUserInfoTool.execute!({ email: 'nonexistent@example.com', skipAnalysis: true } as any, {}) as any;
 
     expect(userResult.success).toBe(false);
     expect(userResult.error).toBeDefined();
@@ -120,22 +118,21 @@ describe('Vishing Flow Integration', () => {
       .mockResolvedValueOnce({ ok: true, json: async () => mockPhoneNumbers })
       .mockResolvedValueOnce({ ok: false, status: 422, text: async () => 'Invalid phone number' });
 
-    const userResult = await getUserInfoTool.execute({
-      context: { email: 'alice@example.com', skipAnalysis: true },
-    } as any);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const userResult = await getUserInfoTool.execute!({ email: 'alice@example.com', skipAnalysis: true } as any, {}) as any;
     expect(userResult.success).toBe(true);
 
-    const listResult = await listPhoneNumbersTool.execute({ context: {} } as any);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const listResult = await listPhoneNumbersTool.execute!({} as any, {}) as any;
     expect(listResult.phoneNumbers).toHaveLength(1);
 
-    const callResult = await initiateVishingCallTool.execute({
-      context: {
-        agentPhoneNumberId: 'pn-1',
-        toNumber: mockUser.phoneNumber,
-        prompt: 'Test',
-        firstMessage: 'Hello',
-      },
-    } as any);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const callResult = await initiateVishingCallTool.execute!({
+      agentPhoneNumberId: 'pn-1',
+      toNumber: mockUser.phoneNumber,
+      prompt: 'Test',
+      firstMessage: 'Hello',
+    } as any, {}) as any;
 
     expect(callResult.success).toBe(false);
     expect(callResult.error).toBeDefined();

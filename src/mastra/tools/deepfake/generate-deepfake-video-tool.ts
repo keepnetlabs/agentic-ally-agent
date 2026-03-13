@@ -24,7 +24,7 @@
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { HEYGEN } from '../../constants';
-import { uuidv4 } from '../../utils/core/id-utils';
+
 import { getLogger } from '../../utils/core/logger';
 import { normalizeError } from '../../utils/core/error-utils';
 import { withRetry } from '../../utils/core/resilience-utils';
@@ -110,16 +110,15 @@ async function emitVideoGeneratingSignal(
   if (!writer) return;
 
   try {
-    const messageId = uuidv4();
     const encoded = Buffer.from(JSON.stringify(payload)).toString('base64');
 
-    await writer.write({ type: 'text-start', id: messageId });
     await writer.write({
-      type: 'text-delta',
-      id: messageId,
-      delta: `::ui:deepfake_video_generating::${encoded}::/ui:deepfake_video_generating::\n`,
+      type: 'data-ui-signal',
+      data: {
+        signal: 'deepfake_video_generating',
+        message: `::ui:deepfake_video_generating::${encoded}::/ui:deepfake_video_generating::\n`,
+      },
     });
-    await writer.write({ type: 'text-end', id: messageId });
 
     logger.info('deepfake_video_ui_signal_emitted', {
       videoId: payload.videoId,
@@ -199,7 +198,8 @@ export const generateDeepfakeVideoTool = createTool({
     'Generates a deepfake video simulation using HeyGen Create Video V2 API. Takes the spoken script text, avatar ID, and voice ID. Returns immediately with a video_id — the video renders asynchronously in the background.',
   inputSchema: generateDeepfakeVideoInputSchema,
   outputSchema: generateDeepfakeVideoOutputSchema,
-  execute: async ({ context, writer }) => {
+  execute: async (inputData, ctx?) => {
+    const writer = ctx?.writer;
     const startTime = Date.now();
 
     try {
@@ -224,7 +224,7 @@ export const generateDeepfakeVideoTool = createTool({
         avatarStyle = 'normal',
         locale,
         caption = true,
-      } = context;
+      } = inputData;
 
       const url = `${HEYGEN.API_BASE_URL}${HEYGEN.ENDPOINTS.GENERATE_VIDEO}`;
 

@@ -455,17 +455,28 @@ describe('Phishing Editor Helpers', () => {
         true
       );
 
-      expect(writer.write).toHaveBeenCalledWith({ type: 'text-start', id: 'msg-phish' });
+      expect(writer.write).toHaveBeenCalledTimes(2);
       expect(writer.write).toHaveBeenCalledWith(
-        expect.objectContaining({ delta: expect.stringContaining('::ui:phishing_email::') })
+        expect.objectContaining({
+          type: 'data-ui-signal',
+          data: expect.objectContaining({
+            signal: 'phishing_email',
+            message: expect.stringContaining('::ui:phishing_email::'),
+          }),
+        })
       );
       expect(writer.write).toHaveBeenCalledWith(
-        expect.objectContaining({ delta: expect.stringContaining('::ui:landing_page::') })
+        expect.objectContaining({
+          type: 'data-ui-signal',
+          data: expect.objectContaining({
+            signal: 'landing_page',
+            message: expect.stringContaining('::ui:landing_page::'),
+          }),
+        })
       );
-      expect(writer.write).toHaveBeenCalledWith({ type: 'text-end', id: 'msg-phish' });
     });
 
-    it('handles non-Error writer exceptions', async () => {
+    it('does not write when both email and landing are null', async () => {
       const writer = { write: vi.fn().mockRejectedValue('write string fail') };
 
       await streamEditResultsToUI(
@@ -484,10 +495,10 @@ describe('Phishing Editor Helpers', () => {
         false
       );
 
-      expect(writer.write).toHaveBeenCalled();
+      expect(writer.write).not.toHaveBeenCalled();
     });
 
-    it('emits only start/end when email or landing payload is missing', async () => {
+    it('does not write when email template is null and landing pages are empty', async () => {
       const writer = { write: vi.fn().mockResolvedValue(undefined) };
 
       await streamEditResultsToUI(
@@ -506,12 +517,10 @@ describe('Phishing Editor Helpers', () => {
         false
       );
 
-      expect(writer.write).toHaveBeenCalledTimes(2);
-      expect(writer.write).toHaveBeenNthCalledWith(1, { type: 'text-start', id: 'msg-phish' });
-      expect(writer.write).toHaveBeenNthCalledWith(2, { type: 'text-end', id: 'msg-phish' });
+      expect(writer.write).not.toHaveBeenCalled();
     });
 
-    it('handles Error instance writer exceptions', async () => {
+    it('does not write when both payloads are null (Error path not reached)', async () => {
       const writer = { write: vi.fn().mockRejectedValue(new Error('writer error')) };
 
       await streamEditResultsToUI(
@@ -530,7 +539,7 @@ describe('Phishing Editor Helpers', () => {
         false
       );
 
-      expect(writer.write).toHaveBeenCalled();
+      expect(writer.write).not.toHaveBeenCalled();
     });
 
     it('streams landing payload when landingMeta is null', async () => {
@@ -553,7 +562,13 @@ describe('Phishing Editor Helpers', () => {
       );
 
       expect(writer.write).toHaveBeenCalledWith(
-        expect.objectContaining({ delta: expect.stringContaining('::ui:landing_page::') })
+        expect.objectContaining({
+          type: 'data-ui-signal',
+          data: expect.objectContaining({
+            signal: 'landing_page',
+            message: expect.stringContaining('::ui:landing_page::'),
+          }),
+        })
       );
     });
   });

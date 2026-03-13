@@ -170,7 +170,7 @@ vi.mock('../tools/vishing-call/vishing-conversations-summary-tool', () => ({
 
 vi.mock('../workflows/email-ir-workflow', () => ({
   emailIRWorkflow: {
-    createRunAsync: vi.fn().mockResolvedValue({
+    createRun: vi.fn().mockResolvedValue({
       runId: 'run-contract-1',
       start: vi.fn().mockResolvedValue({
         status: 'completed',

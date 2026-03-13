@@ -38,7 +38,7 @@ type SmsPromptParams = {
     scenario: string;
     tone: string;
     psychologicalTriggers: string[];
-    method: string;
+    method?: string;
   };
   language: string;
   difficulty: string;

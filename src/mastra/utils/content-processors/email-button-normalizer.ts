@@ -132,7 +132,7 @@ export function normalizeEmailButtonOnlyRowAlignment(html: string): string {
       }
 
       if (/style=['"]/i.test(nextOpenTag)) {
-        nextOpenTag = nextOpenTag.replace(/(style=['"])([^'"]*)/i, (_m, prefix, styles: string) => {
+        nextOpenTag = nextOpenTag.replace(/(style=['"])([^'"]*)/i, (_m: string, prefix: string, styles: string) => {
           if (/text-align\s*:\s*center/i.test(styles)) {
             return `${prefix}${styles}`;
           }

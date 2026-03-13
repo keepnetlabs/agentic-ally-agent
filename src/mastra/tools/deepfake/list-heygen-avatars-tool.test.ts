@@ -14,9 +14,6 @@ vi.mock('../../utils/core/resilience-utils', () => ({
   withRetry: vi.fn((fn: () => Promise<unknown>) => fn()),
 }));
 
-vi.mock('../../utils/core/id-utils', () => ({
-  uuidv4: () => 'test-uuid-avatars',
-}));
 
 const originalEnv = process.env;
 
@@ -46,7 +43,8 @@ describe('listHeyGenAvatarsTool', () => {
       delete process.env.HEYGEN_API_KEY;
       const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('{}'));
 
-      const result = await listHeyGenAvatarsTool.execute?.({ context: {} } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await listHeyGenAvatarsTool.execute!({} as any, {}) as any;
 
       expect(result).toEqual({
         success: false,
@@ -70,7 +68,8 @@ describe('listHeyGenAvatarsTool', () => {
         )
       );
 
-      const result = await listHeyGenAvatarsTool.execute?.({ context: {} } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await listHeyGenAvatarsTool.execute!({} as any, {}) as any;
 
       expect(result).toMatchObject({
         success: true,
@@ -91,7 +90,8 @@ describe('listHeyGenAvatarsTool', () => {
         new Response('Unauthorized', { status: 401 })
       );
 
-      const result = await listHeyGenAvatarsTool.execute?.({ context: {} } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await listHeyGenAvatarsTool.execute!({} as any, {}) as any;
 
       expect(result).toMatchObject({
         success: false,
@@ -112,7 +112,8 @@ describe('listHeyGenAvatarsTool', () => {
         )
       );
 
-      const result = await listHeyGenAvatarsTool.execute?.({ context: {} } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await listHeyGenAvatarsTool.execute!({} as any, {}) as any;
 
       expect((result as any).avatars).toHaveLength(1);
       expect((result as any).avatars[0].avatar_id).toBe('av-1');
@@ -131,7 +132,8 @@ describe('listHeyGenAvatarsTool', () => {
         )
       );
 
-      const result = await listHeyGenAvatarsTool.execute?.({ context: {} } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await listHeyGenAvatarsTool.execute!({} as any, {}) as any;
 
       expect((result as any).avatars).toHaveLength(100);
     });
@@ -150,16 +152,20 @@ describe('listHeyGenAvatarsTool', () => {
       );
       const mockWriter = { write: vi.fn().mockResolvedValue(undefined) };
 
-      const result = await listHeyGenAvatarsTool.execute?.({
-        context: {},
-        writer: mockWriter,
-      } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await listHeyGenAvatarsTool.execute!(
+        {} as any,
+        { writer: mockWriter } as any,
+      ) as any;
 
       expect(result).toMatchObject({ success: true });
       expect(mockWriter.write).toHaveBeenCalledWith(
         expect.objectContaining({
-          type: 'text-delta',
-          delta: expect.stringContaining('::ui:avatar_selection::'),
+          type: 'data-ui-signal',
+          data: expect.objectContaining({
+            signal: 'avatar_selection',
+            message: expect.stringContaining('::ui:avatar_selection::'),
+          }),
         })
       );
     });
@@ -170,7 +176,8 @@ describe('listHeyGenAvatarsTool', () => {
         new Response(JSON.stringify({ data: {} }), { status: 200 })
       );
 
-      const result = await listHeyGenAvatarsTool.execute?.({ context: {} } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await listHeyGenAvatarsTool.execute!({} as any, {}) as any;
 
       expect(result).toMatchObject({
         success: true,
@@ -183,7 +190,8 @@ describe('listHeyGenAvatarsTool', () => {
       process.env.HEYGEN_API_KEY = 'test-key';
       vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('Network failure'));
 
-      const result = await listHeyGenAvatarsTool.execute?.({ context: {} } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await listHeyGenAvatarsTool.execute!({} as any, {}) as any;
 
       expect(result).toMatchObject({
         success: false,
@@ -197,7 +205,8 @@ describe('listHeyGenAvatarsTool', () => {
       abortErr.name = 'AbortError';
       vi.spyOn(globalThis, 'fetch').mockRejectedValue(abortErr);
 
-      const result = await listHeyGenAvatarsTool.execute?.({ context: {} } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await listHeyGenAvatarsTool.execute!({} as any, {}) as any;
 
       expect(result).toMatchObject({
         success: false,

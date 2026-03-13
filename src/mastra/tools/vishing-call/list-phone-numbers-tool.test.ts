@@ -24,7 +24,8 @@ describe('listPhoneNumbersTool', () => {
   it('should return error when ELEVENLABS_API_KEY is not set', async () => {
     delete process.env.ELEVENLABS_API_KEY;
 
-    const result = await listPhoneNumbersTool.execute({ context: {} } as never);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = await listPhoneNumbersTool.execute!({} as never, {}) as any;
 
     expect(result.success).toBe(false);
     expect(result.error).toContain('ELEVENLABS_API_KEY');
@@ -52,7 +53,8 @@ describe('listPhoneNumbersTool', () => {
       json: async () => mockData,
     });
 
-    const result = await listPhoneNumbersTool.execute({ context: {} } as never);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = await listPhoneNumbersTool.execute!({} as never, {}) as any;
 
     expect(result.success).toBe(true);
     expect(result.phoneNumbers).toHaveLength(2);
@@ -97,7 +99,8 @@ describe('listPhoneNumbersTool', () => {
       json: async () => mockData,
     });
 
-    const result = await listPhoneNumbersTool.execute({ context: {} } as never);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = await listPhoneNumbersTool.execute!({} as never, {}) as any;
 
     expect(result.success).toBe(true);
     expect(result.phoneNumbers).toHaveLength(1);
@@ -120,7 +123,8 @@ describe('listPhoneNumbersTool', () => {
       json: async () => mockData,
     });
 
-    const result = await listPhoneNumbersTool.execute({ context: {} } as never);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = await listPhoneNumbersTool.execute!({} as never, {}) as any;
 
     expect(result.success).toBe(true);
     expect(result.phoneNumbers?.[0]?.provider).toBe('twilio');
@@ -141,7 +145,8 @@ describe('listPhoneNumbersTool', () => {
       json: async () => mockData,
     });
 
-    const result = await listPhoneNumbersTool.execute({ context: {} } as never);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = await listPhoneNumbersTool.execute!({} as never, {}) as any;
 
     expect(result.success).toBe(true);
     expect(result.phoneNumbers?.[0]?.provider).toBe('sip_trunk');
@@ -161,7 +166,8 @@ describe('listPhoneNumbersTool', () => {
       json: async () => mockData,
     });
 
-    const result = await listPhoneNumbersTool.execute({ context: {} } as never);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = await listPhoneNumbersTool.execute!({} as never, {}) as any;
 
     expect(result.success).toBe(true);
     expect(result.phoneNumbers?.[0]?.label).toBe('Unlabeled');
@@ -175,7 +181,8 @@ describe('listPhoneNumbersTool', () => {
       text: async () => 'Invalid API key',
     });
 
-    const result = await listPhoneNumbersTool.execute({ context: {} } as never);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = await listPhoneNumbersTool.execute!({} as never, {}) as any;
 
     expect(result.success).toBe(false);
     expect(result.error).toContain('401');
@@ -192,7 +199,8 @@ describe('listPhoneNumbersTool', () => {
       },
     });
 
-    const result = await listPhoneNumbersTool.execute({ context: {} } as never);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = await listPhoneNumbersTool.execute!({} as never, {}) as any;
 
     expect(result.success).toBe(false);
     expect(result.error).toContain('500');
@@ -203,7 +211,8 @@ describe('listPhoneNumbersTool', () => {
       .fn()
       .mockRejectedValue(Object.assign(new Error('The operation was aborted'), { name: 'AbortError' }));
 
-    const result = await listPhoneNumbersTool.execute({ context: {} } as never);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = await listPhoneNumbersTool.execute!({} as never, {}) as any;
 
     expect(result.success).toBe(false);
     expect(result.error).toContain('timed out');
@@ -212,7 +221,8 @@ describe('listPhoneNumbersTool', () => {
   it('should return generic error on other fetch failures', async () => {
     (global.fetch as ReturnType<typeof vi.fn>) = vi.fn().mockRejectedValue(new Error('Network error'));
 
-    const result = await listPhoneNumbersTool.execute({ context: {} } as never);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = await listPhoneNumbersTool.execute!({} as never, {}) as any;
 
     expect(result.success).toBe(false);
     expect(result.error).toContain('Network error');
@@ -224,7 +234,8 @@ describe('listPhoneNumbersTool', () => {
       json: async () => [],
     });
 
-    const result = await listPhoneNumbersTool.execute({ context: {} } as never);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = await listPhoneNumbersTool.execute!({} as never, {}) as any;
 
     expect(result.success).toBe(true);
     expect(result.phoneNumbers).toEqual([]);
@@ -237,7 +248,8 @@ describe('listPhoneNumbersTool', () => {
       json: async () => ({}),
     });
 
-    const result = await listPhoneNumbersTool.execute({ context: {} } as never);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = await listPhoneNumbersTool.execute!({} as never, {}) as any;
 
     expect(result.success).toBe(true);
     expect(result.phoneNumbers).toEqual([]);
@@ -265,7 +277,8 @@ describe('listPhoneNumbersTool', () => {
       json: async () => mockData,
     });
 
-    const result = await listPhoneNumbersTool.execute({ context: {} } as never);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = await listPhoneNumbersTool.execute!({} as never, {}) as any;
 
     expect(result.success).toBe(true);
     expect(result.phoneNumbers).toHaveLength(2);
@@ -281,9 +294,8 @@ describe('listPhoneNumbersTool', () => {
       json: async () => [],
     });
 
-    const result = await listPhoneNumbersTool.execute({
-      context: { refresh: true },
-    } as never);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = await listPhoneNumbersTool.execute!({ refresh: true } as never, {}) as any;
 
     expect(result.success).toBe(true);
     expect(global.fetch).toHaveBeenCalled();
@@ -297,7 +309,8 @@ describe('listPhoneNumbersTool', () => {
       },
     });
 
-    const result = await listPhoneNumbersTool.execute({ context: {} } as never);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = await listPhoneNumbersTool.execute!({} as never, {}) as any;
 
     expect(result.success).toBe(false);
     expect(result.error).toBeDefined();
@@ -318,7 +331,8 @@ describe('listPhoneNumbersTool', () => {
         json: async () => mockData,
       });
 
-    const result = await listPhoneNumbersTool.execute({ context: {} } as never);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = await listPhoneNumbersTool.execute!({} as never, {}) as any;
 
     expect(result.success).toBe(true);
     expect(result.phoneNumbers).toHaveLength(1);

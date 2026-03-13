@@ -67,6 +67,7 @@ export async function generateSmishingSimulation(params: {
   const difficulty = normalizeDifficultyValue(simulation.difficulty) || SMISHING.DEFAULT_DIFFICULTY;
   const method = resolveSmishingMethod(simulation.scenario_type);
 
+  /* eslint-disable @typescript-eslint/no-non-null-assertion -- guarded at function entry */
   try {
     const additionalContextParts = [
       simulation.rationale ? `Rationale: ${simulation.rationale}` : undefined,
@@ -74,24 +75,26 @@ export async function generateSmishingSimulation(params: {
       executiveReport ? `Executive report:\n${executiveReport}` : undefined,
     ].filter(Boolean);
 
-    const generation = await withRetry(
+    if (!smishingWorkflowExecutorTool.execute) throw new Error('Smishing workflow executor tool is not executable');
+    if (!uploadSmishingTool.execute) throw new Error('Upload smishing tool is not executable');
+    if (!assignSmishingTool.execute) throw new Error('Assign smishing tool is not executable');
+
+    const generation: Record<string, any> = await withRetry(
       () =>
         withTimeout(
-          smishingWorkflowExecutorTool.execute({
-            context: {
-              workflowType: SMISHING.WORKFLOW_TYPE,
-              topic,
-              difficulty,
-              language,
-              method,
-              includeSms: true,
-              includeLandingPage: true,
-              additionalContext: additionalContextParts.length > 0 ? additionalContextParts.join('\n') : undefined,
-              targetProfile: {
-                department: toolResult.userInfo?.department,
-              },
+          smishingWorkflowExecutorTool.execute!({
+            workflowType: SMISHING.WORKFLOW_TYPE,
+            topic,
+            difficulty,
+            language,
+            method,
+            includeSms: true,
+            includeLandingPage: true,
+            additionalContext: additionalContextParts.length > 0 ? additionalContextParts.join('\n') : undefined,
+            targetProfile: {
+              department: toolResult.userInfo?.department,
             },
-          } as any),
+          }, {}),
           AGENT_CALL_TIMEOUT_MS
         ),
       'Autonomous smishing generation'
@@ -106,14 +109,10 @@ export async function generateSmishingSimulation(params: {
       };
     }
 
-    const uploadResult = await withRetry(
+    const uploadResult: Record<string, any> = await withRetry(
       () =>
         withTimeout(
-          uploadSmishingTool.execute({
-            context: {
-              smishingId,
-            },
-          } as any),
+          uploadSmishingTool.execute!({ smishingId }, {}),
           AGENT_CALL_TIMEOUT_MS
         ),
       'Autonomous smishing upload'
@@ -143,17 +142,15 @@ export async function generateSmishingSimulation(params: {
       ? { targetUserResourceId }
       : { targetGroupResourceId: String(targetGroupResourceId) };
 
-    const assignResult = await withRetry(
+    const assignResult: Record<string, any> = await withRetry(
       () =>
         withTimeout(
-          assignSmishingTool.execute({
-            context: {
-              resourceId: uploadedResourceId,
-              languageId: uploadResult?.data?.languageId,
-              contentCategory: buildContentCategory(simulation),
-              ...assignmentContext,
-            },
-          } as any),
+          assignSmishingTool.execute!({
+            resourceId: uploadedResourceId,
+            languageId: uploadResult?.data?.languageId,
+            contentCategory: buildContentCategory(simulation),
+            ...assignmentContext,
+          }, {}),
           AGENT_CALL_TIMEOUT_MS
         ),
       'Autonomous smishing assign'
@@ -192,4 +189,5 @@ export async function generateSmishingSimulation(params: {
       error: err.message,
     };
   }
+  /* eslint-enable @typescript-eslint/no-non-null-assertion */
 }

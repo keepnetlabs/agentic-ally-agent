@@ -6,10 +6,9 @@
  * - rationale: Generates smishing SMS + landing page simulation content
  * @see docs/AI_COMPLIANCE_INVENTORY.md
  */
-import { createTool } from '@mastra/core/tools';
+import { createTool, ToolExecutionContext } from '@mastra/core/tools';
 import { z } from 'zod';
 import { createSmishingWorkflow } from '../../workflows/create-smishing-workflow';
-import { uuidv4 } from '../../utils/core/id-utils';
 import { SMISHING, MODEL_PROVIDERS, ERROR_MESSAGES, PROMPT_ANALYSIS } from '../../constants';
 import { getLogger } from '../../utils/core/logger';
 import { getPolicySummary } from '../../utils/core/policy-cache';
@@ -79,8 +78,9 @@ export const smishingWorkflowExecutorTool = createTool({
   inputSchema: smishingWorkflowSchema,
   outputSchema: smishingWorkflowOutputSchema,
 
-  execute: async ({ context, writer }) => {
-    const params = context;
+  execute: async (inputData, ctx?: ToolExecutionContext) => {
+    const params = inputData;
+    const writer = ctx?.writer;
     const logger = getLogger('SmishingWorkflowExecutor');
 
     try {
@@ -91,17 +91,17 @@ export const smishingWorkflowExecutorTool = createTool({
       logger.info('Policy summary ready', { hasContent: !!policyContext, length: policyContext.length });
 
       const workflow = createSmishingWorkflow;
-      const run = await workflow.createRunAsync();
+      const run = await workflow.createRun();
 
       const result = await run.start({
         inputData: {
           topic: params.topic,
           targetProfile: params.targetProfile,
-          difficulty: params.difficulty || SMISHING.DEFAULT_DIFFICULTY,
+          difficulty: (params.difficulty || SMISHING.DEFAULT_DIFFICULTY) as 'Easy' | 'Medium' | 'Hard',
           language: params.language || 'en-gb',
-          method: params.method,
-          includeSms: params.includeSms,
-          includeLandingPage: params.includeLandingPage,
+          method: params.method || SMISHING.DEFAULT_ATTACK_METHOD,
+          includeSms: params.includeSms ?? true,
+          includeLandingPage: params.includeLandingPage ?? true,
           additionalContext: params.additionalContext,
           modelProvider: params.modelProvider,
           model: params.model,
@@ -118,9 +118,6 @@ export const smishingWorkflowExecutorTool = createTool({
         // Stream result to frontend
         if (writer) {
           try {
-            const messageId = uuidv4();
-            await writer.write({ type: 'text-start', id: messageId });
-
             const normalizedLanguage = (params.language || 'en-gb').toLowerCase();
             const smsKey = `smishing:${output.smishingId}:sms:${normalizedLanguage}`;
             const landingKey = `smishing:${output.smishingId}:landing:${normalizedLanguage}`;
@@ -136,9 +133,11 @@ export const smishingWorkflowExecutorTool = createTool({
               const encodedSms = Buffer.from(smsJson).toString('base64');
 
               await writer.write({
-                type: 'text-delta',
-                id: messageId,
-                delta: `::ui:smishing_sms::${encodedSms}::/ui:smishing_sms::\n`,
+                type: 'data-ui-signal',
+                data: {
+                  signal: 'smishing_sms',
+                  message: `::ui:smishing_sms::${encodedSms}::/ui:smishing_sms::\n`,
+                },
               });
             }
 
@@ -153,13 +152,13 @@ export const smishingWorkflowExecutorTool = createTool({
               const encodedLandingPage = Buffer.from(landingPageJson).toString('base64');
 
               await writer.write({
-                type: 'text-delta',
-                id: messageId,
-                delta: `::ui:smishing_landing_page::${encodedLandingPage}::/ui:smishing_landing_page::\n`,
+                type: 'data-ui-signal',
+                data: {
+                  signal: 'smishing_landing_page',
+                  message: `::ui:smishing_landing_page::${encodedLandingPage}::/ui:smishing_landing_page::\n`,
+                },
               });
             }
-
-            await writer.write({ type: 'text-end', id: messageId });
           } catch (err) {
             const error = err instanceof Error ? err : new Error(String(err));
             const errorInfo = errorService.external(error.message, {
@@ -214,8 +213,8 @@ export const smishingWorkflowExecutorTool = createTool({
     } catch (error) {
       const err = normalizeError(error);
       const errorInfo = errorService.external(err.message, {
-        topic: context?.topic,
-        difficulty: context?.difficulty,
+        topic: params?.topic,
+        difficulty: params?.difficulty,
         step: 'smishing-workflow-execution',
         stack: err.stack,
       });

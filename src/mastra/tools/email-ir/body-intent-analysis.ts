@@ -37,8 +37,8 @@ export const bodyIntentAnalysisTool = createTool({
   description: 'Analyzes email body for intent (what is it asking for?)',
   inputSchema: EmailIREmailDataSchema,
   outputSchema: bodyIntentAnalysisOutputSchema,
-  execute: async ({ context }) => {
-    const email = context;
+  execute: async (inputData) => {
+    const email = inputData;
     const emailId = email.from?.split('@')[0] || 'unknown-sender';
     const ctx = createLogContext(emailId, 'intent-analysis');
 
@@ -173,7 +173,7 @@ Populate the output schema based on the forensic evidence identified above:
       const result = await withRetry(
         () =>
           emailIRAnalyst.generate(prompt, {
-            output: bodyIntentAnalysisOutputSchema.omit({ original_email: true }),
+            structuredOutput: { schema: bodyIntentAnalysisOutputSchema.omit({ original_email: true }) },
           }),
         'body-intent-analysis-llm'
       );

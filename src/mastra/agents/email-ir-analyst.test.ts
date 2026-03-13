@@ -21,31 +21,34 @@ describe('emailIRAnalyst', () => {
     expect(emailIRAnalyst.name).toBe(AGENT_NAMES.EMAIL_IR_ANALYST);
   });
 
-  it('should have description defined', () => {
-    // Description may be defined or used in name/instructions
-    expect(emailIRAnalyst.name || emailIRAnalyst.instructions).toBeDefined();
+  it('should have description defined', async () => {
+    expect(emailIRAnalyst.name || await emailIRAnalyst.getInstructions()).toBeDefined();
   });
 
-  it('should have instructions for header, behavioral, and threat analysis', () => {
-    expect(emailIRAnalyst.instructions).toContain('Incident Responder');
-    expect(emailIRAnalyst.instructions).toContain('headers');
-    expect(emailIRAnalyst.instructions).toContain('Social Engineering');
-    expect(emailIRAnalyst.instructions).toContain('threat intelligence');
+  it('should have instructions for header, behavioral, and threat analysis', async () => {
+    const instructions = await emailIRAnalyst.getInstructions();
+    expect(instructions).toContain('Incident Responder');
+    expect(instructions).toContain('headers');
+    expect(instructions).toContain('Social Engineering');
+    expect(instructions).toContain('threat intelligence');
   });
 
-  it('should have defensive mindset principle in instructions', () => {
-    expect(emailIRAnalyst.instructions).toContain('Defensive Mindset');
-    expect(emailIRAnalyst.instructions).toContain('evasion techniques');
+  it('should have defensive mindset principle in instructions', async () => {
+    const instructions = await emailIRAnalyst.getInstructions();
+    expect(instructions).toContain('Defensive Mindset');
+    expect(instructions).toContain('evasion techniques');
   });
 
-  it('should have evidence-based analysis requirement', () => {
-    expect(emailIRAnalyst.instructions).toContain('Evidence-Based');
-    expect(emailIRAnalyst.instructions).toContain('provided data');
+  it('should have evidence-based analysis requirement', async () => {
+    const instructions = await emailIRAnalyst.getInstructions();
+    expect(instructions).toContain('Evidence-Based');
+    expect(instructions).toContain('provided data');
   });
 
-  it('should support SOC analyst role for analysis', () => {
-    expect(emailIRAnalyst.instructions).toContain('SOC Analyst');
-    expect(emailIRAnalyst.instructions).toContain('Security');
+  it('should support SOC analyst role for analysis', async () => {
+    const instructions = await emailIRAnalyst.getInstructions();
+    expect(instructions).toContain('SOC Analyst');
+    expect(instructions).toContain('Security');
   });
 
   it('should have model configured', () => {

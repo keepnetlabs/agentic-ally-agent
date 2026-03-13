@@ -38,9 +38,9 @@ describe('Reasoning Stream Utils', () => {
       await streamDirectReasoning(reasoning, mockWriter);
 
       expect(writeSpy).toHaveBeenCalledTimes(3);
-      expect(writeSpy).toHaveBeenNthCalledWith(1, { type: 'reasoning-start', id: 'test-uuid-1' });
-      expect(writeSpy).toHaveBeenNthCalledWith(2, { type: 'reasoning-delta', id: 'test-uuid-1', delta: reasoning });
-      expect(writeSpy).toHaveBeenNthCalledWith(3, { type: 'reasoning-end', id: 'test-uuid-1' });
+      expect(writeSpy).toHaveBeenNthCalledWith(1, { type: 'data-reasoning', data: { event: 'start', id: 'test-uuid-1' } });
+      expect(writeSpy).toHaveBeenNthCalledWith(2, { type: 'data-reasoning', data: { event: 'delta', id: 'test-uuid-1', text: reasoning } });
+      expect(writeSpy).toHaveBeenNthCalledWith(3, { type: 'data-reasoning', data: { event: 'end', id: 'test-uuid-1' } });
     });
 
     it('should do nothing if reasoning is empty', async () => {
@@ -81,9 +81,8 @@ describe('Reasoning Stream Utils', () => {
       // Whitespace is truthy, so it should stream
       expect(writeSpy).toHaveBeenCalledTimes(3);
       expect(writeSpy).toHaveBeenNthCalledWith(2, {
-        type: 'reasoning-delta',
-        id: 'test-uuid-1',
-        delta: '   \t\n   ',
+        type: 'data-reasoning',
+        data: { event: 'delta', id: 'test-uuid-1', text: '   \t\n   ' },
       });
     });
 
@@ -93,9 +92,8 @@ describe('Reasoning Stream Utils', () => {
 
       expect(writeSpy).toHaveBeenCalledTimes(3);
       expect(writeSpy).toHaveBeenNthCalledWith(2, {
-        type: 'reasoning-delta',
-        id: 'test-uuid-1',
-        delta: longReasoning,
+        type: 'data-reasoning',
+        data: { event: 'delta', id: 'test-uuid-1', text: longReasoning },
       });
     });
 
@@ -105,9 +103,8 @@ describe('Reasoning Stream Utils', () => {
 
       expect(writeSpy).toHaveBeenCalledTimes(3);
       expect(writeSpy).toHaveBeenNthCalledWith(2, {
-        type: 'reasoning-delta',
-        id: 'test-uuid-1',
-        delta: reasoning,
+        type: 'data-reasoning',
+        data: { event: 'delta', id: 'test-uuid-1', text: reasoning },
       });
     });
 
@@ -117,9 +114,8 @@ describe('Reasoning Stream Utils', () => {
 
       expect(writeSpy).toHaveBeenCalledTimes(3);
       expect(writeSpy).toHaveBeenNthCalledWith(2, {
-        type: 'reasoning-delta',
-        id: 'test-uuid-1',
-        delta: reasoning,
+        type: 'data-reasoning',
+        data: { event: 'delta', id: 'test-uuid-1', text: reasoning },
       });
     });
 
@@ -129,9 +125,8 @@ describe('Reasoning Stream Utils', () => {
 
       expect(writeSpy).toHaveBeenCalledTimes(3);
       expect(writeSpy).toHaveBeenNthCalledWith(2, {
-        type: 'reasoning-delta',
-        id: 'test-uuid-1',
-        delta: reasoning,
+        type: 'data-reasoning',
+        data: { event: 'delta', id: 'test-uuid-1', text: reasoning },
       });
     });
 
@@ -141,9 +136,8 @@ describe('Reasoning Stream Utils', () => {
 
       expect(writeSpy).toHaveBeenCalledTimes(3);
       expect(writeSpy).toHaveBeenNthCalledWith(2, {
-        type: 'reasoning-delta',
-        id: 'test-uuid-1',
-        delta: reasoning,
+        type: 'data-reasoning',
+        data: { event: 'delta', id: 'test-uuid-1', text: reasoning },
       });
     });
 
@@ -152,8 +146,8 @@ describe('Reasoning Stream Utils', () => {
       await streamDirectReasoning('Second', mockWriter);
 
       expect(writeSpy).toHaveBeenCalledTimes(6);
-      expect(writeSpy).toHaveBeenNthCalledWith(1, { type: 'reasoning-start', id: 'test-uuid-1' });
-      expect(writeSpy).toHaveBeenNthCalledWith(4, { type: 'reasoning-start', id: 'test-uuid-2' });
+      expect(writeSpy).toHaveBeenNthCalledWith(1, { type: 'data-reasoning', data: { event: 'start', id: 'test-uuid-1' } });
+      expect(writeSpy).toHaveBeenNthCalledWith(4, { type: 'data-reasoning', data: { event: 'start', id: 'test-uuid-2' } });
     });
 
     it('should not throw if writer.write throws on first call', async () => {
@@ -211,19 +205,19 @@ describe('Reasoning Stream Utils', () => {
     it('should call write in correct order', async () => {
       const calls: string[] = [];
       mockWriter.write = vi.fn().mockImplementation((data: any) => {
-        calls.push(data.type);
+        calls.push(data.data?.event ?? data.type);
         return Promise.resolve();
       });
 
       await streamDirectReasoning('test', mockWriter);
 
-      expect(calls).toEqual(['reasoning-start', 'reasoning-delta', 'reasoning-end']);
+      expect(calls).toEqual(['start', 'delta', 'end']);
     });
 
     it('should pass same id to all write calls', async () => {
       const ids: string[] = [];
       mockWriter.write = vi.fn().mockImplementation((data: any) => {
-        ids.push(data.id);
+        ids.push(data.data?.id ?? data.id);
         return Promise.resolve();
       });
 
@@ -252,10 +246,12 @@ describe('Reasoning Stream Utils', () => {
       expect(mockGenerateText).not.toHaveBeenCalled();
     });
 
-    it('should call writer.write with reasoning-start immediately', async () => {
+    it('should call writer.write with data-reasoning start immediately', async () => {
       mockGenerateText.mockImplementation(() => new Promise(() => {})); // Never resolves
       await streamReasoning('reasoning text', mockWriter);
-      expect(writeSpy).toHaveBeenCalledWith(expect.objectContaining({ type: 'reasoning-start' }));
+      expect(writeSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'data-reasoning', data: expect.objectContaining({ event: 'start' }) })
+      );
     });
 
     it('should handle writer.write throwing on first call', async () => {
@@ -270,17 +266,24 @@ describe('Reasoning Stream Utils', () => {
       const writer = { write: vi.fn().mockResolvedValue(undefined) };
       await streamReasoning('reasoning text', writer as any);
       await new Promise(r => setTimeout(r, 50));
-      expect(writer.write).toHaveBeenCalledWith(expect.objectContaining({ type: 'reasoning-end' }));
+      expect(writer.write).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'data-reasoning', data: expect.objectContaining({ event: 'end' }) })
+      );
     });
 
-    it('should stream delta and reasoning-end when generateText succeeds', async () => {
+    it('should stream data-reasoning delta and end when generateText succeeds', async () => {
       mockGenerateText.mockResolvedValue({ text: 'User-friendly summary' });
       await streamReasoning('technical reasoning', mockWriter);
       await new Promise(r => setTimeout(r, 50));
       expect(writeSpy).toHaveBeenCalledWith(
-        expect.objectContaining({ type: 'reasoning-delta', delta: 'User-friendly summary' })
+        expect.objectContaining({
+          type: 'data-reasoning',
+          data: expect.objectContaining({ event: 'delta', text: 'User-friendly summary' }),
+        })
       );
-      expect(writeSpy).toHaveBeenCalledWith(expect.objectContaining({ type: 'reasoning-end' }));
+      expect(writeSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'data-reasoning', data: expect.objectContaining({ event: 'end' }) })
+      );
     });
   });
 

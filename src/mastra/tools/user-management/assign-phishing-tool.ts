@@ -7,7 +7,7 @@
  * - humanOversight: approval-gated (Chat confirmation before execution)
  * @see docs/AI_COMPLIANCE_INVENTORY.md
  */
-import { createTool } from '@mastra/core/tools';
+import { createTool, ToolExecutionContext } from '@mastra/core/tools';
 import { z } from 'zod';
 import { isSafeId } from '../../utils/core/id-utils';
 import { generateBatchId } from '../../utils/core/short-id';
@@ -104,7 +104,8 @@ export const assignPhishingTool = createTool({
         'Provide EXACTLY ONE: targetUserResourceId (user assignment) OR targetGroupResourceId (group assignment).',
     }),
   outputSchema: assignPhishingOutputSchema,
-  execute: async ({ context, writer }) => {
+  execute: async (inputData, ctx?: ToolExecutionContext) => {
+    const writer = ctx?.writer;
     const logger = getLogger('AssignPhishingTool');
     const {
       resourceId,
@@ -117,7 +118,7 @@ export const assignPhishingTool = createTool({
       trainingId,
       sendTrainingLanguageId,
       contentCategory,
-    } = context;
+    } = inputData;
 
     // Guard: prevent assigning with raw phishingId (must upload first)
     try {

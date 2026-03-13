@@ -16,9 +16,9 @@ describe('Agents Index Exports', () => {
 
     it('should be an Agent instance with proper structure', () => {
       expect(microlearningAgent).toHaveProperty('name');
-      expect(microlearningAgent).toHaveProperty('instructions');
+      expect(microlearningAgent).toHaveProperty('getInstructions');
       expect(microlearningAgent).toHaveProperty('model');
-      expect(microlearningAgent).toHaveProperty('tools');
+      expect(microlearningAgent).toHaveProperty('listTools');
     });
 
     it('should have correct agent name', () => {
@@ -26,10 +26,11 @@ describe('Agents Index Exports', () => {
       expect(microlearningAgent.name).toBe('microlearningAgent');
     });
 
-    it('should have defined instructions', () => {
-      expect(microlearningAgent.instructions).toBeDefined();
-      expect(microlearningAgent.instructions).not.toBe('');
-      expect(typeof microlearningAgent.instructions).toBe('string');
+    it('should have defined instructions', async () => {
+      const instructions = await microlearningAgent.getInstructions();
+      expect(instructions).toBeDefined();
+      expect(instructions).not.toBe('');
+      expect(typeof instructions).toBe('string');
     });
 
     it('should have defined model', () => {
@@ -37,10 +38,11 @@ describe('Agents Index Exports', () => {
       expect(microlearningAgent.model).not.toBeNull();
     });
 
-    it('should have tools defined', () => {
-      expect(microlearningAgent.tools).toBeDefined();
-      expect(typeof microlearningAgent.tools).toBe('object');
-      expect(Object.keys(microlearningAgent.tools).length).toBeGreaterThan(0);
+    it('should have tools defined', async () => {
+      const tools = await microlearningAgent.listTools();
+      expect(tools).toBeDefined();
+      expect(typeof tools).toBe('object');
+      expect(Object.keys(tools).length).toBeGreaterThan(0);
     });
   });
 
@@ -53,9 +55,9 @@ describe('Agents Index Exports', () => {
 
     it('should be an Agent instance with proper structure', () => {
       expect(orchestratorAgent).toHaveProperty('name');
-      expect(orchestratorAgent).toHaveProperty('instructions');
+      expect(orchestratorAgent).toHaveProperty('getInstructions');
       expect(orchestratorAgent).toHaveProperty('model');
-      expect(orchestratorAgent).toHaveProperty('tools');
+      expect(orchestratorAgent).toHaveProperty('listTools');
     });
 
     it('should have correct agent name', () => {
@@ -63,10 +65,11 @@ describe('Agents Index Exports', () => {
       expect(orchestratorAgent.name).toBe('orchestrator');
     });
 
-    it('should have defined instructions', () => {
-      expect(orchestratorAgent.instructions).toBeDefined();
-      expect(orchestratorAgent.instructions).not.toBe('');
-      expect(typeof orchestratorAgent.instructions).toBe('string');
+    it('should have defined instructions', async () => {
+      const instructions = await orchestratorAgent.getInstructions();
+      expect(instructions).toBeDefined();
+      expect(instructions).not.toBe('');
+      expect(typeof instructions).toBe('string');
     });
 
     it('should have defined model', () => {
@@ -74,15 +77,14 @@ describe('Agents Index Exports', () => {
       expect(orchestratorAgent.model).not.toBeNull();
     });
 
-    it('should be a valid routing agent (may not have tools)', () => {
-      // Orchestrator is a routing agent without tools
+    it('should be a valid routing agent (may not have tools)', async () => {
       expect(orchestratorAgent.name).toBeDefined();
-      expect(orchestratorAgent.instructions).toBeDefined();
+      expect(await orchestratorAgent.getInstructions()).toBeDefined();
       expect(orchestratorAgent.model).toBeDefined();
     });
 
-    it('should include ORCHESTRATOR_CONFIRMATION_EXAMPLES in Scenario A instructions', () => {
-      const instructions = orchestratorAgent.instructions as string;
+    it('should include ORCHESTRATOR_CONFIRMATION_EXAMPLES in Scenario A instructions', async () => {
+      const instructions = await orchestratorAgent.getInstructions();
       for (const example of ORCHESTRATOR_CONFIRMATION_EXAMPLES) {
         expect(instructions).toContain(example);
       }
@@ -98,9 +100,9 @@ describe('Agents Index Exports', () => {
 
     it('should be an Agent instance with proper structure', () => {
       expect(phishingEmailAgent).toHaveProperty('name');
-      expect(phishingEmailAgent).toHaveProperty('instructions');
+      expect(phishingEmailAgent).toHaveProperty('getInstructions');
       expect(phishingEmailAgent).toHaveProperty('model');
-      expect(phishingEmailAgent).toHaveProperty('tools');
+      expect(phishingEmailAgent).toHaveProperty('listTools');
     });
 
     it('should have correct agent name', () => {
@@ -108,10 +110,11 @@ describe('Agents Index Exports', () => {
       expect(phishingEmailAgent.name).toBe('phishingEmailAssistant');
     });
 
-    it('should have defined instructions', () => {
-      expect(phishingEmailAgent.instructions).toBeDefined();
-      expect(phishingEmailAgent.instructions).not.toBe('');
-      expect(typeof phishingEmailAgent.instructions).toBe('string');
+    it('should have defined instructions', async () => {
+      const instructions = await phishingEmailAgent.getInstructions();
+      expect(instructions).toBeDefined();
+      expect(instructions).not.toBe('');
+      expect(typeof instructions).toBe('string');
     });
 
     it('should have defined model', () => {
@@ -119,10 +122,11 @@ describe('Agents Index Exports', () => {
       expect(phishingEmailAgent.model).not.toBeNull();
     });
 
-    it('should have tools defined', () => {
-      expect(phishingEmailAgent.tools).toBeDefined();
-      expect(typeof phishingEmailAgent.tools).toBe('object');
-      expect(Object.keys(phishingEmailAgent.tools).length).toBeGreaterThan(0);
+    it('should have tools defined', async () => {
+      const tools = await phishingEmailAgent.listTools();
+      expect(tools).toBeDefined();
+      expect(typeof tools).toBe('object');
+      expect(Object.keys(tools).length).toBeGreaterThan(0);
     });
   });
 
@@ -135,9 +139,9 @@ describe('Agents Index Exports', () => {
 
     it('should be an Agent instance with proper structure', () => {
       expect(policySummaryAgent).toHaveProperty('name');
-      expect(policySummaryAgent).toHaveProperty('instructions');
+      expect(policySummaryAgent).toHaveProperty('getInstructions');
       expect(policySummaryAgent).toHaveProperty('model');
-      expect(policySummaryAgent).toHaveProperty('tools');
+      expect(policySummaryAgent).toHaveProperty('listTools');
     });
 
     it('should have correct agent name', () => {
@@ -145,10 +149,11 @@ describe('Agents Index Exports', () => {
       expect(policySummaryAgent.name).toBe('policySummaryAssistant');
     });
 
-    it('should have defined instructions', () => {
-      expect(policySummaryAgent.instructions).toBeDefined();
-      expect(policySummaryAgent.instructions).not.toBe('');
-      expect(typeof policySummaryAgent.instructions).toBe('string');
+    it('should have defined instructions', async () => {
+      const instructions = await policySummaryAgent.getInstructions();
+      expect(instructions).toBeDefined();
+      expect(instructions).not.toBe('');
+      expect(typeof instructions).toBe('string');
     });
 
     it('should have defined model', () => {
@@ -156,10 +161,11 @@ describe('Agents Index Exports', () => {
       expect(policySummaryAgent.model).not.toBeNull();
     });
 
-    it('should have tools defined', () => {
-      expect(policySummaryAgent.tools).toBeDefined();
-      expect(typeof policySummaryAgent.tools).toBe('object');
-      expect(Object.keys(policySummaryAgent.tools).length).toBeGreaterThan(0);
+    it('should have tools defined', async () => {
+      const tools = await policySummaryAgent.listTools();
+      expect(tools).toBeDefined();
+      expect(typeof tools).toBe('object');
+      expect(Object.keys(tools).length).toBeGreaterThan(0);
     });
   });
 
@@ -172,9 +178,9 @@ describe('Agents Index Exports', () => {
 
     it('should be an Agent instance with proper structure', () => {
       expect(userInfoAgent).toHaveProperty('name');
-      expect(userInfoAgent).toHaveProperty('instructions');
+      expect(userInfoAgent).toHaveProperty('getInstructions');
       expect(userInfoAgent).toHaveProperty('model');
-      expect(userInfoAgent).toHaveProperty('tools');
+      expect(userInfoAgent).toHaveProperty('listTools');
     });
 
     it('should have correct agent name', () => {
@@ -182,10 +188,11 @@ describe('Agents Index Exports', () => {
       expect(userInfoAgent.name).toBe('userInfoAssistant');
     });
 
-    it('should have defined instructions', () => {
-      expect(userInfoAgent.instructions).toBeDefined();
-      expect(userInfoAgent.instructions).not.toBe('');
-      expect(typeof userInfoAgent.instructions).toBe('string');
+    it('should have defined instructions', async () => {
+      const instructions = await userInfoAgent.getInstructions();
+      expect(instructions).toBeDefined();
+      expect(instructions).not.toBe('');
+      expect(typeof instructions).toBe('string');
     });
 
     it('should have defined model', () => {
@@ -193,10 +200,11 @@ describe('Agents Index Exports', () => {
       expect(userInfoAgent.model).not.toBeNull();
     });
 
-    it('should have tools defined', () => {
-      expect(userInfoAgent.tools).toBeDefined();
-      expect(typeof userInfoAgent.tools).toBe('object');
-      expect(Object.keys(userInfoAgent.tools).length).toBeGreaterThan(0);
+    it('should have tools defined', async () => {
+      const tools = await userInfoAgent.listTools();
+      expect(tools).toBeDefined();
+      expect(typeof tools).toBe('object');
+      expect(Object.keys(tools).length).toBeGreaterThan(0);
     });
   });
 
@@ -236,14 +244,15 @@ describe('Agents Index Exports', () => {
       });
     });
 
-    it('should have each agent with instructions property', () => {
+    it('should have each agent with instructions method', async () => {
       const agents = [microlearningAgent, orchestratorAgent, phishingEmailAgent, policySummaryAgent, userInfoAgent, smishingSmsAgent, vishingCallAgent];
 
-      agents.forEach(agent => {
-        expect(agent).toHaveProperty('instructions');
-        expect(typeof agent.instructions).toBe('string');
-        expect(agent.instructions.length).toBeGreaterThan(0);
-      });
+      for (const agent of agents) {
+        const instructions = (await agent.getInstructions()) as string;
+        expect(instructions).toBeDefined();
+        expect(typeof instructions).toBe('string');
+        expect(instructions.length).toBeGreaterThan(0);
+      }
     });
 
     it('should have each agent with model property', () => {
@@ -255,16 +264,16 @@ describe('Agents Index Exports', () => {
       });
     });
 
-    it('should have each agent with tools property (except orchestrator)', () => {
+    it('should have each agent with tools (except orchestrator)', async () => {
       const agents = [microlearningAgent, phishingEmailAgent, policySummaryAgent, userInfoAgent];
 
-      agents.forEach(agent => {
-        expect(agent).toHaveProperty('tools');
-        expect(typeof agent.tools).toBe('object');
-        expect(Object.keys(agent.tools).length).toBeGreaterThan(0);
-      });
+      for (const agent of agents) {
+        const tools = await agent.listTools();
+        expect(tools).toBeDefined();
+        expect(typeof tools).toBe('object');
+        expect(Object.keys(tools).length).toBeGreaterThan(0);
+      }
 
-      // Orchestrator agent may not have tools (it's a routing agent)
       expect(orchestratorAgent).toHaveProperty('name');
       expect(orchestratorAgent).toHaveProperty('model');
     });
@@ -357,7 +366,6 @@ describe('Agents Index Exports', () => {
   // ==================== IMPORT PATH TESTS ====================
   describe('Import Path Validation', () => {
     it('should be importable from barrel export', () => {
-      // This test verifies that the barrel export pattern works
       expect(microlearningAgent).toBeDefined();
       expect(orchestratorAgent).toBeDefined();
       expect(phishingEmailAgent).toBeDefined();
@@ -368,7 +376,6 @@ describe('Agents Index Exports', () => {
     });
 
     it('should support named imports', () => {
-      // Each agent should be independently importable
       expect(typeof microlearningAgent).not.toBe('undefined');
       expect(typeof orchestratorAgent).not.toBe('undefined');
       expect(typeof phishingEmailAgent).not.toBe('undefined');
@@ -381,50 +388,49 @@ describe('Agents Index Exports', () => {
 
   // ==================== AGENT TOOLS VALIDATION TESTS ====================
   describe('Agent Tools Validation', () => {
-    it('microlearningAgent should have tools defined', () => {
-      expect(Object.keys(microlearningAgent.tools).length).toBeGreaterThan(0);
+    it('microlearningAgent should have tools defined', async () => {
+      expect(Object.keys(await microlearningAgent.listTools()).length).toBeGreaterThan(0);
     });
 
     it('orchestratorAgent should be a valid Agent (may not have tools)', () => {
-      // Orchestrator agent is a routing agent that doesn't require tools
       expect(orchestratorAgent).toHaveProperty('name');
       expect(orchestratorAgent).toHaveProperty('model');
       expect(orchestratorAgent.name).toBe(AGENT_NAMES.ORCHESTRATOR);
     });
 
-    it('phishingEmailAgent should have tools defined', () => {
-      expect(Object.keys(phishingEmailAgent.tools).length).toBeGreaterThan(0);
+    it('phishingEmailAgent should have tools defined', async () => {
+      expect(Object.keys(await phishingEmailAgent.listTools()).length).toBeGreaterThan(0);
     });
 
-    it('policySummaryAgent should have tools defined', () => {
-      expect(Object.keys(policySummaryAgent.tools).length).toBeGreaterThan(0);
+    it('policySummaryAgent should have tools defined', async () => {
+      expect(Object.keys(await policySummaryAgent.listTools()).length).toBeGreaterThan(0);
     });
 
-    it('userInfoAgent should have tools defined', () => {
-      expect(Object.keys(userInfoAgent.tools).length).toBeGreaterThan(0);
+    it('userInfoAgent should have tools defined', async () => {
+      expect(Object.keys(await userInfoAgent.listTools()).length).toBeGreaterThan(0);
     });
 
-    it('smishingSmsAgent should have tools defined', () => {
-      expect(Object.keys(smishingSmsAgent.tools).length).toBeGreaterThan(0);
+    it('smishingSmsAgent should have tools defined', async () => {
+      expect(Object.keys(await smishingSmsAgent.listTools()).length).toBeGreaterThan(0);
     });
 
-    it('vishingCallAgent should have tools defined', () => {
-      expect(Object.keys(vishingCallAgent.tools).length).toBeGreaterThan(0);
+    it('vishingCallAgent should have tools defined', async () => {
+      expect(Object.keys(await vishingCallAgent.listTools()).length).toBeGreaterThan(0);
     });
 
-    it('deepfakeVideoAgent should have tools defined', () => {
-      expect(Object.keys(deepfakeVideoAgent.tools).length).toBeGreaterThan(0);
+    it('deepfakeVideoAgent should have tools defined', async () => {
+      expect(Object.keys(await deepfakeVideoAgent.listTools()).length).toBeGreaterThan(0);
     });
 
-    it('all agents should have tools as object (except orchestrator)', () => {
+    it('all agents should have tools as object (except orchestrator)', async () => {
       const agents = [microlearningAgent, phishingEmailAgent, policySummaryAgent, userInfoAgent, smishingSmsAgent, vishingCallAgent, deepfakeVideoAgent];
 
-      agents.forEach(agent => {
-        expect(typeof agent.tools).toBe('object');
-        expect(Array.isArray(agent.tools)).toBe(false);
-      });
+      for (const agent of agents) {
+        const tools = await agent.listTools();
+        expect(typeof tools).toBe('object');
+        expect(Array.isArray(tools)).toBe(false);
+      }
 
-      // Orchestrator agent may not have tools
       expect(orchestratorAgent).toBeDefined();
     });
   });
@@ -444,36 +450,37 @@ describe('Agents Index Exports', () => {
 
   // ==================== INSTRUCTIONS CONTENT TESTS ====================
   describe('Instructions Content Validation', () => {
-    it('microlearningAgent should have substantial instructions', () => {
-      expect(microlearningAgent.instructions.length).toBeGreaterThan(500);
+    it('microlearningAgent should have substantial instructions', async () => {
+      expect(((await microlearningAgent.getInstructions()) as string).length).toBeGreaterThan(500);
     });
 
-    it('orchestratorAgent should have substantial instructions', () => {
-      expect(orchestratorAgent.instructions.length).toBeGreaterThan(500);
+    it('orchestratorAgent should have substantial instructions', async () => {
+      expect(((await orchestratorAgent.getInstructions()) as string).length).toBeGreaterThan(500);
     });
 
-    it('phishingEmailAgent should have substantial instructions', () => {
-      expect(phishingEmailAgent.instructions.length).toBeGreaterThan(500);
+    it('phishingEmailAgent should have substantial instructions', async () => {
+      expect(((await phishingEmailAgent.getInstructions()) as string).length).toBeGreaterThan(500);
     });
 
-    it('policySummaryAgent should have substantial instructions', () => {
-      expect(policySummaryAgent.instructions.length).toBeGreaterThan(500);
+    it('policySummaryAgent should have substantial instructions', async () => {
+      expect(((await policySummaryAgent.getInstructions()) as string).length).toBeGreaterThan(500);
     });
 
-    it('userInfoAgent should have substantial instructions', () => {
-      expect(userInfoAgent.instructions.length).toBeGreaterThan(500);
+    it('userInfoAgent should have substantial instructions', async () => {
+      expect(((await userInfoAgent.getInstructions()) as string).length).toBeGreaterThan(500);
     });
 
-    it('deepfakeVideoAgent should have substantial instructions', () => {
-      expect(deepfakeVideoAgent.instructions.length).toBeGreaterThan(500);
+    it('deepfakeVideoAgent should have substantial instructions', async () => {
+      expect(((await deepfakeVideoAgent.getInstructions()) as string).length).toBeGreaterThan(500);
     });
 
-    it('all agents should have non-empty trimmed instructions', () => {
+    it('all agents should have non-empty trimmed instructions', async () => {
       const agents = [microlearningAgent, orchestratorAgent, phishingEmailAgent, policySummaryAgent, userInfoAgent, smishingSmsAgent, vishingCallAgent, deepfakeVideoAgent];
 
-      agents.forEach(agent => {
-        expect(agent.instructions.trim().length).toBeGreaterThan(0);
-      });
+      for (const agent of agents) {
+        const instructions = (await agent.getInstructions()) as string;
+        expect(instructions.trim().length).toBeGreaterThan(0);
+      }
     });
   });
 
@@ -495,20 +502,18 @@ describe('Agents Index Exports', () => {
       expect(agentCount).toBe(8);
     });
 
-    it('should maintain consistency across exports', () => {
-      // Verify that each agent maintains its properties consistently
+    it('should maintain consistency across exports', async () => {
       const agents = [microlearningAgent, orchestratorAgent, phishingEmailAgent, policySummaryAgent, userInfoAgent, smishingSmsAgent, vishingCallAgent, deepfakeVideoAgent];
 
-      agents.forEach(agent => {
+      for (const agent of agents) {
         expect(agent.name).toBeDefined();
-        expect(agent.instructions).toBeDefined();
+        expect(await agent.getInstructions()).toBeDefined();
         expect(agent.model).toBeDefined();
-        expect(agent.tools).toBeDefined();
+        expect(await agent.listTools()).toBeDefined();
 
-        // Cross-verify with constants
-        const agentNameMatch = Object.values(AGENT_NAMES).includes(agent.name);
+        const agentNameMatch = Object.values(AGENT_NAMES).includes(agent.name as any);
         expect(agentNameMatch).toBe(true);
-      });
+      }
     });
 
     it('should represent all agent types', () => {
@@ -523,10 +528,8 @@ describe('Agents Index Exports', () => {
         deepfakeVideoAgent.name,
       ]);
 
-      // Should have exactly 8 unique agent types
       expect(agentTypes.size).toBe(8);
 
-      // Should include all expected agent names
       expect(agentTypes.has('microlearningAgent')).toBe(true);
       expect(agentTypes.has('orchestrator')).toBe(true);
       expect(agentTypes.has('phishingEmailAssistant')).toBe(true);

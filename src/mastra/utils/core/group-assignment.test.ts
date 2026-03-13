@@ -30,7 +30,7 @@ function makeOpts(overrides: Partial<FanOutGroupAssignmentOptions> = {}): FanOut
     groupResourceId: 'grp-1',
     baseApiUrl: 'https://api.example.com',
     buildPayload: (uid: string) => ({ targetUserResourceId: uid }) as unknown as AgenticActivitiesPayload,
-    callApi: vi.fn<[AgenticActivitiesPayload], Promise<WorkerSendResponse>>().mockResolvedValue({} as WorkerSendResponse),
+    callApi: vi.fn().mockResolvedValue({} as WorkerSendResponse) as any,
     ...overrides,
   };
 }

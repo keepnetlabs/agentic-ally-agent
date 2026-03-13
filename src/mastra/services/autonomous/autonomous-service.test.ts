@@ -100,9 +100,10 @@ describe('executeAutonomousGeneration', () => {
       actions: ['phishing'],
     });
 
-    expect(mockGetUserInfo).toHaveBeenCalledWith({
-      context: { firstName: 'John', lastName: 'Doe' },
-    });
+    expect(mockGetUserInfo).toHaveBeenCalledWith(
+      { firstName: 'John', lastName: 'Doe' },
+      {}
+    );
   });
 
   it('calls getUserInfoTool with direct user context when targetUserResourceId exists', async () => {
@@ -113,9 +114,10 @@ describe('executeAutonomousGeneration', () => {
       actions: ['training'],
     });
 
-    expect(mockGetUserInfo).toHaveBeenCalledWith({
-      context: { targetUserResourceId: 'user-42', departmentName: 'Finance' },
-    });
+    expect(mockGetUserInfo).toHaveBeenCalledWith(
+      { targetUserResourceId: 'user-42', departmentName: 'Finance' },
+      {}
+    );
   });
 
   it('passes smishing action through user generation flow', async () => {
@@ -192,10 +194,10 @@ describe('executeAutonomousGeneration', () => {
   it('replaces dash.keepnetlabs.com with api.keepnetlabs.com in baseApiUrl', async () => {
     const { requestStorage } = await import('../../utils/core/request-storage');
     let capturedContext: { baseApiUrl?: string } = {};
-    vi.spyOn(requestStorage, 'run').mockImplementation(async (ctx: any, fn: () => Promise<any>) => {
+    vi.spyOn(requestStorage, 'run').mockImplementation((async (ctx: any, fn: () => Promise<any>) => {
       capturedContext = ctx;
       return fn();
-    });
+    }) as any);
 
     await executeAutonomousGeneration({
       token: mockToken,
@@ -211,10 +213,10 @@ describe('executeAutonomousGeneration', () => {
   it('replaces test-ui.devkeepnet.com with test-api.devkeepnet.com in baseApiUrl', async () => {
     const { requestStorage } = await import('../../utils/core/request-storage');
     let capturedContext: { baseApiUrl?: string } = {};
-    vi.spyOn(requestStorage, 'run').mockImplementation(async (ctx: any, fn: () => Promise<any>) => {
+    vi.spyOn(requestStorage, 'run').mockImplementation((async (ctx: any, fn: () => Promise<any>) => {
       capturedContext = ctx;
       return fn();
-    });
+    }) as any);
 
     await executeAutonomousGeneration({
       token: mockToken,

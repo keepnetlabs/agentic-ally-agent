@@ -156,8 +156,8 @@ export const searchCompaniesTool = createTool({
     'Searches companies on the Keepnet platform. Supports filters by company name, industry, license type, user count, dates, and more. Returns paginated results.',
   inputSchema,
   outputSchema,
-  execute: async ({ context }) => {
-    const { searchText, filters, filterCondition, pageNumber, pageSize, orderBy, ascending } = context;
+  execute: async (inputData) => {
+    const { searchText, filters, filterCondition, pageNumber, pageSize, orderBy, ascending } = inputData;
 
     logger.debug('search_companies_start', { filterCount: filters?.length || 0 });
 

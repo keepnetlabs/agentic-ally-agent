@@ -218,42 +218,42 @@ describe('prompt-fragments', () => {
   });
 
   describe('Fragment integration in agents', () => {
-    it('microlearning agent should include NO_TECH_JARGON and Language Rules', () => {
-      const instructions = microlearningAgent.instructions;
+    it('microlearning agent should include NO_TECH_JARGON and Language Rules', async () => {
+      const instructions = await microlearningAgent.getInstructions();
       expect(instructions).toContain('No Tech Jargon');
       expect(instructions).toContain('## Language Rules');
       expect(instructions).toContain('INTERACTION LANGUAGE');
       expect(instructions).toContain('CONTENT LANGUAGE');
     });
 
-    it('phishing agent should include NO_TECH_JARGON and Language Rules', () => {
-      const instructions = phishingEmailAgent.instructions;
+    it('phishing agent should include NO_TECH_JARGON and Language Rules', async () => {
+      const instructions = await phishingEmailAgent.getInstructions();
       expect(instructions).toContain('No Tech Jargon');
       expect(instructions).toContain('## Language Rules');
     });
 
-    it('smishing agent should include NO_TECH_JARGON and Language Rules', () => {
-      const instructions = smishingSmsAgent.instructions;
+    it('smishing agent should include NO_TECH_JARGON and Language Rules', async () => {
+      const instructions = await smishingSmsAgent.getInstructions();
       expect(instructions).toContain('No Tech Jargon');
       expect(instructions).toContain('## Language Rules');
     });
 
-    it('deepfake agent should include NO_TECH_JARGON_DEEPFAKE and Language Rules', () => {
-      const instructions = deepfakeVideoAgent.instructions;
+    it('deepfake agent should include NO_TECH_JARGON_DEEPFAKE and Language Rules', async () => {
+      const instructions = await deepfakeVideoAgent.getInstructions();
       expect(instructions).toContain('No Tech Jargon');
       expect(instructions).toContain('VIDEO SCRIPT');
       expect(instructions).toContain('## Language Rules');
     });
 
-    it('vishing agent should include NO_TECH_JARGON and vishing-specific language rules', () => {
-      const instructions = vishingCallAgent.instructions;
+    it('vishing agent should include NO_TECH_JARGON and vishing-specific language rules', async () => {
+      const instructions = await vishingCallAgent.getInstructions();
       expect(instructions).toContain('No Tech Jargon');
       expect(instructions).toContain('Do NOT mix languages');
       expect(instructions).toContain('transitions, lists, questions, confirmations');
     });
 
-    it('orchestrator agent should include NO_TECH_JARGON_ORCHESTRATOR', () => {
-      const instructions = orchestratorAgent.instructions;
+    it('orchestrator agent should include NO_TECH_JARGON_ORCHESTRATOR', async () => {
+      const instructions = await orchestratorAgent.getInstructions();
       expect(instructions).toContain('NO TECH JARGON');
       expect(instructions).toContain('architecture');
     });

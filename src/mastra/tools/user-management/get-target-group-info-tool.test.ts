@@ -32,9 +32,8 @@ describe('getTargetGroupInfoTool', () => {
       json: async () => ({ items: [mockGroup] }),
     });
 
-    const result = await getTargetGroupInfoTool.execute({
-      context: { groupName: 'IT Department' },
-    } as any);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = await getTargetGroupInfoTool.execute!({ groupName: 'IT Department' }, {}) as any;
 
     expect(result.success).toBe(true);
     expect(result.groupInfo?.targetGroupResourceId).toBe('group-123');
@@ -53,12 +52,11 @@ describe('getTargetGroupInfoTool', () => {
   it('skips fetch when targetGroupResourceId is provided', async () => {
     const fetchSpy = global.fetch as any;
 
-    const result = await getTargetGroupInfoTool.execute({
-      context: {
-        targetGroupResourceId: 'group-999',
-        groupName: 'Should not matter',
-      },
-    } as any);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = await getTargetGroupInfoTool.execute!({
+      targetGroupResourceId: 'group-999',
+      groupName: 'Should not matter',
+    }, {}) as any;
 
     expect(result.success).toBe(true);
     expect(fetchSpy).not.toHaveBeenCalled();
@@ -67,18 +65,16 @@ describe('getTargetGroupInfoTool', () => {
 
   it('returns error when token is missing', async () => {
     requestStorage.enterWith({ companyId: mockCompanyId });
-    const result = await getTargetGroupInfoTool.execute({
-      context: { groupName: 'Any Group' },
-    } as any);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = await getTargetGroupInfoTool.execute!({ groupName: 'Any Group' }, {}) as any;
 
     expect(result.success).toBe(false);
     expect(result.error).toBeTruthy();
   });
 
   it('rejects short group names', async () => {
-    const result = await getTargetGroupInfoTool.execute({
-      context: { groupName: 'IT' }, // < 3 chars
-    } as any);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = await getTargetGroupInfoTool.execute!({ groupName: 'IT' }, {}) as any; // < 3 chars
 
     expect(result.success).toBe(false);
     expect(result.error).toContain('at least 3 characters');
@@ -96,9 +92,8 @@ describe('getTargetGroupInfoTool', () => {
       json: async () => ({ items: [{ targetGroupResourceId: 'g-retry', groupName: 'Finance' }] }),
     });
 
-    const result = await getTargetGroupInfoTool.execute({
-      context: { groupName: 'Finance Group' },
-    } as any);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = await getTargetGroupInfoTool.execute!({ groupName: 'Finance Group' }, {}) as any;
 
     expect(result.success).toBe(true);
     expect(result.groupInfo?.targetGroupResourceId).toBe('g-retry');
@@ -123,14 +118,12 @@ describe('getTargetGroupInfoTool', () => {
       json: async () => ({ items: [{ targetGroupResourceId: 'g-signal', groupName: 'Signal' }] }),
     });
 
-    await getTargetGroupInfoTool.execute({
-      context: { groupName: 'Signal Group' },
-      writer: mockWriter,
-    } as any);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    await getTargetGroupInfoTool.execute!({ groupName: 'Signal Group' }, { writer: mockWriter } as any);
 
     expect(mockWriter.write).toHaveBeenCalled();
     const callArgs = mockWriter.write.mock.calls.map(c => c[0]);
-    expect(callArgs.some(arg => arg.type === 'text-delta' && arg.delta.includes('::ui:target_group::'))).toBe(true);
+    expect(callArgs.some(arg => arg.type === 'data-ui-signal' && arg.data?.message?.includes('::ui:target_group::'))).toBe(true);
   });
 
   it('prioritizes exact name match', async () => {
@@ -145,9 +138,8 @@ describe('getTargetGroupInfoTool', () => {
       }),
     });
 
-    const result = await getTargetGroupInfoTool.execute({
-      context: { groupName: 'Sales' },
-    } as any);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = await getTargetGroupInfoTool.execute!({ groupName: 'Sales' }, {}) as any;
 
     expect(result.groupInfo?.targetGroupResourceId).toBe('g-2');
   });
@@ -163,9 +155,8 @@ describe('getTargetGroupInfoTool', () => {
       }),
     });
 
-    const result = await getTargetGroupInfoTool.execute({
-      context: { groupName: 'Nested' },
-    } as any);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = await getTargetGroupInfoTool.execute!({ groupName: 'Nested' }, {}) as any;
 
     expect(result.success).toBe(true);
     expect(result.groupInfo?.targetGroupResourceId).toBe('g-nested');

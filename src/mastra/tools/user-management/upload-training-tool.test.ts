@@ -64,7 +64,8 @@ describe('uploadTrainingTool', () => {
         microlearningId: 'ml-123',
       };
 
-      const result = await uploadTrainingTool.execute({ context: input, runtimeContext: {} as any });
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await uploadTrainingTool.execute!(input, {}) as any;
       expect(result).toBeDefined();
       expect(result.success).toBe(true);
     });
@@ -73,7 +74,8 @@ describe('uploadTrainingTool', () => {
       const input: any = {};
 
       // Tool framework validates input schema and returns error response (doesn't throw)
-      const result = await uploadTrainingTool.execute({ context: input, runtimeContext: {} as any });
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await uploadTrainingTool.execute!(input, {}) as any;
       expect(result).toBeDefined();
       // Framework returns error object when validation fails
       if (result && typeof result === 'object' && 'error' in result) {
@@ -94,7 +96,8 @@ describe('uploadTrainingTool', () => {
         microlearningId: 'ml-123',
       };
 
-      const result = await uploadTrainingTool.execute({ context: input, runtimeContext: {} as any });
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await uploadTrainingTool.execute!(input, {}) as any;
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
     });
@@ -110,7 +113,8 @@ describe('uploadTrainingTool', () => {
         microlearningId: 'ml-123',
       };
 
-      const result = await uploadTrainingTool.execute({ context: input, runtimeContext: {} as any });
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await uploadTrainingTool.execute!(input, {}) as any;
       expect(result.success).toBe(true);
     });
   });
@@ -129,7 +133,8 @@ describe('uploadTrainingTool', () => {
         microlearningId: 'ml-123',
       };
 
-      await uploadTrainingTool.execute({ context: input, runtimeContext: {} as any } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      await uploadTrainingTool.execute!(input, {});
 
       expect(getMicrolearningSpy).toHaveBeenCalledWith('ml-123');
     });
@@ -141,7 +146,8 @@ describe('uploadTrainingTool', () => {
         microlearningId: 'ml-123',
       };
 
-      const result = await uploadTrainingTool.execute({ context: input, runtimeContext: {} as any });
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await uploadTrainingTool.execute!(input, {}) as any;
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
     });
@@ -153,7 +159,8 @@ describe('uploadTrainingTool', () => {
         microlearningId: 'ml-123',
       };
 
-      const result = await uploadTrainingTool.execute({ context: input, runtimeContext: {} as any });
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await uploadTrainingTool.execute!(input, {}) as any;
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
     });
@@ -171,7 +178,8 @@ describe('uploadTrainingTool', () => {
         microlearningId: 'ml-123',
       };
 
-      await uploadTrainingTool.execute({ context: input, runtimeContext: {} as any } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      await uploadTrainingTool.execute!(input, {});
 
       expect(mockCallWorkerAPI).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -214,7 +222,8 @@ describe('uploadTrainingTool', () => {
         microlearningId: 'ml-123',
       };
 
-      await uploadTrainingTool.execute({ context: input, runtimeContext: {} as any } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      await uploadTrainingTool.execute!(input, {});
 
       const callArgs = mockCallWorkerAPI.mock.calls[0][0] as any;
       expect(callArgs.payload.trainingData.targetAudience).toBe('ITHRFinance');
@@ -241,7 +250,8 @@ describe('uploadTrainingTool', () => {
         microlearningId: 'ml-123',
       };
 
-      await uploadTrainingTool.execute({ context: input, runtimeContext: {} as any } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      await uploadTrainingTool.execute!(input, {});
 
       const callArgs = mockCallWorkerAPI.mock.calls[0][0] as any;
       expect(callArgs.payload.trainingData.language).toBe('en-gb');
@@ -260,7 +270,8 @@ describe('uploadTrainingTool', () => {
         microlearningId: 'ml-123',
       };
 
-      const result = await uploadTrainingTool.execute({ context: input, runtimeContext: {} as any });
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await uploadTrainingTool.execute!(input, {}) as any;
 
       expect(result.success).toBe(true);
       expect(result.data).toBeDefined();
@@ -280,7 +291,8 @@ describe('uploadTrainingTool', () => {
         microlearningId: 'ml-123',
       };
 
-      const result = await uploadTrainingTool.execute({ context: input, runtimeContext: {} as any });
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await uploadTrainingTool.execute!(input, {}) as any;
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
     });
@@ -294,7 +306,8 @@ describe('uploadTrainingTool', () => {
         microlearningId: 'ml-123',
       };
 
-      const result = await uploadTrainingTool.execute({ context: input, runtimeContext: {} as any });
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await uploadTrainingTool.execute!(input, {}) as any;
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
     });
@@ -308,7 +321,8 @@ describe('uploadTrainingTool', () => {
         microlearningId: 'ml-123',
       };
 
-      const result = await uploadTrainingTool.execute({ context: input, runtimeContext: {} as any });
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await uploadTrainingTool.execute!(input, {}) as any;
       expect(result.success).toBe(false);
       expect(result.error).toContain('Worker API failed');
     });
@@ -326,7 +340,8 @@ describe('uploadTrainingTool', () => {
         microlearningId: 'ml-123',
       };
 
-      const result = await uploadTrainingTool.execute({ context: input, runtimeContext: {} as any });
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await uploadTrainingTool.execute!(input, {}) as any;
 
       // Validate schema structure
       expect(result).toHaveProperty('success');

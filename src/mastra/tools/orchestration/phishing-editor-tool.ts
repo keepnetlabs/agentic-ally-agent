@@ -89,7 +89,7 @@ export const phishingEditorTool = createTool({
       const aiModel = getModelWithOverride(modelProvider, model);
 
       let brandContext = '';
-      if (context.hasBrandUpdate) {
+      if (inputData.hasBrandUpdate) {
         logger.info('🔍 Brand update requested in edit instruction', {
           phishingId,
           editInstruction: summarizeForLog(editInstruction),
@@ -199,7 +199,7 @@ export const phishingEditorTool = createTool({
       const editedLanding = await processLandingPageResults(
         landingResults,
         existingLanding,
-        mode,
+        mode || 'edit',
         editInstruction,
         fromNameForLanding,
         whitelabelConfig?.mainLogoUrl

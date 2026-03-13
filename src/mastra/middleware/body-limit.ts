@@ -56,5 +56,5 @@ export const bodySizeLimitMiddleware = async (c: Context, next: Next) => {
     );
   }
 
-  await next();
+  return await next();
 };

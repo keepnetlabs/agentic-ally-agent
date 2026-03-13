@@ -39,8 +39,7 @@ export const featureExtractionTool = createTool({
   description: 'Integrates header, behavioral, and intent analyses into comprehensive feature set',
   inputSchema: featureExtractionInputSchema,
   outputSchema: featureExtractionOutputSchema,
-  execute: async ({ context }) => {
-    const inputData = context;
+  execute: async (inputData) => {
     const email = inputData.original_email;
     const header = inputData.header_analysis;
     const behavioral = inputData.behavioral_analysis;

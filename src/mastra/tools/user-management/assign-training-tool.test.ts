@@ -81,7 +81,8 @@ describe('assignTrainingTool', () => {
         targetUserResourceId: 'user-789',
       };
 
-      const result = await assignTrainingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await assignTrainingTool.execute!(input, {}) as any;
       expect(result.success).toBe(false);
       expect(result.error).toContain('Training must be uploaded');
     });
@@ -97,7 +98,8 @@ describe('assignTrainingTool', () => {
         targetUserResourceId: 'user-789',
       };
 
-      const result = await assignTrainingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await assignTrainingTool.execute!(input, {}) as any;
       expect(result).toBeDefined();
       expect(result.success).toBe(true);
     });
@@ -109,7 +111,8 @@ describe('assignTrainingTool', () => {
       };
 
       // Tool framework validates input schema and returns error response (doesn't throw)
-      const result = await assignTrainingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await assignTrainingTool.execute!(input, {}) as any;
       expect(result).toBeDefined();
       // Framework returns error object when validation fails
       if (result && typeof result === 'object' && 'error' in result) {
@@ -124,7 +127,8 @@ describe('assignTrainingTool', () => {
       };
 
       // Tool framework validates input schema and returns error response
-      const result = await assignTrainingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await assignTrainingTool.execute!(input, {}) as any;
       expect(result).toBeDefined();
       if (result && typeof result === 'object' && 'error' in result) {
         expect(result.error).toBeTruthy();
@@ -138,7 +142,8 @@ describe('assignTrainingTool', () => {
       };
 
       // Tool framework validates input schema and returns error response
-      const result = await assignTrainingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await assignTrainingTool.execute!(input, {}) as any;
       expect(result).toBeDefined();
       if (result && typeof result === 'object' && 'error' in result) {
         expect(result.error).toBeTruthy();
@@ -153,7 +158,8 @@ describe('assignTrainingTool', () => {
         targetGroupResourceId: 'group-123',
       };
 
-      const result = await assignTrainingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await assignTrainingTool.execute!(input, {}) as any;
       expect(result).toBeDefined();
       // Schema validation errors may not include `success: false` depending on tool framework
       if (result && typeof result === 'object' && 'error' in result) {
@@ -178,7 +184,8 @@ describe('assignTrainingTool', () => {
         targetUserResourceId: 'user-789',
       };
 
-      const result = await assignTrainingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await assignTrainingTool.execute!(input, {}) as any;
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
     });
@@ -192,7 +199,8 @@ describe('assignTrainingTool', () => {
         targetUserResourceId: 'user-789',
       };
 
-      const result = await assignTrainingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await assignTrainingTool.execute!(input, {}) as any;
       expect(result.success).toBe(true);
       expect(mockCallWorkerAPI).toHaveBeenCalled();
     });
@@ -208,7 +216,8 @@ describe('assignTrainingTool', () => {
         targetUserResourceId: 'user-789',
       };
 
-      const result = await assignTrainingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await assignTrainingTool.execute!(input, {}) as any;
       expect(result.success).toBe(true);
       expect(result.message).toContain('Training assigned to');
       expect(result.error).toBeUndefined();
@@ -223,7 +232,8 @@ describe('assignTrainingTool', () => {
         targetUserResourceId: 'user-789',
       };
 
-      await assignTrainingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      await assignTrainingTool.execute!(input, {});
 
       expect(mockCallWorkerAPI).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -254,7 +264,8 @@ describe('assignTrainingTool', () => {
         targetGroupResourceId: 'group-123',
       };
 
-      const result = await assignTrainingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await assignTrainingTool.execute!(input, {}) as any;
 
       expect(result.success).toBe(true);
       expect(result.data?.assignmentType).toBe('GROUP');
@@ -274,7 +285,8 @@ describe('assignTrainingTool', () => {
         targetUserResourceId: 'user-789',
       };
 
-      const result = await assignTrainingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await assignTrainingTool.execute!(input, {}) as any;
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
     });
@@ -289,7 +301,8 @@ describe('assignTrainingTool', () => {
         targetUserResourceId: 'user-789',
       };
 
-      const result = await assignTrainingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await assignTrainingTool.execute!(input, {}) as any;
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
     });
@@ -304,7 +317,8 @@ describe('assignTrainingTool', () => {
         targetUserResourceId: 'user-789',
       };
 
-      const result = await assignTrainingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await assignTrainingTool.execute!(input, {}) as any;
       expect(result.success).toBe(false);
       expect(result.error).toContain('Worker API failed');
     });
@@ -320,7 +334,8 @@ describe('assignTrainingTool', () => {
         targetUserResourceId: 'user-789',
       };
 
-      await assignTrainingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      await assignTrainingTool.execute!(input, {});
 
       const allCalls = [
         ...mockLogger.info.mock.calls,
@@ -345,7 +360,8 @@ describe('assignTrainingTool', () => {
         targetUserResourceId: 'user-789',
       };
 
-      const result = await assignTrainingTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await assignTrainingTool.execute!(input, {}) as any;
 
       // Validate schema structure
       expect(result).toHaveProperty('success');

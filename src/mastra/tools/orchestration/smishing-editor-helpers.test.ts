@@ -165,23 +165,30 @@ describe('smishing-editor-helpers', () => {
       { name: 'Landing', description: 'Desc', method: 'x', difficulty: 'easy' }
     );
 
-    expect(write).toHaveBeenCalledWith({ type: 'text-start', id: 'msg-1' });
     expect(write).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'text-delta', delta: expect.stringContaining('::ui:smishing_sms::') })
+      expect.objectContaining({
+        type: 'data-ui-signal',
+        data: expect.objectContaining({
+          signal: 'smishing_sms',
+          message: expect.stringContaining('::ui:smishing_sms::'),
+        }),
+      })
     );
     expect(write).toHaveBeenCalledWith(
       expect.objectContaining({
-        type: 'text-delta',
-        delta: expect.stringContaining('::ui:smishing_landing_page::'),
+        type: 'data-ui-signal',
+        data: expect.objectContaining({
+          signal: 'smishing_landing_page',
+          message: expect.stringContaining('::ui:smishing_landing_page::'),
+        }),
       })
     );
-    expect(write).toHaveBeenCalledWith({ type: 'text-end', id: 'msg-1' });
   });
 
   it('swallows stream writer failures and logs warning', async () => {
     const write = vi.fn().mockRejectedValue(new Error('write failed'));
 
-    await streamEditResultsToUI({ write }, 'sid-5', null, null, 'en-gb', null, null, null);
+    await streamEditResultsToUI({ write }, 'sid-5', 'sms-key', null, 'en-gb', { messages: ['m'], summary: 's' }, null, null);
 
     expect(mocks.loggerWarn).toHaveBeenCalledWith(
       'Failed to stream updated components to UI',
@@ -192,7 +199,7 @@ describe('smishing-editor-helpers', () => {
   it('logs stringified warning when writer throws non-Error', async () => {
     const write = vi.fn().mockRejectedValue('write-failed-string');
 
-    await streamEditResultsToUI({ write }, 'sid-5b', null, null, 'en-gb', null, null, null);
+    await streamEditResultsToUI({ write }, 'sid-5b', 'sms-key', null, 'en-gb', { messages: ['m'], summary: 's' }, null, null);
 
     expect(mocks.loggerWarn).toHaveBeenCalledWith(
       'Failed to stream updated components to UI',
@@ -216,20 +223,21 @@ describe('smishing-editor-helpers', () => {
 
     expect(write).toHaveBeenCalledWith(
       expect.objectContaining({
-        type: 'text-delta',
-        delta: expect.stringContaining('::ui:smishing_landing_page::'),
+        type: 'data-ui-signal',
+        data: expect.objectContaining({
+          signal: 'smishing_landing_page',
+          message: expect.stringContaining('::ui:smishing_landing_page::'),
+        }),
       })
     );
   });
 
-  it('still emits text-start/end when there is no sms and no landing payload', async () => {
+  it('does not emit any signals when there is no sms and no landing payload', async () => {
     const write = vi.fn().mockResolvedValue(undefined);
 
     await streamEditResultsToUI({ write }, 'sid-6b', null, null, 'en-gb', null, { pages: [], summary: 'none' }, null);
 
-    expect(write).toHaveBeenCalledTimes(2);
-    expect(write).toHaveBeenNthCalledWith(1, { type: 'text-start', id: 'msg-1' });
-    expect(write).toHaveBeenNthCalledWith(2, { type: 'text-end', id: 'msg-1' });
+    expect(write).not.toHaveBeenCalled();
   });
 
   it('saves sms and landing updates into kv', async () => {

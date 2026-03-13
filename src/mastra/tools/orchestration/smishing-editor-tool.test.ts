@@ -66,7 +66,7 @@ describe('smishingEditorTool', () => {
       editInstruction: 'Make it shorter',
     };
 
-    const result = await executeTool({ context: input } as any);
+    const result = await executeTool(input);
     expect(result.success).toBe(true);
   });
 
@@ -82,7 +82,7 @@ describe('smishingEditorTool', () => {
       editInstruction: 'Update',
     };
 
-    const result = await executeTool({ context: input } as any);
+    const result = await executeTool(input);
     expect(result.success).toBe(false);
     expect(result.message).toContain('Template not found');
   });
@@ -95,7 +95,7 @@ describe('smishingEditorTool', () => {
       editInstruction: 'sms only update tone',
     };
 
-    const result = await executeTool({ context: input } as any);
+    const result = await executeTool(input);
     expect(result.success).toBe(true);
     expect(llm.createSmsEditPromise).toHaveBeenCalled();
     expect(llm.createLandingEditPromises).not.toHaveBeenCalled();
@@ -109,7 +109,7 @@ describe('smishingEditorTool', () => {
       editInstruction: 'landing page only update text',
     };
 
-    const result = await executeTool({ context: input } as any);
+    const result = await executeTool(input);
     expect(result.success).toBe(true);
     expect(llm.createSmsEditPromise).not.toHaveBeenCalled();
     expect(llm.createLandingEditPromises).toHaveBeenCalled();
@@ -124,7 +124,7 @@ describe('smishingEditorTool', () => {
       editInstruction: 'Update',
     };
 
-    const result = await executeTool({ context: input, writer } as any);
+    const result = await executeTool(input, { writer });
     expect(result.success).toBe(true);
     expect(helpers.streamEditResultsToUI).toHaveBeenCalled();
   });
@@ -141,7 +141,7 @@ describe('smishingEditorTool', () => {
       editInstruction: 'Update',
     };
 
-    const result = await executeTool({ context: input } as any);
+    const result = await executeTool(input);
     expect(result.success).toBe(false);
     expect(result.message).toContain('SMS validation error');
   });
@@ -155,7 +155,7 @@ describe('smishingEditorTool', () => {
       editInstruction: 'Update',
     };
 
-    const result = await executeTool({ context: input } as any);
+    const result = await executeTool(input);
     expect(result.success).toBe(false);
   });
 
@@ -165,7 +165,7 @@ describe('smishingEditorTool', () => {
       editInstruction: 'Update',
     };
 
-    const result = await executeTool({ context: input } as any);
+    const result = await executeTool(input);
     expect(result.success).toBe(true);
     expect(result.data?.message).toContain('Updated');
   });
@@ -180,7 +180,7 @@ describe('smishingEditorTool', () => {
       language: 'tr-tr',
     };
 
-    const result = await executeTool({ context: input } as any);
+    const result = await executeTool(input);
     expect(result.success).toBe(true);
     expect(llm.createSmsEditPromise).toHaveBeenCalledWith(expect.objectContaining({ mode: 'translate' }));
     expect(llm.createLandingEditPromises).toHaveBeenCalledWith(expect.objectContaining({ mode: 'translate' }));
@@ -193,7 +193,7 @@ describe('smishingEditorTool', () => {
       hasBrandUpdate: true,
     };
 
-    const result = await executeTool({ context: input } as any);
+    const result = await executeTool(input);
     expect(result.success).toBe(true);
     expect(vi.mocked(detectAndResolveBrand)).toHaveBeenCalled();
   });
@@ -206,7 +206,7 @@ describe('smishingEditorTool', () => {
       editInstruction: 'Update text',
     };
 
-    const result = await executeTool({ context: input } as any);
+    const result = await executeTool(input);
     expect(result.success).toBe(true);
   });
 
@@ -219,7 +219,7 @@ describe('smishingEditorTool', () => {
       editInstruction: 'Update',
     };
 
-    const result = await executeTool({ context: input } as any);
+    const result = await executeTool(input);
     expect(result.success).toBe(false);
     expect(result.message).toContain('Failed to edit smishing template');
   });
@@ -236,7 +236,7 @@ describe('smishingEditorTool', () => {
       editInstruction: 'Update',
     };
 
-    const result = await executeTool({ context: input } as any);
+    const result = await executeTool(input);
     expect(result.success).toBe(true);
     expect(helpers.saveSmishingContent).toHaveBeenCalledWith(
       expect.any(String),
@@ -265,7 +265,7 @@ describe('smishingEditorTool', () => {
       editInstruction: 'Update sms',
     };
 
-    const result = await executeTool({ context: input, writer } as any);
+    const result = await executeTool(input, { writer });
     expect(result.success).toBe(true);
     expect(helpers.streamEditResultsToUI).toHaveBeenCalledWith(
       expect.anything(),

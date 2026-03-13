@@ -52,7 +52,7 @@ vi.mock('../utils/core/error-utils', () => ({
 
 vi.mock('../workflows/email-ir-workflow', () => ({
   emailIRWorkflow: {
-    createRunAsync: vi.fn().mockResolvedValue({
+    createRun: vi.fn().mockResolvedValue({
       runId: 'run-123',
       start: vi.fn().mockResolvedValue({
         status: 'completed',
@@ -104,7 +104,7 @@ describe('emailIRAnalyzeHandler', () => {
         },
       },
     });
-    (emailIRWorkflow.createRunAsync as any).mockResolvedValue({
+    (emailIRWorkflow.createRun as any).mockResolvedValue({
       runId: 'run-123',
       start: mockStart,
     });
@@ -160,7 +160,7 @@ describe('emailIRAnalyzeHandler', () => {
 
   it('should handle workflow failures gracefully', async () => {
     const { emailIRWorkflow } = await import('../workflows/email-ir-workflow');
-    (emailIRWorkflow.createRunAsync as any).mockResolvedValue({
+    (emailIRWorkflow.createRun as any).mockResolvedValue({
       runId: 'run-fail',
       start: vi.fn().mockResolvedValue({
         status: 'failed',
@@ -181,7 +181,7 @@ describe('emailIRAnalyzeHandler', () => {
 
   it('should return 500 when reporting step output is missing', async () => {
     const { emailIRWorkflow } = await import('../workflows/email-ir-workflow');
-    (emailIRWorkflow.createRunAsync as any).mockResolvedValue({
+    (emailIRWorkflow.createRun as any).mockResolvedValue({
       runId: 'run-missing-report',
       start: vi.fn().mockResolvedValue({
         status: 'completed',
@@ -207,7 +207,7 @@ describe('emailIRAnalyzeHandler', () => {
 
   it('should return 500 when reporting step output is schema-invalid', async () => {
     const { emailIRWorkflow } = await import('../workflows/email-ir-workflow');
-    (emailIRWorkflow.createRunAsync as any).mockResolvedValue({
+    (emailIRWorkflow.createRun as any).mockResolvedValue({
       runId: 'run-invalid-report',
       start: vi.fn().mockResolvedValue({
         status: 'completed',

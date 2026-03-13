@@ -10,22 +10,10 @@ const mocks = vi.hoisted(() => ({
   getFallbackAnalysis: vi.fn(),
 }));
 
-vi.mock('@mastra/core/tools', () => ({
-  Tool: class Tool {
-    id: string;
-    description: string;
-    inputSchema: unknown;
-    outputSchema: unknown;
-    execute: (context: unknown) => Promise<unknown>;
-    constructor(config: any) {
-      this.id = config.id;
-      this.description = config.description;
-      this.inputSchema = config.inputSchema;
-      this.outputSchema = config.outputSchema;
-      this.execute = config.execute;
-    }
-  },
-}));
+vi.mock('@mastra/core/tools', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return { ...actual };
+});
 
 vi.mock('../../model-providers', () => ({
   getModelWithOverride: mocks.getModelWithOverride,
@@ -64,14 +52,30 @@ describe('analyzeUserPromptTool.execute', () => {
   });
 
   it('uses context.inputData and returns AI analysis on success', async () => {
+    const fullAnalysisData = {
+      topic: 'Phishing',
+      language: 'en',
+      title: 'Phishing Awareness',
+      department: 'Finance',
+      level: 'Intermediate',
+      category: 'Security',
+      subcategory: 'Email Security',
+      learningObjectives: ['Identify phishing emails'],
+      duration: 15,
+      industries: ['Technology'],
+      roles: ['All'],
+      keyTopics: ['Email Security'],
+      practicalApplications: ['Recognize suspicious links'],
+      assessmentAreas: ['Phishing identification'],
+    };
     mocks.analyzeUserPromptWithAI.mockResolvedValueOnce({
       success: true,
-      data: { topic: 'Phishing', language: 'en' },
+      data: fullAnalysisData,
     });
 
     const writer = { write: vi.fn() };
-    const result = await (analyzeUserPromptTool as any).execute({
-      inputData: {
+    const result = await (analyzeUserPromptTool as any).execute(
+      {
         userPrompt: 'Create phishing awareness training',
         additionalContext: 'Focus on finance users',
         suggestedDepartment: 'Finance',
@@ -81,9 +85,9 @@ describe('analyzeUserPromptTool.execute', () => {
         policyContext: 'Follow internal policy',
         modelProvider: 'OPENAI',
         model: 'OPENAI_GPT_4O',
-        writer,
       },
-    });
+      { writer }
+    );
 
     expect(mocks.getModelWithOverride).toHaveBeenCalledWith('OPENAI', 'OPENAI_GPT_4O');
     expect(mocks.analyzeUserPromptWithAI).toHaveBeenCalledWith(
@@ -98,17 +102,15 @@ describe('analyzeUserPromptTool.execute', () => {
     );
     expect(result).toEqual({
       success: true,
-      data: { topic: 'Phishing', language: 'en' },
+      data: fullAnalysisData,
     });
   });
 
-  it('uses context.input when inputData is missing', async () => {
+  it('works with direct input fields', async () => {
     mocks.analyzeUserPromptWithAI.mockResolvedValueOnce({ success: true, data: { topic: 'x' } });
 
     await (analyzeUserPromptTool as any).execute({
-      input: {
-        userPrompt: 'Create training content',
-      },
+      userPrompt: 'Create training content',
     });
 
     expect(mocks.analyzeUserPromptWithAI).toHaveBeenCalledWith(
@@ -121,11 +123,23 @@ describe('analyzeUserPromptTool.execute', () => {
   it('falls back when AI analysis throws and preserves policyContext', async () => {
     const err = new Error('LLM unavailable');
     mocks.analyzeUserPromptWithAI.mockRejectedValueOnce(err);
-    mocks.getFallbackAnalysis.mockResolvedValueOnce({
+    const fullFallbackData = {
       topic: 'Fallback Topic',
       language: 'en',
       department: 'All',
-    });
+      title: 'Fallback Title',
+      level: 'Intermediate',
+      category: 'General',
+      subcategory: 'Awareness',
+      learningObjectives: ['Basic awareness'],
+      duration: 10,
+      industries: ['All'],
+      roles: ['All'],
+      keyTopics: ['Security'],
+      practicalApplications: ['General safety'],
+      assessmentAreas: ['Basic knowledge'],
+    };
+    mocks.getFallbackAnalysis.mockResolvedValueOnce(fullFallbackData);
 
     const result = await (analyzeUserPromptTool as any).execute({
       userPrompt: 'Create anti-phishing training',
@@ -149,11 +163,7 @@ describe('analyzeUserPromptTool.execute', () => {
     );
     expect(result).toEqual({
       success: true,
-      data: {
-        topic: 'Fallback Topic',
-        language: 'en',
-        department: 'All',
-      },
+      data: fullFallbackData,
       policyContext: 'Policy V1',
       error: JSON.stringify({ code: 'AI_MODEL_ERROR', message: 'failed' }),
     });

@@ -63,7 +63,7 @@ describe('fetchEmailTool', () => {
     expect(fields.apiBaseUrl).toBeDefined();
   });
 
-  it('should have default API base URL in schema', () => {
+  it('should accept input without apiBaseUrl (default applied in execute)', () => {
     const parsed = fetchEmailInputSchema.safeParse({
       id: 'test-id',
       accessToken: 'test-token',
@@ -71,7 +71,7 @@ describe('fetchEmailTool', () => {
 
     expect(parsed.success).toBe(true);
     if (parsed.success) {
-      expect(parsed.data.apiBaseUrl).toBe('https://test-api.devkeepnet.com');
+      expect(parsed.data.apiBaseUrl).toBeUndefined();
     }
   });
 
@@ -156,11 +156,9 @@ describe('fetchEmailTool', () => {
       });
 
       const result = await (fetchEmailTool as any).execute({
-        context: {
-          id: 'email-123',
-          accessToken: 'token',
-          apiBaseUrl: 'https://api.example.com',
-        },
+        id: 'email-123',
+        accessToken: 'token',
+        apiBaseUrl: 'https://api.example.com',
       });
 
       expect(result).toEqual(mockEmailData);
@@ -176,14 +174,14 @@ describe('fetchEmailTool', () => {
     });
 
     it('should use data wrapper when API returns { data: ... }', async () => {
-      const innerData = { id: 'x', subject: 'S' };
+      const innerData = { id: 'x', subject: 'S', from: 'sender@test.com' };
       global.fetch = vi.fn().mockResolvedValue({
         ok: true,
         json: () => Promise.resolve({ data: innerData }),
       });
 
       const result = await (fetchEmailTool as any).execute({
-        context: { id: 'x', accessToken: 't', apiBaseUrl: 'https://a.com' },
+        id: 'x', accessToken: 't', apiBaseUrl: 'https://a.com',
       });
 
       expect(result).toEqual(innerData);
@@ -197,7 +195,7 @@ describe('fetchEmailTool', () => {
       });
 
       const result = await (fetchEmailTool as any).execute({
-        context: { id: 'x', accessToken: 't', apiBaseUrl: 'https://a.com' },
+        id: 'x', accessToken: 't', apiBaseUrl: 'https://a.com',
       });
 
       expect(result).toEqual(directData);
@@ -212,7 +210,7 @@ describe('fetchEmailTool', () => {
 
       await expect(
         (fetchEmailTool as any).execute({
-          context: { id: 'x', accessToken: 't', apiBaseUrl: 'https://a.com' },
+          id: 'x', accessToken: 't', apiBaseUrl: 'https://a.com',
         })
       ).rejects.toThrow(/404/);
     });

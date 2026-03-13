@@ -196,12 +196,14 @@ describe('CreateSmishingWorkflow', () => {
   });
 
   it('should execute successfully for standard smishing', async () => {
-    const run = await createSmishingWorkflow.createRunAsync();
+    const run = await createSmishingWorkflow.createRun();
     const input = {
       topic: 'Password Reset',
       language: 'en-gb',
       difficulty: 'Medium' as const,
       method: 'Click-Only' as const,
+      includeLandingPage: true,
+      includeSms: true,
       targetProfile: { department: 'IT' },
     };
 
@@ -220,12 +222,14 @@ describe('CreateSmishingWorkflow', () => {
   it('should continue when getWhitelabelingConfig throws', async () => {
     mocks.getWhitelabelingConfig.mockRejectedValueOnce(new Error('Product API unavailable'));
 
-    const run = await createSmishingWorkflow.createRunAsync();
+    const run = await createSmishingWorkflow.createRun();
     const input = {
       topic: 'Password Reset',
       language: 'en-gb',
       difficulty: 'Medium' as const,
       method: 'Click-Only' as const,
+      includeLandingPage: true,
+      includeSms: true,
       targetProfile: { department: 'IT' },
     };
 
@@ -235,10 +239,12 @@ describe('CreateSmishingWorkflow', () => {
   });
 
   it('should skip sms generation when includeSms is false', async () => {
-    const run = await createSmishingWorkflow.createRunAsync();
+    const run = await createSmishingWorkflow.createRun();
     const input = {
       topic: 'No SMS',
       language: 'en-gb',
+      difficulty: 'Medium' as const,
+      method: 'Data-Submission' as const,
       includeSms: false,
       includeLandingPage: false,
     };
@@ -255,10 +261,12 @@ describe('CreateSmishingWorkflow', () => {
   });
 
   it('should skip landing page generation when includeLandingPage is false', async () => {
-    const run = await createSmishingWorkflow.createRunAsync();
+    const run = await createSmishingWorkflow.createRun();
     const input = {
       topic: 'No Landing',
       language: 'en-gb',
+      difficulty: 'Medium' as const,
+      method: 'Data-Submission' as const,
       includeSms: true,
       includeLandingPage: false,
     };
@@ -296,10 +304,13 @@ describe('CreateSmishingWorkflow', () => {
         text: JSON.stringify({ messages: ['Now with {PHISHINGURL}'] }),
       });
 
-    const run = await createSmishingWorkflow.createRunAsync();
+    const run = await createSmishingWorkflow.createRun();
     const input = {
       topic: 'Retry SMS',
       language: 'en-gb',
+      difficulty: 'Medium' as const,
+      method: 'Data-Submission' as const,
+      includeSms: true,
       includeLandingPage: false,
     };
 
@@ -320,8 +331,15 @@ describe('CreateSmishingWorkflow', () => {
       }),
     });
 
-    const run = await createSmishingWorkflow.createRunAsync();
-    const input = { topic: 'Invalid', language: 'en-gb' };
+    const run = await createSmishingWorkflow.createRun();
+    const input = {
+      topic: 'Invalid',
+      language: 'en-gb',
+      difficulty: 'Medium' as const,
+      method: 'Data-Submission' as const,
+      includeLandingPage: true,
+      includeSms: true,
+    };
 
     try {
       await run.start({ inputData: input });
@@ -338,14 +356,21 @@ describe('CreateSmishingWorkflow', () => {
         description: 'A'.repeat(500),
         category: 'Urgency',
         method: 'Click-Only',
+        psychologicalTriggers: ['Fear'],
+        tone: 'Urgent',
+        keyRedFlags: ['Odd link'],
+        targetAudienceAnalysis: 'General audience',
+        messageStrategy: 'Short alert',
       }),
     });
 
-    const run = await createSmishingWorkflow.createRunAsync();
+    const run = await createSmishingWorkflow.createRun();
     const result = await run.start({
       inputData: {
         topic: 'Long Description',
         language: 'en-gb',
+        difficulty: 'Medium' as const,
+        method: 'Data-Submission' as const,
         includeSms: false,
         includeLandingPage: false,
       },
@@ -364,11 +389,13 @@ describe('CreateSmishingWorkflow', () => {
     });
     const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.1);
 
-    const run = await createSmishingWorkflow.createRunAsync();
+    const run = await createSmishingWorkflow.createRun();
     const result = await run.start({
       inputData: {
         topic: 'Generic Internal Notice',
         language: 'en-gb',
+        difficulty: 'Medium' as const,
+        method: 'Data-Submission' as const,
         includeSms: false,
         includeLandingPage: false,
       },
@@ -390,6 +417,11 @@ describe('CreateSmishingWorkflow', () => {
           description: 'Test',
           category: 'Urgency',
           method: 'Click-Only',
+          psychologicalTriggers: ['Fear'],
+          tone: 'Urgent',
+          keyRedFlags: ['Odd link'],
+          targetAudienceAnalysis: 'General audience',
+          messageStrategy: 'Short alert',
         }),
       })
       .mockResolvedValueOnce({
@@ -399,17 +431,20 @@ describe('CreateSmishingWorkflow', () => {
         text: JSON.stringify({ messages: ['Still no link'] }),
       });
 
-    const run = await createSmishingWorkflow.createRunAsync();
+    const run = await createSmishingWorkflow.createRun();
     const result = await run.start({
       inputData: {
         topic: 'Retry Link Missing',
         language: 'en-gb',
+        difficulty: 'Medium' as const,
+        method: 'Data-Submission' as const,
+        includeSms: true,
         includeLandingPage: false,
       },
     });
 
     expect(result.status).toBe('failed');
-    expect((result as any).error).toContain('SMS messages must include {PHISHINGURL}');
+    expect(JSON.stringify(result)).toContain('SMS messages must include {PHISHINGURL}');
   });
 
   it('should fallback to en-gb when analysis language is missing', async () => {
@@ -420,16 +455,24 @@ describe('CreateSmishingWorkflow', () => {
         description: 'Test',
         category: 'Urgency',
         method: 'Click-Only',
+        psychologicalTriggers: ['Fear'],
+        tone: 'Urgent',
+        keyRedFlags: ['Odd link'],
+        targetAudienceAnalysis: 'General audience',
+        messageStrategy: 'Short alert',
       }),
     });
 
-    const run = await createSmishingWorkflow.createRunAsync();
+    const run = await createSmishingWorkflow.createRun();
     const result = await run.start({
       inputData: {
         topic: 'Missing Language',
+        language: 'en-gb',
+        difficulty: 'Medium' as const,
+        method: 'Data-Submission' as const,
         includeSms: false,
         includeLandingPage: false,
-      } as any,
+      },
     });
 
     expect(result.status).toBe('success');
@@ -439,11 +482,13 @@ describe('CreateSmishingWorkflow', () => {
   it('should continue when getWhitelabelingConfig throws', async () => {
     mocks.getWhitelabelingConfig.mockRejectedValueOnce(new Error('Product API down'));
 
-    const run = await createSmishingWorkflow.createRunAsync();
+    const run = await createSmishingWorkflow.createRun();
     const result = await run.start({
       inputData: {
         topic: 'Whitelabel Error',
         language: 'en-gb',
+        difficulty: 'Medium' as const,
+        method: 'Data-Submission' as const,
         includeSms: false,
         includeLandingPage: false,
       },

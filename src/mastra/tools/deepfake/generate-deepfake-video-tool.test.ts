@@ -14,9 +14,6 @@ vi.mock('../../utils/core/resilience-utils', () => ({
   withRetry: vi.fn((fn: () => Promise<unknown>) => fn()),
 }));
 
-vi.mock('../../utils/core/id-utils', () => ({
-  uuidv4: () => 'test-uuid-123',
-}));
 
 const originalEnv = process.env;
 
@@ -39,9 +36,9 @@ describe('generateDeepfakeVideoTool', () => {
     it('should have input schema with required fields', () => {
       const schema = generateDeepfakeVideoTool.inputSchema;
       expect(schema).toBeDefined();
-      expect(schema.shape.inputText).toBeDefined();
-      expect(schema.shape.avatarId).toBeDefined();
-      expect(schema.shape.voiceId).toBeDefined();
+      expect((schema as any).shape.inputText).toBeDefined();
+      expect((schema as any).shape.avatarId).toBeDefined();
+      expect((schema as any).shape.voiceId).toBeDefined();
     });
   });
 
@@ -49,13 +46,12 @@ describe('generateDeepfakeVideoTool', () => {
     it('should return error when HEYGEN_API_KEY is not set', async () => {
       delete process.env.HEYGEN_API_KEY;
 
-      const result = await generateDeepfakeVideoTool.execute?.({
-        context: {
-          inputText: 'Hello',
-          avatarId: 'av-1',
-          voiceId: 'v-1',
-        },
-      } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await generateDeepfakeVideoTool.execute!({
+        inputText: 'Hello',
+        avatarId: 'av-1',
+        voiceId: 'v-1',
+      } as any, {}) as any;
 
       expect(result).toEqual({
         success: false,
@@ -74,13 +70,12 @@ describe('generateDeepfakeVideoTool', () => {
         )
       );
 
-      const result = await generateDeepfakeVideoTool.execute?.({
-        context: {
-          inputText: 'Welcome to security training.',
-          avatarId: 'av-1',
-          voiceId: 'v-1',
-        },
-      } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await generateDeepfakeVideoTool.execute!({
+        inputText: 'Welcome to security training.',
+        avatarId: 'av-1',
+        voiceId: 'v-1',
+      } as any, {}) as any;
 
       expect(result).toMatchObject({
         success: true,
@@ -94,13 +89,12 @@ describe('generateDeepfakeVideoTool', () => {
         new Response('Bad Request', { status: 400 })
       );
 
-      const result = await generateDeepfakeVideoTool.execute?.({
-        context: {
-          inputText: 'Script',
-          avatarId: 'av-1',
-          voiceId: 'v-1',
-        },
-      } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await generateDeepfakeVideoTool.execute!({
+        inputText: 'Script',
+        avatarId: 'av-1',
+        voiceId: 'v-1',
+      } as any, {}) as any;
 
       expect(result).toMatchObject({
         success: false,
@@ -117,19 +111,18 @@ describe('generateDeepfakeVideoTool', () => {
         )
       );
 
-      await generateDeepfakeVideoTool.execute?.({
-        context: {
-          inputText: 'Script',
-          avatarId: 'av-1',
-          voiceId: 'v-1',
-          title: 'My Video',
-          orientation: 'portrait',
-          emotion: 'Serious',
-          speed: 1.1,
-          avatarStyle: 'closeUp',
-          caption: false,
-        },
-      } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      await generateDeepfakeVideoTool.execute!({
+        inputText: 'Script',
+        avatarId: 'av-1',
+        voiceId: 'v-1',
+        title: 'My Video',
+        orientation: 'portrait',
+        emotion: 'Serious',
+        speed: 1.1,
+        avatarStyle: 'closeUp',
+        caption: false,
+      } as any, {});
 
       const callBody = JSON.parse((fetchSpy.mock.calls[0][1] as any).body);
       expect(callBody.title).toBe('My Video');
@@ -148,9 +141,10 @@ describe('generateDeepfakeVideoTool', () => {
         )
       );
 
-      const result = await generateDeepfakeVideoTool.execute?.({
-        context: { inputText: 'Script', avatarId: 'av-1', voiceId: 'v-1' },
-      } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await generateDeepfakeVideoTool.execute!({
+        inputText: 'Script', avatarId: 'av-1', voiceId: 'v-1',
+      } as any, {}) as any;
 
       expect(result).toMatchObject({
         success: false,
@@ -164,9 +158,10 @@ describe('generateDeepfakeVideoTool', () => {
         new Response(JSON.stringify({ data: {} }), { status: 200 })
       );
 
-      const result = await generateDeepfakeVideoTool.execute?.({
-        context: { inputText: 'Script', avatarId: 'av-1', voiceId: 'v-1' },
-      } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await generateDeepfakeVideoTool.execute!({
+        inputText: 'Script', avatarId: 'av-1', voiceId: 'v-1',
+      } as any, {}) as any;
 
       expect(result).toMatchObject({
         success: false,
@@ -178,9 +173,10 @@ describe('generateDeepfakeVideoTool', () => {
       process.env.HEYGEN_API_KEY = 'test-key';
       vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('Network failure'));
 
-      const result = await generateDeepfakeVideoTool.execute?.({
-        context: { inputText: 'Script', avatarId: 'av-1', voiceId: 'v-1' },
-      } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await generateDeepfakeVideoTool.execute!({
+        inputText: 'Script', avatarId: 'av-1', voiceId: 'v-1',
+      } as any, {}) as any;
 
       expect(result).toMatchObject({
         success: false,
@@ -194,9 +190,10 @@ describe('generateDeepfakeVideoTool', () => {
       abortErr.name = 'AbortError';
       vi.spyOn(globalThis, 'fetch').mockRejectedValue(abortErr);
 
-      const result = await generateDeepfakeVideoTool.execute?.({
-        context: { inputText: 'Script', avatarId: 'av-1', voiceId: 'v-1' },
-      } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await generateDeepfakeVideoTool.execute!({
+        inputText: 'Script', avatarId: 'av-1', voiceId: 'v-1',
+      } as any, {}) as any;
 
       expect(result).toMatchObject({
         success: false,
@@ -210,9 +207,10 @@ describe('generateDeepfakeVideoTool', () => {
         new Response(JSON.stringify({ error: 'Invalid voice_id' }), { status: 200 })
       );
 
-      const result = await generateDeepfakeVideoTool.execute?.({
-        context: { inputText: 'Script', avatarId: 'av-1', voiceId: 'v-1' },
-      } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await generateDeepfakeVideoTool.execute!({
+        inputText: 'Script', avatarId: 'av-1', voiceId: 'v-1',
+      } as any, {}) as any;
 
       expect(result).toMatchObject({
         success: false,
@@ -231,16 +229,20 @@ describe('generateDeepfakeVideoTool', () => {
 
       const mockWriter = { write: vi.fn().mockResolvedValue(undefined) };
 
-      const result = await generateDeepfakeVideoTool.execute?.({
-        context: { inputText: 'Script', avatarId: 'av-1', voiceId: 'v-1' },
-        writer: mockWriter,
-      } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await generateDeepfakeVideoTool.execute!(
+        { inputText: 'Script', avatarId: 'av-1', voiceId: 'v-1' } as any,
+        { writer: mockWriter } as any,
+      ) as any;
 
       expect(result).toMatchObject({ success: true, videoId: 'vid-signal-123' });
       expect(mockWriter.write).toHaveBeenCalledWith(
         expect.objectContaining({
-          type: 'text-delta',
-          delta: expect.stringContaining('::ui:deepfake_video_generating::'),
+          type: 'data-ui-signal',
+          data: expect.objectContaining({
+            signal: 'deepfake_video_generating',
+            message: expect.stringContaining('::ui:deepfake_video_generating::'),
+          }),
         })
       );
     });
@@ -256,10 +258,11 @@ describe('generateDeepfakeVideoTool', () => {
 
       const mockWriter = { write: vi.fn().mockRejectedValue(new Error('Stream closed')) };
 
-      const result = await generateDeepfakeVideoTool.execute?.({
-        context: { inputText: 'Script', avatarId: 'av-1', voiceId: 'v-1' },
-        writer: mockWriter,
-      } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await generateDeepfakeVideoTool.execute!(
+        { inputText: 'Script', avatarId: 'av-1', voiceId: 'v-1' } as any,
+        { writer: mockWriter } as any,
+      ) as any;
 
       expect(result).toMatchObject({ success: true, videoId: 'vid-err-456' });
     });

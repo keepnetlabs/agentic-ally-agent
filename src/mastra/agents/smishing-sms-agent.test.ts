@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeAll } from 'vitest';
 import { smishingSmsAgent } from './smishing-sms-agent';
 import { AGENT_NAMES, AGENT_IDS } from '../constants';
 
@@ -21,6 +21,14 @@ vi.mock('../model-providers', () => ({
 }));
 
 describe('smishingAgent', () => {
+  let instructions: string;
+  let tools: Record<string, any>;
+
+  beforeAll(async () => {
+    instructions = (await smishingSmsAgent.getInstructions()) as string;
+    tools = await smishingSmsAgent.listTools();
+  });
+
   it('should be defined', () => {
     expect(smishingSmsAgent).toBeDefined();
   });
@@ -34,51 +42,51 @@ describe('smishingAgent', () => {
   });
 
   it('should have instructions mentioning smishing simulation', () => {
-    expect(smishingSmsAgent.instructions).toContain('Smishing Simulation Specialist');
+    expect(instructions).toContain('Smishing Simulation Specialist');
   });
 
   it('should have state machine workflow instructions', () => {
-    expect(smishingSmsAgent.instructions).toContain('STATE 1');
-    expect(smishingSmsAgent.instructions).toContain('STATE 2');
-    expect(smishingSmsAgent.instructions).toContain('STATE 3');
-    expect(smishingSmsAgent.instructions).toContain('STATE 4');
+    expect(instructions).toContain('STATE 1');
+    expect(instructions).toContain('STATE 2');
+    expect(instructions).toContain('STATE 3');
+    expect(instructions).toContain('STATE 4');
   });
 
   it('should emphasize safety rules', () => {
-    expect(smishingSmsAgent.instructions).toContain('Global Rules');
-    expect(smishingSmsAgent.instructions).toContain('Safety');
-    expect(smishingSmsAgent.instructions).toContain('cyberattack');
+    expect(instructions).toContain('Global Rules');
+    expect(instructions).toContain('Safety');
+    expect(instructions).toContain('cyberattack');
   });
 
   it('should include psychological profiling via Cialdini principles', () => {
-    expect(smishingSmsAgent.instructions).toContain('Cialdini');
-    expect(smishingSmsAgent.instructions).toContain('Reciprocity');
-    expect(smishingSmsAgent.instructions).toContain('Authority');
+    expect(instructions).toContain('Cialdini');
+    expect(instructions).toContain('Reciprocity');
+    expect(instructions).toContain('Authority');
   });
 
   it('should specify language handling rules', () => {
-    expect(smishingSmsAgent.instructions).toContain('Language Rules');
-    expect(smishingSmsAgent.instructions).toContain('INTERACTION LANGUAGE');
-    expect(smishingSmsAgent.instructions).toContain('CONTENT LANGUAGE');
+    expect(instructions).toContain('Language Rules');
+    expect(instructions).toContain('INTERACTION LANGUAGE');
+    expect(instructions).toContain('CONTENT LANGUAGE');
   });
 
   it('should mention edit mode instructions', () => {
-    expect(smishingSmsAgent.instructions).toContain('EDIT MODE');
+    expect(instructions).toContain('EDIT MODE');
   });
 
   it('should prohibit tech jargon in reasoning', () => {
-    expect(smishingSmsAgent.instructions).toContain('No Tech Jargon');
+    expect(instructions).toContain('No Tech Jargon');
   });
 
   it('should specify workflow routing', () => {
-    expect(smishingSmsAgent.instructions).toContain('Workflow Routing');
-    expect(smishingSmsAgent.instructions).toContain('CREATION');
-    expect(smishingSmsAgent.instructions).toContain('UTILITY');
+    expect(instructions).toContain('Workflow Routing');
+    expect(instructions).toContain('CREATION');
+    expect(instructions).toContain('UTILITY');
   });
 
   it('should mention confirmation templates', () => {
-    expect(smishingSmsAgent.instructions).toContain('STRICT OUTPUT TEMPLATE');
-    expect(smishingSmsAgent.instructions).toContain('HTML');
+    expect(instructions).toContain('STRICT OUTPUT TEMPLATE');
+    expect(instructions).toContain('HTML');
   });
 
   it('should have model configured', () => {
@@ -86,44 +94,44 @@ describe('smishingAgent', () => {
   });
 
   it('should include BCP-47 language code requirement', () => {
-    expect(smishingSmsAgent.instructions).toContain('BCP-47');
+    expect(instructions).toContain('BCP-47');
   });
 
   it('should specify tool requirements for state transitions', () => {
-    expect(smishingSmsAgent.instructions).toContain('smishingExecutor');
-    expect(smishingSmsAgent.instructions).toContain('uploadSmishing');
-    expect(smishingSmsAgent.instructions).toContain('assignSmishing');
+    expect(instructions).toContain('smishingExecutor');
+    expect(instructions).toContain('uploadSmishing');
+    expect(instructions).toContain('assignSmishing');
   });
 
   it('should specify artifact ID usage', () => {
-    expect(smishingSmsAgent.instructions).toContain('[ARTIFACT_IDS]');
+    expect(instructions).toContain('[ARTIFACT_IDS]');
   });
 
   it('should mention psychological cognitive dissonance concept', () => {
-    expect(smishingSmsAgent.instructions).toContain('cognitive dissonance');
+    expect(instructions).toContain('cognitive dissonance');
   });
 
   it('should include autonomous mode override instructions', () => {
-    expect(smishingSmsAgent.instructions).toContain('AUTONOMOUS MODE OVERRIDE');
-    expect(smishingSmsAgent.instructions).toContain('AUTONOMOUS_EXECUTION_MODE');
-    expect(smishingSmsAgent.instructions).toContain('smishingExecutor');
+    expect(instructions).toContain('AUTONOMOUS MODE OVERRIDE');
+    expect(instructions).toContain('AUTONOMOUS_EXECUTION_MODE');
+    expect(instructions).toContain('smishingExecutor');
   });
 
   it('should have exactly 5 tools', () => {
-    expect(Object.keys(smishingSmsAgent.tools)).toHaveLength(5);
+    expect(Object.keys(tools)).toHaveLength(5);
   });
 
   it('should include messaging guidelines (blacklist words)', () => {
-    expect(smishingSmsAgent.instructions).toContain('NEVER use');
-    expect(smishingSmsAgent.instructions).toContain('Messaging Guidelines');
+    expect(instructions).toContain('NEVER use');
+    expect(instructions).toContain('Messaging Guidelines');
   });
 
   it('should have substantial instructions', () => {
-    expect(smishingSmsAgent.instructions.length).toBeGreaterThan(2000);
+    expect(instructions.length).toBeGreaterThan(2000);
   });
 
   it('should include SCENARIO block for language rules', () => {
-    expect(smishingSmsAgent.instructions).toContain('SCENARIO');
-    expect(smishingSmsAgent.instructions).toContain('Pass this to');
+    expect(instructions).toContain('SCENARIO');
+    expect(instructions).toContain('Pass this to');
   });
 });

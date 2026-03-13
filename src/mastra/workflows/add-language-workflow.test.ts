@@ -393,8 +393,8 @@ describe('add-language-workflow', () => {
 
   // Tests for workflow execution pattern
   describe('Workflow Execution Pattern', () => {
-    it('should have createRunAsync method', () => {
-      expect(typeof (addLanguageWorkflow as any).createRunAsync).toBe('function');
+    it('should have createRun method', () => {
+      expect(typeof (addLanguageWorkflow as any).createRun).toBe('function');
     });
 
     it('should have execute method available', () => {
@@ -623,11 +623,11 @@ describe('add-language-workflow', () => {
   // Tests for workflow async patterns
   describe('Async Workflow Patterns', () => {
     it('should support async execution', async () => {
-      expect(typeof (addLanguageWorkflow as any).createRunAsync).toBe('function');
+      expect(typeof (addLanguageWorkflow as any).createRun).toBe('function');
     });
 
     it('should have proper async method signatures', () => {
-      const asyncMethods = ['createRunAsync', 'start', 'trigger'];
+      const asyncMethods = ['createRun', 'start', 'trigger'];
       asyncMethods.forEach(method => {
         if ((addLanguageWorkflow as any)[method]) {
           expect(typeof (addLanguageWorkflow as any)[method]).toBe('function');

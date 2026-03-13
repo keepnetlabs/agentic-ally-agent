@@ -76,7 +76,8 @@ describe('AutonomousVishingHandlers', () => {
 
     expect(result.success).toBe(true);
     const generateCall = mockGenerateText.mock.calls[0][0];
-    expect(generateCall.messages[1].content).toContain('Target department: HR');
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    expect(generateCall.messages![1].content).toContain('Target department: HR');
   });
 
   it('calls LLM when executiveReport has sufficient context', async () => {
@@ -122,8 +123,10 @@ describe('AutonomousVishingHandlers', () => {
     });
 
     const generateCall = mockGenerateText.mock.calls[0][0];
-    expect(generateCall.messages[0].content).toContain('tr-tr');
-    expect(generateCall.messages[0].content).toContain('MUST be written entirely in tr-tr (BCP-47)');
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    expect(generateCall.messages![0].content).toContain('tr-tr');
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    expect(generateCall.messages![0].content).toContain('MUST be written entirely in tr-tr (BCP-47)');
   });
 
   it('returns error when LLM fails (no fallback)', async () => {
@@ -187,7 +190,8 @@ describe('AutonomousVishingHandlers', () => {
     expect(mockGenerateText).toHaveBeenCalledTimes(1);
 
     const generateCall = mockGenerateText.mock.calls[0][0];
-    expect(generateCall.messages[0].content).toContain('tr-tr');
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    expect(generateCall.messages![0].content).toContain('tr-tr');
 
     const fetchCall = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
     const body = JSON.parse(fetchCall[1].body);

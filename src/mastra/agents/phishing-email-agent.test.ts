@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { phishingEmailAgent } from './phishing-email-agent';
 import { AGENT_NAMES } from '../constants';
 
@@ -6,6 +6,14 @@ import { AGENT_NAMES } from '../constants';
  * Phishing Email Agent - Structural Verification Suite
  */
 describe('Phishing Email Agent', () => {
+  let instructions: string;
+  let tools: Record<string, any>;
+
+  beforeAll(async () => {
+    instructions = (await phishingEmailAgent.getInstructions()) as string;
+    tools = await phishingEmailAgent.listTools();
+  });
+
   // ==================== BASIC CONFIGURATION TESTS ====================
   describe('Basic Configuration', () => {
     it('should have the correct agent name from constants', () => {
@@ -13,15 +21,15 @@ describe('Phishing Email Agent', () => {
     });
 
     it('should have tools configured', () => {
-      expect(phishingEmailAgent.tools).toBeDefined();
-      expect(Object.keys(phishingEmailAgent.tools)).toContain('phishingExecutor');
-      expect(Object.keys(phishingEmailAgent.tools)).toContain('phishingEditor');
-      expect(Object.keys(phishingEmailAgent.tools)).toContain('uploadPhishing');
-      expect(Object.keys(phishingEmailAgent.tools)).toContain('assignPhishing');
+      expect(tools).toBeDefined();
+      expect(Object.keys(tools)).toContain('phishingExecutor');
+      expect(Object.keys(tools)).toContain('phishingEditor');
+      expect(Object.keys(tools)).toContain('uploadPhishing');
+      expect(Object.keys(tools)).toContain('assignPhishing');
     });
 
     it('should have exactly 5 tools', () => {
-      expect(Object.keys(phishingEmailAgent.tools)).toHaveLength(5);
+      expect(Object.keys(tools)).toHaveLength(5);
     });
 
     it('should have name as string', () => {
@@ -36,51 +44,51 @@ describe('Phishing Email Agent', () => {
   // ==================== INSTRUCTION QUALITY TESTS ====================
   describe('Agent Instructions', () => {
     it('should have substantial content', () => {
-      expect(phishingEmailAgent.instructions).toBeDefined();
-      expect(phishingEmailAgent.instructions.length).toBeGreaterThan(500);
+      expect(instructions).toBeDefined();
+      expect(instructions.length).toBeGreaterThan(500);
     });
 
     it('should contain the specialist persona', () => {
-      expect(phishingEmailAgent.instructions).toContain('Phishing Simulation Specialist');
+      expect(instructions).toContain('Phishing Simulation Specialist');
     });
 
     it('should have the language rules', () => {
-      expect(phishingEmailAgent.instructions).toContain('Language Rules');
+      expect(instructions).toContain('Language Rules');
     });
 
     it('should have safety rules', () => {
-      expect(phishingEmailAgent.instructions).toContain('Global Rules');
-      expect(phishingEmailAgent.instructions).toContain('Safety');
+      expect(instructions).toContain('Global Rules');
+      expect(instructions).toContain('Safety');
     });
 
     it('should have the tool/tech jargon restriction', () => {
-      expect(phishingEmailAgent.instructions).toContain('No Tech Jargon');
+      expect(instructions).toContain('No Tech Jargon');
     });
 
     it('should mention Cialdini Principles', () => {
-      expect(phishingEmailAgent.instructions).toContain('Cialdini Principles');
+      expect(instructions).toContain('Cialdini Principles');
     });
 
     it('should have substantial instructions', () => {
-      expect(phishingEmailAgent.instructions.length).toBeGreaterThan(1000);
+      expect(instructions.length).toBeGreaterThan(1000);
     });
 
     it('should define role with bold formatting', () => {
-      expect(phishingEmailAgent.instructions).toContain('**Phishing Simulation Specialist**');
+      expect(instructions).toContain('**Phishing Simulation Specialist**');
     });
   });
 
   // ==================== MESSAGING GUIDELINES COMPLIANCE ====================
   describe('Messaging Guidelines Compliance', () => {
     it('should list blacklist words to avoid', () => {
-      expect(phishingEmailAgent.instructions).toContain('NEVER use');
+      expect(instructions).toContain('NEVER use');
     });
 
     it('should NOT contain unauthorized system strings', () => {
       const forbiddenStrings = ['EMPLOYEE_MATCH', 'ASSIGNMENT_SUCCESS.TRAINING', 'ASSIGNMENT_SUCCESS.SIMULATION'];
 
       forbiddenStrings.forEach(str => {
-        expect(phishingEmailAgent.instructions).not.toContain(str);
+        expect(instructions).not.toContain(str);
       });
     });
   });
@@ -89,51 +97,51 @@ describe('Phishing Email Agent', () => {
   describe('Basic Structural Validation', () => {
     it('should have all required agent properties', () => {
       expect(phishingEmailAgent).toHaveProperty('name');
-      expect(phishingEmailAgent).toHaveProperty('instructions');
+      expect(phishingEmailAgent).toHaveProperty('getInstructions');
       expect(phishingEmailAgent).toHaveProperty('model');
-      expect(phishingEmailAgent).toHaveProperty('tools');
+      expect(phishingEmailAgent).toHaveProperty('listTools');
     });
 
     it('should have tools as object type', () => {
-      expect(typeof phishingEmailAgent.tools).toBe('object');
-      expect(Array.isArray(phishingEmailAgent.tools)).toBe(false);
+      expect(typeof tools).toBe('object');
+      expect(Array.isArray(tools)).toBe(false);
     });
   });
 
   // ==================== TOOL CONFIGURATION ====================
   describe('Tool Configuration', () => {
     it('should have phishingExecutor tool', () => {
-      expect(phishingEmailAgent.tools.phishingExecutor).toBeDefined();
-      expect(typeof phishingEmailAgent.tools.phishingExecutor).toBe('object');
+      expect(tools.phishingExecutor).toBeDefined();
+      expect(typeof tools.phishingExecutor).toBe('object');
     });
 
     it('should have phishingEditor tool', () => {
-      expect(phishingEmailAgent.tools.phishingEditor).toBeDefined();
-      expect(typeof phishingEmailAgent.tools.phishingEditor).toBe('object');
+      expect(tools.phishingEditor).toBeDefined();
+      expect(typeof tools.phishingEditor).toBe('object');
     });
 
     it('should have uploadPhishing tool', () => {
-      expect(phishingEmailAgent.tools.uploadPhishing).toBeDefined();
-      expect(typeof phishingEmailAgent.tools.uploadPhishing).toBe('object');
+      expect(tools.uploadPhishing).toBeDefined();
+      expect(typeof tools.uploadPhishing).toBe('object');
     });
 
     it('should have assignPhishing tool', () => {
-      expect(phishingEmailAgent.tools.assignPhishing).toBeDefined();
-      expect(typeof phishingEmailAgent.tools.assignPhishing).toBe('object');
+      expect(tools.assignPhishing).toBeDefined();
+      expect(typeof tools.assignPhishing).toBe('object');
     });
 
     it('should not have getUserInfo tool', () => {
-      expect(phishingEmailAgent.tools).not.toHaveProperty('getUserInfo');
+      expect(tools).not.toHaveProperty('getUserInfo');
     });
 
     it('should not have summarizePolicy tool', () => {
-      expect(phishingEmailAgent.tools).not.toHaveProperty('summarizePolicy');
+      expect(tools).not.toHaveProperty('summarizePolicy');
     });
   });
 
   // ==================== LANGUAGE RULES ====================
   describe('Language Rules', () => {
-    const instructions = phishingEmailAgent.instructions;
+    
 
     it('should define LANGUAGE RULES section', () => {
       expect(instructions).toContain('Language Rules');
@@ -175,7 +183,7 @@ describe('Phishing Email Agent', () => {
 
   // ==================== SAFETY RULES ====================
   describe('Safety Rules', () => {
-    const instructions = phishingEmailAgent.instructions;
+    
 
     it('should have SAFETY RULES section', () => {
       expect(instructions).toContain('Global Rules');
@@ -205,7 +213,7 @@ describe('Phishing Email Agent', () => {
 
   // ==================== PSYCHOLOGICAL PROFILER MODE ====================
   describe('Psychological Profiler Mode', () => {
-    const instructions = phishingEmailAgent.instructions;
+    
 
     it('should have PSYCHOLOGICAL PROFILER MODE section', () => {
       expect(instructions).toContain('Psychological Profiler');
@@ -242,7 +250,7 @@ describe('Phishing Email Agent', () => {
 
   // ==================== AUTONOMOUS MODE ====================
   describe('Autonomous Mode', () => {
-    const instructions = phishingEmailAgent.instructions;
+    
 
     it('should have AUTONOMOUS MODE OVERRIDE section', () => {
       expect(instructions).toContain('AUTONOMOUS MODE OVERRIDE');
@@ -271,7 +279,7 @@ describe('Phishing Email Agent', () => {
 
   // ==================== WORKFLOW ROUTING ====================
   describe('Workflow Routing', () => {
-    const instructions = phishingEmailAgent.instructions;
+    
 
     it('should have WORKFLOW ROUTING section', () => {
       expect(instructions).toContain('Workflow Routing');
@@ -295,7 +303,7 @@ describe('Phishing Email Agent', () => {
 
   // ==================== STATE MACHINE ====================
   describe('State Machine', () => {
-    const instructions = phishingEmailAgent.instructions;
+    
 
     it('should have State Machine section', () => {
       expect(instructions).toContain('State Machine');
@@ -332,7 +340,7 @@ describe('Phishing Email Agent', () => {
 
   // ==================== SMART DEFAULTS ====================
   describe('Smart Defaults', () => {
-    const instructions = phishingEmailAgent.instructions;
+    
 
     it('should have Smart Defaults section', () => {
       expect(instructions).toContain('Smart Defaults');
@@ -365,7 +373,7 @@ describe('Phishing Email Agent', () => {
 
   // ==================== SELF-CORRECTION ====================
   describe('Self-Correction', () => {
-    const instructions = phishingEmailAgent.instructions;
+    
 
     it('should have Self-Correction section', () => {
       expect(instructions).toContain('Self-Correction');
@@ -397,7 +405,7 @@ describe('Phishing Email Agent', () => {
 
   // ==================== PLATFORM INTEGRATION ====================
   describe('Platform Integration', () => {
-    const instructions = phishingEmailAgent.instructions;
+    
 
     it('should have Platform Integration section', () => {
       expect(instructions).toContain('Platform Integration');
@@ -429,7 +437,7 @@ describe('Phishing Email Agent', () => {
 
   // ==================== QUISHING DETECTION ====================
   describe('Quishing Detection', () => {
-    const instructions = phishingEmailAgent.instructions;
+    
 
     it('should have QUISHING DETECTION RULE', () => {
       expect(instructions).toContain('QUISHING DETECTION');
@@ -456,7 +464,7 @@ describe('Phishing Email Agent', () => {
 
   // ==================== EDIT MODE ====================
   describe('Edit Mode', () => {
-    const instructions = phishingEmailAgent.instructions;
+    
 
     it('should have EDIT MODE section', () => {
       expect(instructions).toContain('EDIT MODE');
@@ -494,7 +502,7 @@ describe('Phishing Email Agent', () => {
 
   // ==================== TOOL PARAMETERS ====================
   describe('Tool Parameters', () => {
-    const instructions = phishingEmailAgent.instructions;
+    
 
     it('should define workflowType parameter', () => {
       expect(instructions).toContain('workflowType');
@@ -539,7 +547,7 @@ describe('Phishing Email Agent', () => {
 
   // ==================== AUTO CONTEXT CAPTURE ====================
   describe('Auto Context Capture', () => {
-    const instructions = phishingEmailAgent.instructions;
+    
 
     it('should have Auto Context Capture section', () => {
       expect(instructions).toContain('Auto Context Capture');
@@ -569,7 +577,7 @@ describe('Phishing Email Agent', () => {
 
   // ==================== MESSAGING GUIDELINES ====================
   describe('Messaging Guidelines', () => {
-    const instructions = phishingEmailAgent.instructions;
+    
 
     it('should have Messaging Guidelines section', () => {
       expect(instructions).toContain('Messaging Guidelines');
@@ -586,7 +594,7 @@ describe('Phishing Email Agent', () => {
 
   // ==================== EXAMPLE INTERACTION ====================
   describe('Example Interaction', () => {
-    const instructions = phishingEmailAgent.instructions;
+    
 
     it('should have Example Interaction section', () => {
       expect(instructions).toContain('Example Interaction');
@@ -612,7 +620,7 @@ describe('Phishing Email Agent', () => {
 
   // ==================== NO TECH JARGON ====================
   describe('No Tech Jargon', () => {
-    const instructions = phishingEmailAgent.instructions;
+    
 
     it('should have NO TECH JARGON rule', () => {
       expect(instructions).toContain('No Tech Jargon');
@@ -638,7 +646,7 @@ describe('Phishing Email Agent', () => {
 
   // ==================== CRITICAL RULES ====================
   describe('Critical Rules', () => {
-    const instructions = phishingEmailAgent.instructions;
+    
 
     it('should have CRITICAL marker', () => {
       expect(instructions).toContain('CRITICAL');
@@ -661,9 +669,9 @@ describe('Phishing Email Agent', () => {
   describe('Edge Cases', () => {
     it('should handle agent with all properties', () => {
       expect(phishingEmailAgent.name).toBeDefined();
-      expect(phishingEmailAgent.instructions).toBeDefined();
+      expect(instructions).toBeDefined();
       expect(phishingEmailAgent.model).toBeDefined();
-      expect(phishingEmailAgent.tools).toBeDefined();
+      expect(tools).toBeDefined();
     });
 
     it('should have non-empty name', () => {
@@ -671,16 +679,16 @@ describe('Phishing Email Agent', () => {
     });
 
     it('should have substantial instructions', () => {
-      expect(phishingEmailAgent.instructions.length).toBeGreaterThan(2000);
+      expect(instructions.length).toBeGreaterThan(2000);
     });
 
     it('should have valid tools object', () => {
-      expect(phishingEmailAgent.tools).not.toBeNull();
-      expect(Array.isArray(phishingEmailAgent.tools)).toBe(false);
+      expect(tools).not.toBeNull();
+      expect(Array.isArray(tools)).toBe(false);
     });
 
     it('should have all tool objects', () => {
-      Object.values(phishingEmailAgent.tools).forEach(tool => {
+      Object.values(tools).forEach(tool => {
         expect(typeof tool).toBe('object');
         expect(tool).not.toBeNull();
       });
@@ -699,21 +707,21 @@ describe('Phishing Email Agent', () => {
     });
 
     it('should have complete agent structure', () => {
-      const requiredProps = ['name', 'instructions', 'model', 'tools'];
+      const requiredProps = ['name', 'getInstructions', 'model', 'listTools'];
       requiredProps.forEach(prop => {
         expect(phishingEmailAgent).toHaveProperty(prop);
       });
     });
 
     it('should have 5 tools configured', () => {
-      const toolCount = Object.keys(phishingEmailAgent.tools).length;
+      const toolCount = Object.keys(tools).length;
       expect(toolCount).toBe(5);
     });
   });
 
   // ==================== INSTRUCTION STRUCTURE ====================
   describe('Instruction Structure', () => {
-    const instructions = phishingEmailAgent.instructions;
+    
 
     it('should have markdown section markers', () => {
       expect(instructions).toContain('## Global Rules');

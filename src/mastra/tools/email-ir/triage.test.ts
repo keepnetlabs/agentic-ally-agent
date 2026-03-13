@@ -80,7 +80,7 @@ describe('triageTool', () => {
         intent_summary: 'summary',
       },
     };
-    const result = await (triageTool as any).execute({ context: input });
+    const result = await (triageTool as any).execute(input);
     expect(result).toBeDefined();
     expect(result.category).toBe('Security Awareness');
     expect(result.original_email).toEqual(input.original_email);
@@ -131,7 +131,7 @@ describe('triageTool', () => {
         intent_summary: 'Credential request',
       },
     };
-    const result = await (triageTool as any).execute({ context: input });
+    const result = await (triageTool as any).execute(input);
     expect(result.category).toBe('Phishing');
     expect(result.confidence).toBe(0.92);
     expect(result.original_email).toEqual(input.original_email);
@@ -177,7 +177,7 @@ describe('triageTool', () => {
       },
     };
 
-    await expect((triageTool as any).execute({ context: input })).rejects.toThrow('LLM API error');
+    await expect((triageTool as any).execute(input)).rejects.toThrow('LLM API error');
   });
 
   it('should use unknown-sender when original_email.from is empty', async () => {
@@ -223,7 +223,7 @@ describe('triageTool', () => {
       },
     };
 
-    await (triageTool as any).execute({ context: input });
+    await (triageTool as any).execute(input);
 
     expect(createLogContext).toHaveBeenCalledWith('unknown-sender', 'triage');
   });
@@ -278,7 +278,7 @@ describe('triageTool', () => {
       },
     };
 
-    await (triageTool as any).execute({ context: input });
+    await (triageTool as any).execute(input);
 
     expect(capturedPrompt).toContain('John CEO');
     expect(capturedPrompt).toContain('ceo@company.com');
@@ -335,7 +335,7 @@ describe('triageTool', () => {
       },
     };
 
-    await (triageTool as any).execute({ context: input });
+    await (triageTool as any).execute(input);
 
     expect(capturedPrompt).toContain('...(truncated)');
   });

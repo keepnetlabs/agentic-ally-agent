@@ -429,10 +429,9 @@ describe('Microlearning Agent', () => {
   describe('Smart Defaults: Automatic Context', () => {
     describe('Scenario A: Continuation', () => {
       it('should use conversation history data when user says "Create it"', () => {
-        const conversationHistory = {
+        const conversationHistory: { topic: string; department: string; level?: string } = {
           topic: 'Phishing Prevention',
           department: 'IT',
-          // Level missing
         };
         const level = conversationHistory.level || 'Intermediate'; // Default
         expect(level).toBe('Intermediate');

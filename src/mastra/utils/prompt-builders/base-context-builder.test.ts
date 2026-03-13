@@ -125,7 +125,7 @@ describe('base-context-builder', () => {
     });
 
     it('should use metadata from microlearning when provided', () => {
-      const microlearning: MicrolearningContent = {
+      const microlearning = {
         microlearning_metadata: {
           category: 'Cybersecurity',
           subcategory: 'Phishing',
@@ -144,7 +144,7 @@ describe('base-context-builder', () => {
           gamification_enabled: false,
           total_points: 0,
         },
-      } as MicrolearningContent;
+      } as unknown as MicrolearningContent;
       const result = buildContextData(minimalAnalysis, microlearning);
       expect(result).toContain('Cybersecurity');
       expect(result).toContain('Phishing');
@@ -152,14 +152,14 @@ describe('base-context-builder', () => {
     });
 
     it('should use scientific evidence learning theories when provided', () => {
-      const microlearning: MicrolearningContent = {
+      const microlearning = {
         scientific_evidence: {
           learning_theories: {
             clt: { theory: 'CLT', application: 'a', evidence: 'e' },
             spaced: { theory: 'Spaced', application: 'a', evidence: 'e' },
           },
         },
-      } as MicrolearningContent;
+      } as unknown as MicrolearningContent;
       const result = buildContextData(minimalAnalysis, microlearning);
       expect(result).toContain('clt');
       expect(result).toContain('spaced');

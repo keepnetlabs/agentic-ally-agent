@@ -2,14 +2,10 @@ import { describe, it, expect, vi, beforeAll } from 'vitest';
 import type { AutonomousRequestBody, CloudflareEnv } from '../types/api-types';
 
 // `cloudflare:workers` does not exist in Node/Vitest runtime.
-// Provide a virtual mock so `autonomous-workflow.ts` can be imported in tests.
-vi.mock(
-  'cloudflare:workers',
-  () => ({
-    WorkflowEntrypoint: class {},
-  }),
-  { virtual: true }
-);
+// The source uses `declare const WorkflowEntrypoint` which is stripped at compile time,
+// so we must define it on globalThis before the module loads.
+(globalThis as any).WorkflowEntrypoint = class {};
+(globalThis as any).WorkflowStep = class {};
 
 // Avoid importing the real `src/mastra/index.ts` in unit tests (it validates env vars and initializes providers).
 vi.mock('../index', () => ({
@@ -450,7 +446,8 @@ describe('AutonomousWorkflow', () => {
         },
       };
 
-      const result = instance.run(event, {} as any);
+      const mockStep = { do: vi.fn().mockResolvedValue({ success: true }) };
+      const result = instance.run(event, mockStep as any);
       expect(result instanceof Promise).toBe(true);
     });
 

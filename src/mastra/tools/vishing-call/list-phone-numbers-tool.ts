@@ -49,7 +49,7 @@ export const listPhoneNumbersTool = createTool({
     'List available outbound phone numbers from ElevenLabs. Returns phone numbers that can be used as caller ID for vishing (voice phishing) simulation calls.',
   inputSchema: listPhoneNumbersInputSchema,
   outputSchema: listPhoneNumbersOutputSchema,
-  execute: async ({ context: _context }) => {
+  execute: async (_inputData) => {
     const startTime = Date.now();
 
     try {

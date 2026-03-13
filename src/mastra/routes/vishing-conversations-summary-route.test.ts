@@ -60,7 +60,7 @@ describe('vishingConversationsSummaryHandler', () => {
     tokenCache = tokenCacheModule.tokenCache as unknown as typeof tokenCache;
 
     const toolModule = await import('../tools/vishing-call/vishing-conversations-summary-tool');
-    generateVishingConversationsSummary = toolModule.generateVishingConversationsSummary;
+    generateVishingConversationsSummary = toolModule.generateVishingConversationsSummary as any;
   });
 
   it('returns 400 when accessToken is too short', async () => {
@@ -195,7 +195,7 @@ describe('vishingConversationsSummaryHandler', () => {
     vi.stubGlobal('fetch', mockFetch);
 
     const { withRetry } = await import('../utils/core/resilience-utils');
-    vi.mocked(withRetry).mockImplementation(async (fn: () => Promise<Response>) => fn());
+    vi.mocked(withRetry).mockImplementation(async (fn: any) => fn());
 
     mockContext.req.json.mockResolvedValue({
       accessToken: 'a'.repeat(32),
@@ -271,7 +271,7 @@ describe('vishingConversationsSummaryHandler', () => {
     tokenCache.get.mockReturnValue(null);
     mockContext.req.header.mockReturnValue('https://test-api.devkeepnet.com');
     const { withRetry } = await import('../utils/core/resilience-utils');
-    vi.mocked(withRetry).mockImplementation(async (fn: () => Promise<Response>) => {
+    vi.mocked(withRetry).mockImplementation(async (fn: any) => {
       const res = await fn();
       return res;
     });

@@ -40,8 +40,8 @@ export const triageTool = createTool({
   description: 'Classifies email into Triage categories using full analysis context',
   inputSchema: triageInputSchema,
   outputSchema: triageOutputSchema,
-  execute: async ({ context }) => {
-    const { original_email, header_analysis, behavioral_analysis, intent_analysis } = context;
+  execute: async (inputData) => {
+    const { original_email, header_analysis, behavioral_analysis, intent_analysis } = inputData;
     const emailId = original_email.from?.split('@')[0] || 'unknown-sender';
     const ctx = createLogContext(emailId, 'triage');
 
@@ -220,7 +220,7 @@ Accuracy is critical. When uncertain, prefer **Other Suspicious** over misclassi
       const result = await withRetry(
         () =>
           emailIRAnalyst.generate(prompt, {
-            output: triageOutputSchema.omit({ original_email: true }),
+            structuredOutput: { schema: triageOutputSchema.omit({ original_email: true }) },
           }),
         'triage-llm'
       );

@@ -84,7 +84,7 @@ describe('policy-cache', () => {
       });
 
       vi.mocked(getPolicyContext).mockResolvedValue(mockPolicy);
-      vi.mocked(generateText).mockResolvedValue({ text: mockSummary });
+      vi.mocked(generateText).mockResolvedValue({ text: mockSummary } as any);
       vi.mocked(getModelWithOverride).mockReturnValue({} as any);
 
       const result = await getPolicySummary();
@@ -104,7 +104,7 @@ describe('policy-cache', () => {
       });
 
       vi.mocked(getPolicyContext).mockResolvedValue(mockPolicy);
-      vi.mocked(generateText).mockResolvedValue({ text: mockSummary });
+      vi.mocked(generateText).mockResolvedValue({ text: mockSummary } as any);
       vi.mocked(getModelWithOverride).mockReturnValue({} as any);
 
       // First call - should fetch
@@ -134,7 +134,7 @@ describe('policy-cache', () => {
       });
 
       vi.mocked(getPolicyContext).mockResolvedValue(mockPolicy);
-      vi.mocked(generateText).mockResolvedValue({ text: summary1 });
+      vi.mocked(generateText).mockResolvedValue({ text: summary1 } as any);
       vi.mocked(getModelWithOverride).mockReturnValue({} as any);
 
       const result1 = await getPolicySummary();
@@ -146,7 +146,7 @@ describe('policy-cache', () => {
         token: undefined,
       });
 
-      vi.mocked(generateText).mockResolvedValue({ text: summary2 });
+      vi.mocked(generateText).mockResolvedValue({ text: summary2 } as any);
 
       const result2 = await getPolicySummary();
       expect(result2).toBe(summary2);
@@ -165,7 +165,7 @@ describe('policy-cache', () => {
         companyId: 'company-1',
         token: undefined,
       });
-      vi.mocked(generateText).mockResolvedValue({ text: summary1 });
+      vi.mocked(generateText).mockResolvedValue({ text: summary1 } as any);
       await getPolicySummary();
 
       // Company 2 - should trigger refetch
@@ -173,7 +173,7 @@ describe('policy-cache', () => {
         companyId: 'company-2',
         token: undefined,
       });
-      vi.mocked(generateText).mockResolvedValue({ text: summary2 });
+      vi.mocked(generateText).mockResolvedValue({ text: summary2 } as any);
 
       const result = await getPolicySummary();
       expect(result).toBe(summary2);
@@ -190,7 +190,7 @@ describe('policy-cache', () => {
       });
 
       vi.mocked(getPolicyContext).mockResolvedValue(mockPolicy);
-      vi.mocked(generateText).mockResolvedValue({ text: mockSummary });
+      vi.mocked(generateText).mockResolvedValue({ text: mockSummary } as any);
       vi.mocked(getModelWithOverride).mockReturnValue({} as any);
 
       // First call
@@ -214,7 +214,7 @@ describe('policy-cache', () => {
       });
 
       vi.mocked(getPolicyContext).mockResolvedValue(mockPolicy);
-      vi.mocked(generateText).mockResolvedValue({ text: mockSummary });
+      vi.mocked(generateText).mockResolvedValue({ text: mockSummary } as any);
       vi.mocked(getModelWithOverride).mockReturnValue({} as any);
 
       // First call
@@ -247,7 +247,7 @@ describe('policy-cache', () => {
       });
 
       vi.mocked(getPolicyContext).mockResolvedValue(mockPolicy);
-      vi.mocked(generateText).mockResolvedValue({ text: mockSummary });
+      vi.mocked(generateText).mockResolvedValue({ text: mockSummary } as any);
       vi.mocked(getModelWithOverride).mockReturnValue({} as any);
 
       await getPolicySummary();
@@ -275,7 +275,7 @@ describe('policy-cache', () => {
       });
 
       vi.mocked(getPolicyContext).mockResolvedValue(mockPolicy);
-      vi.mocked(generateText).mockResolvedValue({ text: mockSummary });
+      vi.mocked(generateText).mockResolvedValue({ text: mockSummary } as any);
       vi.mocked(getModelWithOverride).mockReturnValue({} as any);
 
       await getPolicySummary();
@@ -308,7 +308,7 @@ describe('policy-cache', () => {
       });
 
       vi.mocked(getPolicyContext).mockResolvedValue(mockPolicy);
-      vi.mocked(generateText).mockResolvedValue({ text: mockSummary });
+      vi.mocked(generateText).mockResolvedValue({ text: mockSummary } as any);
       vi.mocked(getModelWithOverride).mockReturnValue({} as any);
 
       await getPolicySummary();
@@ -335,7 +335,7 @@ describe('policy-cache', () => {
       });
 
       vi.mocked(getPolicyContext).mockResolvedValue(mockPolicy);
-      vi.mocked(generateText).mockResolvedValue({ text: mockSummary });
+      vi.mocked(generateText).mockResolvedValue({ text: mockSummary } as any);
       vi.mocked(getModelWithOverride).mockReturnValue({} as any);
 
       await getPolicySummary();
@@ -361,7 +361,7 @@ describe('policy-cache', () => {
       });
 
       vi.mocked(getPolicyContext).mockResolvedValue(mockPolicy);
-      vi.mocked(generateText).mockResolvedValue({ text: 'Summary' });
+      vi.mocked(generateText).mockResolvedValue({ text: 'Summary' } as any);
       vi.mocked(getModelWithOverride).mockReturnValue({} as any);
 
       await getPolicySummary();
@@ -381,7 +381,7 @@ describe('policy-cache', () => {
 
       vi.mocked(extractCompanyIdFromTokenExport).mockReturnValue('company-from-token');
       vi.mocked(getPolicyContext).mockResolvedValue(mockPolicy);
-      vi.mocked(generateText).mockResolvedValue({ text: 'Summary' });
+      vi.mocked(generateText).mockResolvedValue({ text: 'Summary' } as any);
       vi.mocked(getModelWithOverride).mockReturnValue({} as any);
 
       await getPolicySummary();
@@ -400,7 +400,7 @@ describe('policy-cache', () => {
       });
 
       vi.mocked(getPolicyContext).mockResolvedValue(mockPolicy);
-      vi.mocked(generateText).mockResolvedValue({ text: 'Summary' });
+      vi.mocked(generateText).mockResolvedValue({ text: 'Summary' } as any);
       vi.mocked(getModelWithOverride).mockReturnValue({} as any);
 
       await getPolicySummary();
@@ -418,7 +418,7 @@ describe('policy-cache', () => {
 
       vi.mocked(extractCompanyIdFromTokenExport).mockReturnValue(undefined);
       vi.mocked(getPolicyContext).mockResolvedValue(mockPolicy);
-      vi.mocked(generateText).mockResolvedValue({ text: 'Summary' });
+      vi.mocked(generateText).mockResolvedValue({ text: 'Summary' } as any);
       vi.mocked(getModelWithOverride).mockReturnValue({} as any);
 
       const result = await getPolicySummary();
@@ -439,7 +439,7 @@ describe('policy-cache', () => {
 
       vi.mocked(extractCompanyIdFromTokenExport).mockReturnValue('company-from-token');
       vi.mocked(getPolicyContext).mockResolvedValue(mockPolicy);
-      vi.mocked(generateText).mockResolvedValue({ text: 'Summary' });
+      vi.mocked(generateText).mockResolvedValue({ text: 'Summary' } as any);
       vi.mocked(getModelWithOverride).mockReturnValue({} as any);
 
       await getPolicySummary();
@@ -460,7 +460,7 @@ describe('policy-cache', () => {
       });
 
       vi.mocked(getPolicyContext).mockResolvedValue(mockPolicy);
-      vi.mocked(generateText).mockResolvedValue({ text: mockSummary });
+      vi.mocked(generateText).mockResolvedValue({ text: mockSummary } as any);
       vi.mocked(getModelWithOverride).mockReturnValue({} as any);
 
       const result = await getPolicySummary();
@@ -610,7 +610,7 @@ describe('policy-cache', () => {
       });
 
       vi.mocked(getPolicyContext).mockResolvedValue(policy1);
-      vi.mocked(generateText).mockResolvedValue({ text: summary1 });
+      vi.mocked(generateText).mockResolvedValue({ text: summary1 } as any);
       vi.mocked(getModelWithOverride).mockReturnValue({} as any);
 
       const result1 = await getPolicySummary();
@@ -622,7 +622,7 @@ describe('policy-cache', () => {
       });
 
       vi.mocked(getPolicyContext).mockResolvedValue(policy2);
-      vi.mocked(generateText).mockResolvedValue({ text: summary2 });
+      vi.mocked(generateText).mockResolvedValue({ text: summary2 } as any);
 
       const result2 = await getPolicySummary();
 
@@ -655,7 +655,7 @@ describe('policy-cache', () => {
       const summary = 'Summary';
 
       vi.mocked(getPolicyContext).mockResolvedValue(policy);
-      vi.mocked(generateText).mockResolvedValue({ text: summary });
+      vi.mocked(generateText).mockResolvedValue({ text: summary } as any);
       vi.mocked(getModelWithOverride).mockReturnValue({} as any);
 
       // Company 1
@@ -689,7 +689,7 @@ describe('policy-cache', () => {
       });
 
       vi.mocked(getPolicyContext).mockResolvedValue(mockPolicy);
-      vi.mocked(generateText).mockResolvedValue({ text: 'Summary' });
+      vi.mocked(generateText).mockResolvedValue({ text: 'Summary' } as any);
       vi.mocked(getModelWithOverride).mockReturnValue({} as any);
 
       await getPolicySummary();
@@ -708,7 +708,7 @@ describe('policy-cache', () => {
       });
 
       vi.mocked(getPolicyContext).mockResolvedValue(mockPolicy);
-      vi.mocked(generateText).mockResolvedValue({ text: 'Summary' });
+      vi.mocked(generateText).mockResolvedValue({ text: 'Summary' } as any);
       vi.mocked(getModelWithOverride).mockReturnValue({} as any);
 
       await getPolicySummary();
@@ -723,7 +723,7 @@ describe('policy-cache', () => {
       const policy2 = 'Policy 2';
 
       vi.mocked(getPolicyContext).mockResolvedValue(policy1);
-      vi.mocked(generateText).mockResolvedValue({ text: 'Summary 1' });
+      vi.mocked(generateText).mockResolvedValue({ text: 'Summary 1' } as any);
       vi.mocked(getModelWithOverride).mockReturnValue({} as any);
 
       // Company 1 caches
@@ -739,7 +739,7 @@ describe('policy-cache', () => {
         token: undefined,
       });
       vi.mocked(getPolicyContext).mockResolvedValue(policy2);
-      vi.mocked(generateText).mockResolvedValue({ text: 'Summary 2' });
+      vi.mocked(generateText).mockResolvedValue({ text: 'Summary 2' } as any);
       await getPolicySummary();
 
       // Company 1 should still have its cached summary
@@ -760,7 +760,7 @@ describe('policy-cache', () => {
         token: undefined,
       });
 
-      vi.mocked(getPolicyContext).mockResolvedValue(null);
+      vi.mocked(getPolicyContext).mockResolvedValue(null as any);
 
       const result = await getPolicySummary();
 
@@ -894,7 +894,7 @@ describe('policy-cache', () => {
         token: undefined,
       });
 
-      vi.mocked(getPolicyContext).mockResolvedValue(null);
+      vi.mocked(getPolicyContext).mockResolvedValue(null as any);
 
       const result = await getPolicySummary();
 
@@ -921,7 +921,7 @@ describe('policy-cache', () => {
       });
 
       vi.mocked(getPolicyContext).mockResolvedValue('Non-empty policy');
-      vi.mocked(generateText).mockResolvedValue({ text: 'Summary' });
+      vi.mocked(generateText).mockResolvedValue({ text: 'Summary' } as any);
       vi.mocked(getModelWithOverride).mockReturnValue({} as any);
 
       await getPolicySummary();
@@ -953,7 +953,7 @@ describe('policy-cache', () => {
       });
 
       vi.mocked(getPolicyContext).mockResolvedValue(longPolicy);
-      vi.mocked(generateText).mockResolvedValue({ text: 'Summary' });
+      vi.mocked(generateText).mockResolvedValue({ text: 'Summary' } as any);
       vi.mocked(getModelWithOverride).mockReturnValue({} as any);
 
       await getPolicySummary();
@@ -971,7 +971,7 @@ describe('policy-cache', () => {
 
       vi.mocked(getPolicyContext).mockResolvedValue(policy);
       vi.mocked(truncateText).mockReturnValue('Truncated policy');
-      vi.mocked(generateText).mockResolvedValue({ text: 'Summary' });
+      vi.mocked(generateText).mockResolvedValue({ text: 'Summary' } as any);
       vi.mocked(getModelWithOverride).mockReturnValue({} as any);
 
       await getPolicySummary();
@@ -1010,7 +1010,7 @@ describe('policy-cache', () => {
       });
 
       vi.mocked(getPolicyContext).mockResolvedValue(policy);
-      vi.mocked(generateText).mockResolvedValue({ text: 'Summary' });
+      vi.mocked(generateText).mockResolvedValue({ text: 'Summary' } as any);
       vi.mocked(getModelWithOverride).mockReturnValue({} as any);
 
       await getPolicySummary();
@@ -1032,7 +1032,7 @@ describe('policy-cache', () => {
       });
 
       vi.mocked(getPolicyContext).mockResolvedValue(mockPolicy);
-      vi.mocked(generateText).mockResolvedValue({ text: mockSummary });
+      vi.mocked(generateText).mockResolvedValue({ text: mockSummary } as any);
       vi.mocked(getModelWithOverride).mockReturnValue({} as any);
 
       const result = await getPolicySummary();
@@ -1055,7 +1055,7 @@ describe('policy-cache', () => {
       });
 
       vi.mocked(getPolicyContext).mockResolvedValue(mockPolicy);
-      vi.mocked(generateText).mockResolvedValue({ text: mockSummary });
+      vi.mocked(generateText).mockResolvedValue({ text: mockSummary } as any);
       vi.mocked(getModelWithOverride).mockReturnValue({} as any);
 
       // First call - caches
@@ -1082,7 +1082,7 @@ describe('policy-cache', () => {
       });
 
       vi.mocked(getPolicyContext).mockResolvedValue(mockPolicy);
-      vi.mocked(generateText).mockResolvedValue({ text: mockSummary });
+      vi.mocked(generateText).mockResolvedValue({ text: mockSummary } as any);
       vi.mocked(getModelWithOverride).mockReturnValue({} as any);
 
       // Fetch and cache
@@ -1112,7 +1112,7 @@ describe('policy-cache', () => {
         companyId: 'company-1',
         token: undefined,
       });
-      vi.mocked(generateText).mockResolvedValue({ text: summary1 });
+      vi.mocked(generateText).mockResolvedValue({ text: summary1 } as any);
       const r1 = await getPolicySummary();
 
       // Company 2
@@ -1120,7 +1120,7 @@ describe('policy-cache', () => {
         companyId: 'company-2',
         token: undefined,
       });
-      vi.mocked(generateText).mockResolvedValue({ text: summary2 });
+      vi.mocked(generateText).mockResolvedValue({ text: summary2 } as any);
       const r2 = await getPolicySummary();
 
       // Back to Company 1
@@ -1146,7 +1146,7 @@ describe('policy-cache', () => {
       });
 
       vi.mocked(getPolicyContext).mockResolvedValue(mockPolicy);
-      vi.mocked(generateText).mockResolvedValue({ text: mockSummary });
+      vi.mocked(generateText).mockResolvedValue({ text: mockSummary } as any);
       vi.mocked(getModelWithOverride).mockReturnValue({} as any);
 
       // Execute full flow
@@ -1175,7 +1175,7 @@ describe('policy-cache', () => {
       });
 
       vi.mocked(getPolicyContext).mockResolvedValue(mockPolicy);
-      vi.mocked(generateText).mockResolvedValue({ text: mockSummary });
+      vi.mocked(generateText).mockResolvedValue({ text: mockSummary } as any);
       vi.mocked(getModelWithOverride).mockReturnValue({} as any);
 
       // Cache something
@@ -1198,7 +1198,7 @@ describe('policy-cache', () => {
       });
 
       vi.mocked(getPolicyContext).mockResolvedValue(mockPolicy);
-      vi.mocked(generateText).mockResolvedValue({ text: mockSummary });
+      vi.mocked(generateText).mockResolvedValue({ text: mockSummary } as any);
       vi.mocked(getModelWithOverride).mockReturnValue({} as any);
 
       // First call caches
@@ -1229,14 +1229,14 @@ describe('policy-cache', () => {
         companyId: 'company-1',
         token: undefined,
       });
-      vi.mocked(generateText).mockResolvedValue({ text: 'Summary 1' });
+      vi.mocked(generateText).mockResolvedValue({ text: 'Summary 1' } as any);
       await getPolicySummary();
 
       vi.mocked(getRequestContext).mockReturnValue({
         companyId: 'company-2',
         token: undefined,
       });
-      vi.mocked(generateText).mockResolvedValue({ text: 'Summary 2' });
+      vi.mocked(generateText).mockResolvedValue({ text: 'Summary 2' } as any);
       await getPolicySummary();
 
       // Clear ALL cache
@@ -1267,7 +1267,7 @@ describe('policy-cache', () => {
       });
 
       vi.mocked(getPolicyContext).mockResolvedValue('Policy');
-      vi.mocked(generateText).mockResolvedValue({ text: 'Summary' });
+      vi.mocked(generateText).mockResolvedValue({ text: 'Summary' } as any);
       vi.mocked(getModelWithOverride).mockReturnValue({} as any);
 
       await getPolicySummary();
@@ -1312,7 +1312,7 @@ describe('policy-cache', () => {
       });
 
       vi.mocked(getPolicyContext).mockResolvedValue('Policy');
-      vi.mocked(generateText).mockResolvedValue({ text: 'Summary' });
+      vi.mocked(generateText).mockResolvedValue({ text: 'Summary' } as any);
       vi.mocked(getModelWithOverride).mockReturnValue({} as any);
 
       await getPolicySummary();
@@ -1334,7 +1334,7 @@ describe('policy-cache', () => {
       });
 
       vi.mocked(getPolicyContext).mockResolvedValue('Policy');
-      vi.mocked(generateText).mockResolvedValue({ text: 'Summary' });
+      vi.mocked(generateText).mockResolvedValue({ text: 'Summary' } as any);
       vi.mocked(getModelWithOverride).mockReturnValue({} as any);
 
       await getPolicySummary();
@@ -1357,7 +1357,7 @@ describe('policy-cache', () => {
       });
 
       vi.mocked(getPolicyContext).mockResolvedValue('Policy');
-      vi.mocked(generateText).mockResolvedValue({ text: summary });
+      vi.mocked(generateText).mockResolvedValue({ text: summary } as any);
       vi.mocked(getModelWithOverride).mockReturnValue({} as any);
 
       await getPolicySummary();
@@ -1374,7 +1374,7 @@ describe('policy-cache', () => {
 
       vi.mocked(extractCompanyIdFromTokenExport).mockReturnValue('company-from-token');
       vi.mocked(getPolicyContext).mockResolvedValue('Policy');
-      vi.mocked(generateText).mockResolvedValue({ text: 'Summary' });
+      vi.mocked(generateText).mockResolvedValue({ text: 'Summary' } as any);
       vi.mocked(getModelWithOverride).mockReturnValue({} as any);
 
       await getPolicySummary();
@@ -1394,7 +1394,7 @@ describe('policy-cache', () => {
         companyId: 'company-1',
         token: undefined,
       });
-      vi.mocked(generateText).mockResolvedValue({ text: 'Summary 1' });
+      vi.mocked(generateText).mockResolvedValue({ text: 'Summary 1' } as any);
       await getPolicySummary();
 
       const stats1 = getPolicyCacheStats();
@@ -1406,7 +1406,7 @@ describe('policy-cache', () => {
         companyId: 'company-2',
         token: undefined,
       });
-      vi.mocked(generateText).mockResolvedValue({ text: 'Summary 2' });
+      vi.mocked(generateText).mockResolvedValue({ text: 'Summary 2' } as any);
       await getPolicySummary();
 
       const stats2 = getPolicyCacheStats();
@@ -1428,7 +1428,7 @@ describe('policy-cache', () => {
       });
 
       vi.mocked(getPolicyContext).mockResolvedValue(specialPolicy);
-      vi.mocked(generateText).mockResolvedValue({ text: 'Summary' });
+      vi.mocked(generateText).mockResolvedValue({ text: 'Summary' } as any);
       vi.mocked(getModelWithOverride).mockReturnValue({} as any);
 
       const result = await getPolicySummary();
@@ -1444,7 +1444,7 @@ describe('policy-cache', () => {
       });
 
       vi.mocked(getPolicyContext).mockResolvedValue('Policy');
-      vi.mocked(generateText).mockResolvedValue({ text: 'Summary' });
+      vi.mocked(generateText).mockResolvedValue({ text: 'Summary' } as any);
       vi.mocked(getModelWithOverride).mockReturnValue({} as any);
 
       const result = await getPolicySummary();
@@ -1463,7 +1463,7 @@ describe('policy-cache', () => {
       });
 
       vi.mocked(getPolicyContext).mockResolvedValue(unicodePolicy);
-      vi.mocked(generateText).mockResolvedValue({ text: 'Summary' });
+      vi.mocked(generateText).mockResolvedValue({ text: 'Summary' } as any);
       vi.mocked(getModelWithOverride).mockReturnValue({} as any);
 
       const result = await getPolicySummary();
@@ -1479,7 +1479,7 @@ describe('policy-cache', () => {
       });
 
       vi.mocked(getPolicyContext).mockResolvedValue(hugePol);
-      vi.mocked(generateText).mockResolvedValue({ text: 'Summary' });
+      vi.mocked(generateText).mockResolvedValue({ text: 'Summary' } as any);
       vi.mocked(getModelWithOverride).mockReturnValue({} as any);
 
       const result = await getPolicySummary();
@@ -1496,7 +1496,7 @@ describe('policy-cache', () => {
       });
 
       vi.mocked(getPolicyContext).mockResolvedValue('Policy');
-      vi.mocked(generateText).mockResolvedValue({ text: 'Summary' });
+      vi.mocked(generateText).mockResolvedValue({ text: 'Summary' } as any);
       vi.mocked(getModelWithOverride).mockReturnValue({} as any);
 
       const promises = Array(10)
@@ -1522,7 +1522,7 @@ describe('policy-cache', () => {
       });
 
       vi.mocked(getPolicyContext).mockResolvedValue('Policy');
-      vi.mocked(generateText).mockResolvedValue({ text: 'Summary' });
+      vi.mocked(generateText).mockResolvedValue({ text: 'Summary' } as any);
       vi.mocked(getModelWithOverride).mockReturnValue({} as any);
 
       await getPolicySummary();

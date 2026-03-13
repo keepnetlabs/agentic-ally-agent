@@ -222,7 +222,7 @@ describe('phishing-editor-llm', () => {
         aiModel: model,
         pages: [
           { type: 'login', template: '<html>1</html>' },
-          { type: 'survey', template: '<html>2</html>' },
+          { type: 'survey' as any, template: '<html>2</html>' },
         ],
         mode: 'edit',
         escapedInstruction: 'Edit',
@@ -254,7 +254,7 @@ describe('phishing-editor-llm', () => {
 
     it('passes page data to user prompt generator', async () => {
       const page1 = { type: 'login', template: '<html>Login</html>' };
-      const page2 = { type: 'survey', template: '<html>Survey</html>' };
+      const page2 = { type: 'survey' as any, template: '<html>Survey</html>' };
 
       const promises = createLandingEditPromises({
         aiModel: model,
@@ -353,7 +353,7 @@ describe('phishing-editor-llm', () => {
       const pages = Array(10)
         .fill(null)
         .map((_, i) => ({
-          type: 'login',
+          type: 'login' as const,
           template: `<html>${i}</html>`,
         }));
 
@@ -528,7 +528,7 @@ describe('phishing-editor-llm', () => {
     it('handles survey page type', async () => {
       const promises = createLandingEditPromises({
         aiModel: model,
-        pages: [{ type: 'survey', template: '<html></html>' }],
+        pages: [{ type: 'survey' as any, template: '<html></html>' }],
         mode: 'edit',
         escapedInstruction: 'Edit',
         brandContext: '',
@@ -538,7 +538,7 @@ describe('phishing-editor-llm', () => {
       await Promise.all(promises);
 
       expect(prompts.getLandingPageUserPrompt).toHaveBeenCalledWith(
-        { type: 'survey', template: '<html></html>' },
+        { type: 'survey' as any, template: '<html></html>' },
         'Edit',
         ''
       );
@@ -549,7 +549,7 @@ describe('phishing-editor-llm', () => {
         aiModel: model,
         pages: [
           { type: 'login', template: '<html>1</html>' },
-          { type: 'survey', template: '<html>2</html>' },
+          { type: 'survey' as any, template: '<html>2</html>' },
           { type: 'login', template: '<html>3</html>' },
         ],
         mode: 'edit',

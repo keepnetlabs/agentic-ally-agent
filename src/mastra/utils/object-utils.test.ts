@@ -521,7 +521,7 @@ describe('object-utils', () => {
         const date = new Date('2024-01-01');
         const target = { a: 1 };
         const source = { date };
-        const result = deepMerge(target, source);
+        const result = deepMerge(target, source) as any;
         // Date is an object, so it goes through recursive merge path
         // Date objects have no enumerable properties, so result is {}
         expect(result.date).toEqual({});
@@ -531,7 +531,7 @@ describe('object-utils', () => {
         const target = { a: 1 };
         const fn = () => 'test';
         const source = { fn };
-        const result = deepMerge(target, source);
+        const result = deepMerge(target, source) as any;
         // Source values are directly assigned, so functions are preserved
         expect(typeof result.fn).toBe('function');
         expect(result.fn).toBe(fn);
@@ -541,7 +541,7 @@ describe('object-utils', () => {
         const target = { a: 1 };
         const regex = /test/g;
         const source = { regex };
-        const result = deepMerge(target, source);
+        const result = deepMerge(target, source) as any;
         // RegExp is an object, so it goes through recursive merge path
         // RegExp objects have no enumerable properties, so result is {}
         expect(result.regex).toEqual({});

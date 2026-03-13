@@ -29,7 +29,7 @@ import {
 } from '../../utils/prompt-builders/autonomous-prompts';
 
 interface MicrolearningRecommendation {
-  title: string;
+  title?: string;
   objective?: string;
   description?: string;
   rationale?: string;

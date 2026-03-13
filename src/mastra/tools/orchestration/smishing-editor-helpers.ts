@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { uuidv4 } from '../../utils/core/id-utils';
 import { cleanResponse } from '../../utils/content-processors/json-cleaner';
 import { KVService } from '../../services/kv-service';
 import { getLogger } from '../../utils/core/logger';
@@ -130,9 +129,6 @@ export async function streamEditResultsToUI(
   landingMeta: Pick<ExistingLanding, 'name' | 'description' | 'method' | 'difficulty'> | null
 ): Promise<void> {
   try {
-    const messageId = uuidv4();
-    await writer.write({ type: 'text-start', id: messageId });
-
     if (editedSms) {
       const smsObject = {
         smishingId,
@@ -144,9 +140,11 @@ export async function streamEditResultsToUI(
       const encodedSms = Buffer.from(smsJson).toString('base64');
 
       await writer.write({
-        type: 'text-delta',
-        id: messageId,
-        delta: `::ui:smishing_sms::${encodedSms}::/ui:smishing_sms::\n`,
+        type: 'data-ui-signal',
+        data: {
+          signal: 'smishing_sms',
+          message: `::ui:smishing_sms::${encodedSms}::/ui:smishing_sms::\n`,
+        },
       });
     }
 
@@ -162,13 +160,13 @@ export async function streamEditResultsToUI(
       const encodedLanding = Buffer.from(landingJson).toString('base64');
 
       await writer.write({
-        type: 'text-delta',
-        id: messageId,
-        delta: `::ui:smishing_landing_page::${encodedLanding}::/ui:smishing_landing_page::\n`,
+        type: 'data-ui-signal',
+        data: {
+          signal: 'smishing_landing_page',
+          message: `::ui:smishing_landing_page::${encodedLanding}::/ui:smishing_landing_page::\n`,
+        },
       });
     }
-
-    await writer.write({ type: 'text-end', id: messageId });
   } catch (err) {
     const error = normalizeError(err);
     const errorInfo = errorService.external(error.message, {

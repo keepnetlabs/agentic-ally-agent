@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeAll } from 'vitest';
 import { deepfakeVideoAgent } from './deepfake-video-agent';
 import { AGENT_NAMES, AGENT_IDS } from '../constants';
 
@@ -17,7 +17,13 @@ vi.mock('../model-providers', () => ({
 }));
 
 describe('deepfakeVideoAgent', () => {
-  const instructions = deepfakeVideoAgent.instructions;
+  let instructions: string;
+  let tools: Record<string, any>;
+
+  beforeAll(async () => {
+    instructions = (await deepfakeVideoAgent.getInstructions()) as string;
+    tools = await deepfakeVideoAgent.listTools();
+  });
 
   describe('Basic Configuration', () => {
     it('should be defined', () => {
@@ -30,15 +36,15 @@ describe('deepfakeVideoAgent', () => {
     });
 
     it('should have tools configured', () => {
-      expect(deepfakeVideoAgent.tools).toBeDefined();
-      expect(Object.keys(deepfakeVideoAgent.tools)).toContain('listHeyGenAvatars');
-      expect(Object.keys(deepfakeVideoAgent.tools)).toContain('listHeyGenVoices');
-      expect(Object.keys(deepfakeVideoAgent.tools)).toContain('generateDeepfakeVideo');
-      expect(Object.keys(deepfakeVideoAgent.tools)).toContain('showReasoning');
+      expect(tools).toBeDefined();
+      expect(Object.keys(tools)).toContain('listHeyGenAvatars');
+      expect(Object.keys(tools)).toContain('listHeyGenVoices');
+      expect(Object.keys(tools)).toContain('generateDeepfakeVideo');
+      expect(Object.keys(tools)).toContain('showReasoning');
     });
 
     it('should have exactly 4 tools', () => {
-      expect(Object.keys(deepfakeVideoAgent.tools)).toHaveLength(4);
+      expect(Object.keys(tools)).toHaveLength(4);
     });
 
     it('should have model configured', () => {

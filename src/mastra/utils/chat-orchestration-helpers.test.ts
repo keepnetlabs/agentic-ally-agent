@@ -235,7 +235,6 @@ describe('chat-orchestration-helpers', () => {
 
       expect(result).toEqual(mockStream);
       expect(mockAgent.stream).toHaveBeenCalledWith('final prompt', {
-        format: 'aisdk',
         memory: {
           thread: 'thread-123',
           resource: 'agentic-ally-user',
@@ -253,7 +252,6 @@ describe('chat-orchestration-helpers', () => {
       expect(mockAgent.stream).toHaveBeenCalledTimes(1);
       const callArgs = mockAgent.stream.mock.calls[0];
       expect(callArgs[0]).toBe('test prompt');
-      expect(callArgs[1].format).toBe('aisdk');
       expect(callArgs[1].memory.thread).toBe('thread-456');
       expect(callArgs[1].memory.resource).toBe('agentic-ally-user');
     });
@@ -290,7 +288,7 @@ describe('chat-orchestration-helpers', () => {
       expect(callArgs.memory.resource).toBe('agentic-ally-user');
     });
 
-    it('should use aisdk format', async () => {
+    it('should not include format option (removed in Mastra 1.1.0)', async () => {
       const mockAgent = {
         stream: vi.fn().mockResolvedValue({}),
       } as any;
@@ -298,7 +296,7 @@ describe('chat-orchestration-helpers', () => {
       await createAgentStream(mockAgent, 'prompt', 'thread-123', 'agent');
 
       const callArgs = mockAgent.stream.mock.calls[0][1];
-      expect(callArgs.format).toBe('aisdk');
+      expect(callArgs.format).toBeUndefined();
     });
   });
 });

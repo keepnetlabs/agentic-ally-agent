@@ -25,23 +25,23 @@ describe('OutOfScopeAgent', () => {
   });
 
   describe('instructions', () => {
-    it('should include scope boundary rules', () => {
-      const instructions = (outOfScopeAgent as any).instructions ?? '';
+    it('should include scope boundary rules', async () => {
+      const instructions = await outOfScopeAgent.getInstructions();
       expect(instructions).toContain('scope boundary');
     });
 
-    it('should instruct NOT to answer the user question', () => {
-      const instructions = (outOfScopeAgent as any).instructions ?? '';
+    it('should instruct NOT to answer the user question', async () => {
+      const instructions = await outOfScopeAgent.getInstructions();
       expect(instructions).toContain('Do NOT answer');
     });
 
-    it('should instruct NOT to guess or fabricate', () => {
-      const instructions = (outOfScopeAgent as any).instructions ?? '';
+    it('should instruct NOT to guess or fabricate', async () => {
+      const instructions = await outOfScopeAgent.getInstructions();
       expect(instructions).toContain('Do NOT guess');
     });
 
-    it('should list supported capabilities', () => {
-      const instructions = (outOfScopeAgent as any).instructions ?? '';
+    it('should list supported capabilities', async () => {
+      const instructions = await outOfScopeAgent.getInstructions();
       expect(instructions).toContain('Security awareness training');
       expect(instructions).toContain('Phishing email simulations');
       expect(instructions).toContain('Smishing');
@@ -51,13 +51,13 @@ describe('OutOfScopeAgent', () => {
       expect(instructions).toContain('Security policy guidance');
     });
 
-    it('should mention language matching rule', () => {
-      const instructions = (outOfScopeAgent as any).instructions ?? '';
+    it('should mention language matching rule', async () => {
+      const instructions = await outOfScopeAgent.getInstructions();
       expect(instructions).toContain('language');
     });
 
-    it('should suggest contacting support team', () => {
-      const instructions = (outOfScopeAgent as any).instructions ?? '';
+    it('should suggest contacting support team', async () => {
+      const instructions = await outOfScopeAgent.getInstructions();
       expect(instructions).toContain('support team');
     });
   });

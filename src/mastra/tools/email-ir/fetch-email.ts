@@ -17,7 +17,7 @@ import { errorService } from '../../services/error-service';
 export const fetchEmailInputSchema = z.object({
   id: z.string().trim().min(1).max(128),
   accessToken: z.string().trim().min(1).max(4096),
-  apiBaseUrl: z.string().trim().url().max(2048).optional().default('https://test-api.devkeepnet.com'),
+  apiBaseUrl: z.string().trim().url().max(2048).optional(),
 });
 
 export const fetchEmailTool = createTool({
@@ -25,8 +25,8 @@ export const fetchEmailTool = createTool({
   description: 'Fetches email data from the Keepnet API using an ID',
   inputSchema: fetchEmailInputSchema,
   outputSchema: EmailIREmailDataSchema,
-  execute: async ({ context }) => {
-    const { id, accessToken, apiBaseUrl } = context;
+  execute: async (inputData) => {
+    const { id, accessToken, apiBaseUrl = 'https://test-api.devkeepnet.com' } = inputData;
     const ctx = createLogContext(id, 'fetch-email');
 
     return await withRetry(async () => {

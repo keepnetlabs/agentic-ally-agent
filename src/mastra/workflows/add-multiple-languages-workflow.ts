@@ -7,7 +7,10 @@ import { getLogger } from '../utils/core/logger';
 import { normalizeError, logErrorInfo } from '../utils/core/error-utils';
 import { errorService } from '../services/error-service';
 
-import { addMultipleLanguagesInputSchema, finalMultiLanguageResultSchema } from '../schemas/add-language-schemas';
+import {
+  addMultipleLanguagesStepInputSchema,
+  finalMultiLanguageResultSchema,
+} from '../schemas/add-language-schemas';
 
 /** Shape of add-language workflow run result (success or error). */
 interface AddLanguageRunResult {
@@ -44,7 +47,7 @@ function extractFromAddLanguageResult(result: AddLanguageRunResult | null | unde
 export const processMultipleLanguagesStep = createStep({
   id: 'process-multiple-languages',
   description: 'Process multiple languages in parallel using add-language-workflow',
-  inputSchema: addMultipleLanguagesInputSchema,
+  inputSchema: addMultipleLanguagesStepInputSchema,
   outputSchema: finalMultiLanguageResultSchema,
   execute: async ({ inputData }) => {
     const logger = getLogger('ProcessMultipleLanguages');
@@ -227,7 +230,7 @@ export const processMultipleLanguagesStep = createStep({
 const addMultipleLanguagesWorkflow = createWorkflow({
   id: 'add-multiple-languages-workflow',
   description: 'Add multiple languages to existing microlearning in parallel',
-  inputSchema: addMultipleLanguagesInputSchema,
+  inputSchema: addMultipleLanguagesStepInputSchema,
   outputSchema: finalMultiLanguageResultSchema,
 }).then(processMultipleLanguagesStep);
 

@@ -5,12 +5,12 @@ import '../../../../src/__tests__/setup';
 import * as workflowModule from '../../workflows/create-phishing-workflow';
 import { buildRoutingContext, extractArtifactIdsFromRoutingContext } from '../../utils/chat-request-helpers';
 
-// Mock the workflow module
+// Mock the workflow module (v1: createRun, not createRunAsync)
 vi.mock('../../workflows/create-phishing-workflow', () => {
-  const mockCreateRunAsync = vi.fn();
+  const mockCreateRun = vi.fn();
   return {
     createPhishingWorkflow: {
-      createRunAsync: mockCreateRunAsync,
+      createRun: mockCreateRun,
     },
   };
 });
@@ -60,16 +60,16 @@ describe('phishingWorkflowExecutorTool', () => {
     write: vi.fn().mockResolvedValue(undefined),
   };
 
-  let mockCreateRunAsync: ReturnType<typeof vi.fn>;
+  let mockCreateRun: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     vi.clearAllMocks();
 
-    // Get the mocked createRunAsync from the module
-    mockCreateRunAsync = workflowModule.createPhishingWorkflow.createRunAsync as any;
+    // Get the mocked createRun from the module (v1 API)
+    mockCreateRun = workflowModule.createPhishingWorkflow.createRun as any;
 
     // Setup default workflow mock
-    mockCreateRunAsync.mockResolvedValue(mockWorkflowRun);
+    mockCreateRun.mockResolvedValue(mockWorkflowRun);
     mockWorkflowRun.start.mockResolvedValue(mockWorkflowResult);
   });
 
@@ -80,7 +80,8 @@ describe('phishingWorkflowExecutorTool', () => {
         topic: 'Reset Password',
       };
 
-      const result = await phishingWorkflowExecutorTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await phishingWorkflowExecutorTool.execute!(input as any, {}) as any;
       expect(result).toBeDefined();
       expect(result.success).toBe(true);
     });
@@ -97,7 +98,8 @@ describe('phishingWorkflowExecutorTool', () => {
         },
       };
 
-      const result = await phishingWorkflowExecutorTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await phishingWorkflowExecutorTool.execute!(input as any, {}) as any;
       expect(result.success).toBe(true);
     });
 
@@ -108,7 +110,8 @@ describe('phishingWorkflowExecutorTool', () => {
         difficulty: 'medium',
       };
 
-      const result = await phishingWorkflowExecutorTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await phishingWorkflowExecutorTool.execute!(input as any, {}) as any;
       expect(result.success).toBe(true);
     });
 
@@ -119,7 +122,8 @@ describe('phishingWorkflowExecutorTool', () => {
         language: 'tr-tr',
       };
 
-      const result = await phishingWorkflowExecutorTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await phishingWorkflowExecutorTool.execute!(input as any, {}) as any;
       expect(result.success).toBe(true);
     });
 
@@ -129,7 +133,8 @@ describe('phishingWorkflowExecutorTool', () => {
       };
 
       // Tool framework validates input schema
-      const result = await phishingWorkflowExecutorTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await phishingWorkflowExecutorTool.execute!(input as any, {}) as any;
       expect(result).toBeDefined();
       if (result && typeof result === 'object' && 'error' in result) {
         expect(result.error).toBeTruthy();
@@ -142,7 +147,8 @@ describe('phishingWorkflowExecutorTool', () => {
       };
 
       // Tool framework validates input schema
-      const result = await phishingWorkflowExecutorTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await phishingWorkflowExecutorTool.execute!(input as any, {}) as any;
       expect(result).toBeDefined();
       if (result && typeof result === 'object' && 'error' in result) {
         expect(result.error).toBeTruthy();
@@ -161,9 +167,10 @@ describe('phishingWorkflowExecutorTool', () => {
         includeLandingPage: true,
       };
 
-      await phishingWorkflowExecutorTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      await phishingWorkflowExecutorTool.execute!(input as any, {});
 
-      expect(mockCreateRunAsync).toHaveBeenCalled();
+      expect(mockCreateRun).toHaveBeenCalled();
       expect(mockWorkflowRun.start).toHaveBeenCalledWith(
         expect.objectContaining({
           inputData: expect.objectContaining({
@@ -183,7 +190,8 @@ describe('phishingWorkflowExecutorTool', () => {
         topic: 'Reset Password',
       };
 
-      await phishingWorkflowExecutorTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      await phishingWorkflowExecutorTool.execute!(input as any, {});
 
       expect(mockWorkflowRun.start).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -201,7 +209,8 @@ describe('phishingWorkflowExecutorTool', () => {
         difficulty: 'Advanced',
       };
 
-      await phishingWorkflowExecutorTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      await phishingWorkflowExecutorTool.execute!(input as any, {});
 
       expect(mockWorkflowRun.start).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -218,7 +227,8 @@ describe('phishingWorkflowExecutorTool', () => {
         topic: 'Reset Password',
       };
 
-      await phishingWorkflowExecutorTool.execute({ context: input, writer: mockWriter } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      await phishingWorkflowExecutorTool.execute!(input as any, { writer: mockWriter } as any);
 
       expect(mockWorkflowRun.start).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -239,7 +249,8 @@ describe('phishingWorkflowExecutorTool', () => {
         language: 'en-gb',
       };
 
-      const result = await phishingWorkflowExecutorTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await phishingWorkflowExecutorTool.execute!(input as any, {}) as any;
 
       expect(result.success).toBe(true);
       expect(result.status).toBe('success');
@@ -257,7 +268,8 @@ describe('phishingWorkflowExecutorTool', () => {
         topic: 'Reset Password',
       };
 
-      const result = await phishingWorkflowExecutorTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await phishingWorkflowExecutorTool.execute!(input as any, {}) as any;
 
       expect(result.data?.method).toBe('email');
       expect(result.data?.scenario).toBe('password-reset');
@@ -274,17 +286,20 @@ describe('phishingWorkflowExecutorTool', () => {
         topic: 'Reset Password',
       };
 
-      await phishingWorkflowExecutorTool.execute({ context: input, writer: mockWriter } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      await phishingWorkflowExecutorTool.execute!(input as any, { writer: mockWriter } as any);
 
       expect(mockWriter.write).toHaveBeenCalled();
       const writeCalls = mockWriter.write.mock.calls;
 
-      // Should have text-start, text-delta (email), text-delta (landing), text-end
-      expect(writeCalls.length).toBeGreaterThanOrEqual(3);
+      // v1: data-ui-signal format (email + landing)
+      expect(writeCalls.length).toBeGreaterThanOrEqual(2);
 
-      // Check for email streaming
+      // Check for email streaming (data-ui-signal with phishing_email)
       const emailCall = writeCalls.find(
-        call => call[0].type === 'text-delta' && call[0].delta?.includes('phishing_email')
+        call =>
+          (call[0].type === 'data-ui-signal' && call[0].data?.signal === 'phishing_email') ||
+          (call[0].type === 'text-delta' && call[0].delta?.includes('phishing_email'))
       );
       expect(emailCall).toBeDefined();
     });
@@ -300,7 +315,8 @@ describe('phishingWorkflowExecutorTool', () => {
       };
 
       // Should still succeed even if streaming fails
-      const result = await phishingWorkflowExecutorTool.execute({ context: input, writer: errorWriter } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await phishingWorkflowExecutorTool.execute!(input as any, { writer: errorWriter } as any) as any;
       expect(result.success).toBe(true);
     });
 
@@ -310,7 +326,8 @@ describe('phishingWorkflowExecutorTool', () => {
         topic: 'Reset Password',
       };
 
-      await phishingWorkflowExecutorTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      await phishingWorkflowExecutorTool.execute!(input as any, {});
 
       expect(mockWriter.write).not.toHaveBeenCalled();
     });
@@ -322,12 +339,19 @@ describe('phishingWorkflowExecutorTool', () => {
         language: 'en-gb',
       };
 
-      await phishingWorkflowExecutorTool.execute({ context: input, writer: mockWriter } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      await phishingWorkflowExecutorTool.execute!(input as any, { writer: mockWriter } as any);
 
+      // v1: support both text-delta and data-ui-signal formats
       const uiDeltas = mockWriter.write.mock.calls
         .map(call => call[0])
-        .filter(event => event?.type === 'text-delta' && typeof event?.delta === 'string')
-        .map(event => event.delta as string);
+        .filter(Boolean)
+        .flatMap(event => {
+          if (event?.type === 'text-delta' && typeof event?.delta === 'string') return [event.delta as string];
+          if (event?.type === 'data-ui-signal' && typeof event?.data?.message === 'string')
+            return [event.data.message as string];
+          return [];
+        });
 
       expect(uiDeltas.length).toBeGreaterThan(0);
 
@@ -355,7 +379,8 @@ describe('phishingWorkflowExecutorTool', () => {
         topic: 'Reset Password',
       };
 
-      const result = await phishingWorkflowExecutorTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await phishingWorkflowExecutorTool.execute!(input as any, {}) as any;
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
       expect(result.message).toContain('produced no output');
@@ -369,7 +394,8 @@ describe('phishingWorkflowExecutorTool', () => {
         topic: 'Reset Password',
       };
 
-      const result = await phishingWorkflowExecutorTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await phishingWorkflowExecutorTool.execute!(input as any, {}) as any;
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
     });
@@ -382,7 +408,8 @@ describe('phishingWorkflowExecutorTool', () => {
         topic: 'Reset Password',
       };
 
-      const result = await phishingWorkflowExecutorTool.execute({ context: input } as any);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await phishingWorkflowExecutorTool.execute!(input as any, {}) as any;
 
       expect(result).toHaveProperty('success');
       expect(typeof result.success).toBe('boolean');

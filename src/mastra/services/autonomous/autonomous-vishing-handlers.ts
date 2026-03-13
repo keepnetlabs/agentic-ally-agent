@@ -132,13 +132,13 @@ Language: All call content must be in ${language}.`;
 }
 
 async function getAgentPhoneNumberId(): Promise<string | undefined> {
-  const result = await listPhoneNumbersTool.execute({ context: {} } as never);
+  if (!listPhoneNumbersTool.execute) throw new Error('List phone numbers tool is not executable');
+  const result: Record<string, any> = await listPhoneNumbersTool.execute({}, {});
   if (!result?.success || !result.phoneNumbers?.length) {
     logger.warn('No phone numbers available for vishing call', { error: result?.error });
     return undefined;
   }
-  const first = result.phoneNumbers[0];
-  return first?.phone_number_id;
+  return result.phoneNumbers[0]?.phone_number_id;
 }
 
 /**

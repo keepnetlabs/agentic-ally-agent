@@ -10,7 +10,7 @@
  * Supports: text updates, tone changes, language translation, landing page edits
  */
 
-import { createTool } from '@mastra/core/tools';
+import { createTool, ToolExecutionContext } from '@mastra/core/tools';
 import { getModelWithOverride } from '../../model-providers';
 import { getLogger } from '../../utils/core/logger';
 import { errorService } from '../../services/error-service';
@@ -57,8 +57,9 @@ export const smishingEditorTool = createTool({
   description: 'Edit and customize existing smishing templates using natural language instructions',
   inputSchema: smishingEditorSchema,
 
-  execute: async ({ context, writer }) => {
-    const { smishingId, editInstruction, mode, language: inputLanguage, modelProvider, model } = context;
+  execute: async (inputData, ctx?: ToolExecutionContext) => {
+    const { smishingId, editInstruction, mode, language: inputLanguage, modelProvider, model } = inputData;
+    const writer = ctx?.writer;
     const logger = getLogger('SmishingEditor');
 
     try {
@@ -109,7 +110,7 @@ export const smishingEditorTool = createTool({
       const aiModel = getModelWithOverride(modelProvider, model);
 
       let brandContext = '';
-      if (context.hasBrandUpdate) {
+      if (inputData.hasBrandUpdate) {
         logger.info('Brand update requested in edit instruction', {
           smishingId,
           editInstruction: summarizeForLog(editInstruction),

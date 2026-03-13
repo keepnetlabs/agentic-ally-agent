@@ -9,25 +9,25 @@ import { getPolicySummary } from '../../utils/core/policy-cache';
 // Mock dependencies
 vi.mock('../../workflows/create-microlearning-workflow', () => ({
   createMicrolearningWorkflow: {
-    createRunAsync: vi.fn(),
+    createRun: vi.fn(),
   },
 }));
 
 vi.mock('../../workflows/add-language-workflow', () => ({
   addLanguageWorkflow: {
-    createRunAsync: vi.fn(),
+    createRun: vi.fn(),
   },
 }));
 
 vi.mock('../../workflows/add-multiple-languages-workflow', () => ({
   addMultipleLanguagesWorkflow: {
-    createRunAsync: vi.fn(),
+    createRun: vi.fn(),
   },
 }));
 
 vi.mock('../../workflows/update-microlearning-workflow', () => ({
   updateMicrolearningWorkflow: {
-    createRunAsync: vi.fn(),
+    createRun: vi.fn(),
   },
 }));
 
@@ -57,10 +57,10 @@ describe('WorkflowExecutorTool', () => {
     vi.clearAllMocks();
 
     // Setup default mock returns
-    (createMicrolearningWorkflow.createRunAsync as any).mockResolvedValue(mockRun);
-    (addLanguageWorkflow.createRunAsync as any).mockResolvedValue(mockRun);
-    (addMultipleLanguagesWorkflow.createRunAsync as any).mockResolvedValue(mockRun);
-    (updateMicrolearningWorkflow.createRunAsync as any).mockResolvedValue(mockRun);
+    (createMicrolearningWorkflow.createRun as any).mockResolvedValue(mockRun);
+    (addLanguageWorkflow.createRun as any).mockResolvedValue(mockRun);
+    (addMultipleLanguagesWorkflow.createRun as any).mockResolvedValue(mockRun);
+    (updateMicrolearningWorkflow.createRun as any).mockResolvedValue(mockRun);
     (getPolicySummary as any).mockResolvedValue('Mock Policy Context');
   });
 
@@ -84,24 +84,18 @@ describe('WorkflowExecutorTool', () => {
         department: 'HR',
       };
 
-      const result: any = await workflowExecutorTool.execute({
-        context: params as any,
-        writer: mockWriter as any,
-        runId: 'test-run-id',
-        runtimeContext: {} as any,
-        suspend: async () => {},
-      });
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result: any = await workflowExecutorTool.execute!(params as any, { writer: mockWriter } as any);
 
       expect(getPolicySummary).toHaveBeenCalled();
-      expect(createMicrolearningWorkflow.createRunAsync).toHaveBeenCalled();
+      expect(createMicrolearningWorkflow.createRun).toHaveBeenCalled();
 
-      // Verify writer passed in inputData
+      // Verify inputData passed to workflow
       expect(mockRun.start).toHaveBeenCalledWith(
         expect.objectContaining({
           inputData: expect.objectContaining({
             prompt: 'Create a course about safety',
             department: 'HR',
-            writer: mockWriter,
           }),
         })
       );
@@ -120,13 +114,8 @@ describe('WorkflowExecutorTool', () => {
         model: 'gpt-4o',
       };
 
-      await workflowExecutorTool.execute({
-        context: params as any,
-        writer: mockWriter as any,
-        runId: 'test-run-id',
-        runtimeContext: {} as any,
-        suspend: async () => {},
-      });
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      await workflowExecutorTool.execute!(params as any, { writer: mockWriter } as any);
 
       expect(mockRun.start).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -156,29 +145,27 @@ describe('WorkflowExecutorTool', () => {
         prompt: 'test prompt',
       };
 
-      await workflowExecutorTool.execute({
-        context: params as any,
-        writer: mockWriter as any,
-        runId: 'test-run-id',
-        runtimeContext: {} as any,
-        suspend: async () => {},
-      });
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      await workflowExecutorTool.execute!(params as any, { writer: mockWriter } as any);
 
-      // Should call writer.write multiple times
-      expect(mockWriter.write).toHaveBeenCalledWith(expect.objectContaining({ type: 'text-start' }));
       expect(mockWriter.write).toHaveBeenCalledWith(
         expect.objectContaining({
-          type: 'text-delta',
-          delta: expect.stringContaining('::ui:canvas_open::https://example.com/training'),
+          type: 'data-ui-signal',
+          data: expect.objectContaining({
+            signal: 'canvas_open',
+            message: expect.stringContaining('::ui:canvas_open::https://example.com/training'),
+          }),
         })
       );
       expect(mockWriter.write).toHaveBeenCalledWith(
         expect.objectContaining({
-          type: 'text-delta',
-          delta: expect.stringContaining('::ui:training_meta::'),
+          type: 'data-ui-signal',
+          data: expect.objectContaining({
+            signal: 'training_meta',
+            message: expect.stringContaining('::ui:training_meta::'),
+          }),
         })
       );
-      expect(mockWriter.write).toHaveBeenCalledWith(expect.objectContaining({ type: 'text-end' }));
     });
 
     it('should handle validation error for missing prompt', async () => {
@@ -188,17 +175,13 @@ describe('WorkflowExecutorTool', () => {
         department: 'HR',
       };
 
-      const result: any = await workflowExecutorTool.execute({
-        context: params as any,
-        writer: mockWriter as any,
-        runId: 'test-run-id',
-        runtimeContext: {} as any,
-        suspend: async () => {},
-      });
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result: any = await workflowExecutorTool.execute!(params as any, { writer: mockWriter } as any);
 
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('Prompt is required');
-      expect(createMicrolearningWorkflow.createRunAsync).not.toHaveBeenCalled();
+      // Mastra v1.1.0: Zod superRefine returns a ValidationError object
+      expect(result.error).toBe(true);
+      expect(result.message).toContain('Prompt is required');
+      expect(createMicrolearningWorkflow.createRun).not.toHaveBeenCalled();
     });
 
     it('should return failure when create workflow result validation fails', async () => {
@@ -212,16 +195,11 @@ describe('WorkflowExecutorTool', () => {
         prompt: 'Create a course about safety',
       };
 
-      const result: any = await workflowExecutorTool.execute({
-        context: params as any,
-        writer: mockWriter as any,
-        runId: 'test-run-id',
-        runtimeContext: {} as any,
-        suspend: async () => {},
-      });
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result: any = await workflowExecutorTool.execute!(params as any, { writer: mockWriter } as any);
 
       expect(result.success).toBe(false);
-      expect(result.error).toContain('Create microlearning workflow result validation failed');
+      expect(result.error).toContain('Microlearning creation failed');
     });
   });
 
@@ -244,15 +222,10 @@ describe('WorkflowExecutorTool', () => {
         targetLanguage: 'es',
       };
 
-      const result: any = await workflowExecutorTool.execute({
-        context: params as any,
-        writer: mockWriter as any,
-        runId: 'test-run-id',
-        runtimeContext: {} as any,
-        suspend: async () => {},
-      });
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result: any = await workflowExecutorTool.execute!(params as any, { writer: mockWriter } as any);
 
-      expect(addLanguageWorkflow.createRunAsync).toHaveBeenCalled();
+      expect(addLanguageWorkflow.createRun).toHaveBeenCalled();
       expect(mockRun.start).toHaveBeenCalledWith(
         expect.objectContaining({
           inputData: expect.objectContaining({
@@ -263,10 +236,13 @@ describe('WorkflowExecutorTool', () => {
       );
 
       expect(result.success).toBe(true);
-      // Should also emit UI signal
       expect(mockWriter.write).toHaveBeenCalledWith(
         expect.objectContaining({
-          delta: expect.stringContaining('::ui:canvas_open::https://example.com/training/es'),
+          type: 'data-ui-signal',
+          data: expect.objectContaining({
+            signal: 'canvas_open',
+            message: expect.stringContaining('::ui:canvas_open::https://example.com/training/es'),
+          }),
         })
       );
     });
@@ -277,16 +253,12 @@ describe('WorkflowExecutorTool', () => {
         // Missing params
       };
 
-      const result: any = await workflowExecutorTool.execute({
-        context: params as any,
-        writer: mockWriter as any,
-        runId: 'test-run-id',
-        runtimeContext: {} as any,
-        suspend: async () => {},
-      });
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result: any = await workflowExecutorTool.execute!(params as any, { writer: mockWriter } as any);
 
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('required');
+      // Mastra v1.1.0: Zod superRefine returns a ValidationError object
+      expect(result.error).toBe(true);
+      expect(result.message).toContain('required');
     });
 
     it('should return failure when add-language workflow result validation fails', async () => {
@@ -301,13 +273,8 @@ describe('WorkflowExecutorTool', () => {
         targetLanguage: 'es',
       };
 
-      const result: any = await workflowExecutorTool.execute({
-        context: params as any,
-        writer: mockWriter as any,
-        runId: 'test-run-id',
-        runtimeContext: {} as any,
-        suspend: async () => {},
-      });
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result: any = await workflowExecutorTool.execute!(params as any, { writer: mockWriter } as any);
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('Add language workflow result validation failed');
@@ -336,22 +303,20 @@ describe('WorkflowExecutorTool', () => {
         targetLanguages: ['es', 'fr'],
       };
 
-      const result: any = await workflowExecutorTool.execute({
-        context: params as any,
-        writer: mockWriter as any,
-        runId: 'test-run-id',
-        runtimeContext: {} as any,
-        suspend: async () => {},
-      });
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result: any = await workflowExecutorTool.execute!(params as any, { writer: mockWriter } as any);
 
-      expect(addMultipleLanguagesWorkflow.createRunAsync).toHaveBeenCalled();
+      expect(addMultipleLanguagesWorkflow.createRun).toHaveBeenCalled();
       expect(result.success).toBe(true);
       expect(result.successCount).toBe(2);
 
-      // Should emit first success URL
       expect(mockWriter.write).toHaveBeenCalledWith(
         expect.objectContaining({
-          delta: expect.stringContaining('::ui:canvas_open::url-es'),
+          type: 'data-ui-signal',
+          data: expect.objectContaining({
+            signal: 'canvas_open',
+            message: expect.stringContaining('::ui:canvas_open::url-es'),
+          }),
         })
       );
     });
@@ -375,19 +340,18 @@ describe('WorkflowExecutorTool', () => {
         updates: { theme: { primaryColor: '#000' } },
       };
 
-      const result: any = await workflowExecutorTool.execute({
-        context: params as any,
-        writer: mockWriter as any,
-        runId: 'test-run-id',
-        runtimeContext: {} as any,
-        suspend: async () => {},
-      });
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result: any = await workflowExecutorTool.execute!(params as any, { writer: mockWriter } as any);
 
-      expect(updateMicrolearningWorkflow.createRunAsync).toHaveBeenCalled();
+      expect(updateMicrolearningWorkflow.createRun).toHaveBeenCalled();
       expect(result.success).toBe(true);
       expect(mockWriter.write).toHaveBeenCalledWith(
         expect.objectContaining({
-          delta: expect.stringContaining('::ui:canvas_open::updated-url'),
+          type: 'data-ui-signal',
+          data: expect.objectContaining({
+            signal: 'canvas_open',
+            message: expect.stringContaining('::ui:canvas_open::updated-url'),
+          }),
         })
       );
     });
@@ -398,28 +362,26 @@ describe('WorkflowExecutorTool', () => {
     // it('should return error if workflowType is invalid', ...);
 
     it('should handle catastrophic failure and write to writer', async () => {
-      (createMicrolearningWorkflow.createRunAsync as any).mockRejectedValue(new Error('Internal Crash'));
+      (createMicrolearningWorkflow.createRun as any).mockRejectedValue(new Error('Internal Crash'));
 
       const params = {
         workflowType: 'create-microlearning',
         prompt: 'test prompt',
       };
 
-      const result: any = await workflowExecutorTool.execute({
-        context: params as any,
-        writer: mockWriter as any,
-        runId: 'test-run-id',
-        runtimeContext: {} as any,
-        suspend: async () => {},
-      });
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result: any = await workflowExecutorTool.execute!(params as any, { writer: mockWriter } as any);
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('Internal Crash');
 
-      // Should write error emoji to writer
       expect(mockWriter.write).toHaveBeenCalledWith(
         expect.objectContaining({
-          delta: expect.stringContaining('[ERROR] Workflow failed: Internal Crash'),
+          type: 'data-ui-signal',
+          data: expect.objectContaining({
+            signal: 'workflow_error',
+            message: expect.stringContaining('Internal Crash'),
+          }),
         })
       );
     });
@@ -430,12 +392,11 @@ describe('WorkflowExecutorTool', () => {
           workflowType: 'add-multiple-languages',
           targetLanguages: ['es'],
         };
-        const result: any = await workflowExecutorTool.execute({
-          context: params as any,
-          writer: mockWriter as any,
-        } as any);
-        expect(result.success).toBe(false);
-        expect(result.error).toContain('required');
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        const result: any = await workflowExecutorTool.execute!(params as any, { writer: mockWriter } as any);
+        // Mastra v1.1.0: Zod superRefine returns a ValidationError object
+        expect(result.error).toBe(true);
+        expect(result.message).toContain('required');
       });
 
       it('should fail if targetLanguages is empty', async () => {
@@ -444,12 +405,11 @@ describe('WorkflowExecutorTool', () => {
           existingMicrolearningId: '123',
           targetLanguages: [],
         };
-        const result: any = await workflowExecutorTool.execute({
-          context: params as any,
-          writer: mockWriter as any,
-        } as any);
-        expect(result.success).toBe(false);
-        expect(result.error).toContain('required');
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        const result: any = await workflowExecutorTool.execute!(params as any, { writer: mockWriter } as any);
+        // Mastra v1.1.0: Zod superRefine returns a ValidationError object
+        expect(result.error).toBe(true);
+        expect(result.message).toContain('required');
       });
     });
 
@@ -459,12 +419,11 @@ describe('WorkflowExecutorTool', () => {
           workflowType: 'update-microlearning',
           existingMicrolearningId: '123',
         };
-        const result: any = await workflowExecutorTool.execute({
-          context: params as any,
-          writer: mockWriter as any,
-        } as any);
-        expect(result.success).toBe(false);
-        expect(result.error).toContain('required');
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        const result: any = await workflowExecutorTool.execute!(params as any, { writer: mockWriter } as any);
+        // Mastra v1.1.0: Zod superRefine returns a ValidationError object
+        expect(result.error).toBe(true);
+        expect(result.message).toContain('required');
       });
     });
   });

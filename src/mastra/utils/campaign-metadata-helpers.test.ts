@@ -71,7 +71,7 @@ describe('campaign-metadata-helpers', () => {
 
   describe('enrichActivitiesWithMetadata', () => {
     it('adds tactic when metadata exists', () => {
-      const activities = [{ actionCategory: 'CLICK', context: 'x' }];
+      const activities: any[] = [{ actionCategory: 'CLICK', context: 'x' }];
       const metadataMap = new Map([
         [
           'id1',
@@ -91,14 +91,14 @@ describe('campaign-metadata-helpers', () => {
     });
 
     it('returns unchanged when no metadata', () => {
-      const activities = [{ actionCategory: 'CLICK', context: 'x' }];
+      const activities: any[] = [{ actionCategory: 'CLICK', context: 'x' }];
       const metadataMap = new Map();
       const result = enrichActivitiesWithMetadata(activities, ['id1'], metadataMap);
       expect(result[0].tactic).toBeUndefined();
     });
 
     it('uses persuasion_tactic when tactic null', () => {
-      const activities = [{ actionCategory: 'CLICK' }];
+      const activities: any[] = [{ actionCategory: 'CLICK' }];
       const metadataMap = new Map([
         [
           'id1',

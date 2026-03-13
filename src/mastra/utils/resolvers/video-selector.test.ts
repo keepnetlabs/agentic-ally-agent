@@ -99,7 +99,8 @@ describe('video-selector', () => {
 
       // Verify AI was called with the right candidate list (Level 1 Video only)
       const callArgs = vi.mocked(generateText).mock.calls[0][0];
-      const prompt = (callArgs.messages[1] as any).content;
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const prompt = (callArgs.messages![1] as any).content;
       expect(prompt).toContain('Level 1 Video');
       expect(prompt).not.toContain('Tutorial Video');
     });
@@ -149,7 +150,8 @@ describe('video-selector', () => {
       // Should find "Generic Scenario" because it matches "scenario" keywords in description
       // and is not a tutorial.
       const callArgs = vi.mocked(generateText).mock.calls[0][0];
-      const prompt = (callArgs.messages[1] as any).content;
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const prompt = (callArgs.messages![1] as any).content;
       expect(prompt).toContain('Generic Scenario');
     });
 
@@ -169,7 +171,8 @@ describe('video-selector', () => {
 
       // Should NOT find "Level 1 Video" (general audience)
       const callArgs = vi.mocked(generateText).mock.calls[0][0];
-      const prompt = (callArgs.messages[1] as any).content;
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const prompt = (callArgs.messages![1] as any).content;
       expect(prompt).toContain('Dev Scenario');
       expect(prompt).not.toContain('Level 1 Video');
     });

@@ -15,7 +15,7 @@ import { getRequestContext } from '../../utils/core/request-storage';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
 import { validateToolResult } from '../../utils/tool-result-validation';
 import { withRetry, withTimeout } from '../../utils/core/resilience-utils';
-import { isSafeId, uuidv4 } from '../../utils/core/id-utils';
+import { isSafeId } from '../../utils/core/id-utils';
 import { formatToolSummary } from '../../utils/core/tool-summary-formatter';
 
 interface GroupSearchDeps {

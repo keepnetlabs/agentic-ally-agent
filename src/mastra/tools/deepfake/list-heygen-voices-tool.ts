@@ -11,7 +11,7 @@
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { HEYGEN } from '../../constants';
-import { uuidv4 } from '../../utils/core/id-utils';
+
 import { getLogger } from '../../utils/core/logger';
 import { normalizeError } from '../../utils/core/error-utils';
 import { withRetry } from '../../utils/core/resilience-utils';
@@ -82,16 +82,15 @@ async function emitVoiceSelectionSignal(
   if (!writer) return;
 
   try {
-    const messageId = uuidv4();
     const encoded = Buffer.from(JSON.stringify(payload)).toString('base64');
 
-    await writer.write({ type: 'text-start', id: messageId });
     await writer.write({
-      type: 'text-delta',
-      id: messageId,
-      delta: `::ui:voice_selection::${encoded}::/ui:voice_selection::\n`,
+      type: 'data-ui-signal',
+      data: {
+        signal: 'voice_selection',
+        message: `::ui:voice_selection::${encoded}::/ui:voice_selection::\n`,
+      },
     });
-    await writer.write({ type: 'text-end', id: messageId });
 
     logger.info('voice_selection_ui_signal_emitted', { total: payload.total });
   } catch (emitErr) {
@@ -111,7 +110,8 @@ export const listHeyGenVoicesTool = createTool({
     'Lists available HeyGen voices for deepfake video generation. Accepts an optional "language" parameter (e.g., "Turkish", "English") to filter voices by language. Returns target language voices first, then Multilingual voices (which support emotion tones), then English fallback.',
   inputSchema: listHeyGenVoicesInputSchema,
   outputSchema: listHeyGenVoicesOutputSchema,
-  execute: async ({ context, writer }) => {
+  execute: async (inputData, ctx?) => {
+    const writer = ctx?.writer;
     try {
       const apiKey = process.env.HEYGEN_API_KEY;
       if (!apiKey) {
@@ -122,7 +122,7 @@ export const listHeyGenVoicesTool = createTool({
         };
       }
 
-      const targetLanguage = context.language?.trim() || undefined;
+      const targetLanguage = inputData.language?.trim() || undefined;
       const url = `${HEYGEN.API_BASE_URL}${HEYGEN.ENDPOINTS.LIST_VOICES}`;
 
       logger.info('list_heygen_voices_request', { targetLanguage: targetLanguage ?? 'all' });
@@ -223,7 +223,7 @@ export const listHeyGenVoicesTool = createTool({
       const voices = combined.slice(0, MAX_VOICES);
 
       const noTargetFound = targetLanguage && targetVoices.length === 0;
-      const selectionRequired = !context.autoSelect && voices.length > 1;
+      const selectionRequired = !inputData.autoSelect && voices.length > 1;
 
       logger.info('list_heygen_voices_success', {
         totalFromApi: allVoices.length,

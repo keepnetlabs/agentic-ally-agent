@@ -10,14 +10,14 @@ export type { StreamWriter } from '../../types/stream-writer';
 const logger = getLogger('ReasoningStream');
 
 /**
- * Stream reasoning to frontend using AI SDK reasoning protocol
- * Converts technical AI reasoning to user-friendly progress updates
+ * Stream reasoning to frontend using AI SDK data-reasoning protocol.
+ * Converts technical AI reasoning to user-friendly progress updates.
  * https://sdk.vercel.ai/docs/ai-sdk-core/generating-text#reasoning
  *
- * Protocol:
- * - reasoning-start: Begin reasoning block
- * - reasoning-delta: Stream reasoning content
- * - reasoning-end: Complete reasoning block
+ * Protocol (v1 data- prefix):
+ * - { type: 'data-reasoning', data: { event: 'start', id } }
+ * - { type: 'data-reasoning', data: { event: 'delta', id, text } }
+ * - { type: 'data-reasoning', data: { event: 'end', id } }
  */
 
 export async function streamReasoning(reasoningText: string, writer: StreamWriter): Promise<void> {
@@ -30,7 +30,7 @@ export async function streamReasoning(reasoningText: string, writer: StreamWrite
     await writer.write({
       type: 'data-reasoning',
       data: { event: 'start', id: messageId },
-    } as any);
+    });
 
     // Convert technical reasoning to user-friendly summary in background
     // Fire-and-forget (Silent Mode): Don't await, just let it try.
@@ -60,13 +60,12 @@ export async function streamReasoning(reasoningText: string, writer: StreamWrite
           await writer.write({
             type: 'data-reasoning',
             data: { event: 'delta', id: messageId, text: userFriendlyReasoning },
-          } as any);
+          });
 
-          // End reasoning block
           await writer.write({
             type: 'data-reasoning',
             data: { event: 'end', id: messageId },
-          } as any);
+          });
 
           logger.info('User-friendly reasoning streamed');
         } catch {
@@ -80,7 +79,7 @@ export async function streamReasoning(reasoningText: string, writer: StreamWrite
           await writer.write({
             type: 'data-reasoning',
             data: { event: 'end', id: messageId },
-          } as any);
+          });
         } catch {
           // Stream already closed — safe to ignore
         }
@@ -112,9 +111,9 @@ export async function streamDirectReasoning(reasoning: string, writer: StreamWri
   const messageId = uuidv4();
   try {
     // v1: data- prefix for toAISdkStream compatibility
-    await writer.write({ type: 'data-reasoning', data: { event: 'start', id: messageId } } as any);
-    await writer.write({ type: 'data-reasoning', data: { event: 'delta', id: messageId, text: reasoning } } as any);
-    await writer.write({ type: 'data-reasoning', data: { event: 'end', id: messageId } } as any);
+    await writer.write({ type: 'data-reasoning', data: { event: 'start', id: messageId } });
+    await writer.write({ type: 'data-reasoning', data: { event: 'delta', id: messageId, text: reasoning } });
+    await writer.write({ type: 'data-reasoning', data: { event: 'end', id: messageId } });
   } catch {
     // Ignore write errors silently (e.g. if stream closed)
   }
