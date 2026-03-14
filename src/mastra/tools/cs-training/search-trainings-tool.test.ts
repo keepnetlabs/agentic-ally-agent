@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { searchTrainingsTool } from './search-trainings-tool';
 import '../../../__tests__/setup';
+import { assertToolSuccess } from '../../../__tests__/helpers';
 
 vi.mock(import('../../utils/core/request-storage'), async (importOriginal) => {
   const actual = await importOriginal();
@@ -60,6 +61,7 @@ describe('SearchTrainingsTool', () => {
         trainingSearchType: 1,
         trainingType: null,
       }, {});
+      assertToolSuccess(result);
       expect(result.success).toBe(true);
       expect(result.trainings).toHaveLength(1);
       expect(result.trainings![0].trainingName).toBe('Phishing Awareness');
@@ -120,6 +122,7 @@ describe('SearchTrainingsTool', () => {
         trainingSearchType: 1,
         trainingType: null,
       }, {});
+      assertToolSuccess(result);
       expect(result.success).toBe(false);
     });
 
@@ -139,6 +142,7 @@ describe('SearchTrainingsTool', () => {
         trainingSearchType: 1,
         trainingType: null,
       }, {});
+      assertToolSuccess(result);
       expect(result.success).toBe(false);
       expect(result.error).toContain('403');
     });

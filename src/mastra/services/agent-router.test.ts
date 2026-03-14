@@ -316,9 +316,9 @@ describe('AgentRouter', () => {
       expect(result.taskContext).toBeUndefined();
     });
 
-    it('should exclude internal phishing template fixer from valid agents list', async () => {
+    it('should exclude internal-only agents from valid agents list', async () => {
       const mockDecision = {
-        agent: AGENT_NAMES.PHISHING_TEMPLATE_FIXER,
+        agent: 'phishingTemplateFixer',
         taskContext: 'Fix phishing email HTML',
       };
 

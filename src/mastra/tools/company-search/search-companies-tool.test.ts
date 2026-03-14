@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { searchCompaniesTool } from './search-companies-tool';
 import '../../../__tests__/setup';
+import { assertToolSuccess } from '../../../__tests__/helpers';
 
 vi.mock(import('../../utils/core/request-storage'), async (importOriginal) => {
   const actual = await importOriginal();
@@ -55,6 +56,7 @@ describe('SearchCompaniesTool', () => {
       } as Response);
 
       const result = await searchCompaniesTool.execute!({ pageNumber: 1, pageSize: 10, ascending: false, filterCondition: 'AND', orderBy: 'CreateTime' }, {});
+      assertToolSuccess(result);
       expect(result.success).toBe(true);
       expect(result.companies).toHaveLength(1);
       expect(result.companies![0].companyName).toBe('Acme Corp');
@@ -66,6 +68,7 @@ describe('SearchCompaniesTool', () => {
       vi.mocked(getRequestContext).mockReturnValueOnce({ token: '', baseApiUrl: '' } as any);
 
       const result = await searchCompaniesTool.execute!({ pageNumber: 1, pageSize: 10, ascending: false, filterCondition: 'AND', orderBy: 'CreateTime' }, {});
+      assertToolSuccess(result);
       expect(result.success).toBe(false);
       expect(result.error).toBeTruthy();
     });
@@ -78,6 +81,7 @@ describe('SearchCompaniesTool', () => {
       } as Response);
 
       const result = await searchCompaniesTool.execute!({ pageNumber: 1, pageSize: 10, ascending: false, filterCondition: 'AND', orderBy: 'CreateTime' }, {});
+      assertToolSuccess(result);
       expect(result.success).toBe(false);
       expect(result.error).toContain('500');
     });

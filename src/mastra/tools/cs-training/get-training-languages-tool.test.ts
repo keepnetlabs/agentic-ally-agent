@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { getTrainingLanguagesTool } from './get-training-languages-tool';
 import '../../../__tests__/setup';
+import { assertToolSuccess } from '../../../__tests__/helpers';
 
 vi.mock(import('../../utils/core/request-storage'), async (importOriginal) => {
   const actual = await importOriginal();
@@ -34,6 +35,7 @@ describe('GetTrainingLanguagesTool', () => {
       vi.mocked(getRequestContext).mockReturnValueOnce({ token: '', baseApiUrl: '' } as any);
 
       const result = await getTrainingLanguagesTool.execute!({}, {});
+      assertToolSuccess(result);
       expect(result.success).toBe(false);
     });
 
@@ -45,6 +47,7 @@ describe('GetTrainingLanguagesTool', () => {
       } as Response);
 
       const result = await getTrainingLanguagesTool.execute!({}, {});
+      assertToolSuccess(result);
       expect(result.success).toBe(false);
       expect(result.error).toContain('500');
     });
@@ -62,12 +65,14 @@ describe('GetTrainingLanguagesTool', () => {
       } as Response);
 
       const first = await getTrainingLanguagesTool.execute!({}, {});
+      assertToolSuccess(first);
       expect(first.success).toBe(true);
       expect(first.languages).toHaveLength(2);
       expect(first.languages![0].code).toBe('EN-US');
       expect(first.totalCount).toBe(2);
 
       const second = await getTrainingLanguagesTool.execute!({}, {});
+      assertToolSuccess(second);
       expect(second.success).toBe(true);
       expect(second.message).toContain('cached');
       expect(vi.mocked(global.fetch).mock.calls.length).toBe(1);

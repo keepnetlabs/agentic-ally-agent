@@ -13,8 +13,9 @@ describe('CSOrchestratorAgent', () => {
       expect(csOrchestratorAgent.name).toBe(CS_AGENT_NAMES.CS_ORCHESTRATOR);
     });
 
-    it('should have no tools (pure router)', () => {
-      expect(Object.keys(csOrchestratorAgent.tools ?? {})).toHaveLength(0);
+    it('should have no tools (pure router)', async () => {
+      const tools = await csOrchestratorAgent.listTools();
+      expect(Object.keys(tools)).toHaveLength(0);
     });
   });
 

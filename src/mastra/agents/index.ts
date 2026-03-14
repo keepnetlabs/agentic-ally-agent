@@ -13,9 +13,8 @@ export { vishingCallAgent } from './vishing-call-agent';
 export { deepfakeVideoAgent } from './deepfake-video-agent';
 export { outOfScopeAgent } from './out-of-scope-agent';
 
-// Phishing Template Fixer
+// Phishing Template Fixer (split agents — no legacy combined agent)
 export {
-  phishingTemplateFixerAgent,
   phishingLandingPageClassifierAgent,
   emailRewriterAgent,
   emailClassifierAgent,

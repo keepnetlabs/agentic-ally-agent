@@ -6,7 +6,13 @@ import { reasoningTool } from '../tools/analysis';
 import { getDefaultAgentModel } from '../model-providers';
 import { Memory } from '@mastra/memory';
 import { PHISHING, AGENT_NAMES, AGENT_IDS, MESSAGING_GUIDELINES_PROMPT_FRAGMENT } from '../constants';
-import { NO_TECH_JARGON_FRAGMENT, buildLanguageRulesFragment } from '../prompt-fragments';
+import {
+  NO_TECH_JARGON_FRAGMENT,
+  buildLanguageRulesFragment,
+  PSYCHOLOGICAL_PROFILER_FRAGMENT,
+  buildAutonomousModeFragment,
+  WORKFLOW_ROUTING_CREATION,
+} from '../prompt-fragments';
 
 const buildPhishingInstructions = () => `
 You are the **Phishing Simulation Specialist**.
@@ -27,26 +33,12 @@ ${buildLanguageRulesFragment({
   exampleTr: 'User asks "Oltama yap"',
 })}
 
-## Psychological Profiler (Cialdini Principles)
-- Don't just pick a template. Analyze the target.
-- **Use Triggers:** Apply Cialdini's 6 Principles (Reciprocity, Commitment, Social Proof, Authority, Liking, Scarcity).
-- **Match Context:** If target is 'Finance', use 'Urgency' (Invoice overdue). If 'HR', use 'Authority' (Policy change).
-- **Goal:** Create realistic cognitive dissonance, not just a fake link.
-- Collect **Topic**, **Target Profile** (if available), and **Difficulty**
+${PSYCHOLOGICAL_PROFILER_FRAGMENT}
 - **showReasoning usage:** Call showReasoning only when it adds decision value (pattern detection, self-correction, or pre-tool execution). Do not overuse it.
 
-**AUTONOMOUS MODE OVERRIDE (Critical)**
-If the user message begins with the exact prefix "AUTONOMOUS_EXECUTION_MODE":
-1. IGNORE all State 1 and State 2 conversational rules (no summary, no confirmation).
-2. EXECUTE the requested tool (phishingExecutor) IMMEDIATELY based on the parameters provided. Do not infer missing parameters beyond safe defaults.
-3. AFTER execution: STOP IMMEDIATELY. Do NOT generate any further text. Do NOT suggest upload. Do NOT loop. Do NOT call any other tools.
-4. ONE execution only. If you already executed phishingExecutor in this conversation, DO NOT execute it again.
+${buildAutonomousModeFragment('phishingExecutor')}
 
-### Workflow Routing
-Before gathering info, determine the WORKFLOW TYPE:
-1. **CREATION** (create, generate, new, make a new) → Must follow **STATE 1-4** below.
-2. **EDITING** (change, update, modify, remove, set, translate, localize) → **BYPASS STATES**. Follow **EDIT MODE** section.
-3. **PLATFORM_ACTION** (upload, assign) → **BYPASS STATES**. Follow **Platform Integration** section. Assign requires an upload result (resourceId).
+${WORKFLOW_ROUTING_CREATION}
 
 ## Workflow Execution - State Machine (FOR CREATION ONLY)
 **APPLIES TO:** New Phishing Simulation requests (CREATION route only).

@@ -658,7 +658,6 @@ export const AGENT_NAMES = {
   EMAIL_IR_ANALYST: 'emailIrAnalyst',
   DEEPFAKE_VIDEO: 'deepfakeVideoAssistant',
   OUT_OF_SCOPE: 'outOfScope',
-  PHISHING_TEMPLATE_FIXER: 'phishingTemplateFixer',
   PHISHING_LANDING_CLASSIFIER: 'phishingLandingPageClassifier',
   EMAIL_REWRITER: 'emailRewriter',
   EMAIL_CLASSIFIER: 'emailClassifier',
@@ -679,11 +678,26 @@ export const AGENT_IDS = {
   EMAIL_IR_ANALYST: 'email-ir-analyst',
   DEEPFAKE_VIDEO: 'deepfake-video-agent',
   OUT_OF_SCOPE: 'out-of-scope-agent',
-  PHISHING_TEMPLATE_FIXER: 'phishing-template-fixer-agent',
   PHISHING_LANDING_CLASSIFIER: 'phishing-landing-classifier-agent',
   EMAIL_REWRITER: 'email-rewriter-agent',
   EMAIL_CLASSIFIER: 'email-classifier-agent',
 } as const;
+
+// ============================================
+// PUBLIC AGENT CAPABILITIES (used by out-of-scope agent)
+// ============================================
+
+/** User-facing capability descriptions for public-routable agents. */
+export const PUBLIC_AGENT_CAPABILITIES = [
+  'Security awareness training (interactive microlearning modules)',
+  'Phishing email simulations',
+  'Smishing (SMS) simulations',
+  'Vishing (voice call) simulations',
+  'Deepfake video simulations',
+  'Email incident response analysis',
+  'User risk analysis & behavioral assessment',
+  'Security policy guidance',
+] as const;
 
 /** Short confirmation/selection patterns for orchestrator Scenario A (route to same agent). */
 export const ORCHESTRATOR_CONFIRMATION_EXAMPLES = [

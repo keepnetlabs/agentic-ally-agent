@@ -1,6 +1,8 @@
 import { Agent } from '@mastra/core/agent';
 import { getLightAgentModel } from '../model-providers';
-import { AGENT_NAMES, AGENT_IDS } from '../constants';
+import { AGENT_NAMES, AGENT_IDS, PUBLIC_AGENT_CAPABILITIES } from '../constants';
+
+const capabilityList = PUBLIC_AGENT_CAPABILITIES.map(cap => `   • ${cap}`).join('\n');
 
 export const outOfScopeAgent = new Agent({
   id: AGENT_IDS.OUT_OF_SCOPE,
@@ -17,13 +19,7 @@ RULES:
 RESPONSE TEMPLATE:
 1. Acknowledge you cannot help with this specific topic.
 2. List what you CAN help with:
-   • Security awareness training
-   • Phishing email simulations
-   • Smishing (SMS) simulations
-   • Vishing (voice call) simulations
-   • Deepfake video simulations
-   • User risk analysis
-   • Security policy guidance
+${capabilityList}
 
 3. Suggest contacting the support team for other needs.`,
   model: getLightAgentModel(),

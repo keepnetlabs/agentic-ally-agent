@@ -5,7 +5,13 @@ import { uploadSmishingTool, assignSmishingTool } from '../tools/user-management
 import { getDefaultAgentModel } from '../model-providers';
 import { Memory } from '@mastra/memory';
 import { SMISHING, AGENT_NAMES, AGENT_IDS, MESSAGING_GUIDELINES_PROMPT_FRAGMENT } from '../constants';
-import { NO_TECH_JARGON_FRAGMENT, buildLanguageRulesFragment } from '../prompt-fragments';
+import {
+  NO_TECH_JARGON_FRAGMENT,
+  buildLanguageRulesFragment,
+  PSYCHOLOGICAL_PROFILER_FRAGMENT,
+  buildAutonomousModeFragment,
+  WORKFLOW_ROUTING_CREATION,
+} from '../prompt-fragments';
 
 const buildSmishingInstructions = () => `
 You are the **Smishing Simulation Specialist**.
@@ -24,26 +30,12 @@ ${buildLanguageRulesFragment({
   bcp47Codes: 'en-gb, tr-tr, de-de, es-es, etc.',
 })}
 
-## Psychological Profiler (Cialdini Principles)
-- Don't just pick a template. Analyze the target.
-- **Use Triggers:** Apply Cialdini's 6 Principles (Reciprocity, Commitment, Social Proof, Authority, Liking, Scarcity).
-- **Match Context:** If target is 'Finance', use 'Urgency' (Payment alert). If 'HR', use 'Authority' (Policy confirmation).
-- **Goal:** Create realistic cognitive dissonance, not just a fake link.
-- Collect **Topic**, **Target Profile** (if available), and **Difficulty**
+${PSYCHOLOGICAL_PROFILER_FRAGMENT}
 - Call showReasoning when detecting patterns (e.g., "Detected 'CEO' → Auto-assigning Authority Trigger").
 
-**AUTONOMOUS MODE OVERRIDE (Critical)**
-If the user message starts with "**AUTONOMOUS_EXECUTION_MODE**":
-1. IGNORE all State 1 and State 2 conversational rules (no summary, no confirmation).
-2. EXECUTE the requested tool (smishingExecutor) IMMEDIATELY based on the parameters provided.
-3. AFTER execution: STOP IMMEDIATELY. Do NOT generate any further text. Do NOT suggest upload. Do NOT loop. Do NOT call any other tools.
-4. Your goal is purely functional: Input -> Tool -> Stop. ONE execution only.
-5. **CRITICAL:** If you already executed smishingExecutor in this conversation, DO NOT execute it again. Check conversation history first.
+${buildAutonomousModeFragment('smishingExecutor')}
 
-### Workflow Routing
-Before gathering info, determine the WORKFLOW TYPE:
-1. **CREATION** (New Smishing Simulation) → Must follow **STATE 1-4** below.
-2. **UTILITY** (Edit, Translate, Update, Upload, Assign) → **BYPASS STATES**. Execute immediately **EXCEPT** Assign requires an upload result (resourceId).
+${WORKFLOW_ROUTING_CREATION}
 
 ## Workflow Execution - State Machine (FOR CREATION ONLY)
 **APPLIES TO:** New Smishing Simulation requests.
@@ -201,7 +193,7 @@ export const smishingSmsAgent = new Agent({
   memory: new Memory({
     options: {
       lastMessages: 20,
-      workingMemory: { enabled: false },
+      workingMemory: { enabled: false, scope: 'thread' },
     },
   }),
 });

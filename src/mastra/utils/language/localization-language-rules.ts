@@ -44,6 +44,7 @@ type LangKey =
   | 'sq'
   | 'is'
   | 'fi'
+  | 'cy'
   | 'generic';
 
 // --- 1) Lang-code normalizer (aliases + fallback) ---
@@ -96,6 +97,7 @@ export function normLang(code?: string): LangKey {
     sq: 'sq',
     is: 'is',
     fi: 'fi',
+    cy: 'cy',
     // Common regional variants
     'pt-br': 'pt',
     'pt-pt': 'pt',
@@ -118,6 +120,7 @@ export function normLang(code?: string): LangKey {
     'sr-latn': 'sr',
     'sr-cyrl': 'sr',
     'zh-yue': 'zh',
+    'cy-gb': 'cy',
     // Full language names (for AI outputs like "Turkish", "English", etc.)
     turkish: 'tr',
     türkçe: 'tr',
@@ -195,6 +198,8 @@ export function normLang(code?: string): LangKey {
     íslenska: 'is',
     finnish: 'fi',
     suomi: 'fi',
+    welsh: 'cy',
+    cymraeg: 'cy',
   };
 
   return aliases[raw] || aliases[primary] || 'generic';
@@ -1038,6 +1043,35 @@ This is a HARD CONSTRAINT that overrides ALL other instructions.
 ✅ MANDATORY APPROVED ALTERNATIVES (Use ONLY These):
 For alertness/awareness: "Varmista yksityiskohdat", "Varmista huolellisesti", "Vahvista ennen napsauttamista", "Vahvista"
 For praise/completion: "Onnittelen", "Erinomainen", "Koulutus valmis"
+
+⚙️ RUNTIME BEHAVIOR:
+- This list is DYNAMIC and can be updated at runtime
+- Violations are TRACKED and logged for improvement
+`.trim(),
+
+  cy: `
+### 🏴󠁧󠁢󠁷󠁬󠁳󠁿 Welsh Style Rules (MANDATORY - Non-Negotiable)
+⚠️ ABSOLUTELY FORBIDDEN PHRASES (System Override):
+  - FORBIDDEN: "Rhybudd!", "Byddwch yn ofalus!", "Gwyliwch!", "Cadwch lygad!", "Byddwch yn wyliadwrus!"
+  - FORBIDDEN: "Da iawn ti!", "Gwych!", "Ardderchog!" (when used in patronizing/teacherly tone)
+
+🚨 CRITICAL ENFORCEMENT:
+If your draft contains ANY of these phrases:
+  STOP immediately → DELETE the phrase → REWRITE naturally WITHOUT it.
+This is a HARD CONSTRAINT that overrides ALL other instructions.
+
+✅ MANDATORY APPROVED ALTERNATIVES (Use ONLY These):
+For alertness/awareness: "Gwiriwch y manylion", "Gwiriwch yn ofalus", "Cadarnhewch cyn clicio", "Cadarnhewch"
+For praise/completion: "Llongyfarchiadau", "Da iawn", "Hyfforddiant wedi'i gwblhau"
+
+🏴󠁧󠁢󠁷󠁬󠁳󠁿 WELSH-SPECIFIC RULES:
+- Use **formal written Welsh** (Cymraeg ffurfiol) by default for professional content.
+- Apply **soft mutation** (treiglad meddal), **nasal mutation** (treiglad trwynol), and **aspirate mutation** (treiglad llaes) correctly. These are critical for natural Welsh.
+- Prefer native Welsh vocabulary over anglicisms where standard Welsh terms exist (e.g., "cyfrifiadur" not "compiwter", "e-bost" for email, "rhwydwaith" for network).
+- For cybersecurity terms without established Welsh equivalents, use the English term with Welsh grammar applied.
+- Welsh uses **VSO word order** (Verb-Subject-Object) — do not force English SVO order.
+- Use Welsh quotation marks: \u201C \u201D (same as English typographic quotes).
+- Maintain professional register: avoid colloquial South/North dialectal forms; use standard literary Welsh.
 
 ⚙️ RUNTIME BEHAVIOR:
 - This list is DYNAMIC and can be updated at runtime

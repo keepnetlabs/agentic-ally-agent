@@ -348,7 +348,7 @@ export const deepfakeVideoAgent = new Agent({
   memory: new Memory({
     options: {
       lastMessages: 20,
-      workingMemory: { enabled: false },
+      workingMemory: { enabled: false, scope: 'thread' },
     },
   }),
 });

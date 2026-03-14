@@ -34,7 +34,9 @@ export const fetchStep = createStep({
   execute: async ({ inputData }) => {
     try {
       if (!fetchEmailTool.execute) throw new Error('Fetch email tool is not executable');
-      return await fetchEmailTool.execute(inputData, {});
+      // Step inputSchema validates before execute — ValidationError can't occur at runtime.
+      // The type assertion narrows the union for TypeScript's benefit only.
+      return await fetchEmailTool.execute(inputData, {}) as z.output<typeof EmailIREmailDataSchema>;
     } catch (error) {
       const err = normalizeError(error);
       const errorInfo = errorService.external(err.message, {

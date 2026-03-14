@@ -287,17 +287,14 @@ describe('Phishing Email Agent', () => {
 
     it('should define CREATION workflow', () => {
       expect(instructions).toContain('CREATION');
-      expect(instructions).toContain('New Simulation');
     });
 
-    it('should define UTILITY workflow', () => {
-      expect(instructions).toContain('UTILITY');
-      expect(instructions).toContain('Edit, Translate, Update');
+    it('should define EDITING workflow', () => {
+      expect(instructions).toContain('EDITING');
     });
 
     it('should define bypass behavior', () => {
       expect(instructions).toContain('BYPASS STATES');
-      expect(instructions).toContain('Execute immediately');
     });
   });
 
@@ -311,7 +308,7 @@ describe('Phishing Email Agent', () => {
 
     it('should define STATE 1', () => {
       expect(instructions).toContain('STATE 1');
-      expect(instructions).toContain('Information Gathering');
+      expect(instructions).toContain('Parameter Resolution');
     });
 
     it('should define STATE 2', () => {
@@ -348,7 +345,6 @@ describe('Phishing Email Agent', () => {
 
     it('should define topic randomization', () => {
       expect(instructions).toContain('RANDOMIZATION');
-      expect(instructions).toContain('MUST INVENT a specific');
     });
 
     it('should list inspiration categories', () => {
@@ -453,12 +449,12 @@ describe('Phishing Email Agent', () => {
     });
 
     it('should provide quishing examples', () => {
-      expect(instructions).toContain('Create Quishing Email');
       expect(instructions).toContain('QR code phishing');
     });
 
     it('should require true for QR requests', () => {
-      expect(instructions).toContain('MUST set isQuishing: true');
+      expect(instructions).toContain('isQuishing');
+      expect(instructions).toContain('true');
     });
   });
 

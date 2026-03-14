@@ -3,7 +3,7 @@
  *
  * Prompt architecture:
  *   1. GLOBAL_INSTRUCTIONS      — Response discipline
- *   2. EMAIL_TEMPLATE_PROMPT    — Full HTML rewrite rules + email enrichment
+ *   2. EMAIL_REWRITER_PROMPT    — HTML rewrite rules + placeholder replacements
  *   3. LANDING_PAGE_PROMPT      — Classification-only rules (no HTML rewrite)
  *
  * Prompt updates: Edit the constants below. No code changes needed elsewhere.
@@ -341,84 +341,71 @@ DOMAIN SELECTION:
 // TAGS INSTRUCTIONS — EMAIL
 // ============================================
 
-export const TAGS_INSTRUCTIONS = `
-TAGS SELECTION (EXACTLY 3 TAGS — NO MORE, NO LESS):
-Analyze the template and return exactly 3 UPPERCASE tags:
+// ============================================
+// TAGS — Shared builder (email vs landing page)
+// ============================================
 
-1. BRAND — The impersonated brand or organization (e.g. MICROSOFT, DHL, SAP, NETFLIX, HR, CEO).
-2. PREMISE — The attack type (select closest match):
-   CREDENTIAL_HARVEST, PASSWORD_RESET, OTP_THEFT, MFA_BYPASS,
+const SHARED_TRIGGER_LIST = 'TRIGGER_URGENCY, TRIGGER_FEAR, TRIGGER_AUTHORITY, TRIGGER_CURIOSITY, TRIGGER_GREED, TRIGGER_SOCIAL';
+
+const EMAIL_PREMISE_OPTIONS = `CREDENTIAL_HARVEST, PASSWORD_RESET, OTP_THEFT, MFA_BYPASS,
    FINANCIAL, PAYMENT_ROUTING, INVOICE_FRAUD,
    IT_SUPPORT, SECURITY_ALERT, SOFTWARE_UPDATE,
    HR, PAYROLL_REDIRECT,
    DELIVERY, DOCUMENT_SHARE,
    AUTHORITY_BEC, EXECUTIVE_IMPERSONATION,
-   MALWARE_DISTRIBUTION, REWARD_OFFER, CURRENT_EVENT, SURVEY_DATA_HARVEST
-3. TRIGGER — The primary psychological trigger: TRIGGER_URGENCY, TRIGGER_FEAR, TRIGGER_AUTHORITY, TRIGGER_CURIOSITY, TRIGGER_GREED, TRIGGER_SOCIAL
+   MALWARE_DISTRIBUTION, REWARD_OFFER, CURRENT_EVENT, SURVEY_DATA_HARVEST`;
 
-DIFFICULTY ASSESSMENT (NIST Phish Scale rubric):
-- DIFFICULTY_HIGH: Pixel-perfect brand clone, correct language/grammar, realistic sender, no obvious red flags. A trained user would struggle to detect it.
-- DIFFICULTY_MEDIUM: Recognizable brand but has minor flaws — slight grammar issues, generic greeting, or imperfect layout. A cautious user could spot it.
-- DIFFICULTY_LOW: Obvious red flags — broken layout, major spelling errors, mismatched brand, suspicious tone, or clearly fake sender. Most users would detect it.`;
-
-// ============================================
-// TAGS INSTRUCTIONS — LANDING PAGE
-// Landing pages are visual (forms, downloads, portals) — different attack surface than email.
-// ============================================
-
-export const LANDING_PAGE_TAGS_INSTRUCTIONS = `
-TAGS SELECTION (EXACTLY 3 TAGS — NO MORE, NO LESS):
-Analyze the landing page and return exactly 3 UPPERCASE tags:
-
-1. BRAND — The impersonated brand or organization (e.g. MICROSOFT, GOOGLE, DHL, SAP, NETFLIX, HR, BANK, CORPORATE_PORTAL).
-2. PREMISE — The page's attack type (select closest match):
-   CREDENTIAL_HARVEST, PASSWORD_RESET, OTP_THEFT, MFA_BYPASS,
+const LANDING_PREMISE_OPTIONS = `CREDENTIAL_HARVEST, PASSWORD_RESET, OTP_THEFT, MFA_BYPASS,
    ACCOUNT_VERIFICATION, ACCOUNT_SUSPENDED,
    FAKE_LOGIN_PORTAL, FAKE_DOWNLOAD, FAKE_UPDATE,
    DOCUMENT_PREVIEW, FILE_SHARE_ACCESS,
    FORM_DATA_HARVEST, SURVEY_DATA_HARVEST,
    PAYMENT_PORTAL, REWARD_CLAIM,
-   DATA_BREACH_NOTIFICATION, SECURITY_ALERT
-3. TRIGGER — The primary psychological trigger: TRIGGER_URGENCY, TRIGGER_FEAR, TRIGGER_AUTHORITY, TRIGGER_CURIOSITY, TRIGGER_GREED, TRIGGER_SOCIAL
+   DATA_BREACH_NOTIFICATION, SECURITY_ALERT`;
+
+interface TagsConfig {
+  context: 'email' | 'landing';
+}
+
+function buildTagsInstructions({ context }: TagsConfig): string {
+  const isEmail = context === 'email';
+  const label = isEmail ? 'template' : 'landing page';
+  const brandExamples = isEmail
+    ? 'MICROSOFT, DHL, SAP, NETFLIX, HR, CEO'
+    : 'MICROSOFT, GOOGLE, DHL, SAP, NETFLIX, HR, BANK, CORPORATE_PORTAL';
+  const premiseLabel = isEmail ? 'attack type' : "page's attack type";
+  const premiseOptions = isEmail ? EMAIL_PREMISE_OPTIONS : LANDING_PREMISE_OPTIONS;
+  const difficultyHigh = isEmail
+    ? 'Pixel-perfect brand clone, correct language/grammar, realistic sender, no obvious red flags.'
+    : 'Pixel-perfect brand clone, correct language/grammar, realistic URL, valid-looking SSL, no obvious red flags.';
+  const difficultyMedium = isEmail
+    ? 'Recognizable brand but has minor flaws — slight grammar issues, generic greeting, or imperfect layout.'
+    : 'Recognizable brand but has minor flaws — slight grammar issues, generic form labels, or imperfect layout.';
+  const difficultyLow = isEmail
+    ? 'Obvious red flags — broken layout, major spelling errors, mismatched brand, suspicious tone, or clearly fake sender.'
+    : 'Obvious red flags — broken layout, major spelling errors, mismatched brand, suspicious form fields, or clearly fake design.';
+
+  return `
+TAGS SELECTION (EXACTLY 3 TAGS — NO MORE, NO LESS):
+Analyze the ${label} and return exactly 3 UPPERCASE tags:
+
+1. BRAND — The impersonated brand or organization (e.g. ${brandExamples}).
+2. PREMISE — The ${premiseLabel} (select closest match):
+   ${premiseOptions}
+3. TRIGGER — The primary psychological trigger: ${SHARED_TRIGGER_LIST}
 
 DIFFICULTY ASSESSMENT (NIST Phish Scale rubric):
-- DIFFICULTY_HIGH: Pixel-perfect brand clone, correct language/grammar, realistic URL, valid-looking SSL, no obvious red flags. A trained user would struggle to detect it.
-- DIFFICULTY_MEDIUM: Recognizable brand but has minor flaws — slight grammar issues, generic form labels, or imperfect layout. A cautious user could spot it.
-- DIFFICULTY_LOW: Obvious red flags — broken layout, major spelling errors, mismatched brand, suspicious form fields, or clearly fake design. Most users would detect it.`;
+- DIFFICULTY_HIGH: ${difficultyHigh} A trained user would struggle to detect it.
+- DIFFICULTY_MEDIUM: ${difficultyMedium} A cautious user could spot it.
+- DIFFICULTY_LOW: ${difficultyLow} Most users would detect it.`;
+}
+
+export const TAGS_INSTRUCTIONS = buildTagsInstructions({ context: 'email' });
+export const LANDING_PAGE_TAGS_INSTRUCTIONS = buildTagsInstructions({ context: 'landing' });
 
 // ============================================
 // JSON OUTPUT INSTRUCTIONS
 // ============================================
-
-export const JSON_OUTPUT_INSTRUCTIONS_EMAIL = `
-OUTPUT FORMAT — STRICT JSON (NO MARKDOWN, NO CODE BLOCKS):
-Return ONLY a valid JSON object with exactly these fields:
-
-{
-  "fixed_html": "<full normalized HTML document starting with <!DOCTYPE html>>",
-  "change_log": [
-    "FIXED: <summary of layout/CSS fixes>",
-    "BUTTONS: <details of CTA normalization>",
-    "PLACEHOLDERS: <confirmation of tag replacements>",
-    "TAGS: <why these tags were selected>"
-  ],
-  "tags": ["TAG1", "TAG2", "TAG3"],
-  "difficulty": "DIFFICULTY_HIGH",
-  "from_address": "info@example-domain.com",
-  "from_name": "IT Helpdesk",
-  "subject": "Action Required: Verify Your Account"
-}
-
-RULES:
-- fixed_html: Complete standalone HTML document. Escape double quotes inside HTML as needed for valid JSON.
-- change_log: Array of strings, each describing a category of changes.
-- tags: Array of UPPERCASE strings following NIST Phish Scale taxonomy.
-- difficulty: Exactly one of "DIFFICULTY_HIGH", "DIFFICULTY_MEDIUM", "DIFFICULTY_LOW".
-- from_address: Selected sender email address (prefix@domain).
-- from_name: Sender display name matching the impersonated brand/department. Same language as email body.
-- subject: Compelling email subject line in the SAME language as the email body.
-- Do NOT wrap the JSON in markdown code blocks or any other text.
-- Do NOT include any text before or after the JSON object.`;
 
 export const JSON_OUTPUT_INSTRUCTIONS_LANDING = `
 OUTPUT FORMAT — STRICT JSON (NO MARKDOWN, NO CODE BLOCKS):
@@ -498,17 +485,6 @@ RULES:
 // ============================================
 // COMPOSED PROMPTS
 // ============================================
-
-/** Legacy combined prompt — kept for backward-compat single-agent registration */
-export const EMAIL_TEMPLATE_PROMPT = `${BASE_PROMPT}
-
-${EMAIL_PLACEHOLDER_RULES}
-
-${EMAIL_ENRICHMENT_RULES}
-
-${TAGS_INSTRUCTIONS}
-
-${JSON_OUTPUT_INSTRUCTIONS_EMAIL}`;
 
 /** Rewriter-only prompt: HTML engineering + placeholder replacements (no classification) */
 export const EMAIL_REWRITER_PROMPT = `${BASE_PROMPT}

@@ -133,7 +133,7 @@ export const csOrchestratorAgent = new Agent({
   memory: new Memory({
     options: {
       lastMessages: 5,
-      workingMemory: { enabled: false },
+      workingMemory: { enabled: false, scope: 'thread' },
     },
   }),
 });

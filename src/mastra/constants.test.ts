@@ -116,14 +116,13 @@ describe('constants', () => {
       expect(AGENT_NAMES.ORCHESTRATOR).toBe('orchestrator');
       expect(AGENT_NAMES.EMAIL_IR_ANALYST).toBe('emailIrAnalyst');
       expect(AGENT_NAMES.DEEPFAKE_VIDEO).toBe('deepfakeVideoAssistant');
-      expect(AGENT_NAMES.PHISHING_TEMPLATE_FIXER).toBe('phishingTemplateFixer');
       expect(AGENT_NAMES.PHISHING_LANDING_CLASSIFIER).toBe('phishingLandingPageClassifier');
       expect(AGENT_NAMES.EMAIL_REWRITER).toBe('emailRewriter');
       expect(AGENT_NAMES.EMAIL_CLASSIFIER).toBe('emailClassifier');
     });
 
-    it('should have 14 agent name entries', () => {
-      expect(Object.keys(AGENT_NAMES)).toHaveLength(14);
+    it('should have 13 agent name entries', () => {
+      expect(Object.keys(AGENT_NAMES)).toHaveLength(13);
     });
   });
 
@@ -133,14 +132,13 @@ describe('constants', () => {
       expect(AGENT_IDS.SMISHING).toBe('smishing-sms-agent');
       expect(AGENT_IDS.MICROLEARNING).toBe('microlearning-agent');
       expect(AGENT_IDS.DEEPFAKE_VIDEO).toBe('deepfake-video-agent');
-      expect(AGENT_IDS.PHISHING_TEMPLATE_FIXER).toBe('phishing-template-fixer-agent');
       expect(AGENT_IDS.PHISHING_LANDING_CLASSIFIER).toBe('phishing-landing-classifier-agent');
       expect(AGENT_IDS.EMAIL_REWRITER).toBe('email-rewriter-agent');
       expect(AGENT_IDS.EMAIL_CLASSIFIER).toBe('email-classifier-agent');
     });
 
-    it('should have 14 agent ID entries', () => {
-      expect(Object.keys(AGENT_IDS)).toHaveLength(14);
+    it('should have 13 agent ID entries', () => {
+      expect(Object.keys(AGENT_IDS)).toHaveLength(13);
     });
   });
 

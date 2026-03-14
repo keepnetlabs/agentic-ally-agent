@@ -96,7 +96,7 @@ describe('add-language-workflow', () => {
 
   // Tests for input schema validation
   describe('Input Schema Validation', () => {
-    const inputSchema = addLanguageWorkflow.inputSchema as z.ZodSchema;
+    const inputSchema = addLanguageWorkflow.inputSchema as unknown as z.ZodSchema;
 
     it('should require existingMicrolearningId', () => {
       const testData = {
@@ -128,7 +128,7 @@ describe('add-language-workflow', () => {
 
     it('should accept targetLanguage in BCP-47 format', () => {
       const validLanguages = ['en-US', 'tr-TR', 'de-DE', 'fr-FR', 'ja-JP', 'ko-KR', 'zh-CN', 'fr-CA'];
-      const inputSchema = addLanguageWorkflow.inputSchema as z.ZodSchema;
+      const inputSchema = addLanguageWorkflow.inputSchema as unknown as z.ZodSchema;
 
       validLanguages.forEach(lang => {
         const testData = {
@@ -258,7 +258,7 @@ describe('add-language-workflow', () => {
 
   // Tests for output schema structure
   describe('Output Schema Structure', () => {
-    const outputSchema = addLanguageWorkflow.outputSchema as z.ZodSchema;
+    const outputSchema = addLanguageWorkflow.outputSchema as unknown as z.ZodSchema;
 
     it('should have success field in output', () => {
       const shape = (outputSchema as any).shape;
@@ -416,7 +416,7 @@ describe('add-language-workflow', () => {
 
   // Tests for language code validation
   describe('Language Code Validation', () => {
-    const inputSchema = addLanguageWorkflow.inputSchema as z.ZodSchema;
+    const inputSchema = addLanguageWorkflow.inputSchema as unknown as z.ZodSchema;
 
     it('should accept lowercase language codes', () => {
       const testData = {
@@ -464,7 +464,7 @@ describe('add-language-workflow', () => {
 
   // Tests for optional fields defaults
   describe('Optional Field Defaults', () => {
-    const inputSchema = addLanguageWorkflow.inputSchema as z.ZodSchema;
+    const inputSchema = addLanguageWorkflow.inputSchema as unknown as z.ZodSchema;
 
     it('should apply default for department', () => {
       const testData = {
@@ -516,7 +516,7 @@ describe('add-language-workflow', () => {
 
   // Tests for KVService integration expectations
   describe('KVService Integration', () => {
-    const inputSchema = addLanguageWorkflow.inputSchema as z.ZodSchema;
+    const inputSchema = addLanguageWorkflow.inputSchema as unknown as z.ZodSchema;
 
     it('should accept microlearning IDs formatted for KV', () => {
       const kvFormattedIds = ['ml:phishing-101:base', 'phishing-101', 'training-xyz-123'];
@@ -578,7 +578,7 @@ describe('add-language-workflow', () => {
 
   // Tests for error scenarios
   describe('Error Handling', () => {
-    const inputSchema = addLanguageWorkflow.inputSchema as z.ZodSchema;
+    const inputSchema = addLanguageWorkflow.inputSchema as unknown as z.ZodSchema;
 
     it('should validate with missing targetLanguage', () => {
       const testData = {
@@ -636,7 +636,7 @@ describe('add-language-workflow', () => {
     });
 
     it('should define output schema that supports async results', () => {
-      const outputSchema = addLanguageWorkflow.outputSchema as z.ZodSchema;
+      const outputSchema = addLanguageWorkflow.outputSchema as unknown as z.ZodSchema;
       const shape = (outputSchema as any).shape;
       expect(shape).toHaveProperty('success');
       expect(shape).toHaveProperty('data');

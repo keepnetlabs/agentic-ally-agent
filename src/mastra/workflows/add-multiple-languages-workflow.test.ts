@@ -83,7 +83,7 @@ describe('add-multiple-languages-workflow', () => {
 
   // Tests for input schema validation
   describe('Input Schema Validation', () => {
-    const inputSchema = addMultipleLanguagesWorkflow.inputSchema as z.ZodSchema;
+    const inputSchema = addMultipleLanguagesWorkflow.inputSchema as unknown as z.ZodSchema;
 
     it('should require existingMicrolearningId', () => {
       const testData = {
@@ -255,7 +255,7 @@ describe('add-multiple-languages-workflow', () => {
 
   // Tests for language validation
   describe('Language Validation', () => {
-    const inputSchema = addMultipleLanguagesWorkflow.inputSchema as z.ZodSchema;
+    const inputSchema = addMultipleLanguagesWorkflow.inputSchema as unknown as z.ZodSchema;
 
     it('should accept many languages (no hard limit)', () => {
       const manyLanguages = [
@@ -326,7 +326,7 @@ describe('add-multiple-languages-workflow', () => {
 
   // Tests for output schema structure
   describe('Output Schema Structure', () => {
-    const outputSchema = addMultipleLanguagesWorkflow.outputSchema as z.ZodSchema;
+    const outputSchema = addMultipleLanguagesWorkflow.outputSchema as unknown as z.ZodSchema;
 
     it('should have success field in output', () => {
       const sampleOutput = {
@@ -570,7 +570,7 @@ describe('add-multiple-languages-workflow', () => {
 
   // Tests for status enum values
   describe('Status Enum Values', () => {
-    const outputSchema = addMultipleLanguagesWorkflow.outputSchema as z.ZodSchema;
+    const outputSchema = addMultipleLanguagesWorkflow.outputSchema as unknown as z.ZodSchema;
 
     it('should accept success status', () => {
       const sampleOutput = {
@@ -699,7 +699,7 @@ describe('add-multiple-languages-workflow', () => {
     });
 
     it('should support passing through model provider', () => {
-      const inputSchema = addMultipleLanguagesWorkflow.inputSchema as z.ZodSchema;
+      const inputSchema = addMultipleLanguagesWorkflow.inputSchema as unknown as z.ZodSchema;
       const testData = {
         existingMicrolearningId: 'test-id',
         targetLanguages: ['tr-TR', 'de-DE'],
@@ -711,7 +711,7 @@ describe('add-multiple-languages-workflow', () => {
     });
 
     it('should support passing through model', () => {
-      const inputSchema = addMultipleLanguagesWorkflow.inputSchema as z.ZodSchema;
+      const inputSchema = addMultipleLanguagesWorkflow.inputSchema as unknown as z.ZodSchema;
       const testData = {
         existingMicrolearningId: 'test-id',
         targetLanguages: ['tr-TR'],
@@ -726,7 +726,7 @@ describe('add-multiple-languages-workflow', () => {
   // Tests for result structure
   describe('Result Structure Per Language', () => {
     it('each result should have language string', () => {
-      const outputSchema = addMultipleLanguagesWorkflow.outputSchema as z.ZodSchema;
+      const outputSchema = addMultipleLanguagesWorkflow.outputSchema as unknown as z.ZodSchema;
       const sampleOutput = {
         success: true,
         successCount: 1,
@@ -754,7 +754,7 @@ describe('add-multiple-languages-workflow', () => {
     });
 
     it('successful result should have trainingUrl', () => {
-      const outputSchema = addMultipleLanguagesWorkflow.outputSchema as z.ZodSchema;
+      const outputSchema = addMultipleLanguagesWorkflow.outputSchema as unknown as z.ZodSchema;
       const sampleOutput = {
         success: true,
         successCount: 1,
@@ -779,7 +779,7 @@ describe('add-multiple-languages-workflow', () => {
     });
 
     it('failed result should have error message', () => {
-      const outputSchema = addMultipleLanguagesWorkflow.outputSchema as z.ZodSchema;
+      const outputSchema = addMultipleLanguagesWorkflow.outputSchema as unknown as z.ZodSchema;
       const sampleOutput = {
         success: false,
         successCount: 0,
@@ -803,7 +803,7 @@ describe('add-multiple-languages-workflow', () => {
     });
 
     it('result should include duration in milliseconds', () => {
-      const outputSchema = addMultipleLanguagesWorkflow.outputSchema as z.ZodSchema;
+      const outputSchema = addMultipleLanguagesWorkflow.outputSchema as unknown as z.ZodSchema;
       const sampleOutput = {
         success: true,
         successCount: 1,
@@ -834,7 +834,7 @@ describe('add-multiple-languages-workflow', () => {
     });
 
     it('should handle multiple concurrent language requests', () => {
-      const inputSchema = addMultipleLanguagesWorkflow.inputSchema as z.ZodSchema;
+      const inputSchema = addMultipleLanguagesWorkflow.inputSchema as unknown as z.ZodSchema;
       const testData = {
         existingMicrolearningId: 'test-id',
         targetLanguages: ['tr-TR', 'de-DE', 'fr-FR', 'ja-JP', 'ko-KR'],
@@ -847,7 +847,7 @@ describe('add-multiple-languages-workflow', () => {
 
   // Tests for error scenarios
   describe('Error Handling', () => {
-    const inputSchema = addMultipleLanguagesWorkflow.inputSchema as z.ZodSchema;
+    const inputSchema = addMultipleLanguagesWorkflow.inputSchema as unknown as z.ZodSchema;
 
     it('should validate with missing existingMicrolearningId', () => {
       const testData = {
@@ -899,7 +899,7 @@ describe('add-multiple-languages-workflow', () => {
 
   // Tests for count accuracy
   describe('Count Accuracy', () => {
-    const outputSchema = addMultipleLanguagesWorkflow.outputSchema as z.ZodSchema;
+    const outputSchema = addMultipleLanguagesWorkflow.outputSchema as unknown as z.ZodSchema;
 
     it('successCount should equal successful results count', () => {
       const sampleOutput = {
@@ -958,7 +958,7 @@ describe('add-multiple-languages-workflow', () => {
 
   // Additional edge case tests
   describe('Edge Cases and Boundary Conditions', () => {
-    const inputSchema = addMultipleLanguagesWorkflow.inputSchema as z.ZodSchema;
+    const inputSchema = addMultipleLanguagesWorkflow.inputSchema as unknown as z.ZodSchema;
 
     it('should accept single language (minimum)', () => {
       expect(() => {
@@ -1035,7 +1035,7 @@ describe('add-multiple-languages-workflow', () => {
 
   // Output validation edge cases
   describe('Output Validation Edge Cases', () => {
-    const outputSchema = addMultipleLanguagesWorkflow.outputSchema as z.ZodSchema;
+    const outputSchema = addMultipleLanguagesWorkflow.outputSchema as unknown as z.ZodSchema;
 
     it('should validate partial success output', () => {
       const partialOutput = {
@@ -1128,7 +1128,7 @@ describe('add-multiple-languages-workflow', () => {
 
   // Department-specific tests
   describe('Department-Specific Behavior', () => {
-    const inputSchema = addMultipleLanguagesWorkflow.inputSchema as z.ZodSchema;
+    const inputSchema = addMultipleLanguagesWorkflow.inputSchema as unknown as z.ZodSchema;
 
     it('should accept IT department', () => {
       expect(() => {
@@ -1181,7 +1181,7 @@ describe('add-multiple-languages-workflow', () => {
 
   // Model provider configuration tests
   describe('Model Provider Configurations', () => {
-    const inputSchema = addMultipleLanguagesWorkflow.inputSchema as z.ZodSchema;
+    const inputSchema = addMultipleLanguagesWorkflow.inputSchema as unknown as z.ZodSchema;
 
     it('should accept OPENAI provider', () => {
       expect(() => {

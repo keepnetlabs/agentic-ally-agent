@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { getCompanyDetailTool } from './get-company-detail-tool';
 import '../../../__tests__/setup';
+import { assertToolSuccess } from '../../../__tests__/helpers';
 
 vi.mock(import('../../utils/core/request-storage'), async (importOriginal) => {
   const actual = await importOriginal();
@@ -49,6 +50,7 @@ describe('GetCompanyDetailTool', () => {
       } as Response);
 
       const result = await getCompanyDetailTool.execute!({ companyResourceId: 'company-123' }, {});
+      assertToolSuccess(result);
       expect(result.success).toBe(true);
       expect(result.company?.name).toBe('Acme Corp');
       expect(result.company?.industryName).toBe('Technology');
@@ -60,6 +62,7 @@ describe('GetCompanyDetailTool', () => {
       vi.mocked(getRequestContext).mockReturnValueOnce({ token: '', baseApiUrl: '' } as any);
 
       const result = await getCompanyDetailTool.execute!({ companyResourceId: 'company-123' }, {});
+      assertToolSuccess(result);
       expect(result.success).toBe(false);
       expect(result.error).toBeTruthy();
     });
@@ -72,6 +75,7 @@ describe('GetCompanyDetailTool', () => {
       } as Response);
 
       const result = await getCompanyDetailTool.execute!({ companyResourceId: 'invalid-id' }, {});
+      assertToolSuccess(result);
       expect(result.success).toBe(false);
       expect(result.error).toContain('404');
     });

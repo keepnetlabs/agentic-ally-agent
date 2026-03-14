@@ -85,7 +85,6 @@ vi.mock('../../agents', () => ({
   vishingCallAgent: {},
   deepfakeVideoAgent: {},
   outOfScopeAgent: {},
-  phishingTemplateFixerAgent: {},
   phishingLandingPageClassifierAgent: {},
   emailRewriterAgent: {},
   emailClassifierAgent: {},

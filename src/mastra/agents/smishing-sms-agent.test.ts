@@ -81,7 +81,7 @@ describe('smishingAgent', () => {
   it('should specify workflow routing', () => {
     expect(instructions).toContain('Workflow Routing');
     expect(instructions).toContain('CREATION');
-    expect(instructions).toContain('UTILITY');
+    expect(instructions).toContain('EDITING');
   });
 
   it('should mention confirmation templates', () => {

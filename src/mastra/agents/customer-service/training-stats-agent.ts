@@ -211,7 +211,7 @@ export const trainingStatsAgent = new Agent({
   memory: new Memory({
     options: {
       lastMessages: 10,
-      workingMemory: { enabled: false },
+      workingMemory: { enabled: false, scope: 'thread' },
     },
   }),
 });
