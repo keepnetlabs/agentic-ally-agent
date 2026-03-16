@@ -1066,30 +1066,7 @@ export const TOKEN_CACHE_INVALID_TTL_MS = 60_000;
 // ============================================
 
 export const API_ENDPOINTS = {
-  // CRUD Worker base domain: dev vs production
-  // Local dev (NODE_ENV=development) → dev workers, production → prod workers
-  ...(() => {
-    const isDev = process.env.NODE_ENV === 'development';
-    const phishingBase = isDev
-      ? 'https://crud-phishing-worker-dev.keepnet-labs-ltd-business-profile4086.workers.dev'
-      : 'https://crud-phishing-worker.keepnet-labs-ltd-business-profile4086.workers.dev';
-    const trainingBase = isDev
-      ? 'https://crud-training-worker-dev.keepnet-labs-ltd-business-profile4086.workers.dev'
-      : 'https://crud-training-worker.keepnet-labs-ltd-business-profile4086.workers.dev';
-    const smishingBase = isDev
-      ? 'https://crud-smishing-worker-dev.keepnet-labs-ltd-business-profile4086.workers.dev'
-      : 'https://crud-smishing-worker.keepnet-labs-ltd-business-profile4086.workers.dev';
-    return {
-      PHISHING_WORKER_URL: process.env.PHISHING_WORKER_URL || `${phishingBase}/submit`,
-      PHISHING_WORKER_SUBMIT: process.env.PHISHING_WORKER_SUBMIT || `${phishingBase}/submit`,
-      PHISHING_WORKER_SEND: process.env.PHISHING_WORKER_SEND || `${phishingBase}/send`,
-      TRAINING_WORKER_URL: process.env.TRAINING_WORKER_URL || `${trainingBase}/submit`,
-      TRAINING_WORKER_SEND: process.env.TRAINING_WORKER_SEND || `${trainingBase}/send`,
-      SMISHING_WORKER_URL: process.env.SMISHING_WORKER_URL || `${smishingBase}/submit`,
-      SMISHING_WORKER_SUBMIT: process.env.SMISHING_WORKER_SUBMIT || `${smishingBase}/submit`,
-      SMISHING_WORKER_SEND: process.env.SMISHING_WORKER_SEND || `${smishingBase}/send`,
-    };
-  })(),
+  // CRUD Worker URLs are now resolved dynamically via getWorkerUrls(baseApiUrl)
 
   // Microlearning API endpoints
   MICROLEARNING_API_URL:
@@ -1119,6 +1096,31 @@ export const API_ENDPOINTS = {
   // Agentic AI Chat endpoint (Policy)
   AGENTIC_AI_CHAT_URL: 'https://agentic-ai-chat.keepnetlabs.com',
 } as const;
+
+// CRUD Worker URL resolver — uses baseApiUrl (from X-BASE-API-URL header) at runtime
+// Dev workers are used when: NODE_ENV=development OR baseApiUrl contains 'test'
+export function getWorkerUrls(baseApiUrl?: string) {
+  const isDev = process.env.NODE_ENV === 'development' || (baseApiUrl ? baseApiUrl.includes('test') : false);
+  const phishingBase = isDev
+    ? 'https://crud-phishing-worker-dev.keepnet-labs-ltd-business-profile4086.workers.dev'
+    : 'https://crud-phishing-worker.keepnet-labs-ltd-business-profile4086.workers.dev';
+  const trainingBase = isDev
+    ? 'https://crud-training-worker-dev.keepnet-labs-ltd-business-profile4086.workers.dev'
+    : 'https://crud-training-worker.keepnet-labs-ltd-business-profile4086.workers.dev';
+  const smishingBase = isDev
+    ? 'https://crud-smishing-worker-dev.keepnet-labs-ltd-business-profile4086.workers.dev'
+    : 'https://crud-smishing-worker.keepnet-labs-ltd-business-profile4086.workers.dev';
+  return {
+    PHISHING_WORKER_URL: process.env.PHISHING_WORKER_URL || `${phishingBase}/submit`,
+    PHISHING_WORKER_SUBMIT: process.env.PHISHING_WORKER_SUBMIT || `${phishingBase}/submit`,
+    PHISHING_WORKER_SEND: process.env.PHISHING_WORKER_SEND || `${phishingBase}/send`,
+    TRAINING_WORKER_URL: process.env.TRAINING_WORKER_URL || `${trainingBase}/submit`,
+    TRAINING_WORKER_SEND: process.env.TRAINING_WORKER_SEND || `${trainingBase}/send`,
+    SMISHING_WORKER_URL: process.env.SMISHING_WORKER_URL || `${smishingBase}/submit`,
+    SMISHING_WORKER_SUBMIT: process.env.SMISHING_WORKER_SUBMIT || `${smishingBase}/submit`,
+    SMISHING_WORKER_SEND: process.env.SMISHING_WORKER_SEND || `${smishingBase}/send`,
+  };
+}
 
 // API Keys and authentication
 export const API_KEYS = {

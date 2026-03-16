@@ -16,7 +16,7 @@ import { callWorkerAPI } from '../../utils/core/worker-api-client';
 import { maskSensitiveField } from '../../utils/core/security-utils';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
 import { KVService } from '../../services/kv-service';
-import { ERROR_MESSAGES, API_ENDPOINTS, KV_NAMESPACES } from '../../constants';
+import { ERROR_MESSAGES, KV_NAMESPACES, getWorkerUrls } from '../../constants';
 import { errorService } from '../../services/error-service';
 import { validateToolResult } from '../../utils/tool-result-validation';
 import { extractCompanyIdFromTokenExport } from '../../utils/core/policy-fetcher';
@@ -148,12 +148,13 @@ export const uploadSmishingTool = createTool({
           callWorkerAPI({
             env,
             serviceBinding: env?.SMISHING_CRUD_WORKER,
-            publicUrl: API_ENDPOINTS.SMISHING_WORKER_URL,
+            publicUrl: getWorkerUrls(baseApiUrl).SMISHING_WORKER_URL,
             endpoint: 'https://worker/submit',
             payload,
             token,
             errorPrefix: 'Worker failed',
             operationName: `Upload smishing content ${smishingId}`,
+            baseApiUrl,
           }) as Promise<UploadSmishingWorkerResult>,
         `Upload smishing content ${smishingId}`
       );

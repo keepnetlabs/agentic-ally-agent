@@ -1,5 +1,5 @@
 import { Agent } from '@mastra/core/agent';
-import { getLightAgentModel } from '../model-providers';
+import { getDefaultAgentModel } from '../model-providers';
 import { AGENT_NAMES, AGENT_IDS, PUBLIC_AGENT_CAPABILITIES } from '../constants';
 
 const capabilityList = PUBLIC_AGENT_CAPABILITIES.map(cap => `   • ${cap}`).join('\n');
@@ -22,5 +22,5 @@ RESPONSE TEMPLATE:
 ${capabilityList}
 
 3. Suggest contacting the support team for other needs.`,
-  model: getLightAgentModel(),
+  model: getDefaultAgentModel(),
 });

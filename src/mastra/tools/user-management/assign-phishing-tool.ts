@@ -18,7 +18,7 @@ import { withRetry } from '../../utils/core/resilience-utils';
 import { callWorkerAPI, type AgenticActivitiesPayload, type WorkerSendResponse } from '../../utils/core/worker-api-client';
 import { maskSensitiveField } from '../../utils/core/security-utils';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
-import { ERROR_MESSAGES, API_ENDPOINTS, KV_NAMESPACES, MAX_GROUP_ASSIGN_USERS } from '../../constants';
+import { ERROR_MESSAGES, KV_NAMESPACES, MAX_GROUP_ASSIGN_USERS, getWorkerUrls } from '../../constants';
 import { errorService } from '../../services/error-service';
 import { validateToolResult } from '../../utils/tool-result-validation';
 import { extractCompanyIdFromTokenExport } from '../../utils/core/policy-fetcher';
@@ -190,12 +190,13 @@ export const assignPhishingTool = createTool({
           callWorkerAPI<WorkerSendResponse>({
             env,
             serviceBinding: env?.PHISHING_CRUD_WORKER,
-            publicUrl: API_ENDPOINTS.PHISHING_WORKER_SEND,
+            publicUrl: getWorkerUrls(baseApiUrl).PHISHING_WORKER_SEND,
             endpoint: 'https://worker/send',
             payload: p,
             token,
             errorPrefix: 'Assign API failed',
             operationName: `Assign ${campaignType} to user ${p.targetUserResourceId}`,
+            baseApiUrl,
           }),
         `Assign ${campaignType} to user ${p.targetUserResourceId}`
       );

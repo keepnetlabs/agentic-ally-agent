@@ -17,7 +17,7 @@ import { withRetry } from '../../utils/core/resilience-utils';
 import { callWorkerAPI, type AgenticActivitiesPayload, type WorkerSendResponse } from '../../utils/core/worker-api-client';
 import { maskSensitiveField } from '../../utils/core/security-utils';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
-import { ERROR_MESSAGES, API_ENDPOINTS, KV_NAMESPACES, MAX_GROUP_ASSIGN_USERS } from '../../constants';
+import { ERROR_MESSAGES, KV_NAMESPACES, MAX_GROUP_ASSIGN_USERS, getWorkerUrls } from '../../constants';
 import { errorService } from '../../services/error-service';
 import { validateToolResult } from '../../utils/tool-result-validation';
 import { extractCompanyIdFromTokenExport } from '../../utils/core/policy-fetcher';
@@ -158,12 +158,13 @@ export const assignTrainingTool = createTool({
           callWorkerAPI<WorkerSendResponse>({
             env,
             serviceBinding: env?.CRUD_WORKER,
-            publicUrl: API_ENDPOINTS.TRAINING_WORKER_SEND,
+            publicUrl: getWorkerUrls(baseApiUrl).TRAINING_WORKER_SEND,
             endpoint: 'https://worker/send',
             payload: p,
             token,
             errorPrefix: 'Assign API failed',
             operationName: `Assign training to user ${p.targetUserResourceId}`,
+            baseApiUrl,
           }),
         `Assign training to user ${p.targetUserResourceId}`
       );

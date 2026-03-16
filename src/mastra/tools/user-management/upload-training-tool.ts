@@ -16,7 +16,7 @@ import { callWorkerAPI, type ServiceBinding } from '../../utils/core/worker-api-
 import { maskSensitiveField } from '../../utils/core/security-utils';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
 import { KVService } from '../../services/kv-service';
-import { ERROR_MESSAGES, API_ENDPOINTS } from '../../constants';
+import { ERROR_MESSAGES, API_ENDPOINTS, getWorkerUrls } from '../../constants';
 import { errorService } from '../../services/error-service';
 import { validateToolResult } from '../../utils/tool-result-validation';
 import { waitForKVConsistency, buildExpectedKVKeys } from '../../utils/kv-consistency';
@@ -184,12 +184,13 @@ export const uploadTrainingTool = createTool({
           callWorkerAPI({
             env: safeEnv,
             serviceBinding,
-            publicUrl: API_ENDPOINTS.TRAINING_WORKER_URL,
+            publicUrl: getWorkerUrls(baseApiUrl).TRAINING_WORKER_URL,
             endpoint: 'https://worker/submit',
             payload,
             token,
             errorPrefix: 'Worker failed',
             operationName: `Upload training content ${microlearningId}`,
+            baseApiUrl,
           }),
         `Upload training content ${microlearningId}`
       );

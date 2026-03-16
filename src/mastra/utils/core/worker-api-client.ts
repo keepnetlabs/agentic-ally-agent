@@ -12,7 +12,7 @@
  * const result = await callWorkerAPI({
  *   env,
  *   serviceBinding: env.PHISHING_CRUD_WORKER,
- *   publicUrl: API_ENDPOINTS.PHISHING_WORKER_URL,
+ *   publicUrl: getWorkerUrls(baseApiUrl).PHISHING_WORKER_URL,
  *   endpoint: 'https://worker/submit',
  *   payload: { ... },
  *   token: token, // optional
@@ -54,6 +54,8 @@ export interface CallWorkerAPIOptions<TPayload = any> {
   errorPrefix: string;
   /** Operation name for logging */
   operationName?: string;
+  /** Base API URL (from X-BASE-API-URL header). If contains 'test' → bypass service binding, use publicUrl */
+  baseApiUrl?: string;
 }
 
 /**
@@ -73,12 +75,16 @@ export async function callWorkerAPI<TResponse = any, TPayload = any>(
     token,
     errorPrefix,
     operationName = 'Worker API call',
+    baseApiUrl,
   } = options;
 
   let response: Response;
 
-  const binding = isServiceBinding(serviceBinding) ? serviceBinding : undefined;
-  if (serviceBinding && !binding) {
+  // Test env (baseApiUrl contains 'test') → skip service binding, use dev worker public URL
+  const isTestEnv = !!baseApiUrl?.includes('test');
+  const binding = !isTestEnv && isServiceBinding(serviceBinding) ? serviceBinding : undefined;
+
+  if (serviceBinding && !binding && !isTestEnv) {
     logger.warn('⚠️ Invalid service binding provided; falling back to public URL', { endpoint, operationName });
   }
 
