@@ -12,6 +12,7 @@ import {
   buildAutonomousModeFragment,
   WORKFLOW_ROUTING_CREATION,
 } from '../prompt-fragments';
+import { createCompletenessScorer, createToneScorer } from '@mastra/evals/scorers/prebuilt';
 
 const buildSmishingInstructions = () => `
 You are the **Smishing Simulation Specialist**.
@@ -189,6 +190,10 @@ export const smishingSmsAgent = new Agent({
     uploadSmishing: uploadSmishingTool,
     assignSmishing: assignSmishingTool,
     showReasoning: reasoningTool,
+  },
+  scorers: {
+    completeness: { scorer: createCompletenessScorer(), sampling: { type: 'ratio' as const, rate: 1 } },
+    tone: { scorer: createToneScorer(), sampling: { type: 'ratio' as const, rate: 1 } },
   },
   memory: new Memory({
     options: {

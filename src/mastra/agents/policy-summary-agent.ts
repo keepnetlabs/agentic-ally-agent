@@ -3,6 +3,7 @@ import { summarizePolicyTool } from '../tools';
 import { getLightAgentModel } from '../model-providers';
 import { Memory } from '@mastra/memory';
 import { AGENT_NAMES, AGENT_IDS, MESSAGING_GUIDELINES_PROMPT_FRAGMENT } from '../constants';
+import { createCompletenessScorer, createToneScorer } from '@mastra/evals/scorers/prebuilt';
 
 const buildPolicySummaryInstructions = () => `
 You are the **Policy Intelligence Specialist**.
@@ -71,6 +72,10 @@ export const policySummaryAgent = new Agent({
   model: getLightAgentModel(),
   tools: {
     summarizePolicy: summarizePolicyTool,
+  },
+  scorers: {
+    completeness: { scorer: createCompletenessScorer(), sampling: { type: 'ratio' as const, rate: 1 } },
+    tone: { scorer: createToneScorer(), sampling: { type: 'ratio' as const, rate: 1 } },
   },
   memory: new Memory({
     options: {

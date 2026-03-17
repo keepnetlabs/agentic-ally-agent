@@ -22,6 +22,9 @@ import {
   normalizeEmailButtonDivs,
   normalizeEmailButtonOnlyRowAlignment,
   normalizeEmailCtaWrapperAlignment,
+  normalizeEmailButtonRowPadding,
+  normalizeEmailLeadingCtaBlockAlignment,
+  normalizeEmailNestedCtaTableAlignment,
   normalizeEmailButtonMarginToTdPadding,
 } from '../utils/content-processors/email-button-normalizer';
 import { normalizeEmailMergeTags } from '../utils/content-processors/email-merge-tag-normalizer';
@@ -359,8 +362,11 @@ async function handleEmailTemplate(
   const step1 = normalizeEmailLocalBoxes(baseHtml);
   const step2 = normalizeEmailButtonDivs(step1);
   const step3 = normalizeEmailCtaWrapperAlignment(step2);
-  const step4 = normalizeEmailButtonOnlyRowAlignment(step3);
-  const normalizedHtml = normalizeEmailButtonMarginToTdPadding(step4);
+  const step4 = normalizeEmailButtonRowPadding(step3);
+  const step5 = normalizeEmailButtonOnlyRowAlignment(step4);
+  const step6 = normalizeEmailLeadingCtaBlockAlignment(step5);
+  const step7 = normalizeEmailNestedCtaTableAlignment(step6);
+  const normalizedHtml = normalizeEmailButtonMarginToTdPadding(step7);
 
   const { html: finalHtml, corrections } = normalizeEmailMergeTags(normalizedHtml);
   if (corrections.length > 0) {

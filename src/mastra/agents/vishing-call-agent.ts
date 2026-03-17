@@ -26,6 +26,7 @@ import { getDefaultAgentModel } from '../model-providers';
 import { Memory } from '@mastra/memory';
 import { AGENT_NAMES, AGENT_IDS, MESSAGING_GUIDELINES_PROMPT_FRAGMENT } from '../constants';
 import { NO_TECH_JARGON_FRAGMENT, buildLanguageRulesFragment } from '../prompt-fragments';
+import { createCompletenessScorer, createToneScorer } from '@mastra/evals/scorers/prebuilt';
 
 /**
  * Builds the system instructions for the vishing call agent.
@@ -325,6 +326,10 @@ export const vishingCallAgent = new Agent({
       listPhoneNumbers: listPhoneNumbersTool,
       initiateVishingCall: initiateVishingCallTool,
       showReasoning: reasoningTool,
+   },
+   scorers: {
+      completeness: { scorer: createCompletenessScorer(), sampling: { type: 'ratio' as const, rate: 1 } },
+      tone: { scorer: createToneScorer(), sampling: { type: 'ratio' as const, rate: 1 } },
    },
    memory: new Memory({
       options: {

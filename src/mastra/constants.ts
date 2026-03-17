@@ -661,6 +661,7 @@ export const AGENT_NAMES = {
   PHISHING_LANDING_CLASSIFIER: 'phishingLandingPageClassifier',
   EMAIL_REWRITER: 'emailRewriter',
   EMAIL_CLASSIFIER: 'emailClassifier',
+  REPORT: 'reportAgent',
 } as const;
 
 // ============================================
@@ -681,6 +682,7 @@ export const AGENT_IDS = {
   PHISHING_LANDING_CLASSIFIER: 'phishing-landing-classifier-agent',
   EMAIL_REWRITER: 'email-rewriter-agent',
   EMAIL_CLASSIFIER: 'email-classifier-agent',
+  REPORT: 'report-agent',
 } as const;
 
 // ============================================

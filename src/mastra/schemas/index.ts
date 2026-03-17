@@ -35,3 +35,4 @@ export * from './create-smishing-schemas';
 export * from './add-language-schemas';
 export * from './create-microlearning-schemas';
 export * from './update-microlearning-schemas';
+export * from './report-schema';

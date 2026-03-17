@@ -29,6 +29,7 @@ import { getDefaultAgentModel } from '../model-providers';
 import { Memory } from '@mastra/memory';
 import { AGENT_NAMES, AGENT_IDS, MESSAGING_GUIDELINES_PROMPT_FRAGMENT } from '../constants';
 import { NO_TECH_JARGON_FRAGMENT_DEEPFAKE, buildLanguageRulesFragment } from '../prompt-fragments';
+import { createCompletenessScorer, createToneScorer } from '@mastra/evals/scorers/prebuilt';
 
 const buildDeepfakeVideoInstructions = () => `
 You are the **Deepfake Video Specialist**.
@@ -344,6 +345,10 @@ export const deepfakeVideoAgent = new Agent({
     listHeyGenVoices: listHeyGenVoicesTool,
     generateDeepfakeVideo: generateDeepfakeVideoTool,
     showReasoning: reasoningTool,
+  },
+  scorers: {
+    completeness: { scorer: createCompletenessScorer(), sampling: { type: 'ratio' as const, rate: 1 } },
+    tone: { scorer: createToneScorer(), sampling: { type: 'ratio' as const, rate: 1 } },
   },
   memory: new Memory({
     options: {

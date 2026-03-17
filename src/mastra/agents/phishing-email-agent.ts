@@ -13,6 +13,10 @@ import {
   buildAutonomousModeFragment,
   WORKFLOW_ROUTING_CREATION,
 } from '../prompt-fragments';
+import {
+  createKeywordCoverageScorer,
+  createToneScorer,
+} from '@mastra/evals/scorers/prebuilt';
 
 const buildPhishingInstructions = () => `
 You are the **Phishing Simulation Specialist**.
@@ -245,6 +249,16 @@ export const phishingEmailAgent = new Agent({
     uploadPhishing: uploadPhishingTool,
     assignPhishing: assignPhishingTool,
     showReasoning: reasoningTool,
+  },
+  scorers: {
+    keywordCoverage: {
+      scorer: createKeywordCoverageScorer(),
+      sampling: { type: 'ratio' as const, rate: 1 }, // NLP — free, checks merge tags
+    },
+    tone: {
+      scorer: createToneScorer(),
+      sampling: { type: 'ratio' as const, rate: 1 }, // NLP — free, tone vs difficulty match
+    },
   },
   memory: new Memory({
     options: {

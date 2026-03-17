@@ -13,6 +13,7 @@ export const CS_AGENT_NAMES = {
   CS_ORCHESTRATOR: 'csOrchestrator',
   COMPANY_SEARCH: 'companySearchAssistant',
   TRAINING_STATS: 'trainingStatsAssistant',
+  REPORT: 'reportAgent',
 } as const;
 
 export const CS_AGENT_IDS = {
@@ -28,6 +29,7 @@ export type CSAgentName = (typeof CS_AGENT_NAMES)[keyof typeof CS_AGENT_NAMES];
 export const CS_VALID_AGENTS: readonly CSAgentName[] = [
   CS_AGENT_NAMES.COMPANY_SEARCH,
   CS_AGENT_NAMES.TRAINING_STATS,
+  CS_AGENT_NAMES.REPORT,
 ] as const;
 
 // Fallback agent (routing başarısız olursa)

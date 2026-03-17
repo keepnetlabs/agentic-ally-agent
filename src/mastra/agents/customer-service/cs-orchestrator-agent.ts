@@ -62,15 +62,23 @@ IF the request is about training data, training list, how many trainings, traini
   - **If NOT found AND user mentions a company name:** Route to **${CS_AGENT_NAMES.COMPANY_SEARCH}** FIRST to resolve the company. taskContext: "User wants training data. First resolve company: [name]."
   - **If NOT found AND no company mentioned:** Route to **${CS_AGENT_NAMES.TRAINING_STATS}** with taskContext noting no company context available.
 
-### SCENARIO C: CONTINUATION
+### SCENARIO C: REPORT GENERATION
+IF the request is about generating a report, creating a document, PDF export, or transforming data into a report:
+→ Route to **${CS_AGENT_NAMES.REPORT}**
+→ taskContext: Include topic, page count if mentioned, and any specific data or context from conversation history.
+→ Examples: "Generate a report", "Create a 5-page report about...", "Turn this into a report", "rapor üret", "PDF oluştur"
+→ **IMPORTANT:** If the user previously received company/training data and now says "turn this into a report" or "raporla", route to **${CS_AGENT_NAMES.REPORT}** with the context that previous data should be used.
+
+### SCENARIO D: CONTINUATION
 IF the user says "Yes", "OK", "Next page", "Show more", "Devam et", or similar short confirmations:
 → Route to the **SAME agent** that handled the previous request.
 → Determine last agent from the most recent semantic tag or message content:
   - \`[Company Selected]\` → **${CS_AGENT_NAMES.COMPANY_SEARCH}**
   - Training results/data in recent messages → **${CS_AGENT_NAMES.TRAINING_STATS}**
+  - \`[Report Generated]\` or reportId in recent messages → **${CS_AGENT_NAMES.REPORT}**
 → If unknown, default to **${CS_AGENT_NAMES.COMPANY_SEARCH}**.
 
-### SCENARIO D: MIXED / AMBIGUOUS
+### SCENARIO E: MIXED / AMBIGUOUS
 IF the request is unclear or could go either way:
 → Default to **${CS_AGENT_NAMES.COMPANY_SEARCH}**.
 → taskContext: Note ambiguity.

@@ -38,6 +38,91 @@ function isLikelyCtaElement(element: string): boolean {
   return hasHref && hasPadding && (hasBackground || hasRadius || hasButtonDisplay);
 }
 
+type BoxSide = 'top' | 'right' | 'bottom' | 'left';
+
+function extractStyleValue(tag: string): string | null {
+  const match = tag.match(/style=['"]([^'"]*)['"]/i);
+  return match ? match[1] : null;
+}
+
+function parseBoxShorthand(value: string): Record<BoxSide, string> {
+  const tokens = value.trim().split(/\s+/);
+
+  if (tokens.length === 1) {
+    return { top: tokens[0], right: tokens[0], bottom: tokens[0], left: tokens[0] };
+  }
+  if (tokens.length === 2) {
+    return { top: tokens[0], right: tokens[1], bottom: tokens[0], left: tokens[1] };
+  }
+  if (tokens.length === 3) {
+    return { top: tokens[0], right: tokens[1], bottom: tokens[2], left: tokens[1] };
+  }
+
+  return { top: tokens[0], right: tokens[1], bottom: tokens[2], left: tokens[3] };
+}
+
+function getEffectivePaddingValue(style: string, side: Extract<BoxSide, 'top' | 'bottom'>): string | null {
+  const sideMatch = style.match(new RegExp(`padding-${side}\\s*:\\s*([^;]+)`, 'i'));
+  if (sideMatch) return sideMatch[1].trim();
+
+  const shorthandMatch = style.match(/(?:^|;)\s*padding\s*:\s*([^;]+)/i);
+  if (!shorthandMatch) return null;
+
+  return parseBoxShorthand(shorthandMatch[1])[side];
+}
+
+function isZeroSpacingValue(value: string | null | undefined): boolean {
+  const normalized = (value ?? '').trim().toLowerCase();
+  return normalized === '' || normalized === '0' || normalized === '0px' || normalized === '0%';
+}
+
+function hasMeaningfulPadding(style: string, side: Extract<BoxSide, 'top' | 'bottom'>): boolean {
+  return !isZeroSpacingValue(getEffectivePaddingValue(style, side));
+}
+
+function stripCommentsAndWhitespace(html: string): string {
+  return html
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/&nbsp;/gi, '')
+    .replace(/\s+/g, '');
+}
+
+function hasMeaningfulHtml(html: string): boolean {
+  return stripCommentsAndWhitespace(html).length > 0;
+}
+
+function extractLikelyCtaElement(block: string): string | null {
+  const directTag = block.match(/^\s*(<(?:a|button)\b[\s\S]*?<\/(?:a|button)>)/i);
+  if (directTag) return directTag[1];
+
+  const nestedTag = block.match(/(<(?:a|button)\b[\s\S]*?<\/(?:a|button)>)/i);
+  return nestedTag ? nestedTag[1] : null;
+}
+
+function isLikelyCtaBlock(block: string): boolean {
+  const ctaElement = extractLikelyCtaElement(block);
+  return ctaElement ? isLikelyCtaElement(ctaElement) : false;
+}
+
+function ensureCenteredLeadingCtaBlock(block: string): string {
+  if (/^\s*<table\b/i.test(block)) {
+    if (/\balign\s*=\s*['"]center['"]/i.test(block)) return block;
+    return block.replace(/<table\b/i, '<table align="center"');
+  }
+
+  const directCta = block.match(/^\s*(<(?:a|button)\b[\s\S]*?<\/(?:a|button)>)\s*$/i);
+  if (!directCta) return block;
+
+  return `<div style="text-align: center;">${directCta[1]}</div>`;
+}
+
+function isFullWidthTable(tableBlock: string): boolean {
+  return (
+    /\bwidth\s*=\s*['"]?100%['"]?/i.test(tableBlock) ||
+    /style=['"][^'"]*\bwidth\s*:\s*100%/i.test(tableBlock)
+  );
+}
+
 export function normalizeEmailButtonDivs(html: string): string {
   // Match a <div> that contains ONLY a CTA link/button
   // and optional whitespace. Unwrap the div and ensure the link has centering styles.
@@ -81,15 +166,30 @@ export function normalizeEmailButtonRowPadding(html: string): string {
     /(<td\b[^>]*>)\s*(<(?:a|button)\b[^>]*>[\s\S]*?<\/(?:a|button)>)\s*(<\/td>)/gi,
     (match, openTag, cta, closeTag) => {
       if (!isLikelyCtaElement(cta)) return match;
+      if (!/style=['"]/i.test(openTag)) return match;
 
-      if (/style=['"]/i.test(openTag)) {
-        const fixedOpenTag = openTag.replace(/(style=['"])([^'"]*)/, (_: string, prefix: string, styles: string) => {
-          const trimmed = styles.trimEnd().replace(/;$/, '');
-          return `${prefix}${trimmed}; padding-top: 0`;
-        });
-        return `${fixedOpenTag}${cta}${closeTag}`;
+      const styleValue = extractStyleValue(openTag);
+      if (!styleValue) return match;
+
+      const topPadding = getEffectivePaddingValue(styleValue, 'top');
+      const bottomPadding = getEffectivePaddingValue(styleValue, 'bottom');
+
+      // Conservative fix: only collapse obviously duplicated vertical padding
+      // when the row carries the same non-zero top/bottom spacing.
+      if (
+        !hasMeaningfulPadding(styleValue, 'top') ||
+        !hasMeaningfulPadding(styleValue, 'bottom') ||
+        isZeroSpacingValue(topPadding) ||
+        topPadding?.trim().toLowerCase() !== bottomPadding?.trim().toLowerCase()
+      ) {
+        return match;
       }
-      return match;
+
+      const fixedOpenTag = openTag.replace(/(style=['"])([^'"]*)/i, (_: string, prefix: string, styles: string) => {
+        const trimmed = styles.trimEnd().replace(/;$/, '');
+        return `${prefix}${trimmed}; padding-top: 0`;
+      });
+      return `${fixedOpenTag}${cta}${closeTag}`;
     }
   );
 }
@@ -150,6 +250,67 @@ export function normalizeEmailButtonOnlyRowAlignment(html: string): string {
 }
 
 /**
+ * Restores centered CTA block ownership when a CTA becomes the leading block
+ * inside a mixed footer/help-text cell.
+ *
+ * Problem:
+ * - AI can merge a previously centered CTA row with helper text below it,
+ *   which drops the table-level centering that the original layout relied on.
+ *
+ * Fix:
+ * - If a <td> starts with a likely CTA block and still contains additional
+ *   trailing content, center only that leading CTA block instead of forcing
+ *   the whole cell to become centered.
+ */
+export function normalizeEmailLeadingCtaBlockAlignment(html: string): string {
+  return html.replace(
+    /(<td\b([^>]*)>)((?:\s|<!--[\s\S]*?-->|<br\s*\/?>|<div\b[^>]*>\s*<\/div>\s*)*)((?:<table\b[\s\S]*?<\/table>|<(?:a|button)\b[\s\S]*?<\/(?:a|button)>))([\s\S]*?)(<\/td>)/gi,
+    (match, openTag, attrs, leadingPrefix, leadingBlock, trailingContent, closeTag) => {
+      if (!isLikelyCtaBlock(leadingBlock)) return match;
+      if (!hasMeaningfulHtml(trailingContent)) return match;
+
+      const tdAlreadyCentered =
+        /\balign\s*=\s*['"]center['"]/i.test(attrs) ||
+        /style=['"][^'"]*text-align\s*:\s*center/i.test(openTag);
+      if (tdAlreadyCentered) return match;
+
+      const centeredBlock = ensureCenteredLeadingCtaBlock(leadingBlock);
+      if (centeredBlock === leadingBlock) return match;
+
+      return `${openTag}${leadingPrefix}${centeredBlock}${trailingContent}${closeTag}`;
+    }
+  );
+}
+
+/**
+ * Restores table-level centering for CTA tables that were moved inside neutral
+ * wrapper divs together with helper text.
+ *
+ * Problem:
+ * - A centered footer <td> can contain neutral <div> wrappers, then a content-width
+ *   CTA <table>, followed by helper text. In that shape, td-level centering is not
+ *   enough to visually center the nested table in many renderers.
+ *
+ * Fix:
+ * - If a wrapper div starts with a content-width CTA table and also contains
+ *   trailing content, add align="center" directly on that CTA table.
+ */
+export function normalizeEmailNestedCtaTableAlignment(html: string): string {
+  return html.replace(
+    /<div\b([^>]*)>(\s*)((?:<table\b[\s\S]*?<\/table>))([\s\S]*?)<\/div>/gi,
+    (match, attrs, leadingWhitespace, tableBlock, trailingContent) => {
+      if (!isLikelyCtaBlock(tableBlock)) return match;
+      if (!hasMeaningfulHtml(trailingContent)) return match;
+      if (/\balign\s*=\s*['"]center['"]/i.test(tableBlock)) return match;
+      if (isFullWidthTable(tableBlock)) return match;
+
+      const centeredTable = tableBlock.replace(/<table\b/i, '<table align="center"');
+      return `<div${attrs}>${leadingWhitespace}${centeredTable}${trailingContent}</div>`;
+    }
+  );
+}
+
+/**
  * Adds explicit centering to wrapper divs that start with a likely CTA element.
  *
  * This helps real-world email HTML where the CTA sits inside nested div wrappers
@@ -183,19 +344,36 @@ export function normalizeEmailButtonMarginToTdPadding(html: string): string {
 
       if (!marginTop && !marginBottom) return match;
 
+      const tdStyle = extractStyleValue(tdOpen) ?? '';
+      const canMigrateTop =
+        !!marginTop &&
+        !isZeroSpacingValue(marginTop[1]) &&
+        !hasMeaningfulPadding(tdStyle, 'top');
+      const canMigrateBottom =
+        !!marginBottom &&
+        !isZeroSpacingValue(marginBottom[1]) &&
+        !hasMeaningfulPadding(tdStyle, 'bottom');
+
+      if (!canMigrateTop && !canMigrateBottom) return match;
+
       // Build padding to add to <td>
       const tdPaddings: string[] = [];
-      if (marginTop && marginTop[1].trim() !== '0' && marginTop[1].trim() !== '0px') {
+      if (canMigrateTop && marginTop) {
         tdPaddings.push(`padding-top: ${marginTop[1].trim()}`);
       }
-      if (marginBottom && marginBottom[1].trim() !== '0' && marginBottom[1].trim() !== '0px') {
+      if (canMigrateBottom && marginBottom) {
         tdPaddings.push(`padding-bottom: ${marginBottom[1].trim()}`);
       }
       if (tdPaddings.length === 0) return match;
 
-      // Remove margin-top/margin-bottom from <a>
-      let cleanedAnchor = anchor.replace(/\s*margin-top\s*:\s*[^;]+;?/gi, '');
-      cleanedAnchor = cleanedAnchor.replace(/\s*margin-bottom\s*:\s*[^;]+;?/gi, '');
+      // Remove only the margins that were safely migrated to the parent <td>.
+      let cleanedAnchor = anchor;
+      if (canMigrateTop) {
+        cleanedAnchor = cleanedAnchor.replace(/\s*margin-top\s*:\s*[^;]+;?/gi, '');
+      }
+      if (canMigrateBottom) {
+        cleanedAnchor = cleanedAnchor.replace(/\s*margin-bottom\s*:\s*[^;]+;?/gi, '');
+      }
       // Clean up leftover semicolons/spaces in style
       cleanedAnchor = cleanedAnchor.replace(/style=";\s*/i, 'style="');
       cleanedAnchor = cleanedAnchor.replace(/;\s*"/g, '"');

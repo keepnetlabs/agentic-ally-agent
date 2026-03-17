@@ -121,8 +121,8 @@ describe('constants', () => {
       expect(AGENT_NAMES.EMAIL_CLASSIFIER).toBe('emailClassifier');
     });
 
-    it('should have 13 agent name entries', () => {
-      expect(Object.keys(AGENT_NAMES)).toHaveLength(13);
+    it('should have 14 agent name entries', () => {
+      expect(Object.keys(AGENT_NAMES)).toHaveLength(14);
     });
   });
 
@@ -135,10 +135,11 @@ describe('constants', () => {
       expect(AGENT_IDS.PHISHING_LANDING_CLASSIFIER).toBe('phishing-landing-classifier-agent');
       expect(AGENT_IDS.EMAIL_REWRITER).toBe('email-rewriter-agent');
       expect(AGENT_IDS.EMAIL_CLASSIFIER).toBe('email-classifier-agent');
+      expect(AGENT_IDS.REPORT).toBe('report-agent');
     });
 
-    it('should have 13 agent ID entries', () => {
-      expect(Object.keys(AGENT_IDS)).toHaveLength(13);
+    it('should have 14 agent ID entries', () => {
+      expect(Object.keys(AGENT_IDS)).toHaveLength(14);
     });
   });
 

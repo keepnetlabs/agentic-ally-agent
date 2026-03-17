@@ -91,6 +91,7 @@ vi.mock('../../agents', () => ({
   companySearchAgent: {},
   trainingStatsAgent: {},
   csOrchestratorAgent: {},
+  reportAgent: {},
 }));
 
 vi.mock('../../utils/cs-orchestration-helpers', () => ({

@@ -90,6 +90,7 @@ import {
   companySearchAgent,
   trainingStatsAgent,
   csOrchestratorAgent,
+  reportAgent,
 } from './agents';
 import {
   errorHandlerMiddleware,
@@ -186,6 +187,8 @@ export const mastra = new Mastra({
     companySearchAssistant: companySearchAgent,
     trainingStatsAssistant: trainingStatsAgent,
     csOrchestrator: csOrchestratorAgent,
+    // Report Generation
+    reportAgent,
   },
   logger,
   deployer: getDeployer(),

@@ -36,6 +36,10 @@ import { getDefaultAgentModel } from '../model-providers';
 import { Memory } from '@mastra/memory';
 import { AGENT_NAMES, AGENT_IDS, MESSAGING_GUIDELINES_PROMPT_FRAGMENT } from '../constants';
 import { NO_TECH_JARGON_FRAGMENT, buildLanguageRulesFragment } from '../prompt-fragments';
+import {
+  createCompletenessScorer,
+  createToneScorer,
+} from '@mastra/evals/scorers/prebuilt';
 
 const buildInstructions = () => `
 You are an AI assistant specialized in creating microlearning content. Your role is to quickly gather the right information, apply smart defaults,
@@ -305,6 +309,16 @@ export const microlearningAgent = new Agent({
     workflowExecutor: workflowExecutorTool,
     uploadTraining: uploadTrainingTool,
     assignTraining: assignTrainingTool,
+  },
+  scorers: {
+    completeness: {
+      scorer: createCompletenessScorer(),
+      sampling: { type: 'ratio' as const, rate: 1 }, // NLP — free, run on all outputs
+    },
+    tone: {
+      scorer: createToneScorer(),
+      sampling: { type: 'ratio' as const, rate: 1 }, // NLP — free, run on all outputs
+    },
   },
   memory: new Memory({
     options: {

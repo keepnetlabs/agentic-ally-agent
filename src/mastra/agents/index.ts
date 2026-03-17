@@ -22,3 +22,6 @@ export {
 
 // Customer Service Agent Swarm
 export { companySearchAgent, trainingStatsAgent, csOrchestratorAgent } from './customer-service';
+
+// Report Generation
+export { reportAgent } from './report-agent';

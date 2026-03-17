@@ -83,6 +83,7 @@ vi.mock('./agents', () => ({
   companySearchAgent: {},
   trainingStatsAgent: {},
   csOrchestratorAgent: {},
+  reportAgent: {},
 }));
 
 describe('Mastra API Routes', () => {

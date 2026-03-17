@@ -1,6 +1,7 @@
 import { Agent } from '@mastra/core/agent';
 import { getModel, ModelProvider, Model } from '../model-providers';
 import { AGENT_IDS, AGENT_NAMES } from '../constants';
+import { createCompletenessScorer, createToneScorer } from '@mastra/evals/scorers/prebuilt';
 
 export const emailIRAnalyst = new Agent({
   id: AGENT_IDS.EMAIL_IR_ANALYST,
@@ -23,4 +24,8 @@ You act as a specialized sub-agent depending on the context provided in your tas
 3. **Precision**: Avoid vague statements. Use extracted signals to justify every output.
 `,
   model: getModel(ModelProvider.OPENAI, Model.OPENAI_GPT_5_1),
+  scorers: {
+    completeness: { scorer: createCompletenessScorer(), sampling: { type: 'ratio' as const, rate: 1 } },
+    tone: { scorer: createToneScorer(), sampling: { type: 'ratio' as const, rate: 1 } },
+  },
 });

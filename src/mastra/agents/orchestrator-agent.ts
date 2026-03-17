@@ -19,6 +19,7 @@ import { Agent } from '@mastra/core/agent';
 import { getDefaultAgentModel } from '../model-providers';
 import { AGENT_NAMES, AGENT_IDS, ORCHESTRATOR_CONFIRMATION_EXAMPLES } from '../constants';
 import { NO_TECH_JARGON_FRAGMENT_ORCHESTRATOR } from '../prompt-fragments';
+import { createCompletenessScorer } from '@mastra/evals/scorers/prebuilt';
 
 /**
  * Builds the system instructions for the orchestrator agent.
@@ -206,7 +207,7 @@ IF the user says "Upload", "Assign", "Send", "Deploy", "Yukle", "Gonder":
    - "Create smishing training about X" -> **microlearningAgent** (Smishing is the topic, Training is the artifact)
    - "Create phishing email about X" -> **phishingEmailAssistant**
    - "Create smishing template about X" -> **smishingSmsAssistant**
-6. **Implicit/Ambiguous:**
+7. **Implicit/Ambiguous:**
    - "Create for alice@company.com":
      - IF ID unknown -> **userInfoAssistant** (Resolution first).
      - IF ID known:
@@ -307,4 +308,10 @@ export const orchestratorAgent = new Agent({
   name: AGENT_NAMES.ORCHESTRATOR,
   instructions: buildOrchestratorInstructions(),
   model: getDefaultAgentModel(),
+  scorers: {
+    completeness: {
+      scorer: createCompletenessScorer(),
+      sampling: { type: 'ratio' as const, rate: 1 }, // NLP — free, checks routing completeness
+    },
+  },
 });

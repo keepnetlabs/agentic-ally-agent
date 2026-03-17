@@ -4,6 +4,7 @@ import { getTargetGroupInfoTool, getUserInfoTool } from '../tools/user-managemen
 import { getDefaultAgentModel } from '../model-providers';
 import { Memory } from '@mastra/memory';
 import { AGENT_NAMES, AGENT_IDS, MESSAGING_GUIDELINES_PROMPT_FRAGMENT } from '../constants';
+import { createCompletenessScorer, createToneScorer } from '@mastra/evals/scorers/prebuilt';
 
 const buildUserInfoInstructions = () => `
 You are the Executive Security Communications Expert for an enterprise Human Risk Management platform.
@@ -233,6 +234,10 @@ export const userInfoAgent = new Agent({
   tools: {
     getUserInfo: getUserInfoTool,
     getTargetGroupInfo: getTargetGroupInfoTool,
+  },
+  scorers: {
+    completeness: { scorer: createCompletenessScorer(), sampling: { type: 'ratio' as const, rate: 1 } },
+    tone: { scorer: createToneScorer(), sampling: { type: 'ratio' as const, rate: 1 } },
   },
   memory: new Memory({
     options: {
