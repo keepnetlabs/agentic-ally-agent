@@ -41,12 +41,15 @@ interface AutonomousToolResult {
 
 /**
  * Derive contentCategory from simulation metadata for the Agentic AI Activities API.
- * Example output: "Phishing | CEO Fraud | Authority | Hard"
+ * Example output: "Phishing | Click-Only | Authority | Hard"
  */
-function buildContentCategory(simulation: PhishingSimulationRecommendation): string {
+const VECTOR_LABELS: Record<string, string> = { EMAIL: 'Phishing', QR: 'Quishing' };
+const SCENARIO_LABELS: Record<string, string> = { CLICK_ONLY: 'Click-Only', DATA_SUBMISSION: 'Data-Submission' };
+
+export function buildContentCategory(simulation: { vector?: string; scenario_type?: string; persuasion_tactic?: string; difficulty?: string }): string {
   const parts = [
-    simulation.vector || 'Phishing',
-    simulation.scenario_type,
+    VECTOR_LABELS[simulation.vector ?? ''] || simulation.vector || 'Phishing',
+    SCENARIO_LABELS[simulation.scenario_type ?? ''] || simulation.scenario_type,
     simulation.persuasion_tactic,
     simulation.difficulty,
   ].filter(Boolean);
@@ -92,6 +95,8 @@ async function executePhishingToolFirst(params: {
       return { success: false, error: 'phishingWorkflowExecutorTool not executable' };
     }
 
+    const isQuishing = simulation.vector?.toUpperCase() === 'QR';
+
     // v1: execute now takes (inputData, context)
     const toolGeneration = await phishingWorkflowExecutorTool.execute({
       workflowType: PHISHING.WORKFLOW_TYPE,
@@ -99,6 +104,7 @@ async function executePhishingToolFirst(params: {
       difficulty: normalizedDifficulty,
       language,
       method: resolvedMethod,
+      isQuishing,
       includeEmail: true,
       includeLandingPage: true,
       additionalContext: additionalContextParts.length > 0 ? additionalContextParts.join('\n') : '',

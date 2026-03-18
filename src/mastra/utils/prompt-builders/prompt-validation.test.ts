@@ -131,7 +131,7 @@ describe('buildLandingPageSystemPrompt Validation', () => {
     expect(prompt).toContain('No Fake Personal Identities');
     expect(prompt).toContain('SINGLE QUOTES for ALL HTML attributes');
     expect(prompt).toContain('MANDATORY DESIGN DIRECTIVE');
-    expect(prompt).toContain('OUTPUT FORMAT (MANDATORY)');
+    expect(prompt).toContain('OUTPUT FORMAT (MANDATORY');
   });
 
   it('uses constants for pixel measurements', () => {
@@ -410,7 +410,7 @@ describe('buildLandingPagePrompts Validation', () => {
       isQuishing: false,
     });
 
-    expect(result.systemPrompt).toContain('OUTPUT FORMAT (MANDATORY)');
+    expect(result.systemPrompt).toContain('OUTPUT FORMAT (MANDATORY');
     expect(result.systemPrompt).toContain('"pages"');
     expect(result.systemPrompt).toContain('"template"');
   });

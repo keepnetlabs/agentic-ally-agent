@@ -28,6 +28,16 @@ import { normalizeError, logErrorInfo } from '../utils/core/error-utils';
 import { errorService } from '../services/error-service';
 import { withRetry } from '../utils/core/resilience-utils';
 import { summarizeForLog } from '../utils/core/log-redaction-utils';
+import { emitWorkflowStep } from '../utils/core/stream-progress';
+import type { StreamWriter } from '../types/stream-writer';
+
+const ML_TOTAL_STEPS = 5;
+const ML_WORKFLOW_NAME = 'create-microlearning';
+
+/** Emit a microlearning workflow step event */
+async function emitMLStep(writer: StreamWriter | undefined, runId: string, stepIndex: number, status: 'running' | 'completed' | 'error', stepName: string, message?: string) {
+  await emitWorkflowStep(writer, { workflowRunId: runId, workflowName: ML_WORKFLOW_NAME, stepIndex, totalSteps: ML_TOTAL_STEPS, stepName, status, message });
+}
 
 const logger = getLogger('CreateMicrolearningWorkflow');
 
@@ -50,7 +60,11 @@ export const analyzePromptStep = createStep({
     }
 
     // Get writer from requestContext (bypasses Zod validation)
-    const writer = requestContext?.get('writer');
+    const writer = requestContext?.get('writer') as StreamWriter | undefined;
+    const _wfRunId = crypto.randomUUID();
+    // Store runId in requestContext so subsequent steps can use the same ID
+    requestContext?.set('_wfRunId', _wfRunId);
+    await emitMLStep(writer, _wfRunId, 0, 'running', 'Analyzing prompt', 'Detecting language, topic and level...');
 
     // Pass model provider, model, and policy context to analyze step
     // v1: execute(inputData, ctx) - writer goes in ctx
@@ -100,6 +114,8 @@ export const analyzePromptStep = createStep({
       roles: analysisRes.data.roles ?? undefined,
     };
 
+    await emitMLStep(writer, _wfRunId, 0, 'completed', 'Analyzing prompt', 'Prompt analyzed');
+
     return {
       success: analysisRes.success,
       data: cleanData,
@@ -116,8 +132,11 @@ export const generateMicrolearningStep = createStep({
   description: 'Generate microlearning JSON structure',
   inputSchema: promptAnalysisSchema,
   outputSchema: microlearningSchema,
-  execute: async ({ inputData }) => {
-    // Note: This step doesn't need writer - no streaming here
+  execute: async ({ inputData, requestContext }) => {
+    const writer = requestContext?.get('writer') as StreamWriter | undefined;
+    const _wfRunId = (requestContext?.get('_wfRunId') as string) || '';
+    await emitMLStep(writer, _wfRunId, 1, 'running', 'Generating training structure', 'Creating 8-scene metadata...');
+
     const analysis = inputData.data;
     const microlearningId = generateMicrolearningId(analysis.topic);
     const model = getModelWithOverride(inputData.modelProvider, inputData.model);
@@ -183,6 +202,8 @@ export const generateMicrolearningStep = createStep({
       });
     }
 
+    await emitMLStep(writer, _wfRunId, 1, 'completed', 'Generating training structure', `${scenes.length} scenes structured`);
+
     const output: MicrolearningOutput = {
       success: true,
       data: enrichedMicrolearning,
@@ -206,7 +227,9 @@ export const generateLanguageStep = createStep({
   outputSchema: microlearningLanguageContentSchema, // Updated schema name
   execute: async ({ inputData, requestContext }) => {
     // Get writer from requestContext (bypasses Zod validation)
-    const writer = requestContext?.get('writer');
+    const writer = requestContext?.get('writer') as StreamWriter | undefined;
+    const _wfRunId = (requestContext?.get('_wfRunId') as string) || '';
+    await emitMLStep(writer, _wfRunId, 2, 'running', 'Creating scene content', 'Generating 8 scenes in parallel...');
 
     const microlearningStructure = inputData.data;
     const analysis = inputData.analysis;
@@ -239,6 +262,8 @@ export const generateLanguageStep = createStep({
     const microlearningService = new MicrolearningService();
     await microlearningService.storeLanguageContent(microlearningId, analysis.language, result.data);
 
+    await emitMLStep(writer, _wfRunId, 2, 'completed', 'Creating scene content', 'All scenes generated');
+
     const output: MicrolearningLanguageOutput = {
       ...result,
       microlearningId,
@@ -259,13 +284,18 @@ export const createInboxStep = createStep({
   description: 'Create inbox structure and finalize training',
   inputSchema: microlearningLanguageContentSchema, // Updated input schema to match previous step output
   outputSchema: microlearningFinalResultSchema, // Updated output schema name
-  execute: async ({ inputData }) => {
+  execute: async ({ inputData, requestContext }) => {
+    const writer = requestContext?.get('writer') as StreamWriter | undefined;
+    const _wfRunId = (requestContext?.get('_wfRunId') as string) || '';
+    await emitMLStep(writer, _wfRunId, 3, 'running', 'Building inbox exercises', 'Creating phishing email & SMS simulations...');
+
     const { analysis, microlearningStructure, microlearningId } = inputData;
     const hasInbox = inputData.hasInbox !== false;
 
     const normalizedDept = analysis.department ? normalizeDepartmentName(analysis.department) : 'all';
 
     if (!hasInbox) {
+      await emitMLStep(writer, _wfRunId, 3, 'completed', 'Building inbox exercises', 'Skipped (not applicable)');
       const langUrl = encodeURIComponent(`lang/${analysis.language}`);
       const trainingUrl = `${API_ENDPOINTS.FRONTEND_MICROLEARNING_URL}/?courseId=${microlearningId}&langUrl=${langUrl}&isEditMode=true`;
       return {
@@ -312,6 +342,8 @@ export const createInboxStep = createStep({
     const inboxUrl = encodeURIComponent(`inbox/${normalizedDept}`);
     const trainingUrl = `${API_ENDPOINTS.FRONTEND_MICROLEARNING_URL}/?courseId=${microlearningId}&langUrl=${langUrl}&inboxUrl=${inboxUrl}&isEditMode=true`;
 
+    await emitMLStep(writer, _wfRunId, 3, 'completed', 'Building inbox exercises', 'Inbox ready');
+
     return {
       success: true,
       message: `🎉 New microlearning created successfully! Training URL: ${trainingUrl}`,
@@ -339,7 +371,11 @@ export const saveToKVStep = createStep({
   description: 'Extract inbox result from parallel execution',
   inputSchema: saveToKVInputSchema,
   outputSchema: microlearningFinalResultSchema, // Updated schema name
-  execute: async ({ inputData }) => {
+  execute: async ({ inputData, requestContext }) => {
+    const writer = requestContext?.get('writer') as StreamWriter | undefined;
+    const _wfRunId = (requestContext?.get('_wfRunId') as string) || '';
+    await emitMLStep(writer, _wfRunId, 4, 'running', 'Saving to storage', 'Persisting training to KV...');
+
     const inboxResult = inputData['create-inbox-assignment'];
     const languageResult = inputData['generate-language-content'];
     const hasInbox = languageResult.hasInbox !== false;
@@ -391,6 +427,8 @@ export const saveToKVStep = createStep({
       });
       logErrorInfo(logger, 'warn', 'KV initialization error', errorInfo);
     }
+
+    await emitMLStep(writer, _wfRunId, 4, 'completed', 'Saving to storage', 'Training saved');
 
     // Return only the inbox result from parallel execution
     return inboxResult;

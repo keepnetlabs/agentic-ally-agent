@@ -15,6 +15,7 @@ import {
   generatePhishingSimulation,
   generatePhishingSimulationForGroup,
   assignPhishingWithTraining,
+  buildContentCategory,
 } from './autonomous-phishing-handlers';
 import { generateSmishingSimulation } from './autonomous-smishing-handlers';
 import { generateTrainingModule, generateTrainingModuleForGroup } from './autonomous-training-handlers';
@@ -528,9 +529,7 @@ export async function generateContentForUser(
     } else {
       // Derive contentCategory from phishing simulation metadata
       const phishingSim = recommendedSteps.simulations?.[0];
-      const phishingContentCategory = phishingSim
-        ? [phishingSim.vector || 'Phishing', phishingSim.scenario_type, phishingSim.persuasion_tactic, phishingSim.difficulty].filter(Boolean).join(' | ')
-        : '';
+      const phishingContentCategory = phishingSim ? buildContentCategory(phishingSim) : '';
 
       const assignResult = await assignPhishingWithTraining(
         String(userId),

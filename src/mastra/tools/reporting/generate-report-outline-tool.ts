@@ -29,6 +29,10 @@ const inputSchema = z.object({
     .string()
     .optional()
     .describe('For enhance mode: the source document text to structure into a report'),
+  researchContext: z
+    .string()
+    .optional()
+    .describe('Web research results to ground the outline in real facts. Pass snippets + full page content from webResearch tool.'),
 });
 
 const outputSchema = z.object({
@@ -85,7 +89,7 @@ Do NOT use the same structure for every topic. A football club report should fee
 - timeline: 0.5-0.75
 - comparison: 0.75`;
 
-const OUTLINE_USER_PROMPT = (topic: string, pageTarget: number, language: string, mode: string, sourceDocument?: string) => {
+const OUTLINE_USER_PROMPT = (topic: string, pageTarget: number, language: string, mode: string, sourceDocument?: string, researchContext?: string) => {
   // For outline, send first 4000 chars as summary — full doc goes to expansion tool
   const docSummary = sourceDocument ? sourceDocument.slice(0, 4000) : '';
 
@@ -95,6 +99,7 @@ const OUTLINE_USER_PROMPT = (topic: string, pageTarget: number, language: string
 - Language: ${language}
 - Mode: ${mode}
 
+${researchContext ? `RESEARCH DATA (use these facts for accurate briefs — do NOT invent data outside this):\n${researchContext}\n\nCRITICAL: Base section briefs on REAL facts from this research. Each brief must reference specific data points, dates, or facts found above. If the research doesn't cover a sub-topic, note "general knowledge" in the brief.\n` : ''}
 ${mode === 'enhance' && docSummary ? `Source document (first 4000 chars):\n${docSummary}\n\nBase the outline on the source document's content. Map source sections to appropriate report section types. Preserve all data, metrics, and facts from the source.` : ''}
 
 Respond with ONLY valid JSON matching this structure:
@@ -143,12 +148,12 @@ export const generateReportOutlineTool = createTool({
   inputSchema,
   outputSchema,
   execute: async (input, _ctx?: ToolExecutionContext) => {
-    const { topic, sourceDocument } = input;
+    const { topic, sourceDocument, researchContext } = input;
     const pageTarget = input.pageTarget ?? 5;
     const language = input.language ?? 'en';
     const mode = input.mode ?? 'generate';
 
-    logger.info('Generating report outline', { topic, pageTarget, language, mode });
+    logger.info('Generating report outline', { topic, pageTarget, language, mode, hasResearchContext: !!researchContext });
 
     try {
       const model = getDefaultAgentModel();
@@ -158,7 +163,7 @@ export const generateReportOutlineTool = createTool({
         model,
         messages: [
           { role: 'system', content: OUTLINE_SYSTEM_PROMPT },
-          { role: 'user', content: OUTLINE_USER_PROMPT(topic, pageTarget, language, mode, sourceDocument) },
+          { role: 'user', content: OUTLINE_USER_PROMPT(topic, pageTarget, language, mode, sourceDocument, researchContext) },
         ],
         // temperature omitted — GPT-5.1 reasoning model doesn't support it
       });
@@ -185,6 +190,12 @@ export const generateReportOutlineTool = createTool({
         return { success: false, error: 'AI produced invalid JSON. Retrying may help.' };
       }
 
+      // Pre-normalize weights before validation — AI often produces weights that don't sum to pageTarget
+      const parsedObj = parsed as Record<string, unknown>;
+      if (parsedObj.sections && Array.isArray(parsedObj.sections)) {
+        normalizeOutlineWeights(parsedObj.sections as Array<{ weight: number; [key: string]: unknown }>, pageTarget);
+      }
+
       // Validate against schema
       const validation = ReportOutlineSchema.safeParse(parsed);
       if (!validation.success) {
@@ -194,18 +205,13 @@ export const generateReportOutlineTool = createTool({
       }
 
       const outline: ReportOutline = validation.data;
-
-      // Auto-normalize weights to match pageTarget (AI can't do math reliably)
-      const rawWeightSum = outline.sections.reduce((sum, s) => sum + s.weight, 0);
-      normalizeOutlineWeights(outline.sections, pageTarget);
       const normalizedWeightSum = outline.sections.reduce((sum, s) => sum + s.weight, 0);
 
       logger.info('Report outline generated successfully', {
         topic,
         pageTarget,
         sectionCount: outline.sections.length,
-        rawWeightSum: rawWeightSum.toFixed(1),
-        normalizedWeightSum: normalizedWeightSum.toFixed(1),
+        weightSum: normalizedWeightSum.toFixed(1),
         sectionTypes: outline.sections.map(s => s.type),
       });
 

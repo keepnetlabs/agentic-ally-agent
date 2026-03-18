@@ -17,7 +17,7 @@ import type { ReportBranding } from '../../schemas/report-schema';
 const logger = getLogger('FetchBrandingTool');
 
 const DEFAULT_BRANDING: ReportBranding = {
-  logoUrl: 'https://api.keepnetlabs.com/whitelabeling/mainlogo/3b9fcb6f-76f4-412e-a28b-ec94c0420534.png',
+  logoUrl: 'https://imagedelivery.net/KxWh-mxPGDbsqJB3c5_fmA/f88de4cf-2fcd-4090-aca4-d5241c199b00/public',
   primaryColor: '#0B326F',
   companyName: 'Keepnet Labs',
 };

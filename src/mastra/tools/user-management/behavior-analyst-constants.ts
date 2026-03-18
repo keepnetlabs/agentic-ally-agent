@@ -16,7 +16,7 @@ export const ALLOWED_ENUMS_TEXT = `
 Allowed values (use ONLY these):
 - meta.access_level: LOW | MEDIUM | HIGH
 - header.behavioral_resilience.current_stage / target_stage: Foundational | Building | Consistent | Champion
-- simulations[].vector: EMAIL | QR
+- simulations[].vector: EMAIL | QR  (default EMAIL; use QR ONLY when activity data contains QR-code or quishing evidence)
 - simulations[].scenario_type: CLICK_ONLY | DATA_SUBMISSION
 - simulations[].difficulty: EASY | MEDIUM | HARD
 - simulations[].persuasion_tactic: AUTHORITY | URGENCY | CURIOSITY

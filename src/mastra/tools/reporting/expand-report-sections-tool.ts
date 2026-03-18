@@ -17,6 +17,8 @@ import { errorService } from '../../services/error-service';
 import { cleanResponse } from '../../utils/content-processors/json-cleaner';
 import { ReportSectionSchema } from '../../schemas/report-schema';
 import type { OutlineSection, ReportSection } from '../../schemas/report-schema';
+import { KVService } from '../../services/kv-service';
+import { KV_NAMESPACES } from '../../constants';
 
 const logger = getLogger('ExpandReportSectionsTool');
 
@@ -47,14 +49,16 @@ const inputSchema = z.object({
   }),
   /** For enhance mode: source document text to extract content from */
   sourceDocument: z.string().optional(),
+  /** Web research summary to ground sections in real facts. Passed to each section's LLM call. */
+  researchContext: z.string().optional(),
 });
 
 const outputSchema = z.object({
   success: z.boolean(),
   data: z
     .object({
-      meta: z.record(z.unknown()),
-      sections: z.array(z.record(z.unknown())),
+      expandRef: z.string().describe('Temp KV key where full report data is stored. Pass this to validateAndStoreReport.'),
+      sectionCount: z.number(),
       failedSections: z.array(z.string()).optional(),
     })
     .optional(),
@@ -167,17 +171,28 @@ If the section type is "executive_summary", keep it concise — MAX 250 words re
 3. Use meaningful, distinct colors from the provided palette
 4. Include a description explaining the chart's key insight — MAX 3 sentences, be concise
 
+## CRITICAL: Data Accuracy (Anti-Hallucination)
+- Use ONLY facts, dates, and numbers from the provided report context, source document, or RESEARCH DATA.
+- Do NOT invent specific dates, founding years, revenue figures, or company milestones.
+- If a specific fact is unknown, use general terms ("established in the mid-2010s") or omit it. NEVER fabricate precise data.
+- For timeline sections: include ONLY events explicitly supported by available data. Fewer verified items is better than many fabricated ones.
+- General industry knowledge is acceptable. Company-specific claims MUST be grounded in provided data or research data.
+
 ## Output
 Respond with ONLY valid JSON matching the section schema. No text outside JSON.`;
 
 function buildExpansionUserPrompt(
   section: OutlineSection,
   reportContext: string,
-  sourceDocument?: string
+  sourceDocument?: string,
+  researchContext?: string
 ): string {
   const schemaHint = getSchemaHintForType(section.type);
   const sourceHint = sourceDocument
     ? `\n\nSOURCE DOCUMENT (extract relevant data — do NOT invent numbers):\n${sourceDocument}`
+    : '';
+  const researchHint = researchContext
+    ? `\n\nRESEARCH DATA (use ONLY these facts for specific claims — do NOT fabricate data outside this):\n${researchContext}`
     : '';
 
   return `REPORT CONTEXT (maintain consistency):
@@ -194,6 +209,7 @@ ${section.chartType ? `- Chart Type: ${section.chartType}` : ''}
 Output MUST be valid JSON matching this structure:
 ${schemaHint}
 ${sourceHint}
+${researchHint}
 
 Respond with ONLY the JSON object. No markdown fences, no explanation.`;
 }
@@ -309,14 +325,15 @@ interface ExpansionResult {
 async function expandSingleSection(
   section: OutlineSection,
   reportContext: string,
-  sourceDocument?: string
+  sourceDocument?: string,
+  researchContext?: string
 ): Promise<ExpansionResult> {
   const startTime = Date.now();
   const { text, usage } = await generateText({
     model: getSharedModel(),
     messages: [
       { role: 'system', content: EXPANSION_SYSTEM_PROMPT },
-      { role: 'user', content: buildExpansionUserPrompt(section, reportContext, sourceDocument) },
+      { role: 'user', content: buildExpansionUserPrompt(section, reportContext, sourceDocument, researchContext) },
     ],
     // temperature omitted — GPT-5.1 reasoning model doesn't support it
   });
@@ -375,7 +392,7 @@ export const expandReportSectionsTool = createTool({
   inputSchema,
   outputSchema,
   execute: async (input, _ctx?: ToolExecutionContext) => {
-    const { outline, sourceDocument } = input;
+    const { outline, sourceDocument, researchContext } = input;
     const reportContext = buildReportContext(outline.meta);
     const sections = outline.sections as OutlineSection[];
 
@@ -391,7 +408,7 @@ export const expandReportSectionsTool = createTool({
       const sourceChunks = chunkSourceForSections(sourceDocument, sections);
 
       // Build expansion tasks
-      const tasks = sections.map((section, i) => () => expandSingleSection(section, reportContext, sourceChunks[i]));
+      const tasks = sections.map((section, i) => () => expandSingleSection(section, reportContext, sourceChunks[i], researchContext));
 
       // Run in batches of 3 with retry
       const CONCURRENCY = 3;
@@ -427,7 +444,7 @@ export const expandReportSectionsTool = createTool({
           });
 
           try {
-            const retried = await expandSingleSection(section, reportContext, sourceChunks[i]);
+            const retried = await expandSingleSection(section, reportContext, sourceChunks[i], researchContext);
             expandedSections.push(retried.section);
             totalInputTokens += retried.inputTokens;
             totalOutputTokens += retried.outputTokens;
@@ -466,11 +483,29 @@ export const expandReportSectionsTool = createTool({
         avgDurationPerSectionMs: Math.round(totalDurationMs / sections.length),
       });
 
+      // Store full report in temp KV — agent only passes the ref key (avoids large JSON in tool args)
+      const expandRef = `temp:expand:${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+      const reportData = { meta: outline.meta, sections: expandedSections };
+
+      const kvService = new KVService(KV_NAMESPACES.MICROLEARNING);
+      const stored = await kvService.put(expandRef, reportData, { ttlSeconds: 300 }); // 5 min TTL
+      if (!stored) {
+        logger.warn('Failed to store expand result in KV, returning inline fallback');
+        // Fallback: return inline data (may truncate in agent, but better than nothing)
+        return {
+          success: true,
+          data: { expandRef: '', sectionCount: expandedSections.length, ...(failedSections.length > 0 && { failedSections }) },
+          error: 'KV storage failed — report data may be lost. Try again.',
+        };
+      }
+
+      logger.info('Expand result stored in temp KV', { expandRef, sectionCount: expandedSections.length });
+
       return {
         success: true,
         data: {
-          meta: outline.meta,
-          sections: expandedSections,
+          expandRef,
+          sectionCount: expandedSections.length,
           ...(failedSections.length > 0 && { failedSections }),
         },
       };

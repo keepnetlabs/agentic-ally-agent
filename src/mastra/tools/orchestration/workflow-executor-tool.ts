@@ -85,17 +85,15 @@ export const workflowExecutorTool = createTool({
         const policyContext = await getPolicySummary();
         logger.info('Policy summary ready', { hasContent: !!policyContext, length: policyContext?.length || 0 });
 
-        // Start workflow with writer in requestContext (bypasses Zod validation)
+        // Start workflow with writer in requestContext (workflow handles its own progress)
         const workflow = createMicrolearningWorkflow;
         const run = await workflow.createRun();
 
-        // Create requestContext with writer (Zod won't touch this)
         const requestContext = new RequestContext();
         if (writer) {
           requestContext.set('writer', writer);
         }
 
-        // Start workflow - let it fail if it fails
         const workflowResult: CreateMicrolearningResult = await run.start({
           inputData: {
             prompt,
@@ -358,7 +356,6 @@ export const workflowExecutorTool = createTool({
         });
 
         logger.debug('Update workflow completed', { success: result?.result?.success });
-
         // Send updated training URL to frontend via UI signal
         const trainingUrl = result?.result?.metadata?.trainingUrl;
         if (trainingUrl && writer) {

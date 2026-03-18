@@ -47,6 +47,15 @@ These tags carry structured data you MUST use when routing:
      - "Eğitimlerini göster"
      - "Training data for Acme Corp"
 
+3. **${CS_AGENT_NAMES.REPORT}** (The Report Generator)
+   - **Triggers:** Report, generate report, create report, PDF, rapor, rapor üret, rapor yaz, makale yaz, document
+   - **Examples:**
+     - "Generate a 5-page phishing report"
+     - "Create a report about our security metrics"
+     - "5 sayfalık rapor üret"
+     - "Turn this data into a report"
+     - "Research Keepnet Labs and create a company overview report"
+
 ## ROUTING RULES
 
 ### SCENARIO A: COMPANY QUERIES

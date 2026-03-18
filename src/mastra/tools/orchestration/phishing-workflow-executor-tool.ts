@@ -7,6 +7,7 @@
  * @see docs/AI_COMPLIANCE_INVENTORY.md
  */
 import { createTool, ToolExecutionContext } from '@mastra/core/tools';
+import { RequestContext } from '@mastra/core/request-context';
 import { createPhishingWorkflow } from '../../workflows/create-phishing-workflow';
 import { PHISHING, ERROR_MESSAGES, TIMEOUT_VALUES } from '../../constants';
 import { getLogger } from '../../utils/core/logger';
@@ -41,9 +42,15 @@ export const phishingWorkflowExecutorTool = createTool({
       const policyContext = await getPolicySummary();
       logger.info('Policy summary ready', { hasContent: !!policyContext, length: policyContext.length });
 
+      // Workflow handles its own step-level progress via requestContext (bypasses Zod)
       const workflow = createPhishingWorkflow;
-      // v1: createRunAsync → createRun
       const run = await workflow.createRun();
+
+      // Pass writer via requestContext to avoid Zod stripping function references
+      const requestContext = new RequestContext();
+      if (writer) {
+        requestContext.set('writer', writer);
+      }
 
       const result = await run.start({
         inputData: {
@@ -61,6 +68,7 @@ export const phishingWorkflowExecutorTool = createTool({
           writer: writer,
           policyContext: policyContext || undefined,
         },
+        requestContext,
       });
 
       logger.info('Workflow Completed', { status: result.status });

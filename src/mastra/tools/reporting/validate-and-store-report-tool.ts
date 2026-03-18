@@ -33,24 +33,27 @@ const REPORT_TTL_SECONDS = 7 * 24 * 60 * 60; // 7 days
 // ============================================
 
 const inputSchema = z.object({
-  /** Full report data (meta + sections) from expansion step */
+  /** Temp KV key from expandReportSections — preferred way to pass report data (avoids large JSON in tool args) */
+  expandRef: z.string().nullable().optional(),
+  /** Full report data (meta + sections) — fallback if expandRef is not available (e.g. edit flow) */
   report: z
     .object({
       meta: z.object({
         title: z.string(),
-        subtitle: z.string().optional(),
-        author: z.string().optional(),
+        subtitle: z.string().nullable().optional(),
+        author: z.string().nullable().optional(),
         generatedAt: z.string(),
-        language: z.string().optional(),
+        language: z.string().nullable().optional(),
         pageTarget: z.number(),
       }),
       sections: z.array(z.record(z.unknown())),
     })
+    .nullable()
     .optional(),
   /** Existing reportId to load from KV (for edit flow) */
-  reportId: z.string().optional(),
+  reportId: z.string().nullable().optional(),
   /** Edit action description (for editHistory) */
-  editAction: z.string().optional(),
+  editAction: z.string().nullable().optional(),
 });
 
 const outputSchema = z.object({
@@ -141,8 +144,37 @@ export const validateAndStoreReportTool = createTool({
     const kvService = new KVService(KV_NAMESPACES.MICROLEARNING);
 
     try {
+      // ─── Resolve report data: expandRef (preferred) or inline report ───
+      let resolvedReport = input.report;
+
+      if (input.expandRef) {
+        logger.info('Loading expand result from temp KV', { expandRef: input.expandRef });
+
+        // Retry with short delays — KV eventual consistency may cause immediate read to miss
+        let expandData: unknown = null;
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          expandData = await kvService.get(input.expandRef);
+          if (expandData && typeof expandData === 'object' && 'meta' in expandData && 'sections' in expandData) {
+            break;
+          }
+          if (attempt < 3) {
+            logger.debug('expandRef not ready, retrying', { expandRef: input.expandRef, attempt });
+            await new Promise(r => setTimeout(r, 500 * attempt)); // 500ms, 1000ms
+          }
+        }
+
+        if (expandData && typeof expandData === 'object' && 'meta' in expandData && 'sections' in expandData) {
+          resolvedReport = expandData as typeof input.report;
+          logger.info('Expand result loaded from KV', { sectionCount: (expandData as any).sections?.length });
+          // Clean up temp key (fire-and-forget)
+          kvService.delete(input.expandRef).catch(() => {});
+        } else {
+          logger.warn('expandRef not found in KV after retries, falling back to inline report', { expandRef: input.expandRef });
+        }
+      }
+
       // ─── Edit flow: load existing report from KV ───
-      if (input.reportId && !input.report) {
+      if (input.reportId && !resolvedReport) {
         logger.info('Loading existing report from KV', { reportId: input.reportId });
 
         // Find latest version (try v1..v20)
@@ -173,12 +205,12 @@ export const validateAndStoreReportTool = createTool({
       }
 
       // ─── New report or updated report: validate + store ───
-      if (!input.report) {
-        return { success: false, error: 'Either report data or reportId must be provided' };
+      if (!resolvedReport) {
+        return { success: false, error: 'Either expandRef, report data, or reportId must be provided' };
       }
 
       // Validate report schema
-      const reportValidation = ReportSchema.safeParse(input.report);
+      const reportValidation = ReportSchema.safeParse(resolvedReport);
       if (!reportValidation.success) {
         const issues = reportValidation.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ');
         logger.warn('Report validation failed', { issues });

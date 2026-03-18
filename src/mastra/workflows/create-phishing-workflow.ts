@@ -38,6 +38,18 @@ import {
 } from '../utils/content-processors/phishing-html-postprocessors';
 import { repairBrokenLandingFormControlAttrs } from '../utils/content-processors/landing-form-style-preserver';
 import { PHISHING_SCENARIO_PARAMS, PHISHING_CONTENT_PARAMS } from '../utils/config/llm-generation-params';
+import { emitWorkflowStep } from '../utils/core/stream-progress';
+import type { StreamWriter } from '../types/stream-writer';
+
+type LandingPageType = (typeof LANDING_PAGE.PAGE_TYPES)[number];
+
+const PHISHING_TOTAL_STEPS = 4;
+const PHISHING_WORKFLOW_NAME = 'create-phishing';
+
+/** Emit a phishing workflow step event (safe no-op if writer is undefined) */
+async function emitPhishingStep(writer: StreamWriter | undefined, runId: string, stepIndex: number, status: 'running' | 'completed' | 'error', stepName: string, message?: string) {
+  await emitWorkflowStep(writer, { workflowRunId: runId, workflowName: PHISHING_WORKFLOW_NAME, stepIndex, totalSteps: PHISHING_TOTAL_STEPS, stepName, status, message });
+}
 
 // --- Steps ---
 
@@ -48,8 +60,13 @@ const analyzeRequest = createStep({
   // v1: Use step schema with resolved types (defaults applied)
   inputSchema: createPhishingStepInputSchema,
   outputSchema: createPhishingAnalysisSchema,
-  execute: async ({ inputData }) => {
+  execute: async ({ inputData, requestContext }) => {
     const logger = getLogger('AnalyzePhishingRequest');
+    const writer = requestContext?.get('writer') as StreamWriter | undefined;
+    const _wfRunId = crypto.randomUUID();
+    requestContext?.set('_wfRunId', _wfRunId);
+    await emitPhishingStep(writer, _wfRunId, 0, 'running', 'Designing scenario', 'Analyzing topic, detecting brand and industry...');
+
     const {
       topic,
       isQuishing,
@@ -144,10 +161,9 @@ const analyzeRequest = createStep({
 
       // Extract reasoning if available (Workers AI returns it)
       const reasoning = extractReasoning(response);
-      if (reasoning && inputData.writer) {
+      if (reasoning && writer) {
         logger.info('Streaming scenario reasoning to frontend');
-        // Stream reasoning directly without LLM processing
-        await streamDirectReasoning(reasoning, inputData.writer);
+        await streamDirectReasoning(reasoning, writer);
       }
 
       logger.info('AI generated phishing scenario successfully');
@@ -299,6 +315,8 @@ const analyzeRequest = createStep({
         logger.info('Using detected industry design', { industry: industryDesign.industry });
       }
 
+      await emitPhishingStep(writer, _wfRunId, 0, 'completed', 'Designing scenario', 'Scenario designed');
+
       return {
         ...parsedResult,
         additionalContext, // Pass through user behavior context
@@ -338,8 +356,12 @@ const generateEmail = createStep({
   description: 'Generate phishing email content including subject, body, and sender details',
   inputSchema: createPhishingAnalysisSchema,
   outputSchema: createPhishingEmailOutputSchema,
-  execute: async ({ inputData }) => {
+  execute: async ({ inputData, requestContext }) => {
     const logger = getLogger('GeneratePhishingEmail');
+    const writer = requestContext?.get('writer') as StreamWriter | undefined;
+    const _wfRunId = (requestContext?.get('_wfRunId') as string) || '';
+    await emitPhishingStep(writer, _wfRunId, 1, 'running', 'Generating email template', 'Creating subject line and HTML body...');
+
     const analysis = inputData;
     const {
       language,
@@ -355,6 +377,7 @@ const generateEmail = createStep({
     // If email generation is disabled, skip this step but pass context
     if (includeEmail === false) {
       logger.info('Email generation disabled by user request. Skipping.');
+      await emitPhishingStep(writer, _wfRunId, 1, 'completed', 'Generating email template', 'Skipped (disabled)');
       return {
         subject: undefined,
         template: undefined,
@@ -409,10 +432,9 @@ const generateEmail = createStep({
 
         // Extract reasoning if available (Workers AI returns it)
         const emailReasoning = extractReasoning(response);
-        if (emailReasoning && analysis.writer) {
+        if (emailReasoning && writer) {
           logger.info('Streaming email generation reasoning to frontend');
-          // Stream reasoning directly without LLM processing
-          await streamDirectReasoning(emailReasoning, analysis.writer);
+          await streamDirectReasoning(emailReasoning, writer);
         }
 
         logger.info('AI generated phishing email content successfully');
@@ -433,7 +455,7 @@ const generateEmail = createStep({
             { role: 'user', content: userPrompt },
           ],
           'email',
-          analysis.writer
+          writer
         );
         response = retryResult.response;
         parsedResult = retryResult.parsedResult;
@@ -486,6 +508,8 @@ const generateEmail = createStep({
         templatePreview: parsedResult.template,
       });
 
+      await emitPhishingStep(writer, _wfRunId, 1, 'completed', 'Generating email template', 'Email template ready');
+
       return {
         ...parsedResult,
         fromAddress: analysis.fromAddress,
@@ -517,14 +541,19 @@ const generateLandingPage = createStep({
   description: 'Generate phishing landing page content including logic and layout',
   inputSchema: createPhishingEmailOutputSchema,
   outputSchema: createPhishingOutputSchema,
-  execute: async ({ inputData }) => {
+  execute: async ({ inputData, requestContext }) => {
     const logger = getLogger('GenerateLandingPage');
+    const writer = requestContext?.get('writer') as StreamWriter | undefined;
+    const _wfRunId = (requestContext?.get('_wfRunId') as string) || '';
+    await emitPhishingStep(writer, _wfRunId, 2, 'running', 'Creating landing pages', 'Generating multi-page login forms...');
+
     const { analysis, fromAddress, fromName, subject, template, includeLandingPage, additionalContext, policyContext } =
       inputData;
 
     // If landing page generation is disabled, skip this step
     if (includeLandingPage === false) {
       logger.info('Landing page generation disabled by user request. Skipping.');
+      await emitPhishingStep(writer, _wfRunId, 2, 'completed', 'Creating landing pages', 'Skipped (disabled)');
       return {
         subject,
         template,
@@ -613,7 +642,7 @@ const generateLandingPage = createStep({
     });
 
     let response;
-    let parsedResult;
+    let parsedResult: { pages?: { type: LandingPageType; template: string }[] };
 
     try {
       try {
@@ -627,8 +656,8 @@ const generateLandingPage = createStep({
 
         // Reasoning handling
         const lpReasoning = extractReasoning(response);
-        if (lpReasoning && analysis.writer) {
-          await streamDirectReasoning(lpReasoning, analysis.writer);
+        if (lpReasoning && writer) {
+          await streamDirectReasoning(lpReasoning, writer);
         }
 
         const cleanedJson = cleanResponse(response.text, 'landing-page');
@@ -645,16 +674,47 @@ const generateLandingPage = createStep({
           systemPrompt,
           messages,
           'landing-page',
-          analysis.writer
+          writer
         );
         response = retryResult.response;
-        parsedResult = retryResult.parsedResult;
+        parsedResult = retryResult.parsedResult as typeof parsedResult;
+      }
+
+      // Validate page count matches requiredPages — AI sometimes skips the success page
+      const returnedTypes = (parsedResult.pages || []).map((p: { type: string }) => p.type);
+      const missingPages = requiredPages.filter(rp => !returnedTypes.includes(rp));
+      if (missingPages.length > 0) {
+        logger.warn('AI returned fewer pages than required, retrying with stronger prompt', {
+          required: [...requiredPages],
+          returned: returnedTypes,
+          missing: [...missingPages],
+        });
+        const retryResult = await retryGenerationWithStrongerPrompt(
+          aiModel,
+          systemPrompt,
+          messages,
+          'landing-page',
+          writer
+        );
+        response = retryResult.response;
+        parsedResult = retryResult.parsedResult as typeof parsedResult;
+
+        // Check again after retry
+        const retryTypes = (parsedResult.pages || []).map((p: { type: string }) => p.type);
+        const stillMissing = requiredPages.filter(rp => !retryTypes.includes(rp));
+        if (stillMissing.length > 0) {
+          logger.warn('Retry still missing pages, proceeding with available pages', {
+            required: [...requiredPages],
+            returned: retryTypes,
+            stillMissing: [...stillMissing],
+          });
+        }
       }
 
       // Sanitize HTML, fix broken images, enforce email logo, and validate for all pages
       if (parsedResult.pages && Array.isArray(parsedResult.pages)) {
         parsedResult.pages = await Promise.all(
-          parsedResult.pages.map(async (page: { type: string; template: string }) => {
+          parsedResult.pages.map(async (page: { type: LandingPageType; template: string }) => {
             // Step 1: Post-process landing HTML (sanitize/repair/centering/wrapper)
             let cleanedTemplate = postProcessPhishingLandingHtml({ html: page.template, title: `${fromName} Login` });
 
@@ -701,6 +761,9 @@ const generateLandingPage = createStep({
         );
       }
 
+      const pageCount = parsedResult.pages?.length || 0;
+      await emitPhishingStep(writer, _wfRunId, 2, 'completed', 'Creating landing pages', `${pageCount} ${pageCount === 1 ? 'page' : 'pages'} ready`);
+
       return {
         subject,
         template,
@@ -712,7 +775,7 @@ const generateLandingPage = createStep({
           description: description,
           method: method || 'Data-Submission',
           difficulty: difficulty || 'Medium',
-          pages: parsedResult.pages,
+          pages: parsedResult.pages || [],
         },
         policyContext: analysis.policyContext,
       };
@@ -736,8 +799,12 @@ const savePhishingContent = createStep({
   description: 'Save generated phishing simulation content to KV store',
   inputSchema: createPhishingOutputSchema, // Use OutputSchema directly as input
   outputSchema: createPhishingOutputSchema,
-  execute: async ({ inputData }) => {
+  execute: async ({ inputData, requestContext }) => {
     const logger = getLogger('SavePhishingContent');
+    const writer = requestContext?.get('writer') as StreamWriter | undefined;
+    const _wfRunId = (requestContext?.get('_wfRunId') as string) || '';
+    await emitPhishingStep(writer, _wfRunId, 3, 'running', 'Saving simulation', 'Persisting to storage...');
+
     const phishingId = generateUniqueId();
     const language = 'en-gb'; // Default language for phishing content
 
@@ -763,6 +830,8 @@ const savePhishingContent = createStep({
     // Use phishing namespace ID to check consistency
     const expectedKeys = buildExpectedPhishingKeys(phishingId, language, !!inputData.template, !!inputData.landingPage);
     await waitForKVConsistency(phishingId, expectedKeys, KV_NAMESPACES.PHISHING);
+
+    await emitPhishingStep(writer, _wfRunId, 3, 'completed', 'Saving simulation', 'Simulation saved');
 
     return {
       ...inputData,

@@ -6,11 +6,15 @@ import * as smishingHandlers from './autonomous-smishing-handlers';
 import * as trainingHandlers from './autonomous-training-handlers';
 import * as groupTopicService from './group-topic-service';
 
-vi.mock('./autonomous-phishing-handlers', () => ({
-  generatePhishingSimulation: vi.fn().mockResolvedValue({ success: true }),
-  generatePhishingSimulationForGroup: vi.fn().mockResolvedValue({ success: true }),
-  assignPhishingWithTraining: vi.fn().mockResolvedValue({ success: true }),
-}));
+vi.mock('./autonomous-phishing-handlers', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./autonomous-phishing-handlers')>();
+  return {
+    ...actual,
+    generatePhishingSimulation: vi.fn().mockResolvedValue({ success: true }),
+    generatePhishingSimulationForGroup: vi.fn().mockResolvedValue({ success: true }),
+    assignPhishingWithTraining: vi.fn().mockResolvedValue({ success: true }),
+  };
+});
 
 vi.mock('./autonomous-training-handlers', () => ({
   generateTrainingModule: vi.fn().mockResolvedValue({ success: true }),

@@ -31,6 +31,16 @@ import { postProcessPhishingLandingHtml } from '../utils/content-processors/phis
 import { repairBrokenLandingFormControlAttrs } from '../utils/content-processors/landing-form-style-preserver';
 import { buildLandingPagePrompts } from '../utils/prompt-builders/phishing-prompts';
 import { PHISHING_SCENARIO_PARAMS, PHISHING_CONTENT_PARAMS } from '../utils/config/llm-generation-params';
+import { emitWorkflowStep } from '../utils/core/stream-progress';
+import type { StreamWriter } from '../types/stream-writer';
+
+const SMISHING_TOTAL_STEPS = 4;
+const SMISHING_WORKFLOW_NAME = 'create-smishing';
+
+/** Emit a smishing workflow step event (safe no-op if writer is undefined) */
+async function emitSmishingStep(writer: StreamWriter | undefined, runId: string, stepIndex: number, status: 'running' | 'completed' | 'error', stepName: string, message?: string) {
+  await emitWorkflowStep(writer, { workflowRunId: runId, workflowName: SMISHING_WORKFLOW_NAME, stepIndex, totalSteps: SMISHING_TOTAL_STEPS, stepName, status, message });
+}
 
 // --- Steps ---
 
@@ -40,8 +50,13 @@ const analyzeRequest = createStep({
   description: 'Analyze smishing request, design scenario, detect brand/logo, and determine industry design',
   inputSchema: createSmishingStepInputSchema,
   outputSchema: createSmishingAnalysisSchema,
-  execute: async ({ inputData }) => {
+  execute: async ({ inputData, requestContext }) => {
     const logger = getLogger('AnalyzeSmishingRequest');
+    const writer = requestContext?.get('writer') as StreamWriter | undefined;
+    const _wfRunId = crypto.randomUUID();
+    requestContext?.set('_wfRunId', _wfRunId);
+    await emitSmishingStep(writer, _wfRunId, 0, 'running', 'Designing SMS scenario', 'Analyzing topic, detecting brand and industry...');
+
     const {
       topic,
       targetProfile,
@@ -111,9 +126,9 @@ const analyzeRequest = createStep({
       );
 
       const reasoning = extractReasoning(response);
-      if (reasoning && inputData.writer) {
+      if (reasoning && writer) {
         logger.info('Streaming scenario reasoning to frontend');
-        await streamDirectReasoning(reasoning, inputData.writer);
+        await streamDirectReasoning(reasoning, writer);
       }
 
       logger.info('AI generated smishing scenario successfully');
@@ -223,6 +238,8 @@ const analyzeRequest = createStep({
         logger.info('Using detected industry design', { industry: industryDesign.industry });
       }
 
+      await emitSmishingStep(writer, _wfRunId, 0, 'completed', 'Designing SMS scenario', 'Scenario designed');
+
       return {
         ...parsedResult,
         additionalContext,
@@ -262,13 +279,18 @@ const generateSms = createStep({
   description: 'Generate smishing SMS message templates',
   inputSchema: createSmishingAnalysisSchema,
   outputSchema: createSmishingSmsOutputSchema,
-  execute: async ({ inputData }) => {
+  execute: async ({ inputData, requestContext }) => {
     const logger = getLogger('GenerateSmishingSms');
+    const writer = requestContext?.get('writer') as StreamWriter | undefined;
+    const _wfRunId = (requestContext?.get('_wfRunId') as string) || '';
+    await emitSmishingStep(writer, _wfRunId, 1, 'running', 'Generating SMS templates', 'Creating SMS messages...');
+
     const analysis = inputData;
     const { language, modelProvider, model, difficulty, includeSms, includeLandingPage } = analysis;
 
     if (includeSms === false) {
       logger.info('SMS generation disabled by user request. Skipping.');
+      await emitSmishingStep(writer, _wfRunId, 1, 'completed', 'Generating SMS templates', 'Skipped (disabled)');
       return {
         messages: undefined,
         analysis,
@@ -309,9 +331,9 @@ const generateSms = createStep({
       );
 
       const smsReasoning = extractReasoning(response);
-      if (smsReasoning && analysis.writer) {
+      if (smsReasoning && writer) {
         logger.info('Streaming SMS generation reasoning to frontend');
-        await streamDirectReasoning(smsReasoning, analysis.writer);
+        await streamDirectReasoning(smsReasoning, writer);
       }
 
       const cleanedJson = cleanResponse(response.text, 'smishing-sms');
@@ -349,6 +371,8 @@ const generateSms = createStep({
         throw new Error('SMS messages must include {PHISHINGURL}');
       }
 
+      await emitSmishingStep(writer, _wfRunId, 1, 'completed', 'Generating SMS templates', `${parsedResult.messages?.length || 0} SMS templates ready`);
+
       return {
         ...parsedResult,
         analysis,
@@ -375,12 +399,17 @@ const generateLandingPage = createStep({
   description: 'Generate smishing landing page content including logic and layout',
   inputSchema: createSmishingSmsOutputSchema,
   outputSchema: createSmishingOutputSchema,
-  execute: async ({ inputData }) => {
+  execute: async ({ inputData, requestContext }) => {
     const logger = getLogger('GenerateSmishingLandingPage');
+    const writer = requestContext?.get('writer') as StreamWriter | undefined;
+    const _wfRunId = (requestContext?.get('_wfRunId') as string) || '';
+    await emitSmishingStep(writer, _wfRunId, 2, 'running', 'Creating landing pages', 'Generating multi-page login forms...');
+
     const { analysis, messages, includeLandingPage, additionalContext, policyContext } = inputData;
 
     if (includeLandingPage === false) {
       logger.info('Landing page generation disabled by user request. Skipping.');
+      await emitSmishingStep(writer, _wfRunId, 2, 'completed', 'Creating landing pages', 'Skipped (disabled)');
       return {
         messages,
         analysis,
@@ -458,8 +487,8 @@ const generateLandingPage = createStep({
       );
 
       const lpReasoning = extractReasoning(response);
-      if (lpReasoning && analysis.writer) {
-        await streamDirectReasoning(lpReasoning, analysis.writer);
+      if (lpReasoning && writer) {
+        await streamDirectReasoning(lpReasoning, writer);
       }
 
       const cleanedJson = cleanResponse(response.text, 'smishing-landing-page');
@@ -502,6 +531,8 @@ const generateLandingPage = createStep({
         );
       }
 
+      await emitSmishingStep(writer, _wfRunId, 2, 'completed', 'Creating landing pages', `${parsedResult.pages?.length || 0} pages ready`);
+
       return {
         messages,
         analysis,
@@ -534,8 +565,12 @@ const saveSmishingContent = createStep({
   description: 'Save generated smishing simulation content to KV store',
   inputSchema: createSmishingOutputSchema,
   outputSchema: createSmishingOutputSchema,
-  execute: async ({ inputData }) => {
+  execute: async ({ inputData, requestContext }) => {
     const logger = getLogger('SaveSmishingContent');
+    const writer = requestContext?.get('writer') as StreamWriter | undefined;
+    const _wfRunId = (requestContext?.get('_wfRunId') as string) || '';
+    await emitSmishingStep(writer, _wfRunId, 3, 'running', 'Saving simulation', 'Persisting to storage...');
+
     const smishingId = generateUniqueId();
     const language = inputData.analysis?.language || 'en-gb';
 
@@ -555,6 +590,8 @@ const saveSmishingContent = createStep({
 
     const expectedKeys = buildExpectedSmishingKeys(smishingId, language, !!inputData.messages, !!inputData.landingPage);
     await waitForKVConsistency(smishingId, expectedKeys, KV_NAMESPACES.SMISHING);
+
+    await emitSmishingStep(writer, _wfRunId, 3, 'completed', 'Saving simulation', 'Simulation saved');
 
     return {
       ...inputData,

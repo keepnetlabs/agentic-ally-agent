@@ -657,16 +657,22 @@ export function buildLandingPagePrompts(params: LandingPagePromptParams): {
     getInfoPageSection
   );
 
-  const layoutSpecificReminders =
-    randomLayout.id === 'HERO'
-      ? `- Keep the assigned HERO structure (top hero + overlapping card)\n- Keep the main container centered and preserve the assigned overlap rules`
-      : randomLayout.id === 'MINIMAL'
-        ? `- Keep the MINIMAL structure: no outer card, generous spacing, constrained form width\n- Do not reintroduce a centered card wrapper`
-        : randomLayout.id === 'SPLIT'
-          ? `- Keep the SPLIT structure with distinct left/right panels\n- Do not collapse the page into a single centered card`
-          : `- Keep the single centered card structure with vertical centering (min-height: 100vh + flex center)\n- Preserve comfortable card padding and clear visual hierarchy`;
+  const layoutReminders: Record<string, string> = {
+    HERO: '- Keep the assigned HERO structure (top hero + overlapping card)\n- Keep the main container centered and preserve the assigned overlap rules',
+    MINIMAL: '- Keep the MINIMAL structure: no outer card, generous spacing, constrained form width\n- Do not reintroduce a centered card wrapper',
+    SPLIT: '- Keep the SPLIT structure with distinct left/right panels\n- Do not collapse the page into a single centered card',
+    CENTERED: '- Keep the single centered card structure with vertical centering (min-height: 100vh + flex center)\n- Preserve comfortable card padding and clear visual hierarchy',
+  };
+  const layoutSpecificReminders = layoutReminders[randomLayout.id] || layoutReminders.CENTERED;
+
+  const pageList = [...requiredPages].map(p => `'${p}'`).join(', ');
+  const pageCountReminder = requiredPages.length === 2
+    ? `**REQUIRED: Generate EXACTLY 2 pages — a '${requiredPages[0]}' page AND a '${requiredPages[1]}' page. Do NOT stop after the first page.**`
+    : `**REQUIRED: Generate EXACTLY ${requiredPages.length} page(s): [${pageList}].**`;
 
   const userPrompt = `Design landing pages for: ${fromName} - ${scenario}
+
+${pageCountReminder}
 
 **SCENARIO:** ${scenario}
 **LANGUAGE:** ${language}
@@ -676,7 +682,7 @@ Create modern, professional pages that match ${industryDesign.industry} standard
 **GENERATION STEPS (Follow this order):**
 1. **Plan first:** Review the rules and template examples in system prompt, decide on colors, layout, spacing
 2. **Match email branding:** Use same logo, colors, and style from phishing email
-3. **Generate HTML:** Create complete, valid HTML with all required elements
+3. **Generate HTML:** Create complete, valid HTML with all required elements${requiredPages.length > 1 ? ` for ALL ${requiredPages.length} pages` : ''}
 4. **Validate:** Check against the structure requirements and template examples before returning
 5. **Ensure variation:** If multiple pages, make them related but NOT identical. Adapt messages and content to match the specific scenario - make it look like a real ${fromName} page, not a generic template.
 
@@ -687,7 +693,7 @@ ${hasFormPages ? '- Button must contrast with the surrounding background' : '- *
 
   // Build optional context messages
   const userContextMessage = additionalContext
-    ? `🔴 USER BEHAVIOR ANALYSIS CONTEXT - Design landing page based on this user profile:
+    ? `USER BEHAVIOR ANALYSIS CONTEXT - Design landing page based on this user profile:
 
 ${additionalContext}
 
@@ -696,7 +702,7 @@ ${additionalContext}
 
   const emailContextMessage =
     template && (emailUsesLogoTag || emailBrandContext)
-      ? `📧 PHISHING EMAIL CONTEXT (for landing page consistency):
+      ? `PHISHING EMAIL CONTEXT (for landing page consistency):
 
 **Email Subject:** ${subject || 'N/A'}
 **From:** ${fromName} <${fromAddress}>

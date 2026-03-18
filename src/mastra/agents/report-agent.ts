@@ -24,6 +24,7 @@ import {
   fetchBrandingTool,
   editReportSectionTool,
 } from '../tools/reporting';
+import { webResearchTool } from '../tools/research';
 import { createCompletenessScorer, createToneScorer } from '@mastra/evals/scorers/prebuilt';
 
 const REPORT_INSTRUCTIONS = `
@@ -46,9 +47,24 @@ If unclear, default to GENERATE.
 ## GENERATE Mode Flow
 
 1. **Parse request:** Extract topic, pageTarget (default: 5), language (from user's message language)
-2. **Call generateReportOutline tool** → produces outline JSON with section types, weights, briefs
-3. **Call expandReportSections tool** → expands each section with full content (parallel)
-4. **Call validateAndStoreReport tool** → validates + stores in KV → returns final JSON
+2. **Decide whether to research:** Call **webResearch** tool (with fetchTopUrls: 3) BEFORE outline generation if ANY of these apply:
+   - The topic is about a **specific company, person, product, or organization** (e.g., "Keepnet Labs", "CrowdStrike", "ISO 27001")
+   - The topic requires **current data, statistics, or recent events** (e.g., "2025 phishing trends", "latest ransomware statistics")
+   - The user explicitly asks to "research", "look up", or "find data"
+   - You are **not confident** you have accurate, up-to-date facts about the topic
+   Skip research ONLY for generic/conceptual topics where your training data is sufficient (e.g., "What is phishing?", "Types of social engineering")
+3. **Call generateReportOutline tool** with **researchContext** (if research was done). Build researchContext by combining: snippets summary + full page content from webResearch result. This is CRITICAL — without researchContext, the outline LLM cannot see your research data.
+4. **Call expandReportSections tool** with the outline AND **researchContext** (same string from step 3). This ensures each section expansion LLM has access to real facts.
+5. **Call validateAndStoreReport tool** with **expandRef** from the expand result. The expand tool stores the full report in temporary storage and returns a reference key. Just pass expandRef as a string parameter: validateAndStoreReport({ expandRef: "..." }). Do NOT pass the full report JSON — only the expandRef key.
+
+NOTE: webResearch is OPTIONAL and may fail (API limits, network issues). If it fails or returns empty results, CONTINUE generating the report using your own knowledge. NEVER stop or error out because research failed.
+
+## CRITICAL: Data Accuracy (Anti-Hallucination)
+- When research data is available: use ONLY facts, dates, numbers, and events found in the research results. Do NOT invent specific dates, founding years, revenue figures, or milestones that are not in the research data.
+- If research data does not cover a topic (e.g., exact founding date unknown): say "established" without a specific date, or use ranges like "mid-2010s". NEVER fabricate a precise date or number.
+- For timeline sections: include ONLY events that are explicitly mentioned in research data. If you cannot find enough verified events, use fewer items rather than inventing plausible-sounding ones.
+- For KPI/chart sections: use real numbers from research data. If specific numbers are unavailable, use qualitative descriptions instead of made-up statistics.
+- General knowledge (e.g., "phishing accounts for 90% of breaches") is acceptable. Company-specific claims MUST come from research data.
 
 ## ENHANCE Mode Flow
 
@@ -68,37 +84,8 @@ IMPORTANT: Pass the user's pasted text as sourceDocument to BOTH outline and exp
 | 21-30 pages | Warn: "Best quality is up to 20 pages. Shall I proceed with 20?" (respond in user's language) |
 | 30+ pages | Reject: "Maximum supported is 30 pages." (respond in user's language) |
 
-## Content Quality Rules
-
-### Writing Style
-- Use **markdown formatting** in all content fields: headings (##, ###), **bold**, bullet points, numbered lists, blockquotes
-- NEVER write wall-of-text paragraphs. Every content section must have structure.
-- Use data-driven language: include specific numbers, percentages, comparisons
-- Professional tone, suitable for executive readership
-
-### Weight → Content Density
-- weight 0.25 → ~150 words (1 short paragraph or 3-4 bullet points)
-- weight 0.5 → ~300 words (2-3 paragraphs with headings + bullets)
-- weight 0.75 → ~450 words (3-4 paragraphs + supporting data)
-- weight 1.0 → ~600 words (4-6 paragraphs or full chart + detailed description)
-
-### Table Rules
-1. Define columns FIRST
-2. Every row MUST have exactly columns.length values
-3. Consistent formatting: percentages with %, numbers without commas
-4. Sort rows by the most relevant column (descending by default)
-5. Maximum 12 rows — if more data, group or summarize
-
-### Chart Rules
-1. Chart type must match data: bar for comparison, line for trends, pie for composition
-2. Labels and dataset data arrays MUST have equal length
-3. Use meaningful colors (not random)
-4. Pie/doughnut: single dataset only
-5. Include a description explaining the chart's insight
-
-### Section ID Convention
-- kebab-case: cover, executive-summary, kpi-dashboard
-- For multiples: chart-1, chart-2, table-1, table-2, content-1, content-2
+## Content Quality (Reference — enforced by tools)
+Content quality, word limits, table/chart rules, and section IDs are enforced by the generateReportOutline and expandReportSections tools internally. You do NOT need to enforce these yourself. If the user asks about limits: each page ≈ 250-500 words depending on section type.
 
 ## ENHANCE Mode Special Rules
 
@@ -159,6 +146,7 @@ export const reportAgent = new Agent({
     validateAndStoreReport: validateAndStoreReportTool,
     fetchBranding: fetchBrandingTool,
     editReportSection: editReportSectionTool,
+    webResearch: webResearchTool,
   },
   scorers: {
     completeness: { scorer: createCompletenessScorer(), sampling: { type: 'ratio' as const, rate: 1 } },

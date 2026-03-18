@@ -7,6 +7,7 @@
  * @see docs/AI_COMPLIANCE_INVENTORY.md
  */
 import { createTool, ToolExecutionContext } from '@mastra/core/tools';
+import { RequestContext } from '@mastra/core/request-context';
 import { z } from 'zod';
 import { createSmishingWorkflow } from '../../workflows/create-smishing-workflow';
 import { SMISHING, MODEL_PROVIDERS, ERROR_MESSAGES, PROMPT_ANALYSIS } from '../../constants';
@@ -90,8 +91,15 @@ export const smishingWorkflowExecutorTool = createTool({
       const policyContext = await getPolicySummary();
       logger.info('Policy summary ready', { hasContent: !!policyContext, length: policyContext.length });
 
+      // Workflow handles its own step-level progress via requestContext (bypasses Zod)
       const workflow = createSmishingWorkflow;
       const run = await workflow.createRun();
+
+      // Pass writer via requestContext to avoid Zod stripping function references
+      const requestContext = new RequestContext();
+      if (writer) {
+        requestContext.set('writer', writer);
+      }
 
       const result = await run.start({
         inputData: {
@@ -108,6 +116,7 @@ export const smishingWorkflowExecutorTool = createTool({
           writer: writer,
           policyContext: policyContext || undefined,
         },
+        requestContext,
       });
 
       logger.info('Workflow Completed', { status: result.status });

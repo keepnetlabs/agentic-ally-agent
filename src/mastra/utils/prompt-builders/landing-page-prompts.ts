@@ -34,6 +34,11 @@ Your job: generate modern, professional, trustworthy WEB PAGES (not emails) usin
 
 ---
 
+**REQUIRED PAGES:** You MUST generate EXACTLY ${requiredPages.length} page(s): [${requiredPages.map(p => `'${p}'`).join(', ')}].
+${requiredPages.length === 2 ? `This is a Data-Submission flow — return BOTH a 'login' page AND a 'success' page. Do NOT stop after the first page.` : ''}
+
+---
+
 **Rules:**
 
 **No Fake Personal Identities:**
@@ -74,7 +79,7 @@ ${isQuishing ? QUISHING_LANDING_PAGE_RULE : NO_QR_CODE_LANDING_PAGE_RULE}
      **ASSIGNED VISUAL STYLE: ${randomStyle.name}**
      - Rules: ${randomStyle.rules}
 
-     **CONSTRAINT:** You MUST ignore any previous "Option A/B" instructions and strictly implement the **${randomLayout.name}** layout with **${randomStyle.name}** styling.
+     **CONSTRAINT:** Strictly implement the **${randomLayout.name}** layout with **${randomStyle.name}** styling.
 
      **Specific Implementation Rules for ${randomLayout.id}:**
      ${randomLayout.id === 'SPLIT' ? '- Use `display: flex; flex-wrap: wrap; min-height: 100vh;` on body so both panels fill the viewport.\n     - Left side: Brand color background, centered logo/text.\n     - Right side: White background, form content.\n     - You MAY vary logo size, panel padding, card shadow, and CTA corner style.\n     - Do NOT collapse this into a single centered card.' : ''}
@@ -101,7 +106,7 @@ ${hasFormPages ? `\nAlways ensure **high contrast** (e.g. primary button backgro
 
 ---
 
-**🎨 VISUAL VARIATION RULES (DO NOT CREATE CLONES):**
+**VISUAL VARIATION RULES (DO NOT CREATE CLONES):**
 
 Pages for the same brand must feel related (same color palette, logo, general mood) but **must not be pixel-identical copies**.
 
@@ -187,24 +192,20 @@ ${requiredPages.includes('info') ? getInfoPageSection({ fromName, industryDesign
 **TECHNICAL CONSTRAINTS:**
 1. **Single File per Page:** Each \`template\` must be a complete HTML document as shown above.
 2. **Assets:** Use ONLY public CDN-hosted images (neutral icons). No local files.
-3. **STRICT PAGE COUNT:** Generate ONLY the pages requested in \`requiredPages\`.
-   - If only 'info' is requested, DO NOT generate 'login' or 'success'.
-4. **NO DISCLAIMERS:** Do NOT add any security warnings like "this is a fake site" or "look-alike domain". The output is a mockup.
+3. **NO DISCLAIMERS:** Do NOT add any security warnings like "this is a fake site" or "look-alike domain". The output is a mockup.
 
 ---
 
-**OUTPUT FORMAT (MANDATORY):**
-Return ONLY this JSON structure (no extra commentary, no markdown):
+**OUTPUT FORMAT (MANDATORY — ${requiredPages.length} pages required):**
+Return ONLY this JSON (no commentary, no markdown). The "pages" array MUST contain EXACTLY ${requiredPages.length} object(s):
 
 {
   "pages": [
-    { "type": "login", "template": "<!DOCTYPE html><html>...</html>" },
-    { "type": "success", "template": "<!DOCTYPE html><html>...</html>" },
-    { "type": "info", "template": "<!DOCTYPE html><html>...</html>" }
+${requiredPages.map(p => `    { "type": "${p}", "template": "<!DOCTYPE html><html>...</html>" }`).join(',\n')}
   ]
 }
 
-- Include only the page objects that match \`requiredPages\`.
-- DO NOT include email-related fields (subject, fromName, fromAddress). This is a WEBSITE, not an email.
+${requiredPages.length === 2 ? `IMPORTANT: BOTH pages are required. Do NOT stop after the login page — you MUST also generate the success page.\n` : ''}- DO NOT include email-related fields (subject, fromName, fromAddress). This is a WEBSITE, not an email.
+- All HTML attributes MUST use single quotes (for JSON safety).
 `;
 }
