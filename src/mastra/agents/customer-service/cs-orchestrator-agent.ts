@@ -147,6 +147,7 @@ export const csOrchestratorAgent = new Agent({
   instructions: buildCSRoutingInstructions(),
   model: getDefaultAgentModel(),
   tools: {},
+  // @ts-expect-error @mastra/memory@1.1.0 ↔ @mastra/core@1.10.0 type mismatch; pinned until memory is upgradeable
   memory: new Memory({
     options: {
       lastMessages: 5,

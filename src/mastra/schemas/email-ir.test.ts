@@ -8,7 +8,10 @@ describe('EmailIRCanvasSchema', () => {
       verdict: 'Confirmed Social Engineering Attack',
       risk_level: 'High' as const,
       confidence: 0.95,
+      evidence_strength: null,
+      confidence_basis: null,
       status: 'Active investigation',
+      why_this_matters: null,
     },
     agent_determination:
       'This email exhibits clear phishing characteristics including spoofed sender and malicious link.',
@@ -338,7 +341,7 @@ describe('EmailIRCanvasSchema', () => {
       }
     });
 
-    it('should reject when final step has no finding_label', () => {
+    it('should reject when final step has null finding_label', () => {
       const data = {
         ...validMinimalData,
         evidence_flow: [
@@ -346,6 +349,7 @@ describe('EmailIRCanvasSchema', () => {
             step: 1,
             title: 'Final Step',
             description: 'Analysis complete',
+            finding_label: null,
           },
         ],
       };

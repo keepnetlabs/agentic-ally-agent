@@ -758,7 +758,7 @@ describe('CreatePhishingWorkflow', () => {
       const writer = { write: vi.fn() };
       const requestContext = new Map<string, unknown>([['writer', writer]]);
       const run = await createPhishingWorkflow.createRun();
-      await run.start({ inputData: { topic: 'Reasoning Test', language: 'en' } as any, requestContext });
+      await run.start({ inputData: { topic: 'Reasoning Test', language: 'en' } as any, requestContext: requestContext as any });
 
       expect(mocks.streamDirectReasoning).toHaveBeenCalledWith('AI reasoning text', expect.anything());
     });

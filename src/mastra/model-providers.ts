@@ -1,6 +1,7 @@
 import { createOpenAI } from '@ai-sdk/openai';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { createAnthropic } from '@ai-sdk/anthropic';
+import type { LanguageModel } from 'ai';
 import { getLogger } from './utils/core/logger';
 import { normalizeError, logErrorInfo } from './utils/core/error-utils';
 import { errorService } from './services/error-service';
@@ -58,12 +59,12 @@ export enum Model {
  * @param model The specific model to retrieve
  * @returns The model instance
  */
-export function getModel(provider: ModelProvider, model: Model) {
+export function getModel(provider: ModelProvider, model: Model): LanguageModel {
   // Initialize provider if not already cached
   if (!modelProviderCache.has(provider)) {
     const modelProvider = getModelProvider(provider);
     modelProviderCache.set(provider, modelProvider);
-    return modelProvider(model);
+    return modelProvider(model) as LanguageModel;
   }
 
   // Return from cache (guaranteed to exist at this point)
@@ -72,7 +73,7 @@ export function getModel(provider: ModelProvider, model: Model) {
     // This should never happen, but fail gracefully if logic changes
     throw new Error(`Internal error: model provider ${provider} not found in cache after initialization`);
   }
-  return cachedProvider(model);
+  return cachedProvider(model) as LanguageModel;
 }
 
 // Singleton cache for model providers

@@ -4,11 +4,12 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ModelProvider, Model } from './model-providers';
-import type { LanguageModel } from './types/language-model';
+// Extended type for test assertions — LanguageModel at runtime exposes modelId
+type TestLanguageModel = { modelId: string; provider: string };
 
 // Minimal mock shape for AI SDK v5 LanguageModelV2 (uses modelId, not id)
-const mockModel = (modelId: string): LanguageModel =>
-  ({ modelId, provider: 'openai' }) as LanguageModel;
+const mockModel = (modelId: string): TestLanguageModel =>
+  ({ modelId, provider: 'openai' });
 
 // Mock AI SDK and env-dependent code to avoid actual provider initialization
 vi.mock('@ai-sdk/openai', () => ({
@@ -50,8 +51,12 @@ describe('model-providers', () => {
       expect(ModelProvider.GOOGLE).toBe('google');
     });
 
-    it('should have 3 provider values', () => {
-      expect(Object.values(ModelProvider)).toHaveLength(3);
+    it('should have anthropic provider', () => {
+      expect(ModelProvider.ANTHROPIC).toBe('anthropic');
+    });
+
+    it('should have 4 provider values', () => {
+      expect(Object.values(ModelProvider)).toHaveLength(4);
     });
   });
 
@@ -82,7 +87,7 @@ describe('model-providers', () => {
 
       expect(model).toBeDefined();
       expect(model).toHaveProperty('modelId');
-      expect(model.modelId).toBe(Model.OPENAI_GPT_5_1);
+      expect((model as any).modelId).toBe(Model.OPENAI_GPT_5_1);
 
       process.env.OPENAI_API_KEY = orig;
     });
@@ -97,7 +102,7 @@ describe('model-providers', () => {
       const model = getLightAgentModel();
 
       expect(model).toBeDefined();
-      expect(model.modelId).toBe(Model.OPENAI_GPT_4O_MINI);
+      expect((model as any).modelId).toBe(Model.OPENAI_GPT_4O_MINI);
 
       process.env.OPENAI_API_KEY = orig;
     });
@@ -111,7 +116,7 @@ describe('model-providers', () => {
       const { getModel } = await import('./model-providers');
       const model = getModel(ModelProvider.OPENAI, Model.OPENAI_GPT_4O_MINI);
       expect(model).toBeDefined();
-      expect(model.modelId).toBe(Model.OPENAI_GPT_4O_MINI);
+      expect((model as any).modelId).toBe(Model.OPENAI_GPT_4O_MINI);
 
       process.env.OPENAI_API_KEY = orig;
     });
@@ -125,8 +130,8 @@ describe('model-providers', () => {
       const model2 = getModel(ModelProvider.OPENAI, Model.OPENAI_GPT_4O);
       expect(model1).toBeDefined();
       expect(model2).toBeDefined();
-      expect(model1.modelId).toBe(Model.OPENAI_GPT_4O_MINI);
-      expect(model2.modelId).toBe(Model.OPENAI_GPT_4O);
+      expect((model1 as any).modelId).toBe(Model.OPENAI_GPT_4O_MINI);
+      expect((model2 as any).modelId).toBe(Model.OPENAI_GPT_4O);
 
       process.env.OPENAI_API_KEY = orig;
     });
@@ -159,7 +164,7 @@ describe('model-providers', () => {
       const { getModelWithOverride } = await import('./model-providers');
       const result = getModelWithOverride(undefined, undefined, defaultMock as any);
       expect(defaultMock).toHaveBeenCalled();
-      expect(result.modelId).toBe('default-model');
+      expect((result as any).modelId).toBe('default-model');
     });
 
     it('should use default when modelProvider is empty string', async () => {
@@ -167,7 +172,7 @@ describe('model-providers', () => {
       const { getModelWithOverride } = await import('./model-providers');
       const result = getModelWithOverride('', 'gpt-4o', defaultMock as any);
       expect(defaultMock).toHaveBeenCalled();
-      expect(result.modelId).toBe('default-model');
+      expect((result as any).modelId).toBe('default-model');
     });
 
     it('should return override model when valid openai provider and model', async () => {
@@ -178,7 +183,7 @@ describe('model-providers', () => {
       const { getModelWithOverride } = await import('./model-providers');
       const result = getModelWithOverride('openai', 'gpt-4o-mini', defaultMock as any);
       expect(defaultMock).not.toHaveBeenCalled();
-      expect(result.modelId).toBe(Model.OPENAI_GPT_4O_MINI);
+      expect((result as any).modelId).toBe(Model.OPENAI_GPT_4O_MINI);
 
       process.env.OPENAI_API_KEY = orig;
     });
@@ -191,7 +196,7 @@ describe('model-providers', () => {
       const { getModelWithOverride } = await import('./model-providers');
       const result = getModelWithOverride('OPENAI', 'OPENAI_GPT_4O_MINI', defaultMock as any);
       expect(defaultMock).not.toHaveBeenCalled();
-      expect(result.modelId).toBe(Model.OPENAI_GPT_4O_MINI);
+      expect((result as any).modelId).toBe(Model.OPENAI_GPT_4O_MINI);
 
       process.env.OPENAI_API_KEY = orig;
     });
@@ -204,7 +209,7 @@ describe('model-providers', () => {
       const { getModelWithOverride } = await import('./model-providers');
       const result = getModelWithOverride('openai', 'invalid-model-xyz', defaultMock as any);
       expect(defaultMock).toHaveBeenCalled();
-      expect(result.modelId).toBe('default-model');
+      expect((result as any).modelId).toBe('default-model');
 
       process.env.OPENAI_API_KEY = orig;
     });
@@ -214,7 +219,7 @@ describe('model-providers', () => {
       const { getModelWithOverride } = await import('./model-providers');
       const result = getModelWithOverride(null as any, 'gpt-4o', defaultMock as any);
       expect(defaultMock).toHaveBeenCalled();
-      expect(result.modelId).toBe('fallback');
+      expect((result as any).modelId).toBe('fallback');
     });
 
     it('should use default when modelName is empty string with valid provider', async () => {
@@ -225,7 +230,7 @@ describe('model-providers', () => {
       const { getModelWithOverride } = await import('./model-providers');
       const result = getModelWithOverride('openai', '', defaultMock as any);
       expect(defaultMock).toHaveBeenCalled();
-      expect(result.modelId).toBe('default');
+      expect((result as any).modelId).toBe('default');
 
       process.env.OPENAI_API_KEY = orig;
     });
@@ -235,7 +240,7 @@ describe('model-providers', () => {
       const { getModelWithOverride } = await import('./model-providers');
       const result = getModelWithOverride('invalid-provider-xyz', 'gpt-4o', defaultMock as any);
       expect(defaultMock).toHaveBeenCalled();
-      expect(result.modelId).toBe('fallback');
+      expect((result as any).modelId).toBe('fallback');
     });
 
     it('should fall back to default when getModel throws', async () => {
@@ -248,7 +253,7 @@ describe('model-providers', () => {
       const { getModelWithOverride } = await import('./model-providers');
       const result = getModelWithOverride('workers-ai', '@cf/openai/gpt-oss-120b', defaultMock as any);
       expect(defaultMock).toHaveBeenCalled();
-      expect(result.modelId).toBe('fallback-on-error');
+      expect((result as any).modelId).toBe('fallback-on-error');
 
       if (origAccount !== undefined) process.env.CLOUDFLARE_ACCOUNT_ID = origAccount;
       if (origGateway !== undefined) process.env.CLOUDFLARE_AI_GATEWAY_ID = origGateway;

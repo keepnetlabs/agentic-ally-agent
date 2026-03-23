@@ -9,7 +9,10 @@ const { validReport } = vi.hoisted(() => ({
       verdict: 'No Threat Detected - Benign Email',
       risk_level: 'Low' as const,
       confidence: 0.95,
+      evidence_strength: null,
+      confidence_basis: null,
       status: 'Analysis Complete',
+      why_this_matters: null,
     },
     agent_determination: 'Message appears informational with no malicious indicators.',
     risk_indicators: {

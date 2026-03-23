@@ -30,11 +30,11 @@ export const EmailIRCanvasSchema = z
       confidence: z.number().min(0).max(1).describe('Confidence score between 0 and 1'),
       evidence_strength: z
         .enum(['Strong', 'Moderate', 'Limited'])
-        .optional()
+        .nullable()
         .describe('Text evidence quality label for UI display'),
-      confidence_basis: z.string().optional().describe('Short explanation for how evidence strength was determined'),
+      confidence_basis: z.string().nullable().describe('Short explanation for how evidence strength was determined'),
       status: z.string().describe('Current status of the analysis'),
-      why_this_matters: z.string().optional().describe('Single-line business impact explanation for executives'),
+      why_this_matters: z.string().nullable().describe('Single-line business impact explanation for executives'),
     }),
     agent_determination: z
       .string()
@@ -51,7 +51,7 @@ export const EmailIRCanvasSchema = z
           description: z.string(),
           finding_label: z
             .enum(EMAIL_IR_EVIDENCE_FINDING_LABELS)
-            .optional()
+            .nullable()
             .describe('Short UI badge label for step status or final category'),
         })
       )
@@ -71,7 +71,7 @@ export const EmailIRCanvasSchema = z
     }
 
     const lastStep = data.evidence_flow[data.evidence_flow.length - 1];
-    if (!lastStep.finding_label) {
+    if (lastStep.finding_label === null || lastStep.finding_label === undefined) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: 'Final evidence_flow step must include finding_label.',

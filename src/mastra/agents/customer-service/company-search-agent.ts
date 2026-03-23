@@ -249,6 +249,7 @@ export const companySearchAgent = new Agent({
     searchCompanies: searchCompaniesTool,
     getCompanyDetail: getCompanyDetailTool,
   },
+  // @ts-expect-error @mastra/memory@1.1.0 ↔ @mastra/core@1.10.0 type mismatch; pinned until memory is upgradeable
   memory: new Memory({
     options: {
       lastMessages: 10,

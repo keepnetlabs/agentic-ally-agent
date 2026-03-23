@@ -205,7 +205,8 @@ describe('CreateMicrolearningWorkflow', () => {
       expect.any(String),
       expect.objectContaining({ inboxContent: undefined }),
       expect.any(String),
-      expect.any(String)
+      expect.any(String),
+      expect.any(Object)
     );
     expect(result.status).toBe('success');
   });
@@ -426,7 +427,8 @@ describe('Step Execution Logic', () => {
           inboxContent: inboxResult.data,
         }),
         'en',
-        'it'
+        'it',
+        languageResult.analysis
       );
       expect(result).toEqual(inboxResult);
     });
@@ -464,7 +466,8 @@ describe('Step Execution Logic', () => {
           inboxContent: undefined,
         }),
         'en',
-        'it'
+        'it',
+        languageResult.analysis
       );
       expect(result).toEqual({ success: true, data: null });
     });

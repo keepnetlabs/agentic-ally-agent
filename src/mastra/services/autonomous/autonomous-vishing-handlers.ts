@@ -133,7 +133,7 @@ Language: All call content must be in ${language}.`;
 
 async function getAgentPhoneNumberId(): Promise<string | undefined> {
   if (!listPhoneNumbersTool.execute) throw new Error('List phone numbers tool is not executable');
-  const result: Record<string, any> = await listPhoneNumbersTool.execute({}, {});
+  const result: Record<string, any> = await listPhoneNumbersTool.execute({ refresh: false }, {});
   if (!result?.success || !result.phoneNumbers?.length) {
     logger.warn('No phone numbers available for vishing call', { error: result?.error });
     return undefined;
