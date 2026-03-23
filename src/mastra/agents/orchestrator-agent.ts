@@ -271,6 +271,7 @@ IF the request seems related to security awareness but the exact intent is uncle
     - Example: Report says "| Preferred Language | Turkish (tr-tr) |" -> taskContext: "Create Phishing training in Turkish (tr-tr)".
   - **Transfer full context:**
     - If you see a "Behavioral Resilience Report" or "Executive Report" in the history, summarize the KEY RISKS and RECOMMENDATIONS in the taskContext.
+    - **CRITICAL for microlearning/phishing/smishing:** If the report contains "Next Microlearning", "Next Simulation", or "Next Steps" recommendations, include the EXACT recommendation details in taskContext: title, objective/why, difficulty, language, and behavioral stage. Example: "Next Microlearning: Identifying Malicious Links | Objective: Teach link inspection | Level: Beginner (Foundational stage) | Language: tr-tr | Why: User clicked 3 authority-based phishing links"
     - Do NOT just say "Resolve user". Say: "Create training for user [Name]. Context: [Risk Level], [Preferred Language], [Key Observations]."
   - Keep it concise but INCLUDE THE ESSENTIALS.
 

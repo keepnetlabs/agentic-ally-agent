@@ -49,3 +49,4 @@ build/
 
 # Keep .env.example for developers (this is the template)
 # .env.example should be committed with placeholder values only
+wrangler.jsonc

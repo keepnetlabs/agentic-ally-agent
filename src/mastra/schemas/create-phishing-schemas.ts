@@ -79,6 +79,12 @@ export const createPhishingAnalysisSchema = z.object({
     .string()
     .optional()
     .describe('AI reasoning about email content generation (if available)'),
+  userContextReasoning: z
+    .string()
+    .optional()
+    .describe(
+      'If user behavior context was provided: 1-2 sentence explanation of WHY this specific scenario was chosen for this user based on their behavioral profile, risk signals, and activity history. Reference specific behavioral evidence.'
+    ),
   additionalContext: z
     .string()
     .optional()

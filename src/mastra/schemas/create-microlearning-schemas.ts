@@ -49,6 +49,11 @@ export const promptAnalysisSchema = z.object({
     roles: nullToUndefined(z.array(z.string()).nullable()).optional(),
     themeColor: nullToUndefined(z.string().nullable()).optional(),
     additionalContext: nullToUndefined(z.string().nullable()).optional(),
+    // EU AI Act Art. 13 — Explainability reasoning fields
+    reasoning: nullToUndefined(z.string().nullable()).optional(),
+    targetAudienceReasoning: nullToUndefined(z.string().nullable()).optional(),
+    contentStrategy: nullToUndefined(z.string().nullable()).optional(),
+    userContextReasoning: nullToUndefined(z.string().nullable()).optional(),
   }),
   modelProvider: nullToUndefined(z.enum(MODEL_PROVIDERS.NAMES).nullable()).optional(),
   model: nullToUndefined(z.string().nullable()).optional(),

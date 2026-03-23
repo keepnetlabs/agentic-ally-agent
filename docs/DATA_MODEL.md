@@ -26,7 +26,9 @@ We use a hierarchical key structure to store all content.
 | `phishing:{id}:email:{lang}` | **Email Template.** subject, template (HTML), fromAddress, fromName, redFlags. | None |
 | `phishing:{id}:landing:{lang}` | **Landing Page.** name, description, method, difficulty, pages (HTML array). | None |
 
-**Base fields** (`phishing:{id}:base`): `id`, `name`, `description`, `topic`, `difficulty`, `method`, `isQuishing`, `targetProfile`, `psychologicalTriggers` (array), `tone`, `category`, `createdAt`, `language_availability`.
+**Base fields** (`phishing:{id}:base`): `id`, `name`, `description`, `topic`, `difficulty`, `method`, `isQuishing`, `targetProfile`, `psychologicalTriggers` (array), `tone`, `category`, `createdAt`, `language_availability`, `explainability`.
+
+**Explainability field** (`explainability`): EU AI Act Art. 13 — AI decision rationale embedded in base JSON. See [Explainability Schema](#explainability-schema) below.
 
 ### C. Smishing Storage (`smishing:*`)
 
@@ -50,6 +52,7 @@ We use a hierarchical key structure to store all content.
 | `psychologicalTriggers` | string[] | Triggers used (e.g. `["Urgency", "Curiosity"]`) — used for Active Learning |
 | `createdAt` | string | ISO timestamp |
 | `language_availability` | string[] | Supported languages (e.g. `["en-gb"]`) |
+| `explainability` | object | EU AI Act Art. 13 — AI decision rationale. See [Explainability Schema](#explainability-schema) |
 
 **SMS fields** (`smishing:{id}:sms:{lang}`):
 
@@ -73,6 +76,24 @@ We use a hierarchical key structure to store all content.
 | `pages` | array | `{ type: "login" \| "form" \| ..., template: "<html>..." }[]` |
 
 **Flow:** `create-smishing-workflow` → `saveSmishingBase` + `saveSmishingSms` + `saveSmishingLandingPage`; `upload-smishing-tool` reads and uploads; Active Learning writes to D1 `campaign_metadata` after upload.
+
+### Explainability Schema
+
+All content base records (phishing, smishing, microlearning) include an `explainability` object for EU AI Act Art. 13 compliance. Defined in `src/mastra/types/explainability.ts`.
+
+| Field | Type | Source (Phishing) | Source (Smishing) | Source (Microlearning) |
+|-------|------|-------------------|-------------------|------------------------|
+| `reasoning` | string | `analysis.reasoning` | `analysis.reasoning` | `analysis.reasoning` (prompt) |
+| `targetAudienceReasoning` | string | `analysis.targetAudienceAnalysis` | `analysis.targetAudienceAnalysis` | `analysis.targetAudienceReasoning` (prompt) |
+| `contentStrategy` | string | `analysis.subjectLineStrategy` | `analysis.messageStrategy` | `analysis.contentStrategy` (prompt) |
+| `userContextReasoning` | string? | `analysis.userContextReasoning` | `analysis.userContextReasoning` | `analysis.userContextReasoning` (prompt) |
+| `keyFactors` | string[] | `psychologicalTriggers` | `psychologicalTriggers` | `learningObjectives` |
+| `modelId` | string? | Workflow param | Workflow param | Workflow param |
+| `modelProvider` | string? | Workflow param | Workflow param | Workflow param |
+| `generatedAt` | string | ISO timestamp | ISO timestamp | ISO timestamp |
+| `version` | string | Schema version (e.g. `"1.0"`) | Schema version | Schema version |
+
+**Factory:** `buildExplainability()` from `src/mastra/types/explainability.ts` — common builder for all content types.
 
 ### D. Autonomous State (`autonomous:*`)
 

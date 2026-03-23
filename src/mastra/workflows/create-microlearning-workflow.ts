@@ -395,9 +395,12 @@ export const saveToKVStep = createStep({
                 microlearning: microlearningStructure,
                 languageContent: languageResult.data,
                 inboxContent: hasInbox ? inboxResult.data : undefined,
+                model: languageResult.model,
+                modelProvider: languageResult.modelProvider,
               },
               analysis.language,
-              normalizedDept
+              normalizedDept,
+              analysis
             ),
           `KV save microlearning ${microlearningId}`
         );

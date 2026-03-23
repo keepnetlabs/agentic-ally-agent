@@ -191,5 +191,10 @@ export function autoRepairPromptAnalysis(
     isVishing,
     isSmishing,
     deliveryChannel,
+    // EU AI Act Art. 13 — Explainability: passthrough reasoning fields from AI output
+    reasoning: typeof analysis.reasoning === 'string' ? analysis.reasoning : undefined,
+    targetAudienceReasoning: typeof analysis.targetAudienceReasoning === 'string' ? analysis.targetAudienceReasoning : undefined,
+    contentStrategy: typeof analysis.contentStrategy === 'string' ? analysis.contentStrategy : undefined,
+    userContextReasoning: typeof analysis.userContextReasoning === 'string' ? analysis.userContextReasoning : undefined,
   };
 }

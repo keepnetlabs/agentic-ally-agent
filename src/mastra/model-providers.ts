@@ -1,5 +1,6 @@
 import { createOpenAI } from '@ai-sdk/openai';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
+import { createAnthropic } from '@ai-sdk/anthropic';
 import { getLogger } from './utils/core/logger';
 import { normalizeError, logErrorInfo } from './utils/core/error-utils';
 import { errorService } from './services/error-service';
@@ -16,6 +17,7 @@ export enum ModelProvider {
   OPENAI = 'openai',
   WORKERS_AI = 'workers-ai',
   GOOGLE = 'google',
+  ANTHROPIC = 'anthropic',
 }
 
 /**
@@ -45,6 +47,8 @@ export enum Model {
   GOOGLE_GEMINI_2_5_PRO = 'gemini-2.5-pro',
   GOOGLE_GEMINI_2_5_FLASH = 'gemini-2.5-flash',
   GOOGLE_GEMINI_3_PRO = 'gemini-3-pro',
+  ANTHROPIC_CLAUDE_SONNET_4_6 = 'claude-sonnet-4-6',
+  ANTHROPIC_CLAUDE_OPUS_4_6 = 'claude-opus-4-6',
 }
 
 /**
@@ -155,6 +159,20 @@ function getModelProvider(provider: ModelProvider) {
       });
       return (modelId: string) => googleProvider(modelId);
 
+    case 'anthropic': {
+      // Anthropic Claude provider
+      const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
+      if (!anthropicApiKey) {
+        throw new Error(
+          'Failed to initialize ModelProvider.ANTHROPIC: ANTHROPIC_API_KEY environment variable is not set'
+        );
+      }
+      const anthropicProvider = createAnthropic({
+        apiKey: anthropicApiKey,
+      });
+      return (modelId: string) => anthropicProvider(modelId);
+    }
+
     default:
       throw new Error(`Unsupported provider: ${provider}`);
   }
@@ -222,13 +240,14 @@ function normalizeModelName(model: string): string {
     return Model[enumKeyCandidate as keyof typeof Model];
   }
 
-  // 4) Best-effort: if they included provider prefixes for OpenAI/Gemini, strip them
+  // 4) Best-effort: if they included provider prefixes for OpenAI/Gemini/Anthropic, strip them
   // openai-gpt-4o-mini -> gpt-4o-mini (valid enum value)
   const stripped = raw
     .toLowerCase()
     .replace(/^openai[-_]/, '')
     .replace(/^google[-_]/, '')
     .replace(/^gemini[-_]/, '')
+    .replace(/^anthropic[-_]/, '')
     .trim();
 
   return stripped;

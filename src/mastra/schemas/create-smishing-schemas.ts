@@ -62,6 +62,12 @@ export const createSmishingAnalysisSchema = z.object({
   messageStrategy: z.string().describe('Reasoning behind the SMS content strategy'),
   reasoning: z.string().optional().describe('AI reasoning about scenario design (if available)'),
   smsGenerationReasoning: z.string().optional().describe('AI reasoning about SMS content generation (if available)'),
+  userContextReasoning: z
+    .string()
+    .optional()
+    .describe(
+      'If user behavior context was provided: 1-2 sentence explanation of WHY this specific scenario was chosen for this user based on their behavioral profile, risk signals, and activity history. Reference specific behavioral evidence.'
+    ),
   additionalContext: z
     .string()
     .optional()

@@ -702,6 +702,39 @@ function patchWranglerConfig() {
       console.log(`  ✅ BATCH_WORKFLOW_KV KV namespace binding already exists`);
     }
 
+    // Inject .env vars into wrangler.json vars (Mastra 1.14+ no longer does this automatically)
+    const envPath = join(PROJECT_ROOT, '.env');
+    if (existsSync(envPath)) {
+      const envContent = readFileSync(envPath, 'utf8');
+      const envLines = envContent.split('\n').filter(l => l.trim() && !l.startsWith('#'));
+      let envAdded = 0;
+      for (const line of envLines) {
+        const eqIndex = line.indexOf('=');
+        if (eqIndex === -1) continue;
+        const key = line.substring(0, eqIndex).trim();
+        let value = line.substring(eqIndex + 1).trim();
+        // Remove surrounding quotes if present
+        if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+          value = value.slice(1, -1);
+        }
+        if (!key || !value) continue;
+        // Skip keys that conflict with existing bindings (KV, D1, services, workflows)
+        const reservedBindings = (config.kv_namespaces || []).map(k => k.binding)
+          .concat((config.d1_databases || []).map(d => d.binding))
+          .concat((config.services || []).map(s => s.binding))
+          .concat((config.workflows || []).map(w => w.binding));
+        if (reservedBindings.includes(key)) continue;
+        if (!config.vars[key]) {
+          config.vars[key] = value;
+          envAdded++;
+        }
+      }
+      if (envAdded > 0) {
+        console.log(`  ✅ Injected ${envAdded} env vars from .env into wrangler.json vars`);
+        added = true;
+      }
+    }
+
     if (added) {
       writeFileSync(WRANGLER_CONFIG_PATH, JSON.stringify(config, null, 2), 'utf8');
       return true;

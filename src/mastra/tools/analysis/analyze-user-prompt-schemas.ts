@@ -72,6 +72,11 @@ export const AnalyzeUserPromptOutputSchema = z.object({
     isCodeTopic: nullToUndefined(z.boolean().nullable()).optional(),
     isVishing: nullToUndefined(z.boolean().nullable()).optional(),
     isSmishing: nullToUndefined(z.boolean().nullable()).optional(),
+    // EU AI Act Art. 13 — Explainability reasoning fields
+    reasoning: nullToUndefined(z.string().nullable()).optional(),
+    targetAudienceReasoning: nullToUndefined(z.string().nullable()).optional(),
+    contentStrategy: nullToUndefined(z.string().nullable()).optional(),
+    userContextReasoning: nullToUndefined(z.string().nullable()).optional(),
   }),
   policyContext: z.string().optional(),
   error: z.string().optional(),

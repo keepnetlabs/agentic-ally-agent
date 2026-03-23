@@ -24,4 +24,9 @@ export interface PromptAnalysis {
   isVishing?: boolean;
   isSmishing?: boolean;
   deliveryChannel?: 'sms' | 'slack' | 'whatsapp' | 'teams' | 'telegram' | 'instagram' | 'linkedin';
+  // EU AI Act Art. 13 — Explainability reasoning fields
+  reasoning?: string;
+  targetAudienceReasoning?: string;
+  contentStrategy?: string;
+  userContextReasoning?: string;
 }

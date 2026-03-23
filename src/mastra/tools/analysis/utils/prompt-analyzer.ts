@@ -248,7 +248,11 @@ Return JSON:
   "isCodeTopic": false,
   "isVishing": false,
   "isSmishing": false,
-  "deliveryChannel": null
+  "deliveryChannel": null,
+  "reasoning": "1-2 sentence explanation of WHY this topic, difficulty level and approach were chosen for the training",
+  "targetAudienceReasoning": "1-2 sentence explanation of WHY this audience/department/role is the right target for this training",
+  "contentStrategy": "1-2 sentence explanation of the pedagogical approach and content delivery strategy chosen",
+  "userContextReasoning": "If USER CONTEXT was provided above: 1-2 sentence explanation of WHY this training was chosen for this specific user based on their behavioral profile and risk signals. null if no user context."
 }
 
 RULES:

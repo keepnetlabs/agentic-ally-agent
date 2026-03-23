@@ -86,7 +86,7 @@
 | # | Task | Effort | Status | Notes |
 |---|------|--------|--------|-------|
 | 1 | **Deploy migrations (0003 + 0004) to prod** | Low | ✅ Done | Deployed Mar 2026 |
-| 2 | **Explainability (PBI 44872)** | Medium | Planned | Decision rationale in response; audit trail |
+| 2 | **Explainability (PBI 44872)** | Medium | **In Progress** | `explainability` object in phishing/smishing/microlearning base JSON (v1.0); audit trail pending |
 | 3 | **Privacy Policy (Art. 13-14)** | Medium | Blocked | Requires legal/DPO |
 | 4 | **DPIA (Art. 35)** | High | Blocked | Requires DPO — deepfake, phishing, vishing assessment |
 | 5 | **DPA with processors (Art. 28)** | Medium | Blocked | OpenAI, HeyGen, ElevenLabs — vendor agreements |

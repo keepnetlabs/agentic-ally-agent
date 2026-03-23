@@ -55,7 +55,12 @@
       "Bash(npx eslint:*)",
       "Bash(node -e:*)",
       "Bash(cmd /c \"dir /s /b \"\"C:\\\\Users\\\\user\\\\Desktop\\\\Agentic Ally\\\\fleet-v2-main\\\\platform\"\" | findstr /i \"\"\\\\.vue\"\" | head\")",
-      "Read(//c/Users/user/Desktop/Agentic Ally/fleet-v2-main/agent/$TEMP/claude/c--Users-user-Desktop-Agentic-Ally-fleet-v2-main-agent/tasks/**)"
+      "Read(//c/Users/user/Desktop/Agentic Ally/fleet-v2-main/agent/$TEMP/claude/c--Users-user-Desktop-Agentic-Ally-fleet-v2-main-agent/tasks/**)",
+      "Bash(for v:*)",
+      "Bash(do echo:*)",
+      "Bash(npm pack:*)",
+      "Read(//c/Users/user/Desktop/Agentic Ally/fleet-v2-main/agent/@mastra/**)",
+      "Bash(/dev/null done:*)"
     ],
     "deny": [],
     "ask": [],

@@ -130,6 +130,15 @@ function parseAndValidate<T>(raw: string, schema: { safeParse: (data: unknown) =
     };
   }
 
+  // Step 2.5: Soft-truncate change_log if LLM returned too many entries
+  // Prevents deterministic retry loops when LLM consistently exceeds the limit
+  if (parsed && typeof parsed === 'object' && 'change_log' in parsed && Array.isArray((parsed as Record<string, unknown>).change_log)) {
+    const log = (parsed as Record<string, unknown>).change_log as unknown[];
+    if (log.length > 15) {
+      (parsed as Record<string, unknown>).change_log = log.slice(0, 15);
+    }
+  }
+
   // Step 3: Validate against Zod schema
   const result = schema.safeParse(parsed);
   if (!result.success) {

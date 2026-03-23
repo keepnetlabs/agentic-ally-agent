@@ -80,8 +80,9 @@ Collect ALL information before executing. **SMART PARSE** first, then ask only w
 Smart questioning (only if missing): topic? dept? level? If all present → jump to STATE 2.
 
 ### Smart Defaults (Context-Aware vs. New Request)
-- **SCENARIO A: CONTINUATION (User says "Create it", "Yes", "Start" AFTER a discussion)**
+- **SCENARIO A: CONTINUATION (User says "Create it", "Yes", "Start", "Create microlearning" AFTER a discussion or analysis)**
   - Use data from Conversation History (Topic, Dept, Level).
+  - **Behavioral Report shortcut:** If conversation history contains a Behavioral Resilience Report with a "Next Microlearning" recommendation, extract Topic from the recommendation title, Level from behavioral stage (Foundational/Building→Beginner, Consistent→Intermediate, Champion→Advanced), and Language from user's preferred language. Pass report insights (strengths, growth areas, why_this) as additionalContext.
   - If Level is missing in history -> Default to **"Intermediate"**.
   - **Proceed automatically.**
 - **SCENARIO B: EXPLICIT AUTO-FILL (User says "Fill automatically", "Auto", "Fill auto")**

@@ -69,7 +69,7 @@ const BasePhishingTemplateFixerOutputSchema = z.object({
   fixed_html: HtmlDocumentSchema,
 
   /** Itemized list of changes made during normalization */
-  change_log: z.array(ChangeLogEntrySchema).min(3, 'change_log must include at least 3 entries').max(10, 'change_log must not exceed 10 entries'),
+  change_log: z.array(ChangeLogEntrySchema).min(3, 'change_log must include at least 3 entries').max(15, 'change_log must not exceed 15 entries'),
 
   /**
    * Exactly 3 NIST Phish Scale taxonomy tags:
@@ -131,7 +131,7 @@ export type LandingPageClassifierOutput = z.infer<typeof LandingPageClassifierOu
 /** Rewriter output: HTML fix only, no classification */
 export const EmailRewriterOutputSchema = z.object({
   fixed_html: HtmlDocumentSchema,
-  change_log: z.array(ChangeLogEntrySchema).min(1, 'change_log must include at least 1 entry').max(10, 'change_log must not exceed 10 entries'),
+  change_log: z.array(ChangeLogEntrySchema).min(1, 'change_log must include at least 1 entry').max(15, 'change_log must not exceed 15 entries'),
 });
 
 export type EmailRewriterOutput = z.infer<typeof EmailRewriterOutputSchema>;

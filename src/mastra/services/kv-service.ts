@@ -4,6 +4,7 @@ import { normalizeError, logErrorInfo } from '../utils/core/error-utils';
 import { errorService } from './error-service';
 import { ERROR_CODES } from '../constants';
 import { detectAndRepairInbox } from '../utils/validation/json-validation-utils';
+import { buildExplainability } from '../types/explainability';
 
 /**
  * KV Service for direct Cloudflare KV REST API operations
@@ -242,7 +243,7 @@ export class KVService {
   }
 
   // Microlearning specific methods
-  async saveMicrolearning(microlearningId: string, data: any, language: string, department: string): Promise<boolean> {
+  async saveMicrolearning(microlearningId: string, data: any, language: string, department: string, analysis?: any): Promise<boolean> {
     const timer = startTimer();
     const normalizedLang = language.toLowerCase();
     const baseKey = `ml:${microlearningId}:base`;
@@ -275,6 +276,16 @@ export class KVService {
         this.put(baseKey, {
           ...data.microlearning,
           microlearning_id: microlearningId,
+          // EU AI Act Art. 13 — Explainability: decision rationale for operator review
+          explainability: buildExplainability({
+            reasoning: analysis?.reasoning,
+            targetAudienceReasoning: analysis?.targetAudienceReasoning,
+            contentStrategy: analysis?.contentStrategy,
+            userContextReasoning: analysis?.userContextReasoning,
+            keyFactors: analysis?.learningObjectives,
+            modelId: data.model,
+            modelProvider: data.modelProvider,
+          }),
         }),
         this.put(langKey, data.languageContent),
         ...(shouldSaveInbox ? [this.put(inboxKey, inboxToSave)] : []),
@@ -373,6 +384,14 @@ export class KVService {
     const normalizedLang = language.toLowerCase();
 
     try {
+      // Active Learning: normalize to array (handles old/corrupt data where it might be string or missing)
+      const psychologicalTriggers = (() => {
+        const t = data.analysis?.psychologicalTriggers;
+        if (Array.isArray(t)) return t.map(x => (typeof x === 'string' ? x : String(x)));
+        if (typeof t === 'string') return [t];
+        return [];
+      })();
+
       const baseData = {
         id,
         name: data.analysis?.name,
@@ -382,17 +401,21 @@ export class KVService {
         method: data.analysis?.method || 'Click-Only',
         isQuishing: data.analysis?.isQuishing || false, // Add quishing flag (AI-determined)
         targetProfile: data.analysis?.targetAudienceAnalysis || {},
-        // Active Learning: normalize to array (handles old/corrupt data where it might be string or missing)
-        psychologicalTriggers: (() => {
-          const t = data.analysis?.psychologicalTriggers;
-          if (Array.isArray(t)) return t.map(x => (typeof x === 'string' ? x : String(x)));
-          if (typeof t === 'string') return [t];
-          return [];
-        })(),
+        psychologicalTriggers,
         tone: typeof data.analysis?.tone === 'string' ? data.analysis.tone : undefined,
         category: typeof data.analysis?.category === 'string' ? data.analysis.category : undefined,
         createdAt: new Date().toISOString(),
         language_availability: [normalizedLang],
+        // EU AI Act Art. 13 — Explainability: decision rationale for operator review
+        explainability: buildExplainability({
+          reasoning: data.analysis?.reasoning,
+          targetAudienceReasoning: data.analysis?.targetAudienceAnalysis,
+          contentStrategy: data.analysis?.subjectLineStrategy,
+          userContextReasoning: data.analysis?.userContextReasoning,
+          keyFactors: psychologicalTriggers,
+          modelId: data.model,
+          modelProvider: data.modelProvider,
+        }),
       };
 
       return await this.put(baseKey, baseData);
@@ -521,6 +544,14 @@ export class KVService {
     const normalizedLang = language.toLowerCase();
 
     try {
+      // Active Learning: psychological triggers for campaign_metadata (User Info tactic enrichment)
+      const psychologicalTriggers = (() => {
+        const t = data.analysis?.psychologicalTriggers;
+        if (Array.isArray(t)) return t.map(x => (typeof x === 'string' ? x : String(x)));
+        if (typeof t === 'string') return [t];
+        return [];
+      })();
+
       const baseData = {
         id,
         name: data.analysis?.name,
@@ -529,15 +560,19 @@ export class KVService {
         difficulty: data.analysis?.difficulty || 'Medium',
         method: data.analysis?.method || 'Click-Only',
         targetProfile: data.analysis?.targetAudienceAnalysis || {},
-        // Active Learning: psychological triggers for campaign_metadata (User Info tactic enrichment)
-        psychologicalTriggers: (() => {
-          const t = data.analysis?.psychologicalTriggers;
-          if (Array.isArray(t)) return t.map(x => (typeof x === 'string' ? x : String(x)));
-          if (typeof t === 'string') return [t];
-          return [];
-        })(),
+        psychologicalTriggers,
         createdAt: new Date().toISOString(),
         language_availability: [normalizedLang],
+        // EU AI Act Art. 13 — Explainability: decision rationale for operator review
+        explainability: buildExplainability({
+          reasoning: data.analysis?.reasoning,
+          targetAudienceReasoning: data.analysis?.targetAudienceAnalysis,
+          contentStrategy: data.analysis?.messageStrategy,
+          userContextReasoning: data.analysis?.userContextReasoning,
+          keyFactors: psychologicalTriggers,
+          modelId: data.model,
+          modelProvider: data.modelProvider,
+        }),
       };
 
       return await this.put(baseKey, baseData);
