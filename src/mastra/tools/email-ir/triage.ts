@@ -16,6 +16,7 @@ import { bodyIntentAnalysisOutputSchema } from './body-intent-analysis';
 import { createLogContext, loggerTriage, logStepStart, logStepComplete, logStepError } from './logger-setup';
 import { normalizeError, logErrorInfo } from '../../utils/core/error-utils';
 import { errorService } from '../../services/error-service';
+import { trackAgentCost } from '../../utils/core/tracked-generate';
 import { withRetry } from '../../utils/core/resilience-utils';
 import { sanitizeEmailBody } from './email-body-sanitizer';
 import { EMAIL_IR_EMAIL_CATEGORIES } from '../../schemas/email-ir';
@@ -225,6 +226,7 @@ Accuracy is critical. When uncertain, prefer **Other Suspicious** over misclassi
         'triage-llm'
       );
 
+      trackAgentCost('email-ir-triage', result, emailIRAnalyst.model);
       logStepComplete(loggerTriage, ctx, { result: result.object });
 
       return {

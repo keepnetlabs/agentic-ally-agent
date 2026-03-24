@@ -13,6 +13,7 @@ import { riskAssessmentOutputSchema } from './risk-assessment';
 import { createLogContext, loggerReporting, logStepStart, logStepComplete, logStepError } from './logger-setup';
 import { normalizeError, logErrorInfo } from '../../utils/core/error-utils';
 import { errorService } from '../../services/error-service';
+import { trackAgentCost } from '../../utils/core/tracked-generate';
 import { withRetry } from '../../utils/core/resilience-utils';
 
 export const reportingTool = createTool({
@@ -164,6 +165,7 @@ This report format is designed for:
         'reporting-llm'
       );
 
+      trackAgentCost('email-ir-reporting', result, emailIRAnalyst.model);
       logStepComplete(loggerReporting, ctx, { report_generated: true });
 
       return result.object;

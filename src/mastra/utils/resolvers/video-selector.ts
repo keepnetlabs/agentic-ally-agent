@@ -1,4 +1,4 @@
-import { generateText } from 'ai';
+import { trackedGenerateText } from '../core/tracked-generate';
 import { getModel, Model, ModelProvider } from '../../model-providers';
 import { PromptAnalysis } from '../../types/prompt-analysis';
 import videoDatabase from '../../data/video-database.json';
@@ -188,7 +188,7 @@ ${relevantVideos.map((v, i) => `${i + 1}. ${v.title}\n   Topics: ${v.topics.join
 Return the best matching video URL only:`;
 
     const model = getModel(ModelProvider.WORKERS_AI, Model.WORKERS_AI_GPT_OSS_120B);
-    const videoSelection = await generateText({
+    const videoSelection = await trackedGenerateText('video-selector', {
       model,
       messages: [
         {

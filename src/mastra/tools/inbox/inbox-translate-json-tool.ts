@@ -1,5 +1,5 @@
 import { createTool, ToolExecutionContext } from '@mastra/core/tools';
-import { generateText } from 'ai';
+import { trackedGenerateText } from '../../utils/core/tracked-generate';
 import { getModelWithOverride } from '../../model-providers';
 import { cleanResponse } from '../../utils/content-processors/json-cleaner';
 import { LOCALIZER_PARAMS } from '../../utils/config/llm-generation-params';
@@ -261,7 +261,7 @@ export const inboxTranslateJsonTool = createTool({
 
           const res = await withRetry(
             () =>
-              generateText({
+              trackedGenerateText('inbox-translate', {
                 model,
                 messages: [
                   { role: 'system', content: system },

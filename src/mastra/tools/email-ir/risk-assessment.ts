@@ -15,6 +15,7 @@ import { featureExtractionOutputSchema } from './feature-extraction';
 import { createLogContext, loggerRiskAssessment, logStepStart, logStepComplete, logStepError } from './logger-setup';
 import { normalizeError, logErrorInfo } from '../../utils/core/error-utils';
 import { errorService } from '../../services/error-service';
+import { trackAgentCost } from '../../utils/core/tracked-generate';
 import { withRetry } from '../../utils/core/resilience-utils';
 
 export const riskAssessmentOutputSchema = z.object({
@@ -198,6 +199,7 @@ Provide clear SOC-ready justification.
         'risk-assessment-llm'
       );
 
+      trackAgentCost('email-ir-risk-assessment', result, emailIRAnalyst.model);
       logStepComplete(loggerRiskAssessment, ctx, { result: result.object });
 
       return {

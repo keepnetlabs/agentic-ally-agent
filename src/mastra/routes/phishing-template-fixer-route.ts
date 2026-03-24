@@ -2,6 +2,8 @@ import { Context } from 'hono';
 import { errorService } from '../services/error-service';
 import { getLogger } from '../utils/core/logger';
 import { logErrorInfo, normalizeError } from '../utils/core/error-utils';
+import { trackAgentCost } from '../utils/core/tracked-generate';
+import type { Agent } from '@mastra/core/agent';
 import { withRetry, withTimeout } from '../utils/core/resilience-utils';
 import {
   PhishingTemplateFixerInputSchema,
@@ -234,8 +236,8 @@ export const phishingTemplateFixerHandler = async (c: Context) => {
 
 async function handleEmailTemplate(
   c: Context,
-  rewriterAgent: { generate: (msg: string) => Promise<{ text: string }> },
-  classifierAgent: { generate: (msg: string) => Promise<{ text: string }> },
+  rewriterAgent: Agent,
+  classifierAgent: Agent,
   html: string,
   domainList: readonly string[],
   logger: ReturnType<typeof getLogger>,
@@ -264,6 +266,7 @@ async function handleEmailTemplate(
     Promise.all([
       withRetry<EmailRewriterOutput>(async () => {
         const response = await rewriterAgent.generate(rewriterMessage);
+        trackAgentCost('phishing-fixer-rewriter', response, rewriterAgent.model);
         const result = parseRewriterOutput(response.text);
         if (!result.success) throw new Error(`Rewriter: ${result.error}`);
         return result.data;
@@ -271,6 +274,7 @@ async function handleEmailTemplate(
 
       withRetry<EmailClassifierOutput>(async () => {
         const response = await classifierAgent.generate(classifierMessage);
+        trackAgentCost('phishing-fixer-classifier', response, classifierAgent.model);
         const result = parseClassifierOutput(response.text);
         if (!result.success) throw new Error(`Classifier: ${result.error}`);
 
@@ -406,7 +410,7 @@ async function handleEmailTemplate(
 
 async function handleLandingPage(
   c: Context,
-  agent: { generate: (msg: string) => Promise<{ text: string }> },
+  agent: Agent,
   html: string,
   domainList: readonly string[],
   logger: ReturnType<typeof getLogger>,
@@ -431,6 +435,7 @@ async function handleLandingPage(
   const data = await withTimeout(
     withRetry<LandingPageClassifierOutput>(async () => {
       const response = await agent.generate(userMessage);
+      trackAgentCost('phishing-fixer-landing-classifier', response, agent.model);
       const result = parseLandingPageOutput(response.text);
 
       if (!result.success) {

@@ -151,12 +151,12 @@ ${NO_FAKE_PERSONAL_IDENTITIES_RULES}
 ${NO_DISCLAIMERS_RULE}
 
 **SMS GENERATION RULES:**
-1. Output 2-4 short SMS messages in a realistic conversational style.
-2. Keep each message brief (<= 160 chars) and natural.
+1. Output exactly ONE SMS message — a single, self-contained text.
+2. Keep it brief (<= 160 chars) and natural.
 3. Maintain the tone specified in the blueprint.
 4. Use mild urgency, no threats or abuse.
-5. ${mustIncludeLink ? `One message MUST include the placeholder link {PHISHINGURL}.` : 'Include a link only if it fits the scenario.'}
-6. Do not include markdown or labels in messages.
+5. ${mustIncludeLink ? `The message MUST include the placeholder link {PHISHINGURL}.` : 'Include a link only if it fits the scenario.'}
+6. Do not include markdown or labels.
 
 **DIFFICULTY (${difficulty}):**
 - Sender style: ${difficultyRules.sender.rule}
@@ -168,8 +168,7 @@ ${JSON_OUTPUT_RULE}
 **EXAMPLE OUTPUT:**
 {
   "messages": [
-    "Hi, your package delivery is pending verification.",
-    "Please confirm the address here: {PHISHINGURL}"
+    "Hi, your package delivery is pending verification. Confirm here: {PHISHINGURL}"
   ]
 }`;
 

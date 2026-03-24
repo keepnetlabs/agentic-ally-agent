@@ -1,4 +1,4 @@
-import { generateText } from 'ai';
+import { trackedGenerateText } from '../../utils/core/tracked-generate';
 import { getLogger } from '../../utils/core/logger';
 import { normalizeError, logErrorInfo } from '../../utils/core/error-utils';
 import { errorService } from '../../services/error-service';
@@ -28,7 +28,7 @@ export async function detectAndResolveBrand(
     const intentPrompt = getIntentClassificationPrompt(editInstruction);
 
     const intentResponse = await withTimeout(
-      generateText({
+      trackedGenerateText('phishing-editor-utils', {
         model: aiModel,
         messages: [{ role: 'user', content: intentPrompt }],
         ...EXTRACTION_PARAMS,
@@ -71,7 +71,7 @@ export async function detectAndResolveBrand(
       let extractedBrandName: string | null = null;
       try {
         const brandExtractResponse = await withTimeout(
-          generateText({
+          trackedGenerateText('phishing-editor-utils', {
             model: aiModel,
             messages: [{ role: 'user', content: brandExtractPrompt }],
             ...EXTRACTION_PARAMS,

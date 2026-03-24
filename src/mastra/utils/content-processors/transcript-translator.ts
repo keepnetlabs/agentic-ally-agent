@@ -1,4 +1,5 @@
-import { generateText, LanguageModel } from 'ai';
+import type { LanguageModel } from 'ai';
+import { trackedGenerateText } from '../core/tracked-generate';
 import { getLanguagePrompt } from '../language/localization-language-rules';
 import { TRANSCRIPT_TRANSLATION_PARAMS } from '../config/llm-generation-params';
 import { withRetry } from '../core/resilience-utils';
@@ -26,7 +27,7 @@ export async function translateTranscript(
     const languageRules = getLanguagePrompt(targetLanguage);
     const response = await withRetry(
       () =>
-        generateText({
+        trackedGenerateText('transcript-translate', {
           model,
           messages: [
             {

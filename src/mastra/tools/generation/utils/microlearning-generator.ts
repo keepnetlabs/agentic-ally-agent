@@ -1,4 +1,4 @@
-import { generateText } from 'ai';
+import { trackedGenerateText } from '../../../utils/core/tracked-generate';
 import { PromptAnalysis } from '../../../types/prompt-analysis';
 import { MicrolearningContent, Scene } from '../../../types/microlearning';
 import { cleanResponse } from '../../../utils/content-processors/json-cleaner';
@@ -168,7 +168,7 @@ CRITICAL JSON RULES:
   try {
     const response = await withRetry(
       () =>
-        generateText({
+        trackedGenerateText('microlearning-gen', {
           model: model,
           messages: [
             {

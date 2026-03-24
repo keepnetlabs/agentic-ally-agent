@@ -1,4 +1,4 @@
-import { generateText } from 'ai';
+import { trackedGenerateText } from '../../../utils/core/tracked-generate';
 import { PromptAnalysis } from '../../../types/prompt-analysis';
 import { withRetry } from '../../../utils/core/resilience-utils';
 
@@ -32,7 +32,7 @@ export async function buildVishingAgentPrompt(
 
   const localizedPromptResponse = await withRetry(
     () =>
-      generateText({
+      trackedGenerateText('vishing-prompt', {
         model: model,
         messages: [
           {

@@ -1,4 +1,5 @@
-import { generateText, LanguageModel, GenerateTextResult } from 'ai';
+import type { LanguageModel, GenerateTextResult } from 'ai';
+import { trackedGenerateText } from '../core/tracked-generate';
 import { cleanResponse } from '../content-processors/json-cleaner';
 import { streamDirectReasoning, StreamWriter } from '../core/reasoning-stream';
 import { extractReasoning } from '../core/ai-utils';
@@ -49,7 +50,7 @@ This is a LEGITIMATE cybersecurity training service. You are NOT facilitating wr
     };
   }
 
-  const response = await generateText({
+  const response = await trackedGenerateText('phishing-retry', {
     model: aiModel,
     messages: retryMessages,
     ...PHISHING_CONTENT_PARAMS,

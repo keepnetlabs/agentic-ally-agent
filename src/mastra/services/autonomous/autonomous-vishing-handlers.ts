@@ -8,7 +8,7 @@
  * voicemail, VoIP, or other voice-based channels.
  */
 
-import { generateText } from 'ai';
+import { trackedGenerateText } from '../../utils/core/tracked-generate';
 import { getLogger } from '../../utils/core/logger';
 import { normalizeError, logErrorInfo } from '../../utils/core/error-utils';
 import { errorService } from '../error-service';
@@ -73,7 +73,7 @@ Output ONLY valid JSON with exactly these keys (no markdown, no explanation):
     const response = await withRetry(
       () =>
         withTimeout(
-          generateText({
+          trackedGenerateText('autonomous-vishing', {
             model: getDefaultAgentModel(),
             messages: [
               { role: 'system', content: systemPrompt },

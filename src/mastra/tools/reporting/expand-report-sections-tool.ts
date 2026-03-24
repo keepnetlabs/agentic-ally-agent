@@ -9,8 +9,8 @@
 
 import { createTool, ToolExecutionContext } from '@mastra/core/tools';
 import { z } from 'zod';
-import { generateText } from 'ai';
 import { getDefaultAgentModel } from '../../model-providers';
+import { trackedGenerateText } from '../../utils/core/tracked-generate';
 import { getLogger } from '../../utils/core/logger';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
 import { errorService } from '../../services/error-service';
@@ -288,7 +288,7 @@ async function expandSingleSection(
   researchContext?: string
 ): Promise<ExpansionResult> {
   const startTime = Date.now();
-  const { text, usage } = await generateText({
+  const { text, usage } = await trackedGenerateText(`report-expand-${section.type}`, {
     model: getSharedModel(),
     messages: [
       { role: 'system', content: EXPANSION_SYSTEM_PROMPT },

@@ -24,7 +24,7 @@ import { getRequestContext } from '../../utils/core/request-storage';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
 import { ERROR_MESSAGES } from '../../constants';
 import { parseName, isValidName, normalizeName } from '../../utils/parsers/name-parser';
-import { generateText } from 'ai';
+import { trackedGenerateText } from '../../utils/core/tracked-generate';
 import { withRetry } from '../../utils/core/resilience-utils';
 import { getModelWithOverride } from '../../model-providers'; // Use override to pick stronger model
 import { cleanResponse } from '../../utils/content-processors/json-cleaner';
@@ -607,7 +607,7 @@ If a value is unknown, use "" or null.
 
           const response = await withRetry(
             () =>
-              generateText({
+              trackedGenerateText('user-info', {
                 model,
                 messages: [
                   { role: 'system', content: systemPrompt },

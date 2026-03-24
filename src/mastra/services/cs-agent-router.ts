@@ -11,6 +11,7 @@ import { Mastra } from '@mastra/core/mastra';
 import { cleanResponse } from '../utils/content-processors/json-cleaner';
 import { withRetry } from '../utils/core/resilience-utils';
 import { getLogger } from '../utils/core/logger';
+import { trackAgentCost } from '../utils/core/tracked-generate';
 import { normalizeError, logErrorInfo } from '../utils/core/error-utils';
 import { errorService } from '../services/error-service';
 import {
@@ -54,6 +55,7 @@ export class CSAgentRouter {
 
       const decision = await withRetry<CSRoutingDecision>(async () => {
         const routingResult = await orchestrator.generate(prompt);
+        trackAgentCost('cs-orchestrator-routing', routingResult, orchestrator.model);
         const routingText = routingResult.text;
 
         const cleanJsonText = cleanResponse(routingText, 'cs-orchestrator-decision');

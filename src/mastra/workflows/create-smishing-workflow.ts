@@ -1,5 +1,5 @@
 import { createStep, createWorkflow } from '@mastra/core/workflows';
-import { generateText } from 'ai';
+import { trackedGenerateText } from '../utils/core/tracked-generate';
 import { getModelWithOverride } from '../model-providers';
 import { cleanResponse } from '../utils/content-processors/json-cleaner';
 import { generateUniqueId } from '../utils/core/id-utils';
@@ -117,7 +117,7 @@ const analyzeRequest = createStep({
     try {
       const response = await withRetry(
         async () =>
-          generateText({
+          trackedGenerateText('smishing-analysis', {
             model: aiModel,
             messages,
             ...PHISHING_SCENARIO_PARAMS,
@@ -322,7 +322,7 @@ const generateSms = createStep({
     try {
       const response = await withRetry(
         async () =>
-          generateText({
+          trackedGenerateText('smishing-sms-generate', {
             model: aiModel,
             messages,
             ...PHISHING_CONTENT_PARAMS,
@@ -345,7 +345,7 @@ const generateSms = createStep({
 
       if (!hasLink) {
         logger.warn('SMS messages missing {PHISHINGURL}. Retrying once with stricter instruction.');
-        const retryResponse = await generateText({
+        const retryResponse = await trackedGenerateText('smishing-sms-retry', {
           model: aiModel,
           messages: [
             { role: 'system', content: systemPrompt + '\n\nCRITICAL: You MUST include {PHISHINGURL} in one message.' },
@@ -478,7 +478,7 @@ const generateLandingPage = createStep({
     try {
       response = await withRetry(
         async () =>
-          generateText({
+          trackedGenerateText('smishing-landing-page', {
             model: aiModel,
             messages: messagesToSend,
             ...PHISHING_CONTENT_PARAMS,

@@ -1,5 +1,5 @@
 import { createTool, ToolExecutionContext } from '@mastra/core/tools';
-import { generateText } from 'ai';
+import { trackedGenerateText } from '../../utils/core/tracked-generate';
 import { PromptAnalysis } from '../../types/prompt-analysis';
 
 /** AI SDK usage shape - v5 uses camelCase, older versions use snake_case. */
@@ -30,7 +30,6 @@ import { generateScene8Prompt } from '../scenes/generators/scene8-summary-genera
 import { cleanResponse } from '../../utils/content-processors/json-cleaner';
 import { translateTranscript } from '../../utils/content-processors/transcript-translator';
 import { SCENE_GENERATION_PARAMS } from '../../utils/config/llm-generation-params';
-import { trackCost } from '../../utils/core/cost-tracker';
 import { getLogger } from '../../utils/core/logger';
 import { errorService } from '../../services/error-service';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
@@ -196,7 +195,7 @@ async function generateLanguageJsonWithAI(
     ] = await Promise.all([
       withRetry(
         () =>
-          generateText({
+          trackedGenerateText('generate-language', {
             model: model,
             messages: buildSceneMessages(systemPrompt, scene1Prompt, analysis, policyContext),
             ...SCENE_GENERATION_PARAMS[1], // Scene 1: Intro (creative)
@@ -205,7 +204,7 @@ async function generateLanguageJsonWithAI(
       ),
       withRetry(
         () =>
-          generateText({
+          trackedGenerateText('generate-language', {
             model: model,
             messages: buildSceneMessages(systemPrompt, scene2Prompt, analysis, policyContext),
             ...SCENE_GENERATION_PARAMS[2], // Scene 2: Goals (factual)
@@ -214,7 +213,7 @@ async function generateLanguageJsonWithAI(
       ),
       withRetry(
         () =>
-          generateText({
+          trackedGenerateText('generate-language', {
             model: model,
             messages: buildSceneMessages(videoSystemPrompt, videoPrompt, analysis, policyContext),
             ...SCENE_GENERATION_PARAMS[3], // Scene 3: Video (balanced)
@@ -223,7 +222,7 @@ async function generateLanguageJsonWithAI(
       ),
       withRetry(
         () =>
-          generateText({
+          trackedGenerateText('generate-language', {
             model: model,
             messages: buildSceneMessages(systemPrompt, scene4Prompt, analysis, policyContext),
             ...SCENE_GENERATION_PARAMS[4], // Scene 4: Actions (specific)
@@ -232,7 +231,7 @@ async function generateLanguageJsonWithAI(
       ),
       withRetry(
         () =>
-          generateText({
+          trackedGenerateText('generate-language', {
             model: model,
             messages: buildSceneMessages(systemPrompt, scene5Prompt, analysis, policyContext),
             ...SCENE_GENERATION_PARAMS[5], // Scene 5: Quiz (precise)
@@ -241,7 +240,7 @@ async function generateLanguageJsonWithAI(
       ),
       withRetry(
         () =>
-          generateText({
+          trackedGenerateText('generate-language', {
             model: model,
             messages: buildSceneMessages(systemPrompt, scene6Prompt, analysis, policyContext),
             ...SCENE_GENERATION_PARAMS[6], // Scene 6: Survey (neutral)
@@ -250,7 +249,7 @@ async function generateLanguageJsonWithAI(
       ),
       withRetry(
         () =>
-          generateText({
+          trackedGenerateText('generate-language', {
             model: model,
             messages: buildSceneMessages(systemPrompt, scene7Prompt, analysis, policyContext),
             ...SCENE_GENERATION_PARAMS[7], // Scene 7: Nudge (engaging)
@@ -259,7 +258,7 @@ async function generateLanguageJsonWithAI(
       ),
       withRetry(
         () =>
-          generateText({
+          trackedGenerateText('generate-language', {
             model: model,
             messages: buildSceneMessages(systemPrompt, scene8Prompt, analysis, policyContext),
             ...SCENE_GENERATION_PARAMS[8], // Scene 8: Summary (consistent)
@@ -301,8 +300,7 @@ async function generateLanguageJsonWithAI(
       { promptTokens: 0, completionTokens: 0 }
     );
 
-    // Use cost tracker for structured logging
-    trackCost('generate-language-content', model.modelId || '@cf/openai/gpt-oss-120b', totalUsage);
+    // Cost tracking is now automatic via trackedGenerateText wrapper (each scene call is tracked individually)
 
     // Clean and parse the responses with detailed error handling
     logger.debug('Starting JSON parsing for all scenes');
@@ -361,7 +359,7 @@ async function generateLanguageJsonWithAI(
         // Retry with fresh AI call using same optimized prompt (withRetry handles exponential backoff)
         const retryResponse = await withRetry(
           () =>
-            generateText({
+            trackedGenerateText('generate-language', {
               model: model,
               messages: buildSceneMessages(videoSystemPrompt, videoPrompt, analysis, policyContext),
               ...SCENE_GENERATION_PARAMS[3], // Scene 3: Video (balanced) - keep retry consistent with primary call

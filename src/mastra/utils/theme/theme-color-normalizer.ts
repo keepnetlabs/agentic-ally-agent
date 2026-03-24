@@ -11,7 +11,7 @@
  * - Level 3: Guaranteed default
  */
 
-import { generateText } from 'ai';
+import { trackedGenerateText } from '../core/tracked-generate';
 import { THEME_COLORS } from '../../constants';
 import { DEFAULT_GENERATION_PARAMS } from '../config/llm-generation-params';
 import { getModelWithOverride } from '../../model-providers';
@@ -154,7 +154,7 @@ ${THEME_COLORS.VALUES.map(c => `- ${c}`).join('\n')}
 
 Respond with ONLY the CSS class name. Nothing else.`;
 
-    const { text } = await generateText({
+    const { text } = await trackedGenerateText('theme-color', {
       model: finalModel,
       messages: [
         { role: 'system', content: systemPrompt },

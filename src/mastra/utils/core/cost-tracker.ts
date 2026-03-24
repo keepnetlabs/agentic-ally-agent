@@ -9,15 +9,17 @@ import { getLogger } from './logger';
 
 const logger = getLogger('CostTracker');
 
-// Pricing (USD per 1M tokens)
+// Pricing (USD per 1M tokens) — keep in sync with Model enum in model-providers.ts
 const PRICING = {
   // OpenAI Models
   'gpt-4o': { input: 2.5, output: 10.0 },
   'gpt-4o-mini': { input: 0.15, output: 0.6 },
   'gpt-4.1': { input: 2.0, output: 8.0 },
   'gpt-4.1-mini': { input: 0.4, output: 1.6 },
+  'gpt-4.1-nano': { input: 0.1, output: 0.4 },
   'gpt-5-nano': { input: 0.05, output: 0.4 },
   'gpt-5-mini': { input: 0.25, output: 2.0 },
+  'gpt-5.1': { input: 2.0, output: 8.0 },
 
   // Cloudflare Workers AI
   '@cf/openai/gpt-oss-120b': { input: 0.01, output: 0.03 },
@@ -27,6 +29,10 @@ const PRICING = {
   'gemini-2.5-pro': { input: 1.25, output: 10.0 },
   'gemini-2.5-flash': { input: 0.1, output: 0.4 },
   'gemini-3-pro': { input: 1.25, output: 10.0 },
+
+  // Anthropic Claude Models
+  'claude-sonnet-4-6': { input: 3.0, output: 15.0 },
+  'claude-opus-4-6': { input: 15.0, output: 75.0 },
 } as const;
 
 interface Usage {

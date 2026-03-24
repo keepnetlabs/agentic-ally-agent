@@ -1,4 +1,4 @@
-import { generateText } from 'ai';
+import { trackedGenerateText } from '../../../utils/core/tracked-generate';
 import { PromptAnalysis } from '../../../types/prompt-analysis';
 import { withRetry } from '../../../utils/core/resilience-utils';
 import { resolveSmishingChannel, buildSmishingChannelPromptRules } from '../../../utils/smishing-channel';
@@ -39,7 +39,7 @@ export async function buildSmishingAgentPrompt(
 
   const localizedPromptResponse = await withRetry(
     () =>
-      generateText({
+      trackedGenerateText('smishing-prompt', {
         model: model,
         messages: [
           {

@@ -1,4 +1,4 @@
-import { generateText } from 'ai';
+import { trackedGenerateText } from '../../../utils/core/tracked-generate';
 import type { LanguageModel } from 'ai';
 import { PromptAnalysis } from '../../../types/prompt-analysis';
 import type { StreamWriter } from '../../../types/stream-writer';
@@ -119,7 +119,7 @@ export async function detectTargetLanguageWithAI(
 
     const response = await withRetry(
       () =>
-        generateText({
+        trackedGenerateText('prompt-analyzer', {
           model,
           prompt: `What language should the training/content be created in?
 1. Look for explicit "in {language}" requests in the Prompt.
@@ -340,7 +340,7 @@ ${additionalContext}`,
 
     const response = await withRetry(
       () =>
-        generateText({
+        trackedGenerateText('prompt-analyzer', {
           model: model,
           messages: messages,
           ...PROMPT_ANALYSIS_PARAMS,

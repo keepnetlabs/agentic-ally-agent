@@ -1,5 +1,5 @@
 import { createStep, createWorkflow } from '@mastra/core/workflows';
-import { generateText } from 'ai';
+import { trackedGenerateText } from '../utils/core/tracked-generate';
 import { getModelWithOverride } from '../model-providers';
 import { cleanResponse } from '../utils/content-processors/json-cleaner';
 import { generateUniqueId } from '../utils/core/id-utils';
@@ -152,7 +152,7 @@ const analyzeRequest = createStep({
 
     try {
       const response = await withRetry(async () => {
-        return await generateText({
+        return await trackedGenerateText('phishing-analysis', {
           model: aiModel,
           messages,
           ...PHISHING_SCENARIO_PARAMS,
@@ -420,7 +420,7 @@ const generateEmail = createStep({
 
       try {
         response = await withRetry(async () => {
-          return await generateText({
+          return await trackedGenerateText('phishing-email-generate', {
             model: aiModel,
             messages: [
               { role: 'system', content: systemPrompt },
@@ -647,7 +647,7 @@ const generateLandingPage = createStep({
     try {
       try {
         response = await withRetry(async () => {
-          return await generateText({
+          return await trackedGenerateText('phishing-landing-page', {
             model: aiModel,
             messages: messages,
             ...PHISHING_CONTENT_PARAMS,

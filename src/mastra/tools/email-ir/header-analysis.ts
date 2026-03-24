@@ -16,6 +16,7 @@ import {
 import { withRetry } from '../../utils/core/resilience-utils';
 import { normalizeError, logErrorInfo } from '../../utils/core/error-utils';
 import { errorService } from '../../services/error-service';
+import { trackAgentCost } from '../../utils/core/tracked-generate';
 
 export const headerAnalysisOutputSchema = z.object({
   spf_pass: z.boolean().describe('True if SPF authentication passed'),
@@ -247,6 +248,7 @@ Note: If header data is incomplete or missing, use the exact string "insufficien
       );
 
       timing.mark('llm-analysis-complete');
+      trackAgentCost('email-ir-header-analysis', result, emailIRAnalyst.model);
 
       // Log authentication results
       logAuthResults(

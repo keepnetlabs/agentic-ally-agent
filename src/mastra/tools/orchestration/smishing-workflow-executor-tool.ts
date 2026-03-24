@@ -137,6 +137,7 @@ export const smishingWorkflowExecutorTool = createTool({
                 smsKey,
                 language: normalizedLanguage,
                 messages: output.messages,
+                template: output.messages[0], // FE expects `template` string for canvas rendering
               };
               const smsJson = JSON.stringify(smsObject);
               const encodedSms = Buffer.from(smsJson).toString('base64');

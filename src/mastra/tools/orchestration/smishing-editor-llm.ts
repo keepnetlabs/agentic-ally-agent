@@ -1,4 +1,4 @@
-import { generateText } from 'ai';
+import { trackedGenerateText } from '../../utils/core/tracked-generate';
 import { withRetry, withTimeout } from '../../utils/core/resilience-utils';
 import { TIMEOUT_VALUES } from '../../constants';
 import {
@@ -10,8 +10,8 @@ import {
 import { LandingPageInput } from './phishing-editor-schemas';
 import { EDITOR_PARAMS } from '../../utils/config/llm-generation-params';
 
-export type GenerateTextResult = Awaited<ReturnType<typeof generateText>>;
-export type AiModel = Parameters<typeof generateText>[0]['model'];
+export type GenerateTextResult = Awaited<ReturnType<typeof trackedGenerateText>>;
+export type AiModel = Parameters<typeof trackedGenerateText>[1]['model'];
 
 export type LoggerLike = {
   info: (message: string, meta?: Record<string, unknown>) => void;
@@ -32,7 +32,7 @@ export function createSmsEditPromise(args: {
   return withRetry(
     () =>
       withTimeout(
-        generateText({
+        trackedGenerateText('smishing-editor', {
           model: aiModel,
           messages: [
             { role: 'system', content: systemPrompt },
@@ -65,7 +65,7 @@ export function createLandingEditPromises(args: {
     return withRetry(
       () =>
         withTimeout(
-          generateText({
+          trackedGenerateText('smishing-editor', {
             model: aiModel,
             messages: [
               { role: 'system', content: landingSystemPrompt },

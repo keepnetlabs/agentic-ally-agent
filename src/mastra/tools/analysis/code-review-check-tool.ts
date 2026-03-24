@@ -1,5 +1,5 @@
 import { createTool, ToolExecutionContext } from '@mastra/core/tools';
-import { generateText } from 'ai';
+import { trackedGenerateText } from '../../utils/core/tracked-generate';
 import { getModelWithOverride } from '../../model-providers';
 import { cleanResponse } from '../../utils/content-processors/json-cleaner';
 import { getLogger } from '../../utils/core/logger';
@@ -42,7 +42,7 @@ export const codeReviewCheckTool = createTool({
       // Call AI for validation with automatic retry
       const response = await withRetry(
         () =>
-          generateText({
+          trackedGenerateText('code-review', {
             model: model,
             messages: [
               {

@@ -5,6 +5,7 @@ import { EmailIREmailDataSchema } from '../../types/email-ir';
 import { createLogContext, loggerBehavioral, logStepStart, logStepComplete, logStepError } from './logger-setup';
 import { normalizeError, logErrorInfo } from '../../utils/core/error-utils';
 import { errorService } from '../../services/error-service';
+import { trackAgentCost } from '../../utils/core/tracked-generate';
 import { withRetry } from '../../utils/core/resilience-utils';
 import { sanitizeEmailBody } from './email-body-sanitizer';
 
@@ -132,6 +133,7 @@ Populate the output schema based on the behavioral signals identified:
         'body-behavioral-analysis-llm'
       );
 
+      trackAgentCost('email-ir-behavioral-analysis', result, emailIRAnalyst.model);
       logStepComplete(loggerBehavioral, ctx, { result: result.object });
 
       return {

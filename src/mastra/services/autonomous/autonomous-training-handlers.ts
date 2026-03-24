@@ -16,6 +16,7 @@ import { workflowExecutorTool } from '../../tools/orchestration';
 import { assignTrainingTool, uploadTrainingTool } from '../../tools/user-management';
 import { withTimeout, withRetry } from '../../utils/core/resilience-utils';
 import { getLogger } from '../../utils/core/logger';
+import { trackAgentCost } from '../../utils/core/tracked-generate';
 import { normalizeError, logErrorInfo } from '../../utils/core/error-utils';
 import { errorService } from '../error-service';
 import { summarizeForLog } from '../../utils/core/log-redaction-utils';
@@ -287,6 +288,7 @@ export async function uploadTrainingOnly(threadId: string, microlearning: Microl
       AGENT_CALL_TIMEOUT_MS
     );
 
+    trackAgentCost('autonomous-training-upload', uploadResponse, microlearningAgent.model);
     logger.info('Upload agent executed');
     logger.debug('Upload response received (redacted)', {
       text: summarizeForLog(uploadResponse.text),
@@ -391,6 +393,7 @@ export async function uploadAndAssignTraining(
       AGENT_CALL_TIMEOUT_MS
     );
 
+    trackAgentCost('autonomous-training-upload-assign', uploadAssignResponse, microlearningAgent.model);
     logger.info('Upload and assign agent executed');
     logger.debug('Upload/Assign response received (redacted)', {
       text: summarizeForLog(uploadAssignResponse.text),
@@ -554,6 +557,7 @@ export async function generateTrainingModule(
       () => withTimeout(microlearningAgent.generate(fullPrompt, memoryConfig), LONG_RUNNING_AGENT_TIMEOUT_MS),
       'Training agent generation (Level 1)'
     );
+    trackAgentCost('autonomous-training-generate', agentResult, microlearningAgent.model);
 
     logger.info('Training agent executed successfully');
 
@@ -617,6 +621,7 @@ export async function generateTrainingModule(
         microlearningAgent.generate(simplifiedPrompt, memoryConfig),
         LONG_RUNNING_AGENT_TIMEOUT_MS
       );
+      trackAgentCost('autonomous-training-fallback1', agentResult, microlearningAgent.model);
 
       logger.info('Fallback 1 succeeded');
       if (uploadOnly) {
@@ -696,6 +701,7 @@ export async function uploadAndAssignTrainingForGroup(
       AGENT_CALL_TIMEOUT_MS
     );
 
+    trackAgentCost('autonomous-training-group-upload-assign', uploadAssignResponse, microlearningAgent.model);
     logger.info('✅ Upload and assign agent executed (GROUP)');
     logger.debug('Upload/Assign response received (redacted)', {
       text: summarizeForLog(uploadAssignResponse.text),
@@ -799,6 +805,7 @@ export async function generateTrainingModuleForGroup(
       () => withTimeout(microlearningAgent.generate(customPrompt, memoryConfig), LONG_RUNNING_AGENT_TIMEOUT_MS),
       'Training agent generation (Level 1)'
     );
+    trackAgentCost('autonomous-training-group-generate', agentResult, microlearningAgent.model);
 
     logger.info('✅ Training agent executed successfully (GROUP)');
 
@@ -849,6 +856,7 @@ export async function generateTrainingModuleForGroup(
         () => withTimeout(microlearningAgent.generate(simplifiedPrompt, memoryConfig), LONG_RUNNING_AGENT_TIMEOUT_MS),
         'Training agent generation (Level 2)'
       );
+      trackAgentCost('autonomous-training-group-fallback', agentResult, microlearningAgent.model);
 
       logger.info('✅ Training agent executed successfully (Level 2 Fallback)');
 

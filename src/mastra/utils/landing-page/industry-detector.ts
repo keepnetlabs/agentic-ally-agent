@@ -3,7 +3,8 @@
  * Automatically detects company industry and provides appropriate color schemes
  */
 
-import { generateText, LanguageModel } from 'ai';
+import type { LanguageModel } from 'ai';
+import { trackedGenerateText } from '../core/tracked-generate';
 import { getLogger } from '../core/logger';
 import { getDefaultGenerationModel } from '../../model-providers';
 import { cleanResponse } from '../content-processors/json-cleaner';
@@ -839,7 +840,7 @@ Scenario: ${scenario}
 
 Based on the company name and scenario description, determine the most appropriate industry category.`;
 
-    const response = await generateText({
+    const response = await trackedGenerateText('industry-detector', {
       model: aiModel,
       messages: [
         { role: 'system', content: systemPrompt },

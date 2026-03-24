@@ -1,5 +1,5 @@
 import { getPolicyContext } from './policy-fetcher';
-import { generateText } from 'ai';
+import { trackedGenerateText } from './tracked-generate';
 import { getModelWithOverride } from '../../model-providers';
 import { getLogger } from './logger';
 import { normalizeError, logErrorInfo } from './error-utils';
@@ -111,7 +111,7 @@ CRITICAL:
       const { text } = await withRetry(
         () =>
           withTimeout(
-            generateText({
+            trackedGenerateText('policy-cache', {
               model,
               system: systemPrompt,
               prompt: userPrompt,

@@ -4,6 +4,7 @@ import { cleanResponse } from '../utils/content-processors/json-cleaner';
 import { AGENT_NAMES } from '../constants';
 import { withRetry } from '../utils/core/resilience-utils';
 import { getLogger } from '../utils/core/logger';
+import { trackAgentCost } from '../utils/core/tracked-generate';
 import { normalizeError, logErrorInfo } from '../utils/core/error-utils';
 import { errorService } from '../services/error-service';
 
@@ -95,6 +96,7 @@ export class AgentRouter {
 
       const decision = await withRetry<RoutingDecision>(async () => {
         const routingResult = await orchestrator.generate(prompt);
+        trackAgentCost('orchestrator-routing', routingResult, orchestrator.model);
         const routingText = routingResult.text;
 
         const cleanJsonText = cleanResponse(routingText, 'orchestrator-decision');

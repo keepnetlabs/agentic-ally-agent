@@ -1,4 +1,4 @@
-import { generateText } from 'ai';
+import { trackedGenerateText } from '../core/tracked-generate';
 import { z } from 'zod';
 import { getLogger } from '../core/logger';
 import { normalizeError, logErrorInfo } from '../core/error-utils';
@@ -17,12 +17,12 @@ export const VideoMetadataSchema = z.object({
 });
 
 export async function generateVideoMetadataFromPrompt(
-  model: Parameters<typeof generateText>[0]['model'],
+  model: Parameters<typeof trackedGenerateText>[1]['model'],
   generationPrompt: string,
   topic: string,
   language: string
 ): Promise<VideoMetadata> {
-  const result = await generateText({
+  const result = await trackedGenerateText('video-metadata', {
     model,
     messages: [
       {

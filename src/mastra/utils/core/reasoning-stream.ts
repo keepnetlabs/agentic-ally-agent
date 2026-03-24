@@ -1,5 +1,5 @@
 import { uuidv4 } from './id-utils';
-import { generateText } from 'ai';
+import { trackedGenerateText } from './tracked-generate';
 import { getModelWithOverride } from '../../model-providers';
 import { getLogger } from './logger';
 import { normalizeError } from './error-utils';
@@ -37,7 +37,7 @@ export async function streamReasoning(reasoningText: string, writer: StreamWrite
     // If the stream closes before it finishes, we silently ignore the error.
     const model = getModelWithOverride('WORKERS_AI');
 
-    generateText({
+    trackedGenerateText('reasoning-stream', {
       model: model,
       messages: [
         {

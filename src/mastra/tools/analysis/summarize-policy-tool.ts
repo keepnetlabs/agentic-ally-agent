@@ -7,7 +7,7 @@
  * @see docs/AI_COMPLIANCE_INVENTORY.md
  */
 import { createTool, ToolExecutionContext } from '@mastra/core/tools';
-import { generateText } from 'ai';
+import { trackedGenerateText } from '../../utils/core/tracked-generate';
 import { getModelWithOverride } from '../../model-providers';
 import { getPolicySummary } from '../../utils/core/policy-cache';
 import { cleanResponse } from '../../utils/content-processors/json-cleaner';
@@ -90,7 +90,7 @@ Return ONLY a valid JSON object with this structure (no markdown, no extra text)
 
       const { text } = await withRetry(
         () =>
-          generateText({
+          trackedGenerateText('summarize-policy', {
             model: modelToUse,
             system: systemPrompt,
             prompt: userPrompt,

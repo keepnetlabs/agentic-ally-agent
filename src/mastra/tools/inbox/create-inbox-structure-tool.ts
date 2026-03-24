@@ -1,6 +1,6 @@
 import { createTool, ToolExecutionContext } from '@mastra/core/tools';
 
-import { generateText } from 'ai';
+import { trackedGenerateText } from '../../utils/core/tracked-generate';
 import { LanguageModel } from '../../types/language-model';
 import { MicrolearningContent } from '../../types/microlearning';
 import { MicrolearningService } from '../../services/microlearning-service';
@@ -170,7 +170,7 @@ async function generateDynamicInboxWithAI(
   const [textsResponse, emailsArray] = await Promise.all([
     withRetry(
       () =>
-        generateText({
+        trackedGenerateText('inbox-structure', {
           model: model,
           messages: [
             {

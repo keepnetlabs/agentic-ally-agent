@@ -3,8 +3,8 @@
  * Generates a structured summary (timeline, disclosed info, outcome) + next steps from a completed vishing call transcript.
  */
 
-import { generateText } from 'ai';
 import { getModelWithOverride, Model, ModelProvider } from '../../model-providers';
+import { trackedGenerateText } from '../../utils/core/tracked-generate';
 import { getLogger } from '../../utils/core/logger';
 import { cleanResponse } from '../../utils/content-processors/json-cleaner';
 import { withRetry, withTimeout } from '../../utils/core/resilience-utils';
@@ -251,7 +251,7 @@ Return ONLY the JSON object. No markdown, no code blocks, no extra text.`;
   const { text } = await withRetry(
     () =>
       withTimeout(
-        generateText({
+        trackedGenerateText('vishing-conversations-summary', {
           model,
           system: systemPrompt,
           prompt: userPrompt,

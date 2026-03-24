@@ -1,5 +1,5 @@
 import { Context } from 'hono';
-import { generateText } from 'ai';
+import { trackedGenerateText } from '../utils/core/tracked-generate';
 import { getModelWithOverride } from '../model-providers';
 import { errorService } from '../services/error-service';
 import { getLogger } from '../utils/core/logger';
@@ -159,7 +159,7 @@ export async function smishingChatHandler(c: Context) {
 
     const aiResponse = await withRetry(
       () =>
-        generateText({
+        trackedGenerateText('smishing-chat', {
           model,
           messages: chatMessages,
           ...INBOX_TEXT_PARAMS,

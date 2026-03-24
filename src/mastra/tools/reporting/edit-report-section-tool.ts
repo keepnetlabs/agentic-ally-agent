@@ -11,8 +11,8 @@
 
 import { createTool, ToolExecutionContext } from '@mastra/core/tools';
 import { z } from 'zod';
-import { generateText } from 'ai';
 import { getDefaultAgentModel } from '../../model-providers';
+import { trackedGenerateText } from '../../utils/core/tracked-generate';
 import { getLogger } from '../../utils/core/logger';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
 import { errorService } from '../../services/error-service';
@@ -120,7 +120,7 @@ export const editReportSectionTool = createTool({
 
       // 3. Regenerate section with user instruction
       const model = getDefaultAgentModel();
-      const { text } = await generateText({
+      const { text } = await trackedGenerateText('report-edit-section', {
         model,
         messages: [
           { role: 'system', content: EDIT_SYSTEM_PROMPT },

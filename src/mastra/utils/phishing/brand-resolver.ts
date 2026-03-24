@@ -1,4 +1,5 @@
-import { generateText, LanguageModel } from 'ai';
+import type { LanguageModel } from 'ai';
+import { trackedGenerateText } from '../core/tracked-generate';
 import { DEFAULT_GENERIC_LOGO } from '../landing-page/image-validator';
 import { getLogger } from '../core/logger';
 import { cleanResponse } from '../content-processors/json-cleaner';
@@ -43,7 +44,7 @@ export async function resolveLogoAndBrand(
       : '';
 
     // Use LLM to determine brand recognition and domain
-    const response = await generateText({
+    const response = await trackedGenerateText('brand-resolver', {
       model,
       messages: [
         {
@@ -171,7 +172,7 @@ export async function generateContextualBrand(
       fromName,
     });
 
-    const response = await generateText({
+    const response = await trackedGenerateText('brand-resolver', {
       model,
       messages: [
         {

@@ -2,7 +2,7 @@
 // Base class for all scene rewriting (DRY pattern)
 // Eliminates 1,200+ lines of duplicate boilerplate across scene1-8 + app-texts
 
-import { generateText } from 'ai';
+import { trackedGenerateText } from '../../../utils/core/tracked-generate';
 import { cleanResponse } from '../../../utils/content-processors/json-cleaner';
 import { SCENE_REWRITE_PARAMS } from '../../../utils/config/llm-generation-params';
 import { getLanguagePrompt } from '../../../utils/language/localization-language-rules';
@@ -228,7 +228,7 @@ export async function rewriteSceneWithBase<T>(scene: T, sceneType: SceneType, co
   try {
     const response = await withRetry(
       () =>
-        generateText({
+        trackedGenerateText('scene-rewriter', {
           model,
           messages: [
             { role: 'system', content: systemPrompt },

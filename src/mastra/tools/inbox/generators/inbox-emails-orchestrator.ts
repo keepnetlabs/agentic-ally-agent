@@ -1,4 +1,4 @@
-import { generateText } from 'ai';
+import { trackedGenerateText } from '../../../utils/core/tracked-generate';
 import { LanguageModel } from '../../../types/language-model';
 import { SimulatedEmail } from '../../../types/microlearning';
 import { buildInboxEmailBaseSystem } from './inbox-email-base';
@@ -121,7 +121,7 @@ ${additionalContext}`,
   try {
     const res = await withRetry(
       () =>
-        generateText({
+        trackedGenerateText('inbox-emails', {
           model,
           messages: messages,
           ...INBOX_GENERATION_PARAMS,
@@ -163,7 +163,7 @@ ${additionalContext}`,
     try {
       const res2 = await withRetry(
         () =>
-          generateText({
+          trackedGenerateText('inbox-emails', {
             model,
             messages: retryMessages,
             ...INBOX_GENERATION_PARAMS,
