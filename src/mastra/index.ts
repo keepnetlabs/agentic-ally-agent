@@ -50,6 +50,7 @@ import { csChatHandler } from './routes/cs-chat-route';
 import { healthHandler } from './routes/health-route';
 import { codeReviewValidateHandler } from './routes/code-review-route';
 import { phishingEditorSaveHandler } from './routes/phishing-editor-save-route';
+import { smishingEditorSaveHandler } from './routes/smishing-editor-save-route';
 import { vishingPromptHandler } from './routes/vishing-prompt-route';
 import { vishingConversationsSummaryHandler } from './routes/vishing-conversations-summary-route';
 import { smishingChatHandler } from './routes/smishing-chat-route';
@@ -279,6 +280,11 @@ export const mastra = new Mastra({
       registerApiRoute('/phishing/editor/save', {
         method: 'POST',
         handler: phishingEditorSaveHandler,
+      }),
+
+      registerApiRoute('/smishing/editor/save', {
+        method: 'POST',
+        handler: smishingEditorSaveHandler,
       }),
 
       registerApiRoute('/vishing/prompt', {
