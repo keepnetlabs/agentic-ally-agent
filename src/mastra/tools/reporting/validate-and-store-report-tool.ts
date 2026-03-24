@@ -23,6 +23,7 @@ import {
   validateChartConfig,
 } from '../../schemas/report-schema';
 import type { Report, ReportSection, ReportState } from '../../schemas/report-schema';
+import { loadLatestReport } from './report-section-utils';
 
 const logger = getLogger('ValidateAndStoreReportTool');
 
@@ -176,19 +177,7 @@ export const validateAndStoreReportTool = createTool({
       // ─── Edit flow: load existing report from KV ───
       if (input.reportId && !resolvedReport) {
         logger.info('Loading existing report from KV', { reportId: input.reportId });
-
-        // Find latest version (try v1..v20)
-        let latestState: ReportState | null = null;
-        for (let v = 20; v >= 1; v--) {
-          const data = await kvService.get(kvKey(input.reportId, v));
-          if (data) {
-            const parsed = ReportStateSchema.safeParse(data);
-            if (parsed.success) {
-              latestState = parsed.data;
-              break;
-            }
-          }
-        }
+        const latestState = await loadLatestReport(kvService, input.reportId);
 
         if (!latestState) {
           return { success: false, error: `Report ${input.reportId} not found in KV` };

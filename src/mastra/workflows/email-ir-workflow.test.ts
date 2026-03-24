@@ -406,8 +406,23 @@ describe('EmailIRWorkflow', () => {
     expect(mocks.reportExecute).toHaveBeenCalledWith(riskResult, {});
   });
 
-  it('fails when one of multi-analysis tools rejects', async () => {
+  it('continues with degraded data when one analysis fails (graceful degradation)', async () => {
     mocks.intentExecute.mockRejectedValueOnce(new Error('intent crashed'));
-    await expect((multiAnalysisStep as any).execute({ inputData: baseEmail })).rejects.toThrow('intent crashed');
+    const result = await (multiAnalysisStep as any).execute({ inputData: baseEmail });
+
+    // Header and behavioral should have real data (from mock)
+    expect(result.header_analysis.header_summary).toBe('Authentication failed and spoofing indicators are present.');
+    expect(result.behavioral_analysis.behavioral_summary).toBe('Strong urgency and fear framing are used to manipulate the recipient.');
+
+    // Intent should have fallback values
+    expect(result.intent_analysis.intent).toBe('benign');
+    expect(result.intent_analysis.intent_summary).toBe('Intent analysis unavailable due to processing error');
+  });
+
+  it('fails when all three analyses reject', async () => {
+    mocks.headerExecute.mockRejectedValueOnce(new Error('header crashed'));
+    mocks.behavioralExecute.mockRejectedValueOnce(new Error('behavioral crashed'));
+    mocks.intentExecute.mockRejectedValueOnce(new Error('intent crashed'));
+    await expect((multiAnalysisStep as any).execute({ inputData: baseEmail })).rejects.toThrow('All three parallel analyses failed');
   });
 });

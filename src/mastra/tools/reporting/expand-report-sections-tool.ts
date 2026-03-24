@@ -19,6 +19,7 @@ import { ReportSectionSchema } from '../../schemas/report-schema';
 import type { OutlineSection, ReportSection } from '../../schemas/report-schema';
 import { KVService } from '../../services/kv-service';
 import { KV_NAMESPACES } from '../../constants';
+import { autoCorrectSection } from './report-section-utils';
 
 const logger = getLogger('ExpandReportSectionsTool');
 
@@ -265,48 +266,6 @@ Rules:
 // ============================================
 // Single Section Expansion
 // ============================================
-
-/**
- * Auto-correct common AI mistakes in section JSON before validation.
- * Prevents unnecessary retries for trivial issues.
- */
-function autoCorrectSection(parsed: Record<string, unknown>): void {
-  // KPI trend: AI sometimes uses "flat", "neutral", "unchanged" etc.
-  if (parsed.type === 'kpi_dashboard' && Array.isArray(parsed.kpis)) {
-    const validTrends = new Set(['up', 'down', 'stable', 'flat', 'neutral']);
-    for (const kpi of parsed.kpis as Record<string, unknown>[]) {
-      if (kpi.trend && !validTrends.has(kpi.trend as string)) {
-        kpi.trend = 'stable';
-      }
-    }
-  }
-
-  // Timeline status: AI sometimes uses "done", "ongoing", "future" etc.
-  if (parsed.type === 'timeline' && Array.isArray(parsed.items)) {
-    const statusMap: Record<string, string> = {
-      done: 'completed', finished: 'completed', complete: 'completed',
-      ongoing: 'in_progress', active: 'in_progress', current: 'in_progress',
-      future: 'planned', upcoming: 'planned', pending: 'planned',
-    };
-    for (const item of parsed.items as Record<string, unknown>[]) {
-      if (item.status && statusMap[item.status as string]) {
-        item.status = statusMap[item.status as string];
-      }
-    }
-  }
-
-  // Recommendations priority: AI sometimes uses "urgent", "important" etc.
-  if (parsed.type === 'recommendations' && Array.isArray(parsed.items)) {
-    const priorityMap: Record<string, string> = {
-      urgent: 'critical', important: 'high', normal: 'medium', minor: 'low', optional: 'low',
-    };
-    for (const item of parsed.items as Record<string, unknown>[]) {
-      if (item.priority && priorityMap[item.priority as string]) {
-        item.priority = priorityMap[item.priority as string];
-      }
-    }
-  }
-}
 
 // Shared model instance — created once, reused across all section calls
 let _sharedModel: ReturnType<typeof getDefaultAgentModel> | null = null;

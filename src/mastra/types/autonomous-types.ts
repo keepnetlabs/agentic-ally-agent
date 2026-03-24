@@ -50,6 +50,9 @@ export interface AutonomousActionResult {
   message?: string;
   agentResponse?: string;
   error?: string;
+  errorCode?: string; // Structured error code from errorService (e.g., 'ERR_AI_MODEL', 'ERR_EXTERNAL')
+  errorCategory?: string; // Error category (e.g., 'AI_MODEL', 'EXTERNAL', 'TIMEOUT')
+  retryable?: boolean; // Whether this error can be retried
   data?: {
     resourceId?: string;
     languageId?: string;

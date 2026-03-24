@@ -58,7 +58,8 @@ export const fetchStep = createStep({
   },
 });
 
-// Parallel Analyses: Run header, behavioral, and intent analyses on the fetched email
+// Parallel Analyses: Run header, behavioral, and intent analyses on the fetched email.
+// Uses Promise.allSettled so a single analysis failure doesn't kill the entire pipeline.
 export const multiAnalysisStep = createStep({
   id: 'email-ir-multi-analysis-step',
   inputSchema: EmailIREmailDataSchema,
@@ -70,50 +71,75 @@ export const multiAnalysisStep = createStep({
     if (!bodyBehavioralAnalysisTool.execute) throw new Error('Body behavioral analysis tool is not executable');
     if (!bodyIntentAnalysisTool.execute) throw new Error('Body intent analysis tool is not executable');
 
-    const [headerResult, behavioralResult, intentResult] = (await Promise.all([
+    const [headerSettled, behavioralSettled, intentSettled] = await Promise.allSettled([
       headerAnalysisTool.execute(email, {}),
       bodyBehavioralAnalysisTool.execute(email, {}),
       bodyIntentAnalysisTool.execute(email, {}),
-    ])) as [
-      z.infer<typeof headerAnalysisOutputSchema>,
-      z.infer<typeof bodyBehavioralAnalysisOutputSchema>,
-      z.infer<typeof bodyIntentAnalysisOutputSchema>,
-    ];
+    ]);
+
+    // Log failures but continue pipeline with degraded data
+    if (headerSettled.status === 'rejected') {
+      const err = normalizeError(headerSettled.reason);
+      logErrorInfo(loggerWorkflow, 'warn', 'header_analysis_degraded', errorService.aiModel(err.message, { step: 'multi-analysis' }));
+    }
+    if (behavioralSettled.status === 'rejected') {
+      const err = normalizeError(behavioralSettled.reason);
+      logErrorInfo(loggerWorkflow, 'warn', 'behavioral_analysis_degraded', errorService.aiModel(err.message, { step: 'multi-analysis' }));
+    }
+    if (intentSettled.status === 'rejected') {
+      const err = normalizeError(intentSettled.reason);
+      logErrorInfo(loggerWorkflow, 'warn', 'intent_analysis_degraded', errorService.aiModel(err.message, { step: 'multi-analysis' }));
+    }
+
+    // If ALL three fail, there's nothing useful to triage — fail the step
+    if (headerSettled.status === 'rejected' && behavioralSettled.status === 'rejected' && intentSettled.status === 'rejected') {
+      throw new Error('All three parallel analyses failed — cannot continue pipeline');
+    }
+
+    const headerResult = headerSettled.status === 'fulfilled'
+      ? headerSettled.value as z.infer<typeof headerAnalysisOutputSchema>
+      : null;
+    const behavioralResult = behavioralSettled.status === 'fulfilled'
+      ? behavioralSettled.value as z.infer<typeof bodyBehavioralAnalysisOutputSchema>
+      : null;
+    const intentResult = intentSettled.status === 'fulfilled'
+      ? intentSettled.value as z.infer<typeof bodyIntentAnalysisOutputSchema>
+      : null;
 
     return {
       original_email: email,
       header_analysis: {
-        spf_pass: headerResult.spf_pass,
-        dkim_pass: headerResult.dkim_pass,
-        dmarc_pass: headerResult.dmarc_pass,
-        domain_similarity: headerResult.domain_similarity,
-        sender_ip_reputation: headerResult.sender_ip_reputation,
-        geolocation_anomaly: headerResult.geolocation_anomaly,
-        routing_anomaly: headerResult.routing_anomaly,
-        threat_intel_findings: headerResult.threat_intel_findings,
-        header_summary: headerResult.header_summary,
-        security_awareness_detected: headerResult.security_awareness_detected,
-        list_unsubscribe_present: headerResult.list_unsubscribe_present,
+        spf_pass: headerResult?.spf_pass ?? false,
+        dkim_pass: headerResult?.dkim_pass ?? false,
+        dmarc_pass: headerResult?.dmarc_pass ?? false,
+        domain_similarity: headerResult?.domain_similarity ?? 'insufficient_data',
+        sender_ip_reputation: headerResult?.sender_ip_reputation ?? 'insufficient_data',
+        geolocation_anomaly: headerResult?.geolocation_anomaly ?? 'insufficient_data',
+        routing_anomaly: headerResult?.routing_anomaly ?? 'insufficient_data',
+        threat_intel_findings: headerResult?.threat_intel_findings ?? 'insufficient_data',
+        header_summary: headerResult?.header_summary ?? 'Header analysis unavailable due to processing error',
+        security_awareness_detected: headerResult?.security_awareness_detected ?? false,
+        list_unsubscribe_present: headerResult?.list_unsubscribe_present ?? false,
       },
       behavioral_analysis: {
-        urgency_level: behavioralResult.urgency_level,
-        emotional_pressure: behavioralResult.emotional_pressure,
-        social_engineering_pattern: behavioralResult.social_engineering_pattern,
-        verification_avoidance: behavioralResult.verification_avoidance,
-        verification_avoidance_tactics: behavioralResult.verification_avoidance_tactics,
-        urgency_indicators: behavioralResult.urgency_indicators,
-        emotional_pressure_indicators: behavioralResult.emotional_pressure_indicators,
-        behavioral_summary: behavioralResult.behavioral_summary,
+        urgency_level: behavioralResult?.urgency_level ?? 'insufficient_data',
+        emotional_pressure: behavioralResult?.emotional_pressure ?? 'insufficient_data',
+        social_engineering_pattern: behavioralResult?.social_engineering_pattern ?? 'insufficient_data',
+        verification_avoidance: behavioralResult?.verification_avoidance ?? false,
+        verification_avoidance_tactics: behavioralResult?.verification_avoidance_tactics ?? 'insufficient_data',
+        urgency_indicators: behavioralResult?.urgency_indicators ?? 'insufficient_data',
+        emotional_pressure_indicators: behavioralResult?.emotional_pressure_indicators ?? 'insufficient_data',
+        behavioral_summary: behavioralResult?.behavioral_summary ?? 'Behavioral analysis unavailable due to processing error',
       },
       intent_analysis: {
-        intent: intentResult.intent,
-        financial_request: intentResult.financial_request,
-        credential_request: intentResult.credential_request,
-        authority_impersonation: intentResult.authority_impersonation,
-        financial_request_details: intentResult.financial_request_details,
-        credential_request_details: intentResult.credential_request_details,
-        authority_claimed: intentResult.authority_claimed,
-        intent_summary: intentResult.intent_summary,
+        intent: intentResult?.intent ?? 'benign',
+        financial_request: intentResult?.financial_request ?? false,
+        credential_request: intentResult?.credential_request ?? false,
+        authority_impersonation: intentResult?.authority_impersonation ?? false,
+        financial_request_details: intentResult?.financial_request_details ?? 'insufficient_data',
+        credential_request_details: intentResult?.credential_request_details ?? 'insufficient_data',
+        authority_claimed: intentResult?.authority_claimed ?? 'insufficient_data',
+        intent_summary: intentResult?.intent_summary ?? 'Intent analysis unavailable due to processing error',
       },
     };
   },

@@ -19,8 +19,9 @@ import { errorService } from '../../services/error-service';
 import { cleanResponse } from '../../utils/content-processors/json-cleaner';
 import { KVService } from '../../services/kv-service';
 import { KV_NAMESPACES } from '../../constants';
-import { ReportSectionSchema, ReportStateSchema } from '../../schemas/report-schema';
+import { ReportSectionSchema } from '../../schemas/report-schema';
 import type { ReportState, ReportSection } from '../../schemas/report-schema';
+import { autoCorrectSection, loadLatestReport } from './report-section-utils';
 
 const logger = getLogger('EditReportSectionTool');
 
@@ -66,42 +67,6 @@ function findSectionIndex(sections: ReportSection[], ref: string): number {
   }
 
   return -1;
-}
-
-/**
- * Load latest report version from KV
- */
-async function loadLatestReport(kvService: KVService, reportId: string): Promise<ReportState | null> {
-  for (let v = 20; v >= 1; v--) {
-    const data = await kvService.get(`report:${reportId}:v${v}`);
-    if (data) {
-      const parsed = ReportStateSchema.safeParse(data);
-      if (parsed.success) return parsed.data;
-    }
-  }
-  return null;
-}
-
-/** Auto-correct common AI enum mistakes */
-function autoCorrectSection(parsed: Record<string, unknown>): void {
-  if (parsed.type === 'kpi_dashboard' && Array.isArray(parsed.kpis)) {
-    const validTrends = new Set(['up', 'down', 'stable', 'flat', 'neutral']);
-    for (const kpi of parsed.kpis as Record<string, unknown>[]) {
-      if (kpi.trend && !validTrends.has(kpi.trend as string)) kpi.trend = 'stable';
-    }
-  }
-  if (parsed.type === 'timeline' && Array.isArray(parsed.items)) {
-    const map: Record<string, string> = { done: 'completed', finished: 'completed', ongoing: 'in_progress', active: 'in_progress', future: 'planned', upcoming: 'planned', pending: 'planned' };
-    for (const item of parsed.items as Record<string, unknown>[]) {
-      if (item.status && map[item.status as string]) item.status = map[item.status as string];
-    }
-  }
-  if (parsed.type === 'recommendations' && Array.isArray(parsed.items)) {
-    const map: Record<string, string> = { urgent: 'critical', important: 'high', normal: 'medium', minor: 'low', optional: 'low' };
-    for (const item of parsed.items as Record<string, unknown>[]) {
-      if (item.priority && map[item.priority as string]) item.priority = map[item.priority as string];
-    }
-  }
 }
 
 const EDIT_SYSTEM_PROMPT = `You are a report section editor. You regenerate a SINGLE section of an existing report based on user instructions.

@@ -5,6 +5,7 @@
 
 import { getLogger } from '../../utils/core/logger';
 import { normalizeError } from '../../utils/core/error-utils';
+import { errorService } from '../error-service';
 import { DEFAULT_TRAINING_LEVEL, PHISHING, SMISHING, TRAINING_LEVELS } from '../../constants';
 import type {
   AutonomousActionResult,
@@ -98,6 +99,32 @@ function createMissingRecommendationResult(action: ContentGeneratableAction): Au
   return {
     success: false,
     error: `No recommended ${action} content found in analysis report`,
+    errorCode: 'ERR_VALIDATION_INPUT',
+    errorCategory: 'VALIDATION',
+    retryable: false,
+  };
+}
+
+/** Map error message patterns to errorService classifiers */
+const ERROR_CLASSIFIERS: Array<{ test: (msg: string) => boolean; classify: typeof errorService.aiModel }> = [
+  { test: msg => msg.includes('timeout') || msg.includes('timed out'), classify: errorService.timeout },
+  { test: msg => msg.includes('rate') || msg.includes('429'), classify: errorService.rateLimit },
+  { test: msg => msg.includes('token') || msg.includes('auth') || msg.includes('401'), classify: errorService.auth },
+];
+
+/** Classify error and return enriched AutonomousActionResult */
+function createErrorResult(error: unknown, action: string): AutonomousActionResult {
+  const err = normalizeError(error);
+  const msg = err.message.toLowerCase();
+  const classifier = ERROR_CLASSIFIERS.find(c => c.test(msg))?.classify ?? errorService.aiModel;
+  const errorInfo = classifier(err.message, { action });
+
+  return {
+    success: false,
+    error: err.message,
+    errorCode: errorInfo.code,
+    errorCategory: errorInfo.category,
+    retryable: errorInfo.retryable,
   };
 }
 
@@ -259,9 +286,8 @@ export async function generateContentForGroup(
           phishingResult = result;
         })
         .catch(error => {
-          const err = normalizeError(error);
-          logger.error('Phishing generation failed (GROUP)', { error: err.message });
-          phishingResult = { success: false, error: err.message };
+          logger.error('Phishing generation failed (GROUP)', { error: normalizeError(error).message });
+          phishingResult = createErrorResult(error, 'phishing-group');
         })
     );
   }
@@ -294,9 +320,8 @@ export async function generateContentForGroup(
           smishingResult = result;
         })
         .catch(error => {
-          const err = normalizeError(error);
-          logger.error('Smishing generation failed (GROUP)', { error: err.message });
-          smishingResult = { success: false, error: err.message };
+          logger.error('Smishing generation failed (GROUP)', { error: normalizeError(error).message });
+          smishingResult = createErrorResult(error, 'smishing-group');
         })
     );
   }
@@ -331,9 +356,8 @@ export async function generateContentForGroup(
           trainingResult = result;
         })
         .catch(error => {
-          const err = normalizeError(error);
-          logger.error('Training generation failed (GROUP)', { error: err.message });
-          trainingResult = { success: false, error: err.message };
+          logger.error('Training generation failed (GROUP)', { error: normalizeError(error).message });
+          trainingResult = createErrorResult(error, 'training-group');
         })
     );
   }
@@ -387,9 +411,8 @@ export async function generateContentForUser(
           phishingResult = result;
         })
         .catch(error => {
-          const err = normalizeError(error);
-          logger.error('Phishing generation failed', { error: err.message });
-          phishingResult = { success: false, error: err.message };
+          logger.error('Phishing generation failed', { error: normalizeError(error).message });
+          phishingResult = createErrorResult(error, 'phishing-user');
         })
     );
   } else if (actions.includes('phishing')) {
@@ -415,9 +438,8 @@ export async function generateContentForUser(
           smishingResult = result;
         })
         .catch(error => {
-          const err = normalizeError(error);
-          logger.error('Smishing generation failed', { error: err.message });
-          smishingResult = { success: false, error: err.message };
+          logger.error('Smishing generation failed', { error: normalizeError(error).message });
+          smishingResult = createErrorResult(error, 'smishing-user');
         })
     );
   } else if (actions.includes('smishing')) {
@@ -443,9 +465,8 @@ export async function generateContentForUser(
             vishingCallResult = result;
           })
           .catch(error => {
-            const err = normalizeError(error);
-            logger.error('Vishing-call failed', { error: err.message });
-            vishingCallResult = { success: false, error: err.message };
+            logger.error('Vishing-call failed', { error: normalizeError(error).message });
+            vishingCallResult = createErrorResult(error, 'vishing-call');
           })
       );
     }
@@ -475,9 +496,8 @@ export async function generateContentForUser(
           trainingResult = result;
         })
         .catch(error => {
-          const err = normalizeError(error);
-          logger.error('Training generation failed', { error: err.message });
-          trainingResult = { success: false, error: err.message };
+          logger.error('Training generation failed', { error: normalizeError(error).message });
+          trainingResult = createErrorResult(error, 'training-user');
         })
     );
   } else if (actions.includes('training')) {
