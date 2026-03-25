@@ -54,10 +54,10 @@ describe('campaign-metadata-service', () => {
 
       expect(result).toBe(true);
       expect(prepareMock).toHaveBeenCalled();
-      expect(bindMock).toHaveBeenCalledWith('test-123', 'Authority, Fear', null, null, null, null);
+      expect(bindMock).toHaveBeenCalledWith('test-123', 'Authority, Fear', null, null, null, null, null, null);
     });
 
-    it('binds persuasionTactic, scenario, difficulty when provided', async () => {
+    it('binds all fields including reasoning and contentType when provided', async () => {
       const runMock = vi.fn().mockResolvedValue({ success: true });
       const bindMock = vi.fn().mockReturnValue({ run: runMock });
       const env = { agentic_ally_memory: { prepare: () => ({ bind: bindMock }) } };
@@ -69,9 +69,27 @@ describe('campaign-metadata-service', () => {
         scenario: 'CEO Fraud',
         difficulty: 'Hard',
         scenarioType: 'phishing',
+        reasoning: 'Finance users are high value targets',
+        contentType: 'phishing',
       });
 
-      expect(bindMock).toHaveBeenCalledWith('r1', 'Urgency', 'Fear', 'CEO Fraud', 'Hard', 'phishing');
+      expect(bindMock).toHaveBeenCalledWith(
+        'r1', 'Urgency', 'Fear', 'CEO Fraud', 'Hard', 'phishing',
+        'Finance users are high value targets', 'phishing'
+      );
+    });
+
+    it('binds null for reasoning and contentType when not provided', async () => {
+      const runMock = vi.fn().mockResolvedValue({ success: true });
+      const bindMock = vi.fn().mockReturnValue({ run: runMock });
+      const env = { agentic_ally_memory: { prepare: () => ({ bind: bindMock }) } };
+
+      await saveCampaignMetadata(env as any, {
+        resourceId: 'r1',
+        tactic: 'Urgency',
+      });
+
+      expect(bindMock).toHaveBeenCalledWith('r1', 'Urgency', null, null, null, null, null, null);
     });
 
     it('returns false on D1 error but never throws', async () => {
@@ -223,7 +241,7 @@ describe('campaign-metadata-service', () => {
       );
 
       expect(prepareMock).toHaveBeenCalled();
-      expect(bindMock).toHaveBeenCalledWith('res-456', 'Authority, Fear', null, 'CEO Fraud', null, null);
+      expect(bindMock).toHaveBeenCalledWith('res-456', 'Authority, Fear', null, 'CEO Fraud', null, null, null, null);
     });
 
     it('never throws when save fails (D1 error)', async () => {

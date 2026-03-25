@@ -32,6 +32,8 @@ export class AutonomousWorkflow extends WorkflowEntrypoint {
       targetGroupResourceId,
       baseApiUrl,
       batchResourceId,
+      rejectingReason,
+      rejectedScenarioResourceId,
     } = event.payload;
 
     logger.info('autonomous_workflow_started', {
@@ -56,6 +58,8 @@ export class AutonomousWorkflow extends WorkflowEntrypoint {
           targetUserResourceId,
           targetGroupResourceId,
           batchResourceId,
+          rejectingReason,
+          rejectedScenarioResourceId,
         });
       },
     );

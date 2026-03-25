@@ -26,6 +26,10 @@ export const workflowExecutorSchema = z
       .max(PROMPT_ANALYSIS.MAX_ADDITIONAL_CONTEXT_LENGTH, `Additional context must not exceed ${PROMPT_ANALYSIS.MAX_ADDITIONAL_CONTEXT_LENGTH} characters`)
       .optional()
       .describe('Additional context for the microlearning'),
+    rejectionFeedback: z
+      .string()
+      .optional()
+      .describe('High-priority instruction from rejection refinement. Prepended to context so the LLM addresses it first.'),
     customRequirements: z
       .string()
       .max(PROMPT_ANALYSIS.MAX_CUSTOM_REQUIREMENTS_LENGTH, `Custom requirements must not exceed ${PROMPT_ANALYSIS.MAX_CUSTOM_REQUIREMENTS_LENGTH} characters`)

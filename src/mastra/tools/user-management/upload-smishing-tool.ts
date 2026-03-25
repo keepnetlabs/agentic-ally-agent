@@ -168,7 +168,7 @@ export const uploadSmishingTool = createTool({
       const resourceIdForAssignment = scenarioResourceId || templateResourceId;
 
       // Active Learning: save campaign metadata for UserInfoAgent tactic enrichment (non-blocking)
-      await trySaveCampaignMetadataAfterUpload(env, smishingData, resourceIdForAssignment);
+      await trySaveCampaignMetadataAfterUpload(env, smishingData, resourceIdForAssignment, 'smishing');
 
       const formattedMessage = formatToolSummary({
         prefix: result.message ? `OK ${result.message}` : 'OK Smishing uploaded',

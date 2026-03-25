@@ -43,6 +43,7 @@ export enum Model {
   OPENAI_GPT_4_1_NANO = 'gpt-4.1-nano',
   OPENAI_GPT_5_NANO = 'gpt-5-nano',
   OPENAI_GPT_5_MINI = 'gpt-5-mini',
+  OPENAI_GPT_5_4_MINI = 'gpt-5.4-mini',
   OPENAI_GPT_5_1 = 'gpt-5.1',
   WORKERS_AI_GPT_OSS_120B = '@cf/openai/gpt-oss-120b',
   GOOGLE_GEMINI_2_5_PRO = 'gemini-2.5-pro',
@@ -190,6 +191,11 @@ export function getDefaultAgentModel() {
 // Lightweight model for simple agents (routing, policy summary)
 export function getLightAgentModel() {
   return getModel(ModelProvider.OPENAI, Model.OPENAI_GPT_4O_MINI);
+}
+
+// Refinement model for rejection analysis — fast reasoning, intermediate complexity
+export function getRefinementModel() {
+  return getModel(ModelProvider.OPENAI, Model.OPENAI_GPT_5_4_MINI);
 }
 
 export function getDefaultGenerationModel() {

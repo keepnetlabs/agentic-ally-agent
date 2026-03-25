@@ -48,7 +48,10 @@
 | 18 | **Hash payload serialization** | `buildHashPayload()` uses `JSON.stringify([...])` — collision-proof, no separator ambiguity |
 | 19 | **Chain verification** | `verifyAuditChain(env, companyId)` — walks chain, recomputes hashes, detects tampering + concurrent writes |
 | 20 | **Middleware mounted** | `gdprAuditMiddleware` added to middleware chain in `index.ts` (position 7, after contextStorage + injectD1Database) |
-| 21 | **Test coverage** | 39 tests — hash computation, chain building, tamper detection, collision-safety, fallback behavior |
+| 21 | **Test coverage** | 45 tests — hash computation, chain building, tamper detection, collision-safety, fallback behavior |
+| 22 | **Middleware activated on production routes** | `PERSONAL_DATA_PATHS` updated to include `/chat`, `/autonomous`, `/batch-autonomous`; `autonomous-service.ts` now preserves `companyId` across `requestStorage.run()` — March 2026 |
+| 23 | **Audit `initiatedBy` accuracy** | `gdpr-audit.ts` — `/chat` writes `'user'`, `/autonomous`+`/batch-autonomous` write `'system'` — March 2026 |
+| 24 | **PII log masking (`firstName`/`lastName`)** | `get-user-info-tool.ts:225` — name fields now logged as `[REDACTED]` — March 2026 |
 
 ### GDPR Scan Status (from `eu-scan-report.json`)
 
@@ -61,7 +64,7 @@
 | data_subject_rights | PASS | |
 | security_measures | PASS | |
 | privacy_policy | FAIL | Requires legal/DPO |
-| records_of_processing | ✅ PASS | `data_access_audit` + `gdprAuditMiddleware` mounted + hash-chain |
+| records_of_processing | ✅ PASS | `data_access_audit` + `gdprAuditMiddleware` active on `/chat`, `/autonomous`, `/batch-autonomous` + hash-chain |
 | dpia | FAIL | Requires DPO |
 | data_breach_procedure | ⚠️ Infra ready | Audit log infrastructure exists; procedure doc needed |
 | dpa | FAIL | OpenAI, HeyGen, ElevenLabs — vendor agreements needed |
@@ -72,7 +75,8 @@
 |------|-------|--------|
 | **Docs** | `AI_COMPLIANCE_INVENTORY.md`, `AI_COMPLIANCE_PROGRESS.md`, `INPUT_SANITIZATION_AUDIT.md`, `SCHEMA_VALIDATION_AUDIT.md` | Compliance inventory, progress tracker, audits |
 | **Tool metadata** | 18 tool files (assign, upload, editor, workflow, analysis) | EU AI Act Art. 9 JSDoc risk metadata |
-| **GDPR infra** | `gdpr-service.ts`, `gdpr-audit.ts`, `error-service.ts`, `kv-service.ts`, `constants.ts` | Audit logging, deletion requests, hash-chain, error codes, KV TTL |
+| **GDPR infra** | `gdpr-service.ts`, `gdpr-audit.ts`, `error-service.ts`, `kv-service.ts`, `constants.ts`, `autonomous-service.ts` | Audit logging, deletion requests, hash-chain, error codes, KV TTL, audit activation + initiatedBy fix |
+| **PII controls** | `get-user-info-tool.ts` | `firstName`/`lastName` logged as `[REDACTED]` |
 | **Migrations** | `0003_gdpr_audit.sql`, `0004_audit_integrity_hash.sql` | Audit tables + hash-chain columns |
 | **Tests** | `gdpr-service.test.ts` | 39 tests (hash, chain, tamper, collision, fallback) |
 | **Config** | `index.ts`, `middleware/index.ts`, `package.json`, `.gitignore`, `CLAUDE.md`, `HANDOVER.md` | Middleware mount, barrel export, scripts, links |
@@ -86,7 +90,7 @@
 | # | Task | Effort | Status | Notes |
 |---|------|--------|--------|-------|
 | 1 | **Deploy migrations (0003 + 0004) to prod** | Low | ✅ Done | Deployed Mar 2026 |
-| 2 | **Explainability (PBI 44872)** | Medium | **In Progress** | `explainability` object in phishing/smishing/microlearning base JSON (v1.0); audit trail pending |
+| 2 | **Explainability (PBI 44872)** | Medium | ✅ Done | `explainability` object embedded in phishing/smishing/microlearning KV base records (v1.0); documented in C3 |
 | 3 | **Privacy Policy (Art. 13-14)** | Medium | Blocked | Requires legal/DPO |
 | 4 | **DPIA (Art. 35)** | High | Blocked | Requires DPO — deepfake, phishing, vishing assessment |
 | 5 | **DPA with processors (Art. 28)** | Medium | Blocked | OpenAI, HeyGen, ElevenLabs — vendor agreements |

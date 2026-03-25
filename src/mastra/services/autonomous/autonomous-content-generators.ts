@@ -22,6 +22,7 @@ import { generateSmishingSimulation } from './autonomous-smishing-handlers';
 import { generateTrainingModule, generateTrainingModuleForGroup } from './autonomous-training-handlers';
 import { initiateAutonomousVishingCall } from './autonomous-vishing-handlers';
 import { selectGroupTrainingTopic } from './group-topic-service';
+import type { RefinementContext } from '../rejection-refinement-service';
 
 interface ContentGenerationReport {
   header?: {
@@ -381,7 +382,8 @@ export async function generateContentForUser(
   sendAfterPhishingSimulation: boolean | undefined,
   userId: string | number,
   phishingThreadId: string,
-  trainingThreadId: string
+  trainingThreadId: string,
+  refinementContext?: RefinementContext
 ): Promise<GenerationResults> {
   const logger = getLogger('GenerateContentForUser');
   let phishingResult: AutonomousActionResult | undefined;
@@ -401,7 +403,7 @@ export async function generateContentForUser(
     const simulation = recommendedSteps.simulations[0];
     logger.debug('Starting phishing generation', { simulation: simulation.title, uploadOnly });
     generationPromises.push(
-      generatePhishingSimulation(simulation, executiveReport, toolResult, phishingThreadId, uploadOnly)
+      generatePhishingSimulation(simulation, executiveReport, toolResult, phishingThreadId, uploadOnly, refinementContext?.phishingInstruction)
         .then(result => {
           logger.info('Phishing generation result received', {
             success: result?.success,
@@ -428,6 +430,7 @@ export async function generateContentForUser(
         simulation,
         executiveReport,
         toolResult,
+        rejectionFeedback: refinementContext?.smishingInstruction,
       })
         .then(result => {
           logger.info('Smishing generation result received', {
@@ -484,7 +487,8 @@ export async function generateContentForUser(
         trainingThreadId,
         uploadOnly,
         false,
-        trainingLevel
+        trainingLevel,
+        refinementContext?.trainingInstruction
       )
         .then(result => {
           logger.info('Training generation result received', {

@@ -117,6 +117,7 @@ async function executeTrainingToolFirst(params: {
   targetUserResourceId?: string;
   targetGroupResourceId?: string | number;
   trainingLevel?: string;
+  rejectionFeedback?: string;
 }): Promise<any> {
   const logger = getLogger('ExecuteTrainingToolFirst');
   const {
@@ -128,6 +129,7 @@ async function executeTrainingToolFirst(params: {
     targetUserResourceId,
     targetGroupResourceId,
     trainingLevel,
+    rejectionFeedback,
   } = params;
 
   try {
@@ -168,6 +170,7 @@ async function executeTrainingToolFirst(params: {
       level,
       language,
       priority: DEFAULT_PRIORITY,
+      ...(rejectionFeedback ? { rejectionFeedback } : {}),
     }, {});
 
     // v1: Check for ValidationError or failure
@@ -461,7 +464,8 @@ export async function generateTrainingModule(
   trainingThreadId: string,
   uploadOnly: boolean = false,
   isCustomPrompt: boolean = false,
-  trainingLevel?: string
+  trainingLevel?: string,
+  rejectionFeedback?: string
 ): Promise<any> {
   const logger = getLogger('GenerateTrainingModule');
   logger.info('Using microlearningAgent to generate training module', { isCustomPrompt });
@@ -474,6 +478,7 @@ export async function generateTrainingModule(
     isCustomPrompt,
     targetUserResourceId: toolResult.userInfo?.targetUserResourceId,
     trainingLevel,
+    rejectionFeedback,
   });
   if (toolFirstResult?.success) {
     return {

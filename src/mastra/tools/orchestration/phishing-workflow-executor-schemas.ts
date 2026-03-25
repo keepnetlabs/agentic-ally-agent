@@ -45,6 +45,10 @@ export const phishingWorkflowSchema = z.object({
         .optional()
         .default('')
         .describe('Strategic context from Agent reasoning (e.g. "Use Authority trigger", "Focus on Fear", "Simulate CEO"). Also used for vulnerability analysis details.'),
+    rejectionFeedback: z
+        .string()
+        .optional()
+        .describe('High-priority instruction from rejection refinement. Prepended to context so the LLM addresses it first.'),
     modelProvider: z.enum(MODEL_PROVIDERS.NAMES).optional(),
     model: z.string().optional(),
 });

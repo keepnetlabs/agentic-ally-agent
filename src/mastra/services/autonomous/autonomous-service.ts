@@ -12,6 +12,7 @@ import {
   getGroupEligibleActions,
 } from '../../types/autonomous-types';
 import { buildExecutiveReport, generateContentForUser, generateContentForGroup } from './autonomous-content-generators';
+import { buildRefinementContext } from '../rejection-refinement-service';
 
 /**
  * Autonomous service - Executes user/group analysis and generates training/phishing content
@@ -31,6 +32,8 @@ export async function executeAutonomousGeneration(request: AutonomousRequest): P
     preferredLanguage,
     baseApiUrl,
     batchResourceId,
+    rejectingReason,
+    rejectedScenarioResourceId,
   } = request;
 
   const effectiveBaseApiUrl = resolveBaseApiUrl(baseApiUrl);
@@ -86,6 +89,19 @@ export async function executeAutonomousGeneration(request: AutonomousRequest): P
           const phishingThreadId = `phishing-${userId}-${runTimestamp}`;
           const trainingThreadId = `training-${userId}-${runTimestamp}`;
 
+          const { env } = getRequestContext();
+          const needsRefinement = actions.some(a => a === 'phishing' || a === 'training' || a === 'smishing');
+          const refinementContext =
+            rejectingReason && rejectedScenarioResourceId && needsRefinement
+              ? (await buildRefinementContext({
+                  rejectedScenarioResourceId,
+                  rejectingReason,
+                  actions,
+                  userDepartment: toolResult.userInfo?.department,
+                  env,
+                })) ?? undefined
+              : undefined;
+
           const { phishingResult, trainingResult, smishingResult, vishingCallResult } =
             await generateContentForUser(
               toolResult,
@@ -94,7 +110,8 @@ export async function executeAutonomousGeneration(request: AutonomousRequest): P
               sendAfterPhishingSimulation,
               userId,
               phishingThreadId,
-              trainingThreadId
+              trainingThreadId,
+              refinementContext
             );
 
           const generationDurationMs = Date.now() - generationStartMs;

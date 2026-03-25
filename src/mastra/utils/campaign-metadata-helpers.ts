@@ -6,12 +6,15 @@
  */
 
 import type { CampaignMetadataInput, CampaignMetadataRow } from '../services/campaign-metadata-service';
+import type { Explainability } from '../types/explainability';
 
-/** Phishing base from KV (partial shape) */
+/** Phishing/smishing base from KV (partial shape) */
 export interface PhishingBaseData {
   psychologicalTriggers?: unknown;
   topic?: unknown;
   difficulty?: unknown;
+  explainability?: Explainability;
+  isQuishing?: boolean;
 }
 
 /** Timeline activity from Product API (partial shape) */
@@ -21,11 +24,12 @@ export interface TimelineActivity {
 }
 
 /**
- * Builds CampaignMetadataInput from phishing KV base. Returns null if invalid.
+ * Builds CampaignMetadataInput from phishing/smishing KV base. Returns null if invalid.
  */
 export function buildMetadataFromPhishingBase(
   phishingData: PhishingBaseData | undefined,
-  resourceId: string
+  resourceId: string,
+  contentType: 'phishing' | 'smishing' = 'phishing'
 ): CampaignMetadataInput | null {
   if (!resourceId || typeof resourceId !== 'string') return null;
   const rid = resourceId.trim();
@@ -39,11 +43,53 @@ export function buildMetadataFromPhishingBase(
         ? phishingData.topic
         : undefined;
 
+  // Quishing is a phishing subtype — reflect in content_type
+  const resolvedContentType =
+    contentType === 'phishing' && phishingData?.isQuishing ? 'quishing' as const : contentType;
+
   return {
     resourceId: rid,
     tactic: tactic || undefined,
     scenario: typeof phishingData?.topic === 'string' ? phishingData.topic : undefined,
     difficulty: typeof phishingData?.difficulty === 'string' ? phishingData.difficulty : undefined,
+    reasoning: phishingData?.explainability?.reasoning || undefined,
+    contentType: resolvedContentType,
+  };
+}
+
+/** Microlearning base from KV (partial shape) */
+export interface MicrolearningBaseData {
+  microlearning_metadata?: {
+    title?: string;
+    description?: string;
+    category?: string;
+    level?: string;
+    risk_area?: string;
+  };
+  explainability?: Explainability;
+}
+
+/**
+ * Builds CampaignMetadataInput from microlearning KV base. Returns null if invalid.
+ * Maps: title→scenario, level→difficulty, category→tactic (closest available field).
+ */
+export function buildMetadataFromMicrolearningBase(
+  microlearningData: MicrolearningBaseData | undefined,
+  resourceId: string
+): CampaignMetadataInput | null {
+  if (!resourceId || typeof resourceId !== 'string') return null;
+  const rid = resourceId.trim();
+  if (!rid) return null;
+
+  const meta = microlearningData?.microlearning_metadata;
+
+  return {
+    resourceId: rid,
+    tactic: meta?.risk_area || meta?.category || undefined,
+    scenario: meta?.title || undefined,
+    difficulty: meta?.level || undefined,
+    reasoning: microlearningData?.explainability?.reasoning || undefined,
+    contentType: 'training',
   };
 }
 

@@ -36,6 +36,8 @@ export async function autonomousHandler(c: Context) {
       preferredLanguage,
       baseApiUrl,
       batchResourceId,
+      rejectingReason,
+      rejectedScenarioResourceId,
     } = body;
     const env = c.env as CloudflareEnv | undefined;
 
@@ -107,6 +109,8 @@ export async function autonomousHandler(c: Context) {
             preferredLanguage,
             baseApiUrl,
             batchResourceId,
+            rejectingReason,
+            rejectedScenarioResourceId,
           },
         });
 
@@ -145,6 +149,8 @@ export async function autonomousHandler(c: Context) {
       preferredLanguage,
       baseApiUrl,
       batchResourceId,
+      rejectingReason,
+      rejectedScenarioResourceId,
     };
 
     // Fallback 1: run in background via waitUntil if available (preferred in Workers)

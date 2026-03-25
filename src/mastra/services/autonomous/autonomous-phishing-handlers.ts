@@ -72,9 +72,10 @@ async function executePhishingToolFirst(params: {
   uploadOnly: boolean;
   targetUserResourceId?: string;
   targetGroupResourceId?: string | number;
+  rejectionFeedback?: string;
 }): Promise<any> {
   const logger = getLogger('ExecutePhishingToolFirst');
-  const { simulation, executiveReport, toolResult, language, uploadOnly, targetUserResourceId, targetGroupResourceId } =
+  const { simulation, executiveReport, toolResult, language, uploadOnly, targetUserResourceId, targetGroupResourceId, rejectionFeedback } =
     params;
 
   try {
@@ -111,6 +112,7 @@ async function executePhishingToolFirst(params: {
       targetProfile: {
         department: toolResult.userInfo?.department,
       },
+      ...(rejectionFeedback ? { rejectionFeedback } : {}),
     }, {});
 
     // v1: Check for ValidationError or failure
@@ -224,7 +226,8 @@ export async function generatePhishingSimulation(
   executiveReport: string | undefined,
   toolResult: AutonomousToolResult,
   phishingThreadId: string,
-  uploadOnly: boolean = false
+  uploadOnly: boolean = false,
+  rejectionFeedback?: string
 ): Promise<any> {
   const logger = getLogger('GeneratePhishingSimulation');
   logger.info('🎯 USER: Generating phishing simulation with executive report');
@@ -241,6 +244,7 @@ export async function generatePhishingSimulation(
     language,
     uploadOnly,
     targetUserResourceId: toolResult.userInfo?.targetUserResourceId,
+    rejectionFeedback,
   });
   if (toolFirstResult?.success) {
     return {

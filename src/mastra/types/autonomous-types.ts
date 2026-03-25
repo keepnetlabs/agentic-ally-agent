@@ -41,6 +41,9 @@ export interface AutonomousRequest {
   sendAfterPhishingSimulation?: boolean;
   preferredLanguage?: string;
   batchResourceId?: string; // Shared batch ID for group fan-out — all users in same batch share this
+  // Rejection refinement — both fields required together to trigger regeneration
+  rejectingReason?: string; // Human-readable reason why the previous generation was rejected
+  rejectedScenarioResourceId?: string; // scenarioResourceId from the rejected activity (used for D1 lookup)
   env?: CloudflareEnv;
   mastra?: Mastra; // Mastra instance for agent access
 }

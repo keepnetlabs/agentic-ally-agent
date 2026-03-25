@@ -26,6 +26,8 @@ import { extractCompanyIdFromTokenExport } from '../../utils/core/policy-fetcher
 import { formatToolSummary } from '../../utils/core/tool-summary-formatter';
 import { getExplainabilityReasoning } from '../../types/explainability';
 import { summarizeForLog } from '../../utils/core/log-redaction-utils';
+import { trySaveCampaignMetadataFromInput } from '../../services/campaign-metadata-service';
+import { buildMetadataFromMicrolearningBase } from '../../utils/campaign-metadata-helpers';
 
 // Output schema defined separately to avoid circular reference
 const uploadTrainingOutputSchema = z.object({
@@ -198,6 +200,14 @@ export const uploadTrainingTool = createTool({
       );
 
       logger.info('Training upload successful', { result, microlearningId });
+
+      // Active Learning: save campaign metadata for rejection refinement D1 lookup (non-blocking)
+      if (result.resourceId) {
+        await trySaveCampaignMetadataFromInput(
+          safeEnv,
+          buildMetadataFromMicrolearningBase(microlearningData, result.resourceId)
+        );
+      }
 
       // EMIT UI SIGNAL (SURGICAL)
       if (writer) {

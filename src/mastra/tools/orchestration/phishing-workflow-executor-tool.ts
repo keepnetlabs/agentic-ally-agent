@@ -62,7 +62,9 @@ export const phishingWorkflowExecutorTool = createTool({
           method: params.method,
           includeEmail: params.includeEmail,
           includeLandingPage: params.includeLandingPage,
-          additionalContext: params.additionalContext,
+          additionalContext: params.rejectionFeedback
+            ? `⚠️ PREVIOUS VERSION WAS REJECTED — address this first:\n${params.rejectionFeedback}\n---\n${params.additionalContext ?? ''}`
+            : params.additionalContext,
           modelProvider: params.modelProvider,
           model: params.model,
           writer: writer,

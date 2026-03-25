@@ -48,6 +48,7 @@ const smishingWorkflowSchema = z.object({
   includeSms: z.boolean().optional().default(true).describe('Whether to generate SMS templates'),
   includeLandingPage: z.boolean().optional().default(true).describe('Whether to generate a landing page'),
   additionalContext: z.string().optional().describe('Strategic context from Agent reasoning for targeted smishing'),
+  rejectionFeedback: z.string().optional().describe('High-priority instruction from rejection refinement. Prepended to context so the LLM addresses it first.'),
   modelProvider: z.enum(MODEL_PROVIDERS.NAMES).optional(),
   model: z.string().optional(),
 });
@@ -110,7 +111,9 @@ export const smishingWorkflowExecutorTool = createTool({
           method: params.method || SMISHING.DEFAULT_ATTACK_METHOD,
           includeSms: params.includeSms ?? true,
           includeLandingPage: params.includeLandingPage ?? true,
-          additionalContext: params.additionalContext,
+          additionalContext: params.rejectionFeedback
+            ? `⚠️ PREVIOUS VERSION WAS REJECTED — address this first:\n${params.rejectionFeedback}\n---\n${params.additionalContext ?? ''}`
+            : params.additionalContext,
           modelProvider: params.modelProvider,
           model: params.model,
           writer: writer,

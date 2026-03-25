@@ -97,7 +97,9 @@ export const workflowExecutorTool = createTool({
         const workflowResult: CreateMicrolearningResult = await run.start({
           inputData: {
             prompt,
-            additionalContext: params.additionalContext,
+            additionalContext: params.rejectionFeedback
+              ? `⚠️ PREVIOUS VERSION WAS REJECTED — address this first:\n${params.rejectionFeedback}\n---\n${params.additionalContext ?? ''}`
+              : params.additionalContext,
             customRequirements: params.customRequirements,
             department: params.department || 'All',
             level: params.level || 'Intermediate',

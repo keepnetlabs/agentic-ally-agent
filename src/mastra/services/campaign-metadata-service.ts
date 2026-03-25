@@ -11,6 +11,7 @@
 
 import { getLogger } from '../utils/core/logger';
 import { buildMetadataFromPhishingBase } from '../utils/campaign-metadata-helpers';
+import type { Explainability } from '../types/explainability';
 
 const logger = getLogger('CampaignMetadataService');
 
@@ -21,6 +22,8 @@ export interface CampaignMetadataInput {
   scenario?: string;
   difficulty?: string;
   scenarioType?: string;
+  reasoning?: string;
+  contentType?: 'phishing' | 'quishing' | 'smishing' | 'training';
 }
 
 export interface CampaignMetadataRow {
@@ -31,6 +34,8 @@ export interface CampaignMetadataRow {
   difficulty: string | null;
   scenario_type: string | null;
   created_at: string | null;
+  reasoning: string | null;
+  content_type: string | null;
 }
 
 interface D1PreparedStatement {
@@ -75,9 +80,9 @@ export async function saveCampaignMetadata(
       scenario: metadata.scenario ?? null,
     });
     const stmt = db.prepare(
-      `INSERT OR REPLACE INTO campaign_metadata 
-       (resource_id, tactic, persuasion_tactic, scenario, difficulty, scenario_type) 
-       VALUES (?, ?, ?, ?, ?, ?)`
+      `INSERT OR REPLACE INTO campaign_metadata
+       (resource_id, tactic, persuasion_tactic, scenario, difficulty, scenario_type, reasoning, content_type)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
     );
     await stmt
       .bind(
@@ -86,7 +91,9 @@ export async function saveCampaignMetadata(
         metadata.persuasionTactic ?? null,
         metadata.scenario ?? null,
         metadata.difficulty ?? null,
-        metadata.scenarioType ?? null
+        metadata.scenarioType ?? null,
+        metadata.reasoning ?? null,
+        metadata.contentType ?? null
       )
       .run();
     logger.debug('Campaign metadata saved OK', { resourceId, tactic: metadata.tactic });
@@ -129,7 +136,7 @@ export async function getCampaignMetadata(
   try {
     const placeholders = uniqueIds.map(() => '?').join(', ');
     const stmt = db.prepare(
-      `SELECT resource_id, tactic, persuasion_tactic, scenario, difficulty, scenario_type, created_at 
+      `SELECT resource_id, tactic, persuasion_tactic, scenario, difficulty, scenario_type, created_at, reasoning, content_type
        FROM campaign_metadata WHERE resource_id IN (${placeholders})`
     );
     const bound = stmt.bind(...uniqueIds) as D1PreparedStatement;
@@ -156,25 +163,47 @@ export async function getCampaignMetadata(
 }
 
 /**
- * Attempts to save campaign metadata after successful upload. Never throws.
- * Use from upload-phishing-tool — swallows all errors so upload flow is never broken.
+ * Attempts to save campaign metadata after successful phishing/smishing upload. Never throws.
+ * Swallows all errors so upload flow is never broken.
  */
 export async function trySaveCampaignMetadataAfterUpload(
   env: Record<string, unknown> | undefined,
-  phishingData: { psychologicalTriggers?: unknown; topic?: unknown; difficulty?: unknown } | undefined,
-  resourceId: string | undefined
+  phishingData: { psychologicalTriggers?: unknown; topic?: unknown; difficulty?: unknown; explainability?: Explainability; isQuishing?: boolean } | undefined,
+  resourceId: string | undefined,
+  contentType: 'phishing' | 'smishing' = 'phishing'
 ): Promise<void> {
   try {
-    const metadata = buildMetadataFromPhishingBase(phishingData, resourceId ?? '');
+    const metadata = buildMetadataFromPhishingBase(phishingData, resourceId ?? '', contentType);
     if (metadata) {
       logger.debug('Campaign metadata build OK, saving...', {
         resourceId: metadata.resourceId,
+        contentType: metadata.contentType,
         tactic: metadata.tactic,
       });
       await saveCampaignMetadata(env, metadata);
     } else {
       logger.debug('Campaign metadata build returned null', { resourceId, hasPhishingData: !!phishingData });
     }
+  } catch {
+    // Swallow — upload succeeded, metadata is optional
+  }
+}
+
+/**
+ * Attempts to save pre-built campaign metadata. Never throws.
+ * Use from upload-training-tool (and any tool that builds metadata externally).
+ */
+export async function trySaveCampaignMetadataFromInput(
+  env: Record<string, unknown> | undefined,
+  metadata: CampaignMetadataInput | null | undefined
+): Promise<void> {
+  if (!metadata) return;
+  try {
+    logger.debug('Campaign metadata save attempt (pre-built)', {
+      resourceId: metadata.resourceId,
+      contentType: metadata.contentType,
+    });
+    await saveCampaignMetadata(env, metadata);
   } catch {
     // Swallow — upload succeeded, metadata is optional
   }

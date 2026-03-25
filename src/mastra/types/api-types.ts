@@ -105,6 +105,9 @@ export interface AutonomousRequestBody {
   sendAfterPhishingSimulation?: boolean;
   preferredLanguage?: string;
   batchResourceId?: string; // Shared batch ID for group fan-out
+  // Rejection refinement — both required together to trigger regeneration
+  rejectingReason?: string;
+  rejectedScenarioResourceId?: string;
 }
 
 /**

@@ -57,9 +57,10 @@ export async function generateSmishingSimulation(params: {
   executiveReport?: string;
   toolResult: AutonomousToolResult;
   targetGroupResourceId?: string | number;
+  rejectionFeedback?: string;
 }): Promise<any> {
   const logger = getLogger('GenerateSmishingSimulation');
-  const { simulation, executiveReport, toolResult, targetGroupResourceId } = params;
+  const { simulation, executiveReport, toolResult, targetGroupResourceId, rejectionFeedback } = params;
 
   const preferredLanguageRaw = toolResult.userInfo?.preferredLanguage || '';
   const language = preferredLanguageRaw ? validateBCP47LanguageCode(preferredLanguageRaw) : DEFAULT_LANGUAGE;
@@ -94,6 +95,7 @@ export async function generateSmishingSimulation(params: {
             targetProfile: {
               department: toolResult.userInfo?.department,
             },
+            ...(rejectionFeedback ? { rejectionFeedback } : {}),
           }, {}),
           AGENT_CALL_TIMEOUT_MS
         ),
