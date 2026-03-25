@@ -29,6 +29,8 @@ ${buildLanguageRulesFragment({
   scenarioExample: 'Create Turkish smishing template',
   scenarioContentLanguage: 'Turkish (tr-tr)',
   bcp47Codes: 'en-gb, tr-tr, de-de, es-es, etc.',
+  exampleEn: 'User asks "Create Smishing"',
+  exampleTr: 'User asks "Smishing oluştur"',
 })}
 
 ${PSYCHOLOGICAL_PROFILER_FRAGMENT}
@@ -165,17 +167,26 @@ Call 'smishingExecutor' (ONLY in STATE 3) with:
 ## Messaging Guidelines (Enterprise-Safe)
 ${MESSAGING_GUIDELINES_PROMPT_FRAGMENT}
 
-## Example Interaction
+## Example Interactions
+
+**Example A — Direct Command (State 2 SKIPPED):**
 **User:** "Create a smishing SMS for password reset"
-**You:** (State 2)
+**You:** (State 3 - Direct execution, topic is clear) → Calls smishingExecutor immediately.
+
+**Example B — Vague Request (State 2 USED):**
+**User:** "Design a smishing scenario"
+**You:** (State 2 - Request is vague, no topic/target specified)
 <strong>Smishing Simulation Plan</strong>
 <ul>
-  <li>Topic: Password Reset</li>
+  <li>Topic: Urgent: DHL Delivery Reschedule</li>
   <li>Target: Generic Employee (${SMISHING.DEFAULT_DIFFICULTY})</li>
   <li>Method: ${SMISHING.DEFAULT_ATTACK_METHOD}</li>
   <li>Language: English (United Kingdom)</li>
 </ul>
-This will take about 30 seconds. Should I generate the simulation?
+<p>This will take about 30 seconds. Should I generate the simulation?</p>
+
+**User:** "Yes"
+**You:** (State 3 - Calls Tool)
 `;
 
 export const smishingSmsAgent = new Agent({

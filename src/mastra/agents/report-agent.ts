@@ -21,7 +21,6 @@ import {
   generateReportOutlineTool,
   expandReportSectionsTool,
   validateAndStoreReportTool,
-  fetchBrandingTool,
   editReportSectionTool,
 } from '../tools/reporting';
 import { webResearchTool } from '../tools/research';
@@ -144,7 +143,6 @@ export const reportAgent = new Agent({
     generateReportOutline: generateReportOutlineTool,
     expandReportSections: expandReportSectionsTool,
     validateAndStoreReport: validateAndStoreReportTool,
-    fetchBranding: fetchBrandingTool,
     editReportSection: editReportSectionTool,
     webResearch: webResearchTool,
   },

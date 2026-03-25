@@ -3,7 +3,7 @@
  *
  * The Orchestrator Agent acts as the intelligent router of the Agentic Ally system.
  * It analyzes user requests and conversation context to determine which specialist agent
- * should handle the task (userInfoAssistant, microlearningAgent, phishingEmailAssistant, smishingSmsAssistant, policySummaryAssistant, or vishingCallAssistant).
+ * should handle the task (userInfoAssistant, microlearningAgent, phishingEmailAssistant, smishingSmsAssistant, policySummaryAssistant, vishingCallAssistant, deepfakeVideoAssistant, or outOfScope).
  *
  * Key Responsibilities:
  * - Extract active user from conversation history (emails or real identifiers)
@@ -207,7 +207,7 @@ IF the user says "Upload", "Assign", "Send", "Deploy", "Yukle", "Gonder":
    - "Create smishing training about X" -> **microlearningAgent** (Smishing is the topic, Training is the artifact)
    - "Create phishing email about X" -> **phishingEmailAssistant**
    - "Create smishing template about X" -> **smishingSmsAssistant**
-7. **Implicit/Ambiguous:**
+6. **Implicit/Ambiguous:**
    - "Create for alice@company.com":
      - IF ID unknown -> **userInfoAssistant** (Resolution first).
      - IF ID known:
@@ -299,7 +299,7 @@ You must always respond with a JSON object:
  * Responsible for:
  * - Analyzing incoming user requests and conversation context
  * - Extracting user identity and artifact information
- * - Routing to the appropriate specialist agent (userInfoAssistant, microlearningAgent, phishingEmailAssistant, smishingSmsAssistant, vishingCallAssistant)
+ * - Routing to the appropriate specialist agent (userInfoAssistant, microlearningAgent, phishingEmailAssistant, smishingSmsAssistant, policySummaryAssistant, vishingCallAssistant, deepfakeVideoAssistant, outOfScope)
  *
  * Uses the LLM model specified in model-providers to perform intelligent routing.
  * The routing decision is returned as JSON with agent name and task context.

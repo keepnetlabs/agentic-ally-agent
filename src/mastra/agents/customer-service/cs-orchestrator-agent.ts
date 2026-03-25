@@ -136,7 +136,7 @@ User: "Next page"
 {
   "agent": "${CS_AGENT_NAMES.COMPANY_SEARCH}",
   "taskContext": "User wants next page of results. Continue from previous search.",
-  "reasoning": "Scenario C: Continuation request, routing to last active agent"
+  "reasoning": "Scenario D: Continuation request, routing to last active agent"
 }
 `;
 

@@ -68,12 +68,12 @@ describe('Policy Summary Agent', () => {
     });
 
     it('should include MISSION section', () => {
-      expect(instructions).toContain('MISSION');
+      expect(instructions).toContain('Mission');
       expect(instructions).toContain('Translate complex policy legalese');
     });
 
-    it('should have mission with emoji marker', () => {
-      expect(instructions).toContain('🎯 **MISSION:**');
+    it('should have mission as heading', () => {
+      expect(instructions).toContain('## Mission');
     });
 
     it('should include mission to align with user language', () => {
@@ -97,13 +97,13 @@ describe('Policy Summary Agent', () => {
     });
 
     it('should have NO HALLUCINATIONS section', () => {
-      expect(instructions).toContain('NO HALLUCINATIONS');
+      expect(instructions).toContain('No Hallucinations');
       expect(instructions).toContain("couldn't find a specific policy");
       expect(instructions).toContain('Do NOT invent rules');
     });
 
-    it('should have no hallucinations with emoji marker', () => {
-      expect(instructions).toContain('🚫 **NO HALLUCINATIONS:**');
+    it('should have no hallucinations as heading', () => {
+      expect(instructions).toContain('## No Hallucinations');
     });
 
     it('should specify behavior when policy not found', () => {
@@ -112,14 +112,14 @@ describe('Policy Summary Agent', () => {
     });
 
     it('should have LANGUAGE RULES section', () => {
-      expect(instructions).toContain('LANGUAGE RULES');
+      expect(instructions).toContain('Language Rules');
       expect(instructions).toContain("Match the user's CURRENT message language");
       expect(instructions).toContain('Respond in Turkish');
       expect(instructions).toContain('Respond in English');
     });
 
-    it('should have language rules with emoji marker', () => {
-      expect(instructions).toContain('🌍 **LANGUAGE RULES:**');
+    it('should have language rules as heading', () => {
+      expect(instructions).toContain('## Language Rules');
     });
 
     it('should define INTERACTION LANGUAGE', () => {
@@ -142,15 +142,15 @@ describe('Policy Summary Agent', () => {
     });
 
     it('should have WORKFLOW section', () => {
-      expect(instructions).toContain('WORKFLOW');
+      expect(instructions).toContain('Workflow');
       expect(instructions).toContain('Listen');
       expect(instructions).toContain('IMMEDIATELY Call Tool');
       expect(instructions).toContain('Analyze Tool Output');
       expect(instructions).toContain('Respond');
     });
 
-    it('should have workflow with emoji marker', () => {
-      expect(instructions).toContain('📋 **WORKFLOW:**');
+    it('should have workflow as heading', () => {
+      expect(instructions).toContain('## Workflow');
     });
 
     it('should have workflow as numbered list', () => {
@@ -182,14 +182,14 @@ describe('Policy Summary Agent', () => {
     });
 
     it('should define RESPONSE FORMAT', () => {
-      expect(instructions).toContain('RESPONSE FORMAT (Strict HTML)');
+      expect(instructions).toContain('Response Format (Strict HTML)');
       expect(instructions).toContain('SINGLE block of HTML');
       expect(instructions).toContain('<strong>{Topic_Summary_Header}</strong>');
       expect(instructions).toContain('<ul>');
     });
 
-    it('should have response format with emoji marker', () => {
-      expect(instructions).toContain('✅ **RESPONSE FORMAT (Strict HTML):**');
+    it('should have response format as heading', () => {
+      expect(instructions).toContain('## Response Format (Strict HTML)');
     });
 
     it('should prohibit markdown in response', () => {
@@ -248,15 +248,15 @@ describe('Policy Summary Agent', () => {
     });
 
     it('should include CRITICAL RULES', () => {
-      expect(instructions).toContain('CRITICAL RULES');
+      expect(instructions).toContain('Critical Rules');
       expect(instructions).toContain('conciseness');
       expect(instructions).toContain('clarity');
       expect(instructions).toContain('safety');
       expect(instructions).toContain('Security Team');
     });
 
-    it('should have critical rules with emoji marker', () => {
-      expect(instructions).toContain('⚠️ **CRITICAL RULES:**');
+    it('should have critical rules as heading', () => {
+      expect(instructions).toContain('## Critical Rules');
     });
 
     it('should define conciseness rule', () => {
@@ -321,22 +321,22 @@ describe('Policy Summary Agent', () => {
 
     it('should have all major sections', () => {
       expect(instructions).toContain('Policy Intelligence Specialist');
-      expect(instructions).toContain('MISSION');
-      expect(instructions).toContain('NO HALLUCINATIONS');
-      expect(instructions).toContain('LANGUAGE RULES');
-      expect(instructions).toContain('WORKFLOW');
-      expect(instructions).toContain('RESPONSE FORMAT');
-      expect(instructions).toContain('CRITICAL RULES');
+      expect(instructions).toContain('## Mission');
+      expect(instructions).toContain('## No Hallucinations');
+      expect(instructions).toContain('## Language Rules');
+      expect(instructions).toContain('## Workflow');
+      expect(instructions).toContain('## Response Format');
+      expect(instructions).toContain('## Critical Rules');
     });
 
     it('should have sections in order', () => {
       const roleIndex = instructions.indexOf('Policy Intelligence Specialist');
-      const missionIndex = instructions.indexOf('MISSION');
-      const noHallucinationIndex = instructions.indexOf('NO HALLUCINATIONS');
-      const languageIndex = instructions.indexOf('LANGUAGE RULES');
-      const workflowIndex = instructions.indexOf('WORKFLOW');
-      const responseIndex = instructions.indexOf('RESPONSE FORMAT');
-      const criticalIndex = instructions.indexOf('CRITICAL RULES');
+      const missionIndex = instructions.indexOf('## Mission');
+      const noHallucinationIndex = instructions.indexOf('## No Hallucinations');
+      const languageIndex = instructions.indexOf('## Language Rules');
+      const workflowIndex = instructions.indexOf('## Workflow');
+      const responseIndex = instructions.indexOf('## Response Format');
+      const criticalIndex = instructions.indexOf('## Critical Rules');
 
       expect(roleIndex).toBeLessThan(missionIndex);
       expect(missionIndex).toBeLessThan(noHallucinationIndex);
@@ -346,22 +346,13 @@ describe('Policy Summary Agent', () => {
       expect(responseIndex).toBeLessThan(criticalIndex);
     });
 
-    it('should use emoji markers for sections', () => {
-      expect(instructions).toContain('🎯');
-      expect(instructions).toContain('🚫');
-      expect(instructions).toContain('🌍');
-      expect(instructions).toContain('📋');
-      expect(instructions).toContain('✅');
-      expect(instructions).toContain('⚠️');
-    });
-
-    it('should use bold formatting for headers', () => {
-      expect(instructions).toContain('**MISSION:**');
-      expect(instructions).toContain('**NO HALLUCINATIONS:**');
-      expect(instructions).toContain('**LANGUAGE RULES:**');
-      expect(instructions).toContain('**WORKFLOW:**');
-      expect(instructions).toContain('**RESPONSE FORMAT (Strict HTML):**');
-      expect(instructions).toContain('**CRITICAL RULES:**');
+    it('should use markdown headings for sections', () => {
+      expect(instructions).toContain('## Mission');
+      expect(instructions).toContain('## No Hallucinations');
+      expect(instructions).toContain('## Language Rules');
+      expect(instructions).toContain('## Workflow');
+      expect(instructions).toContain('## Response Format (Strict HTML)');
+      expect(instructions).toContain('## Critical Rules');
     });
   });
 
