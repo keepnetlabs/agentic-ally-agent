@@ -168,12 +168,15 @@ async function executePhishingToolFirst(params: {
       return { success: false, error: 'assignPhishingTool not executable', uploadResult };
     }
 
+    const reasoningText = uploadResult?.data?.explanationReasoningText;
+
     // v1: execute now takes (inputData, context)
     const assignResult = await assignPhishingTool.execute({
       resourceId: uploadResult.data.resourceId,
       languageId: uploadResult.data.languageId,
       isQuishing: uploadResult.data.isQuishing,
       contentCategory: buildContentCategory(simulation),
+      ...(reasoningText && { explanationJson: { reasoningText } }),
       ...assignmentContext,
     }, {});
 

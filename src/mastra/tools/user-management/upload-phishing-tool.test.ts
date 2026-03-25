@@ -374,6 +374,49 @@ describe('uploadPhishingTool', () => {
       expect(result.message).toContain('scenarioName=Test Phishing Campaign');
       expect(result.message).toContain('resourceId=scenario-123');
     });
+
+    it('should include explanationReasoningText from KV explainability', async () => {
+      const contentWithExplainability = {
+        ...mockPhishingContent,
+        base: {
+          ...mockPhishingContent.base,
+          explainability: {
+            reasoning: 'User in finance dept with no recent phishing test.',
+            keyFactors: ['Authority'],
+            generatedAt: '2026-01-01T00:00:00.000Z',
+            version: '1.0',
+          },
+        },
+      };
+
+      vi.spyOn(KVService.prototype, 'getPhishing').mockResolvedValue(contentWithExplainability);
+      vi.spyOn(workerApiClient, 'callWorkerAPI').mockResolvedValue({
+        templateResourceId: 'template-123',
+        scenarioResourceId: 'scenario-123',
+        message: 'Upload successful',
+      });
+
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await uploadPhishingTool.execute!({ phishingId: 'phishing-123' }, {}) as any;
+
+      expect(result.success).toBe(true);
+      expect(result.data?.explanationReasoningText).toBe('User in finance dept with no recent phishing test.');
+    });
+
+    it('should return undefined explanationReasoningText when KV has no explainability', async () => {
+      vi.spyOn(KVService.prototype, 'getPhishing').mockResolvedValue(mockPhishingContent);
+      vi.spyOn(workerApiClient, 'callWorkerAPI').mockResolvedValue({
+        templateResourceId: 'template-123',
+        scenarioResourceId: 'scenario-123',
+        message: 'Upload successful',
+      });
+
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await uploadPhishingTool.execute!({ phishingId: 'phishing-123' }, {}) as any;
+
+      expect(result.success).toBe(true);
+      expect(result.data?.explanationReasoningText).toBeUndefined();
+    });
   });
 
   describe('Error Handling', () => {

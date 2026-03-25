@@ -1218,6 +1218,9 @@ export const GDPR = {
 
   /** Paths that involve personal data processing (for audit middleware) */
   PERSONAL_DATA_PATHS: [
+    '/chat',
+    '/autonomous',
+    '/batch-autonomous',
     '/api/user',
     '/api/target-group',
     '/api/assign',

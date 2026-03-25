@@ -24,6 +24,7 @@ import { MicrolearningService } from '../../services/microlearning-service';
 import { MicrolearningContent } from '../../types/microlearning';
 import { extractCompanyIdFromTokenExport } from '../../utils/core/policy-fetcher';
 import { formatToolSummary } from '../../utils/core/tool-summary-formatter';
+import { getExplainabilityReasoning } from '../../types/explainability';
 import { summarizeForLog } from '../../utils/core/log-redaction-utils';
 
 // Output schema defined separately to avoid circular reference
@@ -35,6 +36,7 @@ const uploadTrainingOutputSchema = z.object({
       sendTrainingLanguageId: z.string().optional(),
       microlearningId: z.string(),
       title: z.string().optional(),
+      explanationReasoningText: z.string().optional(), // AI-generated reasoning from explainability (EU AI Act Art. 13)
     })
     .optional(),
   message: z.string().optional(),
@@ -222,6 +224,7 @@ export const uploadTrainingTool = createTool({
           sendTrainingLanguageId: result.languageId,
           microlearningId: microlearningId,
           title: title,
+          explanationReasoningText: getExplainabilityReasoning(microlearningData),
         },
         message: formatToolSummary({
           prefix: result.message ? `✅ ${result.message}` : '✅ Training uploaded',

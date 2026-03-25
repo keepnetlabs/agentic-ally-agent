@@ -98,6 +98,10 @@ export const assignPhishingTool = createTool({
         .string()
         .optional()
         .describe('Free-text category classifying the activity (e.g. "Social Engineering", "Phishing Awareness"). Used by the Agentic AI Activities API.'),
+      explanationJson: z
+        .object({ reasoningText: z.string() })
+        .optional()
+        .describe('AI reasoning for why this activity was created. Sent to the Agentic AI Activities API as explanationJson.'),
     })
     .refine(data => Boolean(data.targetUserResourceId) !== Boolean(data.targetGroupResourceId), {
       message:
@@ -118,6 +122,7 @@ export const assignPhishingTool = createTool({
       trainingId,
       sendTrainingLanguageId,
       contentCategory,
+      explanationJson,
     } = inputData;
 
     // Guard: prevent assigning with raw phishingId (must upload first)
@@ -173,6 +178,7 @@ export const assignPhishingTool = createTool({
       activityType: (isQuishing ? 'quishing' : 'phishing') as 'phishing' | 'quishing',
       scenarioResourceId: resourceId,
       contentCategory: contentCategory || '',
+      ...(explanationJson && { explanationJson }),
       apiUrl: baseApiUrl,
       accessToken: token,
       companyId: effectiveCompanyId,

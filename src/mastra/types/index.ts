@@ -75,4 +75,4 @@ export type { LanguageModel } from './language-model';
 
 // Explainability (EU AI Act Art. 13)
 export type { Explainability } from './explainability';
-export { buildExplainability, EXPLAINABILITY_VERSION } from './explainability';
+export { buildExplainability, EXPLAINABILITY_VERSION, getExplainabilityReasoning } from './explainability';

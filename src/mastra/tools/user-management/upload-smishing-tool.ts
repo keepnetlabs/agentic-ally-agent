@@ -23,6 +23,7 @@ import { extractCompanyIdFromTokenExport } from '../../utils/core/policy-fetcher
 import { formatToolSummary } from '../../utils/core/tool-summary-formatter';
 import { summarizeForLog } from '../../utils/core/log-redaction-utils';
 import { trySaveCampaignMetadataAfterUpload } from '../../services/campaign-metadata-service';
+import { getExplainabilityReasoning } from '../../types/explainability';
 
 interface UploadSmishingWorkerResult {
   success?: boolean;
@@ -51,6 +52,7 @@ const uploadSmishingOutputSchema = z.object({
       languageId: z.string().optional(),
       smishingId: z.string(),
       title: z.string().optional(),
+      explanationReasoningText: z.string().optional(), // AI-generated reasoning from explainability (EU AI Act Art. 13)
     })
     .optional(),
   message: z.string().optional(),
@@ -216,6 +218,7 @@ export const uploadSmishingTool = createTool({
           languageId: result.languageId,
           smishingId,
           title: name,
+          explanationReasoningText: getExplainabilityReasoning(smishingData),
         },
         message: formattedMessage,
       };

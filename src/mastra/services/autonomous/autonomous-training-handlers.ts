@@ -226,11 +226,14 @@ async function executeTrainingToolFirst(params: {
       return { success: false, error: 'assignTrainingTool not executable', uploadResult };
     }
 
+    const reasoningText = uploadResult?.data?.explanationReasoningText;
+
     // v1: execute now takes (inputData, context)
     const assignResult = await assignTrainingTool.execute({
       resourceId: uploadResult.data.resourceId,
       sendTrainingLanguageId: uploadResult.data.sendTrainingLanguageId,
       contentCategory: buildContentCategory(microlearning),
+      ...(reasoningText && { explanationJson: { reasoningText } }),
       ...assignmentContext,
     }, {});
 

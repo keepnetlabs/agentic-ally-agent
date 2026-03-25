@@ -448,4 +448,55 @@ describe('autonomous-phishing-handlers', () => {
       expect(mockPhishingAgentGenerate).toHaveBeenCalled();
     });
   });
+
+  describe('explanationJson propagation', () => {
+    it('passes explanationJson to assign tool when upload returns explanationReasoningText', async () => {
+      mockUploadExecute.mockResolvedValue({
+        success: true,
+        data: {
+          resourceId: 'res-456',
+          languageId: 'en-gb',
+          isQuishing: false,
+          explanationReasoningText: 'User in finance dept with no recent phishing test.',
+        },
+      });
+
+      await generatePhishingSimulation(
+        baseSimulation as any,
+        undefined,
+        baseToolResult as any,
+        'thread-explain-1',
+        false
+      );
+
+      expect(mockAssignExecute).toHaveBeenCalledWith(
+        expect.objectContaining({
+          explanationJson: { reasoningText: 'User in finance dept with no recent phishing test.' },
+        }),
+        expect.anything()
+      );
+    });
+
+    it('does NOT pass explanationJson when upload returns no explanationReasoningText', async () => {
+      mockUploadExecute.mockResolvedValue({
+        success: true,
+        data: {
+          resourceId: 'res-456',
+          languageId: 'en-gb',
+          isQuishing: false,
+        },
+      });
+
+      await generatePhishingSimulation(
+        baseSimulation as any,
+        undefined,
+        baseToolResult as any,
+        'thread-explain-2',
+        false
+      );
+
+      const assignCall = mockAssignExecute.mock.calls[0][0] as any;
+      expect(assignCall).not.toHaveProperty('explanationJson');
+    });
+  });
 });

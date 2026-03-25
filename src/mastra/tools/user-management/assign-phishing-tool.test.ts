@@ -296,6 +296,42 @@ describe('assignPhishingTool', () => {
       expect(result.data?.targetId).toBe('group-123');
     });
 
+    it('should include explanationJson in payload when provided', async () => {
+      (callWorkerAPI as any).mockResolvedValue({});
+
+      const input = {
+        resourceId: 'phishing-resource-123',
+        targetUserResourceId: 'user-789',
+        explanationJson: { reasoningText: 'User in finance dept with no recent phishing test.' },
+      };
+
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      await assignPhishingTool.execute!(input, {});
+
+      expect(callWorkerAPI).toHaveBeenCalledWith(
+        expect.objectContaining({
+          payload: expect.objectContaining({
+            explanationJson: { reasoningText: 'User in finance dept with no recent phishing test.' },
+          }),
+        })
+      );
+    });
+
+    it('should NOT include explanationJson in payload when not provided', async () => {
+      (callWorkerAPI as any).mockResolvedValue({});
+
+      const input = {
+        resourceId: 'phishing-resource-123',
+        targetUserResourceId: 'user-789',
+      };
+
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      await assignPhishingTool.execute!(input, {});
+
+      const callArgs = (callWorkerAPI as any).mock.calls[0][0];
+      expect(callArgs.payload).not.toHaveProperty('explanationJson');
+    });
+
   });
 
   describe('Error Handling', () => {

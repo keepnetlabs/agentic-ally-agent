@@ -23,6 +23,7 @@ import { extractCompanyIdFromTokenExport } from '../../utils/core/policy-fetcher
 import { formatToolSummary } from '../../utils/core/tool-summary-formatter';
 import { summarizeForLog } from '../../utils/core/log-redaction-utils';
 import { trySaveCampaignMetadataAfterUpload } from '../../services/campaign-metadata-service';
+import { getExplainabilityReasoning } from '../../types/explainability';
 
 interface UploadPhishingWorkerResult {
   success?: boolean;
@@ -53,6 +54,7 @@ const uploadPhishingOutputSchema = z.object({
       phishingId: z.string(),
       title: z.string().optional(),
       isQuishing: z.boolean().optional(), // Quishing flag for passing to assign tool
+      explanationReasoningText: z.string().optional(), // AI-generated reasoning from explainability (EU AI Act Art. 13)
     })
     .optional(),
   message: z.string().optional(),
@@ -241,6 +243,7 @@ export const uploadPhishingTool = createTool({
           scenarioId: result.scenarioId || null,
           languageId: result.languageId, // May not exist in backend response, kept for compatibility
           phishingId: phishingId,
+          explanationReasoningText: getExplainabilityReasoning(phishingData),
           title: name,
           scenarioName: name,
           isQuishing: isQuishing, // Pass isQuishing flag for assign tool

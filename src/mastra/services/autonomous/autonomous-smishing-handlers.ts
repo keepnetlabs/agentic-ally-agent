@@ -142,6 +142,8 @@ export async function generateSmishingSimulation(params: {
       ? { targetUserResourceId }
       : { targetGroupResourceId: String(targetGroupResourceId) };
 
+    const reasoningText = uploadResult?.data?.explanationReasoningText;
+
     const assignResult: Record<string, any> = await withRetry(
       () =>
         withTimeout(
@@ -149,6 +151,7 @@ export async function generateSmishingSimulation(params: {
             resourceId: uploadedResourceId,
             languageId: uploadResult?.data?.languageId,
             contentCategory: buildContentCategory(simulation),
+            ...(reasoningText && { explanationJson: { reasoningText } }),
             ...assignmentContext,
           }, {}),
           AGENT_CALL_TIMEOUT_MS

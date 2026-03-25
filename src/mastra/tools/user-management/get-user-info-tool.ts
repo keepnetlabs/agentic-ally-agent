@@ -222,7 +222,7 @@ export const getUserInfoTool = createTool({
           }
 
           ({ firstName, lastName, fullName } = parsed);
-          logger.info('Searching for user by name', { fullName, firstName, lastName: lastName || 'N/A' });
+          logger.info('Searching for user by name', { fullName: '[REDACTED]', firstName: '[REDACTED]', lastName: '[REDACTED]' });
 
           try {
             user = await findUserByNameWithFallbacks(searchDeps, GET_ALL_PAYLOAD, firstName, lastName, fullName);

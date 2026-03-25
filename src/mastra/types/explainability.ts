@@ -54,6 +54,16 @@ export interface Explainability {
 export const EXPLAINABILITY_VERSION = '1.0';
 
 /**
+ * Safely extracts the AI reasoning text from an unknown KV base object.
+ * KV getters return untyped data, so this avoids `as any` casts at call sites.
+ */
+export function getExplainabilityReasoning(data: unknown): string | undefined {
+  const base = data as Record<string, unknown> | null | undefined;
+  const explainability = base?.explainability as Explainability | undefined;
+  return explainability?.reasoning;
+}
+
+/**
  * Build an Explainability object from analysis output.
  * Common factory used by phishing, smishing, and microlearning KV writes.
  *

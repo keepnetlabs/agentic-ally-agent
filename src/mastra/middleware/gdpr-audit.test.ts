@@ -36,14 +36,6 @@ describe('gdprAuditMiddleware', () => {
   });
 
   describe('non-personal-data paths', () => {
-    it('should call next() without auditing for /chat', async () => {
-      const next = vi.fn(async () => {});
-      const c = createMockContext('/chat', 'POST');
-      await gdprAuditMiddleware(c, next);
-      expect(next).toHaveBeenCalled();
-      expect(mockLogDataAccess).not.toHaveBeenCalled();
-    });
-
     it('should call next() without auditing for /health', async () => {
       const next = vi.fn(async () => {});
       const c = createMockContext('/health', 'GET');
@@ -62,6 +54,22 @@ describe('gdprAuditMiddleware', () => {
   });
 
   describe('personal-data paths', () => {
+    it('should audit /chat POST with initiatedBy user', async () => {
+      const next = vi.fn(async () => {});
+      const c = createMockContext('/chat', 'POST');
+      await gdprAuditMiddleware(c, next);
+      expect(next).toHaveBeenCalled();
+      expect(mockLogDataAccess).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          companyId: 'company-123',
+          action: 'CREATE',
+          details: expect.objectContaining({ path: '/chat', method: 'POST' }),
+          initiatedBy: 'user',
+        })
+      );
+    });
+
     it('should audit /api/user GET', async () => {
       const next = vi.fn(async () => {});
       const c = createMockContext('/api/user', 'GET', 200);
@@ -74,7 +82,7 @@ describe('gdprAuditMiddleware', () => {
           action: 'READ',
           resourceType: 'USER_PII',
           details: expect.objectContaining({ path: '/api/user', method: 'GET', status: 200 }),
-          initiatedBy: 'user',
+          initiatedBy: 'system',
         })
       );
     });

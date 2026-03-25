@@ -152,6 +152,8 @@ export interface AgenticActivitiesPayload {
   trainingResourceId?: string;
   /** Free-text category classifying the activity (e.g. "Social Engineering", "Phishing Awareness") */
   contentCategory?: string;
+  /** AI agent's reasoning for why this activity was created */
+  explanationJson?: { reasoningText: string };
   /** Original flat fields (apiUrl, accessToken, companyId, phishingId, etc.) */
   [key: string]: unknown;
 }

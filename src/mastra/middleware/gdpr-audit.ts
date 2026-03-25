@@ -77,7 +77,7 @@ export const gdprAuditMiddleware = async (c: Context, next: Next) => {
       action: methodToAction(method),
       resourceType: pathToCategory(path),
       details: { path, method, status },
-      initiatedBy: 'user',
+      initiatedBy: path.startsWith('/chat') ? 'user' : 'system',
     }).catch((err) => {
       logger.debug('Audit log fire-and-forget failed', { error: String(err) });
     });

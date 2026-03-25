@@ -1,6 +1,6 @@
 // src/mastra/services/autonomous/autonomous-service.ts
 import { getUserInfoTool } from '../../tools/user-management';
-import { requestStorage } from '../../utils/core/request-storage';
+import { requestStorage, getRequestContext } from '../../utils/core/request-storage';
 import { getLogger } from '../../utils/core/logger';
 import { normalizeError, logErrorInfo } from '../../utils/core/error-utils';
 import { errorService } from '../error-service';
@@ -47,8 +47,9 @@ export async function executeAutonomousGeneration(request: AutonomousRequest): P
     // If batchResourceId provided (batch fan-out), use it as threadId so all users share the same batch.
     // Otherwise generate a unique threadId per autonomous run.
     const threadId = batchResourceId || generateBatchId();
+    const companyId = getRequestContext()?.companyId;
     return await requestStorage.run(
-      { token, baseApiUrl: effectiveBaseApiUrl, threadId },
+      { token, baseApiUrl: effectiveBaseApiUrl, threadId, companyId },
       async (): Promise<AutonomousResponse> => {
         // USER ASSIGNMENT: Get user info and generate personalized content
         if (isUserAssignment) {
