@@ -120,7 +120,7 @@ describe('phishing-prompts', () => {
         isQuishing: true,
       };
       const result = buildLandingPagePrompts(params as any);
-      expect(result.systemPrompt).toContain('Quishing Landing Page - No QR Code References');
+      expect(result.systemPrompt).toContain('Quishing Landing Page');
     });
   });
 });

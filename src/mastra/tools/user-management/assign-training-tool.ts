@@ -178,13 +178,14 @@ export const assignTrainingTool = createTool({
     try {
       // ─── Group Assignment: fan-out to individual users ───
       if (targetGroupResourceId) {
+        const { threadId: groupContextBatchId } = getRequestContext();
         const fanOutResult = await fanOutGroupAssignment({
           token,
           groupResourceId: targetGroupResourceId,
           baseApiUrl,
           buildPayload: (userResourceId: string) => ({
             ...commonPayloadFields,
-            batchResourceId: generateBatchId(),
+            batchResourceId: groupContextBatchId || generateBatchId(),
             targetUserResourceId: userResourceId,
           }),
           callApi: callAssignApi,
@@ -258,9 +259,10 @@ export const assignTrainingTool = createTool({
       }
 
       // ─── User Assignment: single API call (unchanged) ───
+      const { threadId: contextBatchId } = getRequestContext();
       const payload: AgenticActivitiesPayload = {
         ...commonPayloadFields,
-        batchResourceId: generateBatchId(),
+        batchResourceId: contextBatchId || generateBatchId(),
         targetUserResourceId,
       };
 

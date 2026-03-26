@@ -41,6 +41,12 @@ export interface EnrichedActivity {
   timeAgo: string;
   /** Active Learning: psychological tactic(s) used in this simulation (from campaign_metadata) */
   tactic?: string;
+  /** Active Learning: scenario type (e.g. "CEO Fraud", "Invoice Scam") from campaign_metadata */
+  scenarioType?: string;
+  /** Active Learning: difficulty level from campaign_metadata (may differ from Product API difficulty) */
+  metadataDifficulty?: string;
+  /** Active Learning: content type (phishing/quishing/smishing/training) from campaign_metadata */
+  contentType?: string;
 }
 
 /**
@@ -231,9 +237,12 @@ export const formatEnrichedActivitiesForPrompt = (enrichedActivities: EnrichedAc
 
   return enrichedActivities
     .map(activity => {
-      const tactic = typeof activity.tactic === 'string' && activity.tactic.trim() ? activity.tactic.trim() : undefined;
-      const tacticSuffix = tactic ? ` [Tactic: ${tactic}]` : '';
-      return `- ${activity.actionCategory} (Risk: ${activity.riskScore}/100): ${activity.context} (${activity.timeAgo})${tacticSuffix}`;
+      const metaParts: string[] = [];
+      if (activity.tactic?.trim()) metaParts.push(`Tactic: ${activity.tactic.trim()}`);
+      if (activity.scenarioType?.trim()) metaParts.push(`Type: ${activity.scenarioType.trim()}`);
+      if (activity.metadataDifficulty?.trim()) metaParts.push(`Difficulty: ${activity.metadataDifficulty.trim()}`);
+      const metaSuffix = metaParts.length > 0 ? ` [${metaParts.join(' | ')}]` : '';
+      return `- ${activity.actionCategory} (Risk: ${activity.riskScore}/100): ${activity.context} (${activity.timeAgo})${metaSuffix}`;
     })
     .join('\n');
 };

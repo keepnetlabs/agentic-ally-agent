@@ -163,6 +163,7 @@ ${JSON_OUTPUT_RULE}
 - **psychologicalTriggers:** Must include at least "Convenience" or "Technology Trust" or "Mobile Usage"
 - **keyRedFlags:** Must include quishing-specific red flags (see section 6)
 - **description:** ${PHISHING_EMAIL.MAX_DESCRIPTION_LENGTH} characters or less
+- **name, scenario:** MUST be written entirely in the output language. Do NOT mix English prefixes with translated text.
 
 **EXAMPLE OUTPUT (Quishing Scenario):**
 {
@@ -292,6 +293,7 @@ ${JSON_OUTPUT_RULE}
 
 **Field Limits:**
 - **description**: ${PHISHING_EMAIL.MAX_DESCRIPTION_LENGTH} characters or less. Keep it concise and focused on the simulation's purpose.
+- **name, scenario**: MUST be written entirely in the output language (${language}). Do NOT prefix with English attack categories. Write the full name in ${language}.
 
 **EXAMPLE OUTPUT:**
 {

@@ -112,7 +112,7 @@ export function extractResourceIdsFromTimeline(results: TimelineActivity[]): {
  * Enriches activities with tactic from campaign metadata map.
  * T must have optional tactic (e.g. EnrichedActivity).
  */
-export function enrichActivitiesWithMetadata<T extends { tactic?: string }>(
+export function enrichActivitiesWithMetadata<T extends { tactic?: string; scenarioType?: string; metadataDifficulty?: string; contentType?: string }>(
   activities: T[],
   resourceIdsByIndex: (string | undefined)[],
   metadataMap: Map<string, CampaignMetadataRow>
@@ -123,6 +123,15 @@ export function enrichActivitiesWithMetadata<T extends { tactic?: string }>(
     if (!meta) return a;
     const tactic = meta.tactic || meta.persuasion_tactic;
     const tacticStr = typeof tactic === 'string' && tactic.trim() ? tactic.trim() : undefined;
-    return tacticStr ? { ...a, tactic: tacticStr } : a;
+    const scenarioType = typeof meta.scenario_type === 'string' && meta.scenario_type.trim() ? meta.scenario_type.trim() : undefined;
+    const metadataDifficulty = typeof meta.difficulty === 'string' && meta.difficulty.trim() ? meta.difficulty.trim() : undefined;
+    const contentType = typeof meta.content_type === 'string' && meta.content_type.trim() ? meta.content_type.trim() : undefined;
+    return {
+      ...a,
+      ...(tacticStr && { tactic: tacticStr }),
+      ...(scenarioType && { scenarioType }),
+      ...(metadataDifficulty && { metadataDifficulty }),
+      ...(contentType && { contentType }),
+    };
   });
 }

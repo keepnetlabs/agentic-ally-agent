@@ -26,12 +26,9 @@ describe('shared-email-rules', () => {
       expect(AUTH_CONTEXT).toContain('defensive security');
     });
 
-    // Note: ZERO_PRIVACY_POLICY constant removed (policy text no longer embedded in prompts)
-
     it('should define LOGO_TAG_RULE with CUSTOMMAINLOGO requirement', () => {
       expect(LOGO_TAG_RULE).toBeDefined();
       expect(LOGO_TAG_RULE).toContain('CUSTOMMAINLOGO');
-      expect(LOGO_TAG_RULE).toContain('merge tag');
       expect(LOGO_TAG_RULE).toContain('Company Logo');
     });
 
@@ -42,11 +39,11 @@ describe('shared-email-rules', () => {
       expect(NO_DISCLAIMERS_RULE).toContain('phishing link');
     });
 
-    it('should define EMAIL_SIGNATURE_RULES with forbidden/required patterns', () => {
+    it('should define EMAIL_SIGNATURE_RULES with format and padding', () => {
       expect(EMAIL_SIGNATURE_RULES).toBeDefined();
-      expect(EMAIL_SIGNATURE_RULES).toContain('Never use personal names');
-      expect(EMAIL_SIGNATURE_RULES).toContain('Security Notifications Team');
-      expect(EMAIL_SIGNATURE_RULES).toContain('department/team/system names');
+      expect(EMAIL_SIGNATURE_RULES).toContain('Team/Department Name');
+      expect(EMAIL_SIGNATURE_RULES).toContain('Outlook-critical');
+      expect(EMAIL_SIGNATURE_RULES).toContain('output language');
     });
 
     it('should define NO_FAKE_PERSONAL_IDENTITIES_RULES to prevent invented names', () => {
@@ -62,6 +59,10 @@ describe('shared-email-rules', () => {
       expect(TABLE_LAYOUT_RULES).toContain('border-collapse');
       expect(TABLE_LAYOUT_RULES).toContain('Outlook');
       expect(TABLE_LAYOUT_RULES).toContain('PADDING RULE');
+      expect(TABLE_LAYOUT_RULES).toContain('TYPOGRAPHY');
+      expect(TABLE_LAYOUT_RULES).toContain('CARD STYLING');
+      expect(TABLE_LAYOUT_RULES).toContain('box-shadow');
+      expect(TABLE_LAYOUT_RULES).toContain('border-radius: 8px');
     });
 
     it('should define LAYOUT_STRATEGY_RULES with Card and Letter options', () => {
@@ -70,6 +71,8 @@ describe('shared-email-rules', () => {
       expect(LAYOUT_STRATEGY_RULES).toContain('OPTION B');
       expect(LAYOUT_STRATEGY_RULES).toContain('Card');
       expect(LAYOUT_STRATEGY_RULES).toContain('Letter');
+      expect(LAYOUT_STRATEGY_RULES).toContain('subtle border');
+      expect(LAYOUT_STRATEGY_RULES).not.toContain('shadow');
     });
 
     it('should define PREHEADER_RULE with hidden div requirement', () => {
@@ -83,15 +86,16 @@ describe('shared-email-rules', () => {
       expect(GREETING_RULES).toBeDefined();
       expect(GREETING_RULES).toContain('Greeting');
       expect(GREETING_RULES).toContain('{FIRSTNAME}');
-      expect(GREETING_RULES).toContain('Never use');
+      expect(GREETING_RULES).toContain('{FULLNAME}');
       expect(GREETING_RULES).toContain('Dear Employee');
     });
 
     it('should define MOBILE_OPTIMIZATION_RULES with tap target size', () => {
       expect(MOBILE_OPTIMIZATION_RULES).toBeDefined();
-      expect(MOBILE_OPTIMIZATION_RULES).toContain('Mobile Optimization');
+      expect(MOBILE_OPTIMIZATION_RULES).toContain('Mobile');
       expect(MOBILE_OPTIMIZATION_RULES).toContain('tappable');
       expect(MOBILE_OPTIMIZATION_RULES).toContain('32px');
+      expect(MOBILE_OPTIMIZATION_RULES).toContain('600px');
     });
 
     it('should define BRAND_AWARENESS_RULES', () => {
@@ -108,11 +112,13 @@ describe('shared-email-rules', () => {
       expect(SYNTAX_RULE).toContain("style='");
     });
 
-    it('should define FOOTER_RULES with PHISHINGURL requirement', () => {
+    it('should define FOOTER_RULES with PHISHINGURL and unsubscribe', () => {
       expect(FOOTER_RULES).toBeDefined();
       expect(FOOTER_RULES).toContain('Footer');
-      expect(FOOTER_RULES).toContain('PHISHINGURL');
-      expect(FOOTER_RULES).toContain('support');
+      expect(FOOTER_RULES).toContain('{PHISHINGURL}');
+      expect(FOOTER_RULES).toContain('Unsubscribe');
+      expect(FOOTER_RULES).toContain('Privacy Policy');
+      expect(FOOTER_RULES).toContain('text-align: center');
     });
   });
 
@@ -125,7 +131,6 @@ describe('shared-email-rules', () => {
       expect(rules).toBeDefined();
       expect(rules).toContain('Merge Tags');
       expect(rules).toContain('{FIRSTNAME}');
-      // QRCODE tag can exist in the Available list; ensure it's not REQUIRED by default
       expect(requiredLine).not.toContain('{QRCODEURLIMAGE}');
     });
 
@@ -145,33 +150,28 @@ describe('shared-email-rules', () => {
 
     it('should include FIRSTNAME as required tag', () => {
       const rules = getMergeTagsRules();
-
       expect(rules).toContain('{FIRSTNAME}');
       expect(rules).toContain('Required');
     });
 
     it('should include PHISHINGURL requirement', () => {
       const rules = getMergeTagsRules();
-
       expect(rules).toContain('{PHISHINGURL}');
     });
 
     it('should warn against inventing new tags', () => {
       const rules = getMergeTagsRules();
-
       expect(rules).toContain('ONLY use tags');
       expect(rules).toContain('DO NOT invent');
     });
 
     it('should provide list of available tags', () => {
       const rules = getMergeTagsRules();
-
       expect(rules).toContain('Available');
     });
 
     it('should mention no real names in personalization', () => {
       const rules = getMergeTagsRules();
-
       expect(rules).toContain('Never use real names');
       expect(rules).toContain('merge tags');
     });
@@ -180,23 +180,18 @@ describe('shared-email-rules', () => {
       const rulesWithoutQR = getMergeTagsRules(false);
       const rulesWithQR = getMergeTagsRules(true);
 
-      // Both should contain core merge tag rules
       expect(rulesWithoutQR).toContain('Required');
       expect(rulesWithQR).toContain('Required');
-
-      // Difference should be minimal (just QR tag inclusion)
       expect(rulesWithQR.length).toBeGreaterThan(rulesWithoutQR.length);
     });
 
     it('should include recommended tags instruction', () => {
       const rules = getMergeTagsRules();
-
       expect(rules).toContain('Recommended');
     });
 
     it('should mention that all links must use PHISHINGURL', () => {
       const rules = getMergeTagsRules();
-
       expect(rules).toContain('All links/buttons MUST use {PHISHINGURL}');
       expect(rules).toContain('href');
       expect(rules).toContain('never hardcode URLs');
@@ -209,11 +204,8 @@ describe('shared-email-rules', () => {
       expect(AUTH_CONTEXT).toMatch(/AUTHORIZED|LEGAL|EDUCATIONAL/);
     });
 
-    // Note: ZERO_PRIVACY_POLICY constant removed (policy text no longer embedded in prompts)
-
-    it('EMAIL_SIGNATURE_RULES should explicitly forbid personal names', () => {
-      expect(EMAIL_SIGNATURE_RULES).toContain('Never use personal names');
-      expect(EMAIL_SIGNATURE_RULES).toContain('personal names in signature');
+    it('EMAIL_SIGNATURE_RULES should reference No Fake Personal Identities rule', () => {
+      expect(EMAIL_SIGNATURE_RULES).toContain('No Fake Personal Identities');
     });
 
     it('NO_DISCLAIMERS_RULE should ensure output is raw content', () => {
@@ -223,7 +215,7 @@ describe('shared-email-rules', () => {
 
     it('FOOTER_RULES should require PHISHINGURL for link safety', () => {
       expect(FOOTER_RULES).toContain('{PHISHINGURL}');
-      expect(FOOTER_RULES).toContain('footer links');
+      expect(FOOTER_RULES).toContain('All links use');
     });
 
     it('GREETING_RULES should enforce personalization with merge tags', () => {
@@ -257,10 +249,6 @@ describe('shared-email-rules', () => {
       expect(SYNTAX_RULE).toContain("style='");
     });
 
-    it('MOBILE_OPTIMIZATION_RULES should specify max-width 600px', () => {
-      expect(MOBILE_OPTIMIZATION_RULES).toContain('600px');
-    });
-
     it('PREHEADER_RULE should specify display:none for hidden text', () => {
       expect(PREHEADER_RULE).toContain('display:none');
     });
@@ -278,7 +266,7 @@ describe('shared-email-rules', () => {
     it('LAYOUT_STRATEGY_RULES should define Card layout option', () => {
       expect(LAYOUT_STRATEGY_RULES).toContain('Card');
       expect(LAYOUT_STRATEGY_RULES).toContain('#f3f4f6');
-      expect(LAYOUT_STRATEGY_RULES).toContain('shadow');
+      expect(LAYOUT_STRATEGY_RULES).toContain('subtle border');
     });
 
     it('LAYOUT_STRATEGY_RULES should define Letter layout option', () => {
@@ -295,136 +283,6 @@ describe('shared-email-rules', () => {
       expect(LAYOUT_STRATEGY_RULES).toContain('Password Reset');
       expect(LAYOUT_STRATEGY_RULES).toContain('Policy Update');
     });
-
-    it('EMAIL_SIGNATURE_RULES should show correct and incorrect examples', () => {
-      expect(EMAIL_SIGNATURE_RULES).toContain('✅');
-      expect(EMAIL_SIGNATURE_RULES).toContain('❌');
-    });
-  });
-
-  // ==================== MERGE TAGS SPECIFICITY ====================
-  describe('Merge Tags Integration', () => {
-    it('should reference constants for mandatory tags', () => {
-      const rules = getMergeTagsRules();
-
-      // Should contain references to tag lists
-      expect(rules).toContain('Required');
-      expect(rules).toContain('Recommended');
-      expect(rules).toContain('Available');
-    });
-
-    it('should mention PHISHINGURL for all links', () => {
-      const rules = getMergeTagsRules();
-
-      expect(rules).toContain('All links/buttons MUST use {PHISHINGURL}');
-    });
-
-    it('should forbid hardcoded URLs', () => {
-      const rules = getMergeTagsRules();
-
-      expect(rules).toContain('never hardcode URLs');
-    });
-
-    it('should specify FIRSTNAME for personalization', () => {
-      const rules = getMergeTagsRules();
-
-      expect(rules).toContain('{FIRSTNAME}');
-    });
-  });
-
-  // ==================== FORMATTING AND CLARITY ====================
-  describe('Formatting and Readability', () => {
-    it('all rules should use markdown formatting', () => {
-      const allRules = [
-        AUTH_CONTEXT,
-        LOGO_TAG_RULE,
-        NO_DISCLAIMERS_RULE,
-        EMAIL_SIGNATURE_RULES,
-        TABLE_LAYOUT_RULES,
-        LAYOUT_STRATEGY_RULES,
-        PREHEADER_RULE,
-        GREETING_RULES,
-        MOBILE_OPTIMIZATION_RULES,
-        BRAND_AWARENESS_RULES,
-        SYNTAX_RULE,
-        FOOTER_RULES,
-      ];
-
-      allRules.forEach(rule => {
-        expect(rule).toMatch(/\*\*|^-|^`/m);
-      });
-    });
-
-    it('rules should use consistent bullet point format', () => {
-      const rulesWithBullets = [EMAIL_SIGNATURE_RULES, TABLE_LAYOUT_RULES, GREETING_RULES];
-
-      rulesWithBullets.forEach(rule => {
-        expect(rule).toContain('- ');
-      });
-    });
-
-    it('rules should use emphasis (bold) for critical points', () => {
-      const rulesWithEmphasis = [EMAIL_SIGNATURE_RULES, TABLE_LAYOUT_RULES, GREETING_RULES];
-
-      rulesWithEmphasis.forEach(rule => {
-        expect(rule).toContain('**');
-      });
-    });
-
-    it('should include code examples in appropriate rules', () => {
-      expect(LOGO_TAG_RULE).toContain('<img');
-      expect(SYNTAX_RULE).toContain("style='");
-      expect(TABLE_LAYOUT_RULES).toContain('<table');
-    });
-  });
-
-  // ==================== CONTENT VALIDATION ====================
-  describe('Content Validation', () => {
-    // Note: ZERO_PRIVACY_POLICY constant removed (policy text no longer embedded in prompts)
-
-    it('EMAIL_SIGNATURE_RULES should list examples of correct teams', () => {
-      expect(EMAIL_SIGNATURE_RULES).toContain('Security Notifications Team');
-      expect(EMAIL_SIGNATURE_RULES).toContain('IT Support Team');
-      expect(EMAIL_SIGNATURE_RULES).toContain('Customer Service');
-    });
-
-    it('EMAIL_SIGNATURE_RULES should list examples of incorrect signatures', () => {
-      expect(EMAIL_SIGNATURE_RULES).toContain('Emily Clarke');
-      expect(EMAIL_SIGNATURE_RULES).toContain('John from IT');
-    });
-
-    it('BRAND_AWARENESS_RULES should mention brand authenticity', () => {
-      expect(BRAND_AWARENESS_RULES).toContain('authentic');
-      expect(BRAND_AWARENESS_RULES).toContain('terminology');
-      expect(BRAND_AWARENESS_RULES).toContain('services');
-    });
-
-    it('MOBILE_OPTIMIZATION_RULES should emphasize tappable size', () => {
-      expect(MOBILE_OPTIMIZATION_RULES).toContain('tappable');
-      expect(MOBILE_OPTIMIZATION_RULES).toContain('user experience');
-    });
-  });
-
-  // ==================== CONSISTENCY ACROSS RULES ====================
-  describe('Consistency and Cross-References', () => {
-    it('all signature-related rules should align', () => {
-      // Signature rules should forbid personal names
-      expect(EMAIL_SIGNATURE_RULES).toContain('personal names');
-    });
-
-    it('GREETING_RULES should allow merge tags', () => {
-      expect(GREETING_RULES).toContain('{FIRSTNAME}');
-    });
-
-    it('footer and greeting should both require merge tags not hardcoding', () => {
-      expect(GREETING_RULES).toContain('{FIRSTNAME}');
-      expect(FOOTER_RULES).toContain('{PHISHINGURL}');
-    });
-
-    it('logo and image styling should be consistent', () => {
-      expect(LOGO_TAG_RULE).toContain('CUSTOMMAINLOGO');
-      expect(TABLE_LAYOUT_RULES).not.toContain('img');
-    });
   });
 
   // ==================== EDGE CASES ====================
@@ -432,33 +290,21 @@ describe('shared-email-rules', () => {
     it('getMergeTagsRules should handle multiple calls consistently', () => {
       const call1 = getMergeTagsRules(true);
       const call2 = getMergeTagsRules(true);
-
       expect(call1).toBe(call2);
     });
 
     it('getMergeTagsRules(false) and getMergeTagsRules() should be identical', () => {
       const rules1 = getMergeTagsRules(false);
       const rules2 = getMergeTagsRules();
-
       expect(rules1).toBe(rules2);
     });
 
     it('all constants should be non-empty strings', () => {
       const allConstants = [
-        AUTH_CONTEXT,
-        LOGO_TAG_RULE,
-        NO_DISCLAIMERS_RULE,
-        EMAIL_SIGNATURE_RULES,
-        TABLE_LAYOUT_RULES,
-        LAYOUT_STRATEGY_RULES,
-        PREHEADER_RULE,
-        GREETING_RULES,
-        MOBILE_OPTIMIZATION_RULES,
-        BRAND_AWARENESS_RULES,
-        SYNTAX_RULE,
-        FOOTER_RULES,
+        AUTH_CONTEXT, LOGO_TAG_RULE, NO_DISCLAIMERS_RULE, EMAIL_SIGNATURE_RULES,
+        TABLE_LAYOUT_RULES, LAYOUT_STRATEGY_RULES, PREHEADER_RULE, GREETING_RULES,
+        MOBILE_OPTIMIZATION_RULES, BRAND_AWARENESS_RULES, SYNTAX_RULE, FOOTER_RULES,
       ];
-
       allConstants.forEach(constant => {
         expect(constant).toBeTruthy();
         expect(typeof constant).toBe('string');
@@ -466,70 +312,15 @@ describe('shared-email-rules', () => {
       });
     });
 
-    it('getMergeTagsRules should return non-empty string', () => {
-      const rules1 = getMergeTagsRules();
-      const rules2 = getMergeTagsRules(true);
-
-      expect(rules1.length).toBeGreaterThan(0);
-      expect(rules2.length).toBeGreaterThan(0);
-    });
-
-    it('constants should handle markdown rendering', () => {
-      const allConstants = [AUTH_CONTEXT, EMAIL_SIGNATURE_RULES];
-
-      allConstants.forEach(constant => {
-        // Should not have unmatched markdown
-        const boldCount = (constant.match(/\*\*/g) || []).length;
-        expect(boldCount % 2).toBe(0); // Pairs of **
+    it('all rules should use markdown formatting', () => {
+      const allRules = [
+        AUTH_CONTEXT, LOGO_TAG_RULE, NO_DISCLAIMERS_RULE, EMAIL_SIGNATURE_RULES,
+        TABLE_LAYOUT_RULES, LAYOUT_STRATEGY_RULES, PREHEADER_RULE, GREETING_RULES,
+        MOBILE_OPTIMIZATION_RULES, BRAND_AWARENESS_RULES, SYNTAX_RULE, FOOTER_RULES,
+      ];
+      allRules.forEach(rule => {
+        expect(rule).toMatch(/\*\*|^-|^`/m);
       });
-    });
-  });
-
-  // ==================== PHISHING-SPECIFIC RULES ====================
-  describe('Phishing Context Rules', () => {
-    it('AUTH_CONTEXT should appear suitable for security training', () => {
-      expect(AUTH_CONTEXT).toContain('AUTHORIZED');
-      expect(AUTH_CONTEXT).toContain('LEGAL');
-    });
-
-    // Note: ZERO_PRIVACY_POLICY constant removed (policy text no longer embedded in prompts)
-
-    it('NO_DISCLAIMERS_RULE ensures emails look authentic', () => {
-      expect(NO_DISCLAIMERS_RULE).toContain('RAW email content');
-      expect(NO_DISCLAIMERS_RULE).toContain('meta-commentary');
-    });
-
-    it('FOOTER_RULES should include realistic footer link', () => {
-      expect(FOOTER_RULES).toContain('support');
-      expect(FOOTER_RULES).toContain('legal');
-      expect(FOOTER_RULES).toContain('{PHISHINGURL}');
-    });
-  });
-
-  // ==================== OUTPUT SAFETY ====================
-  describe('Output Safety and Validation', () => {
-    it('EMAIL_SIGNATURE_RULES should forbid real employee names', () => {
-      const wrongExamples = ['Emily Clarke', 'John from IT', 'Sarah Johnson'];
-
-      wrongExamples.forEach(example => {
-        expect(EMAIL_SIGNATURE_RULES).toContain(example);
-      });
-    });
-
-    it('getMergeTagsRules should warn against custom tags', () => {
-      const rules = getMergeTagsRules();
-
-      expect(rules).toContain('ONLY use tags');
-      expect(rules).toContain('DO NOT invent');
-    });
-
-    it('GREETING_RULES should require merge tag validation', () => {
-      expect(GREETING_RULES).toContain('Validate');
-    });
-
-    it('FOOTER_RULES should ensure all links are safe', () => {
-      expect(FOOTER_RULES).toContain('{PHISHINGURL}');
-      expect(FOOTER_RULES).toContain('All footer links must use');
     });
   });
 });

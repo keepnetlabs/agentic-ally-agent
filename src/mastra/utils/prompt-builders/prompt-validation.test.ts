@@ -171,7 +171,7 @@ describe('buildLandingPageSystemPrompt Validation', () => {
     );
 
     expect(prompt).toContain('Quishing Landing Page');
-    expect(prompt).toContain('No QR Code');
+    expect(prompt).toContain('No QR codes');
   });
 
   it('includes brand colors in prompt', () => {

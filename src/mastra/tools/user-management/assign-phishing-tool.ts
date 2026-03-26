@@ -210,13 +210,14 @@ export const assignPhishingTool = createTool({
     try {
       // ─── Group Assignment: fan-out to individual users ───
       if (targetGroupResourceId) {
+        const { threadId: groupContextBatchId } = getRequestContext();
         const fanOutResult = await fanOutGroupAssignment({
           token,
           groupResourceId: targetGroupResourceId,
           baseApiUrl,
           buildPayload: (userResourceId: string) => ({
             ...commonPayloadFields,
-            batchResourceId: generateBatchId(),
+            batchResourceId: groupContextBatchId || generateBatchId(),
             targetUserResourceId: userResourceId,
           }),
           callApi: callAssignApi,
@@ -292,9 +293,12 @@ export const assignPhishingTool = createTool({
       }
 
       // ─── User Assignment: single API call (unchanged) ───
+      // Use platform-provided batchResourceId (from requestContext.threadId) if available,
+      // so reject → regenerate flows stay in the same batch. Fallback to new ID for chat flow.
+      const { threadId: contextBatchId } = getRequestContext();
       const payload: AgenticActivitiesPayload = {
         ...commonPayloadFields,
-        batchResourceId: generateBatchId(),
+        batchResourceId: contextBatchId || generateBatchId(),
         targetUserResourceId,
       };
 

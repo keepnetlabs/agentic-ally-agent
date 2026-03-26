@@ -58,7 +58,9 @@ ${isQuishing ? QUISHING_LANDING_PAGE_RULE : NO_QR_CODE_LANDING_PAGE_RULE}
 
 4. **NO external CSS/JS** — no Tailwind, Bootstrap, or libraries. Inline \`style='...'\` only.
 
-5. **INLINE CSS IS THE SOURCE OF TRUTH:**
+5. **FOOTER:** All footer content (copyright, links) must be in a single centered block. Never split copyright left and links right — keep everything together, centered, same font-size (12px), muted color (#9ca3af). Use \`text-align: center;\` on the footer container.
+
+6. **INLINE CSS IS THE SOURCE OF TRUTH:**
    - You MAY use the design hints from \`industryDesign\`, but the final visual result must come from inline styles.
    - For the main card${hasFormPages ? ', primary button and inputs' : ''}, use the provided design patterns:
      - Card: \`style='${industryDesign.patterns.cardStyle}'\`${hasFormPages ? `
@@ -68,7 +70,7 @@ ${isQuishing ? QUISHING_LANDING_PAGE_RULE : NO_QR_CODE_LANDING_PAGE_RULE}
      - ✅ Correct: \`style='display: flex; flex-direction: column; align-items: center; justify-content: center;'\`
      - ❌ Wrong: \`style='display: flex; align-items: center; justify-content: center;'\` (missing flex-direction: column)
 
-  6. **MANDATORY DESIGN DIRECTIVE:**
+  7. **MANDATORY DESIGN DIRECTIVE:**
 
      You act as a rendering engine. You have been assigned a specific design system for this generation.
 
@@ -82,10 +84,10 @@ ${isQuishing ? QUISHING_LANDING_PAGE_RULE : NO_QR_CODE_LANDING_PAGE_RULE}
      **CONSTRAINT:** Strictly implement the **${randomLayout.name}** layout with **${randomStyle.name}** styling.
 
      **Specific Implementation Rules for ${randomLayout.id}:**
-     ${randomLayout.id === 'SPLIT' ? '- Use `display: flex; flex-wrap: wrap; min-height: 100vh;` on body so both panels fill the viewport.\n     - Left side: Brand color background, centered logo/text.\n     - Right side: White background, form content.\n     - You MAY vary logo size, panel padding, card shadow, and CTA corner style.\n     - Do NOT collapse this into a single centered card.' : ''}
+     ${randomLayout.id === 'SPLIT' ? '- Use `display: flex; flex-wrap: wrap; min-height: 100vh;` on body so both panels fill the viewport.\n     - Left side: Brand color background, centered logo/text.\n     - Right side: White background, form content.\n     - You MAY vary logo size, panel padding, card border style, and CTA corner style.\n     - Do NOT collapse this into a single centered card.' : ''}
     ${randomLayout.id === 'MINIMAL' ? `- NO CARD CONTAINER. Content sits directly on background.\n     - Use body max-width: ${LANDING_PAGE.MINIMAL_BODY_MAX_WIDTH_PX}px, form max-width: ${LANDING_PAGE.FORM_MAX_WIDTH_PX}px (never full-width).\n     - Centered logo and form with generous spacing (24px gaps).\n     - Clean, minimalist, alert-like layout with breathing room.\n     - You MAY vary spacing rhythm, logo size/alignment, helper text placement, and button corner style.\n     - Do NOT introduce an outer card or extra layout sections.` : ''}
-     ${randomLayout.id === 'CENTERED' ? '- Classic centered card with shadow.\n     - Background color surrounds the card.\n     - Use `min-height: 100vh; display: flex; align-items: center; justify-content: center;` on body to vertically center the card.\n     - You MAY vary card radius, shadow strength, logo alignment, and helper/footer treatment.\n     - Do NOT add hero sections, side panels, or multiple primary wrappers.' : ''}
-    ${randomLayout.id === 'HERO' ? `- Top full-width hero bar (brand color, ~200px height).\n     - Hero section: \`display: flex; flex-direction: column;\` (logo and title must stack vertically).\n     - Content card overlaps the hero bar with a subtle negative margin-top.\n     - Use this exact overlap for the main container: \`margin: ${LANDING_PAGE.HERO_MAIN_CONTAINER_MARGIN_TOP_PX}px auto 0;\`.\n     - Do NOT make the overlap more aggressive (for example \`-40px\`, \`-48px\`, etc.).\n     - Recommended: main container \`style='width: 100%; max-width: ${LANDING_PAGE.HERO_MAIN_CONTAINER_MAX_WIDTH_PX}px; margin: ${LANDING_PAGE.HERO_MAIN_CONTAINER_MARGIN_TOP_PX}px auto 0; padding: 0 20px; display: flex; flex-direction: column; align-items: center; justify-content: center;'\`.\n     - You MAY vary hero height slightly, logo size, card shadow/radius, and CTA corner style.\n     - Do NOT break the vertical hero stack or the assigned overlap logic.` : ''}
+     ${randomLayout.id === 'CENTERED' ? '- Classic centered card with subtle border.\n     - Background color surrounds the card.\n     - Use `min-height: 100vh; display: flex; align-items: center; justify-content: center;` on body to vertically center the card.\n     - You MAY vary card radius (6-10px), border style, logo alignment, and helper/footer treatment.\n     - Do NOT add hero sections, side panels, or multiple primary wrappers.' : ''}
+    ${randomLayout.id === 'HERO' ? `- Top full-width hero bar (brand color, ~200px height).\n     - Hero section: \`display: flex; flex-direction: column;\` (logo and title must stack vertically).\n     - Content card overlaps the hero bar with a subtle negative margin-top.\n     - Use this exact overlap for the main container: \`margin: ${LANDING_PAGE.HERO_MAIN_CONTAINER_MARGIN_TOP_PX}px auto 0;\`.\n     - Do NOT make the overlap more aggressive (for example \`-40px\`, \`-48px\`, etc.).\n     - Recommended: main container \`style='width: 100%; max-width: ${LANDING_PAGE.HERO_MAIN_CONTAINER_MAX_WIDTH_PX}px; margin: ${LANDING_PAGE.HERO_MAIN_CONTAINER_MARGIN_TOP_PX}px auto 0; padding: 0 20px; display: flex; flex-direction: column; align-items: center; justify-content: center;'\`.\n     - You MAY vary hero height slightly, logo size, card border/radius (6-10px), and CTA corner style.\n     - Do NOT break the vertical hero stack or the assigned overlap logic.` : ''}
 
 ---
 
@@ -119,9 +121,9 @@ For each new page/template, change at least **3** of the following visual aspect
 
 Items 1–3 apply only to card-based layouts (CENTERED, HERO, and the right-panel form card in SPLIT). For MINIMAL, vary items 4–7 instead.
 
-1. Card max-width for card-based layouts (e.g. 520–${LANDING_PAGE.FORM_MAX_WIDTH_PX}px) via \`style='max-width: ${LANDING_PAGE.FORM_MAX_WIDTH_PX}px;'\` vs \`560px\`.
-2. Card border-radius for card-based layouts (e.g. 14px, 18px, 22px).
-3. Card shadow strength for card-based layouts (softer or stronger \`box-shadow\`).
+1. Card max-width for card-based layouts (min 560px, max ${LANDING_PAGE.FORM_MAX_WIDTH_PX}px). Never below 560px — forms look cramped.
+2. Card border-radius for card-based layouts (6px, 8px, or 10px). Keep subtle and professional.
+3. Card border style (e.g. \`border: 1px solid #e2e8f0\` or \`border: 1px solid rgba(0,0,0,0.08)\`). No box-shadow — inconsistent across browsers.
 4. Logo size (keep alignment and placement identical across pages).
 ${hasFormPages ? '5. Button shape (fully pill vs slightly rounded rectangle).' : '5. (No buttons — info pages show content directly, no CTA.)'}
 6. Vertical spacing between sections (margins between logo, card, footer).

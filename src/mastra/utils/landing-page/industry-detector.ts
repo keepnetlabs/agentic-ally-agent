@@ -34,8 +34,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
     patterns: {
       cardStyle: [
         'background-color: #ffffff',
-        'border-radius: 18px',
-        'box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1)',
+        'border-radius: 8px',
         'border: 1px solid rgba(30, 64, 175, 0.12)',
         'padding: 32px',
         CARD_MAX_WIDTH_DECL,
@@ -81,8 +80,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
     patterns: {
       cardStyle: [
         'background-color: #ffffff',
-        'border-radius: 18px',
-        'box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1)',
+        'border-radius: 8px',
         'border: 1px solid rgba(148, 163, 184, 0.18)',
         'padding: 32px',
         CARD_MAX_WIDTH_DECL,
@@ -129,8 +127,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
     patterns: {
       cardStyle: [
         'background-color: #ffffff',
-        'border-radius: 18px',
-        'box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1)',
+        'border-radius: 8px',
         'border: 1px solid rgba(16, 185, 129, 0.12)',
         'padding: 32px',
         CARD_MAX_WIDTH_DECL,
@@ -176,8 +173,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
     patterns: {
       cardStyle: [
         'background-color: #ffffff',
-        'border-radius: 18px',
-        'box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1)',
+        'border-radius: 8px',
         'border: 1px solid rgba(248, 115, 22, 0.12)',
         'padding: 32px',
         CARD_MAX_WIDTH_DECL,
@@ -223,8 +219,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
     patterns: {
       cardStyle: [
         'background-color: #ffffff',
-        'border-radius: 18px',
-        'box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1)',
+        'border-radius: 8px',
         'border: 1px solid rgba(148, 163, 184, 0.18)',
         'padding: 32px',
         CARD_MAX_WIDTH_DECL,
@@ -270,8 +265,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
     patterns: {
       cardStyle: [
         'background-color: #ffffff',
-        'border-radius: 18px',
-        'box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1)',
+        'border-radius: 8px',
         'border: 1px solid rgba(124, 58, 237, 0.12)',
         'padding: 32px',
         CARD_MAX_WIDTH_DECL,
@@ -317,8 +311,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
     patterns: {
       cardStyle: [
         'background-color: #ffffff',
-        'border-radius: 18px',
-        'box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1)',
+        'border-radius: 8px',
         'border: 1px solid rgba(220, 38, 38, 0.12)',
         'padding: 32px',
         CARD_MAX_WIDTH_DECL,
@@ -364,8 +357,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
     patterns: {
       cardStyle: [
         'background-color: #ffffff',
-        'border-radius: 18px',
-        'box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1)',
+        'border-radius: 8px',
         'border: 1px solid rgba(30, 64, 175, 0.12)',
         'padding: 32px',
         CARD_MAX_WIDTH_DECL,
@@ -411,8 +403,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
     patterns: {
       cardStyle: [
         'background-color: #ffffff',
-        'border-radius: 18px',
-        'box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1)',
+        'border-radius: 8px',
         'border: 1px solid rgba(194, 65, 12, 0.12)',
         'padding: 32px',
         CARD_MAX_WIDTH_DECL,
@@ -458,8 +449,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
     patterns: {
       cardStyle: [
         'background-color: #ffffff',
-        'border-radius: 18px',
-        'box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1)',
+        'border-radius: 8px',
         'border: 1px solid rgba(8, 145, 178, 0.12)',
         'padding: 32px',
         CARD_MAX_WIDTH_DECL,
@@ -505,8 +495,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
     patterns: {
       cardStyle: [
         'background-color: #ffffff',
-        'border-radius: 18px',
-        'box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1)',
+        'border-radius: 8px',
         'border: 1px solid rgba(146, 64, 14, 0.12)',
         'padding: 32px',
         CARD_MAX_WIDTH_DECL,
@@ -552,8 +541,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
     patterns: {
       cardStyle: [
         'background-color: #ffffff',
-        'border-radius: 18px',
-        'box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1)',
+        'border-radius: 8px',
         'border: 1px solid rgba(2, 132, 199, 0.12)',
         'padding: 32px',
         CARD_MAX_WIDTH_DECL,
@@ -599,8 +587,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
     patterns: {
       cardStyle: [
         'background-color: #ffffff',
-        'border-radius: 18px',
-        'box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1)',
+        'border-radius: 8px',
         'border: 1px solid rgba(75, 85, 99, 0.12)',
         'padding: 32px',
         CARD_MAX_WIDTH_DECL,
@@ -646,8 +633,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
     patterns: {
       cardStyle: [
         'background-color: #ffffff',
-        'border-radius: 18px',
-        'box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1)',
+        'border-radius: 8px',
         'border: 1px solid rgba(217, 119, 6, 0.12)',
         'padding: 32px',
         CARD_MAX_WIDTH_DECL,
@@ -693,8 +679,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
     patterns: {
       cardStyle: [
         'background-color: #ffffff',
-        'border-radius: 18px',
-        'box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1)',
+        'border-radius: 8px',
         'border: 1px solid rgba(219, 39, 119, 0.12)',
         'padding: 32px',
         CARD_MAX_WIDTH_DECL,

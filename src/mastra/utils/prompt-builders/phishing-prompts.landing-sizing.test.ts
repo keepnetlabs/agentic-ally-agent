@@ -129,7 +129,7 @@ describe('phishing-prompts landing sizing', () => {
 
       const { systemPrompt } = buildLandingPagePrompts(makeBaseParams());
 
-      expect(systemPrompt).toContain('You MAY vary hero height slightly, logo size, card shadow/radius, and CTA corner style.');
+      expect(systemPrompt).toContain('You MAY vary hero height slightly, logo size, card border/radius (6-10px), and CTA corner style.');
       expect(systemPrompt).toContain('Do NOT break the vertical hero stack or the assigned overlap logic.');
     });
 

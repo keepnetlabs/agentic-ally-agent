@@ -25,11 +25,8 @@ export const CLARITY_ACCESSIBILITY_POLICY = `**Clarity & Cultural Safeguards:** 
 /**
  * Logo tag rule for emails and landing pages
  */
-export const LOGO_TAG_RULE = `**Company Logo:**
-- Every email must include a logo image using \`{CUSTOMMAINLOGO}\` tag
-- Never generate logo URLs directly - only use the merge tag
-- Format: \`<img src='{CUSTOMMAINLOGO}' alt='Company Logo' width='96' height='96' style='display:block; margin:0 auto; object-fit: contain;'>\`
-- Tag will be replaced with appropriate logo URL during post-processing`;
+export const LOGO_TAG_RULE = `**Company Logo:** Include logo using \`{CUSTOMMAINLOGO}\` tag (never generate URLs directly).
+- Format: \`<img src='{CUSTOMMAINLOGO}' alt='Company Logo' width='96' height='96' style='display:block; margin:0 auto; object-fit: contain;'>\``;
 
 /**
  * No disclaimers rule
@@ -42,12 +39,9 @@ export const NO_DISCLAIMERS_RULE = `**NO DISCLAIMERS:**
  * Email signature rules - no personal names
  */
 export const EMAIL_SIGNATURE_RULES = `**Email Signature:**
-- Never use personal names in signature (like "Emily Clarke", "John Smith", "Sarah Johnson")
-- Use only department/team/system names:
-  ✅ Correct: "Security Notifications Team", "IT Support Team", "Customer Service", "Microsoft Account Team", "Automated System"
-  ❌ Wrong: "Emily Clarke", "John from IT", "Sarah - Support"
-- Signature format: Team Name + Email Address
-- Padding rule (Outlook-critical): Signature must be wrapped in its own \`<tr><td>\` block with padding. Never use \`<div>\` padding for signatures.
+- Format: Team/Department Name + Email Address (see No Fake Personal Identities rule)
+- Closing phrase (e.g. "Best regards") MUST be in the output language. Do NOT use English closings in non-English emails.
+- Outlook-critical: Signature must be in its own \`<tr><td>\` with padding (never \`<div>\`).
 - Example: "<tr><td style='padding-top:16px; padding-left:20px; padding-right:20px;'>Best regards,<br>Security Notifications Team<br>security@company.com</td></tr>"`;
 
 /**
@@ -74,7 +68,9 @@ export const TABLE_LAYOUT_RULES = `**Body (HTML) - Outlook/Gmail Compatible:**
 - No Flexbox/Grid (breaks Outlook). Must look professional and authentic.
 - **PARAGRAPH RULE:** Use <p> for each body paragraph — NEVER raw text + <br><br> as paragraph breaks.
   ❌ Wrong: Hello {FIRSTNAME},<br><br>We have detected...<br><br>Please log in.
-  ✅ Correct: <p style='margin:0 0 12px 0;'>Hello {FIRSTNAME},</p><p style='margin:0 0 12px 0;'>We have detected...</p>`;
+  ✅ Correct: <p style='margin:0 0 14px 0;'>Hello {FIRSTNAME},</p><p style='margin:0 0 14px 0;'>We have detected...</p>
+- **TYPOGRAPHY:** Use clear size hierarchy — greeting slightly larger/bolder than body, footer smallest. Never same font-size everywhere.
+- **CARD STYLING:** No box-shadow (Outlook ignores it). Use border: 1px solid #e2e8f0 instead. Max border-radius: 8px.`;
 
 /**
  * Layout strategy options (Card vs Letter)
@@ -82,7 +78,7 @@ export const TABLE_LAYOUT_RULES = `**Body (HTML) - Outlook/Gmail Compatible:**
 export const LAYOUT_STRATEGY_RULES = `**LAYOUT STRATEGY:**
 * **OPTION A: Transactional Card (DEFAULT)** - Use unless CEO/HR/Policy memo
   - Background: Light gray (#f3f4f6), outer td padding: 20px
-  - Content: Centered WHITE card with rounded corners and shadow. **Inner card table:** max-width: ${PHISHING_EMAIL.EMAIL_CARD_MAX_WIDTH_PX}px (NOT 420px — that is too narrow for email content).
+  - Content: Centered WHITE card with rounded corners and subtle border. **Inner card table:** max-width: ${PHISHING_EMAIL.EMAIL_CARD_MAX_WIDTH_PX}px (NOT 420px — that is too narrow for email content).
   - **Text alignment:** Greeting, body paragraphs, and signature MUST be left-aligned (text-align: left). Only logo and CTA button may be centered. Professional emails are never fully centered.
   - Best for: Password Reset, Order, Security Alert, E-commerce
 * **OPTION B: Corporate Letter** - For formal internal communications
@@ -100,18 +96,13 @@ export const PREHEADER_RULE = `**Preheader:**
  * Greeting and personalization rules
  */
 export const GREETING_RULES = `**Greeting:**
-- Must start with a greeting in the output language and include {FIRSTNAME}.
-  - English examples: "Dear {FIRSTNAME}," or "Hello {FIRSTNAME},"
-  - Turkish examples: "Merhaba {FIRSTNAME}," or "Sayın {FIRSTNAME},"
-- Never use: "Dear Employee," "Dear User," "Hi Team" (use personalization tags)
-- Validate before output: greeting must contain {FIRSTNAME} or {FULLNAME}. Fix if missing.`;
+- Must include {FIRSTNAME} or {FULLNAME} — never generic ("Dear Employee", "Dear User", "Hi Team").
+- Validate before output: fix if merge tag is missing.`;
 
 /**
  * Mobile optimization rules
  */
-export const MOBILE_OPTIMIZATION_RULES = `**Mobile Optimization:**
-- Main table width: 100% (max-width: ${PHISHING_EMAIL.EMAIL_TABLE_MAX_WIDTH_PX}px).
-- Buttons: **MUST be easily tappable on mobile** (min-height 32px) for optimal user experience.`;
+export const MOBILE_OPTIMIZATION_RULES = `**Mobile:** Buttons min-height 32px (tappable). Table width 100% with max-width ${PHISHING_EMAIL.EMAIL_TABLE_MAX_WIDTH_PX}px.`;
 
 /**
  * Merge tags rules for dynamic variables
@@ -144,8 +135,8 @@ export const SYNTAX_RULE = `- **SYNTAX RULE:** Use **SINGLE QUOTES** for HTML at
 /**
  * Footer rules for emails
  */
-export const FOOTER_RULES = `**Footer (authentic):** Add a short support line and one legal link. All footer links must use {PHISHINGURL} in href attribute.
-- Footer <td> must have: style='text-align: center; padding: 20px; font-size: 12px; color: #9ca3af;'`;
+export const FOOTER_RULES = `**Footer (authentic):** Short support line + Unsubscribe link + Privacy Policy link. All links use {PHISHINGURL}. Include copyright (© {CURRENT_DATE} {COMPANYNAME}).
+- Style: style='text-align: center; padding: 20px; font-size: 12px; color: #9ca3af; font-family: Arial, sans-serif;'`;
 
 /**
  * Landing page logo rule (for phishing landing pages)
@@ -160,12 +151,7 @@ export const LANDING_PAGE_LOGO_RULE = `**Logo (Mandatory):**
  * QR code rules for landing pages (quishing scenarios)
  * Two versions: detailed for quishing, simple for normal phishing
  */
-export const QUISHING_LANDING_PAGE_RULE = `**🚫 Quishing Landing Page - No QR Code References:**
-- Landing pages must NOT contain QR codes
-- Landing pages are standard forms (login, success, info) with zero mention of QR codes
-- Do NOT reference "QR Code", "scan", "verify", or any QR-related text in headings/descriptions
-- Use normal login headings: "Sign In", "Log In to Your Account", "Enter Your Credentials"
-- Landing page must look like a legitimate company login page (no quishing indicators)`;
+export const QUISHING_LANDING_PAGE_RULE = `**🚫 Quishing Landing Page:** No QR codes, no "scan"/"verify" text. Standard login/form page only (e.g., "Sign In", "Log In to Your Account"). Must look like a legitimate company page.`;
 
 export const NO_QR_CODE_LANDING_PAGE_RULE = `**🚫 No QR Codes in Landing Pages:**
 - Do NOT add QR codes to landing pages
