@@ -15,7 +15,7 @@ import {
 import { workflowExecutorTool } from '../../tools/orchestration';
 import { assignTrainingTool, uploadTrainingTool } from '../../tools/user-management';
 import { withTimeout, withRetry } from '../../utils/core/resilience-utils';
-import { sendAgentStopMessage, type AutonomousToolResult } from './autonomous-handler-utils';
+import { sendAgentStopMessage, type AutonomousToolResult, type AutonomousHandlerResult } from './autonomous-handler-utils';
 import { getLogger } from '../../utils/core/logger';
 import { trackAgentCost } from '../../utils/core/tracked-generate';
 import { normalizeError, logErrorInfo } from '../../utils/core/error-utils';
@@ -111,7 +111,7 @@ async function executeTrainingToolFirst(params: {
   targetGroupResourceId?: string | number;
   trainingLevel?: string;
   rejectionFeedback?: string;
-}): Promise<any> {
+}): Promise<AutonomousHandlerResult> {
   const logger = getLogger('ExecuteTrainingToolFirst');
   const {
     microlearning,
@@ -270,7 +270,7 @@ async function executeTrainingToolFirst(params: {
 /**
  * Upload only training module (no assignment) - Extracts training ID for linking
  */
-export async function uploadTrainingOnly(threadId: string, microlearning: MicrolearningRecommendation): Promise<any> {
+export async function uploadTrainingOnly(threadId: string, microlearning: MicrolearningRecommendation): Promise<AutonomousHandlerResult> {
   const logger = getLogger('UploadTrainingOnly');
   try {
     logger.info('Requesting agent to upload training module (upload only)', { microlearning: microlearning?.title });
@@ -346,7 +346,7 @@ export async function uploadTrainingOnly(threadId: string, microlearning: Microl
 export async function uploadAndAssignTraining(
   targetUserResourceId: string | undefined,
   threadId: string
-): Promise<any> {
+): Promise<AutonomousHandlerResult> {
   const logger = getLogger('UploadAndAssignTraining');
   if (!targetUserResourceId) {
     logger.warn('Cannot assign: Missing targetUserResourceId');
@@ -414,7 +414,7 @@ export async function generateTrainingModule(
   isCustomPrompt: boolean = false,
   trainingLevel?: string,
   rejectionFeedback?: string
-): Promise<any> {
+): Promise<AutonomousHandlerResult> {
   const logger = getLogger('GenerateTrainingModule');
   logger.info('Using microlearningAgent to generate training module', { isCustomPrompt });
 
@@ -612,7 +612,7 @@ export async function generateTrainingModule(
 export async function uploadAndAssignTrainingForGroup(
   targetGroupResourceId: string | number | undefined,
   threadId: string
-): Promise<any> {
+): Promise<AutonomousHandlerResult> {
   const logger = getLogger('UploadAndAssignTrainingForGroup');
   if (!targetGroupResourceId) {
     logger.warn('Cannot assign: Missing targetGroupResourceId');
@@ -677,7 +677,7 @@ export async function generateTrainingModuleForGroup(
   trainingThreadId: string,
   targetGroupResourceId: string | number,
   trainingLevel?: string
-): Promise<any> {
+): Promise<AutonomousHandlerResult> {
   const logger = getLogger('GenerateTrainingModuleForGroup');
   logger.info('🎯 GROUP: Generating training module with custom topic-based prompt', {
     groupId: targetGroupResourceId,

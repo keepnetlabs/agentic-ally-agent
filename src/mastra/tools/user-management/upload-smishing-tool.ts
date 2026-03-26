@@ -10,6 +10,7 @@ import { createTool, ToolExecutionContext } from '@mastra/core/tools';
 import { z } from 'zod';
 import { isSafeId } from '../../utils/core/id-utils';
 import { getRequestContext } from '../../utils/core/request-storage';
+import { toolEventBus } from '../../utils/core/tool-event-bus';
 import { getLogger } from '../../utils/core/logger';
 import { withRetry } from '../../utils/core/resilience-utils';
 import { callWorkerAPI } from '../../utils/core/worker-api-client';
@@ -176,6 +177,12 @@ export const uploadSmishingTool = createTool({
 
       // Active Learning: save campaign metadata for UserInfoAgent tactic enrichment (non-blocking)
       await trySaveCampaignMetadataAfterUpload(env, smishingData, resourceIdForAssignment, 'smishing');
+
+      // Store explainability reasoning in event bus for assign tool to read
+      const reasoning = getExplainabilityReasoning(smishingData);
+      if (reasoning) {
+        toolEventBus.set('explainabilityReasoning', reasoning);
+      }
 
       const formattedMessage = formatToolSummary({
         prefix: result.message ? `OK ${result.message}` : 'OK Smishing uploaded',

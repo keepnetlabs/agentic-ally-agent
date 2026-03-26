@@ -16,6 +16,12 @@ import { getLogger } from '../utils/core/logger';
 
 const logger = getLogger('SmishingEditorSaveRoute');
 
+interface KvLandingRecord {
+  pages?: Array<{ template?: string; type?: string }>;
+  name?: string;
+  [key: string]: unknown;
+}
+
 interface SmishingEditorBody {
   smishingId?: string;
   language?: string;
@@ -86,7 +92,7 @@ export async function smishingEditorSaveHandler(c: Context) {
 
     // Save landing pages
     if (landing?.pages && Array.isArray(landing.pages) && landing.pages.length > 0) {
-      const existingLanding = await kvService.get(effectiveLandingKey);
+      const existingLanding = await kvService.get<KvLandingRecord>(effectiveLandingKey);
       if (!existingLanding) {
         logger.warn('smishing_editor_save_landing_not_found', { landingKey: effectiveLandingKey });
         return c.json({ success: false, error: 'Landing template not found for update' }, 404);
@@ -100,20 +106,20 @@ export async function smishingEditorSaveHandler(c: Context) {
           ...page,
           template: postProcessPhishingLandingHtml({
             html: page.template,
-            title: landing?.name || (existingLanding as any)?.name || 'Secure Portal',
+            title: landing?.name || existingLanding.name || 'Secure Portal',
           }),
           edited: page.edited ?? true,
           summary: page.summary || 'Updated in UI',
         }));
 
       if (updatedPages.length > 0) {
-        const existingPages = Array.isArray((existingLanding as any).pages) ? (existingLanding as any).pages : [];
-        const mergedPages = existingPages.map((page: any) => {
+        const existingPages = Array.isArray(existingLanding.pages) ? existingLanding.pages : [];
+        const mergedPages = existingPages.map((page) => {
           const replacement = updatedPages.find(updated => updated.type === page.type);
           return replacement || page;
         });
         const appendedPages = updatedPages.filter(
-          updated => !existingPages.some((page: any) => page.type === updated.type)
+          updated => !existingPages.some((page) => page.type === updated.type)
         );
 
         const updatedLanding = {

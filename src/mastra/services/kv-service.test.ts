@@ -450,9 +450,9 @@ describe('KVService', () => {
 
       const getResult = await kvService.getPhishing('phish-1', 'en-us');
       expect(getResult).toBeDefined();
-      expect(getResult.base).toEqual(baseData);
-      expect(getResult.email).toEqual(emailData);
-      expect(getResult.landing).toEqual(landingData);
+      expect(getResult!.base).toEqual(baseData);
+      expect(getResult!.email).toEqual(emailData);
+      expect(getResult!.landing).toEqual(landingData);
     });
 
     it('should return null when phishing base not found', async () => {
@@ -492,9 +492,9 @@ describe('KVService', () => {
 
       const getResult = await kvService.getSmishing('smish-1', 'en-us');
       expect(getResult).toBeDefined();
-      expect(getResult.base).toEqual(baseData);
-      expect(getResult.sms).toEqual(smsData);
-      expect(getResult.landing).toEqual(landingData);
+      expect(getResult!.base).toEqual(baseData);
+      expect(getResult!.sms).toEqual(smsData);
+      expect(getResult!.landing).toEqual(landingData);
     });
 
     it('should skip landing page when data.landingPage is missing', async () => {
@@ -595,7 +595,7 @@ describe('KVService', () => {
 
       const result = await kvService.searchMicrolearnings('phishing');
       expect(result).toHaveLength(1);
-      expect(result[0].microlearning_metadata.title).toBe('Phishing Awareness');
+      expect((result[0] as any).microlearning_metadata.title).toBe('Phishing Awareness');
     });
   });
 

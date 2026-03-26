@@ -51,9 +51,12 @@ export async function executeAutonomousGeneration(request: AutonomousRequest): P
     // If batchResourceId provided (batch fan-out), use it as threadId so all users share the same batch.
     // Otherwise generate a unique threadId per autonomous run.
     const threadId = batchResourceId || generateBatchId();
-    const companyId = getRequestContext()?.companyId;
+    const existingCtx = getRequestContext();
+    const companyId = existingCtx?.companyId;
+    // Merge env: prefer request.env (from Workflow binding), fallback to existing context env
+    const resolvedEnv = (request.env as Record<string, unknown>) || existingCtx?.env;
     return await requestStorage.run(
-      { token, baseApiUrl: effectiveBaseApiUrl, threadId, companyId },
+      { token, baseApiUrl: effectiveBaseApiUrl, threadId, companyId, env: resolvedEnv },
       async (): Promise<AutonomousResponse> => {
         // USER ASSIGNMENT: Get user info and generate personalized content
         if (isUserAssignment) {

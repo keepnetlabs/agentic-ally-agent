@@ -158,7 +158,7 @@ describe('uploadPhishingTool', () => {
     });
 
     it('should return error when base content is missing', async () => {
-      vi.spyOn(KVService.prototype, 'getPhishing').mockResolvedValue({});
+      vi.spyOn(KVService.prototype, 'getPhishing').mockResolvedValue({ base: null });
 
       const input = {
         phishingId: 'phishing-123',

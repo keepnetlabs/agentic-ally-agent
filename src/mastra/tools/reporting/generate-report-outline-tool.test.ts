@@ -47,14 +47,15 @@ describe('generate-report-outline-tool', () => {
         usage: { inputTokens: 500, outputTokens: 300 },
       });
 
-      const result = await generateReportOutlineTool.execute(
+      const result = await generateReportOutlineTool.execute!(
         { topic: 'Cybersecurity', pageTarget: 5, language: 'en', mode: 'generate' },
         {} as any
       );
 
-      expect(result.success).toBe(true);
-      expect(result.data).toBeDefined();
-      const data = result.data as Record<string, unknown>;
+      const res = result as Record<string, unknown>;
+      expect(res.success).toBe(true);
+      expect(res.data).toBeDefined();
+      const data = res.data as Record<string, unknown>;
       expect(data.meta).toBeDefined();
       expect(data.sections).toBeDefined();
     });
@@ -65,7 +66,7 @@ describe('generate-report-outline-tool', () => {
         usage: { inputTokens: 800, outputTokens: 300 },
       });
 
-      await generateReportOutlineTool.execute(
+      await generateReportOutlineTool.execute!(
         {
           topic: 'Cybersecurity',
           pageTarget: 5,
@@ -92,12 +93,12 @@ describe('generate-report-outline-tool', () => {
         usage: {},
       });
 
-      const result = await generateReportOutlineTool.execute(
+      const result = await generateReportOutlineTool.execute!(
         { topic: 'Test Report' } as any,
         {} as any
       );
 
-      expect(result.success).toBe(true);
+      expect((result as Record<string, unknown>).success).toBe(true);
     });
   });
 
@@ -108,25 +109,26 @@ describe('generate-report-outline-tool', () => {
         usage: {},
       });
 
-      const result = await generateReportOutlineTool.execute(
+      const result = await generateReportOutlineTool.execute!(
         { topic: 'Test', pageTarget: 3, language: 'en', mode: 'generate' },
         {} as any
       );
 
-      expect(result.success).toBe(false);
-      expect(result.error).toBeDefined();
+      const res = result as Record<string, unknown>;
+      expect(res.success).toBe(false);
+      expect(res.error).toBeDefined();
     });
 
     it('returns error when LLM call throws', async () => {
       mockGenerateText.mockRejectedValueOnce(new Error('Model timeout'));
 
-      const result = await generateReportOutlineTool.execute(
+      const r1 = await generateReportOutlineTool.execute!(
         { topic: 'Test', pageTarget: 3, language: 'en', mode: 'generate' },
         {} as any
-      );
+      ) as Record<string, unknown>;
 
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('failed');
+      expect(r1.success).toBe(false);
+      expect(r1.error).toContain('failed');
     });
 
     it('returns error when schema validation fails', async () => {
@@ -136,13 +138,13 @@ describe('generate-report-outline-tool', () => {
         usage: {},
       });
 
-      const result = await generateReportOutlineTool.execute(
+      const r2 = await generateReportOutlineTool.execute!(
         { topic: 'Test', pageTarget: 3, language: 'en', mode: 'generate' },
         {} as any
-      );
+      ) as Record<string, unknown>;
 
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('validation');
+      expect(r2.success).toBe(false);
+      expect(r2.error).toContain('validation');
     });
   });
 
@@ -153,7 +155,7 @@ describe('generate-report-outline-tool', () => {
         usage: {},
       });
 
-      await generateReportOutlineTool.execute(
+      await generateReportOutlineTool.execute!(
         {
           topic: 'Transformed Report',
           pageTarget: 5,

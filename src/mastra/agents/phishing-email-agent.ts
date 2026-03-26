@@ -13,10 +13,8 @@ import {
   buildAutonomousModeFragment,
   WORKFLOW_ROUTING_CREATION,
 } from '../prompt-fragments';
-import {
-  createKeywordCoverageScorer,
-  createToneScorer,
-} from '@mastra/evals/scorers/prebuilt';
+import { createKeywordCoverageScorer, createToneScorer } from '@mastra/evals/scorers/prebuilt';
+import { piiDetectionScorer } from '../evals';
 
 const buildPhishingInstructions = () => `
 You are the **Phishing Simulation Specialist**.
@@ -253,11 +251,15 @@ export const phishingEmailAgent = new Agent({
   scorers: {
     keywordCoverage: {
       scorer: createKeywordCoverageScorer(),
-      sampling: { type: 'ratio' as const, rate: 1 }, // NLP — free, checks merge tags
+      sampling: { type: 'ratio' as const, rate: 1 },
     },
     tone: {
       scorer: createToneScorer(),
-      sampling: { type: 'ratio' as const, rate: 1 }, // NLP — free, tone vs difficulty match
+      sampling: { type: 'ratio' as const, rate: 1 },
+    },
+    piiDetection: {
+      scorer: piiDetectionScorer,
+      sampling: { type: 'ratio' as const, rate: 1 },
     },
   },
   // @ts-expect-error @mastra/memory@1.1.0 ↔ @mastra/core@1.10.0 type mismatch; pinned until memory is upgradeable

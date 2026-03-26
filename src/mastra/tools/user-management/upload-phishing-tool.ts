@@ -10,6 +10,7 @@ import { createTool, ToolExecutionContext } from '@mastra/core/tools';
 import { z } from 'zod';
 import { isSafeId } from '../../utils/core/id-utils';
 import { getRequestContext } from '../../utils/core/request-storage';
+import { toolEventBus } from '../../utils/core/tool-event-bus';
 import { getLogger } from '../../utils/core/logger';
 import { withRetry } from '../../utils/core/resilience-utils';
 import { callWorkerAPI } from '../../utils/core/worker-api-client';
@@ -205,6 +206,12 @@ export const uploadPhishingTool = createTool({
 
       // Active Learning: save campaign metadata for UserInfoAgent correlation (non-blocking)
       await trySaveCampaignMetadataAfterUpload(env, phishingData, resourceIdForAssignment);
+
+      // Store explainability reasoning in event bus for assign tool to read (same request lifecycle)
+      const reasoning = getExplainabilityReasoning(phishingData);
+      if (reasoning) {
+        toolEventBus.set('explainabilityReasoning', reasoning);
+      }
 
       const formattedMessage = formatToolSummary({
         prefix: result.message ? `✅ ${result.message}` : `✅ ${isQuishing ? 'Quishing' : 'Phishing'} uploaded`,

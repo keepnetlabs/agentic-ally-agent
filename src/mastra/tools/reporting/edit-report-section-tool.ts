@@ -22,6 +22,7 @@ import { KV_NAMESPACES } from '../../constants';
 import { ReportSectionSchema } from '../../schemas/report-schema';
 import type { ReportState, ReportSection } from '../../schemas/report-schema';
 import { autoCorrectSection, loadLatestReport } from './report-section-utils';
+import { isSafeId } from '../../utils/core/id-utils';
 
 const logger = getLogger('EditReportSectionTool');
 
@@ -29,7 +30,7 @@ const REPORT_TTL_SECONDS = 7 * 24 * 60 * 60; // 7 days
 
 const inputSchema = z.object({
   /** Report ID to edit */
-  reportId: z.string().min(1),
+  reportId: z.string().min(1).refine(isSafeId, { message: 'Invalid reportId format' }),
   /** Which section to edit — can be section ID, type, title, or index (e.g. "chart-1", "table", "3rd section") */
   sectionRef: z.string().min(1),
   /** What to change — user's instruction */

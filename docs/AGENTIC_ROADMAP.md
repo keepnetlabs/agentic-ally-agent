@@ -43,6 +43,47 @@
 **Test Fix:**
 - `tracked-generate.test.ts` type mismatch düzeltildi (LanguageModel mock)
 
+### Mart 2026 Güncellemesi #2 — Prompt Quality, Performance & Test Coverage
+
+**Error Shape Standardizasyonu (Ek):**
+- 5 ek tool'da plain string error → `errorService.external()` + `createToolErrorResponse()`: search-companies, search-trainings, get-training-categories, get-training-languages, generate-deepfake-video
+- Sonuç: Agent artık retry kararı verebilir (retryable, code, category bilgisi)
+
+**Prompt Self-Check (120B Model Optimizasyonu):**
+- 7 prompt'a FINAL SELF-CHECK eklendi — model'in recency bias'ını kullanarak output'tan önce doğrulama:
+  - Phishing analysis (normal + quishing): language purity, isQuishing, method↔scenario tutarlılığı
+  - Smishing analysis: language purity, method, trigger match, description limit
+  - Smishing SMS: language, {PHISHINGURL}, 160 char limit, no personal names
+  - Microlearning context: language, topic drift, placeholder kontrolü, JSON validity
+  - Report expansion: chart label/data mismatch, table row/column mismatch, word count
+- Smishing analysis'e scenario name language rule eklendi (phishing'deki production bug'ın aynısı)
+
+**Performance Optimizasyonları:**
+- `loadLatestReport()`: N+1 sequential KV → `Promise.allSettled` paralel (20 × ~100ms = 2-4s → ~200ms)
+- `webResearchTool`: Sequential URL fetch → `Promise.allSettled` paralel (3 × 30s = 90s → ~30s)
+- Cloudflare Workers CPU limit: Dashboard'dan 30s → 300s (5 dk) — uzun chat session'larda "Worker exceeded CPU time limit" önlendi
+
+**Güvenlik Fix'leri:**
+- `reportId`'ye `isSafeId` validation eklendi (edit-report-section-tool + validate-and-store-report-tool) — KV key injection önlendi
+- `initiateVishingCallTool`: `agentId` schema'dan kaldırıldı — LLM'in bilmesi gereksiz, validation hatası önlendi
+- Integration test fix: `getLightAgentModel` mock eklendi (diğer AI'ın scorer değişikliği için)
+
+**PII Detection Scorer (Eval):**
+- `pii-detection-scorer.ts` review ve onay — 7 PII type, Luhn/MOD97/TC Kimlik mod check, maskPIIValue (GDPR uyumlu)
+- Rate 1.0: Her generation'da çalışır, maliyet sıfır (regex-based, LLM call yok)
+- 4 agent'a entegre: phishing, smishing, microlearning, (report hariç — scorer'lar zaten mevcut)
+
+**Test Coverage Artışı (+133 test, 8679 → 8812):**
+- `report-section-utils.test.ts` (18 test): loadLatestReport paralel, autoCorrectSection (KPI/timeline/recs)
+- `web-research-tool.test.ts` (9 test): Search, full page fetch, YouTube skip, graceful degradation
+- `generate-report-outline-tool.test.ts` (8 test): Success, research context, enhance mode, errors
+- `expand-report-sections-tool.test.ts` (5 test): Paralel expansion, retry, critical fail, placeholder
+- `validate-and-store-report-tool.test.ts` (8 test): Inline, expandRef, edit flow, table row fix
+- `edit-report-section-tool.test.ts` (7 test): Section lookup (id/type/title), errors
+- `scene4-smishing-rewriter.test.ts` (10 test): Structure, language, async
+- `scene4-vishing-rewriter.test.ts` (10 test): Structure, language, async
+- Integration test fix: `autonomous-flow.integration.test.ts` mock güncellendi
+
 ---
 
 ## 1. 🧠 Active Learning (Metadata Correlation) — **✅ TAMAMLANDI** (Şubat 2026)

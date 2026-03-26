@@ -60,7 +60,16 @@ export const EXPLAINABILITY_VERSION = '1.0';
 export function getExplainabilityReasoning(data: unknown): string | undefined {
   const base = data as Record<string, unknown> | null | undefined;
   const explainability = base?.explainability as Explainability | undefined;
-  return explainability?.reasoning;
+  if (!explainability) return undefined;
+
+  // Combine all available reasoning fields into a single coherent explanation
+  const parts = [
+    explainability.reasoning,
+    explainability.targetAudienceReasoning,
+    explainability.userContextReasoning,
+  ].filter(Boolean);
+
+  return parts.length > 0 ? parts.join(' | ') : undefined;
 }
 
 /**

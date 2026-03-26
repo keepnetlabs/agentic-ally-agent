@@ -13,7 +13,7 @@ import { normalizeDifficultyValue } from '../../utils/difficulty-level-mapper';
 import { validateBCP47LanguageCode, DEFAULT_LANGUAGE } from '../../utils/language/language-utils';
 import { isSafeId } from '../../utils/core/id-utils';
 import { withRetry, withTimeout } from '../../utils/core/resilience-utils';
-import type { AutonomousToolResult } from './autonomous-handler-utils';
+import type { AutonomousToolResult, AutonomousHandlerResult } from './autonomous-handler-utils';
 
 interface SmishingSimulationRecommendation {
   title?: string;
@@ -51,7 +51,7 @@ export async function generateSmishingSimulation(params: {
   toolResult: AutonomousToolResult;
   targetGroupResourceId?: string | number;
   rejectionFeedback?: string;
-}): Promise<any> {
+}): Promise<AutonomousHandlerResult> {
   const logger = getLogger('GenerateSmishingSimulation');
   const { simulation, executiveReport, toolResult, targetGroupResourceId, rejectionFeedback } = params;
 

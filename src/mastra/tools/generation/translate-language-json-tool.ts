@@ -16,13 +16,20 @@ import { getLogger } from '../../utils/core/logger';
 import { errorService } from '../../services/error-service';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
 import { withRetry } from '../../utils/core/resilience-utils';
+import type { RewriteContext } from '../scenes/rewriters/scene-rewriter-base';
 import {
   TranslateJsonInputSchema,
   TranslateJsonOutputSchema,
   type TranslateJsonInput,
 } from './translate-language-json-schemas';
 
-type RewriterFunction = (scene: any, context: any) => Promise<any>;
+interface SceneMetadataEntry {
+  scene_id: string;
+  metadata?: { scene_type?: string };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- scene data is dynamic JSON (z.any()); each rewriter has its own typed signature (Scene1..8Metadata)
+type RewriterFunction = (scene: any, context: RewriteContext) => Promise<any>;
 
 const logger = getLogger('TranslateLanguageJsonTool');
 
@@ -93,11 +100,10 @@ export const translateLanguageJsonTool = createTool({
         model,
       };
 
-      // Rewrite function for a single scene
       async function rewriteScene(
-        sceneMetadata: any,
+        sceneMetadata: SceneMetadataEntry,
         sceneIndex: number
-      ): Promise<{ sceneId: string; content: any }> {
+      ): Promise<{ sceneId: string; content: unknown }> {
         const sceneNumber = sceneIndex + 1;
         const sceneId = sceneMetadata.scene_id;
         const sceneTypeRaw = sceneMetadata.metadata?.scene_type;
@@ -136,11 +142,11 @@ export const translateLanguageJsonTool = createTool({
       logger.debug('Processing all scenes in parallel', { sceneCount: scenesMetadata.length });
 
       const allResults = await Promise.allSettled(
-        scenesMetadata.map((sceneMetadata: any, idx: number) => rewriteScene(sceneMetadata, idx))
+        scenesMetadata.map((sceneMetadata: SceneMetadataEntry, idx: number) => rewriteScene(sceneMetadata, idx))
       );
 
       // Map results to scene IDs - handle both fulfilled and rejected promises
-      const rewrittenScenesMap: Record<string, any> = {};
+      const rewrittenScenesMap: Record<string, unknown> = {};
       allResults.forEach((result, idx) => {
         if (result.status === 'fulfilled') {
           const { sceneId, content } = result.value;

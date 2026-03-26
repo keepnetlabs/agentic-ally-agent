@@ -60,6 +60,7 @@ export class AutonomousWorkflow extends WorkflowEntrypoint {
           batchResourceId,
           rejectingReason,
           rejectedScenarioResourceId,
+          env: this.env,
         });
       },
     );

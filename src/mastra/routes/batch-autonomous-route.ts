@@ -116,7 +116,7 @@ export async function batchAutonomousHandler(c: Context) {
           status: 'accepted',
           actions: eligibleActions,
           skippedActions: eligibleActions.length < actions.length
-            ? actions.filter(a => !eligibleActions.includes(a as any))
+            ? actions.filter(a => !(eligibleActions as readonly string[]).includes(a))
             : undefined,
           createdAt: new Date().toISOString(),
         },
@@ -134,7 +134,7 @@ export async function batchAutonomousHandler(c: Context) {
         targetGroupResourceId,
         actions: eligibleActions,
         ...(eligibleActions.length < actions.length && {
-          skippedActions: actions.filter(a => !eligibleActions.includes(a as any)),
+          skippedActions: actions.filter(a => !(eligibleActions as readonly string[]).includes(a)),
         }),
       },
       202,

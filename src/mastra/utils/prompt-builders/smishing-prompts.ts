@@ -96,6 +96,7 @@ ${JSON_OUTPUT_RULE}
 - **psychologicalTriggers** (at least 2)
 - **keyRedFlags** (3-4)
 - **description**: ${PHISHING_EMAIL.MAX_DESCRIPTION_LENGTH} characters or less
+- **reasoning:** REQUIRED. 1-2 sentences explaining why this scenario was chosen for this target audience. Write in clear, fluent ${language}. A non-technical manager should understand it easily.
 
 **EXAMPLE OUTPUT (Smishing Scenario):**
 {
@@ -108,7 +109,8 @@ ${JSON_OUTPUT_RULE}
   "tone": "Short and urgent",
   "keyRedFlags": ["Unexpected delivery alert", "Shortened link", "Urgent tone"],
   "targetAudienceAnalysis": "Employees regularly receive delivery updates and may click quickly.",
-  "messageStrategy": "Use short, conversational SMS that pushes a quick link click."
+  "messageStrategy": "Use short, conversational SMS that pushes a quick link click.",
+  "reasoning": "Employees frequently receive real delivery notifications and act on them quickly without verifying the sender."
 }`;
 
   const departmentContext = getDepartmentContext(targetProfile?.department);

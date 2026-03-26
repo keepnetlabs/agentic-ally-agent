@@ -5,6 +5,16 @@ import { errorService } from './error-service';
 import { ERROR_CODES } from '../constants';
 import { detectAndRepairInbox } from '../utils/validation/json-validation-utils';
 import { buildExplainability } from '../types/explainability';
+import type {
+  PhishingKvInput,
+  PhishingKvBundle,
+  SmishingKvInput,
+  SmishingKvBundle,
+  MicrolearningKvPayload,
+  MicrolearningAnalysisFields,
+  MicrolearningBaseRecord,
+  MicrolearningKvBundle,
+} from '../types/kv-types';
 
 /**
  * KV Service for direct Cloudflare KV REST API operations
@@ -57,7 +67,7 @@ export class KVService {
     return `https://api.cloudflare.com/client/v4/accounts/${this.accountId}/storage/kv/namespaces/${this.namespaceId}/values/${key}`;
   }
 
-  async put(key: string, value: any, options?: { ttlSeconds?: number }): Promise<boolean> {
+  async put<T = unknown>(key: string, value: T, options?: { ttlSeconds?: number }): Promise<boolean> {
     try {
       const timer = startTimer();
       return await withRetry(async () => {
@@ -102,7 +112,8 @@ export class KVService {
     }
   }
 
-  async get(key: string): Promise<any | null> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- KV stores arbitrary JSON; callers can narrow with get<T>()
+  async get<T = any>(key: string): Promise<T | null> {
     try {
       return await withRetry(async () => {
         const url = this.getKVUrl(key);
@@ -243,7 +254,7 @@ export class KVService {
   }
 
   // Microlearning specific methods
-  async saveMicrolearning(microlearningId: string, data: any, language: string, department: string, analysis?: any): Promise<boolean> {
+  async saveMicrolearning(microlearningId: string, data: MicrolearningKvPayload, language: string, department: string, analysis?: MicrolearningAnalysisFields): Promise<boolean> {
     const timer = startTimer();
     const normalizedLang = language.toLowerCase();
     const baseKey = `ml:${microlearningId}:base`;
@@ -260,15 +271,15 @@ export class KVService {
       const shouldSaveInbox = data.inboxContent !== undefined && data.inboxContent !== null;
 
       // Repair inbox HTML before saving (ensures clean HTML from creation)
-      let inboxToSave = data.inboxContent;
-      if (shouldSaveInbox) {
+      let inboxToSave: Record<string, unknown> | undefined = data.inboxContent;
+      if (shouldSaveInbox && data.inboxContent) {
         const repairResult = detectAndRepairInbox(data.inboxContent);
         if (repairResult.hadCorruption) {
           this.logger.info(`Repaired HTML corruption in inbox before saving`, {
             issuesFound: repairResult.issuesFound.length,
             issuesRemaining: repairResult.issuesRemaining.length,
           });
-          inboxToSave = repairResult.inbox;
+          inboxToSave = repairResult.inbox as Record<string, unknown>;
         }
       }
 
@@ -379,7 +390,7 @@ export class KVService {
   // Phishing specific methods
 
   // 1. Save Phishing Base (Metadata)
-  async savePhishingBase(id: string, data: any, language: string): Promise<boolean> {
+  async savePhishingBase(id: string, data: PhishingKvInput, language: string): Promise<boolean> {
     const baseKey = `phishing:${id}:base`;
     const normalizedLang = language.toLowerCase();
 
@@ -432,7 +443,7 @@ export class KVService {
   }
 
   // 2. Save Phishing Email (Content)
-  async savePhishingEmail(id: string, data: any, language: string): Promise<boolean> {
+  async savePhishingEmail(id: string, data: PhishingKvInput, language: string): Promise<boolean> {
     const normalizedLang = language.toLowerCase();
     const emailKey = `phishing:${id}:email:${normalizedLang}`;
 
@@ -461,7 +472,7 @@ export class KVService {
   }
 
   // 3. Save Phishing Landing Page (Content)
-  async savePhishingLandingPage(id: string, data: any, language: string): Promise<boolean> {
+  async savePhishingLandingPage(id: string, data: PhishingKvInput, language: string): Promise<boolean> {
     if (!data.landingPage) return true; // Skip if no landing page data
 
     const normalizedLang = language.toLowerCase();
@@ -488,7 +499,7 @@ export class KVService {
   }
 
   // Wrapper for saving all components at once (optional convenience method)
-  async savePhishing(id: string, data: any, language: string): Promise<boolean> {
+  async savePhishing(id: string, data: PhishingKvInput, language: string): Promise<boolean> {
     const results = await Promise.allSettled([
       this.savePhishingBase(id, data, language),
       this.savePhishingEmail(id, data, language),
@@ -500,7 +511,7 @@ export class KVService {
 
   // Get Phishing Content from KV (similar to getMicrolearning)
   // Note: KVService must be initialized with phishing namespace ID to use this method
-  async getPhishing(phishingId: string, language?: string): Promise<any> {
+  async getPhishing(phishingId: string, language?: string): Promise<PhishingKvBundle | null> {
     try {
       const baseKey = `phishing:${phishingId}:base`;
       const base = await this.get(baseKey);
@@ -509,10 +520,9 @@ export class KVService {
         return null;
       }
 
-      const result: { base: unknown; email?: unknown; landing?: unknown } = { base };
+      const result: PhishingKvBundle = { base };
 
-      // Use provided language or fallback to first available language from base
-      const availableLangs = (base as Record<string, unknown>)?.language_availability as string[] | undefined;
+      const availableLangs = base?.language_availability as string[] | undefined;
       const langToUse = language || (availableLangs && availableLangs.length > 0 ? availableLangs[0] : null);
 
       if (langToUse) {
@@ -539,7 +549,7 @@ export class KVService {
   // Smishing specific methods
 
   // 1. Save Smishing Base (Metadata)
-  async saveSmishingBase(id: string, data: any, language: string): Promise<boolean> {
+  async saveSmishingBase(id: string, data: SmishingKvInput, language: string): Promise<boolean> {
     const baseKey = `smishing:${id}:base`;
     const normalizedLang = language.toLowerCase();
 
@@ -589,7 +599,7 @@ export class KVService {
   }
 
   // 2. Save Smishing SMS (Content)
-  async saveSmishingSms(id: string, data: any, language: string): Promise<boolean> {
+  async saveSmishingSms(id: string, data: SmishingKvInput, language: string): Promise<boolean> {
     const normalizedLang = language.toLowerCase();
     const smsKey = `smishing:${id}:sms:${normalizedLang}`;
 
@@ -615,7 +625,7 @@ export class KVService {
   }
 
   // 3. Save Smishing Landing Page (Content)
-  async saveSmishingLandingPage(id: string, data: any, language: string): Promise<boolean> {
+  async saveSmishingLandingPage(id: string, data: SmishingKvInput, language: string): Promise<boolean> {
     if (!data.landingPage) return true; // Skip if no landing page data
 
     const normalizedLang = language.toLowerCase();
@@ -642,7 +652,7 @@ export class KVService {
   }
 
   // Wrapper for saving all components at once
-  async saveSmishing(id: string, data: any, language: string): Promise<boolean> {
+  async saveSmishing(id: string, data: SmishingKvInput, language: string): Promise<boolean> {
     const results = await Promise.allSettled([
       this.saveSmishingBase(id, data, language),
       this.saveSmishingSms(id, data, language),
@@ -654,7 +664,7 @@ export class KVService {
 
   // Get Smishing Content from KV
   // Note: KVService must be initialized with smishing namespace ID to use this method
-  async getSmishing(smishingId: string, language?: string): Promise<any> {
+  async getSmishing(smishingId: string, language?: string): Promise<SmishingKvBundle | null> {
     try {
       const baseKey = `smishing:${smishingId}:base`;
       const base = await this.get(baseKey);
@@ -663,10 +673,9 @@ export class KVService {
         return null;
       }
 
-      const result: { base: unknown; sms?: unknown; landing?: unknown } = { base };
+      const result: SmishingKvBundle = { base };
 
-      // Use provided language or fallback to first available language from base
-      const availableLangs = (base as Record<string, unknown>)?.language_availability as string[] | undefined;
+      const availableLangs = base?.language_availability as string[] | undefined;
       const langToUse = language || (availableLangs && availableLangs.length > 0 ? availableLangs[0] : null);
 
       if (langToUse) {
@@ -690,7 +699,7 @@ export class KVService {
     }
   }
 
-  async getMicrolearning(microlearningId: string, language?: string): Promise<any> {
+  async getMicrolearning(microlearningId: string, language?: string): Promise<MicrolearningKvBundle | null> {
     try {
       const baseKey = `ml:${microlearningId}:base`;
       const base = await this.get(baseKey);
@@ -699,7 +708,7 @@ export class KVService {
         return null;
       }
 
-      const result: { base: unknown; language?: unknown } = { base };
+      const result: MicrolearningKvBundle = { base };
 
       if (language) {
         const langKey = `ml:${microlearningId}:lang:${language}`;
@@ -720,7 +729,7 @@ export class KVService {
   }
 
   // Store language content
-  async storeLanguageContent(microlearningId: string, language: string, content: any): Promise<boolean> {
+  async storeLanguageContent(microlearningId: string, language: string, content: Record<string, unknown>): Promise<boolean> {
     try {
       const normalizedLang = language.toLowerCase(); // Normalize to lowercase for consistency
       const langKey = `ml:${microlearningId}:lang:${normalizedLang}`;
@@ -746,7 +755,7 @@ export class KVService {
   }
 
   // Update microlearning base structure only
-  async updateMicrolearning(microlearning: any): Promise<boolean> {
+  async updateMicrolearning(microlearning: MicrolearningBaseRecord): Promise<boolean> {
     try {
       const microlearningId = microlearning.microlearning_id;
       if (!microlearningId) {
@@ -824,7 +833,7 @@ export class KVService {
     microlearningId: string,
     department: string,
     language: string,
-    inboxPayload: any
+    inboxPayload: Record<string, unknown>
   ): Promise<boolean> {
     try {
       const normalizedLang = language.toLowerCase(); // Normalize to lowercase for consistency
@@ -851,7 +860,7 @@ export class KVService {
   }
 
   // Get inbox content for a specific department and language
-  async getInboxContent(microlearningId: string, department: string, language: string): Promise<any | null> {
+  async getInboxContent(microlearningId: string, department: string, language: string): Promise<Record<string, unknown> | null> {
     try {
       const inboxKey = `ml:${microlearningId}:inbox:${department}:${language}`;
       const inbox = await this.get(inboxKey);
@@ -874,13 +883,13 @@ export class KVService {
   }
 
   // Search microlearnings by title or ID
-  async searchMicrolearnings(searchTerm: string): Promise<any[]> {
+  async searchMicrolearnings(searchTerm: string): Promise<MicrolearningBaseRecord[]> {
     try {
       // List all microlearning base keys
       const baseKeys = await this.list('ml:', 100);
       const microlearningKeys = baseKeys.filter(key => key.includes(':base'));
 
-      const results: any[] = [];
+      const results: MicrolearningBaseRecord[] = [];
 
       // Check each microlearning for title match
       for (const key of microlearningKeys.slice(0, 10)) {

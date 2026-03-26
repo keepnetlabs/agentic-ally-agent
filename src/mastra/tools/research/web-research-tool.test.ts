@@ -34,15 +34,15 @@ URL Source: https://example.com/phishing
 Description: Phishing statistics overview`,
       });
 
-      const result = await webResearchTool.execute(
+      const result = await webResearchTool.execute!(
         { query: 'cybersecurity report 2025', fetchTopUrls: 0 },
         {} as any
-      );
+      ) as Record<string, unknown>;
 
       expect(result.success).toBe(true);
-      expect(result.data?.snippets.length).toBeGreaterThanOrEqual(1);
-      expect(result.data?.fullPages).toEqual([]);
-      expect(result.data?.query).toBe('cybersecurity report 2025');
+      expect((result.data as any)?.snippets.length).toBeGreaterThanOrEqual(1);
+      expect((result.data as any)?.fullPages).toEqual([]);
+      expect((result.data as any)?.query).toBe('cybersecurity report 2025');
     });
 
     it('returns empty snippets when search returns no results', async () => {
@@ -51,27 +51,27 @@ Description: Phishing statistics overview`,
         text: async () => '',
       });
 
-      const result = await webResearchTool.execute(
+      const result = await webResearchTool.execute!(
         { query: 'obscure query', fetchTopUrls: 0 },
         {} as any
-      );
+      ) as Record<string, unknown>;
 
       expect(result.success).toBe(true);
-      expect(result.data?.snippets).toEqual([]);
+      expect((result.data as any)?.snippets).toEqual([]);
     });
 
     it('gracefully handles search API failure', async () => {
       fetchMock.mockRejectedValueOnce(new Error('Network timeout'));
 
-      const result = await webResearchTool.execute(
+      const result = await webResearchTool.execute!(
         { query: 'test query', fetchTopUrls: 0 },
         {} as any
-      );
+      ) as Record<string, unknown>;
 
       // Graceful degradation — never blocks report pipeline
       expect(result.success).toBe(true);
-      expect(result.data?.snippets).toEqual([]);
-      expect(result.data?.summary).toContain('unavailable');
+      expect((result.data as any)?.snippets).toEqual([]);
+      expect((result.data as any)?.summary).toContain('unavailable');
     });
 
     it('gracefully handles non-ok response', async () => {
@@ -80,13 +80,13 @@ Description: Phishing statistics overview`,
         status: 429,
       });
 
-      const result = await webResearchTool.execute(
+      const result = await webResearchTool.execute!(
         { query: 'rate limited', fetchTopUrls: 0 },
         {} as any
-      );
+      ) as Record<string, unknown>;
 
       expect(result.success).toBe(true);
-      expect(result.data?.snippets).toEqual([]);
+      expect((result.data as any)?.snippets).toEqual([]);
     });
   });
 
@@ -106,14 +106,14 @@ Description: Test description`,
         text: async () => '# Test Page\n\nFull markdown content here.',
       });
 
-      const result = await webResearchTool.execute(
+      const result = await webResearchTool.execute!(
         { query: 'test', fetchTopUrls: 1 },
         {} as any
-      );
+      ) as Record<string, unknown>;
 
       expect(result.success).toBe(true);
-      expect(result.data?.fullPages.length).toBe(1);
-      expect(result.data?.fullPages[0].markdown).toContain('Full markdown content');
+      expect((result.data as any)?.fullPages.length).toBe(1);
+      expect((result.data as any)?.fullPages[0].markdown).toContain('Full markdown content');
     });
 
     it('skips YouTube URLs in full page fetch', async () => {
@@ -134,15 +134,15 @@ Description: Real article`,
         text: async () => '# Article content',
       });
 
-      const result = await webResearchTool.execute(
+      const result = await webResearchTool.execute!(
         { query: 'test', fetchTopUrls: 2 },
         {} as any
-      );
+      ) as Record<string, unknown>;
 
       expect(result.success).toBe(true);
       // YouTube skipped, only article fetched
-      expect(result.data?.fullPages.length).toBe(1);
-      expect(result.data?.fullPages[0].url).toContain('example.com');
+      expect((result.data as any)?.fullPages.length).toBe(1);
+      expect((result.data as any)?.fullPages[0].url).toContain('example.com');
     });
 
     it('handles individual page fetch failure gracefully', async () => {
@@ -165,15 +165,15 @@ Description: Second page`,
         text: async () => '# Page 2 content',
       });
 
-      const result = await webResearchTool.execute(
+      const result = await webResearchTool.execute!(
         { query: 'test', fetchTopUrls: 2 },
         {} as any
-      );
+      ) as Record<string, unknown>;
 
       expect(result.success).toBe(true);
       // One page failed, one succeeded
-      expect(result.data?.fullPages.length).toBe(1);
-      expect(result.data?.fullPages[0].url).toContain('page2');
+      expect((result.data as any)?.fullPages.length).toBe(1);
+      expect((result.data as any)?.fullPages[0].url).toContain('page2');
     });
   });
 
@@ -190,14 +190,14 @@ Description: Second page`,
           }),
       });
 
-      const result = await webResearchTool.execute(
+      const result = await webResearchTool.execute!(
         { query: 'json test', fetchTopUrls: 0 },
         {} as any
-      );
+      ) as Record<string, unknown>;
 
       expect(result.success).toBe(true);
-      expect(result.data?.snippets.length).toBe(2);
-      expect(result.data?.snippets[0].title).toBe('Result 1');
+      expect((result.data as any)?.snippets.length).toBe(2);
+      expect((result.data as any)?.snippets[0].title).toBe('Result 1');
     });
   });
 });

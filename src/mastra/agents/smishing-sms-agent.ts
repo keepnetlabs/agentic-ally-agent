@@ -13,6 +13,7 @@ import {
   WORKFLOW_ROUTING_CREATION,
 } from '../prompt-fragments';
 import { createCompletenessScorer, createToneScorer } from '@mastra/evals/scorers/prebuilt';
+import { piiDetectionScorer } from '../evals';
 
 const buildSmishingInstructions = () => `
 You are the **Smishing Simulation Specialist**.
@@ -207,6 +208,10 @@ export const smishingSmsAgent = new Agent({
   scorers: {
     completeness: { scorer: createCompletenessScorer(), sampling: { type: 'ratio' as const, rate: 1 } },
     tone: { scorer: createToneScorer(), sampling: { type: 'ratio' as const, rate: 1 } },
+    piiDetection: {
+      scorer: piiDetectionScorer,
+      sampling: { type: 'ratio' as const, rate: 1 },
+    },
   },
   // @ts-expect-error @mastra/memory@1.1.0 ↔ @mastra/core@1.10.0 type mismatch; pinned until memory is upgradeable
   memory: new Memory({

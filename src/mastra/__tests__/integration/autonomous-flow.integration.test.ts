@@ -166,6 +166,9 @@ vi.mock('../../tools/orchestration', async (importOriginal) => {
 vi.mock('../../model-providers', () => ({
   getModelWithOverride: vi.fn().mockReturnValue('mock-model'),
   getDefaultAgentModel: vi.fn().mockReturnValue('mock-model'),
+  getLightAgentModel: vi.fn().mockReturnValue('mock-light-model'),
+  getRefinementModel: vi.fn().mockReturnValue('mock-refinement-model'),
+  getDefaultGenerationModel: vi.fn().mockReturnValue('mock-generation-model'),
 }));
 
 vi.mock('../../utils/prompt-builders/smishing-prompts', () => ({

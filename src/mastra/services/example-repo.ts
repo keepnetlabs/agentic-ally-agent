@@ -1,6 +1,6 @@
 import { promises as fs } from 'fs';
 import * as path from 'path';
-import { embed } from 'ai';
+import { embed, type EmbeddingModel } from 'ai';
 import { getModel, ModelProvider, Model } from '../model-providers';
 import { EXAMPLE_REPO } from '../constants';
 import { getLogger } from '../utils/core/logger';
@@ -77,7 +77,7 @@ export class ExampleRepo {
   private embeddingsGenerated: boolean = false;
   private embeddingsFailed: boolean = false;
   private docs: ExampleDoc[] = [];
-  private embeddingProvider?: any;
+  private embeddingProvider?: EmbeddingModel<string>;
   private db?: D1Database;
   private cacheVersion = '1.0.0';
   private cacheInitialized = false;
@@ -421,7 +421,7 @@ Scene metadata keys: ${Array.from(sceneMetaKeys).join(', ')}`;
     try {
       // Initialize embedding provider
       if (!this.embeddingProvider) {
-        this.embeddingProvider = (getModel(ModelProvider.WORKERS_AI, Model.WORKERS_AI_GPT_OSS_120B) as any).embedding(
+        this.embeddingProvider = (getModel(ModelProvider.WORKERS_AI, Model.WORKERS_AI_GPT_OSS_120B) as unknown as { embedding: (id: string) => EmbeddingModel<string> }).embedding(
           'text-embedding-3-small'
         );
       }
@@ -459,7 +459,7 @@ Scene metadata keys: ${Array.from(sceneMetaKeys).join(', ')}`;
         const semanticContent = this.extractSemanticContent(doc);
 
         const { embedding } = await embed({
-          model: this.embeddingProvider,
+          model: this.embeddingProvider!,
           value: semanticContent,
         });
 
@@ -584,7 +584,7 @@ Scene metadata keys: ${Array.from(sceneMetaKeys).join(', ')}`;
     let queryEmbedding: number[];
     try {
       const result = await embed({
-        model: this.embeddingProvider,
+        model: this.embeddingProvider!,
         value: query,
       });
       queryEmbedding = result.embedding;

@@ -8,7 +8,7 @@ import { AGENT_CALL_TIMEOUT_MS, AUTONOMOUS_DEFAULTS, PHISHING } from '../../cons
 import { phishingWorkflowExecutorTool } from '../../tools/orchestration';
 import { assignPhishingTool, uploadPhishingTool } from '../../tools/user-management';
 import { withTimeout, withRetry } from '../../utils/core/resilience-utils';
-import { sendAgentStopMessage, type AutonomousToolResult } from './autonomous-handler-utils';
+import { sendAgentStopMessage, type AutonomousToolResult, type AutonomousHandlerResult } from './autonomous-handler-utils';
 import { getLogger } from '../../utils/core/logger';
 import { normalizeError, logErrorInfo } from '../../utils/core/error-utils';
 import { errorService } from '../error-service';
@@ -29,6 +29,7 @@ interface PhishingSimulationRecommendation {
   vector?: string;
   persuasion_tactic?: string;
   scenario_type?: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- callers pass loosely-typed analysis report data
   [key: string]: any;
 }
 
@@ -66,7 +67,7 @@ async function executePhishingToolFirst(params: {
   targetUserResourceId?: string;
   targetGroupResourceId?: string | number;
   rejectionFeedback?: string;
-}): Promise<any> {
+}): Promise<AutonomousHandlerResult> {
   const logger = getLogger('ExecutePhishingToolFirst');
   const { simulation, executiveReport, toolResult, language, uploadOnly, targetUserResourceId, targetGroupResourceId, rejectionFeedback } =
     params;
@@ -221,7 +222,7 @@ export async function generatePhishingSimulation(
   phishingThreadId: string,
   uploadOnly: boolean = false,
   rejectionFeedback?: string
-): Promise<any> {
+): Promise<AutonomousHandlerResult> {
   const logger = getLogger('GeneratePhishingSimulation');
   logger.info('🎯 USER: Generating phishing simulation with executive report');
 
@@ -398,7 +399,7 @@ export async function generatePhishingSimulation(
 /**
  * Upload only phishing simulation (no assignment)
  */
-async function uploadPhishingOnly(threadId: string): Promise<any> {
+async function uploadPhishingOnly(threadId: string): Promise<AutonomousHandlerResult> {
   const logger = getLogger('UploadPhishingOnly');
   try {
     logger.info('Requesting agent to upload phishing simulation (upload only)');
@@ -445,7 +446,7 @@ export async function uploadAndAssignPhishing(
   targetUserResourceId: string | undefined,
   threadId: string,
   generatedPhishingId?: string
-): Promise<any> {
+): Promise<AutonomousHandlerResult> {
   const logger = getLogger('UploadAndAssignPhishing');
   if (!targetUserResourceId) {
     logger.warn('Cannot assign: Missing targetUserResourceId');
@@ -505,7 +506,7 @@ export async function uploadAndAssignPhishingForGroup(
   targetGroupResourceId: string | number | undefined,
   threadId: string,
   generatedPhishingId?: string
-): Promise<any> {
+): Promise<AutonomousHandlerResult> {
   const logger = getLogger('UploadAndAssignPhishingForGroup');
   if (!targetGroupResourceId) {
     logger.warn('Cannot assign: Missing targetGroupResourceId');
@@ -575,7 +576,7 @@ export async function generatePhishingSimulationForGroup(
   preferredLanguage: string | undefined,
   phishingThreadId: string,
   targetGroupResourceId: string | number
-): Promise<any> {
+): Promise<AutonomousHandlerResult> {
   const logger = getLogger('GeneratePhishingSimulationForGroup');
   logger.info('🎯 GROUP: Generating phishing simulation with custom topic-based prompt', {
     groupId: targetGroupResourceId,
@@ -698,7 +699,7 @@ export async function assignPhishingWithTraining(
   phishingLanguageId?: string,
   isQuishing?: boolean,
   contentCategory?: string
-): Promise<any> {
+): Promise<AutonomousHandlerResult> {
   const logger = getLogger('AssignPhishingWithTraining');
   if (!targetUserResourceId) {
     logger.warn('Cannot assign: Missing targetUserResourceId');

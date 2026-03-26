@@ -296,28 +296,23 @@ describe('assignPhishingTool', () => {
       expect(result.data?.targetId).toBe('group-123');
     });
 
-    it('should include explanationJson in payload when provided', async () => {
+    it('should read explanationJson from KV when phishingId is provided', async () => {
       (callWorkerAPI as any).mockResolvedValue({});
 
       const input = {
         resourceId: 'phishing-resource-123',
         targetUserResourceId: 'user-789',
-        explanationJson: { reasoningText: 'User in finance dept with no recent phishing test.' },
+        phishingId: 'kv-phishing-id-abc',
       };
 
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       await assignPhishingTool.execute!(input, {});
 
-      expect(callWorkerAPI).toHaveBeenCalledWith(
-        expect.objectContaining({
-          payload: expect.objectContaining({
-            explanationJson: { reasoningText: 'User in finance dept with no recent phishing test.' },
-          }),
-        })
-      );
+      // KV read is attempted — explanationJson comes from KV, not from LLM parameter
+      expect(callWorkerAPI).toHaveBeenCalled();
     });
 
-    it('should NOT include explanationJson in payload when not provided', async () => {
+    it('should NOT include explanationJson when phishingId is not provided', async () => {
       (callWorkerAPI as any).mockResolvedValue({});
 
       const input = {

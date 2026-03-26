@@ -25,6 +25,7 @@ import { extractCompanyIdFromTokenExport } from '../../utils/core/policy-fetcher
 import { formatToolSummary } from '../../utils/core/tool-summary-formatter';
 import { fanOutGroupAssignment, groupResultSchema } from '../../utils/core/group-assignment';
 import { emitUISignal } from '../../utils/core/ui-signal';
+import { toolEventBus } from '../../utils/core/tool-event-bus';
 
 const assignSmishingOutputSchema = z.object({
   success: z.boolean(),
@@ -82,10 +83,6 @@ export const assignSmishingTool = createTool({
         .string()
         .optional()
         .describe('Free-text category classifying the activity (e.g. "Social Engineering", "Smishing Awareness"). Used by the Agentic AI Activities API.'),
-      explanationJson: z
-        .object({ reasoningText: z.string() })
-        .optional()
-        .describe('AI reasoning for why this activity was created. Sent to the Agentic AI Activities API as explanationJson.'),
     })
     .refine(data => Boolean(data.targetUserResourceId) !== Boolean(data.targetGroupResourceId), {
       message:
@@ -95,7 +92,7 @@ export const assignSmishingTool = createTool({
   execute: async (inputData, ctx?: ToolExecutionContext) => {
     const writer = ctx?.writer;
     const logger = getLogger('AssignSmishingTool');
-    const { resourceId, languageId, targetUserResourceId, targetUserEmail, targetUserFullName, targetGroupResourceId, contentCategory, explanationJson } =
+    const { resourceId, languageId, targetUserResourceId, targetUserEmail, targetUserFullName, targetGroupResourceId, contentCategory } =
       inputData;
 
     try {
@@ -139,6 +136,15 @@ export const assignSmishingTool = createTool({
       logErrorInfo(logger, 'warn', 'Auth error: Token missing', errorInfo);
       return createToolErrorResponse(errorInfo);
     }
+
+    // Read explainability reasoning from event bus (set by upload tool in same request lifecycle)
+    const reasoning = toolEventBus.get<string>('explainabilityReasoning');
+    const explanationJson = reasoning ? { reasoningText: reasoning } : undefined;
+
+    logger.info('Assign smishing: explanationJson', {
+      hasExplanationJson: Boolean(explanationJson),
+      reasoningTextLength: reasoning?.length ?? 0,
+    });
 
     const commonPayloadFields = {
       activityType: 'smishing' as const,

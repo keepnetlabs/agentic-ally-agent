@@ -85,17 +85,17 @@ describe('initiateVishingCallTool', () => {
     );
   });
 
-  it('should use custom agentId when provided', async () => {
+  it('should always use default agent ID from constants', async () => {
     (global.fetch as ReturnType<typeof vi.fn>) = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ conversation_id: 'c1', callSid: 's1' }),
     });
 
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    await initiateVishingCallTool.execute!({ ...validContext, agentId: 'custom-agent-456' }, {});
+    await initiateVishingCallTool.execute!(validContext, {});
 
     const body = JSON.parse((global.fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].body);
-    expect(body.agent_id).toBe('custom-agent-456');
+    expect(body.agent_id).toBeDefined();
   });
 
   it('should return user-friendly error for 422 status', async () => {

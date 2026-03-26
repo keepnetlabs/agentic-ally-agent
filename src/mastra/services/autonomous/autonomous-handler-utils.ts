@@ -23,6 +23,14 @@ interface GeneratableAgent {
 }
 
 /**
+ * Minimal handler return contract. Guarantees `success` exists while keeping
+ * ad-hoc properties (toolGeneration, assignResult, etc.) accessible via index signature.
+ * Callers in autonomous-content-generators widen this to AutonomousActionResult.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- handlers return ad-hoc tool result properties that vary per handler
+export type AutonomousHandlerResult = { success: boolean; [key: string]: any };
+
+/**
  * Common tool result shape returned by orchestrator/user-info tools.
  * The canonical definition — handlers should import from here instead of re-declaring.
  */

@@ -10,6 +10,7 @@ import { createTool, ToolExecutionContext } from '@mastra/core/tools';
 import { z } from 'zod';
 import { isSafeId } from '../../utils/core/id-utils';
 import { getRequestContext } from '../../utils/core/request-storage';
+import { toolEventBus } from '../../utils/core/tool-event-bus';
 import { getLogger } from '../../utils/core/logger';
 import { withRetry } from '../../utils/core/resilience-utils';
 import { callWorkerAPI, type ServiceBinding } from '../../utils/core/worker-api-client';
@@ -205,6 +206,12 @@ export const uploadTrainingTool = createTool({
           safeEnv,
           buildMetadataFromMicrolearningBase(microlearningData, result.resourceId)
         );
+
+        // Store explainability reasoning in event bus for assign tool to read
+        const reasoning = getExplainabilityReasoning(microlearningData);
+        if (reasoning) {
+          toolEventBus.set('explainabilityReasoning', reasoning);
+        }
       }
 
       // EMIT UI SIGNAL (SURGICAL)

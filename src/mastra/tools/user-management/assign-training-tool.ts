@@ -25,6 +25,7 @@ import { formatToolSummary } from '../../utils/core/tool-summary-formatter';
 import { KVService } from '../../services/kv-service';
 import { fanOutGroupAssignment, groupResultSchema } from '../../utils/core/group-assignment';
 import { emitUISignal } from '../../utils/core/ui-signal';
+import { toolEventBus } from '../../utils/core/tool-event-bus';
 
 const assignTrainingOutputSchema = z.object({
   success: z.boolean(),
@@ -78,10 +79,6 @@ export const assignTrainingTool = createTool({
         .string()
         .optional()
         .describe('Free-text category classifying the activity (e.g. "Security Awareness", "Compliance Training"). Used by the Agentic AI Activities API.'),
-      explanationJson: z
-        .object({ reasoningText: z.string() })
-        .optional()
-        .describe('AI reasoning for why this activity was created. Sent to the Agentic AI Activities API as explanationJson.'),
     })
     .refine(data => Boolean(data.targetUserResourceId) !== Boolean(data.targetGroupResourceId), {
       message:
@@ -99,7 +96,6 @@ export const assignTrainingTool = createTool({
       targetUserFullName,
       targetGroupResourceId,
       contentCategory,
-      explanationJson,
     } = inputData;
 
     // Guard: prevent assigning with raw microlearningId (must upload first)
@@ -145,6 +141,15 @@ export const assignTrainingTool = createTool({
       logErrorInfo(logger, 'warn', 'Auth error: Token missing', errorInfo);
       return createToolErrorResponse(errorInfo);
     }
+
+    // Read explainability reasoning from event bus (set by upload tool in same request lifecycle)
+    const reasoning = toolEventBus.get<string>('explainabilityReasoning');
+    const explanationJson = reasoning ? { reasoningText: reasoning } : undefined;
+
+    logger.info('Assign training: explanationJson', {
+      hasExplanationJson: Boolean(explanationJson),
+      reasoningTextLength: reasoning?.length ?? 0,
+    });
 
     const commonPayloadFields = {
       activityType: 'training' as const,

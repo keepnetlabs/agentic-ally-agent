@@ -51,10 +51,6 @@ const initiateVishingCallInputSchema = z.object({
     .describe(
       'The opening line the AI agent speaks when the call connects. Should introduce the persona and reason for calling.'
     ),
-  agentId: z
-    .string()
-    .optional()
-    .describe('Override ElevenLabs agent ID. Defaults to ELEVENLABS_AGENT_ID env variable.'),
 });
 
 const initiateVishingCallOutputSchema = z.object({
@@ -142,10 +138,10 @@ export const initiateVishingCallTool = createTool({
         };
       }
 
-      const { agentPhoneNumberId, toNumber, prompt, firstMessage, agentId } = inputData;
+      const { agentPhoneNumberId, toNumber, prompt, firstMessage } = inputData;
 
-      // Use provided agent ID or fall back to environment/default
-      const effectiveAgentId = agentId || ELEVENLABS.DEFAULT_AGENT_ID;
+      // Always use environment/default agent ID — not exposed to LLM
+      const effectiveAgentId = ELEVENLABS.DEFAULT_AGENT_ID;
 
       // Validate phone number format (basic E.164 check)
       const e164Regex = /^\+[1-9]\d{1,14}$/;

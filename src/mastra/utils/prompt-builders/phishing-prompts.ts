@@ -164,6 +164,7 @@ ${JSON_OUTPUT_RULE}
 - **keyRedFlags:** Must include quishing-specific red flags (see section 6)
 - **description:** ${PHISHING_EMAIL.MAX_DESCRIPTION_LENGTH} characters or less
 - **name, scenario:** MUST be written entirely in the output language. Do NOT mix English prefixes with translated text.
+- **reasoning:** REQUIRED. 1-2 sentences explaining why this scenario was chosen for this target audience. Write in clear, fluent ${language}. A non-technical manager should understand it easily.
 
 **EXAMPLE OUTPUT (Quishing Scenario):**
 {
@@ -179,6 +180,7 @@ ${JSON_OUTPUT_RULE}
   "keyRedFlags": ["Unsolicited QR code in email", "Urgency to scan QR code", "Request for payment verification via QR"],
   "targetAudienceAnalysis": "Users are likely to trust QR codes as convenient and legitimate technology",
   "subjectLineStrategy": "Creates urgency with 'Action Required' and emphasizes quick QR code verification",
+  "reasoning": "Employees regularly interact with QR codes for convenience, making them susceptible to QR-based phishing that exploits trust in mobile-friendly technology.",
   "isQuishing": true
 }`;
 
@@ -301,6 +303,7 @@ ${JSON_OUTPUT_RULE}
 **Field Limits:**
 - **description**: ${PHISHING_EMAIL.MAX_DESCRIPTION_LENGTH} characters or less. Keep it concise and focused on the simulation's purpose.
 - **name, scenario**: MUST be written entirely in the output language (${language}). Do NOT prefix with English attack categories. Write the full name in ${language}.
+- **reasoning:** REQUIRED. 1-2 sentences explaining why this scenario was chosen for this target audience. Write in clear, fluent ${language}. A non-technical manager should understand it easily.
 
 **EXAMPLE OUTPUT:**
 {
@@ -315,6 +318,7 @@ ${JSON_OUTPUT_RULE}
   "fromAddress": "finance@companay.com",
   "keyRedFlags": ["Misspelled domain (companay.com)", "Unusual urgency", "Request to bypass procedures", "External email marked as internal"],
   "targetAudienceAnalysis": "Finance team members are targeted due to their access to wire transfer systems and tendency to comply with executive requests",
+  "reasoning": "Finance team handles wire transfers daily and tends to comply with executive requests without question, making authority-based phishing highly effective.",
   "subjectLineStrategy": "Creates time pressure with 'URGENT' prefix and implies consequences for delay",
   "isQuishing": false
 }

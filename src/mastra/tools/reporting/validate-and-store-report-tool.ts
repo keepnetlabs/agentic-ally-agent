@@ -24,6 +24,7 @@ import {
 } from '../../schemas/report-schema';
 import type { Report, ReportSection, ReportState } from '../../schemas/report-schema';
 import { loadLatestReport } from './report-section-utils';
+import { isSafeId } from '../../utils/core/id-utils';
 
 const logger = getLogger('ValidateAndStoreReportTool');
 
@@ -52,7 +53,10 @@ const inputSchema = z.object({
     .nullable()
     .optional(),
   /** Existing reportId to load from KV (for edit flow) */
-  reportId: z.string().nullable().optional(),
+  reportId: z.string().nullable().optional().refine(
+    (val) => !val || isSafeId(val),
+    { message: 'Invalid reportId format' }
+  ),
   /** Edit action description (for editHistory) */
   editAction: z.string().nullable().optional(),
 });
@@ -166,7 +170,7 @@ export const validateAndStoreReportTool = createTool({
 
         if (expandData && typeof expandData === 'object' && 'meta' in expandData && 'sections' in expandData) {
           resolvedReport = expandData as typeof input.report;
-          logger.info('Expand result loaded from KV', { sectionCount: (expandData as any).sections?.length });
+          logger.info('Expand result loaded from KV', { sectionCount: resolvedReport?.sections?.length });
           // Clean up temp key (fire-and-forget)
           kvService.delete(input.expandRef).catch(() => {});
         } else {

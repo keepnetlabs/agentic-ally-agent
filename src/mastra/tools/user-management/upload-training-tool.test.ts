@@ -153,7 +153,7 @@ describe('uploadTrainingTool', () => {
     });
 
     it('should return error when base content is missing', async () => {
-      vi.spyOn(KVService.prototype, 'getMicrolearning').mockResolvedValue({});
+      vi.spyOn(KVService.prototype, 'getMicrolearning').mockResolvedValue({ base: null });
 
       const input = {
         microlearningId: 'ml-123',

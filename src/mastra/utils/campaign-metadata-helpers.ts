@@ -52,7 +52,10 @@ export function buildMetadataFromPhishingBase(
     tactic: tactic || undefined,
     scenario: typeof phishingData?.topic === 'string' ? phishingData.topic : undefined,
     difficulty: typeof phishingData?.difficulty === 'string' ? phishingData.difficulty : undefined,
-    reasoning: phishingData?.explainability?.reasoning || undefined,
+    reasoning: phishingData?.explainability?.reasoning
+      || phishingData?.explainability?.targetAudienceReasoning
+      || phishingData?.explainability?.contentStrategy
+      || undefined,
     contentType: resolvedContentType,
   };
 }
