@@ -370,6 +370,16 @@ describe('AgentRouter', () => {
       const result = await setupRouteTest(AGENT_NAMES.POLICY_SUMMARY, 'Summarize policy', 'Summarize policy doc');
       expect(result.agentName).toBe(AGENT_NAMES.POLICY_SUMMARY);
     });
+
+    it('should route to email IR analyst', async () => {
+      const result = await setupRouteTest(
+        AGENT_NAMES.EMAIL_IR_ANALYST,
+        'Analyze suspicious email headers',
+        'Analyze this phishing email for IR'
+      );
+      expect(result.agentName).toBe(AGENT_NAMES.EMAIL_IR_ANALYST);
+      expect(result.taskContext).toBe('Analyze suspicious email headers');
+    });
   });
 
   describe('Route - Out-of-Scope Handling', () => {

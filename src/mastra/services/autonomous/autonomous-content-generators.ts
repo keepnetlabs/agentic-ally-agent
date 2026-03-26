@@ -7,6 +7,7 @@ import { getLogger } from '../../utils/core/logger';
 import { normalizeError } from '../../utils/core/error-utils';
 import { errorService } from '../error-service';
 import { DEFAULT_TRAINING_LEVEL, PHISHING, SMISHING, TRAINING_LEVELS } from '../../constants';
+import { buildThreadId } from './autonomous-handler-utils';
 import type {
   AutonomousActionResult,
   AutonomousAction,
@@ -50,6 +51,7 @@ interface NextSteps {
   nudges?: RecommendedNudge[];
 }
 
+/** Extended tool result — content-generators needs typed analysisReport (unlike handler files) */
 interface AutonomousToolResult {
   analysisReport?: ContentGenerationReport;
   userInfo?: {
@@ -266,7 +268,7 @@ export async function generateContentForGroup(
       rationale: `Group-level awareness training focused on: ${topic}`,
     };
 
-    const phishingThreadId = `phishing-group-${userId}-${runTimestamp}`;
+    const phishingThreadId = buildThreadId('phishing', userId, runTimestamp, true);
 
     logger.info('Generating phishing simulation', {
       groupId: userId,
@@ -335,7 +337,7 @@ export async function generateContentForGroup(
       rationale: `Group-level training aligned with phishing simulation on: ${topic}`,
     };
 
-    const trainingThreadId = `training-group-${userId}-${runTimestamp}`;
+    const trainingThreadId = buildThreadId('training', userId, runTimestamp, true);
 
     logger.info('Generating training module', {
       groupId: userId,

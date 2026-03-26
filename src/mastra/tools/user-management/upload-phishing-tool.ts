@@ -21,6 +21,7 @@ import { errorService } from '../../services/error-service';
 import { validateToolResult } from '../../utils/tool-result-validation';
 import { extractCompanyIdFromTokenExport } from '../../utils/core/policy-fetcher';
 import { formatToolSummary } from '../../utils/core/tool-summary-formatter';
+import { waitForKVConsistency } from '../../utils/kv-consistency';
 import { summarizeForLog } from '../../utils/core/log-redaction-utils';
 import { trySaveCampaignMetadataAfterUpload } from '../../services/campaign-metadata-service';
 import { getExplainabilityReasoning } from '../../types/explainability';
@@ -91,7 +92,12 @@ export const uploadPhishingTool = createTool({
     }
 
     try {
-      // 1. Fetch Content from KV
+      // 1. Wait for KV consistency (handles Cloudflare eventual consistency)
+      // Only check base key — language variants are written after base, so base presence implies all keys ready
+      const expectedKeys = [`phishing:${phishingId}:base`];
+      await waitForKVConsistency(phishingId, expectedKeys, KV_NAMESPACES.PHISHING);
+
+      // 2. Fetch Content from KV
       // Use phishing namespace ID (same as in create-phishing-workflow.ts)
       const kvService = new KVService(KV_NAMESPACES.PHISHING);
       const phishingContent = await kvService.getPhishing(phishingId);

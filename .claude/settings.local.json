@@ -60,7 +60,8 @@
       "Bash(do echo:*)",
       "Bash(npm pack:*)",
       "Read(//c/Users/user/Desktop/Agentic Ally/fleet-v2-main/agent/@mastra/**)",
-      "Bash(/dev/null done:*)"
+      "Bash(/dev/null done:*)",
+      "Bash(find '/c/Users/user/Desktop/Agentic Ally/fleet-v2-main/agent/src/mastra/agents' -type f \\\\\\(-name *.ts -o -name *.js -o -name *.json \\\\\\))"
     ],
     "deny": [],
     "ask": [],

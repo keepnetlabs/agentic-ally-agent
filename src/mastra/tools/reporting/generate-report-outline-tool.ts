@@ -185,9 +185,9 @@ export const generateReportOutlineTool = createTool({
       try {
         parsed = JSON.parse(cleaned);
       } catch {
-        const errorInfo = errorService.validation('Failed to parse outline JSON from AI response');
+        const errorInfo = errorService.aiModel('AI produced invalid JSON. Retrying may help.');
         logErrorInfo(logger, 'error', 'JSON parse failed', errorInfo);
-        return { success: false, error: 'AI produced invalid JSON. Retrying may help.' };
+        return createToolErrorResponse(errorInfo);
       }
 
       // Pre-normalize weights before validation — AI often produces weights that don't sum to pageTarget

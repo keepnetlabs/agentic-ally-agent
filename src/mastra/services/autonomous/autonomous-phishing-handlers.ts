@@ -8,6 +8,7 @@ import { AGENT_CALL_TIMEOUT_MS, AUTONOMOUS_DEFAULTS, PHISHING } from '../../cons
 import { phishingWorkflowExecutorTool } from '../../tools/orchestration';
 import { assignPhishingTool, uploadPhishingTool } from '../../tools/user-management';
 import { withTimeout, withRetry } from '../../utils/core/resilience-utils';
+import { sendAgentStopMessage, type AutonomousToolResult } from './autonomous-handler-utils';
 import { getLogger } from '../../utils/core/logger';
 import { normalizeError, logErrorInfo } from '../../utils/core/error-utils';
 import { errorService } from '../error-service';
@@ -29,14 +30,6 @@ interface PhishingSimulationRecommendation {
   persuasion_tactic?: string;
   scenario_type?: string;
   [key: string]: any;
-}
-
-interface AutonomousToolResult {
-  userInfo?: {
-    targetUserResourceId?: string;
-    department?: string;
-    preferredLanguage?: string;
-  };
 }
 
 /**
@@ -311,27 +304,7 @@ export async function generatePhishingSimulation(
     logger.info('Phishing agent executed successfully');
 
     // CRITICAL: Send STOP message after phishing generation to prevent agent from continuing
-    // This prevents agent from processing any remaining prompts in memory
-    try {
-      logger.info('Sending STOP message after phishing generation to prevent further processing');
-      await withTimeout(
-        phishingEmailAgent.generate(
-          '**GENERATION COMPLETE - WAIT FOR UPLOAD INSTRUCTIONS**\n\nPhishing generation has been completed. Do NOT generate again. Do NOT call phishingExecutor again. Wait for upload/assign instructions. STOP.',
-          {
-            memory: {
-              thread: phishingThreadId,
-              resource: 'agentic-ally-autonomous',
-            },
-          }
-        ),
-        5000
-      );
-      logger.info('STOP message sent after phishing generation');
-    } catch (stopError) {
-      logger.warn('STOP message after generation failed (non-critical)', {
-        error: stopError instanceof Error ? stopError.message : String(stopError),
-      });
-    }
+    await sendAgentStopMessage(phishingEmailAgent, phishingThreadId, 'generation_complete', logger, 'phishing generation');
 
     // Step 4: Upload (and optionally assign)
     if (uploadOnly) {
@@ -445,29 +418,8 @@ async function uploadPhishingOnly(threadId: string): Promise<any> {
     logger.info('Upload agent executed');
     logger.debug('Upload response preview', { preview: uploadResponse.text?.substring(0, 500) || 'No response' });
 
-    // CRITICAL: Send explicit STOP message IMMEDIATELY to prevent agent from processing any other prompts
-    // This is especially important for GPT-4o-mini and similar models that may continue processing
-    try {
-      logger.info('Sending explicit STOP message to phishing agent (upload only) to prevent further processing');
-      await withTimeout(
-        phishingEmailAgent.generate(
-          '**TASK COMPLETE - STOP IMMEDIATELY**\n\nThe upload operation has been completed successfully. Do NOT process any other prompts or tasks. Do NOT call any tools. Your work is finished. STOP.',
-          {
-            memory: {
-              thread: threadId,
-              resource: 'agentic-ally-autonomous',
-            },
-          }
-        ),
-        5000 // Short timeout for STOP message
-      );
-      logger.info('STOP message sent successfully to phishing agent (upload only)');
-    } catch (stopError) {
-      // Non-critical - log but don't fail
-      logger.warn('STOP message failed (non-critical)', {
-        error: stopError instanceof Error ? stopError.message : String(stopError),
-      });
-    }
+    // CRITICAL: Send STOP message to prevent agent from processing any other prompts
+    await sendAgentStopMessage(phishingEmailAgent, threadId, 'task_complete', logger, 'phishing upload only');
 
     return {
       success: true,
@@ -526,32 +478,8 @@ export async function uploadAndAssignPhishing(
       preview: uploadAssignResponse.text?.substring(0, 500) || 'No response',
     });
 
-    // CRITICAL: Send explicit STOP message IMMEDIATELY to prevent agent from processing any other prompts
-    // This is especially important for GPT-4o-mini and similar models that may continue processing
-    // Send STOP message BEFORE returning to ensure agent stops processing
-    try {
-      logger.info('Sending explicit STOP message to phishing agent to prevent further processing');
-      const stopResponse = await withTimeout(
-        phishingEmailAgent.generate(
-          '**🔴 TASK 100% COMPLETE - MANDATORY STOP 🔴**\n\n**THE UPLOAD AND ASSIGN OPERATION HAS BEEN COMPLETED SUCCESSFULLY.**\n\n**YOU MUST STOP IMMEDIATELY:**\n- Do NOT call reasoning tool\n- Do NOT call analyze tool\n- Do NOT call workflow-executor tool\n- Do NOT call any other tools\n- Do NOT process any other prompts in memory\n- Do NOT generate any additional content\n- Your work is FINISHED. END NOW.',
-          {
-            memory: {
-              thread: threadId,
-              resource: 'agentic-ally-autonomous',
-            },
-          }
-        ),
-        5000 // Short timeout for STOP message
-      );
-      logger.info('STOP message sent successfully to phishing agent', {
-        responseLength: stopResponse.text?.length || 0,
-      });
-    } catch (stopError) {
-      // Non-critical - log but don't fail
-      logger.warn('STOP message failed (non-critical)', {
-        error: stopError instanceof Error ? stopError.message : String(stopError),
-      });
-    }
+    // CRITICAL: Send STOP message to prevent agent from processing any other prompts
+    await sendAgentStopMessage(phishingEmailAgent, threadId, 'mandatory_stop', logger, 'phishing upload+assign USER');
 
     return {
       success: true,
@@ -614,28 +542,8 @@ export async function uploadAndAssignPhishingForGroup(
       preview: uploadAssignResponse.text?.substring(0, 500) || 'No response',
     });
 
-    // CRITICAL: Send explicit STOP message to prevent agent from processing any other prompts
-    try {
-      logger.debug('Sending explicit STOP message to phishing agent (GROUP)');
-      await withTimeout(
-        phishingEmailAgent.generate(
-          '**TASK COMPLETE - STOP IMMEDIATELY**\n\nThe upload and assign operation has been completed successfully. Do NOT process any other prompts or tasks. Do NOT call any tools. Your work is finished. STOP.',
-          {
-            memory: {
-              thread: threadId,
-              resource: 'agentic-ally-autonomous',
-            },
-          }
-        ),
-        5000 // Short timeout for STOP message
-      );
-      logger.debug('STOP message sent successfully to phishing agent (GROUP)');
-    } catch (stopError) {
-      // Non-critical - log but don't fail
-      logger.warn('STOP message failed (non-critical)', {
-        error: stopError instanceof Error ? stopError.message : String(stopError),
-      });
-    }
+    // CRITICAL: Send STOP message to prevent agent from processing any other prompts
+    await sendAgentStopMessage(phishingEmailAgent, threadId, 'task_complete', logger, 'phishing upload+assign GROUP');
 
     return {
       success: true,
@@ -713,27 +621,8 @@ export async function generatePhishingSimulationForGroup(
 
     logger.info('✅ Phishing agent executed successfully (GROUP)');
 
-    // CRITICAL: Send STOP message after phishing generation (GROUP) to prevent agent from continuing
-    try {
-      logger.info('Sending STOP message after phishing generation (GROUP) to prevent further processing');
-      await withTimeout(
-        phishingEmailAgent.generate(
-          '**GENERATION COMPLETE - WAIT FOR UPLOAD INSTRUCTIONS**\n\nPhishing generation has been completed. Do NOT generate again. Do NOT call phishingExecutor again. Wait for upload/assign instructions. STOP.',
-          {
-            memory: {
-              thread: phishingThreadId,
-              resource: 'agentic-ally-autonomous',
-            },
-          }
-        ),
-        5000
-      );
-      logger.info('STOP message sent after phishing generation (GROUP)');
-    } catch (stopError) {
-      logger.warn('STOP message after generation failed (non-critical)', {
-        error: stopError instanceof Error ? stopError.message : String(stopError),
-      });
-    }
+    // CRITICAL: Send STOP message after phishing generation (GROUP)
+    await sendAgentStopMessage(phishingEmailAgent, phishingThreadId, 'generation_complete', logger, 'phishing generation GROUP');
 
     // Extract phishingId from agent response for upload/assign
     const phishingIdMatch = agentResult.text?.match(/"phishingId":\s*"([^"]+)"/);
@@ -915,31 +804,8 @@ export async function assignPhishingWithTraining(
     logger.info('Assign with training agent executed');
     logger.debug('Assign response preview', { preview: assignResponse.text?.substring(0, 500) || 'No response' });
 
-    // CRITICAL: Send explicit STOP message IMMEDIATELY to prevent agent from processing any other prompts
-    // This is especially important for GPT-4o-mini and similar models that may continue processing
-    try {
-      logger.info(
-        'Sending explicit STOP message to phishing agent (assign with training) to prevent further processing'
-      );
-      await withTimeout(
-        phishingEmailAgent.generate(
-          '**🔴 TASK 100% COMPLETE - MANDATORY STOP 🔴**\n\n**THE ASSIGNMENT OPERATION HAS BEEN COMPLETED SUCCESSFULLY.**\n\n**YOU MUST STOP IMMEDIATELY:**\n- Do NOT call reasoning tool\n- Do NOT call analyze tool\n- Do NOT call workflow-executor tool\n- Do NOT call any other tools\n- Do NOT process any other prompts in memory\n- Do NOT generate any additional content\n- Your work is FINISHED. END NOW.',
-          {
-            memory: {
-              thread: phishingThreadId,
-              resource: 'agentic-ally-autonomous',
-            },
-          }
-        ),
-        5000 // Short timeout for STOP message
-      );
-      logger.info('STOP message sent successfully to phishing agent (assign with training)');
-    } catch (stopError) {
-      // Non-critical - log but don't fail
-      logger.warn('STOP message failed (non-critical)', {
-        error: stopError instanceof Error ? stopError.message : String(stopError),
-      });
-    }
+    // CRITICAL: Send STOP message to prevent agent from processing any other prompts
+    await sendAgentStopMessage(phishingEmailAgent, phishingThreadId, 'mandatory_stop', logger, 'phishing assign with training');
 
     return {
       success: true,

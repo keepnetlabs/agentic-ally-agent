@@ -180,7 +180,9 @@ export const validateAndStoreReportTool = createTool({
         const latestState = await loadLatestReport(kvService, input.reportId);
 
         if (!latestState) {
-          return { success: false, error: `Report ${input.reportId} not found in KV` };
+          const errorInfo = errorService.notFound(`Report ${input.reportId} not found in KV`, { reportId: input.reportId });
+          logErrorInfo(logger, 'warn', 'Report not found', errorInfo);
+          return createToolErrorResponse(errorInfo);
         }
 
         return {
@@ -195,15 +197,18 @@ export const validateAndStoreReportTool = createTool({
 
       // ─── New report or updated report: validate + store ───
       if (!resolvedReport) {
-        return { success: false, error: 'Either expandRef, report data, or reportId must be provided' };
+        const errorInfo = errorService.validation('Either expandRef, report data, or reportId must be provided');
+        logErrorInfo(logger, 'warn', 'Missing report input', errorInfo);
+        return createToolErrorResponse(errorInfo);
       }
 
       // Validate report schema
       const reportValidation = ReportSchema.safeParse(resolvedReport);
       if (!reportValidation.success) {
         const issues = reportValidation.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ');
-        logger.warn('Report validation failed', { issues });
-        return { success: false, error: `Report validation failed: ${issues}` };
+        const errorInfo = errorService.validation(`Report validation failed: ${issues}`);
+        logErrorInfo(logger, 'warn', 'Report validation failed', errorInfo);
+        return createToolErrorResponse(errorInfo);
       }
 
       const validatedReport: Report = reportValidation.data;

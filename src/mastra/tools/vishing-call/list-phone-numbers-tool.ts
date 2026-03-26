@@ -12,7 +12,8 @@ import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { ELEVENLABS } from '../../constants';
 import { getLogger } from '../../utils/core/logger';
-import { normalizeError } from '../../utils/core/error-utils';
+import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
+import { errorService } from '../../services/error-service';
 import { withRetry } from '../../utils/core/resilience-utils';
 
 const logger = getLogger('ListPhoneNumbersTool');
@@ -55,11 +56,9 @@ export const listPhoneNumbersTool = createTool({
     try {
       const apiKey = process.env.ELEVENLABS_API_KEY;
       if (!apiKey) {
-        logger.error('elevenlabs_api_key_missing');
-        return {
-          success: false,
-          error: 'ElevenLabs API key is not configured. Please set ELEVENLABS_API_KEY environment variable.',
-        };
+        const errorInfo = errorService.auth('ElevenLabs API key is not configured. Please set ELEVENLABS_API_KEY environment variable.');
+        logErrorInfo(logger, 'error', 'elevenlabs_api_key_missing', errorInfo);
+        return createToolErrorResponse(errorInfo);
       }
 
       const url = `${ELEVENLABS.API_BASE_URL}${ELEVENLABS.ENDPOINTS.LIST_PHONE_NUMBERS}`;
@@ -93,15 +92,12 @@ export const listPhoneNumbersTool = createTool({
 
       if (!response.ok) {
         const errorBody = await response.text().catch(() => 'Unable to read error body');
-        logger.error('list_phone_numbers_api_error', {
+        const errorInfo = errorService.external(`ElevenLabs API returned ${response.status}: ${response.statusText}`, {
           status: response.status,
-          statusText: response.statusText,
           body: errorBody.substring(0, 500),
         });
-        return {
-          success: false,
-          error: `ElevenLabs API returned ${response.status}: ${response.statusText}`,
-        };
+        logErrorInfo(logger, 'error', 'list_phone_numbers_api_error', errorInfo);
+        return createToolErrorResponse(errorInfo);
       }
 
       const data = await response.json();
@@ -128,24 +124,18 @@ export const listPhoneNumbersTool = createTool({
       const err = normalizeError(error);
 
       if (err.name === 'AbortError') {
-        logger.error('list_phone_numbers_timeout', {
+        const errorInfo = errorService.timeout(`Request timed out after ${ELEVENLABS.API_TIMEOUT_MS}ms`, {
           timeoutMs: ELEVENLABS.API_TIMEOUT_MS,
         });
-        return {
-          success: false,
-          error: `Request timed out after ${ELEVENLABS.API_TIMEOUT_MS}ms`,
-        };
+        logErrorInfo(logger, 'error', 'list_phone_numbers_timeout', errorInfo);
+        return createToolErrorResponse(errorInfo);
       }
 
-      logger.error('list_phone_numbers_error', {
-        error: err.message,
+      const errorInfo = errorService.external(`Failed to list phone numbers: ${err.message}`, {
         durationMs: Date.now() - startTime,
       });
-
-      return {
-        success: false,
-        error: `Failed to list phone numbers: ${err.message}`,
-      };
+      logErrorInfo(logger, 'error', 'list_phone_numbers_error', errorInfo);
+      return createToolErrorResponse(errorInfo);
     }
   },
 });

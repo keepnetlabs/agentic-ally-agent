@@ -13,6 +13,7 @@ import { normalizeDifficultyValue } from '../../utils/difficulty-level-mapper';
 import { validateBCP47LanguageCode, DEFAULT_LANGUAGE } from '../../utils/language/language-utils';
 import { isSafeId } from '../../utils/core/id-utils';
 import { withRetry, withTimeout } from '../../utils/core/resilience-utils';
+import type { AutonomousToolResult } from './autonomous-handler-utils';
 
 interface SmishingSimulationRecommendation {
   title?: string;
@@ -20,14 +21,6 @@ interface SmishingSimulationRecommendation {
   scenario_type?: string;
   persuasion_tactic?: string;
   rationale?: string;
-}
-
-interface AutonomousToolResult {
-  userInfo?: {
-    targetUserResourceId?: string;
-    department?: string;
-    preferredLanguage?: string;
-  };
 }
 
 /**

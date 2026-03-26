@@ -51,6 +51,18 @@ describe('CSAgentRouter', () => {
       expect(result.agentName).toBe(CS_AGENT_NAMES.TRAINING_STATS);
     });
 
+    it('should route to reportAgent when orchestrator returns it', async () => {
+      const decision = { agent: CS_AGENT_NAMES.REPORT, taskContext: 'Generate usage report' };
+      mockOrchestrator.generate.mockResolvedValue({ text: JSON.stringify(decision) });
+      (cleanResponse as any).mockReturnValue(JSON.stringify(decision));
+      (withRetry as any).mockImplementation(async (fn: () => Promise<any>) => fn());
+
+      const result = await router.route('Show me a report');
+
+      expect(result.agentName).toBe(CS_AGENT_NAMES.REPORT);
+      expect(result.taskContext).toBe('Generate usage report');
+    });
+
     it('should fallback to default agent when orchestrator returns invalid agent', async () => {
       const decision = { agent: 'invalid-agent', taskContext: 'Unknown' };
       mockOrchestrator.generate.mockResolvedValue({ text: JSON.stringify(decision) });

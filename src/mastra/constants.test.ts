@@ -21,7 +21,19 @@ import {
   SMISHING,
   ORCHESTRATOR_CONFIRMATION_EXAMPLES,
   AUTONOMOUS_DEFAULTS,
+  ROUTING,
 } from './constants';
+
+/** ROUTING string arrays must not contain duplicate entries (copy-paste / merge errors). */
+function assertUniqueNonEmpty(label: string, items: readonly string[]): void {
+  expect(items.length, `${label}: empty array`).toBeGreaterThan(0);
+  for (const s of items) {
+    expect(s.length, `${label}: empty string`).toBeGreaterThan(0);
+    expect(s, `${label}: untrimmed`).toBe(s.trim());
+  }
+  const set = new Set(items);
+  expect(set.size, `${label}: duplicate entries`).toBe(items.length);
+}
 
 describe('constants', () => {
   describe('CLOUDFLARE_KV.KEY_TEMPLATES', () => {
@@ -246,6 +258,29 @@ describe('constants', () => {
     it('should have phishing and training topics', () => {
       expect(AUTONOMOUS_DEFAULTS.PHISHING_TOPIC).toBe('Phishing & Email Security');
       expect(AUTONOMOUS_DEFAULTS.TRAINING_TOPIC).toBe('Security Awareness');
+    });
+  });
+
+  describe('ROUTING (orchestrator config)', () => {
+    it('should have unique non-empty entries in every trigger list', () => {
+      assertUniqueNonEmpty('CONFIRMATION_TRIGGERS', [...ROUTING.CONFIRMATION_TRIGGERS]);
+      assertUniqueNonEmpty('MICROLEARNING_TRIGGERS', [...ROUTING.MICROLEARNING_TRIGGERS]);
+      assertUniqueNonEmpty('PHISHING_TRIGGERS', [...ROUTING.PHISHING_TRIGGERS]);
+      assertUniqueNonEmpty('SMISHING_TRIGGERS', [...ROUTING.SMISHING_TRIGGERS]);
+      assertUniqueNonEmpty('PLATFORM_ACTIONS', [...ROUTING.PLATFORM_ACTIONS]);
+      assertUniqueNonEmpty('TRAINING_KEYWORDS', [...ROUTING.TRAINING_KEYWORDS]);
+      assertUniqueNonEmpty('PHISHING_KEYWORDS', [...ROUTING.PHISHING_KEYWORDS]);
+      assertUniqueNonEmpty('SMISHING_KEYWORDS', [...ROUTING.SMISHING_KEYWORDS]);
+      assertUniqueNonEmpty('USER_ANALYSIS_TRIGGERS', [...ROUTING.USER_ANALYSIS_TRIGGERS]);
+      assertUniqueNonEmpty('VISHING_CALL_TRIGGERS', [...ROUTING.VISHING_CALL_TRIGGERS]);
+      assertUniqueNonEmpty('DEEPFAKE_TRIGGERS', [...ROUTING.DEEPFAKE_TRIGGERS]);
+    });
+
+    it('should keep baseline confirmation triggers used by orchestrator tests', () => {
+      expect([...ROUTING.CONFIRMATION_TRIGGERS]).toContain('Yes');
+      expect([...ROUTING.CONFIRMATION_TRIGGERS]).toContain('Proceed');
+      expect([...ROUTING.CONFIRMATION_TRIGGERS]).toContain('Tamam');
+      expect([...ROUTING.CONFIRMATION_TRIGGERS]).toContain('Oluştur');
     });
   });
 });

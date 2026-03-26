@@ -689,4 +689,12 @@ describe('E2E Smoke Tests', () => {
       expect(body.error).toContain('Invalid');
     });
   });
+
+  describe('Adım 9: Agent routing label normalization', () => {
+    it('normalizes orchestrator agent aliases without LLM', async () => {
+      const { normalizeOrchestratorAgentLabel } = await import('../../services/agent-router');
+      expect(normalizeOrchestratorAgentLabel('email-ir-analyst')).toBe('emailIrAnalyst');
+      expect(normalizeOrchestratorAgentLabel('out-of-scope')).toBe('outOfScope');
+    });
+  });
 });

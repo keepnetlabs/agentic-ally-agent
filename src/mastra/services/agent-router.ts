@@ -12,7 +12,7 @@ const logger = getLogger('AgentRouter');
 
 // Extract agent name type from constants
 type AgentName = (typeof AGENT_NAMES)[keyof typeof AGENT_NAMES];
-type PublicRoutableAgentName =
+export type PublicRoutableAgentName =
   | typeof AGENT_NAMES.PHISHING
   | typeof AGENT_NAMES.SMISHING
   | typeof AGENT_NAMES.MICROLEARNING
@@ -73,6 +73,16 @@ const normalizeAgentName = (
   agent: string,
   normalizedAgentMap: ReadonlyMap<string, PublicRoutableAgentName>
 ): PublicRoutableAgentName | undefined => normalizedAgentMap.get(normalizeAgentKey(agent));
+
+const defaultPublicAgentMap = buildNormalizedAgentMap(PUBLIC_ROUTABLE_AGENT_NAMES);
+
+/**
+ * Maps orchestrator JSON `agent` string to a canonical routable name.
+ * Exported for golden tests (alias / casing / punctuation variants).
+ */
+export function normalizeOrchestratorAgentLabel(agent: string): PublicRoutableAgentName | undefined {
+  return normalizeAgentName(agent, defaultPublicAgentMap);
+}
 
 export class AgentRouter {
   private mastra: Mastra;

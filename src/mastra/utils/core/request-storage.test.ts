@@ -10,6 +10,7 @@ describe('request-storage', () => {
       env: undefined,
       correlationId: undefined,
       baseApiUrl: undefined,
+      threadId: undefined,
     });
   });
 
@@ -21,6 +22,7 @@ describe('request-storage', () => {
         env: { KV: 'binding' },
         correlationId: 'cid-1',
         baseApiUrl: 'https://api.example.com',
+        threadId: 'thread-1',
       },
       async () => {
         const ctx = getRequestContext();
@@ -30,6 +32,7 @@ describe('request-storage', () => {
           env: { KV: 'binding' },
           correlationId: 'cid-1',
           baseApiUrl: 'https://api.example.com',
+          threadId: 'thread-1',
         });
       }
     );

@@ -21,6 +21,7 @@ import { errorService } from '../../services/error-service';
 import { validateToolResult } from '../../utils/tool-result-validation';
 import { extractCompanyIdFromTokenExport } from '../../utils/core/policy-fetcher';
 import { formatToolSummary } from '../../utils/core/tool-summary-formatter';
+import { waitForKVConsistency } from '../../utils/kv-consistency';
 import { summarizeForLog } from '../../utils/core/log-redaction-utils';
 import { trySaveCampaignMetadataAfterUpload } from '../../services/campaign-metadata-service';
 import { getExplainabilityReasoning } from '../../types/explainability';
@@ -86,6 +87,12 @@ export const uploadSmishingTool = createTool({
     }
 
     try {
+      // 1. Wait for KV consistency (handles Cloudflare eventual consistency)
+      // Only check base key — language variants are written after base, so base presence implies all keys ready
+      const expectedKeys = [`smishing:${smishingId}:base`];
+      await waitForKVConsistency(smishingId, expectedKeys, KV_NAMESPACES.SMISHING);
+
+      // 2. Fetch Content from KV
       const kvService = new KVService(KV_NAMESPACES.SMISHING);
       const smishingContent = await kvService.getSmishing(smishingId);
 

@@ -99,7 +99,9 @@ export const editReportSectionTool = createTool({
       // 1. Load existing report
       const state = await loadLatestReport(kvService, reportId);
       if (!state) {
-        return { success: false, error: `Report ${reportId} not found` };
+        const errorInfo = errorService.notFound(`Report ${reportId} not found`, { reportId });
+        logErrorInfo(logger, 'warn', 'Report not found', errorInfo);
+        return createToolErrorResponse(errorInfo);
       }
 
       const { report } = state;
@@ -109,10 +111,9 @@ export const editReportSectionTool = createTool({
       const sectionIdx = findSectionIndex(sections, sectionRef);
       if (sectionIdx === -1) {
         const availableSections = sections.map((s, i) => `${i + 1}. [${s.type}] ${s.title} (id: ${s.id})`).join('\n');
-        return {
-          success: false,
-          error: `Section "${sectionRef}" not found. Available sections:\n${availableSections}`,
-        };
+        const errorInfo = errorService.notFound(`Section "${sectionRef}" not found. Available sections:\n${availableSections}`, { sectionRef });
+        logErrorInfo(logger, 'warn', 'Section not found', errorInfo);
+        return createToolErrorResponse(errorInfo);
       }
 
       const targetSection = sections[sectionIdx];
@@ -145,7 +146,9 @@ Regenerate this section applying the user's changes. Output ONLY valid JSON.`,
       try {
         parsed = JSON.parse(cleaned);
       } catch {
-        return { success: false, error: 'AI returned invalid JSON during edit' };
+        const errorInfo = errorService.aiModel('AI returned invalid JSON during edit');
+        logErrorInfo(logger, 'warn', 'JSON parse failed', errorInfo);
+        return createToolErrorResponse(errorInfo);
       }
 
       // Force original id, type, weight
@@ -159,7 +162,9 @@ Regenerate this section applying the user's changes. Output ONLY valid JSON.`,
       const validation = ReportSectionSchema.safeParse(parsed);
       if (!validation.success) {
         const issues = validation.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ');
-        return { success: false, error: `Edited section validation failed: ${issues}` };
+        const errorInfo = errorService.validation(`Edited section validation failed: ${issues}`);
+        logErrorInfo(logger, 'warn', 'Section validation failed', errorInfo);
+        return createToolErrorResponse(errorInfo);
       }
 
       // 4. Replace section in report

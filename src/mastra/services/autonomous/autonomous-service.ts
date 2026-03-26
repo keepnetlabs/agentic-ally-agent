@@ -12,6 +12,7 @@ import {
   getGroupEligibleActions,
 } from '../../types/autonomous-types';
 import { buildExecutiveReport, generateContentForUser, generateContentForGroup } from './autonomous-content-generators';
+import { buildThreadId } from './autonomous-handler-utils';
 import { buildRefinementContext } from '../rejection-refinement-service';
 
 /**
@@ -86,8 +87,8 @@ export async function executeAutonomousGeneration(request: AutonomousRequest): P
 
           // CRITICAL: Append timestamp to thread IDs to ensure UNIQUE memory context per run
           // This prevents "pollution" from previous runs and prevents the agent from hallucinating based on old history
-          const phishingThreadId = `phishing-${userId}-${runTimestamp}`;
-          const trainingThreadId = `training-${userId}-${runTimestamp}`;
+          const phishingThreadId = buildThreadId('phishing', userId, runTimestamp);
+          const trainingThreadId = buildThreadId('training', userId, runTimestamp);
 
           const { env } = getRequestContext();
           const needsRefinement = actions.some(a => a === 'phishing' || a === 'training' || a === 'smishing');

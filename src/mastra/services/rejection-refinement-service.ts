@@ -121,7 +121,8 @@ export async function buildRefinementContext(params: {
   }
 }
 
-function buildOriginalContentSummary(meta: {
+/** Exported for unit tests — summary string injected into refinement prompt. */
+export function buildOriginalContentSummary(meta: {
   content_type: string | null;
   scenario: string | null;
   tactic: string | null;
@@ -181,7 +182,8 @@ ${schemaFields.join(',\n')}
 }`;
 }
 
-function parseRefinementOutput(text: string): LLMRefinementOutput | null {
+/** Exported for unit tests — parses LLM JSON (optional markdown fences). */
+export function parseRefinementOutput(text: string): LLMRefinementOutput | null {
   try {
     // Strip any accidental markdown fences
     const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
