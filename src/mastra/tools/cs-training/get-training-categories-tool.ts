@@ -99,10 +99,11 @@ export const getTrainingCategoriesTool = createTool({
       if (!response.ok) {
         const errorText = await response.text().catch(() => 'Unknown error');
         logger.error('get_training_categories_api_error', { status: response.status, errorText });
-        return {
-          success: false,
-          error: `API error: ${response.status} - ${errorText}`,
-        };
+        const errorInfo = errorService.external(
+          `Training categories API error: ${response.status} - ${errorText}`,
+          { status: response.status }
+        );
+        return createToolErrorResponse(errorInfo);
       }
 
       const result = await response.json();

@@ -212,10 +212,10 @@ export const searchTrainingsTool = createTool({
     // Resolve companyResourceId: explicit param > request context (own company)
     const effectiveCompanyId = companyResourceId || companyId;
     if (!effectiveCompanyId) {
-      return {
-        success: false,
-        error: 'No company context available. Please specify a company or search for one first.',
-      };
+      const errorInfo = errorService.validation(
+        'No company context available. Please specify a company or search for one first.'
+      );
+      return createToolErrorResponse(errorInfo);
     }
 
     logger.debug('search_trainings_start', { effectiveCompanyId, trainingType });
@@ -258,10 +258,11 @@ export const searchTrainingsTool = createTool({
       if (!response.ok) {
         const errorText = await response.text().catch(() => 'Unknown error');
         logger.error('search_trainings_api_error', { status: response.status, errorText });
-        return {
-          success: false,
-          error: `API error: ${response.status} - ${errorText}`,
-        };
+        const errorInfo = errorService.external(
+          `Training search API error: ${response.status} - ${errorText}`,
+          { status: response.status }
+        );
+        return createToolErrorResponse(errorInfo);
       }
 
       // 4. Parse response

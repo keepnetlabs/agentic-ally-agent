@@ -92,6 +92,7 @@ ${JSON_OUTPUT_RULE}
 
 **Field Requirements:**
 - **scenario, name, description, category, method**
+- **name, scenario:** MUST be written entirely in the output language. Do NOT mix English prefixes with translated text.
 - **psychologicalTriggers** (at least 2)
 - **keyRedFlags** (3-4)
 - **description**: ${PHISHING_EMAIL.MAX_DESCRIPTION_LENGTH} characters or less
@@ -120,7 +121,14 @@ ${JSON_OUTPUT_RULE}
 **Requested Method:** ${method || 'Auto-Detect'}
 **Target Audience Profile:** ${JSON.stringify(targetProfile || {})}${departmentContext}
 
-Create a concise, realistic smishing scenario that will help employees recognize and report SMS phishing.`;
+Create a concise, realistic smishing scenario that will help employees recognize and report SMS phishing.
+
+**FINAL SELF-CHECK (before output):**
+1. Are "name" and "scenario" 100% in ${language}? No English mixing?
+2. Is "method" consistent with the scenario logic?
+3. Are psychologicalTriggers contextually matched to the scenario?
+4. Is description under ${PHISHING_EMAIL.MAX_DESCRIPTION_LENGTH} characters?
+If any fails → fix before outputting.`;
 
   const additionalContextMessage = additionalContext
     ? `📌 USER BEHAVIOR ANALYSIS CONTEXT - Use this to target the smishing scenario:
@@ -180,7 +188,14 @@ ${JSON_OUTPUT_RULE}
 **Triggers:** ${analysis.psychologicalTriggers?.join(', ')}
 **Method:** ${analysis.method}
 
-Return ONLY valid JSON with "messages" array.`;
+Return ONLY valid JSON with "messages" array.
+
+**FINAL SELF-CHECK (before output):**
+1. Is each message 100% in ${language}? No English mixing?
+2. Does the message contain {PHISHINGURL}?
+3. Is each message <= 160 characters?
+4. No personal names — only role/team labels?
+If any fails → fix before outputting.`;
 
   return { systemPrompt, userPrompt };
 }

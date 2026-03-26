@@ -101,10 +101,11 @@ export const getTrainingLanguagesTool = createTool({
       if (!response.ok) {
         const errorText = await response.text().catch(() => 'Unknown error');
         logger.error('get_training_languages_api_error', { status: response.status, errorText });
-        return {
-          success: false,
-          error: `API error: ${response.status} - ${errorText}`,
-        };
+        const errorInfo = errorService.external(
+          `Training languages API error: ${response.status} - ${errorText}`,
+          { status: response.status }
+        );
+        return createToolErrorResponse(errorInfo);
       }
 
       const result = await response.json();

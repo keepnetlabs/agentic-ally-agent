@@ -175,13 +175,19 @@ export const webResearchTool = createTool({
           .filter(s => s.url && !s.url.includes('youtube.com')) // skip video URLs
           .slice(0, fetchTopUrls)
 
-        for (const snippet of urlsToFetch) {
-          try {
+        const results = await Promise.allSettled(
+          urlsToFetch.map(async (snippet) => {
             const markdown = await jinaReadUrl(snippet.url)
-            fullPages.push({ url: snippet.url, markdown })
             logger.debug('Page fetched', { url: snippet.url, length: markdown.length })
-          } catch (err) {
-            logger.warn('Failed to fetch page', { url: snippet.url, error: (err as Error).message })
+            return { url: snippet.url, markdown }
+          })
+        )
+
+        for (const result of results) {
+          if (result.status === 'fulfilled') {
+            fullPages.push(result.value)
+          } else {
+            logger.warn('Failed to fetch page', { error: result.reason?.message || String(result.reason) })
           }
         }
       }

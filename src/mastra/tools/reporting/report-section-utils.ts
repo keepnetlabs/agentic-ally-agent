@@ -9,13 +9,19 @@ import type { ReportState } from '../../schemas/report-schema';
 
 /**
  * Load the latest version of a report from KV.
- * Scans v20→v1 to find the highest stored version.
+ * Fetches all 20 version slots in parallel, returns the highest valid one.
+ * Avoids N+1 sequential KV calls (20 × ~100ms = 2-4s → single round ~100-200ms).
  */
 export async function loadLatestReport(kvService: KVService, reportId: string): Promise<ReportState | null> {
-  for (let v = 20; v >= 1; v--) {
-    const data = await kvService.get(`report:${reportId}:v${v}`);
-    if (data) {
-      const parsed = ReportStateSchema.safeParse(data);
+  const versions = Array.from({ length: 20 }, (_, i) => 20 - i); // [20, 19, ..., 1]
+  const results = await Promise.allSettled(
+    versions.map(v => kvService.get(`report:${reportId}:v${v}`))
+  );
+
+  for (let i = 0; i < results.length; i++) {
+    const result = results[i];
+    if (result.status === 'fulfilled' && result.value) {
+      const parsed = ReportStateSchema.safeParse(result.value);
       if (parsed.success) return parsed.data;
     }
   }

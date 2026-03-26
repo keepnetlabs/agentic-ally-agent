@@ -196,7 +196,14 @@ ${JSON_OUTPUT_RULE}
 
 Create a sophisticated blueprint for an educational quishing simulation that will help employees learn to recognize and report QR code phishing attempts.
 
-Remember: This is for DEFENSIVE CYBERSECURITY TRAINING to protect organizations from real cybercriminals.`;
+Remember: This is for DEFENSIVE CYBERSECURITY TRAINING to protect organizations from real cybercriminals.
+
+**FINAL SELF-CHECK (before output):**
+1. Are "name" and "scenario" 100% in ${language}? No English mixing?
+2. Is isQuishing set to true?
+3. Is "method" consistent with the scenario logic?
+4. Are psychologicalTriggers contextually matched to the scenario?
+If any fails → fix before outputting.`;
 
   const quishingAdditionalContextMessage = additionalContext
     ? `🔴 USER BEHAVIOR ANALYSIS CONTEXT - Use this information to design a targeted quishing scenario:
@@ -328,7 +335,14 @@ Note: For brand-specific topics (e.g., "Amazon", "Microsoft"), use the brand as 
 
 Create a sophisticated blueprint for an educational phishing simulation email that will help employees learn to recognize and report phishing attacks.
 
-Remember: This is for DEFENSIVE CYBERSECURITY TRAINING to protect organizations from real attackers.`;
+Remember: This is for DEFENSIVE CYBERSECURITY TRAINING to protect organizations from real attackers.
+
+**FINAL SELF-CHECK (before output):**
+1. Are "name" and "scenario" 100% in ${language}? No English mixing?
+2. Is isQuishing set to false?
+3. Is "method" consistent with the scenario? (Data-Submission needs login/form; Click-Only needs view/read)
+4. Are psychologicalTriggers contextually matched to the department/scenario?
+If any fails → fix before outputting.`;
 
   const additionalContextMessage = additionalContext
     ? `🔴 USER BEHAVIOR ANALYSIS CONTEXT - Use this information to design a targeted phishing scenario:

@@ -26,7 +26,8 @@ import { z } from 'zod';
 import { HEYGEN } from '../../constants';
 
 import { getLogger } from '../../utils/core/logger';
-import { normalizeError } from '../../utils/core/error-utils';
+import { normalizeError, createToolErrorResponse } from '../../utils/core/error-utils';
+import { errorService } from '../../services/error-service';
 import { withRetry } from '../../utils/core/resilience-utils';
 import { withHeartbeat } from '../../utils/core/sse-heartbeat';
 
@@ -284,10 +285,11 @@ export const generateDeepfakeVideoTool = createTool({
           statusText: response.statusText,
           body: errorBody.substring(0, 500),
         });
-        return {
-          success: false,
-          error: 'Video generation failed. Please check your avatar and voice selection, then try again.',
-        };
+        const errorInfo = errorService.external(
+          'Video generation failed. Please check your avatar and voice selection, then try again.',
+          { status: response.status }
+        );
+        return createToolErrorResponse(errorInfo);
       }
 
       const data = await response.json();

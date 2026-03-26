@@ -212,6 +212,13 @@ ${schemaHint}
 ${sourceHint}
 ${researchHint}
 
+FINAL SELF-CHECK (before output):
+1. Chart: does labels.length === each dataset's data.length?
+2. Table: does every row have exactly columns.length values?
+3. Content/executive_summary: is word count within the weight limit?
+4. Is the JSON valid and does it match the schema hint above?
+If any fails → fix before outputting.
+
 Respond with ONLY the JSON object. No markdown fences, no explanation.`;
 }
 

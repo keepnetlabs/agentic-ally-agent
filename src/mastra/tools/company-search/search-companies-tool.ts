@@ -207,10 +207,11 @@ export const searchCompaniesTool = createTool({
       if (!response.ok) {
         const errorText = await response.text().catch(() => 'Unknown error');
         logger.error('search_companies_api_error', { status: response.status, errorText });
-        return {
-          success: false,
-          error: `API error: ${response.status} - ${errorText}`,
-        };
+        const errorInfo = errorService.external(
+          `Company search API error: ${response.status} - ${errorText}`,
+          { status: response.status }
+        );
+        return createToolErrorResponse(errorInfo);
       }
 
       // 4. Parse response

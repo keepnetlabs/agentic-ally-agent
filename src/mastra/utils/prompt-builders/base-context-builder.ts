@@ -217,5 +217,12 @@ Learning Theories: ${learningTheories}
    • Content must align with category/subcategory and key topics
    • Security terms (phishing, reporting, email) allowed ONLY if explicitly in category/key topics
    • Choose Lucide icons semantically matched to topic—never default to generic security icons
+
+=== FINAL SELF-CHECK (before output) ===
+1. Is ALL content 100% in ${analysis.language}?
+2. Are ALL scenes focused on "${analysis.topic}"? No off-topic drift?
+3. Are ALL placeholders replaced with real, topic-specific content?
+4. Is JSON structure valid and complete?
+If any fails → fix before outputting.
 `;
 }
