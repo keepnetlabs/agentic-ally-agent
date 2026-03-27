@@ -1,5 +1,6 @@
 import { createStep, createWorkflow } from '@mastra/core/workflows';
 import { trackedGenerateText } from '../utils/core/tracked-generate';
+import { reasoningHeaders } from '../model-providers';
 import { getModelWithOverride } from '../model-providers';
 import { cleanResponse } from '../utils/content-processors/json-cleaner';
 import { generateUniqueId } from '../utils/core/id-utils';
@@ -156,6 +157,7 @@ const analyzeRequest = createStep({
           model: aiModel,
           messages,
           ...PHISHING_SCENARIO_PARAMS,
+          headers: reasoningHeaders(),
         });
       }, 'phishing-scenario-analysis');
 
@@ -427,6 +429,7 @@ const generateEmail = createStep({
               { role: 'user', content: userPrompt },
             ],
             ...PHISHING_CONTENT_PARAMS,
+            headers: reasoningHeaders(),
           });
         }, 'phishing-email-generation');
 

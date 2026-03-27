@@ -1,6 +1,7 @@
 import { createTool, ToolExecutionContext } from '@mastra/core/tools';
 
 import { trackedGenerateText } from '../../utils/core/tracked-generate';
+import { reasoningHeaders } from '../../model-providers';
 import { LanguageModel } from '../../types/language-model';
 import { MicrolearningContent } from '../../types/microlearning';
 import { MicrolearningService } from '../../services/microlearning-service';
@@ -180,6 +181,7 @@ async function generateDynamicInboxWithAI(
             { role: 'user', content: textsPrompt },
           ],
           ...LOCALIZER_PARAMS,
+          headers: reasoningHeaders(),
         }),
       `Inbox texts generation for ${topic}`
     ),

@@ -11,6 +11,8 @@ import { normalizeThemeBackgroundClass } from '../utils/theme/theme-color-normal
 import { ProductService } from '../services/product-service';
 import { resolveLogoAndBrand } from '../utils/phishing/brand-resolver';
 import { getModelWithOverride } from '../model-providers';
+import { emitWorkflowStep } from '../utils/core/stream-progress';
+import type { StreamWriter } from '../types/stream-writer';
 import {
   updateStepInputSchema,
   updateOutputSchema,
@@ -24,6 +26,14 @@ import { deepMerge } from '../utils/object-utils';
 
 const logger = getLogger('UpdateMicrolearningWorkflow');
 
+const UM_TOTAL_STEPS = 3;
+const UM_WORKFLOW_NAME = 'update-microlearning';
+
+/** Emit an update-microlearning workflow step event */
+async function emitUMStep(writer: StreamWriter | undefined, runId: string, stepIndex: number, status: 'running' | 'completed' | 'error', stepName: string, message?: string) {
+  await emitWorkflowStep(writer, { workflowRunId: runId, workflowName: UM_WORKFLOW_NAME, stepIndex, totalSteps: UM_TOTAL_STEPS, stepName, status, message });
+}
+
 // Color normalization moved to utils/theme/theme-color-normalizer.ts (preset → AI fallback → default)
 
 // Step 1: Load and validate existing microlearning
@@ -32,9 +42,13 @@ const loadMicrolearningStep = createStep({
   description: 'Load existing microlearning from KV',
   inputSchema: updateStepInputSchema,
   outputSchema: loadMicrolearningOutputSchema,
-  execute: async ({ inputData }) => {
+  execute: async ({ inputData, requestContext }) => {
     const kvService = new KVService();
     const { microlearningId, department, updates, model, modelProvider } = inputData;
+    const writer = requestContext?.get('writer') as StreamWriter | undefined;
+    const _wfRunId = crypto.randomUUID();
+    requestContext?.set('_wfRunId', _wfRunId);
+    await emitUMStep(writer, _wfRunId, 0, 'running', 'Loading training', 'Loading existing microlearning...');
 
     logger.info('Loading microlearning', { microlearningId, department });
 
@@ -49,6 +63,8 @@ const loadMicrolearningStep = createStep({
     }
 
     const currentVersion = currentContent.version || 1;
+
+    await emitUMStep(writer, _wfRunId, 0, 'completed', 'Loading training', `Loaded v${currentVersion}`);
 
     logger.info('Microlearning loaded', {
       microlearningId,
@@ -75,7 +91,7 @@ const mergeUpdatesStep = createStep({
   description: 'Merge theme updates with current content',
   inputSchema: mergeUpdatesInputSchema,
   outputSchema: mergeUpdatesOutputSchema,
-  execute: async ({ inputData }) => {
+  execute: async ({ inputData, requestContext }) => {
     const {
       microlearningId,
       department,
@@ -85,6 +101,9 @@ const mergeUpdatesStep = createStep({
       model,
       modelProvider,
     } = inputData;
+    const writer = requestContext?.get('writer') as StreamWriter | undefined;
+    const _wfRunId = (requestContext?.get('_wfRunId') as string) || '';
+    await emitUMStep(writer, _wfRunId, 1, 'running', 'Applying updates', 'Merging theme and metadata changes...');
     const updates = handleLogoHallucination(rawUpdates, microlearningId);
 
     logger.info('Received update request', {
@@ -213,6 +232,8 @@ const mergeUpdatesStep = createStep({
     updatedContent.version = newVersion;
     updatedContent.updated_at = new Date().toISOString();
 
+    await emitUMStep(writer, _wfRunId, 1, 'completed', 'Applying updates', `${Object.keys(changes).length} changes applied`);
+
     logger.debug('Theme merged', {
       microlearningId,
       department,
@@ -236,9 +257,12 @@ const saveUpdatesStep = createStep({
   description: 'Save updated microlearning to KV and track history',
   inputSchema: saveUpdatesInputSchema,
   outputSchema: updateOutputSchema,
-  execute: async ({ inputData }) => {
+  execute: async ({ inputData, requestContext }) => {
     const { microlearningId, department, updatedContent, newVersion, changes } = inputData;
     const kvService = new KVService();
+    const writer = requestContext?.get('writer') as StreamWriter | undefined;
+    const _wfRunId = (requestContext?.get('_wfRunId') as string) || '';
+    await emitUMStep(writer, _wfRunId, 2, 'running', 'Saving to storage', 'Persisting changes to KV...');
 
     try {
       logger.info('Saving updated microlearning', {
@@ -277,6 +301,8 @@ const saveUpdatesStep = createStep({
       const langUrl = encodeURIComponent(`lang/${language}`);
       const inboxUrl = encodeURIComponent(`inbox/${normalizedDepartment}`);
       const trainingUrl = `${API_ENDPOINTS.FRONTEND_MICROLEARNING_URL}/?courseId=${microlearningId}&langUrl=${langUrl}&inboxUrl=${inboxUrl}&isEditMode=true`;
+
+      await emitUMStep(writer, _wfRunId, 2, 'completed', 'Saving to storage', `Saved v${newVersion}`);
 
       logger.info('Microlearning updated successfully', {
         microlearningId,

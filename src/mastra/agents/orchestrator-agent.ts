@@ -64,6 +64,7 @@ The history is provided in STRUCTURED FORMAT:
   - \`[Phishing Simulation Assigned to User]\` = Phishing simulation assigned to target user
   - \`[Smishing Simulation Assigned to User]\` = Smishing simulation assigned to target user
   - \`[Vishing Call Initiated]\` = Outbound vishing call started via AI voice agent
+  - \`[Vishing Call Pending Confirmation]\` = Vishing call summary shown, waiting for user confirmation → route to **vishingCallAssistant**
   - \`[User Selected]\` = Target user identified/resolved
   - \`[Group Selected]\` = Target group identified/resolved
 - Use these descriptions to quickly identify what artifact exists, which agent last responded, and what actions are possible.

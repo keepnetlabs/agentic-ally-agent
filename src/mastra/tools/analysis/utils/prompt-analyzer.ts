@@ -228,31 +228,31 @@ ${cachedThemeColorsList}
 Return JSON:
 {
   "language": "BCP-47 tag (language-lowercase + region-lowercase; prefer regional if known, e.g., en-gb/en-us/fr-ca/tr-tr; else use primary, e.g. en-gb)"
-  "topic": "2-3 words max - core subject only",
-  "title": "3-5 words max - professional training title",
-  "description": "1-2 sentences max - professional training description",
+  "topic": "2-3 words max - core subject only — written in the detected language",
+  "title": "3-5 words max - professional training title — written in the detected language",
+  "description": "1-2 sentences max - professional training description — written in the detected language",
   "department": "target department or 'All'",
   "level": "beginner/intermediate/advanced - use SUGGESTED LEVEL if provided, else detect from complexity",
   "category": "One category from the list above that matches the topic domain",
   "subcategory": "specific subcategory based on focus",
-  "learningObjectives": ["specific skills learner can DO after 5-min training. Use Bloom's Taxonomy Action Verbs (Analyze, Create, Verify, Spot, Report). NOT passive verbs (Understand, Know) or meta-tasks (pass quiz)"],
+  "learningObjectives": ["specific skills learner can DO after 5-min training. Use Bloom's Taxonomy Action Verbs. NOT passive verbs (Understand, Know). Write in the detected language."],
   "duration": ${MICROLEARNING.DURATION_MINUTES},
   "industries": ["relevant industries from context or 'General Business'"],
   "roles": ["One role from the list above that matches the target audience"],
   "themeColor": "Standard code from THEME COLOR OPTIONS list if user explicitly mentioned a color. Otherwise null.",
-  "keyTopics": ["3-5 main learning areas"],
-  "practicalApplications": ["3-4 workplace situations"],
-  "mustKeepDetails": ["5-8 critical user constraints/details that must not be lost in downstream generation"],
-  "assessmentAreas": ["testable skills - focus on 'can they do X'"],
+  "keyTopics": ["3-5 main learning areas — in detected language"],
+  "practicalApplications": ["3-4 workplace situations — in detected language"],
+  "mustKeepDetails": ["5-8 critical user constraints/details that must not be lost in downstream generation — in detected language"],
+  "assessmentAreas": ["testable skills - focus on 'can they do X' — in detected language"],
   "regulationCompliance": ["relevant regulations by topic/industry"],
   "isCodeTopic": false,
   "isVishing": false,
   "isSmishing": false,
   "deliveryChannel": null,
-  "reasoning": "1-2 sentence explanation of WHY this topic, difficulty level and approach were chosen for the training",
-  "targetAudienceReasoning": "1-2 sentence explanation of WHY this audience/department/role is the right target for this training",
-  "contentStrategy": "1-2 sentence explanation of the pedagogical approach and content delivery strategy chosen",
-  "userContextReasoning": "If USER CONTEXT was provided above: 1-2 sentence explanation of WHY this training was chosen for this specific user based on their behavioral profile and risk signals. null if no user context."
+  "reasoning": "REQUIRED. 1-2 sentence explanation of WHY this topic, difficulty level and approach were chosen. Write in the detected language (same as the language field above).",
+  "targetAudienceReasoning": "REQUIRED. 1-2 sentence explanation of WHY this audience/department/role is the right target. Write in the detected language.",
+  "contentStrategy": "1-2 sentence explanation of the pedagogical approach and content delivery strategy chosen. Write in the detected language.",
+  "userContextReasoning": "If USER CONTEXT was provided above: 1-2 sentence explanation of WHY this training was chosen for this specific user based on their behavioral profile and risk signals. Write in the detected language. null if no user context."
 }
 
 RULES:
@@ -289,7 +289,7 @@ RULES:
 - CREATE professional titles from user intent
 - EXTRACT core subject, not full request
 - USE BCP-47 language codes only
-- RESPOND in user's language for content
+- RESPOND in user's language for ALL text fields: topic, title, description, reasoning, targetAudienceReasoning, contentStrategy, userContextReasoning, learningObjectives, keyTopics, practicalApplications, assessmentAreas
 - If request/context includes specific constraints, examples, scenarios, audiences, or risks, preserve them in keyTopics and practicalApplications.
 - Capture the same constraints/examples/risks in mustKeepDetails as explicit non-negotiable details.
 - Never drop critical user intent details when generating metadata.
@@ -314,13 +314,20 @@ RULES:
   - "instagram" if the prompt mentions Instagram DMs/messages.
   - "linkedin" if the prompt mentions LinkedIn messages/InMail.
   - "sms" if the prompt mentions SMS, text message, or if no channel is specified.
-  - If isSmishing is false, return null.`;
+  - If isSmishing is false, return null.
+
+FINAL SELF-CHECK (before output):
+1. Are topic, title, description written in the detected language?
+2. Are reasoning, targetAudienceReasoning, contentStrategy in the detected language?
+3. Are learningObjectives, keyTopics, assessmentAreas in the detected language?
+4. Is JSON valid with no trailing commas?
+If any fails → fix before outputting.`;
 
     const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
       {
         role: 'system',
         content:
-          'You are an expert instructional designer and Pedagogical Advisor. Analyze user requests and create professional microlearning metadata. Return ONLY valid JSON - no markdown, no extra text. Follow all RULES in the user prompt exactly.',
+          'You are an expert instructional designer and Pedagogical Advisor. Analyze user requests and create professional microlearning metadata. ALL text content fields (topic, title, description, objectives, reasoning) MUST be written in the same language the user wrote in. Return ONLY valid JSON - no markdown, no extra text. Follow all RULES in the user prompt exactly.',
       },
     ];
 

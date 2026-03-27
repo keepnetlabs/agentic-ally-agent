@@ -203,6 +203,29 @@ export function getDefaultGenerationModel() {
   return getModel(ModelProvider.WORKERS_AI, Model.WORKERS_AI_GPT_OSS_120B);
 }
 
+/** Supported reasoning effort levels for Workers AI gpt-oss-120b */
+export type ReasoningEffort = 'low' | 'medium' | 'high';
+
+/**
+ * Build reasoning effort headers for Workers AI gpt-oss-120b.
+ * Picked up by workersAICustomFetch and injected into request body as `reasoning: { effort }`.
+ * Only affects Workers AI calls — OpenAI calls ignore this header silently.
+ *
+ * @param effort - Reasoning depth: 'low' (fast), 'medium' (balanced, default), 'high' (thorough)
+ * @returns Headers object to spread into trackedGenerateText params
+ *
+ * @example
+ * ```typescript
+ * trackedGenerateText('my-task', {
+ *   model, messages,
+ *   headers: reasoningHeaders('medium'),
+ * });
+ * ```
+ */
+export function reasoningHeaders(effort: ReasoningEffort = 'medium'): Record<string, string> {
+  return { 'x-reasoning-effort': effort };
+}
+
 /**
  * Normalize model provider string to enum format
  * Converts uppercase/underscore format (e.g., WORKERS_AI) to lowercase/hyphen (e.g., workers-ai)
@@ -326,6 +349,22 @@ export function getModelWithOverride(
  * @param options Fetch options
  */
 export async function workersAICustomFetch(url: string, options?: RequestInit): Promise<Response> {
+  // Check for x-reasoning-effort header — scene generators set this to request higher reasoning
+  if (options?.body && typeof options.body === 'string') {
+    const headers = options.headers instanceof Headers ? options.headers : new Headers(options.headers as Record<string, string>);
+    const reasoningEffort = headers.get('x-reasoning-effort');
+    if (reasoningEffort) {
+      try {
+        const body = JSON.parse(options.body);
+        body.reasoning = { effort: reasoningEffort };
+        headers.delete('x-reasoning-effort');
+        options = { ...options, body: JSON.stringify(body), headers };
+      } catch {
+        // If body parsing fails, proceed without modification
+      }
+    }
+  }
+
   const response = await fetch(url, options);
   const data = await response.json();
 

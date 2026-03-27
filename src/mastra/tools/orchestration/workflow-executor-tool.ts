@@ -219,6 +219,11 @@ export const workflowExecutorTool = createTool({
         const workflow = addLanguageWorkflow;
         const run = await workflow.createRun();
 
+        const alRequestContext = new RequestContext();
+        if (writer) {
+          alRequestContext.set('writer', writer);
+        }
+
         const workflowResult: AddLanguageResult = await run.start({
           inputData: {
             existingMicrolearningId,
@@ -230,6 +235,7 @@ export const workflowExecutorTool = createTool({
             modelProvider: params.modelProvider,
             model: params.model,
           },
+          requestContext: alRequestContext,
         });
 
         // Validate and extract trainingUrl from result
@@ -285,6 +291,11 @@ export const workflowExecutorTool = createTool({
         const workflow = addMultipleLanguagesWorkflow;
         const run = await workflow.createRun();
 
+        const amlRequestContext = new RequestContext();
+        if (writer) {
+          amlRequestContext.set('writer', writer);
+        }
+
         const result: AddMultipleLanguagesResult = await run.start({
           inputData: {
             existingMicrolearningId: params.existingMicrolearningId,
@@ -294,6 +305,7 @@ export const workflowExecutorTool = createTool({
             modelProvider: params.modelProvider,
             model: params.model,
           },
+          requestContext: amlRequestContext,
         });
 
         // Return workflow result
@@ -347,6 +359,11 @@ export const workflowExecutorTool = createTool({
         const workflow = updateMicrolearningWorkflow;
         const run = await workflow.createRun();
 
+        const umRequestContext = new RequestContext();
+        if (writer) {
+          umRequestContext.set('writer', writer);
+        }
+
         const result: UpdateMicrolearningResult = await run.start({
           inputData: {
             microlearningId: params.existingMicrolearningId,
@@ -355,6 +372,7 @@ export const workflowExecutorTool = createTool({
             modelProvider: params.modelProvider,
             model: params.model,
           },
+          requestContext: umRequestContext,
         });
 
         logger.debug('Update workflow completed', { success: result?.result?.success });

@@ -1,6 +1,6 @@
 import { createTool, ToolExecutionContext } from '@mastra/core/tools';
 import { trackedGenerateText } from '../../utils/core/tracked-generate';
-import { getModelWithOverride } from '../../model-providers';
+import { getModelWithOverride, reasoningHeaders } from '../../model-providers';
 import { cleanResponse } from '../../utils/content-processors/json-cleaner';
 import { LOCALIZER_PARAMS } from '../../utils/config/llm-generation-params';
 import { buildSystemPrompt } from '../../utils/language/localization-language-rules';
@@ -268,6 +268,7 @@ export const inboxTranslateJsonTool = createTool({
                   { role: 'user', content: user },
                 ],
                 ...LOCALIZER_PARAMS,
+                headers: reasoningHeaders(),
               }),
             `Inbox chunk ${chunkNumber} translation`
           );

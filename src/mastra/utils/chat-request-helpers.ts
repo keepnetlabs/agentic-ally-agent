@@ -318,6 +318,23 @@ const cleanMessageContent = (content: string): string => {
     }
     return '[Smishing Simulation Assigned to User]';
   }
+  if (content.match(/::ui:vishing_call_summary::/)) {
+    // Vishing flow: keep user selection marker but indicate pending call confirmation
+    const userPayload = extractUiPayload(content, 'target_user');
+    let userMarker = '';
+    if (userPayload) {
+      try {
+        const decoded = decodeBase64Json(userPayload);
+        if (decoded && typeof decoded === 'object' && 'targetUserResourceId' in decoded) {
+          const value = (decoded as Record<string, unknown>).targetUserResourceId;
+          if (typeof value === 'string' && value.trim()) {
+            userMarker = `[User Selected: targetUserResourceId=${value.trim()}]\n`;
+          }
+        }
+      } catch { /* ignore */ }
+    }
+    return `${userMarker}[Vishing Call Pending Confirmation]`;
+  }
   if (content.match(/::ui:target_user::/)) {
     const payload = extractUiPayload(content, 'target_user');
     if (payload) {

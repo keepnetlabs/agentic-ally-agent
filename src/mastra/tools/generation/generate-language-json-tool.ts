@@ -30,6 +30,7 @@ import { generateScene8Prompt } from '../scenes/generators/scene8-summary-genera
 import { cleanResponse } from '../../utils/content-processors/json-cleaner';
 import { translateTranscript } from '../../utils/content-processors/transcript-translator';
 import { SCENE_GENERATION_PARAMS } from '../../utils/config/llm-generation-params';
+import { reasoningHeaders } from '../../model-providers';
 import { getLogger } from '../../utils/core/logger';
 import { errorService } from '../../services/error-service';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
@@ -181,6 +182,9 @@ async function generateLanguageJsonWithAI(
     const videoSystemPrompt =
       systemPrompt + `\n\nVIDEO-SPECIFIC RULE:\n- NEVER use \\n in transcript - use actual line breaks`;
 
+    // Request high reasoning effort for scene generation (picked up by workersAICustomFetch)
+    const sceneHeaders = reasoningHeaders('medium');
+
     // Generate content in parallel for better performance and reliability
     const startTime = Date.now();
     const [
@@ -199,6 +203,7 @@ async function generateLanguageJsonWithAI(
             model: model,
             messages: buildSceneMessages(systemPrompt, scene1Prompt, analysis, policyContext),
             ...SCENE_GENERATION_PARAMS[1], // Scene 1: Intro (creative)
+            headers: sceneHeaders,
           }),
         'Scene 1 generation'
       ),
@@ -208,6 +213,7 @@ async function generateLanguageJsonWithAI(
             model: model,
             messages: buildSceneMessages(systemPrompt, scene2Prompt, analysis, policyContext),
             ...SCENE_GENERATION_PARAMS[2], // Scene 2: Goals (factual)
+            headers: sceneHeaders,
           }),
         'Scene 2 generation'
       ),
@@ -217,6 +223,7 @@ async function generateLanguageJsonWithAI(
             model: model,
             messages: buildSceneMessages(videoSystemPrompt, videoPrompt, analysis, policyContext),
             ...SCENE_GENERATION_PARAMS[3], // Scene 3: Video (balanced)
+            headers: sceneHeaders,
           }),
         'Scene 3 generation'
       ),
@@ -226,6 +233,7 @@ async function generateLanguageJsonWithAI(
             model: model,
             messages: buildSceneMessages(systemPrompt, scene4Prompt, analysis, policyContext),
             ...SCENE_GENERATION_PARAMS[4], // Scene 4: Actions (specific)
+            headers: sceneHeaders,
           }),
         'Scene 4 generation'
       ),
@@ -235,6 +243,7 @@ async function generateLanguageJsonWithAI(
             model: model,
             messages: buildSceneMessages(systemPrompt, scene5Prompt, analysis, policyContext),
             ...SCENE_GENERATION_PARAMS[5], // Scene 5: Quiz (precise)
+            headers: sceneHeaders,
           }),
         'Scene 5 generation'
       ),
@@ -244,6 +253,7 @@ async function generateLanguageJsonWithAI(
             model: model,
             messages: buildSceneMessages(systemPrompt, scene6Prompt, analysis, policyContext),
             ...SCENE_GENERATION_PARAMS[6], // Scene 6: Survey (neutral)
+            headers: sceneHeaders,
           }),
         'Scene 6 generation'
       ),
@@ -253,6 +263,7 @@ async function generateLanguageJsonWithAI(
             model: model,
             messages: buildSceneMessages(systemPrompt, scene7Prompt, analysis, policyContext),
             ...SCENE_GENERATION_PARAMS[7], // Scene 7: Nudge (engaging)
+            headers: sceneHeaders,
           }),
         'Scene 7 generation'
       ),
@@ -262,6 +273,7 @@ async function generateLanguageJsonWithAI(
             model: model,
             messages: buildSceneMessages(systemPrompt, scene8Prompt, analysis, policyContext),
             ...SCENE_GENERATION_PARAMS[8], // Scene 8: Summary (consistent)
+            headers: sceneHeaders,
           }),
         'Scene 8 generation'
       ),

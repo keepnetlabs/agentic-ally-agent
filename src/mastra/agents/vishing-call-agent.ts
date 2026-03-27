@@ -111,12 +111,14 @@ Determine the target's phone number using this priority chain:
 3. **Resolve via getUserInfo (CRITICAL PATH):** If the orchestrator provided a \`targetUserResourceId\` (from the \`[ARTIFACT_IDS]\` block) but NO phone number:
    - Call the **getUserInfo** tool with EXACTLY these parameters:
      - \`targetUserResourceId\`: the ID from context (e.g., "3VRDY97YnHdZ")
-     - \`skipAnalysis\`: **MUST be \`true\`** - we only need user contact info, not the expensive behavioral report. NEVER call getUserInfo without skipAnalysis=true in this agent.
+     - \`skipAnalysis\`: **MUST be \`true\`** - we only need user contact info, not the expensive behavioral report.
+     - \`isVishingFlow\`: **MUST be \`true\`** - enables correct routing for follow-up confirmations.
+     NEVER call getUserInfo without skipAnalysis=true and isVishingFlow=true in this agent.
    - Extract the \`phoneNumber\` from the response's \`userInfo.phoneNumber\` field.
    - If \`phoneNumber\` is present and non-empty, use it. Continue to STATE 3.
    - If \`phoneNumber\` is empty/missing/null, **DO NOT REFUSE. DO NOT GIVE UP.** Instead, ask the user politely in the Interaction Language: "I found the user in the system but no phone number is registered for them. Could you please provide the target phone number in international format? (e.g., +1-555-123-4567)"
 4. **Resolve by Email/Name:** If the user referenced a person by email or name (but no \`targetUserResourceId\`):
-   - Call **getUserInfo** with \`email\` or \`fullName\` and **\`skipAnalysis: true\`** (MANDATORY).
+   - Call **getUserInfo** with \`email\` or \`fullName\` and **\`skipAnalysis: true\`** and **\`isVishingFlow: true\`** (MANDATORY).
    - Extract and use the phone number as in step 3. If empty, ask the user (same as above).
 5. **Ask User:** If none of the above resolved a phone number, ask in the Interaction Language: "I need a phone number to place the call. Please provide the target's phone number in international format (e.g., +1-555-123-4567)."
 

@@ -10,6 +10,7 @@ import { getLogger } from '../../../utils/core/logger';
 import { normalizeError, logErrorInfo } from '../../../utils/core/error-utils';
 import { errorService } from '../../../services/error-service';
 import { withRetry } from '../../../utils/core/resilience-utils';
+import { DEFAULT_LANGUAGE } from '../../../utils/language/language-utils';
 import {
   ETHICAL_POLICY,
   SCIENTIFIC_EVIDENCE,
@@ -114,8 +115,15 @@ export async function enhanceMicrolearningContent(
   additionalContext?: string
 ): Promise<MicrolearningContent> {
   const categoriesList = CATEGORIES.VALUES.join(', ');
+  const contentLanguage = microlearning.microlearning_metadata.language || DEFAULT_LANGUAGE;
 
   const enhancementPrompt = `CRITICAL: Return ONLY valid JSON. No explanations, no markdown, no backticks.
+
+=== LANGUAGE RULE (MANDATORY) ===
+Content language: **${contentLanguage}**
+ALL text fields (title, description, scene content, objectives) MUST remain in ${contentLanguage}.
+DO NOT translate or rewrite any field into a different language.
+Only improve clarity and quality within ${contentLanguage}.
 
 ENHANCE this microlearning metadata to industry standards:
 
@@ -126,11 +134,11 @@ ${additionalContext ? `"${additionalContext}"` : 'No specific context provided.'
 (Use this context to refine the Title, Risk Area, and relevance.)
 
 ENHANCEMENT RULES (apply ONLY if needed):
-1. Title: 2-5 words max, professional training format
+1. Title: 2-5 words max, professional training format — written in ${contentLanguage}
    - Current: "${microlearning.microlearning_metadata.title}"
    - Should clearly convey core topic and learning focus
    - Use action-oriented or outcome-focused phrasing when appropriate
-   - Examples vary by domain - security: "Stop Phishing Attacks", leadership: "Effective Delegation Skills", compliance: "GDPR Essentials"
+   - Keep the title in ${contentLanguage} — do NOT switch to a different language
 
 2. Category: Ensure correct categorization (DO NOT CHANGE unless clearly wrong)
    - Current: "${microlearning.microlearning_metadata.category}"
@@ -140,6 +148,7 @@ ENHANCEMENT RULES (apply ONLY if needed):
 3. Learning Objectives (Bloom's Taxonomy):
    - Ensure descriptions and objectives use measurable verbs (e.g., "Identify", "Analyze", "Apply" instead of "Understand").
    - Focus on ACTIONABLE outcomes for the learner.
+   - Write objectives in ${contentLanguage}.
 
 4. Regulation Compliance: Add 2-4 relevant standards
    - Current: ${microlearning.microlearning_metadata.regulation_compliance?.length || 0} items
@@ -152,18 +161,25 @@ ENHANCEMENT RULES (apply ONLY if needed):
 6. Scientific Basis: Verify all 8 scenes have specific learning theory reference
 
 VALIDATION CHECKLIST:
-✓ Title: 2-5 words, clear and professional
+✓ Title: 2-5 words, clear and professional, in ${contentLanguage}
 ✓ Category: Accurate for topic domain
-✓ Objectives: Uses Bloom's Taxonomy verbs
+✓ Objectives: Uses Bloom's Taxonomy verbs, in ${contentLanguage}
 ✓ Risk area: 1-3 words maximum
 ✓ All scenes have scientific_basis field
+✓ ALL text content is in ${contentLanguage} — no language mixing
 
 CRITICAL JSON RULES:
 - Use double quotes for all strings
 - No trailing commas
-- Escape all quotes in content with \"
+- Escape all quotes in content with \\"
 - No undefined or null values
-- Return complete enhanced JSON with same structure`;
+- Return complete enhanced JSON with same structure
+
+FINAL SELF-CHECK (before output):
+1. Is the title in ${contentLanguage}? No language mixing?
+2. Are ALL text fields (description, objectives, scene content) in ${contentLanguage}?
+3. Is JSON structure valid and complete?
+If any fails → fix before outputting.`;
 
   try {
     const response = await withRetry(
@@ -173,8 +189,7 @@ CRITICAL JSON RULES:
           messages: [
             {
               role: 'system',
-              content:
-                'You are enhancing microlearning content. Keep the exact same JSON structure, only improve content values. Return ONLY valid JSON, no markdown blocks or commentary.',
+              content: `You are enhancing microlearning content in ${contentLanguage}. Keep the exact same JSON structure, only improve content values. ALL text content MUST remain in ${contentLanguage} — do not switch to a different language. Return ONLY valid JSON, no markdown blocks or commentary.`,
             },
             { role: 'user', content: enhancementPrompt },
           ],

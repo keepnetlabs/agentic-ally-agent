@@ -6,6 +6,8 @@ import { KVService } from '../services/kv-service';
 import { getLogger } from '../utils/core/logger';
 import { normalizeError, logErrorInfo } from '../utils/core/error-utils';
 import { errorService } from '../services/error-service';
+import { emitWorkflowStep } from '../utils/core/stream-progress';
+import type { StreamWriter } from '../types/stream-writer';
 
 import {
   addMultipleLanguagesStepInputSchema,
@@ -49,9 +51,14 @@ export const processMultipleLanguagesStep = createStep({
   description: 'Process multiple languages in parallel using add-language-workflow',
   inputSchema: addMultipleLanguagesStepInputSchema,
   outputSchema: finalMultiLanguageResultSchema,
-  execute: async ({ inputData }) => {
+  execute: async ({ inputData, requestContext }) => {
     const logger = getLogger('ProcessMultipleLanguages');
     const { existingMicrolearningId, targetLanguages, sourceLanguage, department, modelProvider, model } = inputData;
+    const writer = requestContext?.get('writer') as StreamWriter | undefined;
+    const _wfRunId = crypto.randomUUID();
+    const totalSteps = targetLanguages.length + 1; // N languages + 1 finalize step
+
+    await emitWorkflowStep(writer, { workflowRunId: _wfRunId, workflowName: 'add-multiple-languages', stepIndex: 0, totalSteps, stepName: 'Starting', status: 'running', message: `Localizing ${targetLanguages.length} languages in parallel...` });
 
     logger.info('Starting parallel language processing', {
       languageCount: targetLanguages.length,
@@ -119,6 +126,9 @@ export const processMultipleLanguagesStep = createStep({
 
             logger.info('Translation completed successfully', { language: targetLanguage, durationMs: duration });
 
+            const langIndex = normalizedLanguages.indexOf(targetLanguage);
+            await emitWorkflowStep(writer, { workflowRunId: _wfRunId, workflowName: 'add-multiple-languages', stepIndex: langIndex, totalSteps, stepName: `Localizing ${targetLanguage}`, status: 'completed', message: `${targetLanguage} localized` });
+
             return {
               language: targetLanguage,
               success: true,
@@ -134,6 +144,9 @@ export const processMultipleLanguagesStep = createStep({
               language: targetLanguage,
             });
             logErrorInfo(logger, 'error', 'Translation failed', errorInfo);
+
+            const langIndex = normalizedLanguages.indexOf(targetLanguage);
+            await emitWorkflowStep(writer, { workflowRunId: _wfRunId, workflowName: 'add-multiple-languages', stepIndex: langIndex, totalSteps, stepName: `Localizing ${targetLanguage}`, status: 'error', message: errorMsg });
 
             return {
               language: targetLanguage,
@@ -151,6 +164,9 @@ export const processMultipleLanguagesStep = createStep({
             language: targetLanguage,
           });
           logErrorInfo(logger, 'error', 'Translation exception', errorInfo);
+
+          const langIndex = normalizedLanguages.indexOf(targetLanguage);
+          await emitWorkflowStep(writer, { workflowRunId: _wfRunId, workflowName: 'add-multiple-languages', stepIndex: langIndex, totalSteps, stepName: `Localizing ${targetLanguage}`, status: 'error', message: err.message });
 
           return {
             language: targetLanguage,
@@ -202,6 +218,8 @@ export const processMultipleLanguagesStep = createStep({
       }
 
       const status = successCount > 0 ? (failureCount === 0 ? 'success' : 'partial') : 'failed';
+
+      await emitWorkflowStep(writer, { workflowRunId: _wfRunId, workflowName: 'add-multiple-languages', stepIndex: totalSteps - 1, totalSteps, stepName: 'Finalizing', status: 'completed', message: `${successCount}/${targetLanguages.length} languages localized` });
 
       return {
         success: failureCount === 0,

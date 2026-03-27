@@ -7,6 +7,8 @@ import { normalizeDepartmentName } from '../utils/language/language-utils';
 import { validateInboxStructure, correctInboxStructure } from '../utils/validation/json-validation-utils';
 import { TIMEOUT_VALUES, STRING_TRUNCATION, API_ENDPOINTS, LANGUAGE, CLOUDFLARE_KV } from '../constants';
 import { getLogger } from '../utils/core/logger';
+import { emitWorkflowStep } from '../utils/core/stream-progress';
+import type { StreamWriter } from '../types/stream-writer';
 import { loadInboxWithFallback } from '../utils/kv-helpers';
 import { waitForKVConsistency, buildExpectedKVKeys } from '../utils/kv-consistency';
 import { normalizeError, logErrorInfo } from '../utils/core/error-utils';
@@ -16,6 +18,14 @@ import { withRetry } from '../utils/core/resilience-utils';
 import { MicrolearningContent } from '../types/microlearning';
 
 const logger = getLogger('AddLanguageWorkflow');
+
+const AL_TOTAL_STEPS = 4;
+const AL_WORKFLOW_NAME = 'add-language';
+
+/** Emit an add-language workflow step event */
+async function emitALStep(writer: StreamWriter | undefined, runId: string, stepIndex: number, status: 'running' | 'completed' | 'error', stepName: string, message?: string) {
+  await emitWorkflowStep(writer, { workflowRunId: runId, workflowName: AL_WORKFLOW_NAME, stepIndex, totalSteps: AL_TOTAL_STEPS, stepName, status, message });
+}
 
 import {
   addLanguageStepInputSchema,
@@ -33,8 +43,12 @@ export const loadExistingStep = createStep({
   // v1: Use step schema with resolved types (defaults applied)
   inputSchema: addLanguageStepInputSchema,
   outputSchema: existingContentSchema,
-  execute: async ({ inputData }) => {
+  execute: async ({ inputData, requestContext }) => {
     const { existingMicrolearningId, targetLanguage, sourceLanguage, department, modelProvider, model } = inputData;
+    const writer = requestContext?.get('writer') as StreamWriter | undefined;
+    const _wfRunId = crypto.randomUUID();
+    requestContext?.set('_wfRunId', _wfRunId);
+    await emitALStep(writer, _wfRunId, 0, 'running', 'Loading training', `Loading microlearning for ${targetLanguage} translation...`);
 
     logger.info('Step 1: Loading existing microlearning', {
       existingMicrolearningId,
@@ -135,6 +149,8 @@ export const loadExistingStep = createStep({
       });
     }
 
+    await emitALStep(writer, _wfRunId, 0, 'completed', 'Loading training', `Loaded: ${analysis.title}`);
+
     logger.info('Step 1 completed: Found microlearning', {
       title: analysis.title,
       category: analysis.category,
@@ -165,8 +181,11 @@ export const translateLanguageStep = createStep({
   description: 'Translate base language content to target language',
   inputSchema: existingContentSchema,
   outputSchema: languageContentSchema,
-  execute: async ({ inputData }) => {
+  execute: async ({ inputData, requestContext }) => {
     const { data: microlearningStructure, microlearningId, analysis, sourceLanguage, targetLanguage } = inputData;
+    const writer = requestContext?.get('writer') as StreamWriter | undefined;
+    const _wfRunId = (requestContext?.get('_wfRunId') as string) || '';
+    await emitALStep(writer, _wfRunId, 1, 'running', 'Localizing scenes', `Localizing ${sourceLanguage} → ${targetLanguage}...`);
 
     logger.info('Step 2: Starting translation', { sourceLanguage, targetLanguage });
 
@@ -267,6 +286,8 @@ export const translateLanguageStep = createStep({
       throw new Error(`Translation completed but storage failed: ${err.message}`);
     }
 
+    await emitALStep(writer, _wfRunId, 1, 'completed', 'Localizing scenes', 'Scenes localized');
+
     logger.info('Step 2 completed: Translation successful', { targetLanguage, microlearningId });
 
     return {
@@ -288,14 +309,17 @@ export const updateInboxStep = createStep({
   description: 'Translate and update department inbox for new language',
   inputSchema: existingContentSchema, // Receives from loadExistingStep
   outputSchema: updateInboxSchema,
-  execute: async ({ inputData }) => {
+  execute: async ({ inputData, requestContext }) => {
     const { analysis, microlearningId, data: microlearningStructure } = inputData;
     const targetLanguage = analysis.language;
     const sourceLanguage = microlearningStructure.microlearning_metadata?.language || LANGUAGE.DEFAULT_SOURCE;
     const { modelProvider, model, hasInbox } = inputData;
+    const writer = requestContext?.get('writer') as StreamWriter | undefined;
+    const _wfRunId = (requestContext?.get('_wfRunId') as string) || '';
 
     // Skip inbox processing if not needed (e.g., code_review training)
     if (!hasInbox) {
+      await emitALStep(writer, _wfRunId, 2, 'completed', 'Localizing inbox', 'Skipped (not applicable)');
       logger.info('Step 3: Skipping inbox update - not required for this training type');
       return {
         success: true,
@@ -313,6 +337,8 @@ export const updateInboxStep = createStep({
       LANGUAGE.DEFAULT_DEPARTMENT,
     ].filter((dept): dept is string => Boolean(dept && dept.trim()));
     const normalizedDepartments = Array.from(new Set(rawDepartments.map(dept => normalizeDepartmentName(dept))));
+    await emitALStep(writer, _wfRunId, 2, 'running', 'Localizing inbox', 'Localizing inbox exercises…');
+
     logger.info('🔍 Step 3: Creating inbox', {
       targetLanguage,
       sourceLanguage,
@@ -395,7 +421,7 @@ export const updateInboxStep = createStep({
         // Store result or use correction fallback
         if (isValid) {
           await kvService.storeInboxContent(microlearningId, normalizedDept, targetLanguage, translatedInbox.data);
-          logger.info('Inbox translated and stored', { normalizedDept, targetLanguage });
+          logger.info('Inbox localized and stored', { normalizedDept, targetLanguage });
         } else {
           logger.warn('Translation retry also failed, using structure correction fallback');
           const correctedInbox = correctInboxStructure(baseInbox, translatedInbox?.data || baseInbox);
@@ -432,6 +458,8 @@ export const updateInboxStep = createStep({
       };
     }
 
+    await emitALStep(writer, _wfRunId, 2, 'completed', 'Localizing inbox', 'Inbox localized');
+
     logger.info('Step 3 completed: Inbox translation and storage finished');
 
     return {
@@ -450,9 +478,12 @@ export const combineResultsStep = createStep({
   description: 'Combine parallel results and generate final training URL',
   inputSchema: combineInputSchema,
   outputSchema: finalResultSchema,
-  execute: async ({ inputData }) => {
+  execute: async ({ inputData, requestContext }) => {
     const translateLanguage = inputData['translate-language-content'];
     const updateInbox = inputData['update-inbox'];
+    const writer = requestContext?.get('writer') as StreamWriter | undefined;
+    const _wfRunId = (requestContext?.get('_wfRunId') as string) || '';
+    await emitALStep(writer, _wfRunId, 3, 'running', 'Finalizing', 'Verifying storage consistency...');
 
     // Check if translation succeeded
     if (!translateLanguage || !translateLanguage.success) {
@@ -513,6 +544,8 @@ export const combineResultsStep = createStep({
     }
 
     logger.info('Training URL generated', { trainingUrl });
+    await emitALStep(writer, _wfRunId, 3, 'completed', 'Finalizing', 'Translation complete');
+
     logger.info('Add-language workflow completed', { targetLanguage });
 
     return {

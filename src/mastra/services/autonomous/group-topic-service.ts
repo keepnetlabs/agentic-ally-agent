@@ -3,7 +3,7 @@
  * Selects ONE topic for group phishing & training, returns prompts + metadata
  */
 
-import { getModelWithOverride } from '../../model-providers';
+import { getModelWithOverride, reasoningHeaders } from '../../model-providers';
 import { trackedGenerateText } from '../../utils/core/tracked-generate';
 import { normalizeError, logErrorInfo } from '../../utils/core/error-utils';
 import { errorService } from '../error-service';
@@ -98,6 +98,7 @@ Examples: "Phishing & Email Security" OR "AI-Powered Attack Detection" OR "Block
     const response = await trackedGenerateText('group-topic-selection', {
       model,
       messages: [{ role: 'user', content: topicSelectionPrompt }],
+      headers: reasoningHeaders(),
     });
 
     const selectedTopic = response.text.trim();

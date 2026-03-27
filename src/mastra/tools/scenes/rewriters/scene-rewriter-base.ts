@@ -3,6 +3,7 @@
 // Eliminates 1,200+ lines of duplicate boilerplate across scene1-8 + app-texts
 
 import { trackedGenerateText } from '../../../utils/core/tracked-generate';
+import { reasoningHeaders } from '../../../model-providers';
 import { cleanResponse } from '../../../utils/content-processors/json-cleaner';
 import { SCENE_REWRITE_PARAMS } from '../../../utils/config/llm-generation-params';
 import { getLanguagePrompt } from '../../../utils/language/localization-language-rules';
@@ -235,6 +236,7 @@ export async function rewriteSceneWithBase<T>(scene: T, sceneType: SceneType, co
             { role: 'user', content: userPrompt },
           ],
           ...SCENE_REWRITE_PARAMS,
+          headers: reasoningHeaders(),
         }),
       `Scene ${config.sceneNumber ? config.sceneNumber + ' (' + config.displayName + ')' : config.displayName} rewrite`
     );

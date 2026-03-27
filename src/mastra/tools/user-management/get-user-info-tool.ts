@@ -26,7 +26,7 @@ import { ERROR_MESSAGES } from '../../constants';
 import { parseName, isValidName, normalizeName } from '../../utils/parsers/name-parser';
 import { trackedGenerateText } from '../../utils/core/tracked-generate';
 import { withRetry } from '../../utils/core/resilience-utils';
-import { getModelWithOverride } from '../../model-providers'; // Use override to pick stronger model
+import { getModelWithOverride, reasoningHeaders } from '../../model-providers';
 import { cleanResponse } from '../../utils/content-processors/json-cleaner';
 import { getLogger } from '../../utils/core/logger';
 import { errorService } from '../../services/error-service';
@@ -88,6 +88,12 @@ export const getUserInfoTool = createTool({
         .optional()
         .describe(
           'If true, skips the expensive AI behavioral report generation. Use when you ONLY need the user ID for assignment.'
+        ),
+      isVishingFlow: z
+        .boolean()
+        .optional()
+        .describe(
+          'If true, emits a vishing_call_summary routing marker so the orchestrator can correctly route follow-up confirmations to vishingCallAssistant.'
         ),
     })
     .refine(data => data.targetUserResourceId || data.email || data.fullName || data.firstName, {
@@ -613,7 +619,7 @@ If a value is unknown, use "" or null.
                   { role: 'system', content: systemPrompt },
                   { role: 'user', content: userPrompt },
                 ],
-                // No temperature param to be safe with OSS models
+                headers: reasoningHeaders(),
               }),
             '[GetUserInfoTool] analysis-report-generation'
           );
@@ -695,6 +701,17 @@ If a value is unknown, use "" or null.
               message: `::ui:target_user::${encoded}::/ui:target_user::\n`,
             }
           });
+
+          // Vishing flow marker: emit vishing_call_summary so cleanMessageContent preserves routing context.
+          if (inputData.isVishingFlow) {
+            await writer.write({
+              type: 'data-ui-signal',
+              data: {
+                signal: 'vishing_call_summary',
+                message: `::ui:vishing_call_summary::::/ui:vishing_call_summary::\n`,
+              }
+            });
+          }
         } catch (emitErr) {
           const err = normalizeError(emitErr);
           const errorInfo = errorService.external(err.message, { step: 'emit-ui-signal-user', stack: err.stack });

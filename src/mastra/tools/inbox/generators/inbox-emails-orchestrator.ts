@@ -1,4 +1,5 @@
 import { trackedGenerateText } from '../../../utils/core/tracked-generate';
+import { reasoningHeaders } from '../../../model-providers';
 import { LanguageModel } from '../../../types/language-model';
 import { SimulatedEmail } from '../../../types/microlearning';
 import { buildInboxEmailBaseSystem } from './inbox-email-base';
@@ -125,6 +126,7 @@ ${additionalContext}`,
           model,
           messages: messages,
           ...INBOX_GENERATION_PARAMS,
+          headers: reasoningHeaders(),
         }),
       `[InboxEmailsOrchestrator] email-generation-${variant}-${index + 1}`
     );
@@ -167,6 +169,7 @@ ${additionalContext}`,
             model,
             messages: retryMessages,
             ...INBOX_GENERATION_PARAMS,
+            headers: reasoningHeaders(),
           }),
         `[InboxEmailsOrchestrator] email-generation-retry-${variant}-${index + 1}`
       );
