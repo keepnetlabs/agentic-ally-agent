@@ -186,9 +186,6 @@ export const RETRY = {
   // Jitter configuration (AWS Best Practice)
   JITTER_ENABLED: true,
 
-  // Exponential backoff delays (in milliseconds) - legacy, kept for reference
-  BACKOFF_DELAYS_MS: [1000, 2000, 4000],
-
   /**
    * Calculate delay with Full Jitter (AWS recommended)
    * Formula: random(0, min(cap, base * 2^attempt))
@@ -312,6 +309,23 @@ export const TIMEOUT_VALUES = {
   PHISHING_EDITOR_EMAIL_TIMEOUT_MS: 180000,
   // Landing page = classification only (no HTML rewrite), much faster
   PHISHING_EDITOR_LANDING_TIMEOUT_MS: 60000,
+  // Keepnet domain API fetch timeout (milliseconds)
+  DOMAIN_FETCH_TIMEOUT_MS: 10_000,
+  // KV edge propagation delays (milliseconds) — wait for Cloudflare KV eventual consistency
+  KV_UPLOAD_PROPAGATION_MS: 3000,
+  KV_UPDATE_PROPAGATION_MS: 1500,
+  // Batch orchestrator chunk retry delay (milliseconds)
+  BATCH_CHUNK_RETRY_DELAY_MS: 2000,
+  // Web research (Jina) fetch timeout (milliseconds)
+  WEB_RESEARCH_FETCH_TIMEOUT_MS: 30000,
+  // Validate-and-store report KV consistency retry base delay (milliseconds) — multiplied by attempt
+  REPORT_KV_RETRY_BASE_MS: 500,
+  // Group lookup API timeout (milliseconds)
+  GROUP_LOOKUP_TIMEOUT_MS: 15000,
+  // Policy summary AI call timeout (milliseconds)
+  POLICY_SUMMARY_TIMEOUT_MS: 60000,
+  // Health check default timeout (milliseconds)
+  HEALTH_CHECK_TIMEOUT_MS: 5000,
 } as const;
 
 // ============================================
@@ -748,6 +762,8 @@ export const PHISHING = {
 export const PHISHING_TEMPLATE_FIXER = {
   /** Maximum HTML input size in bytes. Templates exceeding this are rejected with 413. */
   MAX_HTML_SIZE_BYTES: 80_000,
+  /** Maximum HTML characters sent to LLM for landing page classification. Full HTML is NOT rewritten — only classified. */
+  LANDING_PAGE_CHAR_LIMIT: 5_000,
   /**
    * Simulation sender domains for from_address generation.
    * Agent selects the most appropriate domain based on email content,
@@ -905,10 +921,10 @@ export const LANDING_PAGE = {
   },
 
   // UI sizing defaults (px)
-  // 600px is a more realistic max-width for modern login forms
-  FORM_MAX_WIDTH_PX: 600,
+  // 680px ensures form fields have comfortable width even with 32px padding on each side
+  FORM_MAX_WIDTH_PX: 680,
   MINIMAL_BODY_MAX_WIDTH_PX: 800,
-  HERO_MAIN_CONTAINER_MAX_WIDTH_PX: 600,
+  HERO_MAIN_CONTAINER_MAX_WIDTH_PX: 680,
   HERO_MAIN_CONTAINER_MARGIN_TOP_PX: -24,
   QR_CODE_IMAGE_WIDTH_PX: 200,
 } as const;

@@ -186,55 +186,48 @@ export const mastra = new Mastra({
   /* eslint-enable @typescript-eslint/no-non-null-assertion */
   server: {
     /**
-     * MIDDLEWARE EXECUTION ORDER (left to right = first to last)
-     * ========================================================
+     * MIDDLEWARE EXECUTION ORDER (array index = execution order)
+     * ==========================================================
      *
      * ORDER MATTERS! Each middleware depends on previous ones.
      *
-     * 1. contextStorage (FIRST)
-     *    - Purpose: Initialize request context + correlation ID
-     *    - Why first: All subsequent middleware/handlers need context to be available
-     *    - Dependency: None
-     *    - Provides: c.get('mastra'), request context, correlationId
+     *  1. errorHandlerMiddleware
+     *     - Wraps entire chain; catches unhandled errors → 500 JSON (no stack leak)
      *
-     * 2. requestLoggingMiddleware (SECOND)
-     *    - Purpose: Log all requests with timing and status
-     *    - Why second: Needs correlationId, measures total request duration
-     *    - Logs: method, path, status, duration (ms)
+     *  2. authTokenMiddleware
+     *     - Validates X-AGENTIC-ALLY-TOKEN header (skips SKIP_AUTH_PATHS)
+     *     - Rejects: 401 if token missing/invalid
      *
-     * 3. securityHeadersMiddleware (THIRD)
-     *    - Purpose: Add OWASP security headers to all responses
-     *    - Why third: Security headers should be applied early
-     *    - Adds: X-Content-Type-Options, X-Frame-Options, X-XSS-Protection, etc.
+     *  3. contextStorage
+     *     - Initializes request context, correlation ID, c.get('mastra')
+     *     - Dependency: None (but placed after auth so context has companyId)
      *
-     * 4. bodySizeLimitMiddleware (FOURTH)
-     *    - Purpose: Prevent DoS via oversized payloads
-     *    - Why fourth: Reject large requests before rate limiting counts them
-     *    - Rejects: Requests > 1MB with 413 Payload Too Large
+     *  4. requestLoggingMiddleware
+     *     - Logs method, path, status, duration (ms) with correlationId
+     *     - Dependency: contextStorage
      *
-     * 5. rateLimitMiddleware (FIFTH)
-     *    - Purpose: Rate limiting (security boundary)
-     *    - Why fifth: Applied before any business logic executes
-     *    - Dependency: contextStorage (for request identification)
-     *    - Rejects: Requests exceeding rate limit with 429 (Retry-After header)
+     *  5. securityHeadersMiddleware
+     *     - OWASP headers: X-Content-Type-Options, X-Frame-Options, X-XSS-Protection, etc.
      *
-     * 6. injectD1Database (SIXTH)
-     *    - Purpose: Inject Cloudflare D1 database binding into ExampleRepo
-     *    - Why sixth: Handlers need DB access, security checks should complete first
-     *    - Dependency: contextStorage
-     *    - Modifies: ExampleRepo singleton with D1 database instance
+     *  6. bodySizeLimitMiddleware
+     *     - Rejects requests > 1 MB with 413 (before rate limiter counts them)
      *
-     * 7. gdprAuditMiddleware (SEVENTH)
-     *    - Purpose: GDPR Art. 30 automatic audit for personal data endpoints
-     *    - Why seventh: Needs companyId (from contextStorage) and D1 (from env)
-     *    - Dependency: contextStorage, injectD1Database
-     *    - Fire-and-forget: does NOT block the response
+     *  7. rateLimitMiddleware (PUBLIC_UNAUTH tier — 180/min)
+     *     - Only applies to public unauthenticated paths; skipped otherwise
      *
-     * 8. disablePlayground & disableSwagger (LAST)
-     *    - Purpose: Modify OpenAPI/Swagger documentation
-     *    - Why last: Applied after all service setup is complete
-     *    - Dependency: All previous middleware
-     *    - Modifies: HTTP headers for OpenAPI responses
+     *  8. rateLimitMiddleware (global — 100/min)
+     *     - Applies to all paths except /health
+     *
+     *  9. injectD1Database
+     *     - Injects Cloudflare D1 binding into ExampleRepo singleton
+     *     - Dependency: contextStorage
+     *
+     * 10. gdprAuditMiddleware (Art. 30)
+     *     - Fire-and-forget audit log for personal data endpoints
+     *     - Dependency: contextStorage, D1
+     *
+     * 11. disablePlayground & disableSwagger
+     *     - Blocks /swagger-ui in production
      *
      * CRITICAL: Do not reorder without understanding dependencies!
      */

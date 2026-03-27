@@ -17,7 +17,7 @@ import { callWorkerAPI, type ServiceBinding } from '../../utils/core/worker-api-
 import { maskSensitiveField } from '../../utils/core/security-utils';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
 import { KVService } from '../../services/kv-service';
-import { ERROR_MESSAGES, API_ENDPOINTS, getWorkerUrls } from '../../constants';
+import { ERROR_MESSAGES, API_ENDPOINTS, getWorkerUrls, TIMEOUT_VALUES } from '../../constants';
 import { errorService } from '../../services/error-service';
 import { validateToolResult } from '../../utils/tool-result-validation';
 import { waitForKVConsistency, buildExpectedKVKeys } from '../../utils/kv-consistency';
@@ -91,7 +91,7 @@ export const uploadTrainingTool = createTool({
       await waitForKVConsistency(microlearningId, expectedKeys);
 
       // Additional buffer for KV content propagation — key may exist but data not fully readable yet
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      await new Promise(resolve => setTimeout(resolve, TIMEOUT_VALUES.KV_UPLOAD_PROPAGATION_MS));
 
       // 2. Fetch Content from KV with retry (handles eventual consistency edge cases)
       const kvService = new KVService();

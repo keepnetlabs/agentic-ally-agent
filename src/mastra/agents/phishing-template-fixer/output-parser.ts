@@ -23,7 +23,6 @@ import {
   type LandingPageClassifierOutput,
   type EmailRewriterOutput,
   type EmailClassifierOutput,
-  type PhishingTemplateFixerType,
 } from './types';
 
 // ============================================
@@ -82,19 +81,6 @@ export function parseRewriterOutput(raw: string): RewriterParseResult {
  */
 export function parseClassifierOutput(raw: string): ClassifierParseResult {
   return parseAndValidate(raw, EmailClassifierOutputSchema);
-}
-
-/**
- * Legacy unified parser — routes to the correct parser based on type.
- * Kept for backward compatibility with existing route code.
- */
-export function parsePhishingTemplateFixerOutput(
-  raw: string,
-  type: PhishingTemplateFixerType
-): ParseResult {
-  return type === 'email_template'
-    ? parseEmailTemplateOutput(raw)
-    : parseLandingPageOutput(raw);
 }
 
 // ============================================

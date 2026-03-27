@@ -8,6 +8,7 @@ vi.mock('ai', () => ({
 }));
 
 vi.mock('../../model-providers', () => ({
+  reasoningHeaders: () => ({}),
   getModelWithOverride: vi.fn(() => 'gpt-4o'),
 }));
 

@@ -344,27 +344,6 @@ export function detectJsonCorruption(jsonData: EmailSimulationInbox | Record<str
 }
 
 /**
- * Truncate text to maximum length
- * Useful for fields with strict character limits (e.g., email descriptions limited to 300 chars)
- * @param text - The text to truncate
- * @param maxLength - Maximum allowed length
- * @returns Truncated text
- */
-export function truncateText(text: string, maxLength: number): string {
-  if (!text) return text;
-  if (text.length <= maxLength) return text;
-
-  // Truncate and optionally add ellipsis
-  const truncated = text.substring(0, maxLength);
-  logger.info('Text truncated', {
-    originalLength: text.length,
-    maxLength,
-    truncatedLength: truncated.length,
-  });
-  return truncated;
-}
-
-/**
  * Repairs HTML by auto-closing unclosed tags using parse5
  * @param html - The HTML string to repair
  * @returns Repaired HTML with properly closed tags

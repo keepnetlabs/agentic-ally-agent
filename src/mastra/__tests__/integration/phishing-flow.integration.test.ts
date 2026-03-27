@@ -96,6 +96,7 @@ vi.mock('../../utils/core/reasoning-stream', () => ({
 }));
 
 vi.mock('../../model-providers', () => ({
+  reasoningHeaders: () => ({}),
   getModelWithOverride: vi.fn().mockReturnValue('mock-model'),
 }));
 

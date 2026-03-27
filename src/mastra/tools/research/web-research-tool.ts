@@ -13,12 +13,13 @@ import { createTool, ToolExecutionContext } from '@mastra/core/tools';
 import { z } from 'zod';
 import { getLogger } from '../../utils/core/logger';
 import { normalizeError } from '../../utils/core/error-utils';
+import { TIMEOUT_VALUES } from '../../constants';
 
 const logger = getLogger('WebResearchTool');
 
 const JINA_SEARCH_URL = 'https://s.jina.ai';
 const JINA_READER_URL = 'https://r.jina.ai';
-const FETCH_TIMEOUT_MS = 30000;
+const FETCH_TIMEOUT_MS = TIMEOUT_VALUES.WEB_RESEARCH_FETCH_TIMEOUT_MS;
 
 // ============================================
 // Types
@@ -43,6 +44,12 @@ function getJinaHeaders(search = false): Record<string, string> {
 }
 
 async function jinaSearch(query: string): Promise<SearchResult[]> {
+  const MAX_QUERY_LENGTH = 500
+  if (query.length > MAX_QUERY_LENGTH) {
+    logger.warn('Query exceeds max length, truncating', { original: query.length, max: MAX_QUERY_LENGTH })
+    query = query.slice(0, MAX_QUERY_LENGTH)
+  }
+
   const url = `${JINA_SEARCH_URL}/?q=${encodeURIComponent(query)}`
 
   const response = await fetch(url, {
@@ -85,7 +92,8 @@ async function jinaSearch(query: string): Promise<SearchResult[]> {
           description: item.description || item.content || '',
         }))
       }
-    } catch {
+    } catch (parseErr) {
+      logger.warn('JSON parse failed for Jina response, falling back to line-by-line parse', { error: String(parseErr) })
       // Not JSON, try line-by-line parse
       const lines = text.split('\n').filter(l => l.trim())
       for (const line of lines) {

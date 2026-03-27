@@ -34,16 +34,11 @@ import { postProcessPhishingLandingHtml } from '../utils/content-processors/phis
 import { collapseEmptyWrappers } from '../utils/content-processors/email-wrapper-collapser';
 import { cleanGrapejsStyles } from '../utils/content-processors/email-style-cleaner';
 import { restoreLostPadding } from '../utils/content-processors/email-padding-restorer';
+import { restoreLostFontFamilies } from '../utils/content-processors/email-font-restorer';
+import { restoreLostBorders } from '../utils/content-processors/email-border-restorer';
 
-/**
- * Maximum HTML characters sent to LLM for landing page classification.
- * Landing pages only need enough content to identify brand, premise, and trigger.
- * Full HTML is NOT rewritten — only classified.
- */
-const LANDING_PAGE_CLASSIFICATION_CHAR_LIMIT = 5000;
-
-/** Timeout for the Keepnet domain fetch call (10s) */
-const DOMAIN_FETCH_TIMEOUT_MS = 10_000;
+/** Domain source for logging — distinguishes API-fetched from hardcoded fallback */
+type DomainSource = 'api' | 'hardcoded';
 
 function normalizeDomain(value: string): string {
   return value.trim().toLowerCase();
@@ -54,14 +49,20 @@ function extractDomainFromEmail(emailAddress: string): string {
   return domain;
 }
 
+/**
+ * Validates that AI-selected domain is from the allowed list.
+ * Throws a validation error (non-retryable) if the domain is not in the list.
+ */
 function assertAllowedDomain(selectedDomain: string, allowedDomains: readonly string[], fieldName: string): void {
   const normalizedSelectedDomain = normalizeDomain(selectedDomain);
   const normalizedAllowedDomains = new Set(allowedDomains.map(normalizeDomain));
 
   if (!normalizedAllowedDomains.has(normalizedSelectedDomain)) {
-    throw new Error(
-      `${fieldName} must be selected from available domains. Received: ${selectedDomain}`
+    const errorInfo = errorService.validation(
+      `${fieldName} must be selected from available domains. Received: ${selectedDomain}`,
+      { field: fieldName, received: selectedDomain, allowedCount: allowedDomains.length }
     );
+    throw new Error(errorInfo.message);
   }
 }
 
@@ -98,7 +99,7 @@ async function fetchDomainsFromApi(
         method: 'GET',
         headers,
       }),
-      DOMAIN_FETCH_TIMEOUT_MS,
+      TIMEOUT_VALUES.DOMAIN_FETCH_TIMEOUT_MS,
     );
 
     if (!response.ok) {
@@ -172,9 +173,8 @@ export const phishingTemplateFixerHandler = async (c: Context) => {
 
     // Fetch domains from Keepnet API; fall back to hardcoded list on failure
     const apiDomains = await fetchDomainsFromApi(logger, accessToken);
-    const domainList = apiDomains.length > 0
-      ? apiDomains
-      : PHISHING_TEMPLATE_FIXER.SENDER_DOMAINS;
+    const domainSource: DomainSource = apiDomains.length > 0 ? 'api' : 'hardcoded';
+    const domainList = domainSource === 'api' ? apiDomains : PHISHING_TEMPLATE_FIXER.SENDER_DOMAINS;
 
     // Step 2: Size guard (email only — landing pages are truncated, not rejected)
     if (type === 'email_template' && html.length > PHISHING_TEMPLATE_FIXER.MAX_HTML_SIZE_BYTES) {
@@ -195,6 +195,8 @@ export const phishingTemplateFixerHandler = async (c: Context) => {
     logger.info('phishing_template_fixer_started', {
       type,
       htmlLength: html.length,
+      domainSource,
+      domainCount: domainList.length,
     });
 
     // Step 3: Get agents and branch by type
@@ -297,7 +299,7 @@ async function handleEmailTemplate(
   const aiRawHtml = rewriterData.fixed_html;
 
   // --- Content marker checks ---
-  const inputImgSrcs = [...(cleanedHtml.matchAll(/src="([^"]+)"/gi))].map(m => m[1]);
+  const inputImgSrcs = [...(cleanedHtml.matchAll(/src=["']([^"']+)["']/gi))].map(m => m[1]);
   const inputTrCount = (cleanedHtml.match(/<tr/gi) || []).length;
   const aiTrCount = (aiRawHtml.match(/<tr/gi) || []).length;
   const aiShrinkPct = Math.round((1 - aiRawHtml.length / cleanedHtml.length) * 100);
@@ -343,9 +345,25 @@ async function handleEmailTemplate(
     aiTail: aiRawHtml.slice(-200),
   });
 
-  // If AI output lost content or is structurally broken, fall back to original HTML
-  // Otherwise, restore any padding the AI stripped from <td> elements (matched by GrapeJS id)
-  const baseHtml = aiLostContent ? html : restoreLostPadding(cleanedHtml, aiRawHtml);
+  // If AI output lost content or is structurally broken, fall back to original HTML.
+  // Otherwise, restore padding, font-family, and border values the AI may have stripped/changed.
+  let baseHtml: string;
+  let fontsRestored = 0;
+  let bordersRestored = 0;
+  if (aiLostContent) {
+    baseHtml = html;
+  } else {
+    baseHtml = restoreLostPadding(cleanedHtml, aiRawHtml);
+    const fontResult = restoreLostFontFamilies(cleanedHtml, baseHtml);
+    baseHtml = fontResult.html;
+    fontsRestored = fontResult.restoredCount;
+    const borderResult = restoreLostBorders(cleanedHtml, baseHtml);
+    baseHtml = borderResult.html;
+    bordersRestored = borderResult.restoredCount;
+    if (fontsRestored > 0 || bordersRestored > 0) {
+      logger.info('email_ai_properties_restored', { fontsRestored, bordersRestored });
+    }
+  }
   if (aiLostContent) {
     logger.warn('email_rewrite_fallback', {
       reason: structurallyBroken
@@ -362,17 +380,17 @@ async function handleEmailTemplate(
     });
   }
 
-  // Post-process through the normalizer pipeline
-  const step1 = normalizeEmailLocalBoxes(baseHtml);
-  const step2 = normalizeEmailButtonDivs(step1);
-  const step3 = normalizeEmailCtaWrapperAlignment(step2);
-  const step4 = normalizeEmailButtonRowPadding(step3);
-  const step5 = normalizeEmailButtonOnlyRowAlignment(step4);
-  const step6 = normalizeEmailLeadingCtaBlockAlignment(step5);
-  const step7 = normalizeEmailNestedCtaTableAlignment(step6);
-  const normalizedHtml = normalizeEmailButtonMarginToTdPadding(step7);
+  // Post-process through the normalizer pipeline (same pattern as postProcessPhishingEmailHtml)
+  let out = normalizeEmailLocalBoxes(baseHtml);
+  out = normalizeEmailButtonDivs(out);
+  out = normalizeEmailCtaWrapperAlignment(out);
+  out = normalizeEmailButtonRowPadding(out);
+  out = normalizeEmailButtonOnlyRowAlignment(out);
+  out = normalizeEmailLeadingCtaBlockAlignment(out);
+  out = normalizeEmailNestedCtaTableAlignment(out);
+  out = normalizeEmailButtonMarginToTdPadding(out);
 
-  const { html: finalHtml, corrections } = normalizeEmailMergeTags(normalizedHtml);
+  const { html: finalHtml, corrections } = normalizeEmailMergeTags(out);
   if (corrections.length > 0) {
     logger.info('merge_tags_corrected', { corrections });
   }
@@ -393,11 +411,15 @@ async function handleEmailTemplate(
   logger.info('phishing_template_fixer_completed', {
     type: 'email_template',
     mode: 'parallel',
+    fallbackUsed: aiLostContent,
+    fontsRestored,
+    bordersRestored,
     tagsCount: data.tags.length,
     difficulty: data.difficulty,
     fromAddress: data.from_address,
     fromName: data.from_name,
     subject: data.subject,
+    mergeTagCorrections: corrections.length,
     durationMs: Date.now() - requestStart,
   });
 
@@ -417,8 +439,9 @@ async function handleLandingPage(
   requestStart: number,
 ) {
   // Truncate HTML — classification only needs enough to identify brand/premise/trigger
-  const truncatedHtml = html.slice(0, LANDING_PAGE_CLASSIFICATION_CHAR_LIMIT);
-  const wasTruncated = html.length > LANDING_PAGE_CLASSIFICATION_CHAR_LIMIT;
+  const charLimit = PHISHING_TEMPLATE_FIXER.LANDING_PAGE_CHAR_LIMIT;
+  const truncatedHtml = html.slice(0, charLimit);
+  const wasTruncated = html.length > charLimit;
 
   if (wasTruncated) {
     logger.warn('landing_page_truncated', {

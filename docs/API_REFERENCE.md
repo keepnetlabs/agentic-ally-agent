@@ -283,7 +283,7 @@ Diagnostic endpoint for uptime checks and dependency validation.
   "details": {
     "agents": ["orchestrator", "microlearning", "phishingEmail", "..."],
     "workflows": ["create-microlearning", "add-language", "..."],
-    "agentCount": 9,
+    "agentCount": 13,
     "workflowCount": 6
   },
   "cache": { "microlearningCount": 10, "estimatedSizeMB": 25.5 },
@@ -705,6 +705,77 @@ Backend proxy for HeyGen video status polling. Keeps `HEYGEN_API_KEY` server-sid
 
 ---
 
+## 10. Phishing Template Fixer (`POST /phishing/template-fixer`)
+
+Normalizes and classifies phishing email templates or landing page templates. Uses a split architecture with 3 specialized agents: `emailRewriter` (email HTML fix + metadata), `emailClassifier`, and `phishingLandingPageClassifier`.
+
+### Headers
+| Header | Value | Required | Description |
+|--------|-------|----------|-------------|
+| `Content-Type` | `application/json` | Yes | - |
+
+### Request Body
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `html` | string | Yes | Raw HTML template. Max **80,000 bytes**. |
+| `type` | `"email_template"` \| `"landing_page"` | Yes | Template type determines which agent pipeline runs. |
+| `accessToken` | string | No | Optional auth token. |
+
+**Example:**
+```json
+{
+  "html": "<html>...</html>",
+  "type": "email_template",
+  "accessToken": "optional-token"
+}
+```
+
+### Response (`email_template`)
+Timeout: **180 seconds**.
+```json
+{
+  "fixed_html": "<html>...normalized...</html>",
+  "change_log": ["Fixed table width", "Added Outlook VML"],
+  "tags": ["urgency", "credential-harvest"],
+  "difficulty": "medium",
+  "from_address": "it-support@company.com",
+  "from_name": "IT Support",
+  "subject": "Action Required: Verify Your Account"
+}
+```
+
+### Response (`landing_page`)
+Timeout: **60 seconds**.
+```json
+{
+  "tags": ["login-page", "credential-harvest"],
+  "difficulty": "hard",
+  "domain": "secure-login.example.com",
+  "change_log": ["Preserved form action", "Fixed responsive layout"],
+  "fixed_html": "<html>...normalized...</html>"
+}
+```
+
+### Error Responses
+
+**400 - Invalid input (HTML too large)**
+```json
+{
+  "success": false,
+  "error": "HTML exceeds maximum size of 80000 bytes"
+}
+```
+
+**400 - Invalid type**
+```json
+{
+  "success": false,
+  "error": "Invalid type. Must be 'email_template' or 'landing_page'"
+}
+```
+
+---
+
 ## Error Response Format (5xx)
 
 All 5xx responses from the global error handler include:
@@ -747,7 +818,7 @@ All 5xx responses from the global error handler include:
 1.  **Correlation Header:** every response includes `X-Correlation-ID`. If caller sends one, it is propagated; otherwise service generates one.
 2.  **Auth Model:**
     *   Requires `X-AGENTIC-ALLY-TOKEN` by default.
-    *   Public unauthenticated endpoints: `/autonomous`, `/code-review-validate`, `/vishing/prompt`, `/vishing/conversations/summary`, `/smishing/chat`, `/email-ir/analyze`.
+    *   Public unauthenticated endpoints: `/autonomous`, `/code-review-validate`, `/vishing/prompt`, `/vishing/conversations/summary`, `/smishing/chat`, `/email-ir/analyze`, `/phishing/template-fixer`.
     *   Authenticated + company-scoped: `/audit/verify`, `/deepfake/status/:videoId`.
     *   Internal auth-skip endpoints: `/health`, `/__refresh`, `/__hot-reload-status`, `/api/telemetry`.
 3.  **Rate Limit Tiers (per IP):**

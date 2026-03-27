@@ -121,7 +121,7 @@ For each new page/template, change at least **3** of the following visual aspect
 
 Items 1–3 apply only to card-based layouts (CENTERED, HERO, and the right-panel form card in SPLIT). For MINIMAL, vary items 4–7 instead.
 
-1. Card max-width for card-based layouts (min 560px, max ${LANDING_PAGE.FORM_MAX_WIDTH_PX}px). Never below 560px — forms look cramped.
+1. Card max-width for card-based layouts (min 620px, max ${LANDING_PAGE.FORM_MAX_WIDTH_PX}px). Never below 620px — forms look cramped with padding.
 2. Card border-radius for card-based layouts (6px, 8px, or 10px). Keep subtle and professional.
 3. Card border style (e.g. \`border: 1px solid #e2e8f0\` or \`border: 1px solid rgba(0,0,0,0.08)\`). No box-shadow — inconsistent across browsers.
 4. Logo size (keep alignment and placement identical across pages).
@@ -154,6 +154,7 @@ If a layout-specific rule above conflicts with a shared rule below, the layout-s
 
 ${hasFormPages ? `3. **Inputs:**
    - Use \`inputStyle\` from the design patterns above. Each input must have a visible label above it.
+   - **CRITICAL:** Every \`<button>\` with \`width: 100%\` MUST also include \`box-sizing: border-box;\` in its inline style to prevent overflow.
 
 4. **Primary Button:**
    - Use \`buttonStyle\` from the design patterns above with \`type='submit'\`.

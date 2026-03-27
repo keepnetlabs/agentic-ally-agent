@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseEmailTemplateOutput, parseLandingPageOutput, parsePhishingTemplateFixerOutput } from './output-parser';
+import { parseEmailTemplateOutput, parseLandingPageOutput } from './output-parser';
 
 // ============================================
 // EMAIL TEMPLATE PARSER
@@ -213,36 +213,3 @@ describe('parseLandingPageOutput', () => {
 // ============================================
 // LEGACY UNIFIED PARSER
 // ============================================
-
-describe('parsePhishingTemplateFixerOutput (legacy)', () => {
-  it('routes email_template to email parser', () => {
-    const raw = JSON.stringify({
-      fixed_html: '<!DOCTYPE html><html><head></head><body>Email</body></html>',
-      change_log: [
-        'FIXED: rebuilt outer wrapper table',
-        'BUTTONS: normalized CTA with hybrid VML button',
-        'PLACEHOLDERS: replaced recipient links with {PHISHINGURL}',
-      ],
-      tags: ['MICROSOFT', 'CREDENTIAL_HARVEST', 'TRIGGER_URGENCY'],
-      difficulty: 'DIFFICULTY_HIGH',
-      from_address: 'info@example.com',
-      from_name: 'Microsoft Account Team',
-      subject: 'Verify Your Account',
-    });
-
-    const result = parsePhishingTemplateFixerOutput(raw, 'email_template');
-    expect(result.success).toBe(true);
-  });
-
-  it('routes landing_page to landing page parser', () => {
-    const raw = JSON.stringify({
-      tags: ['DHL', 'DELIVERY', 'TRIGGER_URGENCY'],
-      difficulty: 'DIFFICULTY_LOW',
-      domain: 'getsaccess.com',
-      change_log: ['BRAND: DHL parcel tracking page'],
-    });
-
-    const result = parsePhishingTemplateFixerOutput(raw, 'landing_page');
-    expect(result.success).toBe(true);
-  });
-});

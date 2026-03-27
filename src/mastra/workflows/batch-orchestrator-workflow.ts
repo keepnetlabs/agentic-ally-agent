@@ -7,7 +7,7 @@ declare const WorkflowEntrypoint: any;
 declare const WorkflowStep: any;
 import { getLogger } from '../utils/core/logger';
 import { fetchGroupMembersPage } from '../utils/core/group-members';
-import { CF_WORKFLOW_LIMITS, BATCH_KV_KEYS, BATCH_META_TTL_SECONDS } from '../constants';
+import { CF_WORKFLOW_LIMITS, BATCH_KV_KEYS, BATCH_META_TTL_SECONDS, TIMEOUT_VALUES } from '../constants';
 import type { AutonomousAction } from '../types/autonomous-types';
 import { mastra } from '../index';
 
@@ -137,7 +137,7 @@ export class BatchOrchestratorWorkflow extends WorkflowEntrypoint {
                     attempt,
                     error: errMsg,
                   });
-                  await new Promise(r => setTimeout(r, 2000));
+                  await new Promise(r => setTimeout(r, TIMEOUT_VALUES.BATCH_CHUNK_RETRY_DELAY_MS));
                 } else {
                   failed += chunk.length;
                   errors.push(errMsg);

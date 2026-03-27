@@ -5,7 +5,7 @@ import { getLogger } from '../../utils/core/logger';
 import { normalizeError, logErrorInfo } from '../../utils/core/error-utils';
 import { errorService } from '../error-service';
 import { resolveBaseApiUrl } from '../../utils/core/url-validator';
-import { generateBatchId } from '../../utils/core/short-id';
+// generateBatchId removed — each assign tool generates its own batchResourceId when threadId is undefined
 import {
   AutonomousRequest,
   AutonomousResponse,
@@ -48,9 +48,10 @@ export async function executeAutonomousGeneration(request: AutonomousRequest): P
   }
 
   try {
-    // If batchResourceId provided (batch fan-out), use it as threadId so all users share the same batch.
-    // Otherwise generate a unique threadId per autonomous run.
-    const threadId = batchResourceId || generateBatchId();
+    // If batchResourceId provided (from API), use it as threadId so all actions share the same batch.
+    // If NOT provided, leave threadId undefined — each assign tool will generate its own unique batchResourceId,
+    // ensuring each action (phishing, training, smishing) gets a separate batch.
+    const threadId = batchResourceId || undefined;
     const existingCtx = getRequestContext();
     const companyId = existingCtx?.companyId;
     // Merge env: prefer request.env (from Workflow binding), fallback to existing context env

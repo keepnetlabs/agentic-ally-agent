@@ -73,6 +73,7 @@ vi.mock('../constants', () => ({
 }));
 
 vi.mock('../model-providers', () => ({
+  reasoningHeaders: () => ({}),
   getModelWithOverride: vi.fn().mockReturnValue('mock-model'),
 }));
 

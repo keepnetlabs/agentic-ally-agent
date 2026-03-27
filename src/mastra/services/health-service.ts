@@ -11,6 +11,7 @@ import { errorService } from './error-service';
 import { KVService } from './kv-service';
 import { withRetry } from '../utils/core/resilience-utils';
 import { MicrolearningService } from './microlearning-service';
+import { TIMEOUT_VALUES } from '../constants';
 
 const logger = getLogger('HealthService');
 
@@ -208,7 +209,7 @@ export function determineOverallStatus(checks: {
 export async function performHealthCheck(
   agents: Record<string, unknown>,
   workflows: Record<string, unknown>,
-  timeoutMs: number = 5000,
+  timeoutMs: number = TIMEOUT_VALUES.HEALTH_CHECK_TIMEOUT_MS,
   env?: { agentic_ally_memory?: D1Database }
 ): Promise<HealthCheckResponse> {
   const uptime = getUptime();

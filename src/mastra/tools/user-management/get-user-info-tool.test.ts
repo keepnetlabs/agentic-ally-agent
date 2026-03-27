@@ -19,6 +19,7 @@ vi.mock('ai', () => ({
 
 // Mock model providers
 vi.mock('../../model-providers', () => ({
+  reasoningHeaders: () => ({}),
   getModelWithOverride: vi.fn(() => ({ modelId: 'test-model' })),
 }));
 

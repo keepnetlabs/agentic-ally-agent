@@ -212,22 +212,28 @@ export function normalizeEmailButtonOnlyRowAlignment(html: string): string {
       if (!isLikelyCtaElement(cta)) return match;
 
       const openingTag = String(cta).slice(0, String(cta).indexOf('>') + 1);
-      const ctaSelfContainedLayout =
-        /display\s*:\s*block/i.test(openingTag) ||
-        /width\s*:\s*100%/i.test(openingTag) ||
-        /margin-left\s*:\s*auto/i.test(openingTag) ||
-        /margin-right\s*:\s*auto/i.test(openingTag) ||
+      const isFullWidth = /width\s*:\s*100%/i.test(openingTag);
+      const isSelfCentered =
+        (/margin-left\s*:\s*auto/i.test(openingTag) && /margin-right\s*:\s*auto/i.test(openingTag)) ||
         /margin\s*:\s*0\s+auto/i.test(openingTag);
 
-      // If the CTA already carries its own width/alignment semantics, do not override the row.
-      // This preserves intentionally full-width buttons and self-contained centered CTAs.
-      if (ctaSelfContainedLayout) {
+      // Skip centering ONLY for full-width (fills td) or self-centering (margin:auto) buttons.
+      // display:block alone does NOT center — a 300px block element stays left-aligned without parent centering.
+      if (isFullWidth || isSelfCentered) {
+        return `${openTag}${content}${closeTag}`;
+      }
+
+      // Respect explicit non-center alignment on the <td> — do not override intentional left/right placement.
+      const hasExplicitAlignAttr = /\balign\s*=\s*['"](left|right)['"]/i.test(attrs);
+      const tdStyle = (attrs.match(/style=['"]([^'"]*)/i) || [])[1] || '';
+      const hasExplicitTextAlign = /text-align\s*:\s*(left|right)/i.test(tdStyle);
+      if (hasExplicitAlignAttr || hasExplicitTextAlign) {
         return `${openTag}${content}${closeTag}`;
       }
 
       let nextOpenTag = openTag;
 
-      if (!/\balign\s*=\s*['"]center['"]/i.test(attrs)) {
+      if (!/\balign\s*=/i.test(attrs)) {
         nextOpenTag = nextOpenTag.replace(/<td\b/i, `<td align="center"`);
       }
 

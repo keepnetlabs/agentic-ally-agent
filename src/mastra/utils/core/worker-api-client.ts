@@ -133,7 +133,19 @@ export async function callWorkerAPI<TResponse = any, TPayload = any>(
     throw new Error(errorInfo.message);
   }
 
-  return await response.json();
+  let data: TResponse;
+  try {
+    data = await response.json();
+  } catch {
+    const errorInfo = errorService.external(`${errorPrefix}: Response is not valid JSON`, {
+      status: response.status,
+      endpoint,
+      operationName,
+    });
+    logErrorInfo(logger, 'error', `${operationName} returned non-JSON response`, errorInfo);
+    throw new Error(errorInfo.message);
+  }
+  return data;
 }
 
 // ============================================

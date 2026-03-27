@@ -17,13 +17,13 @@ Agentic Ally is built on the **Mastra** framework and deployed on **Cloudflare W
 │  • Routes to 9 Specialist Agents                     │
 └────────────────────┬─────────────────────────────────┘
                      │
-     ┌───────┬───────┬───────┬───────┬───────┬───────┐
-     ▼       ▼       ▼       ▼       ▼       ▼       ▼
-  MICRO  PHISH  SMISH  POLICY USER   EMAIL   VISHING  OUT-OF-
- LEARNING  EMAIL  SMS   RAG    INFO    IR     CALL    SCOPE
-   AGENT   AGENT  AGENT AGENT  AGENT  AGENT   AGENT   AGENT
-     │       │      │     │      │      │       │
-     └───────┴──────┴─────┴──────┴──────┴───────┘
+     ┌───────┬───────┬───────┬───────┬───────┬───────┬───────┐
+     ▼       ▼       ▼       ▼       ▼       ▼       ▼       ▼
+  MICRO  PHISH  SMISH  POLICY USER   EMAIL  VISHING DEEPFAKE OUT-OF-
+ LEARNING EMAIL  SMS    RAG   INFO    IR     CALL    VIDEO   SCOPE
+   AGENT  AGENT  AGENT AGENT  AGENT  AGENT   AGENT   AGENT   AGENT
+     │       │      │     │      │      │       │       │
+     └───────┴──────┴─────┴──────┴──────┴───────┴───────┘
                 │
                 ▼
 ┌──────────────────────────────────────────────────────┐
@@ -173,11 +173,31 @@ logErrorInfo(logger, 'warn', 'Message', errorInfo);
 - **Role:** Automated incident response for suspicious emails.
 - **Usage:** Performs header/body/intent analysis, triages the email, and generates a SOC-ready report.
 
-### 7. Out-of-Scope Agent (The Boundary Guard)
+### 8. Deepfake Video Agent (The Visual Simulator)
+- **Role:** Generates deepfake awareness training videos via HeyGen.
+- **Usage:** Creates realistic AI-generated video content for security awareness training scenarios.
+- **Features:**
+    - Avatar and voice selection via HeyGen API.
+    - Async video generation with status polling (`/deepfake/status/:videoId`).
+
+### 9. Out-of-Scope Agent (The Boundary Guard)
 - **Role:** Polite scope boundary. Handles requests outside the security awareness domain.
 - **Usage:** Orchestrator routes here when the request is clearly out-of-scope (billing, IT helpdesk, general knowledge, etc.).
 - **Behavior:** Does NOT answer the question. Acknowledges limitation, lists what the system CAN help with, suggests contacting support.
 - **Safety:** Prevents hallucination and misleading responses on topics the system has no verified information for.
+
+### Direct API Agents (Non-Orchestrator)
+
+These agents are invoked directly via dedicated API endpoints, not through the Orchestrator.
+
+**Phishing Template Fixer** (`POST /phishing/template-fixer`) — Split into 3 specialized agents:
+- **emailRewriter:** Normalizes phishing email HTML (Outlook compatibility, structure fixes) and classifies metadata (tags, difficulty, from_address, subject).
+- **emailClassifier:** Classifies landing page templates (tags, difficulty, domain).
+- **phishingLandingPageClassifier:** Dedicated landing page analysis and classification.
+
+**Report Agent** (`reportAgent`) — Generates structured reports. Invoked via the platform report system, not through chat.
+
+**Total Agent Count:** 13 (9 orchestrator-routed + 3 template fixer + 1 report).
 
 ---
 

@@ -4,7 +4,7 @@ import { getLogger } from '../utils/core/logger';
 import { normalizeDepartmentName } from '../utils/language/language-utils';
 import { normalizeError, logErrorInfo } from '../utils/core/error-utils';
 import { errorService } from '../services/error-service';
-import { API_ENDPOINTS } from '../constants';
+import { API_ENDPOINTS, TIMEOUT_VALUES } from '../constants';
 import { waitForKVConsistency, buildExpectedKVKeys } from '../utils/kv-consistency';
 import { withRetry } from '../utils/core/resilience-utils';
 import { normalizeThemeBackgroundClass } from '../utils/theme/theme-color-normalizer';
@@ -316,7 +316,7 @@ const saveUpdatesStep = createStep({
       await waitForKVConsistency(microlearningId, expectedKeys);
 
       // Add a small safety buffer for edge propagation so UI sees changes immediately
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await new Promise(resolve => setTimeout(resolve, TIMEOUT_VALUES.KV_UPDATE_PROPAGATION_MS));
 
       return {
         success: true,

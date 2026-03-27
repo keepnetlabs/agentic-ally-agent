@@ -1,6 +1,7 @@
 import { truncateText } from './text-utils';
+import { TIMEOUT_VALUES } from '../../constants';
 
-export const POLICY_SUMMARY_TIMEOUT_MS = 60000;
+export const POLICY_SUMMARY_TIMEOUT_MS = TIMEOUT_VALUES.POLICY_SUMMARY_TIMEOUT_MS;
 export const MAX_POLICY_INPUT_CHARS = 24000;
 
 export interface PolicyFallbackOptions {

@@ -8,6 +8,7 @@
  * - Falls back to CS_DEFAULT_AGENT (companySearchAssistant)
  */
 import { Mastra } from '@mastra/core/mastra';
+import { z } from 'zod';
 import { cleanResponse } from '../utils/content-processors/json-cleaner';
 import { withRetry } from '../utils/core/resilience-utils';
 import { getLogger } from '../utils/core/logger';
@@ -29,11 +30,13 @@ export type CSAgentRoutingResult = {
   taskContext?: string;
 };
 
-interface CSRoutingDecision {
-  agent: CSAgentName;
-  taskContext?: string;
-  reasoning?: string;
-}
+const csRoutingDecisionSchema = z.object({
+  agent: z.string().min(1, 'agent is required'),
+  taskContext: z.string().optional(),
+  reasoning: z.string().optional(),
+});
+
+type CSRoutingDecision = z.infer<typeof csRoutingDecisionSchema> & { agent: CSAgentName };
 
 export class CSAgentRouter {
   private mastra: Mastra;
@@ -59,7 +62,7 @@ export class CSAgentRouter {
         const routingText = routingResult.text;
 
         const cleanJsonText = cleanResponse(routingText, 'cs-orchestrator-decision');
-        const parsed = JSON.parse(cleanJsonText);
+        const parsed = csRoutingDecisionSchema.parse(JSON.parse(cleanJsonText));
 
         return parsed as CSRoutingDecision;
       }, 'cs-orchestrator-routing');

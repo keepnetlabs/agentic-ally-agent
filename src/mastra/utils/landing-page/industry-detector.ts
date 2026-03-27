@@ -53,7 +53,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
         'box-shadow: 0 4px 12px rgba(30, 58, 138, 0.3)',
       ].join('; '),
       inputStyle: [
-        'width: 100%',
+        'width: 100%; box-sizing: border-box',
         'border-radius: 10px',
         'border: 1px solid #e5e7eb',
         'padding: 11px 12px',
@@ -99,7 +99,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
         'box-shadow: 0 4px 12px rgba(66, 133, 244, 0.3)',
       ].join('; '),
       inputStyle: [
-        'width: 100%',
+        'width: 100%; box-sizing: border-box',
         'border-radius: 10px',
         'border: 1px solid #e5e7eb',
         'padding: 11px 12px',
@@ -146,7 +146,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
         'box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3)',
       ].join('; '),
       inputStyle: [
-        'width: 100%',
+        'width: 100%; box-sizing: border-box',
         'border-radius: 10px',
         'border: 1px solid #e5e7eb',
         'padding: 11px 12px',
@@ -192,7 +192,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
         'box-shadow: 0 4px 12px rgba(234, 88, 12, 0.3)',
       ].join('; '),
       inputStyle: [
-        'width: 100%',
+        'width: 100%; box-sizing: border-box',
         'border-radius: 10px',
         'border: 1px solid #e5e7eb',
         'padding: 11px 12px',
@@ -238,7 +238,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
         'box-shadow: 0 4px 12px rgba(51, 65, 85, 0.3)',
       ].join('; '),
       inputStyle: [
-        'width: 100%',
+        'width: 100%; box-sizing: border-box',
         'border-radius: 10px',
         'border: 1px solid #e5e7eb',
         'padding: 11px 12px',
@@ -284,7 +284,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
         'box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3)',
       ].join('; '),
       inputStyle: [
-        'width: 100%',
+        'width: 100%; box-sizing: border-box',
         'border-radius: 10px',
         'border: 1px solid #e5e7eb',
         'padding: 11px 12px',
@@ -330,7 +330,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
         'box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3)',
       ].join('; '),
       inputStyle: [
-        'width: 100%',
+        'width: 100%; box-sizing: border-box',
         'border-radius: 10px',
         'border: 1px solid #e5e7eb',
         'padding: 11px 12px',
@@ -376,7 +376,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
         'box-shadow: 0 4px 12px rgba(30, 64, 175, 0.3)',
       ].join('; '),
       inputStyle: [
-        'width: 100%',
+        'width: 100%; box-sizing: border-box',
         'border-radius: 8px',
         'border: 1px solid #e5e7eb',
         'padding: 11px 12px',
@@ -422,7 +422,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
         'box-shadow: 0 4px 12px rgba(194, 65, 12, 0.3)',
       ].join('; '),
       inputStyle: [
-        'width: 100%',
+        'width: 100%; box-sizing: border-box',
         'border-radius: 10px',
         'border: 1px solid #e5e7eb',
         'padding: 11px 12px',
@@ -468,7 +468,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
         'box-shadow: 0 4px 12px rgba(8, 145, 178, 0.3)',
       ].join('; '),
       inputStyle: [
-        'width: 100%',
+        'width: 100%; box-sizing: border-box',
         'border-radius: 10px',
         'border: 1px solid #e5e7eb',
         'padding: 11px 12px',
@@ -514,7 +514,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
         'box-shadow: 0 4px 12px rgba(146, 64, 14, 0.3)',
       ].join('; '),
       inputStyle: [
-        'width: 100%',
+        'width: 100%; box-sizing: border-box',
         'border-radius: 10px',
         'border: 1px solid #e5e7eb',
         'padding: 11px 12px',
@@ -560,7 +560,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
         'box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3)',
       ].join('; '),
       inputStyle: [
-        'width: 100%',
+        'width: 100%; box-sizing: border-box',
         'border-radius: 10px',
         'border: 1px solid #e5e7eb',
         'padding: 11px 12px',
@@ -606,7 +606,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
         'box-shadow: 0 4px 12px rgba(75, 85, 99, 0.3)',
       ].join('; '),
       inputStyle: [
-        'width: 100%',
+        'width: 100%; box-sizing: border-box',
         'border-radius: 10px',
         'border: 1px solid #e5e7eb',
         'padding: 11px 12px',
@@ -652,7 +652,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
         'box-shadow: 0 4px 12px rgba(217, 119, 6, 0.3)',
       ].join('; '),
       inputStyle: [
-        'width: 100%',
+        'width: 100%; box-sizing: border-box',
         'border-radius: 10px',
         'border: 1px solid #e5e7eb',
         'padding: 11px 12px',
@@ -698,7 +698,7 @@ const INDUSTRY_DESIGN_MAP: Record<string, Omit<IndustryDesign, 'industry'>> = {
         'box-shadow: 0 4px 12px rgba(219, 39, 119, 0.3)',
       ].join('; '),
       inputStyle: [
-        'width: 100%',
+        'width: 100%; box-sizing: border-box',
         'border-radius: 10px',
         'border: 1px solid #e5e7eb',
         'padding: 11px 12px',

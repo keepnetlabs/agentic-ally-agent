@@ -1,8 +1,8 @@
-<svg viewBox="0 0 2700 1400" xmlns="http://www.w3.org/2000/svg">
+<svg viewBox="0 0 2700 1440" xmlns="http://www.w3.org/2000/svg">
   <!-- Define styles (Original Palette) -->
   <defs>
     <style>
-      .box { fill: #f0f4f8; stroke: #2c3e50; stroke-width: 2; }
+      .box { fill: #f7f9fb; stroke: #2c3e50; stroke-width: 1.5; filter: url(#shadow-sm); }
       .box-header { fill: #34495e; }
       .box-header-ml { fill: #3498db; }       /* Blue */
       .box-header-phishing { fill: #e74c3c; } /* Red */
@@ -14,8 +14,10 @@
       .box-header-emailir { fill: #2980b9; }  /* Dark Blue */
       .box-header-vishing { fill: #c0392b; }  /* Dark Red */
       .box-header-outofscope { fill: #95a5a6; } /* Slate - Boundary Guard */
+      .box-header-deepfake { fill: #e91e63; }   /* Pink - Deepfake Video */
+      .box-header-templatefixer { fill: #f57c00; } /* Amber - Template Fixer */
 
-      .workflow-box { fill: #ffffff; stroke-width: 2; }
+      .workflow-box { fill: #ffffff; stroke-width: 1.5; filter: url(#shadow-sm); }
       .workflow-box-ml { stroke: #3498db; }
       .workflow-box-phishing { stroke: #e74c3c; }
       .workflow-box-userinfo { stroke: #27ae60; }
@@ -26,12 +28,20 @@
       .text-normal { fill: #2c3e50; font-size: 12px; font-family: sans-serif; }
       .text-small { fill: #7f8c8d; font-size: 10px; font-family: sans-serif; }
       
-      .arrow { stroke: #34495e; stroke-width: 2; fill: none; marker-end: url(#arrowhead); stroke-linecap: round; stroke-linejoin: round; }
-      .arrow-no-marker { stroke: #34495e; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
-      .arrow-colored { stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+      .arrow { stroke: #34495e; stroke-width: 1.5; fill: none; marker-end: url(#arrowhead); stroke-linecap: round; stroke-linejoin: round; }
+      .arrow-no-marker { stroke: #34495e; stroke-width: 1.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+      .arrow-colored { stroke-width: 1.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
       .arrow-label { fill: #34495e; font-size: 11px; font-weight: bold; font-family: sans-serif; }
     </style>
     
+    <!-- Filters -->
+    <filter id="shadow" x="-2%" y="-2%" width="104%" height="108%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.08" flood-color="#000"/>
+    </filter>
+    <filter id="shadow-sm" x="-1%" y="-1%" width="102%" height="106%">
+      <feDropShadow dx="0" dy="1" stdDeviation="2" flood-opacity="0.06" flood-color="#000"/>
+    </filter>
+
     <!-- Markers -->
     <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><polygon points="0 0, 10 3, 0 6" fill="#34495e" /></marker>
     <marker id="arrowhead-ml" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><polygon points="0 0, 10 3, 0 6" fill="#3498db" /></marker>
@@ -43,11 +53,16 @@
     <marker id="arrowhead-emailir" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><polygon points="0 0, 10 3, 0 6" fill="#2980b9" /></marker>
     <marker id="arrowhead-vishing" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><polygon points="0 0, 10 3, 0 6" fill="#c0392b" /></marker>
     <marker id="arrowhead-outofscope" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><polygon points="0 0, 10 3, 0 6" fill="#95a5a6" /></marker>
+    <marker id="arrowhead-deepfake" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><polygon points="0 0, 10 3, 0 6" fill="#e91e63" /></marker>
+    <marker id="arrowhead-templatefixer" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><polygon points="0 0, 10 3, 0 6" fill="#f57c00" /></marker>
   </defs>
 
   <!-- Title -->
-  <text x="1350" y="30" font-size="28" font-weight="bold" text-anchor="middle" fill="#2c3e50" font-family="sans-serif">
-    Agentic Ally - Complete Platform Architecture
+  <text x="1350" y="28" font-size="26" font-weight="bold" text-anchor="middle" fill="#1a2332" font-family="sans-serif">
+    Agentic Ally — Platform Architecture
+  </text>
+  <text x="1350" y="44" font-size="11" text-anchor="middle" fill="#7f8c8d" font-family="sans-serif">
+    Security Awareness Training &amp; Simulation Platform · 13 Agents · Cloudflare Workers
   </text>
 
   <!-- ============================================== -->
@@ -72,7 +87,7 @@
   <rect class="box" x="2050" y="50" width="550" height="60" rx="5"/>
   <rect class="box-header" x="2050" y="50" width="550" height="25" rx="5"/>
   <text class="text-header" x="2325" y="67" text-anchor="middle">Public API Endpoints (Direct)</text>
-  <text class="text-normal" x="2070" y="85">/smishing/chat | /vishing/prompt | /vishing/conversations/summary | /email-ir/analyze</text>
+  <text class="text-normal" x="2070" y="85">/smishing/chat | /vishing/prompt | /email-ir/analyze | /phishing/template-fixer</text>
   <text class="text-small" x="2070" y="100">• Bypass /chat → Direct to agents below</text>
 
   <!-- Converging Arrows to Middleware (Y-shape, single arrowhead) -->
@@ -96,7 +111,7 @@
   <rect class="box" x="300" y="230" width="700" height="60" rx="5"/>
   <rect fill="#9b59b6" x="300" y="230" width="700" height="25" rx="5"/>
   <text class="text-header" x="650" y="247" text-anchor="middle">Orchestrator Agent (The Router)</text>
-  <text class="text-normal" x="350" y="270">Analyzes Intent &amp; History → Routes to 8 Specialist Agents (incl. Out-of-Scope Guard)</text>
+  <text class="text-normal" x="350" y="270">Analyzes Intent &amp; History → Routes to 9 Specialist Agents (incl. Out-of-Scope &amp; Deepfake Guard)</text>
 
   <!-- Out-of-Scope Agent (Guardrail - beside orchestrator) -->
   <rect class="box" x="1050" y="233" width="280" height="52" rx="5"/>
@@ -107,6 +122,16 @@
 
   <!-- Arrow: Orchestrator → Out-of-Scope (horizontal) -->
   <path class="arrow-colored" stroke="#95a5a6" marker-end="url(#arrowhead-outofscope)" d="M 1000 258 L 1050 258"/>
+
+  <!-- Deepfake Video Agent (beside Out-of-Scope) -->
+  <rect class="box" x="1370" y="233" width="280" height="52" rx="5"/>
+  <rect class="box-header-deepfake" x="1370" y="233" width="280" height="22" rx="5"/>
+  <text class="text-header" x="1510" y="249" text-anchor="middle">Deepfake Video Agent</text>
+  <text class="text-small" x="1385" y="268">AI-generated video simulations.</text>
+  <text class="text-small" x="1385" y="280">Social engineering awareness.</text>
+
+  <!-- Arrow: Orchestrator → Deepfake Video (horizontal) -->
+  <path class="arrow-colored" stroke="#e91e63" marker-end="url(#arrowhead-deepfake)" d="M 1330 258 L 1370 258"/>
 
   <!-- Routing Arrows to Main Agents (spread origins along orchestrator bottom) -->
   <path class="arrow-colored" stroke="#3498db" marker-end="url(#arrowhead-ml)" d="M 450 290 L 250 340"/>     <!-- ML -->
@@ -208,7 +233,8 @@
   <!-- ============================================== -->
 
   <!-- Separator: Main flow | Direct API flow -->
-  <line x1="2000" y1="50" x2="2000" y2="720" stroke="#bdc3c7" stroke-width="1" stroke-dasharray="8,4" opacity="0.6"/>
+  <line x1="2000" y1="50" x2="2000" y2="860" stroke="#dde1e6" stroke-width="1" stroke-dasharray="6,6" opacity="0.7"/>
+  <text x="2005" y="135" font-size="9" fill="#95a5a6" font-family="sans-serif" opacity="0.8">Direct API</text>
 
   <!-- Arrows from Public APIs to Direct Agents (parallel, no overlap) -->
   <path class="arrow-colored" stroke="#16a085" marker-end="url(#arrowhead-smishing)" stroke-dasharray="6,4" d="M 2180 110 L 2180 340"/>
@@ -239,6 +265,19 @@
   <text class="text-normal" x="2070" y="660" font-size="9">/vishing/prompt | /vishing/conversations/summary</text>
   <text fill="#9b59b6" font-size="9" x="2070" y="695">🔗 ElevenLabs Conversational AI</text>
 
+
+  <!-- Phishing Template Fixer (right column - 3 parallel agents) -->
+  <rect class="box" x="2050" y="730" width="550" height="120" rx="5"/>
+  <rect class="box-header-templatefixer" x="2050" y="730" width="550" height="25" rx="5"/>
+  <text class="text-header" x="2325" y="748" text-anchor="middle">Phishing Template Fixer (3 Agents)</text>
+  <text fill="#f57c00" font-weight="bold" x="2070" y="770" font-size="10">(Split Architecture | Parallel Rewriter + Classifier)</text>
+  <text class="text-normal" x="2070" y="790" font-size="9">/phishing/template-fixer → emailRewriter | emailClassifier (parallel)</text>
+  <text class="text-normal" x="2070" y="805" font-size="9">                          → phishingLandingPageClassifier (landing only)</text>
+  <text class="text-small" x="2070" y="825" font-size="9">Post-process: Font/Border/Padding restore + Button centering + Merge tag fix</text>
+  <text fill="#9b59b6" font-size="9" x="2070" y="840">🔗 GPT-5.1 | NIST Phish Scale | Keepnet Domain API</text>
+
+  <!-- Arrow: Public APIs → Template Fixer -->
+  <path class="arrow-colored" stroke="#f57c00" marker-end="url(#arrowhead-templatefixer)" stroke-dasharray="6,4" d="M 2560 110 L 2560 730"/>
 
   <!-- ============================================== -->
   <!-- 4. WORKERS LAYER -->
@@ -304,12 +343,13 @@
   <!-- LEGEND / FEATURES -->
   <!-- ============================================== -->
   
-  <rect class="box" x="100" y="1110" width="2500" height="220" rx="5"/>
-  <text x="120" y="1140" font-size="16" font-weight="bold" fill="#2c3e50" font-family="sans-serif">Key Features &amp; Capabilities:</text>
+  <rect class="box" x="100" y="1110" width="2500" height="260" rx="5"/>
+  <text x="120" y="1138" font-size="14" font-weight="bold" fill="#1a2332" font-family="sans-serif" letter-spacing="0.5">KEY FEATURES &amp; CAPABILITIES</text>
+  <line x1="120" y1="1146" x2="370" y2="1146" stroke="#3498db" stroke-width="2" opacity="0.4"/>
 
   <g transform="translate(120, 1170)">
-    <text y="0"  class="text-normal">✓ Orchestrator: NLP-based intent analysis to route between 8 Specialist Agents (incl. Out-of-Scope Guard).</text>
-    <text y="20" class="text-normal">✓ Public APIs: /smishing/chat | /vishing/prompt | /vishing/conversations/summary | /email-ir/analyze (direct).</text>
+    <text y="0"  class="text-normal">✓ Orchestrator: NLP-based intent analysis to route between 9 Specialist Agents (incl. Out-of-Scope &amp; Deepfake).</text>
+    <text y="20" class="text-normal">✓ Public APIs: /smishing/chat | /vishing/prompt | /email-ir/analyze | /phishing/template-fixer (direct).</text>
     <text y="40" class="text-normal">✓ Middleware: AsyncLocalStorage, Rate Limiting, Auth.</text>
     <text y="60" class="text-normal">✓ 4-State Machine: Strict checks (Gather -> Summary -> Execute -> Complete) before generation.</text>
     <text y="80" class="text-normal">✓ Smishing: SMS templates + landing pages (department-aware).</text>
@@ -332,6 +372,8 @@
      <text y="40" class="text-normal">✓ Streamed Responses: Low TTFB architecture for instant feedback.</text>
      <text y="60" class="text-normal">✓ D1 Vector DB: Semantic search for video &amp; policy matching.</text>
      <text y="80" class="text-normal">✓ Brand Detection: Apistemic Logos API integration with text fallback.</text>
+     <text y="100" class="text-normal">✓ Template Fixer: Split 3-agent architecture (Rewriter + Classifier + Landing Classifier).</text>
+     <text y="120" class="text-normal">✓ Deepfake Video: AI-generated video simulations for social engineering awareness.</text>
   </g>
 
 </svg>

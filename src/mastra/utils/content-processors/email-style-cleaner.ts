@@ -91,6 +91,11 @@ function isNoiseLonghand(property: string, value: string): boolean {
   // Always strip pure reset properties
   if (RESET_PROPERTIES.has(prop)) return true;
 
+  // margin-left/right: auto is the CSS block centering mechanism — NEVER strip.
+  if ((prop === 'margin-left' || prop === 'margin-right') && val === 'auto') {
+    return false;
+  }
+
   // Strip longhand properties with noise values
   for (const prefix of LONGHAND_PREFIXES) {
     if (prop.startsWith(prefix) && NOISE_VALUES.has(val)) {

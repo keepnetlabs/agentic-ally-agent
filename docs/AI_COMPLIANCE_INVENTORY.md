@@ -8,7 +8,9 @@
 
 ## 1. AI System Inventory
 
-### 1.1 Agent List (9 Agents)
+### 1.1 Agent List (13 Agents)
+
+**Orchestrator-Routed (9 agents via `/chat`):**
 
 | Agent | Role | Data Flow | Risk Pre-Assessment |
 |-------|------|-----------|---------------------|
@@ -20,7 +22,22 @@
 | **Policy** | RAG-based policy summary | Policy docs, Product API | Minimal |
 | **Vishing Call** | Voice phishing (ElevenLabs) | Product API, ElevenLabs | Limited |
 | **Email IR Analyst** | Suspicious email analysis, IR report | Product API (email fetch) | Limited |
+| **Deepfake Video** | Deepfake awareness video generation (HeyGen) | Product API, HeyGen | Limited |
 | **Out-of-Scope** | Scope boundary, polite refusal | Prompt → LLM → Static-like response | Minimal |
+
+**Phishing Template Fixer (3 agents via `/phishing/template-fixer`):**
+
+| Agent | Role | Data Flow | Risk Pre-Assessment |
+|-------|------|-----------|---------------------|
+| **emailRewriter** | Email HTML normalization + metadata classification | HTML → LLM → Fixed HTML + tags | Limited |
+| **emailClassifier** | Email template classification (tags, difficulty) | HTML → LLM → Metadata | Limited |
+| **phishingLandingPageClassifier** | Landing page classification (tags, difficulty, domain) | HTML → LLM → Metadata | Limited |
+
+**Report (1 agent via platform report system):**
+
+| Agent | Role | Data Flow | Risk Pre-Assessment |
+|-------|------|-----------|---------------------|
+| **reportAgent** | Structured report generation | Report data → LLM → Report sections | Limited |
 
 ### 1.2 Tool List and Risk Classification (EU AI Act Art. 9)
 
@@ -180,6 +197,6 @@ See [AI_COMPLIANCE_PROGRESS.md](./AI_COMPLIANCE_PROGRESS.md) for full progress t
 | [AI_COMPLIANCE_PROGRESS.md](./AI_COMPLIANCE_PROGRESS.md) | Done vs planned — progress tracker |
 | [EU_AI_ACT_WORKFLOW.md](./EU_AI_ACT_WORKFLOW.md) | Süreç, raporlama, araçlar |
 | [HANDOVER.md](./HANDOVER.md) | Critical config, timeout, thread ID |
-| [ARCHITECTURE.md](./ARCHITECTURE.md) | 8-agent system, state machine |
+| [ARCHITECTURE.md](./ARCHITECTURE.md) | 13-agent system, state machine |
 | [DATA_MODEL.md](./DATA_MODEL.md) | KV schema, D1 tables |
 | [AGENTIC_ROADMAP.md](./AGENTIC_ROADMAP.md) | Critic Agent, PII control plan |

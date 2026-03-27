@@ -164,6 +164,7 @@ vi.mock('../../tools/orchestration', async (importOriginal) => {
 });
 
 vi.mock('../../model-providers', () => ({
+  reasoningHeaders: () => ({}),
   getModelWithOverride: vi.fn().mockReturnValue('mock-model'),
   getDefaultAgentModel: vi.fn().mockReturnValue('mock-model'),
   getLightAgentModel: vi.fn().mockReturnValue('mock-light-model'),

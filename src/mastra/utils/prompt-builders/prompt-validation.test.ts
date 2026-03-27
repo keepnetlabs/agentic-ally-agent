@@ -82,7 +82,7 @@ describe('Constants Validation', () => {
 
   it('LANDING_PAGE constants are defined', () => {
     expect(LANDING_PAGE.QR_CODE_IMAGE_WIDTH_PX).toBe(200);
-    expect(LANDING_PAGE.FORM_MAX_WIDTH_PX).toBe(600);
+    expect(LANDING_PAGE.FORM_MAX_WIDTH_PX).toBe(680);
     expect(LANDING_PAGE.MINIMAL_BODY_MAX_WIDTH_PX).toBe(800);
   });
 });

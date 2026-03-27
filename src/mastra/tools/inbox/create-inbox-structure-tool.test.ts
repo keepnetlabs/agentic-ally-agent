@@ -12,6 +12,7 @@ vi.mock('../../services/microlearning-service', () => ({
 
 const mockGetModelWithOverride = vi.fn();
 vi.mock('../../model-providers', () => ({
+  reasoningHeaders: () => ({}),
   getModelWithOverride: (...args: unknown[]) => mockGetModelWithOverride(...args),
 }));
 

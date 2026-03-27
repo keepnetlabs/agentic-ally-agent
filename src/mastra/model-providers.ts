@@ -366,11 +366,21 @@ export async function workersAICustomFetch(url: string, options?: RequestInit): 
   }
 
   const response = await fetch(url, options);
-  const data = await response.json();
+
+  // Guard against non-JSON responses (e.g. Cloudflare HTML error pages)
+  let data: any;
+  try {
+    data = await response.json();
+  } catch {
+    const text = await response.text().catch(() => '');
+    const errorInfo = errorService.external(`Workers AI returned non-JSON response (${response.status}): ${text.substring(0, 200)}`, { step: 'workers-ai-fetch', status: response.status });
+    logErrorInfo(logger, 'error', 'Non-JSON response from Workers AI', errorInfo);
+    throw new Error(errorInfo.message);
+  }
 
   // Store raw Cloudflare response for reasoning extraction
   if (data.output) {
-    const reasoningItem = data.output.find((item: any) => item.type === 'reasoning');
+    const reasoningItem = (data.output as Array<{ type?: string; content?: Array<{ text?: string }> }>).find(item => item.type === 'reasoning');
     if (reasoningItem?.content?.[0]?.text) {
       data.reasoning = reasoningItem.content[0].text;
     }

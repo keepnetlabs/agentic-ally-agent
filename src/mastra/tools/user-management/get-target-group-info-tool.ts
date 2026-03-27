@@ -9,7 +9,7 @@
 import { createTool, ToolExecutionContext } from '@mastra/core/tools';
 import { z } from 'zod';
 import { errorService } from '../../services/error-service';
-import { ERROR_MESSAGES } from '../../constants';
+import { ERROR_MESSAGES, TIMEOUT_VALUES } from '../../constants';
 import { getLogger } from '../../utils/core/logger';
 import { getRequestContext } from '../../utils/core/request-storage';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
@@ -26,7 +26,7 @@ interface GroupSearchDeps {
 }
 
 const MIN_GROUP_NAME_LENGTH = 3;
-const GROUP_LOOKUP_TIMEOUT_MS = 15000;
+const GROUP_LOOKUP_TIMEOUT_MS = TIMEOUT_VALUES.GROUP_LOOKUP_TIMEOUT_MS;
 
 const getTargetGroupInfoOutputSchema = z.object({
   success: z.boolean(),

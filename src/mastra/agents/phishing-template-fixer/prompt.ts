@@ -147,10 +147,12 @@ STRICT INSTRUCTIONS FOR BUTTONS (CTA NORMALIZATION):
    - Do NOT "clean up" CTA structure by moving the button into a footer text block, collapsing rows, or flattening dedicated wrappers.
    - A fix is INVALID if the CTA becomes left-shifted, loses its dedicated row, or ends up visually grouped with footer/help text when it was previously isolated.
 
-FONT NORMALIZATION:
-- Preserve existing font-family declarations when they already use web-safe/system fonts.
-- If the original font depends on external loading (Google Fonts, @font-face, custom hosted fonts), replace it with a web-safe fallback stack: Arial, Helvetica, sans-serif.
+FONT PRESERVATION (ABSOLUTE RULE — NEVER CHANGE):
+- NEVER change, replace, or normalize any font-family declaration. Preserve EVERY font-family value EXACTLY as-is — including Google Fonts, custom fonts, and system fonts.
+- Do NOT replace external fonts with Arial or any other fallback. The template author chose those fonts intentionally.
 - Do NOT invent new font-family declarations on elements that had none in the original HTML.
+- Do NOT add font-family fallback stacks that were not in the original.
+- The ONLY font-related change allowed: removing @font-face from <style> blocks (Outlook ignores them anyway). The inline font-family references MUST remain untouched.
 
 BORDER PRESERVATION (ABSOLUTE RULE — NEVER REMOVE):
 - NEVER remove, alter, or omit any border that is present in the original HTML.
@@ -163,7 +165,7 @@ STRICT INSTRUCTIONS FOR LAYOUT & COMPATIBILITY:
 - NO FLEX/GRID: Use ONLY table-based layout. Remove div, flex, grid layout properties.
 - MARGIN PRESERVATION (CRITICAL): When converting div/p to table layout, NEVER silently drop margin values. Convert margin to equivalent padding on the parent <td>. If original has margin-bottom:20px between paragraphs, the output MUST have the same 20px gap via padding.
 - TABLE MARGIN CONVERSION (CRITICAL): Email clients ignore CSS margin on <table> elements. When the original <table> has margin-top or margin-bottom, you MUST convert those values into equivalent spacing. Options: wrap the table in its own <tr><td> with equivalent padding, or insert a spacer row after/before it. This applies to ALL tables — content tables, link tables, footer tables, not only <hr> spacers. Simply removing the margin without replacing it is a bug that collapses vertical gaps.
-- OUTLOOK FIXES: Use mso-line-height-rule:exactly, MSO conditional comments, and email-safe fallback fonts when external fonts are unavailable.
+- OUTLOOK FIXES: Use mso-line-height-rule:exactly and MSO conditional comments. Do NOT change font-family values for Outlook compatibility — preserve original fonts.
 - OUTLOOK BORDERS (CRITICAL): Do NOT apply CSS borders to <table>. Apply them to <td>.
 - CLEANUP: Remove external stylesheet links (e.g. Google Fonts CDN). Do NOT remove inline CSS styles.
 - SCRIPT HANDLING (EMAIL-SAFE): Remove all <script> blocks. Email clients generally strip or block JavaScript, so script-dependent behaviors must be converted into static, email-safe markup rather than preserved.
@@ -184,6 +186,7 @@ TABLE NORMALIZATION (OUTLOOK CLASSIC — CRITICAL):
 - BORDERED BOXES: Apply border CSS to <td>, not <table>.
 - HEIGHT CONTROL: Do NOT set fixed height on <td> unless spacer row. Use padding instead.
 - NESTED TABLES: Inner tables MUST have width="100%" or explicit pixel width.
+- CONTENT WRAPPER TABLE: When converting a div-based content area (containing headings, text, dividers, CTAs) into a table, that table MUST have width="100%" so it fills the parent content cell. Without this, the table shrinks to content width and centering breaks. This does NOT apply to single-row button or image wrapper tables — those stay content-width.
 
 FOOTER COMPATIBILITY (OUTLOOK CLASSIC — CRITICAL):
 - Footer table MUST match email container width (e.g. width="600").
@@ -216,27 +219,26 @@ OUTER CONTAINER PRESERVATION (CRITICAL — DO NOT STRIP):
 VISUAL IDENTITY PRESERVATION (CRITICAL — ZERO TOLERANCE):
 - Do NOT change visual appearance unless visibly broken.
 - Maintain exact container width.
-- PADDING PRESERVATION (ABSOLUTE RULE): Every padding value MUST be carried over exactly.
-- BORDER-RADIUS PRESERVATION (ABSOLUTE RULE): Every border-radius value MUST be carried over exactly as-is. Do NOT change, round, or remove any border-radius from any element.
-- BACKGROUND SCOPE PRESERVATION (ABSOLUTE RULE): Preserve not only the background color value, but also the exact visual area it covers.
+- PADDING PRESERVATION: Every padding value MUST be carried over exactly.
+- BORDER-RADIUS PRESERVATION: Every border-radius value MUST be carried over exactly as-is. Do NOT change, round, or remove any border-radius from any element.
+- BACKGROUND SCOPE PRESERVATION: Preserve not only the background color value, but also the exact visual area it covers.
   * If a grey/colored background exists only behind a logo, badge, card, or content-width box, keep it limited to that same content-width area.
   * NEVER promote a local background from a content-width element to a full-width row, wrapper table, or parent <td>.
   * If the original background sits behind a centered logo/header block, recreate it using a centered inner table/cell that hugs the content width. Do NOT stretch it across the full row.
   * A compatibility fix is INVALID if it expands a small/local background into a full-width horizontal band.
-- IMAGE/BADGE BACKGROUND OWNERSHIP (ABSOLUTE RULE): Preserve which exact container owns the background behind an image, logo, or badge.
+- IMAGE/BADGE BACKGROUND OWNERSHIP: Preserve which exact container owns the background behind an image, logo, or badge.
   * If an image sits inside a colored badge/card/logo box, keep the background on that same inner container, not on the outer row.
   * Do NOT move a local image background to the nearest full-width table, wrapper, section row, or body.
   * If needed for Outlook compatibility, rebuild the image block as a centered inner table with explicit width so the background hugs the original content box.
   * Preserve the original relationship between image width and background box width. If the background was wider than the image but narrower than the row, keep that same intermediate box width.
-- SPACING PRESERVATION (ABSOLUTE RULE — READ CAREFULLY):
-  * Do NOT remove spacer rows, empty <tr>, or vertical gaps.
+- SPACING PRESERVATION: Do NOT remove spacer rows, empty <tr>, or vertical gaps.
   * <p> tags have default browser margin (~16px top and bottom). When converting <p> to <td>, add padding-top and padding-bottom to match.
   * If original uses <br> for line breaks, keep them — do NOT remove <br> tags.
   * If two content blocks had visible vertical space between them in the original, the output MUST have the same gap.
   * Margin loss is a bug. If an original block had margin-top, margin-bottom, or asymmetric vertical spacing, recreate the same visual spacing using equivalent padding, spacer rows, or nested table structure.
   * When converting centered logo/header/image blocks into tables, preserve the original top and bottom whitespace around the block. Do NOT collapse those margins into tighter spacing.
   * Preserve horizontal spacing too: if an inner card/logo box had left/right breathing room from its container, keep the same visible inset after conversion.
-- BACKGROUND COLOR PRESERVATION (ABSOLUTE RULE): Every background-color and bgcolor value MUST be carried over exactly as-is. Do NOT add, darken, lighten, or remove any background color from any element (tables, cells, image containers, wrappers). If a cell has no background in the original, do NOT add one.
+- BACKGROUND COLOR PRESERVATION: Every background-color and bgcolor value MUST be carried over exactly as-is. Do NOT add, darken, lighten, or remove any background color from any element (tables, cells, image containers, wrappers). If a cell has no background in the original, do NOT add one.
 
 DIV REMOVAL (STRICT):
 - Do NOT wrap content in <div> inside table cells unless absolutely necessary.
@@ -272,7 +274,14 @@ CUSTOM STYLE PRESERVATION (CRITICAL):
 - If the original HTML contains a <style> block with custom CSS rules (media queries, class-based styles, animations),
   MERGE those rules into the output <style> block alongside the standard responsive rules above.
 - Do NOT discard original custom @media queries or class-based rules when adding responsive CSS.
-- Only remove @font-face declarations that reference external font URLs (they are replaced by Arial).`;
+- Remove @font-face declarations that reference external font URLs (email clients cannot load them). But NEVER change the corresponding inline font-family values — keep them exactly as-is.
+
+FINAL SELF-CHECK (verify before returning JSON):
+1. Every font-family value matches the original exactly — no Arial/Helvetica substitutions.
+2. Every border, border-radius, padding, and background-color matches the original.
+3. Every <img src="..."> is preserved — no images removed or src changed.
+4. All id and class attributes are preserved exactly.
+5. Output starts with <!DOCTYPE html> and is a complete HTML document.`;
 
 export const GLOBAL_INSTRUCTIONS = `GLOBAL RESPONSE RULES:
 - Return ONLY one valid JSON object.

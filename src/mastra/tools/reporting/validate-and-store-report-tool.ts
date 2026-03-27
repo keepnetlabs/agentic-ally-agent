@@ -15,7 +15,7 @@ import { getLogger } from '../../utils/core/logger';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
 import { errorService } from '../../services/error-service';
 import { KVService } from '../../services/kv-service';
-import { KV_NAMESPACES } from '../../constants';
+import { KV_NAMESPACES, TIMEOUT_VALUES } from '../../constants';
 import {
   ReportSchema,
   ReportResponseSchema,
@@ -164,7 +164,7 @@ export const validateAndStoreReportTool = createTool({
           }
           if (attempt < 3) {
             logger.debug('expandRef not ready, retrying', { expandRef: input.expandRef, attempt });
-            await new Promise(r => setTimeout(r, 500 * attempt)); // 500ms, 1000ms
+            await new Promise(r => setTimeout(r, TIMEOUT_VALUES.REPORT_KV_RETRY_BASE_MS * attempt));
           }
         }
 

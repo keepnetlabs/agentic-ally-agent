@@ -3,7 +3,6 @@ import {
   validateInboxStructure,
   correctInboxStructure,
   detectJsonCorruption,
-  truncateText,
   repairHtml,
   repairInboxHtml,
   detectAndRepairInbox,
@@ -482,79 +481,6 @@ describe('JSON Validation Utilities', () => {
       const issues = detectJsonCorruption(data);
       // Should return an array of issues
       expect(Array.isArray(issues)).toBe(true);
-    });
-  });
-
-  describe('truncateText', () => {
-    it('should return empty string unchanged', () => {
-      const result = truncateText('', 100);
-      expect(result).toBe('');
-    });
-
-    it('should return null unchanged', () => {
-      const result = truncateText(null as any, 100);
-      expect(result).toBe(null);
-    });
-
-    it('should return text shorter than maxLength unchanged', () => {
-      const text = 'Hello world';
-      const result = truncateText(text, 20);
-      expect(result).toBe(text);
-    });
-
-    it('should truncate text to maxLength', () => {
-      const text = 'This is a long text that needs truncation';
-      const result = truncateText(text, 10);
-      expect(result).toBe('This is a ');
-      expect(result.length).toBe(10);
-    });
-
-    it('should handle exact length match', () => {
-      const text = 'Hello';
-      const result = truncateText(text, 5);
-      expect(result).toBe('Hello');
-    });
-
-    it('should truncate one character less than exact length', () => {
-      const text = 'Hello';
-      const result = truncateText(text, 4);
-      expect(result).toBe('Hell');
-    });
-
-    it('should handle maxLength of 1', () => {
-      const text = 'Hello';
-      const result = truncateText(text, 1);
-      expect(result).toBe('H');
-    });
-
-    it('should handle maxLength of 0', () => {
-      const text = 'Hello';
-      const result = truncateText(text, 0);
-      expect(result).toBe('');
-    });
-
-    it('should handle very long text', () => {
-      const text = 'x'.repeat(10000);
-      const result = truncateText(text, 300);
-      expect(result.length).toBe(300);
-    });
-
-    it('should preserve special characters', () => {
-      const text = 'Hello @#$% World!';
-      const result = truncateText(text, 11);
-      expect(result).toBe('Hello @#$% ');
-    });
-
-    it('should handle unicode characters', () => {
-      const text = 'Hello 世界 مرحبا';
-      const result = truncateText(text, 10);
-      expect(result.length).toBe(10);
-    });
-
-    it('should handle newlines in text', () => {
-      const text = 'Line 1\nLine 2\nLine 3';
-      const result = truncateText(text, 10);
-      expect(result).toBe('Line 1\nLin');
     });
   });
 
@@ -1139,7 +1065,7 @@ describe('Integration tests', () => {
     // Step 3: Truncate description if needed
     const maxDescLength = 50;
     if ((repaired as any).emails[0].description && (repaired as any).emails[0].description.length > maxDescLength) {
-      (repaired as any).emails[0].description = truncateText((repaired as any).emails[0].description, maxDescLength);
+      (repaired as any).emails[0].description = (repaired as any).emails[0].description.substring(0, maxDescLength);
     }
 
     // Verify integrity
@@ -1280,7 +1206,7 @@ describe('Edge cases and error handling', () => {
 
   it('should handle very large text truncation', () => {
     const largeText = 'a'.repeat(100000);
-    const result = truncateText(largeText, 1000);
+    const result = largeText.substring(0, 1000);
     expect(result.length).toBe(1000);
   });
 
@@ -1320,7 +1246,7 @@ describe('Edge cases and error handling', () => {
 
   it('should truncate at character boundary for unicode', () => {
     const text = '你好世界🌍';
-    const result = truncateText(text, 3);
+    const result = text.substring(0, 3);
     expect(result.length).toBe(3);
   });
 
