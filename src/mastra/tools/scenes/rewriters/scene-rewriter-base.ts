@@ -169,6 +169,10 @@ You MUST:
 ❌ Keeping the source language's sentence rhythm (Subject-Verb order mirroring).
 ❌ Using passive voice if active voice is more natural in ${targetLanguage}.
 
+=== SOURCE LANGUAGE CONTAMINATION (ZERO TOLERANCE) ===
+
+EVERY word in your output MUST be in ${targetLanguage}. If you find ANY word or phrase still in ${sourceLanguage} (or any other non-target language), you MUST rewrite it in ${targetLanguage} before returning. This includes titles, descriptions, button labels, alert messages, and ALL user-facing text. A single ${sourceLanguage} word in the output is a critical failure.
+
 ${languageRules}
 
 === OUTPUT FORMAT (STRICT) ===

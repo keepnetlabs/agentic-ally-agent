@@ -116,6 +116,7 @@ RULE 3: Quality & Readability
 ${vocabularyGuidance.simplification}
 ${vocabularyGuidance.conversational}
 • Consistent terminology, voice, and perspective throughout
+• For each technical concept (email, password, security, download, login, etc.), choose the term a native speaker of ${language} would naturally use in a professional context. Once chosen, use that same term consistently throughout ALL scenes. Never alternate between a native term and a foreign loanword for the same concept.
 • Avoid machine-translation artifacts, awkward constructions, or stiff formal tone
 
 RULE 4: Pedagogical Quality
