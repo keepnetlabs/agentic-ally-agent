@@ -208,7 +208,11 @@ Category: ${category}${subcategory ? `/${subcategory}` : ''}
 Risk Area: ${riskArea}
 Learning Theories: ${learningTheories}
 
-=== CONTENT RULES ===
+${analysis.mustKeepDetails?.length ? `=== MUST-KEEP DETAILS (from user — non-negotiable) ===
+${analysis.mustKeepDetails.map((d, i) => `${i + 1}. ${d}`).join('\n')}
+Each scene MUST incorporate these details where relevant. Do NOT drop or ignore them.
+
+` : ''}=== CONTENT RULES ===
 1. **Topic Consistency**
    • Keep all content focused strictly on ${analysis.topic}
    • Use consistent terminology and examples tied to ${analysis.topic}

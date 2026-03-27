@@ -24,6 +24,7 @@ import { getLogger } from '../../utils/core/logger';
 import { errorService } from '../../services/error-service';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
 import { withRetry } from '../../utils/core/resilience-utils';
+import { runPostRewriteQC } from '../../utils/localization/post-rewrite-qc';
 import type { RewriteContext } from '../scenes/rewriters/scene-rewriter-base';
 import {
   TranslateJsonInputSchema,
@@ -189,9 +190,25 @@ export const translateLanguageJsonTool = createTool({
 
       logger.debug('Scene rewrite batch completed', { scenesRewritten: Object.keys(rewrittenScenesMap).length });
 
+      // Post-rewrite QC: single AI pass to catch untranslated leaks in user-facing texts
+      // Wrapped in its own try/catch so QC failure never breaks localization
+      let finalResult = result;
+      try {
+        finalResult = await runPostRewriteQC(
+          result as Record<string, unknown>,
+          sourceLanguage,
+          targetLanguage,
+          model
+        );
+      } catch (qcError) {
+        logger.warn('Post-rewrite QC failed, using original result', {
+          error: qcError instanceof Error ? qcError.message : String(qcError),
+        });
+      }
+
       return {
         success: true,
-        data: result,
+        data: finalResult,
       };
     } catch (error) {
       const err = normalizeError(error);

@@ -11,14 +11,6 @@ import { trackedGenerateText } from '../../utils/core/tracked-generate';
 import { PromptAnalysis } from '../../types/prompt-analysis';
 
 /** AI SDK usage shape - v5 uses camelCase, older versions use snake_case. */
-type UsageShape = {
-  inputTokens?: number;
-  outputTokens?: number;
-  promptTokens?: number;
-  completionTokens?: number;
-  input_tokens?: number;
-  output_tokens?: number;
-};
 import { MicrolearningContent, LanguageContent } from '../../types/microlearning';
 import { GenerateLanguageJsonSchema, GenerateLanguageJsonOutputSchema } from '../../schemas';
 import { getAppTexts, getAppAriaTexts } from '../../utils/language/app-texts';
@@ -45,6 +37,7 @@ import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../uti
 import { withRetry } from '../../utils/core/resilience-utils';
 import { buildVishingAgentPrompt } from './utils/vishing-prompt-builder';
 import { buildSmishingAgentPrompt } from './utils/smishing-prompt-builder';
+import { runPostRewriteQC } from '../../utils/localization/post-rewrite-qc';
 
 const logger = getLogger('GenerateLanguageJsonTool');
 
@@ -290,36 +283,6 @@ async function generateLanguageJsonWithAI(
     const generationTime = Date.now() - startTime;
     logger.debug('Parallel generation completed', { durationMs: generationTime });
 
-    // Track token usage for cost monitoring
-    const allResponses = [
-      scene1Response,
-      scene2Response,
-      videoResponse,
-      scene4Response,
-      scene5Response,
-      scene6Response,
-      scene7Response,
-      scene8Response,
-    ];
-    const totalUsage = allResponses.reduce(
-      (acc, response) => {
-        if (response.usage) {
-          // AI SDK v5 uses: inputTokens, outputTokens (camelCase)
-          // Older versions: promptTokens/completionTokens or input_tokens/output_tokens
-          const usage = response.usage as UsageShape;
-          const inputTokens = usage.inputTokens ?? usage.promptTokens ?? usage.input_tokens ?? 0;
-          const outputTokens = usage.outputTokens ?? usage.completionTokens ?? usage.output_tokens ?? 0;
-
-          acc.promptTokens += inputTokens;
-          acc.completionTokens += outputTokens;
-        } else {
-          logger.warn('Response missing usage field', {});
-        }
-        return acc;
-      },
-      { promptTokens: 0, completionTokens: 0 }
-    );
-
     // Cost tracking is now automatic via trackedGenerateText wrapper (each scene call is tracked individually)
 
     // Clean and parse the responses with detailed error handling
@@ -538,7 +501,24 @@ async function generateLanguageJsonWithAI(
     const totalTime = Date.now() - startTime;
     logger.debug('Language content generation completed', { durationMs: totalTime, sceneCount });
 
-    return combinedContent as LanguageContent;
+    // Post-generation QC: catch untranslated English leaks in non-English content
+    // Wrapped in its own try/catch so QC failure never breaks generation
+    let finalContent = combinedContent;
+    try {
+      const qcResult = await runPostRewriteQC(
+        combinedContent as Record<string, unknown>,
+        'en',
+        analysis.language,
+        model
+      );
+      finalContent = qcResult as unknown as LanguageContent;
+    } catch (qcError) {
+      logger.warn('Post-generation QC failed, using original content', {
+        error: qcError instanceof Error ? qcError.message : String(qcError),
+      });
+    }
+
+    return finalContent as LanguageContent;
   } catch (err) {
     const error = normalizeError(err);
     const errorInfo = errorService.aiModel(`Language generation failed: ${error.message}`, {

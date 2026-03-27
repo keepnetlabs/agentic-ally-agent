@@ -14,6 +14,7 @@ import { withRetry } from '../../../utils/core/resilience-utils';
 
 import { LanguageModel } from '../../../types/language-model';
 
+
 export interface RewriteContext {
   sourceLanguage: string;
   targetLanguage: string;
@@ -62,7 +63,7 @@ const SCENE_CONFIGS: Record<SceneType, SceneConfig> = {
   },
   video: {
     displayName: 'Video Transcript',
-    typeInstruction: 'Create natural, conversational speech patterns.',
+    typeInstruction: 'Create natural, conversational speech patterns. CRITICAL: Preserve ALL timestamps (HH:MM:SS) exactly — only translate the spoken text after each timestamp. Never modify, shift, or reformat timestamp values.',
     sceneNumber: 3,
   },
   actionable: {
@@ -171,22 +172,46 @@ You MUST:
 
 === SOURCE LANGUAGE CONTAMINATION (ZERO TOLERANCE) ===
 
-EVERY word in your output MUST be in ${targetLanguage}. If you find ANY word or phrase still in ${sourceLanguage} (or any other non-target language), you MUST rewrite it in ${targetLanguage} before returning. This includes titles, descriptions, button labels, alert messages, and ALL user-facing text. A single ${sourceLanguage} word in the output is a critical failure.
+EVERY word in your output MUST be in ${targetLanguage}. If you find ANY word or phrase still in ${sourceLanguage} (or any other non-target language — including closely related languages), you MUST rewrite it in ${targetLanguage} before returning. This includes titles, descriptions, button labels, alert messages, and ALL user-facing text. A single non-${targetLanguage} word in the output is a critical failure.
+
+=== PROTECTED FIELDS (DO NOT TRANSLATE — keep original values exactly) ===
+
+These fields contain technical metadata, NOT user-facing content. Copy them as-is:
+- "scientific_basis": Keep the original English text exactly
+- "scene_type": Keep exactly as-is (e.g., "intro", "quiz", "nudge")
+- "iconName", "sparkleIconName", "sceneIconName": Keep icon names exactly
+- "id" fields: Keep exactly as-is
+- "type" fields (e.g., "multiple_choice", "true_false"): Keep exactly as-is
+- "isCorrect", "correctAnswer": Keep boolean values exactly
+- "points", "duration_seconds", "totalCount", "maxAttempts": Keep numbers exactly
+- URLs and email addresses: Keep exactly as-is
+- Timestamps in transcripts (HH:MM:SS format): Keep exactly as-is, only translate the spoken text after each timestamp
 
 ${languageRules}
+
+=== HALLUCINATION GUARD ===
+
+If you are unsure whether a word exists in ${targetLanguage}:
+- Use a simpler, common alternative you ARE certain about
+- NEVER invent or guess word forms by blending languages
+- If a technical term has no natural ${targetLanguage} equivalent, keep the widely-accepted international term
 
 === OUTPUT FORMAT (STRICT) ===
 
 - Output only valid JSON.
 - Keys must remain exactly the same.
 - Do NOT add or remove any fields.
-- Only text values change.
+- Only user-facing text values change. Technical/metadata values stay unchanged.
 - No conversational filler ("Here is the JSON...", explanations, comments).
 
-FINAL CHECK (MENTAL):
+=== FINAL SELF-VERIFICATION (before output) ===
 
-- Did I keep all original technical and scenario details?
-- Does every sentence sound like it was naturally written in ${targetLanguage}, not translated?`;
+Scan your output for these common failures:
+1. Any word still in ${sourceLanguage}? → Rewrite it
+2. Any word from a NEIGHBORING language (not ${targetLanguage})? → Replace with correct ${targetLanguage} word
+3. Any word you are not 100% certain exists in ${targetLanguage}? → Use simpler alternative
+4. Are scientific_basis, scene_type, iconName, URLs, timestamps unchanged from source? → If changed, restore original
+5. Does every sentence read naturally in ${targetLanguage}? → If not, rephrase`;
 }
 
 /**

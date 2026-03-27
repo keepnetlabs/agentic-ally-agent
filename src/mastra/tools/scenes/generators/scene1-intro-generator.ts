@@ -1,9 +1,11 @@
 import { PromptAnalysis } from '../../../types/prompt-analysis';
 import { MicrolearningContent } from '../../../types/microlearning';
 import { buildContextData } from '../../../utils/prompt-builders/base-context-builder';
+import { getHighlightExamples } from '../../../utils/language/localization-language-rules';
 
 export function generateScene1Prompt(analysis: PromptAnalysis, microlearning: MicrolearningContent): string {
   const contextData = buildContextData(analysis, microlearning);
+  const examples = getHighlightExamples(analysis.language);
 
   return `${contextData}
 
@@ -16,13 +18,13 @@ Topic: ${analysis.topic} | Department: ${analysis.department || 'General'} | Lan
 - Highlights: Exactly 3 items, <8 words each
   • Pattern: Risk statement → Empowering action → Positive outcome
 
-  REFERENCE EXAMPLE (Phishing):
-  • "Know that phishing attacks are common"
-  • "Remember that anyone can be targeted"
-  • "See how simple steps reduce risk"
+  REFERENCE EXAMPLES in ${analysis.language}:
+  • "${examples.risk}"
+  • "${examples.action}"
+  • "${examples.outcome}"
 
   FOR ${analysis.topic} (${analysis.department}):
-  • Adapt pattern to your topic context (do NOT copy phishing example)
+  • Adapt pattern to your topic context (do NOT copy the examples above)
   • Focus on relevant threat → preventive action → positive outcome
 
 - Duration: "~5 minutes" (adjust based on total scene duration), duration_seconds: 15-20.
@@ -41,15 +43,15 @@ NOT: 'Sender addresses fake' (technical) or 'Always verify' (imperative).",
     "highlights": [
       {
         "iconName": "alert-triangle",
-        "text": "KNOW statement (≤8 words): Topic and Department-aware impact. Pattern: [topic fact] [impacts department outcome]. Department focus: Finance→fraud/money | Operations/IT→system/reliability | HR/General→team/safety. CRITICAL LANGUAGE RULES: If ${analysis.language} is English, MUST start with 'Know that...' (e.g., 'Know that phishing targets payment requests'). If ${analysis.language} is NOT English, DO NOT use 'Know that' pattern at all - write naturally as a native ${analysis.language} speaker would express this idea. DO NOT translate 'Know that' literally. Think directly in ${analysis.language}. NOTE: Examples demonstrate the pattern. Adapt for ${analysis.topic} + ${analysis.department}. Examples: English→'Know that phishing targets payment requests' | Turkish→'Oltalama saldırıları BT sistemlerini hedef alır'. Generate contextually for ${analysis.topic} + ${analysis.department} in ${analysis.language}."
+        "text": "KNOW statement (≤8 words): Topic and Department-aware impact. Pattern: [topic fact] [impacts department outcome]. Department focus: Finance→fraud/money | Operations/IT→system/reliability | HR/General→team/safety. CRITICAL LANGUAGE RULES: If ${analysis.language} is English, MUST start with 'Know that...' (e.g., 'Know that phishing targets payment requests'). If ${analysis.language} is NOT English, DO NOT use 'Know that' pattern at all - write naturally as a native ${analysis.language} speaker would express this idea. DO NOT translate 'Know that' literally. Think directly in ${analysis.language}. STYLE REFERENCE in ${analysis.language}: '${examples.risk}'. Generate contextually for ${analysis.topic} + ${analysis.department} in ${analysis.language}."
       },
       {
         "iconName": "users",
-        "text": "REMEMBER statement (≤8 words): Topic and Department-aware empowering action. Pattern: [action/strategy] [prevents/protects/stops] [outcome]. Department focus: Finance→fraud/money/verification | Operations/IT→system/speed/reliability | HR/General→team/safety. CRITICAL LANGUAGE RULES: If ${analysis.language} is English, MUST start with 'Remember that...' (e.g., 'Remember that verification prevents fraud'). If ${analysis.language} is NOT English, DO NOT use 'Remember that' pattern at all - write naturally as a native ${analysis.language} speaker would express this idea. DO NOT translate 'Remember that' literally. Think directly in ${analysis.language}. NOTE: Examples demonstrate the pattern. Adapt for ${analysis.topic} + ${analysis.department}. Examples: English→'Remember that verification prevents fraud' | Turkish→'Doğrulama dolandırıcılığı önler'. Use conversational language. Generate contextually for ${analysis.topic} + ${analysis.department} in ${analysis.language}."
+        "text": "REMEMBER statement (≤8 words): Topic and Department-aware empowering action. Pattern: [action/strategy] [prevents/protects/stops] [outcome]. Department focus: Finance→fraud/money/verification | Operations/IT→system/speed/reliability | HR/General→team/safety. CRITICAL LANGUAGE RULES: If ${analysis.language} is English, MUST start with 'Remember that...' (e.g., 'Remember that verification prevents fraud'). If ${analysis.language} is NOT English, DO NOT use 'Remember that' pattern at all - write naturally as a native ${analysis.language} speaker would express this idea. DO NOT translate 'Remember that' literally. Think directly in ${analysis.language}. STYLE REFERENCE in ${analysis.language}: '${examples.action}'. Generate contextually for ${analysis.topic} + ${analysis.department} in ${analysis.language}."
       },
       {
         "iconName": "shield-check",
-        "text": "SEE statement (≤8 words): Topic and Department-aware positive outcome. Pattern: [learner action] [leads to/enables/protects] [positive outcome]. Department focus: Finance→transaction/asset protection | Operations/IT→system/reliability | HR/General→team/colleague safety. CRITICAL LANGUAGE RULES: If ${analysis.language} is English, MUST start with 'See how...' (e.g., 'See how verification protects transactions'). If ${analysis.language} is NOT English, DO NOT use 'See how' pattern at all - write naturally as a native ${analysis.language} speaker would express this idea. DO NOT translate 'See how' literally. Think directly in ${analysis.language}. NOTE: Examples demonstrate the pattern. Adapt for ${analysis.topic} + ${analysis.department}. Examples: English→'See how verification protects transactions' | Turkish→'Doğrulama işlemleri nasıl korur'. Generate contextually for ${analysis.topic} + ${analysis.department} in ${analysis.language}."
+        "text": "SEE statement (≤8 words): Topic and Department-aware positive outcome. Pattern: [learner action] [leads to/enables/protects] [positive outcome]. Department focus: Finance→transaction/asset protection | Operations/IT→system/reliability | HR/General→team/colleague safety. CRITICAL LANGUAGE RULES: If ${analysis.language} is English, MUST start with 'See how...' (e.g., 'See how verification protects transactions'). If ${analysis.language} is NOT English, DO NOT use 'See how' pattern at all - write naturally as a native ${analysis.language} speaker would express this idea. DO NOT translate 'See how' literally. Think directly in ${analysis.language}. STYLE REFERENCE in ${analysis.language}: '${examples.outcome}'. Generate contextually for ${analysis.topic} + ${analysis.department} in ${analysis.language}."
       }
     ],
     "key_message": [
