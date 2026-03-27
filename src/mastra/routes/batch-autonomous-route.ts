@@ -94,9 +94,14 @@ export async function batchAutonomousHandler(c: Context) {
         },
       });
     } catch (createErr) {
-      const msg = createErr instanceof Error ? createErr.message : String(createErr);
-      logger.error('batch_orchestrator_create_failed', { batchResourceId, error: msg });
-      return c.json({ success: false, error: `Failed to create orchestrator workflow: ${msg}` }, 500);
+      const normalized = normalizeError(createErr);
+      const errorInfo = errorService.external(normalized.message, {
+        step: 'batch-orchestrator-create',
+        batchResourceId,
+        stack: normalized.stack,
+      });
+      logErrorInfo(logger, 'error', 'batch_orchestrator_create_failed', errorInfo);
+      return c.json({ success: false, error: `Failed to create orchestrator workflow: ${normalized.message}` }, 500);
     }
 
     logger.info('batch_orchestrator_dispatched', {
@@ -173,7 +178,11 @@ export async function batchAutonomousStatusHandler(c: Context) {
     return c.json({ success: true, ...(typeof meta === 'object' ? meta : {}) }, 200);
   } catch (error) {
     const err = normalizeError(error);
-    logger.error('batch_status_endpoint_error', { error: err.message });
+    const errorInfo = errorService.external(err.message, {
+      step: 'batch-status-endpoint',
+      stack: err.stack,
+    });
+    logErrorInfo(logger, 'error', 'batch_status_endpoint_error', errorInfo);
     return c.json({ success: false, error: err.message }, 500);
   }
 }

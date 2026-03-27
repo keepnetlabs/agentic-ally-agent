@@ -1,3 +1,11 @@
+/**
+ * code-review-check-tool
+ *
+ * EU AI Act (Art. 9) Tool Risk Metadata:
+ * - riskLevel: limited
+ * - rationale: AI-powered validation of user-submitted code fixes
+ * @see docs/AI_COMPLIANCE_INVENTORY.md
+ */
 import { createTool, ToolExecutionContext } from '@mastra/core/tools';
 import { trackedGenerateText } from '../../utils/core/tracked-generate';
 import { getModelWithOverride } from '../../model-providers';

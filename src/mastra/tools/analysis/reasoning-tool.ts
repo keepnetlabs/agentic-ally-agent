@@ -7,10 +7,17 @@ import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../uti
 const logger = getLogger('ReasoningTool');
 
 /**
- * Reasoning Tool - Allows agent to show its thinking process
- * Agent calls this tool to emit reasoning events to the frontend
- * 
+ * reasoning-tool
+ *
+ * Allows agent to show its thinking process.
+ * Agent calls this tool to emit reasoning events to the frontend.
+ *
  * v1 Migration: Updated to (inputData, context) signature
+ *
+ * EU AI Act (Art. 9) Tool Risk Metadata:
+ * - riskLevel: minimal
+ * - rationale: Emits reasoning events to frontend; no AI generation
+ * @see docs/AI_COMPLIANCE_INVENTORY.md
  */
 
 export const reasoningTool = createTool({

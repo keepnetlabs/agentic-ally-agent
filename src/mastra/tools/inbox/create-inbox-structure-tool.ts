@@ -1,3 +1,11 @@
+/**
+ * create-inbox-structure-tool
+ *
+ * EU AI Act (Art. 9) Tool Risk Metadata:
+ * - riskLevel: limited
+ * - rationale: AI-powered generation of phishing inbox simulation content
+ * @see docs/AI_COMPLIANCE_INVENTORY.md
+ */
 import { createTool, ToolExecutionContext } from '@mastra/core/tools';
 
 import { trackedGenerateText } from '../../utils/core/tracked-generate';

@@ -1,5 +1,5 @@
 /**
- * Get Training Languages Tool (CS Domain)
+ * get-training-languages-tool
  *
  * Fetches available training languages from GET /api/trainings/languages.
  * Returns language name, code, and native name for agent to resolve
@@ -9,6 +9,11 @@
  * return cached data (cache lives for the process lifetime).
  *
  * Used by: Training Stats Agent (Customer Service Swarm)
+ *
+ * EU AI Act (Art. 9) Tool Risk Metadata:
+ * - riskLevel: minimal
+ * - rationale: Read-only training language retrieval via platform API
+ * @see docs/AI_COMPLIANCE_INVENTORY.md
  */
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';

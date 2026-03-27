@@ -1,3 +1,11 @@
+/**
+ * generate-language-json-tool
+ *
+ * EU AI Act (Art. 9) Tool Risk Metadata:
+ * - riskLevel: limited
+ * - rationale: AI-powered generation of microlearning language content (scenes)
+ * @see docs/AI_COMPLIANCE_INVENTORY.md
+ */
 import { createTool, ToolExecutionContext } from '@mastra/core/tools';
 import { trackedGenerateText } from '../../utils/core/tracked-generate';
 import { PromptAnalysis } from '../../types/prompt-analysis';

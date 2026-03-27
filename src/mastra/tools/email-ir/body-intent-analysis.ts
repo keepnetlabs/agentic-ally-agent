@@ -169,6 +169,7 @@ Populate the output schema based on the forensic evidence identified above:
 **CRITICAL NOTES:**
 - **Zero Trust**: Even if the email looks polite ("Kindly..."), if it asks for money/creds without context, flag it.
 - **Evidence-Based**: Do not hallucinate requests. If no financial request is present, set \`financial_request\` to false.
+- **Self-Check**: Before returning, verify each boolean flag (financial_request, credential_request, authority_impersonation) has a corresponding phrase or artifact in the email body. If you cannot point to specific text, the flag MUST be false.
 `;
 
       const result = await withRetry(

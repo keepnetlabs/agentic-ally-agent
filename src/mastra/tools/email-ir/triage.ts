@@ -208,6 +208,11 @@ Generate a structured triage verdict:
    - **0.50-0.69**: Moderate confidence, some ambiguity
    - **Below 0.50**: Low confidence, recommend human review (note in reason)
 
+### Self-Check (verify before returning)
+1. Does your **reason** cite specific evidence from the analysis data above? If not, add it.
+2. Is your **category** consistent with the cited evidence? (e.g., don't say "Phishing" if no credential_request or suspicious URL was found)
+3. Does your **confidence** match the strength of evidence? (strong multi-signal = 0.9+, single weak signal = 0.5-0.7)
+
 ### Enterprise Compliance Note
 This classification will be used for:
 - SOC ticket routing and escalation

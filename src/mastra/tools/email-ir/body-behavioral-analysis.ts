@@ -123,6 +123,7 @@ Populate the output schema based on the behavioral signals identified:
 - **Logic Separation**: You are analyzing **HOW** the email manipulates (Psychology), not **WHAT** it is asking for (Intent).
     - *Example*: "Verify password immediately or lose access" is High Urgency + Fear (Behavior), regardless of whether it's for Netflix or a Bank.
 - **Edge Cases**: If the body is empty or too short to analyze, use "insufficient_data" for fields you cannot assess.
+- **Self-Check**: Before returning, verify urgency_level matches actual time-pressure phrases in the body. If no deadline/expiry language exists, urgency MUST be "low" or "none".
 `;
 
       const result = await withRetry(

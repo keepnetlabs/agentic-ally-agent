@@ -1,11 +1,15 @@
 /**
- * Edit Report Section Tool
+ * edit-report-section-tool
  *
  * Loads an existing report from KV, regenerates a single section based on user instruction,
  * and saves the updated report as a new version.
  *
  * Used for edit flow: "Change the table to show quarterly data" or "Make the recommendations more specific"
  *
+ * EU AI Act (Art. 9) Tool Risk Metadata:
+ * - riskLevel: limited
+ * - rationale: AI-powered regeneration of individual report sections
+ * @see docs/AI_COMPLIANCE_INVENTORY.md
  * @see docs/REPORT_AGENT_DESIGN.md
  */
 

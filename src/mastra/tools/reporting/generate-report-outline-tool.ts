@@ -1,9 +1,13 @@
 /**
- * Generate Report Outline Tool (Step 1)
+ * generate-report-outline-tool
  *
  * Produces a structured outline (sections + weights + briefs) from a topic and page target.
  * No content is generated here — only the skeleton that guides section expansion.
  *
+ * EU AI Act (Art. 9) Tool Risk Metadata:
+ * - riskLevel: limited
+ * - rationale: AI-powered generation of structured report outlines
+ * @see docs/AI_COMPLIANCE_INVENTORY.md
  * @see docs/REPORT_AGENT_DESIGN.md
  */
 

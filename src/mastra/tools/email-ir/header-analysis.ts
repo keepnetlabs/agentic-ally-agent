@@ -237,6 +237,8 @@ Based on headers provided:
 11. **list_unsubscribe_present**: true if List-Unsubscribe or List-Unsubscribe-Post header exists (RFC 2369 - indicates legitimate marketing/newsletter)
 
 Note: If header data is incomplete or missing, use the exact string "insufficient_data" for fields you cannot assess.
+
+Self-Check: Before returning, verify each boolean (spf_pass, dkim_pass, dmarc_pass) matches an explicit value in the Authentication-Results header. If the header doesn't contain the keyword, the value MUST be false.
 `;
 
       const result = await withRetry(

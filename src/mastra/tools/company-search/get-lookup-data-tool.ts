@@ -1,5 +1,5 @@
 /**
- * Lookup Resolver
+ * get-lookup-data-tool
  *
  * Resolves display names to resource IDs for industry/license filters,
  * and license module IDs to display names for company details.
@@ -11,6 +11,11 @@
  * - resolveLookupFilters: Auto-resolves text → ID in searchCompanies filters
  * - resolveLookupIds: Resolves generic lookup IDs → names
  * - resolveLicenseModuleIds: Resolves license module IDs → names (separate endpoint)
+ *
+ * EU AI Act (Art. 9) Tool Risk Metadata:
+ * - riskLevel: minimal
+ * - rationale: Read-only lookup data resolver with in-memory cache
+ * @see docs/AI_COMPLIANCE_INVENTORY.md
  */
 import { withRetry } from '../../utils/core/resilience-utils';
 import { getLogger } from '../../utils/core/logger';

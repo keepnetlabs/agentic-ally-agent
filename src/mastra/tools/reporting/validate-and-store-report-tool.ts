@@ -1,11 +1,15 @@
 /**
- * Validate and Store Report Tool (Step 3)
+ * validate-and-store-report-tool
  *
  * Final step: validates expanded report JSON, runs chart config validation,
  * stores in KV, and returns the response to FE.
  *
  * Also handles loading existing reports for edit flow.
  *
+ * EU AI Act (Art. 9) Tool Risk Metadata:
+ * - riskLevel: minimal
+ * - rationale: Validation and KV storage of report data; no AI generation
+ * @see docs/AI_COMPLIANCE_INVENTORY.md
  * @see docs/REPORT_AGENT_DESIGN.md
  */
 

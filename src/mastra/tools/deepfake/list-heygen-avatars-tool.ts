@@ -1,11 +1,16 @@
 /**
- * List HeyGen Avatars Tool
+ * list-heygen-avatars-tool
  *
  * Fetches all available avatars from HeyGen API.
  * Used by the Deepfake Video Agent to let the user pick an avatar
  * before generating a deepfake video simulation.
  *
  * API: GET https://api.heygen.com/v2/avatars
+ *
+ * EU AI Act (Art. 9) Tool Risk Metadata:
+ * - riskLevel: minimal
+ * - rationale: Read-only avatar listing from HeyGen API
+ * @see docs/AI_COMPLIANCE_INVENTORY.md
  */
 
 import { createTool } from '@mastra/core/tools';

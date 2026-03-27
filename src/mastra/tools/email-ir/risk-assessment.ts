@@ -183,6 +183,8 @@ ${JSON.stringify(inputData.triage_result, null, 2)}
 
 Assign risk_level (Low/Medium/High/Critical - PascalCase) and confidence (0.0-1.0) based on the framework above.
 Provide clear SOC-ready justification.
+
+Self-Check: Verify risk_level matches the Decision Rules above for the given triage_category. If your risk_level contradicts the rules (e.g., "Low" for a Phishing triage), correct it before returning.
 `;
 
       const result = await withRetry(

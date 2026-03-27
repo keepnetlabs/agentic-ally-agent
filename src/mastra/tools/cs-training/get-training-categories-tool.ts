@@ -1,5 +1,5 @@
 /**
- * Get Training Categories Tool (CS Domain)
+ * get-training-categories-tool
  *
  * Fetches available training categories from GET /api/trainings/categories.
  * Returns category name (API key) and displayName (human-friendly) for agent
@@ -9,6 +9,11 @@
  * return cached data (cache lives for the process lifetime).
  *
  * Used by: Training Stats Agent (Customer Service Swarm)
+ *
+ * EU AI Act (Art. 9) Tool Risk Metadata:
+ * - riskLevel: minimal
+ * - rationale: Read-only training category retrieval via platform API
+ * @see docs/AI_COMPLIANCE_INVENTORY.md
  */
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';

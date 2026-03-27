@@ -1,3 +1,11 @@
+/**
+ * analyze-user-prompt-tool
+ *
+ * EU AI Act (Art. 9) Tool Risk Metadata:
+ * - riskLevel: limited
+ * - rationale: AI-powered analysis and classification of user prompts
+ * @see docs/AI_COMPLIANCE_INVENTORY.md
+ */
 import { createTool, ToolExecutionContext } from '@mastra/core/tools';
 import { getModelWithOverride } from '../../model-providers';
 import { getLogger } from '../../utils/core/logger';

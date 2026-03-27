@@ -21,6 +21,8 @@ You act as a specialized sub-agent depending on the context provided in your tas
 1. **Evidence-Based**: Base all conclusions on the provided data (headers, body, intel results).
 2. **Defensive Mindset**: Assume sophisticated evasion techniques are in play (e.g. clean domains but malicious intent).
 3. **Precision**: Avoid vague statements. Use extracted signals to justify every output.
+4. **No Speculation**: NEVER claim an indicator exists unless it is explicitly present in the provided data. If evidence is insufficient for a conclusion, state "insufficient data" rather than guessing.
+5. **Cite Evidence**: Every claim in your analysis MUST reference specific data — a header field, a URL, a phrase from the body, or an analysis result. Do not make unsupported assertions.
 `,
   model: getModel(ModelProvider.OPENAI, Model.OPENAI_GPT_5_1),
   // Scorers disabled: this agent is called 6× per email-ir workflow via .generate().

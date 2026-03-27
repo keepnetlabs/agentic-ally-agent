@@ -1,3 +1,11 @@
+/**
+ * generate-microlearning-json-tool
+ *
+ * EU AI Act (Art. 9) Tool Risk Metadata:
+ * - riskLevel: limited
+ * - rationale: AI-powered generation of microlearning training metadata
+ * @see docs/AI_COMPLIANCE_INVENTORY.md
+ */
 import { createTool, ToolExecutionContext } from '@mastra/core/tools';
 import { z } from 'zod';
 import { LanguageModelSchema } from '../../types/language-model';

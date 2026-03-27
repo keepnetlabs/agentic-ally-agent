@@ -1,11 +1,16 @@
 /**
- * Get Company Detail Tool
+ * get-company-detail-tool
  *
  * Fetches detailed company information from GET /api/companies/{resourceId}.
  * Resolves licenseModules IDs to display names via lookup cache.
  * Returns clean, agent-friendly company data.
  *
  * Used by: Company Search Agent
+ *
+ * EU AI Act (Art. 9) Tool Risk Metadata:
+ * - riskLevel: minimal
+ * - rationale: Read-only company detail retrieval via platform API
+ * @see docs/AI_COMPLIANCE_INVENTORY.md
  */
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';

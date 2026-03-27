@@ -1,6 +1,6 @@
 # Workflow Documentation
 
-**Last Updated:** February 16, 2026
+**Last Updated:** March 27, 2026
 
 This document visualizes the core logic flows of the Agentic Ally system.
 
@@ -276,4 +276,76 @@ graph TD
     Validate2 -->|Fail| Level3[Level 3: Auto-Repair / Basic]
     
     Level3 --> Save
+```
+
+---
+
+## 8. Phishing Template Fixer Workflow
+
+`POST /phishing/template-fixer` — Two distinct flows based on `type` field.
+
+### 8a. Email Template (Rewrite + Classification)
+
+```mermaid
+graph TD
+    Input[POST /phishing/template-fixer] --> Validate[Validate Input + Size Guard 80KB]
+    Validate --> Domains[Fetch Domains from API]
+    Domains -->|Fail| Fallback[Use Hardcoded Domain List]
+    Domains -->|OK| PreProcess
+    Fallback --> PreProcess
+
+    PreProcess[Pre-Process: collapseWrappers + cleanGrapejsStyles] --> Parallel
+
+    Parallel -->|Branch A| Rewriter[emailRewriter Agent]
+    Parallel -->|Branch B| Classifier[emailClassifier Agent]
+
+    Rewriter --> AIValidation{Content + Structure Check}
+    AIValidation -->|Lost content / Broken HTML| OriginalFallback[Use Original HTML]
+    AIValidation -->|Pass| RestorePipeline
+
+    OriginalFallback --> RestorePipeline[Restore: Padding + Fonts + Borders]
+    RestorePipeline --> Normalizers[Normalizer Pipeline: 8 Steps]
+    Normalizers --> MergeTags[Fix Merge Tags: Levenshtein]
+
+    Classifier --> DomainCheck{Domain in Allowed List?}
+    DomainCheck -->|No| RetryClassifier[Retry with Backoff]
+    DomainCheck -->|Yes| MergeResult
+
+    MergeTags --> MergeResult[Merge: fixed_html + tags + difficulty + from_address + subject]
+    MergeResult --> Response[200 JSON Response]
+```
+
+### 8b. Landing Page (Classification Only)
+
+```mermaid
+graph TD
+    Input[POST /phishing/template-fixer] --> Validate[Validate Input]
+    Validate --> Truncate[Truncate HTML to 5000 chars]
+    Truncate --> LPClassifier[phishingLandingPageClassifier Agent]
+
+    LPClassifier --> DomainCheck{Domain in Allowed List?}
+    DomainCheck -->|No| Retry[Retry with Backoff]
+    DomainCheck -->|Yes| PostProcess
+
+    PostProcess[Post-Process: sanitize + repair + centering + merge tags + full doc wrap]
+    PostProcess --> Response[200 JSON: tags + difficulty + domain + fixed_html]
+```
+
+### Post-Processing Pipeline (Email)
+
+```
+Input HTML
+  → restoreLostPadding (GrapeJS ID match)
+  → restoreLostFontFamilies (GrapeJS ID match)
+  → restoreLostBorders (GrapeJS ID match)
+  → normalizeEmailLocalBoxes
+  → normalizeEmailButtonDivs
+  → normalizeEmailCtaWrapperAlignment
+  → normalizeEmailButtonRowPadding
+  → normalizeEmailButtonOnlyRowAlignment
+  → normalizeEmailLeadingCtaBlockAlignment
+  → normalizeEmailNestedCtaTableAlignment
+  → normalizeEmailButtonMarginToTdPadding
+  → normalizeEmailMergeTags (Levenshtein fuzzy)
+Output HTML
 ```

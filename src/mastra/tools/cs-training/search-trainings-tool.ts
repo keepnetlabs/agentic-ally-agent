@@ -1,11 +1,16 @@
 /**
- * Search Trainings Tool (CS Domain)
+ * search-trainings-tool
  *
  * Searches trainings for a company via POST /api/trainings/search.
  * Uses companyResourceId as x-ir-company-id header; falls back to request context's own companyId if omitted.
  * Supports filtering by training type, search type, and free-text search.
  *
  * Used by: Training Stats Agent (Customer Service Swarm)
+ *
+ * EU AI Act (Art. 9) Tool Risk Metadata:
+ * - riskLevel: minimal
+ * - rationale: Read-only training search via platform API
+ * @see docs/AI_COMPLIANCE_INVENTORY.md
  */
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';

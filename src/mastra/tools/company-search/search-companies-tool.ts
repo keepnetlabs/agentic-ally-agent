@@ -1,10 +1,15 @@
 /**
- * Search Companies Tool
+ * search-companies-tool
  *
  * Searches companies on the Keepnet platform via POST /api/companies/search.
  * Supports structured filters (field/operator/value) and free-text search.
  *
  * Used by: Company Search Agent, Training Stats Agent (shared tool)
+ *
+ * EU AI Act (Art. 9) Tool Risk Metadata:
+ * - riskLevel: minimal
+ * - rationale: Read-only company search via platform API
+ * @see docs/AI_COMPLIANCE_INVENTORY.md
  */
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';

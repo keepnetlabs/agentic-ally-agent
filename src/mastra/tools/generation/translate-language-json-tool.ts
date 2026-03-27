@@ -1,3 +1,11 @@
+/**
+ * translate-language-json-tool
+ *
+ * EU AI Act (Art. 9) Tool Risk Metadata:
+ * - riskLevel: limited
+ * - rationale: AI-powered translation and rewriting of microlearning scenes
+ * @see docs/AI_COMPLIANCE_INVENTORY.md
+ */
 import { createTool, ToolExecutionContext } from '@mastra/core/tools';
 import { getModelWithOverride } from '../../model-providers';
 import { SceneType, getSceneTypeOrDefault } from '../../types/scene-types';

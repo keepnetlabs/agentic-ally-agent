@@ -1,9 +1,13 @@
 /**
- * Expand Report Sections Tool (Step 2)
+ * expand-report-sections-tool
  *
  * Takes the outline from Step 1 and expands each section with full content.
  * Runs section expansions in parallel batches (3 concurrent) with retry on failure.
  *
+ * EU AI Act (Art. 9) Tool Risk Metadata:
+ * - riskLevel: limited
+ * - rationale: AI-powered expansion of report outline into full section content
+ * @see docs/AI_COMPLIANCE_INVENTORY.md
  * @see docs/REPORT_AGENT_DESIGN.md
  */
 
