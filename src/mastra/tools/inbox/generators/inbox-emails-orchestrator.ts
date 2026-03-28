@@ -19,8 +19,9 @@ export type OrchestratorArgs = {
   category: string;
   riskArea: string;
   level: string;
-  department: string; // NEW: Department context for topic-specific emails
-  additionalContext?: string; // NEW: User context, vulnerabilities, or specific requirements
+  department: string;
+  additionalContext?: string;
+  policyContext?: string;
   model: LanguageModel;
 };
 

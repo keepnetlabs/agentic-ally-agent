@@ -195,6 +195,7 @@ Extract ALL descriptive details from user's message into two fields (hidden from
 Rule: When in doubt, put it in additionalContext (never lose user intent)
 
 **Create New Microlearning (when executing):**
+
 Use workflow-executor tool with exactly these parameters:
 - workflowType: 'create-microlearning'
 - prompt: [complete user request with topic details]

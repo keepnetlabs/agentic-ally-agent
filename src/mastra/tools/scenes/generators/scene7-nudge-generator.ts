@@ -1,9 +1,11 @@
 import { PromptAnalysis } from '../../../types/prompt-analysis';
 import { MicrolearningContent } from '../../../types/microlearning';
 import { buildContextData } from '../../../utils/prompt-builders/base-context-builder';
+import { getNudgeExamples } from '../../../utils/language/localization-language-rules';
 
 export function generateScene7Prompt(analysis: PromptAnalysis, microlearning: MicrolearningContent): string {
   const contextData = buildContextData(analysis, microlearning);
+  const nudgeExamples = getNudgeExamples(analysis.language);
 
   // Use keyTopics to provide more specific context for dynamic nudge generation
   const keyTopicsHint = analysis.keyTopics?.slice(0, 3).join(', ') || 'general security practice';
@@ -21,12 +23,12 @@ WARNING JSON OUTPUT RULES (CRITICAL):
 
 === PRODUCTION EXAMPLE: Phishing (THREAT Category)
 
-Phishing Example:
-Subtitle: "Next time a suspicious email appears, you will do this:"
+Phishing Example in ${analysis.language}:
+Subtitle: "${nudgeExamples.subtitle}"
 Key Messages:
-1. "Recognise a suspicious email"
-2. "Don't click links or open unknown attachments"
-3. "Use the report button"
+1. "${nudgeExamples.recognize}"
+2. "${nudgeExamples.protect}"
+3. "${nudgeExamples.verify}"
 
 ADAPT THIS EXACT PATTERN TO ${analysis.topic}:
 
@@ -93,11 +95,9 @@ Generate for ${analysis.topic}: Max 5 words in ${analysis.language}
       "actionsTitle": "Localize 'Your next steps' into ${analysis.language}"
     },
     "key_message": [
-      "Step 1 - RECOGNIZE for ${analysis.topic}: Generate observable threat indicator specific to topic. REFERENCE EXAMPLES: Phishing='Recognise a suspicious email' | Vishing='Recognise a suspicious caller' | Quishing='Recognise a suspicious QR code' | Ransomware='Recognise encryption or lock signs' | Deepfake='Recognise media quality oddities' | Insider-Threat='Recognise unusual access requests' | Social-Engineering='Recognise manipulation attempts'. FOR ANY TOPIC NOT LISTED: Generate 'Recognise [observable threat indicator specific to ${analysis.topic}]'. Max 6 words in ${analysis.language}",
-
-      "Step 2 - PROTECT for ${analysis.topic} (${analysis.category} category): Generate harmful action to avoid in THREAT category. REFERENCE EXAMPLES: Phishing='Don't click links or open attachments' | Vishing='Don't confirm credentials or transfer funds' | Quishing='Don't scan unknown or misplaced QR codes' | Ransomware='Don't pay ransom or execute suspicious files' | Deepfake='Don't trust unusual media without verification' | Insider-Threat='Don't share credentials or sensitive access' | Supply-Chain='Don't trust unexpected vendor communications'. FOR ANY TOPIC NOT LISTED: Generate 'Don't [specific harmful action for ${analysis.topic}]'. Max 8 words in ${analysis.language}",
-
-      "Step 3 - VERIFY for ${analysis.topic}: Generate appropriate escalation/reporting action specific to topic. REFERENCE EXAMPLES: Phishing='Use the report button' | Vishing='Report to security team' | Quishing='Report to IT team' | Ransomware='Report to IT immediately' | Deepfake='Report suspicious content to security' | Insider-Threat='Report to compliance officer' | Supply-Chain='Alert procurement team'. FOR ANY TOPIC NOT LISTED: Generate '[Action] [appropriate escalation channel for ${analysis.topic}]'. Max 5 words in ${analysis.language}"
+      "RECOGNIZE: Observable threat indicator for ${analysis.topic}. Max 6 words in ${analysis.language}. Style: '${nudgeExamples.recognize}'",
+      "PROTECT: Harmful action to avoid for ${analysis.topic}. Max 8 words in ${analysis.language}. Style: '${nudgeExamples.protect}'",
+      "VERIFY: Escalation/reporting action for ${analysis.topic}. Max 5 words in ${analysis.language}. Style: '${nudgeExamples.verify}'"
     ],
     "scientific_basis": "Implementation Intentions: Concrete plans improve behavior change.",
     "scene_type": "nudge"

@@ -40,6 +40,7 @@ export const createInboxStructureTool = createTool({
       microlearningId,
       microlearning,
       additionalContext,
+      policyContext,
       modelProvider,
       model: modelOverride,
     } = inputData;
@@ -52,7 +53,8 @@ export const createInboxStructureTool = createTool({
         microlearning,
         additionalContext,
         modelProvider,
-        modelOverride
+        modelOverride,
+        policyContext
       );
 
       logger.debug('Tool returning inbox content', {
@@ -97,7 +99,8 @@ async function createInboxStructure(
   microlearning: MicrolearningContent,
   additionalContext?: string,
   modelProvider?: string,
-  modelOverride?: string
+  modelOverride?: string,
+  policyContext?: string
 ) {
   const logger = getLogger('CreateInboxStructure');
 
@@ -121,7 +124,8 @@ async function createInboxStructure(
       languageCode,
       model,
       dept, // Pass department for context-specific emails
-      additionalContext
+      additionalContext,
+      policyContext
     );
 
     return dynamicInboxData; // Return the generated content
@@ -137,7 +141,8 @@ async function createInboxStructure(
         languageCode,
         model,
         dept, // Pass department for context-specific emails
-        additionalContext
+        additionalContext,
+        policyContext
       );
 
       return dynamicInboxData; // Return the generated content after retry
@@ -164,8 +169,9 @@ async function generateDynamicInboxWithAI(
   microlearning: MicrolearningContent,
   languageCode: string,
   model: LanguageModel,
-  department: string = 'all', // NEW: Department context for topic-specific emails
-  additionalContext?: string
+  department: string = 'all',
+  additionalContext?: string,
+  policyContext?: string
 ) {
   const topic = microlearning.microlearning_metadata.title;
   const category = microlearning.microlearning_metadata.category;
@@ -174,6 +180,12 @@ async function generateDynamicInboxWithAI(
 
   // Generate prompts using modular generators
   const textsPrompt = generateInboxTextsPrompt(topic, languageCode, microlearning);
+
+  // Build system prompt with optional policy context
+  let textsSystemPrompt = `Generate ${topic} UI texts. Return only valid JSON - no markdown, no backticks. Use exact format shown in user prompt.`;
+  if (policyContext) {
+    textsSystemPrompt += `\n\nPOLICY CONTEXT (must respect these constraints):\n${policyContext}`;
+  }
 
   // Execute both phases
   const [textsResponse, emailsArray] = await Promise.all([
@@ -184,7 +196,7 @@ async function generateDynamicInboxWithAI(
           messages: [
             {
               role: 'system',
-              content: `Generate ${topic} UI texts. Return only valid JSON - no markdown, no backticks. Use exact format shown in user prompt.`,
+              content: textsSystemPrompt,
             },
             { role: 'user', content: textsPrompt },
           ],
@@ -201,8 +213,9 @@ async function generateDynamicInboxWithAI(
           category,
           riskArea,
           level,
-          department, // NEW: Pass department for context-specific emails
+          department,
           additionalContext,
+          policyContext,
           model,
         }),
       `Inbox emails generation for ${topic}`

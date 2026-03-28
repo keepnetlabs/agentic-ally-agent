@@ -28,6 +28,8 @@ CRITICAL: This scene is ALWAYS an email inbox simulation, regardless of topic.
   • Action 2 iconName: MUST be "alert-triangle" (spotting threats)
   • Action 3 iconName: MUST be "flag" (reporting)
 
+IMPORTANT: Adapt all examples below to "${analysis.topic}". Keep the same structure/format but make every title, subtitle, and description specifically about "${analysis.topic}".
+
 {
   "4": {
     "iconName": "mail-check",

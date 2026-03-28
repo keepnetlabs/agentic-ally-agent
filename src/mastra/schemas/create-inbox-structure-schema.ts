@@ -8,6 +8,7 @@ export const CreateInboxStructureSchema = z.object({
   languageContent: z.any(), // LanguageContent
   remote: z.any(),
   additionalContext: z.string().optional().describe('User context, vulnerabilities, or specific requirements'),
+  policyContext: z.string().optional().describe('Organization policy context for content constraints'),
   modelProvider: z.enum(['OPENAI', 'WORKERS_AI', 'GOOGLE']).optional().describe('Model provider'),
   model: z.string().optional().describe('Model name (e.g., OPENAI_GPT_4O_MINI, WORKERS_AI_GPT_OSS_120B)'),
 });

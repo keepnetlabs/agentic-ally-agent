@@ -326,6 +326,7 @@ export const createInboxStep = createStep({
       modelProvider: inputData.modelProvider,
       model: inputData.model,
       additionalContext: analysis.additionalContext,
+      policyContext: inputData.policyContext,
     }, {});
 
     // v1: Check for ValidationError or failure

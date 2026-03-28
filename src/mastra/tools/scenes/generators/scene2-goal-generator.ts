@@ -1,9 +1,11 @@
 import { PromptAnalysis } from '../../../types/prompt-analysis';
 import { MicrolearningContent } from '../../../types/microlearning';
 import { buildContextData } from '../../../utils/prompt-builders/base-context-builder';
+import { getGoalExamples } from '../../../utils/language/localization-language-rules';
 
 export function generateScene2Prompt(analysis: PromptAnalysis, microlearning: MicrolearningContent): string {
   const contextData = buildContextData(analysis, microlearning);
+  const goalExamples = getGoalExamples(analysis.language);
 
   return `${contextData}
 
@@ -20,26 +22,26 @@ USE EXACTLY THESE KEYS BUT REPLACE PLACEHOLDERS WITH REAL CONTENT:
 {
   "2": {
     "iconName": "target",
-    "title": "Topic-aware title (e.g., 'Your Phishing Defense', 'Your Account Security'). Pattern: 'Your [Topic Area/Outcome]'. NEVER: 'Your Learning Goal'.",
-    "subtitle": "Implementation intention (≤18 words): 'Next time you [situation], you will pause and [action]'. Adapt to ${analysis.roles}. (e.g., 'Next time see suspicious email, you will pause and report it').",
+    "title": "Topic-aware title (e.g., '${goalExamples.title}', 'Your Account Security'). Pattern: 'Your [Topic Area/Outcome]'. NEVER: 'Your Learning Goal'.",
+    "subtitle": "Implementation intention (≤18 words): 'Next time you [situation], you will pause and [action]'. Adapt to ${analysis.roles}. STYLE REFERENCE in ${analysis.language}: '${goalExamples.subtitle}'.",
     "callToActionText": "Localize 'Continue' to ${analysis.language}.",
     "goals": [
       {
         "iconName": "alert-triangle",
         "title": "Step 1 Title (2-5 words). Pattern: Recognize/Assess/Identify.",
-        "subtitle": "Concrete cue for Step 1 (2-4 words). (e.g., 'Pause and think', 'Assess risks').",
+        "subtitle": "Concrete cue for Step 1 (2-4 words). STYLE REFERENCE in ${analysis.language}: '${goalExamples.step1}'.",
         "description": "Short benefit (≤12 words). Pattern: 'Helps you [spot/notice] when [situation].' Adapt to ${analysis.roles}. (e.g., 'Helps you spot phishing red flags like sender urgency')."
       },
       {
         "iconName": "shield-check",
         "title": "Step 2 Title (2-5 words). Pattern: Verify/Implement/Follow.",
-        "subtitle": "Specific action (2-4 words). (e.g., 'Verify source', 'Enable MFA').",
+        "subtitle": "Specific action (2-4 words). STYLE REFERENCE in ${analysis.language}: '${goalExamples.step2}'.",
         "description": "Short benefit (≤12 words). Pattern: 'Helps you [action] when [situation] so [outcome].' Adapt to ${analysis.roles}. (e.g., 'Helps you verify sender so you protect sensitive data')."
       },
       {
         "iconName": "flag",
         "title": "Step 3 Title (2-4 words). Pattern: Report/Test/Validate.",
-        "subtitle": "Escalation cue (2-4 words). (e.g., 'Report it', 'Test recovery').",
+        "subtitle": "Escalation cue (2-4 words). STYLE REFERENCE in ${analysis.language}: '${goalExamples.step3}'.",
         "description": "Short benefit (≤12 words). Pattern: 'Helps you [action] when [situation] so [team benefit].' Adapt to ${analysis.roles}. (e.g., 'Helps you report threats so security team responds fast')."
       }
     ],

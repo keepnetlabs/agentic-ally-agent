@@ -164,6 +164,13 @@ You MUST:
 - Scene Type: ${config.displayName} - ${config.typeInstruction}
 - Grammar: use natural ${targetLanguage} sentence structures, NOT the source language's grammar.
 
+=== TOPIC CONSISTENCY ===
+
+TOPIC: "${topic}"
+Every title, subtitle, and description must stay about "${topic}".
+❌ WRONG: Source says "${topic}" → output replaces it with a different cybersecurity topic
+✅ RIGHT: Source says "${topic}" → output says "${topic}" localized into ${targetLanguage}
+
 === AVOID (THE "TRANSLATIONESE" TRAP) ===
 
 ❌ Literal translations of idioms.
@@ -210,8 +217,9 @@ Scan your output for these common failures:
 1. Any word still in ${sourceLanguage}? → Rewrite it
 2. Any word from a NEIGHBORING language (not ${targetLanguage})? → Replace with correct ${targetLanguage} word
 3. Any word you are not 100% certain exists in ${targetLanguage}? → Use simpler alternative
-4. Are scientific_basis, scene_type, iconName, URLs, timestamps unchanged from source? → If changed, restore original
-5. Does every sentence read naturally in ${targetLanguage}? → If not, rephrase`;
+4. Does every title/subtitle still reference "${topic}"? → If you accidentally wrote a different topic, fix it
+5. Are scientific_basis, scene_type, iconName, URLs, timestamps unchanged from source? → If changed, restore original
+6. Does every sentence read naturally in ${targetLanguage}? → If not, rephrase`;
 }
 
 /**

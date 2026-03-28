@@ -8,6 +8,9 @@ export function generateScene6Prompt(analysis: PromptAnalysis, microlearning: Mi
   return `${contextData}
 
 Generate scene 6 (survey):
+
+IMPORTANT: Adapt all examples below to "${analysis.topic}". Keep the same structure/format but make every title and question specifically about "${analysis.topic}".
+
 {
   "6": {
     "iconName": "list-checks",

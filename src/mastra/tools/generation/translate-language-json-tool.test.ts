@@ -70,7 +70,7 @@ describe('translateLanguageJsonTool', () => {
   const baseInput = {
     json: {
       '1': { original: 'content' },
-      app_texts: { key: 'value' },
+      app: { texts: { key: 'value' }, ariaTexts: {} },
     },
     microlearningStructure: {
       scenes: [{ scene_id: '1', metadata: { scene_type: 'intro' } }],
@@ -207,7 +207,7 @@ describe('translateLanguageJsonTool', () => {
     const result = await (translateLanguageJsonTool as any).execute(baseInput);
 
     expect(result.success).toBe(true);
-    expect(result.data.app_texts).toEqual(baseInput.json.app_texts); // Fallback to original
+    expect(result.data.app).toEqual(baseInput.json.app); // Fallback to original
   });
 
   it('should validate languages are different', async () => {
@@ -249,7 +249,7 @@ describe('translateLanguageJsonTool', () => {
       ...baseInput,
       json: {
         // '1' is missing from JSON
-        app_texts: { key: 'val' },
+        app: { texts: { key: 'val' }, ariaTexts: {} },
       },
       microlearningStructure: {
         scenes: [{ scene_id: '1', metadata: { scene_type: 'intro' } }],

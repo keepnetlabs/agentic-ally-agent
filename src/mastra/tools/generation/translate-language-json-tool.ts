@@ -26,6 +26,7 @@ import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../uti
 import { withRetry } from '../../utils/core/resilience-utils';
 import { runPostRewriteQC } from '../../utils/localization/post-rewrite-qc';
 import type { RewriteContext } from '../scenes/rewriters/scene-rewriter-base';
+import type { AppContent } from '../../types/microlearning';
 import {
   TranslateJsonInputSchema,
   TranslateJsonOutputSchema,
@@ -92,7 +93,7 @@ export const translateLanguageJsonTool = createTool({
 
       // Extract scenes metadata from microlearningStructure
       const scenesMetadata = microlearningStructure?.scenes || [];
-      const appTexts = json.app_texts || {};
+      const appContent = (json.app || {}) as AppContent;
 
       if (scenesMetadata.length === 0) {
         logger.warn('No scenes metadata found, returning original', {});
@@ -169,11 +170,11 @@ export const translateLanguageJsonTool = createTool({
         }
       });
 
-      // Rewrite app_texts
+      // Rewrite app texts
       logger.debug('Rewriting application texts', {});
-      let rewrittenAppTexts = appTexts;
+      let rewrittenAppContent = appContent;
       try {
-        rewrittenAppTexts = await withRetry(() => rewriteAppTexts(appTexts, rewriteContext), 'App texts rewrite');
+        rewrittenAppContent = await withRetry(() => rewriteAppTexts(appContent, rewriteContext), 'App texts rewrite');
         logger.debug('Application texts rewrite completed', {});
       } catch (error) {
         const err = normalizeError(error);
@@ -185,7 +186,7 @@ export const translateLanguageJsonTool = createTool({
       const result = {
         ...json, // Keep all original keys
         ...rewrittenScenesMap, // Override with rewritten scene content
-        app_texts: rewrittenAppTexts,
+        app: rewrittenAppContent,
       };
 
       logger.debug('Scene rewrite batch completed', { scenesRewritten: Object.keys(rewrittenScenesMap).length });

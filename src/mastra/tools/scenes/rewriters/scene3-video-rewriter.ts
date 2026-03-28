@@ -72,8 +72,14 @@ export async function rewriteScene3Video(scene: Scene3Metadata, context: Rewrite
   const rewritten = await rewriteSceneWithBase<Scene3Metadata>(scene, 'video', context);
 
   // Post-process: restore original timestamps if transcript exists
-  if (sourceTranscript && rewritten?.video?.transcript) {
-    rewritten.video.transcript = restoreTimestamps(sourceTranscript, rewritten.video.transcript);
+  try {
+    if (sourceTranscript && rewritten?.video?.transcript) {
+      rewritten.video.transcript = restoreTimestamps(sourceTranscript, rewritten.video.transcript);
+    }
+  } catch (err) {
+    logger.warn('Timestamp restoration failed, using AI output as-is', {
+      error: err instanceof Error ? err.message : String(err),
+    });
   }
 
   return rewritten;

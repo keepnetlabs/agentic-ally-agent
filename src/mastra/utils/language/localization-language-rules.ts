@@ -4309,6 +4309,398 @@ export function getHighlightExamples(langCode: string): HighlightExamples {
   };
 }
 
+// --- 2c) Goal examples per language (for scene2 generation) ---
+
+interface GoalExamples {
+  title: string;      // e.g., "Your Phishing Defense"
+  subtitle: string;   // Implementation intention pattern
+  step1: string;      // Recognize step
+  step2: string;      // Verify step
+  step3: string;      // Report step
+}
+
+const GOAL_EXAMPLES: Partial<Record<LangKey, GoalExamples>> = {
+  en: {
+    title: 'Your Phishing Defense',
+    subtitle: 'Next time you see a suspicious email, you will pause and report it',
+    step1: 'Pause and think',
+    step2: 'Verify the source',
+    step3: 'Report it',
+  },
+  tr: {
+    title: 'Oltalama Savunmanız',
+    subtitle: 'Şüpheli bir e-posta gördüğünüzde durup bildireceksiniz',
+    step1: 'Durun ve düşünün',
+    step2: 'Kaynağı doğrulayın',
+    step3: 'Bildirin',
+  },
+  de: {
+    title: 'Ihr Phishing-Schutz',
+    subtitle: 'Bei einer verdächtigen E-Mail halten Sie inne und melden sie',
+    step1: 'Innehalten und nachdenken',
+    step2: 'Quelle überprüfen',
+    step3: 'Vorfall melden',
+  },
+  fr: {
+    title: 'Votre défense anti-hameçonnage',
+    subtitle: 'Face à un e-mail suspect, vous vous arrêterez et le signalerez',
+    step1: 'Marquer une pause et réfléchir',
+    step2: 'Vérifier la source',
+    step3: 'Signaler l\'incident',
+  },
+  es: {
+    title: 'Tu defensa contra phishing',
+    subtitle: 'Ante un correo sospechoso, te detendrás y lo reportarás',
+    step1: 'Detente y piensa',
+    step2: 'Verifica el origen',
+    step3: 'Repórtalo',
+  },
+  pt: {
+    title: 'Sua defesa contra phishing',
+    subtitle: 'Ao ver um e-mail suspeito, você vai parar e reportar',
+    step1: 'Pare e pense',
+    step2: 'Verifique a origem',
+    step3: 'Reporte o incidente',
+  },
+  it: {
+    title: 'La tua difesa dal phishing',
+    subtitle: 'Di fronte a un\'e-mail sospetta, fermati e segnalala',
+    step1: 'Fermati e rifletti',
+    step2: 'Verifica la fonte',
+    step3: 'Segnala l\'incidente',
+  },
+  nl: {
+    title: 'Uw phishing-bescherming',
+    subtitle: 'Bij een verdachte e-mail stopt u en meldt u het',
+    step1: 'Stop en denk na',
+    step2: 'Controleer de bron',
+    step3: 'Meld het incident',
+  },
+  da: {
+    title: 'Dit phishing-forsvar',
+    subtitle: 'Når du ser en mistænkelig e-mail, stopper du op og rapporterer',
+    step1: 'Stop op og tænk',
+    step2: 'Bekræft kilden',
+    step3: 'Rapportér det',
+  },
+  sv: {
+    title: 'Ditt nätfiskeskydd',
+    subtitle: 'Nästa gång du ser ett misstänkt e-post, stanna upp och rapportera',
+    step1: 'Stanna och tänk efter',
+    step2: 'Verifiera källan',
+    step3: 'Rapportera det',
+  },
+  no: {
+    title: 'Ditt phishing-forsvar',
+    subtitle: 'Neste gang du ser en mistenkelig e-post, stopp og rapporter',
+    step1: 'Stopp og tenk',
+    step2: 'Bekreft kilden',
+    step3: 'Rapporter det',
+  },
+  pl: {
+    title: 'Twoja obrona przed phishingiem',
+    subtitle: 'Gdy zobaczysz podejrzanego e-maila, zatrzymaj się i zgłoś',
+    step1: 'Zatrzymaj się i pomyśl',
+    step2: 'Zweryfikuj źródło',
+    step3: 'Zgłoś incydent',
+  },
+  cs: {
+    title: 'Vaše obrana proti phishingu',
+    subtitle: 'Při podezřelém e-mailu se zastavíte a nahlásíte ho',
+    step1: 'Zastavte se a přemýšlejte',
+    step2: 'Ověřte zdroj',
+    step3: 'Nahlaste incident',
+  },
+  ru: {
+    title: 'Ваша защита от фишинга',
+    subtitle: 'Увидев подозрительное письмо, остановитесь и сообщите о нём',
+    step1: 'Остановитесь и подумайте',
+    step2: 'Проверьте источник',
+    step3: 'Сообщите об инциденте',
+  },
+  ar: {
+    title: 'دفاعك ضد التصيّد',
+    subtitle: 'عند رؤية بريد مشبوه، توقف وأبلغ عنه',
+    step1: 'توقف وفكّر',
+    step2: 'تحقق من المصدر',
+    step3: 'أبلغ عن الحادثة',
+  },
+  zh: {
+    title: '您的网络钓鱼防线',
+    subtitle: '下次看到可疑邮件时，停下来并举报',
+    step1: '停下来思考',
+    step2: '验证来源',
+    step3: '举报事件',
+  },
+  ja: {
+    title: 'フィッシング対策',
+    subtitle: '不審なメールを見たら立ち止まって報告する',
+    step1: '立ち止まって考える',
+    step2: '送信元を確認する',
+    step3: '報告する',
+  },
+  ko: {
+    title: '피싱 방어 계획',
+    subtitle: '의심스러운 이메일을 보면 멈추고 신고합니다',
+    step1: '멈추고 생각하기',
+    step2: '출처 확인하기',
+    step3: '신고하기',
+  },
+  hi: {
+    title: 'आपकी फ़िशिंग सुरक्षा',
+    subtitle: 'संदिग्ध ईमेल दिखने पर रुकें और रिपोर्ट करें',
+    step1: 'रुकें और सोचें',
+    step2: 'स्रोत सत्यापित करें',
+    step3: 'रिपोर्ट करें',
+  },
+  he: {
+    title: 'ההגנה שלך מפישינג',
+    subtitle: 'כשתראה מייל חשוד, עצור ודווח עליו',
+    step1: 'עצור וחשוב',
+    step2: 'אמת את המקור',
+    step3: 'דווח על האירוע',
+  },
+  uk: {
+    title: 'Ваш захист від фішингу',
+    subtitle: 'Побачивши підозрілий лист, зупиніться і повідомте',
+    step1: 'Зупиніться і подумайте',
+    step2: 'Перевірте джерело',
+    step3: 'Повідомте про інцидент',
+  },
+  th: {
+    title: 'การป้องกันฟิชชิงของคุณ',
+    subtitle: 'เมื่อเห็นอีเมลน่าสงสัย หยุดคิดและรายงาน',
+    step1: 'หยุดและคิด',
+    step2: 'ตรวจสอบแหล่งที่มา',
+    step3: 'รายงานเหตุการณ์',
+  },
+  vi: {
+    title: 'Phòng thủ lừa đảo của bạn',
+    subtitle: 'Khi thấy email đáng ngờ, hãy dừng lại và báo cáo',
+    step1: 'Dừng lại và suy nghĩ',
+    step2: 'Xác minh nguồn gốc',
+    step3: 'Báo cáo sự cố',
+  },
+  id: {
+    title: 'Pertahanan phishing Anda',
+    subtitle: 'Saat melihat email mencurigakan, berhenti dan laporkan',
+    step1: 'Berhenti dan pikirkan',
+    step2: 'Verifikasi sumbernya',
+    step3: 'Laporkan insiden',
+  },
+  ms: {
+    title: 'Pertahanan phishing anda',
+    subtitle: 'Apabila melihat e-mel mencurigakan, berhenti dan laporkan',
+    step1: 'Berhenti dan fikir',
+    step2: 'Sahkan sumber',
+    step3: 'Laporkan insiden',
+  },
+  fi: {
+    title: 'Tietojenkalastelun torjuntasi',
+    subtitle: 'Kun näet epäilyttävän sähköpostin, pysähdy ja ilmoita',
+    step1: 'Pysähdy ja mieti',
+    step2: 'Varmista lähde',
+    step3: 'Ilmoita tapaus',
+  },
+};
+
+/**
+ * Get goal examples for scene 2 goal generation.
+ * Returns examples in the target language if available, otherwise English fallback.
+ */
+export function getGoalExamples(langCode: string): GoalExamples {
+  const key = normLang(langCode);
+  return GOAL_EXAMPLES[key] || GOAL_EXAMPLES.en || {
+    title: 'Your Phishing Defense',
+    subtitle: 'Next time you see a suspicious email, you will pause and report it',
+    step1: 'Pause and think',
+    step2: 'Verify the source',
+    step3: 'Report it',
+  };
+}
+
+// --- 2d) Nudge examples per language (for scene7 generation) ---
+
+interface NudgeExamples {
+  subtitle: string;   // Implementation intention
+  recognize: string;  // Step 1
+  protect: string;    // Step 2
+  verify: string;     // Step 3
+}
+
+const NUDGE_EXAMPLES: Partial<Record<LangKey, NudgeExamples>> = {
+  en: {
+    subtitle: 'Next time a suspicious email appears, you will do this:',
+    recognize: 'Recognise a suspicious email',
+    protect: 'Don\'t click links or open unknown attachments',
+    verify: 'Use the report button',
+  },
+  tr: {
+    subtitle: 'Şüpheli bir e-posta geldiğinde şunu yapacaksınız:',
+    recognize: 'Şüpheli e-postayı tanıyın',
+    protect: 'Bağlantılara tıklamayın, bilinmeyen ekleri açmayın',
+    verify: 'Bildir butonunu kullanın',
+  },
+  de: {
+    subtitle: 'Wenn eine verdächtige E-Mail erscheint, tun Sie Folgendes:',
+    recognize: 'Verdächtige E-Mail erkennen',
+    protect: 'Keine Links anklicken oder unbekannte Anhänge öffnen',
+    verify: 'Melden-Button verwenden',
+  },
+  fr: {
+    subtitle: 'La prochaine fois qu\'un e-mail suspect apparaît, vous ferez ceci :',
+    recognize: 'Identifier un e-mail suspect',
+    protect: 'Ne cliquez pas sur les liens ni les pièces jointes inconnues',
+    verify: 'Utilisez le bouton de signalement',
+  },
+  es: {
+    subtitle: 'La próxima vez que aparezca un correo sospechoso, harás esto:',
+    recognize: 'Reconoce un correo sospechoso',
+    protect: 'No hagas clic en enlaces ni abras adjuntos desconocidos',
+    verify: 'Usa el botón de reporte',
+  },
+  pt: {
+    subtitle: 'Da próxima vez que um e-mail suspeito aparecer, faça isto:',
+    recognize: 'Reconheça um e-mail suspeito',
+    protect: 'Não clique em links nem abra anexos desconhecidos',
+    verify: 'Use o botão de denúncia',
+  },
+  it: {
+    subtitle: 'La prossima volta che appare un\'e-mail sospetta, farai questo:',
+    recognize: 'Riconoscere un\'e-mail sospetta',
+    protect: 'Non cliccare link né aprire allegati sconosciuti',
+    verify: 'Usa il pulsante di segnalazione',
+  },
+  nl: {
+    subtitle: 'De volgende keer dat een verdachte e-mail verschijnt, doet u dit:',
+    recognize: 'Herken een verdachte e-mail',
+    protect: 'Klik niet op links en open geen onbekende bijlagen',
+    verify: 'Gebruik de meldknop',
+  },
+  da: {
+    subtitle: 'Næste gang en mistænkelig e-mail dukker op, gør du dette:',
+    recognize: 'Genkend en mistænkelig e-mail',
+    protect: 'Klik ikke på links eller åbn ukendte vedhæftninger',
+    verify: 'Brug rapporteringsknappen',
+  },
+  sv: {
+    subtitle: 'Nästa gång ett misstänkt e-post dyker upp, gör du så här:',
+    recognize: 'Känn igen ett misstänkt e-post',
+    protect: 'Klicka inte på länkar eller öppna okända bilagor',
+    verify: 'Använd rapporteringsknappen',
+  },
+  no: {
+    subtitle: 'Neste gang en mistenkelig e-post dukker opp, gjør du dette:',
+    recognize: 'Gjenkjenn en mistenkelig e-post',
+    protect: 'Ikke klikk på lenker eller åpne ukjente vedlegg',
+    verify: 'Bruk rapporteringsknappen',
+  },
+  pl: {
+    subtitle: 'Następnym razem, gdy pojawi się podejrzany e-mail, zrobisz to:',
+    recognize: 'Rozpoznaj podejrzanego e-maila',
+    protect: 'Nie klikaj linków ani nie otwieraj nieznanych załączników',
+    verify: 'Użyj przycisku zgłoszenia',
+  },
+  cs: {
+    subtitle: 'Příště, když se objeví podezřelý e-mail, uděláte toto:',
+    recognize: 'Rozpoznejte podezřelý e-mail',
+    protect: 'Neklikejte na odkazy ani neotevírejte neznámé přílohy',
+    verify: 'Použijte tlačítko nahlášení',
+  },
+  ru: {
+    subtitle: 'Когда появится подозрительное письмо, вы сделаете следующее:',
+    recognize: 'Распознайте подозрительное письмо',
+    protect: 'Не переходите по ссылкам и не открывайте вложения',
+    verify: 'Используйте кнопку «Сообщить»',
+  },
+  ar: {
+    subtitle: 'في المرة القادمة التي يظهر فيها بريد مشبوه، ستفعل هذا:',
+    recognize: 'تعرّف على البريد المشبوه',
+    protect: 'لا تنقر على الروابط أو تفتح مرفقات مجهولة',
+    verify: 'استخدم زر الإبلاغ',
+  },
+  zh: {
+    subtitle: '下次出现可疑邮件时，您将这样做：',
+    recognize: '识别可疑邮件',
+    protect: '不要点击链接或打开未知附件',
+    verify: '使用举报按钮',
+  },
+  ja: {
+    subtitle: '次に不審なメールが届いたら、こうしましょう：',
+    recognize: '不審なメールを見分ける',
+    protect: 'リンクや不明な添付ファイルを開かない',
+    verify: '報告ボタンを使う',
+  },
+  ko: {
+    subtitle: '다음에 의심스러운 이메일이 나타나면 이렇게 하세요:',
+    recognize: '의심스러운 이메일을 인식하기',
+    protect: '링크를 클릭하거나 알 수 없는 첨부파일을 열지 마세요',
+    verify: '신고 버튼을 사용하세요',
+  },
+  hi: {
+    subtitle: 'अगली बार संदिग्ध ईमेल आने पर, आप यह करेंगे:',
+    recognize: 'संदिग्ध ईमेल को पहचानें',
+    protect: 'लिंक पर क्लिक न करें या अज्ञात अटैचमेंट न खोलें',
+    verify: 'रिपोर्ट बटन का उपयोग करें',
+  },
+  he: {
+    subtitle: 'בפעם הבאה שיופיע מייל חשוד, תעשה זאת:',
+    recognize: 'זהה מייל חשוד',
+    protect: 'אל תלחץ על קישורים או תפתח קבצים מצורפים לא מוכרים',
+    verify: 'השתמש בכפתור הדיווח',
+  },
+  uk: {
+    subtitle: 'Наступного разу, коли з\'явиться підозрілий лист, зробіть це:',
+    recognize: 'Розпізнайте підозрілий лист',
+    protect: 'Не натискайте посилання та не відкривайте невідомі вкладення',
+    verify: 'Скористайтеся кнопкою «Повідомити»',
+  },
+  th: {
+    subtitle: 'ครั้งต่อไปที่เห็นอีเมลน่าสงสัย คุณจะทำสิ่งนี้:',
+    recognize: 'สังเกตอีเมลที่น่าสงสัย',
+    protect: 'อย่าคลิกลิงก์หรือเปิดไฟล์แนบที่ไม่รู้จัก',
+    verify: 'ใช้ปุ่มรายงาน',
+  },
+  vi: {
+    subtitle: 'Lần sau khi thấy email đáng ngờ, bạn sẽ làm điều này:',
+    recognize: 'Nhận biết email đáng ngờ',
+    protect: 'Không nhấp vào liên kết hoặc mở tệp đính kèm lạ',
+    verify: 'Sử dụng nút báo cáo',
+  },
+  id: {
+    subtitle: 'Lain kali muncul email mencurigakan, Anda akan melakukan ini:',
+    recognize: 'Kenali email yang mencurigakan',
+    protect: 'Jangan klik tautan atau buka lampiran tidak dikenal',
+    verify: 'Gunakan tombol laporkan',
+  },
+  ms: {
+    subtitle: 'Apabila e-mel mencurigakan muncul, anda akan melakukan ini:',
+    recognize: 'Kenali e-mel yang mencurigakan',
+    protect: 'Jangan klik pautan atau buka lampiran tidak dikenali',
+    verify: 'Gunakan butang laporkan',
+  },
+  fi: {
+    subtitle: 'Kun seuraavan kerran näet epäilyttävän sähköpostin, teet näin:',
+    recognize: 'Tunnista epäilyttävä sähköposti',
+    protect: 'Älä napsauta linkkejä äläkä avaa tuntemattomia liitteitä',
+    verify: 'Käytä ilmoituspainiketta',
+  },
+};
+
+/**
+ * Get nudge examples for scene 7 nudge generation.
+ * Returns examples in the target language if available, otherwise English fallback.
+ */
+export function getNudgeExamples(langCode: string): NudgeExamples {
+  const key = normLang(langCode);
+  return NUDGE_EXAMPLES[key] || NUDGE_EXAMPLES.en || {
+    subtitle: 'Next time a suspicious email appears, you will do this:',
+    recognize: 'Recognise a suspicious email',
+    protect: 'Don\'t click links or open unknown attachments',
+    verify: 'Use the report button',
+  };
+}
+
 // --- 3) Optional glossary injector (hard override for terms) ---
 export function buildGlossaryPrompt(glossary: Array<Record<string, string>> = []): string {
   if (!glossary.length) return '';

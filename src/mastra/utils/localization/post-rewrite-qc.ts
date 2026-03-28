@@ -13,10 +13,36 @@
 import { trackedGenerateText } from '../core/tracked-generate';
 import { cleanResponse } from '../content-processors/json-cleaner';
 import { getLanguagePrompt } from '../language/localization-language-rules';
-import { EXTRACTION_PARAMS } from '../config/llm-generation-params';
+import { QC_PARAMS } from '../config/llm-generation-params';
 import { getLogger } from '../core/logger';
 import { normalizeError } from '../core/error-utils';
+import { getModel, ModelProvider, Model, reasoningHeaders } from '../../model-providers';
 import type { LanguageModel } from '../../types/language-model';
+
+/**
+ * Languages where gpt-oss-120b has known quality limitations.
+ * QC uses a stronger model for these to catch vocabulary/grammar hallucinations.
+ * Major languages (en, de, fr, es, tr, ar, zh, ja, ko, pt, it, ru, nl, pl) work fine with base model.
+ */
+const ENHANCED_QC_LANGUAGES = new Set([
+  'mk', 'sq', 'bs', 'hr', 'sl', 'gl', 'cy', 'mt', 'is',
+  'ka', 'hy', 'az', 'uz', 'kk', 'mn', 'km', 'lo', 'my',
+  'ne', 'si', 'am', 'sw', 'af', 'eu', 'ga', 'gd', 'lb',
+]);
+
+/** Get the appropriate QC model based on target language */
+function getQCModel(targetLanguage: string, fallbackModel: LanguageModel): LanguageModel {
+  const langBase = targetLanguage.split('-')[0].toLowerCase();
+  if (ENHANCED_QC_LANGUAGES.has(langBase)) {
+    try {
+      return getModel(ModelProvider.OPENAI, Model.OPENAI_GPT_5_1);
+    } catch {
+      // If GPT-5.1 not available (missing API key etc.), fall back to provided model
+      return fallbackModel;
+    }
+  }
+  return fallbackModel;
+}
 
 const logger = getLogger('PostRewriteQC');
 
@@ -128,13 +154,18 @@ export async function runPostRewriteQC(
   const targetBase = targetLanguage.split('-')[0].toLowerCase();
   if (sourceBase === targetBase) return combinedResult;
 
+  // Select QC model: stronger model for languages where gpt-oss-120b has limitations
+  const qcModel = getQCModel(targetLanguage, model);
+  const isEnhanced = qcModel !== model;
+
   // Extract user-facing texts
   const entries = extractUserFacingTexts(combinedResult);
   if (entries.length === 0) return combinedResult;
 
-  logger.debug('Running post-rewrite QC', {
+  logger.info('Running post-rewrite QC', {
     targetLanguage,
     fieldsToCheck: entries.length,
+    enhancedModel: isEnhanced,
   });
 
   // Build compact review list (index: value)
@@ -154,10 +185,14 @@ CHECK EACH LINE FOR:
 1. Untranslated English words/phrases that should be in ${targetLanguage}
 2. Words from neighboring/related languages (not ${targetLanguage})
 3. Quoted English text inside scenarios (e.g., email subjects, button labels, error messages) — these must ALSO be in ${targetLanguage} because the learner sees them in the training UI
+4. Terminology inconsistency: if the SAME concept (e.g., "encryption", "report") is translated differently across lines, standardize to the most natural ${targetLanguage} term
+5. Obvious grammar errors: non-existent word forms, hallucinated words, or broken grammar that a native speaker would immediately notice — do NOT fix stylistic preferences or rephrase correct text
+
+IMPORTANT: Only correct CLEAR errors. If a line is acceptable ${targetLanguage}, skip it even if you would phrase it differently.
 
 FOR EACH LINE:
 - If the text is correct ${targetLanguage} (including accepted loanwords) → skip it
-- If it contains words that should be translated → return the index and FULL corrected text
+- If it contains a clear error from checks 1-5 → return the index and FULL corrected text
 
 Return ONLY a JSON object with corrections. Keys = index numbers (as strings), values = corrected text.
 If EVERYTHING is correct, return empty object: {}
@@ -169,7 +204,7 @@ Output (JSON only):`;
 
   try {
     const response = await trackedGenerateText('post-rewrite-qc', {
-      model,
+      model: qcModel,
       messages: [
         {
           role: 'system',
@@ -177,7 +212,8 @@ Output (JSON only):`;
         },
         { role: 'user', content: prompt },
       ],
-      ...EXTRACTION_PARAMS,
+      ...QC_PARAMS,
+      headers: reasoningHeaders('medium'),
     });
 
     const cleaned = cleanResponse(response.text, 'post-rewrite-qc');

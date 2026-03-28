@@ -126,17 +126,17 @@ export const INBOX_TEXT_PARAMS: GenerationParams = {
  *
  * Purpose: Localize content to feel native while preserving meaning
  * Priority: Natural phrasing + Meaning preservation > Literal translation
- * Use: create-inbox-structure-tool.ts (localized UI texts)
+ * Use: create-inbox-structure-tool.ts, inbox-translate-json-tool.ts (localized UI texts)
  *
  * Strategy: Moderate temperature with penalties to encourage natural phrasing
- * - frequencyPenalty: Avoid repetitive words
- * - presencePenalty: Encourage vocabulary variety and natural expressions
+ * Note: gpt-oss-120b (MoE) degrades below ~0.2 — OpenAI recommends temp=1.0.
+ *        0.3 balances meaning preservation with natural phrasing for this architecture.
  */
 export const LOCALIZER_PARAMS: GenerationParams & { frequencyPenalty?: number; presencePenalty?: number } = {
-  temperature: 0.15, // MODERATE - Natural phrasing + meaning preservation balance
+  temperature: 0.3, // MODERATE-LOW - Natural phrasing + meaning preservation (MoE safe floor)
   topP: 0.92, // Good diversity while maintaining control
   frequencyPenalty: 0.1, // Avoid repetitive words - encourages natural language
-  presencePenalty: 0.0, // Encourage vocabulary variety - feels more native
+  presencePenalty: 0.0, // Neutral - no bias toward new/existing tokens
 };
 
 /**
@@ -195,19 +195,34 @@ export const CODE_REVIEW_PARAMS: GenerationParams = {
  *
  * Purpose: Summaries, policy cache - consistent, factual output
  * Use: policy-cache.ts, vishing-conversations-summary-tool.ts
+ * Note: 0.3 is the safe floor for gpt-oss-120b MoE architecture.
  */
 export const LOW_DETERMINISM_PARAMS: GenerationParams = {
-  temperature: 0.2,
+  temperature: 0.3,
 };
 
 /**
  * EXTRACTION PARAMS (High Determinism)
  *
- * Purpose: Structured extraction - brand, metadata, code
- * Use: brand-resolver.ts (extraction), phishing-editor-utils.ts
+ * Purpose: Structured extraction - brand, metadata, code parsing
+ * Use: brand-resolver.ts (extraction), phishing-editor-utils.ts, prompt-analyzer.ts
+ * Note: 0.1 is borderline for MoE but acceptable for pure JSON/code extraction.
  */
 export const EXTRACTION_PARAMS: GenerationParams = {
   temperature: 0.1,
+};
+
+/**
+ * QC PARAMS (Judgment + Structure)
+ *
+ * Purpose: Quality check tasks requiring nuanced judgment (language QC, classification)
+ * Use: post-rewrite-qc.ts
+ * Note: Higher than EXTRACTION because QC must evaluate subtle language quality issues,
+ *        not just extract structured data. 0.25 allows enough exploration to catch
+ *        terminology inconsistencies and grammar errors without hallucinating corrections.
+ */
+export const QC_PARAMS: GenerationParams = {
+  temperature: 0.25,
 };
 
 /**
@@ -277,6 +292,7 @@ export function getGenerationParams(useCase: string): GenerationParams {
     'code-review': CODE_REVIEW_PARAMS,
     'low-determinism': LOW_DETERMINISM_PARAMS,
     extraction: EXTRACTION_PARAMS,
+    qc: QC_PARAMS,
     'brand-creative': BRAND_CREATIVE_PARAMS,
     classification: CLASSIFICATION_PARAMS,
     reasoning: REASONING_PARAMS,
@@ -287,30 +303,28 @@ export function getGenerationParams(useCase: string): GenerationParams {
 }
 
 /**
- * SUMMARY TABLE
+ * SUMMARY TABLE (matches actual values — last updated 2026-03-28)
  *
- * Use Case                     | Temp  | topP | Special Params | Philosophy
- * -----                        | ---   | ---- | -------------- | -----------
- * Scene 1,3,7 (CREATIVE)       | 0.9   | 0.92 | -              | High engagement & variety
- * Scene 2,4,5,6,8 (INFO)       | 0.75-0.8 | 0.90 | -            | Clear & accurate info
- * Inbox Emails (High Creative) | 0.9   | 0.92 | -              | Realistic variation
- * Inbox Texts (Natural SMS)    | 0.85  | 0.90 | -              | Natural messaging
- * Localization & Translation   | 0.65  | 0.92 | freq:0.2, pres:0.3 | Natural + Meaning preserved
- * Analysis (Structured)        | 0.7   | 0.85 | -              | Structured flexibility
- * Metadata (Coherent)          | 0.6   | 0.85 | -              | Coherent clarity
+ * Use Case                     | Temp  | topP | Special Params       | Philosophy
+ * -----                        | ---   | ---- | -------------------- | -----------
+ * Scene 1,3,7 (CREATIVE)       | 0.9   | 0.92 | -                    | High engagement & variety
+ * Scene 2,4,5,6,8 (INFO)       | 0.75-0.8 | 0.90 | -                 | Clear & accurate info
+ * Inbox Emails (High Creative) | 0.9   | 0.92 | -                    | Realistic variation
+ * Inbox Texts (Natural SMS)    | 0.85  | 0.90 | -                    | Natural messaging
+ * Localization (Inbox UI)      | 0.3   | 0.92 | freq:0.1, pres:0.0   | Natural + Meaning preserved
+ * Scene Rewrite (Localization) | 0.4   | -    | -                    | Structure-preserving rewrite
+ * Transcript Translation       | 0.3   | -    | -                    | Natural phrasing
+ * Analysis (Structured)        | 0.7   | 0.85 | -                    | Structured flexibility
+ * Metadata (Coherent)          | 0.6   | 0.85 | -                    | Coherent clarity
+ * QC (Judgment)                | 0.25  | -    | -                    | Nuanced quality evaluation
+ * Extraction (Deterministic)   | 0.1   | -    | -                    | Pure JSON/code extraction
+ * Low Determinism (Summary)    | 0.3   | -    | -                    | Consistent factual output
+ * Editor (Structured)          | 0.3   | -    | -                    | Minimal variation
+ * Classification               | 0.3   | -    | -                    | Consistent labels
  *
- * KEY INSIGHTS:
- * - CREATIVE (1,3,7): temp 0.9, topP 0.92 → Maximum engagement without losing coherence
- * - INFO (2,4,5,6,8): temp 0.75-0.8, topP 0.90 → Clear, accurate, consistent
- * - HIGH temp (0.85-0.9): Emails, Texts → Realistic & natural
- * - MID temp (0.65-0.7): Localization, Analysis, Metadata → Balanced
- * - LOCALIZATION (0.65): Scene + Inbox translation → Natural + Meaning preserved
- *
- * LOCALIZATION PHILOSOPHY:
- * - Doğal, kültürel olarak yerel hissettiren çeviri
- * - Anlam koruması ama robotik değil
- * - frequencyPenalty: 0.2 → Tekrar eden kelimeleri engelle (natural phrasing)
- * - presencePenalty: 0.3 → Yeni kelimeleri teşvik et (native vocabulary)
- *
- * topP ranges 0.8-0.92 = Good diversity without hallucination
+ * MODEL NOTE (gpt-oss-120b):
+ * - OpenAI recommends temp=1.0 for general reasoning (MoE architecture)
+ * - MoE expert routing degrades below ~0.2 (repetitive/collapsed output)
+ * - Safe floor for this model: 0.1 for pure extraction, 0.25+ for judgment tasks
+ * - topP ranges 0.85-0.92 = Good diversity without hallucination
  */
