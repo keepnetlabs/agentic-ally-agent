@@ -1,12 +1,13 @@
 import { PromptAnalysis } from '../../../types/prompt-analysis';
 import { MicrolearningContent } from '../../../types/microlearning';
-import { buildContextData } from '../../../utils/prompt-builders/base-context-builder';
+import { buildContextData, getContentDepthGuidance, normalizeLevel } from '../../../utils/prompt-builders/base-context-builder';
 import { getResourcesForScene8 } from '../../../utils/resolvers/url-resolver';
 import { getLogger } from '../../../utils/core/logger';
 
 export function generateScene8Prompt(analysis: PromptAnalysis, microlearning: MicrolearningContent): string {
   const logger = getLogger('Scene8SummaryGenerator');
   const contextData = buildContextData(analysis, microlearning);
+  const depth = getContentDepthGuidance(normalizeLevel(analysis.level));
 
   // Dynamically resolve resources using keyTopics (more accurate) + category fallback
   logger.info('Scene 8 - Resource Resolution Debug', {
@@ -43,6 +44,9 @@ export function generateScene8Prompt(analysis: PromptAnalysis, microlearning: Mi
   );
 
   return `${contextData}
+
+=== LEVEL: ${analysis.level} ===
+${depth.summaryDepth}
 
 CRITICAL RULES:
 1. Use ONLY the resources provided below - NEVER generate, invent, or suggest alternatives

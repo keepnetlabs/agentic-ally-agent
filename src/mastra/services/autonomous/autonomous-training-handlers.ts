@@ -413,14 +413,19 @@ export async function generateTrainingModule(
   uploadOnly: boolean = false,
   isCustomPrompt: boolean = false,
   trainingLevel?: string,
-  rejectionFeedback?: string
+  rejectionFeedback?: string,
+  levelReasoning?: string
 ): Promise<AutonomousHandlerResult> {
   const logger = getLogger('GenerateTrainingModule');
-  logger.info('Using microlearningAgent to generate training module', { isCustomPrompt });
+  logger.info('Using microlearningAgent to generate training module', { isCustomPrompt, levelReasoning });
 
   const toolFirstResult = await executeTrainingToolFirst({
     microlearning,
-    contextOrPrompt,
+    contextOrPrompt: levelReasoning && contextOrPrompt
+      ? `${contextOrPrompt}\n\nLevel Selection Reasoning: ${levelReasoning}`
+      : levelReasoning
+        ? `Level Selection Reasoning: ${levelReasoning}`
+        : contextOrPrompt,
     toolResult,
     uploadOnly,
     isCustomPrompt,

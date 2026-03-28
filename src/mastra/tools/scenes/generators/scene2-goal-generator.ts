@@ -1,13 +1,17 @@
 import { PromptAnalysis } from '../../../types/prompt-analysis';
 import { MicrolearningContent } from '../../../types/microlearning';
-import { buildContextData } from '../../../utils/prompt-builders/base-context-builder';
+import { buildContextData, getContentDepthGuidance, normalizeLevel } from '../../../utils/prompt-builders/base-context-builder';
 import { getGoalExamples } from '../../../utils/language/localization-language-rules';
 
 export function generateScene2Prompt(analysis: PromptAnalysis, microlearning: MicrolearningContent): string {
   const contextData = buildContextData(analysis, microlearning);
   const goalExamples = getGoalExamples(analysis.language);
+  const depth = getContentDepthGuidance(normalizeLevel(analysis.level));
 
   return `${contextData}
+
+=== LEVEL: ${analysis.level} ===
+${depth.goalComplexity}
 
 SCENE 2 - GOAL (TOPIC-SPECIFIC PATTERNS):
 Topic: ${analysis.topic} | Department: ${analysis.department || 'General'} | Language: ${analysis.language}

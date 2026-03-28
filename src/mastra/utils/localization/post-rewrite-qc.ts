@@ -75,7 +75,7 @@ const USER_FACING_KEYS = new Set([
 
 /** Keys to always skip (metadata, technical) */
 const SKIP_KEYS = new Set([
-  'scientific_basis', 'scene_type', 'iconName', 'sparkleIconName', 'sceneIconName',
+  'scene_type', 'iconName', 'sparkleIconName', 'sceneIconName',
   'id', 'type', 'isCorrect', 'correctAnswer', 'points', 'duration_seconds',
   'totalCount', 'maxAttempts', 'src', 'poster', 'url',
   'hasAchievementNotification', 'disableForwardSeek', 'showTranscript',

@@ -62,14 +62,46 @@ export function getExplainabilityReasoning(data: unknown): string | undefined {
   const explainability = base?.explainability as Explainability | undefined;
   if (!explainability) return undefined;
 
-  // Combine all available reasoning fields into a single coherent explanation
-  const parts = [
-    explainability.reasoning,
-    explainability.targetAudienceReasoning,
-    explainability.userContextReasoning,
-  ].filter(Boolean);
+  // Build a readable explanation with labeled sections
+  const sections: string[] = [];
+  if (explainability.reasoning) sections.push(explainability.reasoning);
+  if (explainability.targetAudienceReasoning) sections.push(explainability.targetAudienceReasoning);
+  if (explainability.userContextReasoning) sections.push(explainability.userContextReasoning);
 
-  return parts.length > 0 ? parts.join(' | ') : undefined;
+  return sections.length > 0 ? sections.join('\n\n') : undefined;
+}
+
+/**
+ * Structured explainability reasoning for frontend display.
+ * Returns separate labeled sections instead of a single pipe-delimited string.
+ */
+export interface ExplainabilityDisplay {
+  /** Why this topic and difficulty were chosen */
+  contentReasoning?: string;
+  /** Why this audience/department was targeted */
+  audienceReasoning?: string;
+  /** Why this specific user received this training (behavioral context) */
+  userReasoning?: string;
+  /** Technical metadata */
+  modelId?: string;
+  generatedAt?: string;
+}
+
+export function getExplainabilityDisplay(data: unknown): ExplainabilityDisplay | undefined {
+  const base = data as Record<string, unknown> | null | undefined;
+  const explainability = base?.explainability as Explainability | undefined;
+  if (!explainability) return undefined;
+
+  const hasContent = explainability.reasoning || explainability.targetAudienceReasoning || explainability.userContextReasoning;
+  if (!hasContent) return undefined;
+
+  return {
+    ...(explainability.reasoning ? { contentReasoning: explainability.reasoning } : {}),
+    ...(explainability.targetAudienceReasoning ? { audienceReasoning: explainability.targetAudienceReasoning } : {}),
+    ...(explainability.userContextReasoning ? { userReasoning: explainability.userContextReasoning } : {}),
+    ...(explainability.modelId ? { modelId: explainability.modelId } : {}),
+    ...(explainability.generatedAt ? { generatedAt: explainability.generatedAt } : {}),
+  };
 }
 
 /**

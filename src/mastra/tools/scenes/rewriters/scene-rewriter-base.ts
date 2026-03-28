@@ -184,7 +184,7 @@ EVERY word in your output MUST be in ${targetLanguage}. If you find ANY word or 
 === PROTECTED FIELDS (DO NOT TRANSLATE — keep original values exactly) ===
 
 These fields contain technical metadata, NOT user-facing content. Copy them as-is:
-- "scientific_basis": Keep the original English text exactly
+- "scientific_basis": LOCALIZE the explanation into ${targetLanguage}, but keep theory names in English (e.g., "Cognitive Load Theory", "Active Recall"). Example: "Active Recall: Testing enhances retention" → TR: "Active Recall: Test yapmak bilgiyi pekiştirir"
 - "scene_type": Keep exactly as-is (e.g., "intro", "quiz", "nudge")
 - "iconName", "sparkleIconName", "sceneIconName": Keep icon names exactly
 - "id" fields: Keep exactly as-is

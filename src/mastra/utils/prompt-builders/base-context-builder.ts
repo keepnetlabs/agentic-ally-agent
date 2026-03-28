@@ -36,6 +36,54 @@ const VOCABULARY_GUIDANCE: Record<LearnerLevel, VocabularyGuidance> = {
 };
 
 /**
+ * Level-specific content depth guidance
+ * Controls scenario complexity, quiz difficulty, and explanation detail across ALL scenes
+ */
+interface ContentDepthGuidance {
+  goalComplexity: string;
+  scenarioComplexity: string;
+  quizDifficulty: string;
+  explanationDepth: string;
+  inboxDifficulty: string;
+  nudgeDetail: string;
+  summaryDepth: string;
+}
+
+const CONTENT_DEPTH_GUIDANCE: Record<LearnerLevel, ContentDepthGuidance> = {
+  Beginner: {
+    goalComplexity: '• Goals: Simple, concrete, single-action steps. "Do X when Y happens." No compound objectives.',
+    scenarioComplexity: '• Scenarios: Simple, clear situations with obvious warning signs. One decision point. No ambiguity.',
+    quizDifficulty: '• Quiz: Straightforward questions with clearly wrong distractors. Explanations should teach the basics.',
+    explanationDepth: '• Explanations: Short and simple (max 20 words). Focus on WHAT to do, not WHY.',
+    inboxDifficulty: '• Inbox emails: EASY difficulty — obvious red flags (external domain, failing SPF, urgent language).',
+    nudgeDetail: '• Nudge: One simple action per step. Use plain language. "Next time X happens, do Y."',
+    summaryDepth: '• Summary: Reinforce the 2-3 most basic takeaways. Keep resources introductory.',
+  },
+  Intermediate: {
+    goalComplexity: '• Goals: Multi-step objectives with cause-effect reasoning. "Identify X, then verify Y to prevent Z."',
+    scenarioComplexity: '• Scenarios: Realistic workplace situations with time pressure. Some ambiguity in the correct response.',
+    quizDifficulty: '• Quiz: Near-miss distractors that sound reasonable. Require understanding, not just recognition.',
+    explanationDepth: '• Explanations: Moderate detail (max 30 words). Explain WHY the correct action works and WHY alternatives fail.',
+    inboxDifficulty: '• Inbox emails: MEDIUM to MEDIUM-HARD — mixed signals, some legitimate elements alongside red flags.',
+    nudgeDetail: '• Nudge: Include context for each step. Explain the reasoning behind the action briefly.',
+    summaryDepth: '• Summary: Connect learning to real workflow impact. Mix introductory and intermediate resources.',
+  },
+  Advanced: {
+    goalComplexity: '• Goals: Complex objectives requiring judgment and prioritization. "Evaluate risk, weigh trade-offs, and decide."',
+    scenarioComplexity: '• Scenarios: Complex multi-step situations with conflicting priorities. Multiple plausible responses. Require deep analysis.',
+    quizDifficulty: '• Quiz: Subtle distinctions between options. All answers sound professional — only domain expertise reveals the correct one.',
+    explanationDepth: '• Explanations: Detailed analysis (max 45 words). Cover risk trade-offs, compliance implications, and root cause reasoning.',
+    inboxDifficulty: '• Inbox emails: HARD — near-perfect impersonation, clean headers, internal domain spoofing. Requires careful context analysis.',
+    nudgeDetail: '• Nudge: Reference specific procedures/frameworks. Include escalation paths and edge cases.',
+    summaryDepth: '• Summary: Emphasize strategic implications and compliance. Recommend advanced/technical resources.',
+  },
+};
+
+export function getContentDepthGuidance(level: LearnerLevel): ContentDepthGuidance {
+  return CONTENT_DEPTH_GUIDANCE[level] || CONTENT_DEPTH_GUIDANCE.Intermediate;
+}
+
+/**
  * Get level-specific vocabulary guidance for content generation
  * @param level - Learner proficiency level
  * @returns Vocabulary guidance rules for simplification and conversational tone
@@ -49,7 +97,7 @@ function getVocabularyGuidance(level: LearnerLevel): VocabularyGuidance {
  * @param level - Raw level string from input
  * @returns Validated LearnerLevel, defaults to 'Beginner'
  */
-function normalizeLevel(level?: string): LearnerLevel {
+export function normalizeLevel(level?: string): LearnerLevel {
   if (!level) return 'Beginner';
   const normalized = level.charAt(0).toUpperCase() + level.slice(1).toLowerCase();
   return normalized in VOCABULARY_GUIDANCE ? (normalized as LearnerLevel) : 'Beginner';

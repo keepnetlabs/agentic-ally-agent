@@ -3,8 +3,15 @@ export function buildInboxEmailBaseSystem(
   languageCode: string,
   _category: string,
   _riskArea: string,
-  _level: string
+  level: string
 ): string {
+  const difficultyMap: Record<string, string> = {
+    Beginner: 'EASY or MEDIUM — obvious red flags, clear indicators for new learners',
+    Intermediate: 'MEDIUM or MEDIUM-HARD — mixed signals, requires careful inspection',
+    Advanced: 'MEDIUM-HARD or HARD — near-perfect impersonation, subtle red flags, requires deep context analysis',
+  };
+  const targetDifficulty = difficultyMap[level] || difficultyMap.Intermediate;
+
   return `Generate ONE realistic business email as a single valid JSON object in ${languageCode} ONLY.
 
 ⚠️ LANGUAGE CONSISTENCY - MANDATORY:
@@ -81,6 +88,8 @@ EXACT FORMAT (return as-is, single object):
   "explanation": "Written in ${languageCode}: Point out 2-3 observable red flags or legitimacy indicators. Describe WHAT is suspicious/normal, NOT what user should do. Natural, professional tone.",
   "attachments": [{"id": "string", "name": "filename (in ${languageCode}).ext", "size": "KB", "type": "pdf|doc|xlsx", "content": "<div>HTML content in ${languageCode}</div> (CRITICAL: ALL HTML tags must be properly closed)"}]
 }
+
+TARGET DIFFICULTY FOR THIS TRAINING: ${targetDifficulty}
 
 DIFFICULTY CALIBRATION:
 - EASY: External domain + failing SPF/DMARC + obvious urgency (clear phishing indicators)

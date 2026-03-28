@@ -1,16 +1,20 @@
 import { PromptAnalysis } from '../../../types/prompt-analysis';
 import { MicrolearningContent } from '../../../types/microlearning';
-import { buildContextData } from '../../../utils/prompt-builders/base-context-builder';
+import { buildContextData, getContentDepthGuidance, normalizeLevel } from '../../../utils/prompt-builders/base-context-builder';
 import { getNudgeExamples } from '../../../utils/language/localization-language-rules';
 
 export function generateScene7Prompt(analysis: PromptAnalysis, microlearning: MicrolearningContent): string {
   const contextData = buildContextData(analysis, microlearning);
   const nudgeExamples = getNudgeExamples(analysis.language);
+  const depth = getContentDepthGuidance(normalizeLevel(analysis.level));
 
   // Use keyTopics to provide more specific context for dynamic nudge generation
   const keyTopicsHint = analysis.keyTopics?.slice(0, 3).join(', ') || 'general security practice';
 
   return `${contextData}
+
+=== LEVEL: ${analysis.level} ===
+${depth.nudgeDetail}
 
 SCENE 7 - NUDGE (Implementation Intention Reminder):
 Topic: ${analysis.topic} | Key Topics: ${keyTopicsHint} | Category: ${analysis.category} | Language: ${analysis.language}
@@ -95,9 +99,9 @@ Generate for ${analysis.topic}: Max 5 words in ${analysis.language}
       "actionsTitle": "Localize 'Your next steps' into ${analysis.language}"
     },
     "key_message": [
-      "RECOGNIZE: Observable threat indicator for ${analysis.topic}. Max 6 words in ${analysis.language}. Style: '${nudgeExamples.recognize}'",
-      "PROTECT: Harmful action to avoid for ${analysis.topic}. Max 8 words in ${analysis.language}. Style: '${nudgeExamples.protect}'",
-      "VERIFY: Escalation/reporting action for ${analysis.topic}. Max 5 words in ${analysis.language}. Style: '${nudgeExamples.verify}'"
+      "Threat indicator for ${analysis.topic}. Max 6 words in ${analysis.language}. Style: '${nudgeExamples.recognize}'",
+      "Harmful action to avoid for ${analysis.topic}. Max 8 words in ${analysis.language}. Style: '${nudgeExamples.protect}'",
+      "Escalation action for ${analysis.topic}. Max 5 words in ${analysis.language}. Style: '${nudgeExamples.verify}'"
     ],
     "scientific_basis": "Implementation Intentions: Concrete plans improve behavior change.",
     "scene_type": "nudge"

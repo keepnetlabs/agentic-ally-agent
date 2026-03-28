@@ -135,18 +135,45 @@ function pickRandomItem<T>(items: readonly T[]): T {
   return items[Math.floor(Math.random() * items.length)];
 }
 
-function deriveTrainingLevelFromAnalysis(report?: ContentGenerationReport): (typeof TRAINING_LEVELS)[number] {
+interface LevelDecision {
+  level: (typeof TRAINING_LEVELS)[number];
+  reasoning: string;
+}
+
+function deriveTrainingLevelFromAnalysis(report?: ContentGenerationReport): LevelDecision {
   const raw = report?.header?.resilience_stage?.level;
   if (!raw) {
-    return pickRandomItem(TRAINING_LEVELS);
+    const level = pickRandomItem(TRAINING_LEVELS);
+    return {
+      level,
+      reasoning: `No resilience assessment available — assigned "${level}" as default.`,
+    };
   }
 
   const normalized = raw.toLowerCase();
-  if (normalized.includes('low') || normalized.includes('beginner')) return 'Beginner';
-  if (normalized.includes('high') || normalized.includes('advanced')) return 'Advanced';
-  if (normalized.includes('medium') || normalized.includes('intermediate')) return 'Intermediate';
+  if (normalized.includes('low') || normalized.includes('beginner')) {
+    return {
+      level: 'Beginner',
+      reasoning: `User resilience stage is "${raw}" — mapped to Beginner for foundational awareness content.`,
+    };
+  }
+  if (normalized.includes('high') || normalized.includes('advanced')) {
+    return {
+      level: 'Advanced',
+      reasoning: `User resilience stage is "${raw}" — mapped to Advanced for complex scenarios and deep analysis.`,
+    };
+  }
+  if (normalized.includes('medium') || normalized.includes('intermediate')) {
+    return {
+      level: 'Intermediate',
+      reasoning: `User resilience stage is "${raw}" — mapped to Intermediate for balanced content difficulty.`,
+    };
+  }
 
-  return DEFAULT_TRAINING_LEVEL;
+  return {
+    level: DEFAULT_TRAINING_LEVEL,
+    reasoning: `User resilience stage "${raw}" not recognized — defaulting to ${DEFAULT_TRAINING_LEVEL}.`,
+  };
 }
 
 /**
@@ -398,7 +425,9 @@ export async function generateContentForUser(
   const uploadOnly = sendAfterPhishingSimulation === true;
 
   const recommendedSteps = getRecommendedNextSteps(toolResult.analysisReport);
-  const trainingLevel = deriveTrainingLevelFromAnalysis(toolResult.analysisReport);
+  const levelDecision = deriveTrainingLevelFromAnalysis(toolResult.analysisReport);
+  const trainingLevel = levelDecision.level;
+  logger.info('Training level determined', { level: trainingLevel, reasoning: levelDecision.reasoning });
 
   // Generate phishing if requested and simulation available
   if (actions.includes('phishing') && recommendedSteps.simulations?.[0]) {
@@ -490,7 +519,8 @@ export async function generateContentForUser(
         uploadOnly,
         false,
         trainingLevel,
-        refinementContext?.trainingInstruction
+        refinementContext?.trainingInstruction,
+        levelDecision.reasoning
       )
         .then(result => {
           logger.info('Training generation result received', {

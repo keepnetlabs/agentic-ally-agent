@@ -157,6 +157,8 @@ export const uploadTrainingTool = createTool({
       const department = Array.isArray(departmentArray) && departmentArray.length > 0 ? departmentArray[0] : 'all';
       const inboxUrl = `inbox/${department.toLowerCase()}`;
 
+      const level = meta.level || 'Intermediate';
+
       const trainingData = {
         title,
         description,
@@ -164,6 +166,7 @@ export const uploadTrainingTool = createTool({
         targetAudience,
         language,
         inboxUrl,
+        level,
       };
       // 3. Upload to Worker (includes inboxUrl for department-specific inbox assignment)
       const payload = {

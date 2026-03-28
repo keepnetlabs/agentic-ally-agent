@@ -1,11 +1,17 @@
 import { PromptAnalysis } from '../../../types/prompt-analysis';
 import { MicrolearningContent } from '../../../types/microlearning';
-import { buildContextData } from '../../../utils/prompt-builders/base-context-builder';
+import { buildContextData, getContentDepthGuidance, normalizeLevel } from '../../../utils/prompt-builders/base-context-builder';
 
 export function generateScene5Prompt(analysis: PromptAnalysis, microlearning: MicrolearningContent): string {
   const contextData = buildContextData(analysis, microlearning);
+  const depth = getContentDepthGuidance(normalizeLevel(analysis.level));
 
   return `${contextData}
+
+=== DIFFICULTY LEVEL: ${analysis.level} ===
+${depth.quizDifficulty}
+${depth.explanationDepth}
+${depth.scenarioComplexity}
 
 === PEDAGOGICAL RULES (Apply to ANY topic: ${analysis.topic})
 
@@ -146,7 +152,9 @@ CRITICAL:
       "questionLoading": "Localize 'Loading question…' into ${analysis.language}",
       "transcriptLoading": "Localize 'Loading transcript…' into ${analysis.language}",
       "closeNotification": "Localize 'Close notification' into ${analysis.language}",
-      "languageNotFound": "Localize 'Language not found' into ${analysis.language}"
+      "languageNotFound": "Localize 'Language not found' into ${analysis.language}",
+      "editNavPrevious": "Localize 'Prev' into ${analysis.language}",
+      "editNavNext": "Localize 'Next' into ${analysis.language}"
     },
     "ariaTexts": {
       "mainLabel": "Quiz interface",
