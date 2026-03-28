@@ -38,9 +38,9 @@ IMPORTANT: Adapt all examples below to "${analysis.topic}". Keep the same struct
     "callToActionText": "Localize 'Start Practice' into ${analysis.language}. Output the localized text directly, not instructions.",
     "successCallToActionText": "Localize 'Continue' into ${analysis.language}. Output the localized text directly, not instructions.",
     "key_message": [
-      "Step 1 - Check action (3-5 words): 'Check the email' or 'Review sender source' (concrete, not conditional)",
-      "Step 2 - Protective directive (3-5 words): 'Don't click links' or 'Spot warning signs' (include DON'T where relevant)",
-      "Step 3 - Action outcome (3-5 words): 'Press Report' or 'Report if suspicious' (action-focused)"
+      "Check action for ${analysis.topic}, 3-5 words in ${analysis.language}",
+      "Protective directive for ${analysis.topic}, 3-5 words in ${analysis.language}",
+      "Action outcome for ${analysis.topic}, 3-5 words in ${analysis.language}"
     ],
     "actions": [
       {

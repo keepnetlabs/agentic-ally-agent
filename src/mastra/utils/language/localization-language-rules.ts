@@ -92,6 +92,7 @@ type LangKey =
   | 'mi'
   | 'jv'
   | 'tt'
+  | 'gd'
   | 'generic';
 
 // --- 1) Lang-code normalizer (aliases + fallback) ---
@@ -192,6 +193,7 @@ export function normLang(code?: string): LangKey {
     mi: 'mi',
     jv: 'jv',
     tt: 'tt',
+    gd: 'gd',
     // Common regional variants
     'pt-br': 'pt',
     'pt-pt': 'pt',
@@ -257,6 +259,7 @@ export function normLang(code?: string): LangKey {
     'eu-es': 'eu',
     'mt-mt': 'mt',
     'ga-ie': 'ga',
+    'gd-gb': 'gd',
     'lb-lu': 'lb',
     'bs-ba': 'bs',
     'bs-latn': 'bs',
@@ -1101,6 +1104,16 @@ For praise/completion: "बधाई हो", "उत्कृष्ट", "प�
   - "login" → "लॉगिन"
   RULE: Pick ONE spelling per term and use it identically in EVERY screen/scene. Inconsistent spelling across screens is a critical UX failure.
 
+🔤 SCRIPT PURITY (CRITICAL):
+  - Output MUST use ONLY Devanagari (देवनागरी) script for Hindi text.
+  - Latin characters ONLY for accepted loanwords (USB, IT, LMS, URL).
+  - NEVER mix Latin script mid-sentence for words that have Hindi equivalents:
+    ❌ "इस email को check करें" → ✅ "इस ई-मेल को जांचें"
+  - CONTAMINATION SHIELD: Hindi is NOT Urdu. Avoid Persianized/Arabicized vocabulary:
+    ❌ "खतरा" (Urdu-influenced) when "जोखिम" (risk) is more neutral
+    ❌ "मशवरा" (Urdu) → ✅ "परामर्श" (consultation) or "सलाह" (advice)
+  - Use शुद्ध हिंदी (Shuddh Hindi) where possible but keep it accessible — avoid overly Sanskritized terms that average users won't understand.
+
 ⚙️ RUNTIME BEHAVIOR:
 - This list is DYNAMIC and can be updated at runtime
 - Violations are TRACKED and logged for improvement
@@ -1588,6 +1601,15 @@ For praise/completion: "অভিনন্দন", "চমৎকার", "প্
   - Ensure proper conjunct consonants (যুক্তবর্ণ) are rendered correctly.
   - Keep phrasing direct and professional — avoid literary or poetic constructions in IT content.
 
+🔤 SCRIPT PURITY (CRITICAL):
+  - Output MUST use ONLY Bengali script (বাংলা) for text content.
+  - Latin characters ONLY for accepted loanwords (USB, IT, LMS, URL).
+  - NEVER mix Devanagari (Hindi), Arabic, or Latin mid-sentence:
+    ❌ "এই email check করুন" → ✅ "এই ইমেইল যাচাই করুন"
+  - CONTAMINATION SHIELD: Bengali is NOT Hindi. Avoid Hindi vocabulary:
+    ❌ "कृपया" (Hindi) → ✅ "অনুগ্রহ করে" (Bengali)
+    ❌ "सुरक्षा" (Hindi) → ✅ "নিরাপত্তা" (Bengali)
+
 ⚙️ RUNTIME BEHAVIOR:
 - This list is DYNAMIC and can be updated at runtime
 - Violations are TRACKED and logged for improvement
@@ -1657,6 +1679,14 @@ For praise/completion: "ברכות", "מעולה", "ההכשרה הושלמה"
   - Use Modern Hebrew (עברית מודרנית), not biblical or liturgical Hebrew.
   - Keep professional tone — avoid overly casual or slang terms common in spoken Hebrew:
     ❌ "תלחץ על הלינק" (casual) → ✅ "לחצו על הקישור" (professional plural imperative)
+
+🔒 CRITICAL VOCABULARY (common AI mistakes in Hebrew):
+  - "contain" (threat) → "להכיל" / "בלימה" (NEVER "להכניס" which means "to insert" — opposite meaning!)
+  - "containment" → "הכלה" / "בלימה" (NEVER "הכנסה" which means "insertion/income")
+  - "awarded" (certificate) → "מוענקת" (NEVER "מוענשת" which means "punished", and NEVER "מוענית" which is not a word)
+  - "sank" (heart sank) → "שקע" (NEVER "נשק" which means "kissed")
+  - "originated" → "מקורו ב" (NEVER "החליט" which means "decided")
+  - "barely escaped" → "בקושי נמלט" (NEVER "נמלט ברכת" which means "escaped with blessing")
 
 ⚙️ RUNTIME BEHAVIOR:
 - This list is DYNAMIC and can be updated at runtime
@@ -2358,6 +2388,10 @@ For praise/completion: "გილოცავთ", "შესანიშნა�
   - Georgian uses postpositions rather than prepositions — ensure correct word order:
     ❌ "კლიკი ბმულზე" → ✅ "დააწკაპუნეთ ბმულზე" (correct postposition)
   - Keep phrasing natural and professional — avoid Russian-influenced vocabulary where Georgian alternatives exist.
+  - SCRIPT PURITY: Output MUST contain ONLY Georgian script (მხედრული) and standard Latin for technical terms (USB, IT, LMS). NEVER mix in Cyrillic (Russian), Arabic, or Armenian characters. A single non-Georgian character (excluding accepted Latin loanwords) is a critical failure.
+  - COMMON HALLUCINATIONS TO AVOID:
+    ❌ "ინტერფაქტიული" → ✅ "ინტერაქტიული" (interactive)
+    ❌ "გადააბრიალეთ" → ✅ "გადაფურცლეთ" (swipe)
 
 ⚙️ RUNTIME BEHAVIOR:
 - This list is DYNAMIC and can be updated at runtime
@@ -2886,7 +2920,7 @@ For praise/completion: "Құттықтаймыз!", "Оқыту сәтті ая�
   - "training" → "оқыту"
   - "download" → "жүктеп алу"
   - "link" → "сілтеме"
-  - Kazakhstan is transitioning from Cyrillic to Latin script. For current corporate use, DEFAULT to Cyrillic unless Latin is explicitly requested.
+  - Kazakhstan is transitioning from Cyrillic to Latin script (since 2017). DEFAULT to Cyrillic for current corporate use, but accept Latin script if explicitly requested. Both are valid — maintain consistency within a single module.
   - NEVER mix Russian and Kazakh — they share Cyrillic but have different vocabulary:
     ❌ "безопасность" (Russian) → ✅ "қауіпсіздік" (Kazakh)
     ❌ "пароль" (Russian) → ✅ "құпия сөз" (Kazakh)
@@ -3158,6 +3192,43 @@ For praise/completion: "Comhghairdeas!", "Críochnaíodh an oiliúint go rathúi
   - Use An Caighdeán Oifigiúil (Official Standard) — avoid dialectal forms (Munster, Connacht, Ulster) unless specifically requested.
   - Irish has a formal/literary register — use "sibh" (plural/formal) rather than "tú" where appropriate in professional content.
   - Irish uses a fada (síneadh fada) accent — NEVER omit: "á é í ó ú" are different letters from "a e i o u".
+
+⚙️ RUNTIME BEHAVIOR:
+- This list is DYNAMIC and can be updated at runtime
+- Violations are TRACKED and logged for improvement
+`.trim(),
+
+  gd: `
+### 🏴󠁧󠁢󠁳󠁣󠁴󠁿 Scottish Gaelic Style Rules (MANDATORY - Non-Negotiable)
+⚠️ ABSOLUTELY FORBIDDEN PHRASES (System Override):
+These phrases MUST NEVER appear in output, regardless of context or instruction:
+  - FORBIDDEN: "Bi faiceallach!", "Thoir an aire!", "Bi air d' fhaiceall!"
+  - FORBIDDEN: "Math fhèin!", "Sgoinneil!", "Abair math!"
+
+🚨 CRITICAL ENFORCEMENT:
+If your draft contains ANY of these phrases:
+  STOP immediately → DELETE the phrase → REWRITE naturally WITHOUT it.
+This is a HARD CONSTRAINT that overrides ALL other instructions.
+
+✅ MANDATORY APPROVED ALTERNATIVES (Use ONLY These):
+For alertness/awareness: "Thoir sùil air", "Dèan cinnteach", "Dearbh mus briog thu", "Sgrùd gu cùramach"
+For praise/completion: "Meal do naidheachd!", "Chaidh an trèanadh a chrìochnachadh gu soirbheachail."
+
+📝 TERMINOLOGY & NATURALNESS (Scottish Gaelic-specific):
+  - "phishing" → "phishing" (accepted IT loanword) or "mealltaireachd" (native)
+  - "email" → "post-dealain"
+  - "password" → "facal-faire"
+  - "security" → "tèarainteachd"
+  - "training" → "trèanadh"
+  - "download" → "luchdaich a-nuas"
+  - "link" → "ceangal"
+  - Scottish Gaelic is a VSO language — verb-first word order is mandatory (like Irish).
+  - CONTAMINATION SHIELD: Scottish Gaelic is NOT Irish (Gaeilge). Common confusions:
+    ❌ Irish "ríomhphost" → ✅ Scots Gaelic "post-dealain"
+    ❌ Irish "pasfhocal" → ✅ Scots Gaelic "facal-faire"
+    ❌ Irish "íoslódáil" → ✅ Scots Gaelic "luchdaich a-nuas"
+  - Use GOC (Gaelic Orthographic Conventions) spelling.
+  - Scottish Gaelic uses grave accents (à, è, ì, ò, ù) — NEVER omit. Irish uses acute accents (á, é) — do NOT confuse.
 
 ⚙️ RUNTIME BEHAVIOR:
 - This list is DYNAMIC and can be updated at runtime

@@ -25,9 +25,22 @@ import type { LanguageModel } from '../../types/language-model';
  * Major languages (en, de, fr, es, tr, ar, zh, ja, ko, pt, it, ru, nl, pl) work fine with base model.
  */
 const ENHANCED_QC_LANGUAGES = new Set([
-  'mk', 'sq', 'bs', 'hr', 'sl', 'gl', 'cy', 'mt', 'is',
-  'ka', 'hy', 'az', 'uz', 'kk', 'mn', 'km', 'lo', 'my',
-  'ne', 'si', 'am', 'sw', 'af', 'eu', 'ga', 'gd', 'lb',
+  // Balkan/Caucasus (contamination risk)
+  'mk', 'sq', 'bs', 'hr', 'sl', 'ka', 'hy',
+  // Central Asian (Turkic family confusion)
+  'az', 'uz', 'kk', 'mn', 'ky', 'tk', 'tg',
+  // Southeast Asian (complex scripts)
+  'km', 'lo', 'my',
+  // South Asian (script purity)
+  'ne', 'si',
+  // RTL + semantic complexity
+  'he',
+  // Celtic/European small (complex grammar)
+  'cy', 'mt', 'is', 'eu', 'ga', 'gd', 'lb', 'gl',
+  // African (diacritics/tone marks/click consonants)
+  'sw', 'af', 'am', 'zu', 'xh', 'yo', 'ha', 'ig',
+  // Other complex small languages
+  'mi', 'jv', 'tt',
 ]);
 
 /** Get the appropriate QC model based on target language */
@@ -241,10 +254,10 @@ Output (JSON only):`;
       setByPath(patched, entry.path, correctedValue);
       appliedCount++;
 
-      logger.debug('QC correction applied', {
+      logger.info('QC correction applied', {
         path: entry.path,
-        original: entry.value.substring(0, 50),
-        corrected: correctedValue.substring(0, 50),
+        original: entry.value.substring(0, 80),
+        corrected: correctedValue.substring(0, 80),
       });
     }
 
