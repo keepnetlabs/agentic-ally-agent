@@ -5,7 +5,7 @@ import { getGoalExamples } from '../../../utils/language/localization-language-r
 
 export function generateScene2Prompt(analysis: PromptAnalysis, microlearning: MicrolearningContent): string {
   const contextData = buildContextData(analysis, microlearning);
-  const goalExamples = getGoalExamples(analysis.language);
+  const goalExamples = getGoalExamples(analysis.language, analysis.category);
   const depth = getContentDepthGuidance(normalizeLevel(analysis.level));
 
   return `${contextData}

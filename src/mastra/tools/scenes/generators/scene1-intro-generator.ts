@@ -5,7 +5,7 @@ import { getHighlightExamples } from '../../../utils/language/localization-langu
 
 export function generateScene1Prompt(analysis: PromptAnalysis, microlearning: MicrolearningContent): string {
   const contextData = buildContextData(analysis, microlearning);
-  const examples = getHighlightExamples(analysis.language);
+  const examples = getHighlightExamples(analysis.language, analysis.category);
 
   return `${contextData}
 

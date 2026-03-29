@@ -5,11 +5,11 @@ import { getNudgeExamples } from '../../../utils/language/localization-language-
 
 export function generateScene7Prompt(analysis: PromptAnalysis, microlearning: MicrolearningContent): string {
   const contextData = buildContextData(analysis, microlearning);
-  const nudgeExamples = getNudgeExamples(analysis.language);
+  const nudgeExamples = getNudgeExamples(analysis.language, analysis.category);
   const depth = getContentDepthGuidance(normalizeLevel(analysis.level));
 
   // Use keyTopics to provide more specific context for dynamic nudge generation
-  const keyTopicsHint = analysis.keyTopics?.slice(0, 3).join(', ') || 'general security practice';
+  const keyTopicsHint = analysis.keyTopics?.slice(0, 3).join(', ') || analysis.topic;
 
   return `${contextData}
 

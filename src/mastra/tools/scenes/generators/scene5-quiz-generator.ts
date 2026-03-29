@@ -21,10 +21,10 @@ ${depth.scenarioComplexity}
    - BAD: "You receive a phishing email."
    - GOOD: "It's 17:55 on Friday. You're rushing to finish a report when an email arrives marked 'URGENT: Invoice Overdue'..." (Time pressure + Specific context)
 
-2. THE "DISTRACTOR" SYSTEM (Wrong answers must be designed types):
-   - Option A (THE IMPULSIVE MISTAKE): The emotional/panic reaction. (e.g., "Click immediately to fix it")
-   - Option B (THE NEAR-MISS): Sounds professional/logical but is effectively wrong (e.g., "Reply to ask if it's real" - wrong channel).
-   - Option C (THE FALSE SECURITY): Passing responsibility (e.g., "Ignore it, the spam filter handles it").
+2. THE "DISTRACTOR" SYSTEM (Each wrong answer MUST match its assigned type):
+   - id "mistake1" = THE IMPULSIVE MISTAKE: The emotional/panic reaction. (e.g., "Click immediately to fix it")
+   - id "mistake2" = THE NEAR-MISS: Sounds professional/logical but is effectively wrong (e.g., "Reply to ask if it's real" - wrong channel).
+   - id "mistake3" = THE FALSE SECURITY: Passing responsibility (e.g., "Ignore it, the spam filter handles it").
 
 3. THE "COMPARATIVE FEEDBACK" RULE:
    - Explanation format: "X is correct because [reason]. Y is risky because [reason]."
@@ -80,12 +80,12 @@ CRITICAL:
           "options": [
             {
               "id": "mistake1",
-              "text": "Common mistake for ${analysis.topic} (${analysis.department}), max 8 words in ${analysis.language}",
+              "text": "Emotional panic reaction to ${analysis.topic} (${analysis.department}), max 8 words in ${analysis.language}",
               "isCorrect": false
             },
             {
               "id": "mistake2",
-              "text": "Another mistake for ${analysis.topic} (${analysis.department}), max 8 words in ${analysis.language}",
+              "text": "Sounds professional but effectively wrong for ${analysis.topic} (${analysis.department}), max 8 words in ${analysis.language}",
               "isCorrect": false
             },
             {
@@ -95,7 +95,7 @@ CRITICAL:
             },
             {
               "id": "mistake3",
-              "text": "Another mistake for ${analysis.topic} (${analysis.department}), max 8 words in ${analysis.language}",
+              "text": "Passes responsibility to someone else for ${analysis.topic} (${analysis.department}), max 8 words in ${analysis.language}",
               "isCorrect": false
             }
           ],
@@ -105,7 +105,7 @@ CRITICAL:
           "id": "belief-test",
           "type": "true_false",
           "title": "Assessment for ${analysis.topic} (${analysis.department}), max 5 words in ${analysis.language}",
-          "statement": "Common misconception or false belief about ${analysis.topic}, max 15 words in ${analysis.language}",
+          "statement": "Common misconception or false belief about ${analysis.topic}, max 25 words in ${analysis.language}. MUST be a grammatically complete sentence (subject + verb + object). Include enough context for a realistic workplace scenario.",
           "correctAnswer": false,
           "options": {
             "true": {

@@ -1,0 +1,379 @@
+{
+  "_metadata": {
+    "description": "Current threat landscape context for content generation. Gives LLM up-to-date techniques it may lack in training data.",
+    "lastUpdated": "2026-03-28",
+    "updateFrequency": "quarterly"
+  },
+  "phishing": {
+    "currentTechniques": [
+      "Adversary-in-the-Middle (AiTM) phishing that bypasses MFA by stealing session tokens",
+      "OAuth consent phishing via fake app authorization prompts",
+      "Browser-in-the-Browser (BitB) attacks with fake login popups",
+      "Email thread hijacking — attacker inserts malicious reply into existing conversation",
+      "HTML smuggling — malicious payload hidden in email HTML attachment bypasses scanners",
+      "QR code embedded in PDF attachment to evade URL scanners"
+    ],
+    "realisticScenarios": [
+      "Microsoft Teams meeting invite with credential harvesting link",
+      "SharePoint document sharing notification from spoofed colleague",
+      "IT helpdesk password reset with AiTM proxy page",
+      "Vendor invoice email with HTML attachment that drops malware on open",
+      "HR annual benefits enrollment email redirecting to fake login portal",
+      "CEO forwarding a 'confidential document' link during board meeting prep"
+    ]
+  },
+  "quishing": {
+    "currentTechniques": [
+      "QR codes on physical items (parking meters, restaurant menus, office posters)",
+      "QR codes in PDF attachments that bypass email link scanners",
+      "Dynamic QR codes that redirect to different URLs after initial scan",
+      "QR code stickers placed over legitimate codes on payment terminals",
+      "Fake Wi-Fi login portals accessed via QR codes in public spaces",
+      "QR codes in phishing emails replacing traditional URL links to evade filters"
+    ],
+    "realisticScenarios": [
+      "Fake parking meter QR code redirecting to payment phishing site",
+      "Office poster for 'Wi-Fi setup' with malicious QR code",
+      "PDF invoice with QR code for 'quick payment'",
+      "Conference badge with QR code leading to credential harvesting page",
+      "Restaurant menu QR code replaced with sticker linking to fake payment portal",
+      "Employee scans QR code on 'security update' flyer taped to office printer"
+    ]
+  },
+  "vishing": {
+    "currentTechniques": [
+      "AI-generated voice cloning of executives (deepfake voice)",
+      "Callback phishing — voicemail left with urgent callback number",
+      "Tech support scam with remote access tool installation",
+      "Caller ID spoofing displaying legitimate company phone numbers",
+      "Hybrid vishing — phishing email followed by 'verification' phone call",
+      "IVR (Interactive Voice Response) phishing — fake automated menu capturing account details"
+    ],
+    "realisticScenarios": [
+      "Voicemail from 'CEO' requesting urgent wire transfer callback",
+      "IT support call asking to install remote access for 'security update'",
+      "Bank fraud department call requesting account verification",
+      "Caller pretending to be new hire confirming payroll banking details",
+      "Vendor call requesting updated payment information for overdue invoice",
+      "Insurance company call asking to verify employee social security numbers"
+    ]
+  },
+  "smishing": {
+    "currentTechniques": [
+      "Package delivery SMS with tracking link to credential harvesting",
+      "Bank alert SMS with shortened URL to phishing page",
+      "MFA code request SMS from spoofed sender ID",
+      "Toll road payment SMS with fake payment portal link",
+      "Employee benefit SMS during open enrollment with credential harvesting",
+      "CEO/manager text from personal number requesting urgent gift card purchase"
+    ],
+    "realisticScenarios": [
+      "DHL/FedEx 'missed delivery' SMS with malicious tracking link",
+      "Bank 'suspicious activity detected' SMS with fake verification link",
+      "HR benefits enrollment SMS during open enrollment period",
+      "Text from 'manager' asking to buy gift cards for client appreciation event",
+      "Fake IT SMS about expiring VPN certificate with renewal link",
+      "Parking violation SMS with link to pay fine online"
+    ]
+  },
+  "ransomware": {
+    "currentTechniques": [
+      "Double extortion — encrypt data AND threaten to publish it",
+      "Ransomware-as-a-Service (RaaS) lowering attack barrier",
+      "Living-off-the-land (LOLBins) — using legitimate tools like PowerShell for lateral movement",
+      "Backup targeting — encrypting backup systems before primary data to prevent recovery",
+      "Supply chain ransomware — infecting software updates to spread across multiple organizations",
+      "Intermittent encryption — partially encrypting files to evade detection while still making data unusable"
+    ],
+    "realisticScenarios": [
+      "Fake IT remote access request to deploy ransomware payload",
+      "Malicious macro in invoice spreadsheet from compromised vendor",
+      "USB drive left in parking lot with ransomware dropper",
+      "Compromised RDP credentials sold on dark web used for after-hours access",
+      "Fake software update notification deploys encryption payload overnight",
+      "Printer spooler vulnerability exploited for lateral movement across network"
+    ]
+  },
+  "social_engineering": {
+    "currentTechniques": [
+      "Pretexting with OSINT — using LinkedIn/social media info for targeted attacks",
+      "Multi-channel attacks — email + phone + SMS in coordinated sequence",
+      "Authority impersonation via spoofed internal communication tools",
+      "Watering hole attacks — compromising websites frequently visited by target group",
+      "Baiting with physical media — infected USB drives labeled as salary reports or org charts",
+      "Reverse social engineering — creating a problem then offering to 'help' fix it to gain access"
+    ],
+    "realisticScenarios": [
+      "New employee receiving 'onboarding' request from fake HR manager",
+      "Vendor impersonation requesting banking detail update",
+      "LinkedIn message from recruiter with malicious job description PDF",
+      "Fake IT technician calling to 'resolve a ticket you submitted' for remote access",
+      "Charity donation request from spoofed executive during holiday season",
+      "Building maintenance worker requesting server room access for 'emergency repair'"
+    ]
+  },
+  "deepfake": {
+    "currentTechniques": [
+      "Real-time video deepfake in video calls (face swap during live meeting)",
+      "AI-generated voice cloning from short audio samples (3-5 seconds)",
+      "Synthetic identity creation combining real and fake attributes",
+      "Deepfake audio messages sent via corporate messaging platforms (Slack, Teams)",
+      "AI-generated profile photos for fake LinkedIn/social media accounts",
+      "Video manipulation of public recordings to create fake executive announcements"
+    ],
+    "realisticScenarios": [
+      "CFO video call requesting emergency fund transfer (deepfake face + voice)",
+      "Voice message from 'manager' authorizing sensitive data access",
+      "Fake employee onboarding video from spoofed executive",
+      "Deepfake video of CEO announcing fake acquisition posted on investor forum",
+      "AI voice clone calling finance team to change vendor payment details",
+      "Fake Teams video message from IT director requesting emergency credential reset"
+    ]
+  },
+  "mfa": {
+    "currentTechniques": [
+      "MFA fatigue attacks — flooding user with push notifications until they approve",
+      "SIM swapping to intercept SMS-based MFA codes",
+      "AiTM proxy capturing MFA tokens in real-time",
+      "SS7 protocol exploitation to intercept SMS verification codes",
+      "Modlishka-style reverse proxy capturing session cookies after MFA completion",
+      "Social engineering help desk to add attacker's device as trusted MFA endpoint"
+    ],
+    "realisticScenarios": [
+      "Repeated MFA push notifications at 3 AM until user approves",
+      "Phishing page that relays MFA code to attacker in real-time",
+      "Help desk social engineering to reset MFA for attacker's device",
+      "Employee approves MFA prompt thinking it's their own login from new laptop",
+      "Attacker calls pretending to be IT asking user to read back the SMS code",
+      "Lost phone with authenticator app and no backup recovery codes configured"
+    ]
+  },
+  "password": {
+    "currentTechniques": [
+      "Credential stuffing with leaked database combinations",
+      "Password spraying across multiple accounts with common passwords",
+      "Passkey/FIDO2 adoption as password replacement",
+      "Keylogger malware capturing credentials from compromised endpoints",
+      "Rainbow table attacks against poorly hashed password databases",
+      "Shoulder surfing and screen recording in open office or public spaces"
+    ],
+    "realisticScenarios": [
+      "Data breach notification revealing reused password across services",
+      "Password manager prompt after detecting compromised credentials",
+      "Setting up passkey authentication for corporate accounts",
+      "Colleague asks to share login for 'just this once' urgent deadline",
+      "Browser auto-fill exposing saved credentials on shared workstation",
+      "Same password used for corporate email and personal shopping account"
+    ]
+  },
+  "data_privacy": {
+    "currentTechniques": [
+      "Shadow IT — employees using unauthorized AI tools with company data",
+      "Data exfiltration via personal cloud storage sync",
+      "GDPR/KVKK compliance gaps in cross-border data transfers",
+      "Metadata leakage — document properties revealing internal info (author, revision history)",
+      "Screen sharing accidents — exposing sensitive tabs during video calls",
+      "Auto-forwarding rules silently copying emails to personal accounts"
+    ],
+    "realisticScenarios": [
+      "Employee pasting customer data into public AI chatbot",
+      "Sharing sensitive spreadsheet via personal Google Drive link",
+      "Third-party vendor requesting data export without DPA in place",
+      "Intern screenshots confidential dashboard and posts on social media",
+      "Manager screen-shares during all-hands and exposes salary spreadsheet tab",
+      "Customer PII accidentally included in marketing analytics export"
+    ]
+  },
+  "incident_response": {
+    "currentTechniques": [
+      "Automated incident triage with SOAR playbooks",
+      "Threat hunting based on MITRE ATT&CK framework indicators",
+      "Post-incident tabletop exercises for team readiness"
+    ],
+    "realisticScenarios": [
+      "Detecting lateral movement after compromised VPN credentials",
+      "Responding to ransomware alert — isolate, assess, escalate",
+      "Handling data breach notification within 72-hour GDPR window"
+    ]
+  },
+  "usb_security": {
+    "currentTechniques": [
+      "USB drop attacks — malware-laden drives left in parking lots or common areas",
+      "BadUSB firmware attacks — reprogrammed USB devices acting as keyboards",
+      "USB data exfiltration — unauthorized copying of sensitive files to removable media"
+    ],
+    "realisticScenarios": [
+      "Branded USB drive found at conference reception claiming to contain agenda",
+      "Colleague asks to borrow USB drive to transfer 'urgent presentation'",
+      "Unknown USB drive found plugged into shared workstation after hours"
+    ]
+  },
+  "tailgating": {
+    "currentTechniques": [
+      "Piggybacking — following authorized employee through secure door",
+      "Impersonation — wearing fake badge or delivery uniform for building access",
+      "Social pressure — carrying heavy boxes to make others hold doors open"
+    ],
+    "realisticScenarios": [
+      "Delivery person without appointment asks to be let into server room",
+      "Well-dressed stranger follows group through badge-protected entrance",
+      "Contractor claims their access card stopped working and needs to get to a meeting"
+    ]
+  },
+  "insider_threat": {
+    "currentTechniques": [
+      "Privilege escalation — employees accessing systems beyond their role",
+      "Data hoarding before resignation — bulk downloading company files",
+      "Shadow IT — using unauthorized tools that bypass security controls"
+    ],
+    "realisticScenarios": [
+      "Departing employee forwards client database to personal email",
+      "Team member installs unauthorized file-sharing app on company laptop",
+      "Contractor retains VPN access months after project completion"
+    ]
+  },
+  "secure_browsing": {
+    "currentTechniques": [
+      "Malvertising — malicious ads on legitimate websites delivering malware",
+      "Drive-by downloads — automatic malware installation from compromised sites",
+      "Browser extension hijacking — legitimate extensions acquired and turned malicious"
+    ],
+    "realisticScenarios": [
+      "Search result ad for popular software leads to trojanized installer",
+      "Trusted news site serves malicious ad redirecting to exploit kit",
+      "Browser extension update silently adds credential-stealing code"
+    ]
+  },
+  "remote_work": {
+    "currentTechniques": [
+      "Evil twin Wi-Fi attacks — rogue access points in cafes and hotels",
+      "VPN split-tunnel exploitation — accessing internal resources while on untrusted network",
+      "Home router compromise — default credentials on consumer routers"
+    ],
+    "realisticScenarios": [
+      "Working from hotel lobby on free Wi-Fi without VPN connection",
+      "Family member uses work laptop for personal browsing and downloads malware",
+      "Home router firmware not updated for 2 years with known vulnerability"
+    ]
+  },
+  "encryption": {
+    "currentTechniques": [
+      "End-to-end encryption bypass via compromised endpoints",
+      "Quantum computing threat to current encryption algorithms (post-quantum readiness)",
+      "TLS stripping attacks downgrading encrypted connections"
+    ],
+    "realisticScenarios": [
+      "Sending sensitive client data via unencrypted email attachment",
+      "Lost laptop with unencrypted hard drive containing employee records",
+      "Using HTTP instead of HTTPS for internal tool with login credentials"
+    ]
+  },
+  "supply_chain": {
+    "currentTechniques": [
+      "Dependency confusion — malicious packages with names matching internal libraries",
+      "Compromised software updates — trojanized vendor updates (SolarWinds-style)",
+      "Third-party API credential theft — vendor breach exposing shared API keys"
+    ],
+    "realisticScenarios": [
+      "Vendor software update installs backdoor alongside legitimate patch",
+      "Open-source library maintainer injects crypto-miner in minor version bump",
+      "Third-party SaaS provider suffers breach exposing integrated customer data"
+    ]
+  },
+  "cloud_security": {
+    "currentTechniques": [
+      "Cloud misconfiguration — publicly exposed S3 buckets, open Azure Blob storage",
+      "Excessive IAM permissions — over-privileged service accounts enabling lateral movement",
+      "Cloud-native malware — serverless function abuse and container escape attacks"
+    ],
+    "realisticScenarios": [
+      "Developer accidentally sets cloud storage bucket to public, exposing customer data",
+      "Former employee's cloud admin credentials still active months after departure",
+      "Unauthorized SaaS app connected to corporate Microsoft 365 tenant via OAuth"
+    ]
+  },
+  "mobile_security": {
+    "currentTechniques": [
+      "Malicious mobile apps mimicking legitimate banking/productivity tools",
+      "Mobile spyware (Pegasus-style) exploiting zero-click vulnerabilities",
+      "Rogue MDM profiles granting attackers full device control"
+    ],
+    "realisticScenarios": [
+      "Employee installs fake VPN app from unofficial app store on work phone",
+      "SMS link installs spyware that captures screen content and keystrokes",
+      "Lost corporate phone without remote wipe capability containing client data"
+    ]
+  },
+  "iot_security": {
+    "currentTechniques": [
+      "Default credential exploitation on smart office devices (cameras, printers, HVAC)",
+      "IoT botnet recruitment — compromised devices used for DDoS attacks",
+      "Firmware vulnerabilities in unpatched connected devices providing network entry"
+    ],
+    "realisticScenarios": [
+      "Smart office printer with default admin password used as network pivot point",
+      "Conference room camera compromised for corporate espionage",
+      "Connected HVAC system exploited to gain access to corporate network"
+    ]
+  },
+  "zero_trust": {
+    "currentTechniques": [
+      "Micro-segmentation — limiting blast radius by isolating workloads and users",
+      "Continuous authentication — real-time trust evaluation beyond initial login",
+      "Least-privilege access — just-in-time permissions replacing standing privileges"
+    ],
+    "realisticScenarios": [
+      "Employee tries to access finance system from unmanaged device and gets blocked",
+      "Contractor given time-limited access that auto-revokes after project ends",
+      "Anomalous login pattern triggers step-up authentication challenge"
+    ]
+  },
+  "email_security": {
+    "currentTechniques": [
+      "DMARC/DKIM/SPF bypass — exploiting misconfigured email authentication records",
+      "Email thread hijacking — inserting malicious replies into legitimate conversation chains",
+      "Lookalike domain registration — domains differing by one character (homoglyph attacks)"
+    ],
+    "realisticScenarios": [
+      "Attacker replies within existing email thread with invoice attachment",
+      "Email from 'rn' instead of 'm' domain passes visual inspection",
+      "Auto-forwarding rule silently copies all emails to external address"
+    ]
+  },
+  "compliance": {
+    "currentTechniques": [
+      "Regulatory gap exploitation — targeting organizations during compliance transition periods",
+      "Cross-border data transfer violations — unauthorized data movement between jurisdictions",
+      "AI compliance requirements — EU AI Act obligations for AI-generated content and decisions"
+    ],
+    "realisticScenarios": [
+      "Company fails to report data breach within mandatory 72-hour GDPR notification window",
+      "Marketing team transfers EU customer data to US tool without adequate safeguards",
+      "AI system used for hiring decisions without required transparency documentation"
+    ]
+  },
+  "secure_coding": {
+    "currentTechniques": [
+      "Prompt injection — manipulating AI/LLM inputs to bypass safety controls",
+      "Dependency poisoning — malicious code in popular open-source libraries",
+      "API key exposure — hardcoded secrets in public repositories and client-side code"
+    ],
+    "realisticScenarios": [
+      "Developer commits AWS credentials to public GitHub repository",
+      "Code review misses SQL injection in user input handling",
+      "CI/CD pipeline compromised through malicious GitHub Action"
+    ]
+  },
+  "business_continuity": {
+    "currentTechniques": [
+      "Backup encryption by ransomware — targeting backup systems before encrypting primary data",
+      "Cloud service outage cascading — single provider failure affecting all dependent services",
+      "Disaster recovery testing gaps — untested backup procedures failing during real incidents"
+    ],
+    "realisticScenarios": [
+      "Ransomware encrypts both production servers and backup storage simultaneously",
+      "Major cloud provider outage takes down company email, files, and CRM for 8 hours",
+      "Recovery from backup fails because backup integrity was never tested"
+    ]
+  }
+}

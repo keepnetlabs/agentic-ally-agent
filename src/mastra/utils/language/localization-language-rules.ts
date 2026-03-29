@@ -4367,12 +4367,87 @@ const HIGHLIGHT_EXAMPLES: Partial<Record<LangKey, HighlightExamples>> = {
   },
 };
 
+// --- Category-aware example overrides (TOOL / PROCESS categories) ---
+// Existing HIGHLIGHT_EXAMPLES are phishing/threat-focused. These provide
+// category-appropriate examples so LLM doesn't bias toward phishing language
+// when generating ransomware, MFA, incident response, etc.
+
+const CATEGORY_HIGHLIGHT_EXAMPLES: Record<string, Partial<Record<LangKey, HighlightExamples>>> = {
+  tool: {
+    en: {
+      risk: 'Weak authentication leaves accounts exposed to takeover',
+      action: 'Enabling extra verification blocks most unauthorized access',
+      outcome: 'Strong security tools keep your data and team protected',
+    },
+    tr: {
+      risk: 'Zayıf kimlik doğrulama hesapları ele geçirmeye açık bırakır',
+      action: 'Ek doğrulama etkinleştirmek yetkisiz erişimi engeller',
+      outcome: 'Güçlü güvenlik araçları verilerinizi ve ekibinizi korur',
+    },
+    de: {
+      risk: 'Schwache Authentifizierung macht Konten angreifbar',
+      action: 'Zusätzliche Verifizierung blockiert unbefugten Zugriff',
+      outcome: 'Starke Sicherheitstools schützen Ihre Daten und Ihr Team',
+    },
+    fr: {
+      risk: 'Une authentification faible expose les comptes au piratage',
+      action: 'La vérification supplémentaire bloque les accès non autorisés',
+      outcome: 'Des outils de sécurité solides protègent vos données',
+    },
+    es: {
+      risk: 'La autenticación débil deja las cuentas expuestas',
+      action: 'La verificación adicional bloquea accesos no autorizados',
+      outcome: 'Herramientas de seguridad sólidas protegen sus datos',
+    },
+  },
+  process: {
+    en: {
+      risk: 'Delayed incident response increases damage and recovery cost',
+      action: 'Following the right procedure contains threats quickly',
+      outcome: 'Prepared teams recover faster and protect the organization',
+    },
+    tr: {
+      risk: 'Geç müdahale hasarı ve kurtarma maliyetini artırır',
+      action: 'Doğru prosedürü izlemek tehditleri hızla kontrol altına alır',
+      outcome: 'Hazırlıklı ekipler daha hızlı toparlanır ve kurumu korur',
+    },
+    de: {
+      risk: 'Verzögerte Reaktion erhöht den Schaden und die Kosten',
+      action: 'Das richtige Verfahren begrenzt Bedrohungen schnell',
+      outcome: 'Vorbereitete Teams erholen sich schneller und schützen die Organisation',
+    },
+    fr: {
+      risk: 'Un retard de réponse augmente les dommages et les coûts',
+      action: 'Suivre la bonne procédure contient les menaces rapidement',
+      outcome: 'Les équipes préparées récupèrent plus vite et protègent l\'organisation',
+    },
+    es: {
+      risk: 'La respuesta tardía aumenta el daño y el coste de recuperación',
+      action: 'Seguir el procedimiento correcto contiene las amenazas rápidamente',
+      outcome: 'Los equipos preparados se recuperan más rápido y protegen la organización',
+    },
+  },
+};
+
 /**
  * Get highlight examples for scene 1 intro generation.
- * Returns examples in the target language if available, otherwise English fallback.
+ * Category-aware: returns TOOL/PROCESS examples when available,
+ * falls back to existing threat/phishing examples.
  */
-export function getHighlightExamples(langCode: string): HighlightExamples {
+export function getHighlightExamples(langCode: string, category?: string): HighlightExamples {
   const key = normLang(langCode);
+
+  // Try category-specific examples first
+  if (category) {
+    const catLower = category.toLowerCase();
+    const catExamples = CATEGORY_HIGHLIGHT_EXAMPLES[catLower];
+    if (catExamples) {
+      const langMatch = catExamples[key] || catExamples.en;
+      if (langMatch) return langMatch;
+    }
+  }
+
+  // Fallback to existing threat/phishing examples
   return HIGHLIGHT_EXAMPLES[key] || HIGHLIGHT_EXAMPLES.en || {
     risk: 'Know that phishing targets payment requests',
     action: 'Remember that verification prevents fraud',
@@ -4575,12 +4650,99 @@ const GOAL_EXAMPLES: Partial<Record<LangKey, GoalExamples>> = {
   },
 };
 
+const CATEGORY_GOAL_EXAMPLES: Record<string, Partial<Record<LangKey, GoalExamples>>> = {
+  tool: {
+    en: {
+      title: 'Your Account Protection',
+      subtitle: 'Next time you access a sensitive system, you will enable extra verification first',
+      step1: 'Assess the risk',
+      step2: 'Enable protection',
+      step3: 'Test it works',
+    },
+    tr: {
+      title: 'Hesap Korumanız',
+      subtitle: 'Hassas bir sisteme eriştiğinizde önce ek doğrulamayı etkinleştireceksiniz',
+      step1: 'Riski değerlendirin',
+      step2: 'Korumayı etkinleştirin',
+      step3: 'Çalıştığını test edin',
+    },
+    de: {
+      title: 'Ihr Kontoschutz',
+      subtitle: 'Beim nächsten Zugriff auf ein sensibles System aktivieren Sie zuerst die zusätzliche Verifizierung',
+      step1: 'Risiko einschätzen',
+      step2: 'Schutz aktivieren',
+      step3: 'Funktion testen',
+    },
+    fr: {
+      title: 'Votre protection de compte',
+      subtitle: 'La prochaine fois que vous accédez à un système sensible, activez d\'abord la vérification',
+      step1: 'Évaluer le risque',
+      step2: 'Activer la protection',
+      step3: 'Tester le fonctionnement',
+    },
+    es: {
+      title: 'Su protección de cuenta',
+      subtitle: 'La próxima vez que acceda a un sistema sensible, activará primero la verificación adicional',
+      step1: 'Evaluar el riesgo',
+      step2: 'Activar la protección',
+      step3: 'Verificar que funciona',
+    },
+  },
+  process: {
+    en: {
+      title: 'Your Response Plan',
+      subtitle: 'Next time you detect an anomaly, you will follow the escalation procedure',
+      step1: 'Identify the issue',
+      step2: 'Follow the procedure',
+      step3: 'Escalate properly',
+    },
+    tr: {
+      title: 'Müdahale Planınız',
+      subtitle: 'Bir anormallik tespit ettiğinizde eskalasyon prosedürünü uygulayacaksınız',
+      step1: 'Sorunu tanımlayın',
+      step2: 'Prosedürü izleyin',
+      step3: 'Doğru şekilde eskalasyon yapın',
+    },
+    de: {
+      title: 'Ihr Reaktionsplan',
+      subtitle: 'Wenn Sie eine Anomalie entdecken, folgen Sie dem Eskalationsverfahren',
+      step1: 'Problem identifizieren',
+      step2: 'Verfahren befolgen',
+      step3: 'Richtig eskalieren',
+    },
+    fr: {
+      title: 'Votre plan de réponse',
+      subtitle: 'La prochaine fois que vous détectez une anomalie, suivez la procédure d\'escalade',
+      step1: 'Identifier le problème',
+      step2: 'Suivre la procédure',
+      step3: 'Escalader correctement',
+    },
+    es: {
+      title: 'Su plan de respuesta',
+      subtitle: 'La próxima vez que detecte una anomalía, seguirá el procedimiento de escalación',
+      step1: 'Identificar el problema',
+      step2: 'Seguir el procedimiento',
+      step3: 'Escalar correctamente',
+    },
+  },
+};
+
 /**
  * Get goal examples for scene 2 goal generation.
- * Returns examples in the target language if available, otherwise English fallback.
+ * Category-aware: returns TOOL/PROCESS examples when available.
  */
-export function getGoalExamples(langCode: string): GoalExamples {
+export function getGoalExamples(langCode: string, category?: string): GoalExamples {
   const key = normLang(langCode);
+
+  if (category) {
+    const catLower = category.toLowerCase();
+    const catExamples = CATEGORY_GOAL_EXAMPLES[catLower];
+    if (catExamples) {
+      const langMatch = catExamples[key] || catExamples.en;
+      if (langMatch) return langMatch;
+    }
+  }
+
   return GOAL_EXAMPLES[key] || GOAL_EXAMPLES.en || {
     title: 'Your Phishing Defense',
     subtitle: 'Next time you see a suspicious email, you will pause and report it',
@@ -4758,12 +4920,89 @@ const NUDGE_EXAMPLES: Partial<Record<LangKey, NudgeExamples>> = {
   },
 };
 
+const CATEGORY_NUDGE_EXAMPLES: Record<string, Partial<Record<LangKey, NudgeExamples>>> = {
+  tool: {
+    en: {
+      subtitle: 'Next time you set up a new account, you will enable protection first:',
+      recognize: 'Check if protection is available',
+      protect: 'Don\'t skip security setup steps',
+      verify: 'Test that the protection works',
+    },
+    tr: {
+      subtitle: 'Yeni bir hesap açtığınızda önce korumayı etkinleştireceksiniz:',
+      recognize: 'Koruma seçeneklerini kontrol edin',
+      protect: 'Güvenlik adımlarını atlamayın',
+      verify: 'Korumanın çalıştığını test edin',
+    },
+    de: {
+      subtitle: 'Beim nächsten neuen Konto aktivieren Sie zuerst den Schutz:',
+      recognize: 'Verfügbaren Schutz prüfen',
+      protect: 'Sicherheitsschritte nicht überspringen',
+      verify: 'Schutzfunktion testen',
+    },
+    fr: {
+      subtitle: 'La prochaine fois que vous créez un compte, activez d\'abord la protection :',
+      recognize: 'Vérifier les options de protection',
+      protect: 'Ne sautez pas les étapes de sécurité',
+      verify: 'Tester que la protection fonctionne',
+    },
+    es: {
+      subtitle: 'La próxima vez que cree una cuenta, activará primero la protección:',
+      recognize: 'Verificar opciones de protección disponibles',
+      protect: 'No omita los pasos de seguridad',
+      verify: 'Comprobar que la protección funciona',
+    },
+  },
+  process: {
+    en: {
+      subtitle: 'Next time you detect something unusual, you will follow these steps:',
+      recognize: 'Identify the anomaly or incident',
+      protect: 'Don\'t try to fix it alone or hide it',
+      verify: 'Escalate through the proper channel',
+    },
+    tr: {
+      subtitle: 'Olağandışı bir durum tespit ettiğinizde şu adımları izleyeceksiniz:',
+      recognize: 'Anomaliyi veya olayı tanımlayın',
+      protect: 'Tek başınıza çözmeye veya gizlemeye çalışmayın',
+      verify: 'Doğru kanal üzerinden eskalasyon yapın',
+    },
+    de: {
+      subtitle: 'Wenn Sie etwas Ungewöhnliches entdecken, folgen Sie diesen Schritten:',
+      recognize: 'Anomalie oder Vorfall identifizieren',
+      protect: 'Nicht allein beheben oder verschweigen',
+      verify: 'Über den richtigen Kanal eskalieren',
+    },
+    fr: {
+      subtitle: 'La prochaine fois que vous détectez quelque chose d\'inhabituel, suivez ces étapes :',
+      recognize: 'Identifier l\'anomalie ou l\'incident',
+      protect: 'Ne tentez pas de résoudre seul ou de cacher',
+      verify: 'Escalader par le bon canal',
+    },
+    es: {
+      subtitle: 'La próxima vez que detecte algo inusual, seguirá estos pasos:',
+      recognize: 'Identificar la anomalía o el incidente',
+      protect: 'No intente resolverlo solo ni ocultarlo',
+      verify: 'Escalar por el canal adecuado',
+    },
+  },
+};
+
 /**
  * Get nudge examples for scene 7 nudge generation.
- * Returns examples in the target language if available, otherwise English fallback.
+ * Category-aware: returns TOOL/PROCESS examples when available.
  */
-export function getNudgeExamples(langCode: string): NudgeExamples {
+export function getNudgeExamples(langCode: string, category?: string): NudgeExamples {
   const key = normLang(langCode);
+
+  if (category) {
+    const catLower = category.toLowerCase();
+    const catExamples = CATEGORY_NUDGE_EXAMPLES[catLower];
+    if (catExamples) {
+      const langMatch = catExamples[key] || catExamples.en;
+      if (langMatch) return langMatch;
+    }
+  }
+
   return NUDGE_EXAMPLES[key] || NUDGE_EXAMPLES.en || {
     subtitle: 'Next time a suspicious email appears, you will do this:',
     recognize: 'Recognise a suspicious email',

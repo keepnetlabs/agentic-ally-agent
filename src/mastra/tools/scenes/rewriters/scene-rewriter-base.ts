@@ -149,6 +149,7 @@ You MUST:
 
 - Do NOT add new risks or remove existing details
 - Do NOT change the logical flow (Idea A → Idea B → Conclusion)
+- If a source sentence is a complete sentence (subject + verb), the localized version MUST also be a complete sentence — never reduce to a noun clause or fragment
 
 === UI/UX CONSTRAINTS (CRITICAL) ===
 
