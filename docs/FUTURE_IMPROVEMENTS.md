@@ -101,6 +101,29 @@ Create an **Inter-Agent Communication Protocol**.
 
 ---
 
+## 5. Localization Quality — Language-Specific Patterns
+
+**Status:** Hebrew ✅ done (March 2026). Other languages: on-demand.
+
+### Approach
+Anti-translationese patterns are added to `localization-language-rules.ts` per-language **only when quality issues are observed** in production. This is data-driven, not preemptive — adding blind patterns to 40+ languages would bloat prompts without evidence of need.
+
+**Hebrew example (implemented):**
+- Forbidden calques: "דעו ש" (Know that), "זכרו ש" (Remember that), "ראו כיצד" (See how)
+- Rule: In highlights/titles/key messages — lead with ACTION or FACT, not meta-instruction
+
+**When to add a new language:**
+1. Generate content in target language
+2. Have native speaker or GPT-5.4-mini review for translationese patterns
+3. Identify recurring calques specific to that language
+4. Add to `localization-language-rules.ts` under that language's section
+
+### Threat Intelligence V2 (Planned)
+Current: Static JSON (`threat-intelligence.json`, updated quarterly).
+Planned: Weekly cron + Jina web search → KV cache with TTL. Infrastructure is prepared in `threat-intelligence-service.ts` (commented KV code).
+
+---
+
 ## Next Steps (Devam)
 
 | Area | Action |
@@ -108,4 +131,6 @@ Create an **Inter-Agent Communication Protocol**.
 | **Product API** | Timeline response'da `scenarioResourceId`/`resourceId` — tactic enrichment için gerekli |
 | **Critic Agent** | Phishing/Smishing çıktısını PII/pattern, ton, gerçekçilik açısından kontrol |
 | **Long-Term Memory** | Vectorize ile kullanıcı persona (zayıflıklar, tercihler, geçmiş) |
+| **Threat Intel V2** | Weekly cron + Jina web search → KV cache (infrastructure ready) |
+| **Language QC patterns** | Add anti-translationese patterns for Turkish, Arabic, Japanese as issues emerge |
 | **Quick wins** | ~~structured logging~~ ✅ |

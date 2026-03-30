@@ -285,7 +285,69 @@ autonomous:policy:{id}  -> Frequency tracking (last_run_time)
 
 ---
 
-## 6. Resilience Strategy (The "Safety Net")
+## 6. Content Quality Pipeline
+
+### 6.1 Threat Intelligence Enhancer
+
+Static JSON-based threat context (`threat-intelligence.json`, 27 categories) injected into LLM prompts to ensure training content reflects real-world threats.
+
+**File:** `src/mastra/services/threat-intelligence-service.ts`
+
+**3-Layer Filtering (Sequential with Fallback):**
+
+| Layer | Filter | Example |
+|-------|--------|---------|
+| 1. Role | Department keywords (Finance → vendor/invoice/wire) | Finance user sees payment fraud scenarios |
+| 2. Difficulty | Score 1-5 based on signal keywords | Beginner gets obvious red flags, Advanced gets subtle impersonation |
+| 3. Custom Focus | User's custom requirements (stop words excluded) | "vendor invoice" → vendor-related scenarios only |
+
+**Adaptive Output:**
+- Technique count: Beginner=2, Intermediate=3, Advanced=5
+- Scenario count: Beginner=1, Intermediate=2, Advanced=3
+- Tone: Beginner/Intermediate=casual, Advanced=formal/urgent (random)
+- Token budget: ~50-80 tokens (compressed for gpt-oss-120b MoE)
+
+**Safety:** If filtering removes all scenarios, falls back to unfiltered. Threat context enhances user parameters — never overrides them.
+
+### 6.2 Localization Quality Pipeline
+
+3-layer quality assurance for non-English content:
+
+```
+Scene Rewriter (gpt-oss-120b, temp 0.4)
+    → Cultural Adaptation (currency, dates, names, number formats)
+    → Anti-translationese (concrete calque examples)
+    → Language-specific rules (per-language injection)
+        ↓
+Post-Rewrite QC (GPT-5.4-mini for enhanced languages)
+    → 7-point checklist:
+       1. Untranslated English
+       2. Neighboring language contamination
+       3. Quoted English in scenarios
+       4. Terminology inconsistency
+       5. Grammar errors
+       6. Translationese patterns (calque detection)
+       7. Cultural adaptation gaps (currency, dates)
+    → Patches corrections back into JSON via dot-bracket path
+```
+
+**Model Selection for QC:**
+- Major languages (en, de, fr, es, tr, ar, ja, ko, etc.): gpt-oss-120b (base model)
+- Enhanced languages (he, mk, sq, az, km, lo, cy, sw, etc.): **GPT-5.4-mini** (~6x cheaper than GPT-5.1, same quality)
+- See `ENHANCED_QC_LANGUAGES` in `post-rewrite-qc.ts` for full list
+
+**Language-Specific Rules:**
+- Per-language style rules injected into both rewriter and QC prompts
+- Hebrew example: Anti-translationese patterns ("Know that X" → "דעו ש" forbidden, use direct statement)
+- Add language-specific patterns only when quality issues are observed (data-driven, not preemptive)
+
+**Measured Impact (Hebrew):**
+- Before pipeline: 6.5/10 (literal calques, wrong currency, grammar errors)
+- After pipeline: 9/10 (native phrasing, ₪ currency, correct grammar)
+
+---
+
+## 7. Resilience Strategy (The "Safety Net")
 
 Reliability is baked into the core via a **3-Level Fallback Pattern**:
 
@@ -297,7 +359,7 @@ Reliability is baked into the core via a **3-Level Fallback Pattern**:
 
 ---
 
-## 7. Critical Configurations
+## 8. Critical Configurations
 
 | Constant | Value | Purpose |
 |----------|-------|---------|
@@ -308,3 +370,18 @@ Reliability is baked into the core via a **3-Level Fallback Pattern**:
 **Deployment:**
 - Runtime: Cloudflare Workers
 - AI: OpenAI (`gpt-4o-mini` default) + Workers AI (Backup)
+
+## 9. Model Costing & Selection
+
+| Use Case | Model | Cost (per MTok) | Why |
+|----------|-------|-----------------|-----|
+| Scene generation (8 scenes) | gpt-oss-120b (Workers AI) | ~Free (CF Workers) | MoE, good diversity at temp 0.75-0.9 |
+| Scene localization | gpt-oss-120b | ~Free | Semantic rewrite, temp 0.4 |
+| Post-rewrite QC (major langs) | gpt-oss-120b | ~Free | Base model sufficient for en/de/fr/es/tr/ar |
+| Post-rewrite QC (enhanced langs) | **GPT-5.4-mini** | $0.40/$1.60 | Hebrew, Swahili, etc. — nuanced judgment needed |
+| Prompt analysis | gpt-oss-120b | ~Free | Structured extraction, temp 0.7 |
+| Default agents | GPT-5.1 | Higher | Strong instruction following |
+| Refinement/routing | GPT-5.4-mini | $0.40/$1.60 | Fast reasoning, intermediate complexity |
+| Extraction (brand, metadata) | gpt-oss-120b | ~Free | Pure JSON extraction, temp 0.1 |
+
+**Cost optimization (March 2026):** QC for enhanced languages switched from GPT-5.1 to GPT-5.4-mini — same quality, ~6x cost reduction. Validated on Hebrew (9/10 quality maintained).

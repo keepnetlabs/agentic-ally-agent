@@ -1680,6 +1680,15 @@ For praise/completion: "ברכות", "מעולה", "ההכשרה הושלמה"
   - Keep professional tone — avoid overly casual or slang terms common in spoken Hebrew:
     ❌ "תלחץ על הלינק" (casual) → ✅ "לחצו על הקישור" (professional plural imperative)
 
+🚫 ANTI-TRANSLATIONESE (Hebrew-specific calque patterns to AVOID):
+  These English sentence openers must NEVER be literally translated into Hebrew:
+  - ❌ "Know that X" → "דעו ש..." — WRONG. Instead, state X directly: "חשבוניות מזויפות מכוונות לתשלומים"
+  - ❌ "Remember that X" → "זכרו ש..." — WRONG. Instead, state X directly: "בדיקת פרטי הבנק מונעת הפסדים"
+  - ❌ "See how X" → "ראו כיצד..." — WRONG. Instead, express the cause-effect natively: "אימות מגן על תזרים המזומנים"
+  - ❌ "Stop X" → "עצרו X" — WRONG if used as a title opener. Use direct professional phrasing.
+  - ❌ "Make sure to X" → "וודאו ש..." — Acceptable ONLY in procedural steps, not in highlights or titles.
+  RULE: In highlights, titles, and key messages — lead with the ACTION or FACT, not with a meta-instruction to the reader.
+
 🔒 CRITICAL VOCABULARY (common AI mistakes in Hebrew):
   - "contain" (threat) → "להכיל" / "בלימה" (NEVER "להכניס" which means "to insert" — opposite meaning!)
   - "containment" → "הכלה" / "בלימה" (NEVER "הכנסה" which means "insertion/income")

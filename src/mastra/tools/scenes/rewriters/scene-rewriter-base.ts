@@ -172,11 +172,26 @@ Every title, subtitle, and description must stay about "${topic}".
 ❌ WRONG: Source says "${topic}" → output replaces it with a different cybersecurity topic
 ✅ RIGHT: Source says "${topic}" → output says "${topic}" localized into ${targetLanguage}
 
+=== CULTURAL ADAPTATION (CRITICAL) ===
+
+Adapt locale-specific elements to the TARGET culture:
+- Currency: Convert to local currency symbol/format (e.g., £12,000 → ₪45,000 for Hebrew, €10.000 for German)
+- Date/time formats: Use local conventions (e.g., DD/MM/YYYY vs MM/DD/YYYY)
+- Names/organizations: Use culturally appropriate names when they appear in scenarios
+- Number formatting: Use local decimal/thousands separators
+
 === AVOID (THE "TRANSLATIONESE" TRAP) ===
 
 ❌ Literal translations of idioms.
 ❌ Keeping the source language's sentence rhythm (Subject-Verb order mirroring).
 ❌ Using passive voice if active voice is more natural in ${targetLanguage}.
+❌ Formulaic English openers translated literally: "Know that X", "Remember that Y", "See how Z", "Stop X" — rewrite as a native would express the same idea.
+
+EXAMPLES OF WHAT TO AVOID:
+- WRONG: "Know that fake invoices target payments" → literal "דעו ש..." / "Wisse, dass..."
+- RIGHT: Rewrite the IDEA natively → "Fake invoices target payments" expressed as a native professional would say it
+- WRONG: Keeping "See how X protects Y" structure → literal calque
+- RIGHT: Express the cause-effect natively without mirroring English sentence pattern
 
 === SOURCE LANGUAGE CONTAMINATION (ZERO TOLERANCE) ===
 

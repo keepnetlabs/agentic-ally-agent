@@ -116,6 +116,9 @@ If you have time, tackle these:
 | Error handling (`errorService` + `logErrorInfo` structured logging) | Feb 2026 |
 | D1 health check (`/health` → `agentic_ally_memory` SELECT 1) | Feb 2026 |
 | GDPR compliance — audit logging, deletion requests, data export, KV TTL, tamper-evident hash-chain (Art. 12) | Mar 2026 |
+| Threat Intel Enhancer — role/level/keyword filtering, adaptive counts, token-efficient format | Mar 2026 |
+| Localization Quality Pipeline — cultural adaptation, anti-translationese, 7-point QC | Mar 2026 |
+| QC model optimization — GPT-5.1 → GPT-5.4-mini for enhanced languages (6x cost reduction) | Mar 2026 |
 
 See [AI_COMPLIANCE_PROGRESS.md](./AI_COMPLIANCE_PROGRESS.md) for full compliance details.
 

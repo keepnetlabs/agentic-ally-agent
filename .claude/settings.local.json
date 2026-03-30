@@ -64,7 +64,10 @@
       "Bash(find '/c/Users/user/Desktop/Agentic Ally/fleet-v2-main/agent/src/mastra/agents' -type f \\\\\\(-name *.ts -o -name *.js -o -name *.json \\\\\\))",
       "WebFetch(domain:blog.cloudflare.com)",
       "WebFetch(domain:developers.openai.com)",
-      "Bash(2)"
+      "Bash(2)",
+      "Bash(node -e \":*)",
+      "Read(//c/Users/user/Desktop/Agentic Ally/fleet-v2-main/agent/**)",
+      "Read(//tmp/**)"
     ],
     "deny": [],
     "ask": [],

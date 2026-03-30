@@ -27,6 +27,129 @@ export interface ThreatIntelEntry {
 }
 
 // ============================================================================
+// Role & Difficulty Mapping
+// ============================================================================
+
+/** Map department/role to relevant threat keywords */
+const ROLE_THREAT_KEYWORDS: Record<string, string[]> = {
+  'Finance': ['vendor', 'payment', 'invoice', 'wire', 'account', 'transfer'],
+  'HR': ['onboarding', 'benefits', 'enrollment', 'hiring', 'salary', 'compensation'],
+  'IT': ['github', 'oauth', 'vpn', 'credential', 'password', 'mfa', 'ssh', 'api', 'firmware'],
+  'Sales': ['customer', 'deal', 'contract', 'proposal', 'client', 'prospect'],
+  'Executive': ['ceo', 'cfо', 'executive', 'board', 'confidential', 'strategic'],
+  'All': [], // No filtering
+};
+
+/** Difficulty signals in threat scenarios */
+const DIFFICULTY_SIGNALS: Record<string, string[]> = {
+  'Beginner': ['urgent', 'click', 'verify', 'confirm', 'act now', 'immediate', 'external domain', 'obvious'],
+  'Advanced': ['legitimate', 'spoofed', 'analysis', 'firmware', 'header', 'impersonation', 'subtle', 'internal domain'],
+};
+
+/**
+ * Related category mapping for cross-category technique blending
+ * Pulls 1 extra technique from a related category for variety
+ */
+const RELATED_CATEGORIES: Record<string, string[]> = {
+  'phishing': ['email_security', 'social_engineering'],
+  'smishing': ['mobile_security', 'social_engineering'],
+  'vishing': ['social_engineering', 'deepfake'],
+  'quishing': ['phishing', 'mobile_security'],
+  'ransomware': ['incident_response', 'business_continuity'],
+  'social_engineering': ['phishing', 'vishing'],
+  'deepfake': ['vishing', 'social_engineering'],
+  'password': ['mfa', 'zero_trust'],
+  'mfa': ['password', 'zero_trust'],
+  'data_privacy': ['compliance', 'insider_threat'],
+  'insider_threat': ['data_privacy', 'zero_trust'],
+  'remote_work': ['mobile_security', 'cloud_security'],
+  'cloud_security': ['remote_work', 'zero_trust'],
+  'supply_chain': ['cloud_security', 'compliance'],
+  'mobile_security': ['remote_work', 'smishing'],
+  'email_security': ['phishing', 'social_engineering'],
+  'secure_coding': ['cloud_security', 'supply_chain'],
+  'zero_trust': ['mfa', 'cloud_security'],
+  'compliance': ['data_privacy', 'supply_chain'],
+  'incident_response': ['ransomware', 'business_continuity'],
+  'business_continuity': ['ransomware', 'incident_response'],
+  'usb_security': ['insider_threat', 'data_privacy'],
+  'tailgating': ['insider_threat', 'social_engineering'],
+  'secure_browsing': ['phishing', 'mobile_security'],
+  'iot_security': ['mobile_security', 'zero_trust'],
+  'encryption': ['data_privacy', 'compliance'],
+};
+
+/**
+ * Adaptive technique count based on learner level
+ * Beginner: simple, obvious techniques
+ * Intermediate: moderate depth
+ * Advanced: comprehensive, subtle techniques
+ */
+const TECHNIQUE_COUNT_BY_LEVEL: Record<string, number> = {
+  'Beginner': 2,
+  'Intermediate': 3,
+  'Advanced': 5,
+};
+
+/**
+ * Tone variants for threat context (minimal)
+ * Affects framing without inflating token count
+ */
+const TONE_VARIANTS: Record<string, { prefix: string; style: string }> = {
+  'formal': {
+    prefix: 'Current threats (2026):',
+    style: 'analytical',
+  },
+  'casual': {
+    prefix: 'Real attacks now:',
+    style: 'practical',
+  },
+  'urgent': {
+    prefix: '⚠️ ACTIVE NOW:',
+    style: 'urgent',
+  },
+};
+
+/**
+ * Pick tone based on learner level
+ * Beginner: Always casual (friendly, accessible)
+ * Intermediate: Always casual (easy to understand)
+ * Advanced: Formal or urgent (structured analysis or high stakes)
+ */
+function selectTone(level?: string): string {
+  if (level === 'Beginner') return 'casual';
+  if (level === 'Intermediate') return 'casual';
+  if (level === 'Advanced') return Math.random() > 0.5 ? 'formal' : 'urgent';
+  return 'casual'; // Default
+}
+
+/**
+ * Scenario difficulty scoring (1-5 scale)
+ * 1: Obvious red flags (Beginner)
+ * 3: Mixed signals (Intermediate)
+ * 5: Subtle/sophisticated (Advanced)
+ */
+function scoreScenarioDifficulty(scenario: string): number {
+  const beginnerSignals = DIFFICULTY_SIGNALS['Beginner'];
+  const advancedSignals = DIFFICULTY_SIGNALS['Advanced'];
+
+  const beginnerMatches = beginnerSignals.filter(s =>
+    scenario.toLowerCase().includes(s.toLowerCase())
+  ).length;
+
+  const advancedMatches = advancedSignals.filter(s =>
+    scenario.toLowerCase().includes(s.toLowerCase())
+  ).length;
+
+  // Score: 1-5 based on signal distribution
+  if (beginnerMatches >= 2) return 1; // Obvious
+  if (beginnerMatches === 1) return 2; // Clear warnings
+  if (advancedMatches >= 2) return 5; // Subtle/Advanced
+  if (advancedMatches === 1) return 4; // Sophisticated
+  return 3; // Neutral/Mixed
+}
+
+// ============================================================================
 // Topic Resolution
 // ============================================================================
 
@@ -173,6 +296,103 @@ function resolveIntelKey(topic: string, category?: string): string | undefined {
 }
 
 // ============================================================================
+// Filtering Helpers
+// ============================================================================
+
+/**
+ * Filter scenarios by role relevance
+ * Returns scenarios matching role-specific keywords
+ */
+function filterScenariosByRole(scenarios: string[], department?: string): string[] {
+  if (!department || department === 'All') return scenarios;
+
+  const keywords = ROLE_THREAT_KEYWORDS[department] || [];
+  if (keywords.length === 0) return scenarios;
+
+  return scenarios.filter(scenario =>
+    keywords.some(kw => scenario.toLowerCase().includes(kw.toLowerCase()))
+  );
+}
+
+/**
+ * Filter scenarios by difficulty level
+ * Beginner (score 1-2): obvious red flags
+ * Intermediate (score 2-4): mixed signals
+ * Advanced (score 4-5): subtle, legitimate-looking
+ */
+function filterScenariosByDifficulty(scenarios: string[], level?: string): string[] {
+  if (!level) return scenarios;
+
+  // Score each scenario and filter by level-appropriate difficulty
+  const scoredScenarios = scenarios.map(scenario => ({
+    scenario,
+    score: scoreScenarioDifficulty(scenario),
+  }));
+
+  if (level === 'Beginner') {
+    // Keep 1-2 difficulty (obvious red flags)
+    return scoredScenarios
+      .filter(s => s.score <= 2)
+      .map(s => s.scenario);
+  }
+
+  if (level === 'Intermediate') {
+    // Keep 2-4 difficulty (mixed signals)
+    return scoredScenarios
+      .filter(s => s.score >= 2 && s.score <= 4)
+      .map(s => s.scenario);
+  }
+
+  if (level === 'Advanced') {
+    // Keep 4-5 difficulty (subtle/sophisticated)
+    return scoredScenarios
+      .filter(s => s.score >= 4)
+      .map(s => s.scenario);
+  }
+
+  return scenarios;
+}
+
+/**
+ * Filter scenarios by custom focus keywords
+ * E.g., "vendor invoice" → pick vendor-related scenarios
+ */
+/** Common stop words to exclude from keyword matching */
+const STOP_WORDS = new Set([
+  'a', 'an', 'the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
+  'of', 'with', 'by', 'from', 'as', 'is', 'was', 'are', 'be', 'been',
+  'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would',
+  'could', 'should', 'may', 'might', 'must', 'shall', 'can', 'need',
+  'about', 'into', 'through', 'during', 'before', 'after', 'above',
+  'below', 'between', 'out', 'off', 'over', 'under', 'again', 'then',
+  'once', 'here', 'there', 'when', 'where', 'why', 'how', 'all', 'each',
+  'every', 'both', 'few', 'more', 'most', 'other', 'some', 'such', 'no',
+  'not', 'only', 'own', 'same', 'so', 'than', 'too', 'very', 'just',
+  'because', 'if', 'while', 'that', 'this', 'these', 'those', 'it', 'its',
+  'my', 'your', 'his', 'her', 'our', 'their', 'what', 'which', 'who',
+  'whom', 'up', 'also', 'like', 'use', 'make', 'focus', 'based', 'create',
+  'include', 'ensure', 'related', 'specific', 'realistic', 'real',
+]);
+
+function filterScenariosByKeywords(scenarios: string[], customRequirements?: string): string[] {
+  if (!customRequirements) return scenarios;
+
+  // Extract meaningful keywords (exclude stop words)
+  const keywords = (customRequirements.toLowerCase().match(/\b[a-z]+\b/g) || [])
+    .filter(w => w.length > 2 && !STOP_WORDS.has(w));
+
+  if (keywords.length === 0) return scenarios;
+
+  // Filter scenarios that match any custom keyword
+  const filtered = scenarios.filter(scenario =>
+    keywords.some(kw => scenario.toLowerCase().includes(kw))
+  );
+
+  // If filtering is too strict (removes all), return original
+  return filtered.length > 0 ? filtered : scenarios;
+}
+
+// ============================================================================
 // Data Source: Static Fallback
 // ============================================================================
 
@@ -242,7 +462,7 @@ export async function getThreatContext(topic: string, category?: string): Promis
 
   logger.info('Threat intel context resolved', { topic, intelKey, techniques: entry.currentTechniques.length });
 
-  return formatThreatContext(topic, entry);
+  return formatThreatContext(topic, entry, undefined, intelKey);
 }
 
 /**
@@ -256,7 +476,77 @@ export function getThreatContextSync(topic: string, category?: string): string |
   const entry = getStaticIntel(intelKey);
   if (!entry) return undefined;
 
-  return formatThreatContext(topic, entry);
+  return formatThreatContext(topic, entry, undefined, intelKey);
+}
+
+/**
+ * Get filtered threat intelligence based on department, level, and custom focus
+ * Returns role-specific and difficulty-appropriate scenarios
+ * Falls back to unfiltered if filtering is too strict
+ *
+ * @param topic - The training topic
+ * @param department - Department/role (Finance, IT, HR, etc.)
+ * @param level - Difficulty level (Beginner, Intermediate, Advanced)
+ * @param customRequirements - User's custom focus (e.g., "vendor invoice" or "realistic threats")
+ * @returns Formatted threat context with filtered scenarios, or undefined
+ */
+export function getThreatContextSyncFiltered(
+  topic: string,
+  department?: string,
+  level?: string,
+  customRequirements?: string
+): string | undefined {
+  const intelKey = resolveIntelKey(topic);
+  if (!intelKey) {
+    logger.debug('No threat intel match', { topic, department });
+    return undefined;
+  }
+
+  const entry = getStaticIntel(intelKey);
+  if (!entry) {
+    logger.debug('No threat intel data for key', { intelKey });
+    return undefined;
+  }
+
+  // Apply filters in order
+  let filteredScenarios = entry.realisticScenarios || [];
+  const filteredTechniques = entry.currentTechniques;
+
+  // Filter 1: By department/role
+  filteredScenarios = filterScenariosByRole(filteredScenarios, department);
+
+  // Filter 2: By difficulty level (uses difficulty scoring)
+  filteredScenarios = filterScenariosByDifficulty(filteredScenarios, level);
+
+  // Filter 3: By custom focus keywords
+  filteredScenarios = filterScenariosByKeywords(filteredScenarios, customRequirements);
+
+  // If no scenarios matched, fall back to unfiltered (better than nothing)
+  if (filteredScenarios.length === 0) {
+    logger.debug('Filtered scenarios too strict, falling back to unfiltered', {
+      topic,
+      department,
+      level,
+    });
+    filteredScenarios = entry.realisticScenarios || [];
+  }
+
+
+  // Create filtered entry
+  const filteredEntry: ThreatIntelEntry = {
+    currentTechniques: filteredTechniques,
+    realisticScenarios: filteredScenarios,
+  };
+
+  logger.info('Threat intel context resolved (filtered)', {
+    topic,
+    department,
+    level,
+    techniques: filteredEntry.currentTechniques.length,
+    scenarios: filteredEntry.realisticScenarios.length,
+  });
+
+  return formatThreatContext(topic, filteredEntry, level, intelKey);
 }
 
 // ============================================================================
@@ -269,18 +559,71 @@ function pickRandom<T>(arr: T[], count: number): T[] {
   return shuffled.slice(0, count);
 }
 
-function formatThreatContext(topic: string, entry: ThreatIntelEntry): string {
-  // Pick random subset each time → prevents repetitive output across generations
-  const techniques = pickRandom(entry.currentTechniques, 2)
+/**
+ * Get 1 bonus technique from a related category for cross-topic variety
+ * Returns undefined if no related category has techniques
+ */
+function getRelatedTechnique(intelKey: string, existingTechniques: string[]): string | undefined {
+  const related = RELATED_CATEGORIES[intelKey];
+  if (!related) return undefined;
+
+  // Pick a random related category
+  const relatedKey = related[Math.floor(Math.random() * related.length)];
+  const relatedEntry = getStaticIntel(relatedKey);
+  if (!relatedEntry?.currentTechniques?.length) return undefined;
+
+  // Pick 1 technique that's not already in the main set
+  const unique = relatedEntry.currentTechniques.filter(t => !existingTechniques.includes(t));
+  if (unique.length === 0) return undefined;
+
+  return unique[Math.floor(Math.random() * unique.length)];
+}
+
+/**
+ * Format threat context for prompt injection (COMPRESSED)
+ * Picks varied random samples to prevent repetitive output
+ * Minimal formatting for gpt-oss-120b token efficiency
+ *
+ * @param topic - Training topic
+ * @param entry - Threat intelligence entry with techniques and scenarios
+ * @param level - Optional learner level (adapts technique count and tone)
+ * @param intelKey - Optional intel key for cross-category blending
+ */
+function formatThreatContext(topic: string, entry: ThreatIntelEntry, level?: string, intelKey?: string): string {
+  // Adaptive technique count based on level
+  const baseTechniqueCount = TECHNIQUE_COUNT_BY_LEVEL[level || 'Intermediate'] || 3;
+  const techniqueCount = Math.min(entry.currentTechniques.length, baseTechniqueCount);
+  const selectedTechniques = pickRandom(entry.currentTechniques, techniqueCount);
+
+  // Blend: add 1 technique from related category (Intermediate+ only, saves tokens for Beginner)
+  if (intelKey && level !== 'Beginner') {
+    const bonus = getRelatedTechnique(intelKey, selectedTechniques);
+    if (bonus) selectedTechniques.push(bonus);
+  }
+
+  const techniques = selectedTechniques
     .map((t, i) => `${i + 1}. ${t}`)
     .join('\n');
 
-  const scenarios = pickRandom(entry.realisticScenarios || [], 1)
-    .map(s => `- ${s}`)
-    .join('\n');
+  // Pick up to 2-3 scenarios based on level
+  const baseScenarioCount = level === 'Beginner' ? 1 : level === 'Advanced' ? 3 : 2;
+  const scenarioCount = Math.min(entry.realisticScenarios?.length || 0, baseScenarioCount);
+  const scenarios = scenarioCount > 0
+    ? pickRandom(entry.realisticScenarios || [], scenarioCount)
+      .map(s => `${s}`)
+      .join('\n- ')
+    : '';
 
-  return `=== CURRENT THREAT LANDSCAPE (${topic}) ===
-Use these real-world techniques as inspiration for realistic, current content:
-${techniques}${scenarios ? `\n\nScenario inspiration:\n${scenarios}` : ''}
-IMPORTANT: Create ORIGINAL scenarios inspired by these — do NOT copy or repeat them verbatim.`;
+  // Select tone based on level (minimal preamble)
+  const tone = selectTone(level);
+  const toneConfig = TONE_VARIANTS[tone];
+
+  // COMPRESSED FORMAT: minimal headers, essential info only
+  return `THREAT CONTEXT (${topic}):
+${toneConfig.prefix}
+
+TECHNIQUES:
+${techniques}${scenarios ? `\nSCENARIOS:\n- ${scenarios}` : ''}
+
+Create ORIGINAL variations — adapt & localize, don't copy verbatim.`;
 }

@@ -48,9 +48,9 @@ function getQCModel(targetLanguage: string, fallbackModel: LanguageModel): Langu
   const langBase = targetLanguage.split('-')[0].toLowerCase();
   if (ENHANCED_QC_LANGUAGES.has(langBase)) {
     try {
-      return getModel(ModelProvider.OPENAI, Model.OPENAI_GPT_5_1);
+      return getModel(ModelProvider.OPENAI, Model.OPENAI_GPT_5_4_MINI);
     } catch {
-      // If GPT-5.1 not available (missing API key etc.), fall back to provided model
+      // If GPT-5.4-mini not available (missing API key etc.), fall back to provided model
       return fallbackModel;
     }
   }
@@ -200,8 +200,10 @@ CHECK EACH LINE FOR:
 3. Quoted English text inside scenarios (e.g., email subjects, button labels, error messages) — these must ALSO be in ${targetLanguage} because the learner sees them in the training UI
 4. Terminology inconsistency: if the SAME concept (e.g., "encryption", "report") is translated differently across lines, standardize to the most natural ${targetLanguage} term
 5. Obvious grammar errors: non-existent word forms, hallucinated words, or broken grammar that a native speaker would immediately notice — do NOT fix stylistic preferences or rephrase correct text
+6. Translationese patterns: formulaic English structures translated literally instead of rewritten natively. Common patterns: "Know that X", "Remember that Y", "See how Z", "Stop X" — if you see these calqued into ${targetLanguage}, rewrite the IDEA natively as a ${targetLanguage} professional would express it
+7. Cultural adaptation gaps: currency symbols/amounts from wrong locale (e.g., £ or $ when target locale uses different currency), date formats, or number formatting that doesn't match ${targetLanguage} conventions
 
-IMPORTANT: Only correct CLEAR errors. If a line is acceptable ${targetLanguage}, skip it even if you would phrase it differently.
+IMPORTANT: Only correct CLEAR errors (checks 1-5) and obvious translationese/cultural gaps (checks 6-7). If a line is acceptable ${targetLanguage}, skip it even if you would phrase it differently.
 
 FOR EACH LINE:
 - If the text is correct ${targetLanguage} (including accepted loanwords) → skip it

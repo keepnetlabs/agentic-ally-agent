@@ -1,7 +1,7 @@
 import { PromptAnalysis } from '../../types/prompt-analysis';
 import { MicrolearningContent } from '../../types/microlearning';
 import { getLanguagePrompt } from '../language/localization-language-rules';
-import { getThreatContextSync } from '../../services/threat-intelligence-service';
+import { getThreatContextSync, getThreatContextSyncFiltered } from '../../services/threat-intelligence-service';
 
 /**
  * Learner proficiency levels for vocabulary adaptation
@@ -236,7 +236,15 @@ export function buildContextData(analysis: PromptAnalysis, microlearning: Microl
   const practicalApps = analysis.practicalApplications?.join(', ') || '';
   const assessmentAreas = analysis.assessmentAreas?.join(', ') || '';
   const compliance = analysis.regulationCompliance?.join(', ') || 'General';
-  const threatContext = getThreatContextSync(analysis.topic, analysis.category);
+
+  // Get filtered threat context based on department, level, and custom focus
+  // This ensures threat intel enhances user request (department, level) rather than overriding it
+  const threatContext = getThreatContextSyncFiltered(
+    analysis.topic,
+    analysis.department,
+    analysis.level,
+    analysis.customRequirements
+  ) || getThreatContextSync(analysis.topic, analysis.category);
 
   return `
 Generate ${analysis.language} training content for "${analysis.topic}" in STRICT JSON only.
@@ -262,7 +270,11 @@ ${analysis.mustKeepDetails?.length ? `=== MUST-KEEP DETAILS (from user — non-n
 ${analysis.mustKeepDetails.map((d, i) => `${i + 1}. ${d}`).join('\n')}
 Each scene MUST incorporate these details where relevant. Do NOT drop or ignore them.
 
-` : ''}${threatContext ? `${threatContext}\n\n` : ''}=== CONTENT RULES ===
+` : ''}${threatContext ? `${threatContext}
+
+IMPORTANT: Create ORIGINAL scenarios inspired by these — do NOT copy or repeat them verbatim.
+
+` : ''}=== CONTENT RULES ===
 1. **Topic Consistency**
    • Keep all content focused strictly on ${analysis.topic}
    • Use consistent terminology and examples tied to ${analysis.topic}
