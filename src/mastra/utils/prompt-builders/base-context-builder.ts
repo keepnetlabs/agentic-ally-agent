@@ -140,7 +140,8 @@ OUTPUT: ${language} ONLY. No other languages. No meta commentary.
 
 RULE 1: Language Purity
 • Every JSON field written entirely in ${language} (100% native fluency)
-• ZERO words from other languages (except global acronyms: MFA, SPF, DMARC, DKIM)
+• ZERO words from other languages (except email protocol acronyms: SPF, DMARC, DKIM)
+• IMPORTANT: Localize security concepts like MFA, 2FA, SSO into the target language — these are user-facing terms, not protocol names
 • No mixed-language fragments or translation residue
 
 RULE 2: Native Expression (Create, Don't Translate)

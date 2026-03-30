@@ -32,6 +32,7 @@ export const SceneSchema = z.object({
 
 export const MicrolearningMetadataSchema = z.object({
   title: z.string().min(1),
+  description: z.string().min(1),
   category: z.string().min(1),
   subcategory: z.string().min(1),
   industry_relevance: z.array(z.string()),

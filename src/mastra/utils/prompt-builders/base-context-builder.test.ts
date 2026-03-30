@@ -65,12 +65,12 @@ describe('base-context-builder', () => {
       expect(result).toContain('Start directly with {');
     });
 
-    it('should include global acronyms exception (MFA, SPF, DMARC, DKIM)', () => {
+    it('should include email protocol acronyms exception (SPF, DMARC, DKIM) and MFA translation rule', () => {
       const result = buildSystemPrompt('de');
-      expect(result).toContain('MFA');
       expect(result).toContain('SPF');
       expect(result).toContain('DMARC');
       expect(result).toContain('DKIM');
+      expect(result).toContain('Localize security concepts like MFA');
     });
 
     it('should include scene_type values', () => {

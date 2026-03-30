@@ -18,6 +18,7 @@ import { maskSensitiveField } from '../../utils/core/security-utils';
 import { normalizeError, createToolErrorResponse, logErrorInfo } from '../../utils/core/error-utils';
 import { KVService } from '../../services/kv-service';
 import { ERROR_MESSAGES, API_ENDPOINTS, getWorkerUrls, TIMEOUT_VALUES } from '../../constants';
+import { normalizeDepartmentName } from '../../utils/language/language-utils';
 import { errorService } from '../../services/error-service';
 import { validateToolResult } from '../../utils/tool-result-validation';
 import { waitForKVConsistency, buildExpectedKVKeys } from '../../utils/kv-consistency';
@@ -152,10 +153,12 @@ export const uploadTrainingTool = createTool({
       const availableLangs = meta.language_availability || [];
       const language = Array.isArray(availableLangs) && availableLangs.length > 0 ? availableLangs[0] : 'en-gb';
 
-      // Extract department for inbox URL (from department_relevance array, default to 'all')
-      const departmentArray = meta.department_relevance || [];
-      const department = Array.isArray(departmentArray) && departmentArray.length > 0 ? departmentArray[0] : 'all';
-      const inboxUrl = `inbox/${department.toLowerCase()}`;
+      // Extract department for inbox URL
+      // CRITICAL: Read _kvDepartment from base data (set by kv-service during save)
+      // This guarantees the inbox URL matches the actual KV key, regardless of LLM language
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- _kvDepartment is injected by kv-service at save time
+      const kvDepartment = (microlearningData as any)._kvDepartment as string | undefined;
+      const inboxUrl = `inbox/${kvDepartment || normalizeDepartmentName('all')}`;
 
       const level = meta.level || 'Intermediate';
 

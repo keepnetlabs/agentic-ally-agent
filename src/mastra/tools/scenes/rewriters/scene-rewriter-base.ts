@@ -197,6 +197,12 @@ EXAMPLES OF WHAT TO AVOID:
 
 EVERY word in your output MUST be in ${targetLanguage}. If you find ANY word or phrase still in ${sourceLanguage} (or any other non-target language — including closely related languages), you MUST rewrite it in ${targetLanguage} before returning. This includes titles, descriptions, button labels, alert messages, and ALL user-facing text. A single non-${targetLanguage} word in the output is a critical failure.
 
+EXCEPTIONS (the ONLY English allowed):
+- Email protocol names: SPF, DMARC, DKIM (technical standards, never localized)
+- Theory names in scientific_basis field: "Cognitive Load Theory", "Active Recall" (keep English, localize the explanation)
+- Accepted loanwords listed in language-specific rules below (e.g., VPN, Wi-Fi)
+- If language-specific rules below say to LOCALIZE a term (e.g., MFA, URL, SSO) — that rule overrides this list
+
 === PROTECTED FIELDS (DO NOT TRANSLATE — keep original values exactly) ===
 
 These fields contain technical metadata, NOT user-facing content. Copy them as-is:

@@ -71,6 +71,7 @@ const USER_FACING_KEYS = new Set([
   'actionsTitle', 'transcriptTitle',
   'ctaLocked', 'ctaUnlocked',
   'submitButton', 'reportButton', 'cancelButton',
+  'duration', 'level',
 ]);
 
 /** Keys to always skip (metadata, technical) */
@@ -79,7 +80,7 @@ const SKIP_KEYS = new Set([
   'id', 'type', 'isCorrect', 'correctAnswer', 'points', 'duration_seconds',
   'totalCount', 'maxAttempts', 'src', 'poster', 'url',
   'hasAchievementNotification', 'disableForwardSeek', 'showTranscript',
-  'transcript', 'transcriptLanguage', 'transcriptTitle',
+  'transcript', 'transcriptLanguage',
   'app', 'app_texts', 'ariaTexts',
 ]);
 
@@ -256,14 +257,14 @@ Output (JSON only):`;
       setByPath(patched, entry.path, correctedValue);
       appliedCount++;
 
-      logger.info('QC correction applied', {
+      logger.debug('QC correction applied', {
         path: entry.path,
         original: entry.value.substring(0, 80),
         corrected: correctedValue.substring(0, 80),
       });
     }
 
-    logger.info('Post-rewrite QC corrections applied', {
+    logger.info('Post-rewrite QC completed', {
       targetLanguage,
       totalChecked: entries.length,
       corrected: appliedCount,

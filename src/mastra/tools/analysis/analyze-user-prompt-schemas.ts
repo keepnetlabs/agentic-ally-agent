@@ -53,6 +53,7 @@ export const AnalyzeUserPromptOutputSchema = z.object({
     language: z.string(),
     topic: z.string(),
     title: z.string(),
+    description: nullToUndefined(z.string().nullable()).optional(),
     department: z.string(),
     level: z.string(),
     category: z.string(),

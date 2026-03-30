@@ -260,12 +260,14 @@ export const inboxTranslateJsonTool = createTool({
           chunk.forEach((item, i) => (numberedInput[String(i)] = item.value));
 
           const user = `Localize these ${sourceLanguage} values to ${targetLanguage} ONLY. Follow all system rules above.
-                        Do NOT modify HTML tokens (__HTML#__) or placeholders.
+Do NOT modify HTML tokens (__HTML#__) or placeholders.
 
-                        INPUT:
-                        ${JSON.stringify(numberedInput, null, 2)}
+CRITICAL: Output MUST contain EXACTLY ${chunk.length} keys ("0" through "${chunk.length - 1}"). Every key from input MUST appear in output. Missing keys = critical failure.
 
-                        OUTPUT (${targetLanguage} ONLY, valid JSON object with keys "0".."${chunk.length - 1}"):`;
+INPUT:
+${JSON.stringify(numberedInput, null, 2)}
+
+OUTPUT (${targetLanguage} ONLY, valid JSON object with keys "0".."${chunk.length - 1}"):`;
 
           const res = await withRetry(
             () =>

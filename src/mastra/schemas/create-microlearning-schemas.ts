@@ -36,6 +36,7 @@ export const promptAnalysisSchema = z.object({
   data: z.object({
     topic: z.string(),
     title: z.string(),
+    description: nullToUndefined(z.string().nullable()).optional(),
     language: z.string(),
     department: z.string(),
     level: z.string(),

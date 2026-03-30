@@ -3,6 +3,7 @@ import { withRetry } from '../utils/core/resilience-utils';
 import { normalizeError, logErrorInfo } from '../utils/core/error-utils';
 import { errorService } from './error-service';
 import { ERROR_CODES } from '../constants';
+import { normalizeDepartmentName } from '../utils/language/language-utils';
 import { detectAndRepairInbox } from '../utils/validation/json-validation-utils';
 import { buildExplainability } from '../types/explainability';
 import type {
@@ -287,6 +288,8 @@ export class KVService {
         this.put(baseKey, {
           ...data.microlearning,
           microlearning_id: microlearningId,
+          // Normalized department for KV key consistency (upload-training-tool reads this)
+          _kvDepartment: normalizeDepartmentName(department),
           // EU AI Act Art. 13 — Explainability: decision rationale for operator review
           explainability: buildExplainability({
             reasoning: analysis?.reasoning,
