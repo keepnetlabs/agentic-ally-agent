@@ -271,8 +271,16 @@ export const BATCH_KV_KEYS = {
   meta: (batchId: string) => `batch:${batchId}:meta`,
 } as const;
 
+/** KV key templates for single autonomous workflow status (stored in BATCH_WORKFLOW_KV namespace). */
+export const WORKFLOW_KV_KEYS = {
+  status: (workflowId: string) => `wf:${workflowId}:status`,
+} as const;
+
 /** TTL for batch metadata entries (7 days). */
 export const BATCH_META_TTL_SECONDS = 7 * 24 * 3600;
+
+/** TTL for single workflow status entries (24 hours). */
+export const WORKFLOW_STATUS_TTL_SECONDS = 24 * 3600;
 
 // ============================================
 // TIME UNIT CONSTANTS

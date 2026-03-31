@@ -27,6 +27,7 @@ import { MicrolearningContent } from '../../types/microlearning';
 import { extractCompanyIdFromTokenExport } from '../../utils/core/policy-fetcher';
 import { formatToolSummary } from '../../utils/core/tool-summary-formatter';
 import { getExplainabilityReasoning } from '../../types/explainability';
+import { normalizeReasoningToEnglish } from '../../utils/core/reasoning-normalizer';
 import { summarizeForLog } from '../../utils/core/log-redaction-utils';
 import { trySaveCampaignMetadataFromInput } from '../../services/campaign-metadata-service';
 import { buildMetadataFromMicrolearningBase } from '../../utils/campaign-metadata-helpers';
@@ -214,9 +215,15 @@ export const uploadTrainingTool = createTool({
         );
 
         // Store explainability reasoning in event bus for assign tool to read
+        // Normalize to English for manager/auditor consumption (EU AI Act Art. 13)
         const reasoning = getExplainabilityReasoning(microlearningData);
         if (reasoning) {
-          toolEventBus.set('explainabilityReasoning', reasoning);
+          try {
+            const normalizedReasoning = await normalizeReasoningToEnglish(reasoning);
+            toolEventBus.set('explainabilityReasoning', normalizedReasoning);
+          } catch {
+            toolEventBus.set('explainabilityReasoning', reasoning);
+          }
         }
       }
 
@@ -238,12 +245,19 @@ export const uploadTrainingTool = createTool({
         }
       }
 
+      // Build training URL for SCORM/integration use
+      const langParam = encodeURIComponent(`lang/${language}`);
+      const inboxParam = encodeURIComponent(inboxUrl);
+      const trainingUrl = `${API_ENDPOINTS.FRONTEND_MICROLEARNING_URL}/?courseId=${microlearningId}&langUrl=${langParam}&inboxUrl=${inboxParam}`;
+
       const toolResult = {
         success: true,
         data: {
           resourceId: result.resourceId,
           sendTrainingLanguageId: result.languageId,
           microlearningId: microlearningId,
+          contentId: microlearningId,
+          trainingUrl,
           title: title,
           explanationReasoningText: getExplainabilityReasoning(microlearningData),
         },

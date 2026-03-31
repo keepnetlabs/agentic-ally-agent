@@ -26,6 +26,7 @@ import { waitForKVConsistency } from '../../utils/kv-consistency';
 import { summarizeForLog } from '../../utils/core/log-redaction-utils';
 import { trySaveCampaignMetadataAfterUpload } from '../../services/campaign-metadata-service';
 import { getExplainabilityReasoning } from '../../types/explainability';
+import { normalizeReasoningToEnglish } from '../../utils/core/reasoning-normalizer';
 
 interface UploadSmishingWorkerResult {
   success?: boolean;
@@ -179,9 +180,15 @@ export const uploadSmishingTool = createTool({
       await trySaveCampaignMetadataAfterUpload(env, smishingData, resourceIdForAssignment, 'smishing');
 
       // Store explainability reasoning in event bus for assign tool to read
+      // Normalize to English for manager/auditor consumption (EU AI Act Art. 13)
       const reasoning = getExplainabilityReasoning(smishingData);
       if (reasoning) {
-        toolEventBus.set('explainabilityReasoning', reasoning);
+        try {
+          const normalizedReasoning = await normalizeReasoningToEnglish(reasoning);
+          toolEventBus.set('explainabilityReasoning', normalizedReasoning);
+        } catch {
+          toolEventBus.set('explainabilityReasoning', reasoning);
+        }
       }
 
       const formattedMessage = formatToolSummary({

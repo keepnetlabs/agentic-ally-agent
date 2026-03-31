@@ -237,8 +237,10 @@ export const inboxTranslateJsonTool = createTool({
 
       // 3) Prompt
       const topicContext = topic
-        ? `You are localizing content for a ${topic} security training. Use appropriate terminology for this security topic.`
-        : 'You are localizing general security training content.';
+        ? `You are localizing content for a ${topic} security training. Use appropriate terminology for this security topic.
+CULTURAL ADAPTATION: Replace source-language sender names, organization names, and email domains with culturally appropriate ${targetLanguage} equivalents. Do NOT transliterate — use authentic local names (e.g., "John Smith" → a natural ${targetLanguage} name). Keep email structure realistic for the target culture.`
+        : `You are localizing general security training content.
+CULTURAL ADAPTATION: Replace source-language sender names, organization names, and email domains with culturally appropriate ${targetLanguage} equivalents.`;
 
       const system = buildSystemPrompt({
         topicContext,

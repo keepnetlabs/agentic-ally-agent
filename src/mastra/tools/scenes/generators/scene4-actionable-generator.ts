@@ -69,7 +69,7 @@ IMPORTANT: Adapt all examples below to "${analysis.topic}". Keep the same struct
     "tipConfig": {
       "iconName": "info"
     },
-    "texts": {  
+    "texts": {
       "attachmentsLabel":"Localize 'Attachments' into ${analysis.language}",
       "mobileHint": "Action hint (max 12 words with 💡): 'Open each email. If it looks suspicious, press Report.' Shows learner what to do.",
       "feedbackCorrect": "Success message (max 12 words with ✅): 'Good job — reporting helps protect everyone' or 'Correct — that email was suspicious.' Emphasize team impact.",

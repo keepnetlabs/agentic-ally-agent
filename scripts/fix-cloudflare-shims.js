@@ -55,43 +55,65 @@ function findFunctionEnd(content, startIndex) {
   let braceCount = 0;
   let inString = false;
   let stringChar = null;
+  let templateDepth = 0; // Track nested ${...} inside template literals
   let i = startIndex;
-  
+
   // Find the opening brace
   while (i < content.length && content[i] !== '{') {
     i++;
   }
-  
+
   if (i >= content.length) return -1;
-  
+
   braceCount = 1;
   i++; // Skip the opening brace
-  
+
   while (i < content.length && braceCount > 0) {
     const char = content[i];
     const prevChar = i > 0 ? content[i - 1] : '';
-    
-    // Handle string literals
-    if (!inString && (char === '"' || char === "'" || char === '`')) {
-      inString = true;
-      stringChar = char;
-    } else if (inString && char === stringChar && prevChar !== '\\') {
-      inString = false;
-      stringChar = null;
+
+    // Skip single-line comments (// ... \n)
+    if (!inString && char === '/' && i + 1 < content.length && content[i + 1] === '/') {
+      while (i < content.length && content[i] !== '\n') i++;
+      i++; continue;
     }
-    
-    // Count braces only when not in a string
-    if (!inString) {
-      if (char === '{') {
+    // Skip multi-line comments (/* ... */)
+    if (!inString && char === '/' && i + 1 < content.length && content[i + 1] === '*') {
+      i += 2;
+      while (i < content.length - 1 && !(content[i] === '*' && content[i + 1] === '/')) i++;
+      i += 2; continue;
+    }
+
+    if (inString) {
+      if (stringChar === '`') {
+        // Template literal: handle ${...} interpolation
+        if (char === '$' && i + 1 < content.length && content[i + 1] === '{' && prevChar !== '\\') {
+          templateDepth++;
+          i += 2; continue;
+        }
+        if (templateDepth > 0) {
+          if (char === '{') templateDepth++;
+          else if (char === '}') { templateDepth--; if (templateDepth < 0) templateDepth = 0; }
+          i++; continue;
+        }
+        if (char === '`' && prevChar !== '\\') { inString = false; stringChar = null; }
+      } else {
+        if (char === stringChar && prevChar !== '\\') { inString = false; stringChar = null; }
+      }
+    } else {
+      if (char === '"' || char === "'" || char === '`') {
+        inString = true;
+        stringChar = char;
+      } else if (char === '{') {
         braceCount++;
       } else if (char === '}') {
         braceCount--;
       }
     }
-    
+
     i++;
   }
-  
+
   return braceCount === 0 ? i : -1;
 }
 
@@ -297,12 +319,19 @@ function addAutonomousWorkflowToCompiled(content) {
     return { content, fixed: false };
   }
 
+  // Inject constants that AutonomousWorkflow needs but Mastra tree-shakes out
+  let autonomousDeps = '';
+  if (!content.includes('WORKFLOW_STATUS_TTL_SECONDS')) {
+    autonomousDeps += `const WORKFLOW_STATUS_TTL_SECONDS = 24 * 3600;\n`;
+    console.log(`  ✅ Injected WORKFLOW_STATUS_TTL_SECONDS constant`);
+  }
+
   // Insert workflow right after executeAutonomousGeneration function ends
   const beforeInsert = content.substring(0, executeEndIndex);
   const afterInsert = content.substring(executeEndIndex);
-  
+
   // Ensure proper spacing
-  const newContent = beforeInsert + '\n\n' + workflowClass + '\n' + afterInsert;
+  const newContent = beforeInsert + '\n\n' + autonomousDeps + workflowClass + '\n' + afterInsert;
 
   return { content: newContent, fixed: true };
 }

@@ -152,8 +152,14 @@ RULE 2: Native Expression (Create, Don't Translate)
 • RIGHT: Fluent, idiomatic, professional writing that feels native
 
 NON-ENGLISH OUTPUT RULE:
-If output language is NOT English, NEVER translate, mirror, or adapt English structures
-(e.g., "Know that", "Remember that", "See how", "Stop X").
+If output language is NOT English, NEVER translate, mirror, or adapt English structures.
+FORBIDDEN patterns in highlights, titles, and key messages:
+- "Know that X" → state X directly as a fact
+- "Remember that X" → state X directly as a fact
+- "See how X" → express the cause-effect directly
+- "Stop X" → express the action directly
+- "Make sure to X" → express the action directly
+Lead with the ACTION or FACT, not a meta-instruction to the reader.
 Write as a native professional would—following meaning and intent.
 
 RULE 3: Quality & Readability

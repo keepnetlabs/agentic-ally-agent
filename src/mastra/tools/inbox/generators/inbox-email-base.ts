@@ -85,6 +85,7 @@ EXACT FORMAT (return as-is, single object):
   "content": "<div class='text-[#1C1C1E] dark:text-[#F2F2F7]'>Multi-paragraph HTML content in ${languageCode}, natural business tone</div>",
   "headers": ["Return-Path: <...>", "SPF: ...", "DMARC: ..."],
   "difficulty": "EASY|MEDIUM|MEDIUM-HARD|HARD",
+  "difficultyLabel": "The difficulty value localized into ${languageCode}. Examples: if EASY→the word for Easy in ${languageCode}, if MEDIUM→the word for Medium in ${languageCode}. Must correspond to the difficulty field above.",
   "explanation": "Written in ${languageCode}: Point out 2-3 observable red flags or legitimacy indicators. Describe WHAT is suspicious/normal, NOT what user should do. Natural, professional tone.",
   "attachments": [{"id": "string", "name": "filename (in ${languageCode}).ext", "size": "KB", "type": "pdf|doc|xlsx", "content": "<div>HTML content in ${languageCode}</div> (CRITICAL: ALL HTML tags must be properly closed)"}]
 }

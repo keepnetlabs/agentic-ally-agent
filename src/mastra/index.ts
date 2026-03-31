@@ -60,6 +60,7 @@ import { auditVerifyHandler } from './routes/audit-verify-route';
 import { phishingTemplateFixerHandler } from './routes/phishing-template-fixer-route';
 import { batchAutonomousHandler, batchAutonomousStatusHandler } from './routes/batch-autonomous-route';
 import { autonomousHandler } from './routes/autonomous-route';
+import { autonomousStatusHandler } from './routes/autonomous-status-route';
 
 // Barrel imports - clean organization
 import {
@@ -313,6 +314,12 @@ export const mastra = new Mastra({
       registerApiRoute('/autonomous', {
         method: 'POST',
         handler: autonomousHandler,
+      }),
+
+      // ─── Autonomous Status: Poll workflow completion ───
+      registerApiRoute('/autonomous/:workflowId/status', {
+        method: 'GET',
+        handler: autonomousStatusHandler,
       }),
 
       // ─── Batch Autonomous: Fan-out to all users in a group ───

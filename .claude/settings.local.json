@@ -67,7 +67,11 @@
       "Bash(2)",
       "Bash(node -e \":*)",
       "Read(//c/Users/user/Desktop/Agentic Ally/fleet-v2-main/agent/**)",
-      "Read(//tmp/**)"
+      "Read(//tmp/**)",
+      "WebFetch(domain:www.youtube.com)",
+      "Bash(where yt-dlp:*)",
+      "Bash(pip install:*)",
+      "Bash(yt-dlp --write-auto-sub --sub-lang en --skip-download --sub-format srv1 -o \"%\\(id\\)s\" \"https://www.youtube.com/watch?v=CBdDqPAiEm4\")"
     ],
     "deny": [],
     "ask": [],

@@ -65,8 +65,7 @@ Generate the following structure:
     "legitimateExplanationTitle": "Localize 'Why this was legitimate' into ${languageCode}",
     "continueButton": "Localize 'Continue Learning' into ${languageCode}"
   },
-  "mobileHint": "Localize '💡 Open email. If suspicious, press Report.' into ${languageCode}",
-  "feedbackCorrect": "Localize '✅ Good job — reporting helps protect everyone.' into ${languageCode}",
-  "feedbackWrong": "Localize '⚠️ Not quite right — this email looks safe. Try again.' into ${languageCode}"
+  "fromLabel": "Localize 'From:' into ${languageCode}",
+  "timeLabel": "Localize 'Time:' into ${languageCode}"
 }`;
 }

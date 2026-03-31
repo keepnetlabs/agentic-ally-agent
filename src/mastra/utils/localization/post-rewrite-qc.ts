@@ -31,8 +31,8 @@ const ENHANCED_QC_LANGUAGES = new Set([
   'az', 'uz', 'kk', 'mn', 'ky', 'tk', 'tg',
   // Southeast Asian (complex scripts)
   'km', 'lo', 'my',
-  // South Asian (script purity)
-  'ne', 'si',
+  // South Asian (script purity + Dravidian)
+  'ne', 'si', 'ta', 'te', 'ml',
   // RTL + semantic complexity
   'he',
   // Celtic/European small (complex grammar)
@@ -71,7 +71,7 @@ const USER_FACING_KEYS = new Set([
   'actionsTitle', 'transcriptTitle',
   'ctaLocked', 'ctaUnlocked',
   'submitButton', 'reportButton', 'cancelButton',
-  'duration', 'level',
+  'duration', 'level', 'label',
 ]);
 
 /** Keys to always skip (metadata, technical) */
