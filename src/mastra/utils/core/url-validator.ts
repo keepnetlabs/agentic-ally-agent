@@ -30,7 +30,8 @@ export function validateBaseApiUrl(headerUrl?: string): string {
     return API_ENDPOINTS.DEFAULT_BASE_API_URL;
   }
 
-  const trimmedUrl = headerUrl.trim();
+  // Fix broken protocol slashes from URL encoding: `https:/example.com` → `https://example.com`
+  const trimmedUrl = headerUrl.trim().replace(/^(https?:)\/{1}(?!\/)/i, '$1//');
 
   // Validate URL format (must be valid URL, not arbitrary string)
   try {
@@ -72,7 +73,7 @@ export function validateBaseApiUrl(headerUrl?: string): string {
  * Falls back to API_ENDPOINTS.DEFAULT_BASE_API_URL when no URL is provided.
  */
 export function resolveBaseApiUrl(url?: string): string {
-  let resolved = url || API_ENDPOINTS.DEFAULT_BASE_API_URL;
+  let resolved = (url || API_ENDPOINTS.DEFAULT_BASE_API_URL).replace(/^(https?:)\/{1}(?!\/)/i, '$1//');
   if (resolved.includes('dash.keepnetlabs.com')) {
     resolved = resolved.replace('dash.keepnetlabs.com', 'api.keepnetlabs.com');
   }

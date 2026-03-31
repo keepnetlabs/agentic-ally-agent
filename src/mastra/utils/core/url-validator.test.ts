@@ -221,6 +221,34 @@ describe('URL Validator', () => {
     });
   });
 
+  describe('Protocol Slash Normalization', () => {
+    it('should fix single slash after https: to double slash', () => {
+      const result = validateBaseApiUrl('https:/dash.keepnetlabs.com');
+
+      expect(result).toBe('https://dash.keepnetlabs.com');
+    });
+
+    it('should fix single slash after http: to double slash', () => {
+      const result = validateBaseApiUrl('http:/test-api.devkeepnet.com');
+
+      // http is not in allowed list, but normalization should still run
+      expect(result).toBe('https://test-api.devkeepnet.com');
+    });
+
+    it('should not modify URLs with correct double slashes', () => {
+      const result = validateBaseApiUrl('https://dash.keepnetlabs.com');
+
+      expect(result).toBe('https://dash.keepnetlabs.com');
+    });
+
+    it('should fix broken test-ui URL from query encoding', () => {
+      // Simulates: baseApiUrl=https%3A%2Ftest-ui.devkeepnet.com → https:/test-ui.devkeepnet.com
+      const result = validateBaseApiUrl('https:/test-ui.devkeepnet.com');
+
+      expect(result).toBe('https://test-ui.devkeepnet.com');
+    });
+  });
+
   describe('Edge Cases', () => {
     it('should handle very long strings', () => {
       const longString = 'https://dash.keepnetlabs.com' + 'a'.repeat(10000);

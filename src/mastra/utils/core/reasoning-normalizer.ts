@@ -9,10 +9,6 @@ import { getModel, ModelProvider, Model, reasoningHeaders } from '../../model-pr
 export async function normalizeReasoningToEnglish(reasoning: string): Promise<string> {
   if (!reasoning || reasoning.trim().length === 0) return reasoning;
 
-  // Quick heuristic: if mostly ASCII, skip the LLM call
-  const asciiRatio = reasoning.replace(/[^\x00-\x7F]/g, '').length / reasoning.length;
-  if (asciiRatio > 0.9) return reasoning;
-
   try {
     const model = getModel(ModelProvider.OPENAI, Model.OPENAI_GPT_5_4_MINI);
 
