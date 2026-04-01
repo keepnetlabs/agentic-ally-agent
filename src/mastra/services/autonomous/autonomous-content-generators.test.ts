@@ -5,6 +5,17 @@ import * as phishingHandlers from './autonomous-phishing-handlers';
 import * as smishingHandlers from './autonomous-smishing-handlers';
 import * as trainingHandlers from './autonomous-training-handlers';
 import * as groupTopicService from './group-topic-service';
+import { requestStorage } from '../../utils/core/request-storage';
+import { toolEventBus } from '../../utils/core/tool-event-bus';
+
+vi.mock('../../utils/core/logger', () => ({
+  getLogger: () => ({
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+  }),
+}));
 
 vi.mock('./autonomous-phishing-handlers', async (importOriginal) => {
   const actual = await importOriginal<typeof import('./autonomous-phishing-handlers')>();
@@ -395,6 +406,111 @@ describe('AutonomousContentGenerators', () => {
       expect(result.phishingResult?.uploadAssignResult?.success).toBe(true);
     });
 
+    it('should preserve explainability reasoning across action-specific follow-up assign', async () => {
+      let observedReasoning: string | undefined;
+      const phishingSpy = vi.mocked(phishingHandlers.generatePhishingSimulation);
+      const trainingSpy = vi.mocked(trainingHandlers.generateTrainingModule);
+      const assignSpy = vi.mocked(phishingHandlers.assignPhishingWithTraining);
+
+      phishingSpy.mockImplementation(async () => {
+        toolEventBus.set('explainabilityReasoning', 'shared-reasoning');
+        return {
+          success: true,
+          message: 'uploaded',
+          uploadResult: {
+            data: {
+              resourceId: 'ph-resource',
+              languageId: 'en-gb',
+              isQuishing: false,
+            },
+          },
+        } as any;
+      });
+      trainingSpy.mockResolvedValue({
+        success: true,
+        data: {
+          resourceId: 'tr-resource',
+          sendTrainingLanguageId: 'en-gb',
+        },
+      } as any);
+      assignSpy.mockImplementation(async () => {
+        observedReasoning = toolEventBus.get<string>('explainabilityReasoning');
+        return { success: true } as any;
+      });
+
+      await requestStorage.run(
+        { token: 'token', threadId: 'parent-batch-id' },
+        async () => generateContentForUser(
+          {
+            analysisReport: {
+              recommended_next_steps: {
+                simulations: [{ title: 'Test Phishing', scenario_type: 'CLICK_ONLY' }],
+                microlearnings: [{ title: 'Test Training', objective: 'Awareness' }],
+                nudges: [],
+              },
+            },
+            userInfo: { targetUserResourceId: 'user-123', preferredLanguage: 'en-gb' },
+          } as any,
+          'Executive report',
+          ['phishing', 'training'],
+          true,
+          'user-123',
+          'phishing-thread',
+          'training-thread',
+          undefined,
+          {
+            phishing: 'batch-phishing-1',
+            training: 'batch-training-1',
+          }
+        )
+      );
+
+      expect(assignSpy).toHaveBeenCalledTimes(1);
+      expect(observedReasoning).toBe('shared-reasoning');
+    });
+
+    it('should use action-specific batchResourceIds when provided', async () => {
+      const observedThreadIds: Record<string, string | undefined> = {};
+      vi.mocked(phishingHandlers.generatePhishingSimulation).mockImplementation(async () => {
+        observedThreadIds.phishing = requestStorage.getStore()?.threadId;
+        return { success: true, message: 'phishing-ok' } as any;
+      });
+      vi.mocked(trainingHandlers.generateTrainingModule).mockImplementation(async () => {
+        observedThreadIds.training = requestStorage.getStore()?.threadId;
+        return { success: true, message: 'training-ok' } as any;
+      });
+
+      await requestStorage.run(
+        { token: 'token', threadId: 'parent-batch-id' },
+        async () => generateContentForUser(
+          {
+            analysisReport: {
+              recommended_next_steps: {
+                simulations: [{ title: 'Test Phishing', scenario_type: 'CLICK_ONLY' }],
+                microlearnings: [{ title: 'Test Training', objective: 'Awareness' }],
+                nudges: [],
+              },
+            },
+            userInfo: { targetUserResourceId: 'user-123', preferredLanguage: 'en-gb' },
+          } as any,
+          'Executive report',
+          ['phishing', 'training'],
+          false,
+          'user-123',
+          'phishing-thread',
+          'training-thread',
+          undefined,
+          {
+            phishing: 'batch-phishing-1',
+            training: 'batch-training-1',
+          }
+        )
+      );
+
+      expect(observedThreadIds.phishing).toBe('batch-phishing-1');
+      expect(observedThreadIds.training).toBe('batch-training-1');
+    });
+
     it('should generate smishing content for user when actions include smishing', async () => {
       const smishingSpy = vi.mocked(smishingHandlers.generateSmishingSimulation);
       smishingSpy.mockResolvedValue({ success: true, message: 'ok' } as any);
@@ -589,6 +705,34 @@ describe('AutonomousContentGenerators', () => {
 
       expect(phishingSpy.mock.calls[0][4]).toBe('group-777');
       expect(trainingSpy.mock.calls[0][4]).toBe('group-777');
+    });
+
+    it('should use action-specific batchResourceIds for group generation when provided', async () => {
+      const observedThreadIds: Record<string, string | undefined> = {};
+      vi.mocked(phishingHandlers.generatePhishingSimulationForGroup).mockImplementation(async () => {
+        observedThreadIds.phishing = requestStorage.getStore()?.threadId;
+        return { success: true } as any;
+      });
+      vi.mocked(trainingHandlers.generateTrainingModuleForGroup).mockImplementation(async () => {
+        observedThreadIds.training = requestStorage.getStore()?.threadId;
+        return { success: true } as any;
+      });
+
+      await requestStorage.run(
+        { token: 'token', threadId: 'parent-batch-id' },
+        async () => generateContentForGroup(
+          ['phishing', 'training'],
+          'en-gb',
+          'group-123',
+          {
+            phishing: 'batch-phishing-1',
+            training: 'batch-training-1',
+          }
+        )
+      );
+
+      expect(observedThreadIds.phishing).toBe('batch-phishing-1');
+      expect(observedThreadIds.training).toBe('batch-training-1');
     });
 
     it('should generate smishing content for group when actions include smishing', async () => {

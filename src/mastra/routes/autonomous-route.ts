@@ -17,6 +17,7 @@ import {
   AUTONOMOUS_ACTIONS,
   isValidAutonomousAction,
 } from '../types';
+import { getRequestContext } from '../utils/core/request-storage';
 import type { AutonomousRequestBody, CloudflareEnv } from '../types';
 
 const logger = getLogger('AutonomousRoute');
@@ -26,6 +27,8 @@ export async function autonomousHandler(c: Context) {
     const body = await c.req.json<AutonomousRequestBody>();
     const {
       token,
+      companyId,
+      actionBatchResourceIds,
       firstName,
       lastName,
       targetUserResourceId,
@@ -40,6 +43,7 @@ export async function autonomousHandler(c: Context) {
       rejectedScenarioResourceId,
     } = body;
     const env = c.env as CloudflareEnv | undefined;
+    const effectiveCompanyId = companyId || getRequestContext().companyId;
 
     // Validation
     if (!token) {
@@ -99,6 +103,8 @@ export async function autonomousHandler(c: Context) {
         const instance = await workflow.create({
           params: {
             token,
+            companyId: effectiveCompanyId,
+            actionBatchResourceIds,
             firstName,
             lastName,
             targetUserResourceId,
@@ -139,6 +145,8 @@ export async function autonomousHandler(c: Context) {
 
     const requestPayload = {
       token,
+      companyId: effectiveCompanyId,
+      actionBatchResourceIds,
       firstName,
       lastName,
       targetUserResourceId,

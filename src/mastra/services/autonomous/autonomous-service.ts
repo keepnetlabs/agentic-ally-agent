@@ -5,6 +5,7 @@ import { getLogger } from '../../utils/core/logger';
 import { normalizeError, logErrorInfo } from '../../utils/core/error-utils';
 import { errorService } from '../error-service';
 import { resolveBaseApiUrl } from '../../utils/core/url-validator';
+import { extractCompanyIdFromTokenExport } from '../../utils/core/policy-fetcher';
 // generateBatchId removed — each assign tool generates its own batchResourceId when threadId is undefined
 import {
   AutonomousRequest,
@@ -23,6 +24,8 @@ export async function executeAutonomousGeneration(request: AutonomousRequest): P
   const generationStartMs = Date.now();
   const {
     token,
+    companyId: requestCompanyId,
+    actionBatchResourceIds,
     firstName,
     lastName,
     targetUserResourceId,
@@ -48,12 +51,12 @@ export async function executeAutonomousGeneration(request: AutonomousRequest): P
   }
 
   try {
-    // If batchResourceId provided (from API), use it as threadId so all actions share the same batch.
-    // If NOT provided, leave threadId undefined — each assign tool will generate its own unique batchResourceId,
-    // ensuring each action (phishing, training, smishing) gets a separate batch.
-    const threadId = batchResourceId || undefined;
+    // Standard flow: if batchResourceId is provided, all actions share the same batch.
+    // Batch fan-out flow can override this with actionBatchResourceIds so each action keeps its own batchResourceId.
+    const hasActionBatchResourceIds = Boolean(actionBatchResourceIds && Object.keys(actionBatchResourceIds).length > 0);
+    const threadId = hasActionBatchResourceIds ? undefined : (batchResourceId || undefined);
     const existingCtx = getRequestContext();
-    const companyId = existingCtx?.companyId;
+    const companyId = requestCompanyId || existingCtx?.companyId || extractCompanyIdFromTokenExport(token);
     // Merge env: prefer request.env (from Workflow binding), fallback to existing context env
     const resolvedEnv = (request.env as Record<string, unknown>) || existingCtx?.env;
     return await requestStorage.run(
@@ -116,7 +119,8 @@ export async function executeAutonomousGeneration(request: AutonomousRequest): P
               userId,
               phishingThreadId,
               trainingThreadId,
-              refinementContext
+              refinementContext,
+              actionBatchResourceIds
             );
 
           const generationDurationMs = Date.now() - generationStartMs;
@@ -163,7 +167,8 @@ export async function executeAutonomousGeneration(request: AutonomousRequest): P
           const { phishingResult, trainingResult, smishingResult } = await generateContentForGroup(
             groupActions,
             preferredLanguage,
-            targetGroupResourceId
+            targetGroupResourceId,
+            actionBatchResourceIds
           );
 
           const generationDurationMs = Date.now() - generationStartMs;

@@ -27,7 +27,8 @@ export async function fetchGroupMembers(
   token: string,
   groupResourceId: string,
   baseApiUrl: string,
-  pageSize = 1000
+  pageSize = 1000,
+  companyId?: string,
 ): Promise<GroupMember[]> {
   const logger = getLogger('FetchGroupMembers');
   const allMembers: GroupMember[] = [];
@@ -60,6 +61,7 @@ export async function fetchGroupMembers(
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
+        ...(companyId ? { 'x-ir-company-id': companyId } : {}),
       },
       body: JSON.stringify(payload),
     });
@@ -143,6 +145,7 @@ export async function fetchGroupMembersPage(
   baseApiUrl: string,
   pageNumber: number,
   pageSize = 1000,
+  companyId?: string,
 ): Promise<{ users: GroupMember[]; totalPages: number; totalRecords: number }> {
   const logger = getLogger('FetchGroupMembersPage');
 
@@ -167,6 +170,7 @@ export async function fetchGroupMembersPage(
     headers: {
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
+      ...(companyId ? { 'x-ir-company-id': companyId } : {}),
     },
     body: JSON.stringify(payload),
   });

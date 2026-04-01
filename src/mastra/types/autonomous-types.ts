@@ -28,6 +28,8 @@ export function getGroupEligibleActions(actions: AutonomousAction[]): ContentGen
 
 export interface AutonomousRequest {
   token: string;
+  companyId?: string; // Optional explicit company override from API caller
+  actionBatchResourceIds?: Partial<Record<AutonomousAction, string>>; // Optional per-action batch IDs for batch fan-out flows
   baseApiUrl?: string; // Optional: API base URL (e.g., https://test-api.devkeepnet.com)
   // User assignment (individual user)
   firstName?: string;

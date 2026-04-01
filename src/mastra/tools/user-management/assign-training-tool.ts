@@ -264,10 +264,12 @@ export const assignTrainingTool = createTool({
       }
 
       // ─── User Assignment: single API call ───
-      // Training always gets a unique batchResourceId per user (unlike phishing/smishing which share batch)
+      // Use platform-provided batchResourceId (from requestContext.threadId) if available,
+      // so batch-autonomous and reject → regenerate flows stay in the same batch.
+      const { threadId: contextBatchId } = getRequestContext();
       const payload: AgenticActivitiesPayload = {
         ...commonPayloadFields,
-        batchResourceId: generateBatchId(),
+        batchResourceId: contextBatchId || generateBatchId(),
         targetUserResourceId,
       };
 

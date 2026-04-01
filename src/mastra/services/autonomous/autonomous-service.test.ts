@@ -155,7 +155,7 @@ describe('executeAutonomousGeneration', () => {
     });
 
     expect(mockGenerateContentForGroup).toHaveBeenCalledTimes(1);
-    expect(mockGenerateContentForGroup).toHaveBeenCalledWith(['training', 'smishing'], undefined, 'group-123');
+    expect(mockGenerateContentForGroup).toHaveBeenCalledWith(['training', 'smishing'], undefined, 'group-123', undefined);
     expect(result.success).toBe(true);
     expect(result.smishingResult?.success).toBe(true);
   });
@@ -227,5 +227,51 @@ describe('executeAutonomousGeneration', () => {
     });
 
     expect(capturedContext.baseApiUrl).toBe('https://test-api.devkeepnet.com/api');
+  });
+
+  it('prefers companyId from request payload when seeding workflow context', async () => {
+    const { requestStorage } = await import('../../utils/core/request-storage');
+    let capturedContext: { companyId?: string; threadId?: string } = {};
+    vi.spyOn(requestStorage, 'run').mockImplementation((async (ctx: any, fn: () => Promise<any>) => {
+      capturedContext = ctx;
+      return fn();
+    }) as any);
+
+    requestStorage.enterWith({
+      token: mockToken,
+      companyId: 'context-company',
+    });
+
+    await executeAutonomousGeneration({
+      token: mockToken,
+      companyId: 'payload-company',
+      firstName: 'John',
+      lastName: 'Doe',
+      actions: ['phishing'],
+    });
+
+    expect(capturedContext.companyId).toBe('payload-company');
+  });
+
+  it('does not seed a shared threadId when actionBatchResourceIds are provided', async () => {
+    const { requestStorage } = await import('../../utils/core/request-storage');
+    let capturedContext: { threadId?: string } = {};
+    vi.spyOn(requestStorage, 'run').mockImplementation((async (ctx: any, fn: () => Promise<any>) => {
+      capturedContext = ctx;
+      return fn();
+    }) as any);
+
+    await executeAutonomousGeneration({
+      token: mockToken,
+      targetGroupResourceId: 'group-123',
+      batchResourceId: 'parent-batch-id',
+      actionBatchResourceIds: {
+        phishing: 'phishing-batch-id',
+        training: 'training-batch-id',
+      },
+      actions: ['phishing', 'training'],
+    });
+
+    expect(capturedContext.threadId).toBeUndefined();
   });
 });

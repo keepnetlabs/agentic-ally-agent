@@ -92,6 +92,8 @@ export interface CodeReviewRequestBody {
  */
 export interface AutonomousRequestBody {
   token: string;
+  companyId?: string; // Optional explicit company override from API caller
+  actionBatchResourceIds?: Partial<Record<AutonomousAction, string>>; // Optional per-action batch IDs (primarily for batch fan-out)
   baseApiUrl?: string; // Optional: API base URL (e.g., https://test-api.devkeepnet.com)
   // User assignment (individual user)
   firstName?: string;
@@ -115,6 +117,7 @@ export interface AutonomousRequestBody {
  */
 export interface BatchAutonomousRequestBody {
   token: string;
+  companyId?: string; // Optional explicit company override from API caller
   baseApiUrl?: string;
   targetGroupResourceId: string;
   actions: AutonomousAction[];

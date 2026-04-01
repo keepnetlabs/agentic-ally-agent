@@ -19,6 +19,7 @@ import { KVService } from '../services';
 import { BATCH_KV_KEYS, BATCH_META_TTL_SECONDS, KV_NAMESPACES } from '../constants';
 import { resolveBaseApiUrl } from '../utils/core/url-validator';
 import { generateBatchId } from '../utils/core/short-id';
+import { getRequestContext } from '../utils/core/request-storage';
 import {
   AUTONOMOUS_ACTIONS,
   isValidAutonomousAction,
@@ -33,6 +34,7 @@ export async function batchAutonomousHandler(c: Context) {
     const body = await c.req.json<BatchAutonomousRequestBody>();
     const {
       token,
+      companyId,
       targetGroupResourceId,
       actions,
       sendAfterPhishingSimulation,
@@ -40,6 +42,7 @@ export async function batchAutonomousHandler(c: Context) {
       baseApiUrl,
     } = body;
     const env = c.env as CloudflareEnv | undefined;
+    const effectiveCompanyId = companyId || getRequestContext().companyId;
 
     // ── Validation ──
     if (!token) {
@@ -71,6 +74,9 @@ export async function batchAutonomousHandler(c: Context) {
 
     const effectiveBaseApiUrl = resolveBaseApiUrl(baseApiUrl);
     const batchResourceId = generateBatchId();
+    const actionBatchResourceIds = Object.fromEntries(
+      eligibleActions.map(action => [action, generateBatchId()])
+    ) as Partial<Record<(typeof eligibleActions)[number], string>>;
 
     // ── Dispatch to BatchOrchestratorWorkflow ──
     const orchestrator = env?.BATCH_ORCHESTRATOR_WORKFLOW;
@@ -83,6 +89,8 @@ export async function batchAutonomousHandler(c: Context) {
         id: `orchestrator-${batchResourceId}`,
         params: {
           token,
+          companyId: effectiveCompanyId,
+          actionBatchResourceIds,
           targetGroupResourceId,
           eligibleActions,
           batchResourceId,

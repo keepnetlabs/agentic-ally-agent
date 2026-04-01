@@ -25,6 +25,8 @@ export class AutonomousWorkflow extends WorkflowEntrypoint {
 
     const {
       token,
+      companyId,
+      actionBatchResourceIds,
       firstName,
       lastName,
       actions,
@@ -75,6 +77,8 @@ export class AutonomousWorkflow extends WorkflowEntrypoint {
         async () => {
           return await executeAutonomousGeneration({
             token,
+            companyId,
+            actionBatchResourceIds,
             baseApiUrl,
             firstName,
             lastName,

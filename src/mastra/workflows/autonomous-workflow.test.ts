@@ -12,6 +12,15 @@ vi.mock('../index', () => ({
   mastra: () => ({}),
 }));
 
+vi.mock('../utils/core/logger', () => ({
+  getLogger: () => ({
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+  }),
+}));
+
 // Avoid importing real autonomous services (which pull in agents/model providers).
 const hoisted = vi.hoisted(() => ({
   executeAutonomousGeneration: vi.fn(async () => ({ success: true, actions: [] })),
@@ -82,6 +91,7 @@ describe('AutonomousWorkflow', () => {
       // This tests the expected structure based on code analysis
       const payloadShape: Partial<AutonomousRequestBody> = {
         token: 'test-token',
+        companyId: 'company-123',
         firstName: 'John',
         lastName: 'Doe',
         actions: [],
@@ -90,6 +100,16 @@ describe('AutonomousWorkflow', () => {
       };
 
       expect(payloadShape).toHaveProperty('token');
+    });
+
+    it('payload should support optional companyId field', () => {
+      const payloadShape: Partial<AutonomousRequestBody> = {
+        token: 'test-token',
+        companyId: 'company-123',
+        actions: [],
+      };
+
+      expect(payloadShape).toHaveProperty('companyId');
     });
 
     it('payload should have firstName field', () => {

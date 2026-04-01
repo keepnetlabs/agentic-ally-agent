@@ -1,5 +1,31 @@
 // Test setup and utilities
 import { beforeEach, afterEach, vi } from 'vitest';
+import { webcrypto } from 'node:crypto';
+
+const fallbackTracingChannel = () => ({
+  subscribe: vi.fn(),
+  unsubscribe: vi.fn(),
+  traceSync: <T>(_context: unknown, fn: () => T) => fn(),
+  tracePromise: <T>(_context: unknown, fn: () => Promise<T>) => fn(),
+  traceCallback: vi.fn(),
+  hasSubscribers: false,
+});
+
+vi.mock('diagnostics_channel', async () => {
+  const actual = await vi.importActual<Record<string, unknown>>('diagnostics_channel');
+  return {
+    ...actual,
+    tracingChannel: typeof actual.tracingChannel === 'function' ? actual.tracingChannel : fallbackTracingChannel,
+  };
+});
+
+vi.mock('node:diagnostics_channel', async () => {
+  const actual = await vi.importActual<Record<string, unknown>>('node:diagnostics_channel');
+  return {
+    ...actual,
+    tracingChannel: typeof actual.tracingChannel === 'function' ? actual.tracingChannel : fallbackTracingChannel,
+  };
+});
 
 // Set environment variables BEFORE module imports (module load time)
 process.env.CLOUDFLARE_ACCOUNT_ID = 'test-account-id';
@@ -9,6 +35,10 @@ process.env.CLOUDFLARE_D1_DATABASE_ID = 'test-d1-db-id';
 process.env.OPENAI_API_KEY = 'test-openai-key';
 process.env.CLOUDFLARE_AI_GATEWAY_ID = 'test-gateway-id';
 process.env.CLOUDFLARE_GATEWAY_AUTHENTICATION_KEY = 'test-gateway-auth';
+
+if (!globalThis.crypto) {
+  globalThis.crypto = webcrypto as Crypto;
+}
 
 // Reset environment variables before each test (for tests that modify them)
 beforeEach(() => {

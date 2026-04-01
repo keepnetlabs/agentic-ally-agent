@@ -32,6 +32,7 @@ vi.mock('../services', () => ({
 
 const validPayload = {
   token: 'test-token',
+  companyId: 'company-123',
   targetGroupResourceId: 'group-456',
   actions: ['phishing', 'training'],
 };
@@ -133,6 +134,20 @@ describe('batchAutonomousHandler', () => {
     mockContext.req.json.mockResolvedValue(validPayload);
 
     await batchAutonomousHandler(mockContext as unknown as Context);
+
+    expect(mockCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        params: expect.objectContaining({
+          companyId: 'company-123',
+          actionBatchResourceIds: expect.objectContaining({
+            phishing: expect.any(String),
+            training: expect.any(String),
+          }),
+        }),
+      })
+    );
+    const createPayload = mockCreate.mock.calls[0]?.[0]?.params;
+    expect(createPayload.actionBatchResourceIds.phishing).not.toBe(createPayload.actionBatchResourceIds.training);
 
     expect(mockContext.json).toHaveBeenCalledWith(
       expect.objectContaining({

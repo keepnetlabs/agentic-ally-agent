@@ -24,6 +24,7 @@ import { generateTrainingModule, generateTrainingModuleForGroup } from './autono
 import { initiateAutonomousVishingCall } from './autonomous-vishing-handlers';
 import { selectGroupTrainingTopic } from './group-topic-service';
 import type { RefinementContext } from '../rejection-refinement-service';
+import { requestStorage } from '../../utils/core/request-storage';
 
 interface ContentGenerationReport {
   header?: {
@@ -96,6 +97,34 @@ interface GenerationResults {
   trainingResult?: AutonomousActionResult;
   smishingResult?: AutonomousActionResult;
   vishingCallResult?: AutonomousActionResult;
+}
+
+type ActionBatchResourceIds = Partial<Record<AutonomousAction, string>>;
+
+async function runWithActionBatchContext<T>(
+  action: AutonomousAction,
+  actionBatchResourceIds: ActionBatchResourceIds | undefined,
+  operation: () => Promise<T>
+): Promise<T> {
+  const actionBatchResourceId = actionBatchResourceIds?.[action];
+  if (!actionBatchResourceId) {
+    return operation();
+  }
+
+  const currentStore = requestStorage.getStore();
+  const sharedToolEventBus = currentStore?.__toolEventBus ?? new Map<string, unknown>();
+  if (currentStore && !currentStore.__toolEventBus) {
+    currentStore.__toolEventBus = sharedToolEventBus;
+  }
+
+  return requestStorage.run(
+    {
+      ...(currentStore ?? {}),
+      threadId: actionBatchResourceId,
+      __toolEventBus: sharedToolEventBus,
+    },
+    operation
+  );
 }
 
 function createMissingRecommendationResult(action: ContentGeneratableAction): AutonomousActionResult {
@@ -264,7 +293,8 @@ ${references || 'None provided'}`;
 export async function generateContentForGroup(
   actions: ContentGeneratableAction[],
   preferredLanguage: string | undefined,
-  targetGroupResourceId: string | undefined
+  targetGroupResourceId: string | undefined,
+  actionBatchResourceIds?: ActionBatchResourceIds
 ): Promise<GenerationResults> {
   const logger = getLogger('GenerateContentForGroup');
   const userId = targetGroupResourceId || Date.now();
@@ -305,12 +335,14 @@ export async function generateContentForGroup(
     });
 
     generationPromises.push(
-      generatePhishingSimulationForGroup(
-        groupPhishingSimulation,
-        phishingPrompt, // custom topic-based prompt from group-topic-service
-        preferredLanguage,
-        phishingThreadId,
-        userId as string | number
+      runWithActionBatchContext('phishing', actionBatchResourceIds, () =>
+        generatePhishingSimulationForGroup(
+          groupPhishingSimulation,
+          phishingPrompt, // custom topic-based prompt from group-topic-service
+          preferredLanguage,
+          phishingThreadId,
+          userId as string | number
+        )
       )
         .then(result => {
           phishingResult = result;
@@ -338,14 +370,16 @@ export async function generateContentForGroup(
     });
 
     generationPromises.push(
-      generateSmishingSimulation({
-        simulation: groupSmishingSimulation,
-        executiveReport: smishingPrompt,
-        toolResult: {
-          userInfo: { preferredLanguage },
-        },
-        targetGroupResourceId: userId as string | number,
-      })
+      runWithActionBatchContext('smishing', actionBatchResourceIds, () =>
+        generateSmishingSimulation({
+          simulation: groupSmishingSimulation,
+          executiveReport: smishingPrompt,
+          toolResult: {
+            userInfo: { preferredLanguage },
+          },
+          targetGroupResourceId: userId as string | number,
+        })
+      )
         .then(result => {
           smishingResult = result;
         })
@@ -374,13 +408,15 @@ export async function generateContentForGroup(
     });
 
     generationPromises.push(
-      generateTrainingModuleForGroup(
-        groupMicrolearning,
-        trainingPrompt, // custom topic-based prompt from group-topic-service
-        preferredLanguage,
-        trainingThreadId,
-        userId as string | number,
-        groupTrainingLevel
+      runWithActionBatchContext('training', actionBatchResourceIds, () =>
+        generateTrainingModuleForGroup(
+          groupMicrolearning,
+          trainingPrompt, // custom topic-based prompt from group-topic-service
+          preferredLanguage,
+          trainingThreadId,
+          userId as string | number,
+          groupTrainingLevel
+        )
       )
         .then(result => {
           trainingResult = result;
@@ -412,7 +448,8 @@ export async function generateContentForUser(
   userId: string | number,
   phishingThreadId: string,
   trainingThreadId: string,
-  refinementContext?: RefinementContext
+  refinementContext?: RefinementContext,
+  actionBatchResourceIds?: ActionBatchResourceIds
 ): Promise<GenerationResults> {
   const logger = getLogger('GenerateContentForUser');
   let phishingResult: AutonomousActionResult | undefined;
@@ -434,7 +471,16 @@ export async function generateContentForUser(
     const simulation = recommendedSteps.simulations[0];
     logger.debug('Starting phishing generation', { simulation: simulation.title, uploadOnly });
     generationPromises.push(
-      generatePhishingSimulation(simulation, executiveReport, toolResult, phishingThreadId, uploadOnly, refinementContext?.phishingInstruction)
+      runWithActionBatchContext('phishing', actionBatchResourceIds, () =>
+        generatePhishingSimulation(
+          simulation,
+          executiveReport,
+          toolResult,
+          phishingThreadId,
+          uploadOnly,
+          refinementContext?.phishingInstruction
+        )
+      )
         .then(result => {
           logger.info('Phishing generation result received', {
             success: result?.success,
@@ -457,12 +503,14 @@ export async function generateContentForUser(
     const simulation = recommendedSteps.simulations[0];
     logger.debug('Starting smishing generation', { simulation: simulation.title });
     generationPromises.push(
-      generateSmishingSimulation({
-        simulation,
-        executiveReport,
-        toolResult,
-        rejectionFeedback: refinementContext?.smishingInstruction,
-      })
+      runWithActionBatchContext('smishing', actionBatchResourceIds, () =>
+        generateSmishingSimulation({
+          simulation,
+          executiveReport,
+          toolResult,
+          rejectionFeedback: refinementContext?.smishingInstruction,
+        })
+      )
         .then(result => {
           logger.info('Smishing generation result received', {
             success: result?.success,
@@ -511,16 +559,18 @@ export async function generateContentForUser(
     const microlearning = recommendedSteps.microlearnings[0];
     logger.info('Starting training generation', { microlearning: microlearning.title, uploadOnly });
     generationPromises.push(
-      generateTrainingModule(
-        microlearning,
-        executiveReport,
-        toolResult,
-        trainingThreadId,
-        uploadOnly,
-        false,
-        trainingLevel,
-        refinementContext?.trainingInstruction,
-        levelDecision.reasoning
+      runWithActionBatchContext('training', actionBatchResourceIds, () =>
+        generateTrainingModule(
+          microlearning,
+          executiveReport,
+          toolResult,
+          trainingThreadId,
+          uploadOnly,
+          false,
+          trainingLevel,
+          refinementContext?.trainingInstruction,
+          levelDecision.reasoning
+        )
       )
         .then(result => {
           logger.info('Training generation result received', {
@@ -587,15 +637,17 @@ export async function generateContentForUser(
       const phishingSim = recommendedSteps.simulations?.[0];
       const phishingContentCategory = phishingSim ? buildContentCategory(phishingSim) : '';
 
-      const assignResult = await assignPhishingWithTraining(
-        String(userId),
-        phishingThreadId,
-        trainingId,
-        sendTrainingLanguageId,
-        phishingResourceId,
-        phishingLanguageId,
-        phishingIsQuishing,
-        phishingContentCategory
+      const assignResult = await runWithActionBatchContext('phishing', actionBatchResourceIds, () =>
+        assignPhishingWithTraining(
+          String(userId),
+          phishingThreadId,
+          trainingId,
+          sendTrainingLanguageId,
+          phishingResourceId,
+          phishingLanguageId,
+          phishingIsQuishing,
+          phishingContentCategory
+        )
       );
       if (assignResult?.success) {
         phishingResult.uploadAssignResult = assignResult;

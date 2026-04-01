@@ -16,6 +16,8 @@ const CHUNK_SIZE = 100;
 /** Payload passed to the orchestrator from the route handler. */
 export interface BatchOrchestratorPayload {
   token: string;
+  companyId?: string;
+  actionBatchResourceIds?: Partial<Record<AutonomousAction, string>>;
   targetGroupResourceId: string;
   eligibleActions: AutonomousAction[];
   batchResourceId: string;
@@ -51,6 +53,8 @@ export class BatchOrchestratorWorkflow extends WorkflowEntrypoint {
 
     const {
       token,
+      companyId,
+      actionBatchResourceIds,
       targetGroupResourceId,
       eligibleActions,
       batchResourceId,
@@ -68,7 +72,7 @@ export class BatchOrchestratorWorkflow extends WorkflowEntrypoint {
       { retries: { limit: 3, delay: '5 seconds', backoff: 'exponential' }, timeout: '2 minutes' },
       async () => {
         logger.info('batch_orchestrator_started', { batchResourceId, targetGroupResourceId });
-        const result = await fetchGroupMembersPage(token, targetGroupResourceId, baseApiUrl, 1);
+        const result = await fetchGroupMembersPage(token, targetGroupResourceId, baseApiUrl, 1, 1000, companyId);
         return { totalPages: result.totalPages, totalRecords: result.totalRecords };
       },
     );
@@ -91,7 +95,7 @@ export class BatchOrchestratorWorkflow extends WorkflowEntrypoint {
         { retries: { limit: 3, delay: '10 seconds', backoff: 'exponential' }, timeout: '5 minutes' },
         async () => {
           // Fetch this page of users
-          const { users } = await fetchGroupMembersPage(token, targetGroupResourceId, baseApiUrl, page);
+          const { users } = await fetchGroupMembersPage(token, targetGroupResourceId, baseApiUrl, page, 1000, companyId);
 
           let created = 0;
           let failed = 0;
@@ -108,6 +112,8 @@ export class BatchOrchestratorWorkflow extends WorkflowEntrypoint {
                   : instanceId,
                 params: {
                   token,
+                  companyId,
+                  actionBatchResourceIds,
                   targetUserResourceId: user.resourceId,
                   firstName: user.firstName,
                   lastName: user.lastName,

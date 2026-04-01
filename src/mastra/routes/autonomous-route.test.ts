@@ -26,9 +26,19 @@ vi.mock('../services', () => ({
 
 const validUserPayload = {
   token: 'test-token',
+  companyId: 'company-123',
   firstName: 'John',
   lastName: 'Doe',
   actions: ['phishing'],
+};
+
+const validUserPayloadWithActionBatches = {
+  ...validUserPayload,
+  actions: ['phishing', 'training'],
+  actionBatchResourceIds: {
+    phishing: 'batch-phishing-1',
+    training: 'batch-training-1',
+  },
 };
 
 const validGroupPayload = {
@@ -139,6 +149,14 @@ describe('autonomousHandler', () => {
 
     await autonomousHandler(mockContext as unknown as Context);
 
+    expect(mockCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        params: expect.objectContaining({
+          companyId: 'company-123',
+        }),
+      })
+    );
+
     expect(mockContext.json).toHaveBeenCalledWith(
       expect.objectContaining({
         success: true,
@@ -149,6 +167,25 @@ describe('autonomousHandler', () => {
     );
   });
 
+  it('should forward actionBatchResourceIds to workflow payload when provided', async () => {
+    const mockCreate = vi.fn().mockResolvedValue({ id: 'wf-123' });
+    mockContext.env = { AUTONOMOUS_WORKFLOW: { create: mockCreate } };
+    mockContext.req.json.mockResolvedValue(validUserPayloadWithActionBatches);
+
+    await autonomousHandler(mockContext as unknown as Context);
+
+    expect(mockCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        params: expect.objectContaining({
+          actionBatchResourceIds: {
+            phishing: 'batch-phishing-1',
+            training: 'batch-training-1',
+          },
+        }),
+      })
+    );
+  });
+
   it('should run inline when no workflow and no waitUntil', async () => {
     mockContext.env = {};
     mockContext.req.json.mockResolvedValue(validUserPayload);
@@ -156,7 +193,11 @@ describe('autonomousHandler', () => {
     await autonomousHandler(mockContext as unknown as Context);
 
     const { executeAutonomousGeneration } = await import('../services');
-    expect(executeAutonomousGeneration).toHaveBeenCalled();
+    expect(executeAutonomousGeneration).toHaveBeenCalledWith(
+      expect.objectContaining({
+        companyId: 'company-123',
+      })
+    );
     expect(mockContext.json).toHaveBeenCalledWith(
       expect.objectContaining({
         success: true,
@@ -177,6 +218,23 @@ describe('autonomousHandler', () => {
       expect.objectContaining({
         targetGroupResourceId: 'group-123',
         actions: ['training'],
+      })
+    );
+  });
+
+  it('should forward actionBatchResourceIds to inline execution payload when provided', async () => {
+    mockContext.env = {};
+    mockContext.req.json.mockResolvedValue(validUserPayloadWithActionBatches);
+
+    await autonomousHandler(mockContext as unknown as Context);
+
+    const { executeAutonomousGeneration } = await import('../services');
+    expect(executeAutonomousGeneration).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actionBatchResourceIds: {
+          phishing: 'batch-phishing-1',
+          training: 'batch-training-1',
+        },
       })
     );
   });

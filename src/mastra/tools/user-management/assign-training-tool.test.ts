@@ -241,7 +241,7 @@ describe('assignTrainingTool', () => {
           serviceBinding: mockEnv.CRUD_WORKER,
           endpoint: 'https://worker/send',
           payload: expect.objectContaining({
-            batchResourceId: expect.any(String),
+            batchResourceId: mockThreadId,
             activityType: 'training',
             trainingResourceId: 'resource-123',
             trainingId: 'resource-123',
@@ -255,6 +255,34 @@ describe('assignTrainingTool', () => {
           operationName: expect.any(String),
         })
       );
+    });
+
+    it('should generate a new batchResourceId when request context has no threadId', async () => {
+      const mockCallWorkerAPI = vi.spyOn(workerApiClient, 'callWorkerAPI').mockResolvedValue({});
+
+      requestStorage.enterWith({
+        token: mockToken,
+        companyId: mockCompanyId,
+        env: mockEnv,
+      });
+
+      const input = {
+        resourceId: 'resource-123',
+        sendTrainingLanguageId: 'lang-456',
+        targetUserResourceId: 'user-789',
+      };
+
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      await assignTrainingTool.execute!(input, {});
+
+      expect(mockCallWorkerAPI).toHaveBeenCalledWith(
+        expect.objectContaining({
+          payload: expect.objectContaining({
+            batchResourceId: expect.any(String),
+          }),
+        })
+      );
+      expect(mockCallWorkerAPI.mock.calls[0]?.[0]?.payload?.batchResourceId).not.toBe(mockThreadId);
     });
 
     it('should assign training to a group and include targetGroupResourceId in payload', async () => {

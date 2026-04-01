@@ -49,6 +49,30 @@ describe('fetchGroupMembers', () => {
     );
   });
 
+  it('should include x-ir-company-id header when companyId is provided', async () => {
+    vi.mocked(global.fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        data: {
+          results: [],
+          totalNumberOfPages: 1,
+          totalNumberOfRecords: 0,
+        },
+      }),
+    } as Response);
+
+    await fetchGroupMembers('token', 'group-123', 'https://api.test.com', 1000, 'company-123');
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          'x-ir-company-id': 'company-123',
+        }),
+      })
+    );
+  });
+
   it('should exclude non-Active users', async () => {
     vi.mocked(global.fetch).mockResolvedValueOnce({
       ok: true,
@@ -103,6 +127,30 @@ describe('fetchGroupMembersPage', () => {
     expect(result.users).toHaveLength(1);
     expect(result.totalPages).toBe(3);
     expect(result.totalRecords).toBe(250);
+  });
+
+  it('should include x-ir-company-id header for paginated fetch when companyId is provided', async () => {
+    vi.mocked(global.fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        data: {
+          results: [],
+          totalNumberOfPages: 1,
+          totalNumberOfRecords: 0,
+        },
+      }),
+    } as Response);
+
+    await fetchGroupMembersPage('token', 'g', 'https://api.test.com', 1, 1000, 'company-123');
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          'x-ir-company-id': 'company-123',
+        }),
+      })
+    );
   });
 
   it('should throw on API error', async () => {
