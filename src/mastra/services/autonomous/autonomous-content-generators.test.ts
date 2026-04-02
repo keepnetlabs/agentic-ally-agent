@@ -210,7 +210,7 @@ describe('AutonomousContentGenerators', () => {
                 objective: 'Understand email threats',
                 duration_min: 15,
                 language: 'en',
-                rationale: 'Foundational training',
+                why_this: 'Builds basic recognition of suspicious email patterns.',
               },
             ],
             nudges: [],
@@ -224,6 +224,75 @@ describe('AutonomousContentGenerators', () => {
 
       expect(report).toContain('Email Security 101');
       expect(report).toContain('15 minutes');
+      expect(report).toContain('Builds basic recognition of suspicious email patterns.');
+    });
+
+    it('should prefer ai recommendations when direct recommendations exist but are empty', () => {
+      const toolResult = {
+        analysisReport: {
+          header: {},
+          meta: { department: 'Finance' },
+          strengths: [],
+          growth_opportunities: [],
+          maturity_mapping: { gartner_sbcp: {}, enisa_security_culture: {} },
+          recommended_next_steps: {
+            simulations: [],
+            microlearnings: [],
+            nudges: [],
+          },
+          ai_recommended_next_steps: {
+            simulations: [],
+            microlearnings: [
+              {
+                title: 'Mailbox Hygiene Basics',
+                objective: 'Reduce trust in spoofed mail',
+                duration_min: 10,
+                language: 'en',
+                why_this: 'Covers the highest-signal awareness gap from the analysis.',
+              },
+            ],
+            nudges: [],
+          },
+          references: [],
+        },
+      };
+
+      const report = buildExecutiveReport(toolResult as any);
+
+      expect(report).toContain('Mailbox Hygiene Basics');
+      expect(report).toContain('Covers the highest-signal awareness gap from the analysis.');
+    });
+
+    it('should display N/A duration when training duration is missing or placeholder', () => {
+      const toolResult = {
+        analysisReport: {
+          header: {},
+          meta: { department: 'Finance' },
+          strengths: [],
+          growth_opportunities: [],
+          maturity_mapping: { gartner_sbcp: {}, enisa_security_culture: {} },
+          ai_recommended_next_steps: {
+            simulations: [],
+            microlearnings: [
+              {
+                title: 'Suspicious Email Signals',
+                objective: 'Recognize common phishing cues',
+                duration_min: 0,
+                language: 'en',
+                why_this: 'Duration is not yet estimated, but the topic is still valid.',
+              },
+            ],
+            nudges: [],
+          },
+          references: [],
+        },
+      };
+
+      const report = buildExecutiveReport(toolResult as any);
+
+      expect(report).toContain('Suspicious Email Signals');
+      expect(report).toContain('- **Duration:** N/A');
+      expect(report).not.toContain('0 minutes');
     });
 
     it('should include recommended nudge strategy in report', () => {

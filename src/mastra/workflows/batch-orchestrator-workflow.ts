@@ -11,7 +11,7 @@ import { CF_WORKFLOW_LIMITS, BATCH_KV_KEYS, BATCH_META_TTL_SECONDS, TIMEOUT_VALU
 import type { AutonomousAction } from '../types/autonomous-types';
 import { mastra } from '../index';
 
-const CHUNK_SIZE = 100;
+const CHUNK_SIZE = 50;
 
 /** Payload passed to the orchestrator from the route handler. */
 export interface BatchOrchestratorPayload {

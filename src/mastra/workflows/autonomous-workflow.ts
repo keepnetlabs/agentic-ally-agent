@@ -75,23 +75,29 @@ export class AutonomousWorkflow extends WorkflowEntrypoint {
         'execute-generation',
         { retries: { limit: 2, delay: '30 seconds', backoff: 'exponential' }, timeout: '10 minutes' },
         async () => {
-          return await executeAutonomousGeneration({
-            token,
-            companyId,
-            actionBatchResourceIds,
-            baseApiUrl,
-            firstName,
-            lastName,
-            actions,
-            sendAfterPhishingSimulation,
-            preferredLanguage,
-            targetUserResourceId,
-            targetGroupResourceId,
-            batchResourceId,
-            rejectingReason,
-            rejectedScenarioResourceId,
-            env: this.env,
-          });
+          try {
+            return await executeAutonomousGeneration({
+              token,
+              companyId,
+              actionBatchResourceIds,
+              baseApiUrl,
+              firstName,
+              lastName,
+              actions,
+              sendAfterPhishingSimulation,
+              preferredLanguage,
+              targetUserResourceId,
+              targetGroupResourceId,
+              batchResourceId,
+              rejectingReason,
+              rejectedScenarioResourceId,
+              env: this.env,
+            });
+          } catch (innerError) {
+            const msg = innerError instanceof Error ? innerError.message : String(innerError);
+            logger.error('autonomous_step_inner_error', { workflowId, error: msg, targetUserResourceId });
+            throw new Error(`Generation failed: ${msg}`);
+          }
         },
       );
     } catch (executionError) {

@@ -693,6 +693,27 @@ describe('AutonomousTrainingHandlers', () => {
       );
     });
 
+    it('passes why_this into tool-first additionalContext for training generation', async () => {
+      await generateTrainingModule(
+        {
+          ...baseMicrolearning,
+          why_this: 'Targets a recurring gap in sender verification habits.',
+        } as any,
+        undefined,
+        baseToolResult as any,
+        'thread-train-7b',
+        true,
+        false
+      );
+
+      expect(mockWorkflowExecute).toHaveBeenCalledWith(
+        expect.objectContaining({
+          additionalContext: 'Rationale: Targets a recurring gap in sender verification habits.',
+        }),
+        expect.anything()
+      );
+    });
+
     it('falls back to agent when assign needed but no target in tool-first', async () => {
       const toolResultNoTarget = {
         userInfo: { department: 'IT', preferredLanguage: 'en-gb' },
@@ -708,8 +729,33 @@ describe('AutonomousTrainingHandlers', () => {
       );
 
       expect(mockMicrolearningAgentGenerate).toHaveBeenCalled();
+      expect(result.success).toBe(false);
       expect(result.uploadAssignResult?.success).toBe(false);
       expect(result.uploadAssignResult?.error).toContain('targetUserResourceId');
+    });
+
+    it('sends stop message in simplified fallback before returning failed assign result', async () => {
+      const toolResultNoTarget = {
+        userInfo: { department: 'IT', preferredLanguage: 'en-gb' },
+      };
+
+      mockMicrolearningAgentGenerate
+        .mockRejectedValueOnce(new Error('primary failed'))
+        .mockResolvedValueOnce({ text: 'Fallback generated' })
+        .mockResolvedValueOnce({ text: 'STOP acknowledged' });
+
+      const result = await generateTrainingModule(
+        baseMicrolearning as any,
+        undefined,
+        toolResultNoTarget as any,
+        'thread-train-8b',
+        false,
+        false
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.uploadAssignResult?.success).toBe(false);
+      expect(mockMicrolearningAgentGenerate).toHaveBeenCalledTimes(3);
     });
   });
 

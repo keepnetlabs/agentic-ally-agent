@@ -313,7 +313,7 @@ export const orchestratorAgent = new Agent({
   scorers: {
     completeness: {
       scorer: createCompletenessScorer(),
-      sampling: { type: 'ratio' as const, rate: 1 }, // NLP — free, checks routing completeness
+      sampling: { type: 'ratio' as const, rate: 0.1 }, // NLP — free, checks routing completeness
     },
   },
 });

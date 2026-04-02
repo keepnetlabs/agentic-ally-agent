@@ -88,6 +88,7 @@ interface RecommendedMicrolearning {
   objective?: string;
   duration_min?: number;
   language?: string;
+  why_this?: string;
   rationale?: string;
 }
 
@@ -95,6 +96,7 @@ interface RecommendedNudge {
   channel?: string;
   message?: string;
   cadence?: string;
+  why_this?: string;
   rationale?: string;
 }
 
@@ -175,12 +177,56 @@ interface LevelDecision {
   reasoning: string;
 }
 
+const EMPTY_NEXT_STEPS: NextSteps = {
+  simulations: [],
+  microlearnings: [],
+  nudges: [],
+};
+
 function getCurrentBehavioralStage(report?: ContentGenerationReport): string | undefined {
   return report?.header?.behavioral_resilience?.current_stage || report?.header?.resilience_stage?.level;
 }
 
 function getTargetBehavioralStage(report?: ContentGenerationReport): string | undefined {
   return report?.header?.behavioral_resilience?.target_stage || report?.header?.progression_target;
+}
+
+function getRecommendationReason(item?: { why_this?: string; rationale?: string }): string | undefined {
+  if (!item) {
+    return undefined;
+  }
+
+  const whyThis = item.why_this?.trim();
+  if (whyThis) {
+    return whyThis;
+  }
+
+  const rationale = item.rationale?.trim();
+  if (rationale) {
+    return rationale;
+  }
+
+  return undefined;
+}
+
+function hasNextStepContent(steps?: NextSteps): boolean {
+  if (!steps) {
+    return false;
+  }
+
+  return Boolean(
+    steps.simulations?.length ||
+    steps.microlearnings?.length ||
+    steps.nudges?.length
+  );
+}
+
+function formatDurationMinutes(duration?: number): string {
+  if (typeof duration !== 'number' || !Number.isFinite(duration) || duration <= 0) {
+    return 'N/A';
+  }
+
+  return `${duration} minutes`;
 }
 
 function deriveTrainingLevelFromAnalysis(report?: ContentGenerationReport): LevelDecision {
@@ -223,14 +269,18 @@ function deriveTrainingLevelFromAnalysis(report?: ContentGenerationReport): Leve
  * Build executive report from analysis data
  */
 function getRecommendedNextSteps(report: ContentGenerationReport | undefined) {
-  return (
-    report?.recommended_next_steps ??
-    report?.ai_recommended_next_steps ?? {
-      simulations: [],
-      microlearnings: [],
-      nudges: [],
-    }
-  );
+  const directSteps = report?.recommended_next_steps;
+  const aiSteps = report?.ai_recommended_next_steps;
+
+  if (hasNextStepContent(directSteps)) {
+    return directSteps;
+  }
+
+  if (hasNextStepContent(aiSteps)) {
+    return aiSteps;
+  }
+
+  return directSteps ?? aiSteps ?? EMPTY_NEXT_STEPS;
 }
 
 export function buildExecutiveReport(toolResult: AutonomousToolResult): string | undefined {
@@ -285,9 +335,9 @@ ${sim
 ${ml
       ? `- **Title:** ${ml.title}
 - **Objective:** ${ml.objective}
-- **Duration:** ${ml.duration_min} minutes
+- **Duration:** ${formatDurationMinutes(ml.duration_min)}
 - **Language:** ${toolResult.userInfo?.preferredLanguage || ml.language || 'en-gb'}
-- **Rationale:** ${ml.rationale}`
+- **Rationale:** ${getRecommendationReason(ml) || 'N/A'}`
       : 'None'
     }
 
@@ -296,7 +346,7 @@ ${nudge
       ? `- **Channel:** ${nudge.channel}
 - **Message:** ${nudge.message}
 - **Cadence:** ${nudge.cadence}
-- **Rationale:** ${nudge.rationale}`
+- **Rationale:** ${getRecommendationReason(nudge) || 'N/A'}`
       : 'None'
     }
 

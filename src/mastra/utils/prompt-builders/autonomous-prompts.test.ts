@@ -90,6 +90,23 @@ describe('autonomous-prompts', () => {
       expect(result).toContain('workflowExecutor');
     });
 
+    it('prefers why_this over rationale for training recommendation context', () => {
+      const result = buildTrainingGenerationPrompt({
+        microlearning: {
+          title: 'Security Awareness',
+          objective: 'Learn best practices',
+          why_this: 'Targets repeated trust in spoofed internal notifications.',
+          rationale: 'Fallback rationale',
+        },
+        department: 'IT',
+        level: 'Intermediate',
+        language: 'en-gb',
+      });
+
+      expect(result).toContain('Why This Training: Targets repeated trust in spoofed internal notifications.');
+      expect(result).not.toContain('Fallback rationale');
+    });
+
     it('uses defaults for empty microlearning', () => {
       const result = buildTrainingGenerationPrompt({
         microlearning: {},
@@ -115,6 +132,20 @@ describe('autonomous-prompts', () => {
       expect(result).toContain('HR');
       expect(result).toContain('Advanced');
       expect(result).toContain('de-de');
+    });
+
+    it('keeps concise why_this guidance in simplified fallback prompt', () => {
+      const result = buildTrainingGenerationPromptSimplified({
+        microlearning: {
+          title: 'Phishing 101',
+          why_this: 'Build confidence spotting urgent credential prompts.',
+        },
+        department: 'HR',
+        level: 'Advanced',
+        language: 'de-de',
+      });
+
+      expect(result).toContain('Why This Training: Build confidence spotting urgent credential prompts.');
     });
   });
 

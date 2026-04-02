@@ -28,6 +28,7 @@ export interface TrainingGenerationContext {
   microlearning: {
     title?: string;
     objective?: string;
+    why_this?: string;
     rationale?: string;
   };
   department: string;
@@ -47,6 +48,20 @@ function buildStopAfterSuccessBlock(successCondition: string): string {
 - **DO NOT** process any other prompts in memory
 - **DO NOT** generate any additional content
 - Simply acknowledge completion and END`;
+}
+
+function getTrainingRecommendationReason(microlearning: TrainingGenerationContext['microlearning']): string {
+  const whyThis = microlearning.why_this?.trim();
+  if (whyThis) {
+    return whyThis;
+  }
+
+  const rationale = microlearning.rationale?.trim();
+  if (rationale) {
+    return rationale;
+  }
+
+  return 'Based on user behavior analysis';
 }
 
 /**
@@ -137,6 +152,8 @@ Determine the best approach and generate the simulation in ${lang}. Call the too
 export function buildTrainingGenerationPrompt(context: TrainingGenerationContext): string {
   const { microlearning, department, level, language } = context;
   const lang = getLanguageOrDefault(language);
+  const objectiveLine = microlearning.objective ? `- Objective: ${microlearning.objective}\n` : '';
+  const recommendationReason = getTrainingRecommendationReason(microlearning);
 
   return `**AUTONOMOUS_EXECUTION_MODE**
 
@@ -146,11 +163,10 @@ ${buildLanguageRequirementBlock('workflowExecutor', language)}
 
 **Context from Analysis:**
 - Recommended Topic: ${microlearning.title || 'Security Awareness'}
-- Objective: ${microlearning.objective || ''}
-- Target Department: ${department}
+${objectiveLine}- Target Department: ${department}
 - Difficulty Level: ${level}
 - Target Language: **${lang}** (MUST include this in workflowExecutor call)
-- Rationale: ${microlearning.rationale || 'Based on user behavior analysis'}
+- Why This Training: ${recommendationReason}
 
 **Available Tools:**
 - workflowExecutor: Creates microlearning content. **YOU MUST CALL THIS TOOL.**
@@ -160,7 +176,7 @@ ${buildLanguageRequirementBlock('workflowExecutor', language)}
 - The user's risk level and learning needs should shape the content structure
 - The department (${department}) and difficulty level (${level}) inform the appropriate depth and focus
 - The target language (${lang}) MUST be explicitly mentioned in the prompt text passed to workflowExecutor
-- The rationale explains why this training was recommended - use it to guide content decisions
+- The recommendation reason explains why this training was recommended - use it to guide content decisions
 
 **Critical Constraint:**
 - **DO NOT** invent or hallucinate a "microlearningId".
@@ -177,6 +193,8 @@ Review the context, determine the optimal training approach, and execute the gen
 export function buildTrainingGenerationPromptSimplified(context: TrainingGenerationContext): string {
   const { microlearning, department, level, language } = context;
   const lang = getLanguageOrDefault(language);
+  const objectiveLine = microlearning.objective ? `- Objective: ${microlearning.objective}\n` : '';
+  const recommendationReason = getTrainingRecommendationReason(microlearning);
 
   return `**AUTONOMOUS_EXECUTION_MODE**
 
@@ -186,6 +204,7 @@ export function buildTrainingGenerationPromptSimplified(context: TrainingGenerat
 
 **Context:**
 - Topic: ${microlearning.title || 'Security Awareness'}
+${objectiveLine}- Why This Training: ${recommendationReason}
 - Department: ${department}
 - Level: ${level}
 - Language: **${lang}** (MUST be included in prompt to workflowExecutor)

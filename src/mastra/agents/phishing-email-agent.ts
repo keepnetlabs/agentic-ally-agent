@@ -251,15 +251,15 @@ export const phishingEmailAgent = new Agent({
   scorers: {
     keywordCoverage: {
       scorer: createKeywordCoverageScorer(),
-      sampling: { type: 'ratio' as const, rate: 1 },
+      sampling: { type: 'ratio' as const, rate: 0.1 },
     },
     tone: {
       scorer: createToneScorer(),
-      sampling: { type: 'ratio' as const, rate: 1 },
+      sampling: { type: 'ratio' as const, rate: 0.1 },
     },
     piiDetection: {
       scorer: piiDetectionScorer,
-      sampling: { type: 'ratio' as const, rate: 1 },
+      sampling: { type: 'ratio' as const, rate: 0.1 },
     },
   },
   // @ts-expect-error @mastra/memory@1.1.0 ↔ @mastra/core@1.10.0 type mismatch; pinned until memory is upgradeable

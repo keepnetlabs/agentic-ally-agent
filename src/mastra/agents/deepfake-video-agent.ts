@@ -347,8 +347,8 @@ export const deepfakeVideoAgent = new Agent({
     showReasoning: reasoningTool,
   },
   scorers: {
-    completeness: { scorer: createCompletenessScorer(), sampling: { type: 'ratio' as const, rate: 1 } },
-    tone: { scorer: createToneScorer(), sampling: { type: 'ratio' as const, rate: 1 } },
+    completeness: { scorer: createCompletenessScorer(), sampling: { type: 'ratio' as const, rate: 0.1 } },
+    tone: { scorer: createToneScorer(), sampling: { type: 'ratio' as const, rate: 0.1 } },
   },
   // @ts-expect-error @mastra/memory@1.1.0 ↔ @mastra/core@1.10.0 type mismatch; pinned until memory is upgradeable
   memory: new Memory({

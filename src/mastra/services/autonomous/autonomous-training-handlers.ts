@@ -34,6 +34,7 @@ interface MicrolearningRecommendation {
   title?: string;
   objective?: string;
   description?: string;
+  why_this?: string;
   rationale?: string;
   language?: string;
   duration_min?: number;
@@ -64,6 +65,10 @@ function resolveTrainingLevel(level?: string): (typeof TRAINING_LEVELS)[number] 
   return matched ?? DEFAULT_TRAINING_LEVEL;
 }
 
+function getMicrolearningReason(microlearning: MicrolearningRecommendation): string | undefined {
+  return microlearning.why_this || microlearning.rationale;
+}
+
 function buildTrainingPrompt(params: {
   microlearning: MicrolearningRecommendation;
   department: string;
@@ -85,7 +90,8 @@ function resolveToolFirstPromptAndContext(params: {
   language: string;
 }): { prompt: string; additionalContext?: string } {
   const { isCustomPrompt, contextOrPrompt, microlearning, department, level, language } = params;
-  const rationaleContext = microlearning.rationale ? `Rationale: ${microlearning.rationale}` : undefined;
+  const reason = getMicrolearningReason(microlearning);
+  const rationaleContext = reason ? `Rationale: ${reason}` : undefined;
 
   if (isCustomPrompt && contextOrPrompt) {
     return {
@@ -475,7 +481,7 @@ export async function generateTrainingModule(
   const objective = microlearning.objective || '';
   const department = toolResult.userInfo?.department || 'All';
   const level = resolveTrainingLevel(trainingLevel);
-  const rationale = microlearning.rationale || 'Based on user behavior analysis';
+  const rationale = getMicrolearningReason(microlearning) || 'Based on user behavior analysis';
 
   // Use user's preferredLanguage if available, otherwise fall back to microlearning.language or default
   const preferredLanguageRaw = toolResult.userInfo?.preferredLanguage || microlearning.language || '';
@@ -543,7 +549,7 @@ export async function generateTrainingModule(
         trainingThreadId
       );
       return {
-        success: true,
+        success: uploadAssignResult?.success ?? false,
         message:
           'Training module generated' +
           (uploadAssignResult?.success ? ', uploaded and assigned' : ' (upload/assign failed)'),
@@ -565,6 +571,7 @@ export async function generateTrainingModule(
       trackAgentCost('autonomous-training-fallback1', agentResult, microlearningAgent.model);
 
       logger.info('Fallback 1 succeeded');
+      await sendAgentStopMessage(microlearningAgent, trainingThreadId, 'generation_complete', logger, 'training fallback generation');
       if (uploadOnly) {
         const uploadResult = await uploadTrainingOnly(trainingThreadId, microlearning);
         return {
@@ -582,7 +589,7 @@ export async function generateTrainingModule(
           trainingThreadId
         );
         return {
-          success: true,
+          success: uploadAssignResult?.success ?? false,
           message:
             'Training module generated via agent (simplified)' +
             (uploadAssignResult?.success ? ', uploaded and assigned' : ' (upload/assign failed)'),
