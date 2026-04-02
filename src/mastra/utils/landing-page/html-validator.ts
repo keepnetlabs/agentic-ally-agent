@@ -13,6 +13,13 @@ export interface ValidationResult {
   warnings: string[];
 }
 
+export interface LandingValidationContext {
+  fromName?: string;
+  scenario?: string;
+  subject?: string;
+  isQuishing?: boolean;
+}
+
 /**
  * Validate that page doesn't contain unwanted CSS patterns
  * (e.g., overly complex styling that doesn't match "normal web page" requirement)
@@ -146,6 +153,110 @@ export function validateHTMLStructure(html: string): ValidationResult {
   };
 }
 
+function extractScenarioKeywords(...values: Array<string | undefined>): string[] {
+  const stopWords = new Set([
+    'account', 'update', 'urgent', 'required', 'request', 'secure', 'security', 'team', 'portal', 'page',
+    'login', 'sign', 'your', 'with', 'from', 'into', 'that', 'this', 'have', 'will', 'please', 'review',
+  ]);
+
+  return values
+    .join(' ')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, ' ')
+    .split(/\s+/)
+    .filter(word => word.length >= 4 && !stopWords.has(word))
+    .slice(0, 8);
+}
+
+function extractActionLabels(html: string): string[] {
+  return Array.from(html.matchAll(/<(a|button)\b[^>]*>([\s\S]{1,120}?)<\/\1>/gi))
+    .map(match => match[2]?.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase())
+    .filter((label): label is string => Boolean(label));
+}
+
+const SUCCESS_STATE_PATTERN = /(success|updated|received|confirmed|submitted|complete|completed|thank you)/;
+const CONFLICTING_SUCCESS_CTA_PATTERN =
+  /sign in|log in|login|verify|submit|confirm|complete|review|acknowledg|update|continue|retry|try again/;
+
+export function validateSemanticQuality(
+  html: string,
+  pageType: string,
+  context: LandingValidationContext = {}
+): ValidationResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  const lowerHtml = html.toLowerCase();
+  const actionLabels = extractActionLabels(html);
+
+  const genericPlaceholderPatterns = [
+    /lorem ipsum/,
+    /your company/,
+    /company name/,
+    /insert logo/,
+    /replace this/,
+    /placeholder text/,
+  ];
+
+  for (const pattern of genericPlaceholderPatterns) {
+    if (pattern.test(lowerHtml)) {
+      errors.push(`Generic placeholder copy detected: ${pattern.source}`);
+    }
+  }
+
+  if (context.isQuishing && /(qr code|scan the qr|scan qr|verify via qr)/.test(lowerHtml)) {
+    errors.push('Quishing landing page contains QR-specific wording instead of a standard form');
+  }
+
+  if (pageType === 'success') {
+    if (/<form/i.test(html) || /type=['"]password['"]/i.test(html)) {
+      errors.push('Success page should not contain login form fields');
+    }
+
+    if (!SUCCESS_STATE_PATTERN.test(lowerHtml)) {
+      warnings.push('Success page copy looks generic and does not clearly communicate completion');
+    }
+
+    if (actionLabels.some(label => CONFLICTING_SUCCESS_CTA_PATTERN.test(label))) {
+      warnings.push('Success page CTA may contradict the completed state; prefer neutral follow-up navigation or no primary CTA');
+    }
+  }
+
+  if (pageType === 'info') {
+    if (/<form/i.test(html) || /type=['"]password['"]/i.test(html) || /type=['"]submit['"]/i.test(html) || /<button/i.test(html)) {
+      errors.push('Info page should present content directly without forms or CTA buttons');
+    }
+  }
+
+  if (pageType === 'login') {
+    if (/(>\s*(click here|submit|continue)\s*<)/i.test(html)) {
+      warnings.push('Login CTA looks generic; use scenario-specific action wording');
+    }
+
+    if (!/(sign in|log in|login|continue|access|securely)/.test(lowerHtml)) {
+      warnings.push('Login page heading/microcopy may not read like a realistic product sign-in flow');
+    }
+  }
+
+  if (context.fromName && !lowerHtml.includes(context.fromName.toLowerCase()) && !lowerHtml.includes('{custommainlogo}')) {
+    warnings.push('Landing page does not visibly reference the impersonated brand');
+  }
+
+  if (/(>\s*go to dashboard\s*<)/i.test(html)) {
+    warnings.push('Generic "Go to dashboard" CTA detected; prefer scenario-specific completion language');
+  }
+
+  const scenarioKeywords = extractScenarioKeywords(context.scenario, context.subject);
+  if (pageType !== 'login' && scenarioKeywords.length > 0 && !scenarioKeywords.some(keyword => lowerHtml.includes(keyword))) {
+    warnings.push('Landing page copy appears weakly tied to the scenario context');
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+    warnings,
+  };
+}
+
 /**
  * Comprehensive validation for landing pages
  * Runs all validation checks and aggregates results
@@ -153,13 +264,18 @@ export function validateHTMLStructure(html: string): ValidationResult {
  * @param pageType - Type of page (login, success, info)
  * @returns ValidationResult
  */
-export function validateLandingPage(html: string, pageType: string): ValidationResult {
+export function validateLandingPage(
+  html: string,
+  pageType: string,
+  context?: LandingValidationContext
+): ValidationResult {
   const results: ValidationResult[] = [];
 
   // Run all validations
   results.push(validateHTMLStructure(html));
   results.push(validateCSSPatterns(html));
   results.push(validateFormElements(html, pageType));
+  results.push(validateSemanticQuality(html, pageType, context));
 
   // Aggregate results
   const allErrors = results.flatMap(r => r.errors);
@@ -170,6 +286,10 @@ export function validateLandingPage(html: string, pageType: string): ValidationR
     errors: allErrors,
     warnings: allWarnings,
   };
+}
+
+export function hasRetryableLandingQualitySignals(result: ValidationResult): boolean {
+  return result.errors.length > 0;
 }
 
 /**

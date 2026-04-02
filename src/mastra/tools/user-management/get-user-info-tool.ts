@@ -50,6 +50,11 @@ import {
 import { getCampaignMetadata } from '../../services/campaign-metadata-service';
 import { extractResourceIdsFromTimeline, enrichActivitiesWithMetadata } from '../../utils/campaign-metadata-helpers';
 import { findUserByEmail, findUserById, findUserByNameWithFallbacks } from './utils/user-search-utils';
+import {
+  applyNoActivitySimulationGuardrails,
+  buildNoActivitySimulationDefaults,
+  ensureNoActivitySimulationSlot,
+} from './utils/no-activity-foundational-defaults';
 
 export const getUserInfoTool = createTool({
   id: 'get-user-info',
@@ -367,6 +372,7 @@ STRICT OUTPUT
 - If there is insufficient evidence for a section, keep it brief.
 - If NO ACTIVITY DATA AVAILABLE: do NOT use placeholders like "unspecified", "not specified", "N/A".
 - If NO ACTIVITY DATA AVAILABLE: provide 1 short, meaningful sentence in strengths[], growth_opportunities[], business_value_zone.operational[], business_value_zone.strategic[] that avoids claiming evidence.
+- If NO ACTIVITY DATA AVAILABLE: keep recommendations foundational, but use department/role as secondary context to choose a plausible baseline scenario instead of repeating the exact same generic example for every user.
 - meta.generated_at_utc MUST be a UTC timestamp string (ISO 8601 preferred).
 
 PRIMARY EVIDENCE
@@ -437,7 +443,9 @@ RECOMMENDATION RUBRIC (HIGH PRIORITY)
   - If CLICKED_LINK pattern: prioritize CLICK_ONLY next; change vector from last observed; focus on link inspection cues.
   - If REPORTED pattern: increase difficulty one step; vary premise_alignment; reinforce reporting as a strength.
   - If TRAINING_ONLY pattern: start with EASY CLICK_ONLY in EMAIL (then QR as second if you include a second simulation).
-  - If NO_DATA pattern: keep recommendations foundational (EASY, CLICK_ONLY, EMAIL; ONE_OFF nudge) and explicitly note data gaps.
+  - If NO_DATA pattern: keep recommendations foundational and explicitly note data gaps.
+  - For NO_DATA pattern, use role/department only as a tie-breaker for a plausible baseline archetype.
+  - Prefer EASY difficulty and low-friction cues; keep the scenario safe, simple, and realistic.
 - Microlearning objectives MUST align with the primary pattern (e.g., reporting workflow, link verification, credential hygiene, QR safety).
 - Nudge message must be short, non-blaming, and directly actionable; cadence must be ONE_OFF unless evidence supports a higher cadence need.
 
@@ -640,25 +648,21 @@ If a value is unknown, use "" or null.
             reportTyped.meta.user_id = resolvedUserId;
           }
 
-          // Deterministic variation: if we have NO activity evidence, keep recommendations foundational
-          // but vary the first simulation vector/tactic per user (stable across runs, avoids always identical output).
+          // AI-first no-activity handling: keep the model's recommendation when it is already concrete and valid.
+          // Deterministic defaults only fill weak or missing fields so large populations do not collapse into one identical path.
           if (analysisReport && typeof analysisReport === 'object' && recentActivities.length === 0) {
-            const seed = String(resolvedUserId);
-            const parity = seed.split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0) % 2;
-            const vector = parity === 0 ? 'EMAIL' : 'QR';
-            const tactic = parity === 0 ? 'CURIOSITY' : 'AUTHORITY';
+            const defaults = buildNoActivitySimulationDefaults({
+              userId: String(resolvedUserId),
+              department: resolvedDepartment,
+              role: user?.role || '',
+            });
 
-            const sim0 = reportTyped.ai_recommended_next_steps?.simulations?.[0];
-            if (sim0 && typeof sim0 === 'object') {
-              sim0.vector = vector;
-              sim0.scenario_type = sim0.scenario_type || 'CLICK_ONLY';
-              sim0.difficulty = sim0.difficulty || 'EASY';
-              sim0.persuasion_tactic = tactic;
-              if (sim0.nist_phish_scale && typeof sim0.nist_phish_scale === 'object') {
-                sim0.nist_phish_scale.cue_difficulty = sim0.nist_phish_scale.cue_difficulty || 'LOW';
-                sim0.nist_phish_scale.premise_alignment = sim0.nist_phish_scale.premise_alignment || 'LOW';
-              }
+            if (!reportTyped.ai_recommended_next_steps || typeof reportTyped.ai_recommended_next_steps !== 'object') {
+              reportTyped.ai_recommended_next_steps = { simulations: [], microlearnings: [], nudges: [] };
             }
+
+            const sim0 = ensureNoActivitySimulationSlot(reportTyped.ai_recommended_next_steps);
+            applyNoActivitySimulationGuardrails(sim0, defaults);
           }
 
           // Analysis is OPTIONAL: if the model returns invalid JSON contract, drop it and continue.

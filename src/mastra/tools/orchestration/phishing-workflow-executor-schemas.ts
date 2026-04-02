@@ -19,6 +19,15 @@ const normalizeTargetProfile = (value: unknown) => {
     return value;
 };
 
+const behavioralProfileSchema = z.object({
+    currentStage: z.string().optional(),
+    targetStage: z.string().optional(),
+    progressionHint: z.string().optional(),
+    foggTriggerType: z.string().optional(),
+    keySignalsUsed: z.array(z.string()).optional(),
+    dataGaps: z.array(z.string()).optional(),
+}).optional();
+
 export const phishingWorkflowSchema = z.object({
     workflowType: z.literal(PHISHING.WORKFLOW_TYPE).describe('Workflow to execute'),
     topic: z.string().describe('Topic for phishing simulation (e.g. "Reset Password")'),
@@ -32,6 +41,7 @@ export const phishingWorkflowSchema = z.object({
             vulnerabilities: z.array(z.string()).optional(),
         }).optional()
     ).describe('Target user profile for personalization'),
+    behavioralProfile: behavioralProfileSchema.describe('Structured behavioral guidance extracted from user resilience analysis'),
     difficulty: z
         .preprocess((value) => normalizeDifficultyValue(value) ?? value, z.enum(PHISHING.DIFFICULTY_LEVELS))
         .optional()

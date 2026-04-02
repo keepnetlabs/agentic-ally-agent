@@ -33,6 +33,7 @@ vi.mock('../core/logger', () => ({
 
 vi.mock('../config/llm-generation-params', () => ({
   PHISHING_CONTENT_PARAMS: { temperature: 0.7 },
+  PHISHING_LANDING_PARAMS: { temperature: 0.55, topP: 0.88 },
 }));
 
 describe('retry-generator', () => {

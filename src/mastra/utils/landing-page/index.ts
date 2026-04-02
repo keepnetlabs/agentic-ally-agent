@@ -12,6 +12,7 @@ export { detectIndustry, type IndustryDesign } from './industry-detector';
 // HTML validation
 export {
   validateLandingPage,
+  hasRetryableLandingQualitySignals,
   validateCSSPatterns,
   validateFormElements,
   validateHTMLStructure,

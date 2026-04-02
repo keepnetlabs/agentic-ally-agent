@@ -5,13 +5,15 @@
 
 import { PHISHING, PHISHING_EMAIL } from '../../constants';
 import { DIFFICULTY_CONFIG } from '../config/phishing-difficulty-config';
-import { LAYOUT_OPTIONS, STYLE_OPTIONS } from '../config/landing-page-design-config';
 import { getLoginPageSection, getSuccessPageSection, getInfoPageSection } from '../templates/landing-page-templates';
 import { createPhishingAnalysisSchema } from '../../schemas';
 import { getLogger } from '../core/logger';
 import { buildPolicyScenePrompt } from './policy-context-builder';
 import { DEFAULT_PHISHING_ETHICAL_POLICY } from './prompt-analysis-policies';
 import { buildLandingPageSystemPrompt } from './landing-page-prompts';
+import { buildActionFamilyPromptBlock } from './journey-copy-guidance';
+import { buildLandingContinuityGuidance, selectLandingDesign } from './phishing-landing-design';
+import { buildLandingEmailSummary } from './phishing-landing-context';
 import {
   AUTH_CONTEXT,
   CLARITY_ACCESSIBILITY_POLICY,
@@ -24,6 +26,7 @@ import {
   PREHEADER_RULE,
   GREETING_RULES,
   MOBILE_OPTIMIZATION_RULES,
+  buildDateRealismRule,
   getMergeTagsRules,
   BRAND_AWARENESS_RULES,
   SYNTAX_RULE,
@@ -45,6 +48,78 @@ function getDepartmentContext(department?: string, isQuishing = false): string {
   return `\n**Target Department:** ${department} - Tailor ${scenarioType} to department workflows, vulnerabilities, and attack vectors.`;
 }
 
+function buildCoherencePromptBlock(params: {
+  audienceMode?: string;
+  journeyType?: string;
+  offerMechanic?: string;
+}): string {
+  const audienceMode = params.audienceMode || 'general';
+  const journeyType = params.journeyType || 'generic';
+  const offerMechanic = params.offerMechanic || 'generic';
+
+  return `**Coherence Fields:**
+- Audience Frame: ${audienceMode}
+- Primary Journey: ${journeyType}
+- Primary Mechanic: ${offerMechanic}
+- Treat these as soft source-of-truth. If any field is "general" or "generic", preserve the most plausible scenario-consistent default behavior instead of forcing a narrow frame.
+- Do NOT introduce a second audience frame, primary journey, or offer mechanic unless the blueprint explicitly requires it.`;
+}
+
+function buildBehavioralProfilePromptBlock(params?: {
+  currentStage?: string;
+  targetStage?: string;
+  progressionHint?: string;
+  foggTriggerType?: string;
+  keySignalsUsed?: string[];
+  dataGaps?: string[];
+}): string {
+  if (!params) return '';
+
+  const lines: string[] = [];
+  if (params.currentStage) lines.push(`- Current Stage: ${params.currentStage}`);
+  if (params.targetStage) lines.push(`- Target Stage: ${params.targetStage}`);
+  if (params.progressionHint) lines.push(`- Progression Hint: ${params.progressionHint}`);
+  if (params.foggTriggerType) lines.push(`- Trigger Type: ${params.foggTriggerType}`);
+  if (params.keySignalsUsed?.length) lines.push(`- Key Signals: ${params.keySignalsUsed.slice(0, 3).join(' | ')}`);
+  if (params.dataGaps?.length) lines.push(`- Data Gaps: ${params.dataGaps.slice(0, 2).join(' | ')}`);
+
+  if (lines.length === 0) return '';
+
+  return `**Structured Behavioral Signals:**
+${lines.join('\n')}
+- Treat these as higher-signal than generic narrative context.
+- Use them to tune friction, persuasion style, and the user's likely trust path.
+- Do NOT let them contradict the chosen scenario blueprint.`;
+}
+
+function buildBehavioralContextMessage(params: {
+  additionalContext?: string;
+  behavioralProfile?: {
+    currentStage?: string;
+    targetStage?: string;
+    progressionHint?: string;
+    foggTriggerType?: string;
+    keySignalsUsed?: string[];
+    dataGaps?: string[];
+  };
+  label: string;
+  actionInstruction: string;
+}): string | undefined {
+  const behavioralBlock = buildBehavioralProfilePromptBlock(params.behavioralProfile);
+  const narrativeBlock = params.additionalContext
+    ? `**Behavioral Narrative Context:**\n${params.additionalContext}`
+    : '';
+  const combined = [behavioralBlock, narrativeBlock].filter(Boolean).join('\n\n');
+
+  if (!combined) return undefined;
+
+  return `🔴 USER BEHAVIOR ANALYSIS CONTEXT - Use this information to design a targeted ${params.label}:
+
+${combined}
+
+**ACTION REQUIRED:** ${params.actionInstruction}`;
+}
+
 // Type definitions for prompt parameters
 type AnalysisPromptParams = {
   topic?: string;
@@ -56,6 +131,14 @@ type AnalysisPromptParams = {
     department?: string;
     behavioralTriggers?: string[];
     vulnerabilities?: string[];
+  };
+  behavioralProfile?: {
+    currentStage?: string;
+    targetStage?: string;
+    progressionHint?: string;
+    foggTriggerType?: string;
+    keySignalsUsed?: string[];
+    dataGaps?: string[];
   };
   additionalContext?: string;
   isQuishingDetected?: boolean; // Pre-detected quishing flag (from lightweight AI check)
@@ -88,7 +171,19 @@ type LandingPagePromptParams = {
   subject?: string;
   template?: string;
   additionalContext?: string;
+  behavioralProfile?: {
+    currentStage?: string;
+    targetStage?: string;
+    progressionHint?: string;
+    foggTriggerType?: string;
+    keySignalsUsed?: string[];
+    dataGaps?: string[];
+  };
   isQuishing?: boolean;
+  audienceMode?: string;
+  journeyType?: string;
+  offerMechanic?: string;
+  method?: string;
   policyContext?: string; // Company policy context
 };
 
@@ -100,7 +195,7 @@ function buildQuishingAnalysisPrompts(params: AnalysisPromptParams): {
   userPrompt: string;
   additionalContextMessage?: string;
 } {
-  const { topic, difficulty, language, method, targetProfile, additionalContext, policyContext } = params;
+  const { topic, difficulty, language, method, targetProfile, behavioralProfile, additionalContext, policyContext } = params;
   const difficultyRules = DIFFICULTY_CONFIG[difficulty as keyof typeof DIFFICULTY_CONFIG] || DIFFICULTY_CONFIG.Medium;
 
   const quishingSystemPrompt = `You are an expert Quishing (QR Code Phishing) Simulation Architect working for a LEGITIMATE CYBERSECURITY TRAINING COMPANY.
@@ -141,6 +236,14 @@ Design highly realistic quishing (QR code phishing) simulation scenarios for cyb
    - **IF Topic is GENERIC:** Invent a plausible company/department (e.g., "IT Support", "HR Department", "Security Team")
    - **QR Context:** The scenario should naturally involve QR code usage for that brand/context
 
+4a. **Coherence Layer (MANDATORY):**
+   - Select exactly ONE audienceMode: consumer, employee, partner, student, citizen, or general.
+   - Select exactly ONE journeyType: login, claim, register, review, pay, track, acknowledge, download, or generic.
+   - Select exactly ONE offerMechanic: account-access, discount, giveaway, presale, document-review, payment-fix, delivery-update, policy-ack, survey, or generic.
+   - If the topic is ambiguous, use "general" / "generic" rather than forcing a narrow frame.
+   - Keep sender identity, copy style, CTA logic, and landing-page logic aligned with those choices.
+   - Do NOT mix multiple primary mechanics in one flow unless the topic explicitly requires it.
+
 5. **Difficulty Adjustment (STRICT RULES for '${difficulty}'):**
    - **Sender Logic:** ${difficultyRules.sender.rule}. (Examples: ${difficultyRules.sender.examples.join(', ')} - **DO NOT COPY these exact examples. INVENT NEW ONES matching this pattern**).
    - **Urgency/Tone:** ${difficultyRules.urgency.rule}. ${difficultyRules.urgency.description}.
@@ -165,6 +268,7 @@ ${JSON_OUTPUT_RULE}
 - **description:** ${PHISHING_EMAIL.MAX_DESCRIPTION_LENGTH} characters or less
 - **name, scenario:** MUST be written entirely in the output language. Do NOT mix English prefixes with translated text.
 - **reasoning:** REQUIRED. 1-2 sentences explaining why this scenario was chosen for this target audience. Write in clear, fluent ${language}. A non-technical manager should understand it easily.
+- **audienceMode / journeyType / offerMechanic:** REQUIRED coherence fields. Use "general" / "generic" only when the topic truly lacks strong signals.
 
 **EXAMPLE OUTPUT (Quishing Scenario):**
 {
@@ -180,6 +284,9 @@ ${JSON_OUTPUT_RULE}
   "keyRedFlags": ["Unsolicited QR code in email", "Urgency to scan QR code", "Request for payment verification via QR"],
   "targetAudienceAnalysis": "Users are likely to trust QR codes as convenient and legitimate technology",
   "subjectLineStrategy": "Creates urgency with 'Action Required' and emphasizes quick QR code verification",
+  "audienceMode": "employee",
+  "journeyType": "login",
+  "offerMechanic": "account-access",
   "reasoning": "Employees regularly interact with QR codes for convenience, making them susceptible to QR-based phishing that exploits trust in mobile-friendly technology.",
   "isQuishing": true
 }`;
@@ -205,15 +312,16 @@ Remember: This is for DEFENSIVE CYBERSECURITY TRAINING to protect organizations 
 2. Is isQuishing set to true?
 3. Is "method" consistent with the scenario logic?
 4. Are psychologicalTriggers contextually matched to the scenario?
+5. Is there exactly one audience frame, one primary journey, and one primary offer mechanic?
 If any fails → fix before outputting.`;
 
-  const quishingAdditionalContextMessage = additionalContext
-    ? `🔴 USER BEHAVIOR ANALYSIS CONTEXT - Use this information to design a targeted quishing scenario:
-
-${additionalContext}
-
-**ACTION REQUIRED:** Use this behavioral analysis to inform your quishing scenario design. Consider the user's risk level, strengths, growth areas, and recommended action plan when designing the QR code phishing simulation. The scenario should be tailored to test and improve the specific vulnerabilities and behavioral patterns identified in this analysis.`
-    : undefined;
+  const quishingAdditionalContextMessage = buildBehavioralContextMessage({
+    additionalContext,
+    behavioralProfile,
+    label: 'quishing scenario',
+    actionInstruction:
+      "Use this behavioral analysis to inform your quishing scenario design. Consider the user's risk level, strengths, growth areas, recommended next-step logic, and structured behavioral signals when designing the QR code phishing simulation. The scenario should be tailored to test and improve the specific vulnerabilities and behavioral patterns identified in this analysis.",
+  });
 
   // Add policy context if available
   const policyBlock = buildPolicyScenePrompt(policyContext);
@@ -234,7 +342,7 @@ function buildNormalPhishingAnalysisPrompts(params: AnalysisPromptParams): {
   userPrompt: string;
   additionalContextMessage?: string;
 } {
-  const { topic, difficulty, language, method, targetProfile, additionalContext, policyContext } = params;
+  const { topic, difficulty, language, method, targetProfile, behavioralProfile, additionalContext, policyContext } = params;
   const difficultyRules = DIFFICULTY_CONFIG[difficulty as keyof typeof DIFFICULTY_CONFIG] || DIFFICULTY_CONFIG.Medium;
 
   const systemPrompt = `You are an expert Social Engineering Architect and Cyber Psychologist working for a LEGITIMATE CYBERSECURITY TRAINING COMPANY.
@@ -281,12 +389,21 @@ Design highly realistic phishing simulation scenarios for cybersecurity training
      * Set "fromName" to that BRAND NAME (e.g., "Amazon")
      * Create scenarios matching that brand's context (e.g., E-commerce → package delivery, order confirmation)
      * Use brand-appropriate email address (e.g., "noreply@shopping-notifications.com" for Medium difficulty)
+     * If the brand is public and consumer-facing or promotional (e.g., NBA, Amazon, Netflix), keep that public brand visible in sender identity. Do NOT replace it with a generic internal department unless the scenario explicitly requires a sub-brand or department sender.
    - **IF Topic is GENERIC** (e.g., "Create phishing email"):
      * Invent a plausible company/department (e.g., "IT Support", "HR Department", "Finance Team")
    - **Examples:**
      * Topic: "E-commerce package" → fromName: "Shopping Platform", scenario: "Package Delivery Notification"
      * Topic: "Amazon order" → fromName: "Amazon", scenario: "Order Confirmation Alert"
      * Topic: "General phishing" → fromName: "IT Support", scenario: "Password Reset Request"
+
+3b. **Coherence Layer (MANDATORY):**
+   - Select exactly ONE audienceMode: consumer, employee, partner, student, citizen, or general.
+   - Select exactly ONE journeyType: login, claim, register, review, pay, track, acknowledge, download, or generic.
+   - Select exactly ONE offerMechanic: account-access, discount, giveaway, presale, document-review, payment-fix, delivery-update, policy-ack, survey, or generic.
+   - If the topic is ambiguous, use "general" / "generic" rather than forcing a narrow frame.
+   - Keep sender identity, copy style, CTA logic, and landing-page logic aligned with those choices.
+   - Do NOT mix multiple primary mechanics in one flow unless the topic explicitly requires it.
 
 4. **Difficulty Adjustment (STRICT RULES for '${difficulty}'):**
    - **Sender Logic:** ${difficultyRules.sender.rule}. (Examples: ${difficultyRules.sender.examples.join(', ')} - **DO NOT COPY these exact examples. INVENT NEW ONES matching this pattern**).
@@ -304,6 +421,7 @@ ${JSON_OUTPUT_RULE}
 - **description**: ${PHISHING_EMAIL.MAX_DESCRIPTION_LENGTH} characters or less. Keep it concise and focused on the simulation's purpose.
 - **name, scenario**: MUST be written entirely in the output language (${language}). Do NOT prefix with English attack categories. Write the full name in ${language}.
 - **reasoning:** REQUIRED. 1-2 sentences explaining why this scenario was chosen for this target audience. Write in clear, fluent ${language}. A non-technical manager should understand it easily.
+- **audienceMode / journeyType / offerMechanic:** REQUIRED coherence fields. Use "general" / "generic" only when the topic truly lacks strong signals.
 
 **EXAMPLE OUTPUT:**
 {
@@ -320,6 +438,9 @@ ${JSON_OUTPUT_RULE}
   "targetAudienceAnalysis": "Finance team members are targeted due to their access to wire transfer systems and tendency to comply with executive requests",
   "reasoning": "Finance team handles wire transfers daily and tends to comply with executive requests without question, making authority-based phishing highly effective.",
   "subjectLineStrategy": "Creates time pressure with 'URGENT' prefix and implies consequences for delay",
+  "audienceMode": "employee",
+  "journeyType": "pay",
+  "offerMechanic": "payment-fix",
   "isQuishing": false
 }
 
@@ -346,15 +467,16 @@ Remember: This is for DEFENSIVE CYBERSECURITY TRAINING to protect organizations 
 2. Is isQuishing set to false?
 3. Is "method" consistent with the scenario? (Data-Submission needs login/form; Click-Only needs view/read)
 4. Are psychologicalTriggers contextually matched to the department/scenario?
+5. Is there exactly one audience frame, one primary journey, and one primary offer mechanic?
 If any fails → fix before outputting.`;
 
-  const additionalContextMessage = additionalContext
-    ? `🔴 USER BEHAVIOR ANALYSIS CONTEXT - Use this information to design a targeted phishing scenario:
-
-${additionalContext}
-
-**ACTION REQUIRED:** Use this behavioral analysis to inform your scenario design. Consider the user's risk level, strengths, growth areas, and recommended action plan when designing the phishing simulation. The scenario should be tailored to test and improve the specific vulnerabilities and behavioral patterns identified in this analysis.`
-    : undefined;
+  const additionalContextMessage = buildBehavioralContextMessage({
+    additionalContext,
+    behavioralProfile,
+    label: 'phishing scenario',
+    actionInstruction:
+      "Use this behavioral analysis to inform your scenario design. Consider the user's risk level, strengths, growth areas, recommended action plan, and structured behavioral signals when designing the phishing simulation. The scenario should be tailored to test and improve the specific vulnerabilities and behavioral patterns identified in this analysis.",
+  });
 
   // Add policy context if available
   const policyBlock = buildPolicyScenePrompt(policyContext);
@@ -394,6 +516,14 @@ function buildQuishingEmailPrompts(params: EmailPromptParams): {
 } {
   const { analysis, language, difficulty } = params;
   const difficultyRules = DIFFICULTY_CONFIG[(difficulty as keyof typeof DIFFICULTY_CONFIG) || 'Medium'];
+  const dateRealismRule = buildDateRealismRule();
+  const coherencePromptBlock = buildCoherencePromptBlock(analysis);
+  const actionFamilyPromptBlock = buildActionFamilyPromptBlock({
+    journeyType: analysis.journeyType,
+    offerMechanic: analysis.offerMechanic,
+    method: analysis.method,
+    isQuishing: true,
+  });
 
   const quishingSystemPrompt = `You are a Quishing (QR Code Phishing) Email Generator for a LEGITIMATE CYBERSECURITY TRAINING COMPANY.
 
@@ -428,6 +558,7 @@ ${BRAND_AWARENESS_RULES}
    ${PREHEADER_RULE}
 
    - **TIMING REALISM:** Reference business hours naturally.
+   - ${dateRealismRule}
 
    ${MOBILE_OPTIMIZATION_RULES}
    - QR code: Must be clearly visible and scannable on mobile devices.
@@ -473,6 +604,10 @@ Note: Template must be complete HTML. QR code is the only call-to-action.`;
 - **Quishing Confirmed:** This is a QR code phishing email. QR code is the only call-to-action. No buttons or links in main body.
 ${analysis.isRecognizedBrand && analysis.brandName ? `- **Recognized Brand:** ${analysis.brandName} - Include brand name in subject line or email body.` : ''}
 
+${coherencePromptBlock}
+
+${actionFamilyPromptBlock}
+
 **Blueprint:**
 ${JSON.stringify(analysis, null, 2)}
 
@@ -484,7 +619,7 @@ ${JSON.stringify(analysis, null, 2)}
 5. **WRITE** realistic, authentic email content that matches the brand's style, the blueprint's tone exactly, and emphasizes convenience/mobile-friendly access.
 6. **QR Code:** Insert ${QR_CODE_IMG_TAG} prominently (center-aligned, after main text, before signature). Never use placeholder src. Add scenario-specific convenience text around it.
 7. **EMBED** quishing-specific red flags according to difficulty level.
-8. **VERIFY** no buttons or links in main body, then **OUTPUT** valid JSON with complete HTML template.`;
+8. **VERIFY** no buttons or links in main body and ensure visible dates/years are current and plausible, then **OUTPUT** valid JSON with complete HTML template.`;
 
   return {
     systemPrompt: quishingSystemPrompt,
@@ -501,6 +636,14 @@ function buildNormalPhishingEmailPrompts(params: EmailPromptParams): {
 } {
   const { analysis, language, difficulty, industryDesign } = params;
   const difficultyRules = DIFFICULTY_CONFIG[(difficulty as keyof typeof DIFFICULTY_CONFIG) || 'Medium'];
+  const dateRealismRule = buildDateRealismRule();
+  const coherencePromptBlock = buildCoherencePromptBlock(analysis);
+  const actionFamilyPromptBlock = buildActionFamilyPromptBlock({
+    journeyType: analysis.journeyType,
+    offerMechanic: analysis.offerMechanic,
+    method: analysis.method,
+    isQuishing: false,
+  });
 
   const systemPrompt = `You are a Phishing Content Generator for a LEGITIMATE CYBERSECURITY TRAINING COMPANY.
 
@@ -531,6 +674,7 @@ ${BRAND_AWARENESS_RULES}
    ${PREHEADER_RULE} (hidden from email body, visible in inbox preview).
 
    - **TIMING REALISM:** Reference business hours naturally (e.g., "by end of business day", "this morning", "before 5 PM"). Routine emails imply weekday business hours; only critical security alerts can be off-hours/weekend.
+   - ${dateRealismRule}
 
    ${MOBILE_OPTIMIZATION_RULES}
 
@@ -584,6 +728,10 @@ Note: Template must be complete HTML (not truncated). Use table-based layout wit
 - **Difficulty:** ${difficulty}
 ${analysis.isRecognizedBrand && analysis.brandName ? `- **Recognized Brand:** ${analysis.brandName} - Include brand name in subject line or email body. Example: "Your ${analysis.brandName} account" or "${analysis.brandName} Security Alert"` : ''}
 
+${coherencePromptBlock}
+
+${actionFamilyPromptBlock}
+
 **Blueprint:**
 ${JSON.stringify(analysis, null, 2)}
 
@@ -595,7 +743,7 @@ ${JSON.stringify(analysis, null, 2)}
 5. **WRITE** realistic, authentic email content that matches the brand's style and the blueprint's tone exactly.
 6. **EMBED** red flags according to difficulty level (obvious for Easy, subtle for Medium/Hard).
 7. **SAFETY RULE:** Do NOT use personal names (like "Emily Clarke") in the signature. Use generic Team/Department names only.
-8. **FINAL VALIDATION:** Before outputting, check that: (a) greeting contains {FIRSTNAME} or {FULLNAME}, (b) button/link uses {PHISHINGURL} tag. Fix if missing or incorrect.
+8. **FINAL VALIDATION:** Before outputting, check that: (a) greeting contains {FIRSTNAME} or {FULLNAME}, (b) button/link uses {PHISHINGURL} tag, (c) visible dates/years are current and not stale, (d) there is no disclaimer-like softening copy such as "ignore this email" or "delete this message". Fix if missing or incorrect.
 9. **OUTPUT** valid JSON with complete, production-ready HTML template.`;
 
   return {
@@ -642,18 +790,28 @@ export function buildLandingPagePrompts(params: LandingPagePromptParams): {
     subject,
     template,
     additionalContext,
+    behavioralProfile,
     isQuishing = false,
+    audienceMode,
+    journeyType,
+    offerMechanic,
+    method,
   } = params;
 
   const hasFormPages = requiredPages.includes('login') || requiredPages.includes('success');
 
-  // 🎲 RANDOMIZE DESIGN 🎲
-  const randomLayout = LAYOUT_OPTIONS[Math.floor(Math.random() * LAYOUT_OPTIONS.length)];
-  const randomStyle = STYLE_OPTIONS[Math.floor(Math.random() * STYLE_OPTIONS.length)];
+  const { layout: randomLayout, style: randomStyle, bucket: landingBucket } = selectLandingDesign({
+    scenario,
+    subject,
+    fromName,
+    requiredPages,
+    isQuishing,
+  });
 
   // 📝 LOG CHOSEN DESIGN FOR DEBUGGING
   // This helps us verify that randomization is working and what the agent is instructed to do
   logger.info('Design Injection:', {
+    scenarioBucket: landingBucket,
     layout: randomLayout.id,
     style: randomStyle.id,
     layoutName: randomLayout.name,
@@ -689,6 +847,14 @@ export function buildLandingPagePrompts(params: LandingPagePromptParams): {
   const pageCountReminder = requiredPages.length === 2
     ? `**REQUIRED: Generate EXACTLY 2 pages — a '${requiredPages[0]}' page AND a '${requiredPages[1]}' page. Do NOT stop after the first page.**`
     : `**REQUIRED: Generate EXACTLY ${requiredPages.length} page(s): [${pageList}].**`;
+  const continuityGuidance = buildLandingContinuityGuidance(landingBucket);
+  const coherencePromptBlock = buildCoherencePromptBlock({ audienceMode, journeyType, offerMechanic });
+  const actionFamilyPromptBlock = buildActionFamilyPromptBlock({
+    journeyType,
+    offerMechanic,
+    method,
+    isQuishing,
+  });
 
   const userPrompt = `Design landing pages for: ${fromName} - ${scenario}
 
@@ -697,40 +863,54 @@ ${pageCountReminder}
 **SCENARIO:** ${scenario}
 **LANGUAGE:** ${language}
 
+${coherencePromptBlock}
+
+${actionFamilyPromptBlock}
+
 Create modern, professional pages that match ${industryDesign.industry} standards. Make them look authentic and realistic for ${fromName}.
 
 **GENERATION STEPS (Follow this order):**
-1. **Plan first:** Review the rules and template examples in system prompt, decide on colors, layout, spacing
-2. **Match email branding:** Use same logo, colors, and style from phishing email
-3. **Generate HTML:** Create complete, valid HTML with all required elements${requiredPages.length > 1 ? ` for ALL ${requiredPages.length} pages` : ''}
+1. **Plan first:** Use the system prompt and email context to decide layout, spacing, and the exact user journey
+2. **Generate HTML:** Create complete, valid HTML with all required elements${requiredPages.length > 1 ? ` for ALL ${requiredPages.length} pages` : ''}
+3. **Keep copy realistic:** Make headings, helper text, form labels, and button text concise, native, and product-like
 4. **Validate:** Check against the structure requirements and template examples before returning
-5. **Ensure variation:** If multiple pages, make them related but NOT identical. Adapt messages and content to match the specific scenario - make it look like a real ${fromName} page, not a generic template.
+5. **Ensure variation:** If multiple pages, make them related but NOT identical while keeping the same scenario and brand logic
 
 **KEY REMINDERS:**
 ${isQuishing ? `- Landing pages are standard forms (no QR codes)\n` : ''}- Add natural design variations (don't make all pages identical)
 - ${layoutSpecificReminders.replace(/\n/g, '\n- ').replace(/^- /, '')}
+- ${continuityGuidance.replace(/\n/g, '\n- ').replace(/^- /, '')}
+- ${requiredPages.includes('success') ? 'On success/confirmation pages, the heading, helper text, and main CTA must agree on the completed state' : 'Keep the page state and main CTA logically aligned'}
+- ${requiredPages.includes('success') ? 'On success/confirmation pages, use scenario-specific completion microcopy that states what was completed and what happens next; avoid generic "Thank you" copy with no task context' : 'Keep follow-up microcopy tied to the exact scenario task'}
+- Avoid placeholder-style UI text such as "Click here", "Submit", "Continue", "Your Company", or "Lorem ipsum"
 ${hasFormPages ? '- Button must contrast with the surrounding background' : '- **No buttons or CTA links** — show content directly (lists, highlighted boxes, metadata)'}`;
 
   // Build optional context messages
-  const userContextMessage = additionalContext
-    ? `USER BEHAVIOR ANALYSIS CONTEXT - Design landing page based on this user profile:
-
-${additionalContext}
-
-**ACTION REQUIRED:** Use this behavioral analysis to inform your landing page design. Consider the user's risk level, strengths, growth areas, and behavioral triggers when creating the page. The design must feel genuine, trustworthy, and specifically tailored to this user's profile. Make it look like a legitimate, professional page that this specific user would naturally trust and interact with based on their identified vulnerabilities and patterns.`
-    : undefined;
+  const userContextMessage = buildBehavioralContextMessage({
+    additionalContext,
+    behavioralProfile,
+    label: 'landing page flow',
+    actionInstruction:
+      "Use this behavioral analysis to inform your landing page design. Consider the user's current stage, progression goal, key evidence signals, data gaps, and behavioral triggers when creating the page. The design must feel genuine, trustworthy, and specifically tailored to this user's likely trust path without contradicting the scenario blueprint.",
+  });
 
   const emailContextMessage =
-    template && (emailUsesLogoTag || emailBrandContext)
+    template
       ? `PHISHING EMAIL CONTEXT (for landing page consistency):
 
-**Email Subject:** ${subject || 'N/A'}
-**From:** ${fromName} <${fromAddress}>
+${buildLandingEmailSummary({
+  subject,
+  fromName,
+  fromAddress,
+  template,
+  isQuishing,
+  emailUsesLogoTag,
+})}
 
-Landing pages must match the branding and style used in the phishing email. Use the same logo, colors, and design language to maintain consistency.${isQuishing ? `\nNote: Landing pages are standard forms (no QR codes).` : ''}${emailUsesLogoTag ? `\nNote: Email uses {CUSTOMMAINLOGO} tag - use the same in landing pages.` : ''}
+Landing pages must match the branding and style used in the phishing email.${isQuishing ? `\nNote: Landing pages are standard forms (no QR codes).` : ''}${emailUsesLogoTag ? `\nNote: Email uses {CUSTOMMAINLOGO} tag - use the same in landing pages.` : ''}
 ${emailBrandContext ? `\n${emailBrandContext}` : ''}
-
-**Email Preview (first 500 chars):** ${template.substring(0, 500)}...`
+\nThe landing page must preserve the same user journey implied by the email. Match the promised task, tone, and level of friction.
+`
       : undefined;
 
   return {

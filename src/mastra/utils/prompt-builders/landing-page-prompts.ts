@@ -56,9 +56,9 @@ ${isQuishing ? QUISHING_LANDING_PAGE_RULE : NO_QR_CODE_LANDING_PAGE_RULE}
 
 3. **Full HTML document** for every page: \`<!DOCTYPE html>\`, \`<head>\` with charset + viewport + title, \`<body>\`. Follow template examples.
 
-4. **NO external CSS/JS** — no Tailwind, Bootstrap, or libraries. Inline \`style='...'\` only.
+4. **INLINE CSS ONLY** — no external CSS/JS, Tailwind, Bootstrap, or libraries.
 
-5. **FOOTER:** All footer content (copyright, links) must be in a single centered block. Never split copyright left and links right — keep everything together, centered, same font-size (12px), muted color (#9ca3af). Use \`text-align: center;\` on the footer container.
+5. **FOOTER:** Keep footer content in one centered block. The detailed footer pattern is defined below.
 
 6. **INLINE CSS IS THE SOURCE OF TRUTH:**
    - You MAY use the design hints from \`industryDesign\`, but the final visual result must come from inline styles.
@@ -117,20 +117,19 @@ Pages for the same brand must feel related (same color palette, logo, general mo
 - The header/hero is the brand anchor — it MUST be identical across login, success, and info pages.
 - Variation applies ONLY to the content area below the header, never to the header itself.
 
-For each new page/template, change at least **3** of the following visual aspects in a natural way:
-
-Items 1–3 apply only to card-based layouts (CENTERED, HERO, and the right-panel form card in SPLIT). For MINIMAL, vary items 4–7 instead.
-
-1. Card max-width for card-based layouts (min 620px, max ${LANDING_PAGE.FORM_MAX_WIDTH_PX}px). Never below 620px — forms look cramped with padding.
-2. Card border-radius for card-based layouts (6px, 8px, or 10px). Keep subtle and professional.
-3. Card border style (e.g. \`border: 1px solid #e2e8f0\` or \`border: 1px solid rgba(0,0,0,0.08)\`). No box-shadow — inconsistent across browsers.
-4. Logo size (keep alignment and placement identical across pages).
-${hasFormPages ? '5. Button shape (fully pill vs slightly rounded rectangle).' : '5. (No buttons — info pages show content directly, no CTA.)'}
-6. Vertical spacing between sections (margins between logo, card, footer).
-7. Heading text and microcopy wording (same meaning, slightly different sentences).
-
+Variation should feel natural, not mechanical:
+- Keep the same product shell, then vary only a few visual aspects naturally when multiple pages are generated.
+- Prefer subtle variation in the following areas when appropriate:
+- 1. Card max-width for card-based layouts (min 620px, max ${LANDING_PAGE.FORM_MAX_WIDTH_PX}px). Never below 620px — forms look cramped with padding.
+- 2. Card border-radius for card-based layouts (6px, 8px, or 10px). Keep subtle and professional.
+- 3. Card border style (for example \`border: 1px solid #e2e8f0\` or \`border: 1px solid rgba(0,0,0,0.08)\`). No box-shadow — inconsistent across browsers.
+- 4. Logo size (keep alignment and placement identical across pages).
+${hasFormPages ? '- 5. Button shape (fully pill vs slightly rounded rectangle).' : '- 5. (No buttons — info pages show content directly, no CTA.)'}
+- 6. Vertical spacing between sections (margins between logo, card, footer).
+- 7. Heading text and microcopy wording (same meaning, slightly different sentences).
+- Items 1–3 apply only to card-based layouts (CENTERED, HERO, and the right-panel form card in SPLIT). For MINIMAL, prefer items 4–7 instead.
+- Do **NOT** force variation for its own sake. Product realism matters more than visible difference.
 - Do **NOT** blindly copy the same inline style values across all pages.
-- Maintain consistency (same brand), but introduce subtle visual diversity like real products do.
 
 ---
 
@@ -141,12 +140,14 @@ If a layout-specific rule above conflicts with a shared rule below, the layout-s
 1. **Card Container (Main Panel) — SKIP for MINIMAL layout:**
    - Applies to CENTERED, HERO, SPLIT. Use \`cardStyle\` from the design patterns above.
    - **IMPORTANT:** Never change or remove \`margin: 0 auto;\` from templates — it's correct centering. New containers must also use \`margin: 0 auto;\`.
+   - Avoid oversized empty whitespace. Keep the content block compact and product-like with balanced spacing around the title, form/status card, and footer.
 
 2. **Typography Hierarchy:**
    - Main heading: clear, strong, around 22–28px, bold.
    - Subheading: smaller, muted color (e.g. #4b5563), explaining context.
    - Helper/footer text: 11–13px, subtle.
    - **Header block alignment:** H1 and the intro/description paragraph directly below it MUST both use \`text-align: center\` (or wrap logo + h1 + p in a div with \`text-align: center\`). This ensures the title and intro text are visually aligned.
+   - Headings and helper text should reflect the promised task from the email context. Prefer scenario-specific product wording over generic portal copy.
    - **FOR QUISHING LANDING PAGES:**
      - Heading MUST be a normal login heading: "Sign In", "Log In to Your Account", "Sign In Securely", etc.
      - Do NOT use: "QR Code Verification", "Verify via QR", "Account Verification via QR", or any QR-related text.
@@ -161,16 +162,21 @@ ${hasFormPages ? `3. **Inputs:**
    - High contrast: strong brand color background, readable text (e.g. white on ${industryDesign.colors.primary}).
 
 5. **Trust & Security Indicator (especially on login):**
-   - Small row BELOW the button (centered), with an icon + text. Use display: flex with justify-content: center (NOT inline-flex) to ensure it appears below, not beside the button.
-   - Example:
-     <div style='margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 11px; color: #6b7280;'>
-       <span aria-hidden='true'>🔒</span>
-       <span>256-bit SSL encryption</span>
-     </div>` : `3. **No Buttons or CTA Links:**
+   - Optional, restrained row BELOW the button (centered), with a small icon + short text. Use display: flex with justify-content: center (NOT inline-flex) so it appears below, not beside the button.
+   - Keep the wording product-like and modern (e.g. "Secure sign-in", "Internal portal", "Encrypted connection").
+   - Avoid generic security cliches or marketing-style badges such as "256-bit SSL encryption".` : `3. **No Buttons or CTA Links:**
    - Info pages display content directly — no buttons, no clickable actions, no form inputs.
    - Show scenario-specific content: lists, highlighted boxes, tables, metadata rows.`}
 
-6. **Footer (ALWAYS under the card):**
+${requiredPages.includes('success') ? `
+6. **Success-State Logic:**
+   - Success / confirmation pages must clearly feel completed, recorded, or submitted.
+   - Use scenario-specific completion microcopy that names the actual completed task and the realistic next state (for example access request received, policy acknowledgment recorded, payment review submitted).
+   - Avoid generic completion copy that could fit any product flow, such as a vague "Thank you" or "Your action is complete" with no scenario context.
+   - If the heading says "completed", "confirmed", "received", or "recorded", the primary CTA must not ask the user to complete the same action again.
+   - Prefer a neutral follow-up action (for example "Return to portal") or no primary CTA at all.` : ''}
+
+${requiredPages.includes('success') ? '7' : '6'}. **Footer (ALWAYS under the card):**
    - Small text: © YEAR BRAND + tiny links (Privacy, Terms, Support).
    - Follow the footer pattern shown in template examples below.
 
@@ -193,9 +199,8 @@ ${requiredPages.includes('info') ? getInfoPageSection({ fromName, industryDesign
 ---
 
 **TECHNICAL CONSTRAINTS:**
-1. **Single File per Page:** Each \`template\` must be a complete HTML document as shown above.
-2. **Assets:** Use ONLY public CDN-hosted images (neutral icons). No local files.
-3. **NO DISCLAIMERS:** Do NOT add any security warnings like "this is a fake site" or "look-alike domain". The output is a mockup.
+1. **Assets:** Use ONLY public CDN-hosted images (neutral icons). No local files.
+2. **NO DISCLAIMERS:** Do NOT add any security warnings like "this is a fake site" or "look-alike domain". The output is a mockup.
 
 ---
 

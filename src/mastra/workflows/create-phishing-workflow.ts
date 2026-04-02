@@ -6,7 +6,13 @@ import { cleanResponse } from '../utils/content-processors/json-cleaner';
 import { generateUniqueId } from '../utils/core/id-utils';
 import { LANDING_PAGE, STRING_TRUNCATION, KV_NAMESPACES } from '../constants';
 import { KVService } from '../services/kv-service';
-import { detectIndustry, fixBrokenImages, validateLandingPage, logValidationResults } from '../utils/landing-page';
+import {
+  detectIndustry,
+  fixBrokenImages,
+  validateLandingPage,
+  hasRetryableLandingQualitySignals,
+  logValidationResults,
+} from '../utils/landing-page';
 import { streamDirectReasoning } from '../utils/core/reasoning-stream';
 import { extractReasoning } from '../utils/core/ai-utils';
 import {
@@ -38,7 +44,7 @@ import {
   postProcessPhishingLandingHtml,
 } from '../utils/content-processors/phishing-html-postprocessors';
 import { repairBrokenLandingFormControlAttrs } from '../utils/content-processors/landing-form-style-preserver';
-import { PHISHING_SCENARIO_PARAMS, PHISHING_CONTENT_PARAMS } from '../utils/config/llm-generation-params';
+import { PHISHING_SCENARIO_PARAMS, PHISHING_CONTENT_PARAMS, PHISHING_LANDING_PARAMS } from '../utils/config/llm-generation-params';
 import { emitWorkflowStep } from '../utils/core/stream-progress';
 import type { StreamWriter } from '../types/stream-writer';
 
@@ -77,6 +83,7 @@ const analyzeRequest = createStep({
       method,
       includeLandingPage,
       includeEmail,
+      behavioralProfile,
       additionalContext,
       modelProvider,
       model,
@@ -125,6 +132,7 @@ const analyzeRequest = createStep({
       language,
       method,
       targetProfile,
+      behavioralProfile,
       additionalContext,
       isQuishingDetected,
       policyContext,
@@ -215,6 +223,19 @@ const analyzeRequest = createStep({
         });
       }
 
+      parsedResult.audienceMode =
+        typeof parsedResult.audienceMode === 'string' && parsedResult.audienceMode.length > 0
+          ? parsedResult.audienceMode
+          : 'general';
+      parsedResult.journeyType =
+        typeof parsedResult.journeyType === 'string' && parsedResult.journeyType.length > 0
+          ? parsedResult.journeyType
+          : 'generic';
+      parsedResult.offerMechanic =
+        typeof parsedResult.offerMechanic === 'string' && parsedResult.offerMechanic.length > 0
+          ? parsedResult.offerMechanic
+          : 'generic';
+
       // Log generated scenario for debugging
       logger.info('Generated Scenario', {
         scenario: parsedResult.scenario,
@@ -227,7 +248,7 @@ const analyzeRequest = createStep({
 
       // Resolve logo and brand detection early (once, in analysis step)
       logger.info('Detecting brand and resolving logo URL');
-      let logoInfo = await resolveLogoAndBrand(parsedResult.fromName, parsedResult.scenario, aiModel);
+      let logoInfo = await resolveLogoAndBrand(parsedResult.fromName, parsedResult.scenario, aiModel, undefined, inputData.topic);
 
       // Validate the resolved logo URL to ensure it's accessible
       // Skip validation for img.logo.dev URLs as they often fail HEAD requests in the backend
@@ -321,6 +342,7 @@ const analyzeRequest = createStep({
 
       return {
         ...parsedResult,
+        behavioralProfile,
         additionalContext, // Pass through user behavior context
         difficulty,
         language,
@@ -563,6 +585,7 @@ const generateLandingPage = createStep({
         fromAddress,
         fromName,
         analysis,
+        language: analysis.language,
         policyContext: inputData.policyContext,
       };
     }
@@ -615,7 +638,12 @@ const generateLandingPage = createStep({
       subject,
       template,
       additionalContext: additionalContext || analysis.additionalContext,
+      behavioralProfile: analysis.behavioralProfile,
       isQuishing: analysis.isQuishing || false,
+      audienceMode: analysis.audienceMode,
+      journeyType: analysis.journeyType,
+      offerMechanic: analysis.offerMechanic,
+      method: analysis.method,
       policyContext,
     });
 
@@ -647,13 +675,71 @@ const generateLandingPage = createStep({
     let response;
     let parsedResult: { pages?: { type: LandingPageType; template: string }[] };
 
+    const finalizeLandingPages = async (pages: { type: LandingPageType; template: string }[]) => {
+      let hasCriticalValidationIssues = false;
+
+      const finalizedPages = await Promise.all(
+        pages.map(async (page: { type: LandingPageType; template: string }) => {
+          // Step 1: Post-process landing HTML (sanitize/repair/centering/wrapper)
+          let cleanedTemplate = postProcessPhishingLandingHtml({ html: page.template, title: `${fromName} Login` });
+
+          // Step 2: Replace {CUSTOMMAINLOGO} tag FIRST (before fixBrokenImages)
+          if (cleanedTemplate.includes('{CUSTOMMAINLOGO}')) {
+            const logoUrl = analysis.logoUrl || DEFAULT_GENERIC_LOGO;
+            // Replace {CUSTOMMAINLOGO} tag with logo URL
+            cleanedTemplate = cleanedTemplate.replace(/src=['"]\{CUSTOMMAINLOGO\}['"]/gi, `src='${logoUrl}'`);
+            // Also handle cases where tag might be in the value without quotes (edge case)
+            cleanedTemplate = cleanedTemplate.replace(/\{CUSTOMMAINLOGO\}/g, logoUrl);
+            // Normalize img attributes and add centering styles
+            cleanedTemplate = normalizeImgAttributes(cleanedTemplate);
+            logger.info('Replaced CUSTOMMAINLOGO tag in landing page with logo from analysis', {
+              logoUrlPrefix: logoUrl.substring(0, STRING_TRUNCATION.LOGO_URL_PREFIX_LENGTH_ALT),
+              truncated: logoUrl.length > STRING_TRUNCATION.LOGO_URL_PREFIX_LENGTH_ALT,
+            });
+          }
+
+          // Step 3: Fix broken images with real HTTP validation
+          // This runs AFTER replace/normalize
+          cleanedTemplate = await fixBrokenImages(cleanedTemplate, fromName);
+
+          // Step 3.5: Repair malformed boolean/form control attrs before validation/save.
+          cleanedTemplate = repairBrokenLandingFormControlAttrs(cleanedTemplate);
+
+          // Step 4: Validate HTML structure and required elements
+          const validationResult = validateLandingPage(cleanedTemplate, page.type, {
+            fromName,
+            scenario,
+            subject,
+            isQuishing: analysis.isQuishing || false,
+          });
+          logValidationResults(validationResult, page.type);
+
+          if (hasRetryableLandingQualitySignals(validationResult)) {
+            hasCriticalValidationIssues = true;
+            logger.warn('Landing page quality validation flagged retryable issues', {
+              pageType: page.type,
+              errors: validationResult.errors,
+              warnings: validationResult.warnings,
+            });
+          }
+
+          return {
+            ...page,
+            template: cleanedTemplate,
+          };
+        })
+      );
+
+      return { finalizedPages, hasCriticalValidationIssues };
+    };
+
     try {
       try {
         response = await withRetry(async () => {
           return await trackedGenerateText('phishing-landing-page', {
             model: aiModel,
             messages: messages,
-            ...PHISHING_CONTENT_PARAMS,
+            ...PHISHING_LANDING_PARAMS,
           });
         }, 'phishing-landing-page-generation');
 
@@ -716,52 +802,29 @@ const generateLandingPage = createStep({
 
       // Sanitize HTML, fix broken images, enforce email logo, and validate for all pages
       if (parsedResult.pages && Array.isArray(parsedResult.pages)) {
-        parsedResult.pages = await Promise.all(
-          parsedResult.pages.map(async (page: { type: LandingPageType; template: string }) => {
-            // Step 1: Post-process landing HTML (sanitize/repair/centering/wrapper)
-            let cleanedTemplate = postProcessPhishingLandingHtml({ html: page.template, title: `${fromName} Login` });
+        let finalized = await finalizeLandingPages(parsedResult.pages);
+        parsedResult.pages = finalized.finalizedPages;
 
-            // Step 2: Replace {CUSTOMMAINLOGO} tag FIRST (before fixBrokenImages)
-            if (cleanedTemplate.includes('{CUSTOMMAINLOGO}')) {
-              const logoUrl = analysis.logoUrl || DEFAULT_GENERIC_LOGO;
-              // Replace {CUSTOMMAINLOGO} tag with logo URL
-              cleanedTemplate = cleanedTemplate.replace(/src=['"]\{CUSTOMMAINLOGO\}['"]/gi, `src='${logoUrl}'`);
-              // Also handle cases where tag might be in the value without quotes (edge case)
-              cleanedTemplate = cleanedTemplate.replace(/\{CUSTOMMAINLOGO\}/g, logoUrl);
-              // Normalize img attributes and add centering styles
-              cleanedTemplate = normalizeImgAttributes(cleanedTemplate);
-              logger.info('Replaced CUSTOMMAINLOGO tag in landing page with logo from analysis', {
-                logoUrlPrefix: logoUrl.substring(0, STRING_TRUNCATION.LOGO_URL_PREFIX_LENGTH_ALT),
-                truncated: logoUrl.length > STRING_TRUNCATION.LOGO_URL_PREFIX_LENGTH_ALT,
-              });
-            }
+        if (finalized.hasCriticalValidationIssues) {
+          logger.warn('Landing page quality issues detected, retrying generation once with stronger prompt');
+          const retryResult = await retryGenerationWithStrongerPrompt(
+            aiModel,
+            systemPrompt,
+            messages,
+            'landing-page',
+            writer
+          );
+          response = retryResult.response;
+          parsedResult = retryResult.parsedResult as typeof parsedResult;
 
-            // Step 3: Fix broken images with real HTTP validation
-            // This runs AFTER replace/normalize
-            cleanedTemplate = await fixBrokenImages(cleanedTemplate, fromName);
+          const retriedPages = Array.isArray(parsedResult.pages) ? parsedResult.pages : [];
+          finalized = await finalizeLandingPages(retriedPages);
+          parsedResult.pages = finalized.finalizedPages;
 
-            // Step 3.5: Repair malformed boolean/form control attrs before validation/save.
-            cleanedTemplate = repairBrokenLandingFormControlAttrs(cleanedTemplate);
-
-            // Step 4: Validate HTML structure and required elements
-            const validationResult = validateLandingPage(cleanedTemplate, page.type);
-            logValidationResults(validationResult, page.type);
-
-            // If validation fails due to CSS patterns, log but continue
-            // (We've already tried our best with explicit negative examples)
-            if (!validationResult.isValid) {
-              logger.warn('Landing page validation failed', {
-                pageType: page.type,
-                errors: validationResult.errors,
-              });
-            }
-
-            return {
-              ...page,
-              template: cleanedTemplate,
-            };
-          })
-        );
+          if (finalized.hasCriticalValidationIssues) {
+            logger.warn('Landing page still has validation issues after retry, proceeding with best available output');
+          }
+        }
       }
 
       const pageCount = parsedResult.pages?.length || 0;
@@ -780,6 +843,7 @@ const generateLandingPage = createStep({
           difficulty: difficulty || 'Medium',
           pages: parsedResult.pages || [],
         },
+        language,
         policyContext: analysis.policyContext,
       };
     } catch (error) {
@@ -809,7 +873,7 @@ const savePhishingContent = createStep({
     await emitPhishingStep(writer, _wfRunId, 3, 'running', 'Saving simulation', 'Persisting to storage...');
 
     const phishingId = generateUniqueId();
-    const language = 'en-gb'; // Default language for phishing content
+    const language = inputData.language || 'en-gb';
 
     logger.info('Saving phishing content to KV', { phishingId });
 

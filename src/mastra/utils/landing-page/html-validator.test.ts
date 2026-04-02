@@ -1,9 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
+  hasRetryableLandingQualitySignals,
   validateCSSPatterns,
   validateFormElements,
   validateHTMLStructure,
   validateLandingPage,
+  validateSemanticQuality,
 } from './html-validator';
 
 // Mock logger
@@ -130,6 +132,66 @@ describe('html-validator', () => {
       expect(result.isValid).toBe(false);
       expect(result.errors).toHaveLength(1); // shadow-2xl
       expect(result.errors[0]).toContain('shadow-2xl');
+    });
+  });
+
+  describe('validateSemanticQuality', () => {
+    it('flags placeholder copy as an error', () => {
+      const html = '<!DOCTYPE html><html><head></head><body><div>Your Company</div></body></html>';
+      const result = validateSemanticQuality(html, 'login');
+      expect(result.isValid).toBe(false);
+      expect(result.errors[0]).toContain('Generic placeholder copy detected');
+    });
+
+    it('flags QR wording on quishing landing pages', () => {
+      const html = '<!DOCTYPE html><html><head></head><body><p>Scan the QR code to continue</p></body></html>';
+      const result = validateSemanticQuality(html, 'login', { isQuishing: true });
+      expect(result.isValid).toBe(false);
+      expect(result.errors).toContain('Quishing landing page contains QR-specific wording instead of a standard form');
+    });
+
+    it('warns when success CTA contradicts the completed state', () => {
+      const html = `
+        <!DOCTYPE html>
+        <html>
+          <head></head>
+          <body>
+            <h1>Policy Review Completed</h1>
+            <p>Your acknowledgement has been recorded.</p>
+            <a href='{PHISHINGURL}'>Review Policy</a>
+          </body>
+        </html>
+      `;
+
+      const result = validateSemanticQuality(html, 'success', { scenario: 'Policy acknowledgement completed' });
+      expect(result.warnings).toContain(
+        'Success page CTA may contradict the completed state; prefer neutral follow-up navigation or no primary CTA'
+      );
+    });
+
+    it('allows neutral follow-up CTA on success pages', () => {
+      const html = `
+        <!DOCTYPE html>
+        <html>
+          <head></head>
+          <body>
+            <h1>Policy Review Completed</h1>
+            <p>Your acknowledgement has been recorded.</p>
+            <a href='{PHISHINGURL}'>Return to portal</a>
+          </body>
+        </html>
+      `;
+
+      const result = validateSemanticQuality(html, 'success', { scenario: 'Policy acknowledgement completed' });
+      expect(result.warnings).not.toContain(
+        'Success page CTA may contradict the completed state; prefer neutral follow-up navigation or no primary CTA'
+      );
+    });
+
+    it('does not mark warnings alone as retryable quality signals', () => {
+      const html = '<!DOCTYPE html><html><head></head><body><button>Go to dashboard</button></body></html>';
+      const result = validateSemanticQuality(html, 'success', { scenario: 'Invoice review completed' });
+      expect(hasRetryableLandingQualitySignals(result)).toBe(false);
     });
   });
 });

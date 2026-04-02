@@ -4,6 +4,7 @@ import { requestStorage } from '../../utils/core/request-storage';
 import { generateText } from 'ai';
 import { getModelWithOverride } from '../../model-providers';
 import { ANALYSIS_REFERENCES } from './behavior-analyst-constants';
+import { buildNoActivitySimulationDefaults } from './utils/no-activity-foundational-defaults';
 import '../../../../src/__tests__/setup';
 
 /**
@@ -583,7 +584,7 @@ describe('getUserInfoTool', () => {
       expect(generateTextCall.messages[1].content).toContain('NO ACTIVITY DATA AVAILABLE');
     });
 
-    it('should generate deterministic default recommendations based on user ID when no activities found', async () => {
+    it('should fill weak no-activity recommendations with deterministic department-aware defaults', async () => {
       // Mock user lookup and empty timeline (phoneNumber avoids extra enrich fetch)
       (global.fetch as any)
         // First call: findUserById (fetches user profile via getAll)
@@ -615,9 +616,9 @@ describe('getUserInfoTool', () => {
               persuasion_tactic: 'DEFAULT',
               scenario_type: 'CLICK_ONLY',
               difficulty: 'EASY',
-              title: 'Test Sim',
-              why_this: 'Testing',
-              designed_to_progress: 'Test',
+              title: 'DEFAULT',
+              why_this: 'Generic',
+              designed_to_progress: 'Unknown',
               nist_phish_scale: {
                 cue_difficulty: 'LOW',
                 premise_alignment: 'LOW',
@@ -631,14 +632,127 @@ describe('getUserInfoTool', () => {
       (generateText as any).mockResolvedValue({ text: JSON.stringify(basicAIResponse) });
 
       const input = { targetUserResourceId: 'user-1' };
-      // 'u' + 's' + 'e' + 'r' + '-' + '1' = 541 (Odd) -> Parity 1 -> QR / AUTHORITY
 
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const result = await getUserInfoTool.execute!(input, {}) as any;
       const sim = result.analysisReport?.ai_recommended_next_steps?.simulations?.[0];
 
+      expect(sim?.vector).toBe('EMAIL');
+      expect(sim?.scenario_type).toBe('CLICK_ONLY');
+      expect(sim?.difficulty).toBe('EASY');
+      expect(sim?.persuasion_tactic).toBe('CURIOSITY');
+      expect(sim?.title).toBe('VPN access review');
+      expect(sim?.why_this).toContain('Curiosity Gap');
+      expect(sim?.designed_to_progress).toContain('access-review prompts');
+    });
+
+    it('should create a first simulation when AI returns an empty no-activity simulation list', async () => {
+      (global.fetch as any)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            items: [
+              {
+                targetUserResourceId: 'user-3',
+                firstName: 'Taylor',
+                lastName: 'Finance',
+                email: 'taylor@example.com',
+                department: 'Finance',
+                phoneNumber: '+1234567892',
+              },
+            ],
+          }),
+        })
+        .mockResolvedValueOnce({ ok: true, json: async () => ({ data: { results: [] } }) });
+
+      const emptySimulationResponse = {
+        ...mockAnalysisReport,
+        ai_recommended_next_steps: {
+          simulations: [],
+          microlearnings: [],
+          nudges: [],
+        },
+      };
+      (generateText as any).mockResolvedValue({ text: JSON.stringify(emptySimulationResponse) });
+
+      const result = await getUserInfoTool.execute!({ targetUserResourceId: 'user-3' }, {}) as any;
+      const sim = result.analysisReport?.ai_recommended_next_steps?.simulations?.[0];
+
+      expect(sim).toBeDefined();
+      expect(sim?.vector).toBe('EMAIL');
+      expect(sim?.scenario_type).toBe('CLICK_ONLY');
+      expect(sim?.difficulty).toBe('EASY');
+      expect(sim?.title).toBe('Quarter-close document review');
+      expect(sim?.why_this).toContain('Urgency Effect');
+    });
+
+    it('should preserve strong AI no-activity recommendations while only keeping guardrails', async () => {
+      (global.fetch as any)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            items: [
+              {
+                targetUserResourceId: 'user-2',
+                firstName: 'Casey',
+                lastName: 'Admin',
+                email: 'casey@example.com',
+                department: 'IT',
+                phoneNumber: '+1234567891',
+              },
+            ],
+          }),
+        })
+        .mockResolvedValueOnce({ ok: true, json: async () => ({ data: { results: [] } }) });
+
+      const strongAIResponse = {
+        ...mockAnalysisReport,
+        ai_recommended_next_steps: {
+          simulations: [
+            {
+              vector: 'QR',
+              persuasion_tactic: 'AUTHORITY',
+              scenario_type: 'CLICK_ONLY',
+              difficulty: 'EASY',
+              title: 'Security tool activation notice',
+              why_this: 'Uses official rollout language to test trust in operational setup prompts (Authority Bias).',
+              designed_to_progress: 'Encourage independent verification of tool-activation notices before scanning codes.',
+              nist_phish_scale: {
+                cue_difficulty: 'MEDIUM',
+                premise_alignment: 'LOW',
+              },
+            },
+          ],
+          microlearnings: [],
+          nudges: [],
+        },
+      };
+      (generateText as any).mockResolvedValue({ text: JSON.stringify(strongAIResponse) });
+
+      const result = await getUserInfoTool.execute!({ targetUserResourceId: 'user-2' }, {}) as any;
+      const sim = result.analysisReport?.ai_recommended_next_steps?.simulations?.[0];
+
       expect(sim?.vector).toBe('QR');
+      expect(sim?.scenario_type).toBe('CLICK_ONLY');
+      expect(sim?.difficulty).toBe('EASY');
       expect(sim?.persuasion_tactic).toBe('AUTHORITY');
+      expect(sim?.title).toBe('Security tool activation notice');
+      expect(sim?.why_this).toContain('Authority Bias');
+      expect(sim?.designed_to_progress).toContain('tool-activation notices');
+      expect(sim?.nist_phish_scale?.cue_difficulty).toBe('MEDIUM');
+      expect(sim?.nist_phish_scale?.premise_alignment).toBe('LOW');
+    });
+
+    it('should provide more than three deterministic archetypes per department family', () => {
+      const titles = new Set([
+        buildNoActivitySimulationDefaults({ userId: 'user-1', department: 'IT' }).title,
+        buildNoActivitySimulationDefaults({ userId: 'user-2', department: 'IT' }).title,
+        buildNoActivitySimulationDefaults({ userId: 'user-3', department: 'IT' }).title,
+        buildNoActivitySimulationDefaults({ userId: 'user-4', department: 'IT' }).title,
+        buildNoActivitySimulationDefaults({ userId: 'user-5', department: 'IT' }).title,
+      ]);
+
+      expect(titles.size).toBeGreaterThanOrEqual(5);
     });
   });
 

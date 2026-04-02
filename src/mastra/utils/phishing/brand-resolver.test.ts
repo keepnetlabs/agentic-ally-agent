@@ -110,6 +110,20 @@ describe('brand-resolver', () => {
       expect(call.messages?.[1].content).toContain('Office 365');
     });
 
+    it('uses brand hint context when provided', async () => {
+      const mockModel = {} as any;
+      vi.mocked(generateText).mockResolvedValue({
+        text: JSON.stringify({ isRecognizedBrand: false, domain: null }),
+      } as any);
+
+      await resolveLogoAndBrand('Kurumsal Spor İletişim', 'Playoff campaign', mockModel, undefined, 'NBA playoff promo');
+
+      const call = vi.mocked(generateText).mock.calls[0][0];
+      expect(call.messages?.[1].content).toContain('Brand Hint');
+      expect(call.messages?.[1].content).toContain('NBA playoff promo');
+      expect(call.messages?.[1].content).toContain('NBA');
+    });
+
     it('falls back to DEFAULT_GENERIC_LOGO on catastrophic failure', async () => {
       vi.mocked(getLogoUrl).mockImplementation(() => {
         throw new Error('Network fail');

@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
   generateContextualBrand: vi.fn(),
   detectIndustry: vi.fn(),
   validateLandingPage: vi.fn(),
+  hasRetryableLandingQualitySignals: vi.fn(),
   fixBrokenImages: vi.fn(),
   validateImageUrlCached: vi.fn(),
   normalizeImgAttributes: vi.fn(),
@@ -125,6 +126,7 @@ vi.mock('../utils/phishing/brand-resolver', () => ({
 vi.mock('../utils/landing-page', () => ({
   detectIndustry: mocks.detectIndustry,
   validateLandingPage: mocks.validateLandingPage,
+  hasRetryableLandingQualitySignals: mocks.hasRetryableLandingQualitySignals,
   logValidationResults: vi.fn(),
   fixBrokenImages: mocks.fixBrokenImages,
 }));
@@ -202,6 +204,7 @@ describe('CreatePhishingWorkflow', () => {
       logoExample: 'https://example.com/logo.png',
     });
     mocks.validateLandingPage.mockReturnValue({ isValid: true, errors: [] });
+    mocks.hasRetryableLandingQualitySignals.mockReturnValue(false);
     mocks.fixBrokenImages.mockImplementation(html => html);
     mocks.validateImageUrlCached.mockResolvedValue(true);
     mocks.normalizeImgAttributes.mockImplementation(html => html);
@@ -259,6 +262,13 @@ describe('CreatePhishingWorkflow', () => {
 
       expect(output.phishingId).toBeDefined();
       expect(output.subject).toBe('Urgent Alert');
+      expect(mocks.resolveLogoAndBrand).toHaveBeenCalledWith(
+        'Security Team',
+        'Test Scenario',
+        'mock-model',
+        undefined,
+        'Password Reset'
+      );
       expect(mocks.savePhishingBase).toHaveBeenCalled();
     });
 

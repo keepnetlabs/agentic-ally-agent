@@ -3,6 +3,7 @@ import {
   getGenerationParams,
   DEFAULT_GENERATION_PARAMS,
   PHISHING_CONTENT_PARAMS,
+  PHISHING_LANDING_PARAMS,
   EXTRACTION_PARAMS,
   SCENE_GENERATION_PARAMS,
 } from './llm-generation-params';
@@ -18,6 +19,11 @@ describe('llm-generation-params', () => {
     it('returns PHISHING_CONTENT_PARAMS for "phishing-content"', () => {
       const params = getGenerationParams('phishing-content');
       expect(params).toEqual(PHISHING_CONTENT_PARAMS);
+    });
+
+    it('returns PHISHING_LANDING_PARAMS for "phishing-landing"', () => {
+      const params = getGenerationParams('phishing-landing');
+      expect(params).toEqual(PHISHING_LANDING_PARAMS);
     });
 
     it('returns EXTRACTION_PARAMS for "extraction"', () => {

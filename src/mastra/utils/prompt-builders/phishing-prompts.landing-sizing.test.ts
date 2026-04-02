@@ -372,12 +372,12 @@ describe('phishing-prompts landing sizing', () => {
       params.isQuishing = true;
 
       vi.spyOn(Math, 'random')
-        .mockImplementationOnce(() => 0.5) // MINIMAL
+        .mockImplementationOnce(() => 0.5) // quishing bucket -> SPLIT
         .mockImplementationOnce(() => 0.0);
 
       const { systemPrompt } = buildLandingPagePrompts(params);
 
-      expect(systemPrompt).toContain(`body max-width: ${LANDING_PAGE.MINIMAL_BODY_MAX_WIDTH_PX}px`);
+      expect(systemPrompt).toContain('SPLIT SCREEN (Enterprise)');
     });
 
     it('should work with additionalContext', () => {
@@ -428,6 +428,22 @@ describe('phishing-prompts landing sizing', () => {
       const result = buildLandingPagePrompts(params);
 
       expect(result.systemPrompt).toContain('TestCompany');
+    });
+
+    it('should include email continuity context whenever template exists', () => {
+      const params = makeBaseParams();
+      params.template = '<html><body>No logo tag here</body></html>';
+
+      vi.spyOn(Math, 'random')
+        .mockImplementationOnce(() => 0.5)
+        .mockImplementationOnce(() => 0.0);
+
+      const result = buildLandingPagePrompts(params);
+
+      expect(result.emailContextMessage).toContain('PHISHING EMAIL CONTEXT');
+      expect(result.emailContextMessage).toContain('Email Summary');
+      expect(result.emailContextMessage).toContain('preserve the same user journey implied by the email');
+      expect(result.emailContextMessage).not.toContain('Email Preview (first 500 chars)');
     });
   });
 

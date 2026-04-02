@@ -29,7 +29,6 @@ interface PhishingSimulationRecommendation {
   vector?: string;
   persuasion_tactic?: string;
   scenario_type?: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- callers pass loosely-typed analysis report data
   [key: string]: any;
 }
 
@@ -58,6 +57,164 @@ function resolveAttackMethod(scenarioType?: string): (typeof PHISHING.ATTACK_MET
   return undefined;
 }
 
+interface BehavioralDirective {
+  source: 'analysis-report' | 'foundational-default';
+  behavioralFocus: string;
+  progressionGoal: string;
+  recommendedPersuasionTactic: string;
+  recommendedScenarioType: string;
+}
+
+interface PhishingBehavioralProfile {
+  currentStage?: string;
+  targetStage?: string;
+  progressionHint?: string;
+  foggTriggerType?: string;
+  keySignalsUsed?: string[];
+  dataGaps?: string[];
+}
+
+function toTrimmedString(value: unknown): string | undefined {
+  return typeof value === 'string' && value.trim().length > 0 ? value.trim() : undefined;
+}
+
+function toTrimmedStringList(value: unknown, maxItems: number): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const items = value
+    .filter((item): item is string => typeof item === 'string')
+    .map(item => item.trim())
+    .filter(Boolean)
+    .slice(0, maxItems);
+  return items.length > 0 ? items : undefined;
+}
+
+function extractPhishingBehavioralProfile(toolResult: AutonomousToolResult): PhishingBehavioralProfile | undefined {
+  const report = toolResult.analysisReport as Record<string, unknown> | undefined;
+  if (!report || typeof report !== 'object') return undefined;
+
+  const header = (report.header as Record<string, unknown> | undefined) || {};
+  const behavioralResilience = (header.behavioral_resilience as Record<string, unknown> | undefined) || {};
+  const internal = (report.internal as Record<string, unknown> | undefined) || {};
+  const evidenceSummary = (internal.evidence_summary as Record<string, unknown> | undefined) || {};
+  const behaviorScienceEngine = (internal.behavior_science_engine as Record<string, unknown> | undefined) || {};
+
+  const profile: PhishingBehavioralProfile = {
+    currentStage: toTrimmedString(behavioralResilience.current_stage),
+    targetStage: toTrimmedString(behavioralResilience.target_stage),
+    progressionHint: toTrimmedString(header.progression_hint),
+    foggTriggerType: toTrimmedString(behaviorScienceEngine.fogg_trigger_type),
+    keySignalsUsed: toTrimmedStringList(evidenceSummary.key_signals_used, 3),
+    dataGaps: toTrimmedStringList(evidenceSummary.data_gaps, 2),
+  };
+
+  return Object.values(profile).some(Boolean) ? profile : undefined;
+}
+
+function normalizeScenarioTypeLabel(scenarioType?: string): string {
+  const normalized = scenarioType?.toUpperCase();
+  if (normalized && SCENARIO_LABELS[normalized]) return SCENARIO_LABELS[normalized];
+  return scenarioType || 'Click-Only';
+}
+
+function inferFoundationalBehavioralDirective(
+  simulation: PhishingSimulationRecommendation,
+  department?: string
+): BehavioralDirective {
+  const normalizedDepartment = (department || '').toLowerCase();
+  const intentHaystack = `${simulation.title || ''} ${simulation.rationale || ''}`.toLowerCase();
+  const resolvedScenarioType =
+    simulation.scenario_type ||
+    (/(password|credential|login|vpn|remote access|account)/.test(intentHaystack)
+      ? 'DATA_SUBMISSION'
+      : /(policy|benefit|handbook|survey|review)/.test(intentHaystack)
+        ? 'CLICK_ONLY'
+        : 'CLICK_ONLY');
+
+  if (normalizedDepartment.includes('finance') || /invoice|payment|billing|bank|tax/.test(intentHaystack)) {
+    return {
+      source: 'foundational-default',
+      behavioralFocus: 'invoice and payment verification before acting on urgent requests',
+      progressionGoal: 'slow down and verify payment-related details before clicking or submitting information',
+      recommendedPersuasionTactic: simulation.persuasion_tactic || 'Authority',
+      recommendedScenarioType: normalizeScenarioTypeLabel(resolvedScenarioType || 'DATA_SUBMISSION'),
+    };
+  }
+
+  if (normalizedDepartment.includes('hr') || /policy|benefit|handbook|acknowledg|survey/.test(intentHaystack)) {
+    return {
+      source: 'foundational-default',
+      behavioralFocus: 'careful review of internal policy and acknowledgment workflows',
+      progressionGoal: 'build the habit of verifying internal notices before opening forms or documents',
+      recommendedPersuasionTactic: simulation.persuasion_tactic || 'Commitment',
+      recommendedScenarioType: normalizeScenarioTypeLabel(resolvedScenarioType),
+    };
+  }
+
+  if (
+    normalizedDepartment.includes('it') ||
+    /password|credential|login|vpn|remote access|account|security/.test(intentHaystack)
+  ) {
+    return {
+      source: 'foundational-default',
+      behavioralFocus: 'credential hygiene and cautious account-access verification',
+      progressionGoal: 'strengthen verification habits before entering credentials or approving access requests',
+      recommendedPersuasionTactic: simulation.persuasion_tactic || 'Authority',
+      recommendedScenarioType: normalizeScenarioTypeLabel(resolvedScenarioType || 'DATA_SUBMISSION'),
+    };
+  }
+
+  if (normalizedDepartment.includes('sales') || normalizedDepartment.includes('marketing') || /offer|event|promo|ticket|discount/.test(intentHaystack)) {
+    return {
+      source: 'foundational-default',
+      behavioralFocus: 'validating promotional offers and external event links before engagement',
+      progressionGoal: 'reduce impulse clicks by checking whether limited-time offers and registrations are legitimate',
+      recommendedPersuasionTactic: simulation.persuasion_tactic || 'Scarcity',
+      recommendedScenarioType: normalizeScenarioTypeLabel(resolvedScenarioType),
+    };
+  }
+
+  return {
+    source: 'foundational-default',
+    behavioralFocus: resolvedScenarioType?.toUpperCase().includes('DATA')
+      ? 'credential hygiene and cautious form submission'
+      : 'link inspection before taking action',
+    progressionGoal: resolvedScenarioType?.toUpperCase().includes('DATA')
+      ? 'pause before entering information into pages reached from email prompts'
+      : 'strengthen the habit of verifying links and context before clicking',
+    recommendedPersuasionTactic: simulation.persuasion_tactic || 'Authority',
+    recommendedScenarioType: normalizeScenarioTypeLabel(resolvedScenarioType),
+  };
+}
+
+function buildBehavioralRecommendationBlock(
+  simulation: PhishingSimulationRecommendation,
+  toolResult: AutonomousToolResult
+): string {
+  const whyThis = typeof simulation.why_this === 'string' ? simulation.why_this.trim() : '';
+  const designedToProgress =
+    typeof simulation.designed_to_progress === 'string' ? simulation.designed_to_progress.trim() : '';
+  const foundationalDirective = inferFoundationalBehavioralDirective(simulation, toolResult.userInfo?.department);
+  const hasHighSignalRecommendation = whyThis.length > 0 || designedToProgress.length > 0;
+
+  const directive = hasHighSignalRecommendation
+    ? {
+        source: 'analysis-report' as const,
+        behavioralFocus: whyThis || foundationalDirective.behavioralFocus,
+        progressionGoal: designedToProgress || foundationalDirective.progressionGoal,
+        recommendedPersuasionTactic: simulation.persuasion_tactic || foundationalDirective.recommendedPersuasionTactic,
+        recommendedScenarioType: normalizeScenarioTypeLabel(simulation.scenario_type) || foundationalDirective.recommendedScenarioType,
+      }
+    : foundationalDirective;
+
+  return `Behavioral Recommendation:
+- Source: ${directive.source}
+- Behavioral Focus: ${directive.behavioralFocus}
+- Progression Goal: ${directive.progressionGoal}
+- Recommended Persuasion Tactic: ${directive.recommendedPersuasionTactic}
+- Recommended Scenario Type: ${directive.recommendedScenarioType}
+- Use this as a soft guidance layer; if the topic is ambiguous, preserve a realistic generic phishing flow.`;
+}
+
 async function executePhishingToolFirst(params: {
   simulation: PhishingSimulationRecommendation;
   executiveReport?: string;
@@ -74,10 +231,13 @@ async function executePhishingToolFirst(params: {
 
   try {
     const topic = simulation.title || AUTONOMOUS_DEFAULTS.PHISHING_TOPIC;
+    const behavioralRecommendation = buildBehavioralRecommendationBlock(simulation, toolResult);
+    const behavioralProfile = extractPhishingBehavioralProfile(toolResult);
     const additionalContextParts = [
       simulation.rationale ? `Rationale: ${simulation.rationale}` : undefined,
       simulation.persuasion_tactic ? `Persuasion tactic: ${simulation.persuasion_tactic}` : undefined,
       simulation.scenario_type ? `Scenario type: ${simulation.scenario_type}` : undefined,
+      behavioralRecommendation,
       executiveReport ? `Executive report:\n${executiveReport}` : undefined,
     ].filter(Boolean);
 
@@ -103,6 +263,7 @@ async function executePhishingToolFirst(params: {
       includeEmail: true,
       includeLandingPage: true,
       additionalContext: additionalContextParts.length > 0 ? additionalContextParts.join('\n') : '',
+      behavioralProfile,
       targetProfile: {
         department: toolResult.userInfo?.department,
       },
@@ -225,6 +386,8 @@ export async function generatePhishingSimulation(
 ): Promise<AutonomousHandlerResult> {
   const logger = getLogger('GeneratePhishingSimulation');
   logger.info('🎯 USER: Generating phishing simulation with executive report');
+  const behavioralRecommendation = buildBehavioralRecommendationBlock(simulation, toolResult);
+  const enhancedExecutiveReport = [behavioralRecommendation, executiveReport].filter(Boolean).join('\n\n') || undefined;
 
   // Use user's preferredLanguage if available, otherwise fall back to default
   const preferredLanguageRaw = toolResult.userInfo?.preferredLanguage || '';
@@ -254,11 +417,11 @@ export async function generatePhishingSimulation(
   }
 
   // First, add context to agent's memory
-  if (executiveReport) {
+  if (enhancedExecutiveReport) {
     try {
       logger.debug('Adding executive report to phishingEmailAgent memory');
       await withTimeout(
-        phishingEmailAgent.generate(`[CONTEXT FROM ORCHESTRATOR: ${executiveReport}]`, {
+        phishingEmailAgent.generate(`[CONTEXT FROM ORCHESTRATOR: ${enhancedExecutiveReport}]`, {
           memory: {
             thread: phishingThreadId,
             resource: 'agentic-ally-autonomous',

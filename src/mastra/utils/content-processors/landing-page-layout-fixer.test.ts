@@ -146,4 +146,27 @@ describe('fixLandingPageLayout', () => {
     const output = fixLandingPageLayout(input);
     expect(output).toContain('&#10003;');
   });
+
+  it('should force footer-bearing flex wrapper into column layout when footer is a sibling of the card', () => {
+    const input = `<div style="flex: 1; min-width: 300px; display: flex; align-items: center; justify-content: center; padding: 24px;"><div style="margin: 0 auto; background-color: #ffffff; border: 2px solid #e5e7eb; border-radius: 6px; padding: 32px; max-width: 560px; width: 100%; box-sizing: border-box; text-align: center;"><h1 style="font-size: 24px; font-weight: 700; margin: 0 0 8px 0;">Sign in to confirm VPN access</h1><p style="font-size: 14px; color: #4b5563; margin: 0 0 24px 0;">Enter your work credentials to verify the VPN certificate update.</p><div style="margin-top: 12px; font-size: 12px; color: #6b7280; display: flex; align-items: center; justify-content: center; gap: 6px;"><span>Secure sign-in</span></div></div><div style="margin-top: 24px; text-align: center; font-size: 12px; color: #9ca3af;"><p style="margin: 0;">© 2026 IT Security Team. All rights reserved.</p><div style="margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 12px;"><a href='#' style='color: #9ca3af; text-decoration: none;'>Privacy</a><span>•</span><a href='#' style='color: #9ca3af; text-decoration: none;'>Terms</a><span>•</span><a href='#' style='color: #9ca3af; text-decoration: none;'>Support</a></div></div></div>`;
+
+    const output = fixLandingPageLayout(input);
+
+    expect(output).toContain('display: flex; align-items: center; justify-content: center; padding: 24px;; flex-direction: column;');
+  });
+
+  it('should not change small trust rows when fixing footer sibling layout', () => {
+    const input = `<div style="margin-top: 12px; font-size: 12px; color: #6b7280; display: flex; align-items: center; justify-content: center; gap: 6px;"><span>Secure sign-in</span></div>`;
+    const output = fixLandingPageLayout(input);
+
+    expect(output).toBe(input);
+  });
+
+  it('should remove a stray bare checkmark left outside the success icon container', () => {
+    const input = `<div style="display:flex; justify-content:center; margin-bottom:24px;"><div style="width:64px; height:64px; background:#22c55e; border-radius:50%; display:flex; align-items:center; justify-content:center;"><span style="color:white;font-size:28px;font-weight:700;">✓</span></div>✓</div>`;
+    const output = fixLandingPageLayout(input);
+
+    expect(output).toContain('<span style="color:white;font-size:28px;font-weight:700;">✓</span>');
+    expect(output).not.toContain('</div>✓</div>');
+  });
 });

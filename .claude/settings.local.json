@@ -71,7 +71,11 @@
       "WebFetch(domain:www.youtube.com)",
       "Bash(where yt-dlp:*)",
       "Bash(pip install:*)",
-      "Bash(yt-dlp --write-auto-sub --sub-lang en --skip-download --sub-format srv1 -o \"%\\(id\\)s\" \"https://www.youtube.com/watch?v=CBdDqPAiEm4\")"
+      "Bash(yt-dlp --write-auto-sub --sub-lang en --skip-download --sub-format srv1 -o \"%\\(id\\)s\" \"https://www.youtube.com/watch?v=CBdDqPAiEm4\")",
+      "Bash(jq -r \"[.. | objects | keys[] | select\\(type == \"\"string\"\"\\)] | unique | sort\")",
+      "Bash(node scripts/fix-cloudflare-shims.js)",
+      "Bash(node scripts/debug-brace.mjs)",
+      "Bash(npx youtube-transcript:*)"
     ],
     "deny": [],
     "ask": [],

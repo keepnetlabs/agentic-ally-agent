@@ -57,6 +57,7 @@ export const phishingWorkflowExecutorTool = createTool({
           topic: params.topic,
           isQuishing: params.isQuishing || false,
           targetProfile: params.targetProfile,
+          behavioralProfile: params.behavioralProfile,
           difficulty: params.difficulty || PHISHING.DEFAULT_DIFFICULTY,
           language: params.language || 'en',
           method: params.method,

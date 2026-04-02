@@ -57,6 +57,9 @@ const mockPhishingAnalysis = {
   keyRedFlags: ['Unusual urgency', 'External email'],
   targetAudienceAnalysis: 'Finance team',
   subjectLineStrategy: 'Creates time pressure',
+  audienceMode: 'employee' as const,
+  journeyType: 'pay' as const,
+  offerMechanic: 'payment-fix' as const,
   isQuishing: false,
   isRecognizedBrand: false,
 };
@@ -150,9 +153,9 @@ describe('buildLandingPageSystemPrompt Validation', () => {
     );
 
     // Should contain design specifications
-    expect(prompt).toContain('max-width');
     expect(prompt).toContain('px');
     expect(prompt).toContain('style=');
+    expect(prompt).toContain('96px');
   });
 
   it('includes quishing warnings when isQuishing is true', () => {
@@ -191,6 +194,66 @@ describe('buildLandingPageSystemPrompt Validation', () => {
 
     expect(prompt).toContain('Finance');
     expect(prompt).toContain('#0066cc');
+  });
+
+  it('guides login pages toward modern trust copy', () => {
+    const prompt = buildLandingPageSystemPrompt(
+      'Test Company',
+      '',
+      false,
+      mockIndustryDesign,
+      mockRandomLayout,
+      mockRandomStyle,
+      ['login'],
+      false,
+      () => '',
+      () => '',
+      () => ''
+    );
+
+    expect(prompt).toContain('Secure sign-in');
+    expect(prompt).toContain('Avoid generic security cliches');
+    expect(prompt).toContain('256-bit SSL encryption');
+  });
+
+  it('keeps variation guidance subtle and bounded', () => {
+    const prompt = buildLandingPageSystemPrompt(
+      'Test Company',
+      '',
+      false,
+      mockIndustryDesign,
+      mockRandomLayout,
+      mockRandomStyle,
+      ['login', 'success'],
+      false,
+      () => '',
+      () => '',
+      () => ''
+    );
+
+    expect(prompt).toContain('Prefer subtle variation');
+    expect(prompt).toContain('Card max-width for card-based layouts');
+    expect(prompt).toContain('Do **NOT** force variation for its own sake');
+    expect(prompt).not.toContain('change at least **3**');
+  });
+
+  it('includes success-state logic when success page is required', () => {
+    const prompt = buildLandingPageSystemPrompt(
+      'Test Company',
+      '',
+      false,
+      mockIndustryDesign,
+      mockRandomLayout,
+      mockRandomStyle,
+      ['login', 'success'],
+      false,
+      () => '',
+      () => '',
+      () => ''
+    );
+
+    expect(prompt).toContain('Success-State Logic');
+    expect(prompt).toContain('the primary CTA must not ask the user to complete the same action again');
   });
 });
 
@@ -244,6 +307,36 @@ describe('buildAnalysisPrompts Validation', () => {
 
     expect(result.systemPrompt).toContain('No fake personal identities allowed');
   });
+
+  it('includes coherence layer guidance in analysis prompts', () => {
+    const result = buildAnalysisPrompts(mockAnalysisParams);
+
+    expect(result.systemPrompt).toContain('Coherence Layer (MANDATORY)');
+    expect(result.systemPrompt).toContain('audienceMode');
+    expect(result.systemPrompt).toContain('journeyType');
+    expect(result.systemPrompt).toContain('offerMechanic');
+  });
+
+  it('includes structured behavioral signals in analysis context without replacing narrative context', () => {
+    const result = buildAnalysisPrompts({
+      ...mockAnalysisParams,
+      additionalContext: 'User tends to trust urgent internal requests.',
+      behavioralProfile: {
+        currentStage: 'Building',
+        targetStage: 'Consistent',
+        progressionHint: 'Verify internal requests before clicking',
+        foggTriggerType: 'FACILITATOR',
+        keySignalsUsed: ['Clicked phishing link from email', 'No reporting events observed'],
+        dataGaps: ['No QR simulation evidence'],
+      },
+    });
+
+    expect(result.additionalContextMessage).toContain('Structured Behavioral Signals');
+    expect(result.additionalContextMessage).toContain('Current Stage: Building');
+    expect(result.additionalContextMessage).toContain('Trigger Type: FACILITATOR');
+    expect(result.additionalContextMessage).toContain('Behavioral Narrative Context');
+    expect(result.additionalContextMessage).toContain('User tends to trust urgent internal requests.');
+  });
 });
 
 // ============================================
@@ -287,6 +380,7 @@ describe('buildEmailPrompts Validation', () => {
 
     expect(result.systemPrompt).toContain('NO DISCLAIMERS');
     expect(result.systemPrompt).toContain('disclaimer');
+    expect(result.systemPrompt).toContain('ignore this email');
   });
 
   it('includes table layout rules', () => {
@@ -311,6 +405,102 @@ describe('buildEmailPrompts Validation', () => {
 
     expect(result.systemPrompt).toContain('Greeting');
     expect(result.systemPrompt).toContain('{FIRSTNAME}');
+  });
+
+  it('passes coherence fields into email prompt guidance', () => {
+    const result = buildEmailPrompts({
+      analysis: mockPhishingAnalysis,
+      language: 'en',
+      difficulty: 'Medium',
+      industryDesign: mockIndustryDesign,
+    });
+
+    expect(result.userPrompt).toContain('Coherence Fields');
+    expect(result.userPrompt).toContain('Audience Frame: employee');
+    expect(result.userPrompt).toContain('Primary Journey: pay');
+    expect(result.userPrompt).toContain('Primary Mechanic: payment-fix');
+  });
+
+  it('adds action-family guidance to keep email and landing journey language aligned', () => {
+    const accessAnalysis = {
+      ...mockPhishingAnalysis,
+      journeyType: 'login' as const,
+      offerMechanic: 'account-access' as const,
+      method: 'Data-Submission' as const,
+    };
+
+    const result = buildEmailPrompts({
+      analysis: accessAnalysis,
+      language: 'en',
+      difficulty: 'Medium',
+      industryDesign: mockIndustryDesign,
+    });
+
+    expect(result.userPrompt).toContain('Action Family Guidance');
+    expect(result.userPrompt).toContain('Primary action family: access confirmation');
+    expect(result.userPrompt).toContain('Verify access');
+    expect(result.userPrompt).toContain('Sign in to confirm access');
+    expect(result.userPrompt).toContain('Access confirmed');
+    expect(result.userPrompt).toContain('Avoid mixing unrelated verbs');
+  });
+
+  it('keeps generic data-submission flows on the neutral fallback when coherence fields are generic', () => {
+    const genericAnalysis = {
+      ...mockPhishingAnalysis,
+      journeyType: 'generic' as const,
+      offerMechanic: 'generic' as const,
+      method: 'Data-Submission' as const,
+    };
+
+    const result = buildEmailPrompts({
+      analysis: genericAnalysis,
+      language: 'en',
+      difficulty: 'Medium',
+      industryDesign: mockIndustryDesign,
+    });
+
+    expect(result.userPrompt).toContain('Primary action family: scenario-aligned continuation');
+    expect(result.userPrompt).toContain('Sign in to continue');
+    expect(result.userPrompt).toContain('Request recorded');
+    expect(result.userPrompt).not.toContain('Primary action family: access confirmation');
+  });
+
+  it('guides greeting placement below the logo/header area', () => {
+    const result = buildEmailPrompts({
+      analysis: mockPhishingAnalysis,
+      language: 'en',
+      difficulty: 'Medium',
+      industryDesign: mockIndustryDesign,
+    });
+
+    expect(result.userPrompt).toContain('after the logo/header area');
+    expect(result.userPrompt).toContain('card-style emails');
+    expect(result.userPrompt).not.toContain('Write greeting first');
+  });
+
+  it('includes date realism guidance to avoid stale years', () => {
+    const result = buildEmailPrompts({
+      analysis: mockPhishingAnalysis,
+      language: 'en',
+      difficulty: 'Medium',
+      industryDesign: mockIndustryDesign,
+    });
+
+    expect(result.systemPrompt).toContain('Date Realism');
+    expect(result.systemPrompt).toContain('Avoid stale fixed years');
+    expect(result.systemPrompt).toContain('{CURRENT_DATE}');
+  });
+
+  it('reminds final validation to reject disclaimer-like escape-hatch copy', () => {
+    const result = buildEmailPrompts({
+      analysis: mockPhishingAnalysis,
+      language: 'en',
+      difficulty: 'Medium',
+      industryDesign: mockIndustryDesign,
+    });
+
+    expect(result.userPrompt).toContain('ignore this email');
+    expect(result.userPrompt).toContain('delete this message');
   });
 
   it('includes quishing-specific rules when isQuishing is true', () => {
@@ -344,6 +534,9 @@ describe('buildLandingPagePrompts Validation', () => {
       language: 'en',
       industryDesign: mockIndustryDesign,
       requiredPages: ['login', 'success'],
+      audienceMode: 'employee',
+      journeyType: 'review',
+      offerMechanic: 'payment-fix',
       isQuishing: false,
     });
 
@@ -384,6 +577,36 @@ describe('buildLandingPagePrompts Validation', () => {
     expect(result.systemPrompt).toContain('<head>');
   });
 
+  it('reminds success pages to keep CTA aligned with completed state', () => {
+    const result = buildLandingPagePrompts({
+      fromName: 'Test Corp',
+      fromAddress: 'test@corp.com',
+      scenario: 'Policy Review',
+      language: 'en',
+      industryDesign: mockIndustryDesign,
+      requiredPages: ['login', 'success'],
+      isQuishing: false,
+    });
+
+    expect(result.userPrompt).toContain('heading, helper text, and main CTA must agree on the completed state');
+  });
+
+  it('guides success pages toward scenario-specific completion microcopy', () => {
+    const result = buildLandingPagePrompts({
+      fromName: 'Test Corp',
+      fromAddress: 'test@corp.com',
+      scenario: 'Policy Review',
+      language: 'en',
+      industryDesign: mockIndustryDesign,
+      requiredPages: ['login', 'success'],
+      isQuishing: false,
+    });
+
+    expect(result.systemPrompt).toContain('Use scenario-specific completion microcopy');
+    expect(result.systemPrompt).toContain('Avoid generic completion copy');
+    expect(result.userPrompt).toContain('avoid generic "Thank you" copy');
+  });
+
   it('includes accessibility requirements', () => {
     const result = buildLandingPagePrompts({
       fromName: 'Test Corp',
@@ -397,6 +620,96 @@ describe('buildLandingPagePrompts Validation', () => {
 
     expect(result.systemPrompt).toContain('ACCESSIBILITY');
     expect(result.systemPrompt).toContain('label');
+  });
+
+  it('guides landing pages toward scenario-specific microcopy and tighter content density', () => {
+    const result = buildLandingPagePrompts({
+      fromName: 'Test Corp',
+      fromAddress: 'test@corp.com',
+      scenario: 'Remote Access Verification',
+      language: 'en',
+      industryDesign: mockIndustryDesign,
+      requiredPages: ['login', 'success'],
+      audienceMode: 'employee',
+      journeyType: 'login',
+      offerMechanic: 'account-access',
+      isQuishing: false,
+    });
+
+    expect(result.systemPrompt).toContain('Prefer scenario-specific product wording over generic portal copy');
+    expect(result.systemPrompt).toContain('Avoid oversized empty whitespace');
+  });
+
+  it('passes coherence fields into landing prompt guidance', () => {
+    const result = buildLandingPagePrompts({
+      fromName: 'Test Corp',
+      fromAddress: 'test@corp.com',
+      scenario: 'Payment Verification',
+      language: 'en',
+      industryDesign: mockIndustryDesign,
+      requiredPages: ['login', 'success'],
+      audienceMode: 'employee',
+      journeyType: 'review',
+      offerMechanic: 'payment-fix',
+      isQuishing: false,
+    });
+
+    expect(result.userPrompt).toContain('Coherence Fields');
+    expect(result.userPrompt).toContain('Audience Frame: employee');
+    expect(result.userPrompt).toContain('Primary Journey: review');
+    expect(result.userPrompt).toContain('Primary Mechanic: payment-fix');
+  });
+
+  it('adds action-family guidance to landing prompts for login-success coherence', () => {
+    const result = buildLandingPagePrompts({
+      fromName: 'Test Corp',
+      fromAddress: 'test@corp.com',
+      scenario: 'Access Upgrade',
+      language: 'en',
+      industryDesign: mockIndustryDesign,
+      requiredPages: ['login', 'success'],
+      audienceMode: 'employee',
+      journeyType: 'login',
+      offerMechanic: 'account-access',
+      method: 'Data-Submission',
+      isQuishing: false,
+    });
+
+    expect(result.userPrompt).toContain('Action Family Guidance');
+    expect(result.userPrompt).toContain('Primary action family: access confirmation');
+    expect(result.userPrompt).toContain('Verify access');
+    expect(result.userPrompt).toContain('Sign in to confirm access');
+    expect(result.userPrompt).toContain('Access confirmed');
+  });
+
+  it('passes structured behavioral signals into landing context guidance', () => {
+    const result = buildLandingPagePrompts({
+      fromName: 'Test Corp',
+      fromAddress: 'test@corp.com',
+      scenario: 'Payment Verification',
+      language: 'en',
+      industryDesign: mockIndustryDesign,
+      requiredPages: ['login', 'success'],
+      audienceMode: 'employee',
+      journeyType: 'review',
+      offerMechanic: 'payment-fix',
+      additionalContext: 'User tends to trust urgent internal notices.',
+      behavioralProfile: {
+        currentStage: 'Building',
+        targetStage: 'Consistent',
+        progressionHint: 'Verify internal notices before acting',
+        foggTriggerType: 'FACILITATOR',
+        keySignalsUsed: ['Clicked phishing link', 'No reporting events observed'],
+        dataGaps: ['No QR simulation evidence'],
+      },
+      isQuishing: false,
+    });
+
+    expect(result.userContextMessage).toContain('Structured Behavioral Signals');
+    expect(result.userContextMessage).toContain('Current Stage: Building');
+    expect(result.userContextMessage).toContain('Trigger Type: FACILITATOR');
+    expect(result.userContextMessage).toContain('Behavioral Narrative Context');
+    expect(result.userContextMessage).toContain('User tends to trust urgent internal notices.');
   });
 
   it('includes JSON output format specification', () => {

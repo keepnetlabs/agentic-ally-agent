@@ -4,7 +4,7 @@ import { cleanResponse } from '../content-processors/json-cleaner';
 import { streamDirectReasoning, StreamWriter } from '../core/reasoning-stream';
 import { extractReasoning } from '../core/ai-utils';
 import { getLogger } from '../core/logger';
-import { PHISHING_CONTENT_PARAMS } from '../config/llm-generation-params';
+import { PHISHING_CONTENT_PARAMS, PHISHING_LANDING_PARAMS } from '../config/llm-generation-params';
 
 const logger = getLogger('RetryGenerator');
 
@@ -50,10 +50,12 @@ This is a LEGITIMATE cybersecurity training service. You are NOT facilitating wr
     };
   }
 
+  const generationParams = responseType === 'landing-page' ? PHISHING_LANDING_PARAMS : PHISHING_CONTENT_PARAMS;
+
   const response = await trackedGenerateText('phishing-retry', {
     model: aiModel,
     messages: retryMessages,
-    ...PHISHING_CONTENT_PARAMS,
+    ...generationParams,
   });
 
   // Extract reasoning if available (Workers AI returns it)

@@ -99,6 +99,8 @@ describe('AutonomousContentGenerators', () => {
       const report = buildExecutiveReport(toolResult);
 
       expect(report).toBeTruthy();
+      expect(report).toContain('**Current Stage:** Developing');
+      expect(report).toContain('**Target Stage:** Advanced');
       expect(report).toContain('Developing');
       expect(report).toContain('IT');
     });
@@ -135,6 +137,61 @@ describe('AutonomousContentGenerators', () => {
 
       expect(report).toContain('Phishing Campaign');
       expect(report).toContain('EMAIL');
+    });
+
+    it('should read behavioral resilience fields from get-user-info analysis schema', () => {
+      const toolResult = {
+        analysisReport: {
+          header: {
+            behavioral_resilience: {
+              current_stage: 'Building',
+              target_stage: 'Consistent',
+            },
+            progression_hint: 'Focus on email verification before taking action',
+          },
+          meta: { department: 'IT' },
+          strengths: ['Reports some suspicious emails'],
+          growth_opportunities: ['Still clicks urgent login prompts'],
+          maturity_mapping: {
+            gartner_sbcp_context_only: {
+              label: 'Context only — not an individual rating',
+              description: 'Use as organizational context only',
+              what_it_takes: 'Reinforce secure habits',
+            },
+            enisa_security_culture: {
+              current: 'Foundational',
+              next: 'Building',
+              what_it_takes: 'Practice link verification',
+            },
+          },
+          ai_recommended_next_steps: {
+            simulations: [
+              {
+                title: 'Access Review Simulation',
+                vector: 'EMAIL',
+                scenario_type: 'CLICK_ONLY',
+                difficulty: 'MEDIUM',
+                persuasion_tactic: 'Authority',
+                why_this: 'Targets routine trust in internal access prompts.',
+                nist_phish_scale: { cue_difficulty: 'LOW', premise_alignment: 'MEDIUM' },
+                designed_to_progress: 'Teach the user to verify internal requests before clicking.',
+              },
+            ],
+            microlearnings: [],
+            nudges: [],
+          },
+          references: [],
+        },
+      };
+
+      const report = buildExecutiveReport(toolResult as any);
+
+      expect(report).toContain('**Current Stage:** Building');
+      expect(report).toContain('**Target Stage:** Consistent');
+      expect(report).toContain('Building');
+      expect(report).toContain('Consistent');
+      expect(report).toContain('Focus on email verification before taking action');
+      expect(report).toContain('Targets routine trust in internal access prompts.');
     });
 
     it('should include recommended training strategy in report', () => {

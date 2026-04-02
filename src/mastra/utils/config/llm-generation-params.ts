@@ -171,6 +171,17 @@ export const PHISHING_CONTENT_PARAMS: GenerationParams = {
 };
 
 /**
+ * PHISHING LANDING PAGE PARAMETERS (Controlled Creativity)
+ *
+ * Purpose: Generate realistic landing pages with stronger structural consistency
+ * Use: create-phishing-workflow.ts, retry-generator.ts
+ */
+export const PHISHING_LANDING_PARAMS: GenerationParams = {
+  temperature: 0.55,
+  topP: 0.88,
+};
+
+/**
  * EDITOR PARAMETERS (Low - Consistency)
  *
  * Purpose: Phishing/smishing editor LLM calls - structured output, minimal variation
@@ -288,6 +299,7 @@ export function getGenerationParams(useCase: string): GenerationParams {
     metadata: METADATA_GENERATION_PARAMS,
     'phishing-scenario': PHISHING_SCENARIO_PARAMS,
     'phishing-content': PHISHING_CONTENT_PARAMS,
+    'phishing-landing': PHISHING_LANDING_PARAMS,
     editor: EDITOR_PARAMS,
     'code-review': CODE_REVIEW_PARAMS,
     'low-determinism': LOW_DETERMINISM_PARAMS,

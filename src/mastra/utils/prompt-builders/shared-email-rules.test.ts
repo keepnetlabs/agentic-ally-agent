@@ -9,7 +9,9 @@ import {
   LAYOUT_STRATEGY_RULES,
   PREHEADER_RULE,
   GREETING_RULES,
+  GREETING_INSTRUCTION,
   MOBILE_OPTIMIZATION_RULES,
+  buildDateRealismRule,
   getMergeTagsRules,
   BRAND_AWARENESS_RULES,
   SYNTAX_RULE,
@@ -88,6 +90,16 @@ describe('shared-email-rules', () => {
       expect(GREETING_RULES).toContain('{FIRSTNAME}');
       expect(GREETING_RULES).toContain('{FULLNAME}');
       expect(GREETING_RULES).toContain('Dear Employee');
+      expect(GREETING_RULES).toContain('after any logo/header area');
+    });
+
+    it('should define GREETING_INSTRUCTION with placement guidance', () => {
+      const instruction = GREETING_INSTRUCTION('en');
+
+      expect(instruction).toContain('Greeting placement');
+      expect(instruction).toContain('after the logo/header area');
+      expect(instruction).toContain('card-style emails');
+      expect(instruction).not.toContain('Write greeting first');
     });
 
     it('should define MOBILE_OPTIMIZATION_RULES with tap target size', () => {
@@ -96,6 +108,15 @@ describe('shared-email-rules', () => {
       expect(MOBILE_OPTIMIZATION_RULES).toContain('tappable');
       expect(MOBILE_OPTIMIZATION_RULES).toContain('32px');
       expect(MOBILE_OPTIMIZATION_RULES).toContain('600px');
+    });
+
+    it('should build DATE_REALISM rule with current year guidance', () => {
+      const rules = buildDateRealismRule(2026);
+
+      expect(rules).toContain('Date Realism');
+      expect(rules).toContain('2026');
+      expect(rules).toContain('{CURRENT_DATE}');
+      expect(rules).toContain('Avoid stale fixed years');
     });
 
     it('should define BRAND_AWARENESS_RULES', () => {

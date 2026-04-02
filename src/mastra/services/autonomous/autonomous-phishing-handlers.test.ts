@@ -124,6 +124,119 @@ describe('autonomous-phishing-handlers', () => {
       expect(result.message).toContain('uploaded');
       expect(mockAssignExecute).not.toHaveBeenCalled();
     });
+
+    it('passes analysis-driven behavioral guidance into tool-first context', async () => {
+      const simulation = {
+        ...baseSimulation,
+        why_this: 'User clicks urgent account links quickly under authority pressure',
+        designed_to_progress: 'Teach the user to pause and verify account requests before clicking',
+        persuasion_tactic: 'Authority',
+      };
+
+      await generatePhishingSimulation(
+        simulation as any,
+        undefined,
+        baseToolResult as any,
+        'thread-phish-guidance-1',
+        true
+      );
+
+      expect(mockPhishingExecute).toHaveBeenCalledWith(
+        expect.objectContaining({
+          additionalContext: expect.stringContaining('Behavioral Recommendation:'),
+        }),
+        expect.anything()
+      );
+      expect(mockPhishingExecute.mock.calls[0]?.[0]?.additionalContext).toContain(
+        'Behavioral Focus: User clicks urgent account links quickly under authority pressure'
+      );
+      expect(mockPhishingExecute.mock.calls[0]?.[0]?.additionalContext).toContain(
+        'Progression Goal: Teach the user to pause and verify account requests before clicking'
+      );
+    });
+
+    it('passes structured behavioral profile into tool-first workflow input when analysis report provides it', async () => {
+      const toolResult = {
+        ...baseToolResult,
+        analysisReport: {
+          header: {
+            behavioral_resilience: {
+              current_stage: 'Building',
+              target_stage: 'Consistent',
+            },
+            progression_hint: 'Verify internal requests before clicking',
+          },
+          internal: {
+            evidence_summary: {
+              key_signals_used: ['Clicked phishing link', 'No reporting events observed'],
+              data_gaps: ['No QR simulation evidence'],
+            },
+            behavior_science_engine: {
+              fogg_trigger_type: 'FACILITATOR',
+            },
+          },
+        },
+      };
+
+      await generatePhishingSimulation(
+        baseSimulation as any,
+        undefined,
+        toolResult as any,
+        'thread-phish-guidance-structured',
+        true
+      );
+
+      expect(mockPhishingExecute).toHaveBeenCalledWith(
+        expect.objectContaining({
+          behavioralProfile: expect.objectContaining({
+            currentStage: 'Building',
+            targetStage: 'Consistent',
+            progressionHint: 'Verify internal requests before clicking',
+            foggTriggerType: 'FACILITATOR',
+          }),
+        }),
+        expect.anything()
+      );
+    });
+
+    it('falls back to foundational behavioral defaults when report signals are weak', async () => {
+      await generatePhishingSimulation(
+        baseSimulation as any,
+        undefined,
+        baseToolResult as any,
+        'thread-phish-guidance-2',
+        true
+      );
+
+      expect(mockPhishingExecute.mock.calls[0]?.[0]?.additionalContext).toContain(
+        'Source: foundational-default'
+      );
+      expect(mockPhishingExecute.mock.calls[0]?.[0]?.additionalContext).toContain(
+        'Behavioral Focus: credential hygiene and cautious account-access verification'
+      );
+    });
+
+    it('treats rationale-only simulations as foundational defaults', async () => {
+      const simulation = {
+        ...baseSimulation,
+        rationale: 'Generic security awareness recommendation without behavioral next-step fields',
+      };
+
+      await generatePhishingSimulation(
+        simulation as any,
+        undefined,
+        baseToolResult as any,
+        'thread-phish-guidance-3',
+        true
+      );
+
+      expect(mockPhishingExecute.mock.calls[0]?.[0]?.additionalContext).toContain(
+        'Source: foundational-default'
+      );
+      expect(mockPhishingExecute.mock.calls[0]?.[0]?.additionalContext).not.toContain(
+        'Source: analysis-report'
+      );
+    });
   });
 
   describe('uploadAndAssignPhishing', () => {

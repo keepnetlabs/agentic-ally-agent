@@ -7,6 +7,40 @@ import { z } from 'zod';
 import { PHISHING, LANDING_PAGE, PHISHING_EMAIL } from '../constants';
 import { StreamWriterSchema } from '../types/stream-writer';
 
+export const PHISHING_AUDIENCE_MODES = ['consumer', 'employee', 'partner', 'student', 'citizen', 'general'] as const;
+export const PHISHING_JOURNEY_TYPES = [
+  'login',
+  'claim',
+  'register',
+  'review',
+  'pay',
+  'track',
+  'acknowledge',
+  'download',
+  'generic',
+] as const;
+export const PHISHING_OFFER_MECHANICS = [
+  'account-access',
+  'discount',
+  'giveaway',
+  'presale',
+  'document-review',
+  'payment-fix',
+  'delivery-update',
+  'policy-ack',
+  'survey',
+  'generic',
+] as const;
+
+const phishingBehavioralProfileSchema = z.object({
+  currentStage: z.string().optional().describe('Current behavioral resilience stage from user analysis'),
+  targetStage: z.string().optional().describe('Next behavioral resilience stage from user analysis'),
+  progressionHint: z.string().optional().describe('Short progression hint for the next behavioral step'),
+  foggTriggerType: z.string().optional().describe('Behavioral trigger type from Fogg B=MAT (e.g. SIGNAL, SPARK, FACILITATOR)'),
+  keySignalsUsed: z.array(z.string()).optional().describe('Top behavioral evidence signals extracted from the report'),
+  dataGaps: z.array(z.string()).optional().describe('Missing evidence or coverage gaps noted in the report'),
+});
+
 /**
  * Input Schema - Workflow entry point
  * Defines the input parameters for creating a phishing simulation
@@ -26,6 +60,9 @@ export const createPhishingInputSchema = z.object({
       vulnerabilities: z.array(z.string()).optional(),
     })
     .optional(),
+  behavioralProfile: phishingBehavioralProfileSchema
+    .optional()
+    .describe('Structured behavioral guidance extracted from the user resilience report'),
   difficulty: z.enum(PHISHING.DIFFICULTY_LEVELS).default(PHISHING.DEFAULT_DIFFICULTY),
   language: z.string().default('en-gb').describe('Target language (BCP-47 code, e.g. en-gb, tr-tr)'),
   method: z.enum(PHISHING.ATTACK_METHODS).optional().describe('Type of phishing attack'),
@@ -74,6 +111,21 @@ export const createPhishingAnalysisSchema = z.object({
   keyRedFlags: z.array(z.string()).describe('List of subtle indicators (red flags) to educate the user'),
   targetAudienceAnalysis: z.string().describe('Brief explanation of why this scenario fits the target profile'),
   subjectLineStrategy: z.string().describe('Reasoning behind the subject line choice'),
+  audienceMode: z
+    .enum(PHISHING_AUDIENCE_MODES)
+    .catch('general')
+    .default('general')
+    .describe('Primary audience frame for the scenario: consumer, employee, partner, student, citizen, or general'),
+  journeyType: z
+    .enum(PHISHING_JOURNEY_TYPES)
+    .catch('generic')
+    .default('generic')
+    .describe('Primary user journey implied by the campaign: login, claim, register, review, pay, track, acknowledge, download, or generic'),
+  offerMechanic: z
+    .enum(PHISHING_OFFER_MECHANICS)
+    .catch('generic')
+    .default('generic')
+    .describe('Primary scenario mechanic: account-access, discount, giveaway, presale, document-review, payment-fix, delivery-update, policy-ack, survey, or generic'),
   reasoning: z.string().optional().describe('AI reasoning about scenario design (if available)'),
   emailGenerationReasoning: z
     .string()
@@ -85,6 +137,9 @@ export const createPhishingAnalysisSchema = z.object({
     .describe(
       'If user behavior context was provided: 1-2 sentence explanation of WHY this specific scenario was chosen for this user based on their behavioral profile, risk signals, and activity history. Reference specific behavioral evidence.'
     ),
+  behavioralProfile: phishingBehavioralProfileSchema
+    .optional()
+    .describe('Structured behavioral guidance carried from workflow input for scenario continuity'),
   additionalContext: z
     .string()
     .optional()
@@ -191,5 +246,6 @@ export const createPhishingOutputSchema = z.object({
     })
     .optional(),
   analysis: createPhishingAnalysisSchema.omit({ language: true, modelProvider: true, model: true }).optional(), // Include analysis in output for reasoning display
+  language: z.string().optional().describe('Content language (BCP-47 code, e.g. en-gb, tr-tr). Passed through from analysis for KV storage.'),
   policyContext: z.string().optional(),
 });

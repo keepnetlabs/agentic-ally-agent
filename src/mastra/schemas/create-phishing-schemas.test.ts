@@ -40,6 +40,23 @@ describe('Phishing Workflow Schemas', () => {
         expect(result.data.includeLandingPage).toBe(true);
       }
     });
+
+    it('should validate structured behavioral profile input', () => {
+      const inputWithBehavioralProfile = {
+        topic: 'Password Reset',
+        behavioralProfile: {
+          currentStage: 'Building',
+          targetStage: 'Consistent',
+          progressionHint: 'Focus on link verification before acting',
+          foggTriggerType: 'FACILITATOR',
+          keySignalsUsed: ['Clicked phishing link in recent campaign'],
+          dataGaps: ['No reporting events observed'],
+        },
+      };
+
+      const result = createPhishingInputSchema.safeParse(inputWithBehavioralProfile);
+      expect(result.success).toBe(true);
+    });
   });
 
   describe('createPhishingAnalysisSchema', () => {
@@ -64,9 +81,24 @@ describe('Phishing Workflow Schemas', () => {
       expect(result.success).toBe(true);
     });
 
+    it('should default coherence fields for generic scenarios', () => {
+      const result = createPhishingAnalysisSchema.safeParse(validAnalysis);
+      expect(result.success).toBe(true);
+
+      if (result.success) {
+        expect(result.data.audienceMode).toBe('general');
+        expect(result.data.journeyType).toBe('generic');
+        expect(result.data.offerMechanic).toBe('generic');
+      }
+    });
+
     it('should validate nested industryDesign object', () => {
       const analysisWithDesign = {
         ...validAnalysis,
+        behavioralProfile: {
+          currentStage: 'Building',
+          progressionHint: 'Slow down before acting on urgent requests',
+        },
         industryDesign: {
           industry: 'Finance',
           colors: {

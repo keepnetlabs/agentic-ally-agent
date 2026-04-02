@@ -5,6 +5,66 @@
 
 import { LANDING_PAGE } from '../../constants';
 
+function addFlexDirectionColumn(tag: string): string {
+  return tag.replace(/style=(['"])([^'"]*)\1/i, (match, quote, styleContent) => {
+    if (/flex-direction\s*:/i.test(styleContent)) return match;
+    return `style=${quote}${styleContent}; flex-direction: column;${quote}`;
+  });
+}
+
+function normalizeFooterSiblingLayout(html: string): string {
+  const footerBlockRegex =
+    /<div\b[^>]*style=['"][^'"]*(?:font-size\s*:\s*12px|color\s*:\s*#9ca3af)[^'"]*['"][^>]*>[\s\S]{0,1600}?(?:privacy|terms|support|all rights reserved|&copy;|©)[\s\S]{0,1600}?<\/div>/gi;
+  const flexDivTagRegex = /<div\b[^>]*style=['"][^'"]*\bdisplay\s*:\s*flex\b[^'"]*['"][^>]*>/gi;
+  const edits = new Map<number, { end: number; replacement: string }>();
+
+  let footerMatch: RegExpExecArray | null;
+  while ((footerMatch = footerBlockRegex.exec(html)) !== null) {
+    const footerStart = footerMatch.index;
+    const searchWindowStart = Math.max(0, footerStart - 3000);
+    const searchRegion = html.slice(searchWindowStart, footerStart);
+
+    let flexMatch: RegExpExecArray | null;
+    let strongestCandidate: { start: number; end: number; tag: string } | undefined;
+    let fallbackCandidate: { start: number; end: number; tag: string } | undefined;
+
+    while ((flexMatch = flexDivTagRegex.exec(searchRegion)) !== null) {
+      const tag = flexMatch[0];
+      if (/flex-direction\s*:/i.test(tag)) continue;
+
+      const candidate = {
+        start: searchWindowStart + flexMatch.index,
+        end: searchWindowStart + flexMatch.index + tag.length,
+        tag,
+      };
+
+      // Prefer wrapper-like flex containers over small inline rows such as trust badges.
+      if (/(?:\bpadding\s*:|\bmin-width\s*:|\bflex\s*:\s*1\b)/i.test(tag) && !/\bfont-size\s*:/i.test(tag)) {
+        strongestCandidate = candidate;
+      } else {
+        fallbackCandidate = candidate;
+      }
+    }
+
+    const chosenCandidate = strongestCandidate || fallbackCandidate;
+    if (!chosenCandidate) continue;
+
+    edits.set(chosenCandidate.start, {
+      end: chosenCandidate.end,
+      replacement: addFlexDirectionColumn(chosenCandidate.tag),
+    });
+  }
+
+  if (edits.size === 0) return html;
+
+  let fixedHtml = html;
+  for (const [start, edit] of [...edits.entries()].sort((a, b) => b[0] - a[0])) {
+    fixedHtml = fixedHtml.slice(0, start) + edit.replacement + fixedHtml.slice(edit.end);
+  }
+
+  return fixedHtml;
+}
+
 export function fixLandingPageLayout(html: string): string {
   let fixedHtml = html;
 
@@ -87,6 +147,13 @@ export function fixLandingPageLayout(html: string): string {
     return `${openDiv}${checkmark}${closeDiv}`;
   });
 
+  // Fix C: remove a stray bare checkmark left outside the icon container.
+  // Example: <div ...border-radius...><span>✓</span></div>✓
+  fixedHtml = fixedHtml.replace(
+    /(<div[^>]*border-radius:\s*(?:999px|50%|99px|100px)[^>]*>[\s\S]*?<\/div>)\s*(?:&#10003;|&#x2713;|&#x2714;|✓)(?=\s*(?:<\/div>|<))/gi,
+    '$1'
+  );
+
   // 4. Fix Success Card Centering
   // Problem: LLM generates success page card divs containing checkmark icons but omits text-align: center
   // This causes icon, heading, and paragraph to left-align inside the card
@@ -124,6 +191,11 @@ export function fixLandingPageLayout(html: string): string {
       return `${closeH1}${openP}${preStyle}style=${quote}${styleContent}; text-align: center;${quote}${postStyle}>`;
     }
   );
+
+  // 8. Fix Footer Placement
+  // If a footer block is emitted as a sibling inside a row-flex content wrapper,
+  // force that wrapper into a column layout so the footer sits below the card.
+  fixedHtml = normalizeFooterSiblingLayout(fixedHtml);
 
   return fixedHtml;
 }

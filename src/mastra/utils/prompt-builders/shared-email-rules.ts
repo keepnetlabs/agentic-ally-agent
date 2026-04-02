@@ -33,6 +33,7 @@ export const LOGO_TAG_RULE = `**Company Logo:** Include logo using \`{CUSTOMMAIN
  */
 export const NO_DISCLAIMERS_RULE = `**NO DISCLAIMERS:**
 - Do NOT include footer notes, explanations, or disclaimers like "This is a phishing link" or "Generated for training"
+- Do NOT add softening escape-hatch copy such as "If you did not request this, ignore this email", "If this reached you by mistake, delete it", or similar safety off-ramps unless the blueprint explicitly requires that behavior
 - Output RAW email content only - no meta-commentary`;
 
 /**
@@ -97,12 +98,24 @@ export const PREHEADER_RULE = `**Preheader:**
  */
 export const GREETING_RULES = `**Greeting:**
 - Must include {FIRSTNAME} or {FULLNAME} — never generic ("Dear Employee", "Dear User", "Hi Team").
+- Greeting must appear once in the main body copy, after any logo/header area.
 - Validate before output: fix if merge tag is missing.`;
 
 /**
  * Mobile optimization rules
  */
 export const MOBILE_OPTIMIZATION_RULES = `**Mobile:** Buttons min-height 32px (tappable). Table width 100% with max-width ${PHISHING_EMAIL.EMAIL_TABLE_MAX_WIDTH_PX}px.`;
+
+/**
+ * Date realism rules to avoid stale time references
+ */
+export function buildDateRealismRule(currentYear = new Date().getFullYear()): string {
+  return `**Date Realism:**
+- Any visible date, year, effective date, deadline, filename, or reporting period must feel current and plausible for ${currentYear}
+- Avoid stale fixed years like 2024 or 2025 unless the blueprint explicitly requires a historical reference
+- Prefer dynamic merge tags when appropriate: \`{CURRENT_DATE}\`, \`{DATEEMAILSENT}\`, \`{DATE_SENT}\`, \`{CURRENT_DATE_PLUS_10_DAYS}\`, \`{CURRENT_DATE_MINUS_10_DAYS}\`
+- If a year is not essential, prefer relative wording such as "today", "this month", or "current policy cycle"`;
+}
 
 /**
  * Merge tags rules for dynamic variables
@@ -162,7 +175,9 @@ export const NO_QR_CODE_LANDING_PAGE_RULE = `**🚫 No QR Codes in Landing Pages
  * Centralized to avoid duplication across quishing and normal phishing prompts
  */
 export const GREETING_INSTRUCTION = (language: string) =>
-  `**Write greeting first** - Must be in ${language} and include {FIRSTNAME} merge tag.
+  `**Greeting placement:** Must be in ${language} and include {FIRSTNAME} merge tag.
+- Greeting must appear in the main body copy, after the logo/header area.
+- Logo/header may appear above the greeting; do NOT place the personalized greeting above the brand header in card-style emails.
 Examples: "Dear {FIRSTNAME}," / "Hello {FIRSTNAME}," / "Merhaba {FIRSTNAME}," (Turkish)
 Never use "Dear Employee" or generic greetings without personalization tag.`;
 

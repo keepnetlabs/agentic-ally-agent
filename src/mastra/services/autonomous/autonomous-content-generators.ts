@@ -31,6 +31,10 @@ interface ContentGenerationReport {
     resilience_stage?: { level?: string };
     progression_target?: string;
     progression_hint?: string;
+    behavioral_resilience?: {
+      current_stage?: string;
+      target_stage?: string;
+    };
   };
   meta?: {
     department?: string;
@@ -40,6 +44,7 @@ interface ContentGenerationReport {
   maturity_mapping?: {
     gartner_sbcp?: { current?: string; next?: string; what_it_takes?: string };
     enisa_security_culture?: { current?: string; next?: string; what_it_takes?: string };
+    gartner_sbcp_context_only?: { label?: string; description?: string; what_it_takes?: string };
   };
   references?: string[];
   recommended_next_steps?: NextSteps;
@@ -70,6 +75,7 @@ interface RecommendedSimulation {
   difficulty?: string;
   persuasion_tactic?: string;
   rationale?: string;
+  why_this?: string;
   designed_to_progress?: string;
   nist_phish_scale?: {
     cue_difficulty?: string;
@@ -169,8 +175,16 @@ interface LevelDecision {
   reasoning: string;
 }
 
+function getCurrentBehavioralStage(report?: ContentGenerationReport): string | undefined {
+  return report?.header?.behavioral_resilience?.current_stage || report?.header?.resilience_stage?.level;
+}
+
+function getTargetBehavioralStage(report?: ContentGenerationReport): string | undefined {
+  return report?.header?.behavioral_resilience?.target_stage || report?.header?.progression_target;
+}
+
 function deriveTrainingLevelFromAnalysis(report?: ContentGenerationReport): LevelDecision {
-  const raw = report?.header?.resilience_stage?.level;
+  const raw = getCurrentBehavioralStage(report);
   if (!raw) {
     const level = pickRandomItem(TRAINING_LEVELS);
     return {
@@ -180,22 +194,22 @@ function deriveTrainingLevelFromAnalysis(report?: ContentGenerationReport): Leve
   }
 
   const normalized = raw.toLowerCase();
-  if (normalized.includes('low') || normalized.includes('beginner')) {
+  if (normalized.includes('foundational') || normalized.includes('building') || normalized.includes('low') || normalized.includes('beginner')) {
     return {
       level: 'Beginner',
       reasoning: `User resilience stage is "${raw}" — mapped to Beginner for foundational awareness content.`,
     };
   }
-  if (normalized.includes('high') || normalized.includes('advanced')) {
-    return {
-      level: 'Advanced',
-      reasoning: `User resilience stage is "${raw}" — mapped to Advanced for complex scenarios and deep analysis.`,
-    };
-  }
-  if (normalized.includes('medium') || normalized.includes('intermediate')) {
+  if (normalized.includes('consistent') || normalized.includes('medium') || normalized.includes('intermediate')) {
     return {
       level: 'Intermediate',
       reasoning: `User resilience stage is "${raw}" — mapped to Intermediate for balanced content difficulty.`,
+    };
+  }
+  if (normalized.includes('champion') || normalized.includes('high') || normalized.includes('advanced')) {
+    return {
+      level: 'Advanced',
+      reasoning: `User resilience stage is "${raw}" — mapped to Advanced for complex scenarios and deep analysis.`,
     };
   }
 
@@ -230,20 +244,24 @@ export function buildExecutiveReport(toolResult: AutonomousToolResult): string |
   const ml = steps.microlearnings?.[0];
   const nudge = steps.nudges?.[0];
   const references = report.references && Array.isArray(report.references) ? report.references.join(', ') : '';
+  const currentStage = getCurrentBehavioralStage(report) || 'Unknown';
+  const targetStage = getTargetBehavioralStage(report) || 'Unknown';
+  const progressionHint = report.header?.progression_hint || 'N/A';
+  const gartnerContext = report.maturity_mapping?.gartner_sbcp_context_only;
 
   return `**User Behavior Analysis Report**
 
-**Risk Level:** ${report.header?.resilience_stage?.level || 'Unknown'}
+**Current Stage:** ${currentStage}
 **Department:** ${report.meta?.department || 'Unknown'}
-**Progression Target:** ${report.header?.progression_target || 'N/A'}
-**Progression Hint:** ${report.header?.progression_hint || 'N/A'}
+**Target Stage:** ${targetStage}
+**Progression Hint:** ${progressionHint}
 **Strengths:** ${report.strengths?.join(', ') || 'None identified'}
 **Growth Opportunities:** ${report.growth_opportunities?.join(', ') || 'None identified'}
 
 **Maturity Level (Gartner SBCP):**
-- **Current:** ${report.maturity_mapping?.gartner_sbcp?.current || 'Unknown'}
-- **Next Target:** ${report.maturity_mapping?.gartner_sbcp?.next || 'Unknown'}
-- **What It Takes:** ${report.maturity_mapping?.gartner_sbcp?.what_it_takes || 'N/A'}
+- **Current:** ${report.maturity_mapping?.gartner_sbcp?.current || gartnerContext?.label || 'Context only — not an individual rating'}
+- **Next Target:** ${report.maturity_mapping?.gartner_sbcp?.next || gartnerContext?.description || 'Unknown'}
+- **What It Takes:** ${report.maturity_mapping?.gartner_sbcp?.what_it_takes || gartnerContext?.what_it_takes || 'N/A'}
 
 **Maturity Level (ENISA Security Culture):**
 - **Current:** ${report.maturity_mapping?.enisa_security_culture?.current || 'Unknown'}
@@ -257,7 +275,7 @@ ${sim
 - **Scenario Type:** ${sim.scenario_type}
 - **Difficulty:** ${sim.difficulty}
 - **Persuasion Tactic:** ${sim.persuasion_tactic}
-- **Rationale:** ${sim.rationale}
+- **Why This:** ${sim.why_this || sim.rationale || 'N/A'}
 - **NIST Phish Scale:** Cue Difficulty: ${sim.nist_phish_scale?.cue_difficulty || 'N/A'}, Premise Alignment: ${sim.nist_phish_scale?.premise_alignment || 'N/A'}
 - **Designed to Progress:** ${sim.designed_to_progress || 'N/A'}`
       : 'None'
