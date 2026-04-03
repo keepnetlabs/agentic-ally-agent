@@ -155,6 +155,8 @@ If a layout-specific rule above conflicts with a shared rule below, the layout-s
 
 ${hasFormPages ? `3. **Inputs:**
    - Use \`inputStyle\` from the design patterns above. Each input must have a visible label above it.
+   - Field labels must be left-aligned and directly associated with their own input. Do NOT center labels such as "Password".
+   - If you include an auxiliary password link (for example "Forgot password?"), it must sit outside the label-input gap and remain left-aligned. Never place it as a centered standalone row between the password label and password input.
    - **CRITICAL:** Every \`<button>\` with \`width: 100%\` MUST also include \`box-sizing: border-box;\` in its inline style to prevent overflow.
 
 4. **Primary Button:**

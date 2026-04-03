@@ -2,7 +2,7 @@ import { Context } from 'hono';
 import { errorService } from '../services/error-service';
 import { getLogger } from '../utils/core/logger';
 import { logErrorInfo, normalizeError } from '../utils/core/error-utils';
-import { trackAgentCost } from '../utils/core/tracked-generate';
+import { trackAgentCost, resolveOpenAIEndUserId } from '../utils/core/tracked-generate';
 import type { Agent } from '@mastra/core/agent';
 import { withRetry, withTimeout } from '../utils/core/resilience-utils';
 import {
@@ -264,10 +264,11 @@ async function handleEmailTemplate(
   const classifierMessage = `type="email_template"\n\nAvailable domains:\n${domainListStr}\n\n${cleanedHtml}`;
 
   // Run Rewriter and Classifier in parallel — each with its own retry/timeout
+  const endUserOpts = (() => { const id = resolveOpenAIEndUserId(); return id ? { providerOptions: { openai: { user: id } } } : {}; })();
   const [rewriterData, classifierData] = await withTimeout(
     Promise.all([
       withRetry<EmailRewriterOutput>(async () => {
-        const response = await rewriterAgent.generate(rewriterMessage);
+        const response = await rewriterAgent.generate(rewriterMessage, endUserOpts);
         trackAgentCost('phishing-fixer-rewriter', response, rewriterAgent.model);
         const result = parseRewriterOutput(response.text);
         if (!result.success) throw new Error(`Rewriter: ${result.error}`);
@@ -275,7 +276,7 @@ async function handleEmailTemplate(
       }, 'email-rewriter'),
 
       withRetry<EmailClassifierOutput>(async () => {
-        const response = await classifierAgent.generate(classifierMessage);
+        const response = await classifierAgent.generate(classifierMessage, endUserOpts);
         trackAgentCost('phishing-fixer-classifier', response, classifierAgent.model);
         const result = parseClassifierOutput(response.text);
         if (!result.success) throw new Error(`Classifier: ${result.error}`);
@@ -457,7 +458,8 @@ async function handleLandingPage(
 
   const data = await withTimeout(
     withRetry<LandingPageClassifierOutput>(async () => {
-      const response = await agent.generate(userMessage);
+      const lpEndUserOpts = (() => { const id = resolveOpenAIEndUserId(); return id ? { providerOptions: { openai: { user: id } } } : {}; })();
+      const response = await agent.generate(userMessage, lpEndUserOpts);
       trackAgentCost('phishing-fixer-landing-classifier', response, agent.model);
       const result = parseLandingPageOutput(response.text);
 

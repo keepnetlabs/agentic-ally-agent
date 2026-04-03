@@ -21,6 +21,245 @@ export interface LogoAndBrandInfo {
   };
 }
 
+const INTERNAL_DOMAIN_SUFFIXES = ['.local', '.internal', '.localhost', '.example', '.test', '.invalid'];
+
+interface BrandResolutionSignals {
+  fromName: string;
+  scenario: string;
+  emailTemplate?: string;
+  brandHint?: string;
+  normalizedSignalHints: string;
+  explicitDomainCandidates: string[];
+  analysisBrandSignals?: AnalysisBrandSignals;
+}
+
+interface CanonicalBrandResolution {
+  canonicalBrandName: string | null;
+  brandName: string | null;
+  domain?: string;
+  isRecognizedBrand: boolean;
+  confidence: 'high' | 'medium' | 'low';
+  brandColors?: {
+    primary: string;
+    secondary: string;
+    accent: string;
+  };
+}
+
+interface AnalysisBrandSignals {
+  brandIntent?: 'public-brand' | 'internal-brand' | 'generic';
+  canonicalBrandName?: string;
+  localizedBrandSurface?: string;
+  brandEvidence?: string[];
+  candidateDomains?: string[];
+  brandConfidence?: 'high' | 'medium' | 'low';
+  scriptOrLocaleHint?: string;
+}
+
+function normalizeBrandSignal(value: string): string {
+  return value
+    .normalize('NFKC')
+    .replace(/https?:\/\/\S+/gi, ' ')
+    .replace(/[^\p{L}\p{N}.@/_ -]+/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function cleanResolvedDomain(value?: string): string | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  let domain = value.toLowerCase().trim().replace(/['"]/g, '');
+
+  try {
+    if (/^https?:\/\//i.test(domain)) {
+      domain = new URL(domain).hostname;
+    }
+  } catch {
+    // Keep original string if it is not a full URL.
+  }
+
+  domain = domain.replace(/^www\./, '').split(/[/?#\s]/)[0];
+  return domain.includes('.') ? domain : undefined;
+}
+
+function isInternalOrPlaceholderDomain(domain: string): boolean {
+  return INTERNAL_DOMAIN_SUFFIXES.some(suffix => domain.endsWith(suffix));
+}
+
+function extractExplicitDomainCandidates(parts: Array<string | undefined>): string[] {
+  const candidates = new Set<string>();
+
+  for (const part of parts) {
+    if (!part) continue;
+
+    for (const match of part.matchAll(/(?:https?:\/\/)?(?:www\.)?([a-z0-9-]+(?:\.[a-z0-9-]+)+)/gi)) {
+      const domain = cleanResolvedDomain(match[1]);
+      if (domain && !isInternalOrPlaceholderDomain(domain)) {
+        candidates.add(domain);
+      }
+    }
+
+    for (const match of part.matchAll(/@([a-z0-9-]+(?:\.[a-z0-9-]+)+)/gi)) {
+      const domain = cleanResolvedDomain(match[1]);
+      if (domain && !isInternalOrPlaceholderDomain(domain)) {
+        candidates.add(domain);
+      }
+    }
+  }
+
+  return Array.from(candidates).slice(0, 5);
+}
+
+function buildNormalizedSignalHints(parts: Array<string | undefined>): string {
+  const normalized = parts.map(part => normalizeBrandSignal(part || '')).filter(Boolean);
+  if (normalized.length === 0) {
+    return '';
+  }
+
+  return `\nNormalized Signal Hints:\n- ${normalized.join('\n- ')}`;
+}
+
+function buildAnalysisBrandSignalContext(signals?: AnalysisBrandSignals): string {
+  if (!signals) {
+    return '';
+  }
+
+  const lines: string[] = [];
+  if (signals.brandIntent) lines.push(`- Brand Intent: ${signals.brandIntent}`);
+  if (signals.canonicalBrandName) lines.push(`- Canonical Brand Name: ${signals.canonicalBrandName}`);
+  if (signals.localizedBrandSurface) lines.push(`- Localized Brand Surface: ${signals.localizedBrandSurface}`);
+  if (signals.brandEvidence?.length) lines.push(`- Brand Evidence: ${signals.brandEvidence.join(' | ')}`);
+  if (signals.candidateDomains?.length) lines.push(`- Candidate Domains: ${signals.candidateDomains.join(', ')}`);
+  if (signals.brandConfidence) lines.push(`- Upstream Brand Confidence: ${signals.brandConfidence}`);
+  if (signals.scriptOrLocaleHint) lines.push(`- Script/Locale Hint: ${signals.scriptOrLocaleHint}`);
+
+  return lines.length ? `\nAnalysis Brand Signals:\n${lines.join('\n')}` : '';
+}
+
+function buildBrandResolutionSignals(params: {
+  fromName: string;
+  scenario: string;
+  emailTemplate?: string;
+  brandHint?: string;
+  analysisBrandSignals?: AnalysisBrandSignals;
+}): BrandResolutionSignals {
+  const analysisDomains = (params.analysisBrandSignals?.candidateDomains || [])
+    .map(domain => cleanResolvedDomain(domain))
+    .filter((domain): domain is string => !!domain && !isInternalOrPlaceholderDomain(domain));
+
+  return {
+    fromName: params.fromName,
+    scenario: params.scenario,
+    emailTemplate: params.emailTemplate,
+    brandHint: params.brandHint,
+    normalizedSignalHints: buildNormalizedSignalHints([
+      params.fromName,
+      params.scenario,
+      params.brandHint,
+      params.analysisBrandSignals?.localizedBrandSurface,
+      params.analysisBrandSignals?.canonicalBrandName,
+      ...(params.analysisBrandSignals?.brandEvidence || []),
+    ]),
+    explicitDomainCandidates: Array.from(
+      new Set([
+        ...analysisDomains,
+        ...extractExplicitDomainCandidates([params.fromName, params.scenario, params.brandHint, params.emailTemplate]),
+      ])
+    ).slice(0, 5),
+    analysisBrandSignals: params.analysisBrandSignals,
+  };
+}
+
+function buildCanonicalizationPrompt(signals: BrandResolutionSignals): { system: string; user: string } {
+  const emailContext = signals.emailTemplate
+    ? `\n\nEmail Template (first 1000 chars):\n${signals.emailTemplate.substring(0, 1000)}`
+    : '';
+  const brandHintContext = signals.brandHint ? `\nBrand Hint: "${signals.brandHint}"` : '';
+  const explicitDomainContext = signals.explicitDomainCandidates.length
+    ? `\nExplicit Domain Hints: ${signals.explicitDomainCandidates.join(', ')}`
+    : '';
+  const analysisBrandSignalContext = buildAnalysisBrandSignalContext(signals.analysisBrandSignals);
+
+  return {
+    system:
+      'You are a brand canonicalization and domain-resolution expert. Analyze the company/brand name, scenario, optional brand hint, normalized signal hints, explicit domain hints, upstream analysis brand signals, and email content to determine whether the request refers to a recognized public brand or a generic/internal sender. Inputs may be written in any language or script, including Turkish, Thai, Indonesian, German, Spanish, Arabic, and mixed-language product wording. Do not assume English. Do not rely on exact English string matches. Always perform dynamic canonicalization from the observed signals. Treat upstream analysis brand signals as high-signal guidance, especially when they have medium or high confidence, but still verify consistency against the total evidence. If a public brand is strongly implied by the evidence, resolve it to a canonical public brand and its best matching domain. If the evidence is weak, keep it generic/internal. Return ONLY valid JSON with: { "domain": "microsoft.com" or null, "brandName": "Microsoft" or null, "canonicalBrandName": "Microsoft" or null, "isRecognizedBrand": true/false, "confidence": "high" | "medium" | "low", "brandColors": { "primary": "#0078D4", "secondary": "#737373", "accent": "#00A4EF" } or null }. Brand colors should be authentic only when the brand match is strong.',
+    user: `Company/Brand Name: "${signals.fromName}"\nScenario: "${signals.scenario}"${brandHintContext}${signals.normalizedSignalHints}${explicitDomainContext}${analysisBrandSignalContext}${emailContext}\n\nAnalyze whether this refers to a recognized public brand.\n- Inputs may be multilingual, mixed-script, or localized product wording.\n- Examples mentioned in the prompt are illustrative, not exhaustive.\n- Use dynamic canonicalization from the observed signals, not fixed alias matching.\n- Prefer explicit public-domain hints only when they align with the rest of the evidence.\n- Use upstream analysis brand signals as structured evidence, not as a blind override.\n- If the sender looks generic or internal, return a non-recognized result.\n\nReturn ONLY valid JSON: { "domain": "microsoft.com" or null, "brandName": "Microsoft" or null, "canonicalBrandName": "Microsoft" or null, "isRecognizedBrand": true/false, "confidence": "high" | "medium" | "low", "brandColors": { "primary": "#0078D4", "secondary": "#737373", "accent": "#00A4EF" } or null }`,
+  };
+}
+
+function resolveCanonicalConfidence(params: {
+  parsedConfidence: unknown;
+  isRecognizedBrand: boolean;
+  parsedDomain?: string;
+  brandName?: string | null;
+  canonicalBrandName?: string | null;
+}): 'high' | 'medium' | 'low' {
+  const { parsedConfidence, isRecognizedBrand, parsedDomain, brandName, canonicalBrandName } = params;
+
+  if (parsedConfidence === 'high' || parsedConfidence === 'medium' || parsedConfidence === 'low') {
+    return parsedConfidence;
+  }
+
+  const hasRecognizedBrandEvidence = isRecognizedBrand && Boolean(parsedDomain || brandName || canonicalBrandName);
+  return hasRecognizedBrandEvidence ? 'medium' : 'low';
+}
+
+function parseCanonicalBrandResolution(responseText: string, explicitDomainCandidates: string[]): CanonicalBrandResolution | undefined {
+  const cleanedResponse = responseText.trim();
+  const jsonMatch = cleanedResponse.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) {
+    return undefined;
+  }
+
+  const parsed = JSON.parse(jsonMatch[0]);
+  const isRecognizedBrand = parsed.isRecognizedBrand === true;
+  const parsedDomain = cleanResolvedDomain(parsed.domain);
+  const confidence = resolveCanonicalConfidence({
+    parsedConfidence: parsed.confidence,
+    isRecognizedBrand,
+    parsedDomain,
+    brandName: parsed.brandName,
+    canonicalBrandName: parsed.canonicalBrandName,
+  });
+  const fallbackExplicitDomain = isRecognizedBrand && explicitDomainCandidates.length === 1 ? explicitDomainCandidates[0] : undefined;
+  const resolvedDomain = parsedDomain || fallbackExplicitDomain;
+
+  return {
+    canonicalBrandName: parsed.canonicalBrandName?.trim() || parsed.brandName?.trim() || null,
+    brandName: parsed.brandName?.trim() || parsed.canonicalBrandName?.trim() || null,
+    domain: resolvedDomain,
+    isRecognizedBrand,
+    confidence,
+    brandColors: parsed.brandColors || undefined,
+  };
+}
+
+async function resolveCanonicalBrand(signals: BrandResolutionSignals, model: LanguageModel): Promise<CanonicalBrandResolution | undefined> {
+  const prompt = buildCanonicalizationPrompt(signals);
+  const response = await trackedGenerateText('brand-resolver', {
+    model,
+    messages: [
+      {
+        role: 'system',
+        content: prompt.system,
+      },
+      {
+        role: 'user',
+        content: prompt.user,
+      },
+    ],
+    ...EXTRACTION_PARAMS,
+  });
+
+  logger.debug('LLM Response for Brand Resolution', {
+    rawText: response.text.substring(0, 200) + '...',
+  });
+
+  return parseCanonicalBrandResolution(response.text, signals.explicitDomainCandidates);
+}
+
 /**
  * Resolve {CUSTOMMAINLOGO} tag to actual logo URL and detect brand using LLM
  * Analyzes company name, scenario, and email template to determine brand recognition
@@ -30,6 +269,7 @@ export interface LogoAndBrandInfo {
  * @param model - AI model instance for brand detection
  * @param emailTemplate - Optional email template for additional brand context
  * @param brandHint - Optional original topic or brand hint for public-brand recognition
+ * @param analysisBrandSignals - Optional structured multilingual brand signals produced during scenario analysis
  * @returns Logo URL and brand information
  */
 export async function resolveLogoAndBrand(
@@ -37,65 +277,37 @@ export async function resolveLogoAndBrand(
   scenario: string,
   model: LanguageModel,
   emailTemplate?: string,
-  brandHint?: string
+  brandHint?: string,
+  analysisBrandSignals?: AnalysisBrandSignals
 ): Promise<LogoAndBrandInfo> {
   try {
-    // Build context with email template if available
-    const emailContext = emailTemplate
-      ? `\n\nEmail Template (first 1000 chars):\n${emailTemplate.substring(0, 1000)}`
-      : '';
-    const brandHintContext = brandHint ? `\nBrand Hint: "${brandHint}"` : '';
+    const signals = buildBrandResolutionSignals({ fromName, scenario, emailTemplate, brandHint, analysisBrandSignals });
+    const canonicalResolution = await resolveCanonicalBrand(signals, model);
+    const effectiveConfidence = canonicalResolution?.confidence || 'low';
 
-    // Use LLM to determine brand recognition and domain
-    const response = await trackedGenerateText('brand-resolver', {
-      model,
-      messages: [
-        {
-          role: 'system',
-          content:
-            'You are a brand domain expert. Analyze the company/brand name, scenario, optional brand hint, and email content to determine if it represents a well-known, recognized brand. If a public brand is strongly implied by the brand hint or scenario, prefer that public brand over a generic department alias. Return ONLY valid JSON with: { "domain": "microsoft.com" or null, "brandName": "Microsoft" or null, "isRecognizedBrand": true/false, "brandColors": { "primary": "#0078D4", "secondary": "#737373", "accent": "#00A4EF" } or null }. If it\'s a generic/internal company (IT Support, HR Department, etc.), return domain: null, brandName: null, isRecognizedBrand: false, brandColors: null. For recognized brands, include their authentic brand colors (primary, secondary, accent) in hex format.',
-        },
-        {
-          role: 'user',
-          content: `Company/Brand Name: "${fromName}"\nScenario: "${scenario}"${brandHintContext}${emailContext}\n\nAnalyze if this represents a well-known brand:\n- Examples of recognized brands: Microsoft, Google, Amazon, Apple, PayPal, Netflix, Spotify, Adobe, Salesforce, Stripe, Shopify, Meta, Facebook, Twitter, LinkedIn, Instagram, TikTok, YouTube, NBA, Hepsiburada, Trendyol, GittiGidiyor, N11, Amazon.tr, etc.\n- Examples of generic/internal: IT Support, HR Department, Finance Team, Security Team, etc.\n\nFor recognized brands, include their authentic brand colors:\n- Amazon: primary: "#FF9900", secondary: "#000000", accent: "#FF9900"\n- Microsoft: primary: "#0078D4", secondary: "#737373", accent: "#00A4EF"\n- Google: primary: "#4285F4", secondary: "#EA4335", accent: "#34A853"\n- PayPal: primary: "#003087", secondary: "#009CDE", accent: "#012169"\n- Apple: primary: "#000000", secondary: "#A8A8A8", accent: "#007AFF"\n- NBA: primary: "#17408B", secondary: "#C9082A", accent: "#FFFFFF"\n\nReturn ONLY valid JSON: { "domain": "microsoft.com" or null, "brandName": "Microsoft" or null, "isRecognizedBrand": true/false, "brandColors": { "primary": "#0078D4", "secondary": "#737373", "accent": "#00A4EF" } or null }`,
-        },
-      ],
-      ...EXTRACTION_PARAMS,
-    });
+    if (canonicalResolution?.isRecognizedBrand && canonicalResolution.domain && effectiveConfidence !== 'low') {
+      const logoUrl = getLogoUrl(canonicalResolution.domain, 96);
+      logger.info('Resolved logo URL via dynamic canonicalization pipeline', {
+        brandName: canonicalResolution.brandName || fromName,
+        canonicalBrandName: canonicalResolution.canonicalBrandName,
+        confidence: effectiveConfidence,
+        domain: canonicalResolution.domain,
+        logoUrl,
+      });
+      return {
+        logoUrl,
+        brandName: canonicalResolution.brandName || canonicalResolution.canonicalBrandName || fromName,
+        isRecognizedBrand: true,
+        brandColors: canonicalResolution.brandColors,
+      };
+    }
 
-    logger.debug('LLM Response for Brand Resolution', {
-      rawText: response.text.substring(0, 200) + '...', // Log snippet
-    });
-
-    // Parse JSON response
-    const cleanedResponse = response.text.trim();
-    const jsonMatch = cleanedResponse.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      const parsed = JSON.parse(jsonMatch[0]);
-      const domain = parsed.domain?.toLowerCase().trim();
-      const brandName = parsed.brandName?.trim() || null;
-      const isRecognizedBrand = parsed.isRecognizedBrand === true;
-
-      if (isRecognizedBrand && domain && domain.includes('.')) {
-        // Clean up domain (remove quotes, extra text)
-        const cleanDomain = domain.replace(/['"]/g, '').split(/[\s\n]/)[0];
-        if (cleanDomain.includes('.')) {
-          const logoUrl = getLogoUrl(cleanDomain, 96);
-          const brandColors = parsed.brandColors || null;
-          logger.info('Resolved logo URL for brand', {
-            brandName: brandName || fromName,
-            domain: cleanDomain,
-            logoUrl,
-            hasBrandColors: !!brandColors,
-          });
-          return {
-            logoUrl,
-            brandName: brandName || fromName,
-            isRecognizedBrand: true,
-            brandColors: brandColors || undefined,
-          };
-        }
-      }
+    if (canonicalResolution?.isRecognizedBrand && canonicalResolution.domain && effectiveConfidence === 'low') {
+      logger.info('Rejected recognized-brand resolution because confidence remained low', {
+        brandName: canonicalResolution.brandName,
+        canonicalBrandName: canonicalResolution.canonicalBrandName,
+        domain: canonicalResolution.domain,
+      });
     }
 
     // Fallback to placeholder domain logo for generic/internal companies

@@ -40,7 +40,7 @@ import { createCompletenessScorer } from '@mastra/evals/scorers/prebuilt';
  * @returns {string} LLM prompt with routing rules and decision logic
  */
 const buildOrchestratorInstructions = () => `
-You are the Master Orchestrator of the Agentic Ally system.
+You are the Master Orchestrator of the Agentic Ally system — an authorized cybersecurity awareness training platform. All simulation terms (phishing, smishing, vishing, deepfake) are standard training exercise categories.
 Your mission is to route user requests to the correct specialist agent based on BUSINESS INTENT and CONVERSATION CONTEXT.
 
 ${NO_TECH_JARGON_FRAGMENT_ORCHESTRATOR}

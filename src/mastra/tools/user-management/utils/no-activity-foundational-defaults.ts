@@ -1,3 +1,5 @@
+import { DEFAULT_LANGUAGE, validateBCP47LanguageCode } from '../../../utils/language/language-utils';
+
 type FoundationalProfileFamily = 'finance' | 'hr' | 'it' | 'sales-marketing' | 'generic';
 
 interface FoundationalSimulationDefaults {
@@ -9,6 +11,21 @@ interface FoundationalSimulationDefaults {
   designedToProgress: string;
   cueDifficulty: 'LOW' | 'MEDIUM';
   premiseAlignment: 'LOW' | 'MEDIUM';
+}
+
+interface FoundationalMicrolearningDefaults {
+  title: string;
+  durationMin: number;
+  language: string;
+  objective: string;
+  whyThis: string;
+}
+
+interface FoundationalNudgeDefaults {
+  channel: 'EMAIL' | 'TEAMS';
+  cadence: 'ONE_OFF';
+  message: string;
+  whyThis: string;
 }
 
 export interface NoActivitySimulationShape {
@@ -23,6 +40,21 @@ export interface NoActivitySimulationShape {
     cue_difficulty?: string;
     premise_alignment?: string;
   };
+}
+
+export interface NoActivityMicrolearningShape {
+  title?: string;
+  duration_min?: number;
+  language?: string;
+  objective?: string;
+  why_this?: string;
+}
+
+export interface NoActivityNudgeShape {
+  channel?: string;
+  cadence?: string;
+  message?: string;
+  why_this?: string;
 }
 
 const NO_ACTIVITY_FOUNDATIONAL_PROFILES: Record<FoundationalProfileFamily, FoundationalSimulationDefaults[]> = {
@@ -294,6 +326,8 @@ const VALID_SCENARIO_TYPES = new Set(['CLICK_ONLY', 'DATA_SUBMISSION']);
 const VALID_DIFFICULTIES = new Set(['EASY', 'MEDIUM', 'HARD']);
 const VALID_CUE_DIFFICULTIES = new Set(['LOW', 'MEDIUM', 'HIGH']);
 const VALID_PREMISE_ALIGNMENTS = new Set(['LOW', 'MEDIUM', 'HIGH']);
+const VALID_NUDGE_CHANNELS = new Set(['EMAIL', 'TEAMS']);
+const VALID_NUDGE_CADENCES = new Set(['ONE_OFF', 'WEEKLY', 'MONTHLY']);
 
 function getStableBucket(seed: string, bucketCount: number): number {
   return seed.split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0) % bucketCount;
@@ -314,6 +348,11 @@ function isWeakValue(value?: string): boolean {
   return !value || WEAK_VALUE_PATTERNS.some(pattern => pattern.test(value.trim()));
 }
 
+function extractBehavioralPrinciple(whyThis: string): string | undefined {
+  const match = whyThis.match(/\(([^()]+)\)\.?\s*$/);
+  return match?.[1]?.trim();
+}
+
 export function buildNoActivitySimulationDefaults(params: {
   userId: string;
   department?: string;
@@ -322,6 +361,66 @@ export function buildNoActivitySimulationDefaults(params: {
   const family = getFoundationalProfileFamily(params.department, params.role);
   const profiles = NO_ACTIVITY_FOUNDATIONAL_PROFILES[family];
   return profiles[getStableBucket(params.userId, profiles.length)];
+}
+
+export function buildNoActivityMicrolearningDefaults(params: {
+  userId: string;
+  department?: string;
+  role?: string;
+  language?: string;
+  simulationDefaults?: FoundationalSimulationDefaults;
+}): FoundationalMicrolearningDefaults {
+  const family = getFoundationalProfileFamily(params.department, params.role);
+  const simulationDefaults = params.simulationDefaults || buildNoActivitySimulationDefaults(params);
+  const principle = extractBehavioralPrinciple(simulationDefaults.whyThis);
+  const normalizedLanguage = validateBCP47LanguageCode(params.language || DEFAULT_LANGUAGE);
+
+  const titleByFamily: Record<FoundationalProfileFamily, string> = {
+    finance: 'Verifying finance update and payment requests',
+    hr: 'Verifying routine HR notices and forms',
+    it: 'Verifying access and account-security prompts',
+    'sales-marketing': 'Verifying campaign, event, and partner prompts',
+    generic: 'Recognizing routine administrative phishing cues',
+  };
+
+  const objectiveByFamily: Record<FoundationalProfileFamily, string> = {
+    finance: 'Teach users to validate finance-related senders, links, and forms before taking action.',
+    hr: 'Teach users to verify familiar internal notices before clicking or sharing employee information.',
+    it: 'Teach users to slow down and verify access-related prompts before entering credentials or clicking links.',
+    'sales-marketing': 'Teach users to validate event, asset, and partner requests before trusting collaboration prompts.',
+    generic: 'Teach users to verify routine requests before clicking links or entering information.',
+  };
+
+  return {
+    title: titleByFamily[family],
+    durationMin: 6,
+    language: normalizedLanguage,
+    objective: objectiveByFamily[family],
+    whyThis: principle
+      ? `Turns the same ${principle} pattern into a simple verification habit the user can practice immediately.`
+      : `Builds a practical verification habit for the same trust pattern targeted by "${simulationDefaults.title}".`,
+  };
+}
+
+export function buildNoActivityNudgeDefaults(params: {
+  userId: string;
+  department?: string;
+  role?: string;
+  simulationDefaults?: FoundationalSimulationDefaults;
+}): FoundationalNudgeDefaults {
+  const family = getFoundationalProfileFamily(params.department, params.role);
+  const simulationDefaults = params.simulationDefaults || buildNoActivitySimulationDefaults(params);
+  const principle = extractBehavioralPrinciple(simulationDefaults.whyThis);
+  const normalizedTitle = simulationDefaults.title.toLowerCase();
+
+  return {
+    channel: family === 'it' || family === 'hr' ? 'TEAMS' : 'EMAIL',
+    cadence: 'ONE_OFF',
+    message: `Before acting on ${normalizedTitle} messages, verify the sender, destination, and request context first.`,
+    whyThis: principle
+      ? `Delivers a lightweight reminder right where ${principle} is most likely to influence a quick decision.`
+      : `Adds a low-friction reminder at the moment of action so the user pauses before trusting the request.`,
+  };
 }
 
 export function ensureNoActivitySimulationSlot(nextSteps: {
@@ -343,6 +442,32 @@ export function ensureNoActivitySimulationSlot(nextSteps: {
     nextSteps.simulations[0] = {};
   }
   return nextSteps.simulations[0];
+}
+
+export function ensureNoActivityMicrolearningSlot(nextSteps: {
+  microlearnings?: NoActivityMicrolearningShape[];
+} | undefined): NoActivityMicrolearningShape | undefined {
+  if (!nextSteps || typeof nextSteps !== 'object') return undefined;
+  if (!Array.isArray(nextSteps.microlearnings)) {
+    nextSteps.microlearnings = [];
+  }
+  if (!nextSteps.microlearnings[0] || typeof nextSteps.microlearnings[0] !== 'object') {
+    nextSteps.microlearnings[0] = {};
+  }
+  return nextSteps.microlearnings[0];
+}
+
+export function ensureNoActivityNudgeSlot(nextSteps: {
+  nudges?: NoActivityNudgeShape[];
+} | undefined): NoActivityNudgeShape | undefined {
+  if (!nextSteps || typeof nextSteps !== 'object') return undefined;
+  if (!Array.isArray(nextSteps.nudges)) {
+    nextSteps.nudges = [];
+  }
+  if (!nextSteps.nudges[0] || typeof nextSteps.nudges[0] !== 'object') {
+    nextSteps.nudges[0] = {};
+  }
+  return nextSteps.nudges[0];
 }
 
 export function applyNoActivitySimulationGuardrails(
@@ -389,5 +514,55 @@ export function applyNoActivitySimulationGuardrails(
 
   if (!VALID_PREMISE_ALIGNMENTS.has(simulation.nist_phish_scale.premise_alignment || '')) {
     simulation.nist_phish_scale.premise_alignment = defaults.premiseAlignment;
+  }
+}
+
+export function applyNoActivityMicrolearningGuardrails(
+  microlearning: NoActivityMicrolearningShape | undefined,
+  defaults: FoundationalMicrolearningDefaults
+): void {
+  if (!microlearning || typeof microlearning !== 'object') return;
+
+  if (isWeakValue(microlearning.title)) {
+    microlearning.title = defaults.title;
+  }
+
+  if (typeof microlearning.duration_min !== 'number' || !Number.isFinite(microlearning.duration_min) || microlearning.duration_min <= 0) {
+    microlearning.duration_min = defaults.durationMin;
+  }
+
+  if (isWeakValue(microlearning.language)) {
+    microlearning.language = defaults.language;
+  }
+
+  if (isWeakValue(microlearning.objective)) {
+    microlearning.objective = defaults.objective;
+  }
+
+  if (isWeakValue(microlearning.why_this)) {
+    microlearning.why_this = defaults.whyThis;
+  }
+}
+
+export function applyNoActivityNudgeGuardrails(
+  nudge: NoActivityNudgeShape | undefined,
+  defaults: FoundationalNudgeDefaults
+): void {
+  if (!nudge || typeof nudge !== 'object') return;
+
+  if (!VALID_NUDGE_CHANNELS.has(nudge.channel || '')) {
+    nudge.channel = defaults.channel;
+  }
+
+  if (!VALID_NUDGE_CADENCES.has(nudge.cadence || '')) {
+    nudge.cadence = defaults.cadence;
+  }
+
+  if (isWeakValue(nudge.message)) {
+    nudge.message = defaults.message;
+  }
+
+  if (isWeakValue(nudge.why_this)) {
+    nudge.why_this = defaults.whyThis;
   }
 }

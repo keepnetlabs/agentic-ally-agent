@@ -24,7 +24,7 @@ export async function detectAndResolveBrand(
   let resolvedBrandInfo = null;
 
   try {
-    // 1. Intent Classification: Does user want THEIR OWN logo or an EXTERNAL brand?
+    // 1. Intent Classification: removal vs internal vs external brand
     const intentPrompt = getIntentClassificationPrompt(editInstruction);
 
     const intentResponse = await withTimeout(
@@ -37,12 +37,20 @@ export async function detectAndResolveBrand(
     );
 
     const intentParsed = JSON.parse(cleanResponse(intentResponse.text, 'brand-intent'));
-    const isInternalBrandRequest = intentParsed.isInternalBrandRequest;
+    const isRemovalRequest = intentParsed.isRemovalRequest === true;
+    const isInternalBrandRequest = intentParsed.isInternalBrandRequest === true;
 
     logger.info('🔍 Brand intent classification result', {
-      isInternalBrandRequest: !!isInternalBrandRequest,
+      isRemovalRequest,
+      isInternalBrandRequest,
       hasWhitelabelLogo: !!whitelabelConfig?.mainLogoUrl,
     });
+
+    // Early exit: removal intent — let the editor LLM handle it as a normal edit
+    if (isRemovalRequest) {
+      logger.info('🔍 Logo removal detected via intent classification, skipping brand resolution');
+      return { brandContext: '', resolvedBrandInfo: null };
+    }
 
     if (isInternalBrandRequest) {
       if (whitelabelConfig?.mainLogoUrl) {
@@ -58,7 +66,23 @@ export async function detectAndResolveBrand(
       }
     }
 
-    // If not internal (or internal failed), try external resolution
+    // If not internal (or internal failed), check for explicit URL first, then try external resolution
+    if (!resolvedBrandInfo) {
+      // 1b. Check if user provided an explicit URL — since hasBrandUpdate is true (caller verified),
+      // any URL in the instruction is a logo/image URL. Prefer image-extension URLs, fallback to any https URL.
+      const imageUrlMatch = editInstruction.match(/https?:\/\/\S+\.(?:jpg|jpeg|png|gif|svg|webp|ico)(?:[?\s]|$)/i);
+      const explicitUrlMatch = imageUrlMatch || editInstruction.match(/https?:\/\/\S+/i);
+      if (explicitUrlMatch) {
+        const explicitLogoUrl = explicitUrlMatch[0].replace(/[\s,;)}\]]+$/, '');
+        logger.info('🔍 Explicit logo URL detected in edit instruction, using directly', { explicitLogoUrl });
+        resolvedBrandInfo = {
+          brandName: 'Custom Logo',
+          logoUrl: explicitLogoUrl,
+          isRecognizedBrand: true,
+        };
+      }
+    }
+
     if (!resolvedBrandInfo) {
       // 2. LLM brand extraction to improve recognition for explicit logo requests
       const brandExtractPrompt = [

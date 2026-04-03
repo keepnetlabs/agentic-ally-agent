@@ -7,16 +7,41 @@ interface LandingEmailSummaryParams {
   emailUsesLogoTag: boolean;
 }
 
-const NON_PRIMARY_CTA_LABELS = new Set(['privacy', 'terms', 'support', 'unsubscribe', 'help', 'contact us']);
-const WEAK_CTA_LABELS = new Set(['click here', 'continue', 'submit', 'learn more', 'read more']);
+const NON_PRIMARY_CTA_LABELS = new Set([
+  'privacy',
+  'terms',
+  'support',
+  'unsubscribe',
+  'help',
+  'contact us',
+  'privacy policy',
+  'gizlilik',
+  'yardım',
+  'hilfe',
+  'aide',
+]);
+const WEAK_CTA_LABELS = new Set([
+  'click here',
+  'continue',
+  'submit',
+  'learn more',
+  'read more',
+  'devam et',
+  'weiter',
+  'continuer',
+  'continuar',
+]);
 
 const SIGN_IN_ACTION_PATTERN =
-  /password|passcode|sign in|log in|login|sso|mfa|credentials|secure access|giriş|oturum aç|şifre|kimlik bilgileri|hesap|anmelden|einloggen|passwort|zugang|konto/;
-const BILLING_ACTION_PATTERN = /invoice|payment|billing|bill|rechnung|zahlung|fatura|ödeme/;
-const DELIVERY_ACTION_PATTERN = /delivery|package|shipment|tracking|order|lieferung|sendung|paket|kargo|teslimat|sipariş/;
+  /password|passcode|sign in|log in|login|sso|mfa|credentials|secure access|verify account|verify access|giriş|oturum aç|şifre|kimlik bilgileri|hesap|anmelden|einloggen|passwort|zugang|konto|iniciar sesión|iniciar sesion|acceder|cuenta|contraseña|connexion|se connecter|mot de passe|compte/;
+const BILLING_ACTION_PATTERN =
+  /invoice|payment|billing|bill|rechnung|zahlung|fatura|ödeme|factura|pago|pagar|facture|paiement|payer/;
+const DELIVERY_ACTION_PATTERN =
+  /delivery|package|shipment|tracking|order|lieferung|sendung|paket|kargo|teslimat|sipariş|entrega|paquete|envío|seguimiento|commande|livraison|colis|suivi/;
 const POLICY_ACTION_PATTERN =
-  /policy|handbook|acknowledg|survey|training|benefit|richtlinie|handbuch|bestätig|umfrage|schulung|vorteil|politika|el kitabı|anket|eğitim|yan hak/;
-const DOCUMENT_ACTION_PATTERN = /document|attachment|file|review|dokument|datei|anhang|prüf|belge|doküman|incele/;
+  /policy|handbook|acknowledg|survey|training|benefit|richtlinie|handbuch|bestätig|umfrage|schulung|vorteil|politika|el kitabı|anket|eğitim|yan hak|política|encuesta|formación|beneficios|politique|enquête|formation|avantages/;
+const DOCUMENT_ACTION_PATTERN =
+  /document|attachment|file|review|dokument|datei|anhang|prüf|belge|doküman|incele|documento|archivo|revisar|pièce jointe|fichier|réviser/;
 
 interface CtaCandidate {
   label: string;
@@ -37,7 +62,7 @@ function extractLikelyCtaLabel(template: string): string | undefined {
   const matches = Array.from(template.matchAll(/<(a|button)\b([^>]*)>([\s\S]{2,120}?)<\/\1>/gi));
   const candidates: CtaCandidate[] = [];
 
-  for (const match of matches) {
+  for (const [index, match] of matches.entries()) {
     const tagName = match[1]?.toLowerCase();
     const attrs = match[2] || '';
     const label = match[3]?.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
@@ -45,8 +70,11 @@ function extractLikelyCtaLabel(template: string): string | undefined {
     if (NON_PRIMARY_CTA_LABELS.has(label.toLowerCase())) continue;
 
     let score = 0;
-    if (attrs.includes('{PHISHINGURL}')) score += 5;
+    const hasPhishingUrl = attrs.includes('{PHISHINGURL}');
+    if (hasPhishingUrl) score += 6;
     if (tagName === 'button') score += 2;
+    if (/role\s*=\s*['"]button['"]/i.test(attrs)) score += 1;
+    if (/\b(btn|button|cta)\b/i.test(attrs)) score += 1;
     if (
       SIGN_IN_ACTION_PATTERN.test(label.toLowerCase()) ||
       BILLING_ACTION_PATTERN.test(label.toLowerCase()) ||
@@ -56,7 +84,9 @@ function extractLikelyCtaLabel(template: string): string | undefined {
     ) {
       score += 2;
     }
+    if (label.length >= 8 && label.length <= 40) score += 1;
     if (WEAK_CTA_LABELS.has(label.toLowerCase())) score -= 1;
+    score += Math.max(0, 3 - index) * 0.01;
 
     candidates.push({ label, score });
   }

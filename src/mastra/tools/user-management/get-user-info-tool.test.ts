@@ -636,6 +636,8 @@ describe('getUserInfoTool', () => {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const result = await getUserInfoTool.execute!(input, {}) as any;
       const sim = result.analysisReport?.ai_recommended_next_steps?.simulations?.[0];
+      const ml = result.analysisReport?.ai_recommended_next_steps?.microlearnings?.[0];
+      const nudge = result.analysisReport?.ai_recommended_next_steps?.nudges?.[0];
 
       expect(sim?.vector).toBe('EMAIL');
       expect(sim?.scenario_type).toBe('CLICK_ONLY');
@@ -644,6 +646,68 @@ describe('getUserInfoTool', () => {
       expect(sim?.title).toBe('VPN access review');
       expect(sim?.why_this).toContain('Curiosity Gap');
       expect(sim?.designed_to_progress).toContain('access-review prompts');
+      expect(ml?.title).toBe('Verifying access and account-security prompts');
+      expect(ml?.duration_min).toBe(6);
+      expect(ml?.why_this).toContain('Curiosity Gap');
+      expect(nudge?.channel).toBe('TEAMS');
+      expect(nudge?.cadence).toBe('ONE_OFF');
+      expect(nudge?.message).toContain('vpn access review');
+      expect(nudge?.why_this).toContain('Curiosity Gap');
+    });
+
+    it('should respect reportLanguage in no-activity prompts and fallback microlearning language', async () => {
+      (global.fetch as any)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            items: [
+              {
+                targetUserResourceId: 'user-lang-1',
+                firstName: 'Dil',
+                lastName: 'Test',
+                email: 'lang@example.com',
+                department: 'IT',
+                preferredLanguage: 'en-gb',
+                phoneNumber: '+1234567893',
+              },
+            ],
+          }),
+        })
+        .mockResolvedValueOnce({ ok: true, json: async () => ({ data: { results: [] } }) });
+
+      const weakLanguageResponse = {
+        ...mockAnalysisReport,
+        meta: {
+          ...mockAnalysisReport.meta,
+          language: '',
+        },
+        ai_recommended_next_steps: {
+          simulations: [],
+          microlearnings: [
+            {
+              title: 'DEFAULT',
+              duration_min: 0,
+              language: '',
+              objective: 'DEFAULT',
+              why_this: 'Generic',
+            },
+          ],
+          nudges: [],
+        },
+      };
+      (generateText as any).mockResolvedValue({ text: JSON.stringify(weakLanguageResponse) });
+
+      const result = await getUserInfoTool.execute!({
+        targetUserResourceId: 'user-lang-1',
+        reportLanguage: 'tr-tr',
+      }, {}) as any;
+
+      const generateTextCall = (generateText as any).mock.calls[0][0];
+      const ml = result.analysisReport?.ai_recommended_next_steps?.microlearnings?.[0];
+
+      expect(generateTextCall.messages[1].content).toContain('Language: tr-tr');
+      expect(result.analysisReport?.meta?.language).toBe('tr-tr');
+      expect(ml?.language).toBe('tr-tr');
     });
 
     it('should create a first simulation when AI returns an empty no-activity simulation list', async () => {
@@ -677,6 +741,8 @@ describe('getUserInfoTool', () => {
 
       const result = await getUserInfoTool.execute!({ targetUserResourceId: 'user-3' }, {}) as any;
       const sim = result.analysisReport?.ai_recommended_next_steps?.simulations?.[0];
+      const ml = result.analysisReport?.ai_recommended_next_steps?.microlearnings?.[0];
+      const nudge = result.analysisReport?.ai_recommended_next_steps?.nudges?.[0];
 
       expect(sim).toBeDefined();
       expect(sim?.vector).toBe('EMAIL');
@@ -684,6 +750,11 @@ describe('getUserInfoTool', () => {
       expect(sim?.difficulty).toBe('EASY');
       expect(sim?.title).toBe('Quarter-close document review');
       expect(sim?.why_this).toContain('Urgency Effect');
+      expect(ml?.title).toBe('Verifying finance update and payment requests');
+      expect(ml?.why_this).toContain('Urgency Effect');
+      expect(nudge?.channel).toBe('EMAIL');
+      expect(nudge?.cadence).toBe('ONE_OFF');
+      expect(nudge?.message).toContain('quarter-close document review');
     });
 
     it('should preserve strong AI no-activity recommendations while only keeping guardrails', async () => {
@@ -731,6 +802,8 @@ describe('getUserInfoTool', () => {
 
       const result = await getUserInfoTool.execute!({ targetUserResourceId: 'user-2' }, {}) as any;
       const sim = result.analysisReport?.ai_recommended_next_steps?.simulations?.[0];
+      const ml = result.analysisReport?.ai_recommended_next_steps?.microlearnings?.[0];
+      const nudge = result.analysisReport?.ai_recommended_next_steps?.nudges?.[0];
 
       expect(sim?.vector).toBe('QR');
       expect(sim?.scenario_type).toBe('CLICK_ONLY');
@@ -741,6 +814,80 @@ describe('getUserInfoTool', () => {
       expect(sim?.designed_to_progress).toContain('tool-activation notices');
       expect(sim?.nist_phish_scale?.cue_difficulty).toBe('MEDIUM');
       expect(sim?.nist_phish_scale?.premise_alignment).toBe('LOW');
+      expect(ml?.title).toBe('Verifying access and account-security prompts');
+      expect(nudge?.channel).toBe('TEAMS');
+    });
+
+    it('should preserve strong AI microlearning and nudge recommendations while applying no-data guardrails', async () => {
+      (global.fetch as any)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            items: [
+              {
+                targetUserResourceId: 'user-6',
+                firstName: 'Jordan',
+                lastName: 'Ops',
+                email: 'jordan@example.com',
+                department: 'HR',
+                phoneNumber: '+1234567896',
+              },
+            ],
+          }),
+        })
+        .mockResolvedValueOnce({ ok: true, json: async () => ({ data: { results: [] } }) });
+
+      const strongAIResponse = {
+        ...mockAnalysisReport,
+        ai_recommended_next_steps: {
+          simulations: [
+            {
+              vector: 'EMAIL',
+              persuasion_tactic: 'SOCIAL_PROOF',
+              scenario_type: 'CLICK_ONLY',
+              difficulty: 'EASY',
+              title: 'Training completion reminder',
+              why_this: 'Uses familiar compliance language and peer-completion cues to reduce skepticism (Social Proof).',
+              designed_to_progress: 'Build a stronger habit of validating training and compliance links before opening them.',
+              nist_phish_scale: {
+                cue_difficulty: 'LOW',
+                premise_alignment: 'LOW',
+              },
+            },
+          ],
+          microlearnings: [
+            {
+              title: 'Checking compliance reminders safely',
+              duration_min: 8,
+              language: 'en',
+              objective: 'Teach users to verify reminder emails before clicking compliance links.',
+              why_this: 'Reinforces the exact workflow confusion shown in the recommendation.',
+            },
+          ],
+          nudges: [
+            {
+              channel: 'TEAMS',
+              cadence: 'ONE_OFF',
+              message: 'Before opening a compliance reminder, confirm the sender and destination first.',
+              why_this: 'Provides a just-in-time reminder before routine compliance actions.',
+            },
+          ],
+        },
+      };
+      (generateText as any).mockResolvedValue({ text: JSON.stringify(strongAIResponse) });
+
+      const result = await getUserInfoTool.execute!({ targetUserResourceId: 'user-6' }, {}) as any;
+      const ml = result.analysisReport?.ai_recommended_next_steps?.microlearnings?.[0];
+      const nudge = result.analysisReport?.ai_recommended_next_steps?.nudges?.[0];
+
+      expect(ml?.title).toBe('Checking compliance reminders safely');
+      expect(ml?.duration_min).toBe(8);
+      expect(ml?.objective).toContain('verify reminder emails');
+      expect(ml?.why_this).toContain('workflow confusion');
+      expect(nudge?.channel).toBe('TEAMS');
+      expect(nudge?.cadence).toBe('ONE_OFF');
+      expect(nudge?.message).toContain('compliance reminder');
+      expect(nudge?.why_this).toContain('just-in-time reminder');
     });
 
     it('should provide more than three deterministic archetypes per department family', () => {
@@ -753,6 +900,20 @@ describe('getUserInfoTool', () => {
       ]);
 
       expect(titles.size).toBeGreaterThanOrEqual(5);
+    });
+
+    describe('Golden Scenario Regression Set', () => {
+      it.each([
+        { department: 'IT', userId: 'user-1', expectedTitle: 'VPN access review', expectedPrinciple: 'Curiosity Gap' },
+        { department: 'Finance', userId: 'user-3', expectedTitle: 'Quarter-close document review', expectedPrinciple: 'Urgency Effect' },
+        { department: 'HR', userId: 'user-6', expectedTitle: 'Benefits profile confirmation', expectedPrinciple: 'Authority Bias' },
+      ])('keeps stable no-data defaults for $department users', ({ department, userId, expectedTitle, expectedPrinciple }) => {
+        const sim = buildNoActivitySimulationDefaults({ userId, department });
+
+        expect(sim.title).toBe(expectedTitle);
+        expect(sim.whyThis).toContain(expectedPrinciple);
+        expect(sim.designedToProgress).toBeTruthy();
+      });
     });
   });
 

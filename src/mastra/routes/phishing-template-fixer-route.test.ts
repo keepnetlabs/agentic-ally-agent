@@ -42,6 +42,7 @@ vi.mock('../utils/core/request-storage', () => ({
     companyId: 'mock-company',
     baseApiUrl: 'https://test-api.devkeepnet.com',
   }),
+  requestStorage: { getStore: vi.fn().mockReturnValue(undefined) },
 }));
 
 // Mock global fetch for domain API call
@@ -168,9 +169,11 @@ describe('phishingTemplateFixerHandler', () => {
     expect(getAgent).toHaveBeenCalledWith('emailClassifier');
     expect(classifierGenerate).toHaveBeenCalledWith(
       expect.stringContaining('Available domains:'),
+      expect.anything(),
     );
     expect(classifierGenerate).toHaveBeenCalledWith(
       expect.stringContaining('sirketiciduyuruonline.com'),
+      expect.anything(),
     );
     expect(json).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -381,6 +384,7 @@ describe('phishingTemplateFixerHandler', () => {
     // Agent should still receive "Available domains:" (from hardcoded fallback)
     expect(generate).toHaveBeenCalledWith(
       expect.stringContaining('Available domains:'),
+      expect.anything(),
     );
   });
 

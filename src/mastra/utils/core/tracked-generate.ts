@@ -19,6 +19,7 @@
 import { generateText } from 'ai';
 import { trackCost } from './cost-tracker';
 import { getLogger } from './logger';
+import { requestStorage } from './request-storage';
 
 const logger = getLogger('TrackedGenerate');
 
@@ -31,7 +32,56 @@ function resolveModelId(model: unknown): string {
 }
 
 /**
- * Wrapper around AI SDK's generateText that automatically tracks cost.
+ * Extract `sub` (user resource ID) from a JWT token without crypto.
+ * JWT = header.payload.signature — payload is base64url-encoded JSON.
+ * Returns undefined if token is malformed or missing `sub`.
+ */
+function extractSubFromJwt(token: string): string | undefined {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return undefined;
+    // base64url → base64 → decode
+    const b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const json = atob(b64);
+    const payload = JSON.parse(json);
+    return typeof payload.sub === 'string' && payload.sub.length > 0
+      ? payload.sub
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Derive a stable, per-operator end-user identifier from request context.
+ * Extracts the opaque `sub` field from the JWT token (e.g. "ptaCdRKjZE2a")
+ * — no crypto needed, no PII sent to OpenAI.
+ * Falls back to companyId for autonomous/cron jobs where no operator token exists.
+ */
+export function resolveOpenAIEndUserId(): string | undefined {
+  return resolveEndUserId();
+}
+
+function resolveEndUserId(): string | undefined {
+  const store = requestStorage.getStore();
+  const token = store?.token;
+
+  // Primary: extract `sub` from JWT (per-operator granularity)
+  if (token) {
+    const sub = extractSubFromJwt(token);
+    if (sub) return `op-${sub}`;
+  }
+
+  // Fallback: companyId for autonomous/cron jobs (no operator token)
+  const companyId = store?.companyId;
+  if (companyId) return `auto-${companyId}`;
+
+  return undefined;
+}
+
+/**
+ * Wrapper around AI SDK's generateText that automatically tracks cost
+ * and injects OpenAI end-user identification for abuse prevention.
  *
  * @param operation - Short label for this LLM call (e.g., 'header-analysis', 'report-outline')
  * @param params - Same parameters as generateText from 'ai'
@@ -41,6 +91,23 @@ export async function trackedGenerateText(
   operation: string,
   params: Parameters<typeof generateText>[0]
 ): ReturnType<typeof generateText> {
+  // Inject OpenAI end-user ID from request context for abuse tracking.
+  // This tells OpenAI which company triggered the request so they can
+  // isolate violations per-company rather than flagging the whole API key.
+  const endUserId = resolveEndUserId();
+  if (endUserId) {
+    params = {
+      ...params,
+      providerOptions: {
+        ...params.providerOptions,
+        openai: {
+          ...(params.providerOptions?.openai as Record<string, unknown> | undefined),
+          user: endUserId,
+        },
+      },
+    };
+  }
+
   const result = await generateText(params);
 
   try {

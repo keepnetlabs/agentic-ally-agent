@@ -2,11 +2,12 @@ import { SimulatedEmail } from '../../types/microlearning';
 
 export function getIntentClassificationPrompt(editInstruction: string): string {
   return `Analyze the following instruction: "${editInstruction}".
-Determine if the user is explicitly asking to use THEIR OWN company/organization logo (internal branding), as opposed to a public external brand (like Google, Microsoft, Amazon).
-Examples of Internal: "Use my logo", "our company brand", "kendi logomuz", "notre logo", "corp identity".
-Examples of External: "Use Google logo", "Microsoft branding", "Amazon style".
+Classify the brand/logo intent:
+1. Is the user asking to REMOVE or DELETE a logo/image entirely? (e.g., "remove logo", "logoyu kaldır", "delete the image", "supprimer le logo")
+2. Is the user asking to use THEIR OWN company/organization logo (internal branding)? (e.g., "use my logo", "kendi logomuz", "notre logo")
+3. Otherwise it is an external brand request (e.g., "Use Google logo", "Microsoft branding").
 
-Return JSON ONLY: { "isInternalBrandRequest": boolean }`;
+Return JSON ONLY: { "isRemovalRequest": boolean, "isInternalBrandRequest": boolean }`;
 }
 
 export function getPhishingEditorSystemPrompt(): string {
@@ -79,6 +80,8 @@ ${mode === 'translate' ? `4. **TRANSLATE MODE:** For <input>, <select>, <textare
 9. If instruction is to "change logo", REPLACE the src attribute. DO NOT add a second img tag
 10. PRESERVE {PHISHINGURL} in links. Do NOT replace with real URLs
 11. ONLY use image URLs provided in instructions or existing in the template. NEVER generate new URLs
+12. FORM CONSISTENCY: All sibling form labels, inputs, buttons, and helper text MUST share the same alignment and spacing. Never center one label while leaving others left-aligned
+13. SCOPE & MINIMAL DIFF: Only change what the instruction asks for. Do NOT add, remove, or rearrange elements unrelated to the instruction. Each page is independent — never copy elements between pages
 
 OUTPUT FORMAT - CRITICAL:
 Return ONLY a valid JSON object. Do NOT include:
@@ -104,8 +107,18 @@ export function getLandingPageUserPrompt(
   escapedInstruction: string,
   brandContext: string
 ): string {
+  const pageType = page.type || 'unknown';
+
+  const PAGE_SCOPE_GUIDES: Record<string, string> = {
+    login: 'This is a LOGIN page (has form inputs, labels, buttons). Apply form-related and visual edits here.',
+    success: 'This is a SUCCESS/confirmation page (no login form). Do NOT add form fields, password inputs, or login elements that do not already exist on this page.',
+    info: 'This is an INFO page (static content). Do NOT add form fields that do not already exist on this page.',
+  };
+  const scopeGuide = PAGE_SCOPE_GUIDES[pageType] || PAGE_SCOPE_GUIDES.info;
+
   return `CURRENT LANDING PAGE:
-Type: ${page.type || 'unknown'}
+Type: ${pageType}
+Scope: ${scopeGuide}
 
 TEMPLATE:
 ${page.template || ''}
@@ -115,6 +128,6 @@ USER INSTRUCTION: "${escapedInstruction}"
 ${brandContext ? `\n${brandContext}\nIMPORTANT: You MUST use the logo URL provided above.` : ''}
 ---
 
-Apply the instruction and return the JSON response.
+Apply the instruction to THIS page only. If the instruction refers to elements that do not exist on this page (e.g., form fields on a success page), return the page unchanged with edited: false.
 PRESERVE {PHISHINGURL} in all links.`;
 }

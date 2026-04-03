@@ -98,6 +98,7 @@ describe('Microlearning Schema Validation', () => {
   describe('MicrolearningMetadataSchema', () => {
     const validMetadata = {
       title: 'Phishing Awareness',
+      description: 'Learn to identify and avoid phishing attacks',
       category: 'Security',
       subcategory: 'Email Security',
       industry_relevance: ['Technology', 'Finance'],
@@ -162,6 +163,7 @@ describe('Microlearning Schema Validation', () => {
       microlearning_id: 'ml-001',
       microlearning_metadata: {
         title: 'Test',
+        description: 'Test training module',
         category: 'Security',
         subcategory: 'Email',
         industry_relevance: [],

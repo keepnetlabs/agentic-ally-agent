@@ -102,12 +102,12 @@ describe('brand-resolver', () => {
         text: JSON.stringify({ isRecognizedBrand: false, domain: null }),
       } as any);
 
-      const emailTemplate = 'Welcome to Microsoft Office 365';
+      const emailTemplate = 'Welcome to the secure document workspace';
       await resolveLogoAndBrand('Support', 'Phishing', mockModel, emailTemplate);
 
       const call = vi.mocked(generateText).mock.calls[0][0];
       expect(call.messages?.[1].content).toContain('Email Template');
-      expect(call.messages?.[1].content).toContain('Office 365');
+      expect(call.messages?.[1].content).toContain('secure document workspace');
     });
 
     it('uses brand hint context when provided', async () => {
@@ -116,12 +116,113 @@ describe('brand-resolver', () => {
         text: JSON.stringify({ isRecognizedBrand: false, domain: null }),
       } as any);
 
-      await resolveLogoAndBrand('Kurumsal Spor İletişim', 'Playoff campaign', mockModel, undefined, 'NBA playoff promo');
+      await resolveLogoAndBrand('Kurumsal Spor İletişim', 'Playoff campaign', mockModel, undefined, 'consumer sports playoff promo');
 
       const call = vi.mocked(generateText).mock.calls[0][0];
       expect(call.messages?.[1].content).toContain('Brand Hint');
-      expect(call.messages?.[1].content).toContain('NBA playoff promo');
-      expect(call.messages?.[1].content).toContain('NBA');
+      expect(call.messages?.[1].content).toContain('consumer sports playoff promo');
+      expect(call.messages?.[1].content).toContain('dynamic canonicalization');
+    });
+
+    it('guides the model to resolve brands from any language or script', async () => {
+      const mockModel = {} as any;
+      vi.mocked(generateText).mockResolvedValue({
+        text: JSON.stringify({ isRecognizedBrand: false, domain: null }),
+      } as any);
+
+      await resolveLogoAndBrand('ฝ่ายไอที', 'แจ้งเตือนบัญชี', mockModel, undefined, 'เข้าสู่ระบบ Microsoft 365');
+
+      const call = vi.mocked(generateText).mock.calls[0][0];
+      expect(call.messages?.[0].content).toContain('any language or script');
+      expect(call.messages?.[1].content).toContain('Normalized Signal Hints');
+      expect(call.messages?.[1].content).toContain('เข้าสู่ระบบ Microsoft 365');
+    });
+
+    it('passes explicit domain hints from multilingual context to the model', async () => {
+      const mockModel = {} as any;
+      vi.mocked(generateText).mockResolvedValue({
+        text: JSON.stringify({ isRecognizedBrand: false, domain: null }),
+      } as any);
+
+      await resolveLogoAndBrand(
+        'Tim Keamanan',
+        'Pembaruan akses',
+        mockModel,
+        '<a href="https://www.microsoft.com/security">Masuk</a>',
+        'akses portal perusahaan'
+      );
+
+      const call = vi.mocked(generateText).mock.calls[0][0];
+      expect(call.messages?.[1].content).toContain('Explicit Domain Hints');
+      expect(call.messages?.[1].content).toContain('microsoft.com');
+    });
+
+    it('uses a detected explicit domain when the model recognizes a brand but omits the domain', async () => {
+      const mockModel = {} as any;
+      vi.mocked(generateText).mockResolvedValue({
+        text: JSON.stringify({
+          isRecognizedBrand: true,
+          domain: null,
+          brandName: 'Microsoft',
+          canonicalBrandName: 'Microsoft',
+          brandColors: { primary: '#0078D4', secondary: '#737373', accent: '#00A4EF' },
+        }),
+      } as any);
+
+      const result = await resolveLogoAndBrand(
+        'ฝ่ายไอที',
+        'อัปเดตการเข้าถึง',
+        mockModel,
+        '<a href="https://www.microsoft.com/security">เข้าสู่ระบบ</a>',
+        'เข้าสู่ระบบพอร์ทัล'
+      );
+
+      expect(result.isRecognizedBrand).toBe(true);
+      expect(result.brandName).toBe('Microsoft');
+      expect(result.brandColors?.primary).toBe('#0078D4');
+      expect(getLogoUrl).toHaveBeenCalledWith('microsoft.com', 96);
+    });
+
+    it('passes upstream analysis brand signals into the dynamic canonicalization prompt', async () => {
+      const mockModel = {} as any;
+      vi.mocked(generateText).mockResolvedValue({
+        text: JSON.stringify({ isRecognizedBrand: false, domain: null }),
+      } as any);
+
+      await resolveLogoAndBrand('Equipo de Seguridad', 'Aviso de acceso', mockModel, undefined, 'Inicia sesion', {
+        brandIntent: 'public-brand',
+        canonicalBrandName: 'Microsoft',
+        localizedBrandSurface: 'Inicia sesion en Microsoft 365',
+        brandEvidence: ['Localized product wording references Microsoft 365'],
+        candidateDomains: ['microsoft.com'],
+        brandConfidence: 'high',
+        scriptOrLocaleHint: 'es',
+      });
+
+      const call = vi.mocked(generateText).mock.calls[0][0];
+      expect(call.messages?.[1].content).toContain('Analysis Brand Signals');
+      expect(call.messages?.[1].content).toContain('Canonical Brand Name: Microsoft');
+      expect(call.messages?.[1].content).toContain('Script/Locale Hint: es');
+    });
+
+    it('rejects low-confidence recognized-brand output and falls back to placeholder logo', async () => {
+      const mockModel = {} as any;
+      vi.mocked(generateText).mockResolvedValue({
+        text: JSON.stringify({
+          isRecognizedBrand: true,
+          domain: 'microsoft.com',
+          brandName: 'Microsoft',
+          canonicalBrandName: 'Microsoft',
+          confidence: 'low',
+          brandColors: { primary: '#0078D4', secondary: '#737373', accent: '#00A4EF' },
+        }),
+      } as any);
+
+      const result = await resolveLogoAndBrand('Generic', 'Context', mockModel);
+
+      expect(result.isRecognizedBrand).toBe(false);
+      expect(result.brandName).toBeNull();
+      expect(getLogoUrl).toHaveBeenCalledWith('generic.local', 96);
     });
 
     it('falls back to DEFAULT_GENERIC_LOGO on catastrophic failure', async () => {

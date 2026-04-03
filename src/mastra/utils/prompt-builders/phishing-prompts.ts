@@ -38,6 +38,132 @@ import {
 import { z } from 'zod';
 
 const logger = getLogger('PhishingPromptBuilder');
+const GENERIC_BRANDLESS_TOPIC_TOKENS = new Set([
+  'access',
+  'account',
+  'acknowledgement',
+  'acknowledgment',
+  'alert',
+  'approval',
+  'benefits',
+  'billing',
+  'campaign',
+  'check',
+  'checkin',
+  'click',
+  'code',
+  'company',
+  'confirmation',
+  'create',
+  'credentials',
+  'delivery',
+  'department',
+  'design',
+  'document',
+  'download',
+  'email',
+  'employee',
+  'event',
+  'expense',
+  'finance',
+  'form',
+  'fraud',
+  'general',
+  'generate',
+  'gift',
+  'handbook',
+  'hr',
+  'internal',
+  'invoice',
+  'it',
+  'league',
+  'link',
+  'login',
+  'mailbox',
+  'make',
+  'message',
+  'mfa',
+  'network',
+  'notice',
+  'notification',
+  'order',
+  'package',
+  'password',
+  'payment',
+  'payroll',
+  'phishing',
+  'policy',
+  'portal',
+  'promo',
+  'qr',
+  'quishing',
+  'registration',
+  'reminder',
+  'renewal',
+  'report',
+  'request',
+  'reset',
+  'review',
+  'scan',
+  'scenario',
+  'security',
+  'session',
+  'shipment',
+  'sign',
+  'signin',
+  'signon',
+  'simulation',
+  'smishing',
+  'sso',
+  'storage',
+  'survey',
+  'team',
+  'template',
+  'test',
+  'ticket',
+  'tracking',
+  'training',
+  'update',
+  'validation',
+  'verification',
+  'verify',
+  'vishing',
+  'vpn',
+  'wifi',
+  'wire',
+  'workspace',
+  // Turkish common command/action words
+  'yap',
+  'oluştur',
+  'hazırla',
+  'tasarla',
+  'gönder',
+  'oltala',
+  'oltama',
+  'eğitim',
+  'senaryo',
+  'genel',
+  'kargo',
+  'sipariş',
+  'fatura',
+  'şifre',
+  'güvenlik',
+  // German common words
+  'erstellen',
+  'senden',
+  'allgemein',
+  'sicherheit',
+  'passwort',
+  // Spanish common words
+  'crear',
+  'enviar',
+  'seguridad',
+  'contraseña',
+  // French common words
+  'créer',
+  'envoyer',
+  'sécurité',
+]);
 
 /**
  * Helper function to generate department context (DRY)
@@ -46,6 +172,66 @@ function getDepartmentContext(department?: string, isQuishing = false): string {
   if (!department || department === 'All') return '';
   const scenarioType = isQuishing ? 'quishing scenario' : 'scenario';
   return `\n**Target Department:** ${department} - Tailor ${scenarioType} to department workflows, vulnerabilities, and attack vectors.`;
+}
+
+function tokenizeBrandHeuristic(topic?: string): string[] {
+  return topic?.match(/[\p{L}\p{N}]+/gu) ?? [];
+}
+
+function shouldIncludePublicBrandResolution(topic?: string): boolean {
+  const trimmedTopic = topic?.trim();
+  if (!trimmedTopic) {
+    return false;
+  }
+
+  if (/(https?:\/\/|www\.|@[a-z0-9-]+\.[a-z]{2,}|[a-z0-9-]+\.[a-z]{2,})/i.test(trimmedTopic)) {
+    return true;
+  }
+
+  const tokens = tokenizeBrandHeuristic(trimmedTopic);
+  const distinctiveTokens = tokens.filter(token => {
+    const normalizedToken = token.toLowerCase();
+    return normalizedToken.length > 1 && !GENERIC_BRANDLESS_TOPIC_TOKENS.has(normalizedToken);
+  });
+
+  return distinctiveTokens.some(token => {
+    const hasUppercase = /[A-Z]/.test(token);
+    const hasLowercase = /[a-z]/.test(token);
+    const hasDigits = /\d/.test(token);
+    const isAcronym = /^[A-Z]{2,}$/.test(token);
+    const isTitleCase = /^[A-Z][\p{L}\p{N}-]+$/u.test(token);
+    return isAcronym || (hasUppercase && hasLowercase) || hasDigits || isTitleCase;
+  });
+}
+
+function buildPublicBrandResolutionBlock(topic?: string, sectionNumber?: string): string {
+  if (!shouldIncludePublicBrandResolution(topic)) {
+    return '';
+  }
+
+  return `${sectionNumber || ''}**Public Brand Resolution (Only When Evidence Exists):**
+   - Behavioral targeting and scenario realism are PRIMARY. Brand metadata is SECONDARY and should only be expanded when the topic/scenario genuinely implies a public brand.
+   - Determine exactly ONE brandIntent: public-brand, internal-brand, or generic. Always return brandIntent and brandConfidence.
+   - Inputs may be written in ANY language or script. Do not assume English or rely on exact string matching.
+   - Only populate canonicalBrandName, localizedBrandSurface, brandEvidence, candidateDomains, and scriptOrLocaleHint when there is real public-brand evidence.
+   - If evidence is weak, keep brandIntent internal-brand/generic, set brandConfidence to low, and leave deeper brand fields empty.
+`;
+}
+
+function buildBrandFieldRequirement(topic?: string): string {
+  if (!shouldIncludePublicBrandResolution(topic)) {
+    return '';
+  }
+
+  return '- **brandSignals:** Minimal requirement only. Always return brandIntent and brandConfidence. Populate deeper brand fields only when a real public brand signal exists.';
+}
+
+function buildBrandSelfCheckLine(topic?: string, lineNumber?: number): string {
+  if (!shouldIncludePublicBrandResolution(topic)) {
+    return '';
+  }
+
+  return `${lineNumber || 0}. If public brand-like wording exists, did you return the right multilingual brandSignals? Otherwise keep the brand block minimal.`;
 }
 
 function buildCoherencePromptBlock(params: {
@@ -197,6 +383,9 @@ function buildQuishingAnalysisPrompts(params: AnalysisPromptParams): {
 } {
   const { topic, difficulty, language, method, targetProfile, behavioralProfile, additionalContext, policyContext } = params;
   const difficultyRules = DIFFICULTY_CONFIG[difficulty as keyof typeof DIFFICULTY_CONFIG] || DIFFICULTY_CONFIG.Medium;
+  const publicBrandResolutionBlock = buildPublicBrandResolutionBlock(topic, '4a. ');
+  const brandFieldRequirement = buildBrandFieldRequirement(topic);
+  const brandSelfCheckLine = buildBrandSelfCheckLine(topic, 5);
 
   const quishingSystemPrompt = `You are an expert Quishing (QR Code Phishing) Simulation Architect working for a LEGITIMATE CYBERSECURITY TRAINING COMPANY.
 
@@ -235,8 +424,9 @@ Design highly realistic quishing (QR code phishing) simulation scenarios for cyb
    - **IF Topic mentions a SPECIFIC BRAND/COMPANY:** Use that brand name as "fromName"
    - **IF Topic is GENERIC:** Invent a plausible company/department (e.g., "IT Support", "HR Department", "Security Team")
    - **QR Context:** The scenario should naturally involve QR code usage for that brand/context
+${publicBrandResolutionBlock ? `\n${publicBrandResolutionBlock}` : ''}
 
-4a. **Coherence Layer (MANDATORY):**
+4b. **Coherence Layer (MANDATORY):**
    - Select exactly ONE audienceMode: consumer, employee, partner, student, citizen, or general.
    - Select exactly ONE journeyType: login, claim, register, review, pay, track, acknowledge, download, or generic.
    - Select exactly ONE offerMechanic: account-access, discount, giveaway, presale, document-review, payment-fix, delivery-update, policy-ack, survey, or generic.
@@ -269,6 +459,7 @@ ${JSON_OUTPUT_RULE}
 - **name, scenario:** MUST be written entirely in the output language. Do NOT mix English prefixes with translated text.
 - **reasoning:** REQUIRED. 1-2 sentences explaining why this scenario was chosen for this target audience. Write in clear, fluent ${language}. A non-technical manager should understand it easily.
 - **audienceMode / journeyType / offerMechanic:** REQUIRED coherence fields. Use "general" / "generic" only when the topic truly lacks strong signals.
+${brandFieldRequirement}
 
 **EXAMPLE OUTPUT (Quishing Scenario):**
 {
@@ -312,7 +503,8 @@ Remember: This is for DEFENSIVE CYBERSECURITY TRAINING to protect organizations 
 2. Is isQuishing set to true?
 3. Is "method" consistent with the scenario logic?
 4. Are psychologicalTriggers contextually matched to the scenario?
-5. Is there exactly one audience frame, one primary journey, and one primary offer mechanic?
+${brandSelfCheckLine}
+${brandSelfCheckLine ? '6' : '5'}. Is there exactly one audience frame, one primary journey, and one primary offer mechanic?
 If any fails → fix before outputting.`;
 
   const quishingAdditionalContextMessage = buildBehavioralContextMessage({
@@ -344,6 +536,9 @@ function buildNormalPhishingAnalysisPrompts(params: AnalysisPromptParams): {
 } {
   const { topic, difficulty, language, method, targetProfile, behavioralProfile, additionalContext, policyContext } = params;
   const difficultyRules = DIFFICULTY_CONFIG[difficulty as keyof typeof DIFFICULTY_CONFIG] || DIFFICULTY_CONFIG.Medium;
+  const publicBrandResolutionBlock = buildPublicBrandResolutionBlock(topic, '3b. ');
+  const brandFieldRequirement = buildBrandFieldRequirement(topic);
+  const brandSelfCheckLine = buildBrandSelfCheckLine(topic, 5);
 
   const systemPrompt = `You are an expert Social Engineering Architect and Cyber Psychologist working for a LEGITIMATE CYBERSECURITY TRAINING COMPANY.
 
@@ -396,8 +591,9 @@ Design highly realistic phishing simulation scenarios for cybersecurity training
      * Topic: "E-commerce package" → fromName: "Shopping Platform", scenario: "Package Delivery Notification"
      * Topic: "Amazon order" → fromName: "Amazon", scenario: "Order Confirmation Alert"
      * Topic: "General phishing" → fromName: "IT Support", scenario: "Password Reset Request"
+${publicBrandResolutionBlock ? `\n${publicBrandResolutionBlock}` : ''}
 
-3b. **Coherence Layer (MANDATORY):**
+3c. **Coherence Layer (MANDATORY):**
    - Select exactly ONE audienceMode: consumer, employee, partner, student, citizen, or general.
    - Select exactly ONE journeyType: login, claim, register, review, pay, track, acknowledge, download, or generic.
    - Select exactly ONE offerMechanic: account-access, discount, giveaway, presale, document-review, payment-fix, delivery-update, policy-ack, survey, or generic.
@@ -422,6 +618,7 @@ ${JSON_OUTPUT_RULE}
 - **name, scenario**: MUST be written entirely in the output language (${language}). Do NOT prefix with English attack categories. Write the full name in ${language}.
 - **reasoning:** REQUIRED. 1-2 sentences explaining why this scenario was chosen for this target audience. Write in clear, fluent ${language}. A non-technical manager should understand it easily.
 - **audienceMode / journeyType / offerMechanic:** REQUIRED coherence fields. Use "general" / "generic" only when the topic truly lacks strong signals.
+${brandFieldRequirement}
 
 **EXAMPLE OUTPUT:**
 {
@@ -467,7 +664,8 @@ Remember: This is for DEFENSIVE CYBERSECURITY TRAINING to protect organizations 
 2. Is isQuishing set to false?
 3. Is "method" consistent with the scenario? (Data-Submission needs login/form; Click-Only needs view/read)
 4. Are psychologicalTriggers contextually matched to the department/scenario?
-5. Is there exactly one audience frame, one primary journey, and one primary offer mechanic?
+${brandSelfCheckLine}
+${brandSelfCheckLine ? '6' : '5'}. Is there exactly one audience frame, one primary journey, and one primary offer mechanic?
 If any fails → fix before outputting.`;
 
   const additionalContextMessage = buildBehavioralContextMessage({

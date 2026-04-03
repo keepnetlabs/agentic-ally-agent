@@ -77,4 +77,36 @@ describe('phishing-landing-context', () => {
 
     expect(summary).toContain('Promised next step: billing or payment review');
   });
+
+  it('prefers the PHISHINGURL CTA even when a non-primary button looks stronger visually', () => {
+    const summary = buildLandingEmailSummary({
+      subject: 'Cuenta protegida',
+      fromName: 'Soporte de Seguridad',
+      fromAddress: 'seguridad@example.com',
+      template: `<html><body>
+        <button class='btn btn-secondary'>Help Center</button>
+        <a href='{PHISHINGURL}' role='button' class='cta-primary'><span>Verificar Cuenta</span></a>
+      </body></html>`,
+      isQuishing: false,
+      emailUsesLogoTag: false,
+    });
+
+    expect(summary).toContain('CTA wording: Verificar Cuenta');
+    expect(summary).toContain('Promised next step: sign-in or credential entry');
+  });
+
+  it('infers promised action from French document review language', () => {
+    const summary = buildLandingEmailSummary({
+      subject: 'Document a revoir',
+      fromName: 'Equipe RH',
+      fromAddress: 'rh@example.com',
+      template:
+        "<html><body><a href='{PHISHINGURL}'>Reviser le document</a><p>Veuillez consulter le document joint.</p></body></html>",
+      isQuishing: false,
+      emailUsesLogoTag: false,
+    });
+
+    expect(summary).toContain('Promised next step: document review');
+    expect(summary).toContain('CTA wording: Reviser le document');
+  });
 });

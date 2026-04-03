@@ -51,8 +51,14 @@ import { getCampaignMetadata } from '../../services/campaign-metadata-service';
 import { extractResourceIdsFromTimeline, enrichActivitiesWithMetadata } from '../../utils/campaign-metadata-helpers';
 import { findUserByEmail, findUserById, findUserByNameWithFallbacks } from './utils/user-search-utils';
 import {
+  applyNoActivityMicrolearningGuardrails,
+  applyNoActivityNudgeGuardrails,
   applyNoActivitySimulationGuardrails,
+  buildNoActivityMicrolearningDefaults,
+  buildNoActivityNudgeDefaults,
   buildNoActivitySimulationDefaults,
+  ensureNoActivityMicrolearningSlot,
+  ensureNoActivityNudgeSlot,
   ensureNoActivitySimulationSlot,
 } from './utils/no-activity-foundational-defaults';
 
@@ -475,7 +481,7 @@ User id: ${resolvedUserId}
 Role: ${user?.role || ''}
 Department: ${resolvedDepartment}
 Location: ${user?.location || ''}
-Language: ${user?.preferredLanguage || ''}
+Language: ${reportLanguageCode}
 Access level: ${user?.accessLevel || ''}
 
 Recent Activities (primary behavioral evidence):
@@ -647,14 +653,30 @@ If a value is unknown, use "" or null.
           if (reportTyped?.meta && !reportTyped.meta.user_id) {
             reportTyped.meta.user_id = resolvedUserId;
           }
+          if (reportTyped?.meta && !reportTyped.meta.language) {
+            reportTyped.meta.language = reportLanguageCode;
+          }
 
           // AI-first no-activity handling: keep the model's recommendation when it is already concrete and valid.
           // Deterministic defaults only fill weak or missing fields so large populations do not collapse into one identical path.
           if (analysisReport && typeof analysisReport === 'object' && recentActivities.length === 0) {
-            const defaults = buildNoActivitySimulationDefaults({
+            const simulationDefaults = buildNoActivitySimulationDefaults({
               userId: String(resolvedUserId),
               department: resolvedDepartment,
               role: user?.role || '',
+            });
+            const microlearningDefaults = buildNoActivityMicrolearningDefaults({
+              userId: String(resolvedUserId),
+              department: resolvedDepartment,
+              role: user?.role || '',
+              language: reportLanguageCode,
+              simulationDefaults,
+            });
+            const nudgeDefaults = buildNoActivityNudgeDefaults({
+              userId: String(resolvedUserId),
+              department: resolvedDepartment,
+              role: user?.role || '',
+              simulationDefaults,
             });
 
             if (!reportTyped.ai_recommended_next_steps || typeof reportTyped.ai_recommended_next_steps !== 'object') {
@@ -662,7 +684,13 @@ If a value is unknown, use "" or null.
             }
 
             const sim0 = ensureNoActivitySimulationSlot(reportTyped.ai_recommended_next_steps);
-            applyNoActivitySimulationGuardrails(sim0, defaults);
+            applyNoActivitySimulationGuardrails(sim0, simulationDefaults);
+
+            const ml0 = ensureNoActivityMicrolearningSlot(reportTyped.ai_recommended_next_steps);
+            applyNoActivityMicrolearningGuardrails(ml0, microlearningDefaults);
+
+            const nudge0 = ensureNoActivityNudgeSlot(reportTyped.ai_recommended_next_steps);
+            applyNoActivityNudgeGuardrails(nudge0, nudgeDefaults);
           }
 
           // Analysis is OPTIONAL: if the model returns invalid JSON contract, drop it and continue.

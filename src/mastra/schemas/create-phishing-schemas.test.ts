@@ -99,6 +99,15 @@ describe('Phishing Workflow Schemas', () => {
           currentStage: 'Building',
           progressionHint: 'Slow down before acting on urgent requests',
         },
+        brandSignals: {
+          brandIntent: 'public-brand',
+          canonicalBrandName: 'Microsoft',
+          localizedBrandSurface: 'Inicia sesion en Microsoft 365',
+          brandEvidence: ['Localized product wording references Microsoft 365'],
+          candidateDomains: ['microsoft.com'],
+          brandConfidence: 'high',
+          scriptOrLocaleHint: 'es',
+        },
         industryDesign: {
           industry: 'Finance',
           colors: {
@@ -121,6 +130,23 @@ describe('Phishing Workflow Schemas', () => {
       };
       const result = createPhishingAnalysisSchema.safeParse(analysisWithDesign);
       expect(result.success).toBe(true);
+    });
+
+    it('should default brand signal confidence fields safely', () => {
+      const result = createPhishingAnalysisSchema.safeParse({
+        ...validAnalysis,
+        brandSignals: {
+          brandIntent: 'public-brand',
+          canonicalBrandName: 'Microsoft',
+          localizedBrandSurface: 'تسجيل الدخول إلى Microsoft 365',
+        },
+      });
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.brandSignals?.brandIntent).toBe('public-brand');
+        expect(result.data.brandSignals?.brandConfidence).toBe('low');
+      }
     });
 
     it('should fail on invalid nested Types', () => {

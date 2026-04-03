@@ -40,7 +40,7 @@ export interface BatchOrchestratorPayload {
  * Architecture:
  *   Route handler ─(create)─> BatchOrchestratorWorkflow
  *     step "fetch-page-count"  → get total pages
- *     step "dispatch-page-N"   → fetch 1000 users + createBatch(100) × 10
+ *     step "dispatch-page-N"   → fetch 1000 users + createBatch(50) × 20
  *     step.sleep "throttle"    → rate limit between pages
  *     step "save-meta"         → persist final status to KV
  */
@@ -101,7 +101,7 @@ export class BatchOrchestratorWorkflow extends WorkflowEntrypoint {
           let failed = 0;
           const errors: string[] = [];
 
-          // Dispatch in chunks of 100 with inline throttle
+          // Dispatch in chunks with inline throttle
           for (let c = 0; c < users.length; c += CHUNK_SIZE) {
             const chunk = users.slice(c, c + CHUNK_SIZE);
             const chunkParams = chunk.map(user => {

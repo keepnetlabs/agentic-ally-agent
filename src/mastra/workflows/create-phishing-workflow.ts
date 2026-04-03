@@ -20,6 +20,11 @@ import {
   createPhishingAnalysisSchema,
   createPhishingEmailOutputSchema,
   createPhishingOutputSchema,
+  PHISHING_AUDIENCE_MODES,
+  PHISHING_JOURNEY_TYPES,
+  PHISHING_OFFER_MECHANICS,
+  PHISHING_BRAND_INTENTS,
+  PHISHING_BRAND_CONFIDENCE_LEVELS,
 } from '../schemas/create-phishing-schemas';
 import {
   buildAnalysisPrompts,
@@ -52,6 +57,89 @@ type LandingPageType = (typeof LANDING_PAGE.PAGE_TYPES)[number];
 
 const PHISHING_TOTAL_STEPS = 4;
 const PHISHING_WORKFLOW_NAME = 'create-phishing';
+const BRAND_SIGNAL_LIST_LIMIT = 3;
+
+function normalizeAllowedValue<T extends readonly string[]>(
+  value: unknown,
+  allowedValues: T,
+  fallback: T[number]
+): T[number] {
+  if (typeof value !== 'string') {
+    return fallback;
+  }
+
+  const trimmedValue = value.trim();
+  return (allowedValues as readonly string[]).includes(trimmedValue) ? (trimmedValue as T[number]) : fallback;
+}
+
+function normalizeOptionalString(value: unknown): string | undefined {
+  return typeof value === 'string' && value.trim().length > 0 ? value.trim() : undefined;
+}
+
+function normalizeOptionalStringList(value: unknown, maxItems: number): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+    .map(item => item.trim())
+    .slice(0, maxItems);
+}
+
+function normalizeAnalysisBrandSignals(rawBrandSignals: unknown) {
+  const safeBrandSignals =
+    rawBrandSignals && typeof rawBrandSignals === 'object'
+      ? (rawBrandSignals as Record<string, unknown>)
+      : {};
+
+  const normalizedBrandSignals = {
+    brandIntent: normalizeAllowedValue(
+      safeBrandSignals.brandIntent,
+      PHISHING_BRAND_INTENTS,
+      'generic'
+    ),
+    canonicalBrandName: normalizeOptionalString(safeBrandSignals.canonicalBrandName),
+    localizedBrandSurface: normalizeOptionalString(safeBrandSignals.localizedBrandSurface),
+    brandEvidence: normalizeOptionalStringList(safeBrandSignals.brandEvidence, BRAND_SIGNAL_LIST_LIMIT),
+    candidateDomains: normalizeOptionalStringList(safeBrandSignals.candidateDomains, BRAND_SIGNAL_LIST_LIMIT),
+    brandConfidence: normalizeAllowedValue(
+      safeBrandSignals.brandConfidence,
+      PHISHING_BRAND_CONFIDENCE_LEVELS,
+      'low'
+    ),
+    scriptOrLocaleHint: normalizeOptionalString(safeBrandSignals.scriptOrLocaleHint),
+  };
+
+  const hasMeaningfulBrandSignals =
+    normalizedBrandSignals.brandIntent !== 'generic' ||
+    !!normalizedBrandSignals.canonicalBrandName ||
+    !!normalizedBrandSignals.localizedBrandSurface ||
+    normalizedBrandSignals.brandEvidence.length > 0 ||
+    normalizedBrandSignals.candidateDomains.length > 0 ||
+    !!normalizedBrandSignals.scriptOrLocaleHint;
+
+  return hasMeaningfulBrandSignals ? normalizedBrandSignals : undefined;
+}
+
+function normalizeAnalysisScenarioMetadata(parsedResult: Record<string, unknown>): void {
+  parsedResult.audienceMode = normalizeAllowedValue(
+    parsedResult.audienceMode,
+    PHISHING_AUDIENCE_MODES,
+    'general'
+  );
+  parsedResult.journeyType = normalizeAllowedValue(
+    parsedResult.journeyType,
+    PHISHING_JOURNEY_TYPES,
+    'generic'
+  );
+  parsedResult.offerMechanic = normalizeAllowedValue(
+    parsedResult.offerMechanic,
+    PHISHING_OFFER_MECHANICS,
+    'generic'
+  );
+  parsedResult.brandSignals = normalizeAnalysisBrandSignals(parsedResult.brandSignals);
+}
 
 /** Emit a phishing workflow step event (safe no-op if writer is undefined) */
 async function emitPhishingStep(writer: StreamWriter | undefined, runId: string, stepIndex: number, status: 'running' | 'completed' | 'error', stepName: string, message?: string) {
@@ -223,18 +311,7 @@ const analyzeRequest = createStep({
         });
       }
 
-      parsedResult.audienceMode =
-        typeof parsedResult.audienceMode === 'string' && parsedResult.audienceMode.length > 0
-          ? parsedResult.audienceMode
-          : 'general';
-      parsedResult.journeyType =
-        typeof parsedResult.journeyType === 'string' && parsedResult.journeyType.length > 0
-          ? parsedResult.journeyType
-          : 'generic';
-      parsedResult.offerMechanic =
-        typeof parsedResult.offerMechanic === 'string' && parsedResult.offerMechanic.length > 0
-          ? parsedResult.offerMechanic
-          : 'generic';
+      normalizeAnalysisScenarioMetadata(parsedResult as Record<string, unknown>);
 
       // Log generated scenario for debugging
       logger.info('Generated Scenario', {
@@ -248,7 +325,14 @@ const analyzeRequest = createStep({
 
       // Resolve logo and brand detection early (once, in analysis step)
       logger.info('Detecting brand and resolving logo URL');
-      let logoInfo = await resolveLogoAndBrand(parsedResult.fromName, parsedResult.scenario, aiModel, undefined, inputData.topic);
+      let logoInfo = await resolveLogoAndBrand(
+        parsedResult.fromName,
+        parsedResult.scenario,
+        aiModel,
+        undefined,
+        inputData.topic,
+        parsedResult.brandSignals
+      );
 
       // Validate the resolved logo URL to ensure it's accessible
       // Skip validation for img.logo.dev URLs as they often fail HEAD requests in the backend
@@ -357,6 +441,7 @@ const analyzeRequest = createStep({
         brandName: logoInfo.brandName,
         isRecognizedBrand: logoInfo.isRecognizedBrand,
         brandColors: logoInfo.brandColors, // Brand colors if available
+        brandSignals: parsedResult.brandSignals,
         // Industry design (detected once, reused in email/landing page steps)
         industryDesign: industryDesign,
       };

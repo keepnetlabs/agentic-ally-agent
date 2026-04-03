@@ -44,6 +44,11 @@ const mockAnalysisParams = {
   },
 };
 
+const mockBrandedAnalysisParams = {
+  ...mockAnalysisParams,
+  topic: 'Microsoft 365 sign-in review',
+};
+
 const mockPhishingAnalysis = {
   scenario: 'CEO Wire Transfer Request',
   name: 'CEO Fraud',
@@ -336,6 +341,34 @@ describe('buildAnalysisPrompts Validation', () => {
     expect(result.additionalContextMessage).toContain('Trigger Type: FACILITATOR');
     expect(result.additionalContextMessage).toContain('Behavioral Narrative Context');
     expect(result.additionalContextMessage).toContain('User tends to trust urgent internal requests.');
+  });
+
+  it('requires multilingual canonical brand extraction in analysis prompts', () => {
+    const result = buildAnalysisPrompts(mockBrandedAnalysisParams);
+
+    expect(result.systemPrompt).toContain('Public Brand Resolution (Only When Evidence Exists)');
+    expect(result.systemPrompt).toContain('brandSignals');
+    expect(result.systemPrompt).toContain('brandIntent');
+    expect(result.systemPrompt).toContain('candidateDomains');
+    expect(result.userPrompt).toContain('multilingual brandSignals');
+  });
+
+  it('omits public brand resolution guidance for generic topics', () => {
+    const result = buildAnalysisPrompts(mockAnalysisParams);
+
+    expect(result.systemPrompt).not.toContain('Public Brand Resolution (Only When Evidence Exists)');
+    expect(result.systemPrompt).not.toContain('candidateDomains');
+    expect(result.systemPrompt).not.toContain('- **brandSignals:** Minimal requirement only.');
+    expect(result.userPrompt).not.toContain('multilingual brandSignals');
+  });
+
+  it('keeps generic example outputs free of unnecessary brandSignals blocks', () => {
+    const result = buildAnalysisPrompts(mockAnalysisParams);
+
+    expect(result.systemPrompt).not.toContain('"brandIntent": "internal-brand"');
+    expect(result.systemPrompt).not.toContain('"brandConfidence": "low"');
+    expect(result.systemPrompt).not.toContain('"canonicalBrandName": "Microsoft"');
+    expect(result.systemPrompt).not.toContain('"canonicalBrandName": "Amazon"');
   });
 });
 
@@ -640,6 +673,22 @@ describe('buildLandingPagePrompts Validation', () => {
     expect(result.systemPrompt).toContain('Avoid oversized empty whitespace');
   });
 
+  it('keeps password labels and forgot-password helpers left-aligned', () => {
+    const result = buildLandingPagePrompts({
+      fromName: 'Test Corp',
+      fromAddress: 'test@corp.com',
+      scenario: 'Password Reset',
+      language: 'en',
+      industryDesign: mockIndustryDesign,
+      requiredPages: ['login'],
+      isQuishing: false,
+    });
+
+    expect(result.systemPrompt).toContain('Field labels must be left-aligned');
+    expect(result.systemPrompt).toContain('Do NOT center labels such as "Password"');
+    expect(result.systemPrompt).toContain('Never place it as a centered standalone row between the password label and password input');
+  });
+
   it('passes coherence fields into landing prompt guidance', () => {
     const result = buildLandingPagePrompts({
       fromName: 'Test Corp',
@@ -726,6 +775,76 @@ describe('buildLandingPagePrompts Validation', () => {
     expect(result.systemPrompt).toContain('OUTPUT FORMAT (MANDATORY');
     expect(result.systemPrompt).toContain('"pages"');
     expect(result.systemPrompt).toContain('"template"');
+  });
+});
+
+describe('Golden Scenario Prompt Coverage', () => {
+  it('keeps a recognized consumer-brand landing scenario visually grounded', () => {
+    const result = buildLandingPagePrompts({
+      fromName: 'NBA',
+      fromAddress: 'support@nba.example.com',
+      scenario: 'League Pass renewal confirmation',
+      language: 'en',
+      industryDesign: {
+        ...mockIndustryDesign,
+        colors: { primary: '#17408B', secondary: '#C9082A', accent: '#FFFFFF' },
+      },
+      requiredPages: ['login', 'success'],
+      audienceMode: 'consumer',
+      journeyType: 'claim',
+      offerMechanic: 'presale',
+      method: 'Data-Submission',
+      isQuishing: false,
+    });
+
+    expect(result.userPrompt).toContain('Audience Frame: consumer');
+    expect(result.userPrompt).toContain('Primary Journey: claim');
+    expect(result.systemPrompt).toContain('#17408B');
+    expect(result.systemPrompt).toContain('#C9082A');
+  });
+
+  it('keeps generic hard scenarios bounded instead of forcing a narrow action family', () => {
+    const result = buildEmailPrompts({
+      analysis: {
+        ...mockPhishingAnalysis,
+        scenario: 'General account follow-up',
+        fromName: 'Operations Desk',
+        fromAddress: 'ops@company.com',
+        journeyType: 'generic',
+        offerMechanic: 'generic',
+        method: 'Data-Submission',
+      },
+      language: 'en',
+      difficulty: 'Hard',
+      industryDesign: mockIndustryDesign,
+    });
+
+    expect(result.userPrompt).toContain('Primary action family: scenario-aligned continuation');
+    expect(result.userPrompt).toContain('Continue request');
+    expect(result.userPrompt).not.toContain('Primary action family: access confirmation');
+  });
+
+  it('keeps quishing scenarios explicitly QR-led while preserving hard-difficulty guidance', () => {
+    const result = buildAnalysisPrompts({
+      ...mockAnalysisParams,
+      topic: 'Visitor Wi-Fi QR access refresh',
+      difficulty: 'Hard',
+      method: 'Data-Submission',
+      isQuishingDetected: true,
+      behavioralProfile: {
+        currentStage: 'Foundational',
+        targetStage: 'Building',
+        progressionHint: 'Verify QR-triggered access prompts before continuing.',
+        foggTriggerType: 'SIGNAL',
+        keySignalsUsed: ['qr_scan'],
+        dataGaps: ['reporting_history'],
+      },
+    });
+
+    expect(result.systemPrompt.toLowerCase()).toContain('quishing');
+    expect(result.systemPrompt.toLowerCase()).toContain('difficulty');
+    expect(result.userPrompt).toContain('QUISHING CONFIRMED');
+    expect(result.userPrompt).toContain('Visitor Wi-Fi QR access refresh');
   });
 });
 

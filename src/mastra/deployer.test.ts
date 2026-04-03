@@ -436,7 +436,7 @@ describe('getDeployer', () => {
       getDeployer();
 
       const callArgs = constructorCallsSpy.mock.calls[0][0];
-      expect(Object.keys(callArgs)).toHaveLength(4);
+      expect(Object.keys(callArgs)).toHaveLength(5);
     });
 
     it('should include name property', () => {

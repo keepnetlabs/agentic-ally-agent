@@ -33,7 +33,7 @@ export { getPolicyContext } from './policy-fetcher';
 
 // Cost tracking
 export { trackCost } from './cost-tracker';
-export { trackedGenerateText, trackAgentCost } from './tracked-generate';
+export { trackedGenerateText, trackAgentCost, resolveOpenAIEndUserId } from './tracked-generate';
 
 // SSE heartbeat (keep-alive for long-running API calls)
 export { withHeartbeat } from './sse-heartbeat';

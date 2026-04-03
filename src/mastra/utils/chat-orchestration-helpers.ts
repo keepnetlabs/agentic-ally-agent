@@ -19,6 +19,7 @@ import { AgentRouter } from '../services/agent-router';
 import { Agent } from '@mastra/core/agent';
 import { ChatRequestBody } from '../types/api-types';
 import { resolveLogLevel, STRUCTURED_LOG_FORMATTERS } from './core/logger';
+import { resolveOpenAIEndUserId } from './core/tracked-generate';
 
 const logger = new PinoLogger({
   name: 'ChatOrchestration',
@@ -129,11 +130,13 @@ export const createAgentStream = async (
   threadId: string,
   agentName: string
 ) => {
+  const endUserId = resolveOpenAIEndUserId();
   const stream = await agent.stream(finalPrompt, {
     memory: {
       thread: threadId,
       resource: 'agentic-ally-user',
     },
+    ...(endUserId ? { providerOptions: { openai: { user: endUserId } } } : {}),
   });
 
   logger.info('stream_created_successfully', { agentName });

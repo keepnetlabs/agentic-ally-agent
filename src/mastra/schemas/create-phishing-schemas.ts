@@ -31,6 +31,8 @@ export const PHISHING_OFFER_MECHANICS = [
   'survey',
   'generic',
 ] as const;
+export const PHISHING_BRAND_INTENTS = ['public-brand', 'internal-brand', 'generic'] as const;
+export const PHISHING_BRAND_CONFIDENCE_LEVELS = ['high', 'medium', 'low'] as const;
 
 const phishingBehavioralProfileSchema = z.object({
   currentStage: z.string().optional().describe('Current behavioral resilience stage from user analysis'),
@@ -39,6 +41,39 @@ const phishingBehavioralProfileSchema = z.object({
   foggTriggerType: z.string().optional().describe('Behavioral trigger type from Fogg B=MAT (e.g. SIGNAL, SPARK, FACILITATOR)'),
   keySignalsUsed: z.array(z.string()).optional().describe('Top behavioral evidence signals extracted from the report'),
   dataGaps: z.array(z.string()).optional().describe('Missing evidence or coverage gaps noted in the report'),
+});
+
+const phishingBrandSignalsSchema = z.object({
+  brandIntent: z
+    .enum(PHISHING_BRAND_INTENTS)
+    .catch('generic')
+    .default('generic')
+    .describe('Whether the topic implies a public brand, an internal sender, or a generic/unbranded scenario'),
+  canonicalBrandName: z
+    .string()
+    .optional()
+    .describe('Canonical public brand entity if a multilingual or localized brand reference is strongly implied'),
+  localizedBrandSurface: z
+    .string()
+    .optional()
+    .describe('Original localized or product-level wording that implied the brand in the source prompt'),
+  brandEvidence: z
+    .array(z.string())
+    .optional()
+    .describe('Short evidence bullets supporting the canonical brand inference'),
+  candidateDomains: z
+    .array(z.string())
+    .optional()
+    .describe('Candidate public domains associated with the brand inference'),
+  brandConfidence: z
+    .enum(PHISHING_BRAND_CONFIDENCE_LEVELS)
+    .catch('low')
+    .default('low')
+    .describe('Confidence that the canonical public brand inference is correct'),
+  scriptOrLocaleHint: z
+    .string()
+    .optional()
+    .describe('Detected script, locale, or language hint useful for multilingual canonicalization'),
 });
 
 /**
@@ -140,6 +175,9 @@ export const createPhishingAnalysisSchema = z.object({
   behavioralProfile: phishingBehavioralProfileSchema
     .optional()
     .describe('Structured behavioral guidance carried from workflow input for scenario continuity'),
+  brandSignals: phishingBrandSignalsSchema
+    .optional()
+    .describe('Structured multilingual brand-intent signals extracted during scenario analysis'),
   additionalContext: z
     .string()
     .optional()

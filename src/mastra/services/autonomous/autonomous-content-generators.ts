@@ -268,15 +268,15 @@ function deriveTrainingLevelFromAnalysis(report?: ContentGenerationReport): Leve
 /**
  * Build executive report from analysis data
  */
-function getRecommendedNextSteps(report: ContentGenerationReport | undefined) {
+function getRecommendedNextSteps(report: ContentGenerationReport | undefined): NextSteps {
   const directSteps = report?.recommended_next_steps;
   const aiSteps = report?.ai_recommended_next_steps;
 
-  if (hasNextStepContent(directSteps)) {
+  if (directSteps && hasNextStepContent(directSteps)) {
     return directSteps;
   }
 
-  if (hasNextStepContent(aiSteps)) {
+  if (aiSteps && hasNextStepContent(aiSteps)) {
     return aiSteps;
   }
 

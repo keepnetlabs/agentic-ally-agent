@@ -196,7 +196,7 @@ If user message contains edit keywords (change, update, modify, remove, set, tra
 - **mode**:
   - Use **"translate"** when user intent is localization/translation and you must preserve landing page layout/CSS (only text/labels/placeholders).
   - Use **"edit"** for normal edits that may change structure/design.
-- **hasBrandUpdate**: [TRUE if request involves logo, brand, image, or company identity changes. FALSE otherwise.]
+- **hasBrandUpdate**: [TRUE if request involves ADDING or CHANGING a logo, brand, image, or company identity. FALSE if request involves REMOVING a logo/image (e.g., "logoyu kaldır", "remove logo", "delete the image"). Removal is a normal edit, not a brand update.]
 - **language**: [detected from user message, optional]
 - **modelProvider**: [Optional Override]
 - **model**: [Optional Override]

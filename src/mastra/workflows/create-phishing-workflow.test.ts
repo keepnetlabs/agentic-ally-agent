@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createPhishingWorkflow } from './create-phishing-workflow';
+import * as phishingPromptBuilders from '../utils/prompt-builders/phishing-prompts';
 
 // Mocks using flattened hoisted object for reliability
 const mocks = vi.hoisted(() => ({
@@ -267,7 +268,8 @@ describe('CreatePhishingWorkflow', () => {
         'Test Scenario',
         'mock-model',
         undefined,
-        'Password Reset'
+        'Password Reset',
+        undefined
       );
       expect(mocks.savePhishingBase).toHaveBeenCalled();
     });
@@ -302,6 +304,173 @@ describe('CreatePhishingWorkflow', () => {
       const result = await run.start({ inputData: input });
       expect(result.status).toBe('success');
       expect((result as any).result.analysis.isQuishing).toBe(true);
+    });
+
+    describe('Golden Scenario Regression Set', () => {
+      it('forwards behavioral profile into analysis prompt construction for finance submitted-data flows', async () => {
+        const run = await createPhishingWorkflow.createRun();
+        const behavioralProfile = {
+          currentStage: 'Foundational',
+          targetStage: 'Building',
+          progressionHint: 'Slow down before approving finance forms.',
+          foggTriggerType: 'SPARK',
+          keySignalsUsed: ['submitted_data', 'authority_responsive'],
+          dataGaps: ['no_recent_reporting_data'],
+        };
+
+        await run.start({
+          inputData: {
+            topic: 'Payment Verification',
+            language: 'en',
+            difficulty: 'Medium',
+            method: 'Data-Submission',
+            targetProfile: { department: 'Finance' },
+            additionalContext: 'User reacts quickly to routine payment requests.',
+            behavioralProfile,
+          } as any,
+        });
+
+        expect(vi.mocked(phishingPromptBuilders.buildAnalysisPrompts)).toHaveBeenCalledWith(
+          expect.objectContaining({
+            method: 'Data-Submission',
+            additionalContext: 'User reacts quickly to routine payment requests.',
+            behavioralProfile,
+          })
+        );
+      });
+
+      it('keeps the original consumer-brand topic as the downstream brand hint', async () => {
+        const run = await createPhishingWorkflow.createRun();
+
+        await run.start({
+          inputData: {
+            topic: 'NBA League Pass renewal',
+            language: 'en',
+            isQuishing: false,
+            difficulty: 'Medium',
+            method: 'Data-Submission',
+          } as any,
+        });
+
+        expect(mocks.resolveLogoAndBrand).toHaveBeenCalledWith(
+          'Security Team',
+          'Test Scenario',
+          'mock-model',
+          undefined,
+        'NBA League Pass renewal',
+        undefined
+        );
+      });
+
+      it('passes multilingual canonical brand signals from analysis into resolver verification', async () => {
+        mocks.generateText.mockResolvedValueOnce({
+          text: JSON.stringify({
+            scenario: 'Localized Microsoft sign-in verification',
+            name: 'Microsoft access review',
+            description: 'Localized account verification scenario',
+            category: 'Credential Harvesting',
+            fromAddress: 'security@test.com',
+            fromName: 'Security Team',
+            method: 'Data-Submission',
+            isQuishing: false,
+            psychologicalTriggers: ['Authority'],
+            tone: 'Urgent',
+            keyRedFlags: ['Unexpected account prompt'],
+            targetAudienceAnalysis: 'Targets multilingual users',
+            subjectLineStrategy: 'Uses localized product wording',
+            brandSignals: {
+              brandIntent: 'public-brand',
+              canonicalBrandName: 'Microsoft',
+              localizedBrandSurface: 'Inicia sesion en Microsoft 365',
+              brandEvidence: ['Localized product wording references Microsoft 365'],
+              candidateDomains: ['microsoft.com'],
+              brandConfidence: 'high',
+              scriptOrLocaleHint: 'es',
+            },
+          }),
+        });
+
+        const run = await createPhishingWorkflow.createRun();
+        await run.start({
+          inputData: {
+            topic: 'Inicia sesion en Microsoft 365',
+            language: 'es',
+            difficulty: 'Medium',
+            method: 'Data-Submission',
+          } as any,
+        });
+
+        expect(mocks.resolveLogoAndBrand).toHaveBeenCalledWith(
+          'Security Team',
+          'Localized Microsoft sign-in verification',
+          'mock-model',
+          undefined,
+          'Inicia sesion en Microsoft 365',
+          expect.objectContaining({
+            brandIntent: 'public-brand',
+            canonicalBrandName: 'Microsoft',
+            brandConfidence: 'high',
+            scriptOrLocaleHint: 'es',
+          })
+        );
+      });
+
+      it('normalizes invalid coherence and empty brand signal values to safe defaults', async () => {
+        mocks.generateText.mockResolvedValueOnce({
+          text: JSON.stringify({
+            scenario: 'Generic access review',
+            name: 'Generic access review',
+            description: 'Generic account review scenario',
+            category: 'Credential Harvesting',
+            fromAddress: 'security@test.com',
+            fromName: 'Security Team',
+            method: 'Data-Submission',
+            isQuishing: false,
+            psychologicalTriggers: ['Authority'],
+            tone: 'Urgent',
+            keyRedFlags: ['Unexpected account prompt'],
+            targetAudienceAnalysis: 'Targets generic users',
+            subjectLineStrategy: 'Uses a routine access notice',
+            audienceMode: 'mystery-mode',
+            journeyType: 'side-quest',
+            offerMechanic: 'surprise-box',
+            brandSignals: {
+              brandIntent: 'brand-maybe',
+              canonicalBrandName: '   ',
+              localizedBrandSurface: '',
+              brandEvidence: ['   '],
+              candidateDomains: ['  '],
+              brandConfidence: 'definitely',
+              scriptOrLocaleHint: '   ',
+            },
+          }),
+        });
+
+        const run = await createPhishingWorkflow.createRun();
+        const result = await run.start({
+          inputData: {
+            topic: 'Account review',
+            language: 'en',
+            difficulty: 'Medium',
+            method: 'Data-Submission',
+          } as any,
+        });
+
+        const output = (result as any).result;
+
+        expect(output.analysis.audienceMode).toBe('general');
+        expect(output.analysis.journeyType).toBe('generic');
+        expect(output.analysis.offerMechanic).toBe('generic');
+        expect(output.analysis.brandSignals).toBeUndefined();
+        expect(mocks.resolveLogoAndBrand).toHaveBeenCalledWith(
+          'Security Team',
+          'Generic access review',
+          'mock-model',
+          undefined,
+          'Account review',
+          undefined
+        );
+      });
     });
 
     it('should handle analysis step failure', async () => {
